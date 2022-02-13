@@ -13,7 +13,7 @@ Vue.use(Vuex);
 
 const store = new Vuex.Store({
   modules,
-  strict: process.env.NODE_ENV !== 'production',
+  strict: false, // to ignore design system extended store errors. it should be set to `true` periodically
 });
 
 export default store;

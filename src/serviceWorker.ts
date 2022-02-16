@@ -1,3 +1,5 @@
+/// <reference types="chrome"/>
+
 chrome.runtime.onInstalled.addListener(({ reason, previousVersion }) => {
   const isInstall = reason === chrome.runtime.OnInstalledReason.INSTALL;
 

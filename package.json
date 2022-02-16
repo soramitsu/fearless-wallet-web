@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@soramitsu/soramitsu-js-ui": "^1.0.26",
+    "@types/chrome": "^0.0.178",
     "core-js": "^3.6.5",
     "lodash": "^4.17.21",
     "vue": "^2.6.14",

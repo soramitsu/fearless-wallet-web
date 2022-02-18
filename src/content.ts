@@ -1,1 +1,1 @@
-console.log('Hello, FWW extension!');
+// console.log('Hello, FWW extension!');

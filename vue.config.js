@@ -39,4 +39,18 @@ module.exports = {
   },
   productionSourceMap: false,
   runtimeCompiler: true,
+  pluginOptions: {
+    browserExtension: {
+      componentOptions: {
+        background: {
+          entry: 'src/serviceWorker.ts',
+        },
+        contentScripts: {
+          entries: {
+            'content-script': ['src/content.ts'],
+          },
+        },
+      },
+    },
+  },
 };

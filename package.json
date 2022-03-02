@@ -17,7 +17,10 @@
     "test:all": "yarn test:unit"
   },
   "dependencies": {
+    "@open-web3/orml-types": "^1.0.1",
+    "@polkadot/api": "^7.9.1",
     "@soramitsu/soramitsu-js-ui": "^1.0.26",
+    "bignumber.js": "^9.0.2",
     "core-js": "^3.6.5",
     "lodash": "^4.17.21",
     "vue": "^2.6.14",

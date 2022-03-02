@@ -9,9 +9,63 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import { Getter, Action } from 'vuex-class';
+import { ActionTypes } from './store/api/actions';
+import { GettersTypes } from './store/api/getters';
+import { Networks } from './store/api/types';
+import { formatBalance } from './util/balances';
+import type { AccountData } from '@polkadot/types/interfaces/balances';
 
 @Component({})
-export default class App extends Vue {}
+export default class App extends Vue {
+  url = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.1/chains/chains_dev.json';
+  address = '5DrEiPsthJmzZF8pS6QiD1DMb835opEKa7evnnGCgfDJ4331';
+
+  @Action(ActionTypes.LOAD_NETWORKS_INFO) loadNetworksInfo: any;
+  @Getter(GettersTypes.getNetworksInfo) networksInfo!: Networks;
+
+  async loadNetworks(url: string): Promise<void> {
+    await this.loadNetworksInfo({ url });
+  }
+
+  async subscribeToNetworks() {
+    console.log('networksInfo', this.networksInfo);
+
+    for (const [netName, network] of Object.entries(this.networksInfo)) {
+      try {
+        network.api.connect();
+
+        await network.api.isReady;
+      } catch (ex) {
+        network.api.disconnect();
+
+        console.log(`Connection to api failed.`);
+      }
+
+      try {
+        network.api.rx.query.balances?.account(this.address)?.subscribe(async (result) => {
+          const balances = formatBalance(result as AccountData);
+
+          const nullBalances = !Object.values(balances).find((value) => value !== '0');
+
+          console.log(netName, balances);
+
+          if (nullBalances) {
+            network.api.disconnect();
+          }
+        });
+      } catch (ex) {
+        console.log(`Subscribe to ${netName} failed`);
+      }
+    }
+  }
+
+  async mounted() {
+    await this.loadNetworks(this.url);
+
+    this.subscribeToNetworks();
+  }
+}
 </script>
 
 <style lang="scss" scoped>

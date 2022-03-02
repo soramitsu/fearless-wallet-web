@@ -1,11 +1,16 @@
 import Vue from 'vue';
-import Vuex, { ModuleTree } from 'vuex';
+import Vuex from 'vuex';
+import api from './api';
+import Modules from './types';
 
 const files = require.context('.', false, /\.ts$/);
-const modules: ModuleTree<unknown> = {};
+const modules: Modules = {
+  api,
+};
 
 files.keys().forEach((key) => {
-  if (key === './index.ts') return;
+  if (key === './index.ts' || key === './types.ts') return;
+
   modules[key.replace(/(\.\/|\.ts)/g, '')] = files(key).default;
 });
 

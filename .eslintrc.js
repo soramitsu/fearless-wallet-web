@@ -17,6 +17,7 @@ module.exports = {
   rules: {
     'no-console': [process.env.NODE_ENV === 'production' ? 'error' : 'warn', { allow: ['warn', 'error', 'info'] }],
     'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'warn',
+    'no-use-before-define': 'warn',
     'vue/html-closing-bracket-newline': [
       'error',
       {
@@ -28,6 +29,12 @@ module.exports = {
     '@typescript-eslint/explicit-function-return-type': ['off'],
     '@typescript-eslint/no-use-before-define': ['off'],
     '@typescript-eslint/no-var-requires': ['off'],
+    'prettier/prettier': [
+      'error',
+      {
+        endOfLine: 'auto',
+      },
+    ],
   },
   overrides: [
     {

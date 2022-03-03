@@ -37,6 +37,7 @@ const actions: ActionTree<State, State> & Actions = {
           api,
           nodes,
           assets,
+          active: false,
         },
       };
     }, {});

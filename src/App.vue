@@ -9,9 +9,11 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
+import { Getter, Action, Mutation } from 'vuex-class';
 import { ActionTypes } from './store/api/actions';
 import { GettersTypes } from './store/api/getters';
+import { MutationTypes } from './store/api/mutations';
+
 import { Networks } from './store/api/types';
 import { formatBalance } from './util/balances';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
@@ -23,8 +25,13 @@ export default class App extends Vue {
 
   @Action(ActionTypes.LOAD_NETWORKS_INFO) loadNetworksInfo: any;
   @Getter(GettersTypes.getNetworksInfo) networksInfo!: Networks;
+  @Mutation(MutationTypes.SET_NETWORK_STATUS) setNetworkStatus: any;
 
   async loadNetworks(url: string): Promise<void> {
+    await this.loadNetworksInfo({ url });
+  }
+
+  async connectToNetworks(url: string): Promise<void> {
     await this.loadNetworksInfo({ url });
   }
 
@@ -36,8 +43,11 @@ export default class App extends Vue {
         network.api.connect();
 
         await network.api.isReady;
+
+        this.setNetworkStatus({ name: netName, active: true });
       } catch (ex) {
         network.api.disconnect();
+        this.setNetworkStatus({ name: netName, active: false });
 
         console.log(`Connection to api failed.`);
       }
@@ -52,6 +62,8 @@ export default class App extends Vue {
 
           if (nullBalances) {
             network.api.disconnect();
+
+            this.setNetworkStatus({ name: netName, active: false });
           }
         });
       } catch (ex) {

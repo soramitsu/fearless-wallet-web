@@ -52,6 +52,12 @@ type Network = {
   provider: WsProvider;
   nodes: Nodes[];
   assets: Assets[];
+  active: boolean;
+};
+
+export type SetNetworkStatusMutation = {
+  name: string;
+  active: boolean;
 };
 
 export type Networks = Record<string, Network>;

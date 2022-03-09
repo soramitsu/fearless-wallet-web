@@ -1,11 +1,13 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
 import api from './api';
+import account from './account';
 import Modules from './types';
 
 const files = require.context('.', false, /\.ts$/);
 const modules: Modules = {
   api,
+  account,
 };
 
 files.keys().forEach((key) => {

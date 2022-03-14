@@ -1,7 +1,7 @@
 <template>
   <div class="nickname">
     <div>
-      <s-input :value="nickname" type="text" placeholder="Wallet nickname" maxlength="25" @input="input" />
+      <s-input v-model="nickname" type="text" placeholder="Wallet nickname" maxlength="25" />
     </div>
     <div class="info">
       <div>
@@ -18,15 +18,23 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter } from 'vuex-class';
-import { MutationTypes } from '../../../store/account/mutations';
-import { GettersTypes } from '../../../store/account/getters';
+import { MutationTypes } from '../../store/account/mutations';
+import { GettersTypes } from '../../store/account/getters';
 
 @Component({})
 export default class App extends Vue {
-  @Getter(GettersTypes.getNickname) nickname!: string;
+  @Getter(GettersTypes.getNickname) getNickname!: string;
   @Mutation(MutationTypes.SET_NICKNAME) setNickname: any;
 
   input(nickname: string) {
+    this.setNickname({ nickname });
+  }
+
+  get nickname(): string {
+    return this.getNickname;
+  }
+
+  set nickname(nickname: string) {
     this.setNickname({ nickname });
   }
 }
@@ -35,7 +43,7 @@ export default class App extends Vue {
 <style lang="scss" scoped>
 .nickname {
   i {
-    color: white;
+    color: #cccccc;
   }
 
   .info {
@@ -46,6 +54,7 @@ export default class App extends Vue {
 
     .info-text {
       margin-left: 5px;
+      color: #cccccc;
     }
   }
 }

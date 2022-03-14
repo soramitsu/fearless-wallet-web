@@ -9,13 +9,12 @@
       :currentIndexPage="currentIndexPage"
       @updateSelectedMnemonicElements="updateSelectedMnemonicElements"
     />
-    <MainPage v-if="currentIndexPage === 3" />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import NicknameForm from './NicknameForm.vue';
+import NicknameForm from '../NicknameForm.vue';
 import MnemonicFom from './MnemonicFom.vue';
 import MainPage from '../../mainPage/MainPage.vue';
 
@@ -45,7 +44,7 @@ export default class App extends Vue {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 435px;
+  height: 400px;
 
   i {
     color: white;

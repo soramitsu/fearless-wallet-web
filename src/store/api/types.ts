@@ -52,6 +52,7 @@ type Network = {
   provider: WsProvider;
   nodes: Nodes[];
   assets: Assets[];
+  prefix: number;
   active: boolean;
 };
 

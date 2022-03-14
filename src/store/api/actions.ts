@@ -24,7 +24,7 @@ const actions: ActionTree<State, State> & Actions = {
     const response = await fetch(url as string);
     const networks: FullNetwork[] = await response.json();
 
-    const networksInfo: Networks = networks.reduce((accumulator, { nodes, name, assets }) => {
+    const networksInfo: Networks = networks.reduce((accumulator, { nodes, name, assets, addressPrefix }) => {
       const url = name === 'Astar' ? nodes[1].url : nodes[0].url;
 
       const provider = new WsProvider(url, autoConnectMs as number);
@@ -37,6 +37,7 @@ const actions: ActionTree<State, State> & Actions = {
           api,
           nodes,
           assets,
+          prefix: addressPrefix,
           active: false,
         },
       };

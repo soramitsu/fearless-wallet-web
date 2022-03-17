@@ -49,22 +49,27 @@ export default class App extends Vue {
   async subscribeToNetworks() {
     console.log('networksInfo', this.networksInfo);
 
-    for (const [netName, network] of Object.entries(this.networksInfo)) {
+    const networks = Object.entries(this.networksInfo);
+
+    // to speed up, first connect to all networks
+    for (const [netName, network] of networks) {
       try {
         network.api.connect();
-
-        await network.api.isReady;
-
-        this.setNetworkStatus({ name: netName, active: true });
       } catch (ex) {
         network.api.disconnect();
         this.setNetworkStatus({ name: netName, active: false });
 
         console.log(`Connection to api failed.`);
       }
+    }
+
+    for (const [netName, network] of networks) {
+      await network.api.isReady;
+
+      this.setNetworkStatus({ name: netName, active: true });
 
       try {
-        network.api.rx.query.balances?.account(this.address)?.subscribe(async (result) => {
+        network.api.rx.query.balances.account(this.address).subscribe(async (result) => {
           const balances = formatBalance(result as AccountData);
 
           const nullBalances = !Object.values(balances).find((value) => value !== '0');
@@ -78,7 +83,10 @@ export default class App extends Vue {
           }
         });
       } catch (ex) {
-        console.log(`Subscribe to ${netName} failed`);
+        console.log(`
+          Subscribe to ${netName} failed
+          ${ex}
+        `);
       }
     }
   }

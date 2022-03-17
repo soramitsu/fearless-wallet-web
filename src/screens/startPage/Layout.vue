@@ -18,11 +18,11 @@
     <ImportWallet
       v-else-if="showImportForm"
       :mnemonic="mnemonic"
+      :rawSeed="rawSeed"
       :json="json"
       :currentIndexPage="currentIndexPage"
-      @setMnemonic="setMnemonic"
-      @setJson="setJson"
-      @setPassword="setPassword"
+      :password="password"
+      @setValue="setValue"
     />
 
     <MainPage v-else-if="currentIndexPage === 3 || isImportWallet" />
@@ -46,7 +46,7 @@ import { GettersTypes } from '../../store/account/getters';
 import { Account } from '../../store/account/types';
 import { mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
 import keyring from '@polkadot/ui-keyring';
-import { WalletConnectionStatus } from '../../interfaces/connectionWallet';
+import { WalletConnectionStatus, TypeFiledForImport } from '../../interfaces/connectionWallet';
 import { isKeyringPairs$Json } from '../../util/typeGuards';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
@@ -60,10 +60,11 @@ import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 })
 export default class App extends Vue {
   json: KeyringPair$Json | KeyringPairs$Json | Record<string, never> = {};
+  mnemonic = '';
+  rawSeed = '';
   password = '';
-  mnemonic: string[] = [];
   headersCreateWallet = ['Create a new wallet', 'Backup mnemonic', 'Confirm mnemonic'];
-  headerForCreateWallet = 'Import wallet';
+  headerForImportWallet = 'Import wallet';
   headers = ['Create a new wallet', 'Backup mnemonic', 'Confirm mnemonic'];
   selectedMnemonicElements: string[] = [];
   unselectedMnemonicElements: string[] = [];
@@ -99,13 +100,15 @@ export default class App extends Vue {
     return this.hasAccount
       ? ''
       : this.isImportWallet
-      ? this.headerForCreateWallet
+      ? this.headerForImportWallet
       : this.headersCreateWallet[this.currentIndexPage];
   }
 
   get disabledProceed() {
     if (this.isImportWallet) {
-      return !this.nickname || (!mnemonicValidate(this.mnemonic.join(' ')) && Object.keys(this.json).length === 0);
+      return (
+        !this.nickname || (!mnemonicValidate(this.mnemonic) && Object.keys(this.json).length === 0 && !this.rawSeed)
+      );
     }
 
     // else isCreateWallet
@@ -115,6 +118,7 @@ export default class App extends Vue {
       return false;
     } else if (this.currentIndexPage === 2) {
       return this.mnemonic
+        .split(' ')
         .map((mnemonicElement, index) => this.selectedMnemonicElements[index] === mnemonicElement)
         .includes(false);
     }
@@ -122,16 +126,11 @@ export default class App extends Vue {
     return true;
   }
 
-  setMnemonic(value: string[]) {
-    this.mnemonic = value;
-  }
-
-  setJson(value: KeyringPairs$Json | KeyringPair$Json) {
-    this.json = value;
-  }
-
-  setPassword(value: string) {
-    this.password = value;
+  setValue(
+    value: string & (KeyringPair$Json | KeyringPairs$Json | Record<string, never>) & string[],
+    typeField: TypeFiledForImport | 'password'
+  ) {
+    this[typeField] = value;
   }
 
   proceed() {
@@ -145,7 +144,8 @@ export default class App extends Vue {
   }
 
   accountAuthorization() {
-    const account = keyring.addUri(this.mnemonic.join(' '));
+    const account = keyring.addUri(this.mnemonic || this.rawSeed);
+    // const account = keyring.addUri('0x3d60d4270bc927dc5985631c9ae2f661a22458bd1733a6716da3b50aeb583912');
 
     this.setAccount({ account });
 
@@ -156,39 +156,43 @@ export default class App extends Vue {
 
   createWallet() {
     if (!this.currentIndexPage && !this.mnemonic.length) {
-      const mnemonic = mnemonicGenerate().split(' ');
+      const mnemonic = mnemonicGenerate();
 
-      this.mnemonic = [...mnemonic];
-      this.unselectedMnemonicElements = [...mnemonic];
-      // this.unselectedMnemonicElements = [...mnemonic].sort(() => Math.random() - 0.5);
+      this.mnemonic = mnemonic;
+      this.unselectedMnemonicElements = mnemonic.split(' ');
+      // this.unselectedMnemonicElements = mnemonic.split(' ').sort(() => Math.random() - 0.5);
     } else if (this.currentIndexPage === 2) {
       this.accountAuthorization();
     }
   }
 
   importWallet() {
-    if (this.mnemonic.length !== 0) {
+    if (this.mnemonic.length !== 0 || this.rawSeed.length !== 0) {
       this.accountAuthorization();
     } else if (Object.keys(this.json).length !== 0) {
       const typedJson = Object.prototype.hasOwnProperty.call(this.json, 'account')
         ? (this.json as KeyringPairs$Json)
         : (this.json as KeyringPair$Json);
 
-      const keyringPair = isKeyringPairs$Json(typedJson)
-        ? keyring.restoreAccounts(typedJson, this.password)
-        : keyring.restoreAccount(typedJson, this.password);
+      try {
+        const keyringPair = isKeyringPairs$Json(typedJson)
+          ? keyring.restoreAccounts(typedJson, this.password)
+          : keyring.restoreAccount(typedJson, this.password);
 
-      // TODO: currently only works for non-batch json file
-      this.setAccount({
-        account: {
-          pair: keyringPair,
-          json: this.json,
-        },
-      });
+        // TODO: currently only works for non-batch json file
+        this.setAccount({
+          account: {
+            pair: keyringPair,
+            json: this.json,
+          },
+        });
 
-      alert('Wallet imported. Check console');
+        alert('Wallet imported. Check console');
 
-      console.log('account info', this.account);
+        console.log('account info', this.account);
+      } catch {
+        alert('Invalid password!');
+      }
     }
   }
 
@@ -204,7 +208,7 @@ export default class App extends Vue {
 
   back() {
     if (this.currentIndexPage === 0) {
-      this.mnemonic = [];
+      this.mnemonic = '';
       this.setNickname({ nickname: '' });
       this.$emit('reset');
 

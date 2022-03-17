@@ -1,25 +1,37 @@
 <template>
   <div class="import-wallet">
-    <s-select v-model="typeImport" class="row">
+    <s-select v-model="typeImport" class="row" size="medium">
       <s-option v-for="option in optionsImport" :key="option.value" :value="option.value" :label="option.label" />
     </s-select>
 
     <NicknameForm class="row" />
 
-    <div class="row">
-      <template v-if="!importJson">
-        <s-input :value="mnemonicString" type="textarea" :placeholder="placeholder" @input="onChange" />
-      </template>
-      <template v-else>
+    <template v-if="!importJson">
+      <div class="row">
+        <s-input :value="inputValue" type="textarea" :placeholder="placeholder" @input="onChange" />
+      </div>
+    </template>
+    <template v-else>
+      <div class="row">
         <s-json-input :value="json ? json : {}" @input="onChange" />
-      </template>
-    </div>
+      </div>
+      <div class="row">
+        <s-input
+          :value="password"
+          placeholder="password from json"
+          size="medium"
+          show-password
+          @input="onChangePassword"
+        />
+      </div>
+    </template>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import NicknameForm from '../NicknameForm.vue';
+import { TypeFiledForImport } from '../../../interfaces/connectionWallet';
 
 @Component({
   components: {
@@ -27,52 +39,61 @@ import NicknameForm from '../NicknameForm.vue';
   },
 })
 export default class App extends Vue {
-  typeImport = 'mnemonic';
+  typeImport: TypeFiledForImport = 'mnemonic';
   optionsImport = [
     { label: 'Mnemonic passphrase', value: 'mnemonic' },
-    { label: 'Restore JSON', value: 'JSON' },
+    { label: 'Restore JSON', value: 'json' },
+    { label: 'Raw seed', value: 'rawSeed' },
   ];
 
   @Prop(Object) json!: Record<string, string>;
   @Prop(String) password!: string;
   @Prop(Number) currentIndexPage!: number;
-  @Prop(Array) mnemonic!: string[];
+  @Prop(String) mnemonic!: string;
+  @Prop(String) rawSeed!: string;
 
-  get importJson() {
-    return this.typeImport === 'JSON';
+  get inputValue() {
+    return this[this.typeImport];
   }
 
-  get mnemonicString() {
-    return this.mnemonic.join(' ');
+  get mnemonicArray() {
+    return this.mnemonic.split(' ');
+  }
+
+  get importJson() {
+    return this.typeImport === 'json';
   }
 
   get placeholder() {
     if (this.typeImport === 'mnemonic') {
       return 'Mnemonic passphrase';
+    } else if (this.typeImport === 'rawSeed') {
+      return 'Raw seed';
     }
 
-    return 'JSON';
+    return 'json';
   }
 
   @Watch('typeImport')
   onTypeImportChanged(value: string) {
     if (value === 'mnemonic') {
-      this.$emit('setJson', {});
-    } else {
-      this.$emit('setMnemonic', []);
+      this.$emit('setValue', {}, 'json');
+      this.$emit('setValue', '', 'rawSeed');
+    } else if (value === 'json') {
+      this.$emit('setValue', '', 'mnemonic');
+      this.$emit('setValue', '', 'rawSeed');
+    } else if (value === 'rawSeed') {
+      this.$emit('setValue', '', 'mnemonic');
+      this.$emit('setValue', {}, 'json');
     }
   }
 
   onChange(value: string) {
-    if (this.typeImport === 'mnemonic') {
-      this.$emit('setMnemonic', value ? value.split(' ') : []);
-    } else {
-      this.$emit('setJson', value);
-    }
+    this.$emit('setValue', value, this.typeImport);
   }
 
   onChangePassword(value: string) {
-    this.$emit('setPassword', value);
+    this.$emit('setValue', value, 'password');
   }
 }
 </script>

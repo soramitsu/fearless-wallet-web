@@ -1,7 +1,7 @@
 <template>
   <div class="nickname">
     <div>
-      <s-input v-model="nickname" type="text" placeholder="Wallet nickname" maxlength="25" />
+      <s-input v-model="nickname" type="text" size="medium" placeholder="Wallet nickname" maxlength="25" />
     </div>
     <div class="info">
       <div>

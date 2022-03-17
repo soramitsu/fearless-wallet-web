@@ -65,13 +65,17 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component({})
 export default class App extends Vue {
-  @Prop(Array) mnemonic!: string[];
+  @Prop(String) mnemonic!: string;
   @Prop(Array) selectedMnemonicElements!: string[];
   @Prop(Array) unselectedMnemonicElements!: string[];
   @Prop(Number) currentIndexPage!: number;
 
+  get mnemonicArray() {
+    return this.mnemonic.split(' ');
+  }
+
   get mnemonicLength() {
-    return this.mnemonic.length;
+    return this.mnemonicArray.length;
   }
 
   get midpoint() {
@@ -79,11 +83,11 @@ export default class App extends Vue {
   }
 
   get mnemonicOne() {
-    return this.mnemonic.slice(0, this.midpoint);
+    return this.mnemonicArray.slice(0, this.midpoint);
   }
 
   get mnemonicTwo() {
-    return this.mnemonic.slice(this.midpoint, this.mnemonicLength);
+    return this.mnemonicArray.slice(this.midpoint, this.mnemonicLength);
   }
 
   updateSelectedMnemonicElements(element: string, index: number, added = true) {

@@ -31,6 +31,7 @@
     "vuex-class": "^0.3.2"
   },
   "devDependencies": {
+    "@types/chrome": "^0.0.177",
     "@types/electron-devtools-installer": "^2.2.0",
     "@types/jest": "^26.0.19",
     "@types/lodash": "^4.14.174",

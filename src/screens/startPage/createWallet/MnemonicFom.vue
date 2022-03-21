@@ -64,7 +64,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component({})
-export default class App extends Vue {
+export default class extends Vue {
   @Prop(String) mnemonic!: string;
   @Prop(Array) selectedMnemonicElements!: string[];
   @Prop(Array) unselectedMnemonicElements!: string[];

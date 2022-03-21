@@ -48,7 +48,7 @@ import { WalletConnectionStatus } from '../../interfaces/connectionWallet';
     Layout,
   },
 })
-export default class App extends Vue {
+export default class extends Vue {
   walletConnectionStatus: WalletConnectionStatus = '';
 
   changWalletConnectionStatus(value: WalletConnectionStatus = '') {

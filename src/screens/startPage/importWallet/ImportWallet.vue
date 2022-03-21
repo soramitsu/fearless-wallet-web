@@ -38,7 +38,7 @@ import { TypeFiledForImport } from '../../../interfaces/connectionWallet';
     NicknameForm,
   },
 })
-export default class App extends Vue {
+export default class extends Vue {
   typeImport: TypeFiledForImport = 'mnemonic';
   optionsImport = [
     { label: 'Mnemonic passphrase', value: 'mnemonic' },

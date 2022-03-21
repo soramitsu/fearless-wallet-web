@@ -58,7 +58,7 @@ import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
     ImportWallet,
   },
 })
-export default class App extends Vue {
+export default class extends Vue {
   json: KeyringPair$Json | KeyringPairs$Json | Record<string, never> = {};
   mnemonic = '';
   rawSeed = '';

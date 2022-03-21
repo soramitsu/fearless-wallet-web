@@ -22,7 +22,7 @@ import { MutationTypes } from '../../store/account/mutations';
 import { GettersTypes } from '../../store/account/getters';
 
 @Component({})
-export default class App extends Vue {
+export default class extends Vue {
   @Getter(GettersTypes.getNickname) getNickname!: string;
   @Mutation(MutationTypes.SET_NICKNAME) setNickname: any;
 

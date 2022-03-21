@@ -17,6 +17,7 @@ import type { AccountData } from '@polkadot/types/interfaces/balances';
 import StartPage from './screens/startPage/StartPage.vue';
 import { Account } from './store/account/types';
 import keyring from '@polkadot/ui-keyring';
+import AccountsStore from './storeChrome/Accounts';
 
 @Component({
   components: {
@@ -95,7 +96,10 @@ export default class App extends Vue {
     await this.loadNetworks(this.url);
 
     // load all the keyring data
-    keyring.loadAll({ type: 'sr25519' });
+    keyring.loadAll({
+      // store: new AccountsStore(),
+      type: 'sr25519',
+    });
 
     console.log('initialization completed');
   }

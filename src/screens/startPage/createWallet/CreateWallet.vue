@@ -25,7 +25,7 @@ import MainPage from '../../mainPage/MainPage.vue';
     MainPage,
   },
 })
-export default class App extends Vue {
+export default class extends Vue {
   @Prop(Number) currentIndexPage!: number;
   @Prop(String) mnemonic!: string;
   @Prop(Array) selectedMnemonicElements!: string[];

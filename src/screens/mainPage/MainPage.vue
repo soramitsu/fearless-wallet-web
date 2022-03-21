@@ -13,7 +13,7 @@ import { GettersTypes } from '../../store/account/getters';
 import { Account } from '../../store/account/types';
 
 @Component({})
-export default class App extends Vue {
+export default class extends Vue {
   @Getter(GettersTypes.getAccount) account!: Account;
   @Getter(GettersTypes.getNickname) nickname!: string;
 

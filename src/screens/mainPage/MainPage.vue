@@ -18,7 +18,7 @@ export default class extends Vue {
   @Getter(GettersTypes.getNickname) nickname!: string;
 
   get address() {
-    return this.account?.pair.address ?? '';
+    return this.account?.address ?? '';
   }
 }
 </script>

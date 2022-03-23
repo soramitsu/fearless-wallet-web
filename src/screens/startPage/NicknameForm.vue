@@ -26,10 +26,6 @@ export default class extends Vue {
   @Getter(GettersTypes.getNickname) getNickname!: string;
   @Mutation(MutationTypes.SET_NICKNAME) setNickname: any;
 
-  input(nickname: string) {
-    this.setNickname({ nickname });
-  }
-
   get nickname(): string {
     return this.getNickname;
   }

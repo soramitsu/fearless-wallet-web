@@ -12,7 +12,10 @@
       :mnemonic="mnemonic"
       :selectedMnemonicElements="selectedMnemonicElements"
       :unselectedMnemonicElements="unselectedMnemonicElements"
+      :substrateSecretDerivationPath="substrateSecretDerivationPath"
+      :ethereumSecretDerivationPath="ethereumSecretDerivationPath"
       @updateSelectedMnemonicElements="updateSelectedMnemonicElements"
+      @updatedDerivationPath="updatedDerivationPath"
     />
 
     <ImportWallet
@@ -63,6 +66,8 @@ export default class extends Vue {
   mnemonic = '';
   rawSeed = '';
   password = '';
+  substrateSecretDerivationPath = '';
+  ethereumSecretDerivationPath = '';
   headersCreateWallet = ['Create a new wallet', 'Backup mnemonic', 'Confirm mnemonic'];
   headerForImportWallet = 'Import wallet';
   headers = ['Create a new wallet', 'Backup mnemonic', 'Confirm mnemonic'];
@@ -126,6 +131,10 @@ export default class extends Vue {
     return true;
   }
 
+  updatedDerivationPath(value: string, name: 'substrateSecretDerivationPath' | 'ethereumSecretDerivationPath') {
+    this[name] = value;
+  }
+
   setValue(
     value: string & (KeyringPair$Json | KeyringPairs$Json | Record<string, never>) & string[],
     typeField: TypeFiledForImport | 'password'
@@ -144,8 +153,10 @@ export default class extends Vue {
   }
 
   accountAuthorization() {
-    const account = keyring.addUri(this.mnemonic || this.rawSeed);
-    // const account = keyring.addUri('0x3d60d4270bc927dc5985631c9ae2f661a22458bd1733a6716da3b50aeb583912');
+    const mnemonic = `${this.mnemonic}${this.substrateSecretDerivationPath}`;
+
+    const account = keyring.createFromUri(mnemonic || this.rawSeed);
+    // const account = keyring.createFromUri('0x3d60d4270bc927dc5985631c9ae2f661a22458bd1733a6716da3b50aeb583912');
 
     this.setAccount({ account });
 

@@ -31,7 +31,7 @@ export default class App extends Vue {
   @Getter(AccountGettersTypes.getNickname) nickname!: string;
 
   get address() {
-    return this.account?.pair.address;
+    return this.account?.address;
   }
 
   @Getter(ApiGettersTypes.getNetworksInfo) networksInfo!: Networks;

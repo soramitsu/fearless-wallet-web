@@ -1,6 +1,8 @@
 <template>
   <div id="app">
-    <StartPage />
+    <div class="background">
+      <WelcomePage />
+    </div>
   </div>
 </template>
 
@@ -8,37 +10,39 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
 import { ActionTypes as ApiActionTypes } from './store/api/actions';
-import { GettersTypes as AccountGettersTypes } from './store/account/getters';
+import { GettersTypes as AccountGettersTypes } from './store/accounts/getters';
 import { GettersTypes as ApiGettersTypes } from './store/api/getters';
 import { MutationTypes } from './store/api/mutations';
 import { Networks } from './store/api/types';
 import { formatBalance } from './util/balances';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
-import StartPage from './screens/startPage/StartPage.vue';
-import { Account } from './store/account/types';
-import keyring from '@polkadot/ui-keyring';
-import AccountsStore from './storeChrome/Accounts';
+import WelcomePage from './screens/welcomePage/WelcomePage.vue';
+import { Accounts } from './store/accounts/types';
 
 @Component({
   components: {
-    StartPage,
+    WelcomePage,
   },
 })
 export default class App extends Vue {
   url = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.1/chains/chains_dev.json';
 
-  @Getter(AccountGettersTypes.getAccount) account!: Account;
+  @Getter(AccountGettersTypes.getAccounts) accounts!: Accounts;
   @Getter(AccountGettersTypes.getNickname) nickname!: string;
 
-  get address() {
-    return this.account?.address;
+  get addresses() {
+    return this.accounts.map((wallet) => wallet.address);
   }
 
   @Getter(ApiGettersTypes.getNetworksInfo) networksInfo!: Networks;
   @Action(ApiActionTypes.LOAD_NETWORKS_INFO) loadNetworksInfo: any;
   @Mutation(MutationTypes.SET_NETWORK_STATUS) setNetworkStatus: any;
 
-  @Watch('account')
+  async mounted() {
+    await this.loadNetworks(this.url);
+  }
+
+  @Watch('accounts')
   subscribe() {
     this.subscribeToNetworks();
   }
@@ -70,18 +74,26 @@ export default class App extends Vue {
       this.setNetworkStatus({ name: netName, active: true });
 
       try {
-        network.api.rx.query.balances.account(this.address).subscribe(async (result) => {
-          const balances = formatBalance(result as AccountData);
+        this.addresses.forEach((address) => {
+          network.api.rx.query.balances.account(address).subscribe(async (result) => {
+            const balances = formatBalance(result as AccountData);
 
-          const nullBalances = !Object.values(balances).find((value) => value !== '0');
+            const nullBalances = !Object.values(balances).find((value) => value !== '0');
 
-          console.log(netName, balances);
+            console.log(
+              `
+              Address: ${address},
+              Network: ${netName},
+            `,
+              balances
+            );
 
-          if (nullBalances) {
-            network.api.disconnect();
+            if (nullBalances) {
+              network.api.disconnect();
 
-            this.setNetworkStatus({ name: netName, active: false });
-          }
+              this.setNetworkStatus({ name: netName, active: false });
+            }
+          });
         });
       } catch (ex) {
         console.log(`
@@ -91,26 +103,79 @@ export default class App extends Vue {
       }
     }
   }
-
-  async mounted() {
-    await this.loadNetworks(this.url);
-
-    // load all the keyring data
-    keyring.loadAll({
-      // store: new AccountsStore(),
-      type: 'sr25519',
-    });
-
-    console.log('initialization completed');
-  }
 }
 </script>
 
+<style lang="scss">
+#app {
+  input {
+    color: #bb77ff;
+  }
+
+  button {
+    clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+  }
+
+  .s-input {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.05);
+    clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+  }
+
+  .s-select {
+    clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+  }
+
+  .s-select .el-input__inner {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .s-select .s-placeholder {
+    color: white;
+    font-size: 13px;
+    margin-top: 13px;
+    padding-left: 30px;
+  }
+
+  .s-select input {
+    padding-left: 30px;
+  }
+
+  .s-input .s-placeholder {
+    color: white;
+    font-size: 13px;
+  }
+
+  .s-input__content {
+    padding-left: 15px;
+    font-size: 15px;
+  }
+
+  .s-select .el-select i.el-icon-arrow-up:before {
+    color: rgba(255, 255, 255, 0.5) !important;
+  }
+}
+</style>
+
 <style lang="scss" scoped>
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Sora';
+  font-style: normal;
+  font-feature-settings: 'tnum' on, 'lnum' on;
+  border-radius: 8px;
+  height: 640px;
+  width: 560px;
+  color: white;
   text-align: center;
-  width: 320px;
-  height: 500px;
+  background: url(./assets/background.svg) center;
+
+  .background {
+    height: 100%;
+    border-radius: 8px;
+    padding: 16px;
+    background-color: rgba(46, 3, 34, 0.637);
+    backdrop-filter: blur(50px);
+  }
 }
 </style>

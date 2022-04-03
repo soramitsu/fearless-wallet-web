@@ -1,7 +1,7 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
 import api from './api';
-import account from './account';
+import account from './accounts';
 import Modules from './types';
 
 const files = require.context('.', false, /\.ts$/);

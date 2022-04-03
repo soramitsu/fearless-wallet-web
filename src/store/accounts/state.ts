@@ -1,14 +1,16 @@
-import { Account } from './types';
+import { Accounts } from './types';
 
 export type State = {
-  account: Account;
+  accounts: Accounts;
   nickname: string;
+  password: string;
 };
 
 const state = (): State => {
   return {
-    account: {},
+    accounts: [],
     nickname: '',
+    password: '',
   };
 };
 

@@ -8,23 +8,22 @@
 
 <style lang="scss" scoped>
 .loading {
-  position: absolute;
+  margin: auto;
 
   .circle {
     border-radius: 50%;
     width: 96px;
     height: 96px;
     border: 8px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    align-items: center;
+    display: inline-block;
   }
 
   .circle:after {
     content: ' ';
     top: 0;
     left: 0;
-    position: absolute;
     display: block;
+    margin: -71px -8px 0;
     width: 96px;
     height: 96px;
     border-radius: 50%;
@@ -36,7 +35,7 @@
   .logo {
     height: 39px;
     width: 70px;
-    margin: 0 auto;
+    margin-top: 20px;
   }
 
   @keyframes arc {

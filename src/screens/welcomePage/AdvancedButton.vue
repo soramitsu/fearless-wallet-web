@@ -1,7 +1,7 @@
 <template>
   <div class="advanced-button">
     <s-button class="button" type="link" border-radius="mini" @click="handler">
-      Advanced
+      <span>Advanced backup settings</span>
       <s-icon name="circle-plus-16" class="plus-icon" />
     </s-button>
   </div>
@@ -16,16 +16,21 @@ export default class extends Vue {
 }
 </script>
 
+<style lang="scss"></style>
+
 <style lang="scss" scoped>
 .advanced-button {
   color: #ffffff;
+  margin-top: 5px;
 
   .button {
-    color: #ffffff;
+    color: inherit;
     font-size: 16px;
-    height: auto;
-    padding-bottom: 12px;
-    padding-top: 20px;
+    line-height: 170%;
+
+    span {
+      font-weight: 400;
+    }
 
     &:hover {
       .s-icon-circle-plus-16 {

@@ -1,65 +1,53 @@
 <template>
   <div class="import-wallet">
-    <s-select v-model="typeImport" class="row" size="medium">
-      <s-option v-for="option in optionsImport" :key="option.value" :value="option.value" :label="option.label" />
-    </s-select>
+    <div class="row import" @click="openPopup">
+      <s-input :value="typeImportLabel" placeholder="Source type" class="import" size="big" readonly />
+    </div>
 
-    <NicknameForm class="row" />
-
-    <template v-if="!importJson">
-      <s-input class="row input" :value="inputValue" type="text" :placeholder="placeholder" @input="onChange" />
+    <template v-if="!jsonImport">
+      <s-input v-model="inputValue" :placeholder="placeholder" class="row input" type="textarea" maxlength="130" />
     </template>
     <template v-else>
       <div class="row">
         <s-input
-          :value="jsonValue"
+          v-model="inputValue"
           placeholder="Restore JSON"
           size="big"
           type="text-file"
           accept="application/JSON"
           readonly
-          @input="onChange"
         />
-        <s-input
-          :value="passwordJson"
-          placeholder="Password"
-          size="big"
-          show-password
-          class="row"
-          @input="onChangePassword"
-        />
+        <s-input v-model="_passwordJson" placeholder="Password" size="big" show-password class="row" />
       </div>
     </template>
 
-    <AdvancedButton v-if="!importJson" :handler="toggleAdvancedFormVisible" />
+    <slot v-if="!jsonImport"></slot>
 
-    <AdvancedForm
-      v-if="showAdvancedForm"
-      :derivationPath="derivationPath"
-      :showEthereumDP="showEthereumDP"
-      @saveChanges="setValue"
-      @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
-    />
+    <Popup v-if="showPopup" :handlerClose="closePopup" header="Source type">
+      <div
+        v-for="{ label, value } in optionsImport"
+        :key="label"
+        :class="typeImportClasses(value)"
+        @click="toggleTypeImport(value)"
+      >
+        <div>
+          {{ label }}
+        </div>
+        <s-icon name="basic-check-mark-24" v-show="typeImport === value" />
+      </div>
+    </Popup>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { TypeFiledForImport, DerivationPath } from '../../interfaces/connectionWallet';
-import NicknameForm from './NicknameForm.vue';
-import AdvancedButton from './AdvancedButton.vue';
-import AdvancedForm from './AdvancedForm.vue';
+import Popup from '../../components/Popup.vue';
 
-@Component({
-  components: {
-    NicknameForm,
-    AdvancedButton,
-    AdvancedForm,
-  },
-})
+@Component({ components: { Popup } })
 export default class extends Vue {
+  showPopup = false;
   fileJson = '';
-  showAdvancedForm = false;
   typeImport: TypeFiledForImport = 'mnemonic';
   optionsImport = [
     { label: 'Mnemonic passphrase', value: 'mnemonic' },
@@ -69,66 +57,82 @@ export default class extends Vue {
 
   @Prop(String) mnemonic!: string;
   @Prop(String) rawSeed!: string;
-  @Prop(Object) json!: string;
+  @Prop(String) json!: string;
   @Prop(String) passwordJson!: string;
   @Prop(Object) derivationPath!: DerivationPath;
 
-  get showEthereumDP() {
-    return this.typeImport !== 'rawSeed';
-  }
-
-  get jsonValue() {
-    return JSON.stringify(this.json);
+  get typeImportLabel() {
+    return this.optionsImport.find(({ value }) => value === this.typeImport)?.label;
   }
 
   get inputValue() {
     return this[this.typeImport];
   }
 
+  set inputValue(value: string) {
+    this.$emit('setValue', value, this.typeImport);
+  }
+
+  get _passwordJson() {
+    return this.passwordJson;
+  }
+
+  set _passwordJson(value: string) {
+    this.$emit('setValue', value, 'passwordJson');
+  }
+
+  get showEthereumDP() {
+    return this.typeImport !== 'rawSeed';
+  }
+
   get mnemonicArray() {
     return this.mnemonic.split(' ');
   }
 
-  get importJson() {
+  get jsonImport() {
     return this.typeImport === 'json';
   }
 
   get placeholder() {
     if (this.typeImport === 'mnemonic') {
-      return 'Mnemonic passphrase';
+      return 'Enter Passphrase';
     } else if (this.typeImport === 'rawSeed') {
       return 'Raw seed';
     }
 
-    return 'json';
+    return 'Restore JSON';
   }
 
   @Watch('typeImport')
-  onTypeImportChanged() {
-    this.$emit('setValue', {}, 'json');
+  onTypeImportChanged(typeImport: string) {
+    this.$emit('setValue', '', 'json');
     this.$emit('setValue', '', 'rawSeed');
     this.$emit('setValue', '', 'mnemonic');
     this.$emit('setValue', '', 'passwordJson');
+    this.$emit('setValue', typeImport !== 'rawSeed', 'showEthereumDP');
   }
 
-  toggleAdvancedFormVisible(value = true) {
-    this.showAdvancedForm = value;
+  typeImportClasses(value: string) {
+    return [
+      'type-import',
+      {
+        'active-type-import': this.typeImport === value,
+      },
+    ];
   }
 
-  onChange(string: string) {
-    const value = this.typeImport === 'json' ? JSON.parse(string) : string;
+  toggleTypeImport(value: TypeFiledForImport) {
+    this.typeImport = value;
 
-    this.$emit('setValue', value, this.typeImport);
+    this.closePopup();
   }
 
-  onChangePassword(value: string) {
-    this.$emit('setValue', value, 'passwordJson');
+  closePopup() {
+    this.showPopup = false;
   }
 
-  setValue(value: DerivationPath) {
-    this.$emit('setValue', value, 'derivationPath');
-
-    this.toggleAdvancedFormVisible(false);
+  openPopup() {
+    this.showPopup = true;
   }
 }
 </script>
@@ -136,6 +140,23 @@ export default class extends Vue {
 <style lang="scss">
 .s-icon-file-file-upload-24::before {
   color: rgba(255, 255, 255, 0.5);
+}
+
+.s-textarea {
+  padding: 20px 25px 25px !important;
+}
+
+.el-textarea__inner {
+  height: 100px !important;
+  resize: none !important;
+}
+
+.import {
+  cursor: pointer;
+
+  input:hover {
+    cursor: pointer;
+  }
 }
 </style>
 
@@ -149,7 +170,7 @@ export default class extends Vue {
   }
 
   .input {
-    height: 135px;
+    height: 170px;
   }
 
   .row {
@@ -158,6 +179,28 @@ export default class extends Vue {
     &:first-child {
       margin-top: 0;
     }
+  }
+
+  .type-import {
+    color: rgba(255, 255, 255, 0.75);
+    margin: 8px 0;
+    text-align: left;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+
+    &:hover {
+      cursor: pointer;
+      color: #ffffff;
+    }
+  }
+
+  .active-type-import {
+    color: #ffffff;
+  }
+
+  i {
+    color: #bb77ff;
   }
 }
 </style>

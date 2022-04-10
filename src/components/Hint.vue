@@ -1,7 +1,7 @@
 <template>
   <div class="hint">
     <div class="notifications-icon">
-      <s-icon name="notifications-info-24" />
+      <s-icon :name="icon" />
     </div>
     <div class="info-text">
       {{ text }}
@@ -34,7 +34,6 @@ export default class extends Vue {
 <style lang="scss" scoped>
 .hint {
   color: rgba(255, 255, 255, 0.65);
-  margin-top: 15px;
 
   i {
     color: rgba(255, 255, 255, 0.65);
@@ -45,19 +44,16 @@ export default class extends Vue {
   text-align: left;
 
   .notifications-icon {
-    width: 48px;
-    height: 48px;
     display: flex;
-    justify-content: center;
     align-items: center;
+    margin-right: 15px;
   }
 
   .info-text {
-    width: 490px;
+    width: 491px;
     font-size: 14px;
-    line-height: 19px;
-    font-weight: 300;
     margin: auto 0;
+    line-height: 14px;
   }
 }
 </style>

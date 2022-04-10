@@ -1,7 +1,16 @@
 <template>
   <div class="nickname">
-    <s-input v-model="nickname" type="text" size="big" placeholder="Wallet nickname" maxlength="25" class="input" />
+    <s-input
+      v-model="_nickname"
+      type="text"
+      size="big"
+      placeholder="Wallet nickname"
+      maxlength="25"
+      class="input"
+      :readonly="readonly"
+    />
     <Hint
+      class="hint"
       iconType="notification"
       text="Example: Savings, Investments, Crowdloans, Staking. This nickname will be displayed only for you and stored
         locally."
@@ -10,23 +19,20 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-import { Mutation, Getter } from 'vuex-class';
-import { MutationTypes } from '../../store/accounts/mutations';
-import { GettersTypes } from '../../store/accounts/getters';
-import Hint from '../Hint.vue';
+import { Component, Vue, Prop } from 'vue-property-decorator';
+import Hint from '../../components/Hint.vue';
 
 @Component({ components: { Hint } })
 export default class extends Vue {
-  @Getter(GettersTypes.getNickname) getNickname!: string;
-  @Mutation(MutationTypes.SET_NICKNAME) setNickname: any;
+  @Prop(String) nickname!: string;
+  @Prop({ default: false }) readonly!: boolean;
 
-  get nickname(): string {
-    return this.getNickname;
+  get _nickname(): string {
+    return this.nickname;
   }
 
-  set nickname(nickname: string) {
-    this.setNickname({ nickname });
+  set _nickname(value: string) {
+    this.$emit('setValue', value, 'nickname');
   }
 }
 </script>
@@ -39,6 +45,7 @@ export default class extends Vue {
 
   .input {
     font-size: 24px;
+    margin-bottom: 16px;
   }
 }
 </style>

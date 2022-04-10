@@ -1,51 +1,24 @@
 <template>
   <div class="mnemonic-backup-form">
-    <div class="header">Backup the passphrase for your new wallet</div>
-
-    <HR />
-
-    <div class="mnemonic-block">
-      <div>
-        <div v-for="(mnemonicElement, index) in mnemonicOne" :key="index" class="mnemonic-element">
-          <div class="mnemonic-number">
-            {{ index + 1 }}
-          </div>
-          <div class="mnemonic-text">
-            {{ mnemonicElement }}
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div v-for="(mnemonicElement, index) in mnemonicTwo" :key="index" class="mnemonic-element">
-          <div class="mnemonic-number">
-            {{ midpoint + index + 1 }}
-          </div>
-          <div class="mnemonic-text">
-            {{ mnemonicElement }}
-          </div>
-        </div>
-      </div>
+    <div class="hint-container">
+      <Hint
+        iconType="warning"
+        text="Use a non-digital way to backup. Write it down on paper (or etch it into metal) and make sure not to loose it."
+      />
     </div>
 
-    <Hint
-      iconType="notification"
-      text="Use a non-digital way to backup the wallet passphrase (also known as the mnemonic, seed, or secret). You could
-          write it down on paper (or etch it into metal) and store super duper hyper mega safely."
-    />
+    <MnemonicColumns :mnemonic="mnemonic" />
 
     <slot></slot>
-
-    <HR />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import HR from '../HR.vue';
-import Hint from '../Hint.vue';
+import MnemonicColumns from './MnemonicColumns.vue';
+import Hint from '../../components/Hint.vue';
 
-@Component({ components: { HR, Hint } })
+@Component({ components: { Hint, MnemonicColumns } })
 export default class extends Vue {
   @Prop(String) mnemonic!: string;
 
@@ -73,33 +46,13 @@ export default class extends Vue {
 
 <style lang="scss" scoped>
 .mnemonic-backup-form {
-  .header {
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 12px;
-  }
-
-  .mnemonic-block {
-    display: flex;
-    justify-content: space-around;
-    padding-bottom: 8px;
-    font-size: 20px;
-
-    .mnemonic-element {
-      display: flex;
-
-      .mnemonic-number {
-        margin-right: 16px;
-        color: #bb77ff;
-        text-align: right;
-        width: 25px;
-      }
-
-      .mnemonic-text {
-        text-align: left;
-        width: 150px;
-      }
-    }
+  .hint-container {
+    width: 480px;
+    height: 48px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.24);
+    margin: 0 auto 10px;
   }
 }
 </style>

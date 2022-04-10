@@ -2,15 +2,15 @@ import { Accounts } from './types';
 
 export type State = {
   accounts: Accounts;
-  nickname: string;
   password: string;
+  haveConnectedAccounts: boolean;
 };
 
 const state = (): State => {
   return {
     accounts: [],
-    nickname: '',
     password: '',
+    haveConnectedAccounts: false,
   };
 };
 

@@ -20,6 +20,7 @@
     "@open-web3/orml-types": "^1.0.1",
     "@polkadot/api": "^7.9.1",
     "@polkadot/ui-keyring": "^1.0.1",
+    "@polkadot/vue-identicon": "^1.4.1",
     "@soramitsu/soramitsu-js-ui": "^1.0.26",
     "bignumber.js": "^9.0.2",
     "core-js": "^3.6.5",

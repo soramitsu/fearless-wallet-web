@@ -7,17 +7,19 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
 import { ActionTypes as ApiActionTypes } from './store/api/actions';
-import { GettersTypes as AccountGettersTypes } from './store/accounts/getters';
 import { GettersTypes as ApiGettersTypes } from './store/api/getters';
-import { MutationTypes } from './store/api/mutations';
+import { MutationTypes as ApiMutationTypes } from './store/api/mutations';
+import { MutationTypes as AccountsMutationTypes } from './store/accounts/mutations';
 import { Networks } from './store/api/types';
 import { formatBalance } from './util/balances';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
+import type { BehaviorSubject } from 'rxjs';
+import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import keyring from '@polkadot/ui-keyring';
 import WelcomePage from './screens/welcomePage/WelcomePage.vue';
-import { Accounts } from './store/accounts/types';
 
 @Component({
   components: {
@@ -26,75 +28,83 @@ import { Accounts } from './store/accounts/types';
 })
 export default class App extends Vue {
   url = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.1/chains/chains_dev.json';
-
-  @Getter(AccountGettersTypes.getAccounts) accounts!: Accounts;
-  @Getter(AccountGettersTypes.getNickname) nickname!: string;
-
-  get addresses() {
-    return this.accounts.map((wallet) => wallet.address);
-  }
+  subscribeAccounts!: BehaviorSubject<SubjectInfo>;
 
   @Getter(ApiGettersTypes.getNetworksInfo) networksInfo!: Networks;
   @Action(ApiActionTypes.LOAD_NETWORKS_INFO) loadNetworksInfo: any;
-  @Mutation(MutationTypes.SET_NETWORK_STATUS) setNetworkStatus: any;
+  @Mutation(ApiMutationTypes.SET_NETWORK_STATUS) setNetworkStatus: any;
+  @Mutation(AccountsMutationTypes.SET_HAVE_CONNECTED_ACCOUNTS) setHaveConnectedAccounts: any;
+
+  get networks() {
+    return Object.entries(this.networksInfo);
+  }
 
   async mounted() {
     await this.loadNetworks(this.url);
+
+    // to speed up, first connect to all networks
+    this.connectToNetworks();
+
+    this.subscribeAccounts = keyring.accounts.subject;
+    this.subscribeAccounts.subscribe((accounts) => {
+      if (Object.keys(accounts).length) this.setHaveConnectedAccounts({ value: true });
+
+      this.subscribeToNetworks(accounts);
+    });
   }
 
-  @Watch('accounts')
-  subscribe() {
-    this.subscribeToNetworks();
+  unmounted() {
+    this.subscribeAccounts.unsubscribe();
   }
 
   async loadNetworks(url: string): Promise<void> {
     await this.loadNetworksInfo({ url });
   }
 
-  async subscribeToNetworks() {
-    console.log('networksInfo', this.networksInfo);
-
-    const networks = Object.entries(this.networksInfo);
-
-    // to speed up, first connect to all networks
-    for (const [netName, network] of networks) {
+  connectToNetworks() {
+    for (const [netName, network] of this.networks) {
       try {
         network.api.connect();
+
+        this.setNetworkStatus({ name: netName, active: true });
+
+        console.log(`%c${netName.toUpperCase()}. API connection successful.`, 'background:green;color:#fff');
       } catch (ex) {
         network.api.disconnect();
+
         this.setNetworkStatus({ name: netName, active: false });
 
-        console.log(`Connection to api failed.`);
+        console.log(`%c${netName.toUpperCase()}. Connection to api failed.`, 'background:red;color:#fff');
       }
     }
+  }
 
-    for (const [netName, network] of networks) {
+  async subscribeToNetworks(accounts: SubjectInfo) {
+    console.log('accounts', accounts);
+
+    for (const [netName, network] of this.networks) {
       await network.api.isReady;
 
       this.setNetworkStatus({ name: netName, active: true });
 
       try {
-        this.addresses.forEach((address) => {
-          network.api.rx.query.balances.account(address).subscribe(async (result) => {
-            const balances = formatBalance(result as AccountData);
-
-            const nullBalances = !Object.values(balances).find((value) => value !== '0');
-
-            console.log(
-              `
-              Address: ${address},
-              Network: ${netName},
-            `,
-              balances
-            );
-
-            if (nullBalances) {
-              network.api.disconnect();
-
-              this.setNetworkStatus({ name: netName, active: false });
-            }
-          });
-        });
+        // Object.keys(accounts).forEach((address) => {
+        //   network.api.rx.query.balances.account(address).subscribe(async (result) => {
+        //     const balances = formatBalance(result as AccountData);
+        //     const nullBalances = !Object.values(balances).find((value) => value !== '0');
+        //     console.log(
+        //       `
+        //       Address: ${address},
+        //       Network: ${netName},
+        //     `,
+        //       balances
+        //     );
+        //     if (nullBalances) {
+        //       network.api.disconnect();
+        //       this.setNetworkStatus({ name: netName, active: false });
+        //     }
+        //   });
+        // });
       } catch (ex) {
         console.log(`
           Subscribe to ${netName} failed
@@ -108,6 +118,7 @@ export default class App extends Vue {
 
 <style lang="scss">
 #app {
+  textarea,
   input {
     color: #bb77ff;
   }
@@ -120,6 +131,7 @@ export default class App extends Vue {
     border: 1px solid rgba(255, 255, 255, 0.1);
     background-color: rgba(255, 255, 255, 0.05);
     clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+    padding-left: 25px;
   }
 
   .s-select {
@@ -129,31 +141,35 @@ export default class App extends Vue {
   .s-select .el-input__inner {
     background-color: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 25px;
+  }
+
+  .el-input__inner {
+    font-size: 16px;
   }
 
   .s-select .s-placeholder {
     color: white;
-    font-size: 13px;
-    margin-top: 13px;
-    padding-left: 30px;
+    font-size: 12px;
+    margin-top: 12px;
+    padding-left: 25px;
   }
 
   .s-select input {
-    padding-left: 30px;
+    padding-left: 25px;
   }
 
   .s-input .s-placeholder {
     color: white;
-    font-size: 13px;
-  }
-
-  .s-input__content {
-    padding-left: 15px;
-    font-size: 15px;
+    font-size: 12px;
   }
 
   .s-select .el-select i.el-icon-arrow-up:before {
     color: rgba(255, 255, 255, 0.5) !important;
+  }
+
+  .s-placeholder + .el-input {
+    padding-top: 15px;
   }
 }
 </style>

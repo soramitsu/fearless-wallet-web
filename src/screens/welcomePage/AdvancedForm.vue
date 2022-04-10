@@ -5,10 +5,10 @@
         <div class="logo">
           <img src="../../assets/fw-logo.svg" />
         </div>
-        <div class="header-text">Advanced</div>
+        <div>Advanced</div>
         <div class="active-block">
           <div class="icon" @click="closeAdvancedForm">
-            <s-icon name="basic-close-24" :class="closeIconClasses" />
+            <s-icon name="basic-close-24" class="default-close" />
           </div>
           <div v-show="showAcceptIcon" class="icon" @click="saveChanges">
             <s-icon name="basic-check-mark-24" />
@@ -25,20 +25,13 @@
           :label="option.label"
         />
       </s-select>
-      <s-input
-        v-model="substrateDP"
-        type="text"
-        placeholder="Substrate secret derivation path"
-        maxlength="25"
-        class="input"
-      />
+      <s-input v-model="substrateDP" type="text" placeholder="Substrate secret derivation path" class="input" />
       <div class="example-prompt">Example: //hard/soft///password</div>
       <div v-if="showEthereumDP">
         <s-input
           value="ECDSA | BTC/ETH compatible"
           type="text"
           placeholder="ETHEREUM KEYPAIR CRYPTO TYPE"
-          maxlength="25"
           :readonly="true"
           class="input"
         />
@@ -77,10 +70,6 @@ export default class extends Vue {
     { label: 'ethereum', value: 'ethereum' },
   ];
 
-  get closeIconClasses() {
-    return this.substrateDP || this.ethereumDP ? 'active-close' : 'default-close';
-  }
-
   get showAcceptIcon() {
     return this.substrateDP || this.ethereumDP;
   }
@@ -108,14 +97,15 @@ export default class extends Vue {
       },
     };
 
-    this.$emit('saveChanges', derivationPath);
+    this.$emit('saveChanges', derivationPath, 'derivationPath');
+    this.closeAdvancedForm();
   }
 }
 </script>
 
 <style lang="scss" scoped>
 .advanced {
-  height: 563px;
+  height: 560px;
   width: 560px;
   background-color: #111111;
   clip-path: polygon(100% 0, 100% 100%, 0 100%, 0 4%, 4% 0);
@@ -135,11 +125,7 @@ export default class extends Vue {
   }
 
   .default-close {
-    color: rgba(255, 255, 255, 0.5);
-  }
-
-  .active-close {
-    color: #ee0077;
+    color: rgba(255, 255, 255, 0.65);
   }
 
   .s-icon-basic-close-24 {
@@ -175,15 +161,11 @@ export default class extends Vue {
     display: flex;
     justify-content: space-between;
     padding: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .content {
     padding: 0 16px;
-  }
-
-  .header-text {
-    margin: auto;
   }
 
   .input {
@@ -193,11 +175,10 @@ export default class extends Vue {
   }
 
   .example-prompt {
-    height: 20px;
-    color: #ffffff;
-    font-weight: 300;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 14px;
     text-align: left;
-    padding-left: 16px;
+    line-height: 180%;
     margin: 16px 0;
   }
 

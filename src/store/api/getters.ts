@@ -20,7 +20,7 @@ const getters: GetterTree<State, State> & Getters = {
   },
   [GettersTypes.getActiveNetworks]({ networks }): Networks {
     return Object.entries(networks)
-      .filter(([, networkInfo]) => networkInfo.active)
+      .filter(([, networkInfo]) => networkInfo.isActive)
       .reduce((accumulator, [netName, networkInfo]) => {
         return {
           ...accumulator,
@@ -30,7 +30,7 @@ const getters: GetterTree<State, State> & Getters = {
   },
   [GettersTypes.getInactiveNetworks]({ networks }): Networks {
     return Object.entries(networks)
-      .filter(([, networkInfo]) => !networkInfo.active)
+      .filter(([, networkInfo]) => !networkInfo.isActive)
       .reduce((accumulator, [netName, networkInfo]) => {
         return {
           ...accumulator,

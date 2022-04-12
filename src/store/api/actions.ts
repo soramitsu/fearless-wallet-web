@@ -25,10 +25,23 @@ const actions: ActionTree<State, State> & Actions = {
     const networks: FullNetwork[] = await response.json();
 
     const networksInfo: Networks = networks.reduce((accumulator, { nodes, name, assets, addressPrefix }) => {
+      let isActive = false;
       const url = name === 'Astar' ? nodes[1].url : nodes[0].url;
 
       const provider = new WsProvider(url, autoConnectMs as number);
       const api = new ApiPromise({ provider });
+
+      try {
+        api.connect();
+
+        isActive = true;
+
+        console.log(`%c${name.toUpperCase()}. API connection successful.`, 'background:green;color:#fff');
+      } catch (ex) {
+        api.disconnect();
+
+        console.log(`%c${name.toUpperCase()}. Connection to api failed.`, 'background:red;color:#fff');
+      }
 
       return {
         ...accumulator,
@@ -38,7 +51,7 @@ const actions: ActionTree<State, State> & Actions = {
           nodes,
           assets,
           prefix: addressPrefix,
-          active: false,
+          isActive,
         },
       };
     }, {});

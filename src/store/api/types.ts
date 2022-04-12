@@ -53,12 +53,12 @@ type Network = {
   nodes: Nodes[];
   assets: Assets[];
   prefix: number;
-  active: boolean;
+  isActive: boolean;
 };
 
 export type SetNetworkStatusMutation = {
   name: string;
-  active: boolean;
+  isActive: boolean;
 };
 
 export type Networks = Record<string, Network>;

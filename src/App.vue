@@ -26,15 +26,8 @@ export default class App extends Vue {
   @Action(ApiActionTypes.LOAD_NETWORKS_INFO) loadNetworksInfo: any;
   @Mutation(ApiMutationTypes.SET_NETWORK_STATUS) setNetworkStatus: any;
 
-  get networks() {
-    return Object.entries(this.networksInfo);
-  }
-
   async mounted() {
-    await this.loadNetworks(this.url);
-
-    // to speed up, first connect to all networks
-    this.connectToNetworks();
+    await this.loadNetworksInfo({ url: this.url });
 
     this.subscribeAccounts = keyring.accounts.subject;
     this.subscribeAccounts.subscribe((accounts) => {
@@ -46,54 +39,33 @@ export default class App extends Vue {
     this.subscribeAccounts.unsubscribe();
   }
 
-  async loadNetworks(url: string): Promise<void> {
-    await this.loadNetworksInfo({ url });
-  }
-
-  connectToNetworks() {
-    for (const [netName, network] of this.networks) {
-      try {
-        network.api.connect();
-
-        this.setNetworkStatus({ name: netName, active: true });
-
-        console.log(`%c${netName.toUpperCase()}. API connection successful.`, 'background:green;color:#fff');
-      } catch (ex) {
-        network.api.disconnect();
-
-        this.setNetworkStatus({ name: netName, active: false });
-
-        console.log(`%c${netName.toUpperCase()}. Connection to api failed.`, 'background:red;color:#fff');
-      }
-    }
-  }
-
   async subscribeToNetworks(accounts: SubjectInfo) {
     console.log('accounts', accounts);
+    console.log('networks', this.networksInfo);
 
-    for (const [netName, network] of this.networks) {
+    for (const [netName, network] of Object.entries(this.networksInfo)) {
       await network.api.isReady;
 
-      this.setNetworkStatus({ name: netName, active: true });
-
       try {
-        // Object.keys(accounts).forEach((address) => {
-        //   network.api.rx.query.balances.account(address).subscribe(async (result) => {
-        //     const balances = formatBalance(result as AccountData);
-        //     const nullBalances = !Object.values(balances).find((value) => value !== '0');
-        //     console.log(
-        //       `
-        //       Address: ${address},
-        //       Network: ${netName},
-        //     `,
-        //       balances
-        //     );
-        //     if (nullBalances) {
-        //       network.api.disconnect();
-        //       this.setNetworkStatus({ name: netName, active: false });
-        //     }
-        //   });
-        // });
+        Object.keys(accounts).forEach((address) => {
+          network.api.rx.query.balances.account(address).subscribe(async (result) => {
+            const balances = formatBalance(result as AccountData);
+            const nullBalances = !Object.values(balances).find((value) => value !== '0');
+
+            console.log(
+              `
+              Address: ${address},
+              Network: ${netName},
+            `,
+              balances
+            );
+
+            if (nullBalances) {
+              network.api.disconnect();
+              this.setNetworkStatus({ name: netName, isActive: false });
+            }
+          });
+        });
       } catch (ex) {
         console.log(`
           Subscribe to ${netName} failed
@@ -169,12 +141,11 @@ export default class App extends Vue {
   font-style: normal;
   font-feature-settings: 'tnum' on, 'lnum' on;
   border-radius: 8px;
-  height: 640px;
-  width: 560px;
+  height: var(--extension-height);
+  width: var(--extension-width);
   color: white;
   text-align: center;
   margin: 0 auto;
-  border-radius: 8px;
   padding: 16px;
   background: url(./assets/background.jpg);
 }

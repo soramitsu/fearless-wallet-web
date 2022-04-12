@@ -9,15 +9,15 @@ export enum MutationTypes {
 
 export type Mutations = {
   [MutationTypes.SET_NETWORKS](state: State, { networks }: Record<string, Networks>): void;
-  [MutationTypes.SET_NETWORK_STATUS](state: State, { name, active }: SetNetworkStatusMutation): void;
+  [MutationTypes.SET_NETWORK_STATUS](state: State, { name, isActive }: SetNetworkStatusMutation): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_NETWORKS](state, { networks }) {
     state.networks = networks;
   },
-  [MutationTypes.SET_NETWORK_STATUS](state, { name, active }) {
-    state.networks[name].active = active;
+  [MutationTypes.SET_NETWORK_STATUS](state, { name, isActive }) {
+    state.networks[name].isActive = isActive;
   },
 };
 

@@ -26,14 +26,12 @@ export default class extends Vue {
 
 <style lang="scss" scoped>
 .popup-background {
+  height: var(--extension-height);
+  width: var(--extension-width);
   display: flex;
   justify-content: center;
   position: absolute;
   top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 100;
   background-color: rgba(0, 0, 0, 0.6);
 
   .popup-content {

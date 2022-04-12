@@ -20,7 +20,7 @@ export default class extends Vue {
   @VModel({ type: String }) vModel!: string;
   @Prop(String) errorDescriptions!: string;
   @Prop(String) placeholder!: string;
-  @Prop({ default: 25 }) maxlength!: number;
+  @Prop({ default: 50 }) maxlength!: number;
   @Prop(Boolean) isError!: boolean;
 
   get inputClasses() {

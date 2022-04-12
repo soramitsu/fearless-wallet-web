@@ -1,6 +1,6 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-import routes from './routes';
+import routes, { Components } from './routes';
 import { Route } from '../../node_modules/vue-router/types/router';
 
 // const originalPush = VueRouter.prototype.push;

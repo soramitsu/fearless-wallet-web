@@ -19,7 +19,7 @@
       </div>
     </div>
 
-    <div v-if="!loading" class="content-block">
+    <div class="content-block">
       <div class="content">
         <div v-if="showContentHeader" class="content-header">{{ header }}</div>
 
@@ -77,8 +77,6 @@
 
       <InvalidPopup v-if="showInvalidPopup" :handlerClose="handlerClosePopup" :headers="invalidPopupHeader" />
     </div>
-
-    <Loading v-else-if="loading" />
   </div>
 </template>
 
@@ -89,6 +87,7 @@ import { isHex } from '@polkadot/util';
 import { GettersTypes } from '../../store/accounts/getters';
 import { WalletConnectionStatus, DerivationPath, TypeFiledForImport } from '../../interfaces/connectionWallet';
 import { mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
+import { Components } from '../../router/routes';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import { INVALID_POPUP_HEADERS } from '../../consts/invalidPopupHeaders';
@@ -99,11 +98,10 @@ import FinishForm from './FinishForm.vue';
 import PasswordForm from './PasswordForm.vue';
 import ImportWallet from './ImportWallet.vue';
 import InvalidPopup from '../../components/InvalidPopup.vue';
-import Loading from '../../components/Loading.vue';
 import NicknameForm from './NicknameForm.vue';
 import AdvancedForm from './AdvancedForm.vue';
 import AdvancedButton from './AdvancedButton.vue';
-import { Components } from '../../router/routes';
+import AccountController from '../../controllers/account-controllers';
 
 type FieldsComponent = 'passwordJson' | 'derivationPath' | 'showEthereumDP';
 type InvalidValueName = 'passphrase' | 'mnemonic' | 'rawSeed' | 'jsonPassword' | 'jsonInvalid' | '';
@@ -115,7 +113,6 @@ type InvalidValueName = 'passphrase' | 'mnemonic' | 'rawSeed' | 'jsonPassword' |
     ImportWallet,
     FinishForm,
     PasswordForm,
-    Loading,
     InvalidPopup,
     NicknameForm,
     AdvancedForm,
@@ -123,13 +120,13 @@ type InvalidValueName = 'passphrase' | 'mnemonic' | 'rawSeed' | 'jsonPassword' |
   },
 })
 export default class extends Vue {
+  accountController = new AccountController();
   nickname = '';
   json = '';
   mnemonic = '';
   rawSeed = '';
   passwordJson = '';
   invalidValueName: InvalidValueName = '';
-  loading = false;
   showAdvancedForm = false;
   showEthereumDP = true;
   selectedMnemonicElements: string[] = [];
@@ -341,6 +338,8 @@ export default class extends Vue {
     // test mnemonic: sibling image belt spot resist year labor style fringe hamster render idle
     const { value: substrate, keyPair } = this.derivationPath.substrate;
     const suri = `${this.mnemonic || this.rawSeed}${substrate}`;
+
+    this.accountController.savePassword(this.passwordExtension);
 
     keyring.addUri(suri, '', { name: this.nickname }, keyPair);
 

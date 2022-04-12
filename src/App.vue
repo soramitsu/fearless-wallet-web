@@ -1,8 +1,6 @@
 <template>
   <div id="app">
-    <div class="background">
-      <WelcomePage />
-    </div>
+    <router-view />
   </div>
 </template>
 
@@ -12,20 +10,14 @@ import { Getter, Action, Mutation } from 'vuex-class';
 import { ActionTypes as ApiActionTypes } from './store/api/actions';
 import { GettersTypes as ApiGettersTypes } from './store/api/getters';
 import { MutationTypes as ApiMutationTypes } from './store/api/mutations';
-import { MutationTypes as AccountsMutationTypes } from './store/accounts/mutations';
 import { Networks } from './store/api/types';
 import { formatBalance } from './util/balances';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import keyring from '@polkadot/ui-keyring';
-import WelcomePage from './screens/welcomePage/WelcomePage.vue';
 
-@Component({
-  components: {
-    WelcomePage,
-  },
-})
+@Component({})
 export default class App extends Vue {
   url = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.1/chains/chains_dev.json';
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
@@ -33,7 +25,6 @@ export default class App extends Vue {
   @Getter(ApiGettersTypes.getNetworksInfo) networksInfo!: Networks;
   @Action(ApiActionTypes.LOAD_NETWORKS_INFO) loadNetworksInfo: any;
   @Mutation(ApiMutationTypes.SET_NETWORK_STATUS) setNetworkStatus: any;
-  @Mutation(AccountsMutationTypes.SET_HAVE_CONNECTED_ACCOUNTS) setHaveConnectedAccounts: any;
 
   get networks() {
     return Object.entries(this.networksInfo);
@@ -47,8 +38,6 @@ export default class App extends Vue {
 
     this.subscribeAccounts = keyring.accounts.subject;
     this.subscribeAccounts.subscribe((accounts) => {
-      if (Object.keys(accounts).length) this.setHaveConnectedAccounts({ value: true });
-
       this.subscribeToNetworks(accounts);
     });
   }
@@ -184,14 +173,9 @@ export default class App extends Vue {
   width: 560px;
   color: white;
   text-align: center;
-  background: url(./assets/background.svg) center;
-
-  .background {
-    height: 100%;
-    border-radius: 8px;
-    padding: 16px;
-    background-color: rgba(46, 3, 34, 0.637);
-    backdrop-filter: blur(50px);
-  }
+  margin: 0 auto;
+  border-radius: 8px;
+  padding: 16px;
+  background: url(./assets/background.jpg);
 }
 </style>

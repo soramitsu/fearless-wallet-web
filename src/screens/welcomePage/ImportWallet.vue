@@ -4,9 +4,14 @@
       <s-input :value="typeImportLabel" placeholder="Source type" class="import" size="big" readonly />
     </div>
 
-    <template v-if="!jsonImport">
-      <s-input v-model="inputValue" :placeholder="placeholder" class="row input" type="textarea" maxlength="130" />
-    </template>
+    <s-input
+      v-if="!jsonImport"
+      v-model="inputValue"
+      :placeholder="placeholder"
+      class="row input"
+      type="textarea"
+      maxlength="130"
+    />
     <template v-else>
       <div class="row">
         <s-input

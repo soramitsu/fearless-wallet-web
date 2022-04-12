@@ -1,6 +1,6 @@
 <template>
   <div class="layout">
-    <div class="header" v-if="!showMainPage">
+    <div class="header">
       <div class="icon-container">
         <div v-if="showBackIcon" :class="backIconClasses" @click="back">
           <s-icon name="chevron-left-16" />
@@ -60,11 +60,9 @@
         <PasswordForm v-else-if="showPasswordForm" />
 
         <FinishForm v-else-if="showFinishForm" />
-
-        <MainPage v-else-if="showMainPage" />
       </div>
 
-      <div v-if="!showMainPage">
+      <div v-if="!showAdvancedForm">
         <s-button
           class="button"
           type="primary"
@@ -86,13 +84,10 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { Mutation, Getter } from 'vuex-class';
+import { Getter } from 'vuex-class';
 import { isHex } from '@polkadot/util';
-import { MutationTypes } from '../../store/accounts/mutations';
 import { GettersTypes } from '../../store/accounts/getters';
-import { Accounts } from '../../store/accounts/types';
 import { WalletConnectionStatus, DerivationPath, TypeFiledForImport } from '../../interfaces/connectionWallet';
-import { isKeyringPairs$Json } from '../../util/typeGuards';
 import { mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
@@ -108,6 +103,7 @@ import Loading from '../../components/Loading.vue';
 import NicknameForm from './NicknameForm.vue';
 import AdvancedForm from './AdvancedForm.vue';
 import AdvancedButton from './AdvancedButton.vue';
+import { Components } from '../../router/routes';
 
 type FieldsComponent = 'passwordJson' | 'derivationPath' | 'showEthereumDP';
 type InvalidValueName = 'passphrase' | 'mnemonic' | 'rawSeed' | 'jsonPassword' | 'jsonInvalid' | '';
@@ -150,20 +146,17 @@ export default class extends Vue {
   };
 
   @Prop(String) walletConnectionStatus!: WalletConnectionStatus;
-  @Getter(GettersTypes.getAccounts) accounts!: Accounts;
   @Getter(GettersTypes.getPassword) passwordExtension!: string;
-  @Getter(GettersTypes.getHaveConnectedAccounts) haveConnectedAccounts!: boolean;
-  @Mutation(MutationTypes.SET_ACCOUNT) setAccount: any;
 
   get JSON() {
     try {
-      const json = JSON.parse(this.json) as KeyringPair$Json | KeyringPairs$Json;
+      const json = JSON.parse(this.json) as KeyringPair$Json;
 
       const isValid =
         Object.hasOwnProperty.call(json, 'encoded') &&
         Object.hasOwnProperty.call(json, 'encoding') &&
-        ((Object.hasOwnProperty.call(json, 'meta') && Object.hasOwnProperty.call(json, 'address')) ||
-          Object.hasOwnProperty.call(json, 'accounts'));
+        Object.hasOwnProperty.call(json, 'meta') &&
+        Object.hasOwnProperty.call(json, 'address');
 
       if (!isValid) throw Error;
 
@@ -217,10 +210,6 @@ export default class extends Vue {
 
   get showPasswordForm() {
     return this.isImportWallet ? this.currentIndexPage === 3 : this.currentIndexPage === 4;
-  }
-
-  get showMainPage() {
-    return this.isImportWallet ? this.currentIndexPage === 5 : this.currentIndexPage === 6;
   }
 
   get showBackIcon() {
@@ -311,6 +300,9 @@ export default class extends Vue {
 
     // if a invalid popup is shown, then the index does not need to be increased
     this.currentIndexPage += this.showInvalidPopup ? 0 : 1;
+
+    if ((this.isCreateWallet && this.currentIndexPage === 6) || (this.isImportWallet && this.currentIndexPage === 5))
+      this.$router.push({ name: Components.MainPage });
   }
 
   createWallet() {
@@ -326,14 +318,11 @@ export default class extends Vue {
   }
 
   importWallet() {
-    if (this.currentIndexPage === 1) this.validateSuriValue();
-    else if (this.currentIndexPage === 3) {
-      if (Object.keys(this.json).length === 0) this.accountAuthorization();
-      else if (Object.keys(this.json).length !== 0) this.restoreJson();
-    }
+    if (this.currentIndexPage === 1) this.validateSuri();
+    else if (this.currentIndexPage === 3 && Object.keys(this.json).length === 0) this.accountAuthorization();
   }
 
-  validateSuriValue() {
+  validateSuri() {
     const isValidMnemonic = this.mnemonic ? mnemonicValidate(this.mnemonic) : true;
     const isValidRawSeed = this.rawSeed ? isHex(this.rawSeed) : true;
     const isValidJson = this.json ? this.restoreJson() : true;
@@ -360,9 +349,7 @@ export default class extends Vue {
 
   restoreJson() {
     try {
-      if (isKeyringPairs$Json(this.JSON as KeyringPair$Json | KeyringPairs$Json))
-        keyring.restoreAccounts(this.JSON as KeyringPairs$Json, this.passwordJson);
-      else keyring.restoreAccount(this.JSON as KeyringPair$Json, this.passwordJson);
+      keyring.restoreAccount(this.JSON as KeyringPair$Json, this.passwordJson);
 
       alert('Wallet imported. Check console');
 
@@ -373,16 +360,14 @@ export default class extends Vue {
   }
 
   updateSelectedMnemonicElements(element: string, index: number, added: boolean) {
-    if (added) {
-      this.selectedMnemonicElements.push(element);
-    } else {
-      this.selectedMnemonicElements.splice(index, 1);
-    }
+    if (added) this.selectedMnemonicElements.push(element);
+    else this.selectedMnemonicElements.splice(index, 1);
   }
 
   back() {
     if (this.currentIndexPage === 1) {
       this.mnemonic = '';
+      this.nickname = '';
       this.derivationPath = {
         substrate: {
           value: '',
@@ -394,7 +379,6 @@ export default class extends Vue {
         },
       };
 
-      this.nickname = '';
       this.$emit('reset');
 
       return;

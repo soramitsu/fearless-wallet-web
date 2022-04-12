@@ -3,6 +3,7 @@
     <template v-if="!walletConnectionStatus">
       <div class="first-page">
         <Logo class="description" text="Fearless Wallet" subtext="The DeFi Wallet From The Future" />
+
         <div>
           <div>
             <s-button
@@ -28,9 +29,9 @@
           </div>
           <div class="privacy-policy">
             By continuing you agree with
-            <span class="important" @click="openTermsAndConditions">Terms and Conditions </span>
+            <span class="important-text" @click="openTermsAndConditions">Terms and Conditions </span>
             and
-            <span class="important" @click="openPrivacyPolicy"> Privacy Policy</span>
+            <span class="important-text" @click="openPrivacyPolicy"> Privacy Policy</span>
           </div>
         </div>
       </div>
@@ -97,7 +98,7 @@ export default class extends Vue {
     line-height: 16px;
     color: rgba(255, 255, 255, 0.65);
 
-    .important {
+    .important-text {
       color: rgb(199, 31, 95);
 
       &:hover {

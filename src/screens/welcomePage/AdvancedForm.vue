@@ -106,13 +106,11 @@ export default class extends Vue {
 <style lang="scss" scoped>
 .advanced {
   height: 560px;
-  width: 560px;
+  width: 100%;
   background-color: #111111;
   clip-path: polygon(100% 0, 100% 100%, 0 100%, 0 4%, 4% 0);
   border-radius: 8px;
   z-index: 99;
-  position: absolute;
-  left: 0;
   animation: ani 0.3s;
 
   @keyframes ani {

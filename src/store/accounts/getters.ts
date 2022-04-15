@@ -6,7 +6,7 @@ export enum GettersTypes {
 }
 
 export type Getters = {
-  [GettersTypes.getPassword](state: State, getters?: any): string;
+  [GettersTypes.getPassword](state: State, getters?: GetterTree<State, State> & Getters): string;
 };
 
 const getters: GetterTree<State, State> & Getters = {

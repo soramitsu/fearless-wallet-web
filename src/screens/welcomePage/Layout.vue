@@ -39,6 +39,7 @@
 
         <ImportWallet
           v-else-if="showImportForm"
+          v-model="typeImport"
           :mnemonic="mnemonic"
           :rawSeed="rawSeed"
           :json="json"
@@ -75,7 +76,7 @@
         </s-button>
       </div>
 
-      <InvalidPopup v-if="showInvalidPopup" :handlerClose="handlerClosePopup" :headers="invalidPopupHeader" />
+      <InvalidPopup v-if="showInvalidPopup" :handlerClose="handlerClosePopup" :headers="invalidPopupMessages" />
     </div>
   </div>
 </template>
@@ -89,8 +90,7 @@ import { WalletConnectionStatus, DerivationPath, TypeFiledForImport } from '../.
 import { mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
 import { Components } from '../../router/routes';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
-import { INVALID_POPUP_HEADERS } from '../../consts/invalidPopupHeaders';
+import { INVALID_POPUP_MESSAGES } from '../../consts/invalidPopupMessages';
 import keyring from '@polkadot/ui-keyring';
 import MainPage from '../mainPage/MainPage.vue';
 import CreateWallet from './CreateWallet.vue';
@@ -101,9 +101,9 @@ import InvalidPopup from '../../components/InvalidPopup.vue';
 import NicknameForm from './NicknameForm.vue';
 import AdvancedForm from './AdvancedForm.vue';
 import AdvancedButton from './AdvancedButton.vue';
-import AccountController from '../../controllers/account-controllers';
+import AccountController from '../../controllers/accountController';
 
-type FieldsComponent = 'passwordJson' | 'derivationPath' | 'showEthereumDP';
+type FieldsComponent = 'passwordJson' | 'derivationPath';
 type InvalidValueName = 'passphrase' | 'mnemonic' | 'rawSeed' | 'jsonPassword' | 'jsonInvalid' | '';
 
 @Component({
@@ -126,19 +126,19 @@ export default class extends Vue {
   mnemonic = '';
   rawSeed = '';
   passwordJson = '';
+  typeImport: TypeFiledForImport = 'mnemonic';
   invalidValueName: InvalidValueName = '';
   showAdvancedForm = false;
-  showEthereumDP = true;
   selectedMnemonicElements: string[] = [];
   currentIndexPage = 1;
   derivationPath: DerivationPath = {
     substrate: {
       value: '',
-      keyPair: undefined,
+      keyPair: 'sr25519',
     },
     ethereum: {
       value: '',
-      keyPair: undefined,
+      keyPair: 'ethereum',
     },
   };
 
@@ -163,6 +163,10 @@ export default class extends Vue {
     }
   }
 
+  get showEthereumDP() {
+    return this.typeImport === 'mnemonic';
+  }
+
   get readonlyNickname() {
     return !!this.json;
   }
@@ -171,8 +175,8 @@ export default class extends Vue {
     return !!this.invalidValueName;
   }
 
-  get invalidPopupHeader() {
-    return this.invalidValueName ? INVALID_POPUP_HEADERS[this.invalidValueName] : {};
+  get invalidPopupMessages() {
+    return this.invalidValueName ? INVALID_POPUP_MESSAGES[this.invalidValueName] : {};
   }
 
   get showNicknameForm() {
@@ -278,7 +282,7 @@ export default class extends Vue {
   }
 
   setValue(
-    value: string & (KeyringPair$Json | KeyringPairs$Json | Record<string, never>) & DerivationPath & boolean,
+    value: string & (KeyringPair$Json | Record<string, never>) & DerivationPath & boolean,
     typeField: TypeFiledForImport | FieldsComponent
   ) {
     this[typeField] = value;
@@ -336,12 +340,22 @@ export default class extends Vue {
   accountAuthorization() {
     // test row seed: 0x3d60d4270bc927dc5985631c9ae2f661a22458bd1733a6716da3b50aeb583912
     // test mnemonic: sibling image belt spot resist year labor style fringe hamster render idle
-    const { value: substrate, keyPair } = this.derivationPath.substrate;
-    const suri = `${this.mnemonic || this.rawSeed}${substrate}`;
+    const {
+      substrate: { value: substrateDP, keyPair: substrateKeyPair },
+      ethereum: { value: ethereumDP, keyPair: ethereumKeyPair },
+    } = this.derivationPath;
+    const suriSubstrate = `${this.mnemonic || this.rawSeed}${substrateDP}`;
+
+    keyring.addUri(suriSubstrate, '', { name: this.nickname }, substrateKeyPair);
+
+    // ETH аккаунт создаем только если ввели мнемонику
+    if (this.mnemonic) {
+      const suriEthereum = `${this.mnemonic}${ethereumDP ?? "/m/44'/60'/0'/0/0"}`;
+
+      keyring.addUri(suriEthereum, '', { name: this.nickname }, ethereumKeyPair);
+    }
 
     this.accountController.savePassword(this.passwordExtension);
-
-    keyring.addUri(suri, '', { name: this.nickname }, keyPair);
 
     alert(this.isImportWallet ? 'Wallet imported. Check console' : 'Wallet created. Check console');
   }
@@ -370,11 +384,11 @@ export default class extends Vue {
       this.derivationPath = {
         substrate: {
           value: '',
-          keyPair: undefined,
+          keyPair: 'sr25519',
         },
         ethereum: {
           value: '',
-          keyPair: undefined,
+          keyPair: 'ethereum',
         },
       };
 

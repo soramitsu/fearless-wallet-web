@@ -2,7 +2,7 @@ import { RouteConfig } from 'vue-router';
 import WelcomePage from '../screens/welcomePage/WelcomePage.vue';
 import MainPage from '../screens/mainPage/MainPage.vue';
 import WelcomeBack from '../screens/welcomeBack/WelcomeBack.vue';
-import AccountController from '../controllers/account-controllers';
+import AccountController from '../controllers/accountController';
 import keyring from '@polkadot/ui-keyring';
 
 export enum Components {

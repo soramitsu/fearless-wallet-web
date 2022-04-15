@@ -5,7 +5,7 @@
     </div>
 
     <s-input
-      v-if="!jsonImport"
+      v-if="notJsonImport"
       v-model="inputValue"
       :placeholder="placeholder"
       class="row input"
@@ -16,7 +16,7 @@
       <div class="row">
         <s-input
           v-model="inputValue"
-          placeholder="Restore JSON"
+          :placeholder="placeholder"
           size="big"
           type="text-file"
           accept="application/JSON"
@@ -26,7 +26,7 @@
       </div>
     </template>
 
-    <slot v-if="!jsonImport"></slot>
+    <slot v-if="notJsonImport"></slot>
 
     <Popup v-if="showPopup" :handlerClose="closePopup" header="Source type">
       <div
@@ -45,7 +45,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Component, Vue, Prop, Watch, VModel } from 'vue-property-decorator';
 import { TypeFiledForImport, DerivationPath } from '../../interfaces/connectionWallet';
 import Popup from '../../components/Popup.vue';
 
@@ -53,13 +53,13 @@ import Popup from '../../components/Popup.vue';
 export default class extends Vue {
   showPopup = false;
   fileJson = '';
-  typeImport: TypeFiledForImport = 'mnemonic';
   optionsImport = [
-    { label: 'Mnemonic passphrase', value: 'mnemonic' },
-    { label: 'Restore JSON', value: 'json' },
-    { label: 'Raw seed', value: 'rawSeed' },
+    { label: 'Mnemonic passphrase', value: 'mnemonic', placeholder: 'Enter Passphrase' },
+    { label: 'Restore JSON', value: 'json', placeholder: 'Restore JSON' },
+    { label: 'Raw seed', value: 'rawSeed', placeholder: 'Raw seed' },
   ];
 
+  @VModel({ type: String }) typeImport!: TypeFiledForImport;
   @Prop(String) mnemonic!: string;
   @Prop(String) rawSeed!: string;
   @Prop(String) json!: string;
@@ -86,35 +86,24 @@ export default class extends Vue {
     this.$emit('setValue', value, 'passwordJson');
   }
 
-  get showEthereumDP() {
-    return this.typeImport !== 'rawSeed';
-  }
-
   get mnemonicArray() {
     return this.mnemonic.split(' ');
   }
 
-  get jsonImport() {
-    return this.typeImport === 'json';
+  get notJsonImport() {
+    return this.typeImport !== 'json';
   }
 
   get placeholder() {
-    if (this.typeImport === 'mnemonic') {
-      return 'Enter Passphrase';
-    } else if (this.typeImport === 'rawSeed') {
-      return 'Raw seed';
-    }
-
-    return 'Restore JSON';
+    return this.optionsImport.find(({ value }) => value === this.typeImport)?.placeholder;
   }
 
   @Watch('typeImport')
-  onTypeImportChanged(typeImport: string) {
+  onTypeImportChanged() {
     this.$emit('setValue', '', 'json');
     this.$emit('setValue', '', 'rawSeed');
     this.$emit('setValue', '', 'mnemonic');
     this.$emit('setValue', '', 'passwordJson');
-    this.$emit('setValue', typeImport !== 'rawSeed', 'showEthereumDP');
   }
 
   typeImportClasses(value: string) {

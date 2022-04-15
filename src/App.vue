@@ -6,73 +6,27 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter, Action, Mutation } from 'vuex-class';
-import { ActionTypes as ApiActionTypes } from './store/api/actions';
-import { GettersTypes as ApiGettersTypes } from './store/api/getters';
-import { MutationTypes as ApiMutationTypes } from './store/api/mutations';
-import { Networks } from './store/api/types';
-import { formatBalance } from './util/balances';
-import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import keyring from '@polkadot/ui-keyring';
+import NetworksController from './controllers/networksController';
 
 @Component({})
 export default class App extends Vue {
-  url = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.1/chains/chains_dev.json';
+  networksController = new NetworksController();
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
 
-  @Getter(ApiGettersTypes.getNetworksInfo) networksInfo!: Networks;
-  @Action(ApiActionTypes.LOAD_NETWORKS_INFO) loadNetworksInfo: any;
-  @Mutation(ApiMutationTypes.SET_NETWORK_STATUS) setNetworkStatus: any;
-
   async mounted() {
-    await this.loadNetworksInfo({ url: this.url });
+    await this.networksController.loadNetworksInfo();
 
     this.subscribeAccounts = keyring.accounts.subject;
     this.subscribeAccounts.subscribe((accounts) => {
-      this.subscribeToNetworks(accounts);
+      this.networksController.subscribeToNetworks(accounts);
     });
   }
 
   unmounted() {
     this.subscribeAccounts.unsubscribe();
-  }
-
-  async subscribeToNetworks(accounts: SubjectInfo) {
-    console.log('accounts', accounts);
-    console.log('networks', this.networksInfo);
-
-    for (const [netName, network] of Object.entries(this.networksInfo)) {
-      await network.api.isReady;
-
-      try {
-        Object.keys(accounts).forEach((address) => {
-          network.api.rx.query.balances.account(address).subscribe(async (result) => {
-            const balances = formatBalance(result as AccountData);
-            const nullBalances = !Object.values(balances).find((value) => value !== '0');
-
-            console.log(
-              `
-              Address: ${address},
-              Network: ${netName},
-            `,
-              balances
-            );
-
-            if (nullBalances) {
-              network.api.disconnect();
-              this.setNetworkStatus({ name: netName, isActive: false });
-            }
-          });
-        });
-      } catch (ex) {
-        console.log(`
-          Subscribe to ${netName} failed
-          ${ex}
-        `);
-      }
-    }
   }
 }
 </script>

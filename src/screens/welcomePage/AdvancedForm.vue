@@ -15,15 +15,9 @@
       />
     </s-select>
     <s-input v-model="substrateDP" type="text" placeholder="Substrate secret derivation path" class="input" />
-    <div class="example-prompt">Example: //hard/soft///password</div>
+    <div class="example-prompt">Example: {{ example }}</div>
     <div v-if="showEthereumDP">
-      <s-input
-        value="ECDSA | BTC/ETH compatible"
-        type="text"
-        placeholder="ETHEREUM KEYPAIR CRYPTO TYPE"
-        :readonly="true"
-        class="input"
-      />
+      <s-input value="ETHEREUM" type="text" placeholder="ETHEREUM KEYPAIR CRYPTO TYPE" :readonly="true" class="input" />
       <s-input
         v-model="ethereumDP"
         type="text"
@@ -31,7 +25,7 @@
         maxlength="25"
         class="input"
       />
-      <div class="example-prompt">Example: 44’/0’/0’/0</div>
+      <div class="example-prompt">Example: m/44'/60'/0'/0/0</div>
     </div>
   </AboveForm>
 </template>
@@ -54,12 +48,15 @@ export default class extends Vue {
   substrateDP = '';
   ethereumDP = '';
   substrateKeyPair = '';
-  ethereumKeyPair = '';
   optionsSubstrateKeyPair = [
-    { label: 'Schnorrkel | sr25519 (recommended)', value: 'sr25519' },
-    { label: 'ed25519', value: 'ed25519' },
-    { label: 'ethereum', value: 'ethereum' },
+    { label: 'Schnorrkel sr25519 (recommended)', value: 'sr25519', example: '//hard/soft///password' },
+    { label: 'Edwards ed25519 (alternative)', value: 'ed25519', example: '//hard///password' },
+    { label: 'ECDSA | BTC/ETH compatible', value: 'ecdsa', example: '//hard///password' },
   ];
+
+  get example() {
+    return this.optionsSubstrateKeyPair.find(({ value }) => value === this.substrateKeyPair)?.example;
+  }
 
   get showAcceptIcon() {
     return !!this.substrateDP || !!this.ethereumDP;
@@ -68,8 +65,7 @@ export default class extends Vue {
   mounted() {
     this.substrateDP = this.derivationPath.substrate.value;
     this.ethereumDP = this.derivationPath.ethereum.value;
-    this.substrateKeyPair = this.derivationPath.substrate.keyPair || 'sr25519';
-    this.ethereumKeyPair = this.derivationPath.ethereum.keyPair || 'ecdsa';
+    this.substrateKeyPair = this.derivationPath.substrate.keyPair;
   }
 
   closeAdvancedForm() {
@@ -84,7 +80,7 @@ export default class extends Vue {
       },
       ethereum: {
         value: this.ethereumDP,
-        keyPair: this.ethereumKeyPair as KeypairType,
+        keyPair: 'ethereum',
       },
     };
 

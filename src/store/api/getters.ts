@@ -9,9 +9,9 @@ export enum GettersTypes {
 }
 
 export type Getters = {
-  [GettersTypes.getNetworksInfo](state: State, getters?: any): Networks;
-  [GettersTypes.getActiveNetworks](state: State, getters?: any): Networks;
-  [GettersTypes.getInactiveNetworks](state: State, getters?: any): Networks;
+  [GettersTypes.getNetworksInfo](state: State, getters?: GetterTree<State, State> & Getters): Networks;
+  [GettersTypes.getActiveNetworks](state: State, getters?: GetterTree<State, State> & Getters): Networks;
+  [GettersTypes.getInactiveNetworks](state: State, getters?: GetterTree<State, State> & Getters): Networks;
 };
 
 const getters: GetterTree<State, State> & Getters = {

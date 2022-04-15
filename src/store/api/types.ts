@@ -54,6 +54,7 @@ type Network = {
   assets: Assets[];
   prefix: number;
   isActive: boolean;
+  isEthereumNetwork: boolean;
 };
 
 export type SetNetworkStatusMutation = {

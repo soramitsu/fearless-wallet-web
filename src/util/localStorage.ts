@@ -1,4 +1,4 @@
-type Value = number | string | Record<string, any>;
+type Value = number | string | Record<string, string | number>;
 
 interface Options {
   dateCreated?: string;

@@ -19,7 +19,7 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import AccountController from '../../controllers/account-controllers';
+import AccountController from '../../controllers/accountController';
 import ValidatedInput from '../../components/ValidatedInput.vue';
 import { Components } from '../../router/routes';
 

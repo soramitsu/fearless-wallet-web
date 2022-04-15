@@ -5,7 +5,7 @@ export type TypeFiledForImport = 'rawSeed' | 'json' | 'mnemonic';
 
 export interface Substrate$Ethereum {
   value: string;
-  keyPair: KeypairType | undefined;
+  keyPair: KeypairType;
 }
 
 export interface DerivationPath {

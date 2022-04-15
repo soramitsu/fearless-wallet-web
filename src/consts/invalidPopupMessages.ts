@@ -1,4 +1,4 @@
-export const INVALID_POPUP_HEADERS = {
+export const INVALID_POPUP_MESSAGES = {
   passphrase: {
     text: 'Invalid passphrase',
     subtext: 'Invalid passphrase sequence, please try again',

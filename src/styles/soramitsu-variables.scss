@@ -36,10 +36,10 @@ $s-color-status-error-background: #FFD8EB;
 // Fiat colors
 $s-color-fiat-value: rgba(71, 154, 239, 1) !default;
 // Sizes
-$s-size-mini: 24px;
-$s-size-small: 32px;
-$s-size-medium: 42px;
-$s-size-big: 58px;
+$s-size-mini: 36px;
+$s-size-small: 42px;
+$s-size-medium: 48px;
+$s-size-big: 64px;
 // Shadows
 $s-shadow-surface: 1px 1px 5px var(--s-shadow-color-dark), inset 1px 1px 1px var(--s-shadow-color-dark);
 $s-shadow-tooltip: 0px 1px 4px rgba(13, 2, 72, 0.35);
@@ -48,7 +48,7 @@ $s-shadow-dropdown: 0px 4px 8px rgba(19, 19, 19, 0.15);
 $s-shadow-mobile-tap-bar: 0px -4px 8px rgba(19, 19, 19, 0.15);
 $s-shadow-mobile-side-menu: -4px 4px 8px rgba(19, 19, 19, 0.15);
 // Border Radius
-$s-border-radius-base: 16px;
+$s-border-radius-base: 4px;
 $s-border-radius-mini: $s-border-radius-base;
 $s-border-radius-small: $s-border-radius-base * 1.5;
 $s-border-radius-medium: $s-border-radius-base * 2;

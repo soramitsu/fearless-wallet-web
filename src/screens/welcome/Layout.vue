@@ -2,9 +2,7 @@
   <div class="layout">
     <div class="header">
       <div class="icon-container">
-        <div v-if="showBackIcon" :class="backIconClasses" @click="back">
-          <s-icon name="chevron-left-16" />
-        </div>
+        <CircleButton v-if="showBackIcon" iconType="back" :handler="back" />
       </div>
       <div class="steps">
         <div
@@ -14,8 +12,8 @@
           :class="item <= currentIndexPage ? 'circle-filled' : ''"
         ></div>
       </div>
-      <div class="icon icon-background">
-        <s-icon name="arrows-arrows-diagonals-bltr-24" class="arrows-diagonals" />
+      <div class="icon-background">
+        <CircleButton iconType="full-screen" :handler="fullScreen" />
       </div>
     </div>
 
@@ -94,12 +92,12 @@ import { INVALID_POPUP_MESSAGES, InvalidValueName } from '../../consts/invalidPo
 import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '../../consts/ethereumNetworks';
 import { DEFAULT_DERIVATION_PATH } from '../../consts/derivationPath';
 import keyring from '@polkadot/ui-keyring';
-import MainPage from '../mainPage/MainPage.vue';
 import CreateWallet from './CreateWallet.vue';
 import FinishForm from './FinishForm.vue';
 import PasswordForm from './PasswordForm.vue';
 import ImportWallet from './ImportWallet.vue';
 import InvalidPopup from '../../components/InvalidPopup.vue';
+import CircleButton from '../../components/CircleButton.vue';
 import NicknameForm from './NicknameForm.vue';
 import AdvancedForm from './AdvancedForm.vue';
 import AdvancedButton from './AdvancedButton.vue';
@@ -109,7 +107,6 @@ type FieldsComponent = 'passwordJson' | 'derivationPath';
 
 @Component({
   components: {
-    MainPage,
     CreateWallet,
     ImportWallet,
     FinishForm,
@@ -118,6 +115,7 @@ type FieldsComponent = 'passwordJson' | 'derivationPath';
     NicknameForm,
     AdvancedForm,
     AdvancedButton,
+    CircleButton,
   },
 })
 export default class extends Vue {
@@ -235,15 +233,6 @@ export default class extends Vue {
     return 'Continue';
   }
 
-  get backIconClasses() {
-    return [
-      'icon',
-      {
-        'icon-background': this.currentIndexPage <= 4,
-      },
-    ];
-  }
-
   get disabledProceed() {
     // mutual logic step(password)
     if (this.showPasswordForm) return !this.passwordExtension;
@@ -295,7 +284,7 @@ export default class extends Vue {
     this.currentIndexPage += this.showInvalidPopup ? 0 : 1;
 
     if ((this.isCreateWallet && this.currentIndexPage === 6) || (this.isImportWallet && this.currentIndexPage === 5))
-      this.$router.push({ name: Components.MainPage });
+      this.$router.push({ name: Components.Wallet });
   }
 
   createWallet() {
@@ -369,6 +358,10 @@ export default class extends Vue {
     else this.selectedMnemonicElements.splice(index, 1);
   }
 
+  fullScreen() {
+    alert('full screen');
+  }
+
   back() {
     if (this.currentIndexPage === 1) {
       this.mnemonic = '';
@@ -440,10 +433,6 @@ export default class extends Vue {
     }
   }
 
-  i {
-    color: white;
-  }
-
   .button {
     width: 528px;
     font-size: 18px;
@@ -458,28 +447,6 @@ export default class extends Vue {
   .icon-container {
     width: 32px;
     height: 32px;
-  }
-
-  .icon {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    border-radius: 50%;
-
-    .arrows-diagonals {
-      font-size: 18px !important;
-    }
-
-    &:hover {
-      cursor: pointer;
-      opacity: 1;
-    }
-  }
-
-  .icon-background {
-    background-color: rgba(255, 255, 255, 0.1);
   }
 }
 </style>

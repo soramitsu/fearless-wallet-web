@@ -1,6 +1,6 @@
 <template>
   <div class="finish">
-    <Logo class="description" text="All done!" subtext="Stay Fearless!" />
+    <Logo class="description" size="big" text="All done!" subtext="Stay Fearless!" />
     <div class="row">
       <s-button
         class="button"

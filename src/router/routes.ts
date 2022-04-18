@@ -1,13 +1,13 @@
 import { RouteConfig } from 'vue-router';
-import WelcomePage from '../screens/welcomePage/WelcomePage.vue';
-import MainPage from '../screens/mainPage/MainPage.vue';
+import Welcome from '../screens/welcome/Welcome.vue';
+import Wallet from '../screens/wallet/Wallet.vue';
 import WelcomeBack from '../screens/welcomeBack/WelcomeBack.vue';
 import AccountController from '../controllers/accountController';
 import keyring from '@polkadot/ui-keyring';
 
 export enum Components {
-  WelcomePage = 'WelcomePage',
-  MainPage = 'MainPage',
+  Welcome = 'Welcome',
+  Wallet = 'Wallet',
   WelcomeBack = 'WelcomeBack',
 }
 
@@ -19,22 +19,22 @@ const redirectToWelcomeBack = () => isSavedPassword() && !isCorrectPasswordAge()
 
 const routes: Array<RouteConfig> = [
   {
-    path: '/welcome-page',
-    name: Components.WelcomePage,
-    component: WelcomePage,
+    path: '/welcome',
+    name: Components.Welcome,
+    component: Welcome,
     beforeEnter: (to, from, next) => {
       if (redirectToWelcomeBack()) next({ name: Components.WelcomeBack });
-      else if (haveAccounts()) next({ name: Components.MainPage });
+      else if (haveAccounts()) next({ name: Components.Wallet });
       else next();
     },
   },
   {
-    path: '/main-page',
-    name: Components.MainPage,
-    component: MainPage,
+    path: '/wallet',
+    name: Components.Wallet,
+    component: Wallet,
     beforeEnter: (to, from, next) => {
       if (redirectToWelcomeBack()) next({ name: Components.WelcomeBack });
-      else if (!haveAccounts()) next({ name: Components.WelcomePage });
+      else if (!haveAccounts()) next({ name: Components.Welcome });
       else next();
     },
   },
@@ -43,14 +43,14 @@ const routes: Array<RouteConfig> = [
     name: Components.WelcomeBack,
     component: WelcomeBack,
     beforeEnter: (to, from, next) => {
-      if (!isSavedPassword()) next({ name: Components.WelcomePage });
-      else if (isCorrectPasswordAge()) next({ name: Components.MainPage });
+      if (!isSavedPassword()) next({ name: Components.Welcome });
+      else if (isCorrectPasswordAge()) next({ name: Components.Wallet });
       else next();
     },
   },
   {
     path: '/*',
-    redirect: () => (haveAccounts() ? { name: Components.MainPage } : { name: Components.WelcomePage }),
+    redirect: () => (haveAccounts() ? { name: Components.Wallet } : { name: Components.Welcome }),
   },
 ];
 

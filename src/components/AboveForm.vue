@@ -29,7 +29,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 export default class extends Vue {
   @Prop({ default: '' }) header!: string;
   @Prop({ default: false }) showAcceptIcon!: boolean;
-  @Prop({ default: () => undefined }) saveChanges!: VoidFunction;
+  @Prop(Function) saveChanges!: VoidFunction;
   @Prop(Function) closeHandler!: VoidFunction;
 }
 </script>

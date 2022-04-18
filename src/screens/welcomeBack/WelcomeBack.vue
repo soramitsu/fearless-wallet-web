@@ -43,7 +43,7 @@ export default class extends Vue {
   unlock() {
     if (this.accountController.isSamePassword(this.password)) {
       this.accountController.updatedPasswordDateCreated();
-      this.$router.push({ name: Components.MainPage });
+      this.$router.push({ name: Components.Wallet });
     } else {
       this.isError = true;
     }

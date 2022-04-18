@@ -2,7 +2,7 @@
   <div class="welcome-page">
     <template v-if="!walletConnectionStatus">
       <div class="first-page">
-        <Logo class="description" text="Fearless Wallet" subtext="The DeFi Wallet From The Future" />
+        <Logo class="description" size="big" text="Fearless Wallet" subtext="The DeFi Wallet From The Future" />
 
         <div>
           <div>

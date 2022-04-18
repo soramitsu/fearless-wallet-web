@@ -17,13 +17,11 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { DerivationPath } from '../../interfaces/connectionWallet';
 import MnemonicConfirmationForm from './MnemonicConfirmationForm.vue';
 import MnemonicBackupFom from './MnemonicBackupFom.vue';
-import MainPage from '../mainPage/MainPage.vue';
 
 @Component({
   components: {
     MnemonicConfirmationForm,
     MnemonicBackupFom,
-    MainPage,
   },
 })
 export default class extends Vue {

@@ -1,6 +1,5 @@
 import LocalStorage from '../util/localStorage';
 import { Hash } from '../util/hash';
-import { bool } from '@polkadot/types-codec';
 
 interface PasswordValue {
   value: string;
@@ -8,10 +7,10 @@ interface PasswordValue {
 }
 
 export default class AccountController {
-  private postfix = 'sora';
-  private radix = 2;
-  private lsAccount = new LocalStorage('account');
-  private passwordLifeTime = 1000 * 60 * 60 * 24; // 24 hours
+  private readonly postfix = 'sora';
+  private readonly radix = 2;
+  private readonly lsAccount = new LocalStorage('account');
+  private readonly passwordLifeTime = 1000 * 60 * 60 * 24; // 24 hours
 
   private getAccountPasswordValue(): PasswordValue {
     const accountPasswordValue = this.lsAccount.get('password');

@@ -3,7 +3,7 @@ import App from './App.vue';
 import store from './store';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import keyring from '@polkadot/ui-keyring';
-import AccountsStore from './storeChrome/Accounts';
+// import AccountsStore from './storeChrome/Accounts';
 
 import './plugins';
 import './styles';

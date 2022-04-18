@@ -14,10 +14,10 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 
-@Component({})
+@Component
 export default class extends Vue {
-  @Prop(String) text!: () => string;
-  @Prop(String) subtext!: () => string;
+  @Prop(String) text!: string;
+  @Prop(String) subtext!: string;
 }
 </script>
 

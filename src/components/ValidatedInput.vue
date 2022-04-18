@@ -15,7 +15,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
 
-@Component({})
+@Component
 export default class extends Vue {
   @VModel({ type: String }) vModel!: string;
   @Prop(String) errorDescriptions!: string;

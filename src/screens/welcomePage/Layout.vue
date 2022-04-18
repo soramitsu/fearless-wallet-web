@@ -90,7 +90,9 @@ import { WalletConnectionStatus, DerivationPath, TypeFiledForImport } from '../.
 import { mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
 import { Components } from '../../router/routes';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import { INVALID_POPUP_MESSAGES } from '../../consts/invalidPopupMessages';
+import { INVALID_POPUP_MESSAGES, InvalidValueName } from '../../consts/invalidPopupMessages';
+import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '../../consts/ethereumNetworks';
+import { DEFAULT_DERIVATION_PATH } from '../../consts/derivationPath';
 import keyring from '@polkadot/ui-keyring';
 import MainPage from '../mainPage/MainPage.vue';
 import CreateWallet from './CreateWallet.vue';
@@ -104,7 +106,6 @@ import AdvancedButton from './AdvancedButton.vue';
 import AccountController from '../../controllers/accountController';
 
 type FieldsComponent = 'passwordJson' | 'derivationPath';
-type InvalidValueName = 'passphrase' | 'mnemonic' | 'rawSeed' | 'jsonPassword' | 'jsonInvalid' | '';
 
 @Component({
   components: {
@@ -131,16 +132,7 @@ export default class extends Vue {
   showAdvancedForm = false;
   selectedMnemonicElements: string[] = [];
   currentIndexPage = 1;
-  derivationPath: DerivationPath = {
-    substrate: {
-      value: '',
-      keyPair: 'sr25519',
-    },
-    ethereum: {
-      value: '',
-      keyPair: 'ethereum',
-    },
-  };
+  derivationPath = DEFAULT_DERIVATION_PATH;
 
   @Prop(String) walletConnectionStatus!: WalletConnectionStatus;
   @Getter(GettersTypes.getPassword) passwordExtension!: string;
@@ -348,9 +340,9 @@ export default class extends Vue {
 
     keyring.addUri(suriSubstrate, '', { name: this.nickname }, substrateKeyPair);
 
-    // ETH аккаунт создаем только если ввели мнемонику
+    // We create an ETH account only if we entered the mnemonic
     if (this.mnemonic) {
-      const suriEthereum = `${this.mnemonic}${ethereumDP ?? "/m/44'/60'/0'/0/0"}`;
+      const suriEthereum = `${this.mnemonic}${ethereumDP ?? ETHEREUM_DEFAULT_DERIVATION_PATH}`;
 
       keyring.addUri(suriEthereum, '', { name: this.nickname }, ethereumKeyPair);
     }
@@ -381,16 +373,7 @@ export default class extends Vue {
     if (this.currentIndexPage === 1) {
       this.mnemonic = '';
       this.nickname = '';
-      this.derivationPath = {
-        substrate: {
-          value: '',
-          keyPair: 'sr25519',
-        },
-        ethereum: {
-          value: '',
-          keyPair: 'ethereum',
-        },
-      };
+      this.derivationPath = DEFAULT_DERIVATION_PATH;
 
       this.$emit('reset');
 

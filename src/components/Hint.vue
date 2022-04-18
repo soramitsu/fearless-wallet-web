@@ -12,10 +12,11 @@
 <script lang="ts">
 import { Vue, Prop, Component } from 'vue-property-decorator';
 
-type iconType = 'notification' | 'warning';
-@Component({})
+type IconType = 'notification' | 'warning';
+
+@Component
 export default class extends Vue {
-  @Prop(String) iconType!: iconType;
+  @Prop(String) iconType!: IconType;
   @Prop(String) text!: string;
 
   get icon() {

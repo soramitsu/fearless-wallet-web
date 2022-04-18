@@ -49,7 +49,9 @@ import { Component, Vue, Prop, Watch, VModel } from 'vue-property-decorator';
 import { TypeFiledForImport, DerivationPath } from '../../interfaces/connectionWallet';
 import Popup from '../../components/Popup.vue';
 
-@Component({ components: { Popup } })
+@Component({
+  components: { Popup },
+})
 export default class extends Vue {
   showPopup = false;
   fileJson = '';

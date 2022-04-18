@@ -1,7 +1,7 @@
 <template>
   <div class="nickname">
     <s-input
-      v-model="_nickname"
+      v-model="nicknameModel"
       type="text"
       size="big"
       placeholder="Wallet nickname"
@@ -22,16 +22,18 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import Hint from '../../components/Hint.vue';
 
-@Component({ components: { Hint } })
+@Component({
+  components: { Hint },
+})
 export default class extends Vue {
   @Prop(String) nickname!: string;
   @Prop({ default: false }) readonly!: boolean;
 
-  get _nickname(): string {
+  get nicknameModel(): string {
     return this.nickname;
   }
 
-  set _nickname(value: string) {
+  set nicknameModel(value: string) {
     this.$emit('setValue', value, 'nickname');
   }
 }

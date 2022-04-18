@@ -11,7 +11,7 @@ import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import keyring from '@polkadot/ui-keyring';
 import NetworksController from './controllers/networksController';
 
-@Component({})
+@Component
 export default class App extends Vue {
   networksController = new NetworksController();
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
@@ -21,6 +21,7 @@ export default class App extends Vue {
 
     this.subscribeAccounts = keyring.accounts.subject;
     this.subscribeAccounts.subscribe((accounts) => {
+      // TODO:refactoring and optimizing subscriptions, subscribe only to new accounts
       this.networksController.subscribeToNetworks(accounts);
     });
   }

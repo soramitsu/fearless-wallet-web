@@ -16,12 +16,10 @@ interface Headers {
 }
 
 @Component({
-  components: {
-    Popup,
-  },
+  components: { Popup },
 })
 export default class extends Vue {
-  @Prop({ default: { text: '', subtext: '' } }) headers!: Headers;
+  @Prop({ default: () => ({ text: '', subtext: '' }) }) headers!: Headers;
   @Prop(Function) handlerClose!: VoidFunction;
 
   get text() {

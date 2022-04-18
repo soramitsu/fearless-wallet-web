@@ -52,10 +52,7 @@ import Layout from './Layout.vue';
 import Logo from '../../components/Logo.vue';
 
 @Component({
-  components: {
-    Layout,
-    Logo,
-  },
+  components: { Layout, Logo },
 })
 export default class extends Vue {
   walletConnectionStatus: WalletConnectionStatus = '';

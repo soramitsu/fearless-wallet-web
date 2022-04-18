@@ -17,7 +17,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 
-@Component({ components: {} })
+@Component
 export default class extends Vue {
   @Prop(Function) handlerClose!: VoidFunction;
   @Prop({ default: '' }) header!: string;

@@ -37,22 +37,21 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import AboveForm from '../../components/AboveForm.vue';
 
 @Component({
-  components: {
-    AboveForm,
-  },
+  components: { AboveForm },
 })
 export default class extends Vue {
-  @Prop(Object) derivationPath!: DerivationPath;
-  @Prop({ default: true }) showEthereumDP!: boolean;
-
-  substrateDP = '';
-  ethereumDP = '';
-  substrateKeyPair = '';
-  optionsSubstrateKeyPair = [
+  readonly optionsSubstrateKeyPair = [
     { label: 'Schnorrkel sr25519 (recommended)', value: 'sr25519', example: '//hard/soft///password' },
     { label: 'Edwards ed25519 (alternative)', value: 'ed25519', example: '//hard///password' },
     { label: 'ECDSA | BTC/ETH compatible', value: 'ecdsa', example: '//hard///password' },
   ];
+
+  substrateDP = '';
+  ethereumDP = '';
+  substrateKeyPair = '';
+
+  @Prop(Object) derivationPath!: DerivationPath;
+  @Prop({ default: true }) showEthereumDP!: boolean;
 
   get example() {
     return this.optionsSubstrateKeyPair.find(({ value }) => value === this.substrateKeyPair)?.example;

@@ -8,21 +8,22 @@ import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 
 export default class NetworksController {
-  private url = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.1/chains/chains_dev.json';
+  private readonly url =
+    'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.1/chains/chains_dev.json';
 
   private getNetworks(): Networks {
     return store.getters[ApiGettersTypes.getNetworksInfo];
   }
 
-  private async setNetworkStatus(props: SetNetworkStatusMutation) {
-    await store.commit(ApiMutationTypes.SET_NETWORK_STATUS, props);
+  private setNetworkStatus(props: SetNetworkStatusMutation): void {
+    store.commit(ApiMutationTypes.SET_NETWORK_STATUS, props);
   }
 
-  async loadNetworksInfo() {
+  async loadNetworksInfo(): Promise<void> {
     await store.dispatch(ApiActionTypes.LOAD_NETWORKS_INFO, { url: this.url });
   }
 
-  async subscribeToNetworks(accounts: SubjectInfo) {
+  async subscribeToNetworks(accounts: SubjectInfo): Promise<void> {
     console.log('accounts', accounts);
     console.log('networks', this.getNetworks());
 

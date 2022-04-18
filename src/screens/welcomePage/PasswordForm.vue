@@ -32,7 +32,9 @@ import { MutationTypes } from '../../store/accounts/mutations';
 import Hint from '../../components/Hint.vue';
 import ValidatedInput from '../../components/ValidatedInput.vue';
 
-@Component({ components: { Hint, ValidatedInput } })
+@Component({
+  components: { Hint, ValidatedInput },
+})
 export default class extends Vue {
   @Getter(GettersTypes.getPassword) getPassword!: string;
   @Mutation(MutationTypes.SET_PASSWORD) setPassword!: (props: Record<string, string>) => void;

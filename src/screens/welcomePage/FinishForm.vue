@@ -33,7 +33,9 @@
 import { Component, Vue } from 'vue-property-decorator';
 import Logo from '../../components/Logo.vue';
 
-@Component({ components: { Logo } })
+@Component({
+  components: { Logo },
+})
 export default class extends Vue {
   redirect(url: string) {
     window.open(url);

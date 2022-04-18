@@ -17,9 +17,7 @@ import Identicon from '@polkadot/vue-identicon';
 import keyring from '@polkadot/ui-keyring';
 
 @Component({
-  components: {
-    Identicon,
-  },
+  components: { Identicon },
 })
 export default class extends Vue {
   get accounts() {

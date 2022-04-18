@@ -18,7 +18,9 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import MnemonicColumns from './MnemonicColumns.vue';
 import Hint from '../../components/Hint.vue';
 
-@Component({ components: { Hint, MnemonicColumns } })
+@Component({
+  components: { Hint, MnemonicColumns },
+})
 export default class extends Vue {
   @Prop(String) mnemonic!: string;
 

@@ -19,7 +19,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component({ components: {} })
 export default class extends Vue {
-  @Prop(Function) handlerClose!: () => void;
+  @Prop(Function) handlerClose!: VoidFunction;
   @Prop({ default: '' }) header!: string;
 }
 </script>

@@ -1,6 +1,6 @@
 <template>
-  <!-- Черная форма с логотипом компании(выбор derivation path на макетах) -->
-  <!-- TODO: Возможно стоит переименовать название во что-то более описательное -->
+  <!-- Black form with company logo (selection derivation path on layouts) -->
+  <!-- TODO: Maybe rename the title to something more descriptive -->
   <div class="above-form">
     <div class="header-content">
       <div class="logo">
@@ -29,8 +29,8 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 export default class extends Vue {
   @Prop({ default: '' }) header!: string;
   @Prop({ default: false }) showAcceptIcon!: boolean;
-  @Prop({ default: () => undefined }) saveChanges!: () => void;
-  @Prop(Function) closeHandler!: () => void;
+  @Prop({ default: () => undefined }) saveChanges!: VoidFunction;
+  @Prop(Function) closeHandler!: VoidFunction;
 }
 </script>
 

@@ -25,7 +25,7 @@ export default class App extends Vue {
     });
   }
 
-  unmounted() {
+  beforeUnmount() {
     this.subscribeAccounts.unsubscribe();
   }
 }

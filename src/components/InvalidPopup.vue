@@ -22,7 +22,7 @@ interface Headers {
 })
 export default class extends Vue {
   @Prop({ default: { text: '', subtext: '' } }) headers!: Headers;
-  @Prop(Function) handlerClose!: () => void;
+  @Prop(Function) handlerClose!: VoidFunction;
 
   get text() {
     return this.headers?.text ?? '';

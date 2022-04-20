@@ -2,7 +2,7 @@
   <Popup :handlerClose="handlerClose" :header="header" class="popup-with-choice">
     <div v-for="{ label, value, path } in options" :key="label" :class="rowClasses(value)" @click="toggleValue(value)">
       <div class="description">
-        <img :src="getImgPath(path)" class="img" v-if="icon" />
+        <img :src="getImg(path)" class="img" v-if="icon" />
 
         {{ label }}
       </div>
@@ -29,9 +29,7 @@ export default class extends Vue {
   @Prop({ default: false }) icon!: boolean;
   @Prop({ default: 'medium' }) space!: SpaceSize;
 
-  getImgPath(path: string) {
-    console.log(this.icon);
-
+  getImg(path: string) {
     return require(`../assets/${path}`);
   }
 

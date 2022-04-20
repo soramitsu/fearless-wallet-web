@@ -4,18 +4,19 @@
       <Logo size="small" />
 
       <div class="wallet-name">{{ name }}</div>
+      <s-icon name="chevron-bottom-16" :class="iconChevronClasses" />
     </div>
     <div class="header-part">
-      <CircleButton iconType="full-screen" class="button-margin" :handler="handler" />
+      <CircleButton iconType="full-screen" backgroundColor="light-black" class="button-margin" :handler="fullScreen" />
 
-      <CircleButton iconType="lock" class="button-margin" :handler="handler" />
+      <CircleButton iconType="lock" backgroundColor="light-black" class="button-margin" :handler="lock" />
 
       <div class="background-ellipse button-margin">
         <div :class="statusConnectedClasses"></div>
         {{ statusConnectedText }}
       </div>
 
-      <CircleButton iconType="settings" class="button-margin" :background="false" :handler="handler" />
+      <CircleButton iconType="settings" class="button-margin" backgroundColor="none" :handler="openSettings" />
     </div>
   </div>
 </template>
@@ -25,7 +26,6 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '../../store/accounts/getters';
 import { SelectedWallet } from '../../store/accounts/types';
-
 import Identicon from '@polkadot/vue-identicon';
 import Logo from '../../components/Logo.vue';
 import CircleButton from '../../components/CircleButton.vue';
@@ -48,8 +48,24 @@ export default class extends Vue {
     return 'Connected';
   }
 
-  handler(name: string) {
-    alert(`handler ${name}`);
+  get iconChevronClasses() {
+    return [
+      {
+        'rotate-180': false,
+      },
+    ];
+  }
+
+  fullScreen() {
+    alert(`fullScreen`);
+  }
+
+  lock() {
+    alert(`lock`);
+  }
+
+  openSettings() {
+    alert(`settings`);
   }
 }
 </script>
@@ -77,12 +93,20 @@ export default class extends Vue {
       display: flex;
       font-weight: 700;
       font-size: 24px;
-      margin-left: 10px;
+      margin: 0 5px 0 10px;
       align-items: center;
 
       &:hover {
         cursor: pointer;
       }
+    }
+
+    .s-icon-chevron-bottom-16 {
+      margin-top: 5px;
+    }
+
+    .rotate-180 {
+      transform: rotate(180deg);
     }
 
     .button-margin {

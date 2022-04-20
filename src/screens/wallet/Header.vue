@@ -1,0 +1,74 @@
+<template>
+  <div class="header">
+    <div class="header-part">
+      <TabButton
+        v-for="tabName in tabsOptions"
+        :key="tabName"
+        :name="tabName"
+        :isActive="activeTabName === tabName"
+        @click.native="openTab(tabName)"
+      />
+    </div>
+    <div class="header-part">
+      <CircleButton iconType="search" backgroundColor="none" class="search-button" :handler="search" />
+
+      <CircleButton iconType="filter" backgroundColor="none" :handler="filter" />
+    </div>
+  </div>
+</template>
+
+<script lang="ts">
+import { Component, Vue, Prop } from 'vue-property-decorator';
+import type { Tab } from '../../interfaces/walletPage';
+import TabButton from './TabButton.vue';
+import CircleButton from '../../components/CircleButton.vue';
+
+@Component({
+  components: { TabButton, CircleButton },
+})
+export default class extends Vue {
+  tabsOptions: Tab[] = ['Currencies', 'NFTs'];
+
+  @Prop(String) activeTabName!: Tab;
+
+  openTab(name: Tab) {
+    this.$emit('updateActiveTabName', name);
+  }
+
+  search() {
+    alert('search');
+  }
+
+  filter() {
+    alert('filter');
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+.header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  width: 100%;
+
+  .header-part {
+    display: flex;
+    align-items: center;
+    margin-right: 16px;
+  }
+
+  i {
+    color: rgba(255, 255, 255, 0.65);
+    margin-left: 24px;
+
+    &:hover {
+      cursor: pointer;
+    }
+  }
+
+  .search-button {
+    margin-right: 10px;
+  }
+}
+</style>

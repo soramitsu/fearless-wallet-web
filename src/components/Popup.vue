@@ -9,17 +9,22 @@
         </s-button>
       </div>
 
-      <div class="content">
-        <slot></slot>
-      </div>
+      <Scroll>
+        <div class="content">
+          <slot></slot>
+        </div>
+      </Scroll>
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import Scroll from './Scroll.vue';
 
-@Component
+@Component({
+  components: { Scroll },
+})
 export default class extends Vue {
   @Prop(Function) handlerClose!: VoidFunction;
   @Prop({ default: '' }) header!: string;
@@ -53,26 +58,11 @@ export default class extends Vue {
     clip-path: var(--default-clip-path);
     border-radius: var(--default-border-radius);
     padding: 20px 0 30px;
-
-    ::-webkit-scrollbar {
-      width: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background-color: rgba(255, 255, 255, 0.25);
-      border-radius: var(--default-border-radius);
-
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.15);
-      }
-    }
   }
 
   .content {
     width: 100%;
     height: 100%;
-    overflow: scroll;
-    overflow-x: hidden;
   }
 
   .header {

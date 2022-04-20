@@ -46,7 +46,7 @@ export default class extends Vue {
   width: 560px;
   margin: 0 0 -16px -16px;
   border-radius: 0 0 var(--default-border-radius) var(--default-border-radius);
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(5px);
+  // background: rgba(0, 0, 0, 0.4);
+  // backdrop-filter: blur(5px);
 }
 </style>

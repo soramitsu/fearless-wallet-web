@@ -40,6 +40,19 @@ export default class App extends Vue {
 
 <style lang="scss">
 #app {
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.25);
+    border-radius: var(--default-border-radius);
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.15);
+    }
+  }
+
   textarea,
   input {
     color: var(--pink-lavender-color);

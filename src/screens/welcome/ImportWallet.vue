@@ -28,7 +28,7 @@
 
     <slot v-if="notJsonImport"></slot>
 
-    <PopupWithChoice
+    <PopupWithSelect
       v-if="showPopup"
       v-model="typeImport"
       header="Source type"
@@ -42,10 +42,10 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch, VModel } from 'vue-property-decorator';
 import { TypeFiledForImport, DerivationPath } from '../../interfaces/connectionWallet';
-import PopupWithChoice from '../../components/PopupWithChoice.vue';
+import PopupWithSelect from '../../components/PopupWithSelect.vue';
 
 @Component({
-  components: { PopupWithChoice },
+  components: { PopupWithSelect },
 })
 export default class extends Vue {
   readonly optionsImport = [

@@ -1,5 +1,5 @@
 <template>
-  <div class="coming-soon">{{ name }} In developing...</div>
+  <div class="coming-soon">{{ name }} in developing...</div>
 </template>
 
 <script lang="ts">

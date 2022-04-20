@@ -1,14 +1,24 @@
 import { RouteConfig } from 'vue-router';
 import Welcome from '../screens/welcome/Welcome.vue';
 import Wallet from '../screens/wallet/Wallet.vue';
+import Crowdloans from '../screens/crowdloans/Crowdloans.vue';
+import Dex from '../screens/dex/Dex.vue';
+import Stacking from '../screens/stacking/Stacking.vue';
+import History from '../screens/history/History.vue';
+import Main from '../screens/main/Main.vue';
 import WelcomeBack from '../screens/welcomeBack/WelcomeBack.vue';
 import AccountController from '../controllers/accountController';
 import keyring from '@polkadot/ui-keyring';
 
 export enum Components {
   Welcome = 'Welcome',
-  Wallet = 'Wallet',
   WelcomeBack = 'WelcomeBack',
+  Main = 'Main',
+  Wallet = 'Wallet',
+  Crowdloans = 'Crowdloans',
+  DEX = 'DEX',
+  Stacking = 'Stacking',
+  History = 'History',
 }
 
 const accountController = new AccountController();
@@ -29,9 +39,42 @@ const routes: Array<RouteConfig> = [
     },
   },
   {
-    path: '/wallet',
-    name: Components.Wallet,
-    component: Wallet,
+    path: '/main',
+    name: Components.Main,
+    component: Main,
+    children: [
+      {
+        path: '',
+        beforeEnter: (to, from, next) => {
+          next({ name: Components.Wallet });
+        },
+      },
+      {
+        path: 'wallet',
+        name: Components.Wallet,
+        component: Wallet,
+      },
+      {
+        path: 'crowdloans',
+        name: Components.Crowdloans,
+        component: Crowdloans,
+      },
+      {
+        path: 'stacking',
+        name: Components.Stacking,
+        component: Stacking,
+      },
+      {
+        path: 'dex',
+        name: Components.DEX,
+        component: Dex,
+      },
+      {
+        path: 'history',
+        name: Components.History,
+        component: History,
+      },
+    ],
     beforeEnter: (to, from, next) => {
       if (redirectToWelcomeBack()) next({ name: Components.WelcomeBack });
       else if (!haveAccounts()) next({ name: Components.Welcome });

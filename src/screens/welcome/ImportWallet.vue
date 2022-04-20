@@ -7,7 +7,7 @@
     <s-input
       v-if="notJsonImport"
       v-model="inputValue"
-      :placeholder="placeholder"
+      :placeholder="placeholderTypeImportValue"
       class="row input"
       type="textarea"
       maxlength="130"
@@ -16,7 +16,7 @@
       <div class="row">
         <s-input
           v-model="inputValue"
-          :placeholder="placeholder"
+          :placeholder="placeholderTypeImportValue"
           size="big"
           type="text-file"
           accept="application/JSON"
@@ -28,38 +28,34 @@
 
     <slot v-if="notJsonImport"></slot>
 
-    <Popup v-if="showPopup" :handlerClose="closePopup" header="Source type">
-      <div
-        v-for="{ label, value } in optionsImport"
-        :key="label"
-        :class="typeImportClasses(value)"
-        @click="toggleTypeImport(value)"
-      >
-        <div>
-          {{ label }}
-        </div>
-        <s-icon name="basic-check-mark-24" v-show="typeImport === value" />
-      </div>
-    </Popup>
+    <PopupWithChoice
+      v-if="showPopup"
+      v-model="typeImport"
+      header="Source type"
+      :toggleValue="toggleTypeImport"
+      :handlerClose="closePopup"
+      :options="optionsImport"
+    />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch, VModel } from 'vue-property-decorator';
 import { TypeFiledForImport, DerivationPath } from '../../interfaces/connectionWallet';
-import Popup from '../../components/Popup.vue';
+import PopupWithChoice from '../../components/PopupWithChoice.vue';
 
 @Component({
-  components: { Popup },
+  components: { PopupWithChoice },
 })
 export default class extends Vue {
-  showPopup = false;
-  fileJson = '';
-  optionsImport = [
+  readonly optionsImport = [
     { label: 'Mnemonic passphrase', value: 'mnemonic', placeholder: 'Enter Passphrase' },
     { label: 'Restore JSON', value: 'json', placeholder: 'Restore JSON' },
     { label: 'Raw seed', value: 'rawSeed', placeholder: 'Raw seed' },
   ];
+
+  showPopup = false;
+  fileJson = '';
 
   @VModel({ type: String }) typeImport!: TypeFiledForImport;
   @Prop(String) mnemonic!: string;
@@ -96,7 +92,7 @@ export default class extends Vue {
     return this.typeImport !== 'json';
   }
 
-  get placeholder() {
+  get placeholderTypeImportValue() {
     return this.optionsImport.find(({ value }) => value === this.typeImport)?.placeholder;
   }
 
@@ -191,12 +187,8 @@ export default class extends Vue {
     }
   }
 
-  .active-type-import {
-    color: #ffffff;
-  }
-
   i {
-    color: #bb77ff;
+    color: var(--pink-lavender-color);
   }
 }
 </style>

@@ -46,7 +46,7 @@ export default class extends Vue {
 <style lang="scss" scoped>
 .finish {
   .icon {
-    color: #ee0077;
+    color: var(--pink-color);
     margin-right: 8px;
   }
 

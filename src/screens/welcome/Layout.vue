@@ -408,7 +408,7 @@ export default class extends Vue {
       }
 
       .circle-filled {
-        background-color: #ee0077;
+        background-color: var(--pink-color);
       }
     }
   }

@@ -49,10 +49,10 @@ export default class extends Vue {
 <style lang="scss" scoped>
 .mnemonic-backup-form {
   .hint-container {
+    border-radius: var(--default-border-radius);
     width: 480px;
     height: 48px;
     padding: 8px 16px;
-    border-radius: 8px;
     background-color: rgba(255, 255, 255, 0.24);
     margin: 0 auto 10px;
   }

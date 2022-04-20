@@ -84,7 +84,7 @@ export default class extends Vue {
 
   .circle {
     border-radius: 50%;
-    background: conic-gradient(from 180deg at 50% 50%, #ee7777 0deg, #ee0077 187.5deg, #7777ee 360deg);
+    background: conic-gradient(from 180deg at 50% 50%, #ee7777 0deg, var(--pink-color) 187.5deg, #7777ee 360deg);
     margin: 0 auto;
   }
 

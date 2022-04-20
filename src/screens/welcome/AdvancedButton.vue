@@ -34,7 +34,7 @@ export default class extends Vue {
 
     &:hover {
       .s-icon-circle-plus-16 {
-        color: #ee0077;
+        color: var(--pink-color);
       }
     }
   }

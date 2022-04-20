@@ -27,8 +27,8 @@
     width: 96px;
     height: 96px;
     border-radius: 50%;
-    border: 8px solid #ee0077;
-    border-color: #ee0077 transparent transparent;
+    border: 8px solid var(--pink-color);
+    border-color: var(--pink-color) transparent transparent;
     animation: arc 2s linear infinite;
   }
 

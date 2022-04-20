@@ -3,7 +3,7 @@
     <div class="header-part">
       <Logo size="small" />
 
-      <div class="wallet-name">Wallet 1</div>
+      <div class="wallet-name">{{ name }}</div>
     </div>
     <div class="header-part">
       <CircleButton iconType="full-screen" class="button-margin" :handler="handler" />
@@ -22,8 +22,11 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import { GettersTypes as AccountsGettersTypes } from '../../store/accounts/getters';
+import { SelectedWallet } from '../../store/accounts/types';
+
 import Identicon from '@polkadot/vue-identicon';
-import keyring from '@polkadot/ui-keyring';
 import Logo from '../../components/Logo.vue';
 import CircleButton from '../../components/CircleButton.vue';
 
@@ -31,8 +34,10 @@ import CircleButton from '../../components/CircleButton.vue';
   components: { Identicon, Logo, CircleButton },
 })
 export default class extends Vue {
-  get accounts() {
-    return keyring.getAccounts();
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get name() {
+    return this.selectedWallet.name;
   }
 
   get statusConnectedClasses() {
@@ -41,19 +46,6 @@ export default class extends Vue {
 
   get statusConnectedText() {
     return 'Connected';
-  }
-
-  get addressesInfo() {
-    return this.accounts.map(({ address }) => {
-      const {
-        meta: { name },
-      } = keyring.getPair(address);
-
-      return {
-        address,
-        name: name ?? 'default name',
-      };
-    });
   }
 
   handler(name: string) {

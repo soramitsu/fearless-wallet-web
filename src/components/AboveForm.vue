@@ -36,11 +36,11 @@ export default class extends Vue {
 
 <style lang="scss" scoped>
 .above-form {
+  border-radius: var(--default-border-radius);
   height: 560px;
   width: 100%;
   background-color: #111111;
   clip-path: polygon(100% 0, 100% 100%, 0 100%, 0 4%, 4% 0);
-  border-radius: 8px;
   animation: ani 0.3s;
 
   @keyframes ani {
@@ -72,7 +72,7 @@ export default class extends Vue {
     // font-size: 20px !important;
     color: rgba(255, 255, 255, 0.5);
     font-weight: 400;
-    color: #bb77ff;
+    color: var(--pink-lavender-color);
     opacity: 0.8;
 
     &:hover {

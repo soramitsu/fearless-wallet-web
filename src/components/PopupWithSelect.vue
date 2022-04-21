@@ -30,7 +30,7 @@ export default class extends Vue {
   @Prop({ default: 'medium' }) space!: SpaceSize;
 
   getImg(path: string) {
-    return require(`../assets/${path}`);
+    return require(`@/assets/${path}`);
   }
 
   rowClasses(value: string) {

@@ -12,8 +12,8 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Components } from '../../router/routes';
-import MenuItem from '../../components/MenuItem.vue';
+import { Components } from '@/router/routes';
+import MenuItem from '@/components/MenuItem.vue';
 
 type MenuItems = 'Wallet' | 'Crowdloans' | 'Staking' | 'DEX' | 'History';
 

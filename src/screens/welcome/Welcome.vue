@@ -47,9 +47,9 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { WalletConnectionStatus } from '../../interfaces/connectionWallet';
+import { WalletConnectionStatus } from '@/interfaces/connectionWallet';
 import Layout from './Layout.vue';
-import Logo from '../../components/Logo.vue';
+import Logo from '@/components/Logo.vue';
 
 @Component({
   components: { Layout, Logo },

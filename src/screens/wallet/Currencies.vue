@@ -6,7 +6,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Currency } from '../../interfaces/currencies';
+import { Currency } from '@/interfaces/currencies';
 import CurrencyItem from './CurrencyItem.vue';
 
 @Component({

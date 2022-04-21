@@ -4,7 +4,7 @@
   <div class="above-form">
     <div class="header-content">
       <div class="logo">
-        <img src="../assets/fw-logo.svg" />
+        <img src="@/assets/fw-logo.svg" />
       </div>
       <div>{{ header }}</div>
       <div class="activity-block">

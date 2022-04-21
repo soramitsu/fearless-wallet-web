@@ -46,10 +46,10 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { getIconPathByNetworkName } from '../../util/imgPath';
-import { Currency } from '../../interfaces/currencies';
-import { Components } from '../../router/routes';
-import CircleButton from '../../components/CircleButton.vue';
+import { getIconPathByNetworkName } from '@/util/imgPath';
+import { Currency } from '@/interfaces/currencies';
+import { Components } from '@/router/routes';
+import CircleButton from '@/components/CircleButton.vue';
 
 @Component({
   components: { CircleButton },
@@ -74,7 +74,9 @@ export default class extends Vue {
   }
 
   getImg(network: string) {
-    return require(`../../assets/networks/${getIconPathByNetworkName(network)}`);
+    console.log(`@/assets/networks/${getIconPathByNetworkName(network)}`);
+
+    return require(`@/assets/networks/${getIconPathByNetworkName(network)}`);
   }
 
   send() {

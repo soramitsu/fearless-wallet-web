@@ -2,7 +2,7 @@
   <div class="logo">
     <div class="circle" :style="styleCircle">
       <div class="circle-blur">
-        <img src="../assets/fw-logo.svg" class="img" :style="styleIconLogo" />
+        <img src="@/assets/fw-logo.svg" class="img" :style="styleIconLogo" />
       </div>
     </div>
 

@@ -6,7 +6,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import ComingSoon from '../../components/ComingSoon.vue';
+import ComingSoon from '@/components/ComingSoon.vue';
 
 @Component({ components: { ComingSoon } })
 export default class extends Vue {}

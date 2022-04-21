@@ -1,5 +1,5 @@
-import LocalStorage from '../util/localStorage';
-import { Hash } from '../util/hash';
+import LocalStorage from '@/util/localStorage';
+import { Hash } from '@/util/hash';
 
 interface PasswordValue {
   value: string;

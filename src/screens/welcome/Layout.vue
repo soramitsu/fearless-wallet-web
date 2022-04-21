@@ -83,25 +83,25 @@
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { isHex } from '@polkadot/util';
-import { GettersTypes } from '../../store/accounts/getters';
-import { WalletConnectionStatus, DerivationPath, TypeFiledForImport } from '../../interfaces/connectionWallet';
+import { GettersTypes } from '@/store/accounts/getters';
+import { WalletConnectionStatus, DerivationPath, TypeFiledForImport } from '@/interfaces/connectionWallet';
 import { mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
-import { Components } from '../../router/routes';
+import { Components } from '@/router/routes';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import { INVALID_POPUP_MESSAGES, InvalidValueName } from '../../consts/invalidPopupMessages';
-import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '../../consts/ethereumNetworks';
-import { DEFAULT_DERIVATION_PATH } from '../../consts/derivationPath';
+import { INVALID_POPUP_MESSAGES, InvalidValueName } from '@/consts/invalidPopupMessages';
+import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/ethereumNetworks';
+import { DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import keyring from '@polkadot/ui-keyring';
 import CreateWallet from './CreateWallet.vue';
 import FinishForm from './FinishForm.vue';
 import PasswordForm from './PasswordForm.vue';
 import ImportWallet from './ImportWallet.vue';
-import InvalidPopup from '../../components/InvalidPopup.vue';
-import CircleButton from '../../components/CircleButton.vue';
+import InvalidPopup from '@/components/InvalidPopup.vue';
+import CircleButton from '@/components/CircleButton.vue';
 import NicknameForm from './NicknameForm.vue';
 import AdvancedForm from './AdvancedForm.vue';
 import AdvancedButton from './AdvancedButton.vue';
-import AccountController from '../../controllers/accountController';
+import AccountController from '@/controllers/accountController';
 
 type FieldsComponent = 'passwordJson' | 'derivationPath';
 

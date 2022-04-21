@@ -29,12 +29,12 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { GettersTypes as AccountsGettersTypes } from '../../store/accounts/getters';
-import { SelectedWallet } from '../../store/accounts/types';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { SelectedWallet } from '@/store/accounts/types';
 import Identicon from '@polkadot/vue-identicon';
-import Logo from '../../components/Logo.vue';
-import CircleButton from '../../components/CircleButton.vue';
-import Rotate from '../../components/Rotate.vue';
+import Logo from '@/components/Logo.vue';
+import CircleButton from '@/components/CircleButton.vue';
+import Rotate from '@/components/Rotate.vue';
 
 @Component({
   components: {

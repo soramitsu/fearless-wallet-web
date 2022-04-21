@@ -1,7 +1,7 @@
 <template functional>
   <div class="loading">
     <div class="circle">
-      <img src="../assets/fw-pink-logo.svg" class="logo" />
+      <img src="@/assets/fw-pink-logo.svg" class="logo" />
     </div>
   </div>
 </template>

@@ -6,8 +6,8 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { IconType } from '../util/iconName';
-import getIconName from '../util/iconName';
+import type { IconType } from '@/util/iconName';
+import getIconName from '@/util/iconName';
 
 type BackgroundType = 'none' | 'black' | 'light-black';
 

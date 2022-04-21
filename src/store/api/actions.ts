@@ -3,7 +3,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { MutationTypes, Mutations } from './mutations';
 import { FullNetwork, Networks } from './types';
 import { State } from './state';
-import { ETHEREUM_NETWORKS } from '../../consts/ethereumNetworks';
+import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 
 export enum ActionTypes {
   LOAD_NETWORKS_INFO = 'LOAD_NETWORKS_INFO',

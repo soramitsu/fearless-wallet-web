@@ -15,8 +15,8 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Components } from '../../../router/routes';
-import CircleButton from '../../../components/CircleButton.vue';
+import { Components } from '@/router/routes';
+import CircleButton from '@/components/CircleButton.vue';
 
 @Component({
   components: { CircleButton },

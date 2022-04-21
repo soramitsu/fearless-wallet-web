@@ -28,8 +28,8 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import Logo from '../../components/Logo.vue';
-import ButtonWithIcon from '../../components/ButtonWithIcon.vue';
+import Logo from '@/components/Logo.vue';
+import ButtonWithIcon from '@/components/ButtonWithIcon.vue';
 
 @Component({
   components: { Logo, ButtonWithIcon },

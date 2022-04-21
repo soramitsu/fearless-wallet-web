@@ -45,16 +45,16 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Currency } from '../../../interfaces/currencies';
-import type { Tab } from '../../../interfaces/walletPage';
-import currencyMock from '../../../mocks/currency';
-import CircleButton from '../../../components/CircleButton.vue';
-import ButtonWithIcon from '../../../components/ButtonWithIcon.vue';
-import Scroll from '../../../components/Scroll.vue';
+import { Currency } from '@/interfaces/currencies';
+import type { Tab } from '@/interfaces/walletPage';
+import currencyMock from '@/mocks/currency';
+import CircleButton from '@/components/CircleButton.vue';
+import ButtonWithIcon from '@/components/ButtonWithIcon.vue';
+import Scroll from '@/components/Scroll.vue';
 import TokenHeader from './TokenHeader.vue';
 import Networks from './Networks.vue';
 import History from './History.vue';
-import TabButton from '../../../components/TabButton.vue';
+import TabButton from '@/components/TabButton.vue';
 
 @Component({
   components: {

@@ -12,13 +12,13 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { Tab } from '../../interfaces/walletPage';
-import { Currency } from '../../interfaces/currencies';
+import type { Tab } from '@/interfaces/walletPage';
+import { Currency } from '@/interfaces/currencies';
 import WalletHeader from './WalletHeader.vue';
 import Currencies from './Currencies.vue';
 import NFTs from './NFTs.vue';
-import Scroll from '../../components/Scroll.vue';
-import currencyMock from '../../mocks/currency';
+import Scroll from '@/components/Scroll.vue';
+import currencyMock from '@/mocks/currency';
 
 @Component({
   components: {

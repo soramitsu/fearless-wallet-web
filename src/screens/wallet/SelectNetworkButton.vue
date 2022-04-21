@@ -1,6 +1,6 @@
 <template>
   <div :class="classes">
-    <img src="../../assets/fw-logo.svg" class="img" />
+    <img src="@/assets/fw-logo.svg" class="img" />
 
     {{ text }}
 
@@ -12,7 +12,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Rotate from '../../components/Rotate.vue';
+import Rotate from '@/components/Rotate.vue';
 
 @Component({
   components: { Rotate },

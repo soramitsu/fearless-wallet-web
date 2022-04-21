@@ -20,7 +20,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Hint from '../../components/Hint.vue';
+import Hint from '@/components/Hint.vue';
 
 @Component({
   components: { Hint },

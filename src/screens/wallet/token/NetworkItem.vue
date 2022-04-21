@@ -8,14 +8,14 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { getIconPathByNetworkName } from '../../../util/imgPath';
+import { getIconPathByNetworkName } from '@/util/imgPath';
 
 @Component
 export default class extends Vue {
   @Prop(String) networkName!: string;
 
   getImg() {
-    return require(`../../../assets/networks/${getIconPathByNetworkName(this.networkName)}`);
+    return require(`@/assets/networks/${getIconPathByNetworkName(this.networkName)}`);
   }
 }
 </script>

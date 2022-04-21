@@ -32,9 +32,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { DerivationPath } from '../../interfaces/connectionWallet';
+import { DerivationPath } from '@/interfaces/connectionWallet';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import AboveForm from '../../components/AboveForm.vue';
+import AboveForm from '@/components/AboveForm.vue';
 
 @Component({
   components: { AboveForm },

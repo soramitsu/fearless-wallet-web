@@ -20,9 +20,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { Tab } from '../../interfaces/walletPage';
-import TabButton from '../../components/TabButton.vue';
-import CircleButton from '../../components/CircleButton.vue';
+import type { Tab } from '@/interfaces/walletPage';
+import TabButton from '@/components/TabButton.vue';
+import CircleButton from '@/components/CircleButton.vue';
 
 @Component({
   components: { TabButton, CircleButton },

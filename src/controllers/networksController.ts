@@ -1,9 +1,9 @@
-import store from '../store';
-import { GettersTypes as ApiGettersTypes } from '../store/api/getters';
-import { ActionTypes as ApiActionTypes } from '../store/api/actions';
-import { MutationTypes as ApiMutationTypes } from '../store/api/mutations';
-import { Networks, SetNetworkStatusMutation } from '../store/api/types';
-import { formatBalance } from '../util/balances';
+import store from '@/store';
+import { GettersTypes as ApiGettersTypes } from '@/store/api/getters';
+import { ActionTypes as ApiActionTypes } from '@/store/api/actions';
+import { MutationTypes as ApiMutationTypes } from '@/store/api/mutations';
+import { Networks, SetNetworkStatusMutation } from '@/store/api/types';
+import { formatBalance } from '@/util/balances';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 

@@ -6,7 +6,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Scroll from '../../../components/Scroll.vue';
+import Scroll from '@/components/Scroll.vue';
 import NetworkItem from './NetworkItem.vue';
 
 @Component({

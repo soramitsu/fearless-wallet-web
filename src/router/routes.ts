@@ -1,14 +1,14 @@
 import { RouteConfig } from 'vue-router';
-import Welcome from '../screens/welcome/Welcome.vue';
-import Wallet from '../screens/wallet/Wallet.vue';
-import Crowdloans from '../screens/crowdloans/Crowdloans.vue';
-import Dex from '../screens/dex/Dex.vue';
-import Staking from '../screens/staking/Staking.vue';
-import History from '../screens/history/History.vue';
-import Token from '../screens/wallet/token/Token.vue';
-import Main from '../screens/main/Main.vue';
-import WelcomeBack from '../screens/welcomeBack/WelcomeBack.vue';
-import AccountController from '../controllers/accountController';
+import Welcome from '@/screens/welcome/Welcome.vue';
+import Wallet from '@/screens/wallet/Wallet.vue';
+import Crowdloans from '@/screens/crowdloans/Crowdloans.vue';
+import Dex from '@/screens/dex/Dex.vue';
+import Staking from '@/screens/staking/Staking.vue';
+import History from '@/screens/history/History.vue';
+import Token from '@/screens/wallet/token/Token.vue';
+import Main from '@/screens/main/Main.vue';
+import WelcomeBack from '@/screens/welcomeBack/WelcomeBack.vue';
+import AccountController from '@/controllers/accountController';
 import keyring from '@polkadot/ui-keyring';
 
 export enum Components {

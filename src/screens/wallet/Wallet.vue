@@ -24,12 +24,12 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { GettersTypes as ApisGettersTypes } from '../../store/api/getters';
-import { Networks } from '../../store/api/types';
-import { getIconPathByNetworkName } from '../../util/imgPath';
+import { GettersTypes as ApisGettersTypes } from '@/store/api/getters';
+import { Networks } from '@/store/api/types';
+import { getIconPathByNetworkName } from '@/util/imgPath';
 import AllNetworksButton from './SelectNetworkButton.vue';
 import Content from './Content.vue';
-import PopupWithSelect from '../../components/PopupWithSelect.vue';
+import PopupWithSelect from '@/components/PopupWithSelect.vue';
 
 @Component({
   components: {

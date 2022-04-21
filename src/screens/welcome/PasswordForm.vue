@@ -27,10 +27,10 @@
 <script lang="ts">
 import { Getter, Mutation } from 'vuex-class';
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { GettersTypes } from '../../store/accounts/getters';
-import { MutationTypes } from '../../store/accounts/mutations';
-import Hint from '../../components/Hint.vue';
-import ValidatedInput from '../../components/ValidatedInput.vue';
+import { GettersTypes } from '@/store/accounts/getters';
+import { MutationTypes } from '@/store/accounts/mutations';
+import Hint from '@/components/Hint.vue';
+import ValidatedInput from '@/components/ValidatedInput.vue';
 
 @Component({
   components: { Hint, ValidatedInput },

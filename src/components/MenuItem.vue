@@ -10,7 +10,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 
-type MenuValue = 'Wallet' | 'Crowdloans' | 'Stacking' | 'DEX' | 'History';
+type MenuValue = 'Wallet' | 'Crowdloans' | 'Staking' | 'DEX' | 'History';
 
 @Component({
   components: {},
@@ -29,7 +29,7 @@ export default class extends Vue {
         return 'finance-wallet-24';
       case 'Crowdloans':
         return 'various-rocket-24';
-      case 'Stacking':
+      case 'Staking':
         return 'software-database-24';
       case 'DEX':
         return 'grid-segment-24';

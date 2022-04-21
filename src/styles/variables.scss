@@ -5,5 +5,6 @@
   --pink-lavender-color: #bb77ff;
   --pink-color: #EE0077;
   --default-background-color: rgba(255, 255, 255, 0.1);
-  --default-clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+  --default-clip-path-left-top-and-right-bottom: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+  --default-clip-path-left-top: polygon(20px 0, 100% 0, 100% calc(100% - 20px), 100% 100%, 0 100%, 0 20px);
 }

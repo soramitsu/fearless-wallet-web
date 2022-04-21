@@ -1,15 +1,22 @@
 <template>
   <div :class="classes">
     <img src="../../assets/fw-logo.svg" class="img" />
+
     {{ text }}
-    <s-icon name="chevron-bottom-16" :class="iconClasses" />
+
+    <Rotate :isActive="isActive" class="icon-chevron">
+      <s-icon name="chevron-bottom-16" />
+    </Rotate>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import Rotate from '../../components/Rotate.vue';
 
-@Component
+@Component({
+  components: { Rotate },
+})
 export default class extends Vue {
   @Prop(String) text!: string;
   @Prop(Boolean) isActive!: boolean;
@@ -19,14 +26,6 @@ export default class extends Vue {
       'select-network-button',
       {
         active: this.isActive,
-      },
-    ];
-  }
-
-  get iconClasses() {
-    return [
-      {
-        'rotate-180': this.isActive,
       },
     ];
   }
@@ -56,14 +55,13 @@ export default class extends Vue {
     margin-right: 7px;
   }
 
-  .s-icon-chevron-bottom-16 {
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 10px !important;
+  .icon-chevron {
     margin-left: 7px;
   }
 
-  .rotate-180 {
-    transform: rotate(180deg);
+  .s-icon-chevron-bottom-16 {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 10px !important;
   }
 }
 

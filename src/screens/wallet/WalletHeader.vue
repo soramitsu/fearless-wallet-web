@@ -6,6 +6,7 @@
         :key="tabName"
         :name="tabName"
         :isActive="activeTabName === tabName"
+        class="tab"
         @click.native="openTab(tabName)"
       />
     </div>
@@ -20,7 +21,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { Tab } from '../../interfaces/walletPage';
-import TabButton from './TabButton.vue';
+import TabButton from '../../components/TabButton.vue';
 import CircleButton from '../../components/CircleButton.vue';
 
 @Component({
@@ -56,6 +57,10 @@ export default class extends Vue {
     display: flex;
     align-items: center;
     margin-right: 16px;
+
+    .tab {
+      margin-right: 12px;
+    }
   }
 
   i {

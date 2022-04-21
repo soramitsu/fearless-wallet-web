@@ -18,7 +18,7 @@
       </div>
       <div class="row second-row">
         <div class="currency-name">
-          {{ currency.currencyName }}
+          {{ currency.token }}
         </div>
         <div class="count-tokens">
           {{ currency.countTokens }}
@@ -34,10 +34,10 @@
         ${{ currency.totalBalance }}
       </div>
     </div>
-    <div class="active-block">
+    <div class="activity-block">
       <CircleButton iconType="send" backgroundColor="black" class="button" :handler="send" />
 
-      <CircleButton iconType="download" backgroundColor="black" class="button" :handler="download" />
+      <CircleButton iconType="receive" backgroundColor="black" class="button" :handler="download" />
 
       <CircleButton iconType="right" backgroundColor="none" :backgroundColorHover="true" :handler="right" />
     </div>
@@ -46,8 +46,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { getIconPathByNetworkName } from '../../util/IconsPath';
+import { getIconPathByNetworkName } from '../../util/imgPath';
 import { Currency } from '../../interfaces/currencies';
+import { Components } from '../../router/routes';
 import CircleButton from '../../components/CircleButton.vue';
 
 @Component({
@@ -85,7 +86,13 @@ export default class extends Vue {
   }
 
   right() {
-    alert('right');
+    this.$router.push({
+      name: Components.Token,
+      params: {
+        tokenName: this.currency.token.toLowerCase(),
+        networkName: this.currency.networkName,
+      },
+    });
   }
 }
 </script>
@@ -159,7 +166,7 @@ export default class extends Vue {
     font-size: 20px;
   }
 
-  .active-block {
+  .activity-block {
     display: flex;
     align-items: center;
     margin-left: 16px;

@@ -1,9 +1,11 @@
 export interface Currency {
   networkName: string;
-  currencyName: string;
+  token: string;
   price: string;
   upPrice: string;
   countTokens: string;
   totalBalance: string;
+  grown: string;
+  grownPercent: string;
   availableInNetworks: string[];
 }

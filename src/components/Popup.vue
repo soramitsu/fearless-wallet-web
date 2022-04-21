@@ -55,7 +55,7 @@ export default class extends Vue {
     max-height: 390px;
     max-width: 480px;
     background-color: #111111;
-    clip-path: var(--default-clip-path);
+    clip-path: var(--default-clip-path-left-top-and-right-bottom);
     border-radius: var(--default-border-radius);
     padding: 20px 0 30px;
   }

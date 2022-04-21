@@ -3,8 +3,13 @@
     <div class="header-part">
       <Logo size="small" />
 
-      <div class="wallet-name">{{ name }}</div>
-      <s-icon name="chevron-bottom-16" :class="iconChevronClasses" />
+      <div class="wallet-name-block" @click="toggleSelectWalletPopupVisible">
+        <div class="wallet-name">{{ name }}</div>
+
+        <Rotate :isActive="showSelectWalletPopup">
+          <s-icon name="chevron-bottom-16" />
+        </Rotate>
+      </div>
     </div>
     <div class="header-part">
       <CircleButton iconType="full-screen" backgroundColor="light-black" class="button-margin" :handler="fullScreen" />
@@ -29,11 +34,19 @@ import { SelectedWallet } from '../../store/accounts/types';
 import Identicon from '@polkadot/vue-identicon';
 import Logo from '../../components/Logo.vue';
 import CircleButton from '../../components/CircleButton.vue';
+import Rotate from '../../components/Rotate.vue';
 
 @Component({
-  components: { Identicon, Logo, CircleButton },
+  components: {
+    Identicon,
+    Logo,
+    CircleButton,
+    Rotate,
+  },
 })
 export default class extends Vue {
+  showSelectWalletPopup = false;
+
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get name() {
@@ -48,12 +61,8 @@ export default class extends Vue {
     return 'Connected';
   }
 
-  get iconChevronClasses() {
-    return [
-      {
-        'rotate-180': false,
-      },
-    ];
+  toggleSelectWalletPopupVisible() {
+    this.showSelectWalletPopup = !this.showSelectWalletPopup;
   }
 
   fullScreen() {
@@ -89,24 +98,25 @@ export default class extends Vue {
     display: flex;
     align-items: center;
 
-    .wallet-name {
+    .wallet-name-block {
       display: flex;
-      font-weight: 700;
-      font-size: 24px;
-      margin: 0 5px 0 10px;
       align-items: center;
 
       &:hover {
         cursor: pointer;
       }
+
+      .wallet-name {
+        display: flex;
+        font-weight: 700;
+        font-size: 24px;
+        margin: 0 5px 0 10px;
+        align-items: center;
+      }
     }
 
     .s-icon-chevron-bottom-16 {
       margin-top: 5px;
-    }
-
-    .rotate-180 {
-      transform: rotate(180deg);
     }
 
     .button-margin {

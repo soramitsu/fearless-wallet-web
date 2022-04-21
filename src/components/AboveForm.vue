@@ -7,7 +7,7 @@
         <img src="../assets/fw-logo.svg" />
       </div>
       <div>{{ header }}</div>
-      <div class="active-block">
+      <div class="activity-block">
         <div class="icon" @click="closeHandler">
           <s-icon name="basic-close-24" />
         </div>
@@ -98,7 +98,7 @@ export default class extends Vue {
     justify-content: center;
   }
 
-  .active-block {
+  .activity-block {
     display: flex;
     justify-content: right;
     width: 10px;

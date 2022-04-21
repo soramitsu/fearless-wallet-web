@@ -59,18 +59,18 @@ export default class App extends Vue {
   }
 
   button {
-    clip-path: var(--default-clip-path);
+    clip-path: var(--default-clip-path-left-top-and-right-bottom);
   }
 
   .s-input {
     border: 1px solid rgba(255, 255, 255, 0.1);
     background-color: rgba(255, 255, 255, 0.05);
-    clip-path: var(--default-clip-path);
+    clip-path: var(--default-clip-path-left-top-and-right-bottom);
     padding-left: 25px;
   }
 
   .s-select {
-    clip-path: var(--default-clip-path);
+    clip-path: var(--default-clip-path-left-top-and-right-bottom);
   }
 
   .s-select .el-input__inner {

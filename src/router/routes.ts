@@ -3,8 +3,9 @@ import Welcome from '../screens/welcome/Welcome.vue';
 import Wallet from '../screens/wallet/Wallet.vue';
 import Crowdloans from '../screens/crowdloans/Crowdloans.vue';
 import Dex from '../screens/dex/Dex.vue';
-import Stacking from '../screens/stacking/Stacking.vue';
+import Staking from '../screens/staking/Staking.vue';
 import History from '../screens/history/History.vue';
+import Token from '../screens/wallet/token/Token.vue';
 import Main from '../screens/main/Main.vue';
 import WelcomeBack from '../screens/welcomeBack/WelcomeBack.vue';
 import AccountController from '../controllers/accountController';
@@ -17,8 +18,9 @@ export enum Components {
   Wallet = 'Wallet',
   Crowdloans = 'Crowdloans',
   DEX = 'DEX',
-  Stacking = 'Stacking',
+  Staking = 'Staking',
   History = 'History',
+  Token = 'Token',
 }
 
 const accountController = new AccountController();
@@ -55,14 +57,19 @@ const routes: Array<RouteConfig> = [
         component: Wallet,
       },
       {
+        path: 'wallet/:tokenName',
+        name: Components.Token,
+        component: Token,
+      },
+      {
         path: 'crowdloans',
         name: Components.Crowdloans,
         component: Crowdloans,
       },
       {
-        path: 'stacking',
-        name: Components.Stacking,
-        component: Stacking,
+        path: 'staking',
+        name: Components.Staking,
+        component: Staking,
       },
       {
         path: 'dex',

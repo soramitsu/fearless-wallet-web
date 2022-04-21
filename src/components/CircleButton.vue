@@ -6,8 +6,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import type { IconType } from '../util/iconName';
+import getIconName from '../util/iconName';
 
-type IconType = 'back' | 'full-screen' | 'lock' | 'settings' | 'send' | 'right' | 'download' | 'search' | 'filter';
 type BackgroundType = 'none' | 'black' | 'light-black';
 
 @Component
@@ -29,28 +30,7 @@ export default class extends Vue {
   }
 
   get iconName() {
-    switch (this.iconType) {
-      case 'back':
-        return 'chevron-left-16';
-      case 'full-screen':
-        return 'arrows-arrows-diagonals-bltr-24';
-      case 'lock':
-        return 'lock-16';
-      case 'settings':
-        return 'basic-settings-24';
-      case 'send':
-        return 'basic-send-24';
-      case 'right':
-        return 'arrows-chevron-right-24';
-      case 'download':
-        return 'basic-download-24';
-      case 'search':
-        return 'basic-search-24';
-      case 'filter':
-        return 'basic-filterlist-24';
-      default:
-        return '';
-    }
+    return getIconName(this.iconType);
   }
 }
 </script>

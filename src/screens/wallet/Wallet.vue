@@ -26,8 +26,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as ApisGettersTypes } from '../../store/api/getters';
 import { Networks } from '../../store/api/types';
-import { getIconPathByNetworkName } from '../../util/IconsPath';
-import keyring from '@polkadot/ui-keyring';
+import { getIconPathByNetworkName } from '../../util/imgPath';
 import AllNetworksButton from './SelectNetworkButton.vue';
 import Content from './Content.vue';
 import PopupWithSelect from '../../components/PopupWithSelect.vue';
@@ -52,23 +51,6 @@ export default class extends Vue {
         return { label: networkName, value: networkName, path: `networks/${getIconPathByNetworkName(networkName)}` };
       }),
     ];
-  }
-
-  get accounts() {
-    return keyring.getAccounts();
-  }
-
-  get addressesInfo() {
-    return this.accounts.map(({ address }) => {
-      const {
-        meta: { name },
-      } = keyring.getPair(address);
-
-      return {
-        address,
-        name: name ?? 'default name',
-      };
-    });
   }
 
   toggleSelectedNetwork(value: string) {

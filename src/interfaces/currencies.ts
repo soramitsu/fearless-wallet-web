@@ -1,11 +1,13 @@
+interface AvailableInNetworks {
+  network: string;
+  balance: number;
+}
+
 export interface Currency {
-  networkName: string;
+  mainNetwork: string;
   token: string;
-  price: string;
-  upPrice: string;
-  countTokens: string;
-  totalBalance: string;
-  grown: string;
-  grownPercent: string;
-  availableInNetworks: string[];
+  price: number;
+  grown: number;
+  grownPercent: number;
+  availableInNetworks: AvailableInNetworks[];
 }

@@ -1,9 +1,14 @@
 <template>
   <div class="popup-background">
-    <div class="popup-container">
+    <div :class="popupContainerClasses">
       <div class="header">
-        <div class="button"></div>
-        <div class="header-text">{{ header }}</div>
+        <SearchInput v-if="search" v-model="filteredValue" placeholder="Search in networks" class="search" />
+
+        <template v-else>
+          <div class="button"></div>
+          <div class="header-text">{{ header }}</div>
+        </template>
+
         <s-button type="link" class="button" @click="handlerClose">
           <s-icon name="basic-close-24" />
         </s-button>
@@ -19,15 +24,35 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import Scroll from './Scroll.vue';
+import SearchInput from './SearchInput.vue';
 
 @Component({
-  components: { Scroll },
+  components: { Scroll, SearchInput },
 })
 export default class extends Vue {
+  filteredValue = '';
+
   @Prop(Function) handlerClose!: VoidFunction;
+  @Prop(Function) handlerFilter!: (value: string) => void;
   @Prop({ default: '' }) header!: string;
+  @Prop({ default: false }) search!: boolean;
+  @Prop({ default: false }) staticHeight!: boolean;
+
+  get popupContainerClasses() {
+    return [
+      'popup-container',
+      {
+        'static-height': this.staticHeight,
+      },
+    ];
+  }
+
+  @Watch('filteredValue')
+  filterValue(value: string) {
+    this.handlerFilter(value);
+  }
 }
 </script>
 
@@ -60,6 +85,10 @@ export default class extends Vue {
     padding: 20px 0 30px;
   }
 
+  .static-height {
+    height: 390px;
+  }
+
   .content {
     width: 100%;
     height: 100%;
@@ -74,12 +103,16 @@ export default class extends Vue {
     margin-bottom: 15px;
     padding-left: 16px;
     padding-right: 22px;
-  }
 
-  .header-text {
-    font-weight: 700;
-    font-size: 18px;
-    color: rgba(255, 255, 255, 0.75);
+    .header-text {
+      font-weight: 700;
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    .search {
+      width: 300px;
+    }
   }
 
   .s-icon-basic-close-24 {

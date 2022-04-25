@@ -57,7 +57,7 @@ const routes: Array<RouteConfig> = [
         component: Wallet,
       },
       {
-        path: 'wallet/:tokenName',
+        path: ':network/:token',
         name: Components.Token,
         component: Token,
       },

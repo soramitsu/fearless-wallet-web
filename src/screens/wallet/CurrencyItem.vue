@@ -1,7 +1,7 @@
 <template>
   <div class="currency-item">
     <div class="img-container">
-      <img :src="getImg(currency.networkName)" class="main-network-img" />
+      <img :src="getImg(currency.mainNetwork)" class="main-network-img" />
     </div>
 
     <div class="descriptions-column">
@@ -11,7 +11,12 @@
         </div>
 
         <div class="available-networks">
-          <img v-for="network in availableInNetworks" :key="network" :src="getImg(network)" class="mini-network-img" />
+          <img
+            v-for="{ network } in availableInNetworks"
+            :key="network"
+            :src="getImg(network)"
+            class="mini-network-img"
+          />
 
           <div v-if="isAdditional" class="additional">+{{ additionalCount }}</div>
         </div>
@@ -21,17 +26,17 @@
           {{ currency.token }}
         </div>
         <div class="count-tokens">
-          {{ currency.countTokens }}
+          {{ countTokensString }}
         </div>
       </div>
       <div class="row third-row">
         <div class="row">
-          $ {{ currency.price }}
+          {{ priceString }}
 
-          <div class="currency-up-price">+{{ currency.upPrice }}%</div>
+          <div class="currency-up-price">+{{ currency.grownPercent }}%</div>
         </div>
 
-        ${{ currency.totalBalance }}
+        {{ totalBalanceString }}
       </div>
     </div>
     <div class="activity-block">
@@ -57,8 +62,28 @@ import CircleButton from '@/components/CircleButton.vue';
 export default class extends Vue {
   @Prop(Object) currency!: Currency;
 
+  get countTokens() {
+    return this.currency.availableInNetworks.reduce((sum, { balance }) => sum + balance, 0);
+  }
+
+  get countTokensString() {
+    return this.countTokens.toFixed(4);
+  }
+
+  get totalBalance() {
+    return this.currency.price * this.countTokens;
+  }
+
+  get totalBalanceString() {
+    return `$${this.totalBalance.toFixed(2)}`;
+  }
+
+  get priceString() {
+    return `$${this.currency.price}`;
+  }
+
   get upperNetworkName() {
-    return this.currency.networkName.toUpperCase();
+    return this.currency.mainNetwork.toUpperCase();
   }
 
   get isAdditional() {
@@ -74,8 +99,6 @@ export default class extends Vue {
   }
 
   getImg(network: string) {
-    console.log(`@/assets/networks/${getIconPathByNetworkName(network)}`);
-
     return require(`@/assets/networks/${getIconPathByNetworkName(network)}`);
   }
 
@@ -91,8 +114,8 @@ export default class extends Vue {
     this.$router.push({
       name: Components.Token,
       params: {
-        tokenName: this.currency.token.toLowerCase(),
-        networkName: this.currency.networkName,
+        token: this.currency.token,
+        network: this.currency.mainNetwork,
       },
     });
   }

@@ -1,6 +1,6 @@
 <template>
   <div class="currencies">
-    <CurrencyItem v-for="currency in currencies" :key="currency.networkName" :currency="currency" />
+    <CurrencyItem v-for="currency in currencies" :key="currency.mainNetwork" :currency="currency" />
   </div>
 </template>
 

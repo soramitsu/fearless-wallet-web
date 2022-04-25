@@ -12,9 +12,12 @@
       header="Select Network"
       space="big"
       :icon="true"
+      :search="true"
+      :staticHeight="true"
       :options="optionsNetworks"
       :toggleValue="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
+      :handlerFilter="handlerFilter"
     />
 
     <Content :selectedNetwork="selectedNetwork" />
@@ -41,16 +44,21 @@ import PopupWithSelect from '@/components/PopupWithSelect.vue';
 export default class extends Vue {
   showSelectNetworkPopup = false;
   selectedNetwork = 'All networks';
+  filteredValue = '';
 
   @Getter(ApisGettersTypes.getNetworksInfo) networksInfo!: Networks;
 
   get optionsNetworks() {
-    return [
+    const optionsNetworks = [
       { label: 'All networks', value: 'All networks', path: getIconPathByNetworkName() },
-      ...Object.keys(this.networksInfo).map((networkName) => {
-        return { label: networkName, value: networkName, path: `networks/${getIconPathByNetworkName(networkName)}` };
+      ...Object.keys(this.networksInfo).map((network) => {
+        return { label: network, value: network, path: `networks/${getIconPathByNetworkName(network)}` };
       }),
     ];
+
+    if (this.filteredValue === '') return optionsNetworks;
+
+    return optionsNetworks.filter(({ label }) => label.includes(this.filteredValue));
   }
 
   toggleSelectedNetwork(value: string) {
@@ -61,6 +69,10 @@ export default class extends Vue {
 
   toggleSelectNetworkPopupVisible() {
     this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
+  }
+
+  handlerFilter(value: string) {
+    this.filteredValue = value;
   }
 }
 </script>

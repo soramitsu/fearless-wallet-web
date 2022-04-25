@@ -13,7 +13,8 @@ export type IconType =
   | 'twitter'
   | 'telegram'
   | 'planet'
-  | 'question';
+  | 'question'
+  | 'teleport';
 
 export default function (iconType: IconType) {
   switch (iconType) {
@@ -47,6 +48,8 @@ export default function (iconType: IconType) {
       return 'various-planet-24';
     case 'question':
       return 'notifications-question-circle-24';
+    case 'teleport':
+      return 'arrows-swap-24';
     default:
       return '';
   }

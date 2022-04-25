@@ -1,5 +1,12 @@
 <template>
-  <Popup :handlerClose="handlerClose" :header="header" class="popup-with-choice">
+  <Popup
+    :header="header"
+    :search="search"
+    :staticHeight="staticHeight"
+    :handlerFilter="handlerFilter"
+    :handlerClose="handlerClose"
+    class="popup-with-choice"
+  >
     <div v-for="{ label, value, path } in options" :key="label" :class="rowClasses(value)" @click="toggleValue(value)">
       <div class="description">
         <img :src="getImg(path)" class="img" v-if="icon" />
@@ -24,9 +31,12 @@ export default class extends Vue {
   @VModel({ type: String }) VModel!: string;
   @Prop(Function) toggleValue!: VoidFunction;
   @Prop(Function) handlerClose!: VoidFunction;
+  @Prop(Function) handlerFilter!: (value: string) => void;
   @Prop(Array) options!: Record<string, string>[];
   @Prop(String) header!: string;
   @Prop({ default: false }) icon!: boolean;
+  @Prop({ default: false }) search!: boolean;
+  @Prop({ default: false }) staticHeight!: boolean;
   @Prop({ default: 'medium' }) space!: SpaceSize;
 
   getImg(path: string) {

@@ -1,41 +1,48 @@
 <template>
   <div class="token">
-    <TokenHeader :networkName="networkName" :price="tokenInfo.price" :tokenName="tokenName" />
+    <TokenHeader :network="network" :price="tokenInfo.price" :token="token" />
 
     <div class="descriptions">
       <div class="column left-column">
+        <div class="first-row">{{ tokenPriceString }}</div>
         <div class="count-tokens">{{ countTokensString }}</div>
-        <div class="total-balance">{{ totalBalanceString }}</div>
+        <div class="total-balance">{{ balanceInNetworkString }}</div>
       </div>
       <div class="column right-column">
-        <div class="today-label">Today</div>
+        <div class="first-row">Today</div>
         <div>{{ grownString }}</div>
         <div class="grown-percent-today">{{ grownPercentString }}</div>
       </div>
     </div>
 
     <div class="activity-block">
-      <ButtonWithIcon name="Send" iconType="send" :handler="send" />
+      <ButtonWithIcon name="Send" iconType="send" :handler="send" class="button" />
 
-      <ButtonWithIcon name="Receive" iconType="receive" :handler="receive" />
+      <ButtonWithIcon name="Receive" iconType="receive" :handler="receive" class="button" />
 
-      <ButtonWithIcon name="Buy" iconType="buy" :handler="buy" />
+      <ButtonWithIcon name="Teleport" iconType="teleport" :handler="teleport" class="button" />
+
+      <ButtonWithIcon name="Buy" iconType="buy" :handler="buy" class="button" />
     </div>
 
     <div class="content">
       <div class="content-header">
-        <TabButton
-          v-for="tabName in tabsOptions"
-          :key="tabName"
-          :name="tabName"
-          :background="false"
-          :isActive="activeTabName === tabName"
-          @click.native="openTab(tabName)"
-        />
+        <div class="tabs">
+          <TabButton
+            v-for="tabName in tabsOptions"
+            :key="tabName"
+            :name="tabName"
+            :background="false"
+            :isActive="activeTabName === tabName"
+            @click.native="openTab(tabName)"
+          />
+        </div>
+
+        <SearchInput v-if="showNetworks" v-model="filterNetworksValue" placeholder="Search in networks" />
       </div>
 
       <Scroll>
-        <Networks v-if="showNetworks" :availableInNetworks="tokenInfo.availableInNetworks" />
+        <Networks v-if="showNetworks" :networks="filteredNetworks" :token="token" :selectedNetwork="network" />
 
         <History v-else-if="showHistory" :availableInNetworks="tokenInfo.availableInNetworks" />
       </Scroll>
@@ -50,6 +57,7 @@ import type { Tab } from '@/interfaces/walletPage';
 import currencyMock from '@/mocks/currency';
 import CircleButton from '@/components/CircleButton.vue';
 import ButtonWithIcon from '@/components/ButtonWithIcon.vue';
+import SearchInput from '@/components/SearchInput.vue';
 import Scroll from '@/components/Scroll.vue';
 import TokenHeader from './TokenHeader.vue';
 import Networks from './Networks.vue';
@@ -65,12 +73,27 @@ import TabButton from '@/components/TabButton.vue';
     Networks,
     TabButton,
     History,
+    SearchInput,
   },
 })
 export default class extends Vue {
   currencies: Currency[] = currencyMock;
   tabsOptions: Tab[] = ['Networks', 'History'];
   activeTabName: Tab = 'Networks';
+  filterNetworksValue = '';
+
+  get filteredNetworks() {
+    const { availableInNetworks } = this.tokenInfo!;
+    const filter = this.filterNetworksValue.trim().toLowerCase();
+
+    if (filter === '') return availableInNetworks;
+
+    return availableInNetworks.filter(({ network }) => network.includes(filter));
+  }
+
+  get tokenPriceString() {
+    return `1 ${this.token.toUpperCase()} = $${this.tokenInfo?.price}`;
+  }
 
   get showNetworks() {
     return this.activeTabName === 'Networks';
@@ -81,23 +104,35 @@ export default class extends Vue {
   }
 
   get tokenInfo() {
-    return this.currencies.find(({ token }) => token.toLowerCase() === this.tokenName);
+    return this.currencies.find(({ token }) => token.toLowerCase() === this.token.toLowerCase());
   }
 
-  get networkName() {
-    return this.$route.params.networkName ?? 'Default';
+  get network() {
+    return this.$route.params.network;
   }
 
-  get tokenName() {
-    return this.$route.params.tokenName;
+  get token() {
+    return this.$route.params.token;
+  }
+
+  get tokenInfoInSelectedNetwork() {
+    return this.tokenInfo!.availableInNetworks.find(({ network }) => network === this.network);
+  }
+
+  get balanceInNetwork() {
+    const { balance } = this.tokenInfoInSelectedNetwork!;
+
+    return this.tokenInfo!.price * balance;
   }
 
   get countTokensString() {
-    return `${this.tokenInfo?.countTokens} ${this.tokenName.toUpperCase()}`;
+    const { balance } = this.tokenInfoInSelectedNetwork!;
+
+    return `${balance} ${this.token.toUpperCase()}`;
   }
 
-  get totalBalanceString() {
-    return `$ ${this.tokenInfo?.totalBalance}`;
+  get balanceInNetworkString() {
+    return `$ ${this.balanceInNetwork.toFixed(2)}`;
   }
 
   get grownString() {
@@ -120,6 +155,10 @@ export default class extends Vue {
     alert('receive');
   }
 
+  teleport() {
+    alert('teleport');
+  }
+
   buy() {
     alert('buy');
   }
@@ -136,26 +175,27 @@ export default class extends Vue {
   .descriptions {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
 
     .column {
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      height: 65px;
 
       .count-tokens {
         font-weight: 600;
         font-size: 28px;
+        margin-bottom: 4px;
       }
 
       .total-balance {
         color: rgba(255, 255, 255, 0.65);
       }
 
-      .today-label {
+      .first-row {
         color: rgba(255, 255, 255, 0.65);
         font-size: 14px;
+        margin-bottom: 4px;
       }
 
       .grown-percent-today {
@@ -174,8 +214,12 @@ export default class extends Vue {
 
   .activity-block {
     display: flex;
-    justify-content: space-between;
+    // justify-content: space-between;
     margin-bottom: 10px;
+
+    .button {
+      width: 25%;
+    }
   }
 
   .content {
@@ -185,11 +229,18 @@ export default class extends Vue {
     background-color: rgba(255, 255, 255, 0.05);
     clip-path: var(--default-clip-path-left-top);
     border-radius: 8px;
-    height: 265px;
+    height: 275px;
 
     .content-header {
       display: flex;
-      padding: 11px 16px;
+      justify-content: space-between;
+      align-items: center;
+      padding: 11px 16px 0 3px;
+      height: 70px !important;
+
+      .tabs {
+        display: flex;
+      }
     }
   }
 }

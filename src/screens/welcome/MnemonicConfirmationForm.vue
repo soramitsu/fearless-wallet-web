@@ -75,7 +75,7 @@ export default class extends Vue {
   .button {
     font-size: 13px;
     margin: 4px 3px;
-    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px) !important;
+    clip-path: var(--mini-clip-path-left-top-and-right-bottom) !important;
 
     span {
       font-weight: 400;

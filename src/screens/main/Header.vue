@@ -58,7 +58,7 @@ export default class extends Vue {
   }
 
   get statusConnectedText() {
-    return 'Connected';
+    return Date.now() ? 'Connected' : 'Not connected';
   }
 
   toggleSelectWalletPopupVisible() {
@@ -147,7 +147,7 @@ export default class extends Vue {
   }
 
   .fail-connected {
-    background-color: red;
+    background-color: #ee7700;
   }
 }
 </style>

@@ -1,5 +1,5 @@
-export function getIconPathByNetworkName(networkName = '') {
-  switch (networkName.toLowerCase()) {
+export function getIconPathByNetworkName(network = '') {
+  switch (network.toLowerCase()) {
     case 'polkadot':
       return 'polkadot.svg';
     case 'kusama':
@@ -31,7 +31,7 @@ export function getIconPathByNetworkName(networkName = '') {
     case 'parallel heiko':
       return 'parallelfinance.svg';
     case 'picasso':
-      return 'Picasso.svg';
+      return 'picasso.svg';
     case 'altair':
       return 'altair.svg';
     case 'bit.country pioneer':

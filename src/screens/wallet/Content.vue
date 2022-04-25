@@ -37,7 +37,9 @@ export default class extends Vue {
   get filterCurrencies() {
     if (this.selectedNetwork === 'All networks') return this.currencies;
 
-    return this.currencies.filter(({ availableInNetworks }) => availableInNetworks.includes(this.selectedNetwork));
+    return this.currencies.filter(({ availableInNetworks }) =>
+      availableInNetworks.map(({ network }) => network).includes(this.selectedNetwork)
+    );
   }
 
   get showCurrencies() {

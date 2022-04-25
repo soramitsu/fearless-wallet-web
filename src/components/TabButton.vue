@@ -35,7 +35,7 @@ export default class extends Vue {
 .tab-button {
   background: none;
   padding: 8px 15px;
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  clip-path: var(--mini-clip-path-left-top-and-right-bottom);
   border-radius: 4px;
 
   &:hover {

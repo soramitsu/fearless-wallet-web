@@ -29,7 +29,7 @@ export default class extends Vue {
   background-color: rgba(255, 255, 255, 0.05) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   font-weight: 600;
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px) !important;
+  clip-path: var(--mini-clip-path-left-top-and-right-bottom) !important;
 
   .icon {
     color: var(--pink-color);
@@ -39,7 +39,7 @@ export default class extends Vue {
 
   &:hover {
     background-color: rgba(255, 255, 255, 0.1) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
   }
 }
 </style>

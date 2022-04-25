@@ -4,7 +4,7 @@
       v-for="menuItem in menuItems"
       :key="menuItem"
       :name="menuItem"
-      :isActive="menuItem === currentRouteName"
+      :isActive="menuItem === currentRouteNameWithFirstCharUp"
       @click.native="clickMenuItem(menuItem)"
     />
   </div>
@@ -13,6 +13,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Components } from '@/router/routes';
+import { firstCharToUp } from '@/util/stringHelper';
 import MenuItem from '@/components/MenuItem.vue';
 
 type MenuItems = 'Wallet' | 'Crowdloans' | 'Staking' | 'DEX' | 'History';
@@ -24,14 +25,14 @@ export default class extends Vue {
   menuItems: MenuItems[] = ['Wallet', 'Crowdloans', 'Staking', 'DEX', 'History'];
   selectedItem = 'Wallet';
 
-  get currentRouteName() {
-    const menuTabName = this.$route.path.split('/')[2];
+  get currentRouteNameWithFirstCharUp() {
+    const route = this.$route.path.split('/')[2];
 
-    return `${menuTabName.charAt(0).toUpperCase()}${menuTabName.slice(1)}`;
+    return firstCharToUp(route);
   }
 
   clickMenuItem(name: MenuItems) {
-    if (this.currentRouteName === name) return;
+    if (this.currentRouteNameWithFirstCharUp === name) return;
 
     this.$router.push({ name: Components[name] });
   }

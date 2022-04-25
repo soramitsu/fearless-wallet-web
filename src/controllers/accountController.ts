@@ -1,4 +1,4 @@
-import LocalStorage from '@/util/localStorage';
+import LocalStorageController from '@/controllers/localStorageController';
 import { Hash } from '@/util/hash';
 
 interface PasswordValue {
@@ -9,7 +9,7 @@ interface PasswordValue {
 export default class AccountController {
   private readonly postfix = 'sora';
   private readonly radix = 2;
-  private readonly lsAccount = new LocalStorage('account');
+  private readonly lsAccount = new LocalStorageController('account');
   private readonly passwordLifeTime = 1000 * 60 * 60 * 24; // 24 hours
 
   private getAccountPasswordValue(): PasswordValue {

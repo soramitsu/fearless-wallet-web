@@ -6,7 +6,7 @@
       <div class="logo">
         <img src="@/assets/fw-logo.svg" />
       </div>
-      <div>{{ header }}</div>
+      <div class="header">{{ header }}</div>
       <div class="activity-block">
         <div class="icon" @click="closeHandler">
           <s-icon name="basic-close-24" />
@@ -29,7 +29,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 export default class extends Vue {
   @Prop({ default: '' }) header!: string;
   @Prop({ default: false }) showAcceptIcon!: boolean;
-  @Prop(Function) saveChanges!: VoidFunction;
+  @Prop({ default: () => () => null }) saveChanges!: VoidFunction;
   @Prop(Function) closeHandler!: VoidFunction;
 }
 </script>
@@ -38,7 +38,9 @@ export default class extends Vue {
 .above-form {
   border-radius: var(--default-border-radius);
   height: 560px;
-  width: 100%;
+  width: 560px;
+  z-index: 299;
+  margin-left: -16px;
   background-color: #111111;
   clip-path: polygon(100% 0, 100% 100%, 0 100%, 0 4%, 4% 0);
   animation: ani 0.3s;
@@ -53,7 +55,8 @@ export default class extends Vue {
   }
 
   .content {
-    padding: 0 16px;
+    height: 496px;
+    padding: 16px;
   }
 
   .s-icon-basic-close-24 {
@@ -84,7 +87,6 @@ export default class extends Vue {
   .header-content {
     height: 64px;
     font-size: 24px;
-
     display: flex;
     justify-content: space-between;
     padding: 16px;
@@ -96,6 +98,12 @@ export default class extends Vue {
     display: flex;
     flex-direction: column;
     justify-content: center;
+  }
+
+  .header {
+    font-size: 18px;
+    font-weight: 700;
+    margin: auto 0;
   }
 
   .activity-block {

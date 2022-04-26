@@ -19,8 +19,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { Tab } from '@/interfaces/walletPage';
+import { Component, Vue, PropSync } from 'vue-property-decorator';
+import type { TabWallet } from '@/interfaces/walletPage';
 import TabButton from '@/components/TabButton.vue';
 import CircleButton from '@/components/CircleButton.vue';
 
@@ -28,12 +28,12 @@ import CircleButton from '@/components/CircleButton.vue';
   components: { TabButton, CircleButton },
 })
 export default class extends Vue {
-  tabsOptions: Tab[] = ['Currencies', 'NFTs'];
+  tabsOptions: TabWallet[] = ['Currencies', 'NFTs'];
 
-  @Prop(String) activeTabName!: Tab;
+  @PropSync('activeTabName', { type: String }) syncedActiveTabName!: TabWallet;
 
-  openTab(name: Tab) {
-    this.$emit('updateActiveTabName', name);
+  openTab(name: TabWallet) {
+    this.syncedActiveTabName = name;
   }
 
   search() {

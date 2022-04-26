@@ -1,8 +1,10 @@
 <template>
   <Popup :handlerClose="handlerClose">
-    <s-icon name="notifications-alert-triangle-24" />
-    <div class="text">{{ text }}</div>
-    <div class="subtext">{{ subtext }}</div>
+    <div class="invalid-popup">
+      <s-icon name="notifications-alert-triangle-24" />
+      <div class="text">{{ text }}</div>
+      <div class="subtext">{{ subtext }}</div>
+    </div>
   </Popup>
 </template>
 
@@ -33,23 +35,29 @@ export default class extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.text {
-  font-weight: 700;
-  font-size: 18px;
-  line-height: 150%;
-  margin: 20px 0 4px;
-}
+.invalid-popup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 
-.subtext {
-  color: rgba(255, 255, 255, 0.5);
-  width: 255px;
-  line-height: 150%;
-}
+  .text {
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 150%;
+    margin: 20px 0 4px;
+  }
 
-.s-icon-notifications-alert-triangle-24 {
-  width: 42px;
-  height: 42px;
-  font-size: 42px !important;
-  color: #ee7700;
+  .subtext {
+    color: rgba(255, 255, 255, 0.5);
+    width: 255px;
+    line-height: 150%;
+  }
+
+  .s-icon-notifications-alert-triangle-24 {
+    width: 42px;
+    height: 42px;
+    font-size: 42px !important;
+    color: #ee7700;
+  }
 }
 </style>

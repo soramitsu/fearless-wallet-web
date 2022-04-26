@@ -5,28 +5,16 @@
         <Logo class="description" size="big" text="Fearless Wallet" subtext="The DeFi Wallet From The Future" />
 
         <div>
-          <div>
-            <s-button
-              class="button"
-              type="primary"
-              border-radius="medium"
-              size="big"
-              @click="changWalletConnectionStatus('isCreateWallet')"
-            >
-              Create a new wallet
-            </s-button>
-          </div>
-          <div>
-            <s-button
-              class="button import-button"
-              type="primary"
-              border-radius="medium"
-              size="big"
-              @click="changWalletConnectionStatus('isImportWallet')"
-            >
-              I already have a wallet
-            </s-button>
-          </div>
+          <BigButton
+            class="button"
+            text="Create a new wallet"
+            :handler="changWalletConnectionStatus.bind(null, 'isCreateWallet')"
+          />
+          <BigButton
+            class="button import-button"
+            text="I already have a wallet"
+            :handler="changWalletConnectionStatus.bind(null, 'isImportWallet')"
+          />
           <div class="privacy-policy">
             By continuing you agree with
             <span class="important-text" @click="openTermsAndConditions">Terms and Conditions </span>
@@ -50,9 +38,14 @@ import { Component, Vue } from 'vue-property-decorator';
 import { WalletConnectionStatus } from '@/interfaces/connectionWallet';
 import Layout from './Layout.vue';
 import Logo from '@/components/Logo.vue';
+import BigButton from '@/components/BigButton.vue';
 
 @Component({
-  components: { Layout, Logo },
+  components: {
+    Layout,
+    Logo,
+    BigButton,
+  },
 })
 export default class extends Vue {
   walletConnectionStatus: WalletConnectionStatus = '';
@@ -105,17 +98,16 @@ export default class extends Vue {
   }
 
   .button {
-    width: 100%;
-    font-size: 18px;
-
-    &:first-child {
-      margin-top: 10px;
-    }
+    margin-top: 10px;
   }
 
   .import-button {
     background-color: rgba(255, 255, 255, 0.1);
     border: rgba(255, 255, 255, 0.1);
+  }
+
+  .el-button + .el-button {
+    margin-left: 0;
   }
 }
 </style>

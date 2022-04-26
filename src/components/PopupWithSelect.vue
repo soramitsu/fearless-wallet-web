@@ -58,6 +58,7 @@ export default class extends Vue {
 <style lang="scss" scoped>
 .popup-with-choice {
   padding: 0 !important;
+  margin-left: -16px;
 
   .row {
     color: rgba(255, 255, 255, 0.75);

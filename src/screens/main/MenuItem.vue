@@ -47,6 +47,7 @@ export default class extends Vue {
   display: flex;
   flex-direction: column;
   color: rgba(255, 255, 255, 0.5);
+  width: 85px;
 
   &:hover {
     cursor: pointer;

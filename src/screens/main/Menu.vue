@@ -14,7 +14,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Components } from '@/router/routes';
 import { firstCharToUp } from '@/util/stringHelper';
-import MenuItem from '@/components/MenuItem.vue';
+import MenuItem from '@/screens/main/MenuItem.vue';
 
 type MenuItems = 'Wallet' | 'Crowdloans' | 'Staking' | 'DEX' | 'History';
 
@@ -41,10 +41,12 @@ export default class extends Vue {
 
 <style lang="scss" scoped>
 .menu {
+  position: absolute;
+  top: 560px;
   display: flex;
   justify-content: space-around;
   align-items: center;
-  z-index: 200;
+  z-index: 199;
   height: 80px;
   width: 560px;
   margin: 0 0 -16px -16px;

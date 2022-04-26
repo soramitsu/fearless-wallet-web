@@ -7,12 +7,7 @@
     class="advanced"
   >
     <s-select v-model="substrateKeyPair" class="input" placeholder="SUBSTRATE KEYPAIR CRYPTO TYPE" size="big">
-      <s-option
-        v-for="option in optionsSubstrateKeyPair"
-        :key="option.value"
-        :value="option.value"
-        :label="option.label"
-      />
+      <s-option v-for="{ value, label } in optionsSubstrateKeyPair" :key="value" :value="value" :label="label" />
     </s-select>
     <s-input v-model="substrateDP" type="text" placeholder="Substrate secret derivation path" class="input" />
     <div class="example-prompt">Example: {{ example }}</div>
@@ -95,6 +90,10 @@ export default class extends Vue {
     width: 528px;
     font-size: 24px;
     margin-top: 16px;
+
+    &:first-child {
+      margin-top: 0;
+    }
   }
 
   .example-prompt {

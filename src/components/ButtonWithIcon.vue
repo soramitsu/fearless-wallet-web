@@ -24,12 +24,12 @@ export default class extends Vue {
 
 <style lang="scss" scoped>
 .button-with-icon {
-  width: 100%;
-  font-size: 16px;
+  clip-path: var(--mini-clip-path-left-top-and-right-bottom);
   background-color: rgba(255, 255, 255, 0.05) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  width: 100%;
   font-weight: 600;
-  clip-path: var(--mini-clip-path-left-top-and-right-bottom) !important;
+  font-size: 16px;
 
   .icon {
     color: var(--pink-color);

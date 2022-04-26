@@ -65,7 +65,6 @@ export default class extends Vue {
   justify-content: center;
   position: absolute;
   top: 0;
-  margin-left: -16px;
   background-color: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(5px);
   z-index: 99;

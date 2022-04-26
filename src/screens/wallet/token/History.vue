@@ -1,19 +1,28 @@
 <template>
   <div class="history">
-    <ComingSoon name="History" />
+    <HistoryItem
+      v-for="{ id, type, value, token, time } in history"
+      :key="id"
+      :token="token"
+      :id="id"
+      :time="time"
+      :type="type"
+      :value="value"
+    />
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-import ComingSoon from '@/components/ComingSoon.vue';
+import { Component, Vue, Prop } from 'vue-property-decorator';
+import { HistoryItem as HistoryItemType } from '@/interfaces/currencies';
+import HistoryItem from './HistoryItem.vue';
 
 @Component({
-  components: {
-    ComingSoon,
-  },
+  components: { HistoryItem },
 })
-export default class extends Vue {}
+export default class extends Vue {
+  @Prop(Array) history!: HistoryItemType[];
+}
 </script>
 
 <style lang="scss" scoped>

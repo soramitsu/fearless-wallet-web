@@ -11,3 +11,11 @@ export interface Currency {
   grownPercent: number;
   availableInNetworks: AvailableInNetworks[];
 }
+
+export interface HistoryItem {
+  id: string;
+  type: string;
+  value: number;
+  token: string;
+  time: number;
+}

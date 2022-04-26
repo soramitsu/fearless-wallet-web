@@ -21,7 +21,12 @@
       <div class="content">
         <div v-if="showContentHeader" class="content-header">{{ header }}</div>
 
-        <NicknameForm v-if="showNicknameForm" :nickname="nickname" @setValue="setValue" :readonly="readonlyNickname" />
+        <NicknameForm
+          v-if="showNicknameForm"
+          :nickname="nickname"
+          @update:nickname="setNickname"
+          :readonly="readonlyNickname"
+        />
 
         <CreateWallet
           v-else-if="showCreateForm"
@@ -61,21 +66,10 @@
         <FinishForm v-else-if="showFinishForm" />
       </div>
 
-      <div v-if="!showAdvancedForm">
-        <s-button
-          class="button"
-          type="primary"
-          size="big"
-          border-radius="medium"
-          @click="proceed"
-          :disabled="disabledProceed"
-        >
-          {{ buttonText }}
-        </s-button>
-      </div>
-
-      <InvalidPopup v-if="showInvalidPopup" :handlerClose="handlerClosePopup" :headers="invalidPopupMessages" />
+      <BigButton v-if="!showAdvancedForm" :text="buttonText" :disabled="disabledProceed" :handler="proceed" />
     </div>
+
+    <InvalidPopup v-if="showInvalidPopup" :handlerClose="handlerClosePopup" :headers="invalidPopupMessages" />
   </div>
 </template>
 
@@ -92,12 +86,13 @@ import { INVALID_POPUP_MESSAGES, InvalidValueName } from '@/consts/invalidPopupM
 import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/ethereumNetworks';
 import { DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import keyring from '@polkadot/ui-keyring';
+import InvalidPopup from '@/components/InvalidPopup.vue';
+import CircleButton from '@/components/CircleButton.vue';
+import BigButton from '@/components/BigButton.vue';
 import CreateWallet from './CreateWallet.vue';
 import FinishForm from './FinishForm.vue';
 import PasswordForm from './PasswordForm.vue';
 import ImportWallet from './ImportWallet.vue';
-import InvalidPopup from '@/components/InvalidPopup.vue';
-import CircleButton from '@/components/CircleButton.vue';
 import NicknameForm from './NicknameForm.vue';
 import AdvancedForm from './AdvancedForm.vue';
 import AdvancedButton from './AdvancedButton.vue';
@@ -116,6 +111,7 @@ type FieldsComponent = 'passwordJson' | 'derivationPath';
     AdvancedForm,
     AdvancedButton,
     CircleButton,
+    BigButton,
   },
 })
 export default class extends Vue {
@@ -269,6 +265,10 @@ export default class extends Vue {
     this[typeField] = value;
   }
 
+  setNickname(value: string) {
+    this.nickname = value;
+  }
+
   handlerClosePopup() {
     if (this.invalidValueName === 'jsonInvalid') this.json = '';
 
@@ -415,6 +415,7 @@ export default class extends Vue {
 
   .content-block {
     height: 100%;
+    width: 100%;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -422,7 +423,6 @@ export default class extends Vue {
 
     .content {
       width: 100%;
-      height: 100%;
     }
 
     .content-header {
@@ -431,11 +431,6 @@ export default class extends Vue {
       line-height: 25px;
       margin: 13.5px 0 21.5px;
     }
-  }
-
-  .button {
-    width: 528px;
-    font-size: 18px;
   }
 
   .el-button.s-primary:disabled {

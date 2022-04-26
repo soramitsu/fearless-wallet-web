@@ -10,9 +10,7 @@
         :maxlength="25"
       />
 
-      <s-button class="button" type="primary" border-radius="mini" :disabled="disabled" @click="unlock">
-        Unlock
-      </s-button>
+      <BigButton text="Unlock" :disabled="disabled" @click="unlock" />
     </div>
   </div>
 </template>
@@ -20,11 +18,15 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import AccountController from '@/controllers/accountController';
-import ValidatedInput from '@/components/ValidatedInput.vue';
 import { Components } from '@/router/routes';
+import ValidatedInput from '@/components/ValidatedInput.vue';
+import BigButton from '@/components/BigButton.vue';
 
 @Component({
-  components: { ValidatedInput },
+  components: {
+    ValidatedInput,
+    BigButton,
+  },
 })
 export default class extends Vue {
   accountController = new AccountController();
@@ -61,10 +63,6 @@ export default class extends Vue {
 
   .input {
     margin: 10px 0;
-  }
-
-  .button {
-    width: 100%;
   }
 }
 </style>

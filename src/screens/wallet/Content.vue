@@ -1,6 +1,6 @@
 <template>
   <div class="content">
-    <WalletHeader :activeTabName="activeTabName" @updateActiveTabName="updateActiveTabName" />
+    <WalletHeader :activeTabName="activeTabName" @update:activeTabName="updateActiveTabName" />
 
     <Scroll>
       <Currencies v-if="showCurrencies" :currencies="filterCurrencies" />
@@ -12,7 +12,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { Tab } from '@/interfaces/walletPage';
+import type { TabWallet } from '@/interfaces/walletPage';
 import { Currency } from '@/interfaces/currencies';
 import WalletHeader from './WalletHeader.vue';
 import Currencies from './Currencies.vue';
@@ -29,7 +29,7 @@ import currencyMock from '@/mocks/currency';
   },
 })
 export default class extends Vue {
-  activeTabName: Tab = 'Currencies';
+  activeTabName: TabWallet = 'Currencies';
   currencies: Currency[] = currencyMock;
 
   @Prop(String) selectedNetwork!: string;
@@ -50,7 +50,7 @@ export default class extends Vue {
     return this.activeTabName === 'NFTs';
   }
 
-  updateActiveTabName(name: Tab) {
+  updateActiveTabName(name: TabWallet) {
     this.activeTabName = name;
   }
 }

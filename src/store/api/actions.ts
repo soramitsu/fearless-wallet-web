@@ -27,7 +27,8 @@ const actions: ActionTree<State, State> & Actions = {
 
     const networksInfo: Networks = networks.reduce((accumulator, { nodes, name, assets, addressPrefix }) => {
       let isActive = false;
-      const isEthereumNetwork = ETHEREUM_NETWORKS.includes(name);
+      const networkname = name.toLocaleLowerCase();
+      const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkname);
 
       const url = name === 'Astar' ? nodes[1].url : nodes[0].url;
 
@@ -48,7 +49,7 @@ const actions: ActionTree<State, State> & Actions = {
 
       return {
         ...accumulator,
-        [name]: {
+        [networkname]: {
           provider,
           api,
           nodes,

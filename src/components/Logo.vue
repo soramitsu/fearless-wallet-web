@@ -1,7 +1,7 @@
 <template>
   <div class="logo">
-    <div class="circle" :style="styleCircle">
-      <div class="circle-blur">
+    <div :class="circleClasses" :style="styleCircle">
+      <div :class="circleBlurClasses">
         <img src="@/assets/fw-logo.svg" class="img" :style="styleIconLogo" />
       </div>
     </div>
@@ -14,13 +14,28 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 
-type SizeLogo = 'small' | 'medium' | 'big';
+type SizeLogo = 'mini' | 'small' | 'medium' | 'big';
+type Logo = 'primary' | 'secondary';
 
 @Component
 export default class extends Vue {
   @Prop(String) text!: string;
   @Prop(String) subtext!: string;
   @Prop({ default: 'medium' }) size!: SizeLogo;
+  @Prop({ default: 'primary' }) typeLogo!: Logo;
+
+  get circleClasses() {
+    return ['circle', `circle-${this.typeLogo}`];
+  }
+
+  get circleBlurClasses() {
+    return [
+      'circle-blur',
+      {
+        'circle-blur-primary': this.typeLogo === 'primary',
+      },
+    ];
+  }
 
   get styleCircle() {
     return { height: this.toPx(this.sizeCircle), width: this.toPx(this.sizeCircle) };
@@ -34,6 +49,8 @@ export default class extends Vue {
 
   get sizeCircle() {
     switch (this.size) {
+      case 'mini':
+        return 38;
       case 'small':
         return 48;
       case 'medium':
@@ -47,6 +64,11 @@ export default class extends Vue {
 
   get sizeIconLogo() {
     switch (this.size) {
+      case 'mini':
+        return {
+          height: 18,
+          width: 32,
+        };
       case 'small':
         return {
           height: 21,
@@ -84,19 +106,29 @@ export default class extends Vue {
 
   .circle {
     border-radius: 50%;
-    background: conic-gradient(from 180deg at 50% 50%, #ee7777 0deg, var(--pink-color) 187.5deg, #7777ee 360deg);
     margin: 0 auto;
   }
 
+  .circle-primary {
+    background: conic-gradient(from 180deg at 50% 50%, #ee7777 0deg, var(--pink-color) 187.5deg, #7777ee 360deg);
+  }
+
+  .circle-secondary {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
   .circle-blur {
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
     height: 100%;
     width: 100%;
     border-radius: 50%;
     display: flex;
     flex-direction: column;
     justify-content: center;
+  }
+
+  .circle-blur-primary {
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .img {

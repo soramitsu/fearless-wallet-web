@@ -1,7 +1,7 @@
 <template>
   <div class="nickname">
     <s-input
-      v-model="nicknameModel"
+      v-model="syncedNickname"
       type="text"
       size="big"
       placeholder="Wallet nickname"
@@ -19,23 +19,16 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import Hint from '@/components/Hint.vue';
 
 @Component({
   components: { Hint },
 })
 export default class extends Vue {
-  @Prop(String) nickname!: string;
   @Prop({ default: false }) readonly!: boolean;
 
-  get nicknameModel(): string {
-    return this.nickname;
-  }
-
-  set nicknameModel(value: string) {
-    this.$emit('setValue', value, 'nickname');
-  }
+  @PropSync('nickname', { type: String }) syncedNickname!: string;
 }
 </script>
 

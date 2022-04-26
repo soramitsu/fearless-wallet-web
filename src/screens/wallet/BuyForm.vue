@@ -1,0 +1,30 @@
+<template>
+  <ActivityForm
+    header="Buy Funds"
+    buttonText="Buy"
+    :handlerButton="copyAddress"
+    :closeForm="closeForm"
+    class="buy-form"
+  >
+    <div>buy</div>
+  </ActivityForm>
+</template>
+
+<script lang="ts">
+import { Component, Vue, Prop } from 'vue-property-decorator';
+import ActivityForm from './ActivityForm.vue';
+
+@Component({
+  components: {
+    ActivityForm,
+  },
+})
+export default class extends Vue {
+  @Prop(Function) closeForm!: VoidFunction;
+}
+</script>
+
+<style lang="scss" scoped>
+.buy-form {
+}
+</style>

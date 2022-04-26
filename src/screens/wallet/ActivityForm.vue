@@ -1,0 +1,48 @@
+<template>
+  <AboveForm :header="header" :closeHandler="closeForm" class="activity-form">
+    <div class="activity-content">
+      <slot></slot>
+
+      <div>
+        <div class="fee">
+          <slot name="fee"></slot>
+        </div>
+        <BigButton :text="buttonText" :handler="handlerButton" />
+      </div>
+    </div>
+  </AboveForm>
+</template>
+
+<script lang="ts">
+import { Component, Vue, Prop } from 'vue-property-decorator';
+import BigButton from '@/components/BigButton.vue';
+import AboveForm from '@/components/AboveForm.vue';
+
+@Component({
+  components: {
+    AboveForm,
+    BigButton,
+  },
+})
+export default class extends Vue {
+  @Prop(String) header!: string;
+  @Prop(String) buttonText!: string;
+  @Prop(Function) handlerButton!: VoidFunction;
+  @Prop(Function) closeForm!: VoidFunction;
+}
+</script>
+
+<style lang="scss" scoped>
+.activity-form {
+  .activity-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+  }
+
+  .fee {
+    margin-bottom: 20px;
+  }
+}
+</style>

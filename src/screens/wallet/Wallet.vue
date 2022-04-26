@@ -30,6 +30,7 @@ import { Getter } from 'vuex-class';
 import { GettersTypes as ApisGettersTypes } from '@/store/api/getters';
 import { Networks } from '@/store/api/types';
 import { getIconPathByNetworkName } from '@/util/imgPath';
+import { firstCharToUp } from '@/util/stringHelper';
 import AllNetworksButton from './SelectNetworkButton.vue';
 import Content from './Content.vue';
 import PopupWithSelect from '@/components/PopupWithSelect.vue';
@@ -52,7 +53,7 @@ export default class extends Vue {
     const optionsNetworks = [
       { label: 'All networks', value: 'All networks', path: getIconPathByNetworkName() },
       ...Object.keys(this.networksInfo).map((network) => {
-        return { label: network, value: network, path: `networks/${getIconPathByNetworkName(network)}` };
+        return { label: firstCharToUp(network), value: network, path: `networks/${getIconPathByNetworkName(network)}` };
       }),
     ];
 

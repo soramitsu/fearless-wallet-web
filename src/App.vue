@@ -58,10 +58,6 @@ export default class App extends Vue {
     color: var(--pink-lavender-color);
   }
 
-  button {
-    clip-path: var(--default-clip-path-left-top-and-right-bottom);
-  }
-
   .s-input {
     border: 1px solid rgba(255, 255, 255, 0.1);
     background-color: rgba(255, 255, 255, 0.05);
@@ -84,7 +80,7 @@ export default class App extends Vue {
   }
 
   .s-select .s-placeholder {
-    color: white;
+    color: rgba(255, 255, 255, 0.75);
     font-size: 12px;
     margin-top: 12px;
     padding-left: 25px;
@@ -95,7 +91,7 @@ export default class App extends Vue {
   }
 
   .s-input .s-placeholder {
-    color: white;
+    color: rgba(255, 255, 255, 0.75);
     font-size: 12px;
   }
 

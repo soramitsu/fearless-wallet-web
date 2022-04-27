@@ -66,7 +66,14 @@
         <FinishForm v-else-if="showFinishForm" />
       </div>
 
-      <BigButton v-if="!showAdvancedForm" :text="buttonText" :disabled="disabledProceed" :handler="proceed" />
+      <Button
+        v-if="!showAdvancedForm"
+        size="big"
+        class="button"
+        :text="buttonText"
+        :disabled="disabledProceed"
+        :handler="proceed"
+      />
     </div>
 
     <InvalidPopup v-if="showInvalidPopup" :handlerClose="handlerClosePopup" :headers="invalidPopupMessages" />
@@ -88,7 +95,7 @@ import { DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import keyring from '@polkadot/ui-keyring';
 import InvalidPopup from '@/components/InvalidPopup.vue';
 import CircleButton from '@/components/CircleButton.vue';
-import BigButton from '@/components/BigButton.vue';
+import Button from '@/components/Button.vue';
 import CreateWallet from './CreateWallet.vue';
 import FinishForm from './FinishForm.vue';
 import PasswordForm from './PasswordForm.vue';
@@ -111,7 +118,7 @@ type FieldsComponent = 'passwordJson' | 'derivationPath';
     AdvancedForm,
     AdvancedButton,
     CircleButton,
-    BigButton,
+    Button,
   },
 })
 export default class extends Vue {
@@ -420,6 +427,10 @@ export default class extends Vue {
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
+
+    .button {
+      width: 100%;
+    }
 
     .content {
       width: 100%;

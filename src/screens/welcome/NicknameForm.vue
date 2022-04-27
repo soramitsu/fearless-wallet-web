@@ -1,14 +1,7 @@
 <template>
   <div class="nickname">
-    <s-input
-      v-model="syncedNickname"
-      type="text"
-      size="big"
-      placeholder="Wallet nickname"
-      maxlength="25"
-      class="input"
-      :readonly="readonly"
-    />
+    <Input v-model="syncedNickname" placeholder="Wallet nickname" size="big" :maxlength="25" :readonly="readonly" />
+
     <Hint
       class="hint"
       iconType="notification"
@@ -21,9 +14,13 @@
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import Hint from '@/components/Hint.vue';
+import Input from '@/components/Input.vue';
 
 @Component({
-  components: { Hint },
+  components: {
+    Hint,
+    Input,
+  },
 })
 export default class extends Vue {
   @Prop({ default: false }) readonly!: boolean;

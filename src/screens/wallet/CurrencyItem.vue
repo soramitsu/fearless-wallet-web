@@ -42,7 +42,7 @@
     <div class="activity-block">
       <CircleButton iconType="send" backgroundColor="black" class="button" :handler="send" />
 
-      <CircleButton iconType="receive" backgroundColor="black" class="button" :handler="download" />
+      <CircleButton iconType="receive" backgroundColor="black" class="button" :handler="receive" />
 
       <CircleButton iconType="right" backgroundColor="none" :backgroundColorHover="true" :handler="right" />
     </div>
@@ -106,8 +106,8 @@ export default class extends Vue {
     alert('send');
   }
 
-  download() {
-    alert('download');
+  receive() {
+    alert('Receive');
   }
 
   right() {

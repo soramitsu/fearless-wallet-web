@@ -5,16 +5,20 @@
         <Logo class="description" size="big" text="Fearless Wallet" subtext="The DeFi Wallet From The Future" />
 
         <div>
-          <BigButton
+          <Button
             class="button"
             text="Create a new wallet"
+            size="big"
             :handler="changWalletConnectionStatus.bind(null, 'isCreateWallet')"
           />
-          <BigButton
+
+          <Button
             class="button import-button"
             text="I already have a wallet"
+            size="big"
             :handler="changWalletConnectionStatus.bind(null, 'isImportWallet')"
           />
+
           <div class="privacy-policy">
             By continuing you agree with
             <span class="important-text" @click="openTermsAndConditions">Terms and Conditions </span>
@@ -38,13 +42,13 @@ import { Component, Vue } from 'vue-property-decorator';
 import { WalletConnectionStatus } from '@/interfaces/connectionWallet';
 import Layout from './Layout.vue';
 import Logo from '@/components/Logo.vue';
-import BigButton from '@/components/BigButton.vue';
+import Button from '@/components/Button.vue';
 
 @Component({
   components: {
     Layout,
     Logo,
-    BigButton,
+    Button,
   },
 })
 export default class extends Vue {
@@ -99,6 +103,7 @@ export default class extends Vue {
 
   .button {
     margin-top: 10px;
+    width: 100%;
   }
 
   .import-button {

@@ -6,29 +6,30 @@
 
     <div class="hint">Select words in the right order:</div>
     <div>
-      <s-button
+      <Button
         v-for="(mnemonicElement, index) in mnemonicMix"
         :key="index"
-        :class="addButtonClasses(mnemonicElement)"
+        :text="mnemonicElement"
         type="primary"
         size="small"
-        border-radius="mini"
-        @click="updateSelectedMnemonicElements(mnemonicElement, index)"
-      >
-        <span>
-          {{ mnemonicElement }}
-        </span>
-      </s-button>
+        borderRadius="mini"
+        :class="addButtonClasses(mnemonicElement)"
+        :handler="updateSelectedMnemonicElements.bind(null, mnemonicElement, index)"
+      />
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import Button from '@/components/Button.vue';
 import MnemonicColumns from './MnemonicColumns.vue';
 
 @Component({
-  components: { MnemonicColumns },
+  components: {
+    MnemonicColumns,
+    Button,
+  },
 })
 export default class extends Vue {
   @Prop(String) mnemonic!: string;

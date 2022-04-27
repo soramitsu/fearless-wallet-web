@@ -7,10 +7,11 @@
         errorDescriptions="Incorrect password"
         placeholder="Enter password"
         :isError="isError"
+        :showPassword="true"
         :maxlength="25"
       />
 
-      <BigButton text="Unlock" :disabled="disabled" @click="unlock" />
+      <Button text="Unlock" size="big" class="button" :disabled="disabled" @click="unlock" />
     </div>
   </div>
 </template>
@@ -20,12 +21,12 @@ import { Component, Vue, Watch } from 'vue-property-decorator';
 import AccountController from '@/controllers/accountController';
 import { Components } from '@/router/routes';
 import ValidatedInput from '@/components/ValidatedInput.vue';
-import BigButton from '@/components/BigButton.vue';
+import Button from '@/components/Button.vue';
 
 @Component({
   components: {
     ValidatedInput,
-    BigButton,
+    Button,
   },
 })
 export default class extends Vue {
@@ -63,6 +64,10 @@ export default class extends Vue {
 
   .input {
     margin: 10px 0;
+  }
+
+  .button {
+    width: 100%;
   }
 }
 </style>

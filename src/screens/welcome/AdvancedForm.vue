@@ -6,22 +6,37 @@
     :saveChanges="saveChanges"
     class="advanced"
   >
-    <s-select v-model="substrateKeyPair" class="input" placeholder="SUBSTRATE KEYPAIR CRYPTO TYPE" size="big">
-      <s-option v-for="{ value, label } in optionsSubstrateKeyPair" :key="value" :value="value" :label="label" />
-    </s-select>
-    <s-input v-model="substrateDP" type="text" placeholder="Substrate secret derivation path" class="input" />
+    <Select
+      v-model="substrateKeyPair"
+      :options="optionsSubstrateKeyPair"
+      placeholder="SUBSTRATE KEYPAIR CRYPTO TYPE"
+      size="big"
+      class="row"
+    />
+
+    <Input v-model="substrateDP" class="row" placeholder="Substrate secret derivation path" size="big" />
+
     <div class="example-prompt">Example: {{ example }}</div>
-    <div v-if="showEthereumDP">
-      <s-input value="ETHEREUM" type="text" placeholder="ETHEREUM KEYPAIR CRYPTO TYPE" :readonly="true" class="input" />
-      <s-input
-        v-model="ethereumDP"
-        type="text"
-        placeholder="Ethereum secret derivation path"
-        maxlength="25"
-        class="input"
+
+    <template v-if="showEthereumDP">
+      <Input
+        v-model="ethereumKeyPair"
+        class="row"
+        placeholder="ETHEREUM KEYPAIR CRYPTO TYPE"
+        :readonly="true"
+        size="big"
       />
+
+      <Input
+        v-model="ethereumDP"
+        class="row"
+        placeholder="Ethereum secret derivation path"
+        :maxlength="25"
+        size="big"
+      />
+
       <div class="example-prompt">Example: m/44'/60'/0'/0/0</div>
-    </div>
+    </template>
   </AboveForm>
 </template>
 
@@ -30,9 +45,15 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { DerivationPath } from '@/interfaces/connectionWallet';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import AboveForm from '@/components/AboveForm.vue';
+import Input from '@/components/Input.vue';
+import Select from '@/components/Select.vue';
 
 @Component({
-  components: { AboveForm },
+  components: {
+    AboveForm,
+    Input,
+    Select,
+  },
 })
 export default class extends Vue {
   readonly optionsSubstrateKeyPair = [
@@ -44,6 +65,7 @@ export default class extends Vue {
   substrateDP = '';
   ethereumDP = '';
   substrateKeyPair = '';
+  ethereumKeyPair = 'ETHEREUM';
 
   @Prop(Object) derivationPath!: DerivationPath;
   @Prop({ default: true }) showEthereumDP!: boolean;
@@ -86,9 +108,7 @@ export default class extends Vue {
 
 <style lang="scss" scoped>
 .advanced {
-  .input {
-    width: 528px;
-    font-size: 24px;
+  .row {
     margin-top: 16px;
 
     &:first-child {

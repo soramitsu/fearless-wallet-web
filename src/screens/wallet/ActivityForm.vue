@@ -7,7 +7,8 @@
         <div class="fee">
           <slot name="fee"></slot>
         </div>
-        <BigButton :text="buttonText" :handler="handlerButton" />
+
+        <Button size="big" class="button" :text="buttonText" :handler="handlerButton" />
       </div>
     </div>
   </AboveForm>
@@ -15,13 +16,13 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import BigButton from '@/components/BigButton.vue';
+import Button from '@/components/Button.vue';
 import AboveForm from '@/components/AboveForm.vue';
 
 @Component({
   components: {
     AboveForm,
-    BigButton,
+    Button,
   },
 })
 export default class extends Vue {
@@ -43,6 +44,10 @@ export default class extends Vue {
 
   .fee {
     margin-bottom: 20px;
+  }
+
+  .button {
+    width: 100%;
   }
 }
 </style>

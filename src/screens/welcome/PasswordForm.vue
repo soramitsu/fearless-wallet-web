@@ -5,6 +5,7 @@
       errorDescriptions="Password is too short"
       placeholder="Enter password"
       :isError="isShortPassword"
+      :showPassword="true"
       :maxlength="25"
     />
 
@@ -14,6 +15,7 @@
       errorDescriptions="Passwords do not match"
       placeholder="Re-Enter password"
       :isError="isWrongPassword"
+      :showPassword="true"
       :maxlength="25"
     />
 

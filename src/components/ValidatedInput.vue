@@ -1,27 +1,32 @@
 <template>
   <div class="validate-input">
-    <s-input
+    <Input
       v-model="vModel"
+      size="big"
       :placeholder="placeholder"
       :maxlength="maxlength"
+      :showPassword="showPassword"
       :class="inputClasses"
-      size="big"
-      show-password
     />
+
     <div v-show="isError" class="error-descriptions">{{ errorDescriptions }}</div>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
+import Input from './Input.vue';
 
-@Component
+@Component({
+  components: { Input },
+})
 export default class extends Vue {
   @VModel({ type: String }) vModel!: string;
   @Prop(String) errorDescriptions!: string;
   @Prop(String) placeholder!: string;
   @Prop({ default: 50 }) maxlength!: number;
   @Prop(Boolean) isError!: boolean;
+  @Prop({ default: false }) showPassword!: boolean;
 
   get inputClasses() {
     return [

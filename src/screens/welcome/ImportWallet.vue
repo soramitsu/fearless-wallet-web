@@ -1,28 +1,30 @@
 <template>
   <div class="import-wallet">
     <div class="row import" @click="openPopup">
-      <s-input :value="typeImportLabel" placeholder="Source type" class="import" size="big" readonly />
+      <Input v-model="typeImportLabel" placeholder="Source type" size="big" :readonly="true" class="import" />
     </div>
 
-    <s-input
+    <Input
       v-if="notJsonImport"
       v-model="inputValue"
-      :placeholder="placeholderTypeImportValue"
-      class="row input"
       type="textarea"
-      maxlength="130"
+      class="row textarea"
+      :placeholder="placeholderTypeImportValue"
+      :maxlength="130"
     />
+
     <template v-else>
       <div class="row">
-        <s-input
+        <Input
           v-model="inputValue"
-          :placeholder="placeholderTypeImportValue"
-          size="big"
           type="text-file"
+          size="big"
           accept="application/JSON"
-          readonly
+          :placeholder="placeholderTypeImportValue"
+          :readonly="true"
         />
-        <s-input v-model="_passwordJson" placeholder="Password" size="big" show-password class="row" />
+
+        <Input v-model="_passwordJson" size="big" placeholder="Password" class="row" :showPassword="true" />
       </div>
     </template>
 
@@ -43,9 +45,13 @@
 import { Component, Vue, Prop, Watch, VModel } from 'vue-property-decorator';
 import { TypeFiledForImport, DerivationPath } from '@/interfaces/connectionWallet';
 import PopupWithSelect from '@/components/PopupWithSelect.vue';
+import Input from '@/components/Input.vue';
 
 @Component({
-  components: { PopupWithSelect },
+  components: {
+    PopupWithSelect,
+    Input,
+  },
 })
 export default class extends Vue {
   readonly optionsImport = [
@@ -161,7 +167,7 @@ export default class extends Vue {
     color: #ccd2e3 !important;
   }
 
-  .input {
+  .textarea {
     height: 170px;
   }
 

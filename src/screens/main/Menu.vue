@@ -48,7 +48,7 @@ export default class extends Vue {
   align-items: center;
   z-index: 199;
   height: 80px;
-  width: 560px;
+  width: var(--extension-width);
   margin: 0 0 -16px -16px;
   border-radius: 0 0 var(--default-border-radius) var(--default-border-radius);
   // background: rgba(0, 0, 0, 0.4);

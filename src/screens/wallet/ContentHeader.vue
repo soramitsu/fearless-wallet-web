@@ -11,7 +11,7 @@
       />
     </div>
     <div class="header-part">
-      <SearchInput v-model="filterValue" placeholder="Search in networks" class="search" />
+      <SearchInput v-if="showSearchInput" v-model="filterValue" placeholder="Search in networks" class="search" />
 
       <CircleButton iconType="filter" backgroundColor="none" :handler="filter" />
     </div>
@@ -40,6 +40,10 @@ export default class extends Vue {
   @PropSync('activeTabName', { type: String }) syncedActiveTabName!: TabWallet;
   @Prop(Function) handlerFilter!: (value: string) => void;
 
+  get showSearchInput() {
+    return this.syncedActiveTabName === 'Currencies';
+  }
+
   @Watch('filterValue')
   filter(value: string) {
     this.handlerFilter(value);
@@ -66,9 +70,10 @@ export default class extends Vue {
     display: flex;
     align-items: center;
     margin-right: 16px;
+    height: 42px;
 
     .tab {
-      margin-right: 12px;
+      margin: auto 12px auto 0;
     }
   }
 

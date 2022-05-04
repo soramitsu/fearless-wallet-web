@@ -20,10 +20,26 @@
       :options="filterOptionsNetworks"
       :toggleValue="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
-      :handlerFilter="handlerFilter"
+      :handlerFilter="handlerFilter.bind(null, 'popupFilterValue')"
     />
 
-    <Content :selectedNetwork="selectedNetwork" :toggleVisibleActivityForm="toggleVisibleActivityForm" />
+    <div class="content">
+      <ContentHeader
+        :activeTabName="activeTabName"
+        :handlerFilter="handlerFilter.bind(null, 'filterValue')"
+        @update:activeTabName="updateActiveTabName"
+      />
+
+      <Scroll>
+        <Currencies
+          v-if="showCurrencies"
+          :currencies="filterCurrencies"
+          :toggleVisibleActivityForm="toggleVisibleActivityForm"
+        />
+
+        <NFTs v-else-if="showNfts" />
+      </Scroll>
+    </div>
 
     <SendForm v-if="showSendForm" :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false)" />
 
@@ -38,29 +54,61 @@ import { GettersTypes as ApisGettersTypes } from '@/store/api/getters';
 import { Networks } from '@/store/api/types';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { firstCharToUp } from '@/util/stringHelper';
+import { Currency } from '@/interfaces/currencies';
+import type { TabWallet } from '@/interfaces/walletPage';
+import Scroll from '@/components/Scroll.vue';
 import SelectNetworkButton from './SelectNetworkButton.vue';
-import Content from './Content.vue';
 import PopupWithSelect from '@/components/PopupWithSelect.vue';
 import ReceiveForm from './ReceiveForm.vue';
 import SendForm from './SendForm.vue';
+import ContentHeader from './ContentHeader.vue';
+import Currencies from './Currencies.vue';
+import NFTs from './NFTs.vue';
+import currencyMock from '@/mocks/currency';
 
 @Component({
   components: {
     PopupWithSelect,
     SelectNetworkButton,
-    Content,
     SendForm,
     ReceiveForm,
+    ContentHeader,
+    Currencies,
+    NFTs,
+    Scroll,
   },
 })
 export default class extends Vue {
+  currencies: Currency[] = currencyMock;
+  activeTabName: TabWallet = 'Currencies';
   showSendForm = false;
   showReceiveForm = false;
   showSelectNetworkPopup = false;
   selectedNetwork = 'All networks';
+  popupFilterValue = '';
   filterValue = '';
 
   @Getter(ApisGettersTypes.getNetworksInfo) networksInfo!: Networks;
+
+  get showCurrencies() {
+    return this.activeTabName === 'Currencies';
+  }
+
+  get showNfts() {
+    return this.activeTabName === 'NFTs';
+  }
+
+  get filterCurrencies() {
+    const filter = this.filterValue.trim().toLowerCase();
+
+    return this.currencies
+      .filter(({ availableInNetworks }) => {
+        if (this.selectedNetwork === 'All networks') return true;
+
+        return availableInNetworks.map(({ network }) => network).includes(this.selectedNetwork);
+      })
+      .filter(({ mainNetwork }) => mainNetwork.includes(filter));
+  }
 
   get optionsNetworks() {
     return [
@@ -72,7 +120,7 @@ export default class extends Vue {
   }
 
   get filterOptionsNetworks() {
-    const filter = this.filterValue.trim().toLowerCase();
+    const filter = this.popupFilterValue.trim().toLowerCase();
 
     return this.optionsNetworks.filter(({ label }) => label.includes(filter));
   }
@@ -91,8 +139,12 @@ export default class extends Vue {
     this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
   }
 
-  handlerFilter(value: string) {
-    this.filterValue = value;
+  handlerFilter(field: 'popupFilterValue' | 'filterValue', value: string) {
+    this[field] = value;
+  }
+
+  updateActiveTabName(name: TabWallet) {
+    this.activeTabName = name;
   }
 }
 </script>
@@ -103,6 +155,17 @@ export default class extends Vue {
   flex-direction: column;
   width: 100%;
   height: 100%;
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    padding: 16px 0 0 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.05);
+    clip-path: var(--default-clip-path-left-top);
+    border-radius: 8px;
+    height: 425px;
+  }
 
   .select-network {
     width: 100%;

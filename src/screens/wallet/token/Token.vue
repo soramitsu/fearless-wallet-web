@@ -343,11 +343,12 @@ export default class extends Vue {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 11px 16px 0 18px;
-      height: 70px !important;
+      margin: 11px 16px 5px 18px;
 
       .tabs {
         display: flex;
+        align-items: center;
+        height: 42px;
 
         .tab {
           margin-right: 8px;

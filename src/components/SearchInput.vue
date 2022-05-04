@@ -1,6 +1,6 @@
 <template>
   <div class="search-input">
-    <Input v-model="vModel" :placeholder="placeholder" size="small" />
+    <Input v-model="vModel" :placeholder="placeholder" size="small" class="search-input-path" />
 
     <s-icon name="basic-search-24" />
   </div>
@@ -30,6 +30,10 @@ export default class extends Vue {
     color: rgba(255, 255, 255, 0.5);
     font-size: 20px !important;
     margin-left: -30px;
+  }
+
+  .search-input-path {
+    clip-path: var(--mini-clip-path-left-top-and-right-bottom);
   }
 }
 </style>

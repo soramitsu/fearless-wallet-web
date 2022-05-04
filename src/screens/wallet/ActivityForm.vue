@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :header="header" :closeHandler="closeForm" class="activity-form">
+  <AboveForm :blur="true" :header="header" :closeHandler="closeForm" class="activity-form">
     <div class="activity-content">
       <slot></slot>
 

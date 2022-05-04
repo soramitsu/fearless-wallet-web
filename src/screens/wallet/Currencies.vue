@@ -1,6 +1,11 @@
 <template>
   <div class="currencies">
-    <CurrencyItem v-for="currency in currencies" :key="currency.mainNetwork" :currency="currency" />
+    <CurrencyItem
+      v-for="currency in currencies"
+      :key="currency.mainNetwork"
+      :currency="currency"
+      :toggleVisibleActivityForm="toggleVisibleActivityForm"
+    />
   </div>
 </template>
 
@@ -14,6 +19,7 @@ import CurrencyItem from './CurrencyItem.vue';
 })
 export default class extends Vue {
   @Prop(Array) currencies!: Currency[];
+  @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
 }
 </script>
 

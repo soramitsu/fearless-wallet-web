@@ -24,6 +24,8 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as ApisGettersTypes } from '@/store/api/getters';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { SelectedWallet } from '@/store/accounts/types';
 import { Networks } from '@/store/api/types';
 import Select from '@/components/Select.vue';
 import Input from '@/components/Input.vue';
@@ -46,7 +48,9 @@ export default class extends Vue {
   feeValue = 0.1618;
 
   @Prop(Function) closeForm!: VoidFunction;
+  @Prop(String) selectedNetwork!: string;
   @Getter(ApisGettersTypes.getNetworksInfo) networksInfo!: Networks;
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get optionsWallets() {
     return keyring.getAccounts().map(({ address, meta: { name } }) => {
@@ -64,8 +68,13 @@ export default class extends Vue {
     });
   }
 
+  mounted() {
+    this.walletAddress = this.selectedWallet.address;
+    this.originNetwork = this.selectedNetwork;
+  }
+
   send() {
-    return 1;
+    alert('send');
   }
 }
 </script>

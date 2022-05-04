@@ -5,6 +5,7 @@
     :staticHeight="staticHeight"
     :handlerFilter="handlerFilter"
     :handlerClose="handlerClose"
+    :placement="placement"
     class="popup-with-choice"
   >
     <div v-for="{ label, value, path } in options" :key="label" :class="rowClasses(value)" @click="toggleValue(value)">
@@ -29,15 +30,16 @@ type SpaceSize = 'small' | 'medium' | 'big';
 })
 export default class extends Vue {
   @VModel({ type: String }) VModel!: string;
+  @Prop(Array) options!: Record<string, string>[];
+  @Prop(String) header!: string;
   @Prop(Function) toggleValue!: VoidFunction;
   @Prop(Function) handlerClose!: VoidFunction;
   @Prop(Function) handlerFilter!: (value: string) => void;
-  @Prop(Array) options!: Record<string, string>[];
-  @Prop(String) header!: string;
   @Prop({ default: false }) icon!: boolean;
   @Prop({ default: false }) search!: boolean;
   @Prop({ default: false }) staticHeight!: boolean;
   @Prop({ default: 'medium' }) space!: SpaceSize;
+  @Prop({ default: 'center' }) placement!: string;
 
   getImg(path: string) {
     return require(`@/assets/${path}`);
@@ -102,7 +104,7 @@ export default class extends Vue {
     align-items: center;
 
     .img {
-      width: 20px;
+      width: 24px;
       margin-right: 10px;
       opacity: 0.65;
     }
@@ -113,8 +115,6 @@ export default class extends Vue {
     font-weight: 700;
 
     .img {
-      width: 20px;
-      margin-right: 10px;
       opacity: 1;
     }
   }

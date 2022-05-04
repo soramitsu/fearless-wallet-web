@@ -12,7 +12,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { getIconPathByNetworkName } from '@/util/imgPath';
+import { getImgPathByNetworkName } from '@/util/imgPath';
 import { firstCharToUp } from '@/util/stringHelper';
 import { Components } from '@/router/routes';
 
@@ -37,7 +37,7 @@ export default class extends Vue {
   }
 
   getImg() {
-    return require(`@/assets/networks/${getIconPathByNetworkName(this.network)}`);
+    return require(`@/assets/networks/${getImgPathByNetworkName(this.network)}`);
   }
 
   openNetwork() {

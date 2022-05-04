@@ -1,4 +1,4 @@
-export function getIconPathByNetworkName(network = '') {
+export function getImgPathByNetworkName(network = '') {
   switch (network.toLowerCase()) {
     case 'polkadot':
       return 'polkadot.svg';
@@ -59,6 +59,6 @@ export function getIconPathByNetworkName(network = '') {
     case 'zeitgeist':
       return 'zeitgeist.svg';
     default:
-      return 'fw-logo.svg';
+      return 'globus.svg';
   }
 }

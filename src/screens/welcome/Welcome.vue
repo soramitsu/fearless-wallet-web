@@ -110,9 +110,5 @@ export default class extends Vue {
     background-color: rgba(255, 255, 255, 0.1);
     border: rgba(255, 255, 255, 0.1);
   }
-
-  .el-button + .el-button {
-    margin-left: 0;
-  }
 }
 </style>

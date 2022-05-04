@@ -1,9 +1,17 @@
 <template>
   <div class="content">
-    <WalletHeader :activeTabName="activeTabName" @update:activeTabName="updateActiveTabName" />
+    <ContentHeader
+      :activeTabName="activeTabName"
+      :handlerFilter="handlerFilter"
+      @update:activeTabName="updateActiveTabName"
+    />
 
     <Scroll>
-      <Currencies v-if="showCurrencies" :currencies="filterCurrencies" />
+      <Currencies
+        v-if="showCurrencies"
+        :currencies="filterCurrencies"
+        :toggleVisibleActivityForm="toggleVisibleActivityForm"
+      />
 
       <NFTs v-else-if="showNfts" />
     </Scroll>
@@ -14,7 +22,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { TabWallet } from '@/interfaces/walletPage';
 import { Currency } from '@/interfaces/currencies';
-import WalletHeader from './WalletHeader.vue';
+import ContentHeader from './ContentHeader.vue';
 import Currencies from './Currencies.vue';
 import NFTs from './NFTs.vue';
 import Scroll from '@/components/Scroll.vue';
@@ -22,7 +30,7 @@ import currencyMock from '@/mocks/currency';
 
 @Component({
   components: {
-    WalletHeader,
+    ContentHeader,
     Currencies,
     NFTs,
     Scroll,
@@ -31,15 +39,21 @@ import currencyMock from '@/mocks/currency';
 export default class extends Vue {
   activeTabName: TabWallet = 'Currencies';
   currencies: Currency[] = currencyMock;
+  filterValue = '';
 
   @Prop(String) selectedNetwork!: string;
+  @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
 
   get filterCurrencies() {
-    if (this.selectedNetwork === 'All networks') return this.currencies;
+    const filter = this.filterValue.trim().toLowerCase();
 
-    return this.currencies.filter(({ availableInNetworks }) =>
-      availableInNetworks.map(({ network }) => network).includes(this.selectedNetwork)
-    );
+    return this.currencies
+      .filter(({ availableInNetworks }) => {
+        if (this.selectedNetwork === 'All networks') return true;
+
+        return availableInNetworks.map(({ network }) => network).includes(this.selectedNetwork);
+      })
+      .filter(({ mainNetwork }) => mainNetwork.includes(filter));
   }
 
   get showCurrencies() {
@@ -48,6 +62,10 @@ export default class extends Vue {
 
   get showNfts() {
     return this.activeTabName === 'NFTs';
+  }
+
+  handlerFilter(value: string) {
+    this.filterValue = value;
   }
 
   updateActiveTabName(name: TabWallet) {

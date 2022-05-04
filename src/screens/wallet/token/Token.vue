@@ -1,91 +1,97 @@
 <template>
   <div class="token">
-    <template v-if="showContent">
-      <TokenHeader :network="network" :price="tokenInfo.price" :token="token" />
+    <TokenHeader :network="network" :price="tokenInfo.price" :token="token" />
 
-      <div class="descriptions">
-        <div class="column left-column">
-          <div class="first-row">{{ tokenPriceString }}</div>
-          <div class="count-tokens">{{ countTokensString }}</div>
-          <div class="total-balance">{{ balanceInNetworkString }}</div>
-        </div>
-        <div class="column right-column">
-          <div class="first-row">Today</div>
-          <div>{{ grownString }}</div>
-          <div class="grown-percent-today">{{ grownPercentString }}</div>
-        </div>
+    <div class="descriptions">
+      <div class="column left-column">
+        <div class="first-row">{{ tokenPriceString }}</div>
+        <div class="count-tokens">{{ countTokensString }}</div>
+        <div class="total-balance">{{ balanceInNetworkString }}</div>
       </div>
-
-      <div class="activity-block">
-        <ButtonWithIcon
-          name="Send"
-          iconType="send"
-          class="button"
-          :handler="toggleVisible.bind(null, 'showSendForm', true)"
-        />
-
-        <ButtonWithIcon
-          name="Receive"
-          iconType="receive"
-          class="button"
-          :handler="toggleVisible.bind(null, 'showReceiveForm', true)"
-        />
-
-        <ButtonWithIcon
-          name="Teleport"
-          iconType="teleport"
-          class="button"
-          :handler="toggleVisible.bind(null, 'showTeleportForm', true)"
-        />
-
-        <ButtonWithIcon
-          name="Buy"
-          iconType="buy"
-          class="button"
-          :handler="toggleVisible.bind(null, 'showBuyForm', true)"
-        />
+      <div class="column right-column">
+        <div class="first-row">Today</div>
+        <div>{{ grownString }}</div>
+        <div class="grown-percent-today">{{ grownPercentString }}</div>
       </div>
+    </div>
 
-      <div class="content">
-        <div class="content-header">
-          <div class="tabs">
-            <TabButton
-              v-for="tabName in tabsOptions"
-              :key="tabName"
-              :name="tabName"
-              :isActive="activeTabName === tabName"
-              class="tab"
-              @click.native="openTab(tabName)"
-            />
-          </div>
+    <div class="activity-block">
+      <ButtonWithIcon
+        name="Send"
+        iconType="send"
+        class="button"
+        :handler="toggleVisible.bind(null, 'showSendForm', true)"
+      />
 
-          <SearchInput v-if="showNetworks" v-model="filterNetworksValue" placeholder="Search in networks" />
+      <ButtonWithIcon
+        name="Receive"
+        iconType="receive"
+        class="button"
+        :handler="toggleVisible.bind(null, 'showReceiveForm', true)"
+      />
 
-          <Dropdown
-            v-else-if="showHistory"
-            :value="filterHistoryValue"
-            :options="historyDropdownOption"
-            :handler="filterHistoryValueUpdate"
+      <ButtonWithIcon
+        name="Teleport"
+        iconType="teleport"
+        class="button"
+        :handler="toggleVisible.bind(null, 'showTeleportForm', true)"
+      />
+
+      <ButtonWithIcon
+        name="Buy"
+        iconType="buy"
+        class="button"
+        :handler="toggleVisible.bind(null, 'showBuyForm', true)"
+      />
+    </div>
+
+    <div class="content">
+      <div class="content-header">
+        <div class="tabs">
+          <TabButton
+            v-for="tabName in tabsOptions"
+            :key="tabName"
+            :name="tabName"
+            :isActive="activeTabName === tabName"
+            class="tab"
+            @click.native="openTab(tabName)"
           />
         </div>
 
-        <Scroll>
-          <Networks v-if="showNetworks" :networks="filteredNetworks" :token="token" :selectedNetwork="network" />
+        <SearchInput v-if="showNetworks" v-model="filterNetworksValue" placeholder="Search in networks" />
 
-          <History
-            v-else-if="showHistory"
-            :history="filteredHistory"
-            :availableInNetworks="tokenInfo.availableInNetworks"
-          />
-        </Scroll>
+        <Dropdown
+          v-else-if="showHistory"
+          :value="filterHistoryValue"
+          :options="historyDropdownOption"
+          :handler="filterHistoryValueUpdate"
+        />
       </div>
-    </template>
+
+      <Scroll>
+        <Networks v-if="showNetworks" :networks="filteredNetworks" :token="token" :selectedNetwork="network" />
+
+        <History
+          v-else-if="showHistory"
+          :history="filteredHistory"
+          :availableInNetworks="tokenInfo.availableInNetworks"
+        />
+      </Scroll>
+    </div>
+
+    <SendForm
+      v-if="showSendForm"
+      :selectedNetwork="network"
+      :closeForm="toggleVisible.bind(null, 'showSendForm', false)"
+    />
 
     <ReceiveForm v-if="showReceiveForm" :closeForm="toggleVisible.bind(null, 'showReceiveForm', false)" />
 
-    <SendForm v-if="showSendForm" :closeForm="toggleVisible.bind(null, 'showSendForm', false)" />
-
-    <TeleportForm v-if="showTeleportForm" :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)" />
+    <TeleportForm
+      v-if="showTeleportForm"
+      :selectedNetwork="network"
+      :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
+    />
 
     <BuyForm v-if="showBuyForm" :closeForm="toggleVisible.bind(null, 'showBuyForm', false)" />
   </div>
@@ -176,15 +182,9 @@ export default class extends Vue {
   showTeleportForm = false;
   showBuyForm = false;
 
-  get showContent() {
-    return !(this.showSendForm || this.showReceiveForm || this.showTeleportForm || this.showBuyForm);
-  }
-
   get filteredNetworks() {
     const { availableInNetworks } = this.tokenInfo!;
     const filter = this.filterNetworksValue.trim().toLowerCase();
-
-    if (filter === '') return availableInNetworks;
 
     return availableInNetworks.filter(({ network }) => network.includes(filter));
   }
@@ -255,8 +255,8 @@ export default class extends Vue {
     this.activeTabName = name;
   }
 
-  toggleVisible(filed: 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyForm', value: boolean) {
-    this[filed] = value;
+  toggleVisible(field: 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyForm', value: boolean) {
+    this[field] = value;
   }
 
   receive() {
@@ -322,10 +322,11 @@ export default class extends Vue {
 
   .activity-block {
     display: flex;
+    justify-content: space-between;
     margin-bottom: 10px;
 
     .button {
-      width: 25%;
+      width: 24%;
     }
   }
 

@@ -17,7 +17,7 @@ export default class extends Vue {
   @Prop(Function) handler!: VoidFunction;
 
   get label() {
-    return this.options.find(({ value }) => value === this.value)!.label;
+    return this.options.find(({ value }) => value === this.value)?.label ?? '';
   }
 }
 </script>

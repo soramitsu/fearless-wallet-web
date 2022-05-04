@@ -37,4 +37,8 @@ export default class extends Vue {
 .el-button {
   clip-path: var(--default-clip-path-left-top-and-right-bottom);
 }
+
+.el-button + .el-button {
+  margin-left: 0;
+}
 </style>

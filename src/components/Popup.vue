@@ -1,8 +1,8 @@
 <template>
-  <div class="popup-background">
+  <div :class="popupBackgroundClasses">
     <div :class="popupContainerClasses">
       <div class="header">
-        <SearchInput v-if="search" v-model="filteredValue" placeholder="Search in networks" class="search" />
+        <SearchInput v-if="search" v-model="filterValue" placeholder="Search in networks" class="search" />
 
         <template v-else>
           <div class="button"></div>
@@ -28,29 +28,37 @@ import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import Scroll from './Scroll.vue';
 import SearchInput from './SearchInput.vue';
 
+type Placement = 'left' | 'center' | 'right';
+
 @Component({
   components: { Scroll, SearchInput },
 })
 export default class extends Vue {
-  filteredValue = '';
+  filterValue = '';
 
   @Prop(Function) handlerClose!: VoidFunction;
   @Prop(Function) handlerFilter!: (value: string) => void;
   @Prop({ default: '' }) header!: string;
   @Prop({ default: false }) search!: boolean;
   @Prop({ default: false }) staticHeight!: boolean;
+  @Prop({ default: 'center' }) placement!: Placement;
 
   get popupContainerClasses() {
     return [
       'popup-container',
+      `popup-container-placement-${this.placement}`,
       {
         'static-height': this.staticHeight,
       },
     ];
   }
 
-  @Watch('filteredValue')
-  filterValue(value: string) {
+  get popupBackgroundClasses() {
+    return ['popup-background', `popup-background-placement-${this.placement}`];
+  }
+
+  @Watch('filterValue')
+  filter(value: string) {
     this.handlerFilter(value);
   }
 }
@@ -62,18 +70,27 @@ export default class extends Vue {
   width: var(--extension-width);
   border-radius: var(--default-border-radius);
   display: flex;
-  justify-content: center;
   position: absolute;
   top: 0;
   background-color: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(5px);
   z-index: 99;
+  animation: opacity 0.7s;
+
+  @keyframes opacity {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
 
   .popup-container {
     display: flex;
     align-items: center;
     flex-direction: column;
-    margin: auto;
+    margin: auto 16px;
     min-height: 100px;
     min-width: 380px;
     max-height: 390px;
@@ -122,5 +139,17 @@ export default class extends Vue {
     padding: 0;
     width: 20px;
   }
+}
+
+.popup-background-placement-left {
+  justify-content: left;
+}
+
+.popup-background-placement-center {
+  justify-content: center;
+}
+
+.popup-background-placement-right {
+  justify-content: right;
 }
 </style>

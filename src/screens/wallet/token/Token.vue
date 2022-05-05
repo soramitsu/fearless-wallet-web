@@ -90,6 +90,7 @@
     <TeleportForm
       v-if="showTeleportForm"
       :selectedNetwork="network"
+      :token="token"
       :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
     />
 
@@ -102,6 +103,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Currency, HistoryItem } from '@/interfaces/currencies';
 import type { TabCurrency } from '@/interfaces/walletPage';
 import currencyMock from '@/mocks/currency';
+import historyMock from '@/mocks/history';
 import CircleButton from '@/components/CircleButton.vue';
 import ButtonWithIcon from '@/components/ButtonWithIcon.vue';
 import SearchInput from '@/components/SearchInput.vue';
@@ -115,37 +117,6 @@ import ReceiveForm from '../ReceiveForm.vue';
 import SendForm from '../SendForm.vue';
 import TeleportForm from '../TeleportForm.vue';
 import BuyForm from '../BuyForm.vue';
-
-const history: HistoryItem[] = [
-  {
-    id: 'GybH541g2s12da213sdassfosi5nA',
-    type: 'transfer',
-    value: -0.51045,
-    token: 'KSM',
-    time: Date.now(),
-  },
-  {
-    id: 'GybH541gds12d212asdassfosi5nA',
-    type: 'transfer',
-    value: -0.51045,
-    token: 'KSM',
-    time: Date.now(),
-  },
-  {
-    id: 'GybH541gds12da4s21dassfosi5nA',
-    type: 'transfer',
-    value: -0.51045,
-    token: 'KSM',
-    time: Date.now(),
-  },
-  {
-    id: 'GybH541gds12d638asdassfosi5nA',
-    type: 'transfer',
-    value: -0.51045,
-    token: 'KSM',
-    time: Date.now(),
-  },
-];
 
 @Component({
   components: {
@@ -174,6 +145,7 @@ export default class extends Vue {
   readonly tabsOptions: TabCurrency[] = ['Networks', 'History'];
 
   currencies: Currency[] = currencyMock;
+  history: HistoryItem[] = historyMock;
   activeTabName: TabCurrency = 'Networks';
   filterNetworksValue = '';
   filterHistoryValue = 'all';
@@ -190,9 +162,9 @@ export default class extends Vue {
   }
 
   get filteredHistory() {
-    if (this.filterHistoryValue === 'all') return history;
+    if (this.filterHistoryValue === 'all') return this.history;
 
-    return history.filter(({ type }) => type === this.filterHistoryValue);
+    return this.history.filter(({ type }) => type === this.filterHistoryValue);
   }
 
   get tokenPriceString() {

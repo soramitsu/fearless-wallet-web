@@ -1,9 +1,9 @@
 <template>
   <s-button
+    class="button"
     :type="type"
     :border-radius="borderRadius"
     :size="size"
-    class="button"
     :disabled="disabled"
     @click="handler"
   >
@@ -30,7 +30,6 @@ export default class extends Vue {
 
 <style lang="scss" scoped>
 .button {
-  // width: 100%;
   font-size: 18px;
 }
 
@@ -40,5 +39,11 @@ export default class extends Vue {
 
 .el-button + .el-button {
   margin-left: 0;
+}
+
+.is-disabled {
+  opacity: 0.7;
+  background-color: #f8087b !important;
+  border-color: #f8087b !important;
 }
 </style>

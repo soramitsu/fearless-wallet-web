@@ -1,6 +1,13 @@
 <template>
   <div class="nickname">
-    <Input v-model="syncedNickname" placeholder="Wallet nickname" size="big" :maxlength="25" :readonly="readonly" />
+    <Input
+      v-model="syncedNickname"
+      placeholder="Wallet nickname"
+      size="big"
+      :maxlength="25"
+      :readonly="readonly"
+      class="input"
+    />
 
     <Hint
       class="hint"
@@ -36,7 +43,6 @@ export default class extends Vue {
   }
 
   .input {
-    font-size: 24px;
     margin-bottom: 16px;
   }
 }

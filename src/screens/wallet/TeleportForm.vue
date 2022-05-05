@@ -1,61 +1,97 @@
 <template>
-  <ActivityForm header="Teleport" buttonText="Send" :handlerButton="send" :closeForm="closeForm" class="teleport-form">
-    <div class="teleport-form-content">
-      <Select v-model="walletAddress" :options="optionsWallets" placeholder="Send from" size="big" class="row" />
+  <div>
+    <ActivityForm
+      header="Teleport"
+      buttonText="Teleport"
+      :handlerButton="teleport"
+      :closeForm="closeForm"
+      :buttonDisabled="buttonDisabled"
+      class="teleport-form"
+    >
+      <div class="teleport-form-content">
+        <Select v-model="selectedToken" :options="optionsCurrency" placeholder="Currency" size="big" class="row" />
 
-      <div class="row select-networks">
-        <Select v-model="originNetwork" :options="optionsNetwork" placeholder="Origin network" size="big" />
+        <Select
+          v-model="originalNetwork"
+          :options="optionsNetwork"
+          placeholder="Original network"
+          size="big"
+          class="row"
+        />
 
-        <s-icon name="arrows-arrow-right-24" />
+        <Input v-model="amount" placeholder="Amount" size="big" styleInput="pink" class="row" />
 
-        <Select v-model="destinationNetwork" :options="optionsNetwork" placeholder="Destination network" size="big" />
+        <Select
+          v-model="destinationNetwork"
+          :options="optionsNetwork"
+          placeholder="Destination network"
+          size="big"
+          class="row"
+        />
       </div>
+    </ActivityForm>
 
-      <Input v-model="amount" placeholder="Amount to send" size="big" class="row" />
-    </div>
-
-    <template #fee>
-      Network fee <span class="fee-value">{{ feeValue }} {{ tokenName }}</span> ${{ feeValueDollars }}
-    </template>
-  </ActivityForm>
+    <SendingPopup
+      v-if="showPopup"
+      header="Teleport"
+      :popupLoading="popupLoading"
+      :handlerClose="handlerClose"
+      :amount="amount"
+      :token="selectedToken"
+      :firstNetwork="originalNetwork"
+      :secondNetwork="destinationNetwork"
+    >
+      <div></div>
+    </SendingPopup>
+  </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as ApisGettersTypes } from '@/store/api/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store/accounts/types';
 import { Networks } from '@/store/api/types';
+import Loading from '@/components/Loading.vue';
 import Select from '@/components/Select.vue';
 import Input from '@/components/Input.vue';
+import Popup from '@/components/Popup.vue';
 import ActivityForm from './ActivityForm.vue';
-import keyring from '@polkadot/ui-keyring';
+import SendingPopup from './SendingPopup.vue';
+import mockCurrency from '@/mocks/currency';
+import { firstCharToUp } from '@/util/stringHelper';
 
 @Component({
   components: {
     ActivityForm,
     Input,
     Select,
+    Popup,
+    Loading,
+    SendingPopup,
   },
 })
 export default class extends Vue {
-  walletAddress = '';
-  originNetwork = '';
+  showPopup = false;
+  popupLoading = false;
+  selectedToken = '';
+  originalNetwork = '';
   destinationNetwork = '';
   amount = '';
-  tokenName = 'KSM';
-  feeValue = 0.1618;
 
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) selectedNetwork!: string;
+  @Prop(String) token!: string;
   @Getter(ApisGettersTypes.getNetworksInfo) networksInfo!: Networks;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
-  get optionsWallets() {
-    return keyring.getAccounts().map(({ address, meta: { name } }) => {
-      return { label: name, value: address };
-    });
+  get buttonDisabled() {
+    return !(!!this.selectedToken && !!this.originalNetwork && !!this.destinationNetwork && !!this.amount);
+  }
+
+  get optionsCurrency() {
+    return mockCurrency.map(({ token, mainNetwork }) => ({
+      label: `${firstCharToUp(mainNetwork)} (${token})`,
+      value: token,
+    }));
   }
 
   get feeValueDollars() {
@@ -63,18 +99,25 @@ export default class extends Vue {
   }
 
   get optionsNetwork() {
-    return Object.keys(this.networksInfo).map((network) => {
-      return { label: network, value: network };
-    });
+    return Object.keys(this.networksInfo).map((network) => ({ label: firstCharToUp(network), value: network }));
   }
 
   mounted() {
-    this.walletAddress = this.selectedWallet.address;
-    this.originNetwork = this.selectedNetwork;
+    this.selectedToken = this.token;
+    this.originalNetwork = this.selectedNetwork;
   }
 
-  send() {
-    alert('send');
+  handlerClose() {
+    this.showPopup = false;
+  }
+
+  teleport() {
+    this.showPopup = true;
+    this.popupLoading = true;
+
+    setTimeout(() => {
+      this.popupLoading = false;
+    }, 2000);
   }
 }
 </script>
@@ -89,27 +132,11 @@ export default class extends Vue {
         margin-top: 0;
       }
     }
-
-    .select-networks {
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .s-icon-arrows-arrow-right-24 {
-      color: rgba(255, 255, 255, 0.3);
-      margin: auto 15px;
-      font-size: 30px;
-    }
   }
 
   .fee {
     font-weight: 300;
     font-size: 15px;
-  }
-
-  .fee-value {
-    font-weight: 700;
-    color: var(--pink-lavender-color);
   }
 }
 </style>

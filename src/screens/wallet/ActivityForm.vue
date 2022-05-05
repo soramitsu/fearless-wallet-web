@@ -8,7 +8,7 @@
           <slot name="fee"></slot>
         </div>
 
-        <Button size="big" class="button" :text="buttonText" :handler="handlerButton" />
+        <Button size="big" class="button" :text="buttonText" :handler="handlerButton" :disabled="buttonDisabled" />
       </div>
     </div>
   </AboveForm>
@@ -28,6 +28,7 @@ import AboveForm from '@/components/AboveForm.vue';
 export default class extends Vue {
   @Prop(String) header!: string;
   @Prop(String) buttonText!: string;
+  @Prop({ default: false }) buttonDisabled!: boolean;
   @Prop(Function) handlerButton!: VoidFunction;
   @Prop(Function) closeForm!: VoidFunction;
 }

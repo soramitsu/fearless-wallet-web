@@ -31,6 +31,7 @@ import { Networks } from '@/store/api/types';
 import ActivityForm from './ActivityForm.vue';
 import QrCode from 'qrcode.vue';
 import Select from '@/components/Select.vue';
+import NetworksController from '@/controllers/networksController';
 import { firstCharToUp } from '@/util/stringHelper';
 
 @Component({
@@ -53,7 +54,7 @@ export default class extends Vue {
   }
 
   get address() {
-    return this.selectedWallet.address;
+    return NetworksController.formatAddress(this.selectedWallet.address, this.network);
   }
 
   mounted() {

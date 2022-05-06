@@ -87,7 +87,7 @@ export default class extends Vue {
   }
 
   .s-input {
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
     background-color: var(--pink-purple-color) !important;
     clip-path: var(--default-clip-path-left-top-and-right-bottom);
     padding-left: 25px !important;

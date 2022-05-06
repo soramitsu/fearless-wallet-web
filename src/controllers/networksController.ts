@@ -20,11 +20,11 @@ export default class NetworksController {
     store.commit(ApiMutationTypes.SET_NETWORK_STATUS, props);
   }
 
-  async loadNetworksInfo(): Promise<void> {
+  public async loadNetworksInfo(): Promise<void> {
     await store.dispatch(ApiActionTypes.LOAD_NETWORKS_INFO, { url: this.url });
   }
 
-  async subscribeToNetworks(accounts: SubjectInfo): Promise<void> {
+  public async subscribeToNetworks(accounts: SubjectInfo): Promise<void> {
     const networks = NetworksController.getNetworks();
 
     console.log('accounts', accounts);

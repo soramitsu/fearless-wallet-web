@@ -31,20 +31,21 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import Identicon from '@polkadot/vue-identicon';
+import { Components } from '@/router/routes';
+import AccountController from '@/controllers/accountController';
 import Logo from '@/components/Logo.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import Rotate from '@/components/Rotate.vue';
 
 @Component({
   components: {
-    Identicon,
     Logo,
     CircleButton,
     Rotate,
   },
 })
 export default class extends Vue {
+  accountController = new AccountController();
   showSelectWalletPopup = false;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -70,7 +71,8 @@ export default class extends Vue {
   }
 
   lock() {
-    alert(`lock`);
+    this.accountController.updatedPasswordDateCreated(0);
+    this.$router.push({ name: Components.WelcomeBack });
   }
 
   openSettings() {

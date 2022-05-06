@@ -24,21 +24,23 @@ export default class AccountController {
     return `${password}${salt}${this.postfix}`;
   }
 
-  savePassword(password: string): void {
+  public savePassword(password: string): void {
     const hashPasswordString = this.getPasswordHash(password);
     const hashPassword = Hash.sha256(hashPasswordString);
 
     this.lsAccount.set('password', hashPassword, {}, { saveDateCreated: true });
   }
 
-  updatedPasswordDateCreated(): void {
+  public updatedPasswordDateCreated(date?: number): void {
     const { value, options } = this.getAccountPasswordValue();
     const opt = options ?? {};
 
-    if (value) this.lsAccount.set('password', value, opt, { saveDateCreated: true });
+    if (date !== undefined) opt.dateCreated = date.toString();
+
+    if (value) this.lsAccount.set('password', value, opt, { saveDateCreated: date === undefined });
   }
 
-  isSamePassword(password: string): boolean {
+  public isSamePassword(password: string): boolean {
     const { value } = this.getAccountPasswordValue();
 
     if (value === undefined) return false;
@@ -48,13 +50,13 @@ export default class AccountController {
     return Hash.isSameAs(hashPasswordString, value);
   }
 
-  isSavedPassword(): boolean {
+  public isSavedPassword(): boolean {
     const { value } = this.getAccountPasswordValue();
 
     return value !== undefined;
   }
 
-  isCorrectPasswordAge(): boolean {
+  public isCorrectPasswordAge(): boolean {
     const { options } = this.getAccountPasswordValue();
 
     if (!options) return false;

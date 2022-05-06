@@ -54,7 +54,7 @@ const actions: ActionTree<State, State> & Actions = {
           api,
           nodes,
           assets,
-          prefix: addressPrefix,
+          addressPrefix,
           isActive,
           isEthereumNetwork,
         },

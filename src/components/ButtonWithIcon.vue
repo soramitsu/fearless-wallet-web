@@ -1,5 +1,5 @@
 <template>
-  <s-button class="button-with-icon" type="primary" border-radius="mini" @click="handler">
+  <s-button class="button-with-icon" type="primary" border-radius="mini" @click="$emit('click')">
     <s-icon :name="iconName" class="icon" />
     {{ name }}
   </s-button>
@@ -14,7 +14,6 @@ import getIconName from '@/util/iconName';
 export default class extends Vue {
   @Prop(String) name!: string;
   @Prop(String) iconType!: IconType;
-  @Prop(Function) handler!: VoidFunction;
 
   get iconName() {
     return getIconName(this.iconType);

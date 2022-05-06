@@ -44,17 +44,17 @@
         iconType="send"
         backgroundColor="black"
         class="button"
-        :handler="toggleVisibleActivityForm.bind(null, 'showSendForm')"
+        @click="toggleVisibleActivityForm('showSendForm', true, currency)"
       />
 
       <CircleButton
         iconType="receive"
         backgroundColor="black"
         class="button"
-        :handler="toggleVisibleActivityForm.bind(null, 'showReceiveForm')"
+        @click="toggleVisibleActivityForm('showReceiveForm', true, currency)"
       />
 
-      <CircleButton iconType="right" backgroundColor="none" :backgroundColorHover="true" :handler="right" />
+      <CircleButton iconType="right" backgroundColor="none" :backgroundColorHover="true" @click="right" />
     </div>
   </div>
 </template>

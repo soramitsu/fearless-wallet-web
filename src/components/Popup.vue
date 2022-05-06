@@ -76,7 +76,7 @@ export default class extends Vue {
   background-color: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(5px);
   z-index: 399;
-  animation: opacity 0.7s;
+  animation: opacity 0.3s;
 
   @keyframes opacity {
     0% {

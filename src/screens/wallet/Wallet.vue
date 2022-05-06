@@ -41,9 +41,18 @@
       </Scroll>
     </div>
 
-    <SendForm v-if="showSendForm" :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false)" />
+    <SendForm
+      v-if="showSendForm"
+      :token="selectedCurrency.token"
+      :selectedNetwork="selectedCurrency.mainNetwork"
+      :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false)"
+    />
 
-    <ReceiveForm v-if="showReceiveForm" :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', false)" />
+    <ReceiveForm
+      v-if="showReceiveForm"
+      :selectedNetwork="selectedCurrency.mainNetwork"
+      :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', false)"
+    />
   </div>
 </template>
 
@@ -56,6 +65,7 @@ import { getImgPathByNetworkName } from '@/util/imgPath';
 import { firstCharToUp } from '@/util/stringHelper';
 import { Currency } from '@/interfaces/currencies';
 import type { TabWallet } from '@/interfaces/walletPage';
+
 import Scroll from '@/components/Scroll.vue';
 import SelectNetworkButton from './SelectNetworkButton.vue';
 import PopupWithSelect from '@/components/PopupWithSelect.vue';
@@ -79,6 +89,7 @@ import currencyMock from '@/mocks/currency';
   },
 })
 export default class extends Vue {
+  selectedCurrency!: Currency;
   currencies: Currency[] = currencyMock;
   activeTabName: TabWallet = 'Currencies';
   showSendForm = false;
@@ -125,8 +136,10 @@ export default class extends Vue {
     return this.optionsNetworks.filter(({ label }) => label.includes(filter));
   }
 
-  toggleVisibleActivityForm(field: 'showSendForm' | 'showReceiveForm', value = true) {
+  toggleVisibleActivityForm(field: 'showSendForm' | 'showReceiveForm', value = true, currency: Currency) {
     this[field] = value;
+
+    if (currency) this.selectedCurrency = currency;
   }
 
   toggleSelectedNetwork(value: string) {

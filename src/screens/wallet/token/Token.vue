@@ -16,33 +16,23 @@
     </div>
 
     <div class="activity-block">
-      <ButtonWithIcon
-        name="Send"
-        iconType="send"
-        class="button"
-        :handler="toggleVisible.bind(null, 'showSendForm', true)"
-      />
+      <ButtonWithIcon name="Send" iconType="send" class="button" @click="toggleVisible('showSendForm', true)" />
 
       <ButtonWithIcon
         name="Receive"
         iconType="receive"
         class="button"
-        :handler="toggleVisible.bind(null, 'showReceiveForm', true)"
+        @click="toggleVisible('showReceiveForm', true)"
       />
 
       <ButtonWithIcon
         name="Teleport"
         iconType="teleport"
         class="button"
-        :handler="toggleVisible.bind(null, 'showTeleportForm', true)"
+        @click="toggleVisible('showTeleportForm', true)"
       />
 
-      <ButtonWithIcon
-        name="Buy"
-        iconType="buy"
-        class="button"
-        :handler="toggleVisible.bind(null, 'showBuyForm', true)"
-      />
+      <ButtonWithIcon name="Buy" iconType="buy" class="button" @click="toggleVisible('showBuyForm', true)" />
     </div>
 
     <div class="content">
@@ -82,10 +72,15 @@
     <SendForm
       v-if="showSendForm"
       :selectedNetwork="network"
+      :token="token"
       :closeForm="toggleVisible.bind(null, 'showSendForm', false)"
     />
 
-    <ReceiveForm v-if="showReceiveForm" :closeForm="toggleVisible.bind(null, 'showReceiveForm', false)" />
+    <ReceiveForm
+      v-if="showReceiveForm"
+      :selectedNetwork="network"
+      :closeForm="toggleVisible.bind(null, 'showReceiveForm', false)"
+    />
 
     <TeleportForm
       v-if="showTeleportForm"

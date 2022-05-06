@@ -11,9 +11,9 @@
       />
     </div>
     <div class="header-part">
-      <CircleButton iconType="search" backgroundColor="none" class="search-button" :handler="search" />
+      <CircleButton iconType="search" backgroundColor="none" class="search-button" @click="search" />
 
-      <CircleButton iconType="filter" backgroundColor="none" :handler="filter" />
+      <CircleButton iconType="filter" backgroundColor="none" @click="filter" />
     </div>
   </div>
 </template>

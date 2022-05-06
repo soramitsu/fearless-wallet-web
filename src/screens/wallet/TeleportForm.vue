@@ -32,17 +32,15 @@
     </ActivityForm>
 
     <SendingPopup
-      v-if="showPopup"
+      v-if="showSendingPopup"
       header="Teleport"
-      :popupLoading="popupLoading"
-      :handlerClose="handlerClose"
+      :popupLoading="sendingPopupLoading"
+      :handlerClose="sendingPopupClose"
       :amount="amount"
       :token="selectedToken"
       :firstNetwork="originalNetwork"
       :secondNetwork="destinationNetwork"
-    >
-      <div></div>
-    </SendingPopup>
+    />
   </div>
 </template>
 
@@ -71,8 +69,8 @@ import { firstCharToUp } from '@/util/stringHelper';
   },
 })
 export default class extends Vue {
-  showPopup = false;
-  popupLoading = false;
+  showSendingPopup = false;
+  sendingPopupLoading = false;
   selectedToken = '';
   originalNetwork = '';
   destinationNetwork = '';
@@ -107,16 +105,16 @@ export default class extends Vue {
     this.originalNetwork = this.selectedNetwork;
   }
 
-  handlerClose() {
-    this.showPopup = false;
+  sendingPopupClose() {
+    this.showSendingPopup = false;
   }
 
   teleport() {
-    this.showPopup = true;
-    this.popupLoading = true;
+    this.showSendingPopup = true;
+    this.sendingPopupLoading = true;
 
     setTimeout(() => {
-      this.popupLoading = false;
+      this.sendingPopupLoading = false;
     }, 2000);
   }
 }

@@ -1,11 +1,5 @@
 <template>
-  <ActivityForm
-    header="Buy Funds"
-    buttonText="Buy"
-    :handlerButton="copyAddress"
-    :closeForm="closeForm"
-    class="buy-form"
-  >
+  <ActivityForm header="Buy Funds" buttonText="Buy" :showButton="false" :closeForm="closeForm" class="buy-form">
     <div>buy</div>
   </ActivityForm>
 </template>

@@ -5,23 +5,15 @@
       <ButtonWithIcon
         name="Follow on Twitter"
         iconType="twitter"
-        :handler="redirect.bind(null, 'https://twitter.com/Soramitsu_co')"
+        @click="redirect('https://twitter.com/Soramitsu_co')"
       />
 
-      <ButtonWithIcon
-        name="Join on Telegram"
-        iconType="telegram"
-        :handler="redirect.bind(null, 'https://t.me/sora_xor')"
-      />
+      <ButtonWithIcon name="Join on Telegram" iconType="telegram" @click="redirect('https://t.me/sora_xor')" />
     </div>
     <div class="row">
-      <ButtonWithIcon name="Read on Medium" iconType="planet" :handler="redirect.bind(null, 'https://t.me/sora_xor')" />
+      <ButtonWithIcon name="Read on Medium" iconType="planet" @click="redirect('https://t.me/sora_xor')" />
 
-      <ButtonWithIcon
-        name="Learn on Wiki"
-        iconType="question"
-        :handler="redirect.bind(null, 'https://t.me/sora_xor')"
-      />
+      <ButtonWithIcon name="Learn on Wiki" iconType="question" @click="redirect('https://t.me/sora_xor')" />
     </div>
   </div>
 </template>

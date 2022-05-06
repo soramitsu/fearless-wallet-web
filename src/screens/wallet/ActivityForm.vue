@@ -3,13 +3,14 @@
     <div class="activity-content">
       <slot></slot>
 
-      <div>
-        <div class="fee">
-          <slot name="fee"></slot>
-        </div>
-
-        <Button size="big" class="button" :text="buttonText" :handler="handlerButton" :disabled="buttonDisabled" />
-      </div>
+      <Button
+        v-if="showButton"
+        size="big"
+        class="button"
+        :text="buttonText"
+        :disabled="buttonDisabled"
+        @click="handlerButton"
+      />
     </div>
   </AboveForm>
 </template>
@@ -28,6 +29,7 @@ import AboveForm from '@/components/AboveForm.vue';
 export default class extends Vue {
   @Prop(String) header!: string;
   @Prop(String) buttonText!: string;
+  @Prop({ default: true }) showButton!: boolean;
   @Prop({ default: false }) buttonDisabled!: boolean;
   @Prop(Function) handlerButton!: VoidFunction;
   @Prop(Function) closeForm!: VoidFunction;
@@ -41,10 +43,6 @@ export default class extends Vue {
     flex-direction: column;
     justify-content: space-between;
     height: 100%;
-  }
-
-  .fee {
-    margin-bottom: 20px;
   }
 
   .button {

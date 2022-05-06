@@ -9,14 +9,14 @@
             class="button"
             text="Create a new wallet"
             size="big"
-            :handler="changWalletConnectionStatus.bind(null, 'isCreateWallet')"
+            @click="changWalletConnectionStatus('isCreateWallet')"
           />
 
           <Button
             class="button import-button"
             text="I already have a wallet"
             size="big"
-            :handler="changWalletConnectionStatus.bind(null, 'isImportWallet')"
+            @click="changWalletConnectionStatus('isImportWallet')"
           />
 
           <div class="privacy-policy">

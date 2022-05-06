@@ -24,7 +24,7 @@ export default class extends Vue {
 <style lang="scss" scoped>
 .rotate {
   transform: rotate(180deg);
-  animation: rotate 0.7s;
+  animation: rotate 0.3s;
 }
 
 @keyframes rotate {

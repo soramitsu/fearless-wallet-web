@@ -14,7 +14,7 @@
         size="small"
         borderRadius="mini"
         :class="addButtonClasses(mnemonicElement)"
-        :handler="updateSelectedMnemonicElements.bind(null, mnemonicElement, index)"
+        @click="updateSelectedMnemonicElements(mnemonicElement, index)"
       />
     </div>
   </div>

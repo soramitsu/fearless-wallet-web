@@ -1,5 +1,5 @@
 <template>
-  <div class="circle-button" :class="backgroundClass" @click="handler">
+  <div class="circle-button" :class="backgroundClass" @click="$emit('click')">
     <s-icon :name="iconName" />
   </div>
 </template>
@@ -13,7 +13,6 @@ type BackgroundType = 'none' | 'black' | 'light-black';
 
 @Component
 export default class extends Vue {
-  @Prop(Function) handler!: VoidFunction;
   @Prop(String) iconType!: IconType;
   @Prop(String) backgroundColor!: BackgroundType;
   @Prop({ default: false }) backgroundColorHover!: boolean;

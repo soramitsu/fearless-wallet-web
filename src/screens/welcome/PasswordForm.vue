@@ -7,6 +7,7 @@
       :isError="isShortPassword"
       :showPassword="true"
       :maxlength="25"
+      class="row"
     />
 
     <ValidatedInput
@@ -17,6 +18,7 @@
       :isError="isWrongPassword"
       :showPassword="true"
       :maxlength="25"
+      class="row"
     />
 
     <Hint
@@ -75,5 +77,8 @@ export default class extends Vue {
 
 <style lang="scss" scoped>
 .password-form {
+  .row {
+    margin-bottom: 14px;
+  }
 }
 </style>

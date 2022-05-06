@@ -54,7 +54,7 @@ export default class extends Vue {
   top: 0;
   z-index: 299;
   margin-left: -16px;
-  animation: opacity 0.7s;
+  animation: opacity 0.3s;
 
   @keyframes opacity {
     0% {
@@ -72,6 +72,16 @@ export default class extends Vue {
     height: 560px;
     background-color: #111111;
     clip-path: polygon(100% 0, 100% 100%, 0 100%, 0 4%, 4% 0);
+    animation: transform 0.3s forwards;
+
+    @keyframes transform {
+      0% {
+        transform: translateY(10%);
+      }
+      100% {
+        transform: translateY(0);
+      }
+    }
 
     .content {
       height: 496px;
@@ -79,7 +89,6 @@ export default class extends Vue {
     }
 
     .s-icon-basic-close-24 {
-      // font-size: 20px !important;
       font-weight: 400;
       opacity: 0.8;
       color: rgba(255, 255, 255, 0.65);
@@ -91,7 +100,6 @@ export default class extends Vue {
     }
 
     .s-icon-basic-check-mark-24 {
-      // font-size: 20px !important;
       color: rgba(255, 255, 255, 0.5);
       font-weight: 400;
       color: var(--pink-lavender-color);

@@ -13,7 +13,7 @@
     <div class="header-part">
       <SearchInput v-if="showSearchInput" v-model="filterValue" placeholder="Search in networks" class="search" />
 
-      <CircleButton iconType="filter" backgroundColor="none" :handler="filter" />
+      <CircleButton iconType="filter" backgroundColor="none" @click="filter" />
     </div>
   </div>
 </template>

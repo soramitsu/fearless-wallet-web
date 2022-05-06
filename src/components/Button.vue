@@ -5,7 +5,7 @@
     :border-radius="borderRadius"
     :size="size"
     :disabled="disabled"
-    @click="handler"
+    @click="$emit('click')"
   >
     {{ text }}
   </s-button>
@@ -24,7 +24,6 @@ export default class extends Vue {
   @Prop({ default: false }) disabled!: boolean;
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'medium' }) borderRadius!: Size;
-  @Prop(Function) handler!: VoidFunction;
 }
 </script>
 

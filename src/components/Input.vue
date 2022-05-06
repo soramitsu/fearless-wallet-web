@@ -2,7 +2,7 @@
   <div :class="styleClasses">
     <s-input
       v-model="vModel"
-      class="input"
+      :class="inputClasses"
       :type="type"
       :accept="accept"
       :placeholder="placeholder"
@@ -28,13 +28,23 @@ export default class extends Vue {
   @Prop(String) accept!: string;
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'text' }) type!: Type;
-  @Prop({ default: 25 }) maxlength!: number;
+  @Prop({ default: 100 }) maxlength!: number;
   @Prop({ default: false }) readonly!: boolean;
   @Prop({ default: false }) showPassword!: boolean;
   @Prop({ default: 'default' }) styleInput!: Style;
+  @Prop({ default: false }) isError!: boolean;
 
   get styleClasses() {
     return [`input-style-${this.styleInput}`];
+  }
+
+  get inputClasses() {
+    return [
+      'input',
+      {
+        'error-input': this.isError,
+      },
+    ];
   }
 }
 </script>
@@ -58,11 +68,15 @@ export default class extends Vue {
   }
 
   .s-input .s-placeholder {
-    color: rgba(255, 255, 255, 0.5) !important;
+    color: rgba(255, 255, 255, 0.75) !important;
   }
 
   .s-placeholder + .el-input {
     padding-top: 15px !important;
+  }
+
+  .error-input {
+    border: 1px solid #ee7700 !important;
   }
 }
 
@@ -89,6 +103,10 @@ export default class extends Vue {
 
   .s-placeholder + .el-input {
     padding-top: 15px !important;
+  }
+
+  .error-input {
+    border: 1px solid #ee7700 !important;
   }
 }
 </style>

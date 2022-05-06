@@ -3,7 +3,7 @@
     <div class="popup-content">
       <Loading v-if="popupLoading" />
 
-      <div v-else>
+      <template v-else>
         <div class="descriptions">
           <img :src="getImg(firstNetwork)" class="network-img" />
 
@@ -15,7 +15,7 @@
         </div>
         <div class="amount">{{ amount }} {{ token }}</div>
         <div class="amount-dollars">${{ amountDollars }}</div>
-      </div>
+      </template>
     </div>
   </Popup>
 </template>
@@ -67,7 +67,6 @@ export default class extends Vue {
       display: flex;
       justify-content: space-between;
       background: rgba(255, 255, 255, 0.05);
-      width: 135px;
       border-radius: 50px;
       margin-bottom: 20px;
       padding: 12px;
@@ -79,6 +78,7 @@ export default class extends Vue {
       .s-icon-arrows-arrow-right-24 {
         color: rgba(255, 255, 255, 0.3);
         font-size: 30px !important;
+        margin: 0 10px;
       }
     }
 

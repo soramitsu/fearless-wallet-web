@@ -2,7 +2,7 @@
   <div class="layout">
     <div class="header">
       <div class="icon-container">
-        <CircleButton v-if="showBackIcon" backgroundColor="light-black" iconType="back" :handler="back" />
+        <CircleButton v-if="showBackIcon" backgroundColor="light-black" iconType="back" @click="back" />
       </div>
       <div class="steps">
         <div
@@ -13,7 +13,7 @@
         ></div>
       </div>
       <div class="icon-background">
-        <CircleButton iconType="full-screen" backgroundColor="light-black" :handler="fullScreen" />
+        <CircleButton iconType="full-screen" backgroundColor="light-black" @click="fullScreen" />
       </div>
     </div>
 
@@ -72,7 +72,7 @@
         class="button"
         :text="buttonText"
         :disabled="disabledProceed"
-        :handler="proceed"
+        @click="proceed"
       />
     </div>
 

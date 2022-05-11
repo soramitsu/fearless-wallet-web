@@ -1,5 +1,5 @@
 <template>
-  <div :class="classes">
+  <div :class="classes" @click="$emit('click')">
     {{ textFormatted }}
 
     <Rotate :isActive="isActive" class="icon-chevron">
@@ -48,9 +48,7 @@ export default class extends Vue {
   padding: 6px 12px;
   font-size: 14px;
   align-items: center;
-  margin-bottom: 16px;
   border: 1px solid #201c1f;
-  z-index: 100;
 
   &:hover {
     cursor: pointer;

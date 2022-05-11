@@ -87,7 +87,7 @@ export default class extends Vue {
   }
 
   .search {
-    margin-right: 10px;
+    margin-right: 16px;
   }
 }
 </style>

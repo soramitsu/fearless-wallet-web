@@ -1,16 +1,19 @@
 <template>
   <Popup
-    :header="header"
-    :search="search"
+    :headerText="header"
+    :showSearch="showSearch"
     :staticHeight="staticHeight"
     :handlerFilter="handlerFilter"
     :handlerClose="handlerClose"
-    :placement="placement"
+    :horizontalPlacement="horizontalPlacement"
+    :verticalPlacement="verticalPlacement"
+    :top="top"
+    :left="left"
     class="popup-with-choice"
   >
     <div v-for="{ label, value, path } in options" :key="label" :class="rowClasses(value)" @click="toggleValue(value)">
       <div class="description">
-        <img :src="getImg(path)" class="img" v-if="icon" />
+        <img v-if="showIcon" :src="getImg(path)" class="img" />
 
         {{ label }}
       </div>
@@ -32,14 +35,18 @@ export default class extends Vue {
   @VModel({ type: String }) VModel!: string;
   @Prop(Array) options!: Record<string, string>[];
   @Prop(String) header!: string;
+  @Prop(Number) top!: number;
+  @Prop(Number) left!: number;
+  @Prop({ default: 'center' }) horizontalPlacement!: string;
+  @Prop({ default: 'center' }) verticalPlacement!: string;
+  @Prop({ default: 'medium' }) space!: SpaceSize;
+  @Prop({ default: false }) showIcon!: boolean;
+  @Prop({ default: false }) showSearch!: boolean;
+  @Prop({ default: false }) staticHeight!: boolean;
+
   @Prop(Function) toggleValue!: VoidFunction;
   @Prop(Function) handlerClose!: VoidFunction;
   @Prop(Function) handlerFilter!: (value: string) => void;
-  @Prop({ default: false }) icon!: boolean;
-  @Prop({ default: false }) search!: boolean;
-  @Prop({ default: false }) staticHeight!: boolean;
-  @Prop({ default: 'medium' }) space!: SpaceSize;
-  @Prop({ default: 'center' }) placement!: string;
 
   getImg(path: string) {
     return require(`@/assets/${path}`);
@@ -60,7 +67,6 @@ export default class extends Vue {
 <style lang="scss" scoped>
 .popup-with-choice {
   padding: 0 !important;
-  margin-left: -16px;
 
   .row {
     color: rgba(255, 255, 255, 0.75);

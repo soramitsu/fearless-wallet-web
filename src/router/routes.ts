@@ -36,7 +36,6 @@ const routes: Array<RouteConfig> = [
     component: Welcome,
     beforeEnter: (to, from, next) => {
       if (redirectToWelcomeBack()) next({ name: Components.WelcomeBack });
-      else if (haveAccounts()) next({ name: Components.Wallet });
       else next();
     },
   },

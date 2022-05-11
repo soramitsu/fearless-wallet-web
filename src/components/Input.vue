@@ -10,6 +10,7 @@
       :maxlength="maxlength"
       :readonly="readonly"
       :show-password="showPassword"
+      :style="inputStyle"
     />
   </div>
 </template>
@@ -26,6 +27,7 @@ export default class extends Vue {
   @VModel({ type: String }) vModel!: string;
   @Prop(String) placeholder!: string;
   @Prop(String) accept!: string;
+  @Prop(Number) height!: number;
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'text' }) type!: Type;
   @Prop({ default: 100 }) maxlength!: number;
@@ -38,9 +40,16 @@ export default class extends Vue {
     return [`input-style-${this.styleInput}`];
   }
 
+  get inputStyle() {
+    const styles: Record<string, string> = {};
+
+    if (this.height) styles.height = `${this.height}px`;
+
+    return styles;
+  }
+
   get inputClasses() {
     return [
-      'input',
       {
         'error-input': this.isError,
       },

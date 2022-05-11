@@ -96,6 +96,9 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Currency, HistoryItem } from '@/interfaces/currencies';
+import { Getter } from 'vuex-class';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { SelectedWallet } from '@/store/accounts/types';
 import type { TabCurrency } from '@/interfaces/walletPage';
 import currencyMock from '@/mocks/currency';
 import historyMock from '@/mocks/history';
@@ -139,7 +142,6 @@ export default class extends Vue {
 
   readonly tabsOptions: TabCurrency[] = ['Networks', 'History'];
 
-  currencies: Currency[] = currencyMock;
   history: HistoryItem[] = historyMock;
   activeTabName: TabCurrency = 'Networks';
   filterNetworksValue = '';
@@ -148,6 +150,13 @@ export default class extends Vue {
   showReceiveForm = false;
   showTeleportForm = false;
   showBuyForm = false;
+
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get currencies(): Currency[] {
+    // TODO: fix as '5GjBdxpNyD4Up3Mgg7JUiFRe3bMa5qnW76vajcG4d5cbfxBa'
+    return currencyMock[this.selectedWallet.address as '5GjBdxpNyD4Up3Mgg7JUiFRe3bMa5qnW76vajcG4d5cbfxBa'];
+  }
 
   get filteredNetworks() {
     const { availableInNetworks } = this.tokenInfo!;

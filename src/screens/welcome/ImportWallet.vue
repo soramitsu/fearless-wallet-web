@@ -8,9 +8,11 @@
       v-if="notJsonImport"
       v-model="inputValue"
       type="textarea"
-      class="row textarea"
+      class="row"
+      size="big"
       :placeholder="placeholderTypeImportValue"
       :maxlength="130"
+      :height="170"
     />
 
     <template v-else>
@@ -165,10 +167,6 @@ export default class extends Vue {
 
   .s-icon-file-file-upload-24 {
     color: #ccd2e3 !important;
-  }
-
-  .textarea {
-    height: 170px;
   }
 
   .row {

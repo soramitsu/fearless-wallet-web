@@ -18,8 +18,8 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import AccountController from '@/controllers/accountController';
 import { Components } from '@/router/routes';
+import AccountController from '@/controllers/accountController';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import Button from '@/components/Button.vue';
 
@@ -60,6 +60,7 @@ export default class extends Vue {
 
   .text {
     font-size: 25px;
+    margin-bottom: 15px;
   }
 
   .input {
@@ -67,6 +68,7 @@ export default class extends Vue {
   }
 
   .button {
+    margin-top: 15px;
     width: 100%;
   }
 }

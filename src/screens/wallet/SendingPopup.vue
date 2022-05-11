@@ -54,7 +54,7 @@ export default class extends Vue {
 
 <style lang="scss" scoped>
 .sending-popup {
-  margin-left: -16px;
+  z-index: 399;
 
   .popup-content {
     display: flex;

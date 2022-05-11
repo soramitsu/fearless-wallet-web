@@ -138,6 +138,10 @@ export default class extends Vue {
   @Prop(String) walletConnectionStatus!: WalletConnectionStatus;
   @Getter(GettersTypes.getPassword) passwordExtension!: string;
 
+  get haveAccounts() {
+    return keyring.getAccounts().length > 0;
+  }
+
   get JSON() {
     try {
       const json = JSON.parse(this.json) as KeyringPair$Json;
@@ -165,7 +169,7 @@ export default class extends Vue {
   }
 
   get showInvalidPopup() {
-    return !!this.invalidValueName;
+    return this.invalidValueName !== '';
   }
 
   get invalidPopupMessages() {
@@ -290,8 +294,19 @@ export default class extends Vue {
     // if a invalid popup is shown, then the index does not need to be increased
     this.currentIndexPage += this.showInvalidPopup ? 0 : 1;
 
-    if ((this.isCreateWallet && this.currentIndexPage === 6) || (this.isImportWallet && this.currentIndexPage === 5))
+    if (
+      this.haveAccounts &&
+      ((this.isCreateWallet && this.currentIndexPage === 4) || (this.isImportWallet && this.currentIndexPage === 3))
+    ) {
+      this.accountAuthorization();
       this.$router.push({ name: Components.Wallet });
+
+      return;
+    }
+
+    if ((this.isCreateWallet && this.currentIndexPage === 6) || (this.isImportWallet && this.currentIndexPage === 5)) {
+      this.$router.push({ name: Components.Wallet });
+    }
   }
 
   createWallet() {
@@ -326,8 +341,6 @@ export default class extends Vue {
   }
 
   accountAuthorization() {
-    // test row seed: 0x3d60d4270bc927dc5985631c9ae2f661a22458bd1733a6716da3b50aeb583912
-    // test mnemonic: sibling image belt spot resist year labor style fringe hamster render idle
     const {
       substrate: { value: substrateDP, keyPair: substrateKeyPair },
       ethereum: { value: ethereumDP, keyPair: ethereumKeyPair },
@@ -343,9 +356,15 @@ export default class extends Vue {
       keyring.addUri(suriEthereum, '', { name: this.nickname }, ethereumKeyPair);
     }
 
-    this.accountController.savePassword(this.passwordExtension);
+    this.savePassword();
 
     alert(this.isImportWallet ? 'Wallet imported. Check console' : 'Wallet created. Check console');
+  }
+
+  savePassword() {
+    if (!this.haveAccounts) {
+      this.accountController.savePassword(this.passwordExtension);
+    }
   }
 
   restoreJson() {

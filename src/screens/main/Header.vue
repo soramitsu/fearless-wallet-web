@@ -1,6 +1,6 @@
 <template>
   <div class="header">
-    <div class="header-part">
+    <div class="header-part" :ref="walletNameRef">
       <Logo size="small" />
 
       <div class="wallet-name-block" @click="toggleSelectWalletPopupVisible">
@@ -23,6 +23,8 @@
 
       <CircleButton iconType="settings" class="button-margin" backgroundColor="none" @click="openSettings" />
     </div>
+
+    <SelectWalletPopup v-if="showSelectWalletPopup" @close="toggleSelectWalletPopupVisible" />
   </div>
 </template>
 
@@ -36,19 +38,26 @@ import AccountController from '@/controllers/accountController';
 import Logo from '@/components/Logo.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import Rotate from '@/components/Rotate.vue';
+import SelectWalletPopup from './SelectWalletPopup.vue';
 
 @Component({
   components: {
     Logo,
     CircleButton,
     Rotate,
+    SelectWalletPopup,
   },
 })
 export default class extends Vue {
+  walletNameRef = 'walletName';
   accountController = new AccountController();
   showSelectWalletPopup = false;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get targetElement() {
+    return this.$refs[this.walletNameRef] as HTMLElement;
+  }
 
   get name() {
     return this.selectedWallet.name;
@@ -64,6 +73,12 @@ export default class extends Vue {
 
   toggleSelectWalletPopupVisible() {
     this.showSelectWalletPopup = !this.showSelectWalletPopup;
+
+    if (this.showSelectWalletPopup) {
+      this.targetElement.style.zIndex = '200';
+    } else {
+      this.targetElement.style.zIndex = '0';
+    }
   }
 
   fullScreen() {

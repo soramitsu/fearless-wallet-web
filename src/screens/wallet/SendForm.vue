@@ -80,12 +80,13 @@ import { GettersTypes as ApiGettersTypes } from '@/store/api/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Networks } from '@/store/api/types';
+import { Currency } from '@/interfaces/currencies';
 import { firstCharToUp } from '@/util/stringHelper';
 import Input from '@/components/Input.vue';
 import Select from '@/components/Select.vue';
 import ActivityForm from './ActivityForm.vue';
 import SendingPopup from './SendingPopup.vue';
-import mockCurrency from '@/mocks/currency';
+import currencyMock from '@/mocks/currency';
 
 @Component({
   components: {
@@ -109,6 +110,11 @@ export default class extends Vue {
   @Prop(String) token!: string;
   @Getter(ApiGettersTypes.getNetworksInfo) networksInfo!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get currencies(): Currency[] {
+    // TODO: fix as '5GjBdxpNyD4Up3Mgg7JUiFRe3bMa5qnW76vajcG4d5cbfxBa'
+    return currencyMock[this.selectedWallet.address as '5GjBdxpNyD4Up3Mgg7JUiFRe3bMa5qnW76vajcG4d5cbfxBa'];
+  }
 
   get fee() {
     return 0.0015;
@@ -141,14 +147,14 @@ export default class extends Vue {
   }
 
   get optionsCurrency() {
-    return mockCurrency.map(({ token, mainNetwork }) => ({
+    return this.currencies.map(({ token, mainNetwork }) => ({
       label: `${firstCharToUp(mainNetwork)} (${token})`,
       value: token,
     }));
   }
 
   get tokenInfo() {
-    return mockCurrency.find(({ token }) => token === this.selectedToken);
+    return this.currencies.find(({ token }) => token === this.selectedToken);
   }
 
   get tokenPrice() {

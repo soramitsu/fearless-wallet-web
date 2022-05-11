@@ -28,11 +28,11 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as ApisGettersTypes } from '@/store/api/getters';
 import { Networks } from '@/store/api/types';
+import { firstCharToUp } from '@/util/stringHelper';
 import ActivityForm from './ActivityForm.vue';
 import QrCode from 'qrcode.vue';
 import Select from '@/components/Select.vue';
 import NetworksController from '@/controllers/networksController';
-import { firstCharToUp } from '@/util/stringHelper';
 
 @Component({
   components: {
@@ -42,7 +42,7 @@ import { firstCharToUp } from '@/util/stringHelper';
   },
 })
 export default class extends Vue {
-  network = '';
+  network = 'polkadot';
 
   @Prop(String) selectedNetwork!: string;
   @Prop(Function) closeForm!: VoidFunction;
@@ -54,6 +54,8 @@ export default class extends Vue {
   }
 
   get address() {
+    if (this.selectedWallet.type === 'ethereum') return this.selectedWallet.address;
+
     return NetworksController.formatAddress(this.selectedWallet.address, this.network);
   }
 

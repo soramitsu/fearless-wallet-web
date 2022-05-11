@@ -1,12 +1,12 @@
 <template>
   <div :class="popupBackgroundClasses">
-    <div :class="popupContainerClasses">
-      <div class="header">
-        <SearchInput v-if="search" v-model="filterValue" placeholder="Search in networks" class="search" />
+    <div :class="popupContainerClasses" :style="popupContainerStyle">
+      <div v-if="showHeader" class="header">
+        <SearchInput v-if="showSearch" v-model="filterValue" placeholder="Search in networks" class="search" />
 
         <template v-else>
           <div class="button"></div>
-          <div class="header-text">{{ header }}</div>
+          <div class="header-text">{{ headerText }}</div>
         </template>
 
         <s-button type="link" class="button" @click="handlerClose">
@@ -28,7 +28,8 @@ import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import Scroll from './Scroll.vue';
 import SearchInput from './SearchInput.vue';
 
-type Placement = 'left' | 'center' | 'right';
+type HorizontalPlacement = 'left' | 'center' | 'right';
+type VerticalPlacement = 'top' | 'center' | 'bottom';
 
 @Component({
   components: { Scroll, SearchInput },
@@ -38,23 +39,40 @@ export default class extends Vue {
 
   @Prop(Function) handlerClose!: VoidFunction;
   @Prop(Function) handlerFilter!: (value: string) => void;
-  @Prop({ default: '' }) header!: string;
-  @Prop({ default: false }) search!: boolean;
+  @Prop(Number) top!: number;
+  @Prop(Number) left!: number;
+  @Prop({ default: true }) showHeader!: boolean;
+  @Prop({ default: '' }) headerText!: string;
+  @Prop({ default: false }) showSearch!: boolean;
   @Prop({ default: false }) staticHeight!: boolean;
-  @Prop({ default: 'center' }) placement!: Placement;
+  @Prop({ default: 'center' }) horizontalPlacement!: HorizontalPlacement;
+  @Prop({ default: 'center' }) verticalPlacement!: VerticalPlacement;
+
+  get popupBackgroundClasses() {
+    return [
+      'popup-background',
+      `popup-background-horizontal-placement-${this.horizontalPlacement}`,
+      `popup-background-vertical-placement-${this.verticalPlacement}`,
+    ];
+  }
 
   get popupContainerClasses() {
     return [
       'popup-container',
-      `popup-container-placement-${this.placement}`,
       {
         'static-height': this.staticHeight,
       },
     ];
   }
 
-  get popupBackgroundClasses() {
-    return ['popup-background', `popup-background-placement-${this.placement}`];
+  get popupContainerStyle() {
+    const styles: Record<string, string> = {};
+
+    if (this.top) styles.top = `${this.top}px`;
+
+    if (this.left) styles.left = `${this.left}px`;
+
+    return styles;
   }
 
   @Watch('filterValue')
@@ -70,12 +88,14 @@ export default class extends Vue {
   width: var(--extension-width);
   border-radius: var(--default-border-radius);
   display: flex;
+  align-items: center;
   position: absolute;
   top: 0;
-  margin: auto;
+  left: 0;
   background-color: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(5px);
-  z-index: 399;
+  z-index: 199;
+  padding: 16px;
   animation: opacity 0.3s;
 
   @keyframes opacity {
@@ -89,11 +109,11 @@ export default class extends Vue {
 
   .popup-container {
     display: flex;
-    align-items: center;
     flex-direction: column;
-    margin: auto 16px;
+    position: relative;
+    top: 0;
     min-height: 100px;
-    min-width: 380px;
+    min-width: 280px;
     max-height: 390px;
     max-width: 480px;
     background-color: #111111;
@@ -142,15 +162,27 @@ export default class extends Vue {
   }
 }
 
-.popup-background-placement-left {
+.popup-background-horizontal-placement-left {
   justify-content: left;
 }
 
-.popup-background-placement-center {
+.popup-background-horizontal-placement-center {
   justify-content: center;
 }
 
-.popup-background-placement-right {
+.popup-background-horizontal-placement-right {
   justify-content: right;
+}
+
+.popup-background-vertical-placement-top {
+  align-items: flex-start;
+}
+
+.popup-background-vertical-placement-center {
+  align-items: center;
+}
+
+.popup-background-vertical-placement-bottom {
+  align-items: flex-end;
 }
 </style>

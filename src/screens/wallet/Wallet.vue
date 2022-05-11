@@ -1,10 +1,13 @@
 <template>
   <div class="wallet">
-    <div class="select-network">
+    <div class="wallet-header">
+      <TotalBalance :balance="totalBalance" :percent="totalPercent" />
+
       <SelectNetworkButton
+        :ref="selectNetworkButtonRef"
         :text="selectedNetwork"
         :isActive="showSelectNetworkPopup"
-        @click.native="toggleSelectNetworkPopupVisible"
+        @click="toggleSelectNetworkPopupVisible"
       />
     </div>
 
@@ -12,10 +15,11 @@
       v-if="showSelectNetworkPopup"
       v-model="selectedNetwork"
       header="Select Network"
-      placement="right"
       space="big"
-      :icon="true"
-      :search="true"
+      horizontalPlacement="right"
+      verticalPlacement="center"
+      :showIcon="true"
+      :showSearch="true"
       :staticHeight="true"
       :options="filterOptionsNetworks"
       :toggleValue="toggleSelectedNetwork"
@@ -60,12 +64,13 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as ApisGettersTypes } from '@/store/api/getters';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { SelectedWallet } from '@/store/accounts/types';
 import { Networks } from '@/store/api/types';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { firstCharToUp } from '@/util/stringHelper';
 import { Currency } from '@/interfaces/currencies';
 import type { TabWallet } from '@/interfaces/walletPage';
-
 import Scroll from '@/components/Scroll.vue';
 import SelectNetworkButton from './SelectNetworkButton.vue';
 import PopupWithSelect from '@/components/PopupWithSelect.vue';
@@ -73,6 +78,7 @@ import ReceiveForm from './ReceiveForm.vue';
 import SendForm from './SendForm.vue';
 import ContentHeader from './ContentHeader.vue';
 import Currencies from './Currencies.vue';
+import TotalBalance from './TotalBalance.vue';
 import NFTs from './NFTs.vue';
 import currencyMock from '@/mocks/currency';
 
@@ -86,11 +92,12 @@ import currencyMock from '@/mocks/currency';
     Currencies,
     NFTs,
     Scroll,
+    TotalBalance,
   },
 })
 export default class extends Vue {
+  selectNetworkButtonRef = 'selectNetworkButton';
   selectedCurrency!: Currency;
-  currencies: Currency[] = currencyMock;
   activeTabName: TabWallet = 'Currencies';
   showSendForm = false;
   showReceiveForm = false;
@@ -100,6 +107,24 @@ export default class extends Vue {
   filterValue = '';
 
   @Getter(ApisGettersTypes.getNetworksInfo) networksInfo!: Networks;
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get currencies(): Currency[] {
+    // TODO: fix as '5GjBdxpNyD4Up3Mgg7JUiFRe3bMa5qnW76vajcG4d5cbfxBa'
+    return currencyMock[this.selectedWallet.address as '5GjBdxpNyD4Up3Mgg7JUiFRe3bMa5qnW76vajcG4d5cbfxBa'];
+  }
+
+  get totalBalance() {
+    return this.currencies.reduce((sum, { price, availableInNetworks }) => {
+      const sumToken = availableInNetworks.reduce((sumToken, { balance }) => sumToken + balance, 0);
+
+      return price * sumToken + sum;
+    }, 0);
+  }
+
+  get totalPercent() {
+    return 5.3;
+  }
 
   get showCurrencies() {
     return this.activeTabName === 'Currencies';
@@ -136,6 +161,10 @@ export default class extends Vue {
     return this.optionsNetworks.filter(({ label }) => label.includes(filter));
   }
 
+  get targetElement() {
+    return (this.$refs[this.selectNetworkButtonRef] as Vue).$el as HTMLElement;
+  }
+
   toggleVisibleActivityForm(field: 'showSendForm' | 'showReceiveForm', value = true, currency: Currency) {
     this[field] = value;
 
@@ -150,6 +179,12 @@ export default class extends Vue {
 
   toggleSelectNetworkPopupVisible() {
     this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
+
+    if (this.showSelectNetworkPopup) {
+      this.targetElement.style.zIndex = '200';
+    } else {
+      this.targetElement.style.zIndex = '0';
+    }
   }
 
   handlerFilter(field: 'popupFilterValue' | 'filterValue', value: string) {
@@ -180,14 +215,12 @@ export default class extends Vue {
     height: 425px;
   }
 
-  .select-network {
+  .wallet-header {
     width: 100%;
     display: flex;
-    justify-content: right;
-  }
-
-  .nickname {
-    text-align: left;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
   }
 }
 </style>

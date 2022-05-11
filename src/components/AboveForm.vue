@@ -52,8 +52,8 @@ export default class extends Vue {
   border-radius: var(--default-border-radius);
   position: absolute;
   top: 0;
+  left: 0;
   z-index: 299;
-  margin-left: -16px;
   animation: opacity 0.3s;
 
   @keyframes opacity {
@@ -66,7 +66,8 @@ export default class extends Vue {
   }
 
   .above-form {
-    margin-top: 80px;
+    position: relative;
+    top: 80px;
     border-radius: var(--default-border-radius);
     width: var(--extension-width);
     height: 560px;

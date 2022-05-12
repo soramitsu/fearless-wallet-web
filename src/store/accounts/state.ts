@@ -7,7 +7,7 @@ export type State = {
 
 const state = (): State => {
   return {
-    selectedWallet: { address: '', name: '', type: '' },
+    selectedWallet: { address: '', ethereumAddress: '', name: '', type: '' },
     password: '',
   };
 };

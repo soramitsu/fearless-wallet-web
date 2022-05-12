@@ -1,10 +1,8 @@
 <template>
   <div class="main">
-    <div>
-      <Header />
+    <Header />
 
-      <router-view></router-view>
-    </div>
+    <router-view></router-view>
 
     <Menu />
   </div>
@@ -28,7 +26,6 @@ export default class extends Vue {}
 .main {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   width: 100%;
   height: 100%;
 }

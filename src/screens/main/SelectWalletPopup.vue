@@ -3,9 +3,9 @@
     <Popup :showHeader="false" horizontalPlacement="left" verticalPlacement="top" :top="49" :left="42">
       <div class="wallet-content">
         <TotalBalance
-          v-for="({ meta: { name }, address, type }, index) in wallets"
+          v-for="({ meta: { name }, address }, index) in wallets"
           :key="name + index"
-          :name="getName(name, type)"
+          :name="name"
           :showIcon="selectedWallet.address === address"
           :balance="getBalance(address)"
           :percent="getPercent(address)"
@@ -30,10 +30,13 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Components } from '@/router/routes';
+import { Currency } from '@/interfaces/currencies';
+import { getMetaTyped } from '@/util/meta';
 import Popup from '@/components/Popup.vue';
 import TotalBalance from '@/screens/wallet/TotalBalance.vue';
 import keyring from '@polkadot/ui-keyring';
 import currencyMock from '@/mocks/currency';
+import CurrencyController from '@/controllers/currencyController';
 
 @Component({
   components: {
@@ -48,14 +51,16 @@ export default class extends Vue {
   get wallets() {
     const accounts = keyring.getAccounts();
 
-    return accounts.map(({ address }) => {
-      const pair = keyring.getPair(address);
+    return accounts
+      .map(({ address }) => {
+        const pair = keyring.getPair(address);
 
-      return pair;
-    });
+        return pair;
+      })
+      .filter(({ type }) => type !== 'ethereum');
   }
 
-  get currencies() {
+  get currencies(): Record<string, Currency[]> {
     return currencyMock;
   }
 
@@ -63,16 +68,15 @@ export default class extends Vue {
     this.$router.push({ name: Components.Welcome });
   }
 
-  getName(name: string, type: string) {
-    return type === 'ethereum' ? `${name} (ethereum)` : name;
-  }
-
   getBalance(address: string) {
-    // TODO: fix as ''
+    const { meta } = keyring.getPair(address);
+    const { ethereumAddress } = getMetaTyped(meta);
 
-    return this.currencies[address as ''].reduce((sum, { price, availableInNetworks }) => {
-      const sumToken = availableInNetworks.reduce((sumToken, { balance }) => sumToken + balance, 0);
-      return price * sumToken + sum;
+    // TODO: fix as ''
+    return [...this.currencies[address as ''], ...this.currencies[ethereumAddress as '']].reduce((sum, currency) => {
+      const currencyController = new CurrencyController(currency);
+
+      return sum + currencyController.getCurrencyInfo().totalBalance;
     }, 0);
   }
 

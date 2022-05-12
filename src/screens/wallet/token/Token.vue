@@ -1,6 +1,6 @@
 <template>
   <div class="token">
-    <TokenHeader :network="network" :price="tokenInfo.price" :token="token" />
+    <TokenHeader :network="network" :price="price" :token="token" />
 
     <div class="descriptions">
       <div class="column left-column">
@@ -61,11 +61,7 @@
       <Scroll>
         <Networks v-if="showNetworks" :networks="filteredNetworks" :token="token" :selectedNetwork="network" />
 
-        <History
-          v-else-if="showHistory"
-          :history="filteredHistory"
-          :availableInNetworks="tokenInfo.availableInNetworks"
-        />
+        <History v-else-if="showHistory" :history="filteredHistory" :availableInNetworks="availableInNetworks" />
       </Scroll>
     </div>
 
@@ -155,14 +151,24 @@ export default class extends Vue {
 
   get currencies(): Currency[] {
     // TODO: fix as ''
-    return currencyMock[this.selectedWallet.address as ''];
+    const substrateWalletCurrency = currencyMock[this.selectedWallet.address as ''];
+    const ethereumWalletCurrency = currencyMock[this.selectedWallet.ethereumAddress as ''];
+
+    return [...substrateWalletCurrency, ...ethereumWalletCurrency];
+  }
+
+  get tokenInfo() {
+    return this.currencies.find(({ token }) => token.toLowerCase() === this.token.toLowerCase());
+  }
+
+  get availableInNetworks() {
+    return this.tokenInfo?.availableInNetworks;
   }
 
   get filteredNetworks() {
-    const { availableInNetworks } = this.tokenInfo!;
     const filter = this.filterNetworksValue.trim().toLowerCase();
 
-    return availableInNetworks.filter(({ network }) => network.includes(filter));
+    return this.availableInNetworks?.filter(({ network }) => network.includes(filter));
   }
 
   get filteredHistory() {
@@ -183,10 +189,6 @@ export default class extends Vue {
     return this.activeTabName === 'History';
   }
 
-  get tokenInfo() {
-    return this.currencies.find(({ token }) => token.toLowerCase() === this.token.toLowerCase());
-  }
-
   get network() {
     return this.$route.params.network;
   }
@@ -195,18 +197,26 @@ export default class extends Vue {
     return this.$route.params.token;
   }
 
+  get price() {
+    return this.tokenInfo?.price;
+  }
+
   get tokenInfoInSelectedNetwork() {
-    return this.tokenInfo!.availableInNetworks.find(({ network }) => network === this.network);
+    return this.tokenInfo?.availableInNetworks.find(({ network }) => network === this.network);
   }
 
   get balanceInNetwork() {
-    const { balance } = this.tokenInfoInSelectedNetwork!;
+    const balance = this.tokenInfoInSelectedNetwork?.balance;
+
+    if (!balance) return 0;
 
     return this.tokenInfo!.price * balance;
   }
 
   get countTokensString() {
-    const { balance } = this.tokenInfoInSelectedNetwork!;
+    const balance = this.tokenInfoInSelectedNetwork?.balance;
+
+    if (!balance) return '';
 
     return `${balance} ${this.token.toUpperCase()}`;
   }
@@ -260,6 +270,7 @@ export default class extends Vue {
     display: flex;
     justify-content: space-between;
     margin-bottom: 16px;
+    height: 75px;
 
     .column {
       display: flex;
@@ -313,7 +324,7 @@ export default class extends Vue {
     background-color: rgba(255, 255, 255, 0.05);
     clip-path: var(--default-clip-path-left-top);
     border-radius: 8px;
-    height: 275px;
+    height: 277px;
 
     .content-header {
       display: flex;

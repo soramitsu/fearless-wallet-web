@@ -41,17 +41,15 @@ export default class extends Vue {
 
 <style lang="scss" scoped>
 .menu {
-  position: absolute;
-  top: 560px;
   display: flex;
+  flex: 0 0 80px;
   justify-content: space-around;
   align-items: center;
   z-index: 199;
-  height: 80px;
   width: var(--extension-width);
   margin: 0 0 -16px -16px;
   border-radius: 0 0 var(--default-border-radius) var(--default-border-radius);
-  // background: rgba(0, 0, 0, 0.4);
-  // backdrop-filter: blur(5px);
+  // background-color: rgba(0, 0, 0, 0.5);
+  // backdrop-filter: blur(10px);
 }
 </style>

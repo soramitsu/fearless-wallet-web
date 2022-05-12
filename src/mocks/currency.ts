@@ -29,23 +29,6 @@ export default {
       ],
     },
     {
-      mainNetwork: 'moonriver',
-      token: 'MOVR',
-      price: 23.29,
-      grown: 2.11,
-      grownPercent: 12.11,
-      availableInNetworks: [
-        { network: 'polkadot', balance: 8122.506 },
-        { network: 'kusama', balance: 211.506 },
-        { network: 'moonriver', balance: 222.506 },
-        { network: 'kilt spiritnet', balance: 833.444 },
-        { network: 'calamari', balance: 9205.333 },
-        { network: 'moonbeam', balance: 2205.2222 },
-        { network: 'zeitgeist', balance: 2205.2222 },
-        { network: 'altair', balance: 2205.2222 },
-      ],
-    },
-    {
       mainNetwork: 'kilt spiritnet',
       token: 'KILT',
       price: 16.89,
@@ -84,8 +67,14 @@ export default {
       grown: 2.11,
       grownPercent: 12.11,
       availableInNetworks: [
-        { network: 'moonriver', balance: 111.506 },
-        { network: 'moonbeam', balance: 222.2222 },
+        { network: 'polkadot', balance: 8122.506 },
+        { network: 'kusama', balance: 211.506 },
+        { network: 'moonriver', balance: 222.506 },
+        { network: 'kilt spiritnet', balance: 833.444 },
+        { network: 'calamari', balance: 9205.333 },
+        { network: 'moonbeam', balance: 2205.2222 },
+        { network: 'zeitgeist', balance: 2205.2222 },
+        { network: 'altair', balance: 2205.2222 },
       ],
     },
   ],
@@ -128,6 +117,8 @@ export default {
       ],
     },
   ],
+
+  // TODO: don't delete
   '': [
     {
       mainNetwork: '',
@@ -137,5 +128,5 @@ export default {
       grownPercent: 0,
       availableInNetworks: [],
     },
-  ], // TODO: don't delete
+  ],
 };

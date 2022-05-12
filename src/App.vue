@@ -25,7 +25,9 @@ export default class App extends Vue {
 
     this.subscribeAccounts = keyring.accounts.subject;
     this.subscribeAccounts.subscribe((accounts) => {
-      this.setSelectedWallet({ selectedWalletAddress: Object.keys(accounts)[0] });
+      const selectedWalletAddress = Object.entries(accounts).find(([, { type }]) => type !== 'ethereum')?.[0];
+
+      if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
 
       // TODO:refactoring and optimizing subscriptions, subscribe only to new accounts
       this.networksController.subscribeToNetworks(accounts);

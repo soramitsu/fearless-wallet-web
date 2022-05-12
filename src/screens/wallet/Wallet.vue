@@ -87,6 +87,7 @@ import Currencies from './Currencies.vue';
 import TotalBalance from './TotalBalance.vue';
 import NFTs from './NFTs.vue';
 import currencyMock from '@/mocks/currency';
+import CurrencyController from '@/controllers/currencyController';
 
 @Component({
   components: {
@@ -118,15 +119,20 @@ export default class extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get currencies(): Currency[] {
+    if (this.selectedWallet.address === '') return [];
+
     // TODO: fix as ''
-    return currencyMock[this.selectedWallet.address as ''];
+    const substrateWalletCurrency = currencyMock[this.selectedWallet.address as ''];
+    const ethereumWalletCurrency = currencyMock[this.selectedWallet.ethereumAddress as ''];
+
+    return [...substrateWalletCurrency, ...ethereumWalletCurrency];
   }
 
   get totalBalance() {
-    return this.currencies.reduce((sum, { price, availableInNetworks }) => {
-      const sumToken = availableInNetworks.reduce((sumToken, { balance }) => sumToken + balance, 0);
+    return this.currencies.reduce((sum, currency) => {
+      const currencyController = new CurrencyController(currency);
 
-      return price * sumToken + sum;
+      return sum + currencyController.getCurrencyInfo().totalBalance;
     }, 0);
   }
 
@@ -222,7 +228,7 @@ export default class extends Vue {
     background-color: rgba(255, 255, 255, 0.05);
     clip-path: var(--default-clip-path-left-top);
     border-radius: 8px;
-    height: 425px;
+    height: 418px;
   }
 
   .wallet-header {

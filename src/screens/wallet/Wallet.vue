@@ -28,16 +28,22 @@
     />
 
     <div class="content">
-      <ContentHeader
+      <ContentSettings
         :activeTabName="activeTabName"
+        :showAssetsManagementForm="showAssetsManagementForm"
+        :hideZeroBalance="hideZeroBalance"
         :handlerFilter="handlerFilter.bind(null, 'filterValue')"
         @update:activeTabName="updateActiveTabName"
+        @update:showAssetsManagementForm="toggleAssetsManagementFormVisible"
+        @update:hideZeroBalance="toggleHideZeroBalance"
       />
 
       <Scroll>
         <Currencies
           v-if="showCurrencies"
           :currencies="filterCurrencies"
+          :showAssetsManagementForm="showAssetsManagementForm"
+          :hideZeroBalance="hideZeroBalance"
           :toggleVisibleActivityForm="toggleVisibleActivityForm"
         />
 
@@ -72,11 +78,11 @@ import { firstCharToUp } from '@/util/stringHelper';
 import { Currency } from '@/interfaces/currencies';
 import type { TabWallet } from '@/interfaces/walletPage';
 import Scroll from '@/components/Scroll.vue';
-import SelectNetworkButton from './SelectNetworkButton.vue';
 import PopupWithSelect from '@/components/PopupWithSelect.vue';
+import SelectNetworkButton from './SelectNetworkButton.vue';
 import ReceiveForm from './ReceiveForm.vue';
 import SendForm from './SendForm.vue';
-import ContentHeader from './ContentHeader.vue';
+import ContentSettings from './ContentSettings.vue';
 import Currencies from './Currencies.vue';
 import TotalBalance from './TotalBalance.vue';
 import NFTs from './NFTs.vue';
@@ -88,7 +94,7 @@ import currencyMock from '@/mocks/currency';
     SelectNetworkButton,
     SendForm,
     ReceiveForm,
-    ContentHeader,
+    ContentSettings,
     Currencies,
     NFTs,
     Scroll,
@@ -96,6 +102,8 @@ import currencyMock from '@/mocks/currency';
   },
 })
 export default class extends Vue {
+  showAssetsManagementForm = false;
+  hideZeroBalance = false;
   selectNetworkButtonRef = 'selectNetworkButton';
   selectedCurrency!: Currency;
   activeTabName: TabWallet = 'Currencies';
@@ -110,8 +118,8 @@ export default class extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get currencies(): Currency[] {
-    // TODO: fix as '5GjBdxpNyD4Up3Mgg7JUiFRe3bMa5qnW76vajcG4d5cbfxBa'
-    return currencyMock[this.selectedWallet.address as '5GjBdxpNyD4Up3Mgg7JUiFRe3bMa5qnW76vajcG4d5cbfxBa'];
+    // TODO: fix as ''
+    return currencyMock[this.selectedWallet.address as ''];
   }
 
   get totalBalance() {
@@ -161,8 +169,12 @@ export default class extends Vue {
     return this.optionsNetworks.filter(({ label }) => label.includes(filter));
   }
 
-  get targetElement() {
-    return (this.$refs[this.selectNetworkButtonRef] as Vue).$el as HTMLElement;
+  toggleAssetsManagementFormVisible(value = true) {
+    this.showAssetsManagementForm = value;
+  }
+
+  toggleHideZeroBalance(value = true) {
+    this.hideZeroBalance = value;
   }
 
   toggleVisibleActivityForm(field: 'showSendForm' | 'showReceiveForm', value = true, currency: Currency) {
@@ -178,13 +190,11 @@ export default class extends Vue {
   }
 
   toggleSelectNetworkPopupVisible() {
+    const targetElement = (this.$refs[this.selectNetworkButtonRef] as Vue).$el as HTMLElement;
+
     this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
 
-    if (this.showSelectNetworkPopup) {
-      this.targetElement.style.zIndex = '200';
-    } else {
-      this.targetElement.style.zIndex = '0';
-    }
+    targetElement.style.zIndex = this.showSelectNetworkPopup ? '200' : '0';
   }
 
   handlerFilter(field: 'popupFilterValue' | 'filterValue', value: string) {

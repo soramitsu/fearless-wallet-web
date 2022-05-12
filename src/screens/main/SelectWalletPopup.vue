@@ -68,23 +68,17 @@ export default class extends Vue {
   }
 
   getBalance(address: string) {
-    // TODO: fix as '5GjBdxpNyD4Up3Mgg7JUiFRe3bMa5qnW76vajcG4d5cbfxBa'
+    // TODO: fix as ''
 
-    return this.currencies[address as '5GjBdxpNyD4Up3Mgg7JUiFRe3bMa5qnW76vajcG4d5cbfxBa'].reduce(
-      (sum, { price, availableInNetworks }) => {
-        const sumToken = availableInNetworks.reduce((sumToken, { balance }) => sumToken + balance, 0);
-        return price * sumToken + sum;
-      },
-      0
-    );
+    return this.currencies[address as ''].reduce((sum, { price, availableInNetworks }) => {
+      const sumToken = availableInNetworks.reduce((sumToken, { balance }) => sumToken + balance, 0);
+      return price * sumToken + sum;
+    }, 0);
   }
 
   getPercent(address: string) {
-    // TODO: fix as '5GjBdxpNyD4Up3Mgg7JUiFRe3bMa5qnW76vajcG4d5cbfxBa'
-    return this.currencies[address as '5GjBdxpNyD4Up3Mgg7JUiFRe3bMa5qnW76vajcG4d5cbfxBa'].reduce(
-      (sum, { grownPercent }) => sum + grownPercent,
-      0
-    );
+    // TODO: fix as ''
+    return this.currencies[address as ''].reduce((sum, { grownPercent }) => sum + grownPercent, 0);
   }
 
   updateSelectedWallet(address: string) {

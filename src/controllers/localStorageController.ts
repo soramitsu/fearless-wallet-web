@@ -1,10 +1,10 @@
-type Value = number | string | Record<string, string | number>;
+type Value = number | string | boolean | Record<string, string | number>;
 
 interface Options {
   dateCreated?: string;
 }
 
-interface OptionsProp {
+interface OptionsProps {
   saveDateCreated?: boolean;
 }
 
@@ -15,11 +15,13 @@ export default class LocalStorage {
     this.prefix = `${prefix}_`;
   }
 
-  public get(key: string): string | null {
-    return localStorage.getItem(`${this.prefix}${key}`);
+  public get(key: string): Record<string, any> {
+    const item = localStorage.getItem(`${this.prefix}${key}`);
+
+    return item ? JSON.parse(item) : {};
   }
 
-  public set(key: string, _value: Value, _options: Options = {}, _optionsProp: OptionsProp = {}) {
+  public set(key: string, _value: Value, _options: Options = {}, _optionsProp: OptionsProps = {}) {
     const { saveDateCreated } = _optionsProp;
     const options: Options = { ..._options };
 

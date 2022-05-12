@@ -11,11 +11,10 @@ export default class AccountController {
   private readonly radix = 2;
   private readonly lsAccount = new LocalStorageController('account');
   private readonly passwordLifeTime = 1000 * 60 * 60 * 24; // 24 hours
+  private readonly passwordStorageName = 'password';
 
   private getAccountPasswordValue(): PasswordValue {
-    const accountPasswordValue = this.lsAccount.get('password');
-
-    return accountPasswordValue ? JSON.parse(accountPasswordValue) : {};
+    return this.lsAccount.get(this.passwordStorageName) as PasswordValue;
   }
 
   private getPasswordHash(password: string): string {
@@ -28,7 +27,7 @@ export default class AccountController {
     const hashPasswordString = this.getPasswordHash(password);
     const hashPassword = Hash.sha256(hashPasswordString);
 
-    this.lsAccount.set('password', hashPassword, {}, { saveDateCreated: true });
+    this.lsAccount.set(this.passwordStorageName, hashPassword, {}, { saveDateCreated: true });
   }
 
   public updatedPasswordDateCreated(date?: number): void {
@@ -37,7 +36,7 @@ export default class AccountController {
 
     if (date !== undefined) opt.dateCreated = date.toString();
 
-    if (value) this.lsAccount.set('password', value, opt, { saveDateCreated: date === undefined });
+    if (value) this.lsAccount.set(this.passwordStorageName, value, opt, { saveDateCreated: date === undefined });
   }
 
   public isSamePassword(password: string): boolean {

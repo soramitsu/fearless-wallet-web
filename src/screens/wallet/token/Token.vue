@@ -154,8 +154,8 @@ export default class extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get currencies(): Currency[] {
-    // TODO: fix as '5GjBdxpNyD4Up3Mgg7JUiFRe3bMa5qnW76vajcG4d5cbfxBa'
-    return currencyMock[this.selectedWallet.address as '5GjBdxpNyD4Up3Mgg7JUiFRe3bMa5qnW76vajcG4d5cbfxBa'];
+    // TODO: fix as ''
+    return currencyMock[this.selectedWallet.address as ''];
   }
 
   get filteredNetworks() {

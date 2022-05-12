@@ -1,19 +1,27 @@
 <template>
   <div class="header">
     <div class="header-part">
-      <TabButton
-        v-for="tabName in tabsOptions"
-        :key="tabName"
-        :name="tabName"
-        :isActive="activeTabName === tabName"
-        class="tab"
-        @click.native="openTab(tabName)"
-      />
+      <template v-if="!syncedShowAssetsManagementForm">
+        <TabButton
+          v-for="tabName in tabsOptions"
+          :key="tabName"
+          :name="tabName"
+          :isActive="activeTabName === tabName"
+          class="tab"
+          @click.native="openTab(tabName)"
+        />
+      </template>
+
+      <template v-else>
+        <Switcher v-model="syncedHideZeroBalance" />
+
+        <div class="hide-balance-text">Hide with empty balance</div>
+      </template>
     </div>
     <div class="header-part">
-      <SearchInput v-if="showSearchInput" v-model="filterValue" placeholder="Search in networks" class="search" />
+      <SearchInput v-if="showSearchInput" v-model="filterValue" placeholder="Search" class="search" />
 
-      <CircleButton iconType="filter" backgroundColor="none" @click="filter" />
+      <CircleButton :iconType="iconType" backgroundColor="none" @click="toggleAssetsManagementVisible" />
     </div>
   </div>
 </template>
@@ -24,12 +32,14 @@ import type { TabWallet } from '@/interfaces/walletPage';
 import TabButton from '@/components/TabButton.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import SearchInput from '@/components/SearchInput.vue';
+import Switcher from '@/components/Switcher.vue';
 
 @Component({
   components: {
     TabButton,
     CircleButton,
     SearchInput,
+    Switcher,
   },
 })
 export default class extends Vue {
@@ -38,7 +48,13 @@ export default class extends Vue {
   filterValue = '';
 
   @PropSync('activeTabName', { type: String }) syncedActiveTabName!: TabWallet;
+  @PropSync('showAssetsManagementForm', { type: Boolean }) syncedShowAssetsManagementForm!: boolean;
+  @PropSync('hideZeroBalance', { type: Boolean }) syncedHideZeroBalance!: boolean;
   @Prop(Function) handlerFilter!: (value: string) => void;
+
+  get iconType() {
+    return this.syncedShowAssetsManagementForm ? 'close' : 'filter';
+  }
 
   get showSearchInput() {
     return this.syncedActiveTabName === 'Currencies';
@@ -53,8 +69,8 @@ export default class extends Vue {
     this.syncedActiveTabName = name;
   }
 
-  search() {
-    alert('search');
+  toggleAssetsManagementVisible() {
+    this.syncedShowAssetsManagementForm = !this.syncedShowAssetsManagementForm;
   }
 }
 </script>
@@ -88,6 +104,14 @@ export default class extends Vue {
 
   .search {
     margin-right: 16px;
+    width: 185px;
+  }
+
+  .hide-balance-text {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 18px;
+    margin-left: 8px;
   }
 }
 </style>

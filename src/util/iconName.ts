@@ -14,7 +14,8 @@ export type IconType =
   | 'telegram'
   | 'planet'
   | 'question'
-  | 'teleport';
+  | 'teleport'
+  | 'close';
 
 export default function (iconType: IconType) {
   switch (iconType) {
@@ -50,6 +51,8 @@ export default function (iconType: IconType) {
       return 'notifications-question-circle-24';
     case 'teleport':
       return 'arrows-swap-24';
+    case 'close':
+      return 'basic-close-24';
     default:
       return '';
   }

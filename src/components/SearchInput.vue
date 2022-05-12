@@ -34,6 +34,7 @@ export default class extends Vue {
 
   .search-input-path {
     clip-path: var(--mini-clip-path-left-top-and-right-bottom);
+    width: 230px;
   }
 }
 </style>

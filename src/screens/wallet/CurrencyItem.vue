@@ -1,7 +1,11 @@
 <template>
-  <div class="currency-item">
+  <div v-if="showCurrencyItem" class="currency-item">
+    <div v-if="showAssetsManagementForm" class="drag-icon">
+      <s-icon name="basic-menu-24" />
+    </div>
+
     <div class="img-container">
-      <img :src="getImg(currency.mainNetwork)" class="main-network-img" />
+      <img :src="getImg(currencyInfo.mainNetwork)" class="main-network-img" />
     </div>
 
     <div class="descriptions-column">
@@ -23,7 +27,7 @@
       </div>
       <div class="row second-row">
         <div class="currency-name">
-          {{ currency.token }}
+          {{ currencyInfo.token }}
         </div>
         <div class="count-tokens">
           {{ countTokensString }}
@@ -33,28 +37,32 @@
         <div class="row">
           {{ priceString }}
 
-          <div class="currency-up-price">+{{ currency.grownPercent }}%</div>
+          <div class="currency-up-price">+{{ currencyInfo.grownPercent }}%</div>
         </div>
 
         {{ totalBalanceString }}
       </div>
     </div>
     <div class="activity-block">
-      <CircleButton
-        iconType="send"
-        backgroundColor="black"
-        class="button"
-        @click="toggleVisibleActivityForm('showSendForm', true, currency)"
-      />
+      <template v-if="!showAssetsManagementForm">
+        <CircleButton
+          iconType="send"
+          backgroundColor="black"
+          class="button"
+          @click="toggleVisibleActivityForm('showSendForm', true, currency)"
+        />
 
-      <CircleButton
-        iconType="receive"
-        backgroundColor="black"
-        class="button"
-        @click="toggleVisibleActivityForm('showReceiveForm', true, currency)"
-      />
+        <CircleButton
+          iconType="receive"
+          backgroundColor="black"
+          class="button"
+          @click="toggleVisibleActivityForm('showReceiveForm', true, currency)"
+        />
 
-      <CircleButton iconType="right" backgroundColor="none" :backgroundColorHover="true" @click="right" />
+        <CircleButton iconType="right" backgroundColor="none" :backgroundColorHover="true" @click="openTokenPage" />
+      </template>
+
+      <Switcher v-if="showAssetsManagementForm" v-model="currencyVisible" />
     </div>
   </div>
 </template>
@@ -65,53 +73,79 @@ import { getImgPathByNetworkName } from '@/util/imgPath';
 import { Currency } from '@/interfaces/currencies';
 import { Components } from '@/router/routes';
 import CircleButton from '@/components/CircleButton.vue';
+import Switcher from '@/components/Switcher.vue';
+import CurrencyController from '@/controllers/currencyController';
 
 @Component({
   components: {
     CircleButton,
+    Switcher,
   },
 })
 export default class extends Vue {
+  localCurrencyVisible = false;
+
   @Prop(Object) currency!: Currency;
+  @Prop(Boolean) showAssetsManagementForm!: boolean;
+  @Prop(Boolean) hideZeroBalance!: boolean;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
 
-  get countTokens() {
-    return this.currency.availableInNetworks.reduce((sum, { balance }) => sum + balance, 0);
+  get showCurrencyItem() {
+    return !this.showAssetsManagementForm ? this.currencyVisible : true;
+  }
+
+  get currencyController() {
+    return new CurrencyController(this.currency);
+  }
+
+  get currencyVisible() {
+    return this.localCurrencyVisible;
+  }
+
+  set currencyVisible(value: boolean) {
+    this.currencyController.setCurrencyVisible(value);
+    this.localCurrencyVisible = value;
+  }
+
+  get currencyInfo() {
+    return this.currencyController.getCurrencyInfo();
   }
 
   get countTokensString() {
-    return this.countTokens.toFixed(4);
-  }
-
-  get totalBalance() {
-    return this.currency.price * this.countTokens;
+    return this.currencyInfo?.countTokens.toFixed(4);
   }
 
   get totalBalanceString() {
-    return `$${this.totalBalance.toFixed(2)}`;
+    return `$${this.currencyInfo?.totalBalance.toFixed(2)}`;
   }
 
   get priceString() {
-    return `$${this.currency.price}`;
+    return `$${this.currencyInfo.price}`;
   }
 
   get upperNetworkName() {
-    return this.currency.mainNetwork.toUpperCase();
+    return this.currencyInfo.mainNetwork.toUpperCase();
   }
 
   get isAdditional() {
-    return this.currency.availableInNetworks.length > 5;
+    return this.currencyInfo.availableInNetworks.length > 5;
   }
 
   get additionalCount() {
-    return this.currency.availableInNetworks.length - 4;
+    return this.currencyInfo.availableInNetworks.length - 4;
   }
 
   get availableInNetworks() {
-    return [...this.currency.availableInNetworks].splice(0, this.isAdditional ? 4 : 5);
+    return [...this.currencyInfo.availableInNetworks].splice(0, this.isAdditional ? 4 : 5);
+  }
+
+  mounted() {
+    this.localCurrencyVisible = this.currencyController.getCurrencyVisible();
   }
 
   getImg(network: string) {
+    if (network === '') return '';
+
     return require(`@/assets/networks/${getImgPathByNetworkName(network)}`);
   }
 
@@ -123,12 +157,12 @@ export default class extends Vue {
     alert('Receive');
   }
 
-  right() {
+  openTokenPage() {
     this.$router.push({
       name: Components.Token,
       params: {
-        token: this.currency.token,
-        network: this.currency.mainNetwork,
+        token: this.currencyInfo.token,
+        network: this.currencyInfo.mainNetwork,
       },
     });
   }
@@ -144,6 +178,18 @@ export default class extends Vue {
 
   &:last-child {
     border-bottom: none;
+  }
+
+  .drag-icon {
+    margin: auto 20px auto 0;
+
+    &:hover {
+      cursor: pointer;
+    }
+
+    i {
+      color: #fff;
+    }
   }
 
   .descriptions-column {

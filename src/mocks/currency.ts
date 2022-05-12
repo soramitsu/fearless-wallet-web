@@ -69,15 +69,11 @@ export default {
     },
     {
       mainNetwork: 'calamari',
-      token: 'CALAMARI',
+      token: 'CLM',
       price: 312.29,
       grown: 56.62,
       grownPercent: 0.31,
-      availableInNetworks: [
-        { network: 'calamari', balance: 22111.506 },
-        { network: 'moonriver', balance: 222.506 },
-        { network: 'kilt spiritnet', balance: 8333.444 },
-      ],
+      availableInNetworks: [],
     },
   ],
   '0x092599A2D997F02A6E629dc9bfEf442e74095437': [
@@ -132,5 +128,14 @@ export default {
       ],
     },
   ],
-  '': [], // TODO: don't delete
+  '': [
+    {
+      mainNetwork: '',
+      token: '',
+      price: 0,
+      grown: 0,
+      grownPercent: 0,
+      availableInNetworks: [],
+    },
+  ], // TODO: don't delete
 };

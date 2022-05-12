@@ -1,4 +1,4 @@
-interface AvailableInNetworks {
+export interface AvailableInNetworks {
   network: string;
   balance: number;
 }

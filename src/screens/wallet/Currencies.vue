@@ -4,6 +4,8 @@
       v-for="currency in currencies"
       :key="currency.mainNetwork"
       :currency="currency"
+      :showAssetsManagementForm="showAssetsManagementForm"
+      :hideZeroBalance="hideZeroBalance"
       :toggleVisibleActivityForm="toggleVisibleActivityForm"
     />
   </div>
@@ -19,6 +21,8 @@ import CurrencyItem from './CurrencyItem.vue';
 })
 export default class extends Vue {
   @Prop(Array) currencies!: Currency[];
+  @Prop(Boolean) showAssetsManagementForm!: boolean;
+  @Prop(Boolean) hideZeroBalance!: boolean;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
 }
 </script>

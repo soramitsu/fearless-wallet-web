@@ -5,14 +5,14 @@
     <MnemonicColumns :mnemonic="mnemonic" :selectedMnemonicElements="selectedMnemonicElements" />
 
     <div class="hint">Select words in the right order:</div>
-    <div>
-      <Button
+    <div class="words">
+      <BorderButton
         v-for="(mnemonicElement, index) in mnemonicMix"
         :key="index"
-        :text="mnemonicElement"
-        type="primary"
+        type="secondary"
         size="small"
         borderRadius="mini"
+        :text="mnemonicElement"
         :class="addButtonClasses(mnemonicElement)"
         @click="updateSelectedMnemonicElements(mnemonicElement, index)"
       />
@@ -22,13 +22,13 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Button from '@/components/Button.vue';
+import BorderButton from '@/components/BorderButton.vue';
 import MnemonicColumns from './MnemonicColumns.vue';
 
 @Component({
   components: {
     MnemonicColumns,
-    Button,
+    BorderButton,
   },
 })
 export default class extends Vue {
@@ -45,8 +45,7 @@ export default class extends Vue {
 
   addButtonClasses(word: string) {
     return [
-      'button',
-      'unselected-button',
+      'button-mnemonic',
       {
         'inactive-button': this.selectedMnemonicElements.includes(word),
       },
@@ -67,41 +66,29 @@ export default class extends Vue {
     margin: 20px 0 26px;
   }
 
+  .words {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
   .warning {
     height: 48px;
     line-height: 170%;
     margin-bottom: 10px;
   }
 
-  .button {
-    font-size: 13px;
-    margin: 4px 3px;
-    clip-path: var(--mini-clip-path-left-top-and-right-bottom) !important;
+  .button-mnemonic {
+    margin: 4px 8px 4px 0;
+    flex: 1 1 70px;
 
     span {
       font-weight: 400;
     }
   }
 
-  .unselected-button {
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-  }
-
   .inactive-button {
     opacity: 0.2;
-  }
-
-  // reset default 'focusing', 's-pressed' classes
-  .s-pressed[class~='unselected-button'],
-  .focusing[class~='unselected-button'] {
-    background-color: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
   }
 }
 </style>

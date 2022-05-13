@@ -16,54 +16,51 @@
     </div>
 
     <div class="activity-block">
-      <ButtonWithIcon name="Send" iconType="send" class="button" @click="toggleVisible('showSendForm', true)" />
+      <ButtonWithIcon text="Send" iconType="send" width="125px" @click="toggleVisible('showSendForm', true)" />
+
+      <ButtonWithIcon text="Receive" iconType="receive" width="125px" @click="toggleVisible('showReceiveForm', true)" />
 
       <ButtonWithIcon
-        name="Receive"
-        iconType="receive"
-        class="button"
-        @click="toggleVisible('showReceiveForm', true)"
-      />
-
-      <ButtonWithIcon
-        name="Teleport"
+        text="Teleport"
         iconType="teleport"
-        class="button"
+        width="125px"
         @click="toggleVisible('showTeleportForm', true)"
       />
 
-      <ButtonWithIcon name="Buy" iconType="buy" class="button" @click="toggleVisible('showBuyForm', true)" />
+      <ButtonWithIcon text="Buy" iconType="buy" width="125px" @click="toggleVisible('showBuyForm', true)" />
     </div>
 
-    <div class="content">
-      <div class="content-header">
-        <div class="tabs">
-          <TabButton
-            v-for="tabName in tabsOptions"
-            :key="tabName"
-            :name="tabName"
-            :isActive="activeTabName === tabName"
-            class="tab"
-            @click.native="openTab(tabName)"
+    <Corners size="big" :bottomRightCorner="false">
+      <div class="content">
+        <div class="content-header">
+          <div class="tabs">
+            <TabButton
+              v-for="tabName in tabsOptions"
+              :key="tabName"
+              :name="tabName"
+              :isActive="activeTabName === tabName"
+              class="tab"
+              @click.native="openTab(tabName)"
+            />
+          </div>
+
+          <SearchInput v-if="showNetworks" v-model="filterNetworksValue" placeholder="Search in networks" />
+
+          <Dropdown
+            v-else-if="showHistory"
+            :value="filterHistoryValue"
+            :options="historyDropdownOption"
+            :handler="filterHistoryValueUpdate"
           />
         </div>
 
-        <SearchInput v-if="showNetworks" v-model="filterNetworksValue" placeholder="Search in networks" />
+        <Scroll>
+          <Networks v-if="showNetworks" :networks="filteredNetworks" :token="token" :selectedNetwork="network" />
 
-        <Dropdown
-          v-else-if="showHistory"
-          :value="filterHistoryValue"
-          :options="historyDropdownOption"
-          :handler="filterHistoryValueUpdate"
-        />
+          <History v-else-if="showHistory" :history="filteredHistory" :availableInNetworks="availableInNetworks" />
+        </Scroll>
       </div>
-
-      <Scroll>
-        <Networks v-if="showNetworks" :networks="filteredNetworks" :token="token" :selectedNetwork="network" />
-
-        <History v-else-if="showHistory" :history="filteredHistory" :availableInNetworks="availableInNetworks" />
-      </Scroll>
-    </div>
+    </Corners>
 
     <SendForm
       v-if="showSendForm"
@@ -103,6 +100,7 @@ import ButtonWithIcon from '@/components/ButtonWithIcon.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import Scroll from '@/components/Scroll.vue';
 import Dropdown from '@/components/Dropdown.vue';
+import Corners from '@/components/Corners.vue';
 import TokenHeader from './TokenHeader.vue';
 import Networks from './Networks.vue';
 import History from './History.vue';
@@ -127,6 +125,7 @@ import BuyForm from '../BuyForm.vue';
     TeleportForm,
     BuyForm,
     Dropdown,
+    Corners,
   },
 })
 export default class extends Vue {
@@ -311,10 +310,6 @@ export default class extends Vue {
     display: flex;
     justify-content: space-between;
     margin-bottom: 10px;
-
-    .button {
-      width: 24%;
-    }
   }
 
   .content {
@@ -322,7 +317,7 @@ export default class extends Vue {
     flex-direction: column;
     border: 1px solid rgba(255, 255, 255, 0.1);
     background-color: rgba(255, 255, 255, 0.05);
-    clip-path: var(--default-clip-path-left-top);
+    clip-path: var(--big-clip-path-left-top);
     border-radius: 8px;
     height: 277px;
 

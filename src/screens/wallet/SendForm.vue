@@ -233,7 +233,7 @@ export default class extends Vue {
     padding: 16px;
     background-color: rgba(255, 255, 255, 0.05) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    clip-path: var(--default-clip-path-left-top-and-right-bottom);
+    clip-path: var(--big-clip-path-left-top-and-right-bottom);
     border-radius: var(--default-border-radius);
 
     .summary-label {

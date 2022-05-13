@@ -33,7 +33,7 @@ export default class extends Vue {
   }
 
   .search-input-path {
-    clip-path: var(--mini-clip-path-left-top-and-right-bottom);
+    clip-path: var(--medium-clip-path-left-top-and-right-bottom);
     width: 230px;
   }
 }

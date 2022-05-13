@@ -6,16 +6,20 @@
 
         <div>
           <Button
-            class="button"
+            width="100%"
             text="Create a new wallet"
+            class="create-button"
             size="big"
             @click="changWalletConnectionStatus('isCreateWallet')"
           />
 
           <Button
-            class="button import-button"
+            class="import-button"
+            width="100%"
             text="I already have a wallet"
             size="big"
+            type="secondary"
+            :border="false"
             @click="changWalletConnectionStatus('isImportWallet')"
           />
 
@@ -101,14 +105,8 @@ export default class extends Vue {
     }
   }
 
-  .button {
-    margin-top: 10px;
-    width: 100%;
-  }
-
   .import-button {
-    background-color: rgba(255, 255, 255, 0.1);
-    border: rgba(255, 255, 255, 0.1);
+    margin-top: 10px;
   }
 }
 </style>

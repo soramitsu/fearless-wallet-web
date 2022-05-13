@@ -3,7 +3,7 @@
     <div class="activity-content">
       <slot></slot>
 
-      <Button
+      <BorderButton
         v-if="showButton"
         size="big"
         class="button"
@@ -17,13 +17,13 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Button from '@/components/Button.vue';
+import BorderButton from '@/components/BorderButton.vue';
 import AboveForm from '@/components/AboveForm.vue';
 
 @Component({
   components: {
     AboveForm,
-    Button,
+    BorderButton,
   },
 })
 export default class extends Vue {

@@ -1,20 +1,26 @@
 <template>
-  <div :class="classes" @click="$emit('click')">
-    {{ textFormatted }}
+  <Corners>
+    <div :class="classes" @click="$emit('click')">
+      {{ textFormatted }}
 
-    <Rotate :isActive="isActive" class="icon-chevron">
-      <s-icon name="chevron-bottom-16" />
-    </Rotate>
-  </div>
+      <Rotate :isActive="isActive" class="icon-chevron">
+        <s-icon name="chevron-bottom-16" />
+      </Rotate>
+    </div>
+  </Corners>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { firstCharToUp } from '@/util/stringHelper';
 import Rotate from '@/components/Rotate.vue';
+import Corners from '@/components/Corners.vue';
 
 @Component({
-  components: { Rotate },
+  components: {
+    Rotate,
+    Corners,
+  },
 })
 export default class extends Vue {
   @Prop(String) text!: string;
@@ -37,9 +43,10 @@ export default class extends Vue {
 
 <style lang="scss" scoped>
 .select-network-button {
+  position: relative;
   display: flex;
   justify-content: space-between;
-  clip-path: var(--mini-clip-path-left-top-and-right-bottom);
+  clip-path: var(--medium-clip-path-left-top-and-right-bottom);
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 5px;
   background-color: #201c1f;

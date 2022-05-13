@@ -11,7 +11,7 @@
         :maxlength="25"
       />
 
-      <Button text="Unlock" size="big" class="button" :disabled="disabled" @click="unlock" />
+      <BorderButton text="Unlock" size="big" class="button" :disabled="disabled" @click="unlock" />
     </div>
   </div>
 </template>
@@ -21,12 +21,12 @@ import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Components } from '@/router/routes';
 import AccountController from '@/controllers/accountController';
 import ValidatedInput from '@/components/ValidatedInput.vue';
-import Button from '@/components/Button.vue';
+import BorderButton from '@/components/BorderButton.vue';
 
 @Component({
   components: {
     ValidatedInput,
-    Button,
+    BorderButton,
   },
 })
 export default class extends Vue {

@@ -3,17 +3,34 @@
     <Logo class="description" size="big" text="All done!" subtext="Stay Fearless!" />
     <div class="row">
       <ButtonWithIcon
-        name="Follow on Twitter"
+        text="Follow on Twitter"
         iconType="twitter"
+        class="follow-button"
+        width="256px"
         @click="redirect('https://twitter.com/Soramitsu_co')"
       />
 
-      <ButtonWithIcon name="Join on Telegram" iconType="telegram" @click="redirect('https://t.me/sora_xor')" />
+      <ButtonWithIcon
+        text="Join on Telegram"
+        iconType="telegram"
+        width="256px"
+        @click="redirect('https://t.me/sora_xor')"
+      />
     </div>
     <div class="row">
-      <ButtonWithIcon name="Read on Medium" iconType="planet" @click="redirect('https://t.me/sora_xor')" />
+      <ButtonWithIcon
+        text="Read on Medium"
+        iconType="planet"
+        width="256px"
+        @click="redirect('https://t.me/sora_xor')"
+      />
 
-      <ButtonWithIcon name="Learn on Wiki" iconType="question" @click="redirect('https://t.me/sora_xor')" />
+      <ButtonWithIcon
+        text="Learn on Wiki"
+        iconType="question"
+        width="256px"
+        @click="redirect('https://t.me/sora_xor')"
+      />
     </div>
   </div>
 </template>

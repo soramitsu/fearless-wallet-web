@@ -1,28 +1,32 @@
 <template>
-  <div :class="styleClasses">
-    <s-input
-      v-model="vModel"
-      :class="inputClasses"
-      :type="type"
-      :accept="accept"
-      :placeholder="placeholder"
-      :size="size"
-      :maxlength="maxlength"
-      :readonly="readonly"
-      :show-password="showPassword"
-      :style="inputStyle"
-    />
-  </div>
+  <Corners :isError="isError" :size="size">
+    <div :class="containerInputClasses">
+      <s-input
+        v-model="vModel"
+        :class="inputClasses"
+        :type="type"
+        :accept="accept"
+        :placeholder="placeholder"
+        :size="size"
+        :maxlength="maxlength"
+        :readonly="readonly"
+        :show-password="showPassword"
+        :style="inputStyle"
+      />
+    </div>
+  </Corners>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
+import Corners from '@/components/Corners.vue';
 
 type Size = 'small' | 'medium' | 'big';
 type Type = 'text' | 'textarea' | 'text-file';
 type Style = 'default' | 'pink';
-
-@Component
+@Component({
+  components: { Corners },
+})
 export default class extends Vue {
   @VModel({ type: String }) vModel!: string;
   @Prop(String) placeholder!: string;
@@ -36,8 +40,11 @@ export default class extends Vue {
   @Prop({ default: 'default' }) styleInput!: Style;
   @Prop({ default: false }) isError!: boolean;
 
-  get styleClasses() {
-    return [`input-style-${this.styleInput}`];
+  get containerInputClasses() {
+    // for "small" and "mini" sizes also medium
+    const sizeName = this.size === 'big' ? 'big' : 'medium';
+
+    return ['input', `input-style-${this.styleInput}`, `input-size-${sizeName}`];
   }
 
   get inputStyle() {
@@ -59,16 +66,11 @@ export default class extends Vue {
 </script>
 
 <style lang="scss">
-.input-style-default {
-  textarea,
-  input {
-    color: var(--pink-lavender-color) !important;
-  }
+.input {
+  position: relative;
 
   .s-input {
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    background-color: rgba(255, 255, 255, 0.05) !important;
-    clip-path: var(--default-clip-path-left-top-and-right-bottom);
     padding-left: 25px !important;
   }
 
@@ -85,7 +87,18 @@ export default class extends Vue {
   }
 
   .error-input {
-    border: 1px solid #ee7700 !important;
+    border: 1px solid var(--error-color) !important;
+  }
+}
+
+.input-style-default {
+  textarea,
+  input {
+    color: var(--pink-lavender-color) !important;
+  }
+
+  .s-input {
+    background-color: rgba(255, 255, 255, 0.05) !important;
   }
 }
 
@@ -96,26 +109,19 @@ export default class extends Vue {
   }
 
   .s-input {
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
     background-color: var(--pink-purple-color) !important;
-    clip-path: var(--default-clip-path-left-top-and-right-bottom);
-    padding-left: 25px !important;
   }
+}
 
-  .el-input__inner {
-    font-size: 16px !important;
+.input-size-big {
+  .s-input {
+    clip-path: var(--big-clip-path-left-top-and-right-bottom);
   }
+}
 
-  .s-input .s-placeholder {
-    color: rgba(255, 255, 255, 0.75) !important;
-  }
-
-  .s-placeholder + .el-input {
-    padding-top: 15px !important;
-  }
-
-  .error-input {
-    border: 1px solid #ee7700 !important;
+.input-size-medium {
+  .s-input {
+    clip-path: var(--medium-clip-path-left-top-and-right-bottom);
   }
 }
 </style>

@@ -27,29 +27,31 @@
       :handlerFilter="handlerFilter.bind(null, 'popupFilterValue')"
     />
 
-    <div class="content">
-      <ContentSettings
-        :activeTabName="activeTabName"
-        :showAssetsManagementForm="showAssetsManagementForm"
-        :hideZeroBalance="hideZeroBalance"
-        :handlerFilter="handlerFilter.bind(null, 'filterValue')"
-        @update:activeTabName="updateActiveTabName"
-        @update:showAssetsManagementForm="toggleAssetsManagementFormVisible"
-        @update:hideZeroBalance="toggleHideZeroBalance"
-      />
-
-      <Scroll>
-        <Currencies
-          v-if="showCurrencies"
-          :currencies="filterCurrencies"
+    <Corners size="big" :bottomRightCorner="false">
+      <div class="content">
+        <ContentSettings
+          :activeTabName="activeTabName"
           :showAssetsManagementForm="showAssetsManagementForm"
           :hideZeroBalance="hideZeroBalance"
-          :toggleVisibleActivityForm="toggleVisibleActivityForm"
+          :handlerFilter="handlerFilter.bind(null, 'filterValue')"
+          @update:activeTabName="updateActiveTabName"
+          @update:showAssetsManagementForm="toggleAssetsManagementFormVisible"
+          @update:hideZeroBalance="toggleHideZeroBalance"
         />
 
-        <NFTs v-else-if="showNfts" />
-      </Scroll>
-    </div>
+        <Scroll>
+          <Currencies
+            v-if="showCurrencies"
+            :currencies="filterCurrencies"
+            :showAssetsManagementForm="showAssetsManagementForm"
+            :hideZeroBalance="hideZeroBalance"
+            :toggleVisibleActivityForm="toggleVisibleActivityForm"
+          />
+
+          <NFTs v-else-if="showNfts" />
+        </Scroll>
+      </div>
+    </Corners>
 
     <SendForm
       v-if="showSendForm"
@@ -78,6 +80,7 @@ import { firstCharToUp } from '@/util/stringHelper';
 import { Currency } from '@/interfaces/currencies';
 import type { TabWallet } from '@/interfaces/walletPage';
 import Scroll from '@/components/Scroll.vue';
+import Corners from '@/components/Corners.vue';
 import PopupWithSelect from '@/components/PopupWithSelect.vue';
 import SelectNetworkButton from './SelectNetworkButton.vue';
 import ReceiveForm from './ReceiveForm.vue';
@@ -100,6 +103,7 @@ import CurrencyController from '@/controllers/currencyController';
     NFTs,
     Scroll,
     TotalBalance,
+    Corners,
   },
 })
 export default class extends Vue {
@@ -226,7 +230,7 @@ export default class extends Vue {
     padding: 16px 0 0 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     background-color: rgba(255, 255, 255, 0.05);
-    clip-path: var(--default-clip-path-left-top);
+    clip-path: var(--big-clip-path-left-top);
     border-radius: 8px;
     height: 418px;
   }

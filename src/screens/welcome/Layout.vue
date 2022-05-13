@@ -69,7 +69,7 @@
       <Button
         v-if="!showAdvancedForm"
         size="big"
-        class="button"
+        width="100%"
         :text="buttonText"
         :disabled="disabledProceed"
         @click="proceed"
@@ -451,10 +451,6 @@ export default class extends Vue {
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
-
-    .button {
-      width: 100%;
-    }
 
     .content {
       width: 100%;

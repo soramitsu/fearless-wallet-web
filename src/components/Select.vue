@@ -1,13 +1,16 @@
 <template>
-  <div class="select-style-default">
-    <s-select v-model="vModel" :placeholder="placeholder" :size="size">
-      <s-option v-for="{ value, label } in options" :key="value" :value="value" :label="label" />
-    </s-select>
-  </div>
+  <Corners :size="size">
+    <div :class="containerSelectClasses">
+      <s-select v-model="vModel" :placeholder="placeholder" :size="size">
+        <s-option v-for="{ value, label } in options" :key="value" :value="value" :label="label" />
+      </s-select>
+    </div>
+  </Corners>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
+import Corners from './Corners.vue';
 
 type Size = 'small' | 'medium' | 'big';
 
@@ -16,12 +19,21 @@ interface Options {
   value: string;
 }
 
-@Component
+@Component({
+  components: { Corners },
+})
 export default class extends Vue {
   @VModel({ type: String }) vModel!: string;
   @Prop(String) placeholder!: string;
   @Prop(Array) options!: Options[];
   @Prop({ default: 'medium' }) size!: Size;
+
+  get containerSelectClasses() {
+    // for "small" and "mini" sizes also medium
+    const sizeName = this.size === 'big' ? 'big' : 'medium';
+
+    return [`select-style-default`, `select-size-${sizeName}`];
+  }
 }
 </script>
 
@@ -29,10 +41,6 @@ export default class extends Vue {
 .select-style-default {
   input {
     color: var(--pink-lavender-color) !important;
-  }
-
-  .s-select {
-    clip-path: var(--default-clip-path-left-top-and-right-bottom);
   }
 
   .s-select .el-input__inner {
@@ -53,6 +61,18 @@ export default class extends Vue {
 
   .s-select .el-select i.el-icon-arrow-up:before {
     color: rgba(255, 255, 255, 0.5) !important;
+  }
+}
+
+.select-size-big {
+  .s-select {
+    clip-path: var(--big-clip-path-left-top-and-right-bottom);
+  }
+}
+
+.select-size-medium {
+  .s-select {
+    clip-path: var(--medium-clip-path-left-top-and-right-bottom);
   }
 }
 </style>

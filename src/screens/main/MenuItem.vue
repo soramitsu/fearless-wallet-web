@@ -1,6 +1,7 @@
 <template>
   <div :class="menuItemClasses">
-    <s-icon :name="icon" />
+    <img :src="img" class="menu-icon" />
+
     <div class="name">
       {{ name }}
     </div>
@@ -23,21 +24,10 @@ export default class MenuItem extends Vue {
     return ['menu-item', { active: this.isActive }];
   }
 
-  get icon() {
-    switch (this.name) {
-      case 'Wallet':
-        return 'finance-wallet-24';
-      case 'Crowdloans':
-        return 'various-rocket-24';
-      case 'Staking':
-        return 'software-database-24';
-      case 'DEX':
-        return 'grid-segment-24';
-      case 'History':
-        return 'time-time-history-24';
-      default:
-        return '';
-    }
+  get img() {
+    const fileName = this.name === 'DEX' ? 'polkaswap' : this.name.toLowerCase();
+
+    return require(`@/assets/${fileName}.svg`);
   }
 }
 </script>
@@ -46,6 +36,7 @@ export default class MenuItem extends Vue {
 .menu-item {
   display: flex;
   flex-direction: column;
+  align-items: center;
   color: rgba(255, 255, 255, 0.5);
   width: 85px;
 
@@ -68,6 +59,11 @@ export default class MenuItem extends Vue {
 
   i {
     color: rgba(255, 255, 255, 0.5);
+  }
+
+  .menu-icon {
+    height: 24px;
+    width: 24px;
   }
 }
 

@@ -4,7 +4,7 @@
     <div class="row">
       <BorderButton
         text="Follow on Twitter"
-        iconType="twitter"
+        iconName="twitter"
         class="follow-button"
         type="secondary"
         width="256px"
@@ -13,7 +13,7 @@
 
       <BorderButton
         text="Join on Telegram"
-        iconType="telegram"
+        iconName="telegram"
         type="secondary"
         width="256px"
         @click="redirect('https://t.me/sora_xor')"
@@ -22,7 +22,7 @@
     <div class="row">
       <BorderButton
         text="Read on Medium"
-        iconType="planet"
+        iconName="medium"
         type="secondary"
         width="256px"
         @click="redirect('https://t.me/sora_xor')"
@@ -30,7 +30,7 @@
 
       <BorderButton
         text="Learn on Wiki"
-        iconType="question"
+        iconName="file-dock"
         type="secondary"
         width="256px"
         @click="redirect('https://t.me/sora_xor')"

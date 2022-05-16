@@ -21,7 +21,7 @@
     <div class="header-part">
       <SearchInput v-if="showSearchInput" v-model="filterValue" placeholder="Search" class="search" />
 
-      <CircleButton :iconType="iconType" backgroundColor="none" @click="toggleAssetsManagementVisible" />
+      <CircleButton :iconName="iconName" backgroundColor="none" @click="toggleAssetsManagementVisible" />
     </div>
   </div>
 </template>
@@ -52,7 +52,7 @@ export default class ContentSettings extends Vue {
   @PropSync('hideZeroBalance', { type: Boolean }) syncedHideZeroBalance!: boolean;
   @Prop(Function) handlerFilter!: (value: string) => void;
 
-  get iconType() {
+  get iconName() {
     return this.syncedShowAssetsManagementForm ? 'close' : 'filter';
   }
 

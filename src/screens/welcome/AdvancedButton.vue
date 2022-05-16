@@ -1,20 +1,12 @@
-<template>
+<template functional>
   <div class="advanced-button">
-    <s-button class="button" type="link" border-radius="mini" @click="handler">
-      <span>Advanced backup settings</span>
-      <s-icon name="circle-plus-16" class="plus-icon" />
-    </s-button>
+    <div class="button" @click="$emit('click')">
+      Advanced backup settings
+
+      <img src="@/assets/circle-plus.svg" class="plus-icon" />
+    </div>
   </div>
 </template>
-
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-
-@Component
-export default class AdvancedButton extends Vue {
-  @Prop(Function) handler!: VoidFunction;
-}
-</script>
 
 <style lang="scss"></style>
 
@@ -24,28 +16,24 @@ export default class AdvancedButton extends Vue {
   margin-top: 5px;
 
   .button {
-    color: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 16px;
     line-height: 170%;
-
-    span {
-      font-weight: 400;
-    }
+    opacity: 0.95;
 
     &:hover {
-      .s-icon-circle-plus-16 {
-        color: var(--pink-color);
-      }
+      cursor: pointer;
+      opacity: 1;
     }
-  }
 
-  .plus-icon {
-    width: 28px;
-    height: 28px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
+    .plus-icon {
+      margin-left: 5px;
+      width: 20px;
+      height: 20px;
+      color: yellow;
+    }
   }
 
   i {

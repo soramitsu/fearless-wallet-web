@@ -22,7 +22,7 @@
     />
 
     <Hint
-      iconType="notification"
+      iconName="notification"
       text="This password protects all your wallets. Make sure you remember it and do not share it with anybody."
     />
   </div>

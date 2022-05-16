@@ -2,7 +2,7 @@
   <div class="mnemonic-backup-form">
     <div class="hint-container">
       <Hint
-        iconType="warning"
+        iconName="warning"
         text="Use a non-digital way to backup. Write it down on paper (or etch it into metal) and make sure not to loose it."
       />
     </div>

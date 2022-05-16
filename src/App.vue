@@ -51,6 +51,6 @@ export default class App extends Vue {
   color: white;
   text-align: center;
   padding: 16px;
-  background: url(./assets/background.png);
+  background-image: url(./assets/background.png);
 }
 </style>

@@ -11,7 +11,7 @@
 
     <Hint
       class="hint"
-      iconType="notification"
+      iconName="notification"
       text="Example: Savings, Investments, Crowdloans, Staking. This nickname will be displayed only for you and stored
         locally."
     />

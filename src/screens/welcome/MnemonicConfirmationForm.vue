@@ -11,6 +11,7 @@
         :key="index"
         type="secondary"
         size="small"
+        fontSize="small"
         borderRadius="mini"
         :text="mnemonicElement"
         :class="addButtonClasses(mnemonicElement)"

@@ -2,7 +2,7 @@
   <div class="layout">
     <div class="header">
       <div class="icon-container">
-        <CircleButton v-if="showBackIcon" backgroundColor="light-black" iconType="back" @click="back" />
+        <CircleButton v-if="showBackIcon" backgroundColor="light-black" iconName="chevron-left" @click="back" />
       </div>
       <div class="steps">
         <div
@@ -13,7 +13,7 @@
         ></div>
       </div>
       <div class="icon-background">
-        <CircleButton iconType="full-screen" backgroundColor="light-black" @click="fullScreen" />
+        <CircleButton iconName="expand" backgroundColor="light-black" @click="fullScreen" />
       </div>
     </div>
 
@@ -37,7 +37,7 @@
           @updateSelectedMnemonicElements="updateSelectedMnemonicElements"
           @setValue="setValue"
         >
-          <AdvancedButton :handler="toggleAdvancedFormVisible" />
+          <AdvancedButton @click="toggleAdvancedFormVisible" />
         </CreateWallet>
 
         <ImportWallet
@@ -50,7 +50,7 @@
           :derivationPath="derivationPath"
           @setValue="setValue"
         >
-          <AdvancedButton :handler="toggleAdvancedFormVisible" />
+          <AdvancedButton @click="toggleAdvancedFormVisible" />
         </ImportWallet>
 
         <AdvancedForm
@@ -69,6 +69,7 @@
       <Button
         v-if="!showAdvancedForm"
         size="big"
+        fontSize="big"
         width="100%"
         :text="buttonText"
         :disabled="disabledProceed"

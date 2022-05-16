@@ -1,12 +1,12 @@
 <template>
   <div class="header">
-    <CircleButton iconType="back" backgroundColor="light-black" @click="back" />
+    <CircleButton iconName="chevron-left" backgroundColor="light-black" @click="back" />
 
     <div>
       <div class="network-name">{{ networkWithFirstCharUp }} network</div>
     </div>
 
-    <CircleButton iconType="more-vertical" backgroundColor="light-black" @click="openSettings" />
+    <CircleButton iconName="dots-vertical" backgroundColor="light-black" @click="openSettings" />
   </div>
 </template>
 

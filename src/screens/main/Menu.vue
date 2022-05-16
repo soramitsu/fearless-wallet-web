@@ -16,13 +16,13 @@ import { Components } from '@/router/routes';
 import { firstCharToUp } from '@/util/stringHelper';
 import MenuItem from '@/screens/main/MenuItem.vue';
 
-type MenuItems = 'Wallet' | 'Crowdloans' | 'Staking' | 'DEX' | 'History';
+type MenuItemType = 'Wallet' | 'Crowdloans' | 'Staking' | 'DEX' | 'History';
 
 @Component({
   components: { MenuItem },
 })
 export default class Menu extends Vue {
-  menuItems: MenuItems[] = ['Wallet', 'Crowdloans', 'Staking', 'DEX', 'History'];
+  menuItems: MenuItemType[] = ['Wallet', 'Crowdloans', 'Staking', 'DEX', 'History'];
   selectedItem = 'Wallet';
 
   get currentRouteNameWithFirstCharUp() {
@@ -31,7 +31,7 @@ export default class Menu extends Vue {
     return firstCharToUp(route);
   }
 
-  clickMenuItem(name: MenuItems) {
+  clickMenuItem(name: MenuItemType) {
     if (this.currentRouteNameWithFirstCharUp === name) return;
 
     this.$router.push({ name: Components[name] });

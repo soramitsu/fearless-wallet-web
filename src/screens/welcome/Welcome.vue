@@ -10,6 +10,7 @@
             text="Create a new wallet"
             class="create-button"
             size="big"
+            fontSize="big"
             @click="changWalletConnectionStatus('isCreateWallet')"
           />
 
@@ -18,6 +19,7 @@
             width="100%"
             text="I already have a wallet"
             size="big"
+            fontSize="big"
             type="secondary"
             :border="false"
             @click="changWalletConnectionStatus('isImportWallet')"

@@ -1,19 +1,17 @@
 <template>
   <div class="circle-button" :class="backgroundClass" @click="$emit('click')">
-    <s-icon :name="iconName" />
+    <img :src="img" :class="imageClasses" />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { IconType } from '@/util/iconName';
-import getIconName from '@/util/iconName';
 
 type BackgroundType = 'none' | 'black' | 'light-black';
 
 @Component
 export default class CircleButton extends Vue {
-  @Prop(String) iconType!: IconType;
+  @Prop(String) iconName!: string;
   @Prop(String) backgroundColor!: BackgroundType;
   @Prop({ default: false }) backgroundColorHover!: boolean;
 
@@ -28,8 +26,21 @@ export default class CircleButton extends Vue {
     ];
   }
 
-  get iconName() {
-    return getIconName(this.iconType);
+  get imageClasses() {
+    const shiftLeft = ['chevron-left', 'send', 'send-gray'].includes(this.iconName);
+    const shiftRight = ['chevron-right'].includes(this.iconName);
+
+    return [
+      'image',
+      {
+        'image-shift-left': shiftLeft,
+        'image-shift-fight': shiftRight,
+      },
+    ];
+  }
+
+  get img() {
+    return require(`@/assets/${this.iconName}.svg`);
   }
 }
 </script>
@@ -41,33 +52,26 @@ export default class CircleButton extends Vue {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
   border-radius: 50%;
 
-  i {
-    color: rgba(255, 255, 255, 0.65);
+  .image {
+    opacity: 0.85;
   }
 
-  .s-icon-arrows-arrows-diagonals-bltr-24 {
-    font-size: 18px !important;
+  .image-shift-left {
+    margin-left: -3px;
   }
 
-  .s-icon-basic-send-24 {
-    font-size: 18px !important;
-  }
-
-  .s-icon-arrows-chevron-right-24 {
-    font-size: 18px !important;
-  }
-
-  .s-icon-basic-download-24 {
-    font-size: 18px !important;
+  .image-shift-fight {
+    margin-right: -3px;
   }
 
   &:hover {
     cursor: pointer;
 
-    i {
-      color: rgba(255, 255, 255, 1);
+    .image {
+      opacity: 1;
     }
   }
 }

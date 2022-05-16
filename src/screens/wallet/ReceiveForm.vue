@@ -1,20 +1,15 @@
 <template>
-  <ActivityForm
-    header="Receive Funds"
-    buttonText="Copy address"
-    :closeForm="closeForm"
-    :showButton="false"
-    class="receive-form"
-  >
+  <ActivityForm header="Receive Funds" :closeForm="closeForm" :showButton="false" class="receive-form">
     <Select v-model="network" :options="optionsNetwork" placeholder="Network" size="big" class="row" />
 
     <div class="receive-content">
       <div class="address">{{ address }}</div>
 
-      <s-button class="button" type="link" border-radius="mini" @click="copyAddress">
-        <s-icon name="basic-copy-24" class="icon" />
-        <span>Copy address</span>
-      </s-button>
+      <div class="button" @click="copyAddress">
+        <img src="@/assets/copy.svg" class="icon" />
+
+        Copy address
+      </div>
 
       <QrCode :value="address" :size="200" render-as="svg" :margin="10" foreground="#bb77ff" background="#111111" />
     </div>
@@ -32,6 +27,7 @@ import { firstCharToUp } from '@/util/stringHelper';
 import ActivityForm from './ActivityForm.vue';
 import QrCode from 'qrcode.vue';
 import Select from '@/components/Select.vue';
+import Button from '@/components/Button.vue';
 import NetworksController from '@/controllers/networksController';
 
 @Component({
@@ -39,6 +35,7 @@ import NetworksController from '@/controllers/networksController';
     ActivityForm,
     QrCode,
     Select,
+    Button,
   },
 })
 export default class ReceiveForm extends Vue {
@@ -86,32 +83,24 @@ export default class ReceiveForm extends Vue {
   }
 
   .button {
-    color: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 14px;
     font-weight: 500;
-    line-height: 180%;
     margin-bottom: 20px;
     color: var(--pink-lavender-color);
     opacity: 0.95;
-
-    span {
-      font-weight: 400;
-    }
+    margin-top: 10px;
 
     &:hover {
-      color: var(--pink-lavender-color);
+      cursor: pointer;
       opacity: 1;
     }
-  }
 
-  .icon {
-    width: 20px;
-    height: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-right: 10px;
-    color: var(--pink-lavender-color);
+    .icon {
+      margin-right: 5px;
+    }
   }
 }
 </style>

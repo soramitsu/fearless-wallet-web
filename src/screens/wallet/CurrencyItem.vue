@@ -46,20 +46,25 @@
     <div class="activity-block">
       <template v-if="!showAssetsManagementForm">
         <CircleButton
-          iconType="send"
+          iconName="send-gray"
           backgroundColor="black"
           class="button"
           @click="toggleVisibleActivityForm('showSendForm', true, currency)"
         />
 
         <CircleButton
-          iconType="receive"
+          iconName="receive-grey"
           backgroundColor="black"
           class="button"
           @click="toggleVisibleActivityForm('showReceiveForm', true, currency)"
         />
 
-        <CircleButton iconType="right" backgroundColor="none" :backgroundColorHover="true" @click="openTokenPage" />
+        <CircleButton
+          iconName="chevron-right"
+          backgroundColor="none"
+          :backgroundColorHover="true"
+          @click="openTokenPage"
+        />
       </template>
 
       <Switcher v-if="showAssetsManagementForm" v-model="currencyVisible" />

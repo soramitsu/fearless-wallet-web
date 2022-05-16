@@ -8,7 +8,7 @@
       :class="buttonClasses"
       @click="$emit('click')"
     >
-      <s-icon :name="iconName" class="icon" v-if="iconName" />
+      <img :src="img" class="icon" v-if="iconName" />
 
       {{ text }}
     </s-button>
@@ -17,26 +17,26 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { IconType } from '@/util/iconName';
-import getIconName from '@/util/iconName';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
+type FontSize = 'small' | 'medium' | 'big';
 type Type = 'primary' | 'secondary';
 
 @Component
 export default class Button extends Vue {
   @Prop(String) text!: string;
   @Prop(String) width!: string;
+  @Prop(String) iconName!: string;
   @Prop({ default: 'primary' }) type!: Type;
   @Prop({ default: 'medium' }) size!: Size;
+  @Prop({ default: 'medium' }) fontSize!: FontSize;
   @Prop({ default: 'medium' }) borderRadius!: Size;
-  @Prop({ default: '' }) iconType!: IconType;
   @Prop({ default: false }) disabled!: boolean;
   @Prop({ default: true }) hover!: boolean;
   @Prop({ default: true }) border!: boolean;
 
-  get iconName() {
-    return getIconName(this.iconType);
+  get img() {
+    return require(`@/assets/${this.iconName}.svg`);
   }
 
   get containerButtonClasses() {
@@ -55,7 +55,7 @@ export default class Button extends Vue {
   }
 
   get buttonClasses() {
-    const classes = ['button'];
+    const classes = ['button', `button-font-size-${this.fontSize}`];
 
     if (this.type === 'secondary') {
       return [
@@ -81,7 +81,6 @@ export default class Button extends Vue {
   }
 
   .button {
-    font-size: 18px;
     width: 100%;
   }
 }
@@ -92,14 +91,20 @@ export default class Button extends Vue {
   }
 
   .button {
-    font-size: 13px;
     width: 100%;
   }
 }
 
-.button {
+.button-font-size-big {
   font-size: 18px;
-  width: 100%;
+}
+
+.button-font-size-medium {
+  font-size: 16px;
+}
+
+.button-font-size-small {
+  font-size: 13px;
 }
 
 .el-button + .el-button {

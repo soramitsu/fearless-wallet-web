@@ -18,7 +18,7 @@
     <div class="activity-block">
       <BorderButton
         text="Send"
-        iconType="send"
+        iconName="send"
         type="secondary"
         width="125px"
         @click="toggleVisible('showSendForm', true)"
@@ -26,7 +26,7 @@
 
       <BorderButton
         text="Receive"
-        iconType="receive"
+        iconName="receive"
         type="secondary"
         width="125px"
         @click="toggleVisible('showReceiveForm', true)"
@@ -34,7 +34,7 @@
 
       <BorderButton
         text="Teleport"
-        iconType="teleport"
+        iconName="teleport"
         type="secondary"
         width="125px"
         @click="toggleVisible('showTeleportForm', true)"
@@ -42,7 +42,7 @@
 
       <BorderButton
         text="Buy"
-        iconType="buy"
+        iconName="plus"
         type="secondary"
         width="125px"
         @click="toggleVisible('showBuyForm', true)"
@@ -65,12 +65,13 @@
 
           <SearchInput v-if="showNetworks" v-model="filterNetworksValue" placeholder="Search in networks" />
 
-          <Dropdown
-            v-else-if="showHistory"
-            :value="filterHistoryValue"
-            :options="historyDropdownOption"
-            :handler="filterHistoryValueUpdate"
-          />
+          <Corners v-else-if="showHistory">
+            <Dropdown
+              :value="filterHistoryValue"
+              :options="historyDropdownOption"
+              :handler="filterHistoryValueUpdate"
+            />
+          </Corners>
         </div>
 
         <Scroll>
@@ -114,7 +115,6 @@ import { SelectedWallet } from '@/store/accounts/types';
 import type { TabCurrency } from '@/interfaces/walletPage';
 import currencyMock from '@/mocks/currency';
 import historyMock from '@/mocks/history';
-import CircleButton from '@/components/CircleButton.vue';
 import BorderButton from '@/components/BorderButton.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import Scroll from '@/components/Scroll.vue';
@@ -131,7 +131,6 @@ import BuyForm from '../BuyForm.vue';
 
 @Component({
   components: {
-    CircleButton,
     BorderButton,
     Scroll,
     TokenHeader,
@@ -232,9 +231,7 @@ export default class Token extends Vue {
   }
 
   get countTokensString() {
-    const balance = this.tokenInfoInSelectedNetwork?.balance;
-
-    if (!balance) return '';
+    const balance = this.tokenInfoInSelectedNetwork?.balance ?? 0;
 
     return `${balance} ${this.token.toUpperCase()}`;
   }

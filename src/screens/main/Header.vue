@@ -12,16 +12,16 @@
       </div>
     </div>
     <div class="header-part">
-      <CircleButton iconType="full-screen" backgroundColor="light-black" class="button-margin" @click="fullScreen" />
+      <CircleButton iconName="expand" backgroundColor="light-black" class="button-margin" @click="fullScreen" />
 
-      <CircleButton iconType="lock" backgroundColor="light-black" class="button-margin" @click="lock" />
+      <CircleButton iconName="lock" backgroundColor="light-black" class="button-margin" @click="lock" />
 
       <div class="background-ellipse button-margin">
         <div :class="statusConnectedClasses"></div>
         {{ statusConnectedText }}
       </div>
 
-      <CircleButton iconType="settings" class="button-margin" backgroundColor="none" @click="openSettings" />
+      <CircleButton iconName="settings" class="button-margin" backgroundColor="none" @click="openSettings" />
     </div>
 
     <SelectWalletPopup v-if="showSelectWalletPopup" @close="toggleSelectWalletPopupVisible" />

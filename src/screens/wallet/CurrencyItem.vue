@@ -82,7 +82,7 @@ import CurrencyController from '@/controllers/currencyController';
     Switcher,
   },
 })
-export default class extends Vue {
+export default class CurrencyItem extends Vue {
   localCurrencyVisible = false;
 
   @Prop(Object) currency!: Currency;

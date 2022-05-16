@@ -42,7 +42,7 @@ import Switcher from '@/components/Switcher.vue';
     Switcher,
   },
 })
-export default class extends Vue {
+export default class ContentSettings extends Vue {
   readonly tabsOptions: TabWallet[] = ['Currencies', 'NFTs'];
 
   filterValue = '';

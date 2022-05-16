@@ -29,7 +29,7 @@ import Input from '@/components/Input.vue';
     Input,
   },
 })
-export default class extends Vue {
+export default class NicknameForm extends Vue {
   @Prop({ default: false }) readonly!: boolean;
 
   @PropSync('nickname', { type: String }) syncedNickname!: string;

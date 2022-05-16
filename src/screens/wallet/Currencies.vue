@@ -19,7 +19,7 @@ import CurrencyItem from './CurrencyItem.vue';
 @Component({
   components: { CurrencyItem },
 })
-export default class extends Vue {
+export default class Currencies extends Vue {
   @Prop(Array) currencies!: Currency[];
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop(Boolean) hideZeroBalance!: boolean;

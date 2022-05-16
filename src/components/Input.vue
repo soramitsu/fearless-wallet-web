@@ -27,7 +27,7 @@ type Style = 'default' | 'pink';
 @Component({
   components: { Corners },
 })
-export default class extends Vue {
+export default class Input extends Vue {
   @VModel({ type: String }) vModel!: string;
   @Prop(String) placeholder!: string;
   @Prop(String) accept!: string;

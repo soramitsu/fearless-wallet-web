@@ -55,7 +55,7 @@ import Button from '@/components/Button.vue';
     Button,
   },
 })
-export default class extends Vue {
+export default class Welcome extends Vue {
   walletConnectionStatus: WalletConnectionStatus = '';
 
   openTermsAndConditions() {

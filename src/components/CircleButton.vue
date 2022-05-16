@@ -12,7 +12,7 @@ import getIconName from '@/util/iconName';
 type BackgroundType = 'none' | 'black' | 'light-black';
 
 @Component
-export default class extends Vue {
+export default class CircleButton extends Vue {
   @Prop(String) iconType!: IconType;
   @Prop(String) backgroundColor!: BackgroundType;
   @Prop({ default: false }) backgroundColorHover!: boolean;

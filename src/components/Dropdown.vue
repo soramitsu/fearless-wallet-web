@@ -11,7 +11,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component
-export default class extends Vue {
+export default class Dropdown extends Vue {
   @Prop(String) value!: string;
   @Prop(Array) options!: Record<string, string>[];
   @Prop(Function) handler!: VoidFunction;

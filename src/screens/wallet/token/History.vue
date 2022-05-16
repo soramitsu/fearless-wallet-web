@@ -20,7 +20,7 @@ import HistoryItem from './HistoryItem.vue';
 @Component({
   components: { HistoryItem },
 })
-export default class extends Vue {
+export default class History extends Vue {
   @Prop(Array) history!: HistoryItemType[];
 }
 </script>

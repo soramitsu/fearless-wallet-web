@@ -16,18 +16,37 @@
     </div>
 
     <div class="activity-block">
-      <ButtonWithIcon text="Send" iconType="send" width="125px" @click="toggleVisible('showSendForm', true)" />
+      <BorderButton
+        text="Send"
+        iconType="send"
+        type="secondary"
+        width="125px"
+        @click="toggleVisible('showSendForm', true)"
+      />
 
-      <ButtonWithIcon text="Receive" iconType="receive" width="125px" @click="toggleVisible('showReceiveForm', true)" />
+      <BorderButton
+        text="Receive"
+        iconType="receive"
+        type="secondary"
+        width="125px"
+        @click="toggleVisible('showReceiveForm', true)"
+      />
 
-      <ButtonWithIcon
+      <BorderButton
         text="Teleport"
         iconType="teleport"
+        type="secondary"
         width="125px"
         @click="toggleVisible('showTeleportForm', true)"
       />
 
-      <ButtonWithIcon text="Buy" iconType="buy" width="125px" @click="toggleVisible('showBuyForm', true)" />
+      <BorderButton
+        text="Buy"
+        iconType="buy"
+        type="secondary"
+        width="125px"
+        @click="toggleVisible('showBuyForm', true)"
+      />
     </div>
 
     <Corners size="big" :bottomRightCorner="false">
@@ -96,7 +115,7 @@ import type { TabCurrency } from '@/interfaces/walletPage';
 import currencyMock from '@/mocks/currency';
 import historyMock from '@/mocks/history';
 import CircleButton from '@/components/CircleButton.vue';
-import ButtonWithIcon from '@/components/ButtonWithIcon.vue';
+import BorderButton from '@/components/BorderButton.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import Scroll from '@/components/Scroll.vue';
 import Dropdown from '@/components/Dropdown.vue';
@@ -113,7 +132,7 @@ import BuyForm from '../BuyForm.vue';
 @Component({
   components: {
     CircleButton,
-    ButtonWithIcon,
+    BorderButton,
     Scroll,
     TokenHeader,
     Networks,
@@ -128,7 +147,7 @@ import BuyForm from '../BuyForm.vue';
     Corners,
   },
 })
-export default class extends Vue {
+export default class Token extends Vue {
   readonly historyDropdownOption = [
     { label: 'All', value: 'all' },
     { label: 'Transfer', value: 'transfer' },

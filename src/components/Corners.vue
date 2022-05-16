@@ -15,7 +15,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 type Size = 'mini' | 'small' | 'medium' | 'big';
 
 @Component
-export default class extends Vue {
+export default class Corners extends Vue {
   @Prop({ default: false }) isError!: boolean;
   @Prop({ default: false }) hover!: boolean;
   @Prop({ default: true }) topLeftCorner!: boolean;

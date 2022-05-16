@@ -22,7 +22,7 @@ import Corners from '@/components/Corners.vue';
     Corners,
   },
 })
-export default class extends Vue {
+export default class SelectNetworkButton extends Vue {
   @Prop(String) text!: string;
   @Prop(Boolean) isActive!: boolean;
 

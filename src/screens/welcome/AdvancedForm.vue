@@ -55,7 +55,7 @@ import Select from '@/components/Select.vue';
     Select,
   },
 })
-export default class extends Vue {
+export default class AdvancedForm extends Vue {
   readonly optionsSubstrateKeyPair = [
     { label: 'Schnorrkel sr25519 (recommended)', value: 'sr25519', example: '//hard/soft///password' },
     { label: 'Edwards ed25519 (alternative)', value: 'ed25519', example: '//hard///password' },

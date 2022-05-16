@@ -2,32 +2,36 @@
   <div class="finish">
     <Logo class="description" size="big" text="All done!" subtext="Stay Fearless!" />
     <div class="row">
-      <ButtonWithIcon
+      <BorderButton
         text="Follow on Twitter"
         iconType="twitter"
         class="follow-button"
+        type="secondary"
         width="256px"
         @click="redirect('https://twitter.com/Soramitsu_co')"
       />
 
-      <ButtonWithIcon
+      <BorderButton
         text="Join on Telegram"
         iconType="telegram"
+        type="secondary"
         width="256px"
         @click="redirect('https://t.me/sora_xor')"
       />
     </div>
     <div class="row">
-      <ButtonWithIcon
+      <BorderButton
         text="Read on Medium"
         iconType="planet"
+        type="secondary"
         width="256px"
         @click="redirect('https://t.me/sora_xor')"
       />
 
-      <ButtonWithIcon
+      <BorderButton
         text="Learn on Wiki"
         iconType="question"
+        type="secondary"
         width="256px"
         @click="redirect('https://t.me/sora_xor')"
       />
@@ -38,12 +42,15 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import Logo from '@/components/Logo.vue';
-import ButtonWithIcon from '@/components/ButtonWithIcon.vue';
+import BorderButton from '@/components/BorderButton.vue';
 
 @Component({
-  components: { Logo, ButtonWithIcon },
+  components: {
+    Logo,
+    BorderButton,
+  },
 })
-export default class extends Vue {
+export default class FinishForm extends Vue {
   redirect(url: string) {
     window.open(url);
   }

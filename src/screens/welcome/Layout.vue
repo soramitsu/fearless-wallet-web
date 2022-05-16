@@ -121,7 +121,7 @@ type FieldsComponent = 'passwordJson' | 'derivationPath';
     Button,
   },
 })
-export default class extends Vue {
+export default class Layout extends Vue {
   accountController = new AccountController();
   nickname = '';
   json = '';

@@ -1,8 +1,8 @@
 <template>
   <div class="create-wallet">
-    <MnemonicBackupFom v-if="showMnemonicBackupForm" :mnemonic="mnemonic">
+    <MnemonicBackupForm v-if="showMnemonicBackupForm" :mnemonic="mnemonic">
       <slot></slot>
-    </MnemonicBackupFom>
+    </MnemonicBackupForm>
     <MnemonicConfirmationForm
       v-if="showMnemonicConfirmationForm"
       :mnemonic="mnemonic"
@@ -16,15 +16,15 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { DerivationPath } from '@/interfaces/connectionWallet';
 import MnemonicConfirmationForm from './MnemonicConfirmationForm.vue';
-import MnemonicBackupFom from './MnemonicBackupFom.vue';
+import MnemonicBackupForm from './MnemonicBackupForm.vue';
 
 @Component({
   components: {
     MnemonicConfirmationForm,
-    MnemonicBackupFom,
+    MnemonicBackupForm,
   },
 })
-export default class extends Vue {
+export default class CreateWallet extends Vue {
   @Prop(Number) currentIndexPage!: number;
   @Prop(String) mnemonic!: string;
   @Prop(Array) selectedMnemonicElements!: string[];

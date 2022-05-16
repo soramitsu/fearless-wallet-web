@@ -6,7 +6,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component
-export default class extends Vue {
+export default class ComingSoon extends Vue {
   @Prop(String) name!: string;
 }
 </script>

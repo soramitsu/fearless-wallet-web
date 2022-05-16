@@ -15,7 +15,7 @@ import { Vue, Prop, Component } from 'vue-property-decorator';
 type IconType = 'notification' | 'warning';
 
 @Component
-export default class extends Vue {
+export default class Hint extends Vue {
   @Prop(String) iconType!: IconType;
   @Prop(String) text!: string;
 

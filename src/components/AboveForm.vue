@@ -27,7 +27,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component
-export default class extends Vue {
+export default class AboveForm extends Vue {
   @Prop({ default: '' }) header!: string;
   @Prop({ default: false }) showAcceptIcon!: boolean;
   @Prop({ default: false }) blur!: boolean;

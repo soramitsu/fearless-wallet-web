@@ -11,7 +11,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component
-export default class extends Vue {
+export default class AdvancedButton extends Vue {
   @Prop(Function) handler!: VoidFunction;
 }
 </script>

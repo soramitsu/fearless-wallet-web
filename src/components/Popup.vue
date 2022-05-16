@@ -34,7 +34,7 @@ type VerticalPlacement = 'top' | 'center' | 'bottom';
 @Component({
   components: { Scroll, SearchInput },
 })
-export default class extends Vue {
+export default class Popup extends Vue {
   filterValue = '';
 
   @Prop(Function) handlerClose!: VoidFunction;

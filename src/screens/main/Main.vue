@@ -19,7 +19,7 @@ import Menu from './Menu.vue';
     Menu,
   },
 })
-export default class extends Vue {}
+export default class Main extends Vue {}
 </script>
 
 <style lang="scss" scoped>

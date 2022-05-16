@@ -13,7 +13,7 @@ import Corners from '@/components/Corners.vue';
 @Component({
   components: { Corners },
 })
-export default class extends Vue {
+export default class TabButton extends Vue {
   @Prop({ default: '' }) name!: string;
   @Prop({ default: false }) isActive!: boolean;
 

@@ -32,7 +32,7 @@ import { getImgPathByNetworkName } from '@/util/imgPath';
     Loading,
   },
 })
-export default class extends Vue {
+export default class SendingPopup extends Vue {
   @Prop(Boolean) popupLoading!: boolean;
   @Prop(Boolean) showPopup!: boolean;
   @Prop(String) header!: string;

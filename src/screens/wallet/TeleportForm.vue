@@ -71,7 +71,7 @@ import currencyMock from '@/mocks/currency';
     SendingPopup,
   },
 })
-export default class extends Vue {
+export default class TeleportForm extends Vue {
   showSendingPopup = false;
   sendingPopupLoading = false;
   selectedToken = '';

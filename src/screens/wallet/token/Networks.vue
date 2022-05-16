@@ -20,7 +20,7 @@ import NetworkItem from './NetworkItem.vue';
     NetworkItem,
   },
 })
-export default class extends Vue {
+export default class Networks extends Vue {
   @Prop(Array) networks!: [];
   @Prop(String) token!: string;
   @Prop(String) selectedNetwork!: string;

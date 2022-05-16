@@ -31,7 +31,7 @@ import MnemonicColumns from './MnemonicColumns.vue';
     BorderButton,
   },
 })
-export default class extends Vue {
+export default class MnemonicConfirmationForm extends Vue {
   @Prop(String) mnemonic!: string;
   @Prop(Array) selectedMnemonicElements!: string[];
 

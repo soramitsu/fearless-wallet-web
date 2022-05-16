@@ -33,30 +33,32 @@
             <Input :value="formattedAddressTo" placeholder="To" size="big" :readonly="true" />
           </div>
 
-          <div class="row summary">
-            <div class="summary-label">Summary</div>
-            <div class="summary-row">
-              <div class="name">Coins</div>
-              <div class="right-column">
-                <div>{{ amount }} {{ selectedToken }}</div>
-                <div class="sub-value">${{ value }}</div>
+          <Corners size="big" class="row">
+            <div class="summary">
+              <div class="summary-label">Summary</div>
+              <div class="summary-row">
+                <div class="name">Coins</div>
+                <div class="right-column">
+                  <div>{{ amount }} {{ selectedToken }}</div>
+                  <div class="sub-value">${{ value }}</div>
+                </div>
+              </div>
+              <div class="summary-row">
+                <div class="name">Fee</div>
+                <div class="right-column">
+                  <div>{{ fee }} {{ selectedToken }}</div>
+                  <div class="sub-value">max fee: {{ fee }} {{ selectedToken }}</div>
+                </div>
+              </div>
+              <div class="summary-row">
+                <div class="name">Total</div>
+                <div class="right-column">
+                  <div>{{ total }} {{ selectedToken }}</div>
+                  <div class="sub-value">max total: {{ value }} {{ selectedToken }}</div>
+                </div>
               </div>
             </div>
-            <div class="summary-row">
-              <div class="name">Fee</div>
-              <div class="right-column">
-                <div>{{ fee }} {{ selectedToken }}</div>
-                <div class="sub-value">max fee: {{ fee }} {{ selectedToken }}</div>
-              </div>
-            </div>
-            <div class="summary-row">
-              <div class="name">Total</div>
-              <div class="right-column">
-                <div>{{ total }} {{ selectedToken }}</div>
-                <div class="sub-value">max total: {{ value }} {{ selectedToken }}</div>
-              </div>
-            </div>
-          </div>
+          </Corners>
         </template>
       </div>
     </ActivityForm>
@@ -84,6 +86,7 @@ import { Currency } from '@/interfaces/currencies';
 import { firstCharToUp } from '@/util/stringHelper';
 import Input from '@/components/Input.vue';
 import Select from '@/components/Select.vue';
+import Corners from '@/components/Corners.vue';
 import ActivityForm from './ActivityForm.vue';
 import SendingPopup from './SendingPopup.vue';
 import currencyMock from '@/mocks/currency';
@@ -94,9 +97,10 @@ import currencyMock from '@/mocks/currency';
     Input,
     Select,
     SendingPopup,
+    Corners,
   },
 })
-export default class extends Vue {
+export default class SendForm extends Vue {
   showSendingPopup = false;
   sendingPopupLoading = false;
   step = 1;

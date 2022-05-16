@@ -44,7 +44,7 @@ import CurrencyController from '@/controllers/currencyController';
     TotalBalance,
   },
 })
-export default class extends Vue {
+export default class SelectWalletPopup extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: (props: Record<string, string>) => void;
 

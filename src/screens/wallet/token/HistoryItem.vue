@@ -25,7 +25,7 @@ import Logo from '@/components/Logo.vue';
     Logo,
   },
 })
-export default class extends Vue {
+export default class HistoryItem extends Vue {
   @Prop(String) id!: string;
   @Prop(String) type!: string;
   @Prop(String) token!: string;

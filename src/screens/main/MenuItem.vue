@@ -15,7 +15,7 @@ type MenuValue = 'Wallet' | 'Crowdloans' | 'Staking' | 'DEX' | 'History';
 @Component({
   components: {},
 })
-export default class extends Vue {
+export default class MenuItem extends Vue {
   @Prop(String) name!: MenuValue;
   @Prop({ default: false }) isActive!: boolean;
 

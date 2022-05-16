@@ -41,7 +41,7 @@ import NetworksController from '@/controllers/networksController';
     Select,
   },
 })
-export default class extends Vue {
+export default class ReceiveForm extends Vue {
   network = 'polkadot';
 
   @Prop(String) selectedNetwork!: string;

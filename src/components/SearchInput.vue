@@ -15,7 +15,7 @@ import Input from '@/components/Input.vue';
     Input,
   },
 })
-export default class extends Vue {
+export default class SearchInput extends Vue {
   @VModel({ type: String }) vModel!: string;
   @Prop(String) placeholder!: string;
 }

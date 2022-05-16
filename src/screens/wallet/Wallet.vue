@@ -106,7 +106,7 @@ import CurrencyController from '@/controllers/currencyController';
     Corners,
   },
 })
-export default class extends Vue {
+export default class Wallet extends Vue {
   showAssetsManagementForm = false;
   hideZeroBalance = false;
   selectNetworkButtonRef = 'selectNetworkButton';

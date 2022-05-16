@@ -8,7 +8,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component
-export default class extends Vue {
+export default class Rotate extends Vue {
   @Prop(Boolean) isActive!: boolean;
 
   get classes() {

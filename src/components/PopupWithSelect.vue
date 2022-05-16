@@ -31,7 +31,7 @@ type SpaceSize = 'small' | 'medium' | 'big';
 @Component({
   components: { Popup },
 })
-export default class extends Vue {
+export default class PopupWithSelect extends Vue {
   @VModel({ type: String }) VModel!: string;
   @Prop(Array) options!: Record<string, string>[];
   @Prop(String) header!: string;

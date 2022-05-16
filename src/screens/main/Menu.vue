@@ -21,7 +21,7 @@ type MenuItems = 'Wallet' | 'Crowdloans' | 'Staking' | 'DEX' | 'History';
 @Component({
   components: { MenuItem },
 })
-export default class extends Vue {
+export default class Menu extends Vue {
   menuItems: MenuItems[] = ['Wallet', 'Crowdloans', 'Staking', 'DEX', 'History'];
   selectedItem = 'Wallet';
 

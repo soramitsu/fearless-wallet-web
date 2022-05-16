@@ -22,7 +22,7 @@ interface Options {
 @Component({
   components: { Corners },
 })
-export default class extends Vue {
+export default class Select extends Vue {
   @VModel({ type: String }) vModel!: string;
   @Prop(String) placeholder!: string;
   @Prop(Array) options!: Options[];

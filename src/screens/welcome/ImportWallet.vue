@@ -55,7 +55,7 @@ import Input from '@/components/Input.vue';
     Input,
   },
 })
-export default class extends Vue {
+export default class ImportWallet extends Vue {
   readonly optionsImport = [
     { label: 'Mnemonic passphrase', value: 'mnemonic', placeholder: 'Enter Passphrase' },
     { label: 'Restore JSON', value: 'json', placeholder: 'Restore JSON' },

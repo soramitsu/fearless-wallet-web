@@ -5,7 +5,7 @@
       :borderRadius="borderRadius"
       :disabled="disabled"
       :hover="hover"
-      :icon="icon"
+      :iconType="iconType"
       :size="size"
       :text="text"
       :type="type"
@@ -30,13 +30,13 @@ type Type = 'primary' | 'secondary';
     Button,
   },
 })
-export default class extends Vue {
+export default class BorderButton extends Vue {
   @Prop(String) text!: string;
   @Prop(String) width!: string;
   @Prop({ default: 'primary' }) type!: Type;
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'medium' }) borderRadius!: Size;
-  @Prop({ default: '' }) icon!: IconType;
+  @Prop({ default: '' }) iconType!: IconType;
   @Prop({ default: false }) disabled!: boolean;
   @Prop({ default: true }) hover!: boolean;
   @Prop({ default: true }) topLeftCorner!: boolean;

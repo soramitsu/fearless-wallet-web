@@ -12,7 +12,7 @@
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
 
 @Component
-export default class extends Vue {
+export default class Switcher extends Vue {
   @VModel({ type: Boolean }) vModel!: boolean;
   @Prop({ default: '' }) activeText!: string;
   @Prop({ default: '' }) inactiveText!: string;

@@ -20,7 +20,7 @@ interface Headers {
 @Component({
   components: { Popup },
 })
-export default class extends Vue {
+export default class InvalidPopup extends Vue {
   @Prop({ default: () => ({ text: '', subtext: '' }) }) headers!: Headers;
   @Prop(Function) handlerClose!: VoidFunction;
 

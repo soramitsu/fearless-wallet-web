@@ -48,7 +48,7 @@ import SelectWalletPopup from './SelectWalletPopup.vue';
     SelectWalletPopup,
   },
 })
-export default class extends Vue {
+export default class Header extends Vue {
   walletNameRef = 'walletName';
   accountController = new AccountController();
   showSelectWalletPopup = false;

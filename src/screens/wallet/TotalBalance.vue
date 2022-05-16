@@ -18,7 +18,7 @@ import { Currency } from '@/interfaces/currencies';
 import currencyMock from '@/mocks/currency';
 
 @Component
-export default class extends Vue {
+export default class TotalBalance extends Vue {
   @Prop({ default: '' }) name!: string;
   @Prop(Number) balance!: number;
   @Prop(Number) percent!: number;

@@ -20,7 +20,7 @@ import Input from './Input.vue';
 @Component({
   components: { Input },
 })
-export default class extends Vue {
+export default class ValidatedInput extends Vue {
   @VModel({ type: String }) vModel!: string;
   @Prop(String) errorDescriptions!: string;
   @Prop(String) placeholder!: string;

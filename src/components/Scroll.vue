@@ -1,4 +1,4 @@
-<template>
+<template functional>
   <div class="scroll">
     <slot></slot>
   </div>

@@ -8,7 +8,7 @@
       :class="buttonClasses"
       @click="$emit('click')"
     >
-      <s-icon :name="icon" class="icon" v-if="icon" />
+      <s-icon :name="iconName" class="icon" v-if="iconName" />
 
       {{ text }}
     </s-button>
@@ -18,21 +18,26 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { IconType } from '@/util/iconName';
+import getIconName from '@/util/iconName';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type Type = 'primary' | 'secondary';
 
 @Component
-export default class extends Vue {
+export default class Button extends Vue {
   @Prop(String) text!: string;
   @Prop(String) width!: string;
   @Prop({ default: 'primary' }) type!: Type;
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'medium' }) borderRadius!: Size;
-  @Prop({ default: '' }) icon!: IconType;
+  @Prop({ default: '' }) iconType!: IconType;
   @Prop({ default: false }) disabled!: boolean;
   @Prop({ default: true }) hover!: boolean;
   @Prop({ default: true }) border!: boolean;
+
+  get iconName() {
+    return getIconName(this.iconType);
+  }
 
   get containerButtonClasses() {
     // for "small" and "mini" sizes also medium

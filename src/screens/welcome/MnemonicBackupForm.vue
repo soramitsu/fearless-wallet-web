@@ -21,7 +21,7 @@ import Hint from '@/components/Hint.vue';
 @Component({
   components: { Hint, MnemonicColumns },
 })
-export default class extends Vue {
+export default class MnemonicBackupForm extends Vue {
   @Prop(String) mnemonic!: string;
 
   get mnemonicArray() {

@@ -17,7 +17,7 @@ import { firstCharToUp } from '@/util/stringHelper';
 import { Components } from '@/router/routes';
 
 @Component
-export default class extends Vue {
+export default class NetworkItem extends Vue {
   @Prop(String) network!: string;
   @Prop(Number) balance!: number;
   @Prop(String) token!: string;

@@ -19,7 +19,7 @@ import CircleButton from '@/components/CircleButton.vue';
 @Component({
   components: { CircleButton },
 })
-export default class extends Vue {
+export default class TokenHeader extends Vue {
   @Prop(String) network!: string;
   @Prop(String) token!: string;
 

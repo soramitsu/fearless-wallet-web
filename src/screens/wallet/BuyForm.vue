@@ -13,7 +13,7 @@ import ActivityForm from './ActivityForm.vue';
     ActivityForm,
   },
 })
-export default class extends Vue {
+export default class BuyForm extends Vue {
   @Prop(Function) closeForm!: VoidFunction;
 }
 </script>

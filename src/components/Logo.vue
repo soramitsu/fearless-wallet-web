@@ -15,14 +15,14 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 
 type SizeLogo = 'mini' | 'small' | 'medium' | 'big';
-type Logo = 'primary' | 'secondary';
+type TypeLogo = 'primary' | 'secondary';
 
 @Component
-export default class extends Vue {
+export default class Logo extends Vue {
   @Prop(String) text!: string;
   @Prop(String) subtext!: string;
   @Prop({ default: 'medium' }) size!: SizeLogo;
-  @Prop({ default: 'primary' }) typeLogo!: Logo;
+  @Prop({ default: 'primary' }) typeLogo!: TypeLogo;
 
   get circleClasses() {
     return ['circle', `circle-${this.typeLogo}`];

@@ -37,4 +37,27 @@ export default class Dropdown extends Vue {
     font-size: 14px;
   }
 }
+
+.el-dropdown-menu {
+  clip-path: var(--medium-clip-path-left-top-and-right-bottom);
+  background-color: #111111 !important;
+  border: 1px solid #111111 !important;
+  margin-top: 5px !important;
+}
+
+.el-dropdown-menu__item {
+  color: #ffffff !important;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+}
+
+.popper__arrow {
+  border-color: #111111 !important;
+}
+
+.popper__arrow::after {
+  content: none !important;
+}
 </style>

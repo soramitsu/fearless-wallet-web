@@ -9,7 +9,7 @@
           <div class="header-text">{{ headerText }}</div>
         </template>
 
-        <s-button type="link" class="button" @click="handlerClose">
+        <s-button type="link" class="button" @click="close">
           <s-icon name="basic-close-24" />
         </s-button>
       </div>
@@ -78,6 +78,11 @@ export default class Popup extends Vue {
   @Watch('filterValue')
   filter(value: string) {
     this.handlerFilter(value);
+  }
+
+  close() {
+    this.handlerFilter('');
+    this.handlerClose();
   }
 }
 </script>

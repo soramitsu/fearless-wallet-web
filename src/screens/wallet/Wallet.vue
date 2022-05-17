@@ -176,7 +176,7 @@ export default class Wallet extends Vue {
   get filterOptionsNetworks() {
     const filter = this.popupFilterValue.trim().toLowerCase();
 
-    return this.optionsNetworks.filter(({ label }) => label.includes(filter));
+    return this.optionsNetworks.filter(({ label }) => label.toLowerCase().includes(filter));
   }
 
   toggleAssetsManagementFormVisible(value = true) {

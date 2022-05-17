@@ -64,6 +64,31 @@ export default class Select extends Vue {
   }
 }
 
+.el-select-dropdown {
+  background-color: #111111 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  margin-top: 5px !important;
+  min-width: 370px !important;
+  max-width: 370px !important;
+}
+
+.el-select-dropdown__item {
+  color: rgba(255, 255, 255, 0.75) !important;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+}
+
+.popper__arrow {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.selected {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 1) !important;
+}
+
 .select-size-big {
   .s-select {
     clip-path: var(--big-clip-path-left-top-and-right-bottom);

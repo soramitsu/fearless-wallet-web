@@ -1,26 +1,31 @@
 <template>
-  <div class="select-wallet-popup">
-    <Popup :showHeader="false" horizontalPlacement="left" verticalPlacement="top" :top="49" :left="42">
-      <div class="wallet-content">
-        <TotalBalance
-          v-for="({ meta: { name }, address }, index) in wallets"
-          :key="name + index"
-          :name="name"
-          :showIcon="selectedWallet.address === address"
-          :balance="getBalance(address)"
-          :percent="getPercent(address)"
-          class="total"
-          @click="updateSelectedWallet(address)"
-        />
+  <Popup
+    :showHeader="false"
+    horizontalPlacement="left"
+    verticalPlacement="top"
+    :top="49"
+    :left="42"
+    class="select-wallet-popup"
+  >
+    <div class="wallet-content">
+      <TotalBalance
+        v-for="({ meta: { name }, address }, index) in wallets"
+        :key="name + index"
+        :name="name"
+        :showIcon="selectedWallet.address === address"
+        :balance="getBalance(address)"
+        :percent="getPercent(address)"
+        class="total"
+        @click="updateSelectedWallet(address)"
+      />
 
-        <div class="add-wallet" @click="addWallet">
-          <s-icon name="basic-plus-24" class="icon" />
+      <div class="add-wallet" @click="addWallet">
+        <s-icon name="basic-plus-24" class="icon" />
 
-          Add wallet
-        </div>
+        Add wallet
       </div>
-    </Popup>
-  </div>
+    </div>
+  </Popup>
 </template>
 
 <script lang="ts">

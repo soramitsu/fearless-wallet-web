@@ -51,7 +51,7 @@
 
     <Corners size="big" :bottomRightCorner="false">
       <div class="content">
-        <div class="content-header">
+        <div class="content-settings">
           <div class="tabs">
             <TabButton
               v-for="tabName in tabsOptions"
@@ -337,7 +337,7 @@ export default class Token extends Vue {
     border-radius: 8px;
     height: 277px;
 
-    .content-header {
+    .content-settings {
       display: flex;
       justify-content: space-between;
       align-items: center;

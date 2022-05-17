@@ -1,6 +1,6 @@
 <template>
-  <div class="header">
-    <div class="header-part">
+  <div class="settings">
+    <div class="settings-part">
       <template v-if="!syncedShowAssetsManagementForm">
         <TabButton
           v-for="tabName in tabsOptions"
@@ -18,8 +18,8 @@
         <div class="hide-balance-text">Hide with empty balance</div>
       </template>
     </div>
-    <div class="header-part">
-      <SearchInput v-if="showSearchInput" v-model="filterValue" placeholder="Search" class="search" />
+    <div v-if="isCurrenciesTab" class="settings-part">
+      <SearchInput v-model="filterValue" placeholder="Search" class="search" />
 
       <CircleButton :iconName="iconName" backgroundColor="none" @click="toggleAssetsManagementVisible" />
     </div>
@@ -56,7 +56,7 @@ export default class ContentSettings extends Vue {
     return this.syncedShowAssetsManagementForm ? 'close' : 'filter';
   }
 
-  get showSearchInput() {
+  get isCurrenciesTab() {
     return this.syncedActiveTabName === 'Currencies';
   }
 
@@ -76,13 +76,13 @@ export default class ContentSettings extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.header {
+.settings {
   display: flex;
   justify-content: space-between;
   margin-bottom: 10px;
   width: 100%;
 
-  .header-part {
+  .settings-part {
     display: flex;
     align-items: center;
     margin-right: 16px;

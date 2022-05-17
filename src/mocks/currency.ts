@@ -1,5 +1,5 @@
 export default {
-  '5GjBdxpNyD4Up3Mgg7JUiFRe3bMa5qnW76vajcG4d5cbfxBa': [
+  '5GecoStYi2bHzKz6LwE2LWa8MWJxaZYAGjx2WeH8r4RTnQ6e': [
     {
       mainNetwork: 'polkadot',
       token: 'DOT',
@@ -59,7 +59,7 @@ export default {
       availableInNetworks: [],
     },
   ],
-  '0x092599A2D997F02A6E629dc9bfEf442e74095437': [
+  '0xB6abdB46B0dDBa86fbE25C285C00FeAa7E6540eF': [
     {
       mainNetwork: 'moonriver',
       token: 'MOVR',

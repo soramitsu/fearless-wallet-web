@@ -45,8 +45,8 @@ export default class MenuItem extends Vue {
     color: #fff;
     transition: 300ms ease-out;
 
-    i {
-      color: #fff;
+    .menu-icon {
+      filter: invert(0);
       transition: 300ms ease-out;
     }
   }
@@ -57,21 +57,18 @@ export default class MenuItem extends Vue {
     font-size: 13px;
   }
 
-  i {
-    color: rgba(255, 255, 255, 0.5);
-  }
-
   .menu-icon {
     height: 24px;
     width: 24px;
+    filter: invert(0.45);
   }
 }
 
 .active {
   color: #fff;
 
-  i {
-    color: #fff;
+  .menu-icon {
+    filter: invert(0);
   }
 }
 </style>

@@ -1,6 +1,6 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
-import api from './api';
+import api from './networks';
 import account from './accounts';
 import Modules from './types';
 

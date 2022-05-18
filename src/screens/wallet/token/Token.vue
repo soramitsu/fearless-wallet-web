@@ -108,7 +108,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Currency, HistoryItem } from '@/interfaces/currencies';
+import { Currencies, HistoryItem } from '@/interfaces/currencies';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
@@ -166,7 +166,7 @@ export default class Token extends Vue {
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
-  get currencies(): Currency[] {
+  get currencies(): Currencies {
     // TODO: fix as ''
     const substrateWalletCurrency = currencyMock[this.selectedWallet.address as ''];
     const ethereumWalletCurrency = currencyMock[this.selectedWallet.ethereumAddress as ''];

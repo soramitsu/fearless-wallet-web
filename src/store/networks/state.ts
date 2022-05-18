@@ -6,7 +6,7 @@ export type State = {
 
 const state = (): State => {
   return {
-    networks: {},
+    networks: [],
   };
 };
 

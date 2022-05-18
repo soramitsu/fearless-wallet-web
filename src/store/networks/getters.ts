@@ -15,28 +15,14 @@ export type Getters = {
 };
 
 const getters: GetterTree<State, State> & Getters = {
-  [GettersTypes.getNetworksInfo](state): Networks {
-    return state.networks;
+  [GettersTypes.getNetworksInfo]({ networks }): Networks {
+    return networks;
   },
   [GettersTypes.getActiveNetworks]({ networks }): Networks {
-    return Object.entries(networks)
-      .filter(([, networkInfo]) => networkInfo.isActive)
-      .reduce((accumulator, [netName, networkInfo]) => {
-        return {
-          ...accumulator,
-          [netName]: networkInfo,
-        };
-      }, {});
+    return networks.filter(({ isActive }) => isActive);
   },
   [GettersTypes.getInactiveNetworks]({ networks }): Networks {
-    return Object.entries(networks)
-      .filter(([, networkInfo]) => !networkInfo.isActive)
-      .reduce((accumulator, [netName, networkInfo]) => {
-        return {
-          ...accumulator,
-          [netName]: networkInfo,
-        };
-      }, {});
+    return networks.filter(({ isActive }) => !isActive);
   },
 };
 

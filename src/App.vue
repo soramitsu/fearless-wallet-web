@@ -30,7 +30,9 @@ export default class App extends Vue {
       if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
 
       // TODO:refactoring and optimizing subscriptions, subscribe only to new accounts
-      this.networksController.subscribeToNetworks(accounts);
+      this.networksController.subscribeToBalancesOfNetworks(accounts);
+
+      console.log('accounts', accounts);
     });
   }
 

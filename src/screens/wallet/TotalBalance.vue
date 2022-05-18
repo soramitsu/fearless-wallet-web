@@ -11,11 +11,6 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store/accounts/types';
-import { Currency } from '@/interfaces/currencies';
-import currencyMock from '@/mocks/currency';
 
 @Component
 export default class TotalBalance extends Vue {
@@ -23,20 +18,6 @@ export default class TotalBalance extends Vue {
   @Prop(Number) balance!: number;
   @Prop(Number) percent!: number;
   @Prop({ default: false }) showIcon!: boolean;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-
-  get currencies(): Currency[] {
-    // TODO: fix as ''
-    return currencyMock[this.selectedWallet.address as ''];
-  }
-
-  get totalBalance() {
-    return this.currencies.reduce((sum, { price, availableInNetworks }) => {
-      const sumToken = availableInNetworks.reduce((sumToken, { balance }) => sumToken + balance, 0);
-
-      return price * sumToken + sum;
-    }, 0);
-  }
 
   get balanceString() {
     return this.balance.toFixed(2);

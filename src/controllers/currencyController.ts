@@ -1,4 +1,5 @@
 import { Currency } from '@/interfaces/currencies';
+import { FPNumber } from '@/util/fp';
 import LocalStorageController from '@/controllers/localStorageController';
 
 export interface CurrencyInfo extends Currency {
@@ -16,21 +17,32 @@ export default class CurrencyController {
     this.currencyVisibleStorageName = `visible-${this.currency.token}`;
   }
 
-  private getCountTokens(): number {
-    return this.currency.availableInNetworks.reduce((sum, { balance }) => sum + balance, 0);
+  private getCountTokens(): FPNumber {
+    return this.currency.availableInNetworks.reduce((sum, { balance }) => {
+      const FPBalance = new FPNumber(balance, 12);
+
+      sum = sum.add(FPBalance);
+
+      return sum;
+    }, new FPNumber(0, 12));
   }
 
-  private getTotalBalance(): number {
-    return this.currency.price * this.getCountTokens();
+  private getTotalBalance(): FPNumber {
+    const price = new FPNumber(this.currency.price);
+
+    return this.getCountTokens().mul(price);
   }
 
   public getCurrencyInfo(): CurrencyInfo {
-    const { token, mainNetwork, grown, grownPercent, price, availableInNetworks } = this.currency;
+    const { token } = this.currency;
 
-    const countTokens = this.getCountTokens();
-    const totalBalance = this.getTotalBalance();
+    // TODO: fix
+    const decimals = token === 'kilt' ? 1e15 : token === 'qtz' ? 1e18 : 1e12;
 
-    return { mainNetwork, token, grown, grownPercent, price, availableInNetworks, countTokens, totalBalance };
+    const countTokens = this.getCountTokens().toNumber() / decimals;
+    const totalBalance = this.getTotalBalance().toNumber() / decimals;
+
+    return { ...this.currency, countTokens, totalBalance };
   }
 
   public getCurrencyVisible(): boolean {

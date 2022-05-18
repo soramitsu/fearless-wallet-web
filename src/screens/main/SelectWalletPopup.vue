@@ -31,16 +31,16 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
+import { GettersTypes as ApisGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { SelectedWallet } from '@/store/accounts/types';
+import { Networks } from '@/store/networks/types';
 import { Components } from '@/router/routes';
-import { Currency } from '@/interfaces/currencies';
-import { getMetaTyped } from '@/util/meta';
+import { Currencies } from '@/interfaces/currencies';
 import Popup from '@/components/Popup.vue';
 import TotalBalance from '@/screens/wallet/TotalBalance.vue';
 import keyring from '@polkadot/ui-keyring';
-import currencyMock from '@/mocks/currency';
 import CurrencyController from '@/controllers/currencyController';
 
 @Component({
@@ -50,6 +50,7 @@ import CurrencyController from '@/controllers/currencyController';
   },
 })
 export default class SelectWalletPopup extends Vue {
+  @Getter(ApisGettersTypes.getNetworksInfo) networksInfo!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: (props: Record<string, string>) => void;
 
@@ -65,29 +66,54 @@ export default class SelectWalletPopup extends Vue {
       .filter(({ type }) => type !== 'ethereum');
   }
 
-  get currencies(): Record<string, Currency[]> {
-    return currencyMock;
+  get currencies(): Currencies {
+    return this.networksInfo
+      .map(({ balances, assets, name }) => {
+        return this.wallets.map(({ address: walletAddress }) => {
+          const balance = balances.find(({ address }) => address === walletAddress)?.balance;
+          const total = +(balance?.total ?? 0);
+          const token = assets[0]?.assetId;
+
+          return {
+            walletAddress,
+            token,
+            mainNetwork: name,
+            price: 5,
+            grown: 1,
+            grownPercent: 5,
+            availableInNetworks: [
+              {
+                network: name,
+                balance: total,
+              },
+            ],
+          };
+        });
+      })
+      .flat();
   }
 
   addWallet() {
     this.$router.push({ name: Components.Welcome });
   }
 
+  searchCurrenciesByAddress(address: string) {
+    return this.currencies.filter(({ walletAddress }) => walletAddress === address);
+  }
+
   getBalance(address: string) {
-    const { meta } = keyring.getPair(address);
-    const { ethereumAddress } = getMetaTyped(meta);
+    const currenciesFilter = this.searchCurrenciesByAddress(address);
 
-    // TODO: fix as ''
-    return [...this.currencies[address as ''], ...this.currencies[ethereumAddress as '']].reduce((sum, currency) => {
+    return currenciesFilter.reduce((sum, currency) => {
       const currencyController = new CurrencyController(currency);
+      const { totalBalance } = currencyController.getCurrencyInfo();
 
-      return sum + currencyController.getCurrencyInfo().totalBalance;
+      return sum + totalBalance;
     }, 0);
   }
 
   getPercent(address: string) {
-    // TODO: fix as ''
-    return this.currencies[address as ''].reduce((sum, { grownPercent }) => sum + grownPercent, 0);
+    return 5.3;
   }
 
   updateSelectedWallet(address: string) {

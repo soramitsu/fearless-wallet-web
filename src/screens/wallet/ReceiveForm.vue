@@ -21,8 +21,8 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { GettersTypes as ApisGettersTypes } from '@/store/api/getters';
-import { Networks } from '@/store/api/types';
+import { GettersTypes as ApisGettersTypes } from '@/store/networks/getters';
+import { Networks } from '@/store/networks/types';
 import { firstCharToUp } from '@/util/stringHelper';
 import ActivityForm from './ActivityForm.vue';
 import QrCode from 'qrcode.vue';
@@ -47,7 +47,7 @@ export default class ReceiveForm extends Vue {
   @Getter(ApisGettersTypes.getNetworksInfo) networksInfo!: Networks;
 
   get optionsNetwork() {
-    return Object.keys(this.networksInfo).map((network) => ({ label: firstCharToUp(network), value: network }));
+    return this.networksInfo.map(({ name }) => ({ label: firstCharToUp(name), value: name }));
   }
 
   get address() {

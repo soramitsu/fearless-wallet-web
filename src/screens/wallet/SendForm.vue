@@ -78,18 +78,17 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { GettersTypes as ApiGettersTypes } from '@/store/api/getters';
+import { GettersTypes as ApiGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { Networks } from '@/store/api/types';
-import { Currency } from '@/interfaces/currencies';
+import { Networks } from '@/store/networks/types';
+import { Currencies } from '@/interfaces/currencies';
 import { firstCharToUp } from '@/util/stringHelper';
 import Input from '@/components/Input.vue';
 import Select from '@/components/Select.vue';
 import Corners from '@/components/Corners.vue';
 import ActivityForm from './ActivityForm.vue';
 import SendingPopup from './SendingPopup.vue';
-import currencyMock from '@/mocks/currency';
 
 @Component({
   components: {
@@ -112,13 +111,9 @@ export default class SendForm extends Vue {
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) selectedNetwork!: string;
   @Prop(String) token!: string;
+  @Prop(Array) currencies!: Currencies;
   @Getter(ApiGettersTypes.getNetworksInfo) networksInfo!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-
-  get currencies(): Currency[] {
-    // TODO: fix as ''
-    return currencyMock[this.selectedWallet.address as ''];
-  }
 
   get fee() {
     return 0.0015;
@@ -145,8 +140,8 @@ export default class SendForm extends Vue {
   }
 
   get optionsNetwork() {
-    return Object.keys(this.networksInfo).map((network) => {
-      return { label: firstCharToUp(network), value: network };
+    return this.networksInfo.map(({ name }) => {
+      return { label: firstCharToUp(name), value: name };
     });
   }
 

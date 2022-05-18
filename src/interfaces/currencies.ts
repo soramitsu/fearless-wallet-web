@@ -4,6 +4,7 @@ export interface AvailableInNetworks {
 }
 
 export interface Currency {
+  walletAddress?: string;
   mainNetwork: string;
   token: string;
   price: number;
@@ -11,6 +12,8 @@ export interface Currency {
   grownPercent: number;
   availableInNetworks: AvailableInNetworks[];
 }
+
+export type Currencies = Currency[];
 
 export interface HistoryItem {
   id: string;

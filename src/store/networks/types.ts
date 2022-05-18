@@ -1,4 +1,5 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
+import type { AccountBalance } from '@/interfaces/balances';
 
 export type Nodes = {
   url: string;
@@ -47,7 +48,26 @@ export type FullNetwork = {
   options?: string[];
 };
 
+export type balance = {
+  chainId: string;
+  parentId?: string;
+  name: string;
+  externalApi?: ExternalApi;
+  assets: Assets[];
+  nodes: Nodes[];
+  icon: string;
+  addressPrefix: number;
+  types: Types;
+  options?: string[];
+};
+
+type Balance = {
+  address: string;
+  balance: AccountBalance;
+};
+
 type Network = {
+  name: string;
   api: ApiPromise;
   provider: WsProvider;
   nodes: Nodes[];
@@ -55,11 +75,17 @@ type Network = {
   addressPrefix: number;
   isActive: boolean;
   isEthereumNetwork: boolean;
+  balances: Balance[];
 };
 
-export type SetNetworkStatusMutation = {
+export type SetNetworkStatusProps = {
   name: string;
   isActive: boolean;
 };
 
-export type Networks = Record<string, Network>;
+export type SetNetworkBalancesProps = {
+  name: string;
+  balances: Balance[];
+};
+
+export type Networks = Network[];

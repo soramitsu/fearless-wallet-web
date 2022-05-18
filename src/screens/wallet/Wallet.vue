@@ -43,6 +43,7 @@
           <Currencies
             v-if="showCurrencies"
             :currencies="filterCurrencies"
+            :selectedNetwork="selectedNetwork"
             :showAssetsManagementForm="showAssetsManagementForm"
             :hideZeroBalance="hideZeroBalance"
             :toggleVisibleActivityForm="toggleVisibleActivityForm"
@@ -55,6 +56,7 @@
 
     <SendForm
       v-if="showSendForm"
+      :currencies="filterCurrencies"
       :token="selectedCurrency.token"
       :selectedNetwork="selectedCurrency.mainNetwork"
       :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false)"
@@ -71,13 +73,13 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { GettersTypes as ApisGettersTypes } from '@/store/api/getters';
+import { GettersTypes as ApisGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { Networks } from '@/store/api/types';
+import { Networks } from '@/store/networks/types';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { firstCharToUp } from '@/util/stringHelper';
-import { Currency } from '@/interfaces/currencies';
+import { Currency, Currencies as TCurrencies } from '@/interfaces/currencies';
 import type { TabWallet } from '@/interfaces/walletPage';
 import Scroll from '@/components/Scroll.vue';
 import Corners from '@/components/Corners.vue';
@@ -89,7 +91,6 @@ import ContentSettings from './ContentSettings.vue';
 import Currencies from './Currencies.vue';
 import TotalBalance from './TotalBalance.vue';
 import NFTs from './NFTs.vue';
-import currencyMock from '@/mocks/currency';
 import CurrencyController from '@/controllers/currencyController';
 
 @Component({
@@ -122,21 +123,55 @@ export default class Wallet extends Vue {
   @Getter(ApisGettersTypes.getNetworksInfo) networksInfo!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
-  get currencies(): Currency[] {
-    if (this.selectedWallet.address === '') return [];
+  get currencies(): TCurrencies {
+    return this.networksInfo
+      .map(({ balances, assets, name }) => {
+        const walletAddress = this.selectedWallet.address;
+        const balance = balances.find(({ address }) => address === walletAddress)?.balance;
+        const total = +(balance?.total ?? 0);
+        const token = assets[0]?.assetId;
 
-    // TODO: fix as ''
-    const substrateWalletCurrency = currencyMock[this.selectedWallet.address as ''];
-    const ethereumWalletCurrency = currencyMock[this.selectedWallet.ethereumAddress as ''];
+        return {
+          walletAddress,
+          token,
+          mainNetwork: name,
+          price: 5,
+          grown: 1,
+          grownPercent: 5,
+          availableInNetworks: [
+            {
+              network: name,
+              balance: total,
+            },
+          ],
+        };
+      })
+      .sort(({ availableInNetworks: availableInNetworks1 }, { availableInNetworks: availableInNetworks2 }) => {
+        const indexBalanceOne = availableInNetworks1.findIndex(({ balance }) => balance !== 0);
+        const indexBalanceTwo = availableInNetworks2.findIndex(({ balance }) => balance !== 0);
 
-    return [...substrateWalletCurrency, ...ethereumWalletCurrency];
+        return indexBalanceTwo - indexBalanceOne;
+      });
+  }
+
+  get filterCurrencies() {
+    const filter = this.filterValue.trim().toLowerCase();
+
+    return this.currencies
+      .filter(({ availableInNetworks }) => {
+        if (this.selectedNetwork === 'All networks') return true;
+
+        return availableInNetworks.map(({ network }) => network).includes(this.selectedNetwork);
+      })
+      .filter(({ mainNetwork }) => mainNetwork.includes(filter));
   }
 
   get totalBalance() {
     return this.currencies.reduce((sum, currency) => {
       const currencyController = new CurrencyController(currency);
+      const { totalBalance } = currencyController.getCurrencyInfo();
 
-      return sum + currencyController.getCurrencyInfo().totalBalance;
+      return sum + totalBalance;
     }, 0);
   }
 
@@ -152,23 +187,11 @@ export default class Wallet extends Vue {
     return this.activeTabName === 'NFTs';
   }
 
-  get filterCurrencies() {
-    const filter = this.filterValue.trim().toLowerCase();
-
-    return this.currencies
-      .filter(({ availableInNetworks }) => {
-        if (this.selectedNetwork === 'All networks') return true;
-
-        return availableInNetworks.map(({ network }) => network).includes(this.selectedNetwork);
-      })
-      .filter(({ mainNetwork }) => mainNetwork.includes(filter));
-  }
-
   get optionsNetworks() {
     return [
       { label: 'All networks', value: 'All networks', path: getImgPathByNetworkName() },
-      ...Object.keys(this.networksInfo).map((network) => {
-        return { label: firstCharToUp(network), value: network, path: `networks/${getImgPathByNetworkName(network)}` };
+      ...this.networksInfo.map(({ name }) => {
+        return { label: firstCharToUp(name), value: name, path: `networks/${getImgPathByNetworkName(name)}` };
       }),
     ];
   }

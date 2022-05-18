@@ -47,11 +47,11 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { GettersTypes as ApisGettersTypes } from '@/store/api/getters';
-import { Networks } from '@/store/api/types';
+import { GettersTypes as ApisGettersTypes } from '@/store/networks/getters';
+import { Networks } from '@/store/networks/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { Currency } from '@/interfaces/currencies';
+import { Currencies } from '@/interfaces/currencies';
 import { firstCharToUp } from '@/util/stringHelper';
 import Loading from '@/components/Loading.vue';
 import Select from '@/components/Select.vue';
@@ -85,7 +85,7 @@ export default class TeleportForm extends Vue {
   @Getter(ApisGettersTypes.getNetworksInfo) networksInfo!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
-  get currencies(): Currency[] {
+  get currencies(): Currencies {
     // TODO: fix as ''
     return currencyMock[this.selectedWallet.address as ''];
   }
@@ -106,7 +106,7 @@ export default class TeleportForm extends Vue {
   }
 
   get optionsNetwork() {
-    return Object.keys(this.networksInfo).map((network) => ({ label: firstCharToUp(network), value: network }));
+    return this.networksInfo.map(({ name }) => ({ label: firstCharToUp(name), value: name }));
   }
 
   mounted() {

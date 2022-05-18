@@ -27,7 +27,7 @@
       </div>
       <div class="row second-row">
         <div class="currency-name">
-          {{ currencyInfo.token }}
+          {{ tokenString }}
         </div>
         <div class="count-tokens">
           {{ countTokensString }}
@@ -114,6 +114,10 @@ export default class CurrencyItem extends Vue {
 
   get currencyInfo() {
     return this.currencyController.getCurrencyInfo();
+  }
+
+  get tokenString() {
+    return this.currencyInfo?.token.toUpperCase();
   }
 
   get countTokensString() {

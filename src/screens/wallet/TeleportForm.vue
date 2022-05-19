@@ -2,7 +2,7 @@
   <div>
     <ActivityForm
       header="Teleport"
-      buttonText="Teleport"
+      :buttonText="buttonText"
       :handlerButton="teleport"
       :closeForm="closeForm"
       :buttonDisabled="buttonDisabled"
@@ -19,7 +19,11 @@
           class="row"
         />
 
-        <Input v-model="amount" placeholder="Amount" size="big" styleInput="pink" class="row" />
+        <div class="container-amount">
+          <MaxButton class="max-button-amount" @click="setMaxValue" />
+
+          <Input v-model="amount" placeholder="Amount" size="big" styleInput="pink" class="row" />
+        </div>
 
         <Select
           v-model="destinationNetwork"
@@ -49,8 +53,6 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as ApisGettersTypes } from '@/store/networks/getters';
 import { Networks } from '@/store/networks/types';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store/accounts/types';
 import { Currencies } from '@/interfaces/currencies';
 import { firstCharToUp } from '@/util/stringHelper';
 import Loading from '@/components/Loading.vue';
@@ -58,8 +60,9 @@ import Select from '@/components/Select.vue';
 import Input from '@/components/Input.vue';
 import Popup from '@/components/Popup.vue';
 import ActivityForm from './ActivityForm.vue';
+import MaxButton from './MaxButton.vue';
 import SendingPopup from './SendingPopup.vue';
-import currencyMock from '@/mocks/currency';
+import CurrencyController from '@/controllers/currencyController';
 
 @Component({
   components: {
@@ -69,6 +72,7 @@ import currencyMock from '@/mocks/currency';
     Popup,
     Loading,
     SendingPopup,
+    MaxButton,
   },
 })
 export default class TeleportForm extends Vue {
@@ -82,16 +86,35 @@ export default class TeleportForm extends Vue {
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) selectedNetwork!: string;
   @Prop(String) token!: string;
+  @Prop(Array) currencies!: Currencies;
   @Getter(ApisGettersTypes.getNetworksInfo) networksInfo!: Networks;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
-  get currencies(): Currencies {
-    // TODO: fix as ''
-    return currencyMock[this.selectedWallet.address as ''];
+  get buttonText() {
+    if (!this.currentCurrencyController) return '';
+
+    const { countTokens, token } = this.currentCurrencyController.getCurrencyInfo();
+
+    return +this.amount > countTokens ? `Insufficient balance ${token.toUpperCase()}` : 'Teleport';
+  }
+
+  get currentCurrency() {
+    return this.currencies.find(({ token }) => token === this.selectedToken);
+  }
+
+  get currentCurrencyController() {
+    if (!this.currentCurrency) return null;
+
+    return new CurrencyController(this.currentCurrency);
   }
 
   get buttonDisabled() {
-    return !(!!this.selectedToken && !!this.originalNetwork && !!this.destinationNetwork && !!this.amount);
+    if (!this.currentCurrencyController) return true;
+
+    const { countTokens } = this.currentCurrencyController.getCurrencyInfo();
+
+    return !(+this.amount > countTokens)
+      ? !(!!this.selectedToken && !!this.originalNetwork && !!this.destinationNetwork && !!this.amount)
+      : true;
   }
 
   get optionsCurrency() {
@@ -112,6 +135,14 @@ export default class TeleportForm extends Vue {
   mounted() {
     this.selectedToken = this.token;
     this.originalNetwork = this.selectedNetwork;
+  }
+
+  setMaxValue() {
+    if (!this.currentCurrencyController) return;
+
+    const { countTokens } = this.currentCurrencyController.getCurrencyInfo();
+
+    this.amount = countTokens.toString();
   }
 
   sendingPopupClose() {
@@ -138,6 +169,15 @@ export default class TeleportForm extends Vue {
       &:first-child {
         margin-top: 0;
       }
+    }
+  }
+
+  .container-amount {
+    position: relative;
+
+    .max-button-amount {
+      right: 25px;
+      top: 20px;
     }
   }
 

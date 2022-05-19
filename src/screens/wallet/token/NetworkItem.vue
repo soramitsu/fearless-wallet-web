@@ -6,7 +6,7 @@
       <div class="name">{{ networkNameWithFirstCharUp }}</div>
     </div>
 
-    <div class="balance balance-color">{{ balance }} {{ token }}</div>
+    <div class="count-tokens count-tokens-color">{{ countTokens }} {{ token }}</div>
   </div>
 </template>
 
@@ -19,7 +19,7 @@ import { Components } from '@/router/routes';
 @Component
 export default class NetworkItem extends Vue {
   @Prop(String) network!: string;
-  @Prop(Number) balance!: number;
+  @Prop(Number) countTokens!: number;
   @Prop(String) token!: string;
   @Prop({ default: false }) isActive!: boolean;
 
@@ -91,11 +91,11 @@ export default class NetworkItem extends Vue {
     }
   }
 
-  .balance {
+  .count-tokens {
     font-weight: 700;
   }
 
-  .balance-color {
+  .count-tokens-color {
     color: rgba(255, 255, 255, 0.65);
   }
 }

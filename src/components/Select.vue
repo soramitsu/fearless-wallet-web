@@ -2,7 +2,7 @@
   <Corners :size="size">
     <div :class="containerSelectClasses">
       <s-select v-model="vModel" :placeholder="placeholder" :size="size">
-        <s-option v-for="{ value, label } in options" :key="value" :value="value" :label="label" />
+        <s-option v-for="{ value, label } in options" :key="label" :value="value" :label="label" />
       </s-select>
     </div>
   </Corners>

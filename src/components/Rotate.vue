@@ -30,7 +30,7 @@ export default class Rotate extends Vue {
 
 .non-rotate {
   transform: rotateZ(0deg);
-  animation: rotate-2 0.3s reverse;
+  animation: rotate-two 0.3s reverse;
 }
 
 @keyframes rotate-one {

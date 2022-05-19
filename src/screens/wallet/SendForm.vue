@@ -16,10 +16,13 @@
 
           <Input v-model="recipient" placeholder="Send to" size="big" class="row" />
 
-          <div class="row value">
+          <div class="row amount">
+            <MaxButton class="max-button-amount" @click="setMaxValue" />
+            <MaxButton class="max-button-value" @click="setMaxValue" />
+
             <Input v-model="amount" placeholder="Amount" size="big" styleInput="pink" />
 
-            <div class="equals">=</div>
+            <img src="@/assets/equals.svg" />
 
             <Input v-model="value" placeholder="Value" size="big" styleInput="pink" />
           </div>
@@ -89,6 +92,8 @@ import Select from '@/components/Select.vue';
 import Corners from '@/components/Corners.vue';
 import ActivityForm from './ActivityForm.vue';
 import SendingPopup from './SendingPopup.vue';
+import MaxButton from './MaxButton.vue';
+import CurrencyController from '@/controllers/currencyController';
 
 @Component({
   components: {
@@ -97,6 +102,7 @@ import SendingPopup from './SendingPopup.vue';
     Select,
     SendingPopup,
     Corners,
+    MaxButton,
   },
 })
 export default class SendForm extends Vue {
@@ -128,11 +134,25 @@ export default class SendForm extends Vue {
   }
 
   get buttonText() {
-    return this.step === 1 ? 'Continue' : 'Send';
+    if (this.step === 2) return 'Send';
+
+    if (!this.currentCurrencyController) return '';
+
+    const { countTokens, token } = this.currentCurrencyController.getCurrencyInfo();
+
+    return +this.amount > countTokens ? `Insufficient balance ${token.toUpperCase()}` : 'Continue';
   }
 
   get buttonDisabled() {
-    return this.step === 1 ? !(!!this.network && !!this.selectedToken && !!this.recipient && !!this.amount) : false;
+    if (this.step === 2) return false;
+
+    if (!this.currentCurrencyController) return true;
+
+    const { countTokens } = this.currentCurrencyController.getCurrencyInfo();
+
+    return !(+this.amount > countTokens)
+      ? !(!!this.network && !!this.selectedToken && !!this.recipient && !!this.amount)
+      : true;
   }
 
   get formattedAddressTo() {
@@ -152,25 +172,43 @@ export default class SendForm extends Vue {
     }));
   }
 
-  get tokenInfo() {
+  get currentCurrency() {
     return this.currencies.find(({ token }) => token === this.selectedToken);
   }
 
+  get currentCurrencyController() {
+    if (!this.currentCurrency) return null;
+
+    return new CurrencyController(this.currentCurrency);
+  }
+
   get tokenPrice() {
-    return this.tokenInfo?.price ?? 1;
+    return this.currentCurrency?.price ?? 1;
   }
 
   get value() {
-    return (this.tokenPrice * +this.amount).toString();
+    if (!this.currentCurrencyController) return 0;
+
+    return this.currentCurrencyController.getCostOfTokens(+this.amount);
   }
 
   set value(value) {
-    this.amount = (+value / this.tokenPrice).toString();
+    if (!this.currentCurrencyController) return;
+
+    this.amount = this.currentCurrencyController?.getCountsTokensByPrice(+value).toString();
   }
 
   mounted() {
     this.network = this.selectedNetwork ?? '';
     this.selectedToken = this.token;
+  }
+
+  setMaxValue() {
+    if (!this.currentCurrencyController) return;
+
+    const { countTokens } = this.currentCurrencyController.getCurrencyInfo();
+
+    this.amount = countTokens.toString();
   }
 
   sendingPopupClose() {
@@ -207,13 +245,17 @@ export default class SendForm extends Vue {
     }
   }
 
-  .value {
+  .amount {
     display: flex;
     justify-content: space-between;
     align-items: center;
 
-    .equals {
-      font-size: 50px;
+    .max-button-amount {
+      left: 180px;
+    }
+
+    .max-button-value {
+      right: 35px;
     }
   }
 

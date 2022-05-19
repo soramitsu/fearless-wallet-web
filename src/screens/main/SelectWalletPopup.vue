@@ -84,7 +84,7 @@ export default class SelectWalletPopup extends Vue {
             availableInNetworks: [
               {
                 network: name,
-                balance: total,
+                countTokens: total,
               },
             ],
           };

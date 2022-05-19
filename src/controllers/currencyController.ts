@@ -14,35 +14,63 @@ export default class CurrencyController {
 
   constructor(currency: Currency) {
     this.currency = currency;
-    this.currencyVisibleStorageName = `visible-${this.currency.token}`;
+    this.currencyVisibleStorageName = `visible-${currency.token}`;
   }
 
-  private getCountTokens(): FPNumber {
-    return this.currency.availableInNetworks.reduce((sum, { balance }) => {
-      const FPBalance = new FPNumber(balance, 12);
+  private getCountTokens(): number {
+    return this.currency.availableInNetworks
+      .reduce((sum, { countTokens }) => {
+        const FPBalance = new FPNumber(countTokens, 12);
 
-      sum = sum.add(FPBalance);
+        sum = sum.add(FPBalance);
 
-      return sum;
-    }, new FPNumber(0, 12));
+        return sum;
+      }, new FPNumber(0, 12))
+      .toNumber();
   }
 
   private getTotalBalance(): FPNumber {
-    const price = new FPNumber(this.currency.price);
+    const countTokens = this.getCountTokens();
 
-    return this.getCountTokens().mul(price);
+    return this.calculateCost(countTokens);
   }
 
   public getCurrencyInfo(): CurrencyInfo {
-    const { token } = this.currency;
+    const { token, availableInNetworks } = this.currency;
 
     // TODO: fix
     const decimals = token === 'kilt' ? 1e15 : token === 'qtz' ? 1e18 : 1e12;
 
-    const countTokens = this.getCountTokens().toNumber() / decimals;
+    const countTokens = this.getCountTokens() / decimals;
     const totalBalance = this.getTotalBalance().toNumber() / decimals;
 
-    return { ...this.currency, countTokens, totalBalance };
+    const newAvailableInNetworks = availableInNetworks.map(({ countTokens, network }) => {
+      const formattedCountTokens = new FPNumber(countTokens).toNumber() / decimals;
+
+      return {
+        network,
+        countTokens: formattedCountTokens,
+      };
+    });
+
+    return { ...this.currency, availableInNetworks: newAvailableInNetworks, countTokens, totalBalance };
+  }
+
+  public getCostOfTokens(count: number): number {
+    return this.calculateCost(count).toNumber();
+  }
+
+  public getCountsTokensByPrice(cost: number): number {
+    const FPcost = new FPNumber(cost);
+    const price = new FPNumber(this.currency.price);
+
+    return FPcost.div(price).toNumber();
+  }
+
+  private calculateCost(count: number): FPNumber {
+    const price = new FPNumber(this.currency.price);
+
+    return new FPNumber(count).mul(price);
   }
 
   public getCurrencyVisible(): boolean {

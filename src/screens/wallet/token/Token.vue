@@ -77,13 +77,18 @@
         <Scroll>
           <Networks v-if="showNetworks" :networks="filteredNetworks" :token="token" :selectedNetwork="network" />
 
-          <History v-else-if="showHistory" :history="filteredHistory" :availableInNetworks="availableInNetworks" />
+          <History
+            v-else-if="showHistory"
+            :history="filteredHistory"
+            :availableInNetworks="currencies.availableInNetworks"
+          />
         </Scroll>
       </div>
     </Corners>
 
     <SendForm
       v-if="showSendForm"
+      :currencies="currencies"
       :selectedNetwork="network"
       :token="token"
       :closeForm="toggleVisible.bind(null, 'showSendForm', false)"
@@ -97,6 +102,7 @@
 
     <TeleportForm
       v-if="showTeleportForm"
+      :currencies="currencies"
       :selectedNetwork="network"
       :token="token"
       :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
@@ -111,9 +117,10 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Currencies, HistoryItem } from '@/interfaces/currencies';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as ApisGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import type { TabCurrency } from '@/interfaces/walletPage';
-import currencyMock from '@/mocks/currency';
+import { Networks as NetworksType } from '@/store/networks/types';
 import historyMock from '@/mocks/history';
 import BorderButton from '@/components/BorderButton.vue';
 import SearchInput from '@/components/SearchInput.vue';
@@ -128,6 +135,7 @@ import ReceiveForm from '../ReceiveForm.vue';
 import SendForm from '../SendForm.vue';
 import TeleportForm from '../TeleportForm.vue';
 import BuyForm from '../BuyForm.vue';
+import CurrencyController from '@/controllers/currencyController';
 
 @Component({
   components: {
@@ -164,28 +172,50 @@ export default class Token extends Vue {
   showTeleportForm = false;
   showBuyForm = false;
 
+  @Getter(ApisGettersTypes.getNetworksInfo) networksInfo!: NetworksType;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get currencies(): Currencies {
-    // TODO: fix as ''
-    const substrateWalletCurrency = currencyMock[this.selectedWallet.address as ''];
-    const ethereumWalletCurrency = currencyMock[this.selectedWallet.ethereumAddress as ''];
+    return this.networksInfo.map(({ balances, assets, name }) => {
+      const walletAddress = this.selectedWallet.address;
+      const balance = balances.find(({ address }) => address === walletAddress)?.balance;
+      const total = +(balance?.total ?? 0);
+      const token = assets[0]?.assetId;
 
-    return [...substrateWalletCurrency, ...ethereumWalletCurrency];
+      return {
+        walletAddress,
+        token,
+        mainNetwork: name,
+        price: 5,
+        grown: 1,
+        grownPercent: 5,
+        availableInNetworks: [
+          {
+            network: name,
+            countTokens: total,
+          },
+        ],
+      };
+    });
   }
 
-  get tokenInfo() {
+  get currentCurrency() {
     return this.currencies.find(({ token }) => token.toLowerCase() === this.token.toLowerCase());
   }
 
-  get availableInNetworks() {
-    return this.tokenInfo?.availableInNetworks;
+  get currentCurrencyController() {
+    if (!this.currentCurrency) return null;
+
+    return new CurrencyController(this.currentCurrency);
   }
 
   get filteredNetworks() {
-    const filter = this.filterNetworksValue.trim().toLowerCase();
+    if (!this.currentCurrencyController) return [];
 
-    return this.availableInNetworks?.filter(({ network }) => network.includes(filter));
+    const filter = this.filterNetworksValue.trim().toLowerCase();
+    const { availableInNetworks } = this.currentCurrencyController.getCurrencyInfo();
+
+    return availableInNetworks?.filter(({ network }) => network.includes(filter));
   }
 
   get filteredHistory() {
@@ -195,7 +225,7 @@ export default class Token extends Vue {
   }
 
   get tokenPriceString() {
-    return `1 ${this.token.toUpperCase()} = $${this.tokenInfo?.price}`;
+    return `1 ${this.token.toUpperCase()} = $${this.currentCurrency?.price}`;
   }
 
   get showNetworks() {
@@ -215,37 +245,31 @@ export default class Token extends Vue {
   }
 
   get price() {
-    return this.tokenInfo?.price;
-  }
-
-  get tokenInfoInSelectedNetwork() {
-    return this.tokenInfo?.availableInNetworks.find(({ network }) => network === this.network);
-  }
-
-  get balanceInNetwork() {
-    const balance = this.tokenInfoInSelectedNetwork?.balance;
-
-    if (!balance) return 0;
-
-    return this.tokenInfo!.price * balance;
+    return this.currentCurrency?.price;
   }
 
   get countTokensString() {
-    const balance = this.tokenInfoInSelectedNetwork?.balance ?? 0;
+    if (!this.currentCurrencyController) return '';
 
-    return `${balance} ${this.token.toUpperCase()}`;
+    const { countTokens } = this.currentCurrencyController.getCurrencyInfo();
+
+    return `${countTokens.toFixed(4)} ${this.token.toUpperCase()}`;
   }
 
   get balanceInNetworkString() {
-    return `$ ${this.balanceInNetwork.toFixed(2)}`;
+    if (!this.currentCurrencyController) return '';
+
+    const { totalBalance } = this.currentCurrencyController.getCurrencyInfo();
+
+    return `$ ${totalBalance.toFixed(2)}`;
   }
 
   get grownString() {
-    return `+$${this.tokenInfo?.grown}`;
+    return `+$${this.currentCurrency?.grown}`;
   }
 
   get grownPercentString() {
-    return `+${this.tokenInfo?.grownPercent}%`;
+    return `+${this.currentCurrency?.grownPercent}%`;
   }
 
   filterHistoryValueUpdate(name: string) {

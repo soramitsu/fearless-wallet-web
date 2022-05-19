@@ -1,6 +1,6 @@
 export interface AvailableInNetworks {
   network: string;
-  balance: number;
+  countTokens: number;
 }
 
 export interface Currency {

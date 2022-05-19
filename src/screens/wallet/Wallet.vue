@@ -141,14 +141,14 @@ export default class Wallet extends Vue {
           availableInNetworks: [
             {
               network: name,
-              balance: total,
+              countTokens: total,
             },
           ],
         };
       })
       .sort(({ availableInNetworks: availableInNetworks1 }, { availableInNetworks: availableInNetworks2 }) => {
-        const indexBalanceOne = availableInNetworks1.findIndex(({ balance }) => balance !== 0);
-        const indexBalanceTwo = availableInNetworks2.findIndex(({ balance }) => balance !== 0);
+        const indexBalanceOne = availableInNetworks1.findIndex(({ countTokens }) => countTokens !== 0);
+        const indexBalanceTwo = availableInNetworks2.findIndex(({ countTokens }) => countTokens !== 0);
 
         return indexBalanceTwo - indexBalanceOne;
       });

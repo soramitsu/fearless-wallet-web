@@ -47,9 +47,9 @@ export default class App extends Vue {
   font-family: 'Sora';
   font-style: normal;
   font-feature-settings: 'tnum' on, 'lnum' on;
-  height: var(--extension-height);
-  width: var(--extension-width);
-  border-radius: var(--default-border-radius);
+  height: $extension-height;
+  width: $extension-width;
+  border-radius: $default-border-radius;
   color: white;
   text-align: center;
   padding: 16px;

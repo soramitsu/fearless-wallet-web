@@ -52,9 +52,9 @@ export default class Menu extends Vue {
   justify-content: space-around;
   align-items: center;
   z-index: 199;
-  width: var(--extension-width);
+  width: $extension-width;
   margin: 0 0 -16px -16px;
-  border-radius: 0 0 var(--default-border-radius) var(--default-border-radius);
+  border-radius: 0 0 $default-border-radius $default-border-radius;
   // background-color: rgba(0, 0, 0, 0.5);
   // backdrop-filter: blur(10px);
 }

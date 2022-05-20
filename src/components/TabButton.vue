@@ -35,7 +35,7 @@ export default class TabButton extends Vue {
   border-radius: 4px;
   font-size: 13px;
   line-height: 36px;
-  clip-path: var(--medium-clip-path-left-top-and-right-bottom);
+  clip-path: $medium-clip-path-left-top-and-right-bottom;
   border: 1px solid rgba(255, 255, 255, 0.1);
   height: 36px;
 

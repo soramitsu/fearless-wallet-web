@@ -1,12 +1,27 @@
-// TODO: [arch] JUST AN EXAMPLE
-@mixin loading {
-  animation: rotation 2s infinite linear;
-  @keyframes rotation {
+@mixin rotate180deg {
+  transform: rotateZ(180deg);
+  animation: rotation-one 0.3s;
+
+  @keyframes rotation-one {
     from {
       transform: rotate(0deg);
     }
     to {
-      transform: rotate(359deg);
+      transform: rotate(180deg);
+    }
+  }
+}
+
+@mixin rotate180degReverse {
+  transform: rotateZ(0deg);
+  animation: rotation-two 0.3s reverse;
+
+  @keyframes rotation-two {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(180deg);
     }
   }
 }

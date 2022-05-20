@@ -77,7 +77,7 @@ export default class MnemonicColumns extends Vue {
 
     .mnemonic-number {
       margin-right: 16px;
-      color: var(--pink-lavender-color);
+      color: $pink-lavender-color;
     }
   }
 }

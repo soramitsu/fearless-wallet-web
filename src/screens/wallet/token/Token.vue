@@ -357,7 +357,7 @@ export default class Token extends Vue {
     flex-direction: column;
     border: 1px solid rgba(255, 255, 255, 0.1);
     background-color: rgba(255, 255, 255, 0.05);
-    clip-path: var(--big-clip-path-left-top);
+    clip-path: $big-clip-path-left-top;
     border-radius: 8px;
     height: 277px;
 

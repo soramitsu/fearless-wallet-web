@@ -126,7 +126,7 @@ export default class PopupWithSelect extends Vue {
   }
 
   .s-icon-basic-check-mark-24 {
-    color: var(--pink-lavender-color);
+    color: $pink-lavender-color;
   }
 }
 </style>

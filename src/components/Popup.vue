@@ -89,9 +89,9 @@ export default class Popup extends Vue {
 
 <style lang="scss" scoped>
 .popup-background {
-  height: var(--extension-height);
-  width: var(--extension-width);
-  border-radius: var(--default-border-radius);
+  height: $extension-height;
+  width: $extension-width;
+  border-radius: $default-border-radius;
   display: flex;
   align-items: center;
   position: absolute;
@@ -122,8 +122,8 @@ export default class Popup extends Vue {
     max-height: 390px;
     max-width: 480px;
     background-color: #111111;
-    clip-path: var(--big-clip-path-left-top-and-right-bottom);
-    border-radius: var(--default-border-radius);
+    clip-path: $big-clip-path-left-top-and-right-bottom;
+    border-radius: $default-border-radius;
     padding: 20px 0 30px;
   }
 

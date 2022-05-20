@@ -77,7 +77,7 @@ export default class Button extends Vue {
 <style lang="scss" scoped>
 .button-size-big {
   .el-button {
-    clip-path: var(--big-clip-path-left-top-and-right-bottom);
+    clip-path: $big-clip-path-left-top-and-right-bottom;
   }
 
   .button {
@@ -87,7 +87,7 @@ export default class Button extends Vue {
 
 .button-size-medium {
   .el-button {
-    clip-path: var(--medium-clip-path-left-top-and-right-bottom);
+    clip-path: $medium-clip-path-left-top-and-right-bottom;
   }
 
   .button {
@@ -118,7 +118,7 @@ export default class Button extends Vue {
 }
 
 .icon {
-  color: var(--pink-color);
+  color: $pink-color;
   margin-right: 8px;
   color: #ee0077;
 }

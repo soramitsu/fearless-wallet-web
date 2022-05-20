@@ -46,7 +46,7 @@ export default class SelectNetworkButton extends Vue {
   position: relative;
   display: flex;
   justify-content: space-between;
-  clip-path: var(--medium-clip-path-left-top-and-right-bottom);
+  clip-path: $medium-clip-path-left-top-and-right-bottom;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 5px;
   background-color: #201c1f;

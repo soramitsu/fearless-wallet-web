@@ -253,7 +253,7 @@ export default class Wallet extends Vue {
     padding: 16px 0 0 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     background-color: rgba(255, 255, 255, 0.05);
-    clip-path: var(--big-clip-path-left-top);
+    clip-path: $big-clip-path-left-top;
     border-radius: 8px;
     height: 418px;
   }

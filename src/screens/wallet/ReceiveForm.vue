@@ -89,7 +89,7 @@ export default class ReceiveForm extends Vue {
     font-size: 14px;
     font-weight: 500;
     margin-bottom: 20px;
-    color: var(--pink-lavender-color);
+    color: $pink-lavender-color;
     opacity: 0.95;
     margin-top: 10px;
 

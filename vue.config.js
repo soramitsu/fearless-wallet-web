@@ -32,7 +32,7 @@ module.exports = {
         additionalData: `
           @import "@/styles/_layout.scss";
           @import "@/styles/_mixins.scss";
-          @import "@/styles/_typography.scss";
+          @import "@/styles/variables.scss";
         `,
       },
     },

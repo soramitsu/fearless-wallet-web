@@ -24,84 +24,10 @@ export default class Rotate extends Vue {
 
 <style lang="scss" scoped>
 .rotate {
-  transform: rotateZ(180deg);
-  animation: rotate-one 0.3s;
+  @include rotate180deg;
 }
 
 .non-rotate {
-  transform: rotateZ(0deg);
-  animation: rotate-two 0.3s reverse;
-}
-
-@keyframes rotate-one {
-  0% {
-    transform: rotate(0deg);
-  }
-  10% {
-    transform: rotate(18deg);
-  }
-  20% {
-    transform: rotate(36deg);
-  }
-  30% {
-    transform: rotate(54deg);
-  }
-  40% {
-    transform: rotate(72deg);
-  }
-  50% {
-    transform: rotate(90deg);
-  }
-  60% {
-    transform: rotate(108deg);
-  }
-  70% {
-    transform: rotate(126deg);
-  }
-  80% {
-    transform: rotate(144deg);
-  }
-  90% {
-    transform: rotate(162deg);
-  }
-  100% {
-    transform: rotate(180deg);
-  }
-}
-
-@keyframes rotate-two {
-  0% {
-    transform: rotate(0deg);
-  }
-  10% {
-    transform: rotate(18deg);
-  }
-  20% {
-    transform: rotate(36deg);
-  }
-  30% {
-    transform: rotate(54deg);
-  }
-  40% {
-    transform: rotate(72deg);
-  }
-  50% {
-    transform: rotate(90deg);
-  }
-  60% {
-    transform: rotate(108deg);
-  }
-  70% {
-    transform: rotate(126deg);
-  }
-  80% {
-    transform: rotate(144deg);
-  }
-  90% {
-    transform: rotate(162deg);
-  }
-  100% {
-    transform: rotate(180deg);
-  }
+  @include rotate180degReverse;
 }
 </style>

@@ -9,7 +9,7 @@
   border-radius: 20px;
   padding: 4px 7px;
   opacity: 0.9;
-  color: var(--pink-lavender-color);
+  color: $pink-lavender-color;
   z-index: 1000;
 
   &:hover {

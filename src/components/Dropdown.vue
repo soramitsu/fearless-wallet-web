@@ -25,7 +25,7 @@ export default class Dropdown extends Vue {
 <style lang="scss">
 .dropdown {
   .el-button {
-    clip-path: var(--medium-clip-path-left-top-and-right-bottom) !important;
+    clip-path: $medium-clip-path-left-top-and-right-bottom !important;
     background: none !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     color: white !important;
@@ -39,7 +39,7 @@ export default class Dropdown extends Vue {
 }
 
 .el-dropdown-menu {
-  clip-path: var(--medium-clip-path-left-top-and-right-bottom);
+  clip-path: $medium-clip-path-left-top-and-right-bottom;
   background-color: #111111 !important;
   border: 1px solid #111111 !important;
   margin-top: 5px !important;

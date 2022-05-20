@@ -87,14 +87,14 @@ export default class Input extends Vue {
   }
 
   .error-input {
-    border: 1px solid var(--error-color) !important;
+    border: 1px solid $error-color !important;
   }
 }
 
 .input-style-default {
   textarea,
   input {
-    color: var(--pink-lavender-color) !important;
+    color: $pink-lavender-color !important;
   }
 
   .s-input {
@@ -109,19 +109,19 @@ export default class Input extends Vue {
   }
 
   .s-input {
-    background-color: var(--pink-purple-color) !important;
+    background-color: $pink-purple-color !important;
   }
 }
 
 .input-size-big {
   .s-input {
-    clip-path: var(--big-clip-path-left-top-and-right-bottom);
+    clip-path: $big-clip-path-left-top-and-right-bottom;
   }
 }
 
 .input-size-medium {
   .s-input {
-    clip-path: var(--medium-clip-path-left-top-and-right-bottom);
+    clip-path: $medium-clip-path-left-top-and-right-bottom;
   }
 }
 </style>

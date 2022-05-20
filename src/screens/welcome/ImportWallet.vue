@@ -192,7 +192,7 @@ export default class ImportWallet extends Vue {
   }
 
   i {
-    color: var(--pink-lavender-color);
+    color: $pink-lavender-color;
   }
 }
 </style>

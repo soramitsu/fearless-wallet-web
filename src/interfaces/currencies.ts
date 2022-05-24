@@ -1,5 +1,7 @@
 import type { AccountBalance } from '@/interfaces/balances';
 
+type WalletAddress = string;
+
 export interface AvailableInNetworks {
   network: string;
   balance: AccountBalance;
@@ -9,12 +11,9 @@ export interface Currency {
   mainNetwork: string;
   token: string;
   price: number;
-  grown: number;
-  grownPercent: number;
+  usd24HoursChange: number;
   availableInNetworks: AvailableInNetworks[];
 }
-
-type WalletAddress = string;
 
 export type Currencies = Record<WalletAddress, Currency[]>;
 

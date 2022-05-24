@@ -1,5 +1,5 @@
 <template>
-  <Corners>
+  <Corners class="corners">
     <div :class="classes" @click="$emit('click')">
       {{ textFormatted }}
 
@@ -42,6 +42,10 @@ export default class SelectNetworkButton extends Vue {
 </script>
 
 <style lang="scss" scoped>
+.corners {
+  height: 36px;
+}
+
 .select-network-button {
   position: relative;
   display: flex;

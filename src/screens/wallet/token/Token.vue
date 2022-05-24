@@ -1,18 +1,18 @@
 <template>
   <div class="token">
-    <TokenHeader :network="network" :price="price" :token="token" />
-
-    <div class="descriptions">
-      <div class="column left-column">
-        <div class="first-row">{{ tokenPriceString }}</div>
+    <div class="token-header">
+      <div class="descriptions">
         <div class="count-tokens">{{ countTokensString }}</div>
-        <div class="total-balance">{{ balanceInNetworkString }}</div>
+        <div class="balance">{{ balanceInNetworkString }}</div>
+        <div class="price">{{ tokenPriceString }}</div>
       </div>
-      <div class="column right-column">
-        <div class="first-row">Today</div>
-        <div>{{ grownString }}</div>
-        <div class="grown-percent-today">{{ grownPercentString }}</div>
-      </div>
+
+      <SelectNetworkButton
+        :ref="selectNetworkButtonRef"
+        :text="selectedNetwork"
+        :isActive="showSelectNetworkPopup"
+        @click="toggleSelectNetworkPopupVisible"
+      />
     </div>
 
     <div class="activity-block">
@@ -52,20 +52,9 @@
     <Corners size="big" :bottomRightCorner="false">
       <div class="content">
         <div class="content-settings">
-          <div class="tabs">
-            <TabButton
-              v-for="tabName in tabsOptions"
-              :key="tabName"
-              :name="tabName"
-              :isActive="activeTabName === tabName"
-              class="tab"
-              @click.native="openTab(tabName)"
-            />
-          </div>
+          <div class="history-label">History</div>
 
-          <SearchInput v-if="showNetworks" v-model="filterNetworksValue" placeholder="Search in networks" />
-
-          <Corners v-else-if="showHistory">
+          <Corners>
             <Dropdown
               :value="filterHistoryValue"
               :options="historyDropdownOption"
@@ -75,13 +64,7 @@
         </div>
 
         <Scroll>
-          <Networks v-if="showNetworks" :networks="filteredNetworks" :token="token" :selectedNetwork="network" />
-
-          <History
-            v-else-if="showHistory"
-            :history="filteredHistory"
-            :availableInNetworks="currencies.availableInNetworks"
-          />
+          <History :history="filteredHistory" :availableInNetworks="currencies.availableInNetworks" />
         </Scroll>
       </div>
     </Corners>
@@ -89,26 +72,42 @@
     <SendForm
       v-if="showSendForm"
       :currencies="currenciesForSelectedWallet"
-      :selectedNetwork="network"
+      :selectedNetwork="selectedNetwork"
       :token="token"
       :closeForm="toggleVisible.bind(null, 'showSendForm', false)"
     />
 
     <ReceiveForm
       v-if="showReceiveForm"
-      :selectedNetwork="network"
+      :selectedNetwork="selectedNetwork"
       :closeForm="toggleVisible.bind(null, 'showReceiveForm', false)"
     />
 
     <TeleportForm
       v-if="showTeleportForm"
       :currencies="currenciesForSelectedWallet"
-      :selectedNetwork="network"
+      :selectedNetwork="selectedNetwork"
       :token="token"
       :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
     />
 
     <BuyForm v-if="showBuyForm" :closeForm="toggleVisible.bind(null, 'showBuyForm', false)" />
+
+    <PopupWithSelect
+      v-if="showSelectNetworkPopup"
+      v-model="selectedNetwork"
+      header="Select Network"
+      space="big"
+      horizontalPlacement="right"
+      verticalPlacement="center"
+      :showIcon="true"
+      :showSearch="true"
+      :staticHeight="true"
+      :options="filterOptionsNetworks"
+      :toggleValue="toggleSelectedNetwork"
+      :handlerClose="toggleSelectNetworkPopupVisible"
+      :handlerFilter="handlerFilter"
+    />
   </div>
 </template>
 
@@ -119,62 +118,82 @@ import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import type { TabCurrency } from '@/interfaces/walletPage';
 import { Networks as NetworksType } from '@/store/networks/types';
+import { Components } from '@/router/routes';
+import { getImgPathByNetworkName } from '@/util/imgPath';
+import { firstCharToUp } from '@/util/stringHelper';
 import historyMock from '@/mocks/history';
 import BorderButton from '@/components/BorderButton.vue';
-import SearchInput from '@/components/SearchInput.vue';
 import Scroll from '@/components/Scroll.vue';
 import Dropdown from '@/components/Dropdown.vue';
 import Corners from '@/components/Corners.vue';
-import TokenHeader from './TokenHeader.vue';
-import Networks from './Networks.vue';
 import History from './History.vue';
 import TabButton from '@/components/TabButton.vue';
 import ReceiveForm from '../ReceiveForm.vue';
 import SendForm from '../SendForm.vue';
 import TeleportForm from '../TeleportForm.vue';
 import BuyForm from '../BuyForm.vue';
+import SelectNetworkButton from '../SelectNetworkButton.vue';
+import PopupWithSelect from '@/components/PopupWithSelect.vue';
 import CurrencyController from '@/controllers/currencyController';
 
 @Component({
   components: {
     BorderButton,
     Scroll,
-    TokenHeader,
-    Networks,
     TabButton,
     History,
-    SearchInput,
     ReceiveForm,
     SendForm,
     TeleportForm,
     BuyForm,
     Dropdown,
     Corners,
+    SelectNetworkButton,
+    PopupWithSelect,
   },
 })
 export default class Token extends Vue {
+  readonly selectNetworkButtonRef = 'selectNetworkButton';
   readonly historyDropdownOption = [
     { label: 'All', value: 'all' },
     { label: 'Transfer', value: 'transfer' },
     { label: 'Reward', value: 'reward' },
   ];
 
-  readonly tabsOptions: TabCurrency[] = ['Networks', 'History'];
-
   history: HistoryItem[] = historyMock;
-  activeTabName: TabCurrency = 'Networks';
-  filterNetworksValue = '';
   filterHistoryValue = 'all';
+  popupFilterValue = '';
   showSendForm = false;
   showReceiveForm = false;
   showTeleportForm = false;
   showBuyForm = false;
+  showSelectNetworkPopup = false;
 
-  @Getter(NetworksGettersTypes.getNetworksInfo) networksInfo!: NetworksType;
+  @Getter(NetworksGettersTypes.getNetworksInfo) networks!: NetworksType;
   @Getter(NetworksGettersTypes.getCurrenciesInfo) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get optionsNetworks() {
+    if (!this.currentCurrencyController) return [];
+
+    const { totalCountTokens } = this.currentCurrencyController.getCurrencyInfo();
+
+    return [
+      { label: `All networks ${totalCountTokens.toFixed(4)}`, value: 'All networks', path: getImgPathByNetworkName() },
+      ...this.networks.map(({ name }) => ({
+        label: firstCharToUp(name),
+        value: name,
+        path: `networks/${getImgPathByNetworkName(name)}`,
+      })),
+    ];
+  }
+
+  get filterOptionsNetworks() {
+    const filter = this.popupFilterValue.trim().toLowerCase();
+
+    return this.optionsNetworks.filter(({ label }) => label.toLowerCase().includes(filter));
+  }
 
   get currenciesForSelectedWallet() {
     return this.currencies[this.selectedWallet.address] ?? [];
@@ -190,17 +209,6 @@ export default class Token extends Vue {
     return new CurrencyController(this.currentCurrency);
   }
 
-  get filteredNetworks() {
-    if (!this.currentCurrencyController) return [];
-
-    const filter = this.filterNetworksValue.trim().toLowerCase();
-    const { availableInNetworks, totalCountTokens } = this.currentCurrencyController.getCurrencyInfo();
-
-    return availableInNetworks
-      ?.filter(({ network }) => network.includes(filter))
-      .map(({ network }) => ({ network, totalCountTokens }));
-  }
-
   get filteredHistory() {
     if (this.filterHistoryValue === 'all') return this.history;
 
@@ -208,18 +216,10 @@ export default class Token extends Vue {
   }
 
   get tokenPriceString() {
-    return `1 ${this.token.toUpperCase()} = $${this.currentCurrency?.price}`;
+    return `1 ${this.token.toUpperCase()} = $${this.price}`;
   }
 
-  get showNetworks() {
-    return this.activeTabName === 'Networks';
-  }
-
-  get showHistory() {
-    return this.activeTabName === 'History';
-  }
-
-  get network() {
+  get selectedNetwork() {
     return this.$route.params.network;
   }
 
@@ -234,49 +234,59 @@ export default class Token extends Vue {
   get countTokensString() {
     if (!this.currentCurrencyController) return '';
 
-    const { totalCountTokens } = this.currentCurrencyController.getCurrencyInfo();
+    const { totalCountTokens, availableInNetworks } = this.currentCurrencyController.getCurrencyInfo();
 
-    return `${totalCountTokens.toFixed(4)} ${this.token.toUpperCase()}`;
+    if (this.selectedNetwork === 'All networks') return `${this.token.toUpperCase()} ${totalCountTokens.toFixed(4)}`;
+
+    const balance = availableInNetworks.find(({ network }) => network === this.selectedNetwork)?.balance;
+    const total = balance?.total ?? '';
+
+    return `${this.token.toUpperCase()} ${(+total).toFixed(4)}`;
   }
 
   get balanceInNetworkString() {
     if (!this.currentCurrencyController) return '';
 
-    const { totalBalance } = this.currentCurrencyController.getCurrencyInfo();
+    const { totalBalance, availableInNetworks } = this.currentCurrencyController.getCurrencyInfo();
 
-    return `$ ${totalBalance.toFixed(2)}`;
+    if (this.selectedNetwork === 'All networks') return `$ ${totalBalance.toFixed(2)}`;
+
+    const balance = availableInNetworks.find(({ network }) => network === this.selectedNetwork)?.balance;
+    const total = this.currentCurrencyController.getCostOfTokens(+(balance?.total ?? '0'));
+
+    return `$ ${(+total).toFixed(2)}`;
   }
 
-  get grownString() {
-    return `+$${this.currentCurrency?.grown}`;
+  handlerFilter(value: string) {
+    this.popupFilterValue = value;
   }
 
-  get grownPercentString() {
-    return `+${this.currentCurrency?.grownPercent}%`;
+  toggleSelectedNetwork(network: string) {
+    if (this.selectedNetwork === network) return;
+
+    this.$router.push({
+      name: Components.Token,
+      params: {
+        token: this.token,
+        network: network,
+      },
+    });
+  }
+
+  toggleSelectNetworkPopupVisible() {
+    const targetElement = (this.$refs[this.selectNetworkButtonRef] as Vue).$el as HTMLElement;
+
+    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
+
+    targetElement.style.zIndex = this.showSelectNetworkPopup ? '200' : '0';
   }
 
   filterHistoryValueUpdate(name: string) {
     this.filterHistoryValue = name;
   }
 
-  openTab(name: TabCurrency) {
-    this.activeTabName = name;
-  }
-
   toggleVisible(field: 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyForm', value: boolean) {
     this[field] = value;
-  }
-
-  receive() {
-    alert('receive');
-  }
-
-  teleport() {
-    alert('teleport');
-  }
-
-  buy() {
-    alert('buy');
   }
 }
 </script>
@@ -288,44 +298,32 @@ export default class Token extends Vue {
   width: 100%;
   height: 100%;
 
-  .descriptions {
+  .token-header {
     display: flex;
     justify-content: space-between;
     margin-bottom: 16px;
-    height: 75px;
 
-    .column {
+    .descriptions {
       display: flex;
-      flex-direction: column;
       justify-content: space-between;
+      flex-direction: column;
+      align-items: flex-start;
+      height: 70px;
 
       .count-tokens {
         font-weight: 600;
         font-size: 28px;
-        margin-bottom: 4px;
       }
 
-      .total-balance {
-        color: rgba(255, 255, 255, 0.65);
+      .balance {
+        color: rgba(255, 255, 255, 0.5);
       }
 
-      .first-row {
-        color: rgba(255, 255, 255, 0.65);
-        font-size: 14px;
-        margin-bottom: 4px;
+      .price {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 12px;
+        line-height: 15px;
       }
-
-      .grown-percent-today {
-        color: #00ffcc;
-      }
-    }
-
-    .left-column {
-      align-items: flex-start;
-    }
-
-    .right-column {
-      align-items: flex-end;
     }
   }
 
@@ -342,7 +340,7 @@ export default class Token extends Vue {
     background-color: rgba(255, 255, 255, 0.05);
     clip-path: $big-clip-path-left-top;
     border-radius: 8px;
-    height: 277px;
+    height: 336px;
 
     .content-settings {
       display: flex;
@@ -350,14 +348,8 @@ export default class Token extends Vue {
       align-items: center;
       margin: 11px 16px 5px 18px;
 
-      .tabs {
-        display: flex;
-        align-items: center;
-        height: 42px;
-
-        .tab {
-          margin-right: 8px;
-        }
+      .history-label {
+        font-weight: 600;
       }
     }
   }

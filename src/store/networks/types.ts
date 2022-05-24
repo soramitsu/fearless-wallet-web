@@ -1,5 +1,4 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import type { AccountBalance } from '@/interfaces/balances';
 import { Currency } from '@/interfaces/currencies';
 
 export type Nodes = {
@@ -62,8 +61,41 @@ type Network = {
 
 export type Networks = Network[];
 
+export type AssetsJson = {
+  id: string;
+  chainId: string;
+  precision: string;
+  priceId?: string;
+  icon: string;
+};
+
+type NetworkName = string;
+
+export type TokenPriceJson = {
+  usd: number;
+  usd_24h_change: number; // eslint-disable-line
+};
+
+export type TokensPriceJson = Record<NetworkName, TokenPriceJson>;
+
+export type TokenPrice = {
+  usd: number;
+  usd24HoursChange: number;
+};
+
+export type TokensPrice = Record<NetworkName, TokenPrice>;
+
+// Mutations
 export type SetNetworksStatusProps = {
   networks: Networks;
+};
+
+export type SetAssetsProps = {
+  assets: AssetsJson[];
+};
+
+export type SetTokensPriceProps = {
+  tokensPrice: TokensPrice;
 };
 
 export type SetCurrenciesStatusProps = {
@@ -74,4 +106,15 @@ export type SetCurrenciesStatusProps = {
 export type SetNetworkStatusProps = {
   name: string;
   isActive: boolean;
+};
+
+// Actions
+export type LoadNetworksInfo = {
+  url: string;
+  autoConnectMs: number;
+};
+
+export type LoadAssets = {
+  url: string;
+  autoConnectMs: number;
 };

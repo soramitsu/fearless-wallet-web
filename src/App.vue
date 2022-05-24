@@ -24,7 +24,8 @@ export default class App extends Vue {
   ) => void;
 
   async mounted() {
-    await this.networksController.loadNetworksInfo();
+    await Promise.all([this.networksController.loadNetworksInfo(), this.networksController.loadAssetsInfo()]);
+    await this.networksController.loadTokensPrice();
 
     this.subscribeAccounts = keyring.accounts.subject;
     this.subscribeAccounts.subscribe((accounts) => {

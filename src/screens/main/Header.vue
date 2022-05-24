@@ -1,7 +1,11 @@
 <template>
   <div class="header">
     <div class="header-part" :ref="walletNameRef">
-      <Logo size="small" />
+      <div class="logo-container">
+        <CircleButton v-if="showBackIcon" backgroundColor="light-black" iconName="chevron-left" @click="backToWallet" />
+
+        <Logo v-else size="small" />
+      </div>
 
       <div class="wallet-name-block" @click="toggleSelectWalletPopupVisible">
         <div class="wallet-name">{{ name }}</div>
@@ -55,6 +59,10 @@ export default class Header extends Vue {
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
+  get showBackIcon() {
+    return this.$route.name === Components.Token;
+  }
+
   get targetElement() {
     return this.$refs[this.walletNameRef] as HTMLElement;
   }
@@ -81,13 +89,17 @@ export default class Header extends Vue {
     }
   }
 
-  fullScreen() {
-    alert(`fullScreen`);
+  backToWallet() {
+    this.$router.push({ name: Components.Wallet });
   }
 
   lock() {
     this.accountController.updatedPasswordDateCreated(0);
     this.$router.push({ name: Components.WelcomeBack });
+  }
+
+  fullScreen() {
+    alert(`fullScreen`);
   }
 
   openSettings() {
@@ -100,8 +112,12 @@ export default class Header extends Vue {
 .header {
   display: flex;
   justify-content: space-between;
-  height: 48px;
+  min-height: 48px;
   margin-bottom: 16px;
+
+  .logo-container {
+    width: 48px;
+  }
 
   i {
     color: rgba(255, 255, 255, 0.65);

@@ -167,7 +167,7 @@ export default class SendForm extends Vue {
 
   get optionsCurrency() {
     return this.currencies.map(({ token, mainNetwork }) => ({
-      label: `${firstCharToUp(mainNetwork)} (${token})`,
+      label: `${token} (${firstCharToUp(mainNetwork)})`,
       value: `${mainNetwork}-${token}`,
     }));
   }
@@ -192,11 +192,11 @@ export default class SendForm extends Vue {
     return this.currentCurrencyController.getCostOfTokens(+this.amount).toString();
   }
 
-  // set value(value) {
-  //   if (!this.currentCurrencyController) return;
+  set value(value) {
+    if (!this.currentCurrencyController) return;
 
-  //   this.amount = this.currentCurrencyController?.getCountsTokensByPrice(+value).toString();
-  // }
+    this.amount = this.currentCurrencyController?.getCountsTokensByPrice(+value).toString();
+  }
 
   mounted() {
     this.network = this.selectedNetwork ?? '';

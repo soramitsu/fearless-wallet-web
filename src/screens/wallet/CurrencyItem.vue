@@ -37,7 +37,7 @@
         <div class="row">
           {{ priceString }}
 
-          <div class="currency-up-price">+{{ currencyInfo.grownPercent }}%</div>
+          <div :class="changePriceClasses">{{ usd24HoursChangeString }}</div>
         </div>
 
         {{ totalBalanceString }}
@@ -77,6 +77,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { Currency } from '@/interfaces/currencies';
 import { Components } from '@/router/routes';
+import { roundNumber } from '@/util/numbers';
 import CircleButton from '@/components/CircleButton.vue';
 import Switcher from '@/components/Switcher.vue';
 import CurrencyController from '@/controllers/currencyController';
@@ -116,16 +117,33 @@ export default class CurrencyItem extends Vue {
     return this.currencyController.getCurrencyInfo();
   }
 
+  get changePriceClasses() {
+    const { usd24HoursChange } = this.currencyInfo;
+    const classes = ['price'];
+
+    if (usd24HoursChange > 0) classes.push('up-price');
+    else if (usd24HoursChange < 0) classes.push('down-price');
+
+    return classes;
+  }
+
+  get usd24HoursChangeString() {
+    const { usd24HoursChange } = this.currencyInfo;
+    const change = roundNumber(usd24HoursChange);
+
+    return usd24HoursChange > 0 ? `+${change}%` : usd24HoursChange < 0 ? `${change}%` : '';
+  }
+
   get tokenString() {
     return this.currencyInfo?.token.toUpperCase();
   }
 
   get countTokensString() {
-    return this.currencyInfo?.totalCountTokens.toFixed(4);
+    return roundNumber(this.currencyInfo?.totalCountTokens, 4);
   }
 
   get totalBalanceString() {
-    return `$${this.currencyInfo?.totalBalance.toFixed(2)}`;
+    return `$${roundNumber(this.currencyInfo?.totalBalance)}`;
   }
 
   get priceString() {
@@ -249,9 +267,16 @@ export default class CurrencyItem extends Vue {
       color: rgba(255, 255, 255, 0.75);
     }
 
-    .currency-up-price {
+    .price {
       margin-left: 2px;
+    }
+
+    .up-price {
       color: rgba(126, 222, 155, 0.75);
+    }
+
+    .down-price {
+      color: #d0021b;
     }
   }
 

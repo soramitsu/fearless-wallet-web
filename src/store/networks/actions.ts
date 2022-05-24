@@ -1,7 +1,8 @@
 import { ActionTree, ActionContext } from 'vuex';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { MutationTypes, Mutations } from './mutations';
-import { NetworkJson, Networks } from './types';
+import { Getters } from './getters';
+import { NetworkJson, Networks, AssetsJson, LoadNetworksInfo, LoadAssets, TokensPriceJson, TokensPrice } from './types';
 import { State } from './state';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import { formatBalance } from '@/util/balances';
@@ -11,6 +12,8 @@ import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
 export enum ActionTypes {
   LOAD_NETWORKS_INFO = 'LOAD_NETWORKS_INFO',
+  LOAD_ASSETS_INFO = 'LOAD_ASSETS_INFO',
+  LOAD_TOKENS_PRICE = 'LOAD_TOKENS_PRICE',
   SUBSCRIBE_TO_BALANCES = 'SUBSCRIBE_TO_BALANCES',
 }
 
@@ -21,8 +24,10 @@ type AugmentedActionContext = {
 export type Actions = {
   [ActionTypes.LOAD_NETWORKS_INFO](
     store: AugmentedActionContext,
-    { url, autoConnectMs }: Record<string, string | number>
+    { url, autoConnectMs }: LoadNetworksInfo
   ): Promise<void>;
+  [ActionTypes.LOAD_ASSETS_INFO](store: AugmentedActionContext, { url }: LoadAssets): Promise<void>;
+  [ActionTypes.LOAD_TOKENS_PRICE](store: AugmentedActionContext): Promise<void>;
   [ActionTypes.SUBSCRIBE_TO_BALANCES](
     store: AugmentedActionContext,
     { accounts }: Record<string, SubjectInfo>
@@ -31,10 +36,10 @@ export type Actions = {
 
 const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.LOAD_NETWORKS_INFO]({ commit }, { url, autoConnectMs = 0 }) {
-    const response = await fetch(url as string);
-    const fullNetwork: NetworkJson[] = await response.json();
+    const response = await fetch(url);
+    const networksJson: NetworkJson[] = await response.json();
 
-    const networks: Networks = fullNetwork.map(({ nodes, name, assets, addressPrefix }) => {
+    const networks: Networks = networksJson.map(({ nodes, name, assets, addressPrefix }) => {
       let isActive = false;
       const networkName = name.toLocaleLowerCase();
       const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
@@ -69,9 +74,36 @@ const actions: ActionTree<State, State> & Actions = {
 
     commit(MutationTypes.SET_NETWORKS, { networks });
   },
-  async [ActionTypes.SUBSCRIBE_TO_BALANCES]({ commit, state }, { accounts }) {
-    const { networks } = state;
+  async [ActionTypes.LOAD_ASSETS_INFO]({ commit }, { url }) {
+    const response = await fetch(url);
+    const assetsJson: AssetsJson[] = await response.json();
 
+    commit(MutationTypes.SET_ASSETS, { assets: assetsJson });
+  },
+  async [ActionTypes.LOAD_TOKENS_PRICE]({ commit, state: { networks, assets } }) {
+    const assetsIds = networks.map(({ assets }) => assets[0].assetId);
+    const urlTokensPart = assets
+      .filter(({ priceId, id }) => assetsIds.includes(id) && !!priceId)
+      .map(({ priceId }) => priceId)
+      .join('%2C');
+    const url = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&include_24hr_change=true&ids=${urlTokensPart}`;
+    const response = await fetch(url);
+    const tokensPriceJson: TokensPriceJson = await response.json();
+    const tokensPrice: TokensPrice = {};
+
+    for (const tokenPriceId in tokensPriceJson) {
+      const { usd, usd_24h_change } = tokensPriceJson[tokenPriceId]; // eslint-disable-line
+      const assetId = assets.find(({ priceId }) => priceId === tokenPriceId)!.id;
+
+      tokensPrice[assetId] = {
+        usd,
+        usd24HoursChange: usd_24h_change,
+      };
+    }
+
+    commit(MutationTypes.SET_TOKENS_PRICE, { tokensPrice });
+  },
+  async [ActionTypes.SUBSCRIBE_TO_BALANCES]({ commit, state: { networks, tokensPrice } }, { accounts }) {
     for (const { api, isEthereumNetwork, name: networkName, assets } of networks) {
       await api.isReady;
 
@@ -84,13 +116,14 @@ const actions: ActionTree<State, State> & Actions = {
             const data = (result as any).data;
             const balance = formatBalance(data as AccountData);
             const token = assets[0]?.assetId;
+            const price = tokensPrice[token]?.usd ?? 0;
+            const usd24HoursChange = tokensPrice[token]?.usd24HoursChange ?? 0;
 
             const currency: Currency = {
               token,
               mainNetwork: networkName,
-              price: 5,
-              grown: 1,
-              grownPercent: 5,
+              price,
+              usd24HoursChange,
               availableInNetworks: [
                 {
                   network: networkName,

@@ -1,6 +1,6 @@
 <template>
   <div class="wallet">
-    <div class="wallet-header">
+    <div class="header">
       <TotalBalance :balance="totalBalance" :percent="totalPercent" />
 
       <SelectNetworkButton
@@ -108,9 +108,9 @@ import CurrencyController from '@/controllers/currencyController';
   },
 })
 export default class Wallet extends Vue {
+  readonly selectNetworkButtonRef = 'selectNetworkButton';
   showAssetsManagementForm = false;
   hideZeroBalance = false;
-  selectNetworkButtonRef = 'selectNetworkButton';
   selectedCurrency!: Currency;
   activeTabName: TabWallet = 'Currencies';
   showSendForm = false;
@@ -127,10 +127,10 @@ export default class Wallet extends Vue {
   get currenciesForSelectedWallet() {
     return (
       this.currencies[this.selectedWallet.address]?.sort((currency1, currency2) => {
-        const { totalBalance: totalBalanceOne } = new CurrencyController(currency1).getCurrencyInfo();
-        const { totalBalance: totalBalanceTwo } = new CurrencyController(currency2).getCurrencyInfo();
+        const { totalCountTokens: totalCountTokensOne } = new CurrencyController(currency1).getCurrencyInfo();
+        const { totalCountTokens: totalCountTokensTwo } = new CurrencyController(currency2).getCurrencyInfo();
 
-        return totalBalanceTwo - totalBalanceOne;
+        return totalCountTokensTwo - totalCountTokensOne;
       }) ?? []
     );
   }
@@ -237,11 +237,10 @@ export default class Wallet extends Vue {
     height: 418px;
   }
 
-  .wallet-header {
+  .header {
     width: 100%;
     display: flex;
     justify-content: space-between;
-    align-items: center;
     margin-bottom: 16px;
   }
 }

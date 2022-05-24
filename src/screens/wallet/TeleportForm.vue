@@ -119,7 +119,7 @@ export default class TeleportForm extends Vue {
 
   get optionsCurrency() {
     return this.currencies.map(({ token, mainNetwork }) => ({
-      label: `${firstCharToUp(mainNetwork)} (${token})`,
+      label: `${token} (${firstCharToUp(mainNetwork)})`,
       value: token,
     }));
   }
@@ -134,7 +134,7 @@ export default class TeleportForm extends Vue {
 
   mounted() {
     this.selectedToken = this.token;
-    this.originalNetwork = this.selectedNetwork;
+    this.originalNetwork = this.selectedNetwork !== 'All networks' ? this.selectedNetwork : '';
   }
 
   setMaxValue() {

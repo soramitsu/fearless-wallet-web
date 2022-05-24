@@ -363,8 +363,6 @@ export default class Layout extends Vue {
     keyring.addUri(suriSubstrate, '', meta, substrateKeyPair);
 
     this.savePassword();
-
-    alert(this.isImportWallet ? 'Wallet imported. Check console' : 'Wallet created. Check console');
   }
 
   savePassword() {
@@ -376,8 +374,6 @@ export default class Layout extends Vue {
   restoreJson() {
     try {
       keyring.restoreAccount(this.JSON as KeyringPair$Json, this.passwordJson);
-
-      alert('Wallet imported. Check console');
 
       return true;
     } catch {

@@ -1,10 +1,10 @@
 <template>
   <div class="networks">
     <NetworkItem
-      v-for="{ network, countTokens } in networks"
+      v-for="{ network, totalCountTokens } in networks"
       :key="network"
       :network="network"
-      :countTokens="countTokens"
+      :totalCountTokens="totalCountTokens"
       :token="token"
       :isActive="selectedNetwork === network"
     />

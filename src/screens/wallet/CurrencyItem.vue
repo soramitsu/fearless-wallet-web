@@ -121,7 +121,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get countTokensString() {
-    return this.currencyInfo?.countTokens.toFixed(4);
+    return this.currencyInfo?.totalCountTokens.toFixed(4);
   }
 
   get totalBalanceString() {

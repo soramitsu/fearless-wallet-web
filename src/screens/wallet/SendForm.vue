@@ -29,11 +29,11 @@
         </template>
         <template v-else-if="step === 2">
           <div class="row direction">
-            <Input :value="selectedWallet.name" placeholder="From" size="big" :readonly="true" />
+            <Input v-model="selectedWallet.name" placeholder="From" size="big" :readonly="true" />
 
             <s-icon name="arrows-arrow-right-24" />
 
-            <Input :value="formattedAddressTo" placeholder="To" size="big" :readonly="true" />
+            <Input v-model="formattedAddressTo" placeholder="To" size="big" :readonly="true" />
           </div>
 
           <Corners size="big" class="row">
@@ -85,7 +85,7 @@ import { GettersTypes as ApiGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Networks } from '@/store/networks/types';
-import { Currencies } from '@/interfaces/currencies';
+import { Currency } from '@/interfaces/currencies';
 import { firstCharToUp } from '@/util/stringHelper';
 import Input from '@/components/Input.vue';
 import Select from '@/components/Select.vue';
@@ -117,7 +117,7 @@ export default class SendForm extends Vue {
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) selectedNetwork!: string;
   @Prop(String) token!: string;
-  @Prop(Array) currencies!: Currencies;
+  @Prop(Array) currencies!: Currency[];
   @Getter(ApiGettersTypes.getNetworksInfo) networksInfo!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
@@ -138,9 +138,9 @@ export default class SendForm extends Vue {
 
     if (!this.currentCurrencyController) return '';
 
-    const { countTokens, token } = this.currentCurrencyController.getCurrencyInfo();
+    const { totalCountTokens, token } = this.currentCurrencyController.getCurrencyInfo();
 
-    return +this.amount > countTokens ? `Insufficient balance ${token.toUpperCase()}` : 'Continue';
+    return +this.amount > totalCountTokens ? `Insufficient balance ${token.toUpperCase()}` : 'Continue';
   }
 
   get buttonDisabled() {
@@ -148,9 +148,9 @@ export default class SendForm extends Vue {
 
     if (!this.currentCurrencyController) return true;
 
-    const { countTokens } = this.currentCurrencyController.getCurrencyInfo();
+    const { totalCountTokens } = this.currentCurrencyController.getCurrencyInfo();
 
-    return !(+this.amount > countTokens)
+    return !(+this.amount > totalCountTokens)
       ? !(!!this.network && !!this.selectedToken && !!this.recipient && !!this.amount)
       : true;
   }
@@ -168,12 +168,12 @@ export default class SendForm extends Vue {
   get optionsCurrency() {
     return this.currencies.map(({ token, mainNetwork }) => ({
       label: `${firstCharToUp(mainNetwork)} (${token})`,
-      value: token,
+      value: `${mainNetwork}-${token}`,
     }));
   }
 
   get currentCurrency() {
-    return this.currencies.find(({ token }) => token === this.selectedToken);
+    return this.currencies.find(({ token, mainNetwork }) => `${mainNetwork}-${token}` === this.selectedToken);
   }
 
   get currentCurrencyController() {
@@ -187,28 +187,28 @@ export default class SendForm extends Vue {
   }
 
   get value() {
-    if (!this.currentCurrencyController) return 0;
+    if (!this.currentCurrencyController) return '';
 
-    return this.currentCurrencyController.getCostOfTokens(+this.amount);
+    return this.currentCurrencyController.getCostOfTokens(+this.amount).toString();
   }
 
-  set value(value) {
-    if (!this.currentCurrencyController) return;
+  // set value(value) {
+  //   if (!this.currentCurrencyController) return;
 
-    this.amount = this.currentCurrencyController?.getCountsTokensByPrice(+value).toString();
-  }
+  //   this.amount = this.currentCurrencyController?.getCountsTokensByPrice(+value).toString();
+  // }
 
   mounted() {
     this.network = this.selectedNetwork ?? '';
-    this.selectedToken = this.token;
+    this.selectedToken = `${this.selectedNetwork}-${this.token}`;
   }
 
   setMaxValue() {
     if (!this.currentCurrencyController) return;
 
-    const { countTokens } = this.currentCurrencyController.getCurrencyInfo();
+    const { totalCountTokens } = this.currentCurrencyController.getCurrencyInfo();
 
-    this.amount = countTokens.toString();
+    this.amount = totalCountTokens.toString();
   }
 
   sendingPopupClose() {

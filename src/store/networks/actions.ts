@@ -1,10 +1,11 @@
 import { ActionTree, ActionContext } from 'vuex';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { MutationTypes, Mutations } from './mutations';
-import { FullNetwork, Networks } from './types';
+import { NetworkJson, Networks } from './types';
 import { State } from './state';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import { formatBalance } from '@/util/balances';
+import { Currency } from '@/interfaces/currencies';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
@@ -31,9 +32,9 @@ export type Actions = {
 const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.LOAD_NETWORKS_INFO]({ commit }, { url, autoConnectMs = 0 }) {
     const response = await fetch(url as string);
-    const networks: FullNetwork[] = await response.json();
+    const fullNetwork: NetworkJson[] = await response.json();
 
-    const networksInfo: Networks = networks.map(({ nodes, name, assets, addressPrefix }) => {
+    const networks: Networks = fullNetwork.map(({ nodes, name, assets, addressPrefix }) => {
       let isActive = false;
       const networkName = name.toLocaleLowerCase();
       const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
@@ -63,50 +64,51 @@ const actions: ActionTree<State, State> & Actions = {
         addressPrefix,
         isActive,
         isEthereumNetwork,
-        balances: [],
       };
     });
 
-    commit(MutationTypes.SET_NETWORKS, { networks: networksInfo });
+    commit(MutationTypes.SET_NETWORKS, { networks });
   },
   async [ActionTypes.SUBSCRIBE_TO_BALANCES]({ commit, state }, { accounts }) {
     const { networks } = state;
 
-    for (const { api, isEthereumNetwork, name } of networks) {
+    for (const { api, isEthereumNetwork, name: networkName, assets } of networks) {
       await api.isReady;
 
       try {
-        Object.entries(accounts).forEach(([address, { type }]) => {
+        Object.entries(accounts).forEach(([walletAddress, { type }]) => {
           // ethereum accounts only subscribe to the ethereum networks
           if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
 
-          api.rx.query.system.account(address).subscribe(async (result) => {
+          api.rx.query.system.account(walletAddress).subscribe(async (result) => {
             const data = (result as any).data;
-            const balance = formatBalance(data as AccountData, 12);
+            const balance = formatBalance(data as AccountData);
+            const token = assets[0]?.assetId;
 
-            commit(MutationTypes.SET_NETWORK_BALANCES, {
-              name,
-              balances: [
+            const currency: Currency = {
+              token,
+              mainNetwork: networkName,
+              price: 5,
+              grown: 1,
+              grownPercent: 5,
+              availableInNetworks: [
                 {
+                  network: networkName,
                   balance,
-                  address,
                 },
               ],
-            });
+            };
 
-            console.log(
-              `
-              Address: ${address},
-              Network: ${name},
-              `,
-              { ...balance }
-            );
+            commit(MutationTypes.SET_CURRENCIES, {
+              walletAddress,
+              currency,
+            });
           });
         });
       } catch (ex) {
         console.log(
           `
-          Subscribe to ${name.toUpperCase()} failed
+          Subscribe to ${networkName.toUpperCase()} failed
           ${ex}
           `
         );

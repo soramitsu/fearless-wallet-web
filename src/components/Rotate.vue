@@ -12,12 +12,7 @@ export default class Rotate extends Vue {
   @Prop(Boolean) isActive!: boolean;
 
   get classes() {
-    return [
-      {
-        rotate: this.isActive,
-        'non-rotate': !this.isActive,
-      },
-    ];
+    return [this.isActive ? 'rotate' : 'non-rotate'];
   }
 }
 </script>

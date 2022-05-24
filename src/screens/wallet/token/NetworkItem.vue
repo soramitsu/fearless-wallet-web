@@ -6,7 +6,7 @@
       <div class="name">{{ networkNameWithFirstCharUp }}</div>
     </div>
 
-    <div class="count-tokens count-tokens-color">{{ countTokens }} {{ token }}</div>
+    <div class="count-tokens count-tokens-color">{{ totalCountTokens }} {{ token }}</div>
   </div>
 </template>
 
@@ -19,7 +19,7 @@ import { Components } from '@/router/routes';
 @Component
 export default class NetworkItem extends Vue {
   @Prop(String) network!: string;
-  @Prop(Number) countTokens!: number;
+  @Prop(Number) totalCountTokens!: number;
   @Prop(String) token!: string;
   @Prop({ default: false }) isActive!: boolean;
 

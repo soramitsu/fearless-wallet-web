@@ -1,5 +1,5 @@
 <template>
-  <div :class="popupBackgroundClasses">
+  <div :class="popupBackgroundClasses" @click="backgroundClick">
     <div :class="popupContainerClasses" :style="popupContainerStyle">
       <div v-if="showHeader" class="header">
         <SearchInput v-if="showSearch" v-model="filterValue" placeholder="Search in networks" class="search" />
@@ -37,8 +37,8 @@ type VerticalPlacement = 'top' | 'center' | 'bottom';
 export default class Popup extends Vue {
   filterValue = '';
 
-  @Prop(Function) handlerClose!: VoidFunction;
-  @Prop(Function) handlerFilter!: (value: string) => void;
+  @Prop({ default: () => () => null }) handlerClose!: VoidFunction;
+  @Prop({ default: () => () => null }) handlerFilter!: (value: string) => void;
   @Prop(Number) top!: number;
   @Prop(Number) left!: number;
   @Prop({ default: true }) showHeader!: boolean;
@@ -78,6 +78,10 @@ export default class Popup extends Vue {
   @Watch('filterValue')
   filter(value: string) {
     this.handlerFilter(value);
+  }
+
+  backgroundClick(event: any) {
+    if (event.target.classList.contains('popup-background')) this.close();
   }
 
   close() {

@@ -6,3 +6,11 @@ export interface SelectedWallet {
   name: string;
   type: KeypairType | '';
 }
+
+export type SetPasswordProps = {
+  password: string;
+};
+
+export type SetSelectedWalletAddressProps = {
+  selectedWalletAddress: string;
+};

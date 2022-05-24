@@ -1,4 +1,4 @@
-<template functional>
+<template>
   <div class="advanced-button">
     <div class="button" @click="$emit('click')">
       Advanced backup settings

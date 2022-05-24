@@ -1,11 +1,12 @@
 <template>
   <Popup
-    :showHeader="false"
+    class="select-wallet-popup"
     horizontalPlacement="left"
     verticalPlacement="top"
+    :showHeader="false"
+    :handlerClose="close"
     :top="49"
     :left="42"
-    class="select-wallet-popup"
   >
     <div class="wallet-content">
       <TotalBalance
@@ -31,7 +32,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
-import { GettersTypes as ApisGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { SelectedWallet } from '@/store/accounts/types';
@@ -50,9 +51,14 @@ import CurrencyController from '@/controllers/currencyController';
   },
 })
 export default class SelectWalletPopup extends Vue {
-  @Getter(ApisGettersTypes.getNetworksInfo) networksInfo!: Networks;
+  @Getter(NetworksGettersTypes.getNetworksInfo) networksInfo!: Networks;
+  @Getter(NetworksGettersTypes.getCurrenciesInfo) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: (props: Record<string, string>) => void;
+
+  get currenciesForSelectedWallet() {
+    return Object.values(this.currencies).flat();
+  }
 
   get wallets() {
     const accounts = keyring.getAccounts();
@@ -66,50 +72,21 @@ export default class SelectWalletPopup extends Vue {
       .filter(({ type }) => type !== 'ethereum');
   }
 
-  get currencies(): Currencies {
-    return this.networksInfo
-      .map(({ balances, assets, name }) => {
-        return this.wallets.map(({ address: walletAddress }) => {
-          const balance = balances.find(({ address }) => address === walletAddress)?.balance;
-          const total = +(balance?.total ?? 0);
-          const token = assets[0]?.assetId;
-
-          return {
-            walletAddress,
-            token,
-            mainNetwork: name,
-            price: 5,
-            grown: 1,
-            grownPercent: 5,
-            availableInNetworks: [
-              {
-                network: name,
-                countTokens: total,
-              },
-            ],
-          };
-        });
-      })
-      .flat();
-  }
-
   addWallet() {
     this.$router.push({ name: Components.Welcome });
   }
 
-  searchCurrenciesByAddress(address: string) {
-    return this.currencies.filter(({ walletAddress }) => walletAddress === address);
-  }
-
   getBalance(address: string) {
-    const currenciesFilter = this.searchCurrenciesByAddress(address);
+    const currencies = this.currencies[address];
 
-    return currenciesFilter.reduce((sum, currency) => {
-      const currencyController = new CurrencyController(currency);
-      const { totalBalance } = currencyController.getCurrencyInfo();
+    return (
+      currencies?.reduce((sum, currency) => {
+        const currencyController = new CurrencyController(currency);
+        const { totalBalance } = currencyController.getCurrencyInfo();
 
-      return sum + totalBalance;
-    }, 0);
+        return sum + totalBalance;
+      }, 0) ?? 0
+    );
   }
 
   getPercent(address: string) {
@@ -119,6 +96,10 @@ export default class SelectWalletPopup extends Vue {
   updateSelectedWallet(address: string) {
     this.setSelectedWallet({ selectedWalletAddress: address });
 
+    this.close();
+  }
+
+  close() {
     this.$emit('close');
   }
 }

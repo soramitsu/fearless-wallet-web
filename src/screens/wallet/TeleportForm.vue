@@ -51,9 +51,9 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { GettersTypes as ApisGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Networks } from '@/store/networks/types';
-import { Currencies } from '@/interfaces/currencies';
+import { Currency } from '@/interfaces/currencies';
 import { firstCharToUp } from '@/util/stringHelper';
 import Loading from '@/components/Loading.vue';
 import Select from '@/components/Select.vue';
@@ -86,15 +86,15 @@ export default class TeleportForm extends Vue {
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) selectedNetwork!: string;
   @Prop(String) token!: string;
-  @Prop(Array) currencies!: Currencies;
-  @Getter(ApisGettersTypes.getNetworksInfo) networksInfo!: Networks;
+  @Prop(Array) currencies!: Currency[];
+  @Getter(NetworksGettersTypes.getNetworksInfo) networksInfo!: Networks;
 
   get buttonText() {
     if (!this.currentCurrencyController) return '';
 
-    const { countTokens, token } = this.currentCurrencyController.getCurrencyInfo();
+    const { totalCountTokens, token } = this.currentCurrencyController.getCurrencyInfo();
 
-    return +this.amount > countTokens ? `Insufficient balance ${token.toUpperCase()}` : 'Teleport';
+    return +this.amount > totalCountTokens ? `Insufficient balance ${token.toUpperCase()}` : 'Teleport';
   }
 
   get currentCurrency() {
@@ -110,9 +110,9 @@ export default class TeleportForm extends Vue {
   get buttonDisabled() {
     if (!this.currentCurrencyController) return true;
 
-    const { countTokens } = this.currentCurrencyController.getCurrencyInfo();
+    const { totalCountTokens } = this.currentCurrencyController.getCurrencyInfo();
 
-    return !(+this.amount > countTokens)
+    return !(+this.amount > totalCountTokens)
       ? !(!!this.selectedToken && !!this.originalNetwork && !!this.destinationNetwork && !!this.amount)
       : true;
   }
@@ -140,9 +140,9 @@ export default class TeleportForm extends Vue {
   setMaxValue() {
     if (!this.currentCurrencyController) return;
 
-    const { countTokens } = this.currentCurrencyController.getCurrencyInfo();
+    const { totalCountTokens } = this.currentCurrencyController.getCurrencyInfo();
 
-    this.amount = countTokens.toString();
+    this.amount = totalCountTokens.toString();
   }
 
   sendingPopupClose() {

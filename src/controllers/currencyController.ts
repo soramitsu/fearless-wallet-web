@@ -3,7 +3,7 @@ import { FPNumber } from '@/util/fp';
 import LocalStorageController from '@/controllers/localStorageController';
 
 export interface CurrencyInfo extends Currency {
-  countTokens: number;
+  totalCountTokens: number;
   totalBalance: number;
 }
 
@@ -19,13 +19,13 @@ export default class CurrencyController {
 
   private getCountTokens(): number {
     return this.currency.availableInNetworks
-      .reduce((sum, { countTokens }) => {
-        const FPBalance = new FPNumber(countTokens, 12);
+      .reduce((sum, { balance: { total } }) => {
+        const FPBalance = new FPNumber(total);
 
         sum = sum.add(FPBalance);
 
         return sum;
-      }, new FPNumber(0, 12))
+      }, new FPNumber(0))
       .toNumber();
   }
 
@@ -36,24 +36,15 @@ export default class CurrencyController {
   }
 
   public getCurrencyInfo(): CurrencyInfo {
-    const { token, availableInNetworks } = this.currency;
+    const { token } = this.currency;
 
     // TODO: fix
     const decimals = token === 'kilt' ? 1e15 : token === 'qtz' ? 1e18 : 1e12;
 
-    const countTokens = this.getCountTokens() / decimals;
+    const totalCountTokens = this.getCountTokens() / decimals;
     const totalBalance = this.getTotalBalance().toNumber() / decimals;
 
-    const newAvailableInNetworks = availableInNetworks.map(({ countTokens, network }) => {
-      const formattedCountTokens = new FPNumber(countTokens).toNumber() / decimals;
-
-      return {
-        network,
-        countTokens: formattedCountTokens,
-      };
-    });
-
-    return { ...this.currency, availableInNetworks: newAvailableInNetworks, countTokens, totalBalance };
+    return { ...this.currency, totalCountTokens, totalBalance };
   }
 
   public getCostOfTokens(count: number): number {

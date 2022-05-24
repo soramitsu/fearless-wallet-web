@@ -21,7 +21,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { GettersTypes as ApisGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Networks } from '@/store/networks/types';
 import { firstCharToUp } from '@/util/stringHelper';
 import ActivityForm from './ActivityForm.vue';
@@ -44,7 +44,7 @@ export default class ReceiveForm extends Vue {
   @Prop(String) selectedNetwork!: string;
   @Prop(Function) closeForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(ApisGettersTypes.getNetworksInfo) networksInfo!: Networks;
+  @Getter(NetworksGettersTypes.getNetworksInfo) networksInfo!: Networks;
 
   get optionsNetwork() {
     return this.networksInfo.map(({ name }) => ({ label: firstCharToUp(name), value: name }));

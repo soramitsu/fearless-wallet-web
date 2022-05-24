@@ -8,6 +8,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation } from 'vuex-class';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { SetSelectedWalletAddressProps } from '@/store/accounts/types';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import keyring from '@polkadot/ui-keyring';
@@ -18,7 +19,9 @@ export default class App extends Vue {
   networksController = new NetworksController();
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
 
-  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: (props: Record<string, string>) => void;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: (
+    props: SetSelectedWalletAddressProps
+  ) => void;
 
   async mounted() {
     await this.networksController.loadNetworksInfo();

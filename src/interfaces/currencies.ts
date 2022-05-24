@@ -1,10 +1,11 @@
+import type { AccountBalance } from '@/interfaces/balances';
+
 export interface AvailableInNetworks {
   network: string;
-  countTokens: number;
+  balance: AccountBalance;
 }
 
 export interface Currency {
-  walletAddress?: string;
   mainNetwork: string;
   token: string;
   price: number;
@@ -13,7 +14,9 @@ export interface Currency {
   availableInNetworks: AvailableInNetworks[];
 }
 
-export type Currencies = Currency[];
+type WalletAddress = string;
+
+export type Currencies = Record<WalletAddress, Currency[]>;
 
 export interface HistoryItem {
   id: string;

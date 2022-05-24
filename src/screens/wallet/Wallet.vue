@@ -73,7 +73,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { GettersTypes as ApisGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Networks } from '@/store/networks/types';
@@ -120,44 +120,25 @@ export default class Wallet extends Vue {
   popupFilterValue = '';
   filterValue = '';
 
-  @Getter(ApisGettersTypes.getNetworksInfo) networksInfo!: Networks;
+  @Getter(NetworksGettersTypes.getNetworksInfo) networks!: Networks;
+  @Getter(NetworksGettersTypes.getCurrenciesInfo) currencies!: TCurrencies;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
-  get currencies(): TCurrencies {
-    return this.networksInfo
-      .map(({ balances, assets, name }) => {
-        const walletAddress = this.selectedWallet.address;
-        const balance = balances.find(({ address }) => address === walletAddress)?.balance;
-        const total = +(balance?.total ?? 0);
-        const token = assets[0]?.assetId;
+  get currenciesForSelectedWallet() {
+    return (
+      this.currencies[this.selectedWallet.address]?.sort((currency1, currency2) => {
+        const { totalBalance: totalBalanceOne } = new CurrencyController(currency1).getCurrencyInfo();
+        const { totalBalance: totalBalanceTwo } = new CurrencyController(currency2).getCurrencyInfo();
 
-        return {
-          walletAddress,
-          token,
-          mainNetwork: name,
-          price: 5,
-          grown: 1,
-          grownPercent: 5,
-          availableInNetworks: [
-            {
-              network: name,
-              countTokens: total,
-            },
-          ],
-        };
-      })
-      .sort(({ availableInNetworks: availableInNetworks1 }, { availableInNetworks: availableInNetworks2 }) => {
-        const indexBalanceOne = availableInNetworks1.findIndex(({ countTokens }) => countTokens !== 0);
-        const indexBalanceTwo = availableInNetworks2.findIndex(({ countTokens }) => countTokens !== 0);
-
-        return indexBalanceTwo - indexBalanceOne;
-      });
+        return totalBalanceTwo - totalBalanceOne;
+      }) ?? []
+    );
   }
 
   get filterCurrencies() {
     const filter = this.filterValue.trim().toLowerCase();
 
-    return this.currencies
+    return this.currenciesForSelectedWallet
       .filter(({ availableInNetworks }) => {
         if (this.selectedNetwork === 'All networks') return true;
 
@@ -167,7 +148,7 @@ export default class Wallet extends Vue {
   }
 
   get totalBalance() {
-    return this.currencies.reduce((sum, currency) => {
+    return this.currenciesForSelectedWallet.reduce((sum, currency) => {
       const currencyController = new CurrencyController(currency);
       const { totalBalance } = currencyController.getCurrencyInfo();
 
@@ -190,7 +171,7 @@ export default class Wallet extends Vue {
   get optionsNetworks() {
     return [
       { label: 'All networks', value: 'All networks', path: getImgPathByNetworkName() },
-      ...this.networksInfo.map(({ name }) => {
+      ...this.networks.map(({ name }) => {
         return { label: firstCharToUp(name), value: name, path: `networks/${getImgPathByNetworkName(name)}` };
       }),
     ];
@@ -218,8 +199,6 @@ export default class Wallet extends Vue {
 
   toggleSelectedNetwork(value: string) {
     this.selectedNetwork = value;
-
-    this.toggleSelectNetworkPopupVisible();
   }
 
   toggleSelectNetworkPopupVisible() {

@@ -1,5 +1,6 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import type { AccountBalance } from '@/interfaces/balances';
+import { Currency } from '@/interfaces/currencies';
 
 export type Nodes = {
   url: string;
@@ -35,7 +36,7 @@ type ExternalApi = {
   explorers?: Explorer[];
 };
 
-export type FullNetwork = {
+export type NetworkJson = {
   chainId: string;
   parentId?: string;
   name: string;
@@ -46,24 +47,6 @@ export type FullNetwork = {
   addressPrefix: number;
   types: Types;
   options?: string[];
-};
-
-export type balance = {
-  chainId: string;
-  parentId?: string;
-  name: string;
-  externalApi?: ExternalApi;
-  assets: Assets[];
-  nodes: Nodes[];
-  icon: string;
-  addressPrefix: number;
-  types: Types;
-  options?: string[];
-};
-
-type Balance = {
-  address: string;
-  balance: AccountBalance;
 };
 
 type Network = {
@@ -75,17 +58,20 @@ type Network = {
   addressPrefix: number;
   isActive: boolean;
   isEthereumNetwork: boolean;
-  balances: Balance[];
+};
+
+export type Networks = Network[];
+
+export type SetNetworksStatusProps = {
+  networks: Networks;
+};
+
+export type SetCurrenciesStatusProps = {
+  walletAddress: string;
+  currency: Currency;
 };
 
 export type SetNetworkStatusProps = {
   name: string;
   isActive: boolean;
 };
-
-export type SetNetworkBalancesProps = {
-  name: string;
-  balances: Balance[];
-};
-
-export type Networks = Network[];

@@ -88,7 +88,7 @@
 
     <SendForm
       v-if="showSendForm"
-      :currencies="currencies"
+      :currencies="currenciesForSelectedWallet"
       :selectedNetwork="network"
       :token="token"
       :closeForm="toggleVisible.bind(null, 'showSendForm', false)"
@@ -102,7 +102,7 @@
 
     <TeleportForm
       v-if="showTeleportForm"
-      :currencies="currencies"
+      :currencies="currenciesForSelectedWallet"
       :selectedNetwork="network"
       :token="token"
       :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
@@ -114,10 +114,10 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Currencies, HistoryItem } from '@/interfaces/currencies';
+import { HistoryItem, Currencies } from '@/interfaces/currencies';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as ApisGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import type { TabCurrency } from '@/interfaces/walletPage';
 import { Networks as NetworksType } from '@/store/networks/types';
@@ -172,35 +172,16 @@ export default class Token extends Vue {
   showTeleportForm = false;
   showBuyForm = false;
 
-  @Getter(ApisGettersTypes.getNetworksInfo) networksInfo!: NetworksType;
+  @Getter(NetworksGettersTypes.getNetworksInfo) networksInfo!: NetworksType;
+  @Getter(NetworksGettersTypes.getCurrenciesInfo) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
-  get currencies(): Currencies {
-    return this.networksInfo.map(({ balances, assets, name }) => {
-      const walletAddress = this.selectedWallet.address;
-      const balance = balances.find(({ address }) => address === walletAddress)?.balance;
-      const total = +(balance?.total ?? 0);
-      const token = assets[0]?.assetId;
-
-      return {
-        walletAddress,
-        token,
-        mainNetwork: name,
-        price: 5,
-        grown: 1,
-        grownPercent: 5,
-        availableInNetworks: [
-          {
-            network: name,
-            countTokens: total,
-          },
-        ],
-      };
-    });
+  get currenciesForSelectedWallet() {
+    return this.currencies[this.selectedWallet.address] ?? [];
   }
 
   get currentCurrency() {
-    return this.currencies.find(({ token }) => token.toLowerCase() === this.token.toLowerCase());
+    return this.currenciesForSelectedWallet.find(({ token }) => token.toLowerCase() === this.token.toLowerCase());
   }
 
   get currentCurrencyController() {
@@ -213,9 +194,11 @@ export default class Token extends Vue {
     if (!this.currentCurrencyController) return [];
 
     const filter = this.filterNetworksValue.trim().toLowerCase();
-    const { availableInNetworks } = this.currentCurrencyController.getCurrencyInfo();
+    const { availableInNetworks, totalCountTokens } = this.currentCurrencyController.getCurrencyInfo();
 
-    return availableInNetworks?.filter(({ network }) => network.includes(filter));
+    return availableInNetworks
+      ?.filter(({ network }) => network.includes(filter))
+      .map(({ network }) => ({ network, totalCountTokens }));
   }
 
   get filteredHistory() {
@@ -251,9 +234,9 @@ export default class Token extends Vue {
   get countTokensString() {
     if (!this.currentCurrencyController) return '';
 
-    const { countTokens } = this.currentCurrencyController.getCurrencyInfo();
+    const { totalCountTokens } = this.currentCurrencyController.getCurrencyInfo();
 
-    return `${countTokens.toFixed(4)} ${this.token.toUpperCase()}`;
+    return `${totalCountTokens.toFixed(4)} ${this.token.toUpperCase()}`;
   }
 
   get balanceInNetworkString() {

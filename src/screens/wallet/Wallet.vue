@@ -78,7 +78,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Networks } from '@/store/networks/types';
 import { getImgPathByNetworkName } from '@/util/imgPath';
-import { firstCharToUp } from '@/util/stringHelper';
+import { firstCharToUp } from '@/util/helpers';
 import { Currency, Currencies as TCurrencies } from '@/interfaces/currencies';
 import type { TabWallet } from '@/interfaces/walletPage';
 import Scroll from '@/components/Scroll.vue';
@@ -125,8 +125,13 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get currenciesForSelectedWallet() {
+    const currencies = [
+      ...(this.currencies[this.selectedWallet.address] ?? []),
+      ...(this.currencies[this.selectedWallet.ethereumAddress] ?? []),
+    ];
+
     return (
-      this.currencies[this.selectedWallet.address]?.sort((currency1, currency2) => {
+      currencies.sort((currency1, currency2) => {
         const { totalCountTokens: totalCountTokensOne } = new CurrencyController(currency1).getCurrencyInfo();
         const { totalCountTokens: totalCountTokensTwo } = new CurrencyController(currency2).getCurrencyInfo();
 

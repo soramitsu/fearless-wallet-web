@@ -23,7 +23,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Networks } from '@/store/networks/types';
-import { firstCharToUp } from '@/util/stringHelper';
+import { firstCharToUp } from '@/util/helpers';
 import ActivityForm from './ActivityForm.vue';
 import QrCode from 'qrcode.vue';
 import Select from '@/components/Select.vue';

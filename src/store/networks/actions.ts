@@ -1,7 +1,6 @@
 import { ActionTree, ActionContext } from 'vuex';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { MutationTypes, Mutations } from './mutations';
-import { Getters } from './getters';
 import { NetworkJson, Networks, AssetsJson, LoadNetworksInfo, LoadAssets, TokensPriceJson, TokensPrice } from './types';
 import { State } from './state';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
@@ -53,7 +52,7 @@ const actions: ActionTree<State, State> & Actions = {
 
         isActive = true;
 
-        console.log(`%c${name.toUpperCase()}. API connection successful.`, 'background:green;color:#fff');
+        // console.log(`%c${name.toUpperCase()}. API connection successful.`, 'background:green;color:#fff');
       } catch (ex) {
         api.disconnect();
 
@@ -103,7 +102,17 @@ const actions: ActionTree<State, State> & Actions = {
 
     commit(MutationTypes.SET_TOKENS_PRICE, { tokensPrice });
   },
-  async [ActionTypes.SUBSCRIBE_TO_BALANCES]({ commit, state: { networks, tokensPrice } }, { accounts }) {
+  async [ActionTypes.SUBSCRIBE_TO_BALANCES](
+    { commit, state: { networks, tokensPrice, subscriptionsBalances } },
+    { accounts }
+  ) {
+    console.log('accounts', accounts);
+
+    // unsubscribing from previous subscriptions
+    subscriptionsBalances.forEach((subscriptions) => {
+      if (!subscriptions.closed) subscriptions.unsubscribe();
+    });
+
     for (const { api, isEthereumNetwork, name: networkName, assets } of networks) {
       await api.isReady;
 
@@ -112,7 +121,7 @@ const actions: ActionTree<State, State> & Actions = {
           // ethereum accounts only subscribe to the ethereum networks
           if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
 
-          api.rx.query.system.account(walletAddress).subscribe(async (result) => {
+          const subscription = api.rx.query.system.account(walletAddress).subscribe(async (result) => {
             const data = (result as any).data;
             const balance = formatBalance(data as AccountData);
             const token = assets[0]?.assetId;
@@ -136,6 +145,10 @@ const actions: ActionTree<State, State> & Actions = {
               walletAddress,
               currency,
             });
+          });
+
+          commit(MutationTypes.SET_SUBSCRIPTIONS_BALANCES, {
+            subscriptionsBalances: subscription,
           });
         });
       } catch (ex) {

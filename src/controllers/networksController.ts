@@ -2,7 +2,7 @@ import store from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { MutationTypes as ApiMutationTypes } from '@/store/networks/mutations';
-import { getNetworkInfo } from '@/store/helpers';
+import { getNetworkInfo } from '@/util/helpers';
 import { Networks, SetNetworkStatusProps } from '@/store/networks/types';
 import { decodeAddress, encodeAddress } from '@polkadot/util-crypto';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';

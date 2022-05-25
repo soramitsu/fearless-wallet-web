@@ -12,7 +12,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { firstCharToUp } from '@/util/stringHelper';
+import { firstCharToUp } from '@/util/helpers';
 import Rotate from '@/components/Rotate.vue';
 import Corners from '@/components/Corners.vue';
 

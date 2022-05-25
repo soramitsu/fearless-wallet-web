@@ -13,7 +13,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Components } from '@/router/routes';
-import { firstCharToUp } from '@/util/stringHelper';
+import { firstCharToUp } from '@/util/helpers';
 import CircleButton from '@/components/CircleButton.vue';
 
 @Component({

@@ -1,11 +1,13 @@
 import { Networks, AssetsJson, TokensPrice } from './types';
 import { Currencies } from '@/interfaces/currencies';
+import { Subscription } from 'rxjs';
 
 export type State = {
   networks: Networks;
   tokensPrice: TokensPrice;
   assets: AssetsJson[];
   currencies: Currencies;
+  subscriptionsBalances: Subscription[];
 };
 
 const state = (): State => {
@@ -14,6 +16,7 @@ const state = (): State => {
     tokensPrice: {},
     assets: [],
     currencies: {},
+    subscriptionsBalances: [],
   };
 };
 

@@ -11,6 +11,6 @@ export type SetPasswordProps = {
   password: string;
 };
 
-export type SetSelectedWalletAddressProps = {
+export type SetSelectedWalletProps = {
   selectedWalletAddress: string;
 };

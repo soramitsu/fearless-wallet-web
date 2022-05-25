@@ -1,5 +1,6 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { Currency } from '@/interfaces/currencies';
+import { Subscription } from 'rxjs';
 
 export type Nodes = {
   url: string;
@@ -106,6 +107,10 @@ export type SetCurrenciesStatusProps = {
 export type SetNetworkStatusProps = {
   name: string;
   isActive: boolean;
+};
+
+export type SetSubscriptionsBalancesProps = {
+  subscriptionsBalances: Subscription;
 };
 
 // Actions

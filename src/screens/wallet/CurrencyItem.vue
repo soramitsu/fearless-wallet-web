@@ -147,7 +147,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get priceString() {
-    return `$${this.currencyInfo.price}`;
+    return `$${roundNumber(this.currencyInfo.price)}`;
   }
 
   get upperNetworkName() {

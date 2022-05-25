@@ -5,9 +5,10 @@ import {
   SetNetworksStatusProps,
   SetAssetsProps,
   SetTokensPriceProps,
+  SetSubscriptionsBalancesProps,
 } from './types';
 import { State } from './state';
-import { getNetworkInfo } from '../helpers';
+import { getNetworkInfo } from '@/util/helpers';
 
 export enum MutationTypes {
   SET_NETWORKS = 'SET_NETWORKS',
@@ -15,6 +16,7 @@ export enum MutationTypes {
   SET_TOKENS_PRICE = 'SET_TOKENS_PRICE',
   SET_CURRENCIES = 'SET_CURRENCIES',
   SET_NETWORK_STATUS = 'SET_NETWORK_STATUS',
+  SET_SUBSCRIPTIONS_BALANCES = 'SET_SUBSCRIPTIONS_BALANCES',
 }
 
 export type Mutations = {
@@ -23,6 +25,10 @@ export type Mutations = {
   [MutationTypes.SET_TOKENS_PRICE](state: State, { tokensPrice }: SetTokensPriceProps): void;
   [MutationTypes.SET_CURRENCIES](state: State, { walletAddress, currency }: SetCurrenciesStatusProps): void;
   [MutationTypes.SET_NETWORK_STATUS](state: State, { name, isActive }: SetNetworkStatusProps): void;
+  [MutationTypes.SET_SUBSCRIPTIONS_BALANCES](
+    state: State,
+    { subscriptionsBalances }: SetSubscriptionsBalancesProps
+  ): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -53,6 +59,11 @@ const mutations: MutationTree<State> & Mutations = {
     if (network) {
       network.isActive = isActive;
     }
+  },
+  [MutationTypes.SET_SUBSCRIPTIONS_BALANCES](state, { subscriptionsBalances: sub }) {
+    const subscriptions = state.subscriptionsBalances.filter((subscription) => !subscription.closed);
+
+    state.subscriptionsBalances = [...subscriptions, sub];
   },
 };
 

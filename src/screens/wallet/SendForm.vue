@@ -86,7 +86,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Networks } from '@/store/networks/types';
 import { Currency } from '@/interfaces/currencies';
-import { firstCharToUp } from '@/util/stringHelper';
+import { firstCharToUp } from '@/util/helpers';
 import Input from '@/components/Input.vue';
 import Select from '@/components/Select.vue';
 import Corners from '@/components/Corners.vue';

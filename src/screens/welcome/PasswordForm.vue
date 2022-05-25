@@ -34,6 +34,7 @@ import { Component, Vue, Watch } from 'vue-property-decorator';
 import { GettersTypes } from '@/store/accounts/getters';
 import { MutationTypes } from '@/store/accounts/mutations';
 import { SetPasswordProps } from '@/store/accounts/types';
+import { TMutation } from '@/interfaces/common';
 import Hint from '@/components/Hint.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 
@@ -42,7 +43,7 @@ import ValidatedInput from '@/components/ValidatedInput.vue';
 })
 export default class PasswordForm extends Vue {
   @Getter(GettersTypes.getPassword) getPassword!: string;
-  @Mutation(MutationTypes.SET_PASSWORD) setPassword!: (props: SetPasswordProps) => void;
+  @Mutation(MutationTypes.SET_PASSWORD) setPassword!: TMutation<SetPasswordProps>;
   pass1 = '';
   pass2 = '';
 

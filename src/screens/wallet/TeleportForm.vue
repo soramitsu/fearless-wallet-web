@@ -54,7 +54,7 @@ import { Getter } from 'vuex-class';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Networks } from '@/store/networks/types';
 import { Currency } from '@/interfaces/currencies';
-import { firstCharToUp } from '@/util/stringHelper';
+import { firstCharToUp } from '@/util/helpers';
 import Loading from '@/components/Loading.vue';
 import Select from '@/components/Select.vue';
 import Input from '@/components/Input.vue';

@@ -8,7 +8,8 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation } from 'vuex-class';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { SetSelectedWalletAddressProps } from '@/store/accounts/types';
+import { SetSelectedWalletProps } from '@/store/accounts/types';
+import { TMutation } from '@/interfaces/common';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import keyring from '@polkadot/ui-keyring';
@@ -19,9 +20,7 @@ export default class App extends Vue {
   networksController = new NetworksController();
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
 
-  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: (
-    props: SetSelectedWalletAddressProps
-  ) => void;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
 
   async mounted() {
     await Promise.all([this.networksController.loadNetworksInfo(), this.networksController.loadAssetsInfo()]);
@@ -33,10 +32,7 @@ export default class App extends Vue {
 
       if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
 
-      // TODO:refactoring and optimizing subscriptions, subscribe only to new accounts
-      this.networksController.subscribeToBalancesOfNetworks(accounts);
-
-      console.log('accounts', accounts);
+      if (Object.keys(accounts).length % 2 === 0) this.networksController.subscribeToBalancesOfNetworks(accounts);
     });
   }
 

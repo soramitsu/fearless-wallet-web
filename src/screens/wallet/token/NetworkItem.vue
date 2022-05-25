@@ -13,7 +13,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { getImgPathByNetworkName } from '@/util/imgPath';
-import { firstCharToUp } from '@/util/stringHelper';
+import { firstCharToUp } from '@/util/helpers';
 import { Components } from '@/router/routes';
 
 @Component

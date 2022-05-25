@@ -121,7 +121,7 @@ import { SelectedWallet } from '@/store/accounts/types';
 import { Networks as NetworksType } from '@/store/networks/types';
 import { Components } from '@/router/routes';
 import { getImgPathByNetworkName } from '@/util/imgPath';
-import { firstCharToUp } from '@/util/stringHelper';
+import { firstCharToUp } from '@/util/helpers';
 import historyMock from '@/mocks/history';
 import BorderButton from '@/components/BorderButton.vue';
 import Scroll from '@/components/Scroll.vue';

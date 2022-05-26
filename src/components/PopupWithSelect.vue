@@ -45,7 +45,7 @@ export default class PopupWithSelect extends Vue {
   @Prop({ default: false }) staticHeight!: boolean;
   @Prop(Function) toggleValue!: (value: string) => void;
   @Prop(Function) handlerClose!: VoidFunction;
-  @Prop(Function) handlerFilter!: (value: string) => void;
+  @Prop({ default: () => () => null }) handlerFilter!: (value: string) => void;
 
   getImg(path: string) {
     return require(`@/assets/${path}`);

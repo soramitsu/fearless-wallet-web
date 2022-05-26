@@ -21,7 +21,7 @@
       :showIcon="true"
       :showSearch="true"
       :staticHeight="true"
-      :options="filterOptionsNetworks"
+      :options="filteredOptionsNetworks"
       :toggleValue="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
       :handlerFilter="handlerFilter.bind(null, 'popupFilterValue')"
@@ -175,14 +175,14 @@ export default class Wallet extends Vue {
 
   get optionsNetworks() {
     return [
-      { label: 'All networks', value: 'All networks', path: getImgPathByNetworkName() },
+      { label: 'All networks', value: 'All networks', path: 'globus.svg' },
       ...this.networks.map(({ name }) => {
         return { label: firstCharToUp(name), value: name, path: `networks/${getImgPathByNetworkName(name)}` };
       }),
     ];
   }
 
-  get filterOptionsNetworks() {
+  get filteredOptionsNetworks() {
     const filter = this.popupFilterValue.trim().toLowerCase();
 
     return this.optionsNetworks.filter(({ label }) => label.toLowerCase().includes(filter));

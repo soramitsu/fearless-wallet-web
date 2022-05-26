@@ -1,5 +1,4 @@
 // test mnemonic 1: present brick service spin vivid catalog wrestle life year husband warm certain
-// public key 1: 5GecoStYi2bHzKz6LwE2LWa8MWJxaZYAGjx2WeH8r4RTnQ6e
-
 // test mnemonic 2: caught choose dream clean client strike demand toast height caught laugh stamp
-// public key 2: 0xEed9500e2E807E78fF1F5Dce03E612c626Af4C55
+
+// test private key 1: 0xab427ec0f8b00001393e5b9e1de1da960ee1c2eaef27fdb5b708927b218fae9b

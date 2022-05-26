@@ -8,7 +8,7 @@
         class="follow-button"
         type="secondary"
         width="256px"
-        @click="redirect('https://twitter.com/Soramitsu_co')"
+        @click="openPage('https://twitter.com/Soramitsu_co')"
       />
 
       <BorderButton
@@ -16,7 +16,7 @@
         iconName="telegram"
         type="secondary"
         width="256px"
-        @click="redirect('https://t.me/sora_xor')"
+        @click="openPage('https://t.me/sora_xor')"
       />
     </div>
     <div class="row">
@@ -25,7 +25,7 @@
         iconName="medium"
         type="secondary"
         width="256px"
-        @click="redirect('https://t.me/sora_xor')"
+        @click="openPage('https://medium.com/fearlesswallet')"
       />
 
       <BorderButton
@@ -33,7 +33,7 @@
         iconName="file-dock"
         type="secondary"
         width="256px"
-        @click="redirect('https://t.me/sora_xor')"
+        @click="openPage('https://t.me/sora_xor')"
       />
     </div>
   </div>
@@ -51,7 +51,7 @@ import BorderButton from '@/components/BorderButton.vue';
   },
 })
 export default class FinishForm extends Vue {
-  redirect(url: string) {
+  openPage(url: string) {
     window.open(url);
   }
 }

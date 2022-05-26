@@ -3,7 +3,7 @@
     <div class="token-header">
       <div class="descriptions">
         <div class="count-tokens">{{ countTokensString }}</div>
-        <div class="balance">{{ balanceInNetworkString }}</div>
+        <div class="balance-in-network">{{ balanceInNetworkString }}</div>
         <div class="price">{{ tokenPriceString }}</div>
       </div>
 
@@ -122,6 +122,7 @@ import { Networks as NetworksType } from '@/store/networks/types';
 import { Components } from '@/router/routes';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { firstCharToUp } from '@/util/helpers';
+import { formattedNumber, formattedPrice } from '@/util/numbers';
 import historyMock from '@/mocks/history';
 import BorderButton from '@/components/BorderButton.vue';
 import Scroll from '@/components/Scroll.vue';
@@ -175,12 +176,8 @@ export default class Token extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get optionsNetworks() {
-    if (!this.currentCurrencyController) return [];
-
-    const { totalCountTokens } = this.currentCurrencyController.getCurrencyInfo();
-
     return [
-      { label: `All networks ${totalCountTokens.toFixed(4)}`, value: 'All networks', path: getImgPathByNetworkName() },
+      { label: 'All networks', value: 'All networks', path: 'globus.svg' },
       ...this.networks.map(({ name }) => ({
         label: firstCharToUp(name),
         value: name,
@@ -216,7 +213,7 @@ export default class Token extends Vue {
   }
 
   get tokenPriceString() {
-    return `1 ${this.token.toUpperCase()} = $${this.price}`;
+    return `1 ${this.token.toUpperCase()} = $${formattedPrice(this.price ?? 0)}`;
   }
 
   get selectedNetwork() {
@@ -239,22 +236,21 @@ export default class Token extends Vue {
     if (this.selectedNetwork === 'All networks') return `${this.token.toUpperCase()} ${totalCountTokens.toFixed(4)}`;
 
     const balance = availableInNetworks.find(({ network }) => network === this.selectedNetwork)?.balance;
-    const total = balance?.total ?? '';
+    const total = formattedNumber(+(balance?.total ?? 0), 4);
 
-    return `${this.token.toUpperCase()} ${(+total).toFixed(4)}`;
+    return `${this.token.toUpperCase()} ${+total}`;
   }
 
   get balanceInNetworkString() {
     if (!this.currentCurrencyController) return '';
 
-    const { totalBalance, availableInNetworks } = this.currentCurrencyController.getCurrencyInfo();
+    const { totalBalance } = this.currentCurrencyController.getCurrencyInfo();
 
     if (this.selectedNetwork === 'All networks') return `$ ${totalBalance.toFixed(2)}`;
 
-    const balance = availableInNetworks.find(({ network }) => network === this.selectedNetwork)?.balance;
-    const total = this.currentCurrencyController.getCostOfTokens(+(balance?.total ?? '0'));
+    const total = this.currentCurrencyController.getBalanceInNetwork(this.selectedNetwork);
 
-    return `$ ${(+total).toFixed(2)}`;
+    return `$ ${formattedNumber(total)}`;
   }
 
   handlerFilter(value: string) {
@@ -315,7 +311,7 @@ export default class Token extends Vue {
         font-size: 28px;
       }
 
-      .balance {
+      .balance-in-network {
         color: rgba(255, 255, 255, 0.5);
       }
 

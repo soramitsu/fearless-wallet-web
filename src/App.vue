@@ -27,12 +27,15 @@ export default class App extends Vue {
     await this.networksController.loadTokensPrice();
 
     this.subscribeAccounts = keyring.accounts.subject;
-    this.subscribeAccounts.subscribe((accounts) => {
+    this.subscribeAccounts.subscribe(async (accounts) => {
       const selectedWalletAddress = Object.entries(accounts).find(([, { type }]) => type !== 'ethereum')?.[0];
 
       if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
 
-      if (Object.keys(accounts).length % 2 === 0) this.networksController.subscribeToBalancesOfNetworks(accounts);
+      // accounts in keyring are added not in one operation (two at a time), but in turn
+      if (Object.keys(accounts).length % 2 === 0) {
+        await this.networksController.subscribeToBalancesOfNetworks(accounts);
+      }
     });
   }
 

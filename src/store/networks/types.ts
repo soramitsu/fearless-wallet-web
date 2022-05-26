@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { Currency } from '@/interfaces/currencies';
+import { Currency, Currencies } from '@/interfaces/currencies';
 import { Subscription } from 'rxjs';
 
 export type Nodes = {
@@ -49,6 +49,8 @@ export type NetworkJson = {
   options?: string[];
 };
 
+type WalletAddress = string;
+
 type Network = {
   name: string;
   api: ApiPromise;
@@ -56,8 +58,8 @@ type Network = {
   nodes: Nodes[];
   assets: Assets[];
   addressPrefix: number;
-  isActive: boolean;
   isEthereumNetwork: boolean;
+  subscriptionsBalances?: Record<WalletAddress, Subscription>;
 };
 
 export type Networks = Network[];
@@ -99,18 +101,19 @@ export type SetTokensPriceProps = {
   tokensPrice: TokensPrice;
 };
 
-export type SetCurrenciesStatusProps = {
+export type UpdateCurrencyProps = {
   walletAddress: string;
   currency: Currency;
 };
 
-export type SetNetworkStatusProps = {
-  name: string;
-  isActive: boolean;
+export type SetCurrenciesProps = {
+  currencies: Currencies;
 };
 
 export type SetSubscriptionsBalancesProps = {
+  walletAddress: string;
   subscriptionsBalances: Subscription;
+  networkName: string;
 };
 
 // Actions

@@ -342,23 +342,23 @@ export default class Layout extends Vue {
   }
 
   accountAuthorization() {
-    const meta: Record<string, string> = { name: this.nickname };
+    const meta = { name: this.nickname, ethereumAddress: '' };
     const {
       substrate: { value: substrateDP, keyPair: substrateKeyPair },
       ethereum: { value: ethereumDP, keyPair: ethereumKeyPair },
     } = this.derivationPath;
     const suriSubstrate = `${this.mnemonic || this.rawSeed}${substrateDP}`;
 
-    // We create an ETH account only if we entered the mnemonic
-    if (this.mnemonic) {
-      const suriEthereum = `${this.mnemonic}${ethereumDP ?? ETHEREUM_DEFAULT_DERIVATION_PATH}`;
+    // We only add a derivation path if we entered a mnemonic
+    const suriEthereum = this.mnemonic
+      ? `${this.mnemonic}${ethereumDP || ETHEREUM_DEFAULT_DERIVATION_PATH}`
+      : this.rawSeed;
 
-      const {
-        pair: { address },
-      } = keyring.addUri(suriEthereum, '', meta, ethereumKeyPair);
+    const {
+      pair: { address },
+    } = keyring.addUri(suriEthereum, '', meta, ethereumKeyPair);
 
-      meta.ethereumAddress = address;
-    }
+    meta.ethereumAddress = address;
 
     keyring.addUri(suriSubstrate, '', meta, substrateKeyPair);
 

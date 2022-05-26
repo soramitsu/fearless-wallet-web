@@ -49,10 +49,16 @@ export default class CurrencyController {
     return this.calculateCost(countTokens);
   }
 
+  private getDecimals(): FPNumber {
+    const { token } = this.currency;
+    const precision = this.getAssets(token)?.precision;
+
+    return new FPNumber(10 ** +precision);
+  }
+
   public getCurrencyInfo(): CurrencyInfo {
-    const { token, availableInNetworks } = this.currency;
-    const { precision } = this.getAssets(token);
-    const decimals = new FPNumber(10 ** +precision);
+    const { availableInNetworks } = this.currency;
+    const decimals = this.getDecimals();
     const updatedAvailableInNetworks: AvailableInNetworks[] = availableInNetworks.map(
       ({ balance: { frozen, locked, reserved, total, transferable }, network }) => {
         return {
@@ -78,6 +84,12 @@ export default class CurrencyController {
     const FPCount = new FPNumber(count);
 
     return this.calculateCost(FPCount).toNumber();
+  }
+
+  public getBalanceInNetwork(_network: string): number {
+    const total = this.getCurrencyInfo().availableInNetworks.find(({ network }) => network === _network)!.balance.total;
+
+    return this.calculateCost(new FPNumber(total)).toNumber();
   }
 
   public getCountsTokensByPrice(cost: number): number {

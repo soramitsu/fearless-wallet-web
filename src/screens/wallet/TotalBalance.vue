@@ -11,7 +11,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { roundNumber } from '@/util/numbers';
+import { formattedNumber } from '@/util/numbers';
 
 @Component
 export default class TotalBalance extends Vue {
@@ -21,14 +21,14 @@ export default class TotalBalance extends Vue {
   @Prop({ default: false }) showIcon!: boolean;
 
   get balanceString() {
-    return roundNumber(this.balance);
+    return formattedNumber(this.balance);
   }
 
   get percentString() {
     const sign = this.percent > 0 ? '+' : '';
     const signPercent = this.percent !== 0 ? '%' : '';
 
-    return `${sign}${roundNumber(this.percent)}${signPercent}`;
+    return `${sign}${formattedNumber(this.percent)}${signPercent}`;
   }
 
   get percentClasses() {
@@ -48,7 +48,7 @@ export default class TotalBalance extends Vue {
   justify-content: space-between;
   align-items: center;
   text-align: left;
-  opacity: 0.95;
+  opacity: 0.9;
 
   &:hover {
     cursor: pointer;

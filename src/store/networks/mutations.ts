@@ -1,21 +1,20 @@
 import { MutationTree } from 'vuex';
 import {
-  SetNetworkStatusProps,
-  SetCurrenciesStatusProps,
+  UpdateCurrencyProps,
   SetNetworksStatusProps,
   SetAssetsProps,
   SetTokensPriceProps,
   SetSubscriptionsBalancesProps,
+  SetCurrenciesProps,
 } from './types';
 import { State } from './state';
-import { getNetworkInfo } from '@/util/helpers';
 
 export enum MutationTypes {
   SET_NETWORKS = 'SET_NETWORKS',
   SET_ASSETS = 'SET_ASSETS',
   SET_TOKENS_PRICE = 'SET_TOKENS_PRICE',
+  UPDATE_CURRENCY = 'UPDATE_CURRENCY',
   SET_CURRENCIES = 'SET_CURRENCIES',
-  SET_NETWORK_STATUS = 'SET_NETWORK_STATUS',
   SET_SUBSCRIPTIONS_BALANCES = 'SET_SUBSCRIPTIONS_BALANCES',
 }
 
@@ -23,11 +22,11 @@ export type Mutations = {
   [MutationTypes.SET_NETWORKS](state: State, { networks }: SetNetworksStatusProps): void;
   [MutationTypes.SET_ASSETS](state: State, { assets }: SetAssetsProps): void;
   [MutationTypes.SET_TOKENS_PRICE](state: State, { tokensPrice }: SetTokensPriceProps): void;
-  [MutationTypes.SET_CURRENCIES](state: State, { walletAddress, currency }: SetCurrenciesStatusProps): void;
-  [MutationTypes.SET_NETWORK_STATUS](state: State, { name, isActive }: SetNetworkStatusProps): void;
+  [MutationTypes.UPDATE_CURRENCY](state: State, { walletAddress, currency }: UpdateCurrencyProps): void;
+  [MutationTypes.SET_CURRENCIES](state: State, { currencies }: SetCurrenciesProps): void;
   [MutationTypes.SET_SUBSCRIPTIONS_BALANCES](
     state: State,
-    { subscriptionsBalances }: SetSubscriptionsBalancesProps
+    { subscriptionsBalances, networkName, walletAddress }: SetSubscriptionsBalancesProps
   ): void;
 };
 
@@ -41,29 +40,34 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_TOKENS_PRICE](state, { tokensPrice }) {
     state.tokensPrice = tokensPrice;
   },
-  [MutationTypes.SET_CURRENCIES](state, { walletAddress, currency }) {
+  [MutationTypes.UPDATE_CURRENCY](state, { walletAddress, currency }) {
     const { currencies } = state;
-    const addressExists = Object.prototype.hasOwnProperty.call(currencies, walletAddress);
-    const newCurrenciesForAddress = addressExists ? [...currencies[walletAddress], currency] : [currency];
+    const currenciesForAddress = [...(currencies[walletAddress] ?? [])];
+    const currencyIndex = currenciesForAddress.findIndex(({ mainNetwork }) => mainNetwork === currency.mainNetwork);
 
-    const newCurrencies = {
-      ...currencies,
-      [walletAddress]: newCurrenciesForAddress,
-    };
-
-    state.currencies = newCurrencies;
-  },
-  [MutationTypes.SET_NETWORK_STATUS]({ networks }, { name, isActive }) {
-    const network = getNetworkInfo(networks, name);
-
-    if (network) {
-      network.isActive = isActive;
+    if (currencyIndex === -1) {
+      currenciesForAddress.push(currency);
+    } else {
+      currenciesForAddress.splice(currencyIndex, 1, currency);
     }
-  },
-  [MutationTypes.SET_SUBSCRIPTIONS_BALANCES](state, { subscriptionsBalances: sub }) {
-    const subscriptions = state.subscriptionsBalances.filter((subscription) => !subscription.closed);
 
-    state.subscriptionsBalances = [...subscriptions, sub];
+    state.currencies = {
+      ...currencies,
+      [walletAddress]: currenciesForAddress,
+    };
+  },
+  [MutationTypes.SET_CURRENCIES](state, { currencies }) {
+    state.currencies = currencies;
+  },
+  [MutationTypes.SET_SUBSCRIPTIONS_BALANCES](state, { subscriptionsBalances, networkName, walletAddress }) {
+    state.networks = state.networks.map((network) => {
+      return network.name === networkName
+        ? {
+            ...network,
+            subscriptionsBalances: { ...network.subscriptionsBalances, [walletAddress]: subscriptionsBalances },
+          }
+        : network;
+    });
   },
 };
 

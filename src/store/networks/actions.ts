@@ -5,9 +5,10 @@ import { NetworkJson, Networks, AssetsJson, LoadNetworksInfo, LoadAssets, Tokens
 import { State } from './state';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import { formatBalance } from '@/util/balances';
-import { Currency } from '@/interfaces/currencies';
+import { Currency, Currencies, MockCurrencies } from '@/interfaces/currencies';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import keyring from '@polkadot/ui-keyring';
 
 export enum ActionTypes {
   LOAD_NETWORKS_INFO = 'LOAD_NETWORKS_INFO',
@@ -39,26 +40,22 @@ const actions: ActionTree<State, State> & Actions = {
     const networksJson: NetworkJson[] = await response.json();
 
     const networks: Networks = networksJson.map(({ nodes, name, assets, addressPrefix }) => {
-      let isActive = false;
       const networkName = name.toLocaleLowerCase();
       const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
-      const url = name === 'Astar' ? nodes[1].url : nodes[0].url;
+      const url = name === 'Calamari' ? nodes[1].url : nodes[0].url;
 
-      const provider = new WsProvider(url, autoConnectMs as number);
+      const provider = new WsProvider(url, autoConnectMs);
       const api = new ApiPromise({ provider });
 
       try {
         api.connect();
 
-        isActive = true;
-
-        // console.log(`%c${name.toUpperCase()}. API connection successful.`, 'background:green;color:#fff');
+        console.log(`%c${name.toUpperCase()}. API connection successful.`, 'background:green;color:#fff');
       } catch (ex) {
         api.disconnect();
 
         console.log(`%c${name.toUpperCase()}. Connection to api failed.`, 'background:red;color:#fff');
       }
-
       return {
         name: networkName,
         provider,
@@ -66,11 +63,21 @@ const actions: ActionTree<State, State> & Actions = {
         nodes,
         assets,
         addressPrefix,
-        isActive,
         isEthereumNetwork,
+        subscriptionsBalances: {},
       };
     });
 
+    const currencies: Currencies = {};
+    const { substrate, ethereum } = getMockCurrencies(networks);
+
+    keyring.getAccounts().forEach(({ address }) => {
+      const { type } = keyring.getPair(address);
+
+      currencies[address] = type === 'ethereum' ? ethereum : substrate;
+    });
+
+    commit(MutationTypes.SET_CURRENCIES, { currencies });
     commit(MutationTypes.SET_NETWORKS, { networks });
   },
   async [ActionTypes.LOAD_ASSETS_INFO]({ commit }, { url }) {
@@ -102,26 +109,21 @@ const actions: ActionTree<State, State> & Actions = {
 
     commit(MutationTypes.SET_TOKENS_PRICE, { tokensPrice });
   },
-  async [ActionTypes.SUBSCRIBE_TO_BALANCES](
-    { commit, state: { networks, tokensPrice, subscriptionsBalances } },
-    { accounts }
-  ) {
+  async [ActionTypes.SUBSCRIBE_TO_BALANCES]({ commit, state: { networks, tokensPrice } }, { accounts }) {
     console.log('accounts', accounts);
 
-    // unsubscribing from previous subscriptions
-    subscriptionsBalances.forEach((subscriptions) => {
-      if (!subscriptions.closed) subscriptions.unsubscribe();
-    });
-
-    for (const { api, isEthereumNetwork, name: networkName, assets } of networks) {
-      await api.isReady;
+    networks.map(async ({ api, subscriptionsBalances, isEthereumNetwork, name: networkName, assets }) => {
+      await api.isReadyOrError;
 
       try {
         Object.entries(accounts).forEach(([walletAddress, { type }]) => {
           // ethereum accounts only subscribe to the ethereum networks
           if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
 
-          const subscription = api.rx.query.system.account(walletAddress).subscribe(async (result) => {
+          // unsubscribing from previous subscriptions(case when we added a new wallet)
+          subscriptionsBalances?.[walletAddress]?.unsubscribe();
+
+          const unsubscribe = api.rx.query.system.account(walletAddress).subscribe(async (result) => {
             const data = (result as any).data;
             const balance = formatBalance(data as AccountData);
             const token = assets[0]?.assetId;
@@ -141,14 +143,16 @@ const actions: ActionTree<State, State> & Actions = {
               ],
             };
 
-            commit(MutationTypes.SET_CURRENCIES, {
+            commit(MutationTypes.UPDATE_CURRENCY, {
               walletAddress,
               currency,
             });
           });
 
           commit(MutationTypes.SET_SUBSCRIPTIONS_BALANCES, {
-            subscriptionsBalances: subscription,
+            networkName,
+            walletAddress,
+            subscriptionsBalances: unsubscribe,
           });
         });
       } catch (ex) {
@@ -159,8 +163,25 @@ const actions: ActionTree<State, State> & Actions = {
           `
         );
       }
-    }
+    });
   },
 };
+
+function getMockCurrencies(networks: Networks): MockCurrencies {
+  const currencies: Currency[] = networks.map(({ name, assets }) => {
+    return {
+      availableInNetworks: [],
+      mainNetwork: name,
+      price: 0,
+      token: assets[0]?.assetId,
+      usd24HoursChange: 0,
+    };
+  });
+
+  return {
+    substrate: currencies.filter(({ mainNetwork }) => !ETHEREUM_NETWORKS.includes(mainNetwork)),
+    ethereum: currencies.filter(({ mainNetwork }) => ETHEREUM_NETWORKS.includes(mainNetwork)),
+  };
+}
 
 export default actions;

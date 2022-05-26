@@ -77,7 +77,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { Currency } from '@/interfaces/currencies';
 import { Components } from '@/router/routes';
-import { roundNumber } from '@/util/numbers';
+import { formattedNumber, formattedPrice } from '@/util/numbers';
 import CircleButton from '@/components/CircleButton.vue';
 import Switcher from '@/components/Switcher.vue';
 import CurrencyController from '@/controllers/currencyController';
@@ -129,7 +129,7 @@ export default class CurrencyItem extends Vue {
 
   get usd24HoursChangeString() {
     const { usd24HoursChange } = this.currencyInfo;
-    const change = roundNumber(usd24HoursChange);
+    const change = formattedNumber(usd24HoursChange);
 
     return usd24HoursChange > 0 ? `+${change}%` : usd24HoursChange < 0 ? `${change}%` : '';
   }
@@ -139,15 +139,15 @@ export default class CurrencyItem extends Vue {
   }
 
   get countTokensString() {
-    return roundNumber(this.currencyInfo?.totalCountTokens, 4);
+    return formattedNumber(this.currencyInfo?.totalCountTokens, 4);
   }
 
   get totalBalanceString() {
-    return `$${roundNumber(this.currencyInfo?.totalBalance)}`;
+    return `$${formattedNumber(this.currencyInfo?.totalBalance)}`;
   }
 
   get priceString() {
-    return `$${roundNumber(this.currencyInfo.price)}`;
+    return `$${formattedPrice(this.currencyInfo.price)}`;
   }
 
   get upperNetworkName() {

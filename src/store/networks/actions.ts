@@ -5,10 +5,11 @@ import { NetworkJson, Networks, AssetsJson, LoadNetworksInfo, LoadAssets, Tokens
 import { State } from './state';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import { formatBalance } from '@/util/balances';
-import { Currency, Currencies, MockCurrencies } from '@/interfaces/currencies';
+import { Currencies, MockCurrencies, Currency } from '@/interfaces/currencies';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import keyring from '@polkadot/ui-keyring';
+import CurrencyController from '@/controllers/currencyController';
 
 export enum ActionTypes {
   LOAD_NETWORKS_INFO = 'LOAD_NETWORKS_INFO',
@@ -130,7 +131,7 @@ const actions: ActionTree<State, State> & Actions = {
             const price = tokensPrice[token]?.usd ?? 0;
             const usd24HoursChange = tokensPrice[token]?.usd24HoursChange ?? 0;
 
-            const currency: Currency = {
+            const currency: Currency = new CurrencyController({
               token,
               mainNetwork: networkName,
               price,
@@ -141,7 +142,7 @@ const actions: ActionTree<State, State> & Actions = {
                   balance,
                 },
               ],
-            };
+            });
 
             commit(MutationTypes.UPDATE_CURRENCY, {
               walletAddress,
@@ -169,13 +170,13 @@ const actions: ActionTree<State, State> & Actions = {
 
 function getMockCurrencies(networks: Networks): MockCurrencies {
   const currencies: Currency[] = networks.map(({ name, assets }) => {
-    return {
+    return new CurrencyController({
       availableInNetworks: [],
       mainNetwork: name,
       price: 0,
       token: assets[0]?.assetId,
       usd24HoursChange: 0,
-    };
+    });
   });
 
   return {

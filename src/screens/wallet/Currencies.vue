@@ -1,11 +1,10 @@
 <template>
   <div class="currencies">
     <CurrencyItem
-      v-for="currency in currencies"
+      v-for="currency in filteredCurrencies"
       :key="currency.mainNetwork"
       :currency="currency"
       :showAssetsManagementForm="showAssetsManagementForm"
-      :hideZeroBalance="hideZeroBalance"
       :toggleVisibleActivityForm="toggleVisibleActivityForm"
     />
   </div>
@@ -13,18 +12,24 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Currencies as TCurrencies } from '@/interfaces/currencies';
+import { Currency } from '@/interfaces/currencies';
 import CurrencyItem from './CurrencyItem.vue';
 
 @Component({
   components: { CurrencyItem },
 })
 export default class Currencies extends Vue {
-  @Prop(Array) currencies!: TCurrencies;
+  @Prop(Array) currencies!: Currency[];
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop(Boolean) hideZeroBalance!: boolean;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
+
+  get filteredCurrencies() {
+    if (this.showAssetsManagementForm || !this.hideZeroBalance) return this.currencies;
+
+    return this.currencies.filter((controller) => controller.getTotalBalance() !== 0);
+  }
 }
 </script>
 

@@ -79,8 +79,8 @@ import { SelectedWallet } from '@/store/accounts/types';
 import { Networks } from '@/store/networks/types';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { firstCharToUp } from '@/util/helpers';
-import { Currency, Currencies as TCurrencies } from '@/interfaces/currencies';
-import type { TabWallet } from '@/interfaces/walletPage';
+import { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
+import type { TabWallet } from '@/interfaces/common';
 import Scroll from '@/components/Scroll.vue';
 import Corners from '@/components/Corners.vue';
 import PopupWithSelect from '@/components/PopupWithSelect.vue';
@@ -91,7 +91,7 @@ import ContentSettings from './ContentSettings.vue';
 import Currencies from './Currencies.vue';
 import TotalBalance from './TotalBalance.vue';
 import NFTs from './NFTs.vue';
-import CurrencyController from '@/controllers/currencyController';
+import AccountController from '@/controllers/accountController';
 
 @Component({
   components: {
@@ -109,6 +109,7 @@ import CurrencyController from '@/controllers/currencyController';
 })
 export default class Wallet extends Vue {
   readonly selectNetworkButtonRef = 'selectNetworkButton';
+  readonly accountController = new AccountController();
   showAssetsManagementForm = false;
   hideZeroBalance = false;
   selectedCurrency!: Currency;
@@ -132,8 +133,8 @@ export default class Wallet extends Vue {
 
     return (
       currencies.sort((currency1, currency2) => {
-        const { totalCountTokens: totalCountTokensOne } = new CurrencyController(currency1).getCurrencyInfo();
-        const { totalCountTokens: totalCountTokensTwo } = new CurrencyController(currency2).getCurrencyInfo();
+        const totalCountTokensOne = currency1.getTotalCountTokens();
+        const totalCountTokensTwo = currency2.getTotalCountTokens();
 
         return totalCountTokensTwo - totalCountTokensOne;
       }) ?? []
@@ -144,8 +145,10 @@ export default class Wallet extends Vue {
     const filter = this.filterValue.trim().toLowerCase();
 
     return this.currenciesForSelectedWallet
-      .filter(({ availableInNetworks }) => {
+      .filter((currency) => {
         if (this.selectedNetwork === 'All networks') return true;
+
+        const availableInNetworks = currency.getAvailableInNetworks();
 
         return availableInNetworks.map(({ network }) => network).includes(this.selectedNetwork);
       })
@@ -154,8 +157,7 @@ export default class Wallet extends Vue {
 
   get totalBalance() {
     return this.currenciesForSelectedWallet.reduce((sum, currency) => {
-      const currencyController = new CurrencyController(currency);
-      const { totalBalance } = currencyController.getCurrencyInfo();
+      const totalBalance = currency.getTotalBalance();
 
       return sum + totalBalance;
     }, 0);
@@ -188,12 +190,17 @@ export default class Wallet extends Vue {
     return this.optionsNetworks.filter(({ label }) => label.toLowerCase().includes(filter));
   }
 
+  mounted() {
+    this.hideZeroBalance = this.accountController.getHideZeroBalanceValue();
+  }
+
   toggleAssetsManagementFormVisible(value = true) {
     this.showAssetsManagementForm = value;
   }
 
-  toggleHideZeroBalance(value = true) {
+  toggleHideZeroBalance(value: boolean) {
     this.hideZeroBalance = value;
+    this.accountController.setHideZeroBalanceValue(value);
   }
 
   toggleVisibleActivityForm(field: 'showSendForm' | 'showReceiveForm', value = true, currency: Currency) {

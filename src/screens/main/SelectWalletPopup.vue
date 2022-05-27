@@ -43,7 +43,6 @@ import { TMutation } from '@/interfaces/common';
 import Popup from '@/components/Popup.vue';
 import TotalBalance from '@/screens/wallet/TotalBalance.vue';
 import keyring from '@polkadot/ui-keyring';
-import CurrencyController from '@/controllers/currencyController';
 
 @Component({
   components: {
@@ -78,8 +77,7 @@ export default class SelectWalletPopup extends Vue {
 
     return (
       currencies?.reduce((sum, currency) => {
-        const currencyController = new CurrencyController(currency);
-        const { totalBalance } = currencyController.getCurrencyInfo();
+        const totalBalance = currency.getTotalBalance();
 
         return sum + totalBalance;
       }, 0) ?? 0

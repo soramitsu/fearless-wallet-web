@@ -1,4 +1,4 @@
-import { DerivationPath } from '@/interfaces/connectionWallet';
+import { DerivationPath } from '@/interfaces/common';
 
 export const DEFAULT_DERIVATION_PATH: DerivationPath = {
   substrate: {

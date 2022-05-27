@@ -85,15 +85,14 @@ import { GettersTypes as ApiGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Networks } from '@/store/networks/types';
-import { Currency } from '@/interfaces/currencies';
 import { firstCharToUp } from '@/util/helpers';
+import { Currency } from '@/interfaces/currencies';
 import Input from '@/components/Input.vue';
 import Select from '@/components/Select.vue';
 import Corners from '@/components/Corners.vue';
 import ActivityForm from './ActivityForm.vue';
 import SendingPopup from './SendingPopup.vue';
 import MaxButton from './MaxButton.vue';
-import CurrencyController from '@/controllers/currencyController';
 
 @Component({
   components: {
@@ -136,9 +135,10 @@ export default class SendForm extends Vue {
   get buttonText() {
     if (this.step === 2) return 'Send';
 
-    if (!this.currentCurrencyController) return '';
+    if (!this.currentCurrency) return '';
 
-    const { totalCountTokens, token } = this.currentCurrencyController.getCurrencyInfo();
+    const { token } = this.currentCurrency;
+    const totalCountTokens = this.currentCurrency.getTotalCountTokens();
 
     return +this.amount > totalCountTokens ? `Insufficient balance ${token.toUpperCase()}` : 'Continue';
   }
@@ -146,9 +146,9 @@ export default class SendForm extends Vue {
   get buttonDisabled() {
     if (this.step === 2) return false;
 
-    if (!this.currentCurrencyController) return true;
+    if (!this.currentCurrency) return true;
 
-    const { totalCountTokens } = this.currentCurrencyController.getCurrencyInfo();
+    const totalCountTokens = this.currentCurrency.getTotalCountTokens();
 
     return !(+this.amount > totalCountTokens)
       ? !(!!this.network && !!this.selectedToken && !!this.recipient && !!this.amount)
@@ -176,26 +176,20 @@ export default class SendForm extends Vue {
     return this.currencies.find(({ token, mainNetwork }) => `${mainNetwork}-${token}` === this.selectedToken);
   }
 
-  get currentCurrencyController() {
-    if (!this.currentCurrency) return null;
-
-    return new CurrencyController(this.currentCurrency);
-  }
-
   get tokenPrice() {
     return this.currentCurrency?.price ?? 1;
   }
 
   get value() {
-    if (!this.currentCurrencyController) return '';
+    if (!this.currentCurrency) return '';
 
-    return this.currentCurrencyController.getCostOfTokens(+this.amount).toString();
+    return this.currentCurrency.getCostOfTokens(+this.amount).toString();
   }
 
   set value(value) {
-    if (!this.currentCurrencyController) return;
+    if (!this.currentCurrency) return;
 
-    this.amount = this.currentCurrencyController?.getCountsTokensByPrice(+value).toString();
+    this.amount = this.currentCurrency?.getCountsTokensByPrice(+value).toString();
   }
 
   mounted() {
@@ -204,9 +198,9 @@ export default class SendForm extends Vue {
   }
 
   setMaxValue() {
-    if (!this.currentCurrencyController) return;
+    if (!this.currentCurrency) return;
 
-    const { totalCountTokens } = this.currentCurrencyController.getCurrencyInfo();
+    const totalCountTokens = this.currentCurrency.getTotalCountTokens();
 
     this.amount = totalCountTokens.toString();
   }

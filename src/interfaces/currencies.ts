@@ -1,4 +1,5 @@
 import type { AccountBalance } from '@/interfaces/balances';
+import CurrencyController from '@/controllers/currencyController';
 
 type WalletAddress = string;
 
@@ -7,13 +8,7 @@ export interface AvailableInNetworks {
   balance: AccountBalance;
 }
 
-export interface Currency {
-  mainNetwork: string;
-  token: string;
-  price: number;
-  usd24HoursChange: number;
-  availableInNetworks: AvailableInNetworks[];
-}
+export type Currency = CurrencyController;
 
 export type Currencies = Record<WalletAddress, Currency[]>;
 

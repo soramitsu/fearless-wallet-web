@@ -5,7 +5,7 @@
     </div>
 
     <div class="img-container">
-      <img :src="getImg(currencyInfo.mainNetwork)" class="main-network-img" />
+      <img :src="getImg(currency.mainNetwork)" class="main-network-img" />
     </div>
 
     <div class="descriptions-column">
@@ -16,7 +16,7 @@
 
         <div class="available-networks">
           <img
-            v-for="{ network } in availableInNetworks"
+            v-for="{ network } in availableInNetworksPart"
             :key="network"
             :src="getImg(network)"
             class="mini-network-img"
@@ -49,14 +49,14 @@
           iconName="send-gray"
           backgroundColor="black"
           class="button"
-          @click="toggleVisibleActivityForm('showSendForm', true, currency)"
+          @click="toggleVisibleActivityForm('showSendForm', true, currency.currency)"
         />
 
         <CircleButton
           iconName="receive-grey"
           backgroundColor="black"
           class="button"
-          @click="toggleVisibleActivityForm('showReceiveForm', true, currency)"
+          @click="toggleVisibleActivityForm('showReceiveForm', true, currency.currency)"
         />
 
         <CircleButton
@@ -75,12 +75,11 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { getImgPathByNetworkName } from '@/util/imgPath';
-import { Currency } from '@/interfaces/currencies';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/util/numbers';
+import { Currency } from '@/interfaces/currencies';
 import CircleButton from '@/components/CircleButton.vue';
 import Switcher from '@/components/Switcher.vue';
-import CurrencyController from '@/controllers/currencyController';
 
 @Component({
   components: {
@@ -93,15 +92,10 @@ export default class CurrencyItem extends Vue {
 
   @Prop(Object) currency!: Currency;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
-  @Prop(Boolean) hideZeroBalance!: boolean;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
 
   get showCurrencyItem() {
     return !this.showAssetsManagementForm ? this.currencyVisible : true;
-  }
-
-  get currencyController() {
-    return new CurrencyController(this.currency);
   }
 
   get currencyVisible() {
@@ -109,16 +103,12 @@ export default class CurrencyItem extends Vue {
   }
 
   set currencyVisible(value: boolean) {
-    this.currencyController.setCurrencyVisible(value);
+    this.currency.setCurrencyVisible(value);
     this.localCurrencyVisible = value;
   }
 
-  get currencyInfo() {
-    return this.currencyController.getCurrencyInfo();
-  }
-
   get changePriceClasses() {
-    const { usd24HoursChange } = this.currencyInfo;
+    const { usd24HoursChange } = this.currency;
     const classes = ['price'];
 
     if (usd24HoursChange > 0) classes.push('up-price');
@@ -128,46 +118,54 @@ export default class CurrencyItem extends Vue {
   }
 
   get usd24HoursChangeString() {
-    const { usd24HoursChange } = this.currencyInfo;
+    const { usd24HoursChange } = this.currency;
     const change = formattedNumber(usd24HoursChange);
 
     return usd24HoursChange > 0 ? `+${change}%` : usd24HoursChange < 0 ? `${change}%` : '';
   }
 
   get tokenString() {
-    return this.currencyInfo?.token.toUpperCase();
+    return this.currency?.token.toUpperCase();
   }
 
   get countTokensString() {
-    return formattedNumber(this.currencyInfo?.totalCountTokens, 4);
+    const totalCountTokens = this.currency.getTotalCountTokens();
+
+    return formattedNumber(totalCountTokens, 4);
   }
 
   get totalBalanceString() {
-    return `$${formattedNumber(this.currencyInfo?.totalBalance)}`;
+    const totalBalance = this.currency.getTotalBalance();
+
+    return `$${formattedNumber(totalBalance)}`;
   }
 
   get priceString() {
-    return `$${formattedPrice(this.currencyInfo.price)}`;
+    return `$${formattedPrice(this.currency.price)}`;
   }
 
   get upperNetworkName() {
-    return this.currencyInfo.mainNetwork.toUpperCase();
-  }
-
-  get isAdditional() {
-    return this.currencyInfo.availableInNetworks.length > 5;
-  }
-
-  get additionalCount() {
-    return this.currencyInfo.availableInNetworks.length - 4;
+    return this.currency.mainNetwork.toUpperCase();
   }
 
   get availableInNetworks() {
-    return [...this.currencyInfo.availableInNetworks].splice(0, this.isAdditional ? 4 : 5);
+    return this.currency.getAvailableInNetworks();
+  }
+
+  get isAdditional() {
+    return this.availableInNetworks.length > 5;
+  }
+
+  get additionalCount() {
+    return this.availableInNetworks.length - 4;
+  }
+
+  get availableInNetworksPart() {
+    return [...this.availableInNetworks].splice(0, this.isAdditional ? 4 : 5);
   }
 
   mounted() {
-    this.localCurrencyVisible = this.currencyController.getCurrencyVisible();
+    this.localCurrencyVisible = this.currency.getCurrencyVisible();
   }
 
   getImg(network: string) {
@@ -185,11 +183,13 @@ export default class CurrencyItem extends Vue {
   }
 
   openTokenPage() {
+    const { token, mainNetwork } = this.currency;
+
     this.$router.push({
       name: Components.Token,
       params: {
-        token: this.currencyInfo.token,
-        network: this.currencyInfo.mainNetwork,
+        token: token,
+        network: mainNetwork,
       },
     });
   }

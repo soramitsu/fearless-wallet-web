@@ -45,10 +45,10 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { WalletConnectionStatus } from '@/interfaces/connectionWallet';
 import Layout from './Layout.vue';
 import Logo from '@/components/Logo.vue';
 import Button from '@/components/Button.vue';
+import type { WalletConnectionStatus } from '@/interfaces/common';
 
 @Component({
   components: {

@@ -1,4 +1,4 @@
-import { Meta } from '@/interfaces/meta';
+import type { Meta } from '@/interfaces/common';
 import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 

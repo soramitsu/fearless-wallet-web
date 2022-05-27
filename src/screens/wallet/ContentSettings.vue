@@ -28,7 +28,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
-import type { TabWallet } from '@/interfaces/walletPage';
+import type { TabWallet } from '@/interfaces/common';
 import TabButton from '@/components/TabButton.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import SearchInput from '@/components/SearchInput.vue';

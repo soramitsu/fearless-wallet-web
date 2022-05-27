@@ -1,28 +1,42 @@
 import store from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { AssetsJson } from '@/store/networks/types';
-import { Currency, AvailableInNetworks } from '@/interfaces/currencies';
+import { AvailableInNetworks } from '@/interfaces/currencies';
 import { FPNumber } from '@/util/fp';
 import LocalStorageController from '@/controllers/localStorageController';
 
-export interface CurrencyInfo extends Currency {
-  totalCountTokens: number;
-  totalBalance: number;
+export interface Props {
+  mainNetwork: string;
+  token: string;
+  price: number;
+  usd24HoursChange: number;
+  availableInNetworks: AvailableInNetworks[];
 }
 
 export default class CurrencyController {
   private readonly lsCurrency = new LocalStorageController('currency');
-  private readonly currencyVisibleStorageName;
-  private currency;
+  private readonly currencyVisibleStorageName: string;
+  private readonly decimals: FPNumber;
+  private availableInNetworks: AvailableInNetworks[];
+  // public currency: Props;
+  public mainNetwork: string;
+  public token: string;
+  public price: number;
+  public usd24HoursChange: number;
 
-  constructor(currency: Currency) {
-    this.currency = currency;
+  constructor(currency: Props) {
+    // this.currency = currency;
+    this.mainNetwork = currency.mainNetwork;
+    this.token = currency.token;
+    this.price = currency.price;
+    this.usd24HoursChange = currency.usd24HoursChange;
+    this.availableInNetworks = currency.availableInNetworks;
+    this.decimals = this.getDecimals();
     this.currencyVisibleStorageName = `visible-${currency.token}`;
   }
 
   private calculateCost(count: FPNumber): FPNumber {
-    const { price } = this.currency;
-    const FPPrice = new FPNumber(price);
+    const FPPrice = new FPNumber(this.price);
 
     return count.mul(FPPrice);
   }
@@ -33,68 +47,67 @@ export default class CurrencyController {
     return assets.find(({ id }) => id === token)!;
   }
 
-  private getCountTokens(): FPNumber {
-    return this.currency.availableInNetworks.reduce((sum, { balance: { total } }) => {
-      const FPBalance = new FPNumber(total);
-
-      sum = sum.add(FPBalance);
-
-      return sum;
-    }, new FPNumber(0));
-  }
-
-  private getTotalBalance(): FPNumber {
-    const countTokens = this.getCountTokens();
-
-    return this.calculateCost(countTokens);
-  }
-
   private getDecimals(): FPNumber {
-    const { token } = this.currency;
-    const precision = this.getAssets(token)?.precision;
+    const precision = this.getAssets(this.token)?.precision ?? 0;
 
     return new FPNumber(10 ** +precision);
   }
 
-  public getCurrencyInfo(): CurrencyInfo {
-    const { availableInNetworks } = this.currency;
-    const decimals = this.getDecimals();
-    const updatedAvailableInNetworks: AvailableInNetworks[] = availableInNetworks.map(
+  private _getTotalCountTokens(): FPNumber {
+    return this.availableInNetworks
+      .reduce((sum, { balance: { total } }) => {
+        const FPBalance = new FPNumber(total);
+
+        sum = sum.add(FPBalance);
+
+        return sum;
+      }, new FPNumber(0))
+      .div(this.decimals);
+  }
+
+  public getAvailableInNetworks(): AvailableInNetworks[] {
+    const updatedAvailableInNetworks: AvailableInNetworks[] = this.availableInNetworks.map(
       ({ balance: { frozen, locked, reserved, total, transferable }, network }) => {
         return {
           network,
           balance: {
-            frozen: new FPNumber(frozen).div(decimals).toString(),
-            locked: new FPNumber(locked).div(decimals).toString(),
-            reserved: new FPNumber(reserved).div(decimals).toString(),
-            total: new FPNumber(total).div(decimals).toString(),
-            transferable: new FPNumber(transferable).div(decimals).toString(),
+            frozen: new FPNumber(frozen).div(this.decimals).toString(),
+            locked: new FPNumber(locked).div(this.decimals).toString(),
+            reserved: new FPNumber(reserved).div(this.decimals).toString(),
+            total: new FPNumber(total).div(this.decimals).toString(),
+            transferable: new FPNumber(transferable).div(this.decimals).toString(),
           },
         };
       }
     );
 
-    const totalCountTokens = this.getCountTokens().div(decimals).toNumber(12);
-    const totalBalance = this.getTotalBalance().div(decimals).toNumber(12);
+    return updatedAvailableInNetworks;
+  }
 
-    return { ...this.currency, availableInNetworks: updatedAvailableInNetworks, totalCountTokens, totalBalance };
+  public getTotalCountTokens(): number {
+    return this._getTotalCountTokens().toNumber();
+  }
+
+  public getTotalBalance(): number {
+    const countTokens = this._getTotalCountTokens();
+    const cost = this.calculateCost(countTokens);
+
+    return cost.toNumber();
   }
 
   public getCostOfTokens(count: number): number {
-    const FPCount = new FPNumber(count);
-
-    return this.calculateCost(FPCount).toNumber();
+    return this.calculateCost(new FPNumber(count)).toNumber();
   }
 
   public getBalanceInNetwork(_network: string): number {
-    const total = this.getCurrencyInfo().availableInNetworks.find(({ network }) => network === _network)!.balance.total;
+    const total = this.availableInNetworks.find(({ network }) => network === _network)?.balance.total ?? 0;
 
-    return this.calculateCost(new FPNumber(total)).toNumber();
+    return this.calculateCost(new FPNumber(total)).div(this.decimals).toNumber();
   }
 
   public getCountsTokensByPrice(cost: number): number {
     const FPCost = new FPNumber(cost);
-    const price = new FPNumber(this.currency.price);
+    const price = new FPNumber(this.price);
 
     return FPCost.div(price).toNumber();
   }

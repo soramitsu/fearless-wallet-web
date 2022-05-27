@@ -42,7 +42,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { DerivationPath } from '@/interfaces/connectionWallet';
+import type { DerivationPath } from '@/interfaces/common';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import AboveForm from '@/components/AboveForm.vue';
 import Input from '@/components/Input.vue';

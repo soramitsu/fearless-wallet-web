@@ -53,8 +53,8 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Networks } from '@/store/networks/types';
-import { Currency } from '@/interfaces/currencies';
 import { firstCharToUp } from '@/util/helpers';
+import { Currency } from '@/interfaces/currencies';
 import Loading from '@/components/Loading.vue';
 import Select from '@/components/Select.vue';
 import Input from '@/components/Input.vue';
@@ -62,7 +62,6 @@ import Popup from '@/components/Popup.vue';
 import ActivityForm from './ActivityForm.vue';
 import MaxButton from './MaxButton.vue';
 import SendingPopup from './SendingPopup.vue';
-import CurrencyController from '@/controllers/currencyController';
 
 @Component({
   components: {
@@ -90,9 +89,10 @@ export default class TeleportForm extends Vue {
   @Getter(NetworksGettersTypes.getNetworksInfo) networksInfo!: Networks;
 
   get buttonText() {
-    if (!this.currentCurrencyController) return '';
+    if (!this.currentCurrency) return '';
 
-    const { totalCountTokens, token } = this.currentCurrencyController.getCurrencyInfo();
+    const { token } = this.currentCurrency;
+    const totalCountTokens = this.currentCurrency.getTotalCountTokens();
 
     return +this.amount > totalCountTokens ? `Insufficient balance ${token.toUpperCase()}` : 'Teleport';
   }
@@ -101,16 +101,10 @@ export default class TeleportForm extends Vue {
     return this.currencies.find(({ token }) => token === this.selectedToken);
   }
 
-  get currentCurrencyController() {
-    if (!this.currentCurrency) return null;
-
-    return new CurrencyController(this.currentCurrency);
-  }
-
   get buttonDisabled() {
-    if (!this.currentCurrencyController) return true;
+    if (!this.currentCurrency) return true;
 
-    const { totalCountTokens } = this.currentCurrencyController.getCurrencyInfo();
+    const totalCountTokens = this.currentCurrency.getTotalCountTokens();
 
     return !(+this.amount > totalCountTokens)
       ? !(!!this.selectedToken && !!this.originalNetwork && !!this.destinationNetwork && !!this.amount)
@@ -138,9 +132,9 @@ export default class TeleportForm extends Vue {
   }
 
   setMaxValue() {
-    if (!this.currentCurrencyController) return;
+    if (!this.currentCurrency) return;
 
-    const { totalCountTokens } = this.currentCurrencyController.getCurrencyInfo();
+    const totalCountTokens = this.currentCurrency.getTotalCountTokens();
 
     this.amount = totalCountTokens.toString();
   }

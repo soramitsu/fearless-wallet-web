@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { Currency, Currencies } from '@/interfaces/currencies';
+import { Currencies, Currency } from '@/interfaces/currencies';
 import { Subscription } from 'rxjs';
 
 export type Nodes = {

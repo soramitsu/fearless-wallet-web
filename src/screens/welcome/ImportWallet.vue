@@ -45,7 +45,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch, VModel } from 'vue-property-decorator';
-import { TypeFiledForImport, DerivationPath } from '@/interfaces/connectionWallet';
+import type { DerivationPath, TypeFiledForImport } from '@/interfaces/common';
 import PopupWithSelect from '@/components/PopupWithSelect.vue';
 import Input from '@/components/Input.vue';
 

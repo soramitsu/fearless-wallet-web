@@ -12,6 +12,7 @@ export default class AccountController {
   private readonly lsAccount = new LocalStorageController('account');
   private readonly passwordLifeTime = 1000 * 60 * 60 * 24; // 24 hours
   private readonly passwordStorageName = 'password';
+  private readonly hideZeroBalanceStorageName = 'hide-zero-balance';
 
   private getAccountPasswordValue(): PasswordValue {
     return this.lsAccount.get(this.passwordStorageName) as PasswordValue;
@@ -63,5 +64,15 @@ export default class AccountController {
     const { dateCreated } = options;
 
     return Date.now() < +dateCreated + this.passwordLifeTime;
+  }
+
+  public getHideZeroBalanceValue(): boolean {
+    const lsVisible = this.lsAccount.get(this.hideZeroBalanceStorageName);
+
+    return lsVisible.value ?? false;
+  }
+
+  public setHideZeroBalanceValue(value: boolean): void {
+    this.lsAccount.set(this.hideZeroBalanceStorageName, value);
   }
 }

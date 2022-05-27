@@ -136,7 +136,6 @@ import TeleportForm from '../TeleportForm.vue';
 import BuyForm from '../BuyForm.vue';
 import SelectNetworkButton from '../SelectNetworkButton.vue';
 import PopupWithSelect from '@/components/PopupWithSelect.vue';
-import CurrencyController from '@/controllers/currencyController';
 
 @Component({
   components: {
@@ -200,12 +199,6 @@ export default class Token extends Vue {
     return this.currenciesForSelectedWallet.find(({ token }) => token.toLowerCase() === this.token.toLowerCase());
   }
 
-  get currentCurrencyController() {
-    if (!this.currentCurrency) return null;
-
-    return new CurrencyController(this.currentCurrency);
-  }
-
   get filteredHistory() {
     if (this.filterHistoryValue === 'all') return this.history;
 
@@ -229,9 +222,10 @@ export default class Token extends Vue {
   }
 
   get countTokensString() {
-    if (!this.currentCurrencyController) return '';
+    if (!this.currentCurrency) return '';
 
-    const { totalCountTokens, availableInNetworks } = this.currentCurrencyController.getCurrencyInfo();
+    const availableInNetworks = this.currentCurrency.getAvailableInNetworks();
+    const totalCountTokens = this.currentCurrency.getTotalCountTokens();
 
     if (this.selectedNetwork === 'All networks') return `${this.token.toUpperCase()} ${totalCountTokens.toFixed(4)}`;
 
@@ -242,13 +236,13 @@ export default class Token extends Vue {
   }
 
   get balanceInNetworkString() {
-    if (!this.currentCurrencyController) return '';
+    if (!this.currentCurrency) return '';
 
-    const { totalBalance } = this.currentCurrencyController.getCurrencyInfo();
+    const totalBalance = this.currentCurrency.getTotalBalance();
 
-    if (this.selectedNetwork === 'All networks') return `$ ${totalBalance.toFixed(2)}`;
+    if (this.selectedNetwork === 'All networks') return `$ ${formattedNumber(totalBalance)}`;
 
-    const total = this.currentCurrencyController.getBalanceInNetwork(this.selectedNetwork);
+    const total = this.currentCurrency.getBalanceInNetwork(this.selectedNetwork);
 
     return `$ ${formattedNumber(total)}`;
   }

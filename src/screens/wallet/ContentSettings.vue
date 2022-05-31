@@ -19,7 +19,7 @@
       </template>
     </div>
     <div v-if="isCurrenciesTab" class="settings-part">
-      <SearchInput v-model="filterValue" placeholder="Search" class="search" />
+      <SearchInput v-if="!showAssetsManagementForm" v-model="filterValue" placeholder="Search" class="search" />
 
       <CircleButton :iconName="iconName" backgroundColor="none" @click="toggleAssetsManagementVisible" />
     </div>

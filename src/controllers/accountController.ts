@@ -13,6 +13,7 @@ export default class AccountController {
   private readonly passwordLifeTime = 1000 * 60 * 60 * 24; // 24 hours
   private readonly passwordStorageName = 'password';
   private readonly hideZeroBalanceStorageName = 'hide-zero-balance';
+  private readonly subsequenceTokens = 'subsequence-tokens';
 
   private getAccountPasswordValue(): PasswordValue {
     return this.lsAccount.get(this.passwordStorageName) as PasswordValue;
@@ -74,5 +75,15 @@ export default class AccountController {
 
   public setHideZeroBalanceValue(value: boolean): void {
     this.lsAccount.set(this.hideZeroBalanceStorageName, value);
+  }
+
+  public getSubsequenceTokens(): string[] {
+    const subsequenceTokens = this.lsAccount.get(this.subsequenceTokens);
+
+    return subsequenceTokens.value?.split(',') ?? [];
+  }
+
+  public setSubsequenceTokens(value: string[]): void {
+    this.lsAccount.set(this.subsequenceTokens, value.join());
   }
 }

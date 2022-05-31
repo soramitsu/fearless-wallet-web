@@ -1,7 +1,7 @@
 <template>
   <div v-if="showCurrencyItem" class="currency-item">
     <div v-if="showAssetsManagementForm" class="drag-icon">
-      <s-icon name="basic-menu-24" />
+      <s-icon name="basic-menu-24" class="handle" />
     </div>
 
     <div class="img-container">
@@ -49,14 +49,14 @@
           iconName="send-gray"
           backgroundColor="black"
           class="button"
-          @click="toggleVisibleActivityForm('showSendForm', true, currency.currency)"
+          @click="toggleVisibleActivityForm('showSendForm', true, currency.getAllFields())"
         />
 
         <CircleButton
           iconName="receive-grey"
           backgroundColor="black"
           class="button"
-          @click="toggleVisibleActivityForm('showReceiveForm', true, currency.currency)"
+          @click="toggleVisibleActivityForm('showReceiveForm', true, currency.getAllFields())"
         />
 
         <CircleButton
@@ -137,7 +137,7 @@ export default class CurrencyItem extends Vue {
   get totalBalanceString() {
     const totalBalance = this.currency.getTotalBalance();
 
-    return `$${formattedNumber(totalBalance)}`;
+    return `$${formattedPrice(totalBalance)}`;
   }
 
   get priceString() {
@@ -308,6 +308,10 @@ export default class CurrencyItem extends Vue {
     width: 12px;
     margin-right: 3px;
     opacity: 0.5;
+
+    &:last-child {
+      margin-right: 0;
+    }
   }
 }
 </style>

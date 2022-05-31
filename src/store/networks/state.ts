@@ -8,6 +8,7 @@ export type State = {
   assets: AssetsJson[];
   currencies: Currencies;
   subscriptionsBalances: Subscription[];
+  allNetworksIsLoaded: boolean;
 };
 
 const state = (): State => {
@@ -17,6 +18,7 @@ const state = (): State => {
     assets: [],
     currencies: {},
     subscriptionsBalances: [],
+    allNetworksIsLoaded: false,
   };
 };
 

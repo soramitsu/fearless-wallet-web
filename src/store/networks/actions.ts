@@ -5,10 +5,10 @@ import { NetworkJson, Networks, AssetsJson, LoadNetworksInfo, LoadAssets, Tokens
 import { State } from './state';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import { formatBalance } from '@/util/balances';
-import { Currencies, MockCurrencies, Currency } from '@/interfaces/currencies';
+import { Currency } from '@/interfaces/currencies';
+import { getMockCurrencies } from '@/util/currenciesHelper';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-import keyring from '@polkadot/ui-keyring';
 import CurrencyController from '@/controllers/currencyController';
 
 export enum ActionTypes {
@@ -51,12 +51,13 @@ const actions: ActionTree<State, State> & Actions = {
       try {
         api.connect();
 
-        console.log(`%c${name.toUpperCase()}. API connection successful.`, 'background:green;color:#fff');
+        // console.log(`%c${name.toUpperCase()}. API connection successful.`, 'background:green;color:#fff');
       } catch (ex) {
         api.disconnect();
 
         console.log(`%c${name.toUpperCase()}. Connection to api failed.`, 'background:red;color:#fff');
       }
+
       return {
         name: networkName,
         provider,
@@ -69,14 +70,7 @@ const actions: ActionTree<State, State> & Actions = {
       };
     });
 
-    const currencies: Currencies = {};
-    const { substrate, ethereum } = getMockCurrencies(networks);
-
-    keyring.getAccounts().forEach(({ address }) => {
-      const { type } = keyring.getPair(address);
-
-      currencies[address] = type === 'ethereum' ? ethereum : substrate;
-    });
+    const currencies = getMockCurrencies(networks);
 
     commit(MutationTypes.SET_CURRENCIES, { currencies });
     commit(MutationTypes.SET_NETWORKS, { networks });
@@ -113,76 +107,65 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.SUBSCRIBE_TO_BALANCES]({ commit, state: { networks, tokensPrice } }, { accounts }) {
     console.log('accounts', accounts);
 
-    networks.map(async ({ api, subscriptionsBalances, isEthereumNetwork, name: networkName, assets }) => {
-      await api.isReadyOrError;
+    await Promise.allSettled(
+      networks.map(async ({ api, subscriptionsBalances, isEthereumNetwork, name: networkName, assets }) => {
+        await api.isReadyOrError;
 
-      try {
-        Object.entries(accounts).forEach(([walletAddress, { type }]) => {
-          // ethereum accounts only subscribe to the ethereum networks
-          if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
+        try {
+          Object.entries(accounts).forEach(([walletAddress, { type }]) => {
+            // ethereum accounts only subscribe to the ethereum networks
+            if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
 
-          // unsubscribing from previous subscriptions(case when we added a new wallet)
-          subscriptionsBalances?.[walletAddress]?.unsubscribe();
+            // unsubscribing from previous subscriptions(case when we added a new wallet)
+            subscriptionsBalances?.[walletAddress]?.unsubscribe();
 
-          const unsubscribe = api.rx.query.system.account(walletAddress).subscribe(async (result) => {
-            const data = (result as any).data;
-            const balance = formatBalance(data as AccountData);
-            const token = assets[0]?.assetId;
-            const price = tokensPrice[token]?.usd ?? 0;
-            const usd24HoursChange = tokensPrice[token]?.usd24HoursChange ?? 0;
+            const unsubscribe = api.rx.query.system.account(walletAddress).subscribe(async (result) => {
+              const data = (result as any).data;
+              const balance = formatBalance(data as AccountData);
+              const token = assets[0]?.assetId;
+              const price = tokensPrice[token]?.usd ?? 0;
+              const usd24HoursChange = tokensPrice[token]?.usd24HoursChange ?? 0;
 
-            const currency: Currency = new CurrencyController({
-              token,
-              mainNetwork: networkName,
-              price,
-              usd24HoursChange,
-              availableInNetworks: [
-                {
-                  network: networkName,
-                  balance,
-                },
-              ],
+              const currency: Currency = new CurrencyController({
+                token,
+                mainNetwork: networkName,
+                price,
+                usd24HoursChange,
+                availableInNetworks: [
+                  {
+                    network: networkName,
+                    balance,
+                  },
+                ],
+              });
+
+              commit(MutationTypes.UPDATE_CURRENCY, {
+                walletAddress,
+                currency,
+              });
             });
 
-            commit(MutationTypes.UPDATE_CURRENCY, {
+            commit(MutationTypes.SET_SUBSCRIPTIONS_BALANCES, {
+              networkName,
               walletAddress,
-              currency,
+              subscriptionsBalances: unsubscribe,
             });
           });
-
-          commit(MutationTypes.SET_SUBSCRIPTIONS_BALANCES, {
-            networkName,
-            walletAddress,
-            subscriptionsBalances: unsubscribe,
-          });
-        });
-      } catch (ex) {
-        console.log(
-          `
+        } catch (ex) {
+          console.log(
+            `
           Subscribe to ${networkName.toUpperCase()} failed
           ${ex}
           `
-        );
-      }
+          );
+        }
+      })
+    );
+
+    commit(MutationTypes.SET_ALL_NETWORKS_IS_LOADED, {
+      value: true,
     });
   },
 };
-
-function getMockCurrencies(networks: Networks): MockCurrencies {
-  const currencies: Currency[] = networks.map(({ name, assets }) => {
-    return new CurrencyController({
-      availableInNetworks: [],
-      mainNetwork: name,
-      price: 0,
-      token: assets[0]?.assetId,
-      usd24HoursChange: 0,
-    });
-  });
-
-  return {
-    substrate: currencies.filter(({ mainNetwork }) => !ETHEREUM_NETWORKS.includes(mainNetwork)),
-    ethereum: currencies.filter(({ mainNetwork }) => ETHEREUM_NETWORKS.includes(mainNetwork)),
-  };
-}
 
 export default actions;

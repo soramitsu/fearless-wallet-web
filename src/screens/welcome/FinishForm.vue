@@ -33,7 +33,7 @@
         iconName="file-dock"
         type="secondary"
         width="256px"
-        @click="openPage('https://t.me/sora_xor')"
+        @click="openPage('https://wiki.sora.org/master')"
       />
     </div>
   </div>

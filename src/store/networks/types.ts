@@ -109,6 +109,9 @@ export type UpdateCurrencyProps = {
 export type SetCurrenciesProps = {
   currencies: Currencies;
 };
+export type SetAllNetworksIsLoaded = {
+  value: boolean;
+};
 
 export type SetSubscriptionsBalancesProps = {
   walletAddress: string;

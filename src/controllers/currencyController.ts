@@ -18,21 +18,19 @@ export default class CurrencyController {
   private readonly currencyVisibleStorageName: string;
   private readonly decimals: FPNumber;
   private availableInNetworks: AvailableInNetworks[];
-  // public currency: Props;
   public mainNetwork: string;
   public token: string;
   public price: number;
   public usd24HoursChange: number;
 
-  constructor(currency: Props) {
-    // this.currency = currency;
-    this.mainNetwork = currency.mainNetwork;
-    this.token = currency.token;
-    this.price = currency.price;
-    this.usd24HoursChange = currency.usd24HoursChange;
-    this.availableInNetworks = currency.availableInNetworks;
+  constructor({ mainNetwork, token, price, usd24HoursChange, availableInNetworks }: Props) {
+    this.mainNetwork = mainNetwork;
+    this.token = token;
+    this.price = price;
+    this.usd24HoursChange = usd24HoursChange;
+    this.availableInNetworks = availableInNetworks;
     this.decimals = this.getDecimals();
-    this.currencyVisibleStorageName = `visible-${currency.token}`;
+    this.currencyVisibleStorageName = `visible-${token}`;
   }
 
   private calculateCost(count: FPNumber): FPNumber {
@@ -86,6 +84,16 @@ export default class CurrencyController {
 
   public getTotalCountTokens(): number {
     return this._getTotalCountTokens().toNumber();
+  }
+
+  public getAllFields(): Props {
+    return {
+      token: this.token,
+      mainNetwork: this.mainNetwork,
+      availableInNetworks: this.availableInNetworks,
+      price: this.price,
+      usd24HoursChange: this.usd24HoursChange,
+    };
   }
 
   public getTotalBalance(): number {

@@ -6,13 +6,15 @@ import { State } from './state';
 export enum GettersTypes {
   getNetworksInfo = 'getNetworksInfo',
   getAssetsInfo = 'getAssetsInfo',
-  getCurrenciesInfo = 'getCurrenciesInfo',
+  getCurrencies = 'getCurrencies',
+  getAllNetworksIsLoaded = 'getAllNetworksIsLoaded',
 }
 
 export type Getters = {
   [GettersTypes.getNetworksInfo](state: State, getters?: GetterTree<State, State> & Getters): Networks;
   [GettersTypes.getAssetsInfo](state: State, getters?: GetterTree<State, State> & Getters): AssetsJson[];
-  [GettersTypes.getCurrenciesInfo](state: State, getters?: GetterTree<State, State> & Getters): Currencies;
+  [GettersTypes.getCurrencies](state: State, getters?: GetterTree<State, State> & Getters): Currencies;
+  [GettersTypes.getAllNetworksIsLoaded](state: State, getters?: GetterTree<State, State> & Getters): boolean;
 };
 
 const getters: GetterTree<State, State> & Getters = {
@@ -22,8 +24,11 @@ const getters: GetterTree<State, State> & Getters = {
   getAssetsInfo({ assets }): AssetsJson[] {
     return assets;
   },
-  [GettersTypes.getCurrenciesInfo]({ currencies }): Currencies {
+  [GettersTypes.getCurrencies]({ currencies }): Currencies {
     return currencies;
+  },
+  [GettersTypes.getAllNetworksIsLoaded](state): boolean {
+    return state.allNetworksIsLoaded;
   },
 };
 

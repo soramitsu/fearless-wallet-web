@@ -171,7 +171,7 @@ export default class Token extends Vue {
   showSelectNetworkPopup = false;
 
   @Getter(NetworksGettersTypes.getNetworksInfo) networks!: NetworksType;
-  @Getter(NetworksGettersTypes.getCurrenciesInfo) currencies!: Currencies;
+  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get optionsNetworks() {
@@ -192,7 +192,10 @@ export default class Token extends Vue {
   }
 
   get currenciesForSelectedWallet() {
-    return this.currencies[this.selectedWallet.address] ?? [];
+    return [
+      ...(this.currencies[this.selectedWallet.address] ?? []),
+      ...(this.currencies[this.selectedWallet.ethereumAddress] ?? []),
+    ];
   }
 
   get currentCurrency() {

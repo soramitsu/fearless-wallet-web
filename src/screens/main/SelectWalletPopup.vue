@@ -52,7 +52,7 @@ import keyring from '@polkadot/ui-keyring';
 })
 export default class SelectWalletPopup extends Vue {
   @Getter(NetworksGettersTypes.getNetworksInfo) networksInfo!: Networks;
-  @Getter(NetworksGettersTypes.getCurrenciesInfo) currencies!: Currencies;
+  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
 

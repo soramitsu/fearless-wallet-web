@@ -71,15 +71,18 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Getter, Mutation } from 'vuex-class';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { Networks } from '@/store/networks/types';
+import { Networks, SetCurrenciesProps } from '@/store/networks/types';
+import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { getImgPathByNetworkName } from '@/util/imgPath';
+import { getCurrencies } from '@/util/currenciesHelper';
 import { firstCharToUp } from '@/util/helpers';
 import { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
+import { TMutation } from '@/interfaces/common';
 import type { TabWallet } from '@/interfaces/common';
 import Scroll from '@/components/Scroll.vue';
 import Corners from '@/components/Corners.vue';
@@ -113,6 +116,7 @@ export default class Wallet extends Vue {
   showAssetsManagementForm = false;
   hideZeroBalance = false;
   selectedCurrency!: Currency;
+  existSavedSequence = false;
   activeTabName: TabWallet = 'Currencies';
   showSendForm = false;
   showReceiveForm = false;
@@ -122,8 +126,10 @@ export default class Wallet extends Vue {
   filterValue = '';
 
   @Getter(NetworksGettersTypes.getNetworksInfo) networks!: Networks;
-  @Getter(NetworksGettersTypes.getCurrenciesInfo) currencies!: TCurrencies;
+  @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
+  @Getter(NetworksGettersTypes.getAllNetworksIsLoaded) allNetworksIsLoaded!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
 
   get currenciesForSelectedWallet() {
     const currencies = [
@@ -131,14 +137,17 @@ export default class Wallet extends Vue {
       ...(this.currencies[this.selectedWallet.ethereumAddress] ?? []),
     ];
 
-    return (
+    // at the first launch of the extension sort by balance
+    if (!this.existSavedSequence) {
       currencies.sort((currency1, currency2) => {
         const totalCountTokensOne = currency1.getTotalCountTokens();
         const totalCountTokensTwo = currency2.getTotalCountTokens();
 
         return totalCountTokensTwo - totalCountTokensOne;
-      }) ?? []
-    );
+      });
+    }
+
+    return currencies;
   }
 
   get filterCurrencies() {
@@ -190,8 +199,21 @@ export default class Wallet extends Vue {
     return this.optionsNetworks.filter(({ label }) => label.toLowerCase().includes(filter));
   }
 
+  @Watch('allNetworksIsLoaded')
+  setSubsequenceTokens() {
+    if (this.existSavedSequence) return;
+
+    const subsequence = this.currenciesForSelectedWallet.map(({ mainNetwork }) => mainNetwork);
+    const currencies = getCurrencies(this.currenciesForSelectedWallet, this.selectedWallet);
+
+    this.accountController.setSubsequenceTokens(subsequence);
+    this.setCurrencies({ currencies });
+    this.existSavedSequence = subsequence.length > 0;
+  }
+
   mounted() {
     this.hideZeroBalance = this.accountController.getHideZeroBalanceValue();
+    this.existSavedSequence = this.accountController.getSubsequenceTokens().length > 0;
   }
 
   toggleAssetsManagementFormVisible(value = true) {

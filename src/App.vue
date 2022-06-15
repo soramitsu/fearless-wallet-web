@@ -17,14 +17,14 @@ import NetworksController from '@/controllers/networksController';
 
 @Component
 export default class App extends Vue {
-  networksController = new NetworksController();
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
 
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
 
   async mounted() {
-    await Promise.all([this.networksController.loadNetworksInfo(), this.networksController.loadAssetsInfo()]);
-    await Promise.all([this.networksController.loadTokensPrice()]);
+    const { loadNetworksInfo, loadAssetsInfo, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
+    await Promise.all([loadNetworksInfo(), loadAssetsInfo()]);
+    await loadTokensPrice();
 
     let loadHistory = true;
 
@@ -34,7 +34,7 @@ export default class App extends Vue {
 
       if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
 
-      await this.networksController.subscribeToBalancesOfNetworks(accounts, loadHistory);
+      await subscribeToBalancesOfNetworks(accounts, loadHistory);
 
       loadHistory = false;
     });

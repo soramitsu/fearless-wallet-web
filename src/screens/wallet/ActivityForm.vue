@@ -1,5 +1,12 @@
 <template>
-  <AboveForm :blur="true" :header="header" :closeHandler="closeForm" class="activity-form">
+  <AboveForm
+    :blur="true"
+    :header="header"
+    :showBackIcon="showBackIcon"
+    :handlerBack="handlerBack"
+    :closeHandler="closeForm"
+    class="activity-form"
+  >
     <div class="activity-content">
       <slot></slot>
 
@@ -31,7 +38,9 @@ export default class ActivityForm extends Vue {
   @Prop(String) buttonText!: string;
   @Prop({ default: true }) showButton!: boolean;
   @Prop({ default: false }) buttonDisabled!: boolean;
+  @Prop({ default: false }) showBackIcon!: boolean;
   @Prop(Function) handlerButton!: VoidFunction;
+  @Prop(Function) handlerBack!: VoidFunction;
   @Prop(Function) closeForm!: VoidFunction;
 }
 </script>

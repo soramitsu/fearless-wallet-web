@@ -123,7 +123,7 @@ type FieldsComponent = 'passwordJson' | 'derivationPath';
   },
 })
 export default class Layout extends Vue {
-  accountController = new AccountController();
+  readonly accountController = new AccountController();
   nickname = '';
   json = '';
   mnemonic = '';

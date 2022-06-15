@@ -64,7 +64,7 @@
         </div>
 
         <Scroll>
-          <History :history="formattedHistory" :token="token" :filterHistoryValue="filterHistoryValue" />
+          <History :history="formattedHistory" :token="selectedToken" :filterHistoryValue="filterHistoryValue" />
         </Scroll>
       </div>
     </Corners>
@@ -72,8 +72,8 @@
     <SendForm
       v-if="showSendForm"
       :currencies="currenciesForSelectedWallet"
-      :selectedNetwork="selectedNetwork"
-      :token="token"
+      :_selectedNetwork="selectedNetwork"
+      :_selectedToken="selectedToken"
       :closeForm="toggleVisible.bind(null, 'showSendForm', false)"
     />
 
@@ -86,8 +86,8 @@
     <TeleportForm
       v-if="showTeleportForm"
       :currencies="currenciesForSelectedWallet"
-      :selectedNetwork="selectedNetwork"
-      :token="token"
+      :_originalNetwork="selectedNetwork"
+      :_selectedToken="selectedToken"
       :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
     />
 
@@ -138,7 +138,6 @@ import TeleportForm from '../TeleportForm.vue';
 import BuyForm from '../BuyForm.vue';
 import SelectNetworkButton from '../SelectNetworkButton.vue';
 import PopupWithSelect from '@/components/PopupWithSelect.vue';
-import NetworksController from '@/controllers/networksController';
 
 @Component({
   components: {
@@ -179,14 +178,11 @@ export default class Token extends Vue {
   @Getter(NetworksGettersTypes.getHistory) history!: THistory;
 
   get optionsNetworks() {
-    return [
-      { label: 'All networks', value: 'All networks', path: 'globus.svg' },
-      ...this.networks.map(({ name }) => ({
-        label: firstCharToUp(name),
-        value: name,
-        path: `networks/${getImgPathByNetworkName(name)}`,
-      })),
-    ];
+    return this.networks.map(({ name }) => ({
+      label: firstCharToUp(name),
+      value: name,
+      path: `networks/${getImgPathByNetworkName(name)}`,
+    }));
   }
 
   get filterOptionsNetworks() {
@@ -203,7 +199,9 @@ export default class Token extends Vue {
   }
 
   get currentCurrency() {
-    return this.currenciesForSelectedWallet.find(({ token }) => token.toLowerCase() === this.token.toLowerCase());
+    return this.currenciesForSelectedWallet.find(
+      ({ token }) => token.toLowerCase() === this.selectedToken.toLowerCase()
+    );
   }
 
   get formattedHistory() {
@@ -213,18 +211,26 @@ export default class Token extends Vue {
     const historyForNetwork = this.history[this.selectedNetwork];
     const historyForWalletAddress = historyForNetwork?.[addressByNetwork]?.nodes ?? [];
 
+    // TODO: fix
+    // Now the history hierarchy is as follows = network: { walletAddress: { history } }
+    // should become like this = network: { walletAddress: { token: { history } } }
+    // when non-native tokens are added, it needs to be fixed
+    if (this.selectedNetwork !== this.currentCurrency?.mainNetwork) {
+      return [];
+    }
+
     return historyForWalletAddress;
   }
 
   get tokenPriceString() {
-    return `1 ${this.token.toUpperCase()} = $${formattedPrice(this.price ?? 0)}`;
+    return `1 ${this.selectedToken.toUpperCase()} = $${formattedPrice(this.price ?? 0)}`;
   }
 
   get selectedNetwork() {
     return this.$route.params.network;
   }
 
-  get token() {
+  get selectedToken() {
     return this.$route.params.token;
   }
 
@@ -236,22 +242,14 @@ export default class Token extends Vue {
     if (!this.currentCurrency) return '';
 
     const availableInNetworks = this.currentCurrency.getAvailableInNetworks();
-    const totalCountTokens = this.currentCurrency.getTotalCountTokens();
-
-    if (this.selectedNetwork === 'All networks') return `${this.token.toUpperCase()} ${totalCountTokens.toFixed(4)}`;
-
     const balance = availableInNetworks.find(({ network }) => network === this.selectedNetwork)?.balance;
     const total = formattedNumber(+(balance?.total ?? 0), 4);
 
-    return `${this.token.toUpperCase()} ${+total}`;
+    return `${this.selectedToken.toUpperCase()} ${+total}`;
   }
 
   get balanceInNetworkString() {
     if (!this.currentCurrency) return '';
-
-    const totalBalance = this.currentCurrency.getTotalBalance();
-
-    if (this.selectedNetwork === 'All networks') return `$ ${formattedNumber(totalBalance)}`;
 
     const total = this.currentCurrency.getBalanceInNetwork(this.selectedNetwork);
 
@@ -268,7 +266,7 @@ export default class Token extends Vue {
     this.$router.push({
       name: Components.Token,
       params: {
-        token: this.token,
+        token: this.selectedToken,
         network: network,
       },
     });

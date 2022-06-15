@@ -33,7 +33,7 @@ import Draggable from 'vuedraggable';
   },
 })
 export default class Currencies extends Vue {
-  accountController = new AccountController();
+  readonly accountController = new AccountController();
 
   @Prop(Array) currencies!: Currency[];
   @Prop(String) selectedNetwork!: string;

@@ -38,7 +38,7 @@ export default class History extends Vue {
   get filteredHistory() {
     if (this.filterHistoryValue === 'all') return this.history;
 
-    const field = this.filterHistoryValue as 'transfer' | 'reward';
+    const field = this.filterHistoryValue as 'transfer' | 'reward' | 'extrinsic';
     const filteredHistory = this.history.filter((historyItem) => historyItem[field] !== null);
 
     return filteredHistory;

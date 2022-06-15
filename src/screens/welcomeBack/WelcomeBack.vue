@@ -30,7 +30,7 @@ import BorderButton from '@/components/BorderButton.vue';
   },
 })
 export default class WelcomeBack extends Vue {
-  accountController = new AccountController();
+  readonly accountController = new AccountController();
   password = '';
   isError = false;
 

@@ -12,6 +12,7 @@
         :readonly="readonly"
         :show-password="showPassword"
         :style="inputStyle"
+        @input="$emit('change', $event)"
       />
     </div>
   </Corners>
@@ -22,13 +23,14 @@ import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
 import Corners from '@/components/Corners.vue';
 
 type Size = 'small' | 'medium' | 'big';
-type Type = 'text' | 'textarea' | 'text-file';
+type Type = 'text' | 'textarea' | 'text-file' | 'number';
 type Style = 'default' | 'pink';
+
 @Component({
   components: { Corners },
 })
 export default class Input extends Vue {
-  @VModel({ type: String }) vModel!: string;
+  @VModel({ type: String || Number }) vModel!: string | number;
   @Prop(String) placeholder!: string;
   @Prop(String) accept!: string;
   @Prop(Number) height!: number;

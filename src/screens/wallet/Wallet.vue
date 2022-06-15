@@ -56,9 +56,9 @@
 
     <SendForm
       v-if="showSendForm"
-      :currencies="filterCurrencies"
-      :token="selectedCurrency.token"
-      :selectedNetwork="selectedCurrency.mainNetwork"
+      :currencies="currenciesForSelectedWallet"
+      :_selectedToken="selectedCurrency.token"
+      :_selectedNetwork="selectedCurrency.mainNetwork"
       :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false)"
     />
 
@@ -115,7 +115,11 @@ export default class Wallet extends Vue {
   readonly accountController = new AccountController();
   showAssetsManagementForm = false;
   hideZeroBalance = false;
-  selectedCurrency!: Currency;
+  selectedCurrency!: {
+    mainNetwork: string;
+    token: string;
+  };
+
   existSavedSequence = false;
   activeTabName: TabWallet = 'Currencies';
   showSendForm = false;
@@ -243,7 +247,11 @@ export default class Wallet extends Vue {
   toggleVisibleActivityForm(field: 'showSendForm' | 'showReceiveForm', value = true, currency: Currency) {
     this[field] = value;
 
-    if (currency) this.selectedCurrency = currency;
+    if (currency)
+      this.selectedCurrency = {
+        mainNetwork: currency.mainNetwork,
+        token: currency.token,
+      };
   }
 
   toggleSelectedNetwork(value: string) {

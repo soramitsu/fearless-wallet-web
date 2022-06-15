@@ -57,7 +57,7 @@ export default class ReceiveForm extends Vue {
   }
 
   mounted() {
-    this.network = this.selectedNetwork !== 'All networks' ? this.selectedNetwork : '';
+    this.network = this.selectedNetwork;
   }
 
   copyAddress() {

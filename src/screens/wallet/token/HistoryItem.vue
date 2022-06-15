@@ -55,18 +55,18 @@ export default class HistoryItem extends Vue {
 
       const sign = typeTransaction === 'to' ? '+' : '-';
 
-      return `${sign}${CurrencyController.getPrecisionValue(this.token, amount)}`;
+      return `${sign}${CurrencyController.getAroundValue(this.token, amount)}`;
     }
 
     if (this.type === 'reward') {
       const { amount } = this.historyItem[this.type];
 
-      return `+${CurrencyController.getPrecisionValue(this.token, amount)}`;
+      return `+${CurrencyController.getAroundValue(this.token, amount)}`;
     }
 
     const { fee } = this.historyItem[this.type];
 
-    return `-${CurrencyController.getPrecisionValue(this.token, fee)}`;
+    return `-${CurrencyController.getAroundValue(this.token, fee)}`;
   }
 
   get formattedId() {

@@ -67,13 +67,13 @@
         />
       </template>
 
-      <Switcher v-if="showAssetsManagementForm" v-model="currencyVisible" />
+      <Switcher v-else v-model="currencyVisible" />
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/util/numbers';
@@ -88,7 +88,7 @@ import Switcher from '@/components/Switcher.vue';
   },
 })
 export default class CurrencyItem extends Vue {
-  localCurrencyVisible = false;
+  currencyVisible = true;
 
   @Prop(Object) currency!: Currency;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
@@ -96,15 +96,6 @@ export default class CurrencyItem extends Vue {
 
   get showCurrencyItem() {
     return !this.showAssetsManagementForm ? this.currencyVisible : true;
-  }
-
-  get currencyVisible() {
-    return this.localCurrencyVisible;
-  }
-
-  set currencyVisible(value: boolean) {
-    this.currency.setCurrencyVisible(value);
-    this.localCurrencyVisible = value;
   }
 
   get changePriceClasses() {
@@ -164,8 +155,13 @@ export default class CurrencyItem extends Vue {
     return [...this.availableInNetworks].splice(0, this.isAdditional ? 4 : 5);
   }
 
+  @Watch('currencyVisible')
+  filter(value: boolean) {
+    this.currency.setCurrencyVisible(value);
+  }
+
   mounted() {
-    this.localCurrencyVisible = this.currency.getCurrencyVisible();
+    this.currencyVisible = this.currency.getCurrencyVisible();
   }
 
   getImg(network: string) {

@@ -62,6 +62,7 @@ export default class PasswordForm extends Vue {
   @Watch('pass1')
   changePassword(pass1: string) {
     if (pass1.length < 5) this.pass2 = '';
+    else if (pass1 === this.pass2) this.setPassword({ password: pass1 });
   }
 
   @Watch('pass2')

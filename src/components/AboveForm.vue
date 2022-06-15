@@ -2,7 +2,10 @@
   <div :class="backgroundClasses">
     <div class="above-form">
       <div class="header-content">
-        <div class="logo">
+        <div v-if="showBackIcon" class="icon icon-back" @click="handlerBack">
+          <img src="@/assets/chevron-left.svg" />
+        </div>
+        <div v-else class="icon">
           <img src="@/assets/fw-logo.svg" />
         </div>
         <div class="header">{{ header }}</div>
@@ -29,8 +32,10 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 export default class AboveForm extends Vue {
   @Prop({ default: '' }) header!: string;
   @Prop({ default: false }) showAcceptIcon!: boolean;
+  @Prop({ default: false }) showBackIcon!: boolean;
   @Prop({ default: false }) blur!: boolean;
   @Prop({ default: () => () => null }) saveChanges!: VoidFunction;
+  @Prop({ default: () => () => null }) handlerBack!: VoidFunction;
   @Prop(Function) closeHandler!: VoidFunction;
 
   get backgroundClasses() {
@@ -120,11 +125,20 @@ export default class AboveForm extends Vue {
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .logo {
+    .icon {
       margin-left: 5px;
       display: flex;
       flex-direction: column;
       justify-content: center;
+    }
+
+    .icon-back {
+      opacity: 0.8;
+
+      &:hover {
+        cursor: pointer;
+        opacity: 1;
+      }
     }
 
     .header {

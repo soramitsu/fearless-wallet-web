@@ -10,6 +10,7 @@ export interface Meta {
 export type TabWallet = 'Currencies' | 'NFTs';
 export type WalletConnectionStatus = 'isCreateWallet' | 'isImportWallet' | '';
 export type TypeFiledForImport = 'rawSeed' | 'json' | 'mnemonic';
+export type FilterHistory = 'all' | 'transfer' | 'reward';
 
 export interface Substrate$Ethereum {
   value: string;
@@ -20,3 +21,6 @@ export interface DerivationPath {
   substrate: Substrate$Ethereum;
   ethereum: Substrate$Ethereum;
 }
+
+export type WalletAddress = string;
+export type NetworkName = string;

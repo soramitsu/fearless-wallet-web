@@ -117,7 +117,7 @@ export default class SendForm extends Vue {
   @Prop(String) selectedNetwork!: string;
   @Prop(String) token!: string;
   @Prop(Array) currencies!: Currency[];
-  @Getter(ApiGettersTypes.getNetworksInfo) networksInfo!: Networks;
+  @Getter(ApiGettersTypes.getNetworks) networks!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get fee() {
@@ -160,7 +160,7 @@ export default class SendForm extends Vue {
   }
 
   get optionsNetwork() {
-    return this.networksInfo.map(({ name }) => {
+    return this.networks.map(({ name }) => {
       return { label: firstCharToUp(name), value: name };
     });
   }

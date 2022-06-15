@@ -349,16 +349,16 @@ export default class Layout extends Vue {
     } = this.derivationPath;
     const suriSubstrate = `${this.mnemonic || this.rawSeed}${substrateDP}`;
 
-    // We only add a derivation path if we entered a mnemonic
-    const suriEthereum = this.mnemonic
-      ? `${this.mnemonic}${ethereumDP || ETHEREUM_DEFAULT_DERIVATION_PATH}`
-      : this.rawSeed;
+    // We create an ETH account only if we entered the mnemonic
+    if (this.mnemonic) {
+      const suriEthereum = `${this.mnemonic}${ethereumDP || ETHEREUM_DEFAULT_DERIVATION_PATH}`;
 
-    const {
-      pair: { address },
-    } = keyring.addUri(suriEthereum, '', meta, ethereumKeyPair);
+      const {
+        pair: { address },
+      } = keyring.addUri(suriEthereum, '', meta, ethereumKeyPair);
 
-    meta.ethereumAddress = address;
+      meta.ethereumAddress = address;
+    }
 
     keyring.addUri(suriSubstrate, '', meta, substrateKeyPair);
 

@@ -63,6 +63,7 @@ export default class TotalBalance extends Vue {
     font-weight: 800;
     font-size: 22px;
     line-height: 28px;
+    max-width: 220px;
   }
 
   .percent {

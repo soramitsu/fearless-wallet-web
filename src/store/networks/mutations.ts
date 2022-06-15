@@ -1,4 +1,3 @@
-import { Currencies } from './../../interfaces/currencies';
 import { MutationTree } from 'vuex';
 import {
   UpdateCurrencyProps,
@@ -8,6 +7,7 @@ import {
   SetSubscriptionsBalancesProps,
   SetCurrenciesProps,
   SetAllNetworksIsLoaded,
+  SetHistoryProps,
 } from './types';
 import { State } from './state';
 
@@ -17,21 +17,20 @@ export enum MutationTypes {
   SET_TOKENS_PRICE = 'SET_TOKENS_PRICE',
   UPDATE_CURRENCY = 'UPDATE_CURRENCY',
   SET_CURRENCIES = 'SET_CURRENCIES',
+  SET_HISTORY = 'SET_HISTORY',
   SET_ALL_NETWORKS_IS_LOADED = 'SET_ALL_NETWORKS_IS_LOADED',
   SET_SUBSCRIPTIONS_BALANCES = 'SET_SUBSCRIPTIONS_BALANCES',
 }
 
 export type Mutations = {
-  [MutationTypes.SET_NETWORKS](state: State, { networks }: SetNetworksStatusProps): void;
-  [MutationTypes.SET_ASSETS](state: State, { assets }: SetAssetsProps): void;
-  [MutationTypes.SET_TOKENS_PRICE](state: State, { tokensPrice }: SetTokensPriceProps): void;
-  [MutationTypes.UPDATE_CURRENCY](state: State, { walletAddress, currency }: UpdateCurrencyProps): void;
-  [MutationTypes.SET_CURRENCIES](state: State, { currencies }: SetCurrenciesProps): void;
-  [MutationTypes.SET_ALL_NETWORKS_IS_LOADED](state: State, { value }: SetAllNetworksIsLoaded): void;
-  [MutationTypes.SET_SUBSCRIPTIONS_BALANCES](
-    state: State,
-    { subscriptionsBalances, networkName, walletAddress }: SetSubscriptionsBalancesProps
-  ): void;
+  [MutationTypes.SET_NETWORKS](state: State, props: SetNetworksStatusProps): void;
+  [MutationTypes.SET_ASSETS](state: State, props: SetAssetsProps): void;
+  [MutationTypes.SET_TOKENS_PRICE](state: State, props: SetTokensPriceProps): void;
+  [MutationTypes.UPDATE_CURRENCY](state: State, props: UpdateCurrencyProps): void;
+  [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
+  [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
+  [MutationTypes.SET_ALL_NETWORKS_IS_LOADED](state: State, props: SetAllNetworksIsLoaded): void;
+  [MutationTypes.SET_SUBSCRIPTIONS_BALANCES](state: State, props: SetSubscriptionsBalancesProps): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -62,6 +61,23 @@ const mutations: MutationTree<State> & Mutations = {
   },
   [MutationTypes.SET_CURRENCIES](state, { currencies }) {
     state.currencies = { ...state.currencies, ...currencies };
+  },
+  [MutationTypes.SET_HISTORY](state, { history: { nodes, pageInfo }, networkName, walletAddress }) {
+    const oldHistoryForWalletAddress = state.history[networkName]?.[walletAddress];
+    const startCursor = oldHistoryForWalletAddress?.pageInfo?.startCursor || pageInfo?.startCursor;
+    const endCursor = pageInfo?.endCursor;
+
+    const newHistoryForWalletAddress = {
+      nodes: [...(oldHistoryForWalletAddress?.nodes ?? []), ...(nodes ?? [])],
+      pageInfo: {
+        startCursor,
+        endCursor,
+      },
+    };
+
+    const historyForNetwork = { ...(state.history[networkName] ?? []), [walletAddress]: newHistoryForWalletAddress };
+
+    state.history = { ...state.history, [networkName]: historyForNetwork };
   },
   [MutationTypes.SET_ALL_NETWORKS_IS_LOADED](state, { value }) {
     state.allNetworksIsLoaded = value;

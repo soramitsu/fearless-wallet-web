@@ -44,10 +44,10 @@ export default class ReceiveForm extends Vue {
   @Prop(String) selectedNetwork!: string;
   @Prop(Function) closeForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getNetworksInfo) networksInfo!: Networks;
+  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
 
   get optionsNetwork() {
-    return this.networksInfo.map(({ name }) => ({ label: firstCharToUp(name), value: name }));
+    return this.networks.map(({ name }) => ({ label: firstCharToUp(name), value: name }));
   }
 
   get address() {

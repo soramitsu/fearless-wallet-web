@@ -36,7 +36,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { SelectedWallet, SetSelectedWalletProps } from '@/store/accounts/types';
-import { Networks } from '@/store/networks/types';
 import { Components } from '@/router/routes';
 import { Currencies } from '@/interfaces/currencies';
 import { TMutation } from '@/interfaces/common';
@@ -51,7 +50,6 @@ import keyring from '@polkadot/ui-keyring';
   },
 })
 export default class SelectWalletPopup extends Vue {
-  @Getter(NetworksGettersTypes.getNetworksInfo) networksInfo!: Networks;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;

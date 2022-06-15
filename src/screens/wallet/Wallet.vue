@@ -125,13 +125,14 @@ export default class Wallet extends Vue {
   popupFilterValue = '';
   filterValue = '';
 
-  @Getter(NetworksGettersTypes.getNetworksInfo) networks!: Networks;
+  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
   @Getter(NetworksGettersTypes.getAllNetworksIsLoaded) allNetworksIsLoaded!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
 
   get currenciesForSelectedWallet() {
+    const subsequenceTokens = this.accountController.getSubsequenceTokens();
     const currencies = [
       ...(this.currencies[this.selectedWallet.address] ?? []),
       ...(this.currencies[this.selectedWallet.ethereumAddress] ?? []),
@@ -143,7 +144,21 @@ export default class Wallet extends Vue {
         const totalCountTokensOne = currency1.getTotalCountTokens();
         const totalCountTokensTwo = currency2.getTotalCountTokens();
 
+        if (totalCountTokensOne || totalCountTokensTwo) {
+          const totalBalanceOne = currency1.getTotalBalance();
+          const totalBalanceTwo = currency2.getTotalBalance();
+
+          return totalBalanceTwo - totalBalanceOne;
+        }
+
         return totalCountTokensTwo - totalCountTokensOne;
+      });
+    } else {
+      currencies.sort(({ mainNetwork: mainNetwork1 }, { mainNetwork: mainNetwork2 }) => {
+        const index1 = subsequenceTokens.indexOf(mainNetwork1);
+        const index2 = subsequenceTokens.indexOf(mainNetwork2);
+
+        return index1 - index2;
       });
     }
 
@@ -208,7 +223,7 @@ export default class Wallet extends Vue {
 
     this.accountController.setSubsequenceTokens(subsequence);
     this.setCurrencies({ currencies });
-    this.existSavedSequence = subsequence.length > 0;
+    this.existSavedSequence = true;
   }
 
   mounted() {

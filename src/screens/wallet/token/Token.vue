@@ -64,7 +64,7 @@
         </div>
 
         <Scroll>
-          <History :history="filteredHistory" :availableInNetworks="currencies.availableInNetworks" />
+          <History :history="formattedHistory" :token="token" :filterHistoryValue="filterHistoryValue" />
         </Scroll>
       </div>
     </Corners>
@@ -113,7 +113,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { HistoryItem, Currencies } from '@/interfaces/currencies';
+import { Currencies } from '@/interfaces/currencies';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -123,7 +123,9 @@ import { Components } from '@/router/routes';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { firstCharToUp } from '@/util/helpers';
 import { formattedNumber, formattedPrice } from '@/util/numbers';
-import historyMock from '@/mocks/history';
+import { History as THistory } from '@/interfaces/history';
+import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
+import type { FilterHistory } from '@/interfaces/common';
 import BorderButton from '@/components/BorderButton.vue';
 import Scroll from '@/components/Scroll.vue';
 import Dropdown from '@/components/Dropdown.vue';
@@ -136,6 +138,7 @@ import TeleportForm from '../TeleportForm.vue';
 import BuyForm from '../BuyForm.vue';
 import SelectNetworkButton from '../SelectNetworkButton.vue';
 import PopupWithSelect from '@/components/PopupWithSelect.vue';
+import NetworksController from '@/controllers/networksController';
 
 @Component({
   components: {
@@ -159,9 +162,9 @@ export default class Token extends Vue {
     { label: 'All', value: 'all' },
     { label: 'Transfer', value: 'transfer' },
     { label: 'Reward', value: 'reward' },
+    { label: 'Extrinsic', value: 'extrinsic' },
   ];
 
-  history: HistoryItem[] = historyMock;
   filterHistoryValue = 'all';
   popupFilterValue = '';
   showSendForm = false;
@@ -170,9 +173,10 @@ export default class Token extends Vue {
   showBuyForm = false;
   showSelectNetworkPopup = false;
 
-  @Getter(NetworksGettersTypes.getNetworksInfo) networks!: NetworksType;
+  @Getter(NetworksGettersTypes.getNetworks) networks!: NetworksType;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.getHistory) history!: THistory;
 
   get optionsNetworks() {
     return [
@@ -202,10 +206,14 @@ export default class Token extends Vue {
     return this.currenciesForSelectedWallet.find(({ token }) => token.toLowerCase() === this.token.toLowerCase());
   }
 
-  get filteredHistory() {
-    if (this.filterHistoryValue === 'all') return this.history;
+  get formattedHistory() {
+    const { address, ethereumAddress } = this.selectedWallet;
+    const isEthereumNetwork = ETHEREUM_NETWORKS.includes(this.selectedNetwork);
+    const addressByNetwork = isEthereumNetwork ? ethereumAddress : address;
+    const historyForNetwork = this.history[this.selectedNetwork];
+    const historyForWalletAddress = historyForNetwork?.[addressByNetwork]?.nodes ?? [];
 
-    return this.history.filter(({ type }) => type === this.filterHistoryValue);
+    return historyForWalletAddress;
   }
 
   get tokenPriceString() {
@@ -274,7 +282,7 @@ export default class Token extends Vue {
     targetElement.style.zIndex = this.showSelectNetworkPopup ? '200' : '0';
   }
 
-  filterHistoryValueUpdate(name: string) {
+  filterHistoryValueUpdate(name: FilterHistory) {
     this.filterHistoryValue = name;
   }
 

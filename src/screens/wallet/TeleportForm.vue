@@ -86,7 +86,7 @@ export default class TeleportForm extends Vue {
   @Prop(String) selectedNetwork!: string;
   @Prop(String) token!: string;
   @Prop(Array) currencies!: Currency[];
-  @Getter(NetworksGettersTypes.getNetworksInfo) networksInfo!: Networks;
+  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
 
   get buttonText() {
     if (!this.currentCurrency) return '';
@@ -123,7 +123,7 @@ export default class TeleportForm extends Vue {
   }
 
   get optionsNetwork() {
-    return this.networksInfo.map(({ name }) => ({ label: firstCharToUp(name), value: name }));
+    return this.networks.map(({ name }) => ({ label: firstCharToUp(name), value: name }));
   }
 
   mounted() {

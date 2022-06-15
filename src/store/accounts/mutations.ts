@@ -10,8 +10,8 @@ export enum MutationTypes {
 }
 
 export type Mutations = {
-  [MutationTypes.SET_PASSWORD](state: State, { password }: SetPasswordProps): void;
-  [MutationTypes.SET_SELECTED_WALLET](state: State, { selectedWalletAddress }: SetSelectedWalletProps): void;
+  [MutationTypes.SET_PASSWORD](state: State, props: SetPasswordProps): void;
+  [MutationTypes.SET_SELECTED_WALLET](state: State, props: SetSelectedWalletProps): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {

@@ -24,7 +24,9 @@ export default class App extends Vue {
 
   async mounted() {
     await Promise.all([this.networksController.loadNetworksInfo(), this.networksController.loadAssetsInfo()]);
-    await this.networksController.loadTokensPrice();
+    await Promise.all([this.networksController.loadTokensPrice()]);
+
+    let loadHistory = true;
 
     this.subscribeAccounts = keyring.accounts.subject;
     this.subscribeAccounts.subscribe(async (accounts) => {
@@ -32,10 +34,9 @@ export default class App extends Vue {
 
       if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
 
-      // accounts in keyring are added not in one operation (two at a time), but in turn
-      if (Object.keys(accounts).length % 2 === 0) {
-        await this.networksController.subscribeToBalancesOfNetworks(accounts);
-      }
+      await this.networksController.subscribeToBalancesOfNetworks(accounts, loadHistory);
+
+      loadHistory = false;
     });
   }
 

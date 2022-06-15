@@ -1,9 +1,9 @@
 import store from '@/store';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { AssetsJson } from '@/store/networks/types';
+import LocalStorageController from '@/controllers/localStorageController';
 import { AvailableInNetworks } from '@/interfaces/currencies';
 import { FPNumber } from '@/util/fp';
-import LocalStorageController from '@/controllers/localStorageController';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { AssetsJson } from '@/store/networks/types';
 
 export interface Props {
   mainNetwork: string;
@@ -11,6 +11,7 @@ export interface Props {
   price: number;
   usd24HoursChange: number;
   availableInNetworks: AvailableInNetworks[];
+  precision: number;
 }
 
 export default class CurrencyController {
@@ -22,13 +23,15 @@ export default class CurrencyController {
   public token: string;
   public price: number;
   public usd24HoursChange: number;
+  public precision: number;
 
-  constructor({ mainNetwork, token, price, usd24HoursChange, availableInNetworks }: Props) {
+  constructor({ mainNetwork, token, price, usd24HoursChange, availableInNetworks, precision }: Props) {
     this.mainNetwork = mainNetwork;
     this.token = token;
     this.price = price;
     this.usd24HoursChange = usd24HoursChange;
     this.availableInNetworks = availableInNetworks;
+    this.precision = precision;
     this.decimals = this.getDecimals();
     this.currencyVisibleStorageName = `visible-${token}`;
   }
@@ -39,16 +42,8 @@ export default class CurrencyController {
     return count.mul(FPPrice);
   }
 
-  private getAssets(token: string): AssetsJson {
-    const assets: AssetsJson[] = store.getters[NetworksGettersTypes.getAssetsInfo];
-
-    return assets.find(({ id }) => id === token)!;
-  }
-
   private getDecimals(): FPNumber {
-    const precision = this.getAssets(this.token)?.precision ?? 0;
-
-    return new FPNumber(10 ** +precision);
+    return new FPNumber(10 ** this.precision);
   }
 
   private _getTotalCountTokens(): FPNumber {
@@ -93,6 +88,7 @@ export default class CurrencyController {
       availableInNetworks: this.availableInNetworks,
       price: this.price,
       usd24HoursChange: this.usd24HoursChange,
+      precision: this.precision,
     };
   }
 
@@ -128,5 +124,18 @@ export default class CurrencyController {
 
   public setCurrencyVisible(value: boolean): void {
     this.lsCurrency.set(this.currencyVisibleStorageName, value, {}, { saveDateCreated: false });
+  }
+
+  private static getAssets(token: string): AssetsJson {
+    const assets: AssetsJson[] = store.getters[NetworksGettersTypes.getAssetsInfo];
+
+    return assets.find(({ id }) => id === token)!;
+  }
+
+  public static getPrecisionValue(token: string, value: string): number {
+    const precision = CurrencyController.getAssets(token)?.precision ?? 0;
+    const decimals = new FPNumber(10 ** +precision);
+
+    return new FPNumber(value).div(decimals).toNumber();
   }
 }

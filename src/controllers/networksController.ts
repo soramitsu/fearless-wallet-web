@@ -13,11 +13,15 @@ export default class NetworksController {
     'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v2/chains/assets_dev.json';
 
   private static getNetworks(): Networks {
-    return store.getters[NetworksGettersTypes.getNetworksInfo];
+    return store.getters[NetworksGettersTypes.getNetworks];
+  }
+
+  public async loadHistory(): Promise<void> {
+    await store.dispatch(NetworksActionTypes.LOAD_HISTORY);
   }
 
   public async loadNetworksInfo(): Promise<void> {
-    await store.dispatch(NetworksActionTypes.LOAD_NETWORKS_INFO, { url: this.networksUrl });
+    await store.dispatch(NetworksActionTypes.LOAD_NETWORKS, { url: this.networksUrl });
   }
 
   public async loadAssetsInfo(): Promise<void> {
@@ -28,8 +32,8 @@ export default class NetworksController {
     await store.dispatch(NetworksActionTypes.LOAD_TOKENS_PRICE);
   }
 
-  public async subscribeToBalancesOfNetworks(accounts: SubjectInfo): Promise<void> {
-    await store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts });
+  public async subscribeToBalancesOfNetworks(accounts: SubjectInfo, loadHistory: boolean): Promise<void> {
+    await store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, loadHistory });
   }
 
   public static formatAddress(address: string, networkName: string): string {

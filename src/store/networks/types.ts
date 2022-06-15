@@ -1,6 +1,9 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { Currencies, Currency } from '@/interfaces/currencies';
+import { HistoryItem } from '@/interfaces/history';
+import { WalletAddress } from '@/interfaces/common';
 import { Subscription } from 'rxjs';
+import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
 export type Nodes = {
   url: string;
@@ -18,18 +21,16 @@ type Types = {
   name: string;
 };
 
-type ExternalApiElement = {
+interface ExternalApiElement {
   url: string;
   type: string;
-};
+}
 
-type Explorer = {
+interface Explorer extends ExternalApiElement {
   types: string[];
-  type: string;
-  url: string;
-};
+}
 
-type ExternalApi = {
+export type ExternalApi = {
   staking?: ExternalApiElement;
   history?: ExternalApiElement;
   crowdloans?: ExternalApiElement;
@@ -49,8 +50,6 @@ export type NetworkJson = {
   options?: string[];
 };
 
-type WalletAddress = string;
-
 type Network = {
   name: string;
   api: ApiPromise;
@@ -59,6 +58,7 @@ type Network = {
   assets: Assets[];
   addressPrefix: number;
   isEthereumNetwork: boolean;
+  externalApi: ExternalApi;
   subscriptionsBalances?: Record<WalletAddress, Subscription>;
 };
 
@@ -109,6 +109,13 @@ export type UpdateCurrencyProps = {
 export type SetCurrenciesProps = {
   currencies: Currencies;
 };
+
+export type SetHistoryProps = {
+  history: HistoryItem;
+  walletAddress: string;
+  networkName: string;
+};
+
 export type SetAllNetworksIsLoaded = {
   value: boolean;
 };
@@ -128,4 +135,14 @@ export type LoadNetworksInfo = {
 export type LoadAssets = {
   url: string;
   autoConnectMs: number;
+};
+
+export type LoadHistory = {
+  historyExternalApi: ExternalApiElement;
+  walletAddress: string;
+};
+
+export type SubscribeToBalances = {
+  accounts: SubjectInfo;
+  loadHistory: boolean;
 };

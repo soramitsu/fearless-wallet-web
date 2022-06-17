@@ -1,4 +1,17 @@
 :root {
   --extension-width: 560px;
   --extension-height: 640px;
+  --default-border-radius: 8px;
+  --pink-lavender-color: #bb77ff;
+  --pink-purple-color: rgba(119, 0, 238, 0.25);
+  --pink-color: #EE0077;
+  --error-color: #ee7700;
+  --default-background-color: rgba(255, 255, 255, 0.1);
+
+  --big-clip-path-left-top-and-right-bottom: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+  --big-clip-path-left-top: polygon(20px 0, 100% 0, 100% calc(100% - 20px), 100% 100%, 0 100%, 0 20px);
+
+  --medium-clip-path-left-top-and-right-bottom: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  --medium-clip-path-left-top: polygon(8px 0, 100% 0, 100% calc(100% - 8px), 100% 100%, 0 100%, 0 8px);
+
 }

@@ -52,7 +52,7 @@ type Network = {
   provider: WsProvider;
   nodes: Nodes[];
   assets: Assets[];
-  prefix: number;
+  addressPrefix: number;
   isActive: boolean;
   isEthereumNetwork: boolean;
 };

@@ -3,7 +3,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { MutationTypes, Mutations } from './mutations';
 import { FullNetwork, Networks } from './types';
 import { State } from './state';
-import { ETHEREUM_NETWORKS } from '../../consts/ethereumNetworks';
+import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 
 export enum ActionTypes {
   LOAD_NETWORKS_INFO = 'LOAD_NETWORKS_INFO',
@@ -27,8 +27,8 @@ const actions: ActionTree<State, State> & Actions = {
 
     const networksInfo: Networks = networks.reduce((accumulator, { nodes, name, assets, addressPrefix }) => {
       let isActive = false;
-      const isEthereumNetwork = ETHEREUM_NETWORKS.includes(name);
-
+      const networkName = name.toLocaleLowerCase();
+      const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
       const url = name === 'Astar' ? nodes[1].url : nodes[0].url;
 
       const provider = new WsProvider(url, autoConnectMs as number);
@@ -48,12 +48,12 @@ const actions: ActionTree<State, State> & Actions = {
 
       return {
         ...accumulator,
-        [name]: {
+        [networkName]: {
           provider,
           api,
           nodes,
           assets,
-          prefix: addressPrefix,
+          addressPrefix,
           isActive,
           isEthereumNetwork,
         },

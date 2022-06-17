@@ -1,14 +1,26 @@
 import { RouteConfig } from 'vue-router';
-import WelcomePage from '../screens/welcomePage/WelcomePage.vue';
-import MainPage from '../screens/mainPage/MainPage.vue';
-import WelcomeBack from '../screens/welcomeBack/WelcomeBack.vue';
-import AccountController from '../controllers/accountController';
+import Welcome from '@/screens/welcome/Welcome.vue';
+import Wallet from '@/screens/wallet/Wallet.vue';
+import Crowdloans from '@/screens/crowdloans/Crowdloans.vue';
+import Dex from '@/screens/dex/Dex.vue';
+import Staking from '@/screens/staking/Staking.vue';
+import History from '@/screens/history/History.vue';
+import Token from '@/screens/wallet/token/Token.vue';
+import Main from '@/screens/main/Main.vue';
+import WelcomeBack from '@/screens/welcomeBack/WelcomeBack.vue';
+import AccountController from '@/controllers/accountController';
 import keyring from '@polkadot/ui-keyring';
 
 export enum Components {
-  WelcomePage = 'WelcomePage',
-  MainPage = 'MainPage',
+  Welcome = 'Welcome',
   WelcomeBack = 'WelcomeBack',
+  Main = 'Main',
+  Wallet = 'Wallet',
+  Crowdloans = 'Crowdloans',
+  DEX = 'DEX',
+  Staking = 'Staking',
+  History = 'History',
+  Token = 'Token',
 }
 
 const accountController = new AccountController();
@@ -19,22 +31,59 @@ const redirectToWelcomeBack = () => isSavedPassword() && !isCorrectPasswordAge()
 
 const routes: Array<RouteConfig> = [
   {
-    path: '/welcome-page',
-    name: Components.WelcomePage,
-    component: WelcomePage,
+    path: '/welcome',
+    name: Components.Welcome,
+    component: Welcome,
     beforeEnter: (to, from, next) => {
       if (redirectToWelcomeBack()) next({ name: Components.WelcomeBack });
-      else if (haveAccounts()) next({ name: Components.MainPage });
       else next();
     },
   },
   {
-    path: '/main-page',
-    name: Components.MainPage,
-    component: MainPage,
+    path: '/main',
+    name: Components.Main,
+    component: Main,
+    children: [
+      {
+        path: '',
+        beforeEnter: (to, from, next) => {
+          next({ name: Components.Wallet });
+        },
+      },
+      {
+        path: 'wallet',
+        name: Components.Wallet,
+        component: Wallet,
+      },
+      {
+        path: ':network/:token',
+        name: Components.Token,
+        component: Token,
+      },
+      {
+        path: 'crowdloans',
+        name: Components.Crowdloans,
+        component: Crowdloans,
+      },
+      {
+        path: 'staking',
+        name: Components.Staking,
+        component: Staking,
+      },
+      {
+        path: 'dex',
+        name: Components.DEX,
+        component: Dex,
+      },
+      {
+        path: 'history',
+        name: Components.History,
+        component: History,
+      },
+    ],
     beforeEnter: (to, from, next) => {
       if (redirectToWelcomeBack()) next({ name: Components.WelcomeBack });
-      else if (!haveAccounts()) next({ name: Components.WelcomePage });
+      else if (!haveAccounts()) next({ name: Components.Welcome });
       else next();
     },
   },
@@ -43,14 +92,14 @@ const routes: Array<RouteConfig> = [
     name: Components.WelcomeBack,
     component: WelcomeBack,
     beforeEnter: (to, from, next) => {
-      if (!isSavedPassword()) next({ name: Components.WelcomePage });
-      else if (isCorrectPasswordAge()) next({ name: Components.MainPage });
+      if (!isSavedPassword()) next({ name: Components.Welcome });
+      else if (isCorrectPasswordAge()) next({ name: Components.Wallet });
       else next();
     },
   },
   {
     path: '/*',
-    redirect: () => (haveAccounts() ? { name: Components.MainPage } : { name: Components.WelcomePage }),
+    redirect: () => (haveAccounts() ? { name: Components.Wallet } : { name: Components.Welcome }),
   },
 ];
 

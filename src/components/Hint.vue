@@ -1,8 +1,6 @@
 <template>
   <div class="hint">
-    <div class="notifications-icon">
-      <s-icon :name="icon" />
-    </div>
+    <img :src="img" class="notifications-icon" />
     <div class="info-text">
       {{ text }}
     </div>
@@ -12,22 +10,15 @@
 <script lang="ts">
 import { Vue, Prop, Component } from 'vue-property-decorator';
 
-type IconType = 'notification' | 'warning';
+type IconNameType = 'notification' | 'warning';
 
 @Component
-export default class extends Vue {
-  @Prop(String) iconType!: IconType;
+export default class Hint extends Vue {
+  @Prop(String) iconName!: IconNameType;
   @Prop(String) text!: string;
 
-  get icon() {
-    switch (this.iconType) {
-      case 'notification':
-        return 'notifications-info-24';
-      case 'warning':
-        return 'notifications-alert-triangle-24';
-      default:
-        return 'notifications-info-24';
-    }
+  get img() {
+    return require(`@/assets/${this.iconName}.svg`);
   }
 }
 </script>

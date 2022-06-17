@@ -7,26 +7,29 @@
         errorDescriptions="Incorrect password"
         placeholder="Enter password"
         :isError="isError"
+        :showPassword="true"
         :maxlength="25"
       />
 
-      <s-button class="button" type="primary" border-radius="mini" :disabled="disabled" @click="unlock">
-        Unlock
-      </s-button>
+      <BorderButton text="Unlock" size="big" class="button" :disabled="disabled" @click="unlock" />
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import AccountController from '../../controllers/accountController';
-import ValidatedInput from '../../components/ValidatedInput.vue';
-import { Components } from '../../router/routes';
+import { Components } from '@/router/routes';
+import AccountController from '@/controllers/accountController';
+import ValidatedInput from '@/components/ValidatedInput.vue';
+import BorderButton from '@/components/BorderButton.vue';
 
 @Component({
-  components: { ValidatedInput },
+  components: {
+    ValidatedInput,
+    BorderButton,
+  },
 })
-export default class extends Vue {
+export default class WelcomeBack extends Vue {
   accountController = new AccountController();
   password = '';
   isError = false;
@@ -43,7 +46,7 @@ export default class extends Vue {
   unlock() {
     if (this.accountController.isSamePassword(this.password)) {
       this.accountController.updatedPasswordDateCreated();
-      this.$router.push({ name: Components.MainPage });
+      this.$router.push({ name: Components.Wallet });
     } else {
       this.isError = true;
     }
@@ -57,6 +60,7 @@ export default class extends Vue {
 
   .text {
     font-size: 25px;
+    margin-bottom: 15px;
   }
 
   .input {
@@ -64,6 +68,7 @@ export default class extends Vue {
   }
 
   .button {
+    margin-top: 15px;
     width: 100%;
   }
 }

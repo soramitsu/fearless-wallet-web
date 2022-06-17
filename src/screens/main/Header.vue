@@ -1,0 +1,170 @@
+<template>
+  <div class="header">
+    <div class="header-part" :ref="walletNameRef">
+      <Logo size="small" />
+
+      <div class="wallet-name-block" @click="toggleSelectWalletPopupVisible">
+        <div class="wallet-name">{{ name }}</div>
+
+        <Rotate :isActive="showSelectWalletPopup">
+          <s-icon name="chevron-bottom-16" />
+        </Rotate>
+      </div>
+    </div>
+    <div class="header-part">
+      <CircleButton iconName="expand" backgroundColor="light-black" class="button-margin" @click="fullScreen" />
+
+      <CircleButton iconName="lock" backgroundColor="light-black" class="button-margin" @click="lock" />
+
+      <div class="background-ellipse button-margin">
+        <div :class="statusConnectedClasses"></div>
+        {{ statusConnectedText }}
+      </div>
+
+      <CircleButton iconName="settings" class="button-margin" backgroundColor="none" @click="openSettings" />
+    </div>
+
+    <SelectWalletPopup v-if="showSelectWalletPopup" @close="toggleSelectWalletPopupVisible" />
+  </div>
+</template>
+
+<script lang="ts">
+import { Component, Vue } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { SelectedWallet } from '@/store/accounts/types';
+import { Components } from '@/router/routes';
+import AccountController from '@/controllers/accountController';
+import Logo from '@/components/Logo.vue';
+import CircleButton from '@/components/CircleButton.vue';
+import Rotate from '@/components/Rotate.vue';
+import SelectWalletPopup from './SelectWalletPopup.vue';
+
+@Component({
+  components: {
+    Logo,
+    CircleButton,
+    Rotate,
+    SelectWalletPopup,
+  },
+})
+export default class Header extends Vue {
+  walletNameRef = 'walletName';
+  accountController = new AccountController();
+  showSelectWalletPopup = false;
+
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get targetElement() {
+    return this.$refs[this.walletNameRef] as HTMLElement;
+  }
+
+  get name() {
+    return this.selectedWallet.name;
+  }
+
+  get statusConnectedClasses() {
+    return ['connected', 'success-connected'];
+  }
+
+  get statusConnectedText() {
+    return Date.now() ? 'Connected' : 'Not connected';
+  }
+
+  toggleSelectWalletPopupVisible() {
+    this.showSelectWalletPopup = !this.showSelectWalletPopup;
+
+    if (this.showSelectWalletPopup) {
+      this.targetElement.style.zIndex = '200';
+    } else {
+      this.targetElement.style.zIndex = '0';
+    }
+  }
+
+  fullScreen() {
+    alert(`fullScreen`);
+  }
+
+  lock() {
+    this.accountController.updatedPasswordDateCreated(0);
+    this.$router.push({ name: Components.WelcomeBack });
+  }
+
+  openSettings() {
+    alert(`settings`);
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+.header {
+  display: flex;
+  justify-content: space-between;
+  height: 48px;
+  margin-bottom: 16px;
+
+  i {
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  .s-icon-arrows-arrows-diagonals-bltr-24 {
+    font-size: 18px !important;
+  }
+
+  .header-part {
+    display: flex;
+    align-items: center;
+
+    .wallet-name-block {
+      display: flex;
+      align-items: center;
+
+      &:hover {
+        cursor: pointer;
+      }
+
+      .wallet-name {
+        display: flex;
+        font-weight: 700;
+        font-size: 24px;
+        margin: 0 5px 0 10px;
+        align-items: center;
+      }
+    }
+
+    .s-icon-chevron-bottom-16 {
+      margin-top: 5px;
+    }
+
+    .button-margin {
+      margin-left: 5px;
+    }
+
+    .background-ellipse {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 32px;
+      padding: 0 12px;
+      font-size: 12px;
+      border-radius: 20px;
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  .connected {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+
+  .success-connected {
+    background-color: #00ee77;
+  }
+
+  .fail-connected {
+    background-color: #ee7700;
+  }
+}
+</style>

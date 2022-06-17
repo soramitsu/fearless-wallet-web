@@ -1,9 +1,10 @@
-import store from '../store';
-import { GettersTypes as ApiGettersTypes } from '../store/api/getters';
-import { ActionTypes as ApiActionTypes } from '../store/api/actions';
-import { MutationTypes as ApiMutationTypes } from '../store/api/mutations';
-import { Networks, SetNetworkStatusMutation } from '../store/api/types';
-import { formatBalance } from '../util/balances';
+import store from '@/store';
+import { GettersTypes as ApiGettersTypes } from '@/store/api/getters';
+import { ActionTypes as ApiActionTypes } from '@/store/api/actions';
+import { MutationTypes as ApiMutationTypes } from '@/store/api/mutations';
+import { Networks, SetNetworkStatusMutation } from '@/store/api/types';
+import { formatBalance } from '@/util/balances';
+import { decodeAddress, encodeAddress } from '@polkadot/util-crypto';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 
@@ -11,7 +12,7 @@ export default class NetworksController {
   private readonly url =
     'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.1/chains/chains_dev.json';
 
-  private getNetworks(): Networks {
+  private static getNetworks(): Networks {
     return store.getters[ApiGettersTypes.getNetworksInfo];
   }
 
@@ -19,15 +20,17 @@ export default class NetworksController {
     store.commit(ApiMutationTypes.SET_NETWORK_STATUS, props);
   }
 
-  async loadNetworksInfo(): Promise<void> {
+  public async loadNetworksInfo(): Promise<void> {
     await store.dispatch(ApiActionTypes.LOAD_NETWORKS_INFO, { url: this.url });
   }
 
-  async subscribeToNetworks(accounts: SubjectInfo): Promise<void> {
-    console.log('accounts', accounts);
-    console.log('networks', this.getNetworks());
+  public async subscribeToNetworks(accounts: SubjectInfo): Promise<void> {
+    const networks = NetworksController.getNetworks();
 
-    for (const [netName, { api, isEthereumNetwork }] of Object.entries(this.getNetworks())) {
+    console.log('accounts', accounts);
+    console.log('networks', networks);
+
+    for (const [netName, { api, isEthereumNetwork }] of Object.entries(networks)) {
       await api.isReady;
 
       try {
@@ -63,5 +66,12 @@ export default class NetworksController {
         );
       }
     }
+  }
+
+  public static formatAddress(address: string, network: string): string {
+    const publicKey = decodeAddress(address, false);
+    const prefix = this.getNetworks()[network].addressPrefix;
+
+    return encodeAddress(publicKey, prefix);
   }
 }

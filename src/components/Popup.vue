@@ -1,26 +1,89 @@
 <template>
-  <div class="popup-background">
-    <div class="popup-content">
-      <div class="header">
-        <div class="button"></div>
-        <div class="header-text">{{ header }}</div>
-        <s-button type="link" class="button" @click="handlerClose">
+  <div :class="popupBackgroundClasses">
+    <div :class="popupContainerClasses" :style="popupContainerStyle">
+      <div v-if="showHeader" class="header">
+        <SearchInput v-if="showSearch" v-model="filterValue" placeholder="Search in networks" class="search" />
+
+        <template v-else>
+          <div class="button"></div>
+          <div class="header-text">{{ headerText }}</div>
+        </template>
+
+        <s-button type="link" class="button" @click="close">
           <s-icon name="basic-close-24" />
         </s-button>
       </div>
 
-      <slot></slot>
+      <Scroll>
+        <div class="content">
+          <slot></slot>
+        </div>
+      </Scroll>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import Scroll from './Scroll.vue';
+import SearchInput from './SearchInput.vue';
 
-@Component
-export default class extends Vue {
+type HorizontalPlacement = 'left' | 'center' | 'right';
+type VerticalPlacement = 'top' | 'center' | 'bottom';
+
+@Component({
+  components: { Scroll, SearchInput },
+})
+export default class Popup extends Vue {
+  filterValue = '';
+
   @Prop(Function) handlerClose!: VoidFunction;
-  @Prop({ default: '' }) header!: string;
+  @Prop(Function) handlerFilter!: (value: string) => void;
+  @Prop(Number) top!: number;
+  @Prop(Number) left!: number;
+  @Prop({ default: true }) showHeader!: boolean;
+  @Prop({ default: '' }) headerText!: string;
+  @Prop({ default: false }) showSearch!: boolean;
+  @Prop({ default: false }) staticHeight!: boolean;
+  @Prop({ default: 'center' }) horizontalPlacement!: HorizontalPlacement;
+  @Prop({ default: 'center' }) verticalPlacement!: VerticalPlacement;
+
+  get popupBackgroundClasses() {
+    return [
+      'popup-background',
+      `popup-background-horizontal-placement-${this.horizontalPlacement}`,
+      `popup-background-vertical-placement-${this.verticalPlacement}`,
+    ];
+  }
+
+  get popupContainerClasses() {
+    return [
+      'popup-container',
+      {
+        'static-height': this.staticHeight,
+      },
+    ];
+  }
+
+  get popupContainerStyle() {
+    const styles: Record<string, string> = {};
+
+    if (this.top) styles.top = `${this.top}px`;
+
+    if (this.left) styles.left = `${this.left}px`;
+
+    return styles;
+  }
+
+  @Watch('filterValue')
+  filter(value: string) {
+    this.handlerFilter(value);
+  }
+
+  close() {
+    this.handlerFilter('');
+    this.handlerClose();
+  }
 }
 </script>
 
@@ -28,25 +91,49 @@ export default class extends Vue {
 .popup-background {
   height: var(--extension-height);
   width: var(--extension-width);
+  border-radius: var(--default-border-radius);
   display: flex;
-  justify-content: center;
+  align-items: center;
   position: absolute;
   top: 0;
+  left: 0;
   background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+  z-index: 199;
+  padding: 16px;
+  animation: opacity 0.3s;
 
-  .popup-content {
+  @keyframes opacity {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  .popup-container {
     display: flex;
-    align-items: center;
     flex-direction: column;
-    margin: auto;
+    position: relative;
+    top: 0;
     min-height: 100px;
-    min-width: 300px;
-    max-height: 600px;
-    max-width: 500px;
-    clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+    min-width: 280px;
+    max-height: 390px;
+    max-width: 480px;
     background-color: #111111;
-    border-radius: 8px;
-    padding: 20px 20px 30px;
+    clip-path: var(--big-clip-path-left-top-and-right-bottom);
+    border-radius: var(--default-border-radius);
+    padding: 20px 0 30px;
+  }
+
+  .static-height {
+    height: 390px;
+  }
+
+  .content {
+    width: 100%;
+    height: 100%;
   }
 
   .header {
@@ -56,12 +143,18 @@ export default class extends Vue {
     width: 100%;
     height: 25px;
     margin-bottom: 15px;
-  }
+    padding-left: 16px;
+    padding-right: 22px;
 
-  .header-text {
-    font-weight: 700;
-    font-size: 18px;
-    color: rgba(255, 255, 255, 0.75);
+    .header-text {
+      font-weight: 700;
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    .search {
+      width: 300px;
+    }
   }
 
   .s-icon-basic-close-24 {
@@ -72,5 +165,29 @@ export default class extends Vue {
     padding: 0;
     width: 20px;
   }
+}
+
+.popup-background-horizontal-placement-left {
+  justify-content: left;
+}
+
+.popup-background-horizontal-placement-center {
+  justify-content: center;
+}
+
+.popup-background-horizontal-placement-right {
+  justify-content: right;
+}
+
+.popup-background-vertical-placement-top {
+  align-items: flex-start;
+}
+
+.popup-background-vertical-placement-center {
+  align-items: center;
+}
+
+.popup-background-vertical-placement-bottom {
+  align-items: flex-end;
 }
 </style>

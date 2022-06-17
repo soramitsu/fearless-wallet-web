@@ -1,6 +1,5 @@
-import LocalStorage from '../util/localStorage';
-import { Hash } from '../util/hash';
-import { bool } from '@polkadot/types-codec';
+import LocalStorageController from '@/controllers/localStorageController';
+import { Hash } from '@/util/hash';
 
 interface PasswordValue {
   value: string;
@@ -8,15 +7,14 @@ interface PasswordValue {
 }
 
 export default class AccountController {
-  private postfix = 'sora';
-  private radix = 2;
-  private lsAccount = new LocalStorage('account');
-  private passwordLifeTime = 1000 * 60 * 60 * 24; // 24 hours
+  private readonly postfix = 'sora';
+  private readonly radix = 2;
+  private readonly lsAccount = new LocalStorageController('account');
+  private readonly passwordLifeTime = 1000 * 60 * 60 * 24; // 24 hours
+  private readonly passwordStorageName = 'password';
 
   private getAccountPasswordValue(): PasswordValue {
-    const accountPasswordValue = this.lsAccount.get('password');
-
-    return accountPasswordValue ? JSON.parse(accountPasswordValue) : {};
+    return this.lsAccount.get(this.passwordStorageName) as PasswordValue;
   }
 
   private getPasswordHash(password: string): string {
@@ -25,21 +23,23 @@ export default class AccountController {
     return `${password}${salt}${this.postfix}`;
   }
 
-  savePassword(password: string): void {
+  public savePassword(password: string): void {
     const hashPasswordString = this.getPasswordHash(password);
     const hashPassword = Hash.sha256(hashPasswordString);
 
-    this.lsAccount.set('password', hashPassword, {}, { saveDateCreated: true });
+    this.lsAccount.set(this.passwordStorageName, hashPassword, {}, { saveDateCreated: true });
   }
 
-  updatedPasswordDateCreated(): void {
+  public updatedPasswordDateCreated(date?: number): void {
     const { value, options } = this.getAccountPasswordValue();
     const opt = options ?? {};
 
-    if (value) this.lsAccount.set('password', value, opt, { saveDateCreated: true });
+    if (date !== undefined) opt.dateCreated = date.toString();
+
+    if (value) this.lsAccount.set(this.passwordStorageName, value, opt, { saveDateCreated: date === undefined });
   }
 
-  isSamePassword(password: string): boolean {
+  public isSamePassword(password: string): boolean {
     const { value } = this.getAccountPasswordValue();
 
     if (value === undefined) return false;
@@ -49,13 +49,13 @@ export default class AccountController {
     return Hash.isSameAs(hashPasswordString, value);
   }
 
-  isSavedPassword(): boolean {
+  public isSavedPassword(): boolean {
     const { value } = this.getAccountPasswordValue();
 
     return value !== undefined;
   }
 
-  isCorrectPasswordAge(): boolean {
+  public isCorrectPasswordAge(): boolean {
     const { options } = this.getAccountPasswordValue();
 
     if (!options) return false;

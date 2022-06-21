@@ -4,4 +4,6 @@
 
 // test mnemonic 2: caught choose dream clean client strike demand toast height caught laugh stamp
 
+// test mnemonic 3: wrong napkin author fabric what detail limb empty room ceiling horror pond
+
 // test private key 1: 0xab427ec0f8b00001393e5b9e1de1da960ee1c2eaef27fdb5b708927b218fae9b

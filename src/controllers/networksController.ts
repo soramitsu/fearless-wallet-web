@@ -10,10 +10,6 @@ export default class NetworksController {
     return store.getters[NetworksGettersTypes.getNetworks];
   }
 
-  public async loadHistory(): Promise<void> {
-    await store.dispatch(NetworksActionTypes.LOAD_HISTORY);
-  }
-
   public static async loadNetworksInfo(): Promise<void> {
     const url = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/v2/chains/chains.json';
 
@@ -41,5 +37,15 @@ export default class NetworksController {
     const prefix = network?.addressPrefix;
 
     return encodeAddress(publicKey, prefix);
+  }
+
+  public static validateAddress(address: string): boolean {
+    try {
+      decodeAddress(address, false);
+
+      return true;
+    } catch {
+      return false;
+    }
   }
 }

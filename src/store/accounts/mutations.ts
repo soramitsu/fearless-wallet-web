@@ -19,14 +19,13 @@ const mutations: MutationTree<State> & Mutations = {
     state.password = password;
   },
   [MutationTypes.SET_SELECTED_WALLET](state, { selectedWalletAddress }) {
-    const { meta, type } = keyring.getPair(selectedWalletAddress);
+    const { meta } = keyring.getPair(selectedWalletAddress);
     const { name, ethereumAddress } = getMetaTyped(meta);
 
     state.selectedWallet = {
       address: selectedWalletAddress,
       ethereumAddress,
       name,
-      type,
     };
   },
 };

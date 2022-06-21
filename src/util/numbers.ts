@@ -3,7 +3,7 @@ export function formattedNumber(number: number, decimalsValue = 2, fixedValue = 
   const roundValue = Math.round(decimals * number) / decimals;
 
   // if roundValue is equal 0 and number is not equal 0, return origin number
-  if (roundValue === 0 && number !== 0) return number.toString();
+  if (roundValue === 0 && number >= 0.000000001) return number.toFixed(9);
 
   return fixedValue && roundValue !== 0 ? roundValue.toFixed(decimalsValue) : roundValue.toString();
 }

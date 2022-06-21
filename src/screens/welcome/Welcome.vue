@@ -78,7 +78,7 @@ export default class Welcome extends Vue {
 .welcome-page {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: $default-height-page;
 
   .first-page {
     display: flex;

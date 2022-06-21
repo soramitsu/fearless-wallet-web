@@ -4,7 +4,7 @@
       class="send-form"
       header="Send Funds"
       :buttonText="buttonText"
-      :handlerButton="send"
+      :handlerButton="handlerButton"
       :showBackIcon="showBackIcon"
       :handlerBack="handlerBack"
       :closeForm="closeForm"
@@ -22,23 +22,15 @@
             <MaxButton class="max-button-amount" @click="setMaxValue" />
             <MaxButton v-show="!isReadonlyValueInput" class="max-button-value" @click="setMaxValue" />
 
-            <Input
-              v-model="amount"
-              placeholder="Amount"
-              size="big"
-              styleInput="pink"
-              type="number"
-              @change="changeAmount"
-            />
+            <FloatInput v-model="amount" placeholder="Amount" size="big" styleInput="pink" @change="changeAmount" />
 
             <img src="@/assets/equals.svg" />
 
-            <Input
+            <FloatInput
               v-model="value"
               placeholder="Value"
               size="big"
               styleInput="pink"
-              type="number"
               :readonly="isReadonlyValueInput"
               @change="changeValue"
             />
@@ -62,7 +54,7 @@
           </div>
         </template>
         <template v-else-if="step === 2">
-          <div class="row direction">
+          <div class="row direction-column">
             <Input v-model="selectedWallet.name" placeholder="From" size="big" :readonly="true" />
 
             <s-icon name="arrows-arrow-right-24" />
@@ -75,23 +67,21 @@
               <div class="summary-label">Summary</div>
               <div class="summary-row">
                 <div class="name">Coins</div>
-                <div class="right-column">
+                <div class="column">
                   <div>{{ amountString }}</div>
                   <div class="sub-value">{{ valueString }}</div>
                 </div>
               </div>
               <div class="summary-row">
                 <div class="name">Fee</div>
-                <div class="right-column">
+                <div class="column">
                   <div>{{ partialFeeString }}</div>
-                  <div class="sub-value">{{ maxPartialFeeString }}</div>
                 </div>
               </div>
               <div class="summary-row">
                 <div class="name">Total</div>
-                <div class="right-column">
+                <div class="column">
                   <div>{{ totalString }}</div>
-                  <div class="sub-value">{{ maxTotalString }}</div>
                 </div>
               </div>
             </div>
@@ -123,7 +113,9 @@ import { Networks } from '@/store/networks/types';
 import { firstCharToUp } from '@/util/helpers';
 import { Currency } from '@/interfaces/currencies';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
+import NetworksController from '@/controllers/networksController';
 import Input from '@/components/Input.vue';
+import FloatInput from '@/components/FloatInput.vue';
 import Select from '@/components/Select.vue';
 import Corners from '@/components/Corners.vue';
 import ActivityForm from './ActivityForm.vue';
@@ -138,18 +130,19 @@ import MaxButton from './MaxButton.vue';
     SendingPopup,
     Corners,
     MaxButton,
+    FloatInput,
   },
 })
 export default class SendForm extends Vue {
+  isValidCountTokens = true;
   showSendingPopup = false;
   sendingPopupLoading = false;
-  isValidCountTokens = false;
+  partialFee = 0;
   selectedNetwork = '';
   selectedToken = '';
   recipient = '';
   amount = '';
   value = '';
-  partialFee: number | undefined;
   step = 1;
 
   @Prop(Function) closeForm!: VoidFunction;
@@ -171,20 +164,10 @@ export default class SendForm extends Vue {
     return `${this.partialFee} ${this.selectedTokenUpper}`;
   }
 
-  get maxPartialFeeString() {
-    return `max fee: ${this.partialFee} ${this.selectedTokenUpper}`;
-  }
-
   get totalString() {
-    const total = +this.amount + (this.partialFee ?? 0);
+    const total = this.currentCurrency?.addNumbers([+this.amount, this.partialFee]);
 
     return `${total} ${this.selectedTokenUpper}`;
-  }
-
-  get maxTotalString() {
-    const total = +this.amount + (this.partialFee ?? 0);
-
-    return `max total: ${total} ${this.selectedTokenUpper}`;
   }
 
   get showBackIcon() {
@@ -206,21 +189,32 @@ export default class SendForm extends Vue {
 
     const { token } = this.currentCurrency;
 
-    return this.isValidCountTokens ? 'Continue' : `Insufficient balance ${token.toUpperCase()}`;
+    if (this.recipient !== '' && !this.isValidRecipientAddress) return 'Incorrect address';
+    else if (!this.isValidCountTokens) return `Insufficient balance ${token.toUpperCase()}`;
+
+    return 'Continue';
   }
 
   get buttonDisabled() {
     if (this.step === 2) return false;
 
-    return !this.isAllFieldsCorrect || this.partialFee === undefined;
+    return !this.isAllFieldsCorrect || +this.amount === 0 || this.partialFee === 0;
   }
 
   get isAllFieldsCorrect() {
     if (!this.currentCurrency) return false;
 
-    return this.isValidCountTokens
-      ? !!this.selectedNetwork && !!this.selectedToken && !!this.recipient && !!this.amount
-      : false;
+    return (
+      !!this.selectedNetwork &&
+      !!this.selectedToken &&
+      !!this.amount &&
+      this.isValidRecipientAddress &&
+      this.isValidCountTokens
+    );
+  }
+
+  get isValidRecipientAddress() {
+    return NetworksController.validateAddress(this.recipient);
   }
 
   get addressByNetwork() {
@@ -236,7 +230,9 @@ export default class SendForm extends Vue {
   }
 
   get currentCurrency() {
-    return this.currencies.find(({ mainNetwork }) => mainNetwork === this.selectedNetwork);
+    return this.currencies.find(
+      ({ token, mainNetwork }) => token === this.selectedToken && mainNetwork === this.selectedNetwork
+    );
   }
 
   get optionsNetwork() {
@@ -275,36 +271,17 @@ export default class SendForm extends Vue {
   @Watch('selectedToken')
   @Watch('recipient')
   @Watch('amount')
-  async createTransfer() {
-    // TODO: validate recipient address
-    if (this.recipient === '') {
-      this.currentCurrency!.resetTransfer();
+  async createSendTransfer() {
+    this.partialFee = 0;
 
-      return;
-    }
+    if (!this.isValidRecipientAddress) return;
 
-    this.partialFee = undefined;
-
-    const transferСreated = this.currentCurrency!.createTransfer(
-      this.recipient,
-      this.selectedNetwork,
-      this.selectedToken,
-      this.amount
-    );
-
-    if (!transferСreated) return;
+    this.currentCurrency!.createSendTransfer(this.recipient, this.selectedNetwork, this.selectedToken, this.amount);
 
     const partialFee = (await this.currentCurrency!.getPartialFee(this.addressByNetwork, true)) as number;
 
     this.partialFee = partialFee;
-  }
-
-  @Watch('recipient')
-  @Watch('amount')
-  async validateCountTokens() {
-    this.isValidCountTokens =
-      ((await this.currentCurrency?.isValidCountTokens(+this.amount, this.addressByNetwork)) && this.amount !== '0') ??
-      false;
+    this.isValidCountTokens = this.currentCurrency!.isValidCountTokens(+this.amount, partialFee);
   }
 
   mounted() {
@@ -333,14 +310,13 @@ export default class SendForm extends Vue {
   async setMaxValue() {
     if (!this.currentCurrency) return;
 
-    const transferableCountTokens =
-      (await this.currentCurrency.getTransferableCountTokensMinusFee(this.addressByNetwork)).toString() ?? '';
+    const transferableCountTokens = this.currentCurrency.getTransferableCountTokensMinusFee(this.partialFee).toString();
 
     this.amount = transferableCountTokens;
-    this.value = this.currentCurrency.getCostOfTokens(+transferableCountTokens).toString() ?? '';
+    this.value = this.currentCurrency.getCostOfTokens(+transferableCountTokens).toString();
   }
 
-  async send() {
+  async handlerButton() {
     if (this.step === 1) {
       this.step += 1;
 
@@ -404,7 +380,7 @@ export default class SendForm extends Vue {
     .transferrable-amount {
       font-weight: 600;
       font-size: 16px;
-      color: #bb77ff;
+      color: $pink-lavender-color;
     }
 
     .transferrable-token {
@@ -417,7 +393,7 @@ export default class SendForm extends Vue {
     }
   }
 
-  .direction {
+  .direction-column {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -454,7 +430,7 @@ export default class SendForm extends Vue {
         color: rgba(255, 255, 255, 0.5);
       }
 
-      .right-column {
+      .column {
         display: flex;
         flex-direction: column;
         align-items: flex-end;

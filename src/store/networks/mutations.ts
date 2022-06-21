@@ -1,4 +1,5 @@
 import { MutationTree } from 'vuex';
+import { State } from './state';
 import {
   UpdateCurrencyProps,
   SetNetworksStatusProps,
@@ -9,7 +10,6 @@ import {
   SetAllNetworksIsLoaded,
   SetHistoryProps,
 } from './types';
-import { State } from './state';
 
 export enum MutationTypes {
   SET_NETWORKS = 'SET_NETWORKS',

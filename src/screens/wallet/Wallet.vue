@@ -170,6 +170,8 @@ export default class Wallet extends Vue {
   }
 
   get filterCurrencies() {
+    if (this.showAssetsManagementForm) return this.currenciesForSelectedWallet;
+
     const filter = this.filterValue.trim().toLowerCase();
 
     return this.currenciesForSelectedWallet

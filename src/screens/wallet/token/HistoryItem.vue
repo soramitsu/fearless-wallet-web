@@ -19,6 +19,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { firstCharToUp } from '@/util/helpers';
 import { HistoryNode } from '@/interfaces/history';
+import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
 import Logo from '@/components/Logo.vue';
 import CurrencyController from '@/controllers/currencyController';
 
@@ -32,9 +33,15 @@ export default class HistoryItem extends Vue {
   @Prop(String) token!: string;
 
   get date() {
-    const date = new Date(+this.historyItem.timestamp);
+    const date = new Date(secondsToMilliseconds(+this.historyItem.timestamp));
 
-    return `${date.toString().slice(0, 15)}`;
+    if (isToday(date)) {
+      return format(date, 'HH:mm');
+    } else if (isThisYear(date)) {
+      return format(date, 'dd MMMM HH:mm');
+    }
+
+    return format(date, 'dd MMMM yyyy HH:mm');
   }
 
   get tokenToUpperCase() {
@@ -47,15 +54,22 @@ export default class HistoryItem extends Vue {
     return transfer !== null ? 'transfer' : reward !== null ? 'reward' : 'extrinsic';
   }
 
-  get value() {
+  get signTransfer() {
     if (this.type === 'transfer') {
       const splitId = this.historyItem.id.split('-');
       const typeTransaction = splitId[splitId.length - 1];
+
+      return typeTransaction === 'to' ? '+' : '-';
+    }
+
+    return '';
+  }
+
+  get value() {
+    if (this.type === 'transfer') {
       const { amount } = this.historyItem[this.type];
 
-      const sign = typeTransaction === 'to' ? '+' : '-';
-
-      return `${sign}${CurrencyController.getAroundValue(this.token, amount)}`;
+      return `${this.signTransfer}${CurrencyController.getAroundValue(this.token, amount)}`;
     }
 
     if (this.type === 'reward') {
@@ -82,12 +96,22 @@ export default class HistoryItem extends Vue {
       return this.cut(validator);
     }
 
-    const { hash } = this.historyItem[this.type];
+    const { module } = this.historyItem[this.type];
 
-    return this.cut(hash);
+    return firstCharToUp(module);
   }
 
   get typeFormatted() {
+    if (this.type === 'extrinsic') {
+      const { call } = this.historyItem[this.type];
+
+      return `${firstCharToUp(call)}${call === 'transfer' ? ' fee' : ''}`;
+    }
+
+    if (this.type === 'transfer') {
+      return this.signTransfer === '+' ? 'Incoming' : 'Outgoing';
+    }
+
     return firstCharToUp(this.type);
   }
 

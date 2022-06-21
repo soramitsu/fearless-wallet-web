@@ -1,13 +1,13 @@
-import Vue from 'vue';
 import App from './App.vue';
-import store from './store';
-import router from './router';
-import { cryptoWaitReady } from '@polkadot/util-crypto';
 import keyring from '@polkadot/ui-keyring';
-// import AccountsStore from './storeChrome/Accounts';
-
-import './plugins';
+import router from './router';
+import store from './store';
+import Vue from 'vue';
+import { cryptoWaitReady } from '@polkadot/util-crypto';
 import './styles';
+import './plugins';
+
+// import AccountsStore from './storeChrome/Accounts';
 
 Vue.config.productionTip = false;
 Vue.config.devtools = process.env.NODE_ENV === 'development';

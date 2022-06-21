@@ -3,35 +3,92 @@
     <ActivityForm
       header="Teleport"
       :buttonText="buttonText"
-      :handlerButton="teleport"
+      :handlerButton="handlerButton"
+      :showBackIcon="showBackIcon"
+      :handlerBack="handlerBack"
       :closeForm="closeForm"
       :buttonDisabled="buttonDisabled"
       class="teleport-form"
     >
       <div class="teleport-form-content">
-        <Select v-model="selectedToken" :options="optionsCurrency" placeholder="Currency" size="big" class="row" />
+        <template v-if="step === 1">
+          <Select v-model="selectedToken" :options="optionsCurrency" placeholder="Currency" size="big" class="row" />
 
-        <Select
-          v-model="originalNetwork"
-          :options="optionsNetwork"
-          placeholder="Original network"
-          size="big"
-          class="row"
-        />
+          <Select
+            v-model="originalNetwork"
+            :options="optionsNetwork"
+            placeholder="Original network"
+            size="big"
+            class="row"
+          />
 
-        <div class="container-amount">
-          <MaxButton class="max-button-amount" @click="setMaxValue" />
+          <Select
+            v-model="destinationNetwork"
+            :options="optionsNetwork"
+            placeholder="Destination network"
+            size="big"
+            class="row"
+          />
 
-          <Input v-model="amount" placeholder="Amount" size="big" styleInput="pink" type="number" class="row" />
-        </div>
+          <div class="container-amount">
+            <MaxButton class="max-button-amount" @click="setMaxValue" />
 
-        <Select
-          v-model="destinationNetwork"
-          :options="optionsNetwork"
-          placeholder="Destination network"
-          size="big"
-          class="row"
-        />
+            <FloatInput v-model="amount" placeholder="Amount" size="big" styleInput="pink" type="number" class="row" />
+          </div>
+
+          <div class="row transferrable">
+            <div class="transferrable-label">Transferrable</div>
+            <div class="transferrable-descriptions">
+              <div class="transferrable-amount">{{ transferrableAmount }}</div>
+              <div class="transferrable-token">{{ selectedTokenUpper }}</div>
+            </div>
+          </div>
+        </template>
+        <template v-else-if="step === 2">
+          <Corners size="big" class="row">
+            <div class="summary">
+              <div class="summary-label">Summary</div>
+              <div class="summary-row">
+                <div class="column column-left">
+                  <div class="name">From</div>
+                  <div class="network-name">{{ originalNetworkString }}</div>
+                </div>
+
+                <img src="@/assets/bold-arrow-right.svg" />
+
+                <div class="column">
+                  <div class="name">To</div>
+                  <div class="network-name">{{ destinationNetworkString }}</div>
+                </div>
+              </div>
+              <div class="summary-row">
+                <div class="name">Assets Amount</div>
+                <div class="column">
+                  <div>{{ amountString }}</div>
+                  <div class="sub-value">{{ valueString }}</div>
+                </div>
+              </div>
+              <div class="summary-row">
+                <div class="name">{{ originalNetworkString }} Fee</div>
+                <div class="column">
+                  <div>{{ originalNetworkPartialFeeString }}</div>
+                </div>
+              </div>
+              <div class="summary-row">
+                <div class="name">{{ destinationNetworkString }} Fee</div>
+                <div class="column">
+                  <div>{{ destinationNetworkPartialFeeString }}</div>
+                </div>
+              </div>
+              <div class="summary-row">
+                <div class="name">Total</div>
+                <div class="column">
+                  <div>{{ totalString }}</div>
+                </div>
+              </div>
+            </div>
+          </Corners>
+        </template>
       </div>
     </ActivityForm>
 
@@ -41,7 +98,7 @@
       :popupLoading="sendingPopupLoading"
       :handlerClose="sendingPopupClose"
       :amount="amount"
-      :value="1"
+      :value="value"
       :token="selectedToken"
       :firstNetwork="originalNetwork"
       :secondNetwork="destinationNetwork"
@@ -61,31 +118,36 @@ import { Currency } from '@/interfaces/currencies';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import Loading from '@/components/Loading.vue';
 import Select from '@/components/Select.vue';
-import Input from '@/components/Input.vue';
+import FloatInput from '@/components/FloatInput.vue';
 import Popup from '@/components/Popup.vue';
 import ActivityForm from './ActivityForm.vue';
 import MaxButton from './MaxButton.vue';
 import SendingPopup from './SendingPopup.vue';
+import Corners from '@/components/Corners.vue';
 
 @Component({
   components: {
     ActivityForm,
-    Input,
     Select,
     Popup,
     Loading,
     SendingPopup,
     MaxButton,
+    Corners,
+    FloatInput,
   },
 })
 export default class TeleportForm extends Vue {
+  isValidCountTokens = true;
   showSendingPopup = false;
   sendingPopupLoading = false;
-  isValidCountTokens = false;
+  originalNetworkPartialFee = 0;
+  destinationNetworkPartialFee = 0;
   selectedToken = '';
   originalNetwork = '';
   destinationNetwork = '';
   amount = '';
+  step = 1;
 
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) _originalNetwork!: string;
@@ -94,26 +156,95 @@ export default class TeleportForm extends Vue {
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
+  get originalNetworkString() {
+    return `${firstCharToUp(this.originalNetwork)}`;
+  }
+
+  get destinationNetworkString() {
+    return `${firstCharToUp(this.destinationNetwork)}`;
+  }
+
+  get amountString() {
+    return `${+this.amount} ${this.selectedTokenUpper}`;
+  }
+
+  get valueString() {
+    return `$${this.value}`;
+  }
+
+  get value() {
+    return this.currentCurrency?.getCostOfTokens(+this.amount).toString() ?? '';
+  }
+
+  get originalNetworkPartialFeeString() {
+    return `${this.originalNetworkPartialFee} ${this.selectedTokenUpper}`;
+  }
+
+  get destinationNetworkPartialFeeString() {
+    return `${this.destinationNetworkPartialFee} ${this.selectedTokenUpper}`;
+  }
+
+  get totalString() {
+    const total = this.currentCurrency?.addNumbers([
+      +this.amount,
+      this.originalNetworkPartialFee,
+      this.destinationNetworkPartialFee,
+    ]);
+
+    return `${total} ${this.selectedTokenUpper}`;
+  }
+
+  get transferrableAmount() {
+    return this.currentCurrency?.getTransferableCountTokens() ?? 0;
+  }
+
+  get selectedTokenUpper() {
+    return this.selectedToken.toUpperCase();
+  }
+
   get buttonText() {
+    if (this.step === 2) return 'Teleport';
+
     if (!this.currentCurrency) return '';
 
     const { token } = this.currentCurrency;
 
-    return this.isValidCountTokens ? `Insufficient balance ${token.toUpperCase()}` : 'Teleport';
+    if (this.destinationNetwork !== '' && !this.isValidTeleportDirection) return 'Impossible to teleport';
+    else if (!this.isValidCountTokens) return `Insufficient balance ${token.toUpperCase()}`;
+
+    return 'Next';
   }
 
   get currentCurrency() {
-    return this.currencies.find(({ token }) => token === this.selectedToken);
+    return this.currencies.find(
+      ({ token, mainNetwork }) => token === this.selectedToken && mainNetwork === this.originalNetwork
+    );
+  }
+
+  get showBackIcon() {
+    return this.step === 2;
   }
 
   get buttonDisabled() {
-    if (!this.currentCurrency) return true;
+    if (this.step === 2) return false;
 
-    const transferableTokens = this.currentCurrency.getTotalCountTokens();
+    return !this.isAllFieldsCorrect || +this.amount === 0 || this.originalNetworkPartialFee === 0;
+  }
 
-    return !(+this.amount > transferableTokens)
-      ? !(!!this.selectedToken && !!this.originalNetwork && !!this.destinationNetwork && !!this.amount)
-      : true;
+  get isValidTeleportDirection() {
+    return this.currentCurrency?.getParaId(this.originalNetwork, this.destinationNetwork) !== undefined;
+  }
+
+  get isAllFieldsCorrect() {
+    if (!this.currentCurrency) return false;
+
+    return (
+      !!this.selectedToken &&
+      !!this.originalNetwork &&
+      !!this.destinationNetwork &&
+      !!this.amount &&
+      this.isValidCountTokens
+    );
   }
 
   get optionsCurrency() {
@@ -137,12 +268,32 @@ export default class TeleportForm extends Vue {
     return addressByNetwork;
   }
 
-  @Watch('addressByNetwork')
+  @Watch('originalNetwork')
+  updateSelectedToken() {
+    this.selectedToken = this.optionsCurrency?.[0]?.value ?? '';
+  }
+
+  @Watch('originalNetwork')
+  @Watch('destinationNetwork')
+  @Watch('selectedToken')
   @Watch('amount')
-  async validateCountTokens() {
-    this.isValidCountTokens =
-      ((await this.currentCurrency?.isValidCountTokens(+this.amount, this.addressByNetwork)) && this.amount !== '0') ??
-      false;
+  async createTeleportTransfer() {
+    this.originalNetworkPartialFee = 0;
+
+    if (!this.isValidTeleportDirection) return;
+
+    this.currentCurrency!.createTeleportTransfer(
+      this.addressByNetwork,
+      this.originalNetwork,
+      this.destinationNetwork,
+      this.selectedToken,
+      this.amount
+    );
+
+    const partialFee = (await this.currentCurrency!.getPartialFee(this.addressByNetwork, true)) as number;
+
+    this.originalNetworkPartialFee = partialFee;
+    this.isValidCountTokens = this.currentCurrency!.isValidCountTokens(+this.amount, partialFee);
   }
 
   mounted() {
@@ -153,23 +304,32 @@ export default class TeleportForm extends Vue {
   async setMaxValue() {
     if (!this.currentCurrency) return;
 
-    const transferableCountTokens =
-      (await this.currentCurrency?.getTransferableCountTokensMinusFee(this.addressByNetwork))?.toString() ?? '';
-
-    this.amount = transferableCountTokens;
+    this.amount = this.currentCurrency.getTransferableCountTokensMinusFee(this.originalNetworkPartialFee).toString();
   }
 
   sendingPopupClose() {
     this.showSendingPopup = false;
+
+    this.closeForm();
   }
 
-  teleport() {
+  handlerBack() {
+    this.step = 1;
+  }
+
+  async handlerButton() {
+    if (this.step === 1) {
+      this.step += 1;
+
+      return;
+    }
+
     this.showSendingPopup = true;
     this.sendingPopupLoading = true;
 
-    setTimeout(() => {
-      this.sendingPopupLoading = false;
-    }, 2000);
+    await this.currentCurrency?.send(this.addressByNetwork, this.amount);
+
+    this.sendingPopupLoading = false;
   }
 }
 </script>
@@ -198,6 +358,84 @@ export default class TeleportForm extends Vue {
   .fee {
     font-weight: 300;
     font-size: 15px;
+  }
+
+  .transferrable {
+    display: flex;
+    align-items: center;
+
+    .transferrable-label {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.75);
+      text-align: left;
+    }
+
+    .transferrable-descriptions {
+      display: flex;
+      margin-left: 5px;
+    }
+
+    .transferrable-amount {
+      font-weight: 600;
+      font-size: 16px;
+      color: $pink-lavender-color;
+    }
+
+    .transferrable-token {
+      margin-left: 5px;
+      color: rgba(255, 255, 255, 0.9);
+    }
+  }
+
+  .summary {
+    padding: 16px;
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    clip-path: $big-clip-path-left-top-and-right-bottom;
+    border-radius: $default-border-radius;
+
+    .summary-label {
+      text-align: left;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 24px 0;
+
+      &:last-child {
+        margin-bottom: 5px;
+      }
+
+      .name {
+        color: rgba(255, 255, 255, 0.5);
+        text-align: left;
+      }
+
+      .column {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+
+        .sub-value {
+          color: rgba(255, 255, 255, 0.75);
+          font-weight: 300;
+          font-size: 12px;
+          margin-top: 3px;
+        }
+
+        .network-name {
+          margin-top: 10px;
+          color: $pink-lavender-color;
+        }
+      }
+
+      .column-left {
+        align-items: flex-start;
+      }
+    }
   }
 }
 </style>

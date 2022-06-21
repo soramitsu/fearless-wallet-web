@@ -3,7 +3,7 @@
     <div>
       <div v-if="name" class="name">{{ name }}</div>
       <div class="balance">${{ balanceString }}</div>
-      <div :class="percentClasses">{{ percentString }}</div>
+      <!-- <div :class="percentClasses">{{ percentString }}</div> -->
     </div>
     <s-icon name="basic-check-mark-24" v-show="showIcon" />
   </div>
@@ -49,6 +49,7 @@ export default class TotalBalance extends Vue {
   align-items: center;
   text-align: left;
   opacity: 0.9;
+  height: 46px;
 
   &:hover {
     cursor: pointer;

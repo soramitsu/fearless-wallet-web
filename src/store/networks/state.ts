@@ -1,6 +1,6 @@
-import { Networks, AssetsJson, TokensPrice } from './types';
-import { History } from '@/interfaces/history';
+import { AssetsJson, Networks, TokensPrice } from './types';
 import { Currencies } from '@/interfaces/currencies';
+import { History } from '@/interfaces/history';
 import { Subscription } from 'rxjs';
 
 export type State = {

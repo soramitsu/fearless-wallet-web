@@ -200,7 +200,7 @@ export default class Token extends Vue {
 
   get currentCurrency() {
     return this.currenciesForSelectedWallet.find(
-      ({ token }) => token.toLowerCase() === this.selectedToken.toLowerCase()
+      ({ token, mainNetwork }) => token === this.selectedToken && mainNetwork === this.selectedNetwork
     );
   }
 
@@ -239,7 +239,7 @@ export default class Token extends Vue {
   }
 
   get countTokensString() {
-    if (!this.currentCurrency) return '';
+    if (!this.currentCurrency) return `${this.selectedToken.toUpperCase()} 0`;
 
     const availableInNetworks = this.currentCurrency.getAvailableInNetworks();
     const balance = availableInNetworks.find(({ network }) => network === this.selectedNetwork)?.balance;
@@ -249,7 +249,7 @@ export default class Token extends Vue {
   }
 
   get balanceInNetworkString() {
-    if (!this.currentCurrency) return '';
+    if (!this.currentCurrency) return `$ 0`;
 
     const total = this.currentCurrency.getBalanceInNetwork(this.selectedNetwork);
 

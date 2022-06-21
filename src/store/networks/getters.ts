@@ -1,6 +1,6 @@
-import { GetterTree } from 'vuex';
-import { Networks, AssetsJson } from './types';
+import { AssetsJson, Networks } from './types';
 import { Currencies } from '@/interfaces/currencies';
+import { GetterTree } from 'vuex';
 import { History } from '@/interfaces/history';
 import { State } from './state';
 

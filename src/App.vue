@@ -1,5 +1,7 @@
 <template>
   <div id="app">
+    <div class="drag"></div>
+
     <router-view />
   </div>
 </template>
@@ -20,6 +22,10 @@ export default class App extends Vue {
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
 
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
+
+  get style() {
+    return { 'background-image': 'url(./img/background.9b667fcd.png)' };
+  }
 
   async mounted() {
     const { loadNetworksInfo, loadAssetsInfo, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
@@ -56,7 +62,12 @@ export default class App extends Vue {
   border-radius: $default-border-radius;
   color: white;
   text-align: center;
-  padding: 16px;
+  padding: 0 16px 16px 16px;
   background-image: url(./assets/background.png);
+
+  .drag {
+    height: 16px;
+    -webkit-app-region: drag;
+  }
 }
 </style>

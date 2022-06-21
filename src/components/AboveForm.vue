@@ -77,7 +77,7 @@ export default class AboveForm extends Vue {
     height: 560px;
     background-color: #111111;
     clip-path: polygon(100% 0, 100% 100%, 0 100%, 0 4%, 4% 0);
-    animation: transform 0.3s forwards;
+    // animation: transform 0.3s forwards;
 
     @keyframes transform {
       0% {
@@ -150,7 +150,6 @@ export default class AboveForm extends Vue {
     .activity-block {
       display: flex;
       justify-content: right;
-      width: 10px;
     }
 
     .icon {

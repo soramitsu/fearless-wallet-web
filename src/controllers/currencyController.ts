@@ -1,13 +1,17 @@
-import store from '@/store';
+import keyring from '@polkadot/ui-keyring';
 import LocalStorageController from '@/controllers/localStorageController';
+import NetworksController from '@/controllers/networksController';
+import store from '@/store';
+import teleportInfo from '@/consts/teleport';
+import { AssetsJson } from '@/store/networks/types';
 import { AvailableInNetworks } from '@/interfaces/currencies';
+import { BN, isFunction } from '@polkadot/util';
 import { FPNumber } from '@/util/fp';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { AssetsJson } from '@/store/networks/types';
-import type { ISubmittableResult } from '@polkadot/types/types';
 import type { SubmittableExtrinsic } from '@polkadot/api-base/types';
-import keyring from '@polkadot/ui-keyring';
-import NetworksController from '@/controllers/networksController';
+import type { MainNetworkName } from '@/consts/teleport';
+
+const XCM_LOC = ['xcm', 'xcmPallet', 'polkadotXcm'];
 
 export interface Props {
   mainNetwork: string;
@@ -31,7 +35,7 @@ export default class CurrencyController {
   private readonly currencyVisibleStorageName: string;
   private readonly decimals: FPNumber;
   private availableInNetworks: AvailableInNetworks[];
-  public transfer!: SubmittableExtrinsic<'promise', ISubmittableResult> | undefined;
+  public transfer!: SubmittableExtrinsic<'promise'> | undefined;
   public mainNetwork: string;
   public token: string;
   public price: number;
@@ -88,7 +92,7 @@ export default class CurrencyController {
     for (const field in availableInNetworks) {
       const typedFiled = field as keyof typeof availableInNetworks;
 
-      availableInNetworks[typedFiled] = (availableInNetworks[typedFiled] as FPNumber).div(this.decimals);
+      availableInNetworks[typedFiled] = availableInNetworks[typedFiled].div(this.decimals);
     }
 
     return availableInNetworks;
@@ -96,6 +100,10 @@ export default class CurrencyController {
 
   private _getTotalCountTokens(): FPNumber {
     return this.countTokens().total;
+  }
+
+  public addNumbers(values: number[]): number {
+    return values.reduce((sum, number) => sum.add(new FPNumber(number)), new FPNumber(0)).toNumber();
   }
 
   public getTotalCountTokens(): number {
@@ -106,15 +114,15 @@ export default class CurrencyController {
     return this.countTokens().transferable.toNumber();
   }
 
-  public async getTransferableCountTokensMinusFee(from: string): Promise<number> {
-    const fee = (await this.getPartialFee(from)) as FPNumber;
-    const result = this.countTokens().transferable.sub(fee).toNumber();
+  public getTransferableCountTokensMinusFee(fee: number): number {
+    const FPFee = new FPNumber(fee);
+    const result = this.countTokens().transferable.sub(FPFee).toNumber();
 
     return result > 0 ? result : 0;
   }
 
-  public async isValidCountTokens(count: number, from: string): Promise<boolean> {
-    const transferableCountTokensMinusFee = await this.getTransferableCountTokensMinusFee(from);
+  public isValidCountTokens(count: number, fee: number): boolean {
+    const transferableCountTokensMinusFee = this.getTransferableCountTokensMinusFee(fee);
 
     return count <= transferableCountTokensMinusFee;
   }
@@ -201,10 +209,26 @@ export default class CurrencyController {
   public static getPrecisionValue(token: string, amount: string): string {
     const decimals = this.getDecimals(token);
 
-    return Math.floor(new FPNumber(+amount).mul(decimals).toNumber()).toString();
+    return Math.floor(new FPNumber(amount === '' ? 0 : +amount).mul(decimals).toNumber()).toString();
   }
 
-  public createTransfer(to: string, networkName: string, token: string, amount: string): boolean {
+  public getParaId(originalNetworkName: string, destinationNetworkName: string) {
+    const isTeleportToMainNetwork =
+      teleportInfo[destinationNetworkName as MainNetworkName]?.parachains[originalNetworkName];
+
+    return (
+      teleportInfo[originalNetworkName as MainNetworkName]?.parachains[destinationNetworkName]?.paraId ??
+      (isTeleportToMainNetwork ? -1 : undefined)
+    );
+
+    // return !isParaTeleport
+    //   ? teleportInfo[originalNetworkName as MainNetworkName]?.parachains[destinationNetworkName]?.paraId
+    //   : isTeleportToMainNetwork
+    //   ? -1
+    //   : undefined;
+  }
+
+  public createSendTransfer(to: string, networkName: string, token: string, amount: string): void {
     const precisionAmount = CurrencyController.getPrecisionValue(token, amount);
     const networks = NetworksController.getNetworks();
     const { api } = networks.find(({ name }) => name === networkName)!; // eslint-disable-line
@@ -214,22 +238,45 @@ export default class CurrencyController {
     } catch {
       this.transfer = undefined;
     }
-
-    return this.transfer !== undefined;
   }
 
-  public resetTransfer(): void {
-    this.transfer = undefined;
+  public async createTeleportTransfer(
+    recipientId: string,
+    originalNetworkName: string,
+    destinationNetworkName: string,
+    token: string,
+    amount: string
+  ): Promise<void> {
+    const networks = NetworksController.getNetworks();
+    const { api } = networks.find(({ name }) => name === originalNetworkName)!; // eslint-disable-line
+    const m = XCM_LOC.filter((x) => api.tx[x] && isFunction(api.tx[x].limitedTeleportAssets))[0];
+    const isParaTeleport = m === 'polkadotXcm';
+    const precisionAmount = CurrencyController.getPrecisionValue(token, amount);
+    const tx = api.tx[m].limitedTeleportAssets;
+    const accountId32 = api.createType('AccountId32', recipientId).toHex();
+    const recipientParaId = this.getParaId(originalNetworkName, destinationNetworkName);
+
+    if (!recipientParaId) {
+      this.transfer = undefined;
+
+      return;
+    }
+
+    const params = getParams(isParaTeleport, recipientParaId, accountId32, new BN(precisionAmount));
+
+    this.transfer = tx(...params);
   }
 
-  public async getPartialFee(from: string, fixed = false): Promise<number | FPNumber> {
-    if (!this.transfer) return fixed ? 0 : new FPNumber(0);
+  public async getPartialFee(from: string, returnNumberType = false): Promise<number | FPNumber> {
+    if (!this.transfer) return returnNumberType ? 0 : new FPNumber(0);
 
     const { partialFee } = await this.transfer.paymentInfo(from);
     const [fee, unit] = partialFee.toHuman().split(' ');
-    const result = new FPNumber(fee).div(new FPNumber(1000));
+    const precision = unit[0] === 'm' ? 3 : unit[0] === 'µ' ? 6 : 1;
+    const decimals = new FPNumber(10 ** precision);
+    const result = new FPNumber(fee).div(decimals);
 
-    return fixed ? +result.toNumber().toFixed(5) : result;
+    return returnNumberType ? +result.toNumber().toFixed(5) : result;
   }
 
   public async send(from: string, amount: string): Promise<void> {
@@ -251,4 +298,54 @@ export default class CurrencyController {
       }
     });
   }
+}
+
+function getParams(isParaTeleport: boolean, recipientParaId: number, accountId32: string, amount: BN) {
+  return [
+    {
+      V1: isParaTeleport
+        ? {
+            interior: 'Here',
+            parents: 1,
+          }
+        : {
+            interior: {
+              X1: {
+                ParaChain: recipientParaId,
+              },
+            },
+            parents: 0,
+          },
+    },
+    {
+      V1: {
+        interior: {
+          X1: {
+            AccountId32: {
+              id: accountId32,
+              network: 'Any',
+            },
+          },
+        },
+        parents: 0,
+      },
+    },
+    {
+      V1: [
+        {
+          fun: {
+            Fungible: amount,
+          },
+          id: {
+            Concrete: {
+              interior: 'Here',
+              parents: isParaTeleport ? 1 : 0,
+            },
+          },
+        },
+      ],
+    },
+    0,
+    { Unlimited: null },
+  ];
 }

@@ -56,7 +56,7 @@ export default class WelcomeBack extends Vue {
 
 <style lang="scss" scoped>
 .welcome-back {
-  height: 100%;
+  height: $default-height-page;
 
   .text {
     font-size: 25px;

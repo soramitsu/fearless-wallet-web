@@ -71,8 +71,6 @@ export default class PopupWithSelect extends Vue {
 
 <style lang="scss" scoped>
 .popup-with-choice {
-  padding: 0 !important;
-
   .row {
     color: rgba(255, 255, 255, 0.75);
     text-align: left;

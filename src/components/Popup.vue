@@ -80,8 +80,8 @@ export default class Popup extends Vue {
     this.handlerFilter(value);
   }
 
-  backgroundClick(event: any) {
-    if (event.target.classList.contains('popup-background')) this.close();
+  backgroundClick(event: Event) {
+    if ((event.target as any)?.classList.contains('popup-background')) this.close();
   }
 
   close() {
@@ -97,7 +97,6 @@ export default class Popup extends Vue {
   width: $extension-width;
   border-radius: $default-border-radius;
   display: flex;
-  align-items: center;
   position: absolute;
   top: 0;
   left: 0;
@@ -172,7 +171,7 @@ export default class Popup extends Vue {
 }
 
 .popup-background-horizontal-placement-left {
-  justify-content: left;
+  justify-content: flex-start;
 }
 
 .popup-background-horizontal-placement-center {
@@ -180,7 +179,7 @@ export default class Popup extends Vue {
 }
 
 .popup-background-horizontal-placement-right {
-  justify-content: right;
+  justify-content: flex-end;
 }
 
 .popup-background-vertical-placement-top {

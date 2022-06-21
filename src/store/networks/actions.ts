@@ -1,6 +1,16 @@
-import { ActionTree, ActionContext } from 'vuex';
+import axios from 'axios';
+import CurrencyController from '@/controllers/currencyController';
+import NetworksController from '@/controllers/networksController';
+import { ActionContext, ActionTree } from 'vuex';
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { MutationTypes, Mutations } from './mutations';
+import { Currency } from '@/interfaces/currencies';
+import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
+import { formatBalance } from '@/util/balances';
+import { getHistory } from '@/sybquery/history';
+import { getMockCurrencies } from '@/util/currenciesHelper';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { Mutations, MutationTypes } from './mutations';
+import { State } from './state';
 import {
   NetworkJson,
   Networks,
@@ -13,15 +23,7 @@ import {
   TokensPrice,
   ExternalApi,
 } from './types';
-import { State } from './state';
-import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
-import { formatBalance } from '@/util/balances';
-import { Currency } from '@/interfaces/currencies';
-import { getMockCurrencies } from '@/util/currenciesHelper';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import CurrencyController from '@/controllers/currencyController';
-import NetworksController from '@/controllers/networksController';
 
 export enum ActionTypes {
   LOAD_NETWORKS = 'LOAD_NETWORKS',
@@ -45,8 +47,8 @@ export type Actions = {
 
 const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.LOAD_NETWORKS]({ commit }, { url, autoConnectMs = 0 }) {
-    const response = await fetch(url);
-    const networksJson: NetworkJson[] = await response.json();
+    const { data } = await axios.get(url);
+    const networksJson: NetworkJson[] = data;
 
     const networks: Networks = networksJson.map(
       ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi }) => {
@@ -88,8 +90,8 @@ const actions: ActionTree<State, State> & Actions = {
     commit(MutationTypes.SET_NETWORKS, { networks });
   },
   async [ActionTypes.LOAD_ASSETS_INFO]({ commit }, { url }) {
-    const response = await fetch(url);
-    const assetsJson: AssetsJson[] = await response.json();
+    const { data } = await axios.get(url);
+    const assetsJson: AssetsJson[] = data;
 
     commit(MutationTypes.SET_ASSETS, { assets: assetsJson });
   },
@@ -100,8 +102,8 @@ const actions: ActionTree<State, State> & Actions = {
       .map(({ priceId }) => priceId)
       .join('%2C');
     const url = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&include_24hr_change=true&ids=${urlTokensPart}`;
-    const response = await fetch(url);
-    const tokensPriceJson: TokensPriceJson = await response.json();
+    const { data } = await axios.get(url);
+    const tokensPriceJson: TokensPriceJson = data;
     const tokensPrice: TokensPrice = {};
 
     for (const tokenPriceId in tokensPriceJson) {
@@ -127,39 +129,9 @@ const actions: ActionTree<State, State> & Actions = {
 
     if (type !== 'subquery' || url === '') return mockHistory;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: `{
-          historyElements(
-            after: ${cursor},
-            first: ${pageSize},
-            orderBy: TIMESTAMP_DESC,
-            filter: {
-              address:{equalTo:"${walletAddress}"}
-            }
-          ) {
-            pageInfo {
-              startCursor,
-              endCursor
-            },
-            nodes {
-              id
-              timestamp
-              address
-              reward
-              extrinsic
-              transfer
-            }
-          }
-        }`,
-      }),
-    });
+    const history = await getHistory(url, pageSize, cursor, walletAddress);
 
-    const historyElements = (await response.json())?.data?.historyElements;
-
-    return historyElements ?? mockHistory;
+    return history ?? mockHistory;
   },
   async [ActionTypes.SUBSCRIBE_TO_BALANCES](
     { dispatch, getters, commit, state: { networks, tokensPrice } },
@@ -174,7 +146,8 @@ const actions: ActionTree<State, State> & Actions = {
 
           try {
             Object.entries(accounts).forEach(async ([walletAddress, { type }]) => {
-              // ethereum accounts only subscribe to the ethereum networks
+              // ethereum accounts only subscribe to the ethereum networks and
+              // substrate accounts only subscribe to the substrate networks
               if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
 
               // unsubscribing from previous subscriptions(case when we added a new wallet)
@@ -235,9 +208,9 @@ const actions: ActionTree<State, State> & Actions = {
           } catch (ex) {
             console.log(
               `
-          Subscribe to ${networkName.toUpperCase()} failed
-          ${ex}
-          `
+                Subscribe to ${networkName.toUpperCase()} failed
+                ${ex}
+              `
             );
           }
         }

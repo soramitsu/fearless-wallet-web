@@ -1,8 +1,8 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { Currencies, Currency } from '@/interfaces/currencies';
 import { HistoryItem } from '@/interfaces/history';
-import { WalletAddress } from '@/interfaces/common';
 import { Subscription } from 'rxjs';
+import { WalletAddress } from '@/interfaces/common';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
 export type Nodes = {

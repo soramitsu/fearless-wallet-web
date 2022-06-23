@@ -216,9 +216,7 @@ export default class TeleportForm extends Vue {
   }
 
   get currentCurrency() {
-    return this.currencies.find(
-      ({ token, mainNetwork }) => token === this.selectedToken && mainNetwork === this.originalNetwork
-    );
+    return this.currencies.find(({ mainNetwork }) => mainNetwork === this.originalNetwork);
   }
 
   get showBackIcon() {

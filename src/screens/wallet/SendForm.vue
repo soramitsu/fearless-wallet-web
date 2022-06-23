@@ -230,9 +230,7 @@ export default class SendForm extends Vue {
   }
 
   get currentCurrency() {
-    return this.currencies.find(
-      ({ token, mainNetwork }) => token === this.selectedToken && mainNetwork === this.selectedNetwork
-    );
+    return this.currencies.find(({ mainNetwork }) => mainNetwork === this.selectedNetwork);
   }
 
   get optionsNetwork() {

@@ -1,15 +1,18 @@
-import { RouteConfig } from 'vue-router';
-import Welcome from '@/screens/welcome/Welcome.vue';
-import Wallet from '@/screens/wallet/Wallet.vue';
+import AccountController from '@/controllers/accountController';
+import Accounts from '@/screens/accounts/Accounts.vue';
+import Network from '@/screens/accounts/Network.vue';
 import Crowdloans from '@/screens/crowdloans/Crowdloans.vue';
 import Dex from '@/screens/dex/Dex.vue';
-import Staking from '@/screens/staking/Staking.vue';
 import History from '@/screens/history/History.vue';
-import Token from '@/screens/wallet/token/Token.vue';
-import Main from '@/screens/main/Main.vue';
-import WelcomeBack from '@/screens/welcomeBack/WelcomeBack.vue';
-import AccountController from '@/controllers/accountController';
 import keyring from '@polkadot/ui-keyring';
+import Main from '@/screens/main/Main.vue';
+import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
+import Staking from '@/screens/staking/Staking.vue';
+import Token from '@/screens/wallet/token/Token.vue';
+import Wallet from '@/screens/wallet/Wallet.vue';
+import Welcome from '@/screens/welcome/Welcome.vue';
+import WelcomeBack from '@/screens/welcomeBack/WelcomeBack.vue';
+import { RouteConfig } from 'vue-router';
 
 export enum Components {
   Welcome = 'Welcome',
@@ -21,6 +24,9 @@ export enum Components {
   Staking = 'Staking',
   History = 'History',
   Token = 'Token',
+  AccountsLayout = 'AccountsLayout',
+  Accounts = 'Accounts',
+  Network = 'Network',
 }
 
 const accountController = new AccountController();
@@ -54,6 +60,23 @@ const routes: Array<RouteConfig> = [
         path: 'wallet',
         name: Components.Wallet,
         component: Wallet,
+      },
+      {
+        path: 'accounts',
+        name: Components.AccountsLayout,
+        component: AccountsLayout,
+        children: [
+          {
+            path: '/',
+            name: Components.Accounts,
+            component: Accounts,
+          },
+          {
+            path: ':network/',
+            name: Components.Network,
+            component: Network,
+          },
+        ],
       },
       {
         path: ':network/:token',

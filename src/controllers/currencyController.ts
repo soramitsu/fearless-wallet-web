@@ -271,6 +271,9 @@ export default class CurrencyController {
     if (!this.transfer) return returnNumberType ? 0 : new FPNumber(0);
 
     const { partialFee } = await this.transfer.paymentInfo(from);
+
+    // console.log('partialFee', new FPNumber(partialFee).toString());
+
     const [fee, unit] = partialFee.toHuman().split(' ');
     const precision = unit[0] === 'm' ? 3 : unit[0] === 'µ' ? 6 : 1;
     const decimals = new FPNumber(10 ** precision);

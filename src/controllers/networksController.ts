@@ -3,6 +3,8 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { Networks } from '@/store/networks/types';
 import { decodeAddress, encodeAddress } from '@polkadot/util-crypto';
+import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
+import type { SelectedWallet } from '@/store/accounts/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
 export default class NetworksController {
@@ -30,7 +32,11 @@ export default class NetworksController {
     await store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, loadHistory });
   }
 
-  public static formatAddress(address: string, networkName: string): string {
+  public static formatAddress({ address, ethereumAddress }: SelectedWallet, networkName: string): string {
+    const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
+
+    if (isEthereumNetwork) return ethereumAddress;
+
     const publicKey = decodeAddress(address, false);
     const networks = this.getNetworks();
     const network = networks.find(({ name }) => name === networkName);

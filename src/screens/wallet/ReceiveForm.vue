@@ -6,7 +6,7 @@
       <div class="address">{{ address }}</div>
 
       <div class="button" @click="copyAddress">
-        <img src="@/assets/copy.svg" class="icon" />
+        <img src="@/assets/copy-lavender.svg" class="icon" />
 
         Copy address
       </div>
@@ -20,11 +20,10 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { SelectedWallet } from '@/store/accounts/types';
 import { Networks } from '@/store/networks/types';
 import { firstCharToUp } from '@/util/helpers';
-import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import NetworksController from '@/controllers/networksController';
 import ActivityForm from './ActivityForm.vue';
 import QrCode from 'qrcode.vue';
@@ -52,9 +51,7 @@ export default class ReceiveForm extends Vue {
   }
 
   get address() {
-    if (ETHEREUM_NETWORKS.includes(this.network)) return this.selectedWallet.ethereumAddress;
-
-    return NetworksController.formatAddress(this.selectedWallet.address, this.network);
+    return NetworksController.formatAddress(this.selectedWallet, this.network);
   }
 
   mounted() {

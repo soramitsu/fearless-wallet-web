@@ -1,9 +1,12 @@
 <template>
-  <Popup :handlerClose="handlerClose">
-    <div class="invalid-popup">
-      <s-icon name="notifications-alert-triangle-24" />
+  <Popup :handlerClose="handlerClose" sizeWidth="medium" :showBorder="true">
+    <div class="notification-popup">
+      <img src="@/assets/info-triangle.svg" />
+
       <div class="text">{{ text }}</div>
       <div class="subtext">{{ subtext }}</div>
+
+      <Button v-if="showButton" size="medium" class="button" :text="buttonText" @click="handlerButton" />
     </div>
   </Popup>
 </template>
@@ -11,6 +14,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import Popup from './Popup.vue';
+import Button from './Button.vue';
 
 interface Headers {
   text: string;
@@ -18,11 +22,17 @@ interface Headers {
 }
 
 @Component({
-  components: { Popup },
+  components: {
+    Popup,
+    Button,
+  },
 })
-export default class InvalidPopup extends Vue {
+export default class NotificationPopup extends Vue {
   @Prop({ default: () => ({ text: '', subtext: '' }) }) headers!: Headers;
+  @Prop({ default: false }) showButton!: boolean;
+  @Prop(String) buttonText!: string;
   @Prop(Function) handlerClose!: VoidFunction;
+  @Prop(Function) handlerButton!: VoidFunction;
 
   get text() {
     return this.headers?.text ?? '';
@@ -35,7 +45,7 @@ export default class InvalidPopup extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.invalid-popup {
+.notification-popup {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -53,11 +63,9 @@ export default class InvalidPopup extends Vue {
     line-height: 150%;
   }
 
-  .s-icon-notifications-alert-triangle-24 {
-    width: 42px;
-    height: 42px;
-    font-size: 42px !important;
-    color: #ee7700;
+  .button {
+    margin-top: 20px;
+    width: 150px;
   }
 }
 </style>

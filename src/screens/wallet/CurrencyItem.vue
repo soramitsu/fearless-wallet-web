@@ -46,14 +46,14 @@
     <div class="activity-block">
       <template v-if="!showAssetsManagementForm">
         <CircleButton
-          iconName="send-gray"
+          iconName="send-white"
           backgroundColor="black"
           class="button"
           @click="toggleVisibleActivityForm('showSendForm', true, currency.getAllFields())"
         />
 
         <CircleButton
-          iconName="receive-grey"
+          iconName="receive-white"
           backgroundColor="black"
           class="button"
           @click="toggleVisibleActivityForm('showReceiveForm', true, currency.getAllFields())"
@@ -110,9 +110,9 @@ export default class CurrencyItem extends Vue {
 
   get usd24HoursChangeString() {
     const { usd24HoursChange } = this.currency;
-    const change = formattedNumber(usd24HoursChange);
+    const change = +formattedNumber(usd24HoursChange);
 
-    return usd24HoursChange > 0 ? `+${change}%` : usd24HoursChange < 0 ? `${change}%` : '';
+    return change > 0 ? `+${change}%` : change < 0 ? `${change}%` : '';
   }
 
   get tokenString() {
@@ -156,7 +156,7 @@ export default class CurrencyItem extends Vue {
   }
 
   @Watch('currencyVisible')
-  filter(value: boolean) {
+  toggleCurrencyVisible(value: boolean) {
     this.currency.setCurrencyVisible(value);
   }
 
@@ -216,9 +216,6 @@ export default class CurrencyItem extends Vue {
   }
 
   .descriptions-column {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
     width: 100%;
 
     .row {

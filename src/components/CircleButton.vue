@@ -27,7 +27,7 @@ export default class CircleButton extends Vue {
   }
 
   get imageClasses() {
-    const shiftLeft = ['chevron-left', 'send', 'send-gray'].includes(this.iconName);
+    const shiftLeft = ['chevron-left', 'send', 'send-white'].includes(this.iconName);
     const shiftRight = ['chevron-right'].includes(this.iconName);
 
     return [
@@ -56,7 +56,7 @@ export default class CircleButton extends Vue {
   border-radius: 50%;
 
   .image {
-    opacity: 0.85;
+    filter: invert(0.35);
   }
 
   .image-shift-left {
@@ -71,7 +71,7 @@ export default class CircleButton extends Vue {
     cursor: pointer;
 
     .image {
-      opacity: 1;
+      filter: invert(0.2);
     }
   }
 }

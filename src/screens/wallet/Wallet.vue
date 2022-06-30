@@ -18,8 +18,10 @@
       space="big"
       horizontalPlacement="right"
       verticalPlacement="center"
+      sizeWidth="big"
       :showIcon="true"
       :showSearch="true"
+      :showBorder="true"
       :staticHeight="true"
       :options="filteredOptionsNetworks"
       :toggleValue="toggleSelectedNetwork"
@@ -27,7 +29,7 @@
       :handlerFilter="handlerFilter.bind(null, 'popupFilterValue')"
     />
 
-    <Corners size="big" :bottomRightCorner="false">
+    <ContentForm :height="418">
       <div class="content">
         <ContentSettings
           :activeTabName="activeTabName"
@@ -42,7 +44,7 @@
         <Scroll>
           <Currencies
             v-if="showCurrencies"
-            :currencies="filterCurrencies"
+            :currencies="filteredCurrencies"
             :selectedNetwork="selectedNetwork"
             :showAssetsManagementForm="showAssetsManagementForm"
             :hideZeroBalance="hideZeroBalance"
@@ -52,7 +54,7 @@
           <NFTs v-else-if="showNfts" />
         </Scroll>
       </div>
-    </Corners>
+    </ContentForm>
 
     <SendForm
       v-if="showSendForm"
@@ -85,7 +87,7 @@ import { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
 import { TMutation } from '@/interfaces/common';
 import type { TabWallet } from '@/interfaces/common';
 import Scroll from '@/components/Scroll.vue';
-import Corners from '@/components/Corners.vue';
+import ContentForm from '@/components/ContentForm.vue';
 import PopupWithSelect from '@/components/PopupWithSelect.vue';
 import SelectNetworkButton from './SelectNetworkButton.vue';
 import ReceiveForm from './ReceiveForm.vue';
@@ -107,7 +109,7 @@ import AccountController from '@/controllers/accountController';
     NFTs,
     Scroll,
     TotalBalance,
-    Corners,
+    ContentForm,
   },
 })
 export default class Wallet extends Vue {
@@ -169,7 +171,7 @@ export default class Wallet extends Vue {
     return currencies;
   }
 
-  get filterCurrencies() {
+  get filteredCurrencies() {
     if (this.showAssetsManagementForm) return this.currenciesForSelectedWallet;
 
     const filter = this.filterValue.trim().toLowerCase();
@@ -285,15 +287,13 @@ export default class Wallet extends Vue {
   width: 100%;
   height: 100%;
 
-  .content {
-    display: flex;
-    flex-direction: column;
-    padding: 16px 0 0 16px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background-color: rgba(255, 255, 255, 0.05);
-    clip-path: $big-clip-path-left-top;
-    border-radius: 8px;
+  .content-form-height {
     height: 418px;
+  }
+
+  .content {
+    padding: 16px 0 0 16px;
+    height: 366px;
   }
 
   .header {

@@ -42,14 +42,14 @@
 
       <BorderButton
         text="Buy"
-        iconName="plus"
+        iconName="plus-pink"
         type="secondary"
         width="125px"
         @click="toggleVisible('showBuyForm', true)"
       />
     </div>
 
-    <Corners size="big" :bottomRightCorner="false">
+    <ContentForm :height="336">
       <div class="content">
         <div class="content-settings">
           <div class="history-label">History</div>
@@ -67,7 +67,7 @@
           <History :history="formattedHistory" :token="selectedToken" :filterHistoryValue="filterHistoryValue" />
         </Scroll>
       </div>
-    </Corners>
+    </ContentForm>
 
     <SendForm
       v-if="showSendForm"
@@ -129,7 +129,7 @@ import type { FilterHistory } from '@/interfaces/common';
 import BorderButton from '@/components/BorderButton.vue';
 import Scroll from '@/components/Scroll.vue';
 import Dropdown from '@/components/Dropdown.vue';
-import Corners from '@/components/Corners.vue';
+import ContentForm from '@/components/ContentForm.vue';
 import History from './History.vue';
 import TabButton from '@/components/TabButton.vue';
 import ReceiveForm from '../ReceiveForm.vue';
@@ -150,9 +150,9 @@ import PopupWithSelect from '@/components/PopupWithSelect.vue';
     TeleportForm,
     BuyForm,
     Dropdown,
-    Corners,
     SelectNetworkButton,
     PopupWithSelect,
+    ContentForm,
   },
 })
 export default class Token extends Vue {
@@ -199,9 +199,7 @@ export default class Token extends Vue {
   }
 
   get currentCurrency() {
-    return this.currenciesForSelectedWallet.find(
-      ({ token, mainNetwork }) => token === this.selectedToken && mainNetwork === this.selectedNetwork
-    );
+    return this.currenciesForSelectedWallet.find(({ mainNetwork }) => mainNetwork === this.selectedNetwork);
   }
 
   get formattedHistory() {
@@ -333,13 +331,7 @@ export default class Token extends Vue {
   }
 
   .content {
-    display: flex;
-    flex-direction: column;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background-color: rgba(255, 255, 255, 0.05);
-    clip-path: $big-clip-path-left-top;
-    border-radius: 8px;
-    height: 336px;
+    height: 284px;
 
     .content-settings {
       display: flex;

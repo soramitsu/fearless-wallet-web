@@ -10,6 +10,7 @@ import { getHistory } from '@/sybquery/history';
 import { getMockCurrencies } from '@/util/currenciesHelper';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Mutations, MutationTypes } from './mutations';
+import { SelectedWallet } from '@/store/accounts/types';
 import { State } from './state';
 import {
   NetworkJson,
@@ -54,7 +55,7 @@ const actions: ActionTree<State, State> & Actions = {
       ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi }) => {
         const networkName = name.toLocaleLowerCase();
         const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
-        const url = name === 'Calamari' ? nodes[1].url : nodes[0].url;
+        const url = nodes[0].url;
         const externalApi = originalExternalApi ?? ({} as ExternalApi);
 
         const provider = new WsProvider(url, autoConnectMs);
@@ -154,8 +155,10 @@ const actions: ActionTree<State, State> & Actions = {
               subscriptionsBalances?.[walletAddress]?.unsubscribe();
 
               if (loadHistory && networkName !== 'moonbase alpha') {
-                const formattedAddress =
-                  type !== 'ethereum' ? NetworksController.formatAddress(walletAddress, networkName) : walletAddress;
+                const formattedAddress = NetworksController.formatAddress(
+                  { address: walletAddress, ethereumAddress: walletAddress } as SelectedWallet,
+                  networkName
+                );
 
                 const history = await dispatch(ActionTypes.LOAD_HISTORY, {
                   historyExternalApi: externalApi.history,

@@ -25,10 +25,12 @@
         {{ statusConnectedText }}
       </div>
 
-      <CircleButton iconName="settings" class="button-margin" backgroundColor="none" @click="openSettings" />
+      <CircleButton iconName="settings" class="button-margin" backgroundColor="none" @click="toggleSettingsVisible" />
     </div>
 
     <SelectWalletPopup v-if="showSelectWalletPopup" @close="toggleSelectWalletPopupVisible" />
+
+    <SettingsPopup v-if="showSettings" :handlerClose="toggleSettingsVisible" />
   </div>
 </template>
 
@@ -43,6 +45,7 @@ import Logo from '@/components/Logo.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import Rotate from '@/components/Rotate.vue';
 import SelectWalletPopup from './SelectWalletPopup.vue';
+import SettingsPopup from './SettingsPopup.vue';
 
 @Component({
   components: {
@@ -50,12 +53,14 @@ import SelectWalletPopup from './SelectWalletPopup.vue';
     CircleButton,
     Rotate,
     SelectWalletPopup,
+    SettingsPopup,
   },
 })
 export default class Header extends Vue {
+  readonly accountController = new AccountController();
   walletNameRef = 'walletName';
-  accountController = new AccountController();
   showSelectWalletPopup = false;
+  showSettings = false;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
@@ -89,6 +94,10 @@ export default class Header extends Vue {
     }
   }
 
+  toggleSettingsVisible() {
+    this.showSettings = !this.showSettings;
+  }
+
   backToWallet() {
     this.$router.push({ name: Components.Wallet });
   }
@@ -100,10 +109,6 @@ export default class Header extends Vue {
 
   fullScreen() {
     alert(`fullScreen`);
-  }
-
-  openSettings() {
-    alert(`settings`);
   }
 }
 </script>

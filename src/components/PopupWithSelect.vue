@@ -2,7 +2,9 @@
   <Popup
     :headerText="header"
     :showSearch="showSearch"
+    :showBorder="showBorder"
     :staticHeight="staticHeight"
+    sizeWidth="big"
     :handlerFilter="handlerFilter"
     :handlerClose="handlerClose"
     :horizontalPlacement="horizontalPlacement"
@@ -42,7 +44,9 @@ export default class PopupWithSelect extends Vue {
   @Prop({ default: 'medium' }) space!: SpaceSize;
   @Prop({ default: false }) showIcon!: boolean;
   @Prop({ default: false }) showSearch!: boolean;
+  @Prop({ default: false }) showBorder!: boolean;
   @Prop({ default: false }) staticHeight!: boolean;
+  @Prop({ default: 'medium' }) sizeWidth!: boolean;
   @Prop(Function) toggleValue!: (value: string) => void;
   @Prop(Function) handlerClose!: VoidFunction;
   @Prop({ default: () => () => null }) handlerFilter!: (value: string) => void;

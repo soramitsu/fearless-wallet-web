@@ -77,7 +77,7 @@
       />
     </div>
 
-    <InvalidPopup v-if="showInvalidPopup" :handlerClose="handlerClosePopup" :headers="invalidPopupMessages" />
+    <NotificationPopup v-if="showNotificationPopup" :handlerClose="handlerClosePopup" :headers="invalidMessages" />
   </div>
 </template>
 
@@ -88,13 +88,13 @@ import { isHex } from '@polkadot/util';
 import { GettersTypes } from '@/store/accounts/getters';
 import { mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
 import { Components } from '@/router/routes';
-import { INVALID_POPUP_MESSAGES, InvalidValueName } from '@/consts/invalidPopupMessages';
+import { INVALID_MESSAGES, InvalidValueName } from '@/consts/invalidMessages';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/ethereumNetworks';
 import { DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import type { DerivationPath, TypeFiledForImport, WalletConnectionStatus } from '@/interfaces/common';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import keyring from '@polkadot/ui-keyring';
-import InvalidPopup from '@/components/InvalidPopup.vue';
+import NotificationPopup from '@/components/NotificationPopup.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import Button from '@/components/Button.vue';
 import CreateWallet from './CreateWallet.vue';
@@ -114,7 +114,7 @@ type FieldsComponent = 'passwordJson' | 'derivationPath';
     ImportWallet,
     FinishForm,
     PasswordForm,
-    InvalidPopup,
+    NotificationPopup,
     NicknameForm,
     AdvancedForm,
     AdvancedButton,
@@ -169,12 +169,12 @@ export default class Layout extends Vue {
     return !!this.json;
   }
 
-  get showInvalidPopup() {
+  get showNotificationPopup() {
     return this.invalidValueName !== '';
   }
 
-  get invalidPopupMessages() {
-    return this.invalidValueName ? INVALID_POPUP_MESSAGES[this.invalidValueName] : {};
+  get invalidMessages() {
+    return this.invalidValueName ? INVALID_MESSAGES[this.invalidValueName] : {};
   }
 
   get showNicknameForm() {
@@ -293,7 +293,7 @@ export default class Layout extends Vue {
     else this.importWallet();
 
     // if a invalid popup is shown, then the index does not need to be increased
-    this.currentIndexPage += this.showInvalidPopup ? 0 : 1;
+    this.currentIndexPage += this.showNotificationPopup ? 0 : 1;
 
     if (
       this.haveAccounts &&

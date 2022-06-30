@@ -5,7 +5,7 @@ import { Subscription } from 'rxjs';
 import { WalletAddress } from '@/interfaces/common';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
-export type Nodes = {
+export type Node = {
   url: string;
   name: string;
 };
@@ -43,7 +43,7 @@ export type NetworkJson = {
   name: string;
   externalApi?: ExternalApi;
   assets: Assets[];
-  nodes: Nodes[];
+  nodes: Node[];
   icon: string;
   addressPrefix: number;
   types: Types;
@@ -54,7 +54,7 @@ type Network = {
   name: string;
   api: ApiPromise;
   provider: WsProvider;
-  nodes: Nodes[];
+  nodes: Node[];
   assets: Assets[];
   addressPrefix: number;
   isEthereumNetwork: boolean;

@@ -1,6 +1,6 @@
 export type InvalidValueName = 'passphrase' | 'mnemonic' | 'rawSeed' | 'jsonPassword' | 'jsonInvalid' | '';
 
-export const INVALID_POPUP_MESSAGES = {
+export const INVALID_MESSAGES = {
   passphrase: {
     text: 'Invalid passphrase',
     subtext: 'Invalid passphrase sequence, please try again',

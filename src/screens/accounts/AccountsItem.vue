@@ -20,9 +20,9 @@
 </template>
 
 <script lang="ts">
+import CircleButton from '@/components/CircleButton.vue';
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { getImgPathByNetworkName } from '@/util/imgPath';
-import CircleButton from '@/components/CircleButton.vue';
 
 @Component({
   components: { CircleButton },

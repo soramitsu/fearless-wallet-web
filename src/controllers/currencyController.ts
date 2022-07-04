@@ -3,11 +3,11 @@ import LocalStorageController from '@/controllers/localStorageController';
 import NetworksController from '@/controllers/networksController';
 import store from '@/store';
 import teleportInfo from '@/consts/teleport';
-import { AssetsJson } from '@/store/networks/types';
-import { AvailableInNetworks } from '@/interfaces/currencies';
 import { BN, isFunction } from '@polkadot/util';
 import { FPNumber } from '@/util/fp';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import type { AssetsJson } from '@/store/networks/types';
+import type { AvailableInNetworks } from '@/interfaces/currencies';
 import type { SubmittableExtrinsic } from '@polkadot/api-base/types';
 import type { MainNetworkName } from '@/consts/teleport';
 
@@ -34,21 +34,16 @@ export default class CurrencyController {
   private readonly lsCurrency = new LocalStorageController('currency');
   private readonly currencyVisibleStorageName: string;
   private readonly decimals: FPNumber;
-  private availableInNetworks: AvailableInNetworks[];
   public transfer!: SubmittableExtrinsic<'promise'> | undefined;
-  public mainNetwork: string;
-  public token: string;
-  public price: number;
-  public usd24HoursChange: number;
-  public precision: number;
 
-  constructor({ mainNetwork, token, price, usd24HoursChange, availableInNetworks, precision }: Props) {
-    this.mainNetwork = mainNetwork;
-    this.token = token;
-    this.price = price;
-    this.usd24HoursChange = usd24HoursChange;
-    this.availableInNetworks = availableInNetworks;
-    this.precision = precision;
+  constructor(
+    public mainNetwork: string,
+    public token: string,
+    public price: number,
+    public usd24HoursChange: number,
+    public precision: number,
+    public availableInNetworks: AvailableInNetworks[]
+  ) {
     this.decimals = this.getDecimals();
     this.currencyVisibleStorageName = `visible-${token}`;
   }
@@ -271,9 +266,6 @@ export default class CurrencyController {
     if (!this.transfer) return returnNumberType ? 0 : new FPNumber(0);
 
     const { partialFee } = await this.transfer.paymentInfo(from);
-
-    // console.log('partialFee', new FPNumber(partialFee).toString());
-
     const [fee, unit] = partialFee.toHuman().split(' ');
     const precision = unit[0] === 'm' ? 3 : unit[0] === 'µ' ? 6 : 1;
     const decimals = new FPNumber(10 ** precision);
@@ -289,15 +281,15 @@ export default class CurrencyController {
 
     const unsubscribe = await this.transfer!.signAndSend(pair, ({ status }) => {
       if (status.isInBlock) {
-        console.log(`Successful transfer of ${amount} with hash ${status.asInBlock.toHex()}`);
+        console.info(`Successful transfer of ${amount} with hash ${status.asInBlock.toHex()}`);
       } else if (status.isFinalized) {
-        console.log(`Transaction finalized at blockHash ${status.asFinalized}`);
+        console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
 
         unsubscribe();
 
         pair.lock();
       } else {
-        console.log(`Status of transfer: ${status.type}`);
+        console.info(`Status of transfer: ${status.type}`);
       }
     });
   }

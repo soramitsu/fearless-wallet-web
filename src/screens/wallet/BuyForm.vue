@@ -5,8 +5,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
 import ActivityForm from './ActivityForm.vue';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component({
   components: {

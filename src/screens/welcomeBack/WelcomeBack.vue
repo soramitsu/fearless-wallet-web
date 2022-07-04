@@ -17,11 +17,11 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
-import { Components } from '@/router/routes';
 import AccountController from '@/controllers/accountController';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import BorderButton from '@/components/BorderButton.vue';
+import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Components } from '@/router/routes';
 
 @Component({
   components: {

@@ -1,7 +1,7 @@
-import { AssetsJson, Networks, TokensPrice } from './types';
-import { Currencies } from '@/interfaces/currencies';
-import { History } from '@/interfaces/history';
-import { Subscription } from 'rxjs';
+import type { AssetsJson, Networks, TokensPrice } from './types';
+import type { Currencies } from '@/interfaces/currencies';
+import type { History } from '@/interfaces/history';
+import type { Subscription } from 'rxjs';
 
 export type State = {
   networks: Networks;

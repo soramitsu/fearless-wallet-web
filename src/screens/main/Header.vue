@@ -35,18 +35,17 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store/accounts/types';
-import { Components } from '@/router/routes';
-import AccountController from '@/controllers/accountController';
 import Logo from '@/components/Logo.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import Rotate from '@/components/Rotate.vue';
 import SelectWalletPopup from './SelectWalletPopup.vue';
 import SettingsPopup from './SettingsPopup.vue';
-
+import { Component, Vue } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { Components } from '@/router/routes';
+import type { SelectedWallet } from '@/store/accounts/types';
+import type AccountController from '@/controllers/accountController';
 @Component({
   components: {
     Logo,
@@ -57,12 +56,12 @@ import SettingsPopup from './SettingsPopup.vue';
   },
 })
 export default class Header extends Vue {
-  readonly accountController = new AccountController();
   walletNameRef = 'walletName';
   showSelectWalletPopup = false;
   showSettings = false;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getAccountController) accountController!: AccountController;
 
   get showBackIcon() {
     return this.$route.name === Components.Token;

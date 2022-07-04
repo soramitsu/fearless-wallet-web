@@ -1,6 +1,6 @@
-import { WalletAddress } from '@/interfaces/common';
+import type { WalletAddress } from '@/interfaces/common';
 import type { AccountBalance } from '@/interfaces/balances';
-import CurrencyController from '@/controllers/currencyController';
+import type CurrencyController from '@/controllers/currencyController';
 
 export interface AvailableInNetworks {
   network: string;

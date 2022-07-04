@@ -1,18 +1,21 @@
 import axios from 'axios';
 import CurrencyController from '@/controllers/currencyController';
+import keyring from '@polkadot/ui-keyring';
 import NetworksController from '@/controllers/networksController';
-import { ActionContext, ActionTree } from 'vuex';
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { Currency } from '@/interfaces/currencies';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import { formatBalance } from '@/util/balances';
 import { getHistory } from '@/sybquery/history';
 import { getMockCurrencies } from '@/util/currenciesHelper';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Mutations, MutationTypes } from './mutations';
-import { SelectedWallet } from '@/store/accounts/types';
-import { State } from './state';
-import {
+import type AccountController from '@/controllers/accountController';
+import type { ActionContext, ActionTree } from 'vuex';
+import type { Currency } from '@/interfaces/currencies';
+import type { SelectedWallet } from '@/store/accounts/types';
+import type { State } from './state';
+import type {
   NetworkJson,
   Networks,
   AssetsJson,
@@ -23,6 +26,8 @@ import {
   TokensPriceJson,
   TokensPrice,
   ExternalApi,
+  UpdateActiveNode,
+  Accounts,
 } from './types';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 
@@ -32,6 +37,7 @@ export enum ActionTypes {
   LOAD_TOKENS_PRICE = 'LOAD_TOKENS_PRICE',
   LOAD_HISTORY = 'LOAD_HISTORY',
   SUBSCRIBE_TO_BALANCES = 'SUBSCRIBE_TO_BALANCES',
+  UPDATE_ACTIVE_NODE = 'UPDATE_ACTIVE_NODE',
 }
 
 type AugmentedActionContext = {
@@ -44,32 +50,26 @@ export type Actions = {
   [ActionTypes.LOAD_TOKENS_PRICE](store: AugmentedActionContext): Promise<void>;
   [ActionTypes.LOAD_HISTORY](store: AugmentedActionContext, props: LoadHistory): Promise<void>;
   [ActionTypes.SUBSCRIBE_TO_BALANCES](store: AugmentedActionContext, props: SubscribeToBalances): Promise<void>;
+  [ActionTypes.UPDATE_ACTIVE_NODE](store: AugmentedActionContext, props: UpdateActiveNode): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
-  async [ActionTypes.LOAD_NETWORKS]({ commit }, { url, autoConnectMs = 0 }) {
+  async [ActionTypes.LOAD_NETWORKS]({ commit, getters }, { url, autoConnectMs = 0 }) {
     const { data } = await axios.get(url);
     const networksJson: NetworkJson[] = data;
+    const accountController: AccountController = getters[AccountsGettersTypes.getAccountController];
+    const autoSelectNodes = accountController.getAutoSelectNodesValue();
+    const activeNodes = accountController.getActiveNodes();
 
     const networks: Networks = networksJson.map(
       ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi }) => {
         const networkName = name.toLocaleLowerCase();
         const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
-        const url = nodes[0].url;
         const externalApi = originalExternalApi ?? ({} as ExternalApi);
+        const autoSelectNode = autoSelectNodes[networkName] ?? true;
+        const url = autoSelectNode ? nodes[0].url : activeNodes[networkName].url;
 
-        const provider = new WsProvider(url, autoConnectMs);
-        const api = new ApiPromise({ provider });
-
-        try {
-          api.connect();
-
-          // console.log(`%c${name.toUpperCase()}. API connection successful.`, 'background:green;color:#fff');
-        } catch (ex) {
-          api.disconnect();
-
-          console.log(`%c${name.toUpperCase()}. Connection to api failed.`, 'background:red;color:#fff');
-        }
+        const { api, provider } = connectToApi(name, url, autoConnectMs);
 
         return {
           name: networkName,
@@ -135,10 +135,17 @@ const actions: ActionTree<State, State> & Actions = {
     return history ?? mockHistory;
   },
   async [ActionTypes.SUBSCRIBE_TO_BALANCES](
-    { dispatch, getters, commit, state: { networks, tokensPrice } },
-    { accounts, loadHistory }
+    { dispatch, getters, commit, state: { networks: networksStore, tokensPrice } },
+    { accounts, loadHistory, networksProps }
   ) {
-    console.log('accounts', accounts);
+    console.info('accounts', accounts);
+
+    commit(MutationTypes.SET_ALL_NETWORKS_IS_LOADED, {
+      value: false,
+    });
+
+    // if the list of networks is not transferred, then we subscribe to all
+    const networks = networksProps ?? networksStore;
 
     await Promise.allSettled(
       networks.map(
@@ -182,19 +189,19 @@ const actions: ActionTree<State, State> & Actions = {
                 const data = (result as any).data;
                 const balance = formatBalance(data as AccountData);
 
-                const currency: Currency = new CurrencyController({
+                const currency: Currency = new CurrencyController(
+                  networkName,
                   token,
-                  mainNetwork: networkName,
                   price,
                   usd24HoursChange,
                   precision,
-                  availableInNetworks: [
+                  [
                     {
                       network: networkName,
                       balance,
                     },
-                  ],
-                });
+                  ]
+                );
 
                 commit(MutationTypes.UPDATE_CURRENCY, {
                   walletAddress,
@@ -209,7 +216,7 @@ const actions: ActionTree<State, State> & Actions = {
               });
             });
           } catch (ex) {
-            console.log(
+            console.info(
               `
                 Subscribe to ${networkName.toUpperCase()} failed
                 ${ex}
@@ -224,6 +231,54 @@ const actions: ActionTree<State, State> & Actions = {
       value: true,
     });
   },
+  async [ActionTypes.UPDATE_ACTIVE_NODE](
+    { state, commit, dispatch },
+    { networkName, nodeUrl: nodeUrlProp, oldNodeUrl }
+  ) {
+    const networks = state.networks;
+    const network = networks.find(({ name }) => name === networkName)!; // eslint-disable-line
+    const nodeUrl = nodeUrlProp === '' ? network.nodes[0].url : nodeUrlProp;
+
+    if (nodeUrl === oldNodeUrl || (oldNodeUrl === '' && nodeUrl === network.nodes[0].url)) return;
+
+    network.api.disconnect();
+    network.provider.disconnect();
+
+    const { provider, api } = connectToApi(networkName, nodeUrl, 0);
+
+    commit(MutationTypes.UPDATE_ACTIVE_NODE, {
+      networkName,
+      provider,
+      api,
+    });
+
+    const accounts = keyring.getAccounts().reduce((result, { address }) => {
+      const { type } = keyring.getPair(address);
+
+      result[address] = { type };
+
+      return result;
+    }, {} as Accounts);
+
+    await dispatch(ActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, loadHistory: false, networksProps: [network] });
+  },
 };
+
+export function connectToApi(name: string, url: string, autoConnectMs = 0) {
+  const provider = new WsProvider(url, autoConnectMs);
+  const api = new ApiPromise({ provider });
+
+  try {
+    api.connect();
+
+    // console.info(`%c${name.toUpperCase()}. API connection successful.`, 'background:green;color:#fff');
+  } catch (ex) {
+    // api.disconnect();
+
+    console.info(`%c${name.toUpperCase()}. Connection to api failed.`, 'background:red;color:#fff');
+  }
+
+  return { provider, api };
+}
 
 export default actions;

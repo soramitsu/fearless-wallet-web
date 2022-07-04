@@ -104,15 +104,6 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import { GettersTypes as ApiGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store/accounts/types';
-import { Networks } from '@/store/networks/types';
-import { firstCharToUp } from '@/util/helpers';
-import { Currency } from '@/interfaces/currencies';
-import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import NetworksController from '@/controllers/networksController';
 import Input from '@/components/Input.vue';
 import FloatInput from '@/components/FloatInput.vue';
@@ -121,6 +112,15 @@ import Corners from '@/components/Corners.vue';
 import ActivityForm from './ActivityForm.vue';
 import SendingPopup from './SendingPopup.vue';
 import MaxButton from './MaxButton.vue';
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import { GettersTypes as ApiGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { SelectedWallet } from '@/store/accounts/types';
+import { Networks } from '@/store/networks/types';
+import { firstCharToUp } from '@/util/helpers';
+import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
+import type { Currency } from '@/interfaces/currencies';
 
 @Component({
   components: {

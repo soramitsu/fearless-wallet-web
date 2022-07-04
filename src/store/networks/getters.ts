@@ -1,8 +1,8 @@
-import { AssetsJson, Networks } from './types';
-import { Currencies } from '@/interfaces/currencies';
-import { GetterTree } from 'vuex';
-import { History } from '@/interfaces/history';
-import { State } from './state';
+import type { AssetsJson, Networks } from './types';
+import type { Currencies } from '@/interfaces/currencies';
+import type { GetterTree } from 'vuex';
+import type { History } from '@/interfaces/history';
+import type { State } from './state';
 
 export enum GettersTypes {
   getNetworks = 'getNetworks',

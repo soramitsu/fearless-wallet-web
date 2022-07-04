@@ -44,10 +44,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch, VModel } from 'vue-property-decorator';
-import type { DerivationPath, TypeFiledForImport } from '@/interfaces/common';
 import PopupWithSelect from '@/components/PopupWithSelect.vue';
 import Input from '@/components/Input.vue';
+import { Component, Vue, Prop, Watch, VModel } from 'vue-property-decorator';
+import type { DerivationPath, TypeFiledForImport } from '@/interfaces/common';
 
 @Component({
   components: {

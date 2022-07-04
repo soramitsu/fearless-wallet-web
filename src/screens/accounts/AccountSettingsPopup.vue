@@ -39,10 +39,10 @@
 </template>
 
 <script lang="ts">
+import Popup from '@/components/Popup.vue';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { firstCharToUp } from '@/util/helpers';
 import { Components } from '@/router/routes';
-import Popup from '@/components/Popup.vue';
 
 @Component({
   components: { Popup },

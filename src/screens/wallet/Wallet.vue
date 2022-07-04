@@ -73,19 +73,6 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
-import { Getter, Mutation } from 'vuex-class';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store/accounts/types';
-import { Networks, SetCurrenciesProps } from '@/store/networks/types';
-import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
-import { getImgPathByNetworkName } from '@/util/imgPath';
-import { getCurrencies } from '@/util/currenciesHelper';
-import { firstCharToUp } from '@/util/helpers';
-import { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
-import { TMutation } from '@/interfaces/common';
-import type { TabWallet } from '@/interfaces/common';
 import Scroll from '@/components/Scroll.vue';
 import ContentForm from '@/components/ContentForm.vue';
 import PopupWithSelect from '@/components/PopupWithSelect.vue';
@@ -96,7 +83,19 @@ import ContentSettings from './ContentSettings.vue';
 import Currencies from './Currencies.vue';
 import TotalBalance from './TotalBalance.vue';
 import NFTs from './NFTs.vue';
-import AccountController from '@/controllers/accountController';
+import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Getter, Mutation } from 'vuex-class';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { SelectedWallet } from '@/store/accounts/types';
+import { Networks, SetCurrenciesProps } from '@/store/networks/types';
+import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
+import { getImgPathByNetworkName } from '@/util/imgPath';
+import { getCurrencies } from '@/util/currenciesHelper';
+import { firstCharToUp } from '@/util/helpers';
+import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
+import type { TMutation, TabWallet } from '@/interfaces/common';
+import type AccountController from '@/controllers/accountController';
 
 @Component({
   components: {
@@ -114,7 +113,6 @@ import AccountController from '@/controllers/accountController';
 })
 export default class Wallet extends Vue {
   readonly selectNetworkButtonRef = 'selectNetworkButton';
-  readonly accountController = new AccountController();
   showAssetsManagementForm = false;
   hideZeroBalance = false;
   selectedCurrency!: {
@@ -135,6 +133,7 @@ export default class Wallet extends Vue {
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
   @Getter(NetworksGettersTypes.getAllNetworksIsLoaded) allNetworksIsLoaded!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getAccountController) accountController!: AccountController;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
 
   get currenciesForSelectedWallet() {
@@ -293,7 +292,9 @@ export default class Wallet extends Vue {
 
   .content {
     padding: 16px 0 0 16px;
-    height: 366px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
 
   .header {

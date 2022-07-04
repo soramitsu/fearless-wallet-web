@@ -1,9 +1,10 @@
 import store from '@/store';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
-import { Networks } from '@/store/networks/types';
 import { decodeAddress, encodeAddress } from '@polkadot/util-crypto';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { Node } from '@/store/networks/types';
+import type { Networks } from '@/store/networks/types';
 import type { SelectedWallet } from '@/store/accounts/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
@@ -30,6 +31,10 @@ export default class NetworksController {
 
   public static async subscribeToBalancesOfNetworks(accounts: SubjectInfo, loadHistory: boolean): Promise<void> {
     await store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, loadHistory });
+  }
+
+  public static async updateActiveNode(networkName: string, nodeUrl: string, oldNodeUrl: string): Promise<void> {
+    await store.dispatch(NetworksActionTypes.UPDATE_ACTIVE_NODE, { networkName, nodeUrl, oldNodeUrl });
   }
 
   public static formatAddress({ address, ethereumAddress }: SelectedWallet, networkName: string): string {

@@ -21,9 +21,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
 import Loading from '@/components/Loading.vue';
 import Popup from '@/components/Popup.vue';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 
 @Component({

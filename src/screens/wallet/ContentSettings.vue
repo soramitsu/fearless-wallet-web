@@ -27,12 +27,12 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
-import type { TabWallet } from '@/interfaces/common';
 import TabButton from '@/components/TabButton.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import Switcher from '@/components/Switcher.vue';
+import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
+import type { TabWallet } from '@/interfaces/common';
 
 @Component({
   components: {
@@ -80,12 +80,11 @@ export default class ContentSettings extends Vue {
   display: flex;
   justify-content: space-between;
   margin-bottom: 10px;
-  width: 100%;
+  margin-right: 16px;
 
   .settings-part {
     display: flex;
     align-items: center;
-    margin-right: 16px;
     height: 42px;
 
     .tab {

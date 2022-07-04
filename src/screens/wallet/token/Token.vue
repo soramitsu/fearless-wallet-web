@@ -112,6 +112,19 @@
 </template>
 
 <script lang="ts">
+import BorderButton from '@/components/BorderButton.vue';
+import Scroll from '@/components/Scroll.vue';
+import Corners from '@/components/Corners.vue';
+import Dropdown from '@/components/Dropdown.vue';
+import ContentForm from '@/components/ContentForm.vue';
+import History from './History.vue';
+import TabButton from '@/components/TabButton.vue';
+import ReceiveForm from '../ReceiveForm.vue';
+import SendForm from '../SendForm.vue';
+import TeleportForm from '../TeleportForm.vue';
+import BuyForm from '../BuyForm.vue';
+import SelectNetworkButton from '../SelectNetworkButton.vue';
+import PopupWithSelect from '@/components/PopupWithSelect.vue';
 import { Component, Vue } from 'vue-property-decorator';
 import { Currencies } from '@/interfaces/currencies';
 import { Getter } from 'vuex-class';
@@ -123,21 +136,9 @@ import { Components } from '@/router/routes';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { firstCharToUp } from '@/util/helpers';
 import { formattedNumber, formattedPrice } from '@/util/numbers';
-import { History as THistory } from '@/interfaces/history';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import type { FilterHistory } from '@/interfaces/common';
-import BorderButton from '@/components/BorderButton.vue';
-import Scroll from '@/components/Scroll.vue';
-import Dropdown from '@/components/Dropdown.vue';
-import ContentForm from '@/components/ContentForm.vue';
-import History from './History.vue';
-import TabButton from '@/components/TabButton.vue';
-import ReceiveForm from '../ReceiveForm.vue';
-import SendForm from '../SendForm.vue';
-import TeleportForm from '../TeleportForm.vue';
-import BuyForm from '../BuyForm.vue';
-import SelectNetworkButton from '../SelectNetworkButton.vue';
-import PopupWithSelect from '@/components/PopupWithSelect.vue';
+import type { History as THistory } from '@/interfaces/history';
 
 @Component({
   components: {
@@ -153,6 +154,7 @@ import PopupWithSelect from '@/components/PopupWithSelect.vue';
     SelectNetworkButton,
     PopupWithSelect,
     ContentForm,
+    Corners,
   },
 })
 export default class Token extends Vue {
@@ -331,7 +333,9 @@ export default class Token extends Vue {
   }
 
   .content {
-    height: 284px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 
     .content-settings {
       display: flex;

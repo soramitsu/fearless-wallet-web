@@ -1,4 +1,4 @@
-import { DerivationPath } from '@/interfaces/common';
+import type { DerivationPath } from '@/interfaces/common';
 
 export const DEFAULT_DERIVATION_PATH: DerivationPath = {
   substrate: {

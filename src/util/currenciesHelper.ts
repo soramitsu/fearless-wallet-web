@@ -1,9 +1,9 @@
-import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
-import { Currency, Currencies } from '@/interfaces/currencies';
-import { SelectedWallet } from '@/store/accounts/types';
 import CurrencyController from '@/controllers/currencyController';
 import keyring from '@polkadot/ui-keyring';
-import { Networks } from '@/store/networks/types';
+import { Currencies, Currency } from '@/interfaces/currencies';
+import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
+import type { Networks } from '@/store/networks/types';
+import type { SelectedWallet } from '@/store/accounts/types';
 
 export function getCurrencies(currency: Currency[], { address, ethereumAddress }: SelectedWallet) {
   const substrate = currency.filter(({ mainNetwork }) => !ETHEREUM_NETWORKS.includes(mainNetwork));
@@ -17,14 +17,7 @@ export function getCurrencies(currency: Currency[], { address, ethereumAddress }
 
 export function getMockCurrencies(networks: Networks): Currencies {
   const currencyArray: Currency[] = networks.map(({ name, assets }) => {
-    return new CurrencyController({
-      availableInNetworks: [],
-      mainNetwork: name,
-      price: 0,
-      token: assets[0]?.assetId,
-      usd24HoursChange: 0,
-      precision: 0,
-    });
+    return new CurrencyController(name, assets[0]?.assetId, 0, 0, 0, []);
   });
 
   const currencies: Currencies = {};

@@ -29,14 +29,14 @@
 </template>
 
 <script lang="ts">
+import Hint from '@/components/Hint.vue';
+import ValidatedInput from '@/components/ValidatedInput.vue';
 import { Getter, Mutation } from 'vuex-class';
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { GettersTypes } from '@/store/accounts/getters';
 import { MutationTypes } from '@/store/accounts/mutations';
 import { SetPasswordProps } from '@/store/accounts/types';
-import { TMutation } from '@/interfaces/common';
-import Hint from '@/components/Hint.vue';
-import ValidatedInput from '@/components/ValidatedInput.vue';
+import type { TMutation } from '@/interfaces/common';
 
 @Component({
   components: { Hint, ValidatedInput },

@@ -30,18 +30,18 @@
 </template>
 
 <script lang="ts">
+import Popup from '@/components/Popup.vue';
+import TotalBalance from '@/screens/wallet/TotalBalance.vue';
+import keyring from '@polkadot/ui-keyring';
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { SelectedWallet, SetSelectedWalletProps } from '@/store/accounts/types';
 import { Components } from '@/router/routes';
-import { Currencies } from '@/interfaces/currencies';
-import { TMutation } from '@/interfaces/common';
-import Popup from '@/components/Popup.vue';
-import TotalBalance from '@/screens/wallet/TotalBalance.vue';
-import keyring from '@polkadot/ui-keyring';
+import type { SelectedWallet, SetSelectedWalletProps } from '@/store/accounts/types';
+import type { Currencies } from '@/interfaces/currencies';
+import type { TMutation } from '@/interfaces/common';
 
 @Component({
   components: {

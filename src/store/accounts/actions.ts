@@ -1,7 +1,6 @@
-import { ActionTree, ActionContext } from 'vuex';
-import { Mutations } from './mutations';
-
-import { State } from './state';
+import type { ActionTree, ActionContext } from 'vuex';
+import type { Mutations } from './mutations';
+import type { State } from './state';
 
 export enum ActionTypes {
   TEST = 'TEST',
@@ -17,7 +16,7 @@ export type Actions = {
 
 const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.TEST]({ commit }) {
-    console.log('test');
+    console.info('test');
   },
 };
 

@@ -82,17 +82,6 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import { isHex } from '@polkadot/util';
-import { GettersTypes } from '@/store/accounts/getters';
-import { mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
-import { Components } from '@/router/routes';
-import { INVALID_MESSAGES, InvalidValueName } from '@/consts/invalidMessages';
-import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/ethereumNetworks';
-import { DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
-import type { DerivationPath, TypeFiledForImport, WalletConnectionStatus } from '@/interfaces/common';
-import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import keyring from '@polkadot/ui-keyring';
 import NotificationPopup from '@/components/NotificationPopup.vue';
 import CircleButton from '@/components/CircleButton.vue';
@@ -105,6 +94,17 @@ import NicknameForm from './NicknameForm.vue';
 import AdvancedForm from './AdvancedForm.vue';
 import AdvancedButton from './AdvancedButton.vue';
 import AccountController from '@/controllers/accountController';
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import { isHex } from '@polkadot/util';
+import { GettersTypes } from '@/store/accounts/getters';
+import { mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
+import { Components } from '@/router/routes';
+import { INVALID_MESSAGES, InvalidValueName } from '@/consts/invalidMessages';
+import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/ethereumNetworks';
+import { DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
+import type { DerivationPath, TypeFiledForImport, WalletConnectionStatus } from '@/interfaces/common';
+import type { KeyringPair$Json } from '@polkadot/keyring/types';
 
 type FieldsComponent = 'passwordJson' | 'derivationPath';
 

@@ -44,10 +44,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
 import Layout from './Layout.vue';
 import Logo from '@/components/Logo.vue';
 import Button from '@/components/Button.vue';
+import { Component, Vue } from 'vue-property-decorator';
 import type { WalletConnectionStatus } from '@/interfaces/common';
 
 @Component({

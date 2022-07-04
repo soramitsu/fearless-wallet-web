@@ -1,6 +1,6 @@
 import LocalStorageController from '@/controllers/localStorageController';
 import { Hash } from '@/util/hash';
-import { Node } from '@/store/networks/types';
+import type { Node } from '@/store/networks/types';
 
 interface PasswordValue {
   value: string;
@@ -144,8 +144,8 @@ export default class AccountController {
   }
 
   public updateCustomNodes(value: Node, network: string, oldValue: Node): void {
-    const nodes = this.getCustomNodes();
-    const networkNodes = nodes[network] ?? [];
+    const customNodes = this.getCustomNodes();
+    const networkNodes = customNodes[network] ?? [];
 
     const oldValueIndex = networkNodes.findIndex(({ name, url }) => name === oldValue.name && url === oldValue.url);
 
@@ -155,9 +155,9 @@ export default class AccountController {
       networkNodes.push(value);
     }
 
-    nodes[network] = networkNodes;
+    customNodes[network] = networkNodes;
 
-    this.lsAccount.set(this.customNodesStorageName, nodes);
+    this.lsAccount.set(this.customNodesStorageName, customNodes);
   }
 
   public deleteNode(value: Node, network: string): void {

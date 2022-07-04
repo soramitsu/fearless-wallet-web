@@ -22,9 +22,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
 import BorderButton from '@/components/BorderButton.vue';
 import MnemonicColumns from './MnemonicColumns.vue';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component({
   components: {

@@ -52,8 +52,6 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component } from 'vue-property-decorator';
-import { Components } from '@/router/routes';
 import ContentForm from '@/components/ContentForm.vue';
 import Input from '@/components/Input.vue';
 import CircleButton from '@/components/CircleButton.vue';
@@ -62,8 +60,12 @@ import EditNodeForm from './EditNodeForm.vue';
 import NodeSettingsPopup from './NodeSettingsPopup.vue';
 import NotificationPopup from '@/components/NotificationPopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
-import AccountController from '@/controllers/accountController';
 import Network from './Network.vue';
+import type AccountController from '@/controllers/accountController';
+import { Vue, Component } from 'vue-property-decorator';
+import { Components } from '@/router/routes';
+import { Getter } from 'vuex-class';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({
   components: {
@@ -78,8 +80,6 @@ import Network from './Network.vue';
   },
 })
 export default class AccountsLayout extends Vue {
-  readonly accountController = new AccountController();
-
   selectedNetwork = '';
   selectedAddress = '';
   selectedNodeName = '';
@@ -88,6 +88,8 @@ export default class AccountsLayout extends Vue {
   showEditNodeForm = false;
   showNodeSettings = false;
   showNotificationPopup = false;
+
+  @Getter(AccountsGettersTypes.getAccountController) accountController!: AccountController;
 
   get path() {
     const path = 'Accounts';

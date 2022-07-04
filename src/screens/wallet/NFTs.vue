@@ -5,8 +5,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
 import ComingSoon from '@/components/ComingSoon.vue';
+import { Component, Vue } from 'vue-property-decorator';
 
 @Component({ components: { ComingSoon } })
 export default class NFTs extends Vue {}

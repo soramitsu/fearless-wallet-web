@@ -16,12 +16,12 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import { firstCharToUp } from '@/util/helpers';
-import { HistoryNode } from '@/interfaces/history';
-import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
 import Logo from '@/components/Logo.vue';
 import CurrencyController from '@/controllers/currencyController';
+import { Component, Vue, Prop } from 'vue-property-decorator';
+import { firstCharToUp } from '@/util/helpers';
+import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
+import { HistoryNode, TransferType, TransactionType as TTransaction } from '@/interfaces/history';
 
 @Component({
   components: {
@@ -51,11 +51,11 @@ export default class HistoryItem extends Vue {
   get type() {
     const { reward, transfer } = this.historyItem;
 
-    return transfer !== null ? 'transfer' : reward !== null ? 'reward' : 'extrinsic';
+    return transfer !== null ? TTransaction.transfer : reward !== null ? TTransaction.reward : TTransaction.extrinsic;
   }
 
   get signTransfer() {
-    if (this.type === 'transfer') {
+    if (this.type === TTransaction.transfer) {
       const splitId = this.historyItem.id.split('-');
       const typeTransaction = splitId[splitId.length - 1];
 
@@ -66,52 +66,55 @@ export default class HistoryItem extends Vue {
   }
 
   get value() {
-    if (this.type === 'transfer') {
+    if (this.type === TTransaction.transfer) {
       const { amount } = this.historyItem[this.type];
 
       return `${this.signTransfer}${CurrencyController.getAroundValue(this.token, amount)}`;
     }
 
-    if (this.type === 'reward') {
+    if (this.type === TTransaction.reward) {
       const { amount } = this.historyItem[this.type];
 
       return `+${CurrencyController.getAroundValue(this.token, amount)}`;
     }
 
+    // extrinsic
     const { fee } = this.historyItem[this.type];
 
     return `-${CurrencyController.getAroundValue(this.token, fee)}`;
   }
 
   get formattedId() {
-    if (this.type === 'transfer') {
+    if (this.type === TTransaction.transfer) {
       const { to } = this.historyItem[this.type];
 
       return this.cut(to);
     }
 
-    if (this.type === 'reward') {
+    if (this.type === TTransaction.reward) {
       const { validator } = this.historyItem[this.type];
 
       return this.cut(validator);
     }
 
+    // extrinsic
     const { module } = this.historyItem[this.type];
 
     return firstCharToUp(module);
   }
 
   get typeFormatted() {
-    if (this.type === 'extrinsic') {
+    if (this.type === TTransaction.transfer) {
+      return this.signTransfer === '+' ? TransferType.incoming : TransferType.outgoing;
+    }
+
+    if (this.type === TTransaction.extrinsic) {
       const { call } = this.historyItem[this.type];
 
       return `${firstCharToUp(call)}${call === 'transfer' ? ' fee' : ''}`;
     }
 
-    if (this.type === 'transfer') {
-      return this.signTransfer === '+' ? 'Incoming' : 'Outgoing';
-    }
-
+    // reward
     return firstCharToUp(this.type);
   }
 

@@ -13,18 +13,18 @@
 </template>
 
 <script lang="ts">
+import CurrencyItem from './CurrencyItem.vue';
+import Draggable from 'vuedraggable';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Mutation, Getter } from 'vuex-class';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store/accounts/types';
-import { SetCurrenciesProps } from '@/store/networks/types';
-import { TMutation } from '@/interfaces/common';
-import { Currency } from '@/interfaces/currencies';
 import { getCurrencies } from '@/util/currenciesHelper';
-import CurrencyItem from './CurrencyItem.vue';
-import AccountController from '@/controllers/accountController';
-import Draggable from 'vuedraggable';
+import type { SelectedWallet } from '@/store/accounts/types';
+import type { SetCurrenciesProps } from '@/store/networks/types';
+import type { TMutation } from '@/interfaces/common';
+import type { Currency } from '@/interfaces/currencies';
+import type AccountController from '@/controllers/accountController';
 
 @Component({
   components: {
@@ -33,8 +33,6 @@ import Draggable from 'vuedraggable';
   },
 })
 export default class Currencies extends Vue {
-  readonly accountController = new AccountController();
-
   @Prop(Array) currencies!: Currency[];
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
@@ -42,6 +40,7 @@ export default class Currencies extends Vue {
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getAccountController) accountController!: AccountController;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
 
   get filteredCurrencies() {

@@ -15,12 +15,14 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
-import { firstCharToUp } from '@/util/helpers';
 import AboveForm from '@/components/AboveForm.vue';
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
-import AccountController from '@/controllers/accountController';
+import type AccountController from '@/controllers/accountController';
+import { Vue, Component, Prop } from 'vue-property-decorator';
+import { firstCharToUp } from '@/util/helpers';
+import { Getter } from 'vuex-class';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({
   components: {
@@ -30,7 +32,6 @@ import AccountController from '@/controllers/accountController';
   },
 })
 export default class EditNodeForm extends Vue {
-  readonly accountController = new AccountController();
   name = '';
   url = '';
 
@@ -38,6 +39,8 @@ export default class EditNodeForm extends Vue {
   @Prop(String) network!: string;
   @Prop(String) _name!: string;
   @Prop(String) _url!: string;
+
+  @Getter(AccountsGettersTypes.getAccountController) accountController!: AccountController;
 
   get buttonText() {
     return this.isEdit ? 'Save' : 'Add node';

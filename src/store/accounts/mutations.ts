@@ -1,8 +1,8 @@
-import { MutationTree } from 'vuex';
-import { State } from './state';
-import { SetPasswordProps, SetSelectedWalletProps } from './types';
-import { getMetaTyped } from '@/util/helpers';
 import keyring from '@polkadot/ui-keyring';
+import { getMetaTyped } from '@/util/helpers';
+import type { MutationTree } from 'vuex';
+import type { SetPasswordProps, SetSelectedWalletProps } from './types';
+import type { State } from './state';
 
 export enum MutationTypes {
   SET_PASSWORD = 'SET_PASSWORD',

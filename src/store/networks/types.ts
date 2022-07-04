@@ -1,9 +1,10 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { Currencies, Currency } from '@/interfaces/currencies';
-import { HistoryItem } from '@/interfaces/history';
 import { Subscription } from 'rxjs';
-import { WalletAddress } from '@/interfaces/common';
+import type { Currencies, Currency } from '@/interfaces/currencies';
+import type { HistoryItem } from '@/interfaces/history';
+import type { WalletAddress } from '@/interfaces/common';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import type { KeypairType } from '@polkadot/util-crypto/types';
 
 export type Node = {
   url: string;
@@ -101,11 +102,6 @@ export type SetTokensPriceProps = {
   tokensPrice: TokensPrice;
 };
 
-export type UpdateCurrencyProps = {
-  walletAddress: string;
-  currency: Currency;
-};
-
 export type SetCurrenciesProps = {
   currencies: Currencies;
 };
@@ -126,6 +122,17 @@ export type SetSubscriptionsBalancesProps = {
   networkName: string;
 };
 
+export type UpdateCurrencyProps = {
+  walletAddress: string;
+  currency: Currency;
+};
+
+export type UpdateActiveNodeProps = {
+  networkName: string;
+  provider: WsProvider;
+  api: ApiPromise;
+};
+
 // Actions
 export type LoadNetworksInfo = {
   url: string;
@@ -142,7 +149,16 @@ export type LoadHistory = {
   walletAddress: string;
 };
 
+export type Accounts = Record<string, { type?: KeypairType }> | SubjectInfo;
+
 export type SubscribeToBalances = {
-  accounts: SubjectInfo;
+  accounts: Accounts;
   loadHistory: boolean;
+  networksProps?: Networks;
+};
+
+export type UpdateActiveNode = {
+  networkName: string;
+  nodeUrl: string;
+  oldNodeUrl: string;
 };

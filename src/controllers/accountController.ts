@@ -7,7 +7,7 @@ interface PasswordValue {
   options: Record<string, string>;
 }
 
-export default class AccountController {
+class AccountController {
   private readonly postfix = 'sora';
   private readonly radix = 2;
   private readonly lsAccount = new LocalStorageController('account');
@@ -173,3 +173,5 @@ export default class AccountController {
     this.lsAccount.set(this.customNodesStorageName, nodes);
   }
 }
+
+export const accountController = new AccountController();

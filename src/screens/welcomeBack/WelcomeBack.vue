@@ -17,11 +17,11 @@
 </template>
 
 <script lang="ts">
-import AccountController from '@/controllers/accountController';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import BorderButton from '@/components/BorderButton.vue';
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Components } from '@/router/routes';
+import { accountController } from '@/controllers/accountController';
 
 @Component({
   components: {
@@ -30,7 +30,6 @@ import { Components } from '@/router/routes';
   },
 })
 export default class WelcomeBack extends Vue {
-  readonly accountController = new AccountController();
   password = '';
   isError = false;
 
@@ -44,8 +43,8 @@ export default class WelcomeBack extends Vue {
   }
 
   unlock() {
-    if (this.accountController.isSamePassword(this.password)) {
-      this.accountController.updatedPasswordDateCreated();
+    if (accountController.isSamePassword(this.password)) {
+      accountController.updatedPasswordDateCreated();
       this.$router.push({ name: Components.Wallet });
     } else {
       this.isError = true;

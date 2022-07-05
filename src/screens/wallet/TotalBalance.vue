@@ -16,12 +16,12 @@ import { formattedNumber } from '@/util/numbers';
 @Component
 export default class TotalBalance extends Vue {
   @Prop({ default: '' }) name!: string;
-  @Prop(Number) balance!: number;
+  @Prop(String) balance!: string;
   @Prop(Number) percent!: number;
   @Prop({ default: false }) showIcon!: boolean;
 
   get balanceString() {
-    return formattedNumber(this.balance);
+    return formattedNumber(+this.balance);
   }
 
   get percentString() {

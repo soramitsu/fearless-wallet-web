@@ -1,4 +1,4 @@
-import AccountController from '@/controllers/accountController';
+import { accountController } from '@/controllers/accountController';
 import Accounts from '@/screens/accounts/Accounts.vue';
 import Network from '@/screens/accounts/Network.vue';
 import Crowdloans from '@/screens/crowdloans/Crowdloans.vue';
@@ -29,7 +29,6 @@ export enum Components {
   Network = 'Network',
 }
 
-const accountController = new AccountController();
 const haveAccounts = () => keyring.getAccounts().length > 0;
 const isSavedPassword = () => accountController.isSavedPassword();
 const isCorrectPasswordAge = () => accountController.isCorrectPasswordAge();

@@ -22,6 +22,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { firstCharToUp } from '@/util/helpers';
 import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
 import { HistoryNode, TransferType, TransactionType as TTransaction } from '@/interfaces/history';
+import { formattedNumber } from '@/util/numbers';
 
 @Component({
   components: {
@@ -68,20 +69,23 @@ export default class HistoryItem extends Vue {
   get value() {
     if (this.type === TTransaction.transfer) {
       const { amount } = this.historyItem[this.type];
+      const value = +CurrencyController.getHumanValue(this.token, amount);
 
-      return `${this.signTransfer}${CurrencyController.getAroundValue(this.token, amount)}`;
+      return `${this.signTransfer}${formattedNumber(value, 4)}`;
     }
 
     if (this.type === TTransaction.reward) {
       const { amount } = this.historyItem[this.type];
+      const value = +CurrencyController.getHumanValue(this.token, amount);
 
-      return `+${CurrencyController.getAroundValue(this.token, amount)}`;
+      return `+${formattedNumber(value, 4)}`;
     }
 
     // extrinsic
     const { fee } = this.historyItem[this.type];
+    const value = +CurrencyController.getHumanValue(this.token, fee);
 
-    return `-${CurrencyController.getAroundValue(this.token, fee)}`;
+    return `-${formattedNumber(value, 4)}`;
   }
 
   get formattedId() {

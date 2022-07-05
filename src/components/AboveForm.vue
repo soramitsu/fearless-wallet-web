@@ -130,6 +130,7 @@ export default class AboveForm extends Vue {
       display: flex;
       flex-direction: column;
       justify-content: center;
+      user-select: none;
     }
 
     .icon-back {

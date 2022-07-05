@@ -18,11 +18,9 @@
 import AboveForm from '@/components/AboveForm.vue';
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
-import type AccountController from '@/controllers/accountController';
+import { accountController } from '@/controllers/accountController';
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { firstCharToUp } from '@/util/helpers';
-import { Getter } from 'vuex-class';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({
   components: {
@@ -39,8 +37,6 @@ export default class EditNodeForm extends Vue {
   @Prop(String) network!: string;
   @Prop(String) _name!: string;
   @Prop(String) _url!: string;
-
-  @Getter(AccountsGettersTypes.getAccountController) accountController!: AccountController;
 
   get buttonText() {
     return this.isEdit ? 'Save' : 'Add node';
@@ -64,7 +60,7 @@ export default class EditNodeForm extends Vue {
   }
 
   updateNodes() {
-    this.accountController.updateCustomNodes({ name: this.name, url: this.url }, this.network, {
+    accountController.updateCustomNodes({ name: this.name, url: this.url }, this.network, {
       name: this._name,
       url: this._url,
     });

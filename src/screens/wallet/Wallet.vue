@@ -83,6 +83,7 @@ import ContentSettings from './ContentSettings.vue';
 import Currencies from './Currencies.vue';
 import TotalBalance from './TotalBalance.vue';
 import NFTs from './NFTs.vue';
+import { accountController } from '@/controllers/accountController';
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -93,9 +94,9 @@ import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutatio
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { getCurrencies } from '@/util/currenciesHelper';
 import { firstCharToUp } from '@/util/helpers';
+import { addNumbers } from '@/util/numbers';
 import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
 import type { TMutation, TabWallet } from '@/interfaces/common';
-import type AccountController from '@/controllers/accountController';
 
 @Component({
   components: {
@@ -133,11 +134,10 @@ export default class Wallet extends Vue {
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
   @Getter(NetworksGettersTypes.getAllNetworksIsLoaded) allNetworksIsLoaded!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getAccountController) accountController!: AccountController;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
 
   get currenciesForSelectedWallet() {
-    const subsequenceTokens = this.accountController.getSubsequenceTokens();
+    const subsequenceTokens = accountController.getSubsequenceTokens();
     const currencies = [
       ...(this.currencies[this.selectedWallet.address] ?? []),
       ...(this.currencies[this.selectedWallet.ethereumAddress] ?? []),
@@ -146,12 +146,12 @@ export default class Wallet extends Vue {
     // at the first launch of the extension sort by balance
     if (!this.existSavedSequence) {
       currencies.sort((currency1, currency2) => {
-        const totalCountTokensOne = currency1.getTotalCountTokens();
-        const totalCountTokensTwo = currency2.getTotalCountTokens();
+        const totalCountTokensOne = +currency1.getTotalCountTokens();
+        const totalCountTokensTwo = +currency2.getTotalCountTokens();
 
         if (totalCountTokensOne || totalCountTokensTwo) {
-          const totalBalanceOne = currency1.getTotalBalance();
-          const totalBalanceTwo = currency2.getTotalBalance();
+          const totalBalanceOne = +currency1.getTotalBalance();
+          const totalBalanceTwo = +currency2.getTotalBalance();
 
           return totalBalanceTwo - totalBalanceOne;
         }
@@ -187,11 +187,7 @@ export default class Wallet extends Vue {
   }
 
   get totalBalance() {
-    return this.currenciesForSelectedWallet.reduce((sum, currency) => {
-      const totalBalance = currency.getTotalBalance();
-
-      return sum + totalBalance;
-    }, 0);
+    return addNumbers(this.currenciesForSelectedWallet.map((currency) => currency.getTotalBalance()));
   }
 
   get totalPercent() {
@@ -228,14 +224,14 @@ export default class Wallet extends Vue {
     const subsequence = this.currenciesForSelectedWallet.map(({ mainNetwork }) => mainNetwork);
     const currencies = getCurrencies(this.currenciesForSelectedWallet, this.selectedWallet);
 
-    this.accountController.setSubsequenceTokens(subsequence);
+    accountController.setSubsequenceTokens(subsequence);
     this.setCurrencies({ currencies });
     this.existSavedSequence = true;
   }
 
   mounted() {
-    this.hideZeroBalance = this.accountController.getHideZeroBalanceValue();
-    this.existSavedSequence = this.accountController.getSubsequenceTokens().length > 0;
+    this.hideZeroBalance = accountController.getHideZeroBalanceValue();
+    this.existSavedSequence = accountController.getSubsequenceTokens().length > 0;
   }
 
   toggleAssetsManagementFormVisible(value = true) {
@@ -244,7 +240,7 @@ export default class Wallet extends Vue {
 
   toggleHideZeroBalance(value: boolean) {
     this.hideZeroBalance = value;
-    this.accountController.setHideZeroBalanceValue(value);
+    accountController.setHideZeroBalanceValue(value);
   }
 
   toggleVisibleActivityForm(field: 'showSendForm' | 'showReceiveForm', value = true, currency: Currency) {

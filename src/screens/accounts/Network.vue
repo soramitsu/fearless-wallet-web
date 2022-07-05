@@ -66,6 +66,7 @@
 import NetworksController from '@/controllers/networksController';
 import Switcher from '@/components/Switcher.vue';
 import NodeItem from './NodeItem.vue';
+import { accountController } from '@/controllers/accountController';
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { getImgPathByNetworkName } from '@/util/imgPath';
@@ -73,7 +74,6 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import type { SelectedWallet } from '@/store/accounts/types';
 import type { Networks, Node } from '@/store/networks/types';
-import type AccountController from '@/controllers/accountController';
 
 @Component({
   components: {
@@ -88,7 +88,6 @@ export default class Network extends Vue {
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
-  @Getter(AccountsGettersTypes.getAccountController) accountController!: AccountController;
 
   get address() {
     if (this.selectedWallet.address === '') return '';
@@ -117,15 +116,15 @@ export default class Network extends Vue {
   }
 
   mounted() {
-    this.autoSelectNodes = this.accountController.getAutoSelectNodesValueByNetwork(this.selectedNetwork);
-    this.activeNode = this.accountController.getActiveNodesByNetwork(this.selectedNetwork);
+    this.autoSelectNodes = accountController.getAutoSelectNodesValueByNetwork(this.selectedNetwork);
+    this.activeNode = accountController.getActiveNodesByNetwork(this.selectedNetwork);
 
     this.updatedCustomNodes();
   }
 
   @Watch('autoSelectNodes')
   toggleAutoSelectNodesValue(value: boolean) {
-    this.accountController.setAutoSelectNodes(value, this.selectedNetwork);
+    accountController.setAutoSelectNodes(value, this.selectedNetwork);
 
     if (value) this.changeNode();
     else if (this.activeNode.name === '') {
@@ -136,14 +135,14 @@ export default class Network extends Vue {
   }
 
   updatedCustomNodes() {
-    this.customNodes = this.accountController.getCustomNodesByNetwork(this.selectedNetwork);
+    this.customNodes = accountController.getCustomNodesByNetwork(this.selectedNetwork);
   }
 
   changeNode(name = '', url = '') {
     const { url: oldUrl } = this.activeNode;
 
     this.activeNode = { name, url };
-    this.accountController.setActiveNode({ name, url }, this.selectedNetwork);
+    accountController.setActiveNode({ name, url }, this.selectedNetwork);
 
     if (oldUrl !== url) {
       NetworksController.updateActiveNode(this.selectedNetwork, url, oldUrl);

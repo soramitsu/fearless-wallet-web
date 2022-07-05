@@ -39,6 +39,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
+import { addNumbers } from '@/util/numbers';
 import type { SelectedWallet, SetSelectedWalletProps } from '@/store/accounts/types';
 import type { Currencies } from '@/interfaces/currencies';
 import type { TMutation } from '@/interfaces/common';
@@ -73,13 +74,7 @@ export default class SelectWalletPopup extends Vue {
   getBalance(address: string) {
     const currencies = this.currencies[address];
 
-    return (
-      currencies?.reduce((sum, currency) => {
-        const totalBalance = currency.getTotalBalance();
-
-        return sum + totalBalance;
-      }, 0) ?? 0
-    );
+    return addNumbers(currencies.map((currency) => currency.getTotalBalance()));
   }
 
   getPercent(address: string) {

@@ -93,7 +93,7 @@ import ImportWallet from './ImportWallet.vue';
 import NicknameForm from './NicknameForm.vue';
 import AdvancedForm from './AdvancedForm.vue';
 import AdvancedButton from './AdvancedButton.vue';
-import AccountController from '@/controllers/accountController';
+import { accountController } from '@/controllers/accountController';
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { isHex } from '@polkadot/util';
@@ -123,7 +123,6 @@ type FieldsComponent = 'passwordJson' | 'derivationPath';
   },
 })
 export default class Layout extends Vue {
-  readonly accountController = new AccountController();
   nickname = '';
   json = '';
   mnemonic = '';
@@ -367,7 +366,7 @@ export default class Layout extends Vue {
 
   savePassword() {
     if (!this.haveAccounts) {
-      this.accountController.savePassword(this.passwordExtension);
+      accountController.savePassword(this.passwordExtension);
     }
   }
 

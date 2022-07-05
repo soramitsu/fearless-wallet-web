@@ -1,3 +1,4 @@
+import { decodeAddress } from '@polkadot/util-crypto';
 import keyring from '@polkadot/ui-keyring';
 import LocalStorageController from '@/controllers/localStorageController';
 import NetworksController from '@/controllers/networksController';
@@ -33,7 +34,6 @@ interface CountTokens {
 export default class CurrencyController {
   private readonly lsCurrency = new LocalStorageController('currency');
   private readonly currencyVisibleStorageName: string;
-  private readonly decimals: FPNumber;
   public transfer!: SubmittableExtrinsic<'promise'> | undefined;
 
   constructor(
@@ -44,7 +44,6 @@ export default class CurrencyController {
     public precision: number,
     public availableInNetworks: AvailableInNetworks[]
   ) {
-    this.decimals = this.getDecimals();
     this.currencyVisibleStorageName = `visible-${token}`;
   }
 
@@ -54,18 +53,14 @@ export default class CurrencyController {
     return count.mul(FPPrice);
   }
 
-  private getDecimals(): FPNumber {
-    return new FPNumber(10 ** this.precision);
-  }
-
   private countTokens(): CountTokens {
     const availableInNetworks = this.availableInNetworks.reduce(
       (obj, { balance: { total, frozen, locked, reserved, transferable } }) => {
-        const FPTotal = new FPNumber(total);
-        const FPFrozen = new FPNumber(frozen);
-        const FPLocked = new FPNumber(locked);
-        const FPReserved = new FPNumber(reserved);
-        const FPTransferable = new FPNumber(transferable);
+        const FPTotal = FPNumber.fromCodecValue(total, this.precision);
+        const FPFrozen = FPNumber.fromCodecValue(frozen, this.precision);
+        const FPLocked = FPNumber.fromCodecValue(locked, this.precision);
+        const FPReserved = FPNumber.fromCodecValue(reserved, this.precision);
+        const FPTransferable = FPNumber.fromCodecValue(transferable, this.precision);
 
         return {
           total: obj.total.add(FPTotal),
@@ -76,50 +71,36 @@ export default class CurrencyController {
         };
       },
       {
-        total: new FPNumber(0),
-        frozen: new FPNumber(0),
-        locked: new FPNumber(0),
-        reserved: new FPNumber(0),
-        transferable: new FPNumber(0),
+        total: FPNumber.ZERO,
+        frozen: FPNumber.ZERO,
+        locked: FPNumber.ZERO,
+        reserved: FPNumber.ZERO,
+        transferable: FPNumber.ZERO,
       }
     );
-
-    for (const field in availableInNetworks) {
-      const typedFiled = field as keyof typeof availableInNetworks;
-
-      availableInNetworks[typedFiled] = availableInNetworks[typedFiled].div(this.decimals);
-    }
 
     return availableInNetworks;
   }
 
-  private _getTotalCountTokens(): FPNumber {
-    return this.countTokens().total;
+  public getTotalCountTokens(): string {
+    return this.countTokens().total.toString();
   }
 
-  public addNumbers(values: number[]): number {
-    return values.reduce((sum, number) => sum.add(new FPNumber(number)), new FPNumber(0)).toNumber();
+  public getTransferableCountTokens(): string {
+    return this.countTokens().transferable.toString();
   }
 
-  public getTotalCountTokens(): number {
-    return this._getTotalCountTokens().toNumber();
-  }
-
-  public getTransferableCountTokens(): number {
-    return this.countTokens().transferable.toNumber();
-  }
-
-  public getTransferableCountTokensMinusFee(fee: number): number {
+  public getTransferableCountTokensMinusFee(fee: string): FPNumber {
     const FPFee = new FPNumber(fee);
-    const result = this.countTokens().transferable.sub(FPFee).toNumber();
+    const result = this.countTokens().transferable.sub(FPFee);
 
-    return result > 0 ? result : 0;
+    return FPNumber.lt(result, FPNumber.ZERO) ? FPNumber.ZERO : result;
   }
 
-  public isValidCountTokens(count: number, fee: number): boolean {
+  public isValidCountTokens(count: string, fee: string): boolean {
     const transferableCountTokensMinusFee = this.getTransferableCountTokensMinusFee(fee);
 
-    return count <= transferableCountTokensMinusFee;
+    return FPNumber.lt(new FPNumber(count), transferableCountTokensMinusFee);
   }
 
   public getAvailableInNetworks(): AvailableInNetworks[] {
@@ -127,49 +108,39 @@ export default class CurrencyController {
       return {
         network,
         balance: {
-          frozen: new FPNumber(frozen).div(this.decimals).toString(),
-          locked: new FPNumber(locked).div(this.decimals).toString(),
-          reserved: new FPNumber(reserved).div(this.decimals).toString(),
-          total: new FPNumber(total).div(this.decimals).toString(),
-          transferable: new FPNumber(transferable).div(this.decimals).toString(),
+          frozen: FPNumber.fromCodecValue(frozen, this.precision).toString(),
+          locked: FPNumber.fromCodecValue(locked, this.precision).toString(),
+          reserved: FPNumber.fromCodecValue(reserved, this.precision).toString(),
+          total: FPNumber.fromCodecValue(total, this.precision).toString(),
+          transferable: FPNumber.fromCodecValue(transferable, this.precision).toString(),
         },
       };
     });
   }
 
-  public getAllFields(): Props {
-    return {
-      token: this.token,
-      mainNetwork: this.mainNetwork,
-      availableInNetworks: this.availableInNetworks,
-      price: this.price,
-      usd24HoursChange: this.usd24HoursChange,
-      precision: this.precision,
-    };
-  }
-
-  public getTotalBalance(): number {
-    const countTokens = this._getTotalCountTokens();
+  public getTotalBalance(): string {
+    const countTokens = this.countTokens().total;
     const cost = this.calculateCost(countTokens);
 
-    return cost.toNumber();
+    return cost.toString();
   }
 
-  public getCostOfTokens(count: number): number {
-    return this.calculateCost(new FPNumber(count)).toNumber();
+  public getCostOfTokens(count: string): string {
+    return this.calculateCost(new FPNumber(count)).toString();
   }
 
-  public getBalanceInNetwork(_network: string): number {
+  public getBalanceInNetwork(_network: string): string {
     const total = this.availableInNetworks.find(({ network }) => network === _network)?.balance.total ?? 0;
+    const FPTotal = FPNumber.fromCodecValue(total, this.precision);
 
-    return this.calculateCost(new FPNumber(total)).div(this.decimals).toNumber();
+    return this.calculateCost(FPTotal).toString();
   }
 
-  public getCountsTokensByPrice(cost: number): number {
+  public getCountTokensByPrice(cost: string): string {
     const FPCost = new FPNumber(cost);
     const price = new FPNumber(this.price);
 
-    return FPCost.div(price).toNumber();
+    return FPCost.div(price).toString();
   }
 
   public getCurrencyVisible(): boolean {
@@ -188,23 +159,17 @@ export default class CurrencyController {
     return assets.find(({ id }) => id === token)!;
   }
 
-  private static getDecimals(token: string): FPNumber {
-    const precision = CurrencyController.getAssets(token)?.precision ?? 0;
-    const decimals = new FPNumber(10 ** +precision);
+  public static getHumanValue(token: string, value: string): string {
+    const precision = +CurrencyController.getAssets(token)?.precision ?? 0;
 
-    return decimals;
-  }
-
-  public static getAroundValue(token: string, value: string): number {
-    const decimals = this.getDecimals(token);
-
-    return new FPNumber(value).div(decimals).toNumber();
+    return FPNumber.fromCodecValue(value, precision).toString();
   }
 
   public static getPrecisionValue(token: string, amount: string): string {
-    const decimals = this.getDecimals(token);
+    const precision = +CurrencyController.getAssets(token)?.precision ?? 0;
+    const value = amount === '' ? 0 : +amount;
 
-    return Math.floor(new FPNumber(amount === '' ? 0 : +amount).mul(decimals).toNumber()).toString();
+    return new FPNumber(value, precision).toCodecString();
   }
 
   public getParaId(originalNetworkName: string, destinationNetworkName: string) {
@@ -229,7 +194,7 @@ export default class CurrencyController {
     const { api } = networks.find(({ name }) => name === networkName)!; // eslint-disable-line
 
     try {
-      this.transfer = api.tx.balances.transfer(to, precisionAmount.toString());
+      this.transfer = api.tx.balances.transfer(to, precisionAmount);
     } catch {
       this.transfer = undefined;
     }
@@ -248,7 +213,7 @@ export default class CurrencyController {
     const isParaTeleport = m === 'polkadotXcm';
     const precisionAmount = CurrencyController.getPrecisionValue(token, amount);
     const tx = api.tx[m].limitedTeleportAssets;
-    const accountId32 = api.createType('AccountId32', recipientId).toHex();
+    const publicKey = keyring.decodeAddress(recipientId);
     const recipientParaId = this.getParaId(originalNetworkName, destinationNetworkName);
 
     if (!recipientParaId) {
@@ -257,21 +222,18 @@ export default class CurrencyController {
       return;
     }
 
-    const params = getParams(isParaTeleport, recipientParaId, accountId32, new BN(precisionAmount));
+    const params = getParams(isParaTeleport, recipientParaId, publicKey, new BN(precisionAmount));
 
     this.transfer = tx(...params);
   }
 
-  public async getPartialFee(from: string, returnNumberType = false): Promise<number | FPNumber> {
-    if (!this.transfer) return returnNumberType ? 0 : new FPNumber(0);
+  public async getPartialFee(from: string): Promise<string> {
+    if (!this.transfer) return '0';
 
     const { partialFee } = await this.transfer.paymentInfo(from);
-    const [fee, unit] = partialFee.toHuman().split(' ');
-    const precision = unit[0] === 'm' ? 3 : unit[0] === 'µ' ? 6 : 1;
-    const decimals = new FPNumber(10 ** precision);
-    const result = new FPNumber(fee).div(decimals);
+    const result = new FPNumber(partialFee, this.precision);
 
-    return returnNumberType ? +result.toNumber().toFixed(5) : result;
+    return result.toString();
   }
 
   public async send(from: string, amount: string): Promise<void> {
@@ -295,7 +257,7 @@ export default class CurrencyController {
   }
 }
 
-function getParams(isParaTeleport: boolean, recipientParaId: number, accountId32: string, amount: BN) {
+function getParams(isParaTeleport: boolean, recipientParaId: number, accountId32: string | Uint8Array, amount: BN) {
   return [
     {
       V1: isParaTeleport

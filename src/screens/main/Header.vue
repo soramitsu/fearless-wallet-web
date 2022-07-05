@@ -40,12 +40,12 @@ import CircleButton from '@/components/CircleButton.vue';
 import Rotate from '@/components/Rotate.vue';
 import SelectWalletPopup from './SelectWalletPopup.vue';
 import SettingsPopup from './SettingsPopup.vue';
+import { accountController } from '@/controllers/accountController';
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
 import type { SelectedWallet } from '@/store/accounts/types';
-import type AccountController from '@/controllers/accountController';
 @Component({
   components: {
     Logo,
@@ -61,7 +61,6 @@ export default class Header extends Vue {
   showSettings = false;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getAccountController) accountController!: AccountController;
 
   get showBackIcon() {
     return this.$route.name === Components.Token;
@@ -102,7 +101,7 @@ export default class Header extends Vue {
   }
 
   lock() {
-    this.accountController.updatedPasswordDateCreated(0);
+    accountController.updatedPasswordDateCreated(0);
     this.$router.push({ name: Components.WelcomeBack });
   }
 

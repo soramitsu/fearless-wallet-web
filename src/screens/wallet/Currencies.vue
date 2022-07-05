@@ -15,6 +15,7 @@
 <script lang="ts">
 import CurrencyItem from './CurrencyItem.vue';
 import Draggable from 'vuedraggable';
+import { accountController } from '@/controllers/accountController';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Mutation, Getter } from 'vuex-class';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
@@ -24,7 +25,6 @@ import type { SelectedWallet } from '@/store/accounts/types';
 import type { SetCurrenciesProps } from '@/store/networks/types';
 import type { TMutation } from '@/interfaces/common';
 import type { Currency } from '@/interfaces/currencies';
-import type AccountController from '@/controllers/accountController';
 
 @Component({
   components: {
@@ -40,20 +40,19 @@ export default class Currencies extends Vue {
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getAccountController) accountController!: AccountController;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
 
   get filteredCurrencies() {
     if (this.showAssetsManagementForm || !this.hideZeroBalance) return this.currencies;
 
-    return this.currencies.filter((currency) => currency.getTotalCountTokens() !== 0);
+    return this.currencies.filter((currency) => currency.getTotalCountTokens() !== '0');
   }
 
   set filteredCurrencies(value) {
     const currencies = getCurrencies(value, this.selectedWallet);
 
     this.setCurrencies({ currencies });
-    this.accountController.setSubsequenceTokens(value.map(({ mainNetwork }) => mainNetwork));
+    accountController.setSubsequenceTokens(value.map(({ mainNetwork }) => mainNetwork));
   }
 }
 </script>

@@ -70,21 +70,17 @@
               </div>
               <div class="summary-row">
                 <div class="name">{{ originalNetworkString }} Fee</div>
-                <div class="column">
-                  <div>{{ originalNetworkPartialFeeString }}</div>
+                <div>
+                  {{ originalNetworkPartialFeeString }}
                 </div>
               </div>
               <div class="summary-row">
                 <div class="name">{{ destinationNetworkString }} Fee</div>
-                <div class="column">
-                  <div>{{ destinationNetworkPartialFeeString }}</div>
-                </div>
+                <div>{{ destinationNetworkPartialFeeString }}</div>
               </div>
               <div class="summary-row">
                 <div class="name">Total</div>
-                <div class="column">
-                  <div>{{ totalString }}</div>
-                </div>
+                <div>{{ totalString }}</div>
               </div>
             </div>
           </Corners>
@@ -122,6 +118,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Networks } from '@/store/networks/types';
 import { firstCharToUp } from '@/util/helpers';
+import { addNumbers, formattedNumber } from '@/util/numbers';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import type { Currency } from '@/interfaces/currencies';
 
@@ -141,8 +138,8 @@ export default class TeleportForm extends Vue {
   isValidCountTokens = true;
   showSendingPopup = false;
   sendingPopupLoading = false;
-  originalNetworkPartialFee = 0;
-  destinationNetworkPartialFee = 0;
+  originalNetworkPartialFee = '';
+  destinationNetworkPartialFee = '';
   selectedToken = '';
   originalNetwork = '';
   destinationNetwork = '';
@@ -173,25 +170,21 @@ export default class TeleportForm extends Vue {
   }
 
   get value() {
-    return this.currentCurrency?.getCostOfTokens(+this.amount).toString() ?? '';
+    return this.currentCurrency?.getCostOfTokens(this.amount).toString() ?? '';
   }
 
   get originalNetworkPartialFeeString() {
-    return `${this.originalNetworkPartialFee} ${this.selectedTokenUpper}`;
+    return `${formattedNumber(+this.originalNetworkPartialFee, 7)} ${this.selectedTokenUpper}`;
   }
 
   get destinationNetworkPartialFeeString() {
-    return `${this.destinationNetworkPartialFee} ${this.selectedTokenUpper}`;
+    return `${formattedNumber(+this.destinationNetworkPartialFee)} ${this.selectedTokenUpper}`;
   }
 
   get totalString() {
-    const total = this.currentCurrency?.addNumbers([
-      +this.amount,
-      this.originalNetworkPartialFee,
-      this.destinationNetworkPartialFee,
-    ]);
+    const total = +addNumbers([this.amount, this.originalNetworkPartialFee, this.destinationNetworkPartialFee]);
 
-    return `${total} ${this.selectedTokenUpper}`;
+    return `${formattedNumber(total, 7)} ${this.selectedTokenUpper}`;
   }
 
   get transferrableAmount() {
@@ -226,7 +219,7 @@ export default class TeleportForm extends Vue {
   get buttonDisabled() {
     if (this.step === 2) return false;
 
-    return !this.isAllFieldsCorrect || +this.amount === 0 || this.originalNetworkPartialFee === 0;
+    return !this.isAllFieldsCorrect || +this.amount === 0 || this.originalNetworkPartialFee === '';
   }
 
   get isValidTeleportDirection() {
@@ -276,7 +269,7 @@ export default class TeleportForm extends Vue {
   @Watch('selectedToken')
   @Watch('amount')
   async createTeleportTransfer() {
-    this.originalNetworkPartialFee = 0;
+    this.originalNetworkPartialFee = '';
 
     if (!this.isValidTeleportDirection) return;
 
@@ -288,10 +281,10 @@ export default class TeleportForm extends Vue {
       this.amount
     );
 
-    const partialFee = (await this.currentCurrency!.getPartialFee(this.addressByNetwork, true)) as number;
+    const partialFee = await this.currentCurrency!.getPartialFee(this.addressByNetwork);
 
     this.originalNetworkPartialFee = partialFee;
-    this.isValidCountTokens = this.currentCurrency!.isValidCountTokens(+this.amount, partialFee);
+    this.isValidCountTokens = this.currentCurrency!.isValidCountTokens(this.amount, partialFee);
   }
 
   mounted() {

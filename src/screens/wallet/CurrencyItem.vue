@@ -49,14 +49,14 @@
           iconName="send-white"
           backgroundColor="black"
           class="button"
-          @click="toggleVisibleActivityForm('showSendForm', true, currency.getAllFields())"
+          @click="toggleVisibleActivityForm('showSendForm', true, currency)"
         />
 
         <CircleButton
           iconName="receive-white"
           backgroundColor="black"
           class="button"
-          @click="toggleVisibleActivityForm('showReceiveForm', true, currency.getAllFields())"
+          @click="toggleVisibleActivityForm('showReceiveForm', true, currency)"
         />
 
         <CircleButton
@@ -120,13 +120,13 @@ export default class CurrencyItem extends Vue {
   }
 
   get countTokensString() {
-    const totalCountTokens = this.currency.getTotalCountTokens();
+    const totalCountTokens = +this.currency.getTotalCountTokens();
 
     return formattedNumber(totalCountTokens, 4);
   }
 
   get totalBalanceString() {
-    const totalBalance = this.currency.getTotalBalance();
+    const totalBalance = +this.currency.getTotalBalance();
 
     return `$${formattedPrice(totalBalance)}`;
   }

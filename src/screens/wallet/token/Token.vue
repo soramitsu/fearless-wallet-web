@@ -201,7 +201,9 @@ export default class Token extends Vue {
   }
 
   get currentCurrency() {
-    return this.currenciesForSelectedWallet.find(({ mainNetwork }) => mainNetwork === this.selectedNetwork);
+    return this.currenciesForSelectedWallet.find(
+      ({ token, mainNetwork }) => token === this.selectedToken && mainNetwork === this.selectedNetwork
+    );
   }
 
   get formattedHistory() {
@@ -253,7 +255,7 @@ export default class Token extends Vue {
 
     const total = this.currentCurrency.getBalanceInNetwork(this.selectedNetwork);
 
-    return `$ ${formattedNumber(total)}`;
+    return `$ ${formattedNumber(+total)}`;
   }
 
   handlerFilter(value: string) {
@@ -312,6 +314,11 @@ export default class Token extends Vue {
       .count-tokens {
         font-weight: 600;
         font-size: 28px;
+        white-space: nowrap;
+        text-align: left;
+        max-width: 265px;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .balance-in-network {

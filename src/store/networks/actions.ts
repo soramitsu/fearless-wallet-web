@@ -2,15 +2,14 @@ import axios from 'axios';
 import CurrencyController from '@/controllers/currencyController';
 import keyring from '@polkadot/ui-keyring';
 import NetworksController from '@/controllers/networksController';
+import { accountController } from '@/controllers/accountController';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import { formatBalance } from '@/util/balances';
-import { getHistory } from '@/sybquery/history';
+import { getHistory } from '@/subquery/history';
 import { getMockCurrencies } from '@/util/currenciesHelper';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Mutations, MutationTypes } from './mutations';
-import type AccountController from '@/controllers/accountController';
 import type { ActionContext, ActionTree } from 'vuex';
 import type { Currency } from '@/interfaces/currencies';
 import type { SelectedWallet } from '@/store/accounts/types';
@@ -54,10 +53,9 @@ export type Actions = {
 };
 
 const actions: ActionTree<State, State> & Actions = {
-  async [ActionTypes.LOAD_NETWORKS]({ commit, getters }, { url, autoConnectMs = 0 }) {
+  async [ActionTypes.LOAD_NETWORKS]({ commit }, { url, autoConnectMs = 0 }) {
     const { data } = await axios.get(url);
     const networksJson: NetworkJson[] = data;
-    const accountController: AccountController = getters[AccountsGettersTypes.getAccountController];
     const autoSelectNodes = accountController.getAutoSelectNodesValue();
     const activeNodes = accountController.getActiveNodes();
 
@@ -187,7 +185,7 @@ const actions: ActionTree<State, State> & Actions = {
 
               const unsubscribe = api.rx.query.system.account(walletAddress).subscribe(async (result) => {
                 const data = (result as any).data;
-                const balance = formatBalance(data as AccountData);
+                const balance = formatBalance(data as AccountData, precision);
 
                 const currency: Currency = new CurrencyController(
                   networkName,

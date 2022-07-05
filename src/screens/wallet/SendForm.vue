@@ -37,7 +37,7 @@
           </div>
 
           <div class="row transferrable">
-            <div>
+            <div class="transferrable-part">
               <div class="transferrable-label">Transferrable</div>
               <div class="transferrable-descriptions">
                 <div class="transferrable-amount">{{ transferrableAmount }}</div>
@@ -45,7 +45,7 @@
               </div>
             </div>
 
-            <div class="transferrable-value">
+            <div class="transferrable-part">
               <div class="transferrable-label">Transferrable</div>
               <div class="transferrable-descriptions">
                 <div class="transferrable-amount">${{ transferrableValue }}</div>
@@ -119,6 +119,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Networks } from '@/store/networks/types';
 import { firstCharToUp } from '@/util/helpers';
+import { formattedNumber, formattedPrice, addNumbers } from '@/util/numbers';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import type { Currency } from '@/interfaces/currencies';
 
@@ -137,7 +138,7 @@ export default class SendForm extends Vue {
   isValidCountTokens = true;
   showSendingPopup = false;
   sendingPopupLoading = false;
-  partialFee = 0;
+  partialFee = '';
   selectedNetwork = '';
   selectedToken = '';
   recipient = '';
@@ -161,13 +162,13 @@ export default class SendForm extends Vue {
   }
 
   get partialFeeString() {
-    return `${this.partialFee} ${this.selectedTokenUpper}`;
+    return `${formattedNumber(+this.partialFee, 7)} ${this.selectedTokenUpper}`;
   }
 
   get totalString() {
-    const total = this.currentCurrency?.addNumbers([+this.amount, this.partialFee]);
+    const total = addNumbers([this.amount, this.partialFee]);
 
-    return `${total} ${this.selectedTokenUpper}`;
+    return `${formattedNumber(+total, 7)} ${this.selectedTokenUpper}`;
   }
 
   get showBackIcon() {
@@ -198,7 +199,7 @@ export default class SendForm extends Vue {
   get buttonDisabled() {
     if (this.step === 2) return false;
 
-    return !this.isAllFieldsCorrect || +this.amount === 0 || this.partialFee === 0;
+    return !this.isAllFieldsCorrect || +this.amount === 0 || this.partialFee === '';
   }
 
   get isAllFieldsCorrect() {
@@ -240,11 +241,15 @@ export default class SendForm extends Vue {
   }
 
   get transferrableAmount() {
-    return this.currentCurrency?.getTransferableCountTokens() ?? 0;
+    const count = +(this.currentCurrency?.getTransferableCountTokens() ?? 0);
+
+    return formattedNumber(count, 4);
   }
 
   get transferrableValue() {
-    return this.currentCurrency?.getCostOfTokens(this.transferrableAmount);
+    const cost = +(this.currentCurrency?.getCostOfTokens(this.transferrableAmount) ?? 0);
+
+    return formattedPrice(cost);
   }
 
   get selectedTokenUpper() {
@@ -270,16 +275,16 @@ export default class SendForm extends Vue {
   @Watch('recipient')
   @Watch('amount')
   async createSendTransfer() {
-    this.partialFee = 0;
+    this.partialFee = '';
 
     if (!this.isValidRecipientAddress) return;
 
     this.currentCurrency!.createSendTransfer(this.recipient, this.selectedNetwork, this.selectedToken, this.amount);
 
-    const partialFee = (await this.currentCurrency!.getPartialFee(this.addressByNetwork, true)) as number;
+    const partialFee = await this.currentCurrency!.getPartialFee(this.addressByNetwork);
 
     this.partialFee = partialFee;
-    this.isValidCountTokens = this.currentCurrency!.isValidCountTokens(+this.amount, partialFee);
+    this.isValidCountTokens = this.currentCurrency!.isValidCountTokens(this.amount, partialFee);
   }
 
   mounted() {
@@ -288,11 +293,11 @@ export default class SendForm extends Vue {
   }
 
   changeAmount(amount: string) {
-    this.value = this.currentCurrency?.getCostOfTokens(+amount).toString() ?? '';
+    this.value = this.currentCurrency?.getCostOfTokens(amount).toString() ?? '';
   }
 
   changeValue(value: string) {
-    this.amount = this.currentCurrency?.getCountsTokensByPrice(+value).toString() ?? '';
+    this.amount = this.currentCurrency?.getCountTokensByPrice(value).toString() ?? '';
   }
 
   handlerBack() {
@@ -311,7 +316,7 @@ export default class SendForm extends Vue {
     const transferableCountTokens = this.currentCurrency.getTransferableCountTokensMinusFee(this.partialFee).toString();
 
     this.amount = transferableCountTokens;
-    this.value = this.currentCurrency.getCostOfTokens(+transferableCountTokens).toString();
+    this.value = this.currentCurrency.getCostOfTokens(transferableCountTokens).toString();
   }
 
   async handlerButton() {
@@ -363,31 +368,32 @@ export default class SendForm extends Vue {
 
   .transferrable {
     display: flex;
+    justify-content: space-between;
 
-    .transferrable-label {
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.75);
-      text-align: left;
-    }
+    .transferrable-part {
+      width: 235px;
 
-    .transferrable-descriptions {
-      display: flex;
-      line-height: 25px;
-    }
+      .transferrable-label {
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.75);
+        text-align: left;
+      }
 
-    .transferrable-amount {
-      font-weight: 600;
-      font-size: 16px;
-      color: $pink-lavender-color;
-    }
+      .transferrable-descriptions {
+        display: flex;
+        line-height: 25px;
+      }
 
-    .transferrable-token {
-      margin-left: 5px;
-      color: rgba(255, 255, 255, 0.9);
-    }
+      .transferrable-amount {
+        font-weight: 600;
+        font-size: 16px;
+        color: $pink-lavender-color;
+      }
 
-    .transferrable-value {
-      margin-left: 163px;
+      .transferrable-token {
+        margin-left: 5px;
+        color: rgba(255, 255, 255, 0.9);
+      }
     }
   }
 

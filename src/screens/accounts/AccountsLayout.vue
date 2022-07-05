@@ -61,11 +61,9 @@ import NodeSettingsPopup from './NodeSettingsPopup.vue';
 import NotificationPopup from '@/components/NotificationPopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
 import Network from './Network.vue';
-import type AccountController from '@/controllers/accountController';
+import { accountController } from '@/controllers/accountController';
 import { Vue, Component } from 'vue-property-decorator';
 import { Components } from '@/router/routes';
-import { Getter } from 'vuex-class';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({
   components: {
@@ -88,8 +86,6 @@ export default class AccountsLayout extends Vue {
   showEditNodeForm = false;
   showNodeSettings = false;
   showNotificationPopup = false;
-
-  @Getter(AccountsGettersTypes.getAccountController) accountController!: AccountController;
 
   get path() {
     const path = 'Accounts';
@@ -142,7 +138,7 @@ export default class AccountsLayout extends Vue {
   }
 
   deleteNode() {
-    this.accountController.deleteNode({ name: this.selectedNodeName, url: this.selectedNodeUrl }, this.selectedNetwork);
+    accountController.deleteNode({ name: this.selectedNodeName, url: this.selectedNodeUrl }, this.selectedNetwork);
 
     this.childUpdatedNode();
 

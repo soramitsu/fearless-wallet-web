@@ -9,7 +9,7 @@
       :isError="isError"
     />
 
-    <div v-show="isError" class="error-descriptions">{{ errorDescriptions }}</div>
+    <div v-show="showErrorText" class="error-descriptions">{{ errorDescriptions }}</div>
   </div>
 </template>
 
@@ -27,6 +27,10 @@ export default class ValidatedInput extends Vue {
   @Prop(Boolean) isError!: boolean;
   @Prop({ default: 50 }) maxlength!: number;
   @Prop({ default: false }) showPassword!: boolean;
+
+  get showErrorText() {
+    return this.isError && this.errorDescriptions;
+  }
 }
 </script>
 

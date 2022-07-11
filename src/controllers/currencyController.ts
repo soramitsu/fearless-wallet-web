@@ -1,4 +1,3 @@
-import { decodeAddress } from '@polkadot/util-crypto';
 import keyring from '@polkadot/ui-keyring';
 import LocalStorageController from '@/controllers/localStorageController';
 import NetworksController from '@/controllers/networksController';

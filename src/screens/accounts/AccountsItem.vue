@@ -14,7 +14,7 @@
     <CircleButton
       iconName="dots-horizontal"
       backgroundColor="light-black"
-      @click="$emit('toggleAccountSettingsVisible', name, address)"
+      @click="$emit('openAccountSettings', name, $event)"
     />
   </div>
 </template>
@@ -51,6 +51,10 @@ export default class AccountsItem extends Vue {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   justify-content: space-between;
   align-items: center;
+
+  &:last-child {
+    border-bottom: none;
+  }
 
   .left-part {
     display: flex;

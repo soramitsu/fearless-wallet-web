@@ -77,7 +77,12 @@
       />
     </div>
 
-    <NotificationPopup v-if="showNotificationPopup" :handlerClose="handlerClosePopup" :headers="invalidMessages" />
+    <NotificationPopup
+      v-if="showNotificationPopup"
+      sizeWidth="medium"
+      :handlerClose="handlerClosePopup"
+      :headers="invalidMessages"
+    />
   </div>
 </template>
 
@@ -102,7 +107,7 @@ import { mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
 import { Components } from '@/router/routes';
 import { INVALID_MESSAGES, InvalidValueName } from '@/consts/invalidMessages';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/ethereumNetworks';
-import { DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
+import { INITIAL_DERIVATION_PATH } from '@/consts/derivationPath';
 import type { DerivationPath, TypeFiledForImport, WalletConnectionStatus } from '@/interfaces/common';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 
@@ -133,13 +138,13 @@ export default class Layout extends Vue {
   showAdvancedForm = false;
   selectedMnemonicElements: string[] = [];
   currentIndexPage = 1;
-  derivationPath = DEFAULT_DERIVATION_PATH;
+  derivationPath = INITIAL_DERIVATION_PATH;
 
   @Prop(String) walletConnectionStatus!: WalletConnectionStatus;
   @Getter(GettersTypes.getPassword) passwordExtension!: string;
 
-  get haveAccounts() {
-    return keyring.getAccounts().length > 0;
+  get isSavedPassword() {
+    return accountController.isSavedPassword();
   }
 
   get JSON() {
@@ -295,10 +300,13 @@ export default class Layout extends Vue {
     this.currentIndexPage += this.showNotificationPopup ? 0 : 1;
 
     if (
-      this.haveAccounts &&
+      this.isSavedPassword &&
       ((this.isCreateWallet && this.currentIndexPage === 4) || (this.isImportWallet && this.currentIndexPage === 3))
     ) {
-      this.accountAuthorization();
+      if (Object.keys(this.json).length === 0) {
+        this.accountAuthorization();
+      }
+
       this.$router.push({ name: Components.Wallet });
 
       return;
@@ -323,7 +331,13 @@ export default class Layout extends Vue {
 
   importWallet() {
     if (this.currentIndexPage === 1) this.validateSuri();
-    else if (this.currentIndexPage === 3 && Object.keys(this.json).length === 0) this.accountAuthorization();
+    else if (this.currentIndexPage === 3) {
+      if (Object.keys(this.json).length === 0) {
+        this.accountAuthorization();
+      } else {
+        this.savePassword();
+      }
+    }
   }
 
   validateSuri() {
@@ -341,7 +355,7 @@ export default class Layout extends Vue {
   }
 
   accountAuthorization() {
-    const meta = { name: this.nickname, ethereumAddress: '' };
+    const meta = { name: this.nickname.trim(), ethereumAddress: '' };
     const {
       substrate: { value: substrateDP, keyPair: substrateKeyPair },
       ethereum: { value: ethereumDP, keyPair: ethereumKeyPair },
@@ -365,9 +379,7 @@ export default class Layout extends Vue {
   }
 
   savePassword() {
-    if (!this.haveAccounts) {
-      accountController.savePassword(this.passwordExtension);
-    }
+    accountController.savePassword(this.passwordExtension);
   }
 
   restoreJson() {
@@ -393,7 +405,7 @@ export default class Layout extends Vue {
     if (this.currentIndexPage === 1) {
       this.mnemonic = '';
       this.nickname = '';
-      this.derivationPath = DEFAULT_DERIVATION_PATH;
+      this.derivationPath = INITIAL_DERIVATION_PATH;
 
       this.$emit('reset');
 

@@ -6,11 +6,11 @@
     :handlerClose="handlerClose"
     :top="top"
     :left="-17"
-    verticalPlacement="center"
+    verticalPlacement="top"
     horizontalPlacement="right"
   >
     <div class="account-settings">
-      <div class="row">
+      <div class="row" @click="openNotificationPopup">
         <img src="@/assets/export.svg" class="icon" />
         <div class="label">Export account</div>
       </div>
@@ -18,7 +18,7 @@
         <img src="@/assets/account-switch.svg" class="icon" />
         <div class="label">Replace account</div>
       </div>
-      <div class="row" @click="openNetwork">
+      <div v-if="showSwitchNode" class="row" @click="openNetwork">
         <img src="@/assets/currency-switch.svg" class="icon" />
         <div class="label">Switch node</div>
       </div>
@@ -30,7 +30,7 @@
         <img src="@/assets/globus.svg" class="icon" />
         <div class="label">View in Subscan</div>
       </div>
-      <div class="row" @click="open(true)">
+      <div class="row" @click="open(false)">
         <img src="@/assets/globus.svg" class="icon" />
         <div class="label">View in Polkascan</div>
       </div>
@@ -40,34 +40,51 @@
 
 <script lang="ts">
 import Popup from '@/components/Popup.vue';
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import { firstCharToUp } from '@/util/helpers';
+import NetworksController from '@/controllers/networksController';
+import { Getter } from 'vuex-class';
 import { Components } from '@/router/routes';
+import { firstCharToUp } from '@/util/helpers';
+import { Component, Vue, Prop } from 'vue-property-decorator';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import type { SelectedWallet } from '@/store/accounts/types';
 
 @Component({
   components: { Popup },
 })
 export default class AccountSettingsPopup extends Vue {
   @Prop(String) selectedNetwork!: string;
-  @Prop(String) selectedAddress!: string;
+  @Prop(Boolean) showSwitchNode!: boolean;
+  @Prop(Number) pageYClick!: number;
   @Prop(Function) handlerClose!: VoidFunction;
 
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
   get top() {
-    return 0;
+    if (this.pageYClick === undefined) return 110;
+
+    if (this.pageYClick > 320) {
+      return this.pageYClick - 295;
+    }
+
+    return this.pageYClick + 7;
+  }
+
+  get addressByNetwork() {
+    return NetworksController.formatAddress(this.selectedWallet, this.selectedNetwork);
   }
 
   copyAddress() {
-    navigator.clipboard.writeText(this.selectedAddress);
+    navigator.clipboard.writeText(this.addressByNetwork);
 
     this.close();
   }
 
-  open(isPolkascan = false) {
-    if (isPolkascan)
+  open(isSubscan = true) {
+    if (isSubscan) window.open(`https://${this.selectedNetwork}.subscan.io/account/${this.addressByNetwork}`);
+    else
       window.open(
-        `https://explorer.polkascan.io/${firstCharToUp(this.selectedNetwork)}/account/${this.selectedAddress}`
+        `https://explorer.polkascan.io/${firstCharToUp(this.selectedNetwork)}/account/${this.addressByNetwork}`
       );
-    else window.open(`https://${this.selectedNetwork}.subscan.io/account/${this.selectedAddress}`);
 
     this.close();
   }
@@ -81,6 +98,10 @@ export default class AccountSettingsPopup extends Vue {
     });
 
     this.close();
+  }
+
+  openNotificationPopup() {
+    this.$emit('openNotificationPopup', 'export');
   }
 
   close() {

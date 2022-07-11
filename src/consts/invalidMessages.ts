@@ -1,5 +1,3 @@
-export type InvalidValueName = 'passphrase' | 'mnemonic' | 'rawSeed' | 'jsonPassword' | 'jsonInvalid' | '';
-
 export const INVALID_MESSAGES = {
   passphrase: {
     text: 'Invalid passphrase',
@@ -22,3 +20,5 @@ export const INVALID_MESSAGES = {
     subtext: 'Please, make sure that your input contains valid json.',
   },
 };
+
+export type InvalidValueName = keyof typeof INVALID_MESSAGES | '';

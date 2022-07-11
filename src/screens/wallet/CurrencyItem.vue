@@ -62,7 +62,7 @@
         <CircleButton
           iconName="chevron-right"
           backgroundColor="none"
-          :backgroundColorHover="true"
+          backgroundColorHover="black"
           @click="openTokenPage"
         />
       </template>

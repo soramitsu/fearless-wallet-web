@@ -14,7 +14,7 @@
         <img src="@/assets/edit.svg" class="edit-icon" />
         <div class="label">Edit node</div>
       </div>
-      <div class="row" @click="$emit('openNotificationPopup')">
+      <div class="row" @click="$emit('openNotificationPopup', 'delete')">
         <img src="@/assets/basket.svg" class="basket-icon" />
         <div class="label delete">Delete node</div>
       </div>
@@ -42,6 +42,7 @@ export default class NodeSettingsPopup extends Vue {
 .node-settings {
   color: rgba(255, 255, 255, 0.75);
   font-weight: 500;
+  height: 60px;
 
   .row {
     display: flex;

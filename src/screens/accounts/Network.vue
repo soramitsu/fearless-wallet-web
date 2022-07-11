@@ -35,7 +35,6 @@
         @changeNode="changeNode"
       />
     </div>
-
     <div class="custom-nodes">
       <div class="label">Custom nodes</div>
 
@@ -46,19 +45,17 @@
       </div>
     </div>
 
-    <div class="row">
-      <NodeItem
-        v-for="({ url, name }, index) in customNodes"
-        :key="name"
-        :name="name"
-        :url="url"
-        :isCustomNode="true"
-        :isActive="getActiveStatus(name, url)"
-        :isRemoveBorderBottom="getRemoveValue(index, true)"
-        @changeNode="changeNode"
-        @openNodeSettings="$emit('openNodeSettings', selectedNetwork, name, url)"
-      />
-    </div>
+    <NodeItem
+      v-for="({ url, name }, index) in customNodes"
+      :key="name"
+      :name="name"
+      :url="url"
+      :isCustomNode="true"
+      :isActive="getActiveStatus(name, url)"
+      :isRemoveBorderBottom="getRemoveValue(index, true)"
+      @changeNode="changeNode"
+      @openNodeSettings="$emit('openNodeSettings', selectedNetwork, name, url)"
+    />
   </div>
 </template>
 
@@ -179,6 +176,7 @@ export default class Network extends Vue {
   display: flex;
   flex-direction: column;
   height: 100%;
+  margin-right: 16px;
 
   .row {
     margin-top: 16px;
@@ -195,6 +193,7 @@ export default class Network extends Vue {
     display: flex;
     justify-content: space-between;
     margin-right: 9px;
+    padding-bottom: 16px;
 
     .plus {
       filter: invert(0.5);

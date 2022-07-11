@@ -1,12 +1,12 @@
-import type { DerivationPath } from '@/interfaces/common';
+import type { KeypairType } from '@polkadot/util-crypto/types';
 
-export const DEFAULT_DERIVATION_PATH: DerivationPath = {
+export const INITIAL_DERIVATION_PATH = {
   substrate: {
     value: '',
-    keyPair: 'sr25519',
+    keyPair: 'sr25519' as KeypairType,
   },
   ethereum: {
     value: '',
-    keyPair: 'ethereum',
+    keyPair: 'ethereum' as KeypairType,
   },
 };

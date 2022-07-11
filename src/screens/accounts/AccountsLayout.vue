@@ -1,28 +1,40 @@
 <template>
   <div>
     <ContentForm :height="480">
-      <Scroll>
-        <div class="accounts-layout">
-          <div class="navigation">
+      <div class="accounts-layout">
+        <div class="navigation">
+          <div class="left-part">
             <img src="@/assets/arrow-left-circle.svg" class="chevron" @click="back" />
             <div>{{ path }}</div>
           </div>
 
+          <CircleButton
+            v-if="showHeaderMenu"
+            iconName="dots-vertical"
+            backgroundColor="none"
+            backgroundColorHover="light-black"
+            @click="openAccountSettings(network)"
+          />
+        </div>
+        <Scroll>
           <router-view
             ref="content"
             @openEditNodeForm="openEditNodeForm"
             @openNodeSettings="openNodeSettings"
-            @toggleAccountSettingsVisible="toggleAccountSettingsVisible"
+            @openAccountSettings="openAccountSettings"
+            @openExportForm="openExportForm"
           />
-        </div>
-      </Scroll>
+        </Scroll>
+      </div>
     </ContentForm>
 
     <AccountSettingsPopup
       v-if="showAccountSettings"
       :selectedNetwork="selectedNetwork"
-      :selectedAddress="selectedAddress"
-      :handlerClose="toggleAccountSettingsVisible"
+      :handlerClose="closeAccountSettings"
+      :showSwitchNode="isAccountsRoute"
+      :pageYClick="pageYClick"
+      @openNotificationPopup="openNotificationPopup"
     />
 
     <EditNodeForm
@@ -42,18 +54,23 @@
 
     <NotificationPopup
       v-if="showNotificationPopup"
-      buttonText="Delete"
+      sizeWidth="big"
+      :buttonText="buttonText"
       :showButton="true"
-      :headers="{ text: 'Delete custom node?', subtext: selectedNodeName }"
+      :showWarningIcon="showWarningIcon"
+      :headers="headers"
       :handlerClose="closeNotificationPopup"
-      :handlerButton="deleteNode"
+      :handlerButton="handlerButton"
     />
+
+    <ExportForm v-if="showExportForm" :closeForm="closeForm" />
   </div>
 </template>
 
 <script lang="ts">
 import ContentForm from '@/components/ContentForm.vue';
 import Input from '@/components/Input.vue';
+import ExportForm from './ExportForm.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import Scroll from '@/components/Scroll.vue';
 import EditNodeForm from './EditNodeForm.vue';
@@ -65,13 +82,16 @@ import { accountController } from '@/controllers/accountController';
 import { Vue, Component } from 'vue-property-decorator';
 import { Components } from '@/router/routes';
 
+type NotificationType = 'delete' | 'export' | '';
+
 @Component({
   components: {
-    ContentForm,
     Input,
-    CircleButton,
     Scroll,
+    ExportForm,
+    ContentForm,
     EditNodeForm,
+    CircleButton,
     NodeSettingsPopup,
     NotificationPopup,
     AccountSettingsPopup,
@@ -79,22 +99,50 @@ import { Components } from '@/router/routes';
 })
 export default class AccountsLayout extends Vue {
   selectedNetwork = '';
-  selectedAddress = '';
   selectedNodeName = '';
   selectedNodeUrl = '';
+  notificationType: NotificationType = '';
+  pageYClick = 0;
+  showInfoPopup = false;
   showAccountSettings = false;
   showEditNodeForm = false;
   showNodeSettings = false;
-  showNotificationPopup = false;
+  showExportForm = false;
+
+  get headers() {
+    return this.notificationType === 'delete'
+      ? { text: 'Delete custom node?', subtext: this.selectedNodeName }
+      : this.notificationType === 'export'
+      ? {
+          text: 'Be careful',
+          subtext:
+            'Sharing or copying your secret is a high risk operation, don’t send it to anyone. Would you like to proceed with sharing/copying process?',
+        }
+      : '';
+  }
+
+  get showHeaderMenu() {
+    return !this.isAccountsRoute;
+  }
+
+  get showWarningIcon() {
+    return this.notificationType === 'delete';
+  }
+
+  get buttonText() {
+    return this.notificationType === 'delete' ? 'Delete' : this.notificationType === 'export' ? 'Export JSON ' : '';
+  }
 
   get path() {
     const path = 'Accounts';
+    const networkPath = `${path} / ${this.network?.toUpperCase()}`;
+    const exportPath = `${networkPath} / Export account`;
 
-    return this.isAccountsRoute
-      ? path
-      : this.isNetworkRoute
-      ? `${path} / ${this.$route.params.network.toUpperCase()}`
-      : '';
+    return this.isAccountsRoute ? path : this.isNetworkRoute ? networkPath : this.isExportRoute ? exportPath : '';
+  }
+
+  get network() {
+    return this.$route.params.network;
   }
 
   get isAccountsRoute() {
@@ -105,14 +153,54 @@ export default class AccountsLayout extends Vue {
     return this.routeName === Components.Network;
   }
 
+  get isExportRoute() {
+    return this.routeName === Components.Export;
+  }
+
   get routeName() {
     return this.$route.name;
   }
 
-  toggleAccountSettingsVisible(network = '', walletAddress = '') {
-    this.showAccountSettings = !this.showAccountSettings;
+  get showNotificationPopup() {
+    return this.notificationType !== '';
+  }
+
+  openExportForm() {
+    this.showExportForm = true;
+  }
+
+  closeForm() {
+    this.showExportForm = false;
+  }
+
+  handlerButton() {
+    if (this.notificationType === 'delete') this.deleteNode();
+    else if (this.notificationType === 'export') this.openExportAccount();
+  }
+
+  openExportAccount() {
+    this.$router.push({
+      name: Components.Export,
+      params: {
+        network: this.network ?? this.selectedNetwork,
+      },
+    });
+
+    this.closeNotificationPopup();
+  }
+
+  openAccountSettings(network = '', event: PointerEvent) {
+    this.showAccountSettings = true;
     this.selectedNetwork = network;
-    this.selectedAddress = walletAddress;
+    this.pageYClick = event?.pageY;
+  }
+
+  closeAccountSettings(isReset = true) {
+    this.showAccountSettings = false;
+
+    if (isReset) {
+      this.selectedNetwork = '';
+    }
   }
 
   openNodeSettings(network = '', nodeName = '', nodeUrl = '') {
@@ -149,14 +237,15 @@ export default class AccountsLayout extends Vue {
     (this.$refs.content as Network).updatedCustomNodes();
   }
 
-  openNotificationPopup() {
-    this.showNotificationPopup = true;
+  openNotificationPopup(type: NotificationType) {
+    this.notificationType = type;
 
     this.closeNodeSettings();
+    this.closeAccountSettings(false);
   }
 
   closeNotificationPopup() {
-    this.showNotificationPopup = false;
+    this.notificationType = '';
     this.selectedNodeName = '';
     this.selectedNodeUrl = '';
   }
@@ -168,26 +257,36 @@ export default class AccountsLayout extends Vue {
   back() {
     if (this.isAccountsRoute) this.$router.push({ name: Components.Wallet });
     else if (this.isNetworkRoute) this.$router.push({ name: Components.Accounts });
+    else if (this.isExportRoute) this.$router.go(-1);
   }
 }
 </script>
 
 <style lang="scss" scoped>
 .accounts-layout {
-  padding: 16px;
+  padding: 10px 0 0 16px;
   display: flex;
   flex-direction: column;
   height: 100%;
 
   .navigation {
     display: flex;
+    justify-content: space-between;
     color: rgba(255, 255, 255, 0.75);
     font-weight: 700;
-    margin-left: 10px;
+    margin: 0 10px;
+    min-height: 32px;
+
+    .left-part {
+      display: flex;
+      align-items: center;
+    }
 
     .chevron {
       margin-right: 15px;
       filter: invert(0.35);
+      width: 20px;
+      height: 20px;
 
       &:hover {
         cursor: pointer;

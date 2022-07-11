@@ -15,7 +15,7 @@
         :name="name"
         :token="token"
         :address="address"
-        @toggleAccountSettingsVisible="$emit('toggleAccountSettingsVisible', name, address)"
+        @openAccountSettings="openAccountSettings"
       />
     </template>
   </div>
@@ -29,8 +29,8 @@ import CircleButton from '@/components/CircleButton.vue';
 import Scroll from '@/components/Scroll.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
 import AccountsItem from './AccountsItem.vue';
-import { Vue, Component } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import { Vue, Component } from 'vue-property-decorator';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
@@ -90,6 +90,10 @@ export default class Account extends Vue {
   back() {
     this.$router.push({ name: Components.Wallet });
   }
+
+  openAccountSettings(network: string, event: any) {
+    this.$emit('openAccountSettings', network, event);
+  }
 }
 </script>
 
@@ -97,6 +101,7 @@ export default class Account extends Vue {
 .accounts {
   display: flex;
   flex-direction: column;
+  margin-right: 16px;
 
   .row {
     margin-top: 16px;

@@ -5,8 +5,8 @@ module.exports = {
   configureWebpack: (config) => {
     config.plugins.push(new NodePolyfillPlugin());
     // bundle all dependencies from node_modules to vendors
-    config.optimization.splitChunks.cacheGroups.defaultVendors.chunks = 'all';
-    config.optimization.splitChunks.cacheGroups.common.chunks = 'all';
+    // config.optimization.splitChunks.cacheGroups.defaultVendors.chunks = 'all';
+    // config.optimization.splitChunks.cacheGroups.common.chunks = 'all';
     // prepare icons content to unicode
     config.module.rules
       .filter((rule) => {

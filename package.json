@@ -2,20 +2,21 @@
   "name": "fearless-wallet-web",
   "version": "0.1.0",
   "private": true,
-  "license": "Apache-2.0",
-  "main": "index.js",
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
+    "build": "vue-cli-service vue.extension.config.js build --progress",
+    "build:extension": "env VUE_CLI_SERVICE_CONFIG_PATH=vue.config.extension.js vue-cli-service build",
+    "build-watch:extension": "env VUE_CLI_SERVICE_CONFIG_PATH=vue.config.extension.js vue-cli-service  --env.NODE_ENV=development build-watch --mode development",
+    "test:unit": "vue-cli-service test:unit",
+    "test:e2e": "vue-cli-service test:e2e",
     "lint": "vue-cli-service lint",
     "electron:build": "vue-cli-service electron:build",
     "electron:serve": "vue-cli-service electron:serve",
     "postinstall": "electron-builder install-app-deps",
     "postuninstall": "electron-builder install-app-deps",
-    "test:unit": "vue-cli-service test:unit",
-    "test:e2e": "vue-cli-service test:e2e",
     "test:all": "yarn test:unit"
   },
+  "main": "index.js",
   "dependencies": {
     "@open-web3/orml-types": "^1.0.1",
     "@polkadot/api": "^7.9.1",
@@ -38,7 +39,7 @@
     "vuex-class": "^0.3.2"
   },
   "devDependencies": {
-    "@types/chrome": "^0.0.177",
+    "@types/chrome": "^0.0.179",
     "@types/electron-devtools-installer": "^2.2.0",
     "@types/jest": "^26.0.19",
     "@types/lodash": "^4.14.174",
@@ -75,12 +76,14 @@
     "sass-loader": "^12.3.0",
     "ts-jest": "^27.0.5",
     "typescript": "~4.4.4",
+    "vue-cli-plugin-chrome-extension-cli": "~1.1.4",
     "vue-cli-plugin-electron-builder": "^3.0.0-alpha.3",
     "vue-template-compiler": "^2.6.14"
   },
   "gitHooks": {
     "pre-commit": "lint-staged"
   },
+  "license": "Apache-2.0",
   "lint-staged": {
     "*.{js,jsx,vue,ts,tsx}": [
       "vue-cli-service lint",

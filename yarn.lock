@@ -1970,10 +1970,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/chrome@^0.0.177":
-  version "0.0.177"
-  resolved "https://registry.yarnpkg.com/@types/chrome/-/chrome-0.0.177.tgz#b9098a9b0f3714d6604289d176b2a042ddd88ee7"
-  integrity sha512-bZIZyNAJMMqIgbRsBM+nGNDPezaWZMr3p+CKz1JGj4Jn8c7SpvdUqaconpxUG5WEL1WoisBeA3sumo+WXaC9CA==
+"@types/chrome@^0.0.179":
+  version "0.0.179"
+  resolved "https://registry.yarnpkg.com/@types/chrome/-/chrome-0.0.179.tgz#57f93c9bd2e4ebf3a517698868d2012b870bb4df"
+  integrity sha512-60zloNApIf88RwiG3Q7E+4NBG+znchhWmcaEVAAhUZahQbft5LWBzij4sinsfpAwbTtuWdFfUSpZsFhXTEFPVw==
   dependencies:
     "@types/filesystem" "*"
     "@types/har-format" "*"
@@ -11843,6 +11843,11 @@ vue-class-component@^7.2.3, vue-class-component@^7.2.6:
   version "7.2.6"
   resolved "https://registry.yarnpkg.com/vue-class-component/-/vue-class-component-7.2.6.tgz#8471e037b8e4762f5a464686e19e5afc708502e4"
   integrity sha512-+eaQXVrAm/LldalI272PpDe3+i4mPis0ORiMYxF6Ae4hyuCh15W8Idet7wPUEs4N4YptgFHGys4UrgNQOMyO6w==
+
+vue-cli-plugin-chrome-extension-cli@~1.1.4:
+  version "1.1.4"
+  resolved "https://registry.yarnpkg.com/vue-cli-plugin-chrome-extension-cli/-/vue-cli-plugin-chrome-extension-cli-1.1.4.tgz#3edc74c7b650c3961f0417b1f94bedfe620cbab5"
+  integrity sha512-Ij6tVvjju5vz+2N31Drkcsr6VBsZYlwsWiHWL8zeRfN5sIdl/+o8uK1AnV0EfmFTUXB7nM9XYWb9m8nm8feP6Q==
 
 vue-cli-plugin-electron-builder@^3.0.0-alpha.3:
   version "3.0.0-alpha.4"

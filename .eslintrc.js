@@ -2,6 +2,7 @@ module.exports = {
   root: true,
   env: {
     node: true,
+    webextensions: true,
   },
   plugins: ['eslint-plugin-prettier'],
   extends: [

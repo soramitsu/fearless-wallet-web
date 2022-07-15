@@ -110,7 +110,7 @@ export default class Logo extends Vue {
   }
 
   .circle-primary {
-    background: conic-gradient(from 180deg at 50% 50%, #ee7777 0deg, var(--pink-color) 187.5deg, #7777ee 360deg);
+    background: conic-gradient(from 180deg at 50% 50%, #ee7777 0deg, $pink-color 187.5deg, #7777ee 360deg);
   }
 
   .circle-secondary {

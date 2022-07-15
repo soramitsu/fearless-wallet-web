@@ -1,5 +1,5 @@
 <template>
-  <Corners>
+  <Corners class="corners">
     <div :class="classes" @click="$emit('click')">
       {{ textFormatted }}
 
@@ -12,7 +12,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { firstCharToUp } from '@/util/stringHelper';
+import { firstCharToUp } from '@/util/helpers';
 import Rotate from '@/components/Rotate.vue';
 import Corners from '@/components/Corners.vue';
 
@@ -42,11 +42,15 @@ export default class SelectNetworkButton extends Vue {
 </script>
 
 <style lang="scss" scoped>
+.corners {
+  height: 36px;
+}
+
 .select-network-button {
   position: relative;
   display: flex;
   justify-content: space-between;
-  clip-path: var(--medium-clip-path-left-top-and-right-bottom);
+  clip-path: $medium-clip-path-left-top-and-right-bottom;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 5px;
   background-color: #201c1f;

@@ -27,6 +27,6 @@ export default class Main extends Vue {}
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100%;
+  height: $default-height-page;
 }
 </style>

@@ -49,7 +49,7 @@ export default class MnemonicBackupForm extends Vue {
 <style lang="scss" scoped>
 .mnemonic-backup-form {
   .hint-container {
-    border-radius: var(--default-border-radius);
+    border-radius: $default-border-radius;
     width: 480px;
     height: 48px;
     padding: 8px 16px;

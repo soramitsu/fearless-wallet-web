@@ -22,6 +22,7 @@ module.exports = {
 
     if (process.env.NODE_ENV === 'production') {
       const buildDateTime = Date.now();
+
       config.output.filename = `js/[name].[contenthash:8].${buildDateTime}.js`;
       config.output.chunkFilename = `js/[name].[contenthash:8].${buildDateTime}.js`;
     }
@@ -32,7 +33,7 @@ module.exports = {
         additionalData: `
           @import "@/styles/_layout.scss";
           @import "@/styles/_mixins.scss";
-          @import "@/styles/_typography.scss";
+          @import "@/styles/common.scss";
         `,
       },
     },

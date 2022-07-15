@@ -68,13 +68,10 @@ export class FPNumber {
   public static HUNDRED = FPNumber.fromNatural(100);
 
   /**
-   * Return the **max** value, `null` if an array is empty
+   * Return the **max** value
    * @param {...FPNumber} numbers
    */
-  public static max(...numbers: Array<FPNumber>): FPNumber | null {
-    if (!numbers || !numbers.length) {
-      return null;
-    }
+  public static max(...numbers: Array<FPNumber>): FPNumber {
     const precision = numbers[0].precision;
     const filtered = numbers.map((item) => equalizedBN(item, precision));
     return new FPNumber(BigNumber.max(...filtered), precision);
@@ -297,7 +294,7 @@ export class FPNumber {
 
   /**
    * Format real number string (divided by precision) to fixed string (like `Number.toFixed`)
-   * @param {number} [dp=4] Decimal places deafult is 4
+   * @param {number} [dp=4] Decimal places default is 4
    */
   public toFixed(dp = 4): string {
     const result = this.value.div(10 ** this.precision);
@@ -306,7 +303,7 @@ export class FPNumber {
 
   /**
    * Format inner BigNumber value to string
-   * @param {number} [dp=0] Decimal places deafult is 0
+   * @param {number} [dp=0] Decimal places default is 0
    */
   public bnToString(dp = 0): string {
     // Return 0 if the value is Infinity, -Infinity and NaN
@@ -318,7 +315,7 @@ export class FPNumber {
 
   /**
    * Format inner BigNumber value to number
-   * @param {number} [dp=0] - Decimal places deafult is 0
+   * @param {number} [dp=0] - Decimal places default is 0
    */
   public bnToNumber(dp = 0): number {
     // Return 0 if the value is Infinity, -Infinity and NaN
@@ -397,7 +394,7 @@ export class FPNumber {
   }
 
   /**
-   * Return the nagetive number
+   * Return the negative number
    */
   public negative(): FPNumber {
     return new FPNumber(this.value.negated());

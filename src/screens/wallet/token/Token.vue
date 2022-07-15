@@ -1,18 +1,18 @@
 <template>
   <div class="token">
-    <TokenHeader :network="network" :price="price" :token="token" />
-
-    <div class="descriptions">
-      <div class="column left-column">
-        <div class="first-row">{{ tokenPriceString }}</div>
+    <div class="token-header">
+      <div class="descriptions">
         <div class="count-tokens">{{ countTokensString }}</div>
-        <div class="total-balance">{{ balanceInNetworkString }}</div>
+        <div class="balance-in-network">{{ balanceInNetworkString }}</div>
+        <div class="price">{{ tokenPriceString }}</div>
       </div>
-      <div class="column right-column">
-        <div class="first-row">Today</div>
-        <div>{{ grownString }}</div>
-        <div class="grown-percent-today">{{ grownPercentString }}</div>
-      </div>
+
+      <SelectNetworkButton
+        :ref="selectNetworkButtonRef"
+        :text="selectedNetwork"
+        :isActive="showSelectNetworkPopup"
+        @click="toggleSelectNetworkPopupVisible"
+      />
     </div>
 
     <div class="activity-block">
@@ -52,20 +52,9 @@
     <Corners size="big" :bottomRightCorner="false">
       <div class="content">
         <div class="content-settings">
-          <div class="tabs">
-            <TabButton
-              v-for="tabName in tabsOptions"
-              :key="tabName"
-              :name="tabName"
-              :isActive="activeTabName === tabName"
-              class="tab"
-              @click.native="openTab(tabName)"
-            />
-          </div>
+          <div class="history-label">History</div>
 
-          <SearchInput v-if="showNetworks" v-model="filterNetworksValue" placeholder="Search in networks" />
-
-          <Corners v-else-if="showHistory">
+          <Corners>
             <Dropdown
               :value="filterHistoryValue"
               :options="historyDropdownOption"
@@ -75,201 +64,228 @@
         </div>
 
         <Scroll>
-          <Networks v-if="showNetworks" :networks="filteredNetworks" :token="token" :selectedNetwork="network" />
-
-          <History v-else-if="showHistory" :history="filteredHistory" :availableInNetworks="availableInNetworks" />
+          <History :history="formattedHistory" :token="selectedToken" :filterHistoryValue="filterHistoryValue" />
         </Scroll>
       </div>
     </Corners>
 
     <SendForm
       v-if="showSendForm"
-      :selectedNetwork="network"
-      :token="token"
+      :currencies="currenciesForSelectedWallet"
+      :_selectedNetwork="selectedNetwork"
+      :_selectedToken="selectedToken"
       :closeForm="toggleVisible.bind(null, 'showSendForm', false)"
     />
 
     <ReceiveForm
       v-if="showReceiveForm"
-      :selectedNetwork="network"
+      :selectedNetwork="selectedNetwork"
       :closeForm="toggleVisible.bind(null, 'showReceiveForm', false)"
     />
 
     <TeleportForm
       v-if="showTeleportForm"
-      :selectedNetwork="network"
-      :token="token"
+      :currencies="currenciesForSelectedWallet"
+      :_originalNetwork="selectedNetwork"
+      :_selectedToken="selectedToken"
       :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
     />
 
     <BuyForm v-if="showBuyForm" :closeForm="toggleVisible.bind(null, 'showBuyForm', false)" />
+
+    <PopupWithSelect
+      v-if="showSelectNetworkPopup"
+      v-model="selectedNetwork"
+      header="Select Network"
+      space="big"
+      horizontalPlacement="right"
+      verticalPlacement="center"
+      :showIcon="true"
+      :showSearch="true"
+      :staticHeight="true"
+      :options="filterOptionsNetworks"
+      :toggleValue="toggleSelectedNetwork"
+      :handlerClose="toggleSelectNetworkPopupVisible"
+      :handlerFilter="handlerFilter"
+    />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Currency, HistoryItem } from '@/interfaces/currencies';
+import { Currencies } from '@/interfaces/currencies';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import type { TabCurrency } from '@/interfaces/walletPage';
-import currencyMock from '@/mocks/currency';
-import historyMock from '@/mocks/history';
+import { Networks as NetworksType } from '@/store/networks/types';
+import { Components } from '@/router/routes';
+import { getImgPathByNetworkName } from '@/util/imgPath';
+import { firstCharToUp } from '@/util/helpers';
+import { formattedNumber, formattedPrice } from '@/util/numbers';
+import { History as THistory } from '@/interfaces/history';
+import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
+import type { FilterHistory } from '@/interfaces/common';
 import BorderButton from '@/components/BorderButton.vue';
-import SearchInput from '@/components/SearchInput.vue';
 import Scroll from '@/components/Scroll.vue';
 import Dropdown from '@/components/Dropdown.vue';
 import Corners from '@/components/Corners.vue';
-import TokenHeader from './TokenHeader.vue';
-import Networks from './Networks.vue';
 import History from './History.vue';
 import TabButton from '@/components/TabButton.vue';
 import ReceiveForm from '../ReceiveForm.vue';
 import SendForm from '../SendForm.vue';
 import TeleportForm from '../TeleportForm.vue';
 import BuyForm from '../BuyForm.vue';
+import SelectNetworkButton from '../SelectNetworkButton.vue';
+import PopupWithSelect from '@/components/PopupWithSelect.vue';
 
 @Component({
   components: {
     BorderButton,
     Scroll,
-    TokenHeader,
-    Networks,
     TabButton,
     History,
-    SearchInput,
     ReceiveForm,
     SendForm,
     TeleportForm,
     BuyForm,
     Dropdown,
     Corners,
+    SelectNetworkButton,
+    PopupWithSelect,
   },
 })
 export default class Token extends Vue {
+  readonly selectNetworkButtonRef = 'selectNetworkButton';
   readonly historyDropdownOption = [
     { label: 'All', value: 'all' },
     { label: 'Transfer', value: 'transfer' },
     { label: 'Reward', value: 'reward' },
+    { label: 'Extrinsic', value: 'extrinsic' },
   ];
 
-  readonly tabsOptions: TabCurrency[] = ['Networks', 'History'];
-
-  history: HistoryItem[] = historyMock;
-  activeTabName: TabCurrency = 'Networks';
-  filterNetworksValue = '';
   filterHistoryValue = 'all';
+  popupFilterValue = '';
   showSendForm = false;
   showReceiveForm = false;
   showTeleportForm = false;
   showBuyForm = false;
+  showSelectNetworkPopup = false;
 
+  @Getter(NetworksGettersTypes.getNetworks) networks!: NetworksType;
+  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.getHistory) history!: THistory;
 
-  get currencies(): Currency[] {
-    // TODO: fix as ''
-    const substrateWalletCurrency = currencyMock[this.selectedWallet.address as ''];
-    const ethereumWalletCurrency = currencyMock[this.selectedWallet.ethereumAddress as ''];
-
-    return [...substrateWalletCurrency, ...ethereumWalletCurrency];
+  get optionsNetworks() {
+    return this.networks.map(({ name }) => ({
+      label: firstCharToUp(name),
+      value: name,
+      path: `networks/${getImgPathByNetworkName(name)}`,
+    }));
   }
 
-  get tokenInfo() {
-    return this.currencies.find(({ token }) => token.toLowerCase() === this.token.toLowerCase());
+  get filterOptionsNetworks() {
+    const filter = this.popupFilterValue.trim().toLowerCase();
+
+    return this.optionsNetworks.filter(({ label }) => label.toLowerCase().includes(filter));
   }
 
-  get availableInNetworks() {
-    return this.tokenInfo?.availableInNetworks;
+  get currenciesForSelectedWallet() {
+    return [
+      ...(this.currencies[this.selectedWallet.address] ?? []),
+      ...(this.currencies[this.selectedWallet.ethereumAddress] ?? []),
+    ];
   }
 
-  get filteredNetworks() {
-    const filter = this.filterNetworksValue.trim().toLowerCase();
-
-    return this.availableInNetworks?.filter(({ network }) => network.includes(filter));
+  get currentCurrency() {
+    return this.currenciesForSelectedWallet.find(
+      ({ token, mainNetwork }) => token === this.selectedToken && mainNetwork === this.selectedNetwork
+    );
   }
 
-  get filteredHistory() {
-    if (this.filterHistoryValue === 'all') return this.history;
+  get formattedHistory() {
+    const { address, ethereumAddress } = this.selectedWallet;
+    const isEthereumNetwork = ETHEREUM_NETWORKS.includes(this.selectedNetwork);
+    const addressByNetwork = isEthereumNetwork ? ethereumAddress : address;
+    const historyForNetwork = this.history[this.selectedNetwork];
+    const historyForWalletAddress = historyForNetwork?.[addressByNetwork]?.nodes ?? [];
 
-    return this.history.filter(({ type }) => type === this.filterHistoryValue);
+    // TODO: fix
+    // Now the history hierarchy is as follows = network: { walletAddress: { history } }
+    // should become like this = network: { walletAddress: { token: { history } } }
+    // when non-native tokens are added, it needs to be fixed
+    if (this.selectedNetwork !== this.currentCurrency?.mainNetwork) {
+      return [];
+    }
+
+    return historyForWalletAddress;
   }
 
   get tokenPriceString() {
-    return `1 ${this.token.toUpperCase()} = $${this.tokenInfo?.price}`;
+    return `1 ${this.selectedToken.toUpperCase()} = $${formattedPrice(this.price ?? 0)}`;
   }
 
-  get showNetworks() {
-    return this.activeTabName === 'Networks';
-  }
-
-  get showHistory() {
-    return this.activeTabName === 'History';
-  }
-
-  get network() {
+  get selectedNetwork() {
     return this.$route.params.network;
   }
 
-  get token() {
+  get selectedToken() {
     return this.$route.params.token;
   }
 
   get price() {
-    return this.tokenInfo?.price;
-  }
-
-  get tokenInfoInSelectedNetwork() {
-    return this.tokenInfo?.availableInNetworks.find(({ network }) => network === this.network);
-  }
-
-  get balanceInNetwork() {
-    const balance = this.tokenInfoInSelectedNetwork?.balance;
-
-    if (!balance) return 0;
-
-    return this.tokenInfo!.price * balance;
+    return this.currentCurrency?.price;
   }
 
   get countTokensString() {
-    const balance = this.tokenInfoInSelectedNetwork?.balance ?? 0;
+    if (!this.currentCurrency) return `${this.selectedToken.toUpperCase()} 0`;
 
-    return `${balance} ${this.token.toUpperCase()}`;
+    const availableInNetworks = this.currentCurrency.getAvailableInNetworks();
+    const balance = availableInNetworks.find(({ network }) => network === this.selectedNetwork)?.balance;
+    const total = formattedNumber(+(balance?.total ?? 0), 4);
+
+    return `${this.selectedToken.toUpperCase()} ${+total}`;
   }
 
   get balanceInNetworkString() {
-    return `$ ${this.balanceInNetwork.toFixed(2)}`;
+    if (!this.currentCurrency) return `$ 0`;
+
+    const total = this.currentCurrency.getBalanceInNetwork(this.selectedNetwork);
+
+    return `$ ${formattedNumber(total)}`;
   }
 
-  get grownString() {
-    return `+$${this.tokenInfo?.grown}`;
+  handlerFilter(value: string) {
+    this.popupFilterValue = value;
   }
 
-  get grownPercentString() {
-    return `+${this.tokenInfo?.grownPercent}%`;
+  toggleSelectedNetwork(network: string) {
+    if (this.selectedNetwork === network) return;
+
+    this.$router.push({
+      name: Components.Token,
+      params: {
+        token: this.selectedToken,
+        network: network,
+      },
+    });
   }
 
-  filterHistoryValueUpdate(name: string) {
+  toggleSelectNetworkPopupVisible() {
+    const targetElement = (this.$refs[this.selectNetworkButtonRef] as Vue).$el as HTMLElement;
+
+    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
+
+    targetElement.style.zIndex = this.showSelectNetworkPopup ? '200' : '0';
+  }
+
+  filterHistoryValueUpdate(name: FilterHistory) {
     this.filterHistoryValue = name;
-  }
-
-  openTab(name: TabCurrency) {
-    this.activeTabName = name;
   }
 
   toggleVisible(field: 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyForm', value: boolean) {
     this[field] = value;
-  }
-
-  receive() {
-    alert('receive');
-  }
-
-  teleport() {
-    alert('teleport');
-  }
-
-  buy() {
-    alert('buy');
   }
 }
 </script>
@@ -281,44 +297,32 @@ export default class Token extends Vue {
   width: 100%;
   height: 100%;
 
-  .descriptions {
+  .token-header {
     display: flex;
     justify-content: space-between;
     margin-bottom: 16px;
-    height: 75px;
 
-    .column {
+    .descriptions {
       display: flex;
-      flex-direction: column;
       justify-content: space-between;
+      flex-direction: column;
+      align-items: flex-start;
+      height: 70px;
 
       .count-tokens {
         font-weight: 600;
         font-size: 28px;
-        margin-bottom: 4px;
       }
 
-      .total-balance {
-        color: rgba(255, 255, 255, 0.65);
+      .balance-in-network {
+        color: rgba(255, 255, 255, 0.5);
       }
 
-      .first-row {
-        color: rgba(255, 255, 255, 0.65);
-        font-size: 14px;
-        margin-bottom: 4px;
+      .price {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 12px;
+        line-height: 15px;
       }
-
-      .grown-percent-today {
-        color: #00ffcc;
-      }
-    }
-
-    .left-column {
-      align-items: flex-start;
-    }
-
-    .right-column {
-      align-items: flex-end;
     }
   }
 
@@ -333,9 +337,9 @@ export default class Token extends Vue {
     flex-direction: column;
     border: 1px solid rgba(255, 255, 255, 0.1);
     background-color: rgba(255, 255, 255, 0.05);
-    clip-path: var(--big-clip-path-left-top);
+    clip-path: $big-clip-path-left-top;
     border-radius: 8px;
-    height: 277px;
+    height: 336px;
 
     .content-settings {
       display: flex;
@@ -343,14 +347,8 @@ export default class Token extends Vue {
       align-items: center;
       margin: 11px 16px 5px 18px;
 
-      .tabs {
-        display: flex;
-        align-items: center;
-        height: 42px;
-
-        .tab {
-          margin-right: 8px;
-        }
+      .history-label {
+        font-weight: 600;
       }
     }
   }

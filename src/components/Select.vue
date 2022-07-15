@@ -2,7 +2,7 @@
   <Corners :size="size">
     <div :class="containerSelectClasses">
       <s-select v-model="vModel" :placeholder="placeholder" :size="size">
-        <s-option v-for="{ value, label } in options" :key="value" :value="value" :label="label" />
+        <s-option v-for="{ value, label } in options" :key="label" :value="value" :label="label" />
       </s-select>
     </div>
   </Corners>
@@ -40,7 +40,7 @@ export default class Select extends Vue {
 <style lang="scss">
 .select-style-default {
   input {
-    color: var(--pink-lavender-color) !important;
+    color: $pink-lavender-color !important;
   }
 
   .s-select .el-input__inner {
@@ -91,13 +91,13 @@ export default class Select extends Vue {
 
 .select-size-big {
   .s-select {
-    clip-path: var(--big-clip-path-left-top-and-right-bottom);
+    clip-path: $big-clip-path-left-top-and-right-bottom;
   }
 }
 
 .select-size-medium {
   .s-select {
-    clip-path: var(--medium-clip-path-left-top-and-right-bottom);
+    clip-path: $medium-clip-path-left-top-and-right-bottom;
   }
 }
 </style>

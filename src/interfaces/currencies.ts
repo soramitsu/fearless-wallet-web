@@ -1,21 +1,12 @@
+import { WalletAddress } from '@/interfaces/common';
+import type { AccountBalance } from '@/interfaces/balances';
+import CurrencyController from '@/controllers/currencyController';
+
 export interface AvailableInNetworks {
   network: string;
-  balance: number;
+  balance: AccountBalance;
 }
 
-export interface Currency {
-  mainNetwork: string;
-  token: string;
-  price: number;
-  grown: number;
-  grownPercent: number;
-  availableInNetworks: AvailableInNetworks[];
-}
+export type Currency = CurrencyController;
 
-export interface HistoryItem {
-  id: string;
-  type: string;
-  value: number;
-  token: string;
-  time: number;
-}
+export type Currencies = Record<WalletAddress, Currency[]>;

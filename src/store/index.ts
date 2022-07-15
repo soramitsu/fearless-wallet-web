@@ -1,17 +1,19 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
-import api from './api';
+import networks from './networks';
 import account from './accounts';
 import Modules from './types';
 
 const files = require.context('.', false, /\.ts$/);
 const modules: Modules = {
-  api,
+  networks,
   account,
 };
 
 files.keys().forEach((key) => {
-  if (key === './index.ts' || key === './types.ts') return;
+  const ignoredFiles = ['./index.ts', './types.ts', './helpers.ts'];
+
+  if (ignoredFiles.includes(key)) return;
 
   modules[key.replace(/(\.\/|\.ts)/g, '')] = files(key).default;
 });

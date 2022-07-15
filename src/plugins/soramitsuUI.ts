@@ -5,7 +5,6 @@ import { setDesignSystem, setTheme } from '@soramitsu/soramitsu-js-ui/lib/utils'
 import ElementUIPlugin, { Message, MessageBox, Notification } from '@soramitsu/soramitsu-js-ui/lib/plugins/elementUI';
 import SoramitsuUIStorePlugin from '@soramitsu/soramitsu-js-ui/lib/plugins/soramitsuUIStore';
 
-// TODO: [arch] CHECK COMPONENTS USAGE
 import SButton from '@soramitsu/soramitsu-js-ui/lib/components/Button/SButton';
 import SCard from '@soramitsu/soramitsu-js-ui/lib/components/Card/SCard';
 import SCheckbox from '@soramitsu/soramitsu-js-ui/lib/components/Checkbox';

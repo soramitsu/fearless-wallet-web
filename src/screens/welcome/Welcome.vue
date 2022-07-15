@@ -45,10 +45,10 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { WalletConnectionStatus } from '@/interfaces/connectionWallet';
 import Layout from './Layout.vue';
 import Logo from '@/components/Logo.vue';
 import Button from '@/components/Button.vue';
+import type { WalletConnectionStatus } from '@/interfaces/common';
 
 @Component({
   components: {
@@ -78,7 +78,7 @@ export default class Welcome extends Vue {
 .welcome-page {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: $default-height-page;
 
   .first-page {
     display: flex;

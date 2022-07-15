@@ -14,7 +14,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { DerivationPath } from '@/interfaces/connectionWallet';
+import type { DerivationPath } from '@/interfaces/common';
 import MnemonicConfirmationForm from './MnemonicConfirmationForm.vue';
 import MnemonicBackupForm from './MnemonicBackupForm.vue';
 

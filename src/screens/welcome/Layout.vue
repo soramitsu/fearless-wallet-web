@@ -86,13 +86,13 @@ import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { isHex } from '@polkadot/util';
 import { GettersTypes } from '@/store/accounts/getters';
-import { WalletConnectionStatus, DerivationPath, TypeFiledForImport } from '@/interfaces/connectionWallet';
 import { mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
 import { Components } from '@/router/routes';
-import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import { INVALID_POPUP_MESSAGES, InvalidValueName } from '@/consts/invalidPopupMessages';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/ethereumNetworks';
 import { DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
+import type { DerivationPath, TypeFiledForImport, WalletConnectionStatus } from '@/interfaces/common';
+import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import keyring from '@polkadot/ui-keyring';
 import InvalidPopup from '@/components/InvalidPopup.vue';
 import CircleButton from '@/components/CircleButton.vue';
@@ -123,7 +123,7 @@ type FieldsComponent = 'passwordJson' | 'derivationPath';
   },
 })
 export default class Layout extends Vue {
-  accountController = new AccountController();
+  readonly accountController = new AccountController();
   nickname = '';
   json = '';
   mnemonic = '';
@@ -342,7 +342,7 @@ export default class Layout extends Vue {
   }
 
   accountAuthorization() {
-    const meta: Record<string, string> = { name: this.nickname };
+    const meta = { name: this.nickname, ethereumAddress: '' };
     const {
       substrate: { value: substrateDP, keyPair: substrateKeyPair },
       ethereum: { value: ethereumDP, keyPair: ethereumKeyPair },
@@ -351,7 +351,7 @@ export default class Layout extends Vue {
 
     // We create an ETH account only if we entered the mnemonic
     if (this.mnemonic) {
-      const suriEthereum = `${this.mnemonic}${ethereumDP ?? ETHEREUM_DEFAULT_DERIVATION_PATH}`;
+      const suriEthereum = `${this.mnemonic}${ethereumDP || ETHEREUM_DEFAULT_DERIVATION_PATH}`;
 
       const {
         pair: { address },
@@ -363,8 +363,6 @@ export default class Layout extends Vue {
     keyring.addUri(suriSubstrate, '', meta, substrateKeyPair);
 
     this.savePassword();
-
-    alert(this.isImportWallet ? 'Wallet imported. Check console' : 'Wallet created. Check console');
   }
 
   savePassword() {
@@ -376,8 +374,6 @@ export default class Layout extends Vue {
   restoreJson() {
     try {
       keyring.restoreAccount(this.JSON as KeyringPair$Json, this.passwordJson);
-
-      alert('Wallet imported. Check console');
 
       return true;
     } catch {
@@ -440,7 +436,7 @@ export default class Layout extends Vue {
       }
 
       .circle-filled {
-        background-color: var(--pink-color);
+        background-color: $pink-color;
       }
     }
   }

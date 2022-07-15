@@ -1,6 +1,5 @@
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
-
 import { FPNumber } from './fp';
 import type { AccountBalance } from '@/interfaces/balances';
 
@@ -12,11 +11,12 @@ export function formatBalance(data: AccountData | OrmlAccountData, assetDecimals
   const frozen = new FPNumber((data as OrmlAccountData).frozen || 0, assetDecimals);
   const locked = FPNumber.max(miscFrozen, feeFrozen);
   const freeAndReserved = free.add(reserved);
+
   return {
     reserved: reserved.toCodecString(),
-    locked: locked!.toCodecString(),
+    locked: locked.toCodecString(),
     total: freeAndReserved.toCodecString(),
-    transferable: free.sub(locked!).toCodecString(),
-    frozen: (frozen.isZero() ? locked!.add(reserved) : frozen).toCodecString(),
+    transferable: free.sub(locked).toCodecString(),
+    frozen: (frozen.isZero() ? locked.add(reserved) : frozen).toCodecString(),
   } as AccountBalance;
 }

@@ -13,8 +13,8 @@
             <img :src="getImg(secondNetwork)" class="network-img" />
           </template>
         </div>
-        <div class="amount">{{ amount }} {{ token }}</div>
-        <div class="amount-dollars">${{ amountDollars }}</div>
+        <div class="transfer-amount">{{ transferAmountString }}</div>
+        <div class="transfer-value">{{ transferValueString }}</div>
       </template>
     </div>
   </Popup>
@@ -34,16 +34,20 @@ import { getImgPathByNetworkName } from '@/util/imgPath';
 })
 export default class SendingPopup extends Vue {
   @Prop(Boolean) popupLoading!: boolean;
-  @Prop(Boolean) showPopup!: boolean;
   @Prop(String) header!: string;
   @Prop(String) amount!: string;
+  @Prop(String) value!: string;
   @Prop(String) token!: string;
   @Prop(String) firstNetwork!: string;
   @Prop(String) secondNetwork!: string;
   @Prop(Function) handlerClose!: VoidFunction;
 
-  get amountDollars() {
-    return +this.amount * 75;
+  get transferAmountString() {
+    return `-${this.amount} ${this.token}`;
+  }
+
+  get transferValueString() {
+    return `$${this.value}`;
   }
 
   getImg(network: string) {
@@ -61,7 +65,7 @@ export default class SendingPopup extends Vue {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 190px;
+    height: 140px;
 
     .descriptions {
       display: flex;
@@ -82,13 +86,13 @@ export default class SendingPopup extends Vue {
       }
     }
 
-    .amount {
+    .transfer-amount {
       font-weight: 800;
       font-size: 20px;
       margin-bottom: 10px;
     }
 
-    .amount-dollars {
+    .transfer-value {
       font-size: 16px;
       color: rgba(255, 255, 255, 0.5);
     }

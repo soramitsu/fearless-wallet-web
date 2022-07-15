@@ -17,7 +17,7 @@
 
 ::-webkit-scrollbar-thumb {
   background-color: rgba(255, 255, 255, 0.25);
-  border-radius: var(--default-border-radius);
+  border-radius: $default-border-radius;
 
   &:hover {
     background-color: rgba(255, 255, 255, 0.15);

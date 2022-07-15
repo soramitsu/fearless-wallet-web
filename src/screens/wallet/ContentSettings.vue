@@ -19,7 +19,7 @@
       </template>
     </div>
     <div v-if="isCurrenciesTab" class="settings-part">
-      <SearchInput v-model="filterValue" placeholder="Search" class="search" />
+      <SearchInput v-if="!showAssetsManagementForm" v-model="filterValue" placeholder="Search" class="search" />
 
       <CircleButton :iconName="iconName" backgroundColor="none" @click="toggleAssetsManagementVisible" />
     </div>
@@ -28,7 +28,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
-import type { TabWallet } from '@/interfaces/walletPage';
+import type { TabWallet } from '@/interfaces/common';
 import TabButton from '@/components/TabButton.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import SearchInput from '@/components/SearchInput.vue';

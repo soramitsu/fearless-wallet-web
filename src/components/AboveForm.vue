@@ -1,9 +1,11 @@
 <template>
-  <!-- TODO: Maybe rename the component name to something more descriptive -->
   <div :class="backgroundClasses">
     <div class="above-form">
       <div class="header-content">
-        <div class="logo">
+        <div v-if="showBackIcon" class="icon icon-back" @click="handlerBack">
+          <img src="@/assets/chevron-left.svg" />
+        </div>
+        <div v-else class="icon">
           <img src="@/assets/fw-logo.svg" />
         </div>
         <div class="header">{{ header }}</div>
@@ -30,8 +32,10 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 export default class AboveForm extends Vue {
   @Prop({ default: '' }) header!: string;
   @Prop({ default: false }) showAcceptIcon!: boolean;
+  @Prop({ default: false }) showBackIcon!: boolean;
   @Prop({ default: false }) blur!: boolean;
   @Prop({ default: () => () => null }) saveChanges!: VoidFunction;
+  @Prop({ default: () => () => null }) handlerBack!: VoidFunction;
   @Prop(Function) closeHandler!: VoidFunction;
 
   get backgroundClasses() {
@@ -47,9 +51,9 @@ export default class AboveForm extends Vue {
 
 <style lang="scss" scoped>
 .above-form-background {
-  height: var(--extension-height);
-  width: var(--extension-width);
-  border-radius: var(--default-border-radius);
+  height: $extension-height;
+  width: $extension-width;
+  border-radius: $default-border-radius;
   position: absolute;
   top: 0;
   left: 0;
@@ -68,12 +72,12 @@ export default class AboveForm extends Vue {
   .above-form {
     position: relative;
     top: 80px;
-    border-radius: var(--default-border-radius);
-    width: var(--extension-width);
+    border-radius: $default-border-radius;
+    width: $extension-width;
     height: 560px;
     background-color: #111111;
     clip-path: polygon(100% 0, 100% 100%, 0 100%, 0 4%, 4% 0);
-    animation: transform 0.3s forwards;
+    // animation: transform 0.3s forwards;
 
     @keyframes transform {
       0% {
@@ -103,7 +107,7 @@ export default class AboveForm extends Vue {
     .s-icon-basic-check-mark-24 {
       color: rgba(255, 255, 255, 0.5);
       font-weight: 400;
-      color: var(--pink-lavender-color);
+      color: $pink-lavender-color;
       opacity: 0.8;
 
       &:hover {
@@ -121,11 +125,20 @@ export default class AboveForm extends Vue {
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .logo {
+    .icon {
       margin-left: 5px;
       display: flex;
       flex-direction: column;
       justify-content: center;
+    }
+
+    .icon-back {
+      opacity: 0.8;
+
+      &:hover {
+        cursor: pointer;
+        opacity: 1;
+      }
     }
 
     .header {
@@ -137,7 +150,6 @@ export default class AboveForm extends Vue {
     .activity-block {
       display: flex;
       justify-content: right;
-      width: 10px;
     }
 
     .icon {

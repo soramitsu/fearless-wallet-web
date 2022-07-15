@@ -1,5 +1,5 @@
 <template>
-  <div :class="popupBackgroundClasses">
+  <div :class="popupBackgroundClasses" @click="backgroundClick">
     <div :class="popupContainerClasses" :style="popupContainerStyle">
       <div v-if="showHeader" class="header">
         <SearchInput v-if="showSearch" v-model="filterValue" placeholder="Search in networks" class="search" />
@@ -37,8 +37,8 @@ type VerticalPlacement = 'top' | 'center' | 'bottom';
 export default class Popup extends Vue {
   filterValue = '';
 
-  @Prop(Function) handlerClose!: VoidFunction;
-  @Prop(Function) handlerFilter!: (value: string) => void;
+  @Prop({ default: () => () => null }) handlerClose!: VoidFunction;
+  @Prop({ default: () => () => null }) handlerFilter!: (value: string) => void;
   @Prop(Number) top!: number;
   @Prop(Number) left!: number;
   @Prop({ default: true }) showHeader!: boolean;
@@ -80,6 +80,10 @@ export default class Popup extends Vue {
     this.handlerFilter(value);
   }
 
+  backgroundClick(event: Event) {
+    if ((event.target as any)?.classList.contains('popup-background')) this.close();
+  }
+
   close() {
     this.handlerFilter('');
     this.handlerClose();
@@ -89,11 +93,10 @@ export default class Popup extends Vue {
 
 <style lang="scss" scoped>
 .popup-background {
-  height: var(--extension-height);
-  width: var(--extension-width);
-  border-radius: var(--default-border-radius);
+  height: $extension-height;
+  width: $extension-width;
+  border-radius: $default-border-radius;
   display: flex;
-  align-items: center;
   position: absolute;
   top: 0;
   left: 0;
@@ -122,8 +125,8 @@ export default class Popup extends Vue {
     max-height: 390px;
     max-width: 480px;
     background-color: #111111;
-    clip-path: var(--big-clip-path-left-top-and-right-bottom);
-    border-radius: var(--default-border-radius);
+    clip-path: $big-clip-path-left-top-and-right-bottom;
+    border-radius: $default-border-radius;
     padding: 20px 0 30px;
   }
 
@@ -168,7 +171,7 @@ export default class Popup extends Vue {
 }
 
 .popup-background-horizontal-placement-left {
-  justify-content: left;
+  justify-content: flex-start;
 }
 
 .popup-background-horizontal-placement-center {
@@ -176,7 +179,7 @@ export default class Popup extends Vue {
 }
 
 .popup-background-horizontal-placement-right {
-  justify-content: right;
+  justify-content: flex-end;
 }
 
 .popup-background-vertical-placement-top {

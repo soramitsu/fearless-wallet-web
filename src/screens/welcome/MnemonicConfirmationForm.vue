@@ -80,8 +80,8 @@ export default class MnemonicConfirmationForm extends Vue {
   }
 
   .button-mnemonic {
-    margin: 4px 8px 4px 0;
-    flex: 1 1 70px;
+    margin: 4px 4px 4px 0;
+    flex: 1 1 60px;
 
     span {
       font-weight: 400;

@@ -11,7 +11,7 @@
     :left="left"
     class="popup-with-choice"
   >
-    <div v-for="{ label, value, path } in options" :key="label" :class="rowClasses(value)" @click="toggleValue(value)">
+    <div v-for="{ label, value, path } in options" :key="label" :class="rowClasses(value)" @click="toggle(value)">
       <div class="description">
         <img v-if="showIcon" :src="getImg(path)" class="img" />
 
@@ -43,10 +43,9 @@ export default class PopupWithSelect extends Vue {
   @Prop({ default: false }) showIcon!: boolean;
   @Prop({ default: false }) showSearch!: boolean;
   @Prop({ default: false }) staticHeight!: boolean;
-
-  @Prop(Function) toggleValue!: VoidFunction;
+  @Prop(Function) toggleValue!: (value: string) => void;
   @Prop(Function) handlerClose!: VoidFunction;
-  @Prop(Function) handlerFilter!: (value: string) => void;
+  @Prop({ default: () => () => null }) handlerFilter!: (value: string) => void;
 
   getImg(path: string) {
     return require(`@/assets/${path}`);
@@ -61,13 +60,17 @@ export default class PopupWithSelect extends Vue {
       `margin-${this.space}`,
     ];
   }
+
+  toggle(value: string) {
+    this.toggleValue(value);
+    this.handlerFilter('');
+    this.handlerClose();
+  }
 }
 </script>
 
 <style lang="scss" scoped>
 .popup-with-choice {
-  padding: 0 !important;
-
   .row {
     color: rgba(255, 255, 255, 0.75);
     text-align: left;
@@ -126,7 +129,7 @@ export default class PopupWithSelect extends Vue {
   }
 
   .s-icon-basic-check-mark-24 {
-    color: var(--pink-lavender-color);
+    color: $pink-lavender-color;
   }
 }
 </style>

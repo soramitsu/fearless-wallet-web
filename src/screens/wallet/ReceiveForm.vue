@@ -21,14 +21,15 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { GettersTypes as ApisGettersTypes } from '@/store/api/getters';
-import { Networks } from '@/store/api/types';
-import { firstCharToUp } from '@/util/stringHelper';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { Networks } from '@/store/networks/types';
+import { firstCharToUp } from '@/util/helpers';
+import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
+import NetworksController from '@/controllers/networksController';
 import ActivityForm from './ActivityForm.vue';
 import QrCode from 'qrcode.vue';
 import Select from '@/components/Select.vue';
 import Button from '@/components/Button.vue';
-import NetworksController from '@/controllers/networksController';
 
 @Component({
   components: {
@@ -44,14 +45,14 @@ export default class ReceiveForm extends Vue {
   @Prop(String) selectedNetwork!: string;
   @Prop(Function) closeForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(ApisGettersTypes.getNetworksInfo) networksInfo!: Networks;
+  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
 
   get optionsNetwork() {
-    return Object.keys(this.networksInfo).map((network) => ({ label: firstCharToUp(network), value: network }));
+    return this.networks.map(({ name }) => ({ label: firstCharToUp(name), value: name }));
   }
 
   get address() {
-    if (this.selectedWallet.type === 'ethereum') return this.selectedWallet.address;
+    if (ETHEREUM_NETWORKS.includes(this.network)) return this.selectedWallet.ethereumAddress;
 
     return NetworksController.formatAddress(this.selectedWallet.address, this.network);
   }
@@ -89,7 +90,7 @@ export default class ReceiveForm extends Vue {
     font-size: 14px;
     font-weight: 500;
     margin-bottom: 20px;
-    color: var(--pink-lavender-color);
+    color: $pink-lavender-color;
     opacity: 0.95;
     margin-top: 10px;
 

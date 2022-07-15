@@ -58,7 +58,25 @@ export function getImgPathByNetworkName(network = '') {
       return 'subsocial.svg';
     case 'zeitgeist':
       return 'zeitgeist.svg';
+    case 'integritee shell':
+      return 'integritee.svg';
+    case 'hydradx':
+      return 'hydradx.svg';
+    case 'centrifuge':
+      return 'centrifuge.svg';
+    case 'efinity':
+      return 'efinity.svg';
+    case 'litmus':
+      return 'litmus.svg';
+    case 'polkadex main network':
+      return 'polkadex.svg';
+    case 'turing network':
+      return '_default.svg';
+    case 'crust shadow parachain':
+      return 'crustshadow.svg';
+    case 'interlay':
+      return 'interlay.svg';
     default:
-      return 'globus.svg';
+      return '_default.svg';
   }
 }

@@ -1,11 +1,12 @@
 <template>
   <Popup
-    :showHeader="false"
+    class="select-wallet-popup"
     horizontalPlacement="left"
     verticalPlacement="top"
+    :showHeader="false"
+    :handlerClose="close"
     :top="49"
     :left="42"
-    class="select-wallet-popup"
   >
     <div class="wallet-content">
       <TotalBalance
@@ -31,17 +32,16 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { SelectedWallet } from '@/store/accounts/types';
+import { SelectedWallet, SetSelectedWalletProps } from '@/store/accounts/types';
 import { Components } from '@/router/routes';
-import { Currency } from '@/interfaces/currencies';
-import { getMetaTyped } from '@/util/meta';
+import { Currencies } from '@/interfaces/currencies';
+import { TMutation } from '@/interfaces/common';
 import Popup from '@/components/Popup.vue';
 import TotalBalance from '@/screens/wallet/TotalBalance.vue';
 import keyring from '@polkadot/ui-keyring';
-import currencyMock from '@/mocks/currency';
-import CurrencyController from '@/controllers/currencyController';
 
 @Component({
   components: {
@@ -50,8 +50,9 @@ import CurrencyController from '@/controllers/currencyController';
   },
 })
 export default class SelectWalletPopup extends Vue {
+  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: (props: Record<string, string>) => void;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
 
   get wallets() {
     const accounts = keyring.getAccounts();
@@ -65,34 +66,33 @@ export default class SelectWalletPopup extends Vue {
       .filter(({ type }) => type !== 'ethereum');
   }
 
-  get currencies(): Record<string, Currency[]> {
-    return currencyMock;
-  }
-
   addWallet() {
     this.$router.push({ name: Components.Welcome });
   }
 
   getBalance(address: string) {
-    const { meta } = keyring.getPair(address);
-    const { ethereumAddress } = getMetaTyped(meta);
+    const currencies = this.currencies[address];
 
-    // TODO: fix as ''
-    return [...this.currencies[address as ''], ...this.currencies[ethereumAddress as '']].reduce((sum, currency) => {
-      const currencyController = new CurrencyController(currency);
+    return (
+      currencies?.reduce((sum, currency) => {
+        const totalBalance = currency.getTotalBalance();
 
-      return sum + currencyController.getCurrencyInfo().totalBalance;
-    }, 0);
+        return sum + totalBalance;
+      }, 0) ?? 0
+    );
   }
 
   getPercent(address: string) {
-    // TODO: fix as ''
-    return this.currencies[address as ''].reduce((sum, { grownPercent }) => sum + grownPercent, 0);
+    return 5.3;
   }
 
   updateSelectedWallet(address: string) {
     this.setSelectedWallet({ selectedWalletAddress: address });
 
+    this.close();
+  }
+
+  close() {
     this.$emit('close');
   }
 }

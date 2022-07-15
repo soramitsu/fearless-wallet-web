@@ -1,6 +1,7 @@
 import { MutationTree } from 'vuex';
 import { State } from './state';
-import { getMetaTyped } from '@/util/meta';
+import { SetPasswordProps, SetSelectedWalletProps } from './types';
+import { getMetaTyped } from '@/util/helpers';
 import keyring from '@polkadot/ui-keyring';
 
 export enum MutationTypes {
@@ -9,8 +10,8 @@ export enum MutationTypes {
 }
 
 export type Mutations = {
-  [MutationTypes.SET_PASSWORD](state: State, { password }: Record<string, string>): void;
-  [MutationTypes.SET_SELECTED_WALLET](state: State, { selectedWallet }: Record<string, string>): void;
+  [MutationTypes.SET_PASSWORD](state: State, props: SetPasswordProps): void;
+  [MutationTypes.SET_SELECTED_WALLET](state: State, props: SetSelectedWalletProps): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -18,14 +19,13 @@ const mutations: MutationTree<State> & Mutations = {
     state.password = password;
   },
   [MutationTypes.SET_SELECTED_WALLET](state, { selectedWalletAddress }) {
-    const { meta, type } = keyring.getPair(selectedWalletAddress);
+    const { meta } = keyring.getPair(selectedWalletAddress);
     const { name, ethereumAddress } = getMetaTyped(meta);
 
     state.selectedWallet = {
       address: selectedWalletAddress,
       ethereumAddress,
       name,
-      type,
     };
   },
 };

@@ -20,5 +20,6 @@ export default class BuyForm extends Vue {
 
 <style lang="scss" scoped>
 .buy-form {
+  display: flex;
 }
 </style>

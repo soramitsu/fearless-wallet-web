@@ -1,5 +1,5 @@
 import Vue from 'vue';
-import Option from '@/view/options.vue';
+import Option from '../view/options.vue';
 
 Vue.config.productionTip = false;
 

@@ -10,7 +10,7 @@ function getEntryFile(entryPath) {
   const files = fs.readdirSync(entryPath);
   return files;
 }
-const chromeName = getEntryFile(path.join(__dirname, `src/entry`));
+const chromeName = getEntryFile(path.join(__dirname, `src/extension/entry`));
 
 function getFileExtension(filename) {
   return /[.]/.exec(filename) ? /[^.]+$/.exec(filename)[0] : undefined;
@@ -20,7 +20,7 @@ chromeName.forEach((name) => {
   const fileExtension = getFileExtension(name);
   const fileName = name.replace('.' + fileExtension, '');
   pages[fileName] = {
-    entry: `src/entry/${name}`,
+    entry: `src/extension/entry/${name}`,
     template: 'public/index.html',
     filename: `${fileName}.html`,
   };
@@ -29,18 +29,19 @@ chromeName.forEach((name) => {
 module.exports = defineConfig({
   ...baseConfig,
   pages,
+  outputDir: 'dist/extension',
   filenameHashing: false,
   chainWebpack: (config) => {
     config.plugin('copy').use(require('copy-webpack-plugin'), [
       {
         patterns: [
           {
-            from: path.resolve(`src/manifest.${process.env.NODE_ENV}.json`),
-            to: `${path.resolve('dist')}/manifest.json`,
+            from: path.resolve(`src/extension/manifest.${process.env.NODE_ENV}.json`),
+            to: `${path.resolve('dist/extension')}/manifest.json`,
           },
           {
             from: path.resolve(`public/`),
-            to: `${path.resolve('dist')}/`,
+            to: `${path.resolve('dist/extension')}/`,
           },
         ],
       },
@@ -60,7 +61,6 @@ module.exports = defineConfig({
           });
         });
       });
-
     config.output.filename = `[name].js`;
     config.output.chunkFilename = `[name].js`;
   },

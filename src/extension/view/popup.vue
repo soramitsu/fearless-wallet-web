@@ -24,7 +24,7 @@ export default class Popup extends Vue {
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
 
   get style() {
-    return { 'background-image': 'url(./img/background.9b667fcd.png)' };
+    return { 'background-image': 'url(../../img/background.9b667fcd.png)' };
   }
 
   async mounted() {
@@ -63,7 +63,7 @@ export default class Popup extends Vue {
   color: white;
   text-align: center;
   padding: 0 16px 16px 16px;
-  background-image: url(../assets/background.png);
+  background-image: url(../../assets/background.png);
 
   .drag {
     height: 16px;

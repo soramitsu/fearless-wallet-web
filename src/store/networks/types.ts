@@ -1,6 +1,6 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { Subscription } from 'rxjs';
-import type { Currencies, Currency } from '@/interfaces/currencies';
+import type { Currencies, AvailableInNetworks } from '@/interfaces/currencies';
 import type { HistoryItem } from '@/interfaces/history';
 import type { WalletAddress } from '@/interfaces/common';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
@@ -59,6 +59,7 @@ type Network = {
   assets: Assets[];
   addressPrefix: number;
   isEthereumNetwork: boolean;
+  settings: Record<string, any>;
   externalApi: ExternalApi;
   subscriptionsBalances?: Record<WalletAddress, Subscription>;
 };
@@ -124,7 +125,14 @@ export type SetSubscriptionsBalancesProps = {
 
 export type UpdateCurrencyProps = {
   walletAddress: string;
-  currency: Currency;
+  currency: {
+    mainNetwork: string;
+    token: string;
+    price: number;
+    usd24HoursChange: number;
+    precision: number;
+    availableInNetworks: AvailableInNetworks[];
+  };
 };
 
 export type UpdateActiveNodeProps = {

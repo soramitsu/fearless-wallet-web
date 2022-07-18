@@ -1,7 +1,7 @@
 import axios from 'axios';
-import CurrencyController from '@/controllers/currencyController';
 import keyring from '@polkadot/ui-keyring';
 import NetworksController from '@/controllers/networksController';
+import settingsNetworks from '@/networks';
 import { accountController } from '@/controllers/accountController';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
@@ -10,10 +10,10 @@ import { getHistory } from '@/subquery/history';
 import { getMockCurrencies } from '@/util/currenciesHelper';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Mutations, MutationTypes } from './mutations';
-import type { ActionContext, ActionTree } from 'vuex';
-import type { Currency } from '@/interfaces/currencies';
+import type { Settings } from '@/networks';
 import type { SelectedWallet } from '@/store/accounts/types';
 import type { State } from './state';
+import type { ActionContext, ActionTree } from 'vuex';
 import type {
   NetworkJson,
   Networks,
@@ -66,6 +66,7 @@ const actions: ActionTree<State, State> & Actions = {
         const externalApi = originalExternalApi ?? ({} as ExternalApi);
         const autoSelectNode = autoSelectNodes[networkName] ?? true;
         const url = autoSelectNode ? nodes[0].url : activeNodes[networkName].url;
+        const settings = settingsNetworks[networkName as Settings] ?? {};
 
         const { api, provider } = connectToApi(name, url, autoConnectMs);
 
@@ -79,6 +80,7 @@ const actions: ActionTree<State, State> & Actions = {
           isEthereumNetwork,
           subscriptionsBalances: {},
           externalApi,
+          settings,
         };
       }
     );
@@ -187,19 +189,19 @@ const actions: ActionTree<State, State> & Actions = {
                 const data = (result as any).data;
                 const balance = formatBalance(data as AccountData, precision);
 
-                const currency: Currency = new CurrencyController(
-                  networkName,
+                const currency = {
+                  mainNetwork: networkName,
                   token,
                   price,
                   usd24HoursChange,
                   precision,
-                  [
+                  availableInNetworks: [
                     {
                       network: networkName,
                       balance,
                     },
-                  ]
-                );
+                  ],
+                };
 
                 commit(MutationTypes.UPDATE_CURRENCY, {
                   walletAddress,

@@ -12,9 +12,9 @@
     >
       <div class="send-form-content">
         <template v-if="step === 1">
-          <Select v-model="selectedNetwork" :options="optionsNetwork" placeholder="Network" size="big" class="row" />
-
           <Select v-model="selectedToken" :options="optionsCurrency" placeholder="Currency" size="big" class="row" />
+
+          <Select v-model="selectedNetwork" :options="optionsNetwork" placeholder="Network" size="big" class="row" />
 
           <Input v-model="recipient" placeholder="Send to" size="big" class="row" />
 
@@ -69,7 +69,7 @@
                 <div class="name">Coins</div>
                 <div class="column">
                   <div>{{ amountString }}</div>
-                  <div class="sub-value">{{ valueString }}</div>
+                  <div v-if="showValue" class="value">{{ valueString }}</div>
                 </div>
               </div>
               <div class="summary-row">
@@ -157,8 +157,12 @@ export default class SendForm extends Vue {
     return `${+this.amount} ${this.selectedTokenUpper}`;
   }
 
+  get showValue() {
+    return this.value !== '0';
+  }
+
   get valueString() {
-    return `$${this.value}`;
+    return `$${formattedPrice(+this.value)}`;
   }
 
   get partialFeeString() {
@@ -231,17 +235,18 @@ export default class SendForm extends Vue {
   }
 
   get currentCurrency() {
-    return this.currencies.find(({ mainNetwork }) => mainNetwork === this.selectedNetwork);
+    return this.currencies.find(({ token }) => token === this.selectedToken);
   }
 
   get optionsNetwork() {
-    return this.networks.map(({ name }) => {
-      return { label: firstCharToUp(name), value: name };
-    });
+    return this.currentCurrency?.availableInNetworks.map(({ network }) => ({
+      label: firstCharToUp(network),
+      value: `${network}`,
+    }));
   }
 
   get transferrableAmount() {
-    const count = +(this.currentCurrency?.getTransferableCountTokens() ?? 0);
+    const count = +(this.currentCurrency?.getTransferableCountTokens(this.selectedNetwork) ?? 0);
 
     return formattedNumber(count, 4);
   }
@@ -257,17 +262,13 @@ export default class SendForm extends Vue {
   }
 
   get optionsCurrency() {
-    const token = this.currentCurrency?.token ?? '';
-
-    return this.currentCurrency?.getAvailableInNetworks().map(() => ({
-      label: token.toUpperCase(),
-      value: `${token}`,
-    }));
+    return this.currencies.map(({ token }) => ({ label: token.toUpperCase(), value: token }));
   }
 
-  @Watch('selectedNetwork')
-  updateSelectedToken() {
-    this.selectedToken = this.optionsCurrency?.[0]?.value ?? '';
+  @Watch('selectedToken')
+  updateSelectedNetwork() {
+    this.selectedNetwork = this.optionsNetwork?.[0]?.value ?? '';
+    this.amount = '';
   }
 
   @Watch('selectedNetwork')
@@ -279,9 +280,7 @@ export default class SendForm extends Vue {
 
     if (!this.isValidRecipientAddress) return;
 
-    this.currentCurrency!.createSendTransfer(this.recipient, this.selectedNetwork, this.selectedToken, this.amount);
-
-    const partialFee = await this.currentCurrency!.getPartialFee(this.addressByNetwork);
+    const partialFee = await this.createTransferAndGetFee();
 
     this.partialFee = partialFee;
     this.isValidCountTokens = this.currentCurrency!.isValidCountTokens(this.amount, partialFee);
@@ -290,6 +289,12 @@ export default class SendForm extends Vue {
   mounted() {
     this.selectedNetwork = this._selectedNetwork;
     this.selectedToken = this._selectedToken;
+  }
+
+  async createTransferAndGetFee(amount?: string) {
+    this.currentCurrency!.createSendTransfer(this.recipient, this.selectedNetwork, amount ?? this.amount);
+
+    return await this.currentCurrency!.getPartialFee(this.addressByNetwork);
   }
 
   changeAmount(amount: string) {
@@ -313,10 +318,15 @@ export default class SendForm extends Vue {
   async setMaxValue() {
     if (!this.currentCurrency) return;
 
+    // first, we calculate amount with a pre-known commission (it is often the smallest),
+    // then for this amount we calculate the new TransferableCountTokensMinusFee,
+    // because the commission has increased in most cases
     const transferableCountTokens = this.currentCurrency.getTransferableCountTokensMinusFee(this.partialFee).toString();
+    const partialFee = await this.createTransferAndGetFee(transferableCountTokens);
+    const transferableCountTokens2 = this.currentCurrency.getTransferableCountTokensMinusFee(partialFee).toString();
 
-    this.amount = transferableCountTokens;
-    this.value = this.currentCurrency.getCostOfTokens(transferableCountTokens).toString();
+    this.amount = transferableCountTokens2;
+    this.value = this.currentCurrency.getCostOfTokens(transferableCountTokens2).toString();
   }
 
   async handlerButton() {
@@ -439,7 +449,7 @@ export default class SendForm extends Vue {
         flex-direction: column;
         align-items: flex-end;
 
-        .sub-value {
+        .value {
           color: rgba(255, 255, 255, 0.75);
           font-weight: 300;
           font-size: 12px;

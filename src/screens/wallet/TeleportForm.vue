@@ -65,7 +65,7 @@
                 <div class="name">Assets Amount</div>
                 <div class="column">
                   <div>{{ amountString }}</div>
-                  <div class="sub-value">{{ valueString }}</div>
+                  <div v-if="showValue" class="value">{{ valueString }}</div>
                 </div>
               </div>
               <div class="summary-row">
@@ -118,7 +118,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Networks } from '@/store/networks/types';
 import { firstCharToUp } from '@/util/helpers';
-import { addNumbers, formattedNumber } from '@/util/numbers';
+import { addNumbers, formattedNumber, formattedPrice } from '@/util/numbers';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import type { Currency } from '@/interfaces/currencies';
 
@@ -153,6 +153,10 @@ export default class TeleportForm extends Vue {
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
+  get showValue() {
+    return this.value !== '0';
+  }
+
   get originalNetworkString() {
     return `${firstCharToUp(this.originalNetwork)}`;
   }
@@ -166,7 +170,7 @@ export default class TeleportForm extends Vue {
   }
 
   get valueString() {
-    return `$${this.value}`;
+    return `$${formattedPrice(+this.value)}`;
   }
 
   get value() {
@@ -188,7 +192,9 @@ export default class TeleportForm extends Vue {
   }
 
   get transferrableAmount() {
-    return this.currentCurrency?.getTransferableCountTokens() ?? 0;
+    const count = +(this.currentCurrency?.getTransferableCountTokens(this.originalNetwork) ?? 0);
+
+    return formattedNumber(count, 4);
   }
 
   get selectedTokenUpper() {
@@ -209,7 +215,7 @@ export default class TeleportForm extends Vue {
   }
 
   get currentCurrency() {
-    return this.currencies.find(({ mainNetwork }) => mainNetwork === this.originalNetwork);
+    return this.currencies.find(({ token }) => token === this.selectedToken);
   }
 
   get showBackIcon() {
@@ -239,16 +245,14 @@ export default class TeleportForm extends Vue {
   }
 
   get optionsCurrency() {
-    const token = this.currentCurrency?.token ?? '';
-
-    return this.currentCurrency?.getAvailableInNetworks().map(() => ({
-      label: token.toUpperCase(),
-      value: token,
-    }));
+    return this.currencies.map(({ token }) => ({ label: token.toUpperCase(), value: token }));
   }
 
   get optionsNetwork() {
-    return this.networks.map(({ name }) => ({ label: firstCharToUp(name), value: name }));
+    return this.currentCurrency?.availableInNetworks.map(({ network }) => ({
+      label: firstCharToUp(network),
+      value: `${network}`,
+    }));
   }
 
   get addressByNetwork() {
@@ -259,9 +263,11 @@ export default class TeleportForm extends Vue {
     return addressByNetwork;
   }
 
-  @Watch('originalNetwork')
-  updateSelectedToken() {
-    this.selectedToken = this.optionsCurrency?.[0]?.value ?? '';
+  @Watch('selectedToken')
+  updateSelectedNetwork() {
+    this.originalNetwork = this.optionsNetwork?.[0]?.value ?? '';
+    this.destinationNetwork = '';
+    this.amount = '';
   }
 
   @Watch('originalNetwork')
@@ -273,15 +279,7 @@ export default class TeleportForm extends Vue {
 
     if (!this.isValidTeleportDirection) return;
 
-    this.currentCurrency!.createTeleportTransfer(
-      this.addressByNetwork,
-      this.originalNetwork,
-      this.destinationNetwork,
-      this.selectedToken,
-      this.amount
-    );
-
-    const partialFee = await this.currentCurrency!.getPartialFee(this.addressByNetwork);
+    const partialFee = await this.createTransferAndGetFee();
 
     this.originalNetworkPartialFee = partialFee;
     this.isValidCountTokens = this.currentCurrency!.isValidCountTokens(this.amount, partialFee);
@@ -292,10 +290,29 @@ export default class TeleportForm extends Vue {
     this.originalNetwork = this._originalNetwork;
   }
 
+  async createTransferAndGetFee(amount?: string) {
+    this.currentCurrency!.createTeleportTransfer(
+      this.addressByNetwork,
+      this.originalNetwork,
+      this.destinationNetwork,
+      amount ?? this.amount
+    );
+
+    return await this.currentCurrency!.getPartialFee(this.addressByNetwork);
+  }
+
   async setMaxValue() {
     if (!this.currentCurrency) return;
 
-    this.amount = this.currentCurrency.getTransferableCountTokensMinusFee(this.originalNetworkPartialFee).toString();
+    // first, we calculate amount with a pre-known commission (it is often the smallest),
+    // then for this amount we calculate the new TransferableCountTokensMinusFee,
+    // because the commission has increased in most cases
+    const transferableCountTokens = this.currentCurrency
+      .getTransferableCountTokensMinusFee(this.originalNetworkPartialFee)
+      .toString();
+    const partialFee = await this.createTransferAndGetFee(transferableCountTokens);
+
+    this.amount = this.currentCurrency.getTransferableCountTokensMinusFee(partialFee).toString();
   }
 
   sendingPopupClose() {
@@ -410,7 +427,7 @@ export default class TeleportForm extends Vue {
         flex-direction: column;
         align-items: flex-end;
 
-        .sub-value {
+        .value {
           color: rgba(255, 255, 255, 0.75);
           font-weight: 300;
           font-size: 12px;

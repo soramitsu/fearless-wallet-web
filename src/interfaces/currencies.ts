@@ -7,6 +7,15 @@ export interface AvailableInNetworks {
   balance: AccountBalance;
 }
 
+export type CurrencyFields = {
+  mainNetwork: string;
+  token: string;
+  price: number;
+  usd24HoursChange: number;
+  precision: number;
+  availableInNetworks: AvailableInNetworks[];
+};
+
 export type Currency = CurrencyController;
 
 export type Currencies = Record<WalletAddress, Currency[]>;

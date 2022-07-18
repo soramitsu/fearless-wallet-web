@@ -4,10 +4,10 @@
       <template v-if="!syncedShowAssetsManagementForm">
         <TabButton
           v-for="tabName in tabsOptions"
+          class="tab"
           :key="tabName"
           :name="tabName"
           :isActive="activeTabName === tabName"
-          class="tab"
           @click.native="openTab(tabName)"
         />
       </template>
@@ -43,7 +43,7 @@ import type { TabWallet } from '@/interfaces/common';
   },
 })
 export default class ContentSettings extends Vue {
-  readonly tabsOptions: TabWallet[] = ['Currencies', 'NFTs'];
+  readonly tabsOptions: TabWallet[] = ['Currencies']; // ['Currencies', 'NFTs']
 
   filterValue = '';
 

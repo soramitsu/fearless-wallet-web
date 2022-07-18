@@ -76,6 +76,16 @@ export function getImgPathByNetworkName(network = '') {
       return 'crustshadow.svg';
     case 'interlay':
       return 'interlay.svg';
+    case 'dorafactory network':
+      return 'dorafactory.svg';
+    case 'unique':
+      return 'unique.svg';
+    case 'origintrail parachain':
+      return 'origintrail.svg';
+    case 'nodle parachain':
+      return 'nodle.svg';
+    case 'nodle parachain1':
+      return 'nodle.svg';
     default:
       return '_default.svg';
   }

@@ -1,11 +1,11 @@
-import App from '../App.vue';
-import keyring from '@polkadot/ui-keyring';
-import router from '../router';
-import store from '../store';
 import Vue from 'vue';
+import keyring from '@polkadot/ui-keyring';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
-import '../styles';
-import '../plugins';
+import Popup from '@/view/popup.vue';
+import router from '@/router';
+import store from '@/store';
+import '@/styles';
+import '@/plugins';
 
 // import AccountsStore from './storeChrome/Accounts';
 
@@ -22,6 +22,6 @@ cryptoWaitReady().then((): void => {
   new Vue({
     store,
     router,
-    render: (h) => h(App),
+    render: (h) => h(Popup),
   }).$mount('#app');
 });

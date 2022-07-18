@@ -6,7 +6,7 @@
 
 <script>
 export default {
-  name: 'devtoolsView',
+  name: 'Devtools',
   data() {
     return {
       msg: 'devdools',

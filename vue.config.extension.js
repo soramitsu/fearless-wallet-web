@@ -1,4 +1,7 @@
 const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
+const { defineConfig } = require('@vue/cli-service');
+
+const baseConfig = require('./vue.config.base');
 const path = require('path');
 const fs = require('fs');
 const pages = {};
@@ -7,7 +10,7 @@ function getEntryFile(entryPath) {
   const files = fs.readdirSync(entryPath);
   return files;
 }
-const chromeName = getEntryFile(path.resolve(`src/entry`));
+const chromeName = getEntryFile(path.join(__dirname, `src/entry`));
 
 function getFileExtension(filename) {
   return /[.]/.exec(filename) ? /[^.]+$/.exec(filename)[0] : undefined;
@@ -23,9 +26,8 @@ chromeName.forEach((name) => {
   };
 });
 
-// const isDevMode = process.env.NODE_ENV === 'development';
-
-module.exports = {
+module.exports = defineConfig({
+  ...baseConfig,
   pages,
   filenameHashing: false,
   chainWebpack: (config) => {
@@ -44,12 +46,8 @@ module.exports = {
       },
     ]);
   },
-  publicPath: './',
   configureWebpack: (config) => {
     config.plugins.push(new NodePolyfillPlugin());
-    // bundle all dependencies from node_modules to vendors
-    // config.optimization.splitChunks.cacheGroups.defaultVendors.chunks = 'all';
-    // config.optimization.splitChunks.cacheGroups.common.chunks = 'all';
     // prepare icons content to unicode
     config.module.rules
       .filter((rule) => {
@@ -66,17 +64,4 @@ module.exports = {
     config.output.filename = `[name].js`;
     config.output.chunkFilename = `[name].js`;
   },
-  css: {
-    loaderOptions: {
-      sass: {
-        additionalData: `
-          @import "@/styles/_layout.scss";
-          @import "@/styles/_mixins.scss";
-          @import "@/styles/common.scss";
-        `,
-      },
-    },
-  },
-  productionSourceMap: false,
-  runtimeCompiler: true,
-};
+});

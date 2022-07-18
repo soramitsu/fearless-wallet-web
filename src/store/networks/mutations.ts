@@ -1,3 +1,4 @@
+import CurrencyController from '@/controllers/currencyController';
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
 import type {
@@ -47,14 +48,24 @@ const mutations: MutationTree<State> & Mutations = {
     state.tokensPrice = tokensPrice;
   },
   [MutationTypes.UPDATE_CURRENCY](state, { walletAddress, currency }) {
+    const { availableInNetworks, mainNetwork, precision, price, token, usd24HoursChange } = currency;
     const { currencies } = state;
     const currenciesForAddress = [...(currencies[walletAddress] ?? [])];
-    const currencyIndex = currenciesForAddress.findIndex(({ mainNetwork }) => mainNetwork === currency.mainNetwork);
+    const currencyIndex = currenciesForAddress.findIndex(({ token: existToken }) => existToken === token);
 
-    if (currencyIndex === -1) {
-      currenciesForAddress.push(currency);
+    if (currencyIndex !== -1) {
+      currenciesForAddress[currencyIndex].updateFields(currency);
     } else {
-      currenciesForAddress.splice(currencyIndex, 1, currency);
+      const currency = new CurrencyController(
+        mainNetwork,
+        token,
+        price,
+        usd24HoursChange,
+        precision,
+        availableInNetworks
+      );
+
+      currenciesForAddress.push(currency);
     }
 
     state.currencies = {

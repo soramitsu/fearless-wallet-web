@@ -143,21 +143,37 @@ export default class Wallet extends Vue {
       ...(this.currencies[this.selectedWallet.ethereumAddress] ?? []),
     ];
 
-    // at the first launch of the extension sort by balance
+    // at the first launch of the extension sort by fiat balance
     if (!this.existSavedSequence) {
-      currencies.sort((currency1, currency2) => {
-        const totalCountTokensOne = +currency1.getTotalCountTokens();
-        const totalCountTokensTwo = +currency2.getTotalCountTokens();
+      const relayChains = [];
+      const currenciesWithTokens = currencies.filter((currency) => currency.getTotalCountTokens() !== '0');
+      const currenciesWithoutTokens = currencies.filter((currency) => currency.getTotalCountTokens() === '0');
+      const dotIndex = currenciesWithoutTokens.findIndex(({ token }) => token === 'dot');
 
-        if (totalCountTokensOne || totalCountTokensTwo) {
-          const totalBalanceOne = +currency1.getTotalBalance();
-          const totalBalanceTwo = +currency2.getTotalBalance();
+      if (dotIndex !== -1) {
+        const dot = currenciesWithoutTokens.splice(dotIndex, 1)[0];
 
-          return totalBalanceTwo - totalBalanceOne;
-        }
+        relayChains.push(dot);
+      }
 
-        return totalCountTokensTwo - totalCountTokensOne;
+      const ksmIndex = currenciesWithoutTokens.findIndex(({ token }) => token === 'ksm');
+
+      if (ksmIndex !== -1) {
+        const ksm = currenciesWithoutTokens.splice(ksmIndex, 1)[0];
+
+        relayChains.push(ksm);
+      }
+
+      currenciesWithTokens.sort((currency1, currency2) => {
+        const totalBalanceOne = +currency1.getTotalBalance();
+        const totalBalanceTwo = +currency2.getTotalBalance();
+
+        return totalBalanceTwo - totalBalanceOne;
       });
+
+      currenciesWithoutTokens.sort(({ token: token1 }, { token: token2 }) => token1.localeCompare(token2));
+
+      return [...currenciesWithTokens, ...relayChains, ...currenciesWithoutTokens];
     } else {
       currencies.sort(({ mainNetwork: mainNetwork1 }, { mainNetwork: mainNetwork2 }) => {
         const index1 = subsequenceTokens.indexOf(mainNetwork1);
@@ -175,15 +191,22 @@ export default class Wallet extends Vue {
 
     const filter = this.filterValue.trim().toLowerCase();
 
-    return this.currenciesForSelectedWallet
-      .filter((currency) => {
-        if (this.selectedNetwork === 'All networks') return true;
+    return this.currenciesForSelectedWallet.filter((currency) => {
+      const isAllNetworks = this.selectedNetwork === 'All networks';
+      const availableInSelectedNetwork = isAllNetworks
+        ? false
+        : currency
+            .getAvailableInNetworks()
+            .map(({ network }) => network)
+            .includes(this.selectedNetwork);
 
-        const availableInNetworks = currency.getAvailableInNetworks();
+      // if a network is selected and there is no currency in this network
+      if (!isAllNetworks && !availableInSelectedNetwork) return false;
 
-        return availableInNetworks.map(({ network }) => network).includes(this.selectedNetwork);
-      })
-      .filter(({ mainNetwork }) => mainNetwork.includes(filter));
+      const { mainNetwork, token } = currency;
+
+      return mainNetwork.includes(filter) || token.includes(filter);
+    });
   }
 
   get totalBalance() {

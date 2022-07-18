@@ -6,23 +6,15 @@ import teleportInfo from '@/consts/teleport';
 import { BN, isFunction } from '@polkadot/util';
 import { FPNumber } from '@/util/fp';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import type { CurrencyFields, AvailableInNetworks } from '@/interfaces/currencies';
 import type { AssetsJson } from '@/store/networks/types';
-import type { AvailableInNetworks } from '@/interfaces/currencies';
 import type { SubmittableExtrinsic } from '@polkadot/api-base/types';
 import type { MainNetworkName } from '@/consts/teleport';
+import type { SignerOptions } from '@polkadot/api/submittable/types';
 
 const XCM_LOC = ['xcm', 'xcmPallet', 'polkadotXcm'];
 
-export interface Props {
-  mainNetwork: string;
-  token: string;
-  price: number;
-  usd24HoursChange: number;
-  availableInNetworks: AvailableInNetworks[];
-  precision: number;
-}
-
-interface CountTokens {
+interface BalanceFP {
   total: FPNumber;
   frozen: FPNumber;
   locked: FPNumber;
@@ -30,10 +22,14 @@ interface CountTokens {
   transferable: FPNumber;
 }
 
+type AvailableInNetworksFP = Omit<AvailableInNetworks, 'balance'> & { balance: BalanceFP };
+
 export default class CurrencyController {
   private readonly lsCurrency = new LocalStorageController('currency');
-  private readonly currencyVisibleStorageName: string;
+  private readonly currencyVisibleStorageName = 'currency_visible';
   public transfer!: SubmittableExtrinsic<'promise'> | undefined;
+  public options: Partial<SignerOptions> = {};
+  public availableInNetworks: AvailableInNetworksFP[];
 
   constructor(
     public mainNetwork: string,
@@ -41,9 +37,26 @@ export default class CurrencyController {
     public price: number,
     public usd24HoursChange: number,
     public precision: number,
-    public availableInNetworks: AvailableInNetworks[]
+    availableInNetworks: AvailableInNetworks[]
   ) {
-    this.currencyVisibleStorageName = `visible-${token}`;
+    this.availableInNetworks = availableInNetworks.map(
+      ({ network, balance: { frozen, locked, reserved, total, transferable } }) => ({
+        network,
+        balance: {
+          frozen: FPNumber.fromCodecValue(frozen, this.precision),
+          locked: FPNumber.fromCodecValue(locked, this.precision),
+          reserved: FPNumber.fromCodecValue(reserved, this.precision),
+          total: FPNumber.fromCodecValue(total, this.precision),
+          transferable: FPNumber.fromCodecValue(transferable, this.precision),
+        },
+      })
+    );
+  }
+
+  private getCurrenciesVisible() {
+    const currencyVisible = this.lsCurrency.get(this.currencyVisibleStorageName);
+
+    return currencyVisible.value ?? {};
   }
 
   private calculateCost(count: FPNumber): FPNumber {
@@ -52,21 +65,15 @@ export default class CurrencyController {
     return count.mul(FPPrice);
   }
 
-  private countTokens(): CountTokens {
+  private countTotalTokens(): BalanceFP {
     const availableInNetworks = this.availableInNetworks.reduce(
       (obj, { balance: { total, frozen, locked, reserved, transferable } }) => {
-        const FPTotal = FPNumber.fromCodecValue(total, this.precision);
-        const FPFrozen = FPNumber.fromCodecValue(frozen, this.precision);
-        const FPLocked = FPNumber.fromCodecValue(locked, this.precision);
-        const FPReserved = FPNumber.fromCodecValue(reserved, this.precision);
-        const FPTransferable = FPNumber.fromCodecValue(transferable, this.precision);
-
         return {
-          total: obj.total.add(FPTotal),
-          frozen: obj.frozen.add(FPFrozen),
-          locked: obj.locked.add(FPLocked),
-          reserved: obj.reserved.add(FPReserved),
-          transferable: obj.transferable.add(FPTransferable),
+          total: obj.total.add(total),
+          frozen: obj.frozen.add(frozen),
+          locked: obj.locked.add(locked),
+          reserved: obj.reserved.add(reserved),
+          transferable: obj.transferable.add(transferable),
         };
       },
       {
@@ -81,17 +88,45 @@ export default class CurrencyController {
     return availableInNetworks;
   }
 
-  public getTotalCountTokens(): string {
-    return this.countTokens().total.toString();
+  public updateFields({ availableInNetworks, precision, price, usd24HoursChange, mainNetwork }: CurrencyFields): void {
+    this.precision = precision;
+    this.price = price;
+    this.usd24HoursChange = usd24HoursChange;
+
+    const index = this.availableInNetworks.findIndex(({ network }) => network === mainNetwork);
+
+    const {
+      network,
+      balance: { frozen, locked, reserved, total, transferable },
+    } = availableInNetworks[0];
+
+    const newValue = {
+      network: network,
+      balance: {
+        frozen: FPNumber.fromCodecValue(frozen, this.precision),
+        locked: FPNumber.fromCodecValue(locked, this.precision),
+        reserved: FPNumber.fromCodecValue(reserved, this.precision),
+        total: FPNumber.fromCodecValue(total, this.precision),
+        transferable: FPNumber.fromCodecValue(transferable, this.precision),
+      },
+    };
+
+    this.availableInNetworks.splice(index, 1, newValue);
   }
 
-  public getTransferableCountTokens(): string {
-    return this.countTokens().transferable.toString();
+  public getTotalCountTokens(): string {
+    return this.countTotalTokens().total.toString();
+  }
+
+  public getTransferableCountTokens(networkProp: string): string {
+    const { transferable } = this.availableInNetworks.find(({ network }) => network === networkProp)!.balance;
+
+    return transferable.toString();
   }
 
   public getTransferableCountTokensMinusFee(fee: string): FPNumber {
     const FPFee = new FPNumber(fee);
-    const result = this.countTokens().transferable.sub(FPFee);
+    const result = this.countTotalTokens().transferable.sub(FPFee);
 
     return FPNumber.lt(result, FPNumber.ZERO) ? FPNumber.ZERO : result;
   }
@@ -99,7 +134,7 @@ export default class CurrencyController {
   public isValidCountTokens(count: string, fee: string): boolean {
     const transferableCountTokensMinusFee = this.getTransferableCountTokensMinusFee(fee);
 
-    return FPNumber.lt(new FPNumber(count), transferableCountTokensMinusFee);
+    return FPNumber.lte(new FPNumber(count), transferableCountTokensMinusFee);
   }
 
   public getAvailableInNetworks(): AvailableInNetworks[] {
@@ -107,18 +142,18 @@ export default class CurrencyController {
       return {
         network,
         balance: {
-          frozen: FPNumber.fromCodecValue(frozen, this.precision).toString(),
-          locked: FPNumber.fromCodecValue(locked, this.precision).toString(),
-          reserved: FPNumber.fromCodecValue(reserved, this.precision).toString(),
-          total: FPNumber.fromCodecValue(total, this.precision).toString(),
-          transferable: FPNumber.fromCodecValue(transferable, this.precision).toString(),
+          frozen: frozen.toString(),
+          locked: locked.toString(),
+          reserved: reserved.toString(),
+          total: total.toString(),
+          transferable: transferable.toString(),
         },
       };
     });
   }
 
   public getTotalBalance(): string {
-    const countTokens = this.countTokens().total;
+    const countTokens = this.countTotalTokens().total;
     const cost = this.calculateCost(countTokens);
 
     return cost.toString();
@@ -129,10 +164,9 @@ export default class CurrencyController {
   }
 
   public getBalanceInNetwork(_network: string): string {
-    const total = this.availableInNetworks.find(({ network }) => network === _network)?.balance.total ?? 0;
-    const FPTotal = FPNumber.fromCodecValue(total, this.precision);
+    const total = this.availableInNetworks.find(({ network }) => network === _network)?.balance.total ?? FPNumber.ZERO;
 
-    return this.calculateCost(FPTotal).toString();
+    return this.calculateCost(total).toString();
   }
 
   public getCountTokensByPrice(cost: string): string {
@@ -143,13 +177,17 @@ export default class CurrencyController {
   }
 
   public getCurrencyVisible(): boolean {
-    const lsVisible = this.lsCurrency.get(this.currencyVisibleStorageName);
+    const currenciesVisible = this.getCurrenciesVisible();
 
-    return lsVisible.value ?? true;
+    return currenciesVisible[this.token] ?? true;
   }
 
   public setCurrencyVisible(value: boolean): void {
-    this.lsCurrency.set(this.currencyVisibleStorageName, value, {}, { saveDateCreated: false });
+    const currenciesVisible = this.getCurrenciesVisible();
+
+    currenciesVisible[this.token] = value;
+
+    this.lsCurrency.set(this.currencyVisibleStorageName, currenciesVisible);
   }
 
   private static getAssets(token: string): AssetsJson {
@@ -187,15 +225,18 @@ export default class CurrencyController {
     //   : undefined;
   }
 
-  public createSendTransfer(to: string, networkName: string, token: string, amount: string): void {
-    const precisionAmount = CurrencyController.getPrecisionValue(token, amount);
+  public createSendTransfer(to: string, networkName: string, amount: string): void {
+    const precisionAmount = CurrencyController.getPrecisionValue(this.token, amount);
     const networks = NetworksController.getNetworks();
-    const { api } = networks.find(({ name }) => name === networkName)!; // eslint-disable-line
+    const { api, settings: { DefaultTip } } = networks.find(({ name }) => name === networkName)!; // eslint-disable-line
+    const options = { tip: DefaultTip };
 
     try {
       this.transfer = api.tx.balances.transfer(to, precisionAmount);
+      this.options = options;
     } catch {
       this.transfer = undefined;
+      this.options = {};
     }
   }
 
@@ -203,14 +244,13 @@ export default class CurrencyController {
     recipientId: string,
     originalNetworkName: string,
     destinationNetworkName: string,
-    token: string,
     amount: string
   ): Promise<void> {
     const networks = NetworksController.getNetworks();
     const { api } = networks.find(({ name }) => name === originalNetworkName)!; // eslint-disable-line
     const m = XCM_LOC.filter((x) => api.tx[x] && isFunction(api.tx[x].limitedTeleportAssets))[0];
     const isParaTeleport = m === 'polkadotXcm';
-    const precisionAmount = CurrencyController.getPrecisionValue(token, amount);
+    const precisionAmount = CurrencyController.getPrecisionValue(this.token, amount);
     const tx = api.tx[m].limitedTeleportAssets;
     const publicKey = keyring.decodeAddress(recipientId);
     const recipientParaId = this.getParaId(originalNetworkName, destinationNetworkName);
@@ -240,7 +280,7 @@ export default class CurrencyController {
 
     pair.unlock();
 
-    const unsubscribe = await this.transfer!.signAndSend(pair, ({ status }) => {
+    const unsubscribe = await this.transfer!.signAndSend(pair, this.options, ({ status }) => {
       if (status.isInBlock) {
         console.info(`Successful transfer of ${amount} with hash ${status.asInBlock.toHex()}`);
       } else if (status.isFinalized) {

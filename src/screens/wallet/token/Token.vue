@@ -201,9 +201,7 @@ export default class Token extends Vue {
   }
 
   get currentCurrency() {
-    return this.currenciesForSelectedWallet.find(
-      ({ token, mainNetwork }) => token === this.selectedToken && mainNetwork === this.selectedNetwork
-    );
+    return this.currenciesForSelectedWallet.find(({ token }) => token === this.selectedToken);
   }
 
   get formattedHistory() {
@@ -213,11 +211,15 @@ export default class Token extends Vue {
     const historyForNetwork = this.history[this.selectedNetwork];
     const historyForWalletAddress = historyForNetwork?.[addressByNetwork]?.nodes ?? [];
 
+    const index = this.currentCurrency?.availableInNetworks.findIndex(
+      ({ network }) => network === this.selectedNetwork
+    );
+
     // TODO: fix
     // Now the history hierarchy is as follows = network: { walletAddress: { history } }
     // should become like this = network: { walletAddress: { token: { history } } }
     // when non-native tokens are added, it needs to be fixed
-    if (this.selectedNetwork !== this.currentCurrency?.mainNetwork) {
+    if (index === -1) {
       return [];
     }
 

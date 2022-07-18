@@ -1,12 +1,26 @@
+const { defineConfig } = require('@vue/cli-service');
 const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
+const baseConfig = require('./vue.config.base');
 
-module.exports = {
-  publicPath: './',
+module.exports = defineConfig({
+  ...baseConfig,
+  chainWebpack: (config) => {
+    config.optimization.splitChunks({
+      cacheGroups: {
+        defaultVendors: {
+          chunks: 'all',
+        },
+        common: {
+          chunks: 'all',
+        },
+      },
+    });
+  },
   configureWebpack: (config) => {
     config.plugins.push(new NodePolyfillPlugin());
     // bundle all dependencies from node_modules to vendors
-    config.optimization.splitChunks.cacheGroups.defaultVendors.chunks = 'all';
-    config.optimization.splitChunks.cacheGroups.common.chunks = 'all';
+    // config.optimization.splitChunks.cacheGroups.defaultVendors.chunks = 'all';
+    // config.optimization.splitChunks.cacheGroups.common.chunks = 'all';
     // prepare icons content to unicode
     config.module.rules
       .filter((rule) => {
@@ -27,17 +41,4 @@ module.exports = {
       config.output.chunkFilename = `js/[name].[contenthash:8].${buildDateTime}.js`;
     }
   },
-  css: {
-    loaderOptions: {
-      sass: {
-        additionalData: `
-          @import "@/styles/_layout.scss";
-          @import "@/styles/_mixins.scss";
-          @import "@/styles/common.scss";
-        `,
-      },
-    },
-  },
-  productionSourceMap: false,
-  runtimeCompiler: true,
-};
+});

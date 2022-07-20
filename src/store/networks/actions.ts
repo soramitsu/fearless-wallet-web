@@ -202,6 +202,8 @@ const actions: ActionTree<State, State> & Actions = {
               commit(MutationTypes.SET_SUBSCRIPTIONS_BALANCES, {
                 networkName,
                 walletAddress,
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
                 subscriptionsBalances: unsubscribe,
               });
             });

@@ -32,6 +32,10 @@ module.exports = defineConfig({
   outputDir: 'dist/extension',
   filenameHashing: false,
   chainWebpack: (config) => {
+    config.plugin('define').tap((definitions) => {
+      definitions[0]['process.env'].EXTENSION_PREFIX = JSON.stringify('fw');
+      return definitions;
+    });
     config.plugin('copy').use(require('copy-webpack-plugin'), [
       {
         patterns: [

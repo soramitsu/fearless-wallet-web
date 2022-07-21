@@ -1,12 +1,66 @@
 <template>
   <div class="main_app">
     <h1>Here is auth dApp</h1>
+    <button @click="approveAuthReq">Approve</button>
   </div>
 </template>
 
 <script>
+import {
+  subscribeAccounts,
+  subscribeAuthorizeRequests,
+  subscribeSigningRequests,
+  subscribeMetadataRequests,
+  approveAuthRequest,
+} from '../messaging';
 export default {
   name: 'Notification',
+  data: function () {
+    return {
+      accounts: [],
+      requests: [],
+      signReq: [],
+    };
+  },
+  mounted() {
+    this.onMounted();
+  },
+  computed: {
+    request: {
+      get() {
+        return this.requests;
+      },
+      set(data) {
+        this.requests.push(data);
+      },
+    },
+  },
+  methods: {
+    setAccounts(data) {
+      this.accounts = data;
+    },
+    setReq(data) {
+      this.requests.push(data);
+    },
+    setSignReq(data) {
+      this.accounts = data;
+    },
+    setMetaReq(data) {
+      this.accounts = data;
+    },
+    onMounted() {
+      Promise.all([
+        subscribeAccounts(this.setAccounts),
+        subscribeAuthorizeRequests(this.setReq),
+        subscribeMetadataRequests(this.setMetaReq),
+        subscribeSigningRequests(this.setSignReq),
+      ]);
+    },
+    approveAuthReq() {
+      console.log(this.request, this.requests);
+      approveAuthRequest(this.requests[0][0].id);
+    },
+  },
 };
 </script>
 

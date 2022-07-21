@@ -5,7 +5,7 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "env VUE_CLI_SERVICE_CONFIG_PATH=vue.config.desktop.js vue-cli-service build",
-    "build:extension": "env VUE_CLI_SERVICE_CONFIG_PATH=vue.config.extension.js vue-cli-service build",
+    "build:extension": "env VUE_CLI_SERVICE_CONFIG_PATH=vue.config.extension.js vue-cli-service build --progress",
     "build-watch:extension": "env VUE_CLI_SERVICE_CONFIG_PATH=vue.config.extension.js vue-cli-service  --env.NODE_ENV=development build-watch --mode development",
     "test:unit": "vue-cli-service test:unit",
     "test:e2e": "vue-cli-service test:e2e",

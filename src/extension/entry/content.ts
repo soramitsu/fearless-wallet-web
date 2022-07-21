@@ -3,34 +3,36 @@ import type { Message } from '@polkadot/extension-base/types';
 import { MESSAGE_ORIGIN_CONTENT, MESSAGE_ORIGIN_PAGE, PORT_CONTENT } from '@polkadot/extension-base/defaults';
 import { chrome } from '@polkadot/extension-inject/chrome';
 
-// connect to the extension
-const port = chrome.runtime.connect({ name: PORT_CONTENT });
-console.log(MESSAGE_ORIGIN_CONTENT, PORT_CONTENT);
-// send any messages from the extension back to the page
-port.onMessage.addListener((data): void => {
-  window.postMessage({ ...data, origin: MESSAGE_ORIGIN_CONTENT }, '*');
-});
+class Content {
+  private port = chrome.runtime.connect({ name: PORT_CONTENT });
+  private setListeners() {
+    this.port.onMessage.addListener((data): void => {
+      window.postMessage({ ...data, origin: MESSAGE_ORIGIN_CONTENT }, '*');
+    });
+    window.addEventListener('message', ({ data, source }: Message): void => {
+      if (source !== window || data.origin !== MESSAGE_ORIGIN_PAGE) return;
 
-// all messages from the page, pass them to the extension
-window.addEventListener('message', ({ data, source }: Message): void => {
-  // only allow messages from our window, by the inject
-  if (source !== window || data.origin !== MESSAGE_ORIGIN_PAGE) {
-    return;
+      this.port.postMessage(data);
+    });
   }
 
-  port.postMessage(data);
-});
+  private injectScript() {
+    const script = document.createElement('script');
 
-// inject our data injector
-const script = document.createElement('script');
+    script.src = chrome.extension.getURL('page.js');
 
-script.src = chrome.extension.getURL('page.js');
+    script.onload = (): void => {
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
 
-script.onload = (): void => {
-  // remove the injecting tag when loaded
-  if (script.parentNode) {
-    script.parentNode.removeChild(script);
+    (document.head || document.documentElement).appendChild(script);
   }
-};
 
-(document.head || document.documentElement).appendChild(script);
+  public init() {
+    this.setListeners();
+    this.injectScript();
+  }
+}
+
+const content = new Content();
+content.init();

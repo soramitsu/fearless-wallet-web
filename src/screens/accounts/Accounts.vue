@@ -1,6 +1,6 @@
 <template>
   <div class="accounts">
-    <Input v-model="selectedWallet.name" placeholder="Wallet name" size="big" :readonly="true" class="row" />
+    <Input v-model="selectedWallet.name" placeholder="Wallet name" size="big" :readonly="true" />
 
     <template v-if="showUniqueSecretsBlock">
       <div class="row label">Accounts with unique secrets</div>

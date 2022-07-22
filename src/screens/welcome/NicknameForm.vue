@@ -31,7 +31,6 @@ import Input from '@/components/Input.vue';
 })
 export default class NicknameForm extends Vue {
   @Prop({ default: false }) readonly!: boolean;
-
   @PropSync('nickname', { type: String }) syncedNickname!: string;
 }
 </script>

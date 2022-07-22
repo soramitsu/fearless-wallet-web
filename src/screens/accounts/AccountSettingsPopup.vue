@@ -6,6 +6,7 @@
     :handlerClose="handlerClose"
     :top="top"
     :left="-17"
+    sizeWidth="mini"
     verticalPlacement="top"
     horizontalPlacement="right"
   >
@@ -54,19 +55,19 @@ import type { SelectedWallet } from '@/store/accounts/types';
 export default class AccountSettingsPopup extends Vue {
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showSwitchNode!: boolean;
-  @Prop(Number) pageYClick!: number;
+  @Prop(Number) buttonTopClick!: number;
   @Prop(Function) handlerClose!: VoidFunction;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get top() {
-    if (this.pageYClick === undefined) return 110;
+    if (this.buttonTopClick === undefined) return 110;
 
-    if (this.pageYClick > 320) {
-      return this.pageYClick - 295;
+    if (this.buttonTopClick > 300) {
+      return this.buttonTopClick - 265;
     }
 
-    return this.pageYClick + 7;
+    return this.buttonTopClick + 7;
   }
 
   get addressByNetwork() {

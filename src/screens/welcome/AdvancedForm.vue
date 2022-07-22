@@ -7,7 +7,7 @@
     class="advanced"
   >
     <Select
-      v-model="substrateKeyPair"
+      v-model="substrateKeypairType"
       :options="optionsSubstrateKeyPair"
       placeholder="SUBSTRATE KEYPAIR CRYPTO TYPE"
       size="big"
@@ -20,7 +20,7 @@
 
     <template v-if="showEthereumDP">
       <Input
-        v-model="ethereumKeyPair"
+        v-model="ethereumKeypairType"
         class="row"
         placeholder="ETHEREUM KEYPAIR CRYPTO TYPE"
         :readonly="true"
@@ -64,14 +64,14 @@ export default class AdvancedForm extends Vue {
 
   substrateDP = '';
   ethereumDP = '';
-  substrateKeyPair = '';
-  ethereumKeyPair = 'ETHEREUM';
+  substrateKeypairType = '';
+  ethereumKeypairType = 'ETHEREUM';
 
   @Prop(Object) derivationPath!: DerivationPath;
   @Prop({ default: true }) showEthereumDP!: boolean;
 
   get example() {
-    return this.optionsSubstrateKeyPair.find(({ value }) => value === this.substrateKeyPair)?.example;
+    return this.optionsSubstrateKeyPair.find(({ value }) => value === this.substrateKeypairType)?.example;
   }
 
   get showAcceptIcon() {
@@ -81,7 +81,7 @@ export default class AdvancedForm extends Vue {
   mounted() {
     this.substrateDP = this.derivationPath.substrate.value;
     this.ethereumDP = this.derivationPath.ethereum.value;
-    this.substrateKeyPair = this.derivationPath.substrate.keyPair;
+    this.substrateKeypairType = this.derivationPath.substrate.keypairType;
   }
 
   closeAdvancedForm() {
@@ -92,15 +92,15 @@ export default class AdvancedForm extends Vue {
     const derivationPath: DerivationPath = {
       substrate: {
         value: this.substrateDP,
-        keyPair: this.substrateKeyPair as KeypairType,
+        keypairType: this.substrateKeypairType as KeypairType,
       },
       ethereum: {
         value: this.ethereumDP,
-        keyPair: 'ethereum',
+        keypairType: 'ethereum',
       },
     };
 
-    this.$emit('saveChanges', derivationPath, 'derivationPath');
+    this.$emit('updateDP', derivationPath);
     this.closeAdvancedForm();
   }
 }

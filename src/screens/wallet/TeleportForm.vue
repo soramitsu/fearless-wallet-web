@@ -304,13 +304,8 @@ export default class TeleportForm extends Vue {
   async setMaxValue() {
     if (!this.currentCurrency) return;
 
-    // first, we calculate amount with a pre-known commission (it is often the smallest),
-    // then for this amount we calculate the new TransferableCountTokensMinusFee,
-    // because the commission has increased in most cases
-    const transferableCountTokens = this.currentCurrency
-      .getTransferableCountTokensMinusFee(this.originalNetworkPartialFee)
-      .toString();
-    const partialFee = await this.createTransferAndGetFee(transferableCountTokens);
+    const maxTransferableCountTokens = this.currentCurrency?.getTransferableCountTokens(this.originalNetwork);
+    const partialFee = await this.createTransferAndGetFee(maxTransferableCountTokens);
 
     this.amount = this.currentCurrency.getTransferableCountTokensMinusFee(partialFee).toString();
   }

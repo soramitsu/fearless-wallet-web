@@ -12,9 +12,10 @@
     </div>
 
     <CircleButton
+      ref="circleButton"
       iconName="dots-horizontal"
       backgroundColor="light-black"
-      @click="$emit('openAccountSettings', name, $event)"
+      @click="openAccountSettings(name)"
     />
   </div>
 </template>
@@ -40,6 +41,12 @@ export default class AccountsItem extends Vue {
 
   getUpperValue(string: string) {
     return string.toUpperCase();
+  }
+
+  openAccountSettings(name: string) {
+    const buttonTop = (this.$refs.circleButton as Vue).$el.getBoundingClientRect().top;
+
+    this.$emit('openAccountSettings', name, buttonTop);
   }
 }
 </script>

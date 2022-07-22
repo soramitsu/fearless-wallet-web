@@ -1,8 +1,13 @@
 <template>
   <div class="import-wallet">
-    <div class="row import" @click="openPopup">
-      <Input v-model="typeImportLabel" placeholder="Source type" size="big" :readonly="true" class="import" />
-    </div>
+    <Select
+      v-model="typeImport"
+      placeholder="Source type"
+      size="big"
+      class="row"
+      :options="optionsImport"
+      :disabled="disabledSelect"
+    />
 
     <Input
       v-if="notJsonImport"
@@ -26,90 +31,91 @@
           :readonly="true"
         />
 
-        <Input v-model="_passwordJson" size="big" placeholder="Password" class="row" :showPassword="true" />
+        <Input v-model="syncedPasswordJson" size="big" placeholder="Password" class="row" :showPassword="true" />
       </div>
     </template>
 
-    <slot v-if="notJsonImport"></slot>
-
-    <PopupWithSelect
-      v-if="showPopup"
-      v-model="typeImport"
-      header="Source type"
-      :toggleValue="toggleTypeImport"
-      :handlerClose="closePopup"
-      :options="optionsImport"
-    />
+    <slot v-if="showSlot"></slot>
   </div>
 </template>
 
 <script lang="ts">
-import PopupWithSelect from '@/components/PopupWithSelect.vue';
 import Input from '@/components/Input.vue';
-import { Component, Vue, Prop, Watch, VModel } from 'vue-property-decorator';
-import type { DerivationPath, TypeFiledForImport } from '@/interfaces/common';
+import Select from '@/components/Select.vue';
+import { Component, Vue, Prop, Watch, VModel, PropSync } from 'vue-property-decorator';
+import type { DerivationPath, importType } from '@/interfaces/common';
 
 @Component({
   components: {
-    PopupWithSelect,
     Input,
+    Select,
   },
 })
 export default class ImportWallet extends Vue {
   readonly optionsImport = [
-    { label: 'Mnemonic passphrase', value: 'mnemonic', placeholder: 'Enter Passphrase' },
-    { label: 'Restore JSON', value: 'json', placeholder: 'Restore JSON' },
-    { label: 'Raw seed', value: 'rawSeed', placeholder: 'Raw seed' },
+    { label: 'Mnemonic passphrase', value: 'mnemonic' },
+    { label: 'Raw seed', value: 'rawSeed' },
+    { label: 'Restore JSON', value: 'json' },
   ];
 
-  showPopup = false;
-  fileJson = '';
-
-  @VModel({ type: String }) typeImport!: TypeFiledForImport;
+  @VModel({ type: String }) typeImport!: importType;
   @Prop(String) mnemonic!: string;
-  @Prop(String) rawSeed!: string;
-  @Prop(String) json!: string;
-  @Prop(String) passwordJson!: string;
+  @Prop(String) substrateRawSeed!: string;
+  @Prop(String) ethereumRawSeed!: string;
+  @Prop(String) substrateJson!: string;
+  @Prop(String) ethereumJson!: string;
+  @Prop(Number) currentIndexPage!: number;
   @Prop(Object) derivationPath!: DerivationPath;
-
-  get typeImportLabel() {
-    return this.optionsImport.find(({ value }) => value === this.typeImport)?.label;
-  }
+  @PropSync('passwordJson', { type: String }) syncedPasswordJson!: string;
 
   get inputValue() {
-    return this[this.typeImport];
+    const field =
+      this.typeImport === 'mnemonic'
+        ? 'mnemonic'
+        : this.typeImport === 'rawSeed'
+        ? this.currentIndexPage === 1
+          ? 'substrateRawSeed'
+          : 'ethereumRawSeed'
+        : this.currentIndexPage === 1
+        ? 'substrateJson'
+        : 'ethereumJson';
+
+    return this[field];
   }
 
   set inputValue(value: string) {
-    this.$emit('setValue', value, this.typeImport);
+    this.$emit('setImportValue', value);
   }
 
-  get _passwordJson() {
-    return this.passwordJson;
-  }
-
-  set _passwordJson(value: string) {
-    this.$emit('setValue', value, 'passwordJson');
-  }
-
-  get mnemonicArray() {
-    return this.mnemonic.split(' ');
+  get disabledSelect() {
+    return this.currentIndexPage === 2;
   }
 
   get notJsonImport() {
     return this.typeImport !== 'json';
   }
 
+  get showSlot() {
+    return this.notJsonImport && this.currentIndexPage === 1;
+  }
+
   get placeholderTypeImportValue() {
-    return this.optionsImport.find(({ value }) => value === this.typeImport)?.placeholder;
+    if (this.typeImport === 'rawSeed') {
+      if (this.currentIndexPage === 1) return 'Substrate accounts raw seed';
+      else if (this.currentIndexPage === 2) return 'ETH accounts raw seed';
+    }
+
+    if (this.typeImport === 'json') {
+      if (this.currentIndexPage === 1) return 'Restore JSON for Substrate accounts';
+      else if (this.currentIndexPage === 2) return 'Restore JSON for Ethereum accounts';
+    }
+
+    return 'Enter Passphrase';
   }
 
   @Watch('typeImport')
   onTypeImportChanged() {
-    this.$emit('setValue', '', 'json');
-    this.$emit('setValue', '', 'rawSeed');
-    this.$emit('setValue', '', 'mnemonic');
-    this.$emit('setValue', '', 'passwordJson');
+    this.$emit('reset');
   }
 
   typeImportClasses(value: string) {
@@ -119,20 +125,6 @@ export default class ImportWallet extends Vue {
         'active-type-import': this.typeImport === value,
       },
     ];
-  }
-
-  toggleTypeImport(value: TypeFiledForImport) {
-    this.typeImport = value;
-
-    this.closePopup();
-  }
-
-  closePopup() {
-    this.showPopup = false;
-  }
-
-  openPopup() {
-    this.showPopup = true;
   }
 }
 </script>
@@ -149,14 +141,6 @@ export default class ImportWallet extends Vue {
 .el-textarea__inner {
   height: 100px !important;
   resize: none !important;
-}
-
-.import {
-  cursor: pointer;
-
-  input:hover {
-    cursor: pointer;
-  }
 }
 </style>
 

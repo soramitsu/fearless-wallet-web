@@ -24,7 +24,7 @@
 <script lang="ts">
 import BorderButton from '@/components/BorderButton.vue';
 import MnemonicColumns from './MnemonicColumns.vue';
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 
 @Component({
   components: {
@@ -34,7 +34,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 })
 export default class MnemonicConfirmationForm extends Vue {
   @Prop(String) mnemonic!: string;
-  @Prop(Array) selectedMnemonicElements!: string[];
+  @PropSync('selectedMnemonicElements', { type: Array }) syncedSelectedMnemonicElements!: string[];
 
   get mnemonicArray() {
     return this.mnemonic.split(' ');
@@ -48,15 +48,16 @@ export default class MnemonicConfirmationForm extends Vue {
     return [
       'button-mnemonic',
       {
-        'inactive-button': this.selectedMnemonicElements.includes(word),
+        'inactive-button': this.syncedSelectedMnemonicElements.includes(word),
       },
     ];
   }
 
   updateSelectedMnemonicElements(element: string, index: number, added = true) {
-    if (this.selectedMnemonicElements.includes(element) && added) return;
+    if (this.syncedSelectedMnemonicElements.includes(element) && added) return;
 
-    this.$emit('updateSelectedMnemonicElements', element, index, added);
+    if (added) this.syncedSelectedMnemonicElements.push(element);
+    else this.syncedSelectedMnemonicElements.splice(index, 1);
   }
 }
 </script>

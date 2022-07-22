@@ -14,6 +14,7 @@
 .advanced-button {
   color: #ffffff;
   margin-top: 5px;
+  user-select: none;
 
   .button {
     display: flex;

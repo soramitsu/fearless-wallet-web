@@ -318,15 +318,12 @@ export default class SendForm extends Vue {
   async setMaxValue() {
     if (!this.currentCurrency) return;
 
-    // first, we calculate amount with a pre-known commission (it is often the smallest),
-    // then for this amount we calculate the new TransferableCountTokensMinusFee,
-    // because the commission has increased in most cases
-    const transferableCountTokens = this.currentCurrency.getTransferableCountTokensMinusFee(this.partialFee).toString();
-    const partialFee = await this.createTransferAndGetFee(transferableCountTokens);
-    const transferableCountTokens2 = this.currentCurrency.getTransferableCountTokensMinusFee(partialFee).toString();
+    const maxTransferableCountTokens = this.currentCurrency?.getTransferableCountTokens(this.selectedNetwork);
+    const partialFee = await this.createTransferAndGetFee(maxTransferableCountTokens);
+    const transferableCountTokens = this.currentCurrency.getTransferableCountTokensMinusFee(partialFee).toString();
 
-    this.amount = transferableCountTokens2;
-    this.value = this.currentCurrency.getCostOfTokens(transferableCountTokens2).toString();
+    this.amount = transferableCountTokens;
+    this.value = this.currentCurrency.getCostOfTokens(transferableCountTokens).toString();
   }
 
   async handlerButton() {

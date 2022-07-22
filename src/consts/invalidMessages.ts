@@ -1,5 +1,5 @@
 export const INVALID_MESSAGES = {
-  passphrase: {
+  mnemonicSequence: {
     text: 'Invalid passphrase',
     subtext: 'Invalid passphrase sequence, please try again',
   },

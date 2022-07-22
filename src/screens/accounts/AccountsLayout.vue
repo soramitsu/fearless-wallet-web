@@ -33,7 +33,7 @@
       :selectedNetwork="selectedNetwork"
       :handlerClose="closeAccountSettings"
       :showSwitchNode="isAccountsRoute"
-      :pageYClick="pageYClick"
+      :buttonTopClick="buttonTopClick"
       @openNotificationPopup="openNotificationPopup"
     />
 
@@ -102,7 +102,7 @@ export default class AccountsLayout extends Vue {
   selectedNodeName = '';
   selectedNodeUrl = '';
   notificationType: NotificationType = '';
-  pageYClick = 0;
+  buttonTopClick = 0;
   showInfoPopup = false;
   showAccountSettings = false;
   showEditNodeForm = false;
@@ -189,10 +189,10 @@ export default class AccountsLayout extends Vue {
     this.closeNotificationPopup();
   }
 
-  openAccountSettings(network = '', event: PointerEvent) {
+  openAccountSettings(network = '', buttonTop: number) {
     this.showAccountSettings = true;
     this.selectedNetwork = network;
-    this.pageYClick = event?.pageY;
+    this.buttonTopClick = buttonTop;
   }
 
   closeAccountSettings(isReset = true) {
@@ -274,7 +274,7 @@ export default class AccountsLayout extends Vue {
     justify-content: space-between;
     color: rgba(255, 255, 255, 0.75);
     font-weight: 700;
-    margin: 0 10px;
+    margin: 0 10px 16px 10px;
     min-height: 32px;
 
     .left-part {

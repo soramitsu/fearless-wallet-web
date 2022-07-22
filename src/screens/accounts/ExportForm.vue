@@ -2,7 +2,7 @@
   <AboveForm header="Export JSON" :showBackIcon="showBackIcon" :handlerBack="handlerBack" :closeHandler="closeForm">
     <div class="export-form">
       <div class="export-content">
-        <Input v-model="exportType" placeholder="Source type" size="big" class="export-type-input" />
+        <Input v-model="exportType" placeholder="Source type" size="big" class="export-type-input" :readonly="true" />
 
         <template v-if="step === 1">
           <InformationBlock
@@ -14,15 +14,13 @@
           <ValidatedInput
             v-model="pass1"
             placeholder="Set password for json file"
-            errorDescriptions="Password is too short"
-            :isError="isErrorPass1"
             :showPassword="true"
             :maxlength="25"
           />
 
           <ValidatedInput
             v-model="pass2"
-            :class="classesPass2"
+            class="row"
             placeholder="Confirm password"
             errorDescriptions="Passwords do not match."
             :isError="isErrorPass2"
@@ -61,7 +59,6 @@ import { Getter } from 'vuex-class';
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import type { SelectedWallet } from '@/store/accounts/types';
-import type { KeyringPair$Json } from '@polkadot/keyring/types';
 
 @Component({
   components: {
@@ -105,18 +102,6 @@ export default class ExportForm extends Vue {
     return this.step === 1 ? 'Continue' : 'Export';
   }
 
-  get classesPass2() {
-    return [
-      {
-        row: !this.isErrorPass1,
-      },
-    ];
-  }
-
-  get isErrorPass1() {
-    return this.pass1 !== '' && this.pass1.length < 5;
-  }
-
   get isErrorPass2() {
     return this.pass2 !== '' && this.pass2 !== this.pass1;
   }
@@ -127,27 +112,44 @@ export default class ExportForm extends Vue {
 
   proceed() {
     if (this.step === 1) this.step = 2;
-    else this.export();
+    else {
+      this.export();
+      this.closeForm();
+    }
   }
 
   export() {
     const a = document.createElement('a');
 
-    const pairSubstrate = keyring.getPair(this.selectedWallet.address).toJson(this.pass1);
-    const substrateJson = JSON.stringify(pairSubstrate);
-    const fileSubstrate = new Blob([substrateJson], { type: 'application/json' });
+    const addressSubstrate = this.selectedWallet.address;
+    const keyringPair = keyring.getPair(addressSubstrate);
 
-    a.href = URL.createObjectURL(fileSubstrate);
-    a.download = 'substrate.json';
+    keyringPair.unlock();
+
+    const keyringPair$Json = keyringPair.toJson(this.pass1);
+    const jsonSubstrate = JSON.stringify(keyringPair$Json);
+    const blobSubstrate = new Blob([jsonSubstrate], { type: 'application/json; charset=utf-8' });
+
+    keyringPair.lock();
+
+    a.href = URL.createObjectURL(blobSubstrate);
+    a.download = `${addressSubstrate}.json`;
     a.click();
 
     if (this.haveEthereumAccount) {
-      const pairEthereum = keyring.getPair(this.selectedWallet.ethereumAddress).toJson(this.pass1);
-      const ethereumJson = JSON.stringify(pairEthereum);
-      const fileEthereum = new Blob([ethereumJson], { type: 'application/json' });
+      const addressEthereum = this.selectedWallet.ethereumAddress;
+      const keyringPair = keyring.getPair(addressEthereum);
 
-      a.href = URL.createObjectURL(fileEthereum);
-      a.download = 'ethereum.json';
+      keyringPair.unlock();
+
+      const keyringPair$Json = keyringPair.toJson(this.pass1);
+      const jsonEthereum = JSON.stringify(keyringPair$Json);
+      const blobEthereum = new Blob([jsonEthereum], { type: 'application/json; charset=utf-8' });
+
+      keyringPair.lock();
+
+      a.href = URL.createObjectURL(blobEthereum);
+      a.download = `${addressEthereum}.json`;
       a.click();
     }
   }

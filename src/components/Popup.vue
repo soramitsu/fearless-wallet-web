@@ -40,7 +40,7 @@ import Corners from './Corners.vue';
 
 type HorizontalPlacement = 'left' | 'center' | 'right';
 type VerticalPlacement = 'top' | 'center' | 'bottom';
-type Size = 'medium' | 'bid';
+type Size = 'mini' | 'medium' | 'big';
 
 @Component({
   components: {
@@ -62,7 +62,7 @@ export default class Popup extends Vue {
   @Prop({ default: false }) showSearch!: boolean;
   @Prop({ default: false }) showBorder!: boolean;
   @Prop({ default: false }) staticHeight!: boolean;
-  @Prop({ default: false }) sizeWidth!: Size;
+  @Prop({ default: 'medium' }) sizeWidth!: Size;
   @Prop({ default: 'center' }) horizontalPlacement!: HorizontalPlacement;
   @Prop({ default: 'center' }) verticalPlacement!: VerticalPlacement;
 
@@ -164,6 +164,10 @@ export default class Popup extends Vue {
 
   .width-medium {
     width: 300px;
+  }
+
+  .width-mini {
+    width: 230px;
   }
 
   .border {

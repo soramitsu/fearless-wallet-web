@@ -1,6 +1,6 @@
 <template>
   <div class="network">
-    <div class="network-description row">
+    <div class="network-description">
       <div class="description">
         <div class="img-container">
           <img :src="imgPath" class="main-network-img" />
@@ -10,6 +10,7 @@
           <div class="network-name">{{ selectedNetworkUpper }}</div>
           <div class="address-block" @click="copyAddress">
             <div class="address">{{ address }}</div>
+
             <img src="@/assets/copy.svg" class="copy" />
           </div>
         </div>

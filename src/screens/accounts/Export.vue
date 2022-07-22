@@ -1,9 +1,9 @@
 <template>
   <div class="export">
     <div class="description">
-      <div class="row header">Export JSON</div>
+      <div class="header">Export JSON</div>
       <InformationBlock
-        class="row"
+        class="information"
         text="Sharing or copying your secret is a high risk operation, don’t send it to anyone. Would you like to proceed with sharing/copying process?"
       />
     </div>
@@ -71,7 +71,7 @@ export default class Export extends Vue {
   margin-bottom: 16px;
   height: calc(100% - 16px);
 
-  .row {
+  .information {
     margin-top: 25px;
   }
 

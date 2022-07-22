@@ -6,14 +6,14 @@
     <MnemonicConfirmationForm
       v-if="showMnemonicConfirmationForm"
       :mnemonic="mnemonic"
-      :selectedMnemonicElements="selectedMnemonicElements"
-      @updateSelectedMnemonicElements="updateSelectedMnemonicElements"
+      :selectedMnemonicElements="syncedSelectedMnemonicElements"
+      @update:selectedMnemonicElements="updateSelectedMnemonicElements"
     />
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import type { DerivationPath } from '@/interfaces/common';
 import MnemonicConfirmationForm from './MnemonicConfirmationForm.vue';
 import MnemonicBackupForm from './MnemonicBackupForm.vue';
@@ -27,8 +27,8 @@ import MnemonicBackupForm from './MnemonicBackupForm.vue';
 export default class CreateWallet extends Vue {
   @Prop(Number) currentIndexPage!: number;
   @Prop(String) mnemonic!: string;
-  @Prop(Array) selectedMnemonicElements!: string[];
   @Prop(Object) derivationPath!: DerivationPath;
+  @PropSync('selectedMnemonicElements', { type: Array }) syncedSelectedMnemonicElements!: string[];
 
   get showMnemonicBackupForm() {
     return this.currentIndexPage === 2;
@@ -38,8 +38,8 @@ export default class CreateWallet extends Vue {
     return this.currentIndexPage === 3;
   }
 
-  updateSelectedMnemonicElements(element: string, index: number, added: boolean) {
-    this.$emit('updateSelectedMnemonicElements', element, index, added);
+  updateSelectedMnemonicElements(value: string[]) {
+    this.syncedSelectedMnemonicElements = value;
   }
 }
 </script>

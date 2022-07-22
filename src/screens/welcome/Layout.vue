@@ -5,12 +5,7 @@
         <CircleButton v-if="showBackIcon" backgroundColor="light-black" iconName="chevron-left" @click="back" />
       </div>
       <div class="steps">
-        <div
-          v-for="item in countSteps"
-          :key="item"
-          class="circle-step"
-          :class="item <= currentIndexPage ? 'circle-filled' : ''"
-        ></div>
+        <div v-for="num in countSteps" :key="num" :class="getClassesStep(num)"></div>
       </div>
       <div class="icon-background">
         <CircleButton iconName="expand" backgroundColor="light-black" @click="fullScreen" />
@@ -19,51 +14,55 @@
 
     <div class="content-block">
       <div class="content">
-        <div v-if="showContentHeader" class="content-header">{{ header }}</div>
+        <div class="content-header">{{ header }}</div>
 
         <NicknameForm
           v-if="showNicknameForm"
           :nickname="nickname"
-          @update:nickname="setNickname"
           :readonly="readonlyNickname"
+          @update:nickname="setNickname"
         />
 
         <CreateWallet
-          v-else-if="showCreateForm"
+          v-if="showCreateForm"
           :currentIndexPage="currentIndexPage"
           :mnemonic="mnemonic"
           :selectedMnemonicElements="selectedMnemonicElements"
           :derivationPath="derivationPath"
-          @updateSelectedMnemonicElements="updateSelectedMnemonicElements"
-          @setValue="setValue"
+          @update:selectedMnemonicElements="updateSelectedMnemonicElements"
         >
           <AdvancedButton @click="toggleAdvancedFormVisible" />
         </CreateWallet>
 
         <ImportWallet
-          v-else-if="showImportForm"
+          v-if="showImportForm"
           v-model="typeImport"
+          :currentIndexPage="currentIndexPage"
           :mnemonic="mnemonic"
-          :rawSeed="rawSeed"
-          :json="json"
+          :substrateRawSeed="substrateRawSeed"
+          :ethereumRawSeed="ethereumRawSeed"
+          :substrateJson="substrateJson"
+          :ethereumJson="ethereumJson"
           :passwordJson="passwordJson"
           :derivationPath="derivationPath"
-          @setValue="setValue"
+          @setImportValue="setImportValue"
+          @reset="reset"
+          @update:passwordJson="setPasswordJson"
         >
           <AdvancedButton @click="toggleAdvancedFormVisible" />
         </ImportWallet>
 
         <AdvancedForm
-          v-else-if="showAdvancedForm"
+          v-if="showAdvancedForm"
           :derivationPath="derivationPath"
           :showEthereumDP="showEthereumDP"
-          @saveChanges="setValue"
+          @updateDP="updateDP"
           @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
         />
 
-        <PasswordForm v-else-if="showPasswordForm" />
+        <PasswordForm v-if="showPasswordForm" />
 
-        <FinishForm v-else-if="showFinishForm" />
+        <FinishForm v-if="showFinishForm" />
       </div>
 
       <Button
@@ -80,14 +79,21 @@
     <NotificationPopup
       v-if="showNotificationPopup"
       sizeWidth="medium"
-      :handlerClose="handlerClosePopup"
+      :handlerClose="handlerCloseNotificationPopup"
       :headers="invalidMessages"
+    />
+
+    <EthereumAccountPopup
+      v-if="showEthereumAccountPopup"
+      sizeWidth="medium"
+      :handlerClose="handlerCloseConfirmationPopup"
+      :handlerAgree="handlerAgree"
     />
   </div>
 </template>
 
 <script lang="ts">
-import keyring from '@polkadot/ui-keyring';
+import BaseApi from '@/util/BaseApi';
 import NotificationPopup from '@/components/NotificationPopup.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import Button from '@/components/Button.vue';
@@ -98,46 +104,47 @@ import ImportWallet from './ImportWallet.vue';
 import NicknameForm from './NicknameForm.vue';
 import AdvancedForm from './AdvancedForm.vue';
 import AdvancedButton from './AdvancedButton.vue';
+import EthereumAccountPopup from './EthereumAccountPopup.vue';
 import { accountController } from '@/controllers/accountController';
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { isHex } from '@polkadot/util';
 import { GettersTypes } from '@/store/accounts/getters';
-import { mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
 import { Components } from '@/router/routes';
 import { INVALID_MESSAGES, InvalidValueName } from '@/consts/invalidMessages';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/ethereumNetworks';
 import { INITIAL_DERIVATION_PATH } from '@/consts/derivationPath';
-import type { DerivationPath, TypeFiledForImport, WalletConnectionStatus } from '@/interfaces/common';
+import type { DerivationPath, importType, WalletConnectionStatus, ValidateJsonResult } from '@/interfaces/common';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-
-type FieldsComponent = 'passwordJson' | 'derivationPath';
 
 @Component({
   components: {
+    Button,
+    FinishForm,
     CreateWallet,
     ImportWallet,
-    FinishForm,
     PasswordForm,
-    NotificationPopup,
     NicknameForm,
     AdvancedForm,
-    AdvancedButton,
     CircleButton,
-    Button,
+    AdvancedButton,
+    NotificationPopup,
+    EthereumAccountPopup,
   },
 })
 export default class Layout extends Vue {
   nickname = '';
-  json = '';
   mnemonic = '';
-  rawSeed = '';
   passwordJson = '';
-  typeImport: TypeFiledForImport = 'mnemonic';
-  invalidValueName: InvalidValueName = '';
-  showAdvancedForm = false;
-  selectedMnemonicElements: string[] = [];
+  ethereumJson = '';
+  substrateJson = '';
+  ethereumRawSeed = '';
+  substrateRawSeed = '';
   currentIndexPage = 1;
+  showAdvancedForm = false;
+  showEthereumAccountPopup = false;
+  selectedMnemonicElements: string[] = [];
+  invalidValueName: InvalidValueName = '';
+  typeImport: importType = 'mnemonic';
   derivationPath = INITIAL_DERIVATION_PATH;
 
   @Prop(String) walletConnectionStatus!: WalletConnectionStatus;
@@ -147,22 +154,12 @@ export default class Layout extends Vue {
     return accountController.isSavedPassword();
   }
 
-  get JSON() {
-    try {
-      const json = JSON.parse(this.json) as KeyringPair$Json;
+  get substrateJSON() {
+    return BaseApi.parseJson(this.substrateJson);
+  }
 
-      const isValid =
-        Object.hasOwnProperty.call(json, 'encoded') &&
-        Object.hasOwnProperty.call(json, 'encoding') &&
-        Object.hasOwnProperty.call(json, 'meta') &&
-        Object.hasOwnProperty.call(json, 'address');
-
-      if (!isValid) throw Error;
-
-      return json;
-    } catch (e) {
-      return undefined;
-    }
+  get ethereumJSON() {
+    return BaseApi.parseJson(this.ethereumJson);
   }
 
   get showEthereumDP() {
@@ -170,7 +167,7 @@ export default class Layout extends Vue {
   }
 
   get readonlyNickname() {
-    return !!this.json;
+    return this.typeImport === 'json';
   }
 
   get showNotificationPopup() {
@@ -182,17 +179,11 @@ export default class Layout extends Vue {
   }
 
   get showNicknameForm() {
-    return this.isImportWallet ? this.currentIndexPage === 2 : this.currentIndexPage === 1;
-  }
-
-  get showContentHeader() {
-    if (this.showAdvancedForm) return false;
-
-    return this.isImportWallet ? this.currentIndexPage <= 3 : this.currentIndexPage <= 4;
+    return (this.isImportWallet && this.currentIndexPage === 3) || (this.isCreateWallet && this.currentIndexPage === 1);
   }
 
   get countSteps() {
-    return this.isImportWallet ? 4 : 5;
+    return this.isCreateWallet || (this.isImportWallet && this.typeImport !== 'mnemonic') ? 5 : 4;
   }
 
   get isCreateWallet() {
@@ -204,23 +195,27 @@ export default class Layout extends Vue {
   }
 
   get showCreateForm() {
-    return this.isCreateWallet && this.currentIndexPage < 4 && !this.showAdvancedForm;
+    return (
+      this.isCreateWallet && (this.currentIndexPage === 2 || this.currentIndexPage === 3) && !this.showAdvancedForm
+    );
   }
 
   get showImportForm() {
-    return this.isImportWallet && this.currentIndexPage === 1 && !this.showAdvancedForm;
+    return (
+      this.isImportWallet && (this.currentIndexPage === 1 || this.currentIndexPage === 2) && !this.showAdvancedForm
+    );
   }
 
   get showPasswordForm() {
-    return this.isImportWallet ? this.currentIndexPage === 3 : this.currentIndexPage === 4;
+    return this.currentIndexPage === 4;
   }
 
   get showBackIcon() {
-    return this.isImportWallet ? this.currentIndexPage < 4 : this.currentIndexPage < 5;
+    return this.currentIndexPage < 5;
   }
 
   get showFinishForm() {
-    return this.isImportWallet ? this.currentIndexPage === 4 : this.currentIndexPage === 5;
+    return this.currentIndexPage === 5;
   }
 
   get header() {
@@ -231,9 +226,12 @@ export default class Layout extends Vue {
       else if (this.showPasswordForm) return 'Set up password';
     }
 
-    if (this.currentIndexPage === 1) return 'Import wallet';
-    else if (this.currentIndexPage === 2) return 'Make up a nickname';
-    else if (this.currentIndexPage === 3) return 'Enter password';
+    if (this.currentIndexPage === 1) {
+      if (this.typeImport === 'mnemonic') return 'Import wallet';
+      else return 'Import substrate accounts';
+    } else if (this.currentIndexPage === 2) return 'Import ethereum accounts';
+    else if (this.currentIndexPage === 3) return 'Wallet nickname';
+    else if (this.currentIndexPage === 4) return 'Enter password';
 
     return '';
   }
@@ -250,151 +248,241 @@ export default class Layout extends Vue {
     if (this.showPasswordForm) return !this.passwordExtension;
 
     if (this.isImportWallet) {
-      if (this.currentIndexPage === 1) {
-        return !this.mnemonic && !this.rawSeed && (Object.keys(this.json).length === 0 || !this.passwordJson);
-      } else if (this.currentIndexPage === 2) return !this.nickname;
+      if (this.currentIndexPage === 1)
+        return (
+          !this.mnemonic &&
+          !this.substrateRawSeed &&
+          (Object.keys(this.substrateJson).length === 0 || !this.passwordJson)
+        );
+
+      if (this.currentIndexPage === 2)
+        return (
+          (!this.substrateRawSeed || !this.ethereumRawSeed) &&
+          (Object.keys(this.ethereumJson).length === 0 || !this.passwordJson)
+        );
+
+      if (this.currentIndexPage === 3) return !this.nickname;
     }
 
     // isCreateWallet
     if (this.currentIndexPage === 1) return !this.nickname;
-    else if (this.currentIndexPage === 3)
-      return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
+
+    if (this.currentIndexPage === 3) return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
 
     return false;
   }
 
-  @Watch('json')
-  onTypeImportChanged(value: string) {
-    this.nickname = ((this.JSON as KeyringPair$Json)?.meta?.name as string) || '';
+  @Watch('substrateJson')
+  substrateJsonChanged(value: string) {
+    this.nickname = (this.substrateJSON?.meta?.name as string) || '';
 
-    if (this.JSON === undefined && value !== '') this.invalidValueName = 'jsonInvalid';
+    if (Object.keys(this.substrateJSON).length === 0 && value !== '') this.invalidValueName = 'jsonInvalid';
+  }
+
+  @Watch('ethereumJson')
+  ethereumJsonChanged(value: string) {
+    if (Object.keys(this.ethereumJSON).length === 0 && value !== '') this.invalidValueName = 'jsonInvalid';
+  }
+
+  @Watch('currentIndexPage')
+  changedCurrentIndexPage(currentIndexPage: number) {
+    // already have a keypairs
+    if (this.currentIndexPage === 4 && this.isSavedPassword) {
+      this.saveKeypair();
+
+      this.$router.push({ name: Components.Wallet });
+    }
+    // first keypair
+    else if (this.currentIndexPage === 5) this.saveKeypair();
+    else if (currentIndexPage === 6) this.$router.push({ name: Components.Wallet });
+  }
+
+  getClassesStep(num: number) {
+    const isCircleFilled =
+      this.isCreateWallet || this.typeImport !== 'mnemonic'
+        ? num <= this.currentIndexPage
+        : num !== 1
+        ? num <= this.currentIndexPage - 1
+        : true;
+
+    return [
+      'circle-step',
+      {
+        'circle-filled': isCircleFilled,
+      },
+    ];
   }
 
   toggleAdvancedFormVisible(value = true) {
     this.showAdvancedForm = value;
   }
 
-  setValue(
-    value: string & (KeyringPair$Json | Record<string, never>) & DerivationPath & boolean,
-    typeField: TypeFiledForImport | FieldsComponent
-  ) {
-    this[typeField] = value;
+  updateDP(derivationPath: DerivationPath) {
+    this.derivationPath = derivationPath;
+  }
+
+  reset() {
+    this.mnemonic = '';
+    this.substrateRawSeed = '';
+    this.ethereumRawSeed = '';
+    this.substrateJson = '';
+    this.ethereumJson = '';
+    this.passwordJson = '';
+  }
+
+  setImportValue(value: string & (KeyringPair$Json | Record<string, never>)) {
+    const field =
+      this.typeImport === 'mnemonic'
+        ? 'mnemonic'
+        : this.typeImport === 'rawSeed'
+        ? this.currentIndexPage === 1
+          ? 'substrateRawSeed'
+          : 'ethereumRawSeed'
+        : this.currentIndexPage === 1
+        ? 'substrateJson'
+        : 'ethereumJson';
+
+    this[field] = value;
   }
 
   setNickname(value: string) {
     this.nickname = value;
   }
 
-  handlerClosePopup() {
-    if (this.invalidValueName === 'jsonInvalid') this.json = '';
+  setPasswordJson(value: string) {
+    this.passwordJson = value;
+  }
+
+  handlerCloseNotificationPopup() {
+    if (this.invalidValueName === 'jsonInvalid') this.substrateJson = '';
 
     this.invalidValueName = '';
     this.selectedMnemonicElements = [];
   }
 
+  handlerCloseConfirmationPopup() {
+    this.showEthereumAccountPopup = false;
+
+    this.currentIndexPage += 2;
+  }
+
+  handlerAgree() {
+    this.showEthereumAccountPopup = false;
+    this.passwordJson = '';
+    this.currentIndexPage += 1;
+  }
+
   proceed() {
-    if (this.isCreateWallet) this.createWallet();
-    else this.importWallet();
+    if (this.isCreateWallet) this.createFlow();
+    else this.importFlow();
 
-    // if a invalid popup is shown, then the index does not need to be increased
-    this.currentIndexPage += this.showNotificationPopup ? 0 : 1;
-
-    if (
-      this.isSavedPassword &&
-      ((this.isCreateWallet && this.currentIndexPage === 4) || (this.isImportWallet && this.currentIndexPage === 3))
-    ) {
-      if (Object.keys(this.json).length === 0) {
-        this.accountAuthorization();
-      }
-
-      this.$router.push({ name: Components.Wallet });
-
-      return;
-    }
-
-    if ((this.isCreateWallet && this.currentIndexPage === 6) || (this.isImportWallet && this.currentIndexPage === 5)) {
-      this.$router.push({ name: Components.Wallet });
-    }
+    // if a invalid popup  or add ETH account popup is shown, then the index does not need to be increased
+    this.currentIndexPage += this.showNotificationPopup || this.showEthereumAccountPopup ? 0 : 1;
   }
 
-  createWallet() {
-    if (this.currentIndexPage === 1 && !this.mnemonic.length) this.mnemonic = mnemonicGenerate();
-    else if (this.currentIndexPage === 3) {
-      const isNotValidMnemonic = this.mnemonic
-        .split(' ')
-        .map((mnemonicElement, index) => this.selectedMnemonicElements[index] === mnemonicElement)
-        .includes(false);
-
-      this.invalidValueName = isNotValidMnemonic ? 'passphrase' : '';
-    } else if (this.currentIndexPage === 4) this.accountAuthorization();
+  createFlow() {
+    if (this.currentIndexPage === 1 && !this.mnemonic.length) this.mnemonic = BaseApi.generateMnemonic();
+    else if (this.currentIndexPage === 3) this.validateSuri();
   }
 
-  importWallet() {
-    if (this.currentIndexPage === 1) this.validateSuri();
-    else if (this.currentIndexPage === 3) {
-      if (Object.keys(this.json).length === 0) {
-        this.accountAuthorization();
-      } else {
-        this.savePassword();
-      }
-    }
+  importFlow() {
+    if (this.currentIndexPage === 1) {
+      this.validateSuri();
+
+      if (this.invalidValueName !== '') return;
+
+      // if import type is raw seed or json, show a window with a question about adding an ETH account
+      if (this.typeImport === 'mnemonic') this.currentIndexPage += 1;
+      else this.showEthereumAccountPopup = true;
+    } else if (this.currentIndexPage === 2) this.validateSuri();
   }
 
   validateSuri() {
-    const isValidMnemonic = this.mnemonic ? mnemonicValidate(this.mnemonic) : true;
-    const isValidRawSeed = this.rawSeed ? isHex(this.rawSeed) : true;
-    const isValidJson = this.json ? this.restoreJson() : true;
+    const isValidMnemonic = this.mnemonic ? BaseApi.isMnemonic(this.mnemonic) : true;
+    const isValidSubstrateRawSeed = this.substrateRawSeed ? BaseApi.isHex(this.substrateRawSeed) : true;
+    const isValidEthereumRawSeed = this.ethereumRawSeed ? BaseApi.isHex(this.ethereumRawSeed) : true;
 
-    this.invalidValueName = !isValidMnemonic
+    const validatedSubstrateJson = this.substrateJson
+      ? BaseApi.isValidJson(this.substrateJSON, this.passwordJson)
+      : ({ value: true } as ValidateJsonResult);
+
+    const validatedEthereumJson = this.ethereumJson
+      ? BaseApi.isValidJson(this.ethereumJSON, this.passwordJson)
+      : ({ value: true } as ValidateJsonResult);
+
+    const isValidSequenceMnemonic = this.isCreateWallet
+      ? BaseApi.isValidSequenceMnemonic(this.mnemonic, this.selectedMnemonicElements)
+      : true;
+
+    this.invalidValueName = !isValidSequenceMnemonic
+      ? 'mnemonicSequence'
+      : !isValidMnemonic
       ? 'mnemonic'
-      : !isValidRawSeed
+      : !isValidSubstrateRawSeed || !isValidEthereumRawSeed
       ? 'rawSeed'
-      : !isValidJson
-      ? 'jsonPassword'
+      : !validatedSubstrateJson.value
+      ? validatedSubstrateJson.errorType
+      : !validatedEthereumJson.value
+      ? validatedEthereumJson.errorType
       : '';
   }
 
-  accountAuthorization() {
+  saveKeypair() {
+    if (this.substrateJson) this.saveKeypairFromJson();
+    else this.saveKeypairFromSeed();
+
+    this.savePassword();
+  }
+
+  saveKeypairFromJson() {
+    BaseApi.addKeypairFromJson(this.substrateJSON, this.passwordJson);
+
+    if (this.ethereumJson) {
+      BaseApi.addKeypairFromJson(this.ethereumJSON, this.passwordJson);
+    }
+  }
+
+  saveKeypairFromSeed() {
     const meta = { name: this.nickname.trim(), ethereumAddress: '' };
     const {
-      substrate: { value: substrateDP, keyPair: substrateKeyPair },
-      ethereum: { value: ethereumDP, keyPair: ethereumKeyPair },
+      substrate: { value: substrateDerivationPath, keypairType: substrateKeypairType },
+      ethereum: { value: ethereumDerivationPath, keypairType: ethereumKeypairType },
     } = this.derivationPath;
-    const suriSubstrate = `${this.mnemonic || this.rawSeed}${substrateDP}`;
+    const suriSubstrate = `${this.mnemonic || this.substrateRawSeed}${substrateDerivationPath.trim()}`;
 
-    // We create an ETH account only if we entered the mnemonic
     if (this.mnemonic) {
+      const ethereumDP = (
+        ethereumDerivationPath.length !== 0
+          ? ethereumDerivationPath[0] === '/'
+            ? ethereumDerivationPath
+            : `/${ethereumDerivationPath}`
+          : ''
+      ).trim();
+
       const suriEthereum = `${this.mnemonic}${ethereumDP || ETHEREUM_DEFAULT_DERIVATION_PATH}`;
 
       const {
         pair: { address },
-      } = keyring.addUri(suriEthereum, '', meta, ethereumKeyPair);
+      } = BaseApi.addKeypair(suriEthereum, meta, ethereumKeypairType);
+
+      meta.ethereumAddress = address;
+    } else if (this.ethereumRawSeed) {
+      const {
+        pair: { address },
+      } = BaseApi.addKeypair(this.ethereumRawSeed, meta, ethereumKeypairType);
 
       meta.ethereumAddress = address;
     }
 
-    keyring.addUri(suriSubstrate, '', meta, substrateKeyPair);
-
-    this.savePassword();
+    BaseApi.addKeypair(suriSubstrate, meta, substrateKeypairType);
   }
 
   savePassword() {
     accountController.savePassword(this.passwordExtension);
   }
 
-  restoreJson() {
-    try {
-      keyring.restoreAccount(this.JSON as KeyringPair$Json, this.passwordJson);
-
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  updateSelectedMnemonicElements(element: string, index: number, added: boolean) {
-    if (added) this.selectedMnemonicElements.push(element);
-    else this.selectedMnemonicElements.splice(index, 1);
+  updateSelectedMnemonicElements(value: string[]) {
+    this.selectedMnemonicElements = value;
   }
 
   fullScreen() {
@@ -402,6 +490,10 @@ export default class Layout extends Vue {
   }
 
   back() {
+    if (this.currentIndexPage === 3 && this.ethereumRawSeed === '') {
+      this.currentIndexPage -= 1;
+    }
+
     if (this.currentIndexPage === 1) {
       this.mnemonic = '';
       this.nickname = '';

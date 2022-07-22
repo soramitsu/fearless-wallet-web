@@ -54,6 +54,7 @@ export default class CircleButton extends Vue {
   justify-content: center;
   align-items: center;
   border-radius: 50%;
+  user-select: none;
 
   .image {
     filter: invert(0.35);

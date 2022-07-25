@@ -11,6 +11,7 @@ import Staking from '@/screens/staking/Staking.vue';
 import Token from '@/screens/wallet/token/Token.vue';
 import Wallet from '@/screens/wallet/Wallet.vue';
 import Welcome from '@/screens/welcome/Welcome.vue';
+import AddWallet from '@/screens/addWallet/AddWallet.vue';
 import WelcomeBack from '@/screens/welcomeBack/WelcomeBack.vue';
 import { accountController } from '@/controllers/accountController';
 import { RouteConfig } from 'vue-router';
@@ -18,6 +19,7 @@ import { RouteConfig } from 'vue-router';
 export enum Components {
   Welcome = 'Welcome',
   WelcomeBack = 'WelcomeBack',
+  AddWallet = 'AddWallet',
   Main = 'Main',
   Wallet = 'Wallet',
   Crowdloans = 'Crowdloans',
@@ -41,6 +43,15 @@ const routes: Array<RouteConfig> = [
     path: '/welcome',
     name: Components.Welcome,
     component: Welcome,
+    beforeEnter: (to, from, next) => {
+      if (redirectToWelcomeBack()) next({ name: Components.WelcomeBack });
+      else next();
+    },
+  },
+  {
+    path: '/add-wallet/:type',
+    name: Components.AddWallet,
+    component: AddWallet,
     beforeEnter: (to, from, next) => {
       if (redirectToWelcomeBack()) next({ name: Components.WelcomeBack });
       else next();

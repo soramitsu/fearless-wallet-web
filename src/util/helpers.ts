@@ -1,4 +1,4 @@
-import type { Meta } from '@/interfaces/common';
+import type { Meta, ReplacementMeta } from '@/interfaces/common';
 import type { KeyringPair$Meta } from '@polkadot/keyring/types';
 
 export function firstCharToUp(string: string) {
@@ -7,4 +7,8 @@ export function firstCharToUp(string: string) {
 
 export function getMetaTyped(meta: KeyringPair$Meta) {
   return meta as unknown as Meta;
+}
+
+export function getReplacementMetaTyped(meta: KeyringPair$Meta) {
+  return meta as unknown as ReplacementMeta;
 }

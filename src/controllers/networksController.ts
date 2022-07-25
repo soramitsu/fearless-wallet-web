@@ -6,6 +6,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import type { Networks } from '@/store/networks/types';
 import type { SelectedWallet } from '@/store/accounts/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import BaseApi from '@/util/BaseApi';
 
 export default class NetworksController {
   static getNetworks(): Networks {
@@ -37,7 +38,7 @@ export default class NetworksController {
   }
 
   public static formatAddress({ address, ethereumAddress }: SelectedWallet, networkName: string): string {
-    const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
+    const isEthereumNetwork = BaseApi.isEthereumNetwork(networkName);
 
     if (isEthereumNetwork) return ethereumAddress;
 

@@ -157,7 +157,7 @@ export type LoadHistory = {
   walletAddress: string;
 };
 
-export type Accounts = Record<string, { type?: KeypairType }> | SubjectInfo;
+export type Accounts = Record<string, { type?: KeypairType; json?: any }> | SubjectInfo;
 
 export type SubscribeToBalances = {
   accounts: Accounts;

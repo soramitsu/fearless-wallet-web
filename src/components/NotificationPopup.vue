@@ -12,9 +12,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
 import Popup from './Popup.vue';
 import Button from './Button.vue';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 
 interface Headers {
   text: string;

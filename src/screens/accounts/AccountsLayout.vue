@@ -34,6 +34,7 @@
       :handlerClose="closeAccountSettings"
       :showSwitchNode="isAccountsRoute"
       :buttonTopClick="buttonTopClick"
+      @openReplacePopup="openReplacePopup"
       @openNotificationPopup="openNotificationPopup"
     />
 
@@ -63,6 +64,8 @@
       :handlerButton="handlerButton"
     />
 
+    <ReplacePopup v-if="showReplacePopup" :selectedNetwork="selectedNetwork" :handlerClose="closeReplacePopup" />
+
     <ExportForm v-if="showExportForm" :closeForm="closeForm" />
   </div>
 </template>
@@ -76,6 +79,7 @@ import Scroll from '@/components/Scroll.vue';
 import EditNodeForm from './EditNodeForm.vue';
 import NodeSettingsPopup from './NodeSettingsPopup.vue';
 import NotificationPopup from '@/components/NotificationPopup.vue';
+import ReplacePopup from './ReplacePopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
 import Network from './Network.vue';
 import { accountController } from '@/controllers/accountController';
@@ -90,6 +94,7 @@ type NotificationType = 'delete' | 'export' | '';
     Scroll,
     ExportForm,
     ContentForm,
+    ReplacePopup,
     EditNodeForm,
     CircleButton,
     NodeSettingsPopup,
@@ -103,7 +108,7 @@ export default class AccountsLayout extends Vue {
   selectedNodeUrl = '';
   notificationType: NotificationType = '';
   buttonTopClick = 0;
-  showInfoPopup = false;
+  showReplacePopup = false;
   showAccountSettings = false;
   showEditNodeForm = false;
   showNodeSettings = false;
@@ -244,6 +249,12 @@ export default class AccountsLayout extends Vue {
     this.closeAccountSettings(false);
   }
 
+  openReplacePopup() {
+    this.showReplacePopup = true;
+
+    this.closeAccountSettings(false);
+  }
+
   closeNotificationPopup() {
     this.notificationType = '';
     this.selectedNodeName = '';
@@ -252,6 +263,10 @@ export default class AccountsLayout extends Vue {
 
   closeNodeSettings() {
     this.showNodeSettings = false;
+  }
+
+  closeReplacePopup() {
+    this.showReplacePopup = false;
   }
 
   back() {

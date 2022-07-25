@@ -7,6 +7,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import { formatBalance } from '@/util/balances';
 import { getHistory } from '@/subquery/history';
+import { getReplacementMetaTyped } from '@/util/helpers';
 import { getMockCurrencies } from '@/util/currenciesHelper';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Mutations, MutationTypes } from './mutations';
@@ -153,68 +154,80 @@ const actions: ActionTree<State, State> & Actions = {
           await api.isReadyOrError;
 
           try {
-            Object.entries(accounts).forEach(async ([walletAddress, { type }]) => {
-              // ethereum accounts only subscribe to the ethereum networks and
-              // substrate accounts only subscribe to the substrate networks
-              if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
+            Object.entries(accounts).forEach(
+              async ([
+                walletAddress,
+                {
+                  type,
+                  json: { meta },
+                },
+              ]) => {
+                const { isReplacementAccount } = getReplacementMetaTyped(meta);
 
-              // unsubscribing from previous subscriptions(case when we added a new wallet)
-              subscriptionsBalances?.[walletAddress]?.unsubscribe();
+                if (isReplacementAccount) return;
 
-              if (loadHistory && networkName !== 'moonbase alpha') {
-                const formattedAddress = NetworksController.formatAddress(
-                  { address: walletAddress, ethereumAddress: walletAddress } as SelectedWallet,
-                  networkName
-                );
+                // ethereum accounts only subscribe to the ethereum networks and
+                // substrate accounts only subscribe to the substrate networks
+                if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
 
-                const history = await dispatch(ActionTypes.LOAD_HISTORY, {
-                  historyExternalApi: externalApi.history,
-                  walletAddress: formattedAddress,
+                // unsubscribing from previous subscriptions(case when we added a new wallet)
+                subscriptionsBalances?.[walletAddress]?.unsubscribe();
+
+                if (loadHistory && networkName !== 'moonbase alpha') {
+                  const formattedAddress = NetworksController.formatAddress(
+                    { address: walletAddress, ethereumAddress: walletAddress } as SelectedWallet,
+                    networkName
+                  );
+
+                  const history = await dispatch(ActionTypes.LOAD_HISTORY, {
+                    historyExternalApi: externalApi.history,
+                    walletAddress: formattedAddress,
+                  });
+
+                  commit(MutationTypes.SET_HISTORY, {
+                    networkName,
+                    walletAddress,
+                    history,
+                  });
+                }
+
+                const token = assets[0]?.assetId;
+                const price = tokensPrice[token]?.usd ?? 0;
+                const usd24HoursChange = tokensPrice[token]?.usd24HoursChange ?? 0;
+                const precision =
+                  getters[NetworksGettersTypes.getAssetsInfo].find((kek: any) => kek.id === token)?.precision ?? 0;
+
+                const unsubscribe = api.rx.query.system.account(walletAddress).subscribe(async (result) => {
+                  const data = (result as any).data;
+                  const balance = formatBalance(data as AccountData, precision);
+
+                  const currency = {
+                    mainNetwork: networkName,
+                    token,
+                    price,
+                    usd24HoursChange,
+                    precision,
+                    availableInNetworks: [
+                      {
+                        network: networkName,
+                        balance,
+                      },
+                    ],
+                  };
+
+                  commit(MutationTypes.UPDATE_CURRENCY, {
+                    walletAddress,
+                    currency,
+                  });
                 });
 
-                commit(MutationTypes.SET_HISTORY, {
+                commit(MutationTypes.SET_SUBSCRIPTIONS_BALANCES, {
                   networkName,
                   walletAddress,
-                  history,
+                  subscriptionsBalances: unsubscribe,
                 });
               }
-
-              const token = assets[0]?.assetId;
-              const price = tokensPrice[token]?.usd ?? 0;
-              const usd24HoursChange = tokensPrice[token]?.usd24HoursChange ?? 0;
-              const precision =
-                getters[NetworksGettersTypes.getAssetsInfo].find((kek: any) => kek.id === token)?.precision ?? 0;
-
-              const unsubscribe = api.rx.query.system.account(walletAddress).subscribe(async (result) => {
-                const data = (result as any).data;
-                const balance = formatBalance(data as AccountData, precision);
-
-                const currency = {
-                  mainNetwork: networkName,
-                  token,
-                  price,
-                  usd24HoursChange,
-                  precision,
-                  availableInNetworks: [
-                    {
-                      network: networkName,
-                      balance,
-                    },
-                  ],
-                };
-
-                commit(MutationTypes.UPDATE_CURRENCY, {
-                  walletAddress,
-                  currency,
-                });
-              });
-
-              commit(MutationTypes.SET_SUBSCRIPTIONS_BALANCES, {
-                networkName,
-                walletAddress,
-                subscriptionsBalances: unsubscribe,
-              });
-            });
+            );
           } catch (ex) {
             console.info(
               `

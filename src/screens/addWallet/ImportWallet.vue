@@ -43,7 +43,7 @@
 import Input from '@/components/Input.vue';
 import Select from '@/components/Select.vue';
 import { Component, Vue, Prop, Watch, VModel, PropSync } from 'vue-property-decorator';
-import type { DerivationPath, importType } from '@/interfaces/common';
+import type { DerivationPath, ImportType } from '@/interfaces/common';
 
 @Component({
   components: {
@@ -58,13 +58,14 @@ export default class ImportWallet extends Vue {
     { label: 'Restore JSON', value: 'json' },
   ];
 
-  @VModel({ type: String }) typeImport!: importType;
+  @VModel({ type: String }) typeImport!: ImportType;
   @Prop(String) mnemonic!: string;
   @Prop(String) substrateRawSeed!: string;
   @Prop(String) ethereumRawSeed!: string;
   @Prop(String) substrateJson!: string;
   @Prop(String) ethereumJson!: string;
   @Prop(Number) currentIndexPage!: number;
+  @Prop(Boolean) isReplaceAccount!: boolean;
   @Prop(Object) derivationPath!: DerivationPath;
   @PropSync('passwordJson', { type: String }) syncedPasswordJson!: string;
 
@@ -96,7 +97,7 @@ export default class ImportWallet extends Vue {
   }
 
   get showSlot() {
-    return this.notJsonImport && this.currentIndexPage === 1;
+    return this.isReplaceAccount ? this.typeImport === 'mnemonic' : this.notJsonImport && this.currentIndexPage === 1;
   }
 
   get placeholderTypeImportValue() {

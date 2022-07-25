@@ -53,11 +53,10 @@ export default class MnemonicConfirmationForm extends Vue {
     ];
   }
 
-  updateSelectedMnemonicElements(element: string, index: number, added = true) {
-    if (this.syncedSelectedMnemonicElements.includes(element) && added) return;
+  updateSelectedMnemonicElements(element: string) {
+    if (this.syncedSelectedMnemonicElements.includes(element)) return;
 
-    if (added) this.syncedSelectedMnemonicElements.push(element);
-    else this.syncedSelectedMnemonicElements.splice(index, 1);
+    this.syncedSelectedMnemonicElements.push(element);
   }
 }
 </script>

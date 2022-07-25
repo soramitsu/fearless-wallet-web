@@ -37,7 +37,15 @@ export default class App extends Vue {
     // @ts-ignore
     this.subscribeAccounts = keyring.accounts.subject;
     this.subscribeAccounts.subscribe(async (accounts) => {
-      const selectedWalletAddress = Object.entries(accounts).find(([, { type }]) => type !== 'ethereum')?.[0];
+      const selectedWalletAddress = Object.entries(accounts).find( // eslint-disable-line
+        ([
+          ,
+          {
+            type,
+            json: { meta },
+          },
+        ]) => type !== 'ethereum' && !meta.isReplacementAccount
+      )![0];
 
       if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
 

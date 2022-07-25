@@ -1,7 +1,9 @@
 import keyring from '@polkadot/ui-keyring';
-import { CreateResult } from '@polkadot/ui-keyring/types';
+import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
+import { getReplacementMetaTyped } from '@/util/helpers';
 import { isHex } from '@polkadot/util';
 import { mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
+// import { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import type { KeyringPair$Json, KeyringPair$Meta, KeyringPair } from '@polkadot/keyring/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { WordCount } from '@polkadot/util-crypto/mnemonic/generate';
@@ -32,16 +34,51 @@ export default class BaseApi {
     return json.encoding.content.includes('batch-pkcs8');
   }
 
-  public static addKeypair(suri: string, meta: KeyringPair$Meta, type: KeypairType): CreateResult {
-    const pair = keyring.addUri(suri, '', meta, type);
+  public static addKeypair(suri: string, meta: KeyringPair$Meta, type: KeypairType): KeyringPair {
+    const { pair } = keyring.addUri(suri, '', meta, type);
 
     return pair;
+  }
+
+  public static createFromUri(suri: string, type: KeypairType): KeyringPair {
+    const pair = keyring.createFromUri(suri, {}, type);
+
+    return pair;
+  }
+
+  public static isDuplicateKeypair(address: string): boolean {
+    const accounts = keyring.getAccounts();
+
+    return accounts.map(({ address }) => address).includes(address);
+  }
+
+  public static getKeyringPair(address: string): KeyringPair {
+    return keyring.getPair(address);
+  }
+
+  public static updateReplacementMetaData(address: string, parentAddressProps: string, network: string): void {
+    const pair = this.getKeyringPair(address);
+    const meta = getReplacementMetaTyped(pair.meta);
+    const oldReplacementSettings = meta.replacementSettings;
+    const index = oldReplacementSettings.findIndex(({ parentAddress }) => parentAddress === parentAddressProps);
+    const oldNetworksList = oldReplacementSettings[index].networksList;
+    const newNetworksList = [...oldNetworksList, network];
+
+    meta.replacementSettings[index].networksList = newNetworksList;
+
+    pair.setMeta(meta as any);
+
+    keyring.addPair(pair, '');
   }
 
   public static addKeypairFromJson(json: KeyringPair$Json, password: string): KeyringPair {
     const pair = keyring.restoreAccount(json, password);
 
     return pair;
+  }
+
+  public static isEthereumNetwork(network: string): boolean {
+    return ETHEREUM_NETWORKS.includes(network);
   }
 
   public static parseJson(jsonString: string): KeyringPair$Json {

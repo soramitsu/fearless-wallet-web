@@ -64,7 +64,7 @@ export default class SelectWalletPopup extends Vue {
 
         return pair;
       })
-      .filter(({ type }) => type !== 'ethereum');
+      .filter(({ type, meta }) => type !== 'ethereum' && !meta.isReplacementAccount);
   }
 
   addWallet() {

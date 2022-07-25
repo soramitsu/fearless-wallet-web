@@ -15,7 +15,7 @@
         <img src="@/assets/export.svg" class="icon" />
         <div class="label">Export account</div>
       </div>
-      <div class="row">
+      <div class="row" @click="openReplacePopup">
         <img src="@/assets/account-switch.svg" class="icon" />
         <div class="label">Replace account</div>
       </div>
@@ -99,6 +99,10 @@ export default class AccountSettingsPopup extends Vue {
     });
 
     this.close();
+  }
+
+  openReplacePopup() {
+    this.$emit('openReplacePopup');
   }
 
   openNotificationPopup() {

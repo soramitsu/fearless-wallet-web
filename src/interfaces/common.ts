@@ -8,9 +8,18 @@ export interface Meta {
   ethereumAddress: string;
 }
 
+export interface ReplacementMeta {
+  isReplacementAccount: true;
+  replacementSettings: [
+    {
+      parentAddress: string;
+      networksList: string[];
+    }
+  ];
+}
+
 export type TabWallet = 'Currencies' | 'NFTs';
-export type WalletConnectionStatus = 'isCreateWallet' | 'isImportWallet' | '';
-export type importType = 'mnemonic' | 'rawSeed' | 'json';
+export type ImportType = 'mnemonic' | 'rawSeed' | 'json';
 export type FilterHistory = 'all' | 'transfer' | 'reward' | 'extrinsic';
 
 export type WalletAddress = string;

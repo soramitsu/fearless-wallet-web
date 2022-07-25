@@ -6,17 +6,19 @@
     :saveChanges="saveChanges"
     class="advanced"
   >
-    <Select
-      v-model="substrateKeypairType"
-      :options="optionsSubstrateKeyPair"
-      placeholder="SUBSTRATE KEYPAIR CRYPTO TYPE"
-      size="big"
-      class="row"
-    />
+    <template v-if="showSubstrateDP">
+      <Select
+        v-model="substrateKeypairType"
+        :options="optionsSubstrateKeyPair"
+        placeholder="SUBSTRATE KEYPAIR CRYPTO TYPE"
+        size="big"
+        class="row"
+      />
 
-    <Input v-model="substrateDP" class="row" placeholder="Substrate secret derivation path" size="big" />
+      <Input v-model="substrateDP" class="row" placeholder="Substrate secret derivation path" size="big" />
 
-    <div class="example-prompt">Example: {{ example }}</div>
+      <div class="example-prompt">Example: {{ example }}</div>
+    </template>
 
     <template v-if="showEthereumDP">
       <Input
@@ -69,6 +71,7 @@ export default class AdvancedForm extends Vue {
 
   @Prop(Object) derivationPath!: DerivationPath;
   @Prop({ default: true }) showEthereumDP!: boolean;
+  @Prop({ default: true }) showSubstrateDP!: boolean;
 
   get example() {
     return this.optionsSubstrateKeyPair.find(({ value }) => value === this.substrateKeypairType)?.example;

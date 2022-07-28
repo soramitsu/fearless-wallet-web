@@ -1,12 +1,8 @@
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
-import { decodeAddress, encodeAddress } from '@polkadot/util-crypto';
-import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import type { Networks } from '@/store/networks/types';
-import type { SelectedWallet } from '@/store/accounts/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-import BaseApi from '@/util/BaseApi';
 
 export default class NetworksController {
   static getNetworks(): Networks {
@@ -35,28 +31,5 @@ export default class NetworksController {
 
   public static async updateActiveNode(networkName: string, nodeUrl: string, oldNodeUrl: string): Promise<void> {
     await store.dispatch(NetworksActionTypes.UPDATE_ACTIVE_NODE, { networkName, nodeUrl, oldNodeUrl });
-  }
-
-  public static formatAddress({ address, ethereumAddress }: SelectedWallet, networkName: string): string {
-    const isEthereumNetwork = BaseApi.isEthereumNetwork(networkName);
-
-    if (isEthereumNetwork) return ethereumAddress;
-
-    const publicKey = decodeAddress(address, false);
-    const networks = this.getNetworks();
-    const network = networks.find(({ name }) => name === networkName);
-    const prefix = network?.addressPrefix;
-
-    return encodeAddress(publicKey, prefix);
-  }
-
-  public static validateAddress(address: string): boolean {
-    try {
-      decodeAddress(address, false);
-
-      return true;
-    } catch {
-      return false;
-    }
   }
 }

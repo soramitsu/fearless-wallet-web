@@ -1,13 +1,12 @@
 import axios from 'axios';
-import keyring from '@polkadot/ui-keyring';
-import NetworksController from '@/controllers/networksController';
+import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
 import { accountController } from '@/controllers/accountController';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import { formatBalance } from '@/util/balances';
 import { getHistory } from '@/subquery/history';
-import { getReplacementMetaTyped } from '@/util/helpers';
+import { getReplacedMetaTyped } from '@/util/helpers';
 import { getMockCurrencies } from '@/util/currenciesHelper';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Mutations, MutationTypes } from './mutations';
@@ -91,12 +90,14 @@ const actions: ActionTree<State, State> & Actions = {
     commit(MutationTypes.SET_CURRENCIES, { currencies });
     commit(MutationTypes.SET_NETWORKS, { networks });
   },
+
   async [ActionTypes.LOAD_ASSETS_INFO]({ commit }, { url }) {
     const { data } = await axios.get(url);
     const assetsJson: AssetsJson[] = data;
 
     commit(MutationTypes.SET_ASSETS, { assets: assetsJson });
   },
+
   async [ActionTypes.LOAD_TOKENS_PRICE]({ commit, state: { networks, assets } }) {
     const assetsIds = networks.map(({ assets }) => assets[0].assetId);
     const urlTokensPart = assets
@@ -120,6 +121,7 @@ const actions: ActionTree<State, State> & Actions = {
 
     commit(MutationTypes.SET_TOKENS_PRICE, { tokensPrice });
   },
+
   async [ActionTypes.LOAD_HISTORY]({ commit }, { historyExternalApi, walletAddress }) {
     const mockHistory = {};
     const pageSize = 20;
@@ -135,11 +137,12 @@ const actions: ActionTree<State, State> & Actions = {
 
     return history ?? mockHistory;
   },
-  async [ActionTypes.SUBSCRIBE_TO_BALANCES](
-    { dispatch, getters, commit, state: { networks: networksStore, tokensPrice } },
-    { accounts, loadHistory, networksProps }
-  ) {
+
+  async [ActionTypes.SUBSCRIBE_TO_BALANCES](context, { accounts, loadHistory, networksProps }) {
     console.info('accounts', accounts);
+
+    const { commit, state } = context;
+    const { networks: networksStore } = state;
 
     commit(MutationTypes.SET_ALL_NETWORKS_IS_LOADED, {
       value: false,
@@ -147,103 +150,55 @@ const actions: ActionTree<State, State> & Actions = {
 
     // if the list of networks is not transferred, then we subscribe to all
     const networks = networksProps ?? networksStore;
+    const promises = networks.map(async (network) => {
+      const { api, subscriptionsBalances, isEthereumNetwork, name: networkName, assets, externalApi } = network;
+      const token = assets[0]?.assetId;
 
-    await Promise.allSettled(
-      networks.map(
-        async ({ api, subscriptionsBalances, isEthereumNetwork, name: networkName, assets, externalApi }) => {
-          await api.isReadyOrError;
+      await api.isReadyOrError;
 
-          try {
-            Object.entries(accounts).forEach(
-              async ([
-                walletAddress,
-                {
-                  type,
-                  json: { meta },
-                },
-              ]) => {
-                const { isReplacementAccount } = getReplacementMetaTyped(meta);
+      try {
+        Object.entries(accounts).forEach(async ([walletAddress, { type, json }]) => {
+          const { isReplacedAccount, replacedSettings } = getReplacedMetaTyped(json.meta);
+          const networksList = Object.values(replacedSettings ?? []).flat();
 
-                if (isReplacementAccount) return;
+          // if it is a replaced account and the iterated network is not in the list
+          if (isReplacedAccount && !networksList.includes(networkName)) return;
 
-                // ethereum accounts only subscribe to the ethereum networks and
-                // substrate accounts only subscribe to the substrate networks
-                if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
+          // ethereum accounts only subscribe to the ethereum networks and
+          // substrate accounts only subscribe to the substrate networks
+          if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
 
-                // unsubscribing from previous subscriptions(case when we added a new wallet)
-                subscriptionsBalances?.[walletAddress]?.unsubscribe();
+          // unsubscribing from previous subscriptions(case when we added a new wallet)
+          subscriptionsBalances?.[walletAddress]?.unsubscribe();
 
-                if (loadHistory && networkName !== 'moonbase alpha') {
-                  const formattedAddress = NetworksController.formatAddress(
-                    { address: walletAddress, ethereumAddress: walletAddress } as SelectedWallet,
-                    networkName
-                  );
+          if (loadHistory && networkName !== 'moonbase alpha')
+            saveHistory(walletAddress, networkName, externalApi, context);
 
-                  const history = await dispatch(ActionTypes.LOAD_HISTORY, {
-                    historyExternalApi: externalApi.history,
-                    walletAddress: formattedAddress,
-                  });
+          const unsubscribe = subscribe(context, api, token, networkName, walletAddress);
 
-                  commit(MutationTypes.SET_HISTORY, {
-                    networkName,
-                    walletAddress,
-                    history,
-                  });
-                }
+          commit(MutationTypes.SET_SUBSCRIPTIONS_BALANCES, {
+            networkName,
+            walletAddress,
+            subscriptionsBalances: unsubscribe,
+          });
+        });
+      } catch (ex) {
+        console.info(
+          `
+            Subscribe to ${networkName.toUpperCase()} failed
+            ${ex}
+          `
+        );
+      }
+    });
 
-                const token = assets[0]?.assetId;
-                const price = tokensPrice[token]?.usd ?? 0;
-                const usd24HoursChange = tokensPrice[token]?.usd24HoursChange ?? 0;
-                const precision =
-                  getters[NetworksGettersTypes.getAssetsInfo].find((kek: any) => kek.id === token)?.precision ?? 0;
-
-                const unsubscribe = api.rx.query.system.account(walletAddress).subscribe(async (result) => {
-                  const data = (result as any).data;
-                  const balance = formatBalance(data as AccountData, precision);
-
-                  const currency = {
-                    mainNetwork: networkName,
-                    token,
-                    price,
-                    usd24HoursChange,
-                    precision,
-                    availableInNetworks: [
-                      {
-                        network: networkName,
-                        balance,
-                      },
-                    ],
-                  };
-
-                  commit(MutationTypes.UPDATE_CURRENCY, {
-                    walletAddress,
-                    currency,
-                  });
-                });
-
-                commit(MutationTypes.SET_SUBSCRIPTIONS_BALANCES, {
-                  networkName,
-                  walletAddress,
-                  subscriptionsBalances: unsubscribe,
-                });
-              }
-            );
-          } catch (ex) {
-            console.info(
-              `
-                Subscribe to ${networkName.toUpperCase()} failed
-                ${ex}
-              `
-            );
-          }
-        }
-      )
-    );
+    await Promise.allSettled(promises);
 
     commit(MutationTypes.SET_ALL_NETWORKS_IS_LOADED, {
       value: true,
     });
   },
+
   async [ActionTypes.UPDATE_ACTIVE_NODE](
     { state, commit, dispatch },
     { networkName, nodeUrl: nodeUrlProp, oldNodeUrl }
@@ -265,8 +220,8 @@ const actions: ActionTree<State, State> & Actions = {
       api,
     });
 
-    const accounts = keyring.getAccounts().reduce((result, { address }) => {
-      const { type } = keyring.getPair(address);
+    const accounts = BaseApi.getAccounts().reduce((result, { address }) => {
+      const { type } = BaseApi.getPair(address);
 
       result[address] = { type };
 
@@ -292,6 +247,56 @@ export function connectToApi(name: string, url: string, autoConnectMs = 0) {
   }
 
   return { provider, api };
+}
+
+async function saveHistory(address: string, network: string, api: ExternalApi, context: AugmentedActionContext) {
+  const { commit, dispatch } = context;
+  const formattedAddress = BaseApi.formatAddress({ address, ethereumAddress: address } as SelectedWallet, network);
+
+  const history = await dispatch(ActionTypes.LOAD_HISTORY, {
+    historyExternalApi: api.history,
+    walletAddress: formattedAddress,
+  });
+
+  commit(MutationTypes.SET_HISTORY, {
+    networkName: network,
+    walletAddress: address,
+    history,
+  });
+}
+
+function subscribe(context: AugmentedActionContext, api: ApiPromise, token: string, network: string, address: string) {
+  const { getters, commit, state } = context;
+  const { tokensPrice } = state;
+  const price = tokensPrice[token]?.usd ?? 0;
+  const usd24HoursChange = tokensPrice[token]?.usd24HoursChange ?? 0;
+  const precision = getters[NetworksGettersTypes.getAssetsInfo].find((kek: any) => kek.id === token)?.precision ?? 0;
+
+  const unsubscribe = api.rx.query.system.account(address).subscribe(async (result) => {
+    const data = (result as any).data;
+    const balance = formatBalance(data as AccountData, precision);
+
+    const currency = {
+      mainNetwork: network,
+      token,
+      price,
+      usd24HoursChange,
+      precision,
+      availableInNetworks: [
+        {
+          network: network,
+          balance,
+        },
+      ],
+    };
+
+    commit(MutationTypes.UPDATE_CURRENCY, {
+      walletAddress: address,
+      currency,
+    });
+  });
+
+  return unsubscribe;
 }
 
 export default actions;

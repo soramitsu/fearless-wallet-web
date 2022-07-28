@@ -8,14 +8,11 @@ export interface Meta {
   ethereumAddress: string;
 }
 
-export interface ReplacementMeta {
-  isReplacementAccount: true;
-  replacementSettings: [
-    {
-      parentAddress: string;
-      networksList: string[];
-    }
-  ];
+type ParentAddress = string;
+
+export interface ReplacedMeta {
+  isReplacedAccount: true;
+  replacedSettings: Record<ParentAddress, string[]>;
 }
 
 export type TabWallet = 'Currencies' | 'NFTs';

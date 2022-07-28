@@ -104,7 +104,7 @@
 </template>
 
 <script lang="ts">
-import NetworksController from '@/controllers/networksController';
+import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
 import FloatInput from '@/components/FloatInput.vue';
 import Select from '@/components/Select.vue';
@@ -219,7 +219,7 @@ export default class SendForm extends Vue {
   }
 
   get isValidRecipientAddress() {
-    return NetworksController.validateAddress(this.recipient);
+    return BaseApi.validateAddress(this.recipient);
   }
 
   get addressByNetwork() {
@@ -283,12 +283,17 @@ export default class SendForm extends Vue {
     const partialFee = await this.createTransferAndGetFee();
 
     this.partialFee = partialFee;
-    this.isValidCountTokens = this.currentCurrency!.isValidCountTokens(this.amount, partialFee);
+    this.isValidCountTokens = this.currentCurrency!.isValidCountTokens(this.amount, partialFee, this.selectedNetwork);
   }
 
   mounted() {
-    this.selectedNetwork = this._selectedNetwork;
     this.selectedToken = this._selectedToken;
+
+    this.$nextTick(() => {
+      const index = this.optionsNetwork?.findIndex(({ value }) => value === this._selectedNetwork);
+
+      this.selectedNetwork = index !== -1 ? this._selectedNetwork : this.optionsNetwork?.[0]?.value ?? '';
+    });
   }
 
   async createTransferAndGetFee(amount?: string) {
@@ -320,7 +325,9 @@ export default class SendForm extends Vue {
 
     const maxTransferableCountTokens = this.currentCurrency?.getTransferableCountTokens(this.selectedNetwork);
     const partialFee = await this.createTransferAndGetFee(maxTransferableCountTokens);
-    const transferableCountTokens = this.currentCurrency.getTransferableCountTokensMinusFee(partialFee).toString();
+    const transferableCountTokens = this.currentCurrency
+      .getTransferableCountTokensMinusFee(partialFee, this.selectedNetwork)
+      .toString();
 
     this.amount = transferableCountTokens;
     this.value = this.currentCurrency.getCostOfTokens(transferableCountTokens).toString();

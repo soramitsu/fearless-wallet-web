@@ -66,26 +66,32 @@ export default class ImportWallet extends Vue {
   @Prop(String) ethereumJson!: string;
   @Prop(Number) currentIndexPage!: number;
   @Prop(Boolean) isReplaceAccount!: boolean;
+  @Prop(Boolean) isEthereumReplacedNetwork!: boolean;
   @Prop(Object) derivationPath!: DerivationPath;
   @PropSync('passwordJson', { type: String }) syncedPasswordJson!: string;
 
   get inputValue() {
-    const field =
-      this.typeImport === 'mnemonic'
-        ? 'mnemonic'
-        : this.typeImport === 'rawSeed'
-        ? this.currentIndexPage === 1
-          ? 'substrateRawSeed'
-          : 'ethereumRawSeed'
-        : this.currentIndexPage === 1
-        ? 'substrateJson'
-        : 'ethereumJson';
-
-    return this[field];
+    return this[this.field];
   }
 
   set inputValue(value: string) {
-    this.$emit('setImportValue', value);
+    this.$emit('setImportValue', value, this.field);
+  }
+
+  get field() {
+    return this.typeImport === 'mnemonic'
+      ? 'mnemonic'
+      : this.typeImport === 'rawSeed'
+      ? this.isReplaceAccount
+        ? this.isEthereumReplacedNetwork
+          ? 'ethereumRawSeed'
+          : 'substrateRawSeed'
+        : this.currentIndexPage === 1
+        ? 'substrateRawSeed'
+        : 'ethereumRawSeed'
+      : this.currentIndexPage === 1
+      ? 'substrateJson'
+      : 'ethereumJson';
   }
 
   get disabledSelect() {

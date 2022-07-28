@@ -62,6 +62,7 @@
 
 <script lang="ts">
 import NetworksController from '@/controllers/networksController';
+import BaseApi from '@/util/BaseApi';
 import Switcher from '@/components/Switcher.vue';
 import NodeItem from './NodeItem.vue';
 import { accountController } from '@/controllers/accountController';
@@ -90,7 +91,7 @@ export default class Network extends Vue {
   get address() {
     if (this.selectedWallet.address === '') return '';
 
-    return NetworksController.formatAddress(this.selectedWallet, this.selectedNetwork);
+    return BaseApi.getDisplayAddress(this.selectedWallet, this.selectedNetwork);
   }
 
   get defaultNodes() {

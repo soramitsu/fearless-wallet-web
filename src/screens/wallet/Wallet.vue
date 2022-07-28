@@ -83,6 +83,7 @@ import ContentSettings from './ContentSettings.vue';
 import Currencies from './Currencies.vue';
 import TotalBalance from './TotalBalance.vue';
 import NFTs from './NFTs.vue';
+import BaseApi from '@/util/BaseApi';
 import { accountController } from '@/controllers/accountController';
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
@@ -92,8 +93,8 @@ import { SelectedWallet } from '@/store/accounts/types';
 import { Networks, SetCurrenciesProps } from '@/store/networks/types';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { getImgPathByNetworkName } from '@/util/imgPath';
-import { getCurrencies } from '@/util/currenciesHelper';
-import { firstCharToUp } from '@/util/helpers';
+import { getCurrencies, defaultSortingCurrencies } from '@/util/currenciesHelper';
+import { getReplacedMetaTyped, firstCharToUp } from '@/util/helpers';
 import { addNumbers } from '@/util/numbers';
 import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
 import type { TMutation, TabWallet } from '@/interfaces/common';
@@ -130,58 +131,54 @@ export default class Wallet extends Vue {
   popupFilterValue = '';
   filterValue = '';
 
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
   @Getter(NetworksGettersTypes.getAllNetworksIsLoaded) allNetworksIsLoaded!: boolean;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
 
   get currenciesForSelectedWallet() {
+    const { address: selectedAddress, ethereumAddress } = this.selectedWallet;
     const subsequenceTokens = accountController.getSubsequenceTokens();
-    const currencies = [
-      ...(this.currencies[this.selectedWallet.address] ?? []),
-      ...(this.currencies[this.selectedWallet.ethereumAddress] ?? []),
-    ];
+    const replacedAccounts = BaseApi.getReplacedAccounts(this.selectedWallet);
+    const replacedNetworks = replacedAccounts.reduce((result, { address, meta }) => {
+      const { replacedSettings } = getReplacedMetaTyped(meta);
+      const networkList = [...(replacedSettings[selectedAddress] ?? replacedSettings[ethereumAddress])];
+
+      networkList.forEach((network) => (result[network] = address));
+
+      return result;
+    }, {} as Record<string, string>);
+
+    const currencies = [...(this.currencies[selectedAddress] ?? []), ...(this.currencies[ethereumAddress] ?? [])].map(
+      (currency) => {
+        const { availableInNetworks } = currency;
+        const replacedNetwork = availableInNetworks.find(({ network }) => replacedNetworks[network])?.network;
+
+        if (replacedNetwork) {
+          const replacedAddress = replacedNetworks[replacedNetwork];
+          const replacedCurrencies = this.currencies[replacedAddress];
+          const availableInNetwork = replacedCurrencies // eslint-disable-line
+            .map(({ availableInNetworks }) => availableInNetworks)
+            .flat()
+            .find(({ network }) => network === replacedNetwork)!;
+
+          currency.updateAvailableInNetworks(availableInNetwork);
+        }
+
+        return currency;
+      }
+    );
 
     // at the first launch of the extension sort by fiat balance
-    if (!this.existSavedSequence) {
-      const relayChains = [];
-      const currenciesWithTokens = currencies.filter((currency) => currency.getTotalCountTokens() !== '0');
-      const currenciesWithoutTokens = currencies.filter((currency) => currency.getTotalCountTokens() === '0');
-      const dotIndex = currenciesWithoutTokens.findIndex(({ token }) => token === 'dot');
-
-      if (dotIndex !== -1) {
-        const dot = currenciesWithoutTokens.splice(dotIndex, 1)[0];
-
-        relayChains.push(dot);
-      }
-
-      const ksmIndex = currenciesWithoutTokens.findIndex(({ token }) => token === 'ksm');
-
-      if (ksmIndex !== -1) {
-        const ksm = currenciesWithoutTokens.splice(ksmIndex, 1)[0];
-
-        relayChains.push(ksm);
-      }
-
-      currenciesWithTokens.sort((currency1, currency2) => {
-        const totalBalanceOne = +currency1.getTotalBalance();
-        const totalBalanceTwo = +currency2.getTotalBalance();
-
-        return totalBalanceTwo - totalBalanceOne;
-      });
-
-      currenciesWithoutTokens.sort(({ token: token1 }, { token: token2 }) => token1.localeCompare(token2));
-
-      return [...currenciesWithTokens, ...relayChains, ...currenciesWithoutTokens];
-    } else {
+    if (!this.existSavedSequence) return defaultSortingCurrencies(currencies);
+    else
       currencies.sort(({ mainNetwork: mainNetwork1 }, { mainNetwork: mainNetwork2 }) => {
         const index1 = subsequenceTokens.indexOf(mainNetwork1);
         const index2 = subsequenceTokens.indexOf(mainNetwork2);
 
         return index1 - index2;
       });
-    }
 
     return currencies;
   }

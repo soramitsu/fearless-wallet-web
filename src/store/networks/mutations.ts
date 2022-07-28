@@ -54,7 +54,7 @@ const mutations: MutationTree<State> & Mutations = {
     const currencyIndex = currenciesForAddress.findIndex(({ token: existToken }) => existToken === token);
 
     if (currencyIndex !== -1) {
-      currenciesForAddress[currencyIndex].updateFields(currency);
+      currenciesForAddress[currencyIndex].updateCurrency(currency);
     } else {
       const currency = new CurrencyController(
         mainNetwork,

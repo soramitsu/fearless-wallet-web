@@ -69,3 +69,34 @@ export function getMockCurrencies(networks: Networks): Currencies {
 
   return currencies;
 }
+
+export function defaultSortingCurrencies(currencies: Currency[]) {
+  const relayChains = [];
+  const currenciesWithTokens = currencies.filter((currency) => currency.getTotalCountTokens() !== '0');
+  const currenciesWithoutTokens = currencies.filter((currency) => currency.getTotalCountTokens() === '0');
+  const dotIndex = currenciesWithoutTokens.findIndex(({ token }) => token === 'dot');
+  const ksmIndex = currenciesWithoutTokens.findIndex(({ token }) => token === 'ksm');
+
+  if (dotIndex !== -1) {
+    const dot = currenciesWithoutTokens.splice(dotIndex, 1)[0];
+
+    relayChains.push(dot);
+  }
+
+  if (ksmIndex !== -1) {
+    const ksm = currenciesWithoutTokens.splice(ksmIndex, 1)[0];
+
+    relayChains.push(ksm);
+  }
+
+  currenciesWithTokens.sort((currency1, currency2) => {
+    const totalBalanceOne = +currency1.getTotalBalance();
+    const totalBalanceTwo = +currency2.getTotalBalance();
+
+    return totalBalanceTwo - totalBalanceOne;
+  });
+
+  currenciesWithoutTokens.sort(({ token: token1 }, { token: token2 }) => token1.localeCompare(token2));
+
+  return [...currenciesWithTokens, ...relayChains, ...currenciesWithoutTokens];
+}

@@ -88,10 +88,16 @@ export default class CurrencyController {
     return availableInNetworks;
   }
 
-  public updateFields({ availableInNetworks, precision, price, usd24HoursChange, mainNetwork }: CurrencyFields): void {
-    this.precision = precision;
-    this.price = price;
-    this.usd24HoursChange = usd24HoursChange;
+  public updateCurrency({
+    availableInNetworks,
+    precision,
+    price,
+    usd24HoursChange,
+    mainNetwork,
+  }: CurrencyFields): void {
+    this.precision = precision ?? this.precision;
+    this.price = price ?? this.price;
+    this.usd24HoursChange = usd24HoursChange ?? this.usd24HoursChange;
 
     const index = this.availableInNetworks.findIndex(({ network }) => network === mainNetwork);
 
@@ -114,25 +120,32 @@ export default class CurrencyController {
     this.availableInNetworks.splice(index, 1, newValue);
   }
 
+  public updateAvailableInNetworks({ balance, network: networkProp }: AvailableInNetworksFP): void {
+    const index = this.availableInNetworks.findIndex(({ network }) => network === networkProp);
+
+    this.availableInNetworks.splice(index, 1, { network: networkProp, balance });
+  }
+
   public getTotalCountTokens(): string {
     return this.countTotalTokens().total.toString();
   }
 
   public getTransferableCountTokens(networkProp: string): string {
-    const { transferable } = this.availableInNetworks.find(({ network }) => network === networkProp)!.balance;
+    const { transferable } = this.availableInNetworks.find(({ network }) => network === networkProp)!.balance; // eslint-disable-line
 
     return transferable.toString();
   }
 
-  public getTransferableCountTokensMinusFee(fee: string): FPNumber {
+  public getTransferableCountTokensMinusFee(fee: string, networkProp: string): FPNumber {
     const FPFee = new FPNumber(fee);
-    const result = this.countTotalTokens().transferable.sub(FPFee);
+    const { transferable } = this.availableInNetworks.find(({ network }) => network === networkProp)!.balance; // eslint-disable-line
+    const result = transferable.sub(FPFee);
 
     return FPNumber.lt(result, FPNumber.ZERO) ? FPNumber.ZERO : result;
   }
 
-  public isValidCountTokens(count: string, fee: string): boolean {
-    const transferableCountTokensMinusFee = this.getTransferableCountTokensMinusFee(fee);
+  public isValidCountTokens(count: string, fee: string, network: string): boolean {
+    const transferableCountTokensMinusFee = this.getTransferableCountTokensMinusFee(fee, network);
 
     return FPNumber.lte(new FPNumber(count), transferableCountTokensMinusFee);
   }

@@ -2,10 +2,10 @@
   <div class="accounts-item">
     <div class="left-part">
       <div class="img-container">
-        <img :src="getImg(name)" class="main-network-img" />
+        <img :src="getImg(network)" class="main-network-img" />
       </div>
       <div class="description">
-        <div class="network-name">{{ getUpperValue(name) }}</div>
+        <div class="network-name">{{ getUpperValue(network) }}</div>
         <div class="token-name">{{ getUpperValue(token) }}</div>
         <div class="address">{{ address }}</div>
       </div>
@@ -15,7 +15,7 @@
       ref="circleButton"
       iconName="dots-horizontal"
       backgroundColor="light-black"
-      @click="openAccountSettings(name)"
+      @click="openAccountSettings(network)"
     />
   </div>
 </template>
@@ -29,7 +29,7 @@ import { getImgPathByNetworkName } from '@/util/imgPath';
   components: { CircleButton },
 })
 export default class AccountsItem extends Vue {
-  @Prop(String) name!: string;
+  @Prop(String) network!: string;
   @Prop(String) token!: string;
   @Prop(String) address!: string;
 

@@ -282,12 +282,17 @@ export default class TeleportForm extends Vue {
     const partialFee = await this.createTransferAndGetFee();
 
     this.originalNetworkPartialFee = partialFee;
-    this.isValidCountTokens = this.currentCurrency!.isValidCountTokens(this.amount, partialFee);
+    this.isValidCountTokens = this.currentCurrency!.isValidCountTokens(this.amount, partialFee, this.originalNetwork);
   }
 
   mounted() {
     this.selectedToken = this._selectedToken;
-    this.originalNetwork = this._originalNetwork;
+
+    this.$nextTick(() => {
+      const index = this.optionsNetwork?.findIndex(({ value }) => value === this._originalNetwork);
+
+      this.originalNetwork = index !== -1 ? this._originalNetwork : this.optionsNetwork?.[0]?.value ?? '';
+    });
   }
 
   async createTransferAndGetFee(amount?: string) {
@@ -307,7 +312,7 @@ export default class TeleportForm extends Vue {
     const maxTransferableCountTokens = this.currentCurrency?.getTransferableCountTokens(this.originalNetwork);
     const partialFee = await this.createTransferAndGetFee(maxTransferableCountTokens);
 
-    this.amount = this.currentCurrency.getTransferableCountTokensMinusFee(partialFee).toString();
+    this.amount = this.currentCurrency.getTransferableCountTokensMinusFee(partialFee, this.originalNetwork).toString();
   }
 
   sendingPopupClose() {

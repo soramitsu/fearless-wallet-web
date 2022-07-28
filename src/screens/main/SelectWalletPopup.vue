@@ -64,7 +64,7 @@ export default class SelectWalletPopup extends Vue {
 
         return pair;
       })
-      .filter(({ type, meta }) => type !== 'ethereum' && !meta.isReplacementAccount);
+      .filter(({ type, meta }) => type !== 'ethereum' && !meta.isReplacedAccount);
   }
 
   addWallet() {
@@ -72,7 +72,7 @@ export default class SelectWalletPopup extends Vue {
   }
 
   getBalance(address: string) {
-    const currencies = this.currencies[address];
+    const currencies = this.currencies[address] ?? [];
 
     return addNumbers(currencies.map((currency) => currency.getTotalBalance()));
   }

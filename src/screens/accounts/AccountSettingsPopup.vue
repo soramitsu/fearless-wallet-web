@@ -15,7 +15,7 @@
         <img src="@/assets/export.svg" class="icon" />
         <div class="label">Export account</div>
       </div>
-      <div class="row" @click="openReplacePopup">
+      <div v-if="showReplaceAccount" class="row" @click="openReplacePopup">
         <img src="@/assets/account-switch.svg" class="icon" />
         <div class="label">Replace account</div>
       </div>
@@ -41,7 +41,7 @@
 
 <script lang="ts">
 import Popup from '@/components/Popup.vue';
-import NetworksController from '@/controllers/networksController';
+import BaseApi from '@/util/BaseApi';
 import { Getter } from 'vuex-class';
 import { Components } from '@/router/routes';
 import { firstCharToUp } from '@/util/helpers';
@@ -55,6 +55,7 @@ import type { SelectedWallet } from '@/store/accounts/types';
 export default class AccountSettingsPopup extends Vue {
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showSwitchNode!: boolean;
+  @Prop(Boolean) showReplaceAccount!: boolean;
   @Prop(Number) buttonTopClick!: number;
   @Prop(Function) handlerClose!: VoidFunction;
 
@@ -64,14 +65,16 @@ export default class AccountSettingsPopup extends Vue {
     if (this.buttonTopClick === undefined) return 110;
 
     if (this.buttonTopClick > 300) {
-      return this.buttonTopClick - 265;
+      const subtractionNumber = this.showReplaceAccount ? 265 : 225;
+
+      return this.buttonTopClick - subtractionNumber;
     }
 
     return this.buttonTopClick + 7;
   }
 
   get addressByNetwork() {
-    return NetworksController.formatAddress(this.selectedWallet, this.selectedNetwork);
+    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
   }
 
   copyAddress() {

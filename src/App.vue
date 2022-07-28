@@ -29,6 +29,7 @@ export default class App extends Vue {
 
   async mounted() {
     const { loadNetworksInfo, loadAssetsInfo, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
+
     await Promise.all([loadNetworksInfo(), loadAssetsInfo()]);
     await loadTokensPrice();
 
@@ -36,15 +37,15 @@ export default class App extends Vue {
 
     this.subscribeAccounts = keyring.accounts.subject;
     this.subscribeAccounts.subscribe(async (accounts) => {
-      const selectedWalletAddress = Object.entries(accounts).find( // eslint-disable-line
+      const selectedWalletAddress = Object.entries(accounts).find(
         ([
           ,
           {
             type,
             json: { meta },
           },
-        ]) => type !== 'ethereum' && !meta.isReplacementAccount
-      )![0];
+        ]) => type !== 'ethereum' && !meta.isReplacedAccount
+      )?.[0];
 
       if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
 

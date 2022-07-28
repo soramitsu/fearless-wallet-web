@@ -17,8 +17,8 @@
         <div class="content-header">{{ header }}</div>
 
         <Input
-          v-if="showSelectedNetwork"
-          v-model="selectedNetworkUpper"
+          v-if="showReplacedNetwork"
+          v-model="replaceNetworkUpper"
           placeholder="Network"
           size="big"
           :maxlength="15"
@@ -27,7 +27,7 @@
         />
 
         <NicknameForm
-          v-if="!showSelectedNetwork && showNicknameForm"
+          v-if="!showReplacedNetwork && showNicknameForm"
           :nickname="nickname"
           :readonly="readonlyNickname"
           @update:nickname="setNickname"
@@ -56,6 +56,7 @@
           :passwordJson="passwordJson"
           :derivationPath="derivationPath"
           :isReplaceAccount="isReplaceAccount"
+          :isEthereumReplacedNetwork="isEthereumReplacedNetwork"
           @setImportValue="setImportValue"
           @reset="reset"
           @update:passwordJson="setPasswordJson"
@@ -130,6 +131,8 @@ import type { DerivationPath, ImportType, ValidateJsonResult } from '@/interface
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { SelectedWallet } from '@/store/accounts/types';
 
+type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
+
 @Component({
   components: {
     Input,
@@ -146,10 +149,11 @@ import type { SelectedWallet } from '@/store/accounts/types';
     EthereumAccountPopup,
   },
 })
-export default class Layout extends Vue {
+export default class AddWallet extends Vue {
   nickname = '';
   mnemonic = '';
-  passwordJson = '';
+  passwordSubstrateJson = '';
+  passwordEthereumJson = '';
   ethereumJson = '';
   substrateJson = '';
   ethereumRawSeed = '';
@@ -165,24 +169,24 @@ export default class Layout extends Vue {
   @Getter(AccountsGettersTypes.getPassword) passwordExtension!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
-  get selectedNetwork() {
+  get replacedNetwork() {
     return this.$route.params.network ?? '';
   }
 
   get isReplaceAccount() {
-    return this.selectedNetwork !== '';
+    return this.replacedNetwork !== '';
   }
 
-  get selectedNetworkUpper() {
-    return this.selectedNetwork.toUpperCase();
+  get replaceNetworkUpper() {
+    return this.replacedNetwork.toUpperCase();
   }
 
-  get showSelectedNetwork() {
-    return this.selectedNetwork !== '' && this.currentIndexPage === 1;
+  get showReplacedNetwork() {
+    return this.replacedNetwork !== '' && this.currentIndexPage === 1;
   }
 
-  get isEthereumSelectedNetwork() {
-    return BaseApi.isEthereumNetwork(this.selectedNetwork);
+  get isEthereumReplacedNetwork() {
+    return BaseApi.isEthereumNetwork(this.replacedNetwork);
   }
 
   get addWalletType() {
@@ -191,6 +195,10 @@ export default class Layout extends Vue {
 
   get isSavedPassword() {
     return accountController.isSavedPassword();
+  }
+
+  get passwordJson() {
+    return this.currentIndexPage === 1 ? this.passwordSubstrateJson : this.passwordEthereumJson;
   }
 
   get substrateJSON() {
@@ -202,11 +210,11 @@ export default class Layout extends Vue {
   }
 
   get showSubstrateDP() {
-    return !this.isReplaceAccount || !this.isEthereumSelectedNetwork;
+    return !this.isReplaceAccount || !this.isEthereumReplacedNetwork;
   }
 
   get showEthereumDP() {
-    return !this.isReplaceAccount ? this.typeImport === 'mnemonic' : this.isEthereumSelectedNetwork;
+    return !this.isReplaceAccount ? this.typeImport === 'mnemonic' : this.isEthereumReplacedNetwork;
   }
 
   get readonlyNickname() {
@@ -288,6 +296,7 @@ export default class Layout extends Vue {
 
     if (this.currentIndexPage === 1) {
       if (this.typeImport === 'mnemonic') return 'Import wallet';
+      else if (this.isReplaceAccount && this.isEthereumReplacedNetwork) return 'Import ethereum accounts';
       else return 'Import substrate accounts';
     } else if (this.currentIndexPage === 2) return 'Import ethereum accounts';
     else if (this.currentIndexPage === 3) return 'Wallet nickname';
@@ -308,17 +317,19 @@ export default class Layout extends Vue {
     if (this.showPasswordForm) return !this.passwordExtension;
 
     if (this.isImportWallet) {
-      if (this.currentIndexPage === 1)
+      if (this.currentIndexPage === 1) {
         return (
           !this.mnemonic &&
           !this.substrateRawSeed &&
-          (Object.keys(this.substrateJson).length === 0 || !this.passwordJson)
+          (this.isReplaceAccount && this.isEthereumReplacedNetwork ? !this.ethereumRawSeed : true) &&
+          (Object.keys(this.substrateJson).length === 0 || !this.passwordSubstrateJson)
         );
+      }
 
       if (this.currentIndexPage === 2)
         return (
           (!this.substrateRawSeed || !this.ethereumRawSeed) &&
-          (Object.keys(this.ethereumJson).length === 0 || !this.passwordJson)
+          (Object.keys(this.ethereumJson).length === 0 || !this.passwordEthereumJson)
         );
 
       if (this.currentIndexPage === 3) return !this.nickname;
@@ -379,9 +390,13 @@ export default class Layout extends Vue {
       (this.currentIndexPage === 3 && this.isReplaceAccount && this.isImportWallet) ||
       (this.currentIndexPage === 4 && this.isSavedPassword)
     ) {
-      this.saveKeypair();
+      try {
+        this.saveKeypair();
 
-      this.$router.push({ name: Components.Wallet });
+        const name = this.isReplaceAccount ? Components.Accounts : Components.Wallet;
+
+        this.$router.push({ name });
+      } catch {}
     }
     // first keypair
     else if (this.currentIndexPage === 5) this.saveKeypair();
@@ -418,21 +433,11 @@ export default class Layout extends Vue {
     this.ethereumRawSeed = '';
     this.substrateJson = '';
     this.ethereumJson = '';
-    this.passwordJson = '';
+    this.passwordSubstrateJson = '';
+    this.passwordEthereumJson = '';
   }
 
-  setImportValue(value: string & (KeyringPair$Json | Record<string, never>)) {
-    const field =
-      this.typeImport === 'mnemonic'
-        ? 'mnemonic'
-        : this.typeImport === 'rawSeed'
-        ? this.currentIndexPage === 1
-          ? 'substrateRawSeed'
-          : 'ethereumRawSeed'
-        : this.currentIndexPage === 1
-        ? 'substrateJson'
-        : 'ethereumJson';
-
+  setImportValue(value: string & (KeyringPair$Json | Record<string, never>), field: AddWalletField) {
     this[field] = value;
   }
 
@@ -441,7 +446,8 @@ export default class Layout extends Vue {
   }
 
   setPasswordJson(value: string) {
-    this.passwordJson = value;
+    if (this.currentIndexPage === 1) this.passwordSubstrateJson = value;
+    else this.passwordEthereumJson = value;
   }
 
   handlerCloseNotificationPopup() {
@@ -459,7 +465,6 @@ export default class Layout extends Vue {
 
   handlerAgree() {
     this.showEthereumAccountPopup = false;
-    this.passwordJson = '';
     this.currentIndexPage += 1;
   }
 
@@ -483,7 +488,7 @@ export default class Layout extends Vue {
       if (this.invalidValueName !== '') return;
 
       // if import type is raw seed or json, show a window with a question about adding an ETH account
-      if (this.typeImport === 'mnemonic') this.currentIndexPage += 1;
+      if (this.typeImport === 'mnemonic' || this.isReplaceAccount) this.currentIndexPage += 1;
       else this.showEthereumAccountPopup = true;
     } else if (this.currentIndexPage === 2) this.validateSuri();
   }
@@ -494,11 +499,11 @@ export default class Layout extends Vue {
     const isValidEthereumRawSeed = this.ethereumRawSeed ? BaseApi.isHex(this.ethereumRawSeed) : true;
 
     const validatedSubstrateJson = this.substrateJson
-      ? BaseApi.isValidJson(this.substrateJSON, this.passwordJson)
+      ? BaseApi.isValidJson(this.substrateJSON, this.passwordSubstrateJson)
       : ({ value: true } as ValidateJsonResult);
 
     const validatedEthereumJson = this.ethereumJson
-      ? BaseApi.isValidJson(this.ethereumJSON, this.passwordJson)
+      ? BaseApi.isValidJson(this.ethereumJSON, this.passwordEthereumJson)
       : ({ value: true } as ValidateJsonResult);
 
     const isValidSequenceMnemonic = this.isCreateWallet
@@ -519,27 +524,46 @@ export default class Layout extends Vue {
   }
 
   saveKeypair() {
-    if (this.substrateJson) this.saveKeypairFromJson();
-    else this.saveKeypairFromSeed();
+    if (this.isReplaceAccount) {
+      try {
+        if (this.substrateJson) this.replaceAccountFromJson();
+        else this.replaceAccountFromSeed();
+      } catch ({ message }) {
+        this.currentIndexPage = 1;
+
+        alert(message);
+
+        throw Error;
+      }
+    } else {
+      if (this.substrateJson) this.saveKeypairFromJson();
+      else this.saveKeypairFromSeed();
+    }
 
     this.savePassword();
   }
 
   saveKeypairFromJson() {
-    BaseApi.addKeypairFromJson(this.substrateJSON, this.passwordJson);
+    const substrateJSON = { ...this.substrateJSON };
 
     if (this.ethereumJson) {
-      BaseApi.addKeypairFromJson(this.ethereumJSON, this.passwordJson);
+      const { address } = BaseApi.addKeypairFromJson(this.ethereumJSON, this.passwordEthereumJson);
+
+      substrateJSON.meta.ethereumAddress = address;
     }
+
+    BaseApi.addKeypairFromJson(substrateJSON, this.passwordSubstrateJson);
+  }
+
+  replaceAccountFromJson() {
+    const parent = this.isEthereumReplacedNetwork ? this.selectedWallet.ethereumAddress : this.selectedWallet.address;
+    const json = this.isEthereumReplacedNetwork ? this.ethereumJSON : this.substrateJSON;
+    const password = this.isEthereumReplacedNetwork ? this.passwordEthereumJson : this.passwordSubstrateJson;
+
+    BaseApi.replaceAccountFromJson(json, password, parent, this.replacedNetwork);
   }
 
   saveKeypairFromSeed() {
-    if (this.isReplaceAccount) {
-      this.replaceAccount();
-
-      return;
-    }
-
     const meta: Record<string, unknown> = { name: this.nickname.trim() };
     const {
       substrate: { keypairType: substrateKeypairType },
@@ -555,37 +579,17 @@ export default class Layout extends Vue {
     BaseApi.addKeypair(this.suriSubstrate, meta, substrateKeypairType);
   }
 
-  replaceAccount() {
-    const meta: Record<string, unknown> = {};
+  replaceAccountFromSeed() {
     const {
       substrate: { keypairType: substrateKeypairType },
       ethereum: { keypairType: ethereumKeypairType },
     } = this.derivationPath;
 
-    const parentAddress = this.isEthereumSelectedNetwork
-      ? this.selectedWallet.ethereumAddress
-      : this.selectedWallet.address;
+    const parent = this.isEthereumReplacedNetwork ? this.selectedWallet.ethereumAddress : this.selectedWallet.address;
+    const suri = this.isEthereumReplacedNetwork ? this.suriEthereum : this.suriSubstrate;
+    const type = this.isEthereumReplacedNetwork ? ethereumKeypairType : substrateKeypairType;
 
-    const suri = this.isEthereumSelectedNetwork ? this.suriEthereum : this.suriSubstrate;
-    const type = this.isEthereumSelectedNetwork ? ethereumKeypairType : substrateKeypairType;
-    const { address } = BaseApi.createFromUri(suri, type);
-    const isDuplicateKeypair = BaseApi.isDuplicateKeypair(address);
-
-    if (isDuplicateKeypair) {
-      BaseApi.updateReplacementMetaData(address, parentAddress, this.selectedNetwork);
-
-      return;
-    }
-
-    meta.isReplacementAccount = true;
-    meta.replacementSettings = [
-      {
-        parentAddress,
-        networksList: [this.selectedNetwork],
-      },
-    ];
-
-    BaseApi.addKeypair(suri, meta, type);
+    BaseApi.replaceAccountFromSeed(suri, type, parent, this.replacedNetwork);
   }
 
   savePassword() {

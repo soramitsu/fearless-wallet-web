@@ -33,6 +33,7 @@
       :selectedNetwork="selectedNetwork"
       :handlerClose="closeAccountSettings"
       :showSwitchNode="isAccountsRoute"
+      :showReplaceAccount="showReplaceAccount"
       :buttonTopClick="buttonTopClick"
       @openReplacePopup="openReplacePopup"
       @openNotificationPopup="openNotificationPopup"
@@ -108,6 +109,7 @@ export default class AccountsLayout extends Vue {
   selectedNodeUrl = '';
   notificationType: NotificationType = '';
   buttonTopClick = 0;
+  showReplaceAccount = true;
   showReplacePopup = false;
   showAccountSettings = false;
   showEditNodeForm = false;
@@ -194,10 +196,11 @@ export default class AccountsLayout extends Vue {
     this.closeNotificationPopup();
   }
 
-  openAccountSettings(network = '', buttonTop: number) {
+  openAccountSettings(network = '', buttonTop: number, isReplaceAccount: boolean) {
     this.showAccountSettings = true;
     this.selectedNetwork = network;
     this.buttonTopClick = buttonTop;
+    this.showReplaceAccount = !isReplaceAccount;
   }
 
   closeAccountSettings(isReset = true) {

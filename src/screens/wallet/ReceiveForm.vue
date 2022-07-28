@@ -17,7 +17,7 @@
 </template>
 
 <script lang="ts">
-import NetworksController from '@/controllers/networksController';
+import BaseApi from '@/util/BaseApi';
 import ActivityForm from './ActivityForm.vue';
 import QrCode from 'qrcode.vue';
 import Select from '@/components/Select.vue';
@@ -51,7 +51,7 @@ export default class ReceiveForm extends Vue {
   }
 
   get address() {
-    return NetworksController.formatAddress(this.selectedWallet, this.network);
+    return BaseApi.getDisplayAddress(this.selectedWallet, this.network);
   }
 
   mounted() {

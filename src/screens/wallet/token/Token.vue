@@ -71,7 +71,6 @@
 
     <SendForm
       v-if="showSendForm"
-      :currencies="currenciesForSelectedWallet"
       :_selectedNetwork="selectedNetwork"
       :_selectedToken="selectedToken"
       :closeForm="toggleVisible.bind(null, 'showSendForm', false)"
@@ -85,7 +84,6 @@
 
     <TeleportForm
       v-if="showTeleportForm"
-      :currencies="currenciesForSelectedWallet"
       :_originalNetwork="selectedNetwork"
       :_selectedToken="selectedToken"
       :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
@@ -125,6 +123,7 @@ import TeleportForm from '../TeleportForm.vue';
 import BuyForm from '../BuyForm.vue';
 import SelectNetworkButton from '../SelectNetworkButton.vue';
 import PopupWithSelect from '@/components/PopupWithSelect.vue';
+import BaseApi from '@/util/BaseApi';
 import { Component, Vue } from 'vue-property-decorator';
 import { Currencies } from '@/interfaces/currencies';
 import { Getter } from 'vuex-class';
@@ -193,25 +192,19 @@ export default class Token extends Vue {
     return this.optionsNetworks.filter(({ label }) => label.toLowerCase().includes(filter));
   }
 
-  get currenciesForSelectedWallet() {
-    return [
-      ...(this.currencies[this.selectedWallet.address] ?? []),
-      ...(this.currencies[this.selectedWallet.ethereumAddress] ?? []),
-    ];
-  }
-
   get currentCurrency() {
-    return this.currenciesForSelectedWallet.find(({ token }) => token === this.selectedToken);
+    return this.currencies.find(({ token }) => token === this.selectedToken);
   }
 
   get formattedHistory() {
-    const { address, ethereumAddress } = this.selectedWallet;
-    const isEthereumNetwork = ETHEREUM_NETWORKS.includes(this.selectedNetwork);
-    const addressByNetwork = isEthereumNetwork ? ethereumAddress : address;
+    const addressByNetwork = BaseApi.getAddressByNetworkIncludingReplacedAccount(
+      this.selectedWallet,
+      this.selectedNetwork
+    );
     const historyForNetwork = this.history[this.selectedNetwork];
     const historyForWalletAddress = historyForNetwork?.[addressByNetwork]?.nodes ?? [];
 
-    const index = this.currentCurrency?.availableInNetworks.findIndex(
+    const index = (this.currentCurrency?.balances[addressByNetwork] ?? []).findIndex(
       ({ network }) => network === this.selectedNetwork
     );
 
@@ -245,7 +238,7 @@ export default class Token extends Vue {
   get countTokensString() {
     if (!this.currentCurrency) return `${this.selectedToken.toUpperCase()} 0`;
 
-    const availableInNetworks = this.currentCurrency.getAvailableInNetworks();
+    const availableInNetworks = this.currentCurrency.getAvailableInNetworks(this.selectedWallet);
     const balance = availableInNetworks.find(({ network }) => network === this.selectedNetwork)?.balance;
     const total = formattedNumber(+(balance?.total ?? 0), 4);
 
@@ -255,7 +248,7 @@ export default class Token extends Vue {
   get balanceInNetworkString() {
     if (!this.currentCurrency) return `$ 0`;
 
-    const total = this.currentCurrency.getBalanceInNetwork(this.selectedNetwork);
+    const total = this.currentCurrency.getBalanceInNetwork(this.selectedNetwork, this.selectedWallet);
 
     return `$ ${formattedNumber(+total)}`;
   }

@@ -272,25 +272,24 @@ function subscribe(context: AugmentedActionContext, api: ApiPromise, token: stri
   const usd24HoursChange = tokensPrice[token]?.usd24HoursChange ?? 0;
   const precision = getters[NetworksGettersTypes.getAssetsInfo].find((kek: any) => kek.id === token)?.precision ?? 0;
 
+  commit(MutationTypes.UPDATE_CURRENCY, {
+    token,
+    price,
+    usd24HoursChange,
+    precision,
+  });
+
   const unsubscribe = api.rx.query.system.account(address).subscribe(async (result) => {
     const data = (result as any).data;
     const balance = formatBalance(data as AccountData, precision);
 
     const currency = {
-      mainNetwork: network,
+      network,
       token,
-      price,
-      usd24HoursChange,
-      precision,
-      availableInNetworks: [
-        {
-          network: network,
-          balance,
-        },
-      ],
+      balance,
     };
 
-    commit(MutationTypes.UPDATE_CURRENCY, {
+    commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
       walletAddress: address,
       currency,
     });

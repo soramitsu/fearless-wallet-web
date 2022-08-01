@@ -36,6 +36,7 @@
           :showAssetsManagementForm="showAssetsManagementForm"
           :hideZeroBalance="hideZeroBalance"
           :handlerFilter="handlerFilter.bind(null, 'filterValue')"
+          :showAssetsManagementButton="existSavedSequence"
           @update:activeTabName="updateActiveTabName"
           @update:showAssetsManagementForm="toggleAssetsManagementFormVisible"
           @update:hideZeroBalance="toggleHideZeroBalance"
@@ -58,7 +59,6 @@
 
     <SendForm
       v-if="showSendForm"
-      :currencies="currenciesForSelectedWallet"
       :_selectedToken="selectedCurrency.token"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false)"
@@ -83,7 +83,6 @@ import ContentSettings from './ContentSettings.vue';
 import Currencies from './Currencies.vue';
 import TotalBalance from './TotalBalance.vue';
 import NFTs from './NFTs.vue';
-import BaseApi from '@/util/BaseApi';
 import { accountController } from '@/controllers/accountController';
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
@@ -93,24 +92,24 @@ import { SelectedWallet } from '@/store/accounts/types';
 import { Networks, SetCurrenciesProps } from '@/store/networks/types';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { getImgPathByNetworkName } from '@/util/imgPath';
-import { getCurrencies, defaultSortingCurrencies } from '@/util/currenciesHelper';
-import { getReplacedMetaTyped, firstCharToUp } from '@/util/helpers';
+import { defaultSortingCurrencies } from '@/util/currenciesHelper';
+import { firstCharToUp } from '@/util/helpers';
 import { addNumbers } from '@/util/numbers';
 import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
 import type { TMutation, TabWallet } from '@/interfaces/common';
 
 @Component({
   components: {
-    PopupWithSelect,
-    SelectNetworkButton,
-    SendForm,
-    ReceiveForm,
-    ContentSettings,
-    Currencies,
     NFTs,
     Scroll,
-    TotalBalance,
+    SendForm,
+    Currencies,
     ContentForm,
+    ReceiveForm,
+    TotalBalance,
+    PopupWithSelect,
+    ContentSettings,
+    SelectNetworkButton,
   },
 })
 export default class Wallet extends Vue {
@@ -137,41 +136,14 @@ export default class Wallet extends Vue {
   @Getter(NetworksGettersTypes.getAllNetworksIsLoaded) allNetworksIsLoaded!: boolean;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
 
-  get currenciesForSelectedWallet() {
-    const { address: selectedAddress, ethereumAddress } = this.selectedWallet;
+  get sortedCurrencies() {
+    if (this.selectedWallet.address === '') return [];
+
     const subsequenceTokens = accountController.getSubsequenceTokens();
-    const replacedAccounts = BaseApi.getReplacedAccounts(this.selectedWallet);
-    const replacedNetworks = replacedAccounts.reduce((result, { address, meta }) => {
-      const { replacedSettings } = getReplacedMetaTyped(meta);
-      const networkList = [...(replacedSettings[selectedAddress] ?? replacedSettings[ethereumAddress])];
-
-      networkList.forEach((network) => (result[network] = address));
-
-      return result;
-    }, {} as Record<string, string>);
-
-    const currencies = [...(this.currencies[selectedAddress] ?? []), ...(this.currencies[ethereumAddress] ?? [])].map(
-      (currency) => {
-        const { availableInNetworks } = currency;
-        const replacedNetwork = availableInNetworks.find(({ network }) => replacedNetworks[network])?.network;
-
-        if (replacedNetwork) {
-          const replacedAddress = replacedNetworks[replacedNetwork];
-          const replacedCurrencies = this.currencies[replacedAddress];
-          const availableInNetwork = replacedCurrencies // eslint-disable-line
-            .map(({ availableInNetworks }) => availableInNetworks)
-            .flat()
-            .find(({ network }) => network === replacedNetwork)!;
-
-          currency.updateAvailableInNetworks(availableInNetwork);
-        }
-
-        return currency;
-      }
-    );
+    const currencies = [...(this.currencies ?? [])];
 
     // at the first launch of the extension sort by fiat balance
-    if (!this.existSavedSequence) return defaultSortingCurrencies(currencies);
+    if (!this.existSavedSequence) return defaultSortingCurrencies(currencies, this.selectedWallet);
     else
       currencies.sort(({ mainNetwork: mainNetwork1 }, { mainNetwork: mainNetwork2 }) => {
         const index1 = subsequenceTokens.indexOf(mainNetwork1);
@@ -184,16 +156,16 @@ export default class Wallet extends Vue {
   }
 
   get filteredCurrencies() {
-    if (this.showAssetsManagementForm) return this.currenciesForSelectedWallet;
+    if (this.showAssetsManagementForm) return this.sortedCurrencies;
 
     const filter = this.filterValue.trim().toLowerCase();
 
-    return this.currenciesForSelectedWallet.filter((currency) => {
+    return this.sortedCurrencies.filter((currency) => {
       const isAllNetworks = this.selectedNetwork === 'All networks';
       const availableInSelectedNetwork = isAllNetworks
         ? false
         : currency
-            .getAvailableInNetworks()
+            .getAvailableInNetworks(this.selectedWallet)
             .map(({ network }) => network)
             .includes(this.selectedNetwork);
 
@@ -207,7 +179,9 @@ export default class Wallet extends Vue {
   }
 
   get totalBalance() {
-    return addNumbers(this.currenciesForSelectedWallet.map((currency) => currency.getTotalBalance()));
+    const arr = this.sortedCurrencies.map((currency) => currency.getTotalBalance(this.selectedWallet));
+
+    return addNumbers(arr);
   }
 
   get totalPercent() {
@@ -241,11 +215,10 @@ export default class Wallet extends Vue {
   setSubsequenceTokens() {
     if (this.existSavedSequence) return;
 
-    const subsequence = this.currenciesForSelectedWallet.map(({ mainNetwork }) => mainNetwork);
-    const currencies = getCurrencies(this.currenciesForSelectedWallet, this.selectedWallet);
+    const subsequence = this.sortedCurrencies.map(({ mainNetwork }) => mainNetwork);
 
     accountController.setSubsequenceTokens(subsequence);
-    this.setCurrencies({ currencies });
+    this.setCurrencies({ currencies: this.sortedCurrencies });
     this.existSavedSequence = true;
   }
 

@@ -14,8 +14,8 @@
         :key="name + index"
         :name="name"
         :showIcon="selectedWallet.address === address"
-        :balance="getBalance(address)"
-        :percent="getPercent(address)"
+        :balance="getBalance()"
+        :percent="getPercent()"
         class="total"
         @click="updateSelectedWallet(address)"
       />
@@ -71,13 +71,13 @@ export default class SelectWalletPopup extends Vue {
     this.$router.push({ name: Components.Welcome });
   }
 
-  getBalance(address: string) {
-    const currencies = this.currencies[address] ?? [];
+  getBalance() {
+    const arr = this.currencies.map((currency) => currency.getTotalBalance(this.selectedWallet));
 
-    return addNumbers(currencies.map((currency) => currency.getTotalBalance()));
+    return addNumbers(arr);
   }
 
-  getPercent(address: string) {
+  getPercent() {
     return 5.3;
   }
 

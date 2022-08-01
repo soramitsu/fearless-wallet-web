@@ -114,14 +114,14 @@ import SendingPopup from './SendingPopup.vue';
 import MaxButton from './MaxButton.vue';
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { GettersTypes as ApiGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as ApiGettersTypes, GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Networks } from '@/store/networks/types';
 import { firstCharToUp } from '@/util/helpers';
 import { formattedNumber, formattedPrice, addNumbers } from '@/util/numbers';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
-import type { Currency } from '@/interfaces/currencies';
+import type { Currencies } from '@/interfaces/currencies';
 
 @Component({
   components: {
@@ -147,11 +147,11 @@ export default class SendForm extends Vue {
   step = 1;
 
   @Prop(Function) closeForm!: VoidFunction;
-  @Prop(Array) currencies!: Currency[];
   @Prop(String) _selectedNetwork!: string;
   @Prop(String) _selectedToken!: string;
   @Getter(ApiGettersTypes.getNetworks) networks!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
 
   get amountString() {
     return `${+this.amount} ${this.selectedTokenUpper}`;
@@ -223,11 +223,7 @@ export default class SendForm extends Vue {
   }
 
   get addressByNetwork() {
-    const { address, ethereumAddress } = this.selectedWallet;
-    const isEthereumNetwork = ETHEREUM_NETWORKS.includes(this.selectedNetwork);
-    const addressByNetwork = isEthereumNetwork ? ethereumAddress : address;
-
-    return addressByNetwork;
+    return this.currentCurrency?.getTransactionAddress(this.selectedWallet, this.selectedNetwork) ?? '';
   }
 
   get formattedAddressTo() {
@@ -239,14 +235,16 @@ export default class SendForm extends Vue {
   }
 
   get optionsNetwork() {
-    return this.currentCurrency?.availableInNetworks.map(({ network }) => ({
+    const availableInNetworks = this.currentCurrency?.getAvailableInNetworks(this.selectedWallet);
+
+    return availableInNetworks?.map(({ network }) => ({
       label: firstCharToUp(network),
       value: `${network}`,
     }));
   }
 
   get transferrableAmount() {
-    const count = +(this.currentCurrency?.getTransferableCountTokens(this.selectedNetwork) ?? 0);
+    const count = +(this.currentCurrency?.getTransferableCountTokens(this.selectedNetwork, this.selectedWallet) ?? 0);
 
     return formattedNumber(count, 4);
   }
@@ -283,7 +281,12 @@ export default class SendForm extends Vue {
     const partialFee = await this.createTransferAndGetFee();
 
     this.partialFee = partialFee;
-    this.isValidCountTokens = this.currentCurrency!.isValidCountTokens(this.amount, partialFee, this.selectedNetwork);
+    this.isValidCountTokens = this.currentCurrency!.isValidCountTokens(
+      this.amount,
+      partialFee,
+      this.selectedNetwork,
+      this.selectedWallet
+    );
   }
 
   mounted() {
@@ -323,10 +326,13 @@ export default class SendForm extends Vue {
   async setMaxValue() {
     if (!this.currentCurrency) return;
 
-    const maxTransferableCountTokens = this.currentCurrency?.getTransferableCountTokens(this.selectedNetwork);
+    const maxTransferableCountTokens = this.currentCurrency?.getTransferableCountTokens(
+      this.selectedNetwork,
+      this.selectedWallet
+    );
     const partialFee = await this.createTransferAndGetFee(maxTransferableCountTokens);
     const transferableCountTokens = this.currentCurrency
-      .getTransferableCountTokensMinusFee(partialFee, this.selectedNetwork)
+      .getTransferableCountTokensMinusFee(partialFee, this.selectedNetwork, this.selectedWallet)
       .toString();
 
     this.amount = transferableCountTokens;

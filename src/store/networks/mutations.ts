@@ -1,9 +1,9 @@
-import CurrencyController from '@/controllers/currencyController';
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
 import type {
   UpdateCurrencyProps,
   SetNetworksStatusProps,
+  UpdateCurrencyBalanceProps,
   SetAssetsProps,
   SetTokensPriceProps,
   SetSubscriptionsBalancesProps,
@@ -22,6 +22,7 @@ export enum MutationTypes {
   SET_ALL_NETWORKS_IS_LOADED = 'SET_ALL_NETWORKS_IS_LOADED',
   SET_SUBSCRIPTIONS_BALANCES = 'SET_SUBSCRIPTIONS_BALANCES',
   UPDATE_CURRENCY = 'UPDATE_CURRENCY',
+  UPDATE_CURRENCY_BALANCE = 'UPDATE_CURRENCY_BALANCE',
   UPDATE_ACTIVE_NODE = 'UPDATE_ACTIVE_NODE',
 }
 
@@ -34,6 +35,7 @@ export type Mutations = {
   [MutationTypes.SET_ALL_NETWORKS_IS_LOADED](state: State, props: SetAllNetworksIsLoaded): void;
   [MutationTypes.SET_SUBSCRIPTIONS_BALANCES](state: State, props: SetSubscriptionsBalancesProps): void;
   [MutationTypes.UPDATE_CURRENCY](state: State, props: UpdateCurrencyProps): void;
+  [MutationTypes.UPDATE_CURRENCY_BALANCE](state: State, props: UpdateCurrencyBalanceProps): void;
   [MutationTypes.UPDATE_ACTIVE_NODE](state: State, props: UpdateActiveNodeProps): void;
 };
 
@@ -41,40 +43,28 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_NETWORKS](state, { networks }) {
     state.networks = networks;
   },
+  [MutationTypes.SET_CURRENCIES](state, { currencies }) {
+    state.currencies = currencies;
+  },
   [MutationTypes.SET_ASSETS](state, { assets }) {
     state.assets = assets;
   },
   [MutationTypes.SET_TOKENS_PRICE](state, { tokensPrice }) {
     state.tokensPrice = tokensPrice;
   },
-  [MutationTypes.UPDATE_CURRENCY](state, { walletAddress, currency }) {
-    const { availableInNetworks, mainNetwork, precision, price, token, usd24HoursChange } = currency;
+  [MutationTypes.UPDATE_CURRENCY](state, currency) {
+    const { token } = currency;
     const { currencies } = state;
-    const currenciesForAddress = [...(currencies[walletAddress] ?? [])];
-    const currencyIndex = currenciesForAddress.findIndex(({ token: existToken }) => existToken === token);
+    const currencyIndex = currencies?.findIndex(({ token: existToken }) => existToken === token);
 
-    if (currencyIndex !== -1) {
-      currenciesForAddress[currencyIndex].updateCurrency(currency);
-    } else {
-      const currency = new CurrencyController(
-        mainNetwork,
-        token,
-        price,
-        usd24HoursChange,
-        precision,
-        availableInNetworks
-      );
-
-      currenciesForAddress.push(currency);
-    }
-
-    state.currencies = {
-      ...currencies,
-      [walletAddress]: currenciesForAddress,
-    };
+    currencies[currencyIndex].updateCurrency(currency);
   },
-  [MutationTypes.SET_CURRENCIES](state, { currencies }) {
-    state.currencies = { ...state.currencies, ...currencies };
+  [MutationTypes.UPDATE_CURRENCY_BALANCE](state, { walletAddress, currency }) {
+    const { token } = currency;
+    const { currencies } = state;
+    const currentCurrency = currencies.find(({ token: existToken }) => existToken === token)!;
+
+    currentCurrency.updateCurrencyBalance({ walletAddress, currency });
   },
   [MutationTypes.SET_HISTORY](state, { history: { nodes, pageInfo }, networkName, walletAddress }) {
     const oldHistoryForWalletAddress = state.history[networkName]?.[walletAddress];

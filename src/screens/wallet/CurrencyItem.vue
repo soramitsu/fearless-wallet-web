@@ -76,10 +76,13 @@
 import CircleButton from '@/components/CircleButton.vue';
 import Switcher from '@/components/Switcher.vue';
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/util/numbers';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import type { Currency } from '@/interfaces/currencies';
+import type { SelectedWallet } from '@/store/accounts/types';
 
 @Component({
   components: {
@@ -93,6 +96,8 @@ export default class CurrencyItem extends Vue {
   @Prop(Object) currency!: Currency;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
+
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get showCurrencyItem() {
     return !this.showAssetsManagementForm ? this.currencyVisible : true;
@@ -120,13 +125,13 @@ export default class CurrencyItem extends Vue {
   }
 
   get countTokensString() {
-    const totalCountTokens = +this.currency.getTotalCountTokens();
+    const totalCountTokens = +this.currency.getTotalCountTokens(this.selectedWallet);
 
     return formattedNumber(totalCountTokens, 4);
   }
 
   get totalBalanceString() {
-    const totalBalance = +this.currency.getTotalBalance();
+    const totalBalance = +this.currency.getTotalBalance(this.selectedWallet);
 
     return `$${formattedPrice(totalBalance)}`;
   }
@@ -140,7 +145,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get availableInNetworks() {
-    return this.currency.getAvailableInNetworks();
+    return this.currency.getAvailableInNetworks(this.selectedWallet);
   }
 
   get isAdditional() {

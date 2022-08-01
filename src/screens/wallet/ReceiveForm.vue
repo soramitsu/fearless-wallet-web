@@ -51,7 +51,9 @@ export default class ReceiveForm extends Vue {
   }
 
   get address() {
-    return BaseApi.getDisplayAddress(this.selectedWallet, this.network);
+    if (this.selectedWallet.address === '') return '';
+
+    return BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.network);
   }
 
   mounted() {

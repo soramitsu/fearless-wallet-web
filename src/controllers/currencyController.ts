@@ -1,56 +1,38 @@
+import BaseApi from '@/util/BaseApi';
 import keyring from '@polkadot/ui-keyring';
 import LocalStorageController from '@/controllers/localStorageController';
 import NetworksController from '@/controllers/networksController';
 import store from '@/store';
 import teleportInfo from '@/consts/teleport';
 import { BN, isFunction } from '@polkadot/util';
+import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import { FPNumber } from '@/util/fp';
+import { getReplacedMetaTyped } from '@/util/helpers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import type { CurrencyFields, AvailableInNetworks } from '@/interfaces/currencies';
-import type { AssetsJson } from '@/store/networks/types';
+import type { AvailableInNetworks, Balances, BalanceFP, AvailableInNetworksFP } from '@/interfaces/currencies';
+import type { AssetsJson, UpdateCurrencyProps, UpdateCurrencyBalanceProps } from '@/store/networks/types';
 import type { SubmittableExtrinsic } from '@polkadot/api-base/types';
 import type { MainNetworkName } from '@/consts/teleport';
 import type { SignerOptions } from '@polkadot/api/submittable/types';
+import type { SelectedWallet } from '@/store/accounts/types';
 
 const XCM_LOC = ['xcm', 'xcmPallet', 'polkadotXcm'];
-
-interface BalanceFP {
-  total: FPNumber;
-  frozen: FPNumber;
-  locked: FPNumber;
-  reserved: FPNumber;
-  transferable: FPNumber;
-}
-
-type AvailableInNetworksFP = Omit<AvailableInNetworks, 'balance'> & { balance: BalanceFP };
 
 export default class CurrencyController {
   private readonly lsCurrency = new LocalStorageController('currency');
   private readonly currencyVisibleStorageName = 'currency_visible';
   public transfer!: SubmittableExtrinsic<'promise'> | undefined;
   public options: Partial<SignerOptions> = {};
-  public availableInNetworks: AvailableInNetworksFP[];
+  public balances: Balances = {};
 
   constructor(
     public mainNetwork: string,
     public token: string,
     public price: number,
     public usd24HoursChange: number,
-    public precision: number,
-    availableInNetworks: AvailableInNetworks[]
+    public precision: number
   ) {
-    this.availableInNetworks = availableInNetworks.map(
-      ({ network, balance: { frozen, locked, reserved, total, transferable } }) => ({
-        network,
-        balance: {
-          frozen: FPNumber.fromCodecValue(frozen, this.precision),
-          locked: FPNumber.fromCodecValue(locked, this.precision),
-          reserved: FPNumber.fromCodecValue(reserved, this.precision),
-          total: FPNumber.fromCodecValue(total, this.precision),
-          transferable: FPNumber.fromCodecValue(transferable, this.precision),
-        },
-      })
-    );
+    console.log();
   }
 
   private getCurrenciesVisible() {
@@ -65,8 +47,43 @@ export default class CurrencyController {
     return count.mul(FPPrice);
   }
 
-  private countTotalTokens(): BalanceFP {
-    const availableInNetworks = this.availableInNetworks.reduce(
+  private getAvailableInNetworksIncludingReplacedAccounts(wallet: SelectedWallet): AvailableInNetworksFP[] {
+    const { address, ethereumAddress } = wallet;
+    const availableInNetworks = this.balances[address] ?? this.balances[ethereumAddress] ?? [];
+
+    const replacedAccounts = BaseApi.getReplacedAccounts(wallet);
+    const replacedNetworks = replacedAccounts.reduce((result, { address: _address, meta }) => {
+      const { replacedSettings } = getReplacedMetaTyped(meta);
+      const replacedNetworks = replacedSettings[address] ?? replacedSettings[ethereumAddress];
+
+      replacedNetworks.forEach((network) => (result[network] = _address));
+
+      return result;
+    }, {} as Record<string, string>);
+
+    return availableInNetworks.map((item) => {
+      const { network } = item;
+      let { balance } = item;
+
+      const replacedAddress = replacedNetworks[network];
+      const replacedAvailableInNetworks = this.balances[replacedAddress];
+
+      if (replacedAvailableInNetworks) {
+        const { balance: replacedBalance } = replacedAvailableInNetworks.find( // eslint-disable-line
+          ({ network: _network }) => _network === network
+        )!;
+
+        balance = replacedBalance;
+      }
+
+      return { network, balance };
+    });
+  }
+
+  private countTotalTokens(wallet: SelectedWallet): BalanceFP {
+    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
+
+    return availableInNetworks.reduce(
       (obj, { balance: { total, frozen, locked, reserved, transferable } }) => {
         return {
           total: obj.total.add(total),
@@ -84,30 +101,38 @@ export default class CurrencyController {
         transferable: FPNumber.ZERO,
       }
     );
-
-    return availableInNetworks;
   }
 
-  public updateCurrency({
-    availableInNetworks,
-    precision,
-    price,
-    usd24HoursChange,
-    mainNetwork,
-  }: CurrencyFields): void {
+  public getTransactionAddress(wallet: SelectedWallet, network: string): string {
+    const { address, ethereumAddress } = wallet;
+    const replacedAccount = BaseApi.getReplacedAccountByNetwork(wallet, network);
+
+    if (replacedAccount) {
+      const { address } = replacedAccount;
+
+      return address;
+    }
+
+    const isEthereumNetwork = ETHEREUM_NETWORKS.includes(network);
+    const addressByNetwork = isEthereumNetwork ? ethereumAddress : address;
+
+    return addressByNetwork;
+  }
+
+  public updateCurrency({ precision, price, usd24HoursChange }: UpdateCurrencyProps): void {
     this.precision = precision ?? this.precision;
     this.price = price ?? this.price;
     this.usd24HoursChange = usd24HoursChange ?? this.usd24HoursChange;
+  }
 
-    const index = this.availableInNetworks.findIndex(({ network }) => network === mainNetwork);
-
-    const {
-      network,
-      balance: { frozen, locked, reserved, total, transferable },
-    } = availableInNetworks[0];
+  public updateCurrencyBalance({ walletAddress, currency }: UpdateCurrencyBalanceProps): CurrencyController {
+    const { network: networkProp, balance } = currency;
+    const { frozen, locked, reserved, total, transferable } = balance;
+    const oldBalances = { ...this.balances };
+    let balancesForAddress = oldBalances[walletAddress];
 
     const newValue = {
-      network: network,
+      network: networkProp,
       balance: {
         frozen: FPNumber.fromCodecValue(frozen, this.precision),
         locked: FPNumber.fromCodecValue(locked, this.precision),
@@ -117,41 +142,50 @@ export default class CurrencyController {
       },
     };
 
-    this.availableInNetworks.splice(index, 1, newValue);
+    if (balancesForAddress) {
+      const index = balancesForAddress.findIndex(({ network }) => network === networkProp);
+
+      if (index === -1) balancesForAddress.push(newValue);
+      else balancesForAddress.splice(index, 1, newValue);
+    } else balancesForAddress = [newValue];
+
+    this.balances = { ...oldBalances, [walletAddress]: balancesForAddress };
+
+    return this;
   }
 
-  public updateAvailableInNetworks({ balance, network: networkProp }: AvailableInNetworksFP): void {
-    const index = this.availableInNetworks.findIndex(({ network }) => network === networkProp);
-
-    this.availableInNetworks.splice(index, 1, { network: networkProp, balance });
+  public getTotalCountTokens(wallet: SelectedWallet): string {
+    return this.countTotalTokens(wallet).total.toString();
   }
 
-  public getTotalCountTokens(): string {
-    return this.countTotalTokens().total.toString();
+  public getTransferableCountTokens(networkProp: string, wallet: SelectedWallet): string {
+    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
+    const balance = availableInNetworks.find(({ network }) => network === networkProp)?.balance;
+
+    if (!balance) return '';
+
+    return balance.transferable.toString();
   }
 
-  public getTransferableCountTokens(networkProp: string): string {
-    const { transferable } = this.availableInNetworks.find(({ network }) => network === networkProp)!.balance; // eslint-disable-line
-
-    return transferable.toString();
-  }
-
-  public getTransferableCountTokensMinusFee(fee: string, networkProp: string): FPNumber {
+  public getTransferableCountTokensMinusFee(fee: string, networkProp: string, wallet: SelectedWallet): FPNumber {
     const FPFee = new FPNumber(fee);
-    const { transferable } = this.availableInNetworks.find(({ network }) => network === networkProp)!.balance; // eslint-disable-line
+    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
+    const { transferable } = availableInNetworks.find(({ network }) => network === networkProp)!.balance; // eslint-disable-line
     const result = transferable.sub(FPFee);
 
     return FPNumber.lt(result, FPNumber.ZERO) ? FPNumber.ZERO : result;
   }
 
-  public isValidCountTokens(count: string, fee: string, network: string): boolean {
-    const transferableCountTokensMinusFee = this.getTransferableCountTokensMinusFee(fee, network);
+  public isValidCountTokens(count: string, fee: string, network: string, wallet: SelectedWallet): boolean {
+    const transferableCountTokensMinusFee = this.getTransferableCountTokensMinusFee(fee, network, wallet);
 
     return FPNumber.lte(new FPNumber(count), transferableCountTokensMinusFee);
   }
 
-  public getAvailableInNetworks(): AvailableInNetworks[] {
-    return this.availableInNetworks.map(({ balance: { frozen, locked, reserved, total, transferable }, network }) => {
+  public getAvailableInNetworks(wallet: SelectedWallet): AvailableInNetworks[] {
+    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
+
+    return availableInNetworks.map(({ balance: { frozen, locked, reserved, total, transferable }, network }) => {
       return {
         network,
         balance: {
@@ -165,8 +199,8 @@ export default class CurrencyController {
     });
   }
 
-  public getTotalBalance(): string {
-    const countTokens = this.countTotalTokens().total;
+  public getTotalBalance(wallet: SelectedWallet): string {
+    const countTokens = this.countTotalTokens(wallet).total;
     const cost = this.calculateCost(countTokens);
 
     return cost.toString();
@@ -176,8 +210,9 @@ export default class CurrencyController {
     return this.calculateCost(new FPNumber(count)).toString();
   }
 
-  public getBalanceInNetwork(_network: string): string {
-    const total = this.availableInNetworks.find(({ network }) => network === _network)?.balance.total ?? FPNumber.ZERO;
+  public getBalanceInNetwork(_network: string, wallet: SelectedWallet): string {
+    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
+    const total = availableInNetworks.find(({ network }) => network === _network)?.balance.total ?? FPNumber.ZERO;
 
     return this.calculateCost(total).toString();
   }
@@ -206,7 +241,7 @@ export default class CurrencyController {
   private static getAssets(token: string): AssetsJson {
     const assets: AssetsJson[] = store.getters[NetworksGettersTypes.getAssetsInfo];
 
-    return assets.find(({ id }) => id === token)!;
+    return assets.find(({ id }) => id === token)!; // eslint-disable-line
   }
 
   public static getHumanValue(token: string, value: string): string {
@@ -254,11 +289,15 @@ export default class CurrencyController {
   }
 
   public async createTeleportTransfer(
-    recipientId: string,
+    wallet: SelectedWallet,
     originalNetworkName: string,
     destinationNetworkName: string,
     amount: string
   ): Promise<void> {
+    // const recipientId = BaseApi.getReplacedAccountByNetwork(wallet, destinationNetworkName)?.address ?? '';
+
+    const recipientId = this.getTransactionAddress(wallet, destinationNetworkName);
+
     const networks = NetworksController.getNetworks();
     const { api } = networks.find(({ name }) => name === originalNetworkName)!; // eslint-disable-line
     const m = XCM_LOC.filter((x) => api.tx[x] && isFunction(api.tx[x].limitedTeleportAssets))[0];

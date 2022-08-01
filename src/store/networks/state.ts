@@ -18,7 +18,7 @@ const state = (): State => {
     networks: [],
     tokensPrice: {},
     assets: [],
-    currencies: {},
+    currencies: [],
     subscriptionsBalances: [],
     allNetworksIsLoaded: false,
     history: {},

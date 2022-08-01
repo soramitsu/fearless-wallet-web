@@ -67,12 +67,11 @@ export default class BaseApi {
     return { replaced: false };
   }
 
-  public static getAccounts(): KeyringAddress[] {
-    return keyring.getAccounts();
-  }
+  private static getWalletIncludingReplacedAccount(wallet: SelectedWallet, network: string): SelectedWallet {
+    const replacedAccountByNetwork = BaseApi.getReplacedAccountByNetwork(wallet, network);
+    const address = replacedAccountByNetwork?.address;
 
-  public static getPair(address: string): KeyringPair {
-    return keyring.getPair(address);
+    return address ? ({ address, ethereumAddress: address } as SelectedWallet) : wallet;
   }
 
   public static getReplacedAccounts({ address, ethereumAddress }: SelectedWallet): KeyringPair[] {
@@ -100,42 +99,39 @@ export default class BaseApi {
     });
   }
 
-  /**
-   * Get the address to display to the user, taking into account the network and replaced the account
-   * @param {SelectedWallet} selectedWallet
-   * @param {string} network
-   */
-  public static getDisplayAddress(wallet: SelectedWallet, network: string): string {
-    const replacedAccountByNetwork = BaseApi.getReplacedAccountByNetwork(wallet, network);
+  public static getAddressByNetworkIncludingReplacedAccount(_wallet: SelectedWallet, network: string): string {
+    const wallet = BaseApi.getWalletIncludingReplacedAccount(_wallet, network);
+    const { address, ethereumAddress } = wallet;
+    const isEthereumNetwork = ETHEREUM_NETWORKS.includes(network);
+    const addressByNetwork = isEthereumNetwork ? ethereumAddress : address;
 
-    if (replacedAccountByNetwork) {
-      const address = replacedAccountByNetwork.address;
-
-      return BaseApi.formatAddress(
-        {
-          address,
-          ethereumAddress: address,
-        } as SelectedWallet,
-        network
-      );
-    }
-
-    return BaseApi.formatAddress(wallet, network);
+    return addressByNetwork;
   }
 
-  public static generateMnemonic(numWords: WordCount = 12) {
+  /**
+   * Get the address to display to the user, taking into account the network and replaced the account
+   * @param {SelectedWallet} wallet
+   * @param {string} network
+   */
+  public static getDisplayAddressByNetwork(wallet: SelectedWallet, network: string): string {
+    const defaultWallet = BaseApi.getWalletIncludingReplacedAccount(wallet, network);
+
+    return BaseApi.formatAddress(defaultWallet, network);
+  }
+
+  public static generateMnemonic(numWords: WordCount = 12): string {
     return mnemonicGenerate(numWords);
   }
 
-  public static isHex(value: string) {
+  public static isHex(value: string): boolean {
     return isHex(value);
   }
 
-  public static isMnemonic(value: string) {
+  public static isMnemonic(value: string): boolean {
     return mnemonicValidate(value);
   }
 
-  public static isValidSequenceMnemonic(mnemonic: string, selectedMnemonicElements: string[]) {
+  public static isValidSequenceMnemonic(mnemonic: string, selectedMnemonicElements: string[]): boolean {
     return !mnemonic
       .split(' ')
       .map((mnemonicElement, index) => selectedMnemonicElements[index] === mnemonicElement)
@@ -190,6 +186,14 @@ export default class BaseApi {
     const accounts = BaseApi.getAccounts();
 
     return accounts.map(({ address }) => address).includes(address);
+  }
+
+  public static getAccounts(): KeyringAddress[] {
+    return keyring.getAccounts();
+  }
+
+  public static getPair(address: string): KeyringPair {
+    return keyring.getPair(address);
   }
 
   public static isDuplicateReplacedKeypair(addressProp: string): boolean {

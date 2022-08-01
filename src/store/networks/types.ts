@@ -1,10 +1,11 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { Subscription } from 'rxjs';
-import type { Currencies, AvailableInNetworks } from '@/interfaces/currencies';
+import type { Currencies } from '@/interfaces/currencies';
 import type { HistoryItem } from '@/interfaces/history';
 import type { WalletAddress } from '@/interfaces/common';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
+import type { AccountBalance } from '@/interfaces/balances';
 
 export type Node = {
   url: string;
@@ -124,14 +125,18 @@ export type SetSubscriptionsBalancesProps = {
 };
 
 export type UpdateCurrencyProps = {
+  token: string;
+  price: number;
+  usd24HoursChange: number;
+  precision: number;
+};
+
+export type UpdateCurrencyBalanceProps = {
   walletAddress: string;
   currency: {
-    mainNetwork: string;
+    network: string;
     token: string;
-    price: number;
-    usd24HoursChange: number;
-    precision: number;
-    availableInNetworks: AvailableInNetworks[];
+    balance: AccountBalance;
   };
 };
 

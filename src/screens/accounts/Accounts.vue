@@ -80,9 +80,7 @@ export default class Account extends Vue {
         const token = assets[0].assetId;
         const accounts = BaseApi.getReplacedAccountByNetwork(this.selectedWallet, name);
         const address = accounts?.address;
-        const formattedAddress = address
-          ? BaseApi.formatAddress({ address, ethereumAddress: address } as SelectedWallet, name)
-          : '';
+        const formattedAddress = address ? BaseApi.formatAddress({ address, ethereumAddress: address }, name) : '';
 
         return {
           network: name,

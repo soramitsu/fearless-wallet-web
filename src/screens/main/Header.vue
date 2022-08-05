@@ -18,8 +18,6 @@
     <div class="header-part">
       <CircleButton iconName="expand" backgroundColor="light-black" class="button-margin" @click="fullScreen" />
 
-      <CircleButton iconName="lock" backgroundColor="light-black" class="button-margin" @click="lock" />
-
       <div class="background-ellipse button-margin">
         <div :class="statusConnectedClasses"></div>
         {{ statusConnectedText }}
@@ -40,7 +38,6 @@ import CircleButton from '@/components/CircleButton.vue';
 import Rotate from '@/components/Rotate.vue';
 import SelectWalletPopup from './SelectWalletPopup.vue';
 import SettingsPopup from './SettingsPopup.vue';
-import { accountController } from '@/controllers/accountController';
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -98,11 +95,6 @@ export default class Header extends Vue {
 
   backToWallet() {
     this.$router.push({ name: Components.Wallet });
-  }
-
-  lock() {
-    accountController.updatedPasswordDateCreated(0);
-    this.$router.push({ name: Components.WelcomeBack });
   }
 
   fullScreen() {

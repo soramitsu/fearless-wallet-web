@@ -10,7 +10,7 @@ import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { WordCount } from '@polkadot/util-crypto/mnemonic/generate';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult } from '@/interfaces/common';
-import type { SelectedWallet } from '@/store/accounts/types';
+import type { Wallet } from '@/store/accounts/types';
 
 export default class BaseApi {
   private static createFromUri(suri: string, type: KeypairType): KeyringPair {
@@ -25,12 +25,7 @@ export default class BaseApi {
     return pair;
   }
 
-  private static updateReplacedMetaData(
-    address: string,
-    parentAddressProp: string,
-    network: string,
-    password: string
-  ): void {
+  private static updateReplacedMetaData(address: string, parentAddressProp: string, network: string): void {
     const pair = BaseApi.getKeyringPair(address);
     const meta = getReplacedMetaTyped(pair.meta);
     const oldReplacedSettings = meta.replacedSettings;
@@ -39,22 +34,19 @@ export default class BaseApi {
 
     meta.replacedSettings[parentAddressProp] = newNetworksList;
 
-    pair.setMeta(meta as any);
-
-    keyring.addPair(pair, password);
+    keyring.saveAccountMeta(pair, meta as any);
   }
 
   private static checkAndReplaceDuplicateAccount(
     address: string,
     parentAddress: string,
-    network: string,
-    password: string
+    network: string
   ): Record<'replaced', boolean> {
     const isDuplicateReplacedKeypair = BaseApi.isDuplicateReplacedKeypair(address);
     const isDuplicateKeypair = BaseApi.isDuplicateKeypair(address);
 
     if (isDuplicateReplacedKeypair) {
-      BaseApi.updateReplacedMetaData(address, parentAddress, network, password);
+      BaseApi.updateReplacedMetaData(address, parentAddress, network);
 
       return { replaced: true };
     }
@@ -67,14 +59,14 @@ export default class BaseApi {
     return { replaced: false };
   }
 
-  private static getWalletIncludingReplacedAccount(wallet: SelectedWallet, network: string): SelectedWallet {
+  private static getWalletIncludingReplacedAccount(wallet: Wallet, network: string): Wallet {
     const replacedAccountByNetwork = BaseApi.getReplacedAccountByNetwork(wallet, network);
     const address = replacedAccountByNetwork?.address;
 
-    return address ? ({ address, ethereumAddress: address } as SelectedWallet) : wallet;
+    return address ? ({ address, ethereumAddress: address } as Wallet) : wallet;
   }
 
-  public static getReplacedAccounts({ address, ethereumAddress }: SelectedWallet): KeyringPair[] {
+  public static getReplacedAccounts({ address, ethereumAddress }: Wallet): KeyringPair[] {
     return BaseApi.getAccounts()
       .filter(({ meta }) => {
         const { isReplacedAccount, replacedSettings } = getReplacedMetaTyped(meta);
@@ -89,7 +81,7 @@ export default class BaseApi {
       .map(({ address }) => BaseApi.getPair(address));
   }
 
-  public static getReplacedAccountByNetwork(wallet: SelectedWallet, network: string): KeyringPair | undefined {
+  public static getReplacedAccountByNetwork(wallet: Wallet, network: string): KeyringPair | undefined {
     return BaseApi.getReplacedAccounts(wallet).find(({ meta }) => {
       const { address, ethereumAddress } = wallet;
       const { replacedSettings } = getReplacedMetaTyped(meta);
@@ -99,7 +91,7 @@ export default class BaseApi {
     });
   }
 
-  public static getAddressByNetworkIncludingReplacedAccount(_wallet: SelectedWallet, network: string): string {
+  public static getDefaultAddressByNetworkIncludingReplacedAccount(_wallet: Wallet, network: string): string {
     const wallet = BaseApi.getWalletIncludingReplacedAccount(_wallet, network);
     const { address, ethereumAddress } = wallet;
     const isEthereumNetwork = ETHEREUM_NETWORKS.includes(network);
@@ -110,10 +102,10 @@ export default class BaseApi {
 
   /**
    * Get the address to display to the user, taking into account the network and replaced the account
-   * @param {SelectedWallet} wallet
+   * @param {Wallet} wallet
    * @param {string} network
    */
-  public static getDisplayAddressByNetwork(wallet: SelectedWallet, network: string): string {
+  public static getDisplayAddressByNetwork(wallet: Wallet, network: string): string {
     const defaultWallet = BaseApi.getWalletIncludingReplacedAccount(wallet, network);
 
     return BaseApi.formatAddress(defaultWallet, network);
@@ -132,18 +124,18 @@ export default class BaseApi {
   }
 
   public static isValidSequenceMnemonic(mnemonic: string, selectedMnemonicElements: string[]): boolean {
-    return !mnemonic
+    return mnemonic
       .split(' ')
       .map((mnemonicElement, index) => selectedMnemonicElements[index] === mnemonicElement)
-      .includes(false);
+      .every((item) => item);
   }
 
   public static isKeyringPairs$Json(json: KeyringPair$Json | KeyringPairs$Json): json is KeyringPairs$Json {
     return json.encoding.content.includes('batch-pkcs8');
   }
 
-  public static addKeypair(suri: string, meta: KeyringPair$Meta, type: KeypairType): KeyringPair {
-    const { pair } = keyring.addUri(suri, '', meta, type);
+  public static addKeypair(suri: string, password: string, meta: KeyringPair$Meta, type: KeypairType): KeyringPair {
+    const { pair } = keyring.addUri(suri, password, meta, type);
 
     return pair;
   }
@@ -155,7 +147,7 @@ export default class BaseApi {
     network: string
   ): void {
     const { address } = BaseApi.createFromJson(json);
-    const { replaced } = BaseApi.checkAndReplaceDuplicateAccount(address, parentAddress, network, password);
+    const { replaced } = BaseApi.checkAndReplaceDuplicateAccount(address, parentAddress, network);
 
     if (replaced) return;
 
@@ -167,10 +159,16 @@ export default class BaseApi {
     keyring.restoreAccount(json, password);
   }
 
-  public static replaceAccountFromSeed(suri: string, type: KeypairType, parentAddress: string, network: string): void {
+  public static replaceAccountFromSeed(
+    suri: string,
+    password: string,
+    type: KeypairType,
+    parentAddress: string,
+    network: string
+  ): void {
     const meta: Record<string, unknown> = {};
     const { address } = BaseApi.createFromUri(suri, type);
-    const { replaced } = BaseApi.checkAndReplaceDuplicateAccount(address, parentAddress, network, '');
+    const { replaced } = BaseApi.checkAndReplaceDuplicateAccount(address, parentAddress, network);
 
     if (replaced) return;
 
@@ -179,7 +177,7 @@ export default class BaseApi {
       [parentAddress]: [network],
     };
 
-    BaseApi.addKeypair(suri, meta, type);
+    BaseApi.addKeypair(suri, password, meta, type);
   }
 
   public static isDuplicateKeypair(address: string): boolean {
@@ -239,9 +237,13 @@ export default class BaseApi {
     }
   }
 
+  public static decodeAddress(address: string): Uint8Array {
+    return decodeAddress(address, false);
+  }
+
   public static validateAddress(address: string): boolean {
     try {
-      decodeAddress(address, false);
+      this.decodeAddress(address);
 
       return true;
     } catch {
@@ -249,16 +251,22 @@ export default class BaseApi {
     }
   }
 
-  public static formatAddress({ address, ethereumAddress }: SelectedWallet, networkName: string): string {
+  public static formatAddress({ address, ethereumAddress }: Wallet, networkName: string): string {
     const isEthereumNetwork = BaseApi.isEthereumNetwork(networkName);
 
     if (isEthereumNetwork) return ethereumAddress;
 
-    const publicKey = decodeAddress(address, false);
+    const publicKey = this.decodeAddress(address);
     const networks = NetworksController.getNetworks();
     const network = networks.find(({ name }) => name === networkName);
     const prefix = network?.addressPrefix;
 
     return encodeAddress(publicKey, prefix);
+  }
+
+  public static unlockPair(from: string, password: string): void {
+    const pair = keyring.getPair(from);
+
+    pair.unlock(password);
   }
 }

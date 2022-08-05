@@ -23,7 +23,7 @@
 
     <Hint
       iconName="notification"
-      text="This password protects all your wallets. Make sure you remember it and do not share it with anybody."
+      text="This password protects your wallet. Make sure you remember it and do not share it with anybody."
     />
   </div>
 </template>
@@ -31,24 +31,17 @@
 <script lang="ts">
 import Hint from '@/components/Hint.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
-import { Getter, Mutation } from 'vuex-class';
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { GettersTypes } from '@/store/accounts/getters';
-import { MutationTypes } from '@/store/accounts/mutations';
-import { SetPasswordProps } from '@/store/accounts/types';
-import type { TMutation } from '@/interfaces/common';
 
 @Component({
   components: { Hint, ValidatedInput },
 })
 export default class PasswordForm extends Vue {
-  @Getter(GettersTypes.getPassword) getPassword!: string;
-  @Mutation(MutationTypes.SET_PASSWORD) setPassword!: TMutation<SetPasswordProps>;
   pass1 = '';
   pass2 = '';
 
   get isShortPassword() {
-    return this.pass1.length !== 0 && this.pass1.length < 5;
+    return this.pass1.length !== 0 && this.pass1.length < 6;
   }
 
   get isWrongPassword() {
@@ -61,19 +54,23 @@ export default class PasswordForm extends Vue {
 
   @Watch('pass1')
   changePassword(pass1: string) {
-    if (pass1.length < 5) this.pass2 = '';
-    else if (pass1 === this.pass2) this.setPassword({ password: pass1 });
+    if (pass1.length < 6) this.pass2 = '';
+    else if (pass1 === this.pass2) this.setPassword(pass1);
   }
 
   @Watch('pass2')
   confirmPassword(pass2: string) {
     if (this.pass1 === pass2) {
-      this.setPassword({ password: pass2 });
+      this.setPassword(pass2);
 
       return;
     }
 
-    this.setPassword({ password: '' });
+    this.setPassword('');
+  }
+
+  setPassword(password: string) {
+    this.$emit('updateWalletPassword', password);
   }
 }
 </script>

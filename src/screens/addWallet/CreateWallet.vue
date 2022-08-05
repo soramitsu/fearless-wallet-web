@@ -25,17 +25,17 @@ import MnemonicBackupForm from './MnemonicBackupForm.vue';
   },
 })
 export default class CreateWallet extends Vue {
-  @Prop(Number) currentIndexPage!: number;
+  @Prop(Number) step!: number;
   @Prop(String) mnemonic!: string;
   @Prop(Object) derivationPath!: DerivationPath;
   @PropSync('selectedMnemonicElements', { type: Array }) syncedSelectedMnemonicElements!: string[];
 
   get showMnemonicBackupForm() {
-    return this.currentIndexPage === 2;
+    return this.step === 2;
   }
 
   get showMnemonicConfirmationForm() {
-    return this.currentIndexPage === 3;
+    return this.step === 3;
   }
 
   updateSelectedMnemonicElements(value: string[]) {

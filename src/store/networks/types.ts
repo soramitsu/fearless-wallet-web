@@ -58,6 +58,7 @@ type Network = {
   provider: WsProvider;
   nodes: Node[];
   assets: Assets[];
+  chainId: string;
   addressPrefix: number;
   isEthereumNetwork: boolean;
   settings: Record<string, any>;

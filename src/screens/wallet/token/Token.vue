@@ -197,7 +197,7 @@ export default class Token extends Vue {
   }
 
   get formattedHistory() {
-    const addressByNetwork = BaseApi.getAddressByNetworkIncludingReplacedAccount(
+    const addressByNetwork = BaseApi.getDefaultAddressByNetworkIncludingReplacedAccount(
       this.selectedWallet,
       this.selectedNetwork
     );

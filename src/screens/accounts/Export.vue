@@ -12,7 +12,7 @@
       <ValidatedInput
         v-model="password"
         errorDescriptions="Incorrect password"
-        placeholder="Password for this account"
+        placeholder="Password for this wallet"
         :isError="isError"
         :showPassword="true"
         :maxlength="25"
@@ -24,7 +24,7 @@
         fontSize="big"
         width="100%"
         text="I want to export JSON"
-        @click="openExportForm"
+        @click="checkPassword"
       />
     </div>
   </div>
@@ -34,8 +34,11 @@
 import Button from '@/components/Button.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import InformationBlock from '@/components/InformationBlock.vue';
+import BaseApi from '@/util/BaseApi';
 import { Vue, Component, Watch } from 'vue-property-decorator';
-import { accountController } from '@/controllers/accountController';
+import { Getter } from 'vuex-class';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import type { SelectedWallet } from '@/store/accounts/types';
 
 @Component({
   components: {
@@ -48,16 +51,32 @@ export default class Export extends Vue {
   password = '';
   isError = false;
 
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get network() {
+    return this.$route.params.network;
+  }
+
   @Watch('password')
   filter() {
     this.isError = false;
   }
 
-  openExportForm() {
-    const isSamePassword = accountController.isSamePassword(this.password);
+  checkPassword() {
+    const addressByNetwork = BaseApi.getDefaultAddressByNetworkIncludingReplacedAccount(
+      this.selectedWallet,
+      this.network
+    );
 
-    if (isSamePassword) this.$emit('openExportForm');
-    else this.isError = true;
+    try {
+      BaseApi.unlockPair(addressByNetwork, this.password);
+    } catch (ex) {
+      this.isError = true;
+
+      return;
+    }
+
+    this.$emit('setPassword', this.password);
   }
 }
 </script>

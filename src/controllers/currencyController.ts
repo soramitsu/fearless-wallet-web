@@ -1,5 +1,4 @@
 import BaseApi from '@/util/BaseApi';
-import keyring from '@polkadot/ui-keyring';
 import LocalStorageController from '@/controllers/localStorageController';
 import NetworksController from '@/controllers/networksController';
 import store from '@/store';
@@ -14,7 +13,7 @@ import type { AssetsJson, UpdateCurrencyProps, UpdateCurrencyBalanceProps } from
 import type { SubmittableExtrinsic } from '@polkadot/api-base/types';
 import type { MainNetworkName } from '@/consts/teleport';
 import type { SignerOptions } from '@polkadot/api/submittable/types';
-import type { SelectedWallet } from '@/store/accounts/types';
+import type { Wallet } from '@/store/accounts/types';
 
 const XCM_LOC = ['xcm', 'xcmPallet', 'polkadotXcm'];
 
@@ -47,7 +46,7 @@ export default class CurrencyController {
     return count.mul(FPPrice);
   }
 
-  private getAvailableInNetworksIncludingReplacedAccounts(wallet: SelectedWallet): AvailableInNetworksFP[] {
+  private getAvailableInNetworksIncludingReplacedAccounts(wallet: Wallet): AvailableInNetworksFP[] {
     const { address, ethereumAddress } = wallet;
     const availableInNetworks = this.balances[address] ?? this.balances[ethereumAddress] ?? [];
 
@@ -80,7 +79,7 @@ export default class CurrencyController {
     });
   }
 
-  private countTotalTokens(wallet: SelectedWallet): BalanceFP {
+  private countTotalTokens(wallet: Wallet): BalanceFP {
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
 
     return availableInNetworks.reduce(
@@ -103,7 +102,7 @@ export default class CurrencyController {
     );
   }
 
-  public getTransactionAddress(wallet: SelectedWallet, network: string): string {
+  public getTransactionAddress(wallet: Wallet, network: string): string {
     const { address, ethereumAddress } = wallet;
     const replacedAccount = BaseApi.getReplacedAccountByNetwork(wallet, network);
 
@@ -154,11 +153,11 @@ export default class CurrencyController {
     return this;
   }
 
-  public getTotalCountTokens(wallet: SelectedWallet): string {
+  public getTotalCountTokens(wallet: Wallet): string {
     return this.countTotalTokens(wallet).total.toString();
   }
 
-  public getTransferableCountTokens(networkProp: string, wallet: SelectedWallet): string {
+  public getTransferableCountTokens(networkProp: string, wallet: Wallet): string {
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
     const balance = availableInNetworks.find(({ network }) => network === networkProp)?.balance;
 
@@ -167,7 +166,7 @@ export default class CurrencyController {
     return balance.transferable.toString();
   }
 
-  public getTransferableCountTokensMinusFee(fee: string, networkProp: string, wallet: SelectedWallet): FPNumber {
+  public getTransferableCountTokensMinusFee(fee: string, networkProp: string, wallet: Wallet): FPNumber {
     const FPFee = new FPNumber(fee);
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
     const { transferable } = availableInNetworks.find(({ network }) => network === networkProp)!.balance; // eslint-disable-line
@@ -176,13 +175,13 @@ export default class CurrencyController {
     return FPNumber.lt(result, FPNumber.ZERO) ? FPNumber.ZERO : result;
   }
 
-  public isValidCountTokens(count: string, fee: string, network: string, wallet: SelectedWallet): boolean {
+  public isValidCountTokens(count: string, fee: string, network: string, wallet: Wallet): boolean {
     const transferableCountTokensMinusFee = this.getTransferableCountTokensMinusFee(fee, network, wallet);
 
     return FPNumber.lte(new FPNumber(count), transferableCountTokensMinusFee);
   }
 
-  public getAvailableInNetworks(wallet: SelectedWallet): AvailableInNetworks[] {
+  public getAvailableInNetworks(wallet: Wallet): AvailableInNetworks[] {
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
 
     return availableInNetworks.map(({ balance: { frozen, locked, reserved, total, transferable }, network }) => {
@@ -199,7 +198,7 @@ export default class CurrencyController {
     });
   }
 
-  public getTotalBalance(wallet: SelectedWallet): string {
+  public getTotalBalance(wallet: Wallet): string {
     const countTokens = this.countTotalTokens(wallet).total;
     const cost = this.calculateCost(countTokens);
 
@@ -210,7 +209,7 @@ export default class CurrencyController {
     return this.calculateCost(new FPNumber(count)).toString();
   }
 
-  public getBalanceInNetwork(_network: string, wallet: SelectedWallet): string {
+  public getBalanceInNetwork(_network: string, wallet: Wallet): string {
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
     const total = availableInNetworks.find(({ network }) => network === _network)?.balance.total ?? FPNumber.ZERO;
 
@@ -289,22 +288,19 @@ export default class CurrencyController {
   }
 
   public async createTeleportTransfer(
-    wallet: SelectedWallet,
+    wallet: Wallet,
     originalNetworkName: string,
     destinationNetworkName: string,
     amount: string
   ): Promise<void> {
-    // const recipientId = BaseApi.getReplacedAccountByNetwork(wallet, destinationNetworkName)?.address ?? '';
-
     const recipientId = this.getTransactionAddress(wallet, destinationNetworkName);
-
     const networks = NetworksController.getNetworks();
     const { api } = networks.find(({ name }) => name === originalNetworkName)!; // eslint-disable-line
     const m = XCM_LOC.filter((x) => api.tx[x] && isFunction(api.tx[x].limitedTeleportAssets))[0];
     const isParaTeleport = m === 'polkadotXcm';
     const precisionAmount = CurrencyController.getPrecisionValue(this.token, amount);
     const tx = api.tx[m].limitedTeleportAssets;
-    const publicKey = keyring.decodeAddress(recipientId);
+    const publicKey = BaseApi.decodeAddress(recipientId);
     const recipientParaId = this.getParaId(originalNetworkName, destinationNetworkName);
 
     if (!recipientParaId) {
@@ -328,9 +324,7 @@ export default class CurrencyController {
   }
 
   public async send(from: string, amount: string): Promise<void> {
-    const pair = keyring.getPair(from);
-
-    pair.unlock();
+    const pair = BaseApi.getPair(from);
 
     const unsubscribe = await this.transfer!.signAndSend(pair, this.options, ({ status }) => {
       if (status.isInBlock) {

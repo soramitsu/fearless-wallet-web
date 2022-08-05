@@ -19,7 +19,7 @@ import ConfirmationPopup from '@/components/ConfirmationPopup.vue';
 @Component({
   components: { ConfirmationPopup },
 })
-export default class EthereumAccountPopup extends Vue {
+export default class AddEthereumAccountPopup extends Vue {
   @Prop(Function) handlerClose!: VoidFunction;
   @Prop(Function) handlerAgree!: VoidFunction;
 }

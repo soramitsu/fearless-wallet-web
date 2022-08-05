@@ -11,7 +11,6 @@ import { getMockCurrencies } from '@/util/currenciesHelper';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Mutations, MutationTypes } from './mutations';
 import type { Settings } from '@/networks';
-import type { SelectedWallet } from '@/store/accounts/types';
 import type { State } from './state';
 import type { ActionContext, ActionTree } from 'vuex';
 import type {
@@ -60,7 +59,7 @@ const actions: ActionTree<State, State> & Actions = {
     const activeNodes = accountController.getActiveNodes();
 
     const networks: Networks = networksJson.map(
-      ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi }) => {
+      ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi, chainId }) => {
         const networkName = name.toLocaleLowerCase();
         const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
         const externalApi = originalExternalApi ?? ({} as ExternalApi);
@@ -76,6 +75,7 @@ const actions: ActionTree<State, State> & Actions = {
           api,
           nodes,
           assets,
+          chainId,
           addressPrefix,
           isEthereumNetwork,
           subscriptionsBalances: {},
@@ -251,7 +251,7 @@ export function connectToApi(name: string, url: string, autoConnectMs = 0) {
 
 async function saveHistory(address: string, network: string, api: ExternalApi, context: AugmentedActionContext) {
   const { commit, dispatch } = context;
-  const formattedAddress = BaseApi.formatAddress({ address, ethereumAddress: address } as SelectedWallet, network);
+  const formattedAddress = BaseApi.formatAddress({ address, ethereumAddress: address }, network);
 
   const history = await dispatch(ActionTypes.LOAD_HISTORY, {
     historyExternalApi: api.history,

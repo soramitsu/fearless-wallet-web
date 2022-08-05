@@ -1,49 +1,13 @@
 <template>
-  <AboveForm header="Export JSON" :showBackIcon="showBackIcon" :handlerBack="handlerBack" :closeHandler="closeForm">
+  <AboveForm header="Export JSON" :closeHandler="closeForm.bind(null, '')">
     <div class="export-form">
       <div class="export-content">
         <Input v-model="exportType" placeholder="Source type" size="big" class="export-type-input" :readonly="true" />
 
-        <template v-if="step === 1">
-          <InformationBlock
-            class="info-block"
-            text="Password is required to encrypt your account and store as Restore JSON. Please, create password to continue
-          operation."
-          />
-
-          <ValidatedInput
-            v-model="pass1"
-            placeholder="Set password for json file"
-            :showPassword="true"
-            :maxlength="25"
-          />
-
-          <ValidatedInput
-            v-model="pass2"
-            class="row"
-            placeholder="Confirm password"
-            errorDescriptions="Passwords do not match."
-            :isError="isErrorPass2"
-            :showPassword="true"
-            :maxlength="25"
-          />
-        </template>
-
-        <template v-else-if="step === 2">
-          <Input v-model="substrateAddress" class="row" size="big" placeholder="Substrate" :readonly="true" />
-
-          <Input
-            v-if="haveEthereumAccount"
-            v-model="ethereumAddress"
-            class="row"
-            size="big"
-            placeholder="Ethereum"
-            :readonly="true"
-          />
-        </template>
+        <Input v-model="substrateAddress" class="row" size="big" placeholder="Substrate" :readonly="true" />
       </div>
 
-      <Button size="big" fontSize="big" width="100%" :text="buttonText" :disabled="disabledButton" @click="proceed" />
+      <Button size="big" fontSize="big" width="100%" text="Export" @click="proceed" />
     </div>
   </AboveForm>
 </template>
@@ -51,14 +15,17 @@
 <script lang="ts">
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
-import keyring from '@polkadot/ui-keyring';
+import BaseApi from '@/util/BaseApi';
 import AboveForm from '@/components/AboveForm.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import InformationBlock from '@/components/InformationBlock.vue';
 import { Getter } from 'vuex-class';
+import { saveAs } from 'file-saver';
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import type { SelectedWallet } from '@/store/accounts/types';
+import type { Networks } from '@/store/networks/types';
 
 @Component({
   components: {
@@ -71,93 +38,42 @@ import type { SelectedWallet } from '@/store/accounts/types';
 })
 export default class ExportForm extends Vue {
   exportType = 'Restore JSON';
-  pass1 = '';
-  pass2 = '';
-  step = 1;
 
-  @Prop(Function) closeForm!: VoidFunction;
-
+  @Prop(String) password!: string;
+  @Prop(Function) closeForm!: (password: string) => void;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
 
-  get haveEthereumAccount() {
-    const accounts = keyring.getAccounts();
-    const indexEthereum = accounts.findIndex(({ address }) => address === this.selectedWallet.ethereumAddress);
-
-    return indexEthereum !== -1;
+  get network() {
+    return this.$route.params.network;
   }
 
   get substrateAddress() {
-    return JSON.stringify({ address: this.selectedWallet.address });
-  }
+    const address = BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.network);
 
-  get ethereumAddress() {
-    return JSON.stringify({ address: this.selectedWallet.ethereumAddress });
-  }
-
-  get showBackIcon() {
-    return this.step === 2;
-  }
-
-  get buttonText() {
-    return this.step === 1 ? 'Continue' : 'Export';
-  }
-
-  get isErrorPass2() {
-    return this.pass2 !== '' && this.pass2 !== this.pass1;
-  }
-
-  get disabledButton() {
-    return this.pass2 === '' || this.pass2 !== this.pass1;
+    return JSON.stringify({ address });
   }
 
   proceed() {
-    if (this.step === 1) this.step = 2;
-    else {
-      this.export();
-      this.closeForm();
-    }
+    this.export();
+    this.closeForm('');
   }
 
   export() {
-    const a = document.createElement('a');
-
-    const addressSubstrate = this.selectedWallet.address;
-    const keyringPair = keyring.getPair(addressSubstrate);
-
-    keyringPair.unlock();
-
-    const keyringPair$Json = keyringPair.toJson(this.pass1);
-    const jsonSubstrate = JSON.stringify(keyringPair$Json);
+    const chainId = this.networks.find(({ name }) => name === this.network)!.chainId; //eslint-disable-line
+    const addressSubstrate = BaseApi.getDefaultAddressByNetworkIncludingReplacedAccount(
+      this.selectedWallet,
+      this.network
+    );
+    const keyringPair = BaseApi.getPair(addressSubstrate);
+    const keyringPair$Json = keyringPair.toJson(this.password);
+    const meta = { ...keyringPair$Json.meta, genesisHash: `0x${chainId}` };
+    const jsonSubstrate = JSON.stringify({ ...keyringPair$Json, meta });
     const blobSubstrate = new Blob([jsonSubstrate], { type: 'application/json; charset=utf-8' });
 
     keyringPair.lock();
 
-    a.href = URL.createObjectURL(blobSubstrate);
-    a.download = `${addressSubstrate}.json`;
-    a.click();
-
-    if (this.haveEthereumAccount) {
-      const addressEthereum = this.selectedWallet.ethereumAddress;
-      const keyringPair = keyring.getPair(addressEthereum);
-
-      keyringPair.unlock();
-
-      const keyringPair$Json = keyringPair.toJson(this.pass1);
-      const jsonEthereum = JSON.stringify(keyringPair$Json);
-      const blobEthereum = new Blob([jsonEthereum], { type: 'application/json; charset=utf-8' });
-
-      keyringPair.lock();
-
-      a.href = URL.createObjectURL(blobEthereum);
-      a.download = `${addressEthereum}.json`;
-      a.click();
-    }
-  }
-
-  handlerBack() {
-    this.pass1 = '';
-    this.pass2 = '';
-    this.step = 1;
+    saveAs(blobSubstrate, `${addressSubstrate}.json`);
   }
 }
 </script>

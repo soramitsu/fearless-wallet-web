@@ -1,7 +1,7 @@
 import CurrencyController from '@/controllers/currencyController';
 import type { Currencies, Currency } from '@/interfaces/currencies';
 import type { Networks } from '@/store/networks/types';
-import type { SelectedWallet } from '@/store/accounts/types';
+import type { Wallet } from '@/store/accounts/types';
 
 export function getMockCurrencies(networks: Networks): Currencies {
   const currencies: Currencies = networks
@@ -29,7 +29,7 @@ export function getMockCurrencies(networks: Networks): Currencies {
   return currencies;
 }
 
-export function defaultSortingCurrencies(currencies: Currency[], wallet: SelectedWallet) {
+export function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet) {
   const relayChains = [];
   const currenciesWithTokens = currencies.filter((currency) => currency.getTotalCountTokens(wallet) !== '0');
   const currenciesWithoutTokens = currencies.filter((currency) => currency.getTotalCountTokens(wallet) === '0');

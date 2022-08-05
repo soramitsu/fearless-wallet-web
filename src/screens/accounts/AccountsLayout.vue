@@ -19,10 +19,11 @@
         <Scroll>
           <router-view
             ref="content"
+            :password="password"
+            @setPassword="setPassword"
             @openEditNodeForm="openEditNodeForm"
             @openNodeSettings="openNodeSettings"
             @openAccountSettings="openAccountSettings"
-            @openExportForm="openExportForm"
           />
         </Scroll>
       </div>
@@ -67,7 +68,7 @@
 
     <ReplacePopup v-if="showReplacePopup" :selectedNetwork="selectedNetwork" :handlerClose="closeReplacePopup" />
 
-    <ExportForm v-if="showExportForm" :closeForm="closeForm" />
+    <ExportForm v-if="showExportForm" :password="password" :closeForm="setPassword" />
   </div>
 </template>
 
@@ -104,6 +105,7 @@ type NotificationType = 'delete' | 'export' | '';
   },
 })
 export default class AccountsLayout extends Vue {
+  password = '';
   selectedNetwork = '';
   selectedNodeName = '';
   selectedNodeUrl = '';
@@ -114,7 +116,6 @@ export default class AccountsLayout extends Vue {
   showAccountSettings = false;
   showEditNodeForm = false;
   showNodeSettings = false;
-  showExportForm = false;
 
   get headers() {
     return this.notificationType === 'delete'
@@ -126,6 +127,10 @@ export default class AccountsLayout extends Vue {
             'Sharing or copying your secret is a high risk operation, don’t send it to anyone. Would you like to proceed with sharing/copying process?',
         }
       : '';
+  }
+
+  get showExportForm() {
+    return this.password !== '';
   }
 
   get showHeaderMenu() {
@@ -172,12 +177,8 @@ export default class AccountsLayout extends Vue {
     return this.notificationType !== '';
   }
 
-  openExportForm() {
-    this.showExportForm = true;
-  }
-
-  closeForm() {
-    this.showExportForm = false;
+  setPassword(password: string) {
+    this.password = password;
   }
 
   handlerButton() {

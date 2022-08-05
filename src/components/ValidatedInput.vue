@@ -44,7 +44,7 @@ export default class ValidatedInput extends Vue {
     font-size: 14px;
     color: #ee7700;
     text-align: left;
-    margin: 14px 0;
+    margin-top: 15px;
   }
 }
 </style>

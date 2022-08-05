@@ -64,7 +64,7 @@ export default class ImportWallet extends Vue {
   @Prop(String) ethereumRawSeed!: string;
   @Prop(String) substrateJson!: string;
   @Prop(String) ethereumJson!: string;
-  @Prop(Number) currentIndexPage!: number;
+  @Prop(Number) step!: number;
   @Prop(Boolean) isReplaceAccount!: boolean;
   @Prop(Boolean) isEthereumReplacedNetwork!: boolean;
   @Prop(Object) derivationPath!: DerivationPath;
@@ -86,16 +86,16 @@ export default class ImportWallet extends Vue {
         ? this.isEthereumReplacedNetwork
           ? 'ethereumRawSeed'
           : 'substrateRawSeed'
-        : this.currentIndexPage === 1
+        : this.step === 1
         ? 'substrateRawSeed'
         : 'ethereumRawSeed'
-      : this.currentIndexPage === 1
+      : this.step === 1
       ? 'substrateJson'
       : 'ethereumJson';
   }
 
   get disabledSelect() {
-    return this.currentIndexPage === 2;
+    return this.step === 2;
   }
 
   get notJsonImport() {
@@ -103,18 +103,18 @@ export default class ImportWallet extends Vue {
   }
 
   get showSlot() {
-    return this.isReplaceAccount ? this.typeImport === 'mnemonic' : this.notJsonImport && this.currentIndexPage === 1;
+    return this.isReplaceAccount ? this.typeImport === 'mnemonic' : this.notJsonImport && this.step === 1;
   }
 
   get placeholderTypeImportValue() {
     if (this.typeImport === 'rawSeed') {
-      if (this.currentIndexPage === 1) return 'Substrate accounts raw seed';
-      else if (this.currentIndexPage === 2) return 'ETH accounts raw seed';
+      if (this.step === 1) return 'Substrate accounts raw seed';
+      else if (this.step === 2) return 'ETH accounts raw seed';
     }
 
     if (this.typeImport === 'json') {
-      if (this.currentIndexPage === 1) return 'Restore JSON for Substrate accounts';
-      else if (this.currentIndexPage === 2) return 'Restore JSON for Ethereum accounts';
+      if (this.step === 1) return 'Restore JSON for Substrate accounts';
+      else if (this.step === 2) return 'Restore JSON for Ethereum accounts';
     }
 
     return 'Enter Passphrase';

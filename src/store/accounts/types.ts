@@ -1,12 +1,11 @@
-export interface SelectedWallet {
+export interface Wallet {
   address: string;
   ethereumAddress: string;
-  name: string;
 }
 
-export type SetPasswordProps = {
-  password: string;
-};
+export interface SelectedWallet extends Wallet {
+  name: string;
+}
 
 export type SetSelectedWalletProps = {
   selectedWalletAddress: string;

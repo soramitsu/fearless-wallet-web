@@ -21,7 +21,7 @@
       </div>
       <div class="row">
         <div class="description">
-          <img src="@/assets/lock-2.svg" class="icon" />
+          <img src="@/assets/lock.svg" class="icon" />
 
           <div class="label">Change password</div>
         </div>

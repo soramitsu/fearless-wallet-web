@@ -88,16 +88,17 @@
       </div>
     </ActivityForm>
 
-    <SendingPopup
-      v-if="showSendingPopup"
+    <ConfirmationPasswordPopup
+      v-if="showConfirmationPasswordPopup"
       header="Teleport"
-      :popupLoading="sendingPopupLoading"
-      :handlerClose="sendingPopupClose"
+      :currency="currency"
       :amount="amount"
       :value="value"
       :token="selectedToken"
+      :address="addressByNetwork"
       :firstNetwork="originalNetwork"
       :secondNetwork="destinationNetwork"
+      @close="confirmationPasswordPopupClose"
     />
   </div>
 </template>
@@ -109,7 +110,7 @@ import FloatInput from '@/components/FloatInput.vue';
 import Popup from '@/components/Popup.vue';
 import ActivityForm from './ActivityForm.vue';
 import MaxButton from './MaxButton.vue';
-import SendingPopup from './SendingPopup.vue';
+import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import Corners from '@/components/Corners.vue';
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
@@ -119,7 +120,6 @@ import { SelectedWallet } from '@/store/accounts/types';
 import { Networks } from '@/store/networks/types';
 import { firstCharToUp } from '@/util/helpers';
 import { addNumbers, formattedNumber, formattedPrice } from '@/util/numbers';
-import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import type { Currencies } from '@/interfaces/currencies';
 
 @Component({
@@ -128,7 +128,7 @@ import type { Currencies } from '@/interfaces/currencies';
     Select,
     Popup,
     Loading,
-    SendingPopup,
+    ConfirmationPasswordPopup,
     MaxButton,
     Corners,
     FloatInput,
@@ -136,8 +136,7 @@ import type { Currencies } from '@/interfaces/currencies';
 })
 export default class TeleportForm extends Vue {
   isValidCountTokens = true;
-  showSendingPopup = false;
-  sendingPopupLoading = false;
+  showConfirmationPasswordPopup = false;
   originalNetworkPartialFee = '';
   destinationNetworkPartialFee = '';
   selectedToken = '';
@@ -174,7 +173,7 @@ export default class TeleportForm extends Vue {
   }
 
   get value() {
-    return this.currentCurrency?.getCostOfTokens(this.amount).toString() ?? '';
+    return this.currency?.getCostOfTokens(this.amount).toString() ?? '';
   }
 
   get originalNetworkPartialFeeString() {
@@ -192,7 +191,7 @@ export default class TeleportForm extends Vue {
   }
 
   get transferrableAmount() {
-    const count = +(this.currentCurrency?.getTransferableCountTokens(this.originalNetwork, this.selectedWallet) ?? 0);
+    const count = +(this.currency?.getTransferableCountTokens(this.originalNetwork, this.selectedWallet) ?? 0);
 
     return formattedNumber(count, 4);
   }
@@ -204,9 +203,9 @@ export default class TeleportForm extends Vue {
   get buttonText() {
     if (this.step === 2) return 'Teleport';
 
-    if (!this.currentCurrency) return '';
+    if (!this.currency) return '';
 
-    const { token } = this.currentCurrency;
+    const { token } = this.currency;
 
     if (this.destinationNetwork !== '' && !this.isValidTeleportDirection) return 'Impossible to teleport';
     else if (!this.isValidCountTokens) return `Insufficient balance ${token.toUpperCase()}`;
@@ -214,7 +213,7 @@ export default class TeleportForm extends Vue {
     return 'Next';
   }
 
-  get currentCurrency() {
+  get currency() {
     return this.currencies.find(({ token }) => token === this.selectedToken);
   }
 
@@ -229,11 +228,11 @@ export default class TeleportForm extends Vue {
   }
 
   get isValidTeleportDirection() {
-    return this.currentCurrency?.getParaId(this.originalNetwork, this.destinationNetwork) !== undefined;
+    return this.currency?.getParaId(this.originalNetwork, this.destinationNetwork) !== undefined;
   }
 
   get isAllFieldsCorrect() {
-    if (!this.currentCurrency) return false;
+    if (!this.currency) return false;
 
     return (
       !!this.selectedToken &&
@@ -249,7 +248,7 @@ export default class TeleportForm extends Vue {
   }
 
   get optionsNetwork() {
-    const availableInNetworks = this.currentCurrency?.getAvailableInNetworks(this.selectedWallet);
+    const availableInNetworks = this.currency?.getAvailableInNetworks(this.selectedWallet);
 
     return availableInNetworks?.map(({ network }) => ({
       label: firstCharToUp(network),
@@ -258,7 +257,7 @@ export default class TeleportForm extends Vue {
   }
 
   get addressByNetwork() {
-    return this.currentCurrency?.getTransactionAddress(this.selectedWallet, this.originalNetwork) ?? '';
+    return this.currency?.getTransactionAddress(this.selectedWallet, this.originalNetwork) ?? '';
   }
 
   @Watch('selectedToken')
@@ -280,7 +279,7 @@ export default class TeleportForm extends Vue {
     const partialFee = await this.createTransferAndGetFee();
 
     this.originalNetworkPartialFee = partialFee;
-    this.isValidCountTokens = this.currentCurrency!.isValidCountTokens(
+    this.isValidCountTokens = this.currency!.isValidCountTokens( // eslint-disable-line
       this.amount,
       partialFee,
       this.originalNetwork,
@@ -299,53 +298,48 @@ export default class TeleportForm extends Vue {
   }
 
   async createTransferAndGetFee(amount?: string) {
-    this.currentCurrency!.createTeleportTransfer(
+    this.currency!.createTeleportTransfer( // eslint-disable-line
       this.selectedWallet,
       this.originalNetwork,
       this.destinationNetwork,
       amount ?? this.amount
     );
 
-    return await this.currentCurrency!.getPartialFee(this.addressByNetwork);
+    return await this.currency!.getPartialFee(this.addressByNetwork); // eslint-disable-line
   }
 
   async setMaxValue() {
-    if (!this.currentCurrency) return;
+    if (!this.currency) return;
 
-    const maxTransferableCountTokens = this.currentCurrency?.getTransferableCountTokens(
+    const maxTransferableCountTokens = this.currency?.getTransferableCountTokens(
       this.originalNetwork,
       this.selectedWallet
     );
     const partialFee = await this.createTransferAndGetFee(maxTransferableCountTokens);
 
-    this.amount = this.currentCurrency
+    this.amount = this.currency
       .getTransferableCountTokensMinusFee(partialFee, this.originalNetwork, this.selectedWallet)
       .toString();
   }
 
-  sendingPopupClose() {
-    this.showSendingPopup = false;
+  confirmationPasswordPopupClose(closeForm: boolean) {
+    this.showConfirmationPasswordPopup = false;
 
-    this.closeForm();
+    if (closeForm) this.closeForm();
   }
 
   handlerBack() {
     this.step = 1;
   }
 
-  async handlerButton() {
-    if (this.step === 1) {
-      this.step += 1;
+  handlerButton() {
+    if (this.step === 2) {
+      this.showConfirmationPasswordPopup = true;
 
       return;
     }
 
-    this.showSendingPopup = true;
-    this.sendingPopupLoading = true;
-
-    await this.currentCurrency?.send(this.addressByNetwork, this.amount);
-
-    this.sendingPopupLoading = false;
+    this.step += 1;
   }
 }
 </script>

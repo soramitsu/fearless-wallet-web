@@ -12,13 +12,11 @@ import Token from '@/screens/wallet/token/Token.vue';
 import Wallet from '@/screens/wallet/Wallet.vue';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import AddWallet from '@/screens/addWallet/AddWallet.vue';
-import WelcomeBack from '@/screens/welcomeBack/WelcomeBack.vue';
 import { accountController } from '@/controllers/accountController';
 import { RouteConfig } from 'vue-router';
 
 export enum Components {
   Welcome = 'Welcome',
-  WelcomeBack = 'WelcomeBack',
   AddWallet = 'AddWallet',
   Main = 'Main',
   Wallet = 'Wallet',
@@ -34,28 +32,17 @@ export enum Components {
 }
 
 const haveAccounts = () => keyring.getAccounts().length > 0;
-const isSavedPassword = () => accountController.isSavedPassword();
-const isCorrectPasswordAge = () => accountController.isCorrectPasswordAge();
-const redirectToWelcomeBack = () => isSavedPassword() && !isCorrectPasswordAge();
 
 const routes: Array<RouteConfig> = [
   {
     path: '/welcome',
     name: Components.Welcome,
     component: Welcome,
-    beforeEnter: (to, from, next) => {
-      if (redirectToWelcomeBack()) next({ name: Components.WelcomeBack });
-      else next();
-    },
   },
   {
     path: '/add-wallet/:type',
     name: Components.AddWallet,
     component: AddWallet,
-    beforeEnter: (to, from, next) => {
-      if (redirectToWelcomeBack()) next({ name: Components.WelcomeBack });
-      else next();
-    },
   },
   {
     path: '/main',
@@ -89,7 +76,7 @@ const routes: Array<RouteConfig> = [
             component: Network,
           },
           {
-            path: 'export/:network',
+            path: ':network/export',
             name: Components.Export,
             component: Export,
           },
@@ -122,18 +109,7 @@ const routes: Array<RouteConfig> = [
       },
     ],
     beforeEnter: (to, from, next) => {
-      if (redirectToWelcomeBack()) next({ name: Components.WelcomeBack });
-      else if (!haveAccounts()) next({ name: Components.Welcome });
-      else next();
-    },
-  },
-  {
-    path: '/welcome-back',
-    name: Components.WelcomeBack,
-    component: WelcomeBack,
-    beforeEnter: (to, from, next) => {
-      if (!isSavedPassword()) next({ name: Components.Welcome });
-      else if (isCorrectPasswordAge()) next({ name: Components.Wallet });
+      if (!haveAccounts()) next({ name: Components.Welcome });
       else next();
     },
   },

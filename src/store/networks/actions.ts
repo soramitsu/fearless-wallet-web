@@ -9,20 +9,22 @@ import { getHistory } from '@/subquery/history';
 import { getReplacedMetaTyped } from '@/util/helpers';
 import { getMockCurrencies } from '@/util/currenciesHelper';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { Mutations, MutationTypes } from './mutations';
+import { MutationTypes } from './mutations';
+import type { Mutations } from './mutations';
 import type { Settings } from '@/networks';
 import type { State } from './state';
 import type { ActionContext, ActionTree } from 'vuex';
 import type {
   NetworkJson,
   Networks,
-  AssetsJson,
-  LoadNetworksInfo,
+  AssetJson,
+  FiatJson,
+  LoadNetworks,
   LoadHistory,
   SubscribeToBalances,
   LoadAssets,
+  LoadFiats,
   TokensPriceJson,
-  TokensPrice,
   ExternalApi,
   UpdateActiveNode,
   Accounts,
@@ -31,7 +33,8 @@ import type { AccountData } from '@polkadot/types/interfaces/balances';
 
 export enum ActionTypes {
   LOAD_NETWORKS = 'LOAD_NETWORKS',
-  LOAD_ASSETS_INFO = 'LOAD_ASSETS_INFO',
+  LOAD_ASSETS = 'LOAD_ASSETS',
+  LOAD_FIATS = 'LOAD_FIATS',
   LOAD_TOKENS_PRICE = 'LOAD_TOKENS_PRICE',
   LOAD_HISTORY = 'LOAD_HISTORY',
   SUBSCRIBE_TO_BALANCES = 'SUBSCRIBE_TO_BALANCES',
@@ -40,11 +43,12 @@ export enum ActionTypes {
 
 type AugmentedActionContext = {
   commit<K extends keyof Mutations>(key: K, payload: Parameters<Mutations[K]>[1]): ReturnType<Mutations[K]>;
-} & Omit<ActionContext<State, State>, 'commit'>;
+} & Omit<ActionContext<State, any>, 'commit'>;
 
 export type Actions = {
-  [ActionTypes.LOAD_NETWORKS](store: AugmentedActionContext, props: LoadNetworksInfo): Promise<void>;
-  [ActionTypes.LOAD_ASSETS_INFO](store: AugmentedActionContext, props: LoadAssets): Promise<void>;
+  [ActionTypes.LOAD_NETWORKS](store: AugmentedActionContext, props: LoadNetworks): Promise<void>;
+  [ActionTypes.LOAD_ASSETS](store: AugmentedActionContext, props: LoadAssets): Promise<void>;
+  [ActionTypes.LOAD_FIATS](store: AugmentedActionContext, props: LoadFiats): Promise<void>;
   [ActionTypes.LOAD_TOKENS_PRICE](store: AugmentedActionContext): Promise<void>;
   [ActionTypes.LOAD_HISTORY](store: AugmentedActionContext, props: LoadHistory): Promise<void>;
   [ActionTypes.SUBSCRIBE_TO_BALANCES](store: AugmentedActionContext, props: SubscribeToBalances): Promise<void>;
@@ -91,38 +95,42 @@ const actions: ActionTree<State, State> & Actions = {
     commit(MutationTypes.SET_NETWORKS, { networks });
   },
 
-  async [ActionTypes.LOAD_ASSETS_INFO]({ commit }, { url }) {
+  async [ActionTypes.LOAD_ASSETS]({ commit }, { url }) {
     const { data } = await axios.get(url);
-    const assetsJson: AssetsJson[] = data;
+    const assetsJson: AssetJson[] = data;
 
     commit(MutationTypes.SET_ASSETS, { assets: assetsJson });
   },
 
-  async [ActionTypes.LOAD_TOKENS_PRICE]({ commit, state: { networks, assets } }) {
+  async [ActionTypes.LOAD_FIATS]({ commit }, { url }) {
+    const { data } = await axios.get(url);
+    const fiatsJson: FiatJson[] = data;
+
+    commit(MutationTypes.SET_FIATS, { fiats: fiatsJson });
+  },
+
+  async [ActionTypes.LOAD_TOKENS_PRICE]({ commit, state: { networks, assets, fiats } }) {
     const assetsIds = networks.map(({ assets }) => assets[0].assetId);
+    const urlFiatsPart = fiats.map(({ id }) => id).join('%2C');
     const urlTokensPart = assets
       .filter(({ priceId, id }) => assetsIds.includes(id) && !!priceId)
       .map(({ priceId }) => priceId)
       .join('%2C');
-    const url = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&include_24hr_change=true&ids=${urlTokensPart}`;
+    const url = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${urlFiatsPart}&include_24hr_change=true&ids=${urlTokensPart}`;
     const { data } = await axios.get(url);
     const tokensPriceJson: TokensPriceJson = data;
-    const tokensPrice: TokensPrice = {};
+    const tokensPrice: TokensPriceJson = {};
 
-    for (const tokenPriceId in tokensPriceJson) {
-      const { usd, usd_24h_change } = tokensPriceJson[tokenPriceId]; // eslint-disable-line
-      const assetId = assets.find(({ priceId }) => priceId === tokenPriceId)!.id;
+    for (const network in tokensPriceJson) {
+      const assetId = assets.find(({ priceId }) => priceId === network)!.id;
 
-      tokensPrice[assetId] = {
-        usd,
-        usd24HoursChange: usd_24h_change,
-      };
+      tokensPrice[assetId] = tokensPriceJson[network];
     }
 
-    commit(MutationTypes.SET_TOKENS_PRICE, { tokensPrice });
+    commit(MutationTypes.SET_TOKENS_PRICE, { tokensPriceJson: tokensPrice });
   },
 
-  async [ActionTypes.LOAD_HISTORY]({ commit }, { historyExternalApi, walletAddress }) {
+  async [ActionTypes.LOAD_HISTORY](context, { historyExternalApi, walletAddress }) {
     const mockHistory = {};
     const pageSize = 20;
     const cursor = null;
@@ -220,10 +228,10 @@ const actions: ActionTree<State, State> & Actions = {
       api,
     });
 
-    const accounts = BaseApi.getAccounts().reduce((result, { address }) => {
+    const accounts = BaseApi.getAccounts().reduce((result, { address, meta }) => {
       const { type } = BaseApi.getPair(address);
 
-      result[address] = { type };
+      result[address] = { type, json: { address, meta } };
 
       return result;
     }, {} as Accounts);
@@ -266,17 +274,17 @@ async function saveHistory(address: string, network: string, api: ExternalApi, c
 }
 
 function subscribe(context: AugmentedActionContext, api: ApiPromise, token: string, network: string, address: string) {
-  const { getters, commit, state } = context;
-  const { tokensPrice } = state;
-  const price = tokensPrice[token]?.usd ?? 0;
-  const usd24HoursChange = tokensPrice[token]?.usd24HoursChange ?? 0;
-  const precision = getters[NetworksGettersTypes.getAssetsInfo].find((kek: any) => kek.id === token)?.precision ?? 0;
+  const { getters, commit, state, rootState } = context;
+  const { tokensPriceJson } = state;
+  const tokensPrice = tokensPriceJson[token] ?? {};
+  const precision = getters[NetworksGettersTypes.getAssets].find((kek: any) => kek.id === token)?.precision ?? 0;
+  const selectedFiat = rootState.account.selectedFiat;
 
   commit(MutationTypes.UPDATE_CURRENCY, {
     token,
-    price,
-    usd24HoursChange,
+    tokensPrice,
     precision,
+    selectedFiat,
   });
 
   const unsubscribe = api.rx.query.system.account(address).subscribe(async (result) => {

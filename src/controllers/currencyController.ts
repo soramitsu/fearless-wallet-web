@@ -9,7 +9,13 @@ import { FPNumber } from '@/util/fp';
 import { getReplacedMetaTyped } from '@/util/helpers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import type { AvailableInNetworks, Balances, BalanceFP, AvailableInNetworksFP } from '@/interfaces/currencies';
-import type { AssetsJson, UpdateCurrencyProps, UpdateCurrencyBalanceProps } from '@/store/networks/types';
+import type {
+  AssetJson,
+  UpdateCurrencyProps,
+  UpdateCurrencyBalanceProps,
+  TokenPriceJson,
+  KeyTokenPriceJson,
+} from '@/store/networks/types';
 import type { SubmittableExtrinsic } from '@polkadot/api-base/types';
 import type { MainNetworkName } from '@/consts/teleport';
 import type { SignerOptions } from '@polkadot/api/submittable/types';
@@ -23,18 +29,26 @@ export default class CurrencyController {
   public transfer!: SubmittableExtrinsic<'promise'> | undefined;
   public options: Partial<SignerOptions> = {};
   public balances: Balances = {};
+  public price = 0;
+  public hours24Change = 0;
 
   constructor(
     public mainNetwork: string,
     public token: string,
-    public price: number,
-    public usd24HoursChange: number,
+    public tokensPrice: TokenPriceJson,
     public precision: number
   ) {
     console.log();
   }
 
-  private getCurrenciesVisible() {
+  public updatePrice(selectedFiat: string) {
+    const hours24ChangeField = `${selectedFiat}_24h_change` as KeyTokenPriceJson;
+
+    this.price = this.tokensPrice[selectedFiat as KeyTokenPriceJson] ?? 0;
+    this.hours24Change = this.tokensPrice[hours24ChangeField] ?? 0;
+  }
+
+  private getCurrenciesVisible(): Record<string, boolean> {
     const currencyVisible = this.lsCurrency.get(this.currencyVisibleStorageName);
 
     return currencyVisible.value ?? {};
@@ -118,10 +132,11 @@ export default class CurrencyController {
     return addressByNetwork;
   }
 
-  public updateCurrency({ precision, price, usd24HoursChange }: UpdateCurrencyProps): void {
+  public updateCurrency({ precision, tokensPrice, selectedFiat }: UpdateCurrencyProps): void {
     this.precision = precision ?? this.precision;
-    this.price = price ?? this.price;
-    this.usd24HoursChange = usd24HoursChange ?? this.usd24HoursChange;
+    this.tokensPrice = tokensPrice ?? this.tokensPrice;
+
+    this.updatePrice(selectedFiat);
   }
 
   public updateCurrencyBalance({ walletAddress, currency }: UpdateCurrencyBalanceProps): CurrencyController {
@@ -237,8 +252,8 @@ export default class CurrencyController {
     this.lsCurrency.set(this.currencyVisibleStorageName, currenciesVisible);
   }
 
-  private static getAssets(token: string): AssetsJson {
-    const assets: AssetsJson[] = store.getters[NetworksGettersTypes.getAssetsInfo];
+  private static getAssets(token: string): AssetJson {
+    const assets: AssetJson[] = store.getters[NetworksGettersTypes.getAssets];
 
     return assets.find(({ id }) => id === token)!; // eslint-disable-line
   }

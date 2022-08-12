@@ -1,21 +1,27 @@
 <template>
   <Popup
+    sizeWidth="big"
+    class="popup-with-choice"
     :headerText="header"
+    :placeholder="placeholder"
     :showSearch="showSearch"
     :showBorder="showBorder"
     :staticHeight="staticHeight"
-    sizeWidth="big"
     :handlerFilter="handlerFilter"
     :handlerClose="handlerClose"
     :horizontalPlacement="horizontalPlacement"
     :verticalPlacement="verticalPlacement"
     :top="top"
     :left="left"
-    class="popup-with-choice"
   >
-    <div v-for="{ label, value, path } in options" :key="label" :class="rowClasses(value)" @click="toggle(value)">
+    <div
+      v-for="({ label, value, path }, index) in options"
+      :key="label"
+      :class="rowClasses(value)"
+      @click="toggle(value)"
+    >
       <div class="description">
-        <img v-if="showIcon" :src="getImg(path)" class="img" />
+        <img v-if="showIcon" :src="getImg(path, index)" class="img" />
 
         {{ label }}
       </div>
@@ -33,7 +39,9 @@ type SpaceSize = 'small' | 'medium' | 'big';
 @Component({
   components: { Popup },
 })
-export default class PopupWithSelect extends Vue {
+export default class SelectPopup extends Vue {
+  icons: string[] = [];
+
   @VModel({ type: String }) VModel!: string;
   @Prop(Array) options!: Record<string, string>[];
   @Prop(String) header!: string;
@@ -42,6 +50,7 @@ export default class PopupWithSelect extends Vue {
   @Prop({ default: 'center' }) horizontalPlacement!: string;
   @Prop({ default: 'center' }) verticalPlacement!: string;
   @Prop({ default: 'medium' }) space!: SpaceSize;
+  @Prop({ default: '' }) placeholder!: string;
   @Prop({ default: false }) showIcon!: boolean;
   @Prop({ default: false }) showSearch!: boolean;
   @Prop({ default: false }) showBorder!: boolean;
@@ -67,8 +76,6 @@ export default class PopupWithSelect extends Vue {
 
   toggle(value: string) {
     this.toggleValue(value);
-    this.handlerFilter('');
-    this.handlerClose();
   }
 }
 </script>
@@ -118,8 +125,10 @@ export default class PopupWithSelect extends Vue {
 
     .img {
       width: 24px;
+      height: 24px;
       margin-right: 10px;
       opacity: 0.65;
+      user-select: none;
     }
   }
 

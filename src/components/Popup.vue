@@ -10,7 +10,7 @@
     >
       <div :class="popupContainerClasses">
         <div v-if="showHeader" class="header">
-          <SearchInput v-if="showSearch" v-model="filterValue" placeholder="Search in networks" />
+          <SearchInput v-if="showSearch" v-model="filterValue" :placeholder="placeholder" />
 
           <template v-else>
             <div class="button"></div>
@@ -57,6 +57,7 @@ export default class Popup extends Vue {
   @Prop(Number) top!: number;
   @Prop(Number) left!: number;
   @Prop({ default: '' }) headerText!: string;
+  @Prop({ default: '' }) placeholder!: string;
   @Prop({ default: true }) showHeader!: boolean;
   @Prop({ default: true }) showBlur!: boolean;
   @Prop({ default: false }) showSearch!: boolean;

@@ -96,26 +96,26 @@ export default class CurrencyItem extends Vue {
   @Prop(Object) currency!: Currency;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
-
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
   get showCurrencyItem() {
     return !this.showAssetsManagementForm ? this.currencyVisible : true;
   }
 
   get changePriceClasses() {
-    const { usd24HoursChange } = this.currency;
+    const { hours24Change } = this.currency;
     const classes = ['price'];
 
-    if (usd24HoursChange > 0) classes.push('up-price');
-    else if (usd24HoursChange < 0) classes.push('down-price');
+    if (hours24Change > 0) classes.push('up-price');
+    else if (hours24Change < 0) classes.push('down-price');
 
     return classes;
   }
 
   get usd24HoursChangeString() {
-    const { usd24HoursChange } = this.currency;
-    const change = +formattedNumber(usd24HoursChange);
+    const { hours24Change } = this.currency;
+    const change = +formattedNumber(hours24Change);
 
     return change > 0 ? `+${change}%` : change < 0 ? `${change}%` : '';
   }
@@ -133,11 +133,11 @@ export default class CurrencyItem extends Vue {
   get totalBalanceString() {
     const totalBalance = +this.currency.getTotalBalance(this.selectedWallet);
 
-    return `$${formattedPrice(totalBalance)}`;
+    return `${this.fiatSymbol}${formattedPrice(totalBalance)}`;
   }
 
   get priceString() {
-    return `$${formattedPrice(this.currency.price)}`;
+    return `${this.fiatSymbol}${formattedPrice(this.currency.price)}`;
   }
 
   get upperNetworkName() {
@@ -295,6 +295,7 @@ export default class CurrencyItem extends Vue {
   .img-container {
     width: 60px;
     margin: auto;
+    user-select: none;
 
     .main-network-img {
       width: 32px;
@@ -306,6 +307,7 @@ export default class CurrencyItem extends Vue {
     width: 12px;
     margin-right: 3px;
     opacity: 0.5;
+    user-select: none;
 
     &:last-child {
       margin-right: 0;

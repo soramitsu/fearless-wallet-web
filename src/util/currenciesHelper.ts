@@ -1,6 +1,6 @@
 import CurrencyController from '@/controllers/currencyController';
 import type { Currencies, Currency } from '@/interfaces/currencies';
-import type { Networks } from '@/store/networks/types';
+import type { Networks, TokenPriceJson } from '@/store/networks/types';
 import type { Wallet } from '@/store/accounts/types';
 
 export function getMockCurrencies(networks: Networks): Currencies {
@@ -14,16 +14,15 @@ export function getMockCurrencies(networks: Networks): Currencies {
         result.push({
           mainNetwork: name,
           token,
-          price: 0,
           precision: 0,
-          usd24HoursChange: 0,
+          tokenPriceJson: {} as TokenPriceJson,
         });
 
       return result;
     }, [] as any[])
     .map(
-      ({ mainNetwork, price, precision, token, usd24HoursChange }) =>
-        new CurrencyController(mainNetwork, token, price, usd24HoursChange, precision)
+      ({ mainNetwork, tokenPriceJson, precision, token }) =>
+        new CurrencyController(mainNetwork, token, tokenPriceJson, precision)
     );
 
   return currencies;

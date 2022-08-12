@@ -2,7 +2,7 @@
   <div class="total-balance" @click="$emit('click')">
     <div>
       <div v-if="name" class="name">{{ name }}</div>
-      <div class="balance">${{ balanceString }}</div>
+      <div class="balance">{{ fiatSymbol }}{{ balanceString }}</div>
       <!-- <div :class="percentClasses">{{ percentString }}</div> -->
     </div>
     <s-icon name="basic-check-mark-24" v-show="showIcon" />
@@ -11,6 +11,8 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { formattedNumber } from '@/util/numbers';
 
 @Component
@@ -19,6 +21,7 @@ export default class TotalBalance extends Vue {
   @Prop(String) balance!: string;
   @Prop(Number) percent!: number;
   @Prop({ default: false }) showIcon!: boolean;
+  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
   get balanceString() {
     return formattedNumber(+this.balance);

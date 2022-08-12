@@ -9,16 +9,22 @@ export default class NetworksController {
     return store.getters[NetworksGettersTypes.getNetworks];
   }
 
-  public static async loadNetworksInfo(): Promise<void> {
+  public static async loadNetworks(): Promise<void> {
     const url = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/v2/chains/chains.json';
 
     await store.dispatch(NetworksActionTypes.LOAD_NETWORKS, { url });
   }
 
-  public static async loadAssetsInfo(): Promise<void> {
+  public static async loadAssets(): Promise<void> {
     const url = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v2/chains/assets_dev.json';
 
-    await store.dispatch(NetworksActionTypes.LOAD_ASSETS_INFO, { url });
+    await store.dispatch(NetworksActionTypes.LOAD_ASSETS, { url });
+  }
+
+  public static async loadFiats(): Promise<void> {
+    const url = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';
+
+    await store.dispatch(NetworksActionTypes.LOAD_FIATS, { url });
   }
 
   public static async loadTokensPrice(): Promise<void> {

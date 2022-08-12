@@ -1,5 +1,5 @@
 <template>
-  <div class="header">
+  <header class="header">
     <div class="header-part" :ref="walletNameRef">
       <div class="logo-container">
         <CircleButton v-if="showBackIcon" backgroundColor="light-black" iconName="chevron-left" @click="backToWallet" />
@@ -10,7 +10,7 @@
       <div class="wallet-name-block" @click="toggleSelectWalletPopupVisible">
         <div class="wallet-name">{{ name }}</div>
 
-        <Rotate :isActive="showSelectWalletPopup">
+        <Rotate :isActive="syncedShowSelectWalletPopup">
           <s-icon name="chevron-bottom-16" />
         </Rotate>
       </div>
@@ -25,38 +25,30 @@
 
       <CircleButton iconName="settings" class="button-margin" backgroundColor="none" @click="toggleSettingsVisible" />
     </div>
-
-    <SelectWalletPopup v-if="showSelectWalletPopup" @close="toggleSelectWalletPopupVisible" />
-
-    <SettingsPopup v-if="showSettings" :handlerClose="toggleSettingsVisible" />
-  </div>
+  </header>
 </template>
 
 <script lang="ts">
 import Logo from '@/components/Logo.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import Rotate from '@/components/Rotate.vue';
-import SelectWalletPopup from './SelectWalletPopup.vue';
-import SettingsPopup from './SettingsPopup.vue';
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
 import type { SelectedWallet } from '@/store/accounts/types';
+
 @Component({
   components: {
     Logo,
-    CircleButton,
     Rotate,
-    SelectWalletPopup,
-    SettingsPopup,
+    CircleButton,
   },
 })
 export default class Header extends Vue {
   walletNameRef = 'walletName';
-  showSelectWalletPopup = false;
-  showSettings = false;
 
+  @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get showBackIcon() {
@@ -79,26 +71,26 @@ export default class Header extends Vue {
     return Date.now() ? 'Connected' : 'Not connected';
   }
 
-  toggleSelectWalletPopupVisible() {
-    this.showSelectWalletPopup = !this.showSelectWalletPopup;
-
-    if (this.showSelectWalletPopup) {
-      this.targetElement.style.zIndex = '200';
-    } else {
-      this.targetElement.style.zIndex = '0';
-    }
-  }
-
-  toggleSettingsVisible() {
-    this.showSettings = !this.showSettings;
-  }
-
   backToWallet() {
     this.$router.push({ name: Components.Wallet });
   }
 
   fullScreen() {
     alert(`fullScreen`);
+  }
+
+  toggleSettingsVisible() {
+    this.$emit('toggleSettingsVisible');
+  }
+
+  toggleSelectWalletPopupVisible() {
+    this.syncedShowSelectWalletPopup = !this.syncedShowSelectWalletPopup;
+
+    if (!this.syncedShowSelectWalletPopup) {
+      this.targetElement.style.zIndex = '200';
+    } else {
+      this.targetElement.style.zIndex = '0';
+    }
   }
 }
 </script>
@@ -160,6 +152,7 @@ export default class Header extends Vue {
       font-size: 12px;
       border-radius: 20px;
       background-color: rgba(255, 255, 255, 0.1);
+      user-select: none;
     }
   }
 

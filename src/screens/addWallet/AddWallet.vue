@@ -73,7 +73,11 @@
           @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
         />
 
-        <PasswordForm v-if="showPasswordForm" @updateWalletPassword="updateWalletPassword" />
+        <PasswordForm
+          v-if="showPasswordForm"
+          :displayMockPassword="displayMockPassword"
+          @updateWalletPassword="updateWalletPassword"
+        />
 
         <FinishForm v-if="showFinishForm" />
       </div>
@@ -149,6 +153,7 @@ type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'sub
   },
 })
 export default class AddWallet extends Vue {
+  step = 1;
   nickname = '';
   mnemonic = '';
   walletPassword = '';
@@ -158,7 +163,7 @@ export default class AddWallet extends Vue {
   substrateJson = '';
   ethereumRawSeed = '';
   substrateRawSeed = '';
-  step = 1;
+  displayMockPassword = false;
   showAdvancedForm = false;
   showAddEthereumAccountPopup = false;
   selectedMnemonicElements: string[] = [];
@@ -306,7 +311,7 @@ export default class AddWallet extends Vue {
 
   get disabledProceed() {
     // mutual logic step(password)
-    if (this.showPasswordForm) return !this.walletPassword;
+    if (this.showPasswordForm) return !this.displayMockPassword && !this.walletPassword;
 
     if (this.isImportWallet) {
       if (this.step === 1) {
@@ -377,19 +382,32 @@ export default class AddWallet extends Vue {
 
   @Watch('step')
   changedCurrentIndexPage(step: number) {
-    // is replace account
-    if (this.step === 5 && this.isReplaceAccount && this.isImportWallet) {
-      try {
-        this.saveKeypair();
+    if (this.step === 4) {
+      const {
+        substrate: { keypairType: substrateKeypairType },
+        ethereum: { keypairType: ethereumKeypairType },
+      } = this.derivationPath;
+      const suri = this.isEthereumReplacedNetwork ? this.suriEthereum : this.suriSubstrate;
+      const type = this.isEthereumReplacedNetwork ? ethereumKeypairType : substrateKeypairType;
+      const { address } = BaseApi.createFromUri(suri, type);
 
-        const name = this.isReplaceAccount ? Components.Accounts : Components.Wallet;
+      if (BaseApi.isDuplicateReplacedKeypair(address)) this.displayMockPassword = true;
+      else this.displayMockPassword = false;
+    } else if (this.step === 5) {
+      if (this.isReplaceAccount) {
+        try {
+          this.replaceAccount();
+        } catch {
+          return;
+        }
 
-        this.$router.push({ name });
-      } catch {}
-    }
-    // first keypair
-    else if (this.step === 5) this.saveKeypair();
-    else if (step === 6) this.$router.push({ name: Components.Wallet });
+        this.$router.push({ name: Components.Accounts });
+
+        return;
+      }
+
+      this.saveKeypair();
+    } else if (step === 6) this.$router.push({ name: Components.Wallet });
   }
 
   updateWalletPassword(password: string) {
@@ -525,22 +543,22 @@ export default class AddWallet extends Vue {
       : '';
   }
 
-  saveKeypair() {
-    if (this.isReplaceAccount) {
-      try {
-        if (this.substrateJson) this.replaceAccountFromJson();
-        else this.replaceAccountFromSeed();
-      } catch ({ message }) {
-        this.step = 1;
+  replaceAccount() {
+    try {
+      if (this.substrateJson) this.replaceAccountFromJson();
+      else this.replaceAccountFromSeed();
+    } catch ({ message }) {
+      this.step = 1;
 
-        alert(message);
+      alert(message);
 
-        throw Error;
-      }
-    } else {
-      if (this.substrateJson) this.saveKeypairFromJson();
-      else this.saveKeypairFromSeed();
+      throw Error;
     }
+  }
+
+  saveKeypair() {
+    if (this.substrateJson) this.saveKeypairFromJson();
+    else this.saveKeypairFromSeed();
   }
 
   saveKeypairFromJson() {
@@ -607,6 +625,7 @@ export default class AddWallet extends Vue {
 
   back() {
     if (this.step === 3 && this.ethereumRawSeed === '' && this.ethereumJson === '') this.step -= 1;
+    else if (this.step === 4 && this.isReplaceAccount) this.step -= 2;
     else if (this.step === 2) {
       this.ethereumRawSeed = '';
       this.ethereumJson = '';

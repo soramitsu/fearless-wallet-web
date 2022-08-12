@@ -92,6 +92,7 @@ export default class ReceiveForm extends Vue {
     color: $pink-lavender-color;
     opacity: 0.95;
     margin-top: 10px;
+    user-select: none;
 
     &:hover {
       cursor: pointer;

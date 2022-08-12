@@ -28,9 +28,9 @@ export default class App extends Vue {
   }
 
   async mounted() {
-    const { loadNetworksInfo, loadAssetsInfo, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
+    const { loadNetworks, loadAssets, loadFiats, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
 
-    await Promise.all([loadNetworksInfo(), loadAssetsInfo()]);
+    await Promise.all([loadNetworks(), loadAssets(), loadFiats()]);
     await loadTokensPrice();
 
     let loadHistory = true;

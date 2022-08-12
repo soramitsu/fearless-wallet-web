@@ -60,6 +60,7 @@ export default class SelectNetworkButton extends Vue {
   font-size: 14px;
   align-items: center;
   border: 1px solid #201c1f;
+  user-select: none;
 
   &:hover {
     cursor: pointer;

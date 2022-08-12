@@ -58,9 +58,9 @@ export default class NodeItem extends Vue {
   justify-content: space-between;
   align-items: center;
   height: 60px;
-  padding: 10px 0;
-  margin: 0 20px;
+  padding: 10px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-sizing: border-box;
 
   &:last-child {
     margin-bottom: 16px;
@@ -96,7 +96,7 @@ export default class NodeItem extends Vue {
   border-radius: 8px;
   padding: 10px 20px;
   clip-path: $big-clip-path-left-top-and-right-bottom;
-  margin: 0;
+  border-bottom: 1px solid #7700ee;
 
   .url {
     color: white;

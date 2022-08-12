@@ -7,6 +7,7 @@
       :maxlength="maxlength"
       :showPassword="showPassword"
       :isError="isError"
+      :readonly="readonly"
     />
 
     <div v-show="showErrorText" class="error-descriptions">{{ errorDescriptions }}</div>
@@ -27,6 +28,7 @@ export default class ValidatedInput extends Vue {
   @Prop(Boolean) isError!: boolean;
   @Prop({ default: 50 }) maxlength!: number;
   @Prop({ default: false }) showPassword!: boolean;
+  @Prop({ default: false }) readonly!: boolean;
 
   get showErrorText() {
     return this.isError && this.errorDescriptions;

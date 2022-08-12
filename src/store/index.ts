@@ -5,7 +5,7 @@ import account from './accounts';
 import Modules from './types';
 
 const files = require.context('.', false, /\.ts$/);
-const modules: Modules = {
+export const modules: Modules = {
   networks,
   account,
 };

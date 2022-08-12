@@ -91,13 +91,14 @@
 
     <BuyForm v-if="showBuyForm" :closeForm="toggleVisible.bind(null, 'showBuyForm', false)" />
 
-    <PopupWithSelect
+    <SelectPopup
       v-if="showSelectNetworkPopup"
       v-model="selectedNetwork"
       header="Select Network"
       space="big"
       horizontalPlacement="right"
       verticalPlacement="center"
+      placeholder="Search in networks"
       :showIcon="true"
       :showSearch="true"
       :staticHeight="true"
@@ -122,7 +123,7 @@ import SendForm from '../SendForm.vue';
 import TeleportForm from '../TeleportForm.vue';
 import BuyForm from '../BuyForm.vue';
 import SelectNetworkButton from '../SelectNetworkButton.vue';
-import PopupWithSelect from '@/components/PopupWithSelect.vue';
+import SelectPopup from '@/components/SelectPopup.vue';
 import BaseApi from '@/util/BaseApi';
 import { Component, Vue } from 'vue-property-decorator';
 import { Currencies } from '@/interfaces/currencies';
@@ -135,25 +136,24 @@ import { Components } from '@/router/routes';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { firstCharToUp } from '@/util/helpers';
 import { formattedNumber, formattedPrice } from '@/util/numbers';
-import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import type { FilterHistory } from '@/interfaces/common';
 import type { History as THistory } from '@/interfaces/history';
 
 @Component({
   components: {
-    BorderButton,
     Scroll,
-    TabButton,
-    History,
-    ReceiveForm,
-    SendForm,
-    TeleportForm,
-    BuyForm,
-    Dropdown,
-    SelectNetworkButton,
-    PopupWithSelect,
-    ContentForm,
     Corners,
+    History,
+    BuyForm,
+    SendForm,
+    Dropdown,
+    TabButton,
+    ReceiveForm,
+    SelectPopup,
+    ContentForm,
+    TeleportForm,
+    BorderButton,
+    SelectNetworkButton,
   },
 })
 export default class Token extends Vue {
@@ -175,8 +175,9 @@ export default class Token extends Vue {
 
   @Getter(NetworksGettersTypes.getNetworks) networks!: NetworksType;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getHistory) history!: THistory;
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
   get optionsNetworks() {
     return this.networks.map(({ name }) => ({
@@ -220,7 +221,7 @@ export default class Token extends Vue {
   }
 
   get tokenPriceString() {
-    return `1 ${this.selectedToken.toUpperCase()} = $${formattedPrice(this.price ?? 0)}`;
+    return `1 ${this.selectedToken.toUpperCase()} = ${this.fiatSymbol}${formattedPrice(this.price ?? 0)}`;
   }
 
   get selectedNetwork() {
@@ -250,7 +251,7 @@ export default class Token extends Vue {
 
     const total = this.currentCurrency.getBalanceInNetwork(this.selectedNetwork, this.selectedWallet);
 
-    return `$ ${formattedNumber(+total)}`;
+    return `${this.fiatSymbol} ${formattedNumber(+total)}`;
   }
 
   handlerFilter(value: string) {
@@ -267,6 +268,9 @@ export default class Token extends Vue {
         network: network,
       },
     });
+
+    this.handlerFilter('');
+    this.toggleSelectNetworkPopupVisible();
   }
 
   toggleSelectNetworkPopupVisible() {

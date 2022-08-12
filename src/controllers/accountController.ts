@@ -8,6 +8,17 @@ class AccountController {
   private readonly autoSelectNodesStorageName = 'auto-select-nodes';
   private readonly activeNodeStorageName = 'active-node';
   private readonly customNodesStorageName = 'custom-nodes';
+  private readonly selectedFiatStorageName = 'selected-fiat';
+
+  public getSelectedFiat(): string {
+    const lsFiat = this.lsAccount.get(this.selectedFiatStorageName);
+
+    return lsFiat.value ?? 'usd';
+  }
+
+  public setSelectedFiat(fiat: string): void {
+    this.lsAccount.set(this.selectedFiatStorageName, fiat);
+  }
 
   public getHideZeroBalanceValue(): boolean {
     const lsVisible = this.lsAccount.get(this.hideZeroBalanceStorageName);

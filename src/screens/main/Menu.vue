@@ -52,6 +52,7 @@ export default class Menu extends Vue {
   flex: 0 0 80px;
   justify-content: space-around;
   align-items: center;
+  user-select: none;
   z-index: 199;
   width: $extension-width;
   margin: 0 0 -16px -16px;

@@ -71,7 +71,7 @@ export function getImgPathByNetworkName(network = '') {
     case 'polkadex main network':
       return 'polkadex.svg';
     case 'turing network':
-      return '_default.svg';
+      return 'turing.svg';
     case 'crust shadow parachain':
       return 'crustshadow.svg';
     case 'interlay':

@@ -117,6 +117,7 @@ export default class ContentSettings extends Vue {
     font-size: 14px;
     line-height: 18px;
     margin-left: 8px;
+    user-select: none;
   }
 }
 </style>

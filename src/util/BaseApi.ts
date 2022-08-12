@@ -13,12 +13,6 @@ import type { ValidateJsonResult } from '@/interfaces/common';
 import type { Wallet } from '@/store/accounts/types';
 
 export default class BaseApi {
-  private static createFromUri(suri: string, type: KeypairType): KeyringPair {
-    const pair = keyring.createFromUri(suri, {}, type);
-
-    return pair;
-  }
-
   private static createFromJson(json: KeyringPair$Json): KeyringPair {
     const pair = keyring.createFromJson(json);
 
@@ -64,6 +58,12 @@ export default class BaseApi {
     const address = replacedAccountByNetwork?.address;
 
     return address ? ({ address, ethereumAddress: address } as Wallet) : wallet;
+  }
+
+  public static createFromUri(suri: string, type: KeypairType): KeyringPair {
+    const pair = keyring.createFromUri(suri, {}, type);
+
+    return pair;
   }
 
   public static getReplacedAccounts({ address, ethereumAddress }: Wallet): KeyringPair[] {

@@ -14,9 +14,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
-import type { DerivationPath } from '@/interfaces/common';
 import MnemonicConfirmationForm from './MnemonicConfirmationForm.vue';
 import MnemonicBackupForm from './MnemonicBackupForm.vue';
+import type { DerivationPath } from '@/interfaces/common';
 
 @Component({
   components: {

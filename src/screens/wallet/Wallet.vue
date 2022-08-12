@@ -1,6 +1,6 @@
 <template>
   <div class="wallet">
-    <div class="header">
+    <header class="header">
       <TotalBalance :balance="totalBalance" :percent="totalPercent" />
 
       <SelectNetworkButton
@@ -9,9 +9,9 @@
         :isActive="showSelectNetworkPopup"
         @click="toggleSelectNetworkPopupVisible"
       />
-    </div>
+    </header>
 
-    <PopupWithSelect
+    <SelectPopup
       v-if="showSelectNetworkPopup"
       v-model="selectedNetwork"
       header="Select Network"
@@ -19,6 +19,7 @@
       horizontalPlacement="right"
       verticalPlacement="center"
       sizeWidth="big"
+      placeholder="Search in networks"
       :showIcon="true"
       :showSearch="true"
       :showBorder="true"
@@ -75,7 +76,7 @@
 <script lang="ts">
 import Scroll from '@/components/Scroll.vue';
 import ContentForm from '@/components/ContentForm.vue';
-import PopupWithSelect from '@/components/PopupWithSelect.vue';
+import SelectPopup from '@/components/SelectPopup.vue';
 import SelectNetworkButton from './SelectNetworkButton.vue';
 import ReceiveForm from './ReceiveForm.vue';
 import SendForm from './SendForm.vue';
@@ -107,7 +108,7 @@ import type { TMutation, TabWallet } from '@/interfaces/common';
     ContentForm,
     ReceiveForm,
     TotalBalance,
-    PopupWithSelect,
+    SelectPopup,
     ContentSettings,
     SelectNetworkButton,
   },
@@ -116,19 +117,18 @@ export default class Wallet extends Vue {
   readonly selectNetworkButtonRef = 'selectNetworkButton';
   showAssetsManagementForm = false;
   hideZeroBalance = false;
-  selectedCurrency!: {
-    mainNetwork: string;
-    token: string;
-  };
-
   existSavedSequence = false;
-  activeTabName: TabWallet = 'Currencies';
   showSendForm = false;
   showReceiveForm = false;
   showSelectNetworkPopup = false;
   selectedNetwork = 'All networks';
+  activeTabName: TabWallet = 'Currencies';
   popupFilterValue = '';
   filterValue = '';
+  selectedCurrency!: {
+    mainNetwork: string;
+    token: string;
+  };
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
@@ -248,6 +248,8 @@ export default class Wallet extends Vue {
 
   toggleSelectedNetwork(value: string) {
     this.selectedNetwork = value;
+    this.toggleSelectNetworkPopupVisible();
+    this.handlerFilter('popupFilterValue', '');
   }
 
   toggleSelectNetworkPopupVisible() {

@@ -5,6 +5,7 @@ import type {
   SetNetworksStatusProps,
   UpdateCurrencyBalanceProps,
   SetAssetsProps,
+  SetFiatsProps,
   SetTokensPriceProps,
   SetSubscriptionsBalancesProps,
   SetCurrenciesProps,
@@ -16,6 +17,7 @@ import type {
 export enum MutationTypes {
   SET_NETWORKS = 'SET_NETWORKS',
   SET_ASSETS = 'SET_ASSETS',
+  SET_FIATS = 'SET_FIATS',
   SET_TOKENS_PRICE = 'SET_TOKENS_PRICE',
   SET_CURRENCIES = 'SET_CURRENCIES',
   SET_HISTORY = 'SET_HISTORY',
@@ -29,6 +31,7 @@ export enum MutationTypes {
 export type Mutations = {
   [MutationTypes.SET_NETWORKS](state: State, props: SetNetworksStatusProps): void;
   [MutationTypes.SET_ASSETS](state: State, props: SetAssetsProps): void;
+  [MutationTypes.SET_FIATS](state: State, props: SetFiatsProps): void;
   [MutationTypes.SET_TOKENS_PRICE](state: State, props: SetTokensPriceProps): void;
   [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
@@ -43,15 +46,23 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_NETWORKS](state, { networks }) {
     state.networks = networks;
   },
+
   [MutationTypes.SET_CURRENCIES](state, { currencies }) {
     state.currencies = currencies;
   },
+
   [MutationTypes.SET_ASSETS](state, { assets }) {
     state.assets = assets;
   },
-  [MutationTypes.SET_TOKENS_PRICE](state, { tokensPrice }) {
-    state.tokensPrice = tokensPrice;
+
+  [MutationTypes.SET_FIATS](state, { fiats }) {
+    state.fiats = fiats.map((fiat) => ({ ...fiat }));
   },
+
+  [MutationTypes.SET_TOKENS_PRICE](state, { tokensPriceJson }) {
+    state.tokensPriceJson = tokensPriceJson;
+  },
+
   [MutationTypes.UPDATE_CURRENCY](state, currency) {
     const { token } = currency;
     const { currencies } = state;
@@ -59,13 +70,15 @@ const mutations: MutationTree<State> & Mutations = {
 
     currencies[currencyIndex].updateCurrency(currency);
   },
+
   [MutationTypes.UPDATE_CURRENCY_BALANCE](state, { walletAddress, currency }) {
     const { token } = currency;
     const { currencies } = state;
-    const currentCurrency = currencies.find(({ token: existToken }) => existToken === token)!;
+    const currentCurrency = currencies.find(({ token: existToken }) => existToken === token)!; //eslint-disable-line
 
     currentCurrency.updateCurrencyBalance({ walletAddress, currency });
   },
+
   [MutationTypes.SET_HISTORY](state, { history: { nodes, pageInfo }, networkName, walletAddress }) {
     const oldHistoryForWalletAddress = state.history[networkName]?.[walletAddress];
     const startCursor = oldHistoryForWalletAddress?.pageInfo?.startCursor || pageInfo?.startCursor;
@@ -83,9 +96,11 @@ const mutations: MutationTree<State> & Mutations = {
 
     state.history = { ...state.history, [networkName]: historyForNetwork };
   },
+
   [MutationTypes.SET_ALL_NETWORKS_IS_LOADED](state, { value }) {
     state.allNetworksIsLoaded = value;
   },
+
   [MutationTypes.SET_SUBSCRIPTIONS_BALANCES](state, { subscriptionsBalances, networkName, walletAddress }) {
     state.networks = state.networks.map((network) => {
       return network.name === networkName
@@ -96,6 +111,7 @@ const mutations: MutationTree<State> & Mutations = {
         : network;
     });
   },
+
   [MutationTypes.UPDATE_ACTIVE_NODE](state, { networkName, provider, api }) {
     const networks = state.networks;
     const networkIndex = networks.findIndex(({ name }) => name === networkName)!; // eslint-disable-line

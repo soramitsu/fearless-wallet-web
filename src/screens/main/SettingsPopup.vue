@@ -19,16 +19,7 @@
 
         <img src="@/assets/chevron-right.svg" class="chevron-right" />
       </div>
-      <div class="row">
-        <div class="description">
-          <img src="@/assets/lock.svg" class="icon" />
-
-          <div class="label">Change password</div>
-        </div>
-
-        <img src="@/assets/chevron-right.svg" class="chevron-right" />
-      </div>
-      <div class="row">
+      <div class="row" @click="openFiatsPopup">
         <div class="description">
           <img src="@/assets/dollar-circle.svg" class="icon" />
 
@@ -76,6 +67,10 @@ export default class SettingsPopup extends Vue {
     return this.$route.name;
   }
 
+  openFiatsPopup() {
+    this.$emit('openFiatsPopup');
+  }
+
   open(name: SettingsItemType) {
     if (this.routeName !== name) {
       this.$router.push({ name: Components[name] });
@@ -90,6 +85,7 @@ export default class SettingsPopup extends Vue {
 .settings {
   color: rgba(255, 255, 255, 0.75);
   font-weight: 700;
+  user-select: none;
 
   .row {
     display: flex;

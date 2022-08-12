@@ -6,6 +6,7 @@
       placeholder="Enter password"
       :isError="isShortPassword"
       :showPassword="true"
+      :readonly="displayMockPassword"
       :maxlength="25"
       class="row"
     />
@@ -21,17 +22,14 @@
       class="row"
     />
 
-    <Hint
-      iconName="notification"
-      text="This password protects your wallet. Make sure you remember it and do not share it with anybody."
-    />
+    <Hint iconName="notification" :text="hintText" />
   </div>
 </template>
 
 <script lang="ts">
 import Hint from '@/components/Hint.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
-import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
 
 @Component({
   components: { Hint, ValidatedInput },
@@ -39,6 +37,8 @@ import { Component, Vue, Watch } from 'vue-property-decorator';
 export default class PasswordForm extends Vue {
   pass1 = '';
   pass2 = '';
+
+  @Prop(Boolean) displayMockPassword!: boolean;
 
   get isShortPassword() {
     return this.pass1.length !== 0 && this.pass1.length < 6;
@@ -49,7 +49,17 @@ export default class PasswordForm extends Vue {
   }
 
   get showPasswordConfirmation() {
-    return this.pass1.length !== 0 && !this.isShortPassword;
+    return !this.displayMockPassword && this.pass1.length !== 0 && !this.isShortPassword;
+  }
+
+  get hintText() {
+    return this.displayMockPassword
+      ? 'The wallet is already being used to replace other networks. Use the old password.'
+      : 'This password protects your wallet. Make sure you remember it and do not share it with anybody.';
+  }
+
+  mounted() {
+    if (this.displayMockPassword) this.pass1 = '000000';
   }
 
   @Watch('pass1')

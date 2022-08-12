@@ -99,6 +99,8 @@
       horizontalPlacement="right"
       verticalPlacement="center"
       placeholder="Search in networks"
+      :top="10"
+      :showBorder="true"
       :showIcon="true"
       :showSearch="true"
       :staticHeight="true"

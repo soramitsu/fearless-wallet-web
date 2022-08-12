@@ -38,7 +38,7 @@ export default class CurrencyController {
     public tokensPrice: TokenPriceJson,
     public precision: number
   ) {
-    console.log();
+    console.info();
   }
 
   public updatePrice(selectedFiat: string) {

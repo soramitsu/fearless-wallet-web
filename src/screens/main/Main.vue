@@ -43,7 +43,7 @@ export default class Main extends Vue {
   toggleFiatsPopup() {
     this.showFiatsPopup = !this.showFiatsPopup;
 
-    // if (this.showFiatsPopup) this.toggleSettingsVisible();
+    if (this.showFiatsPopup) this.toggleSettingsVisible();
   }
 
   toggleSettingsVisible() {

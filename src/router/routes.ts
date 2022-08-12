@@ -12,7 +12,6 @@ import Token from '@/screens/wallet/token/Token.vue';
 import Wallet from '@/screens/wallet/Wallet.vue';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import AddWallet from '@/screens/addWallet/AddWallet.vue';
-import { accountController } from '@/controllers/accountController';
 import { RouteConfig } from 'vue-router';
 
 export enum Components {

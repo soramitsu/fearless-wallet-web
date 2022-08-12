@@ -60,6 +60,7 @@ export default class Popup extends Vue {
   @Prop({ default: '' }) placeholder!: string;
   @Prop({ default: true }) showHeader!: boolean;
   @Prop({ default: true }) showBlur!: boolean;
+  @Prop({ default: true }) showAnimation!: boolean;
   @Prop({ default: false }) showSearch!: boolean;
   @Prop({ default: false }) showBorder!: boolean;
   @Prop({ default: false }) staticHeight!: boolean;
@@ -74,6 +75,7 @@ export default class Popup extends Vue {
       `popup-background-vertical-placement-${this.verticalPlacement}`,
       {
         'popup-background-blur': this.showBlur,
+        'popup-background-animation': this.showAnimation,
       },
     ];
   }
@@ -129,16 +131,6 @@ export default class Popup extends Vue {
   left: 0;
   z-index: 199;
   padding: 16px;
-  animation: opacity 0.3s;
-
-  @keyframes opacity {
-    0% {
-      opacity: 0;
-    }
-    100% {
-      opacity: 1;
-    }
-  }
 
   .popup-container {
     display: flex;
@@ -147,7 +139,7 @@ export default class Popup extends Vue {
     top: 0;
     min-height: 90px;
     min-width: 230px;
-    max-height: 390px;
+    max-height: 410px;
     max-width: 480px;
     background-color: #111111;
     clip-path: $big-clip-path-left-top-and-right-bottom;
@@ -156,7 +148,7 @@ export default class Popup extends Vue {
   }
 
   .static-height {
-    height: 390px;
+    height: 410px;
   }
 
   .width-big {
@@ -198,6 +190,10 @@ export default class Popup extends Vue {
 
   .s-icon-basic-close-24 {
     color: rgba(255, 255, 255, 0.65);
+
+    &:hover {
+      color: rgba(255, 255, 255, 0.8);
+    }
   }
 
   .button {
@@ -210,6 +206,10 @@ export default class Popup extends Vue {
 .popup-background-blur {
   background-color: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(5px);
+}
+
+.popup-background-animation {
+  @include opacity;
 }
 
 .popup-background-horizontal-placement-left {

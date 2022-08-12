@@ -35,7 +35,7 @@ export default class SearchInput extends Vue {
 
   .search-input-path {
     clip-path: $medium-clip-path-left-top-and-right-bottom;
-    width: 230px;
+    width: 280px;
   }
 }
 </style>

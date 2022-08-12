@@ -10,6 +10,8 @@
       :showIcon="true"
       :showSearch="true"
       :staticHeight="true"
+      :showBorder="true"
+      :showAnimation="false"
       :options="filteredOptionsFiats"
       :toggleValue="toggleSelectedFiat"
       :handlerClose="handlerClose"

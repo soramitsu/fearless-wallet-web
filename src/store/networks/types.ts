@@ -87,99 +87,101 @@ export type FiatJson = {
 type NetworkName = string;
 type TokenName = string;
 
+/* eslint-disable */
 export type TokenPriceJson = {
   aed: number;
-  aed_24h_change: number; // eslint-disable-line
+  aed_24h_change: number;
   ars: number;
-  ars_24h_change: number; // eslint-disable-line
+  ars_24h_change: number;
   aud: number;
-  aud_24h_change: number; // eslint-disable-line
+  aud_24h_change: number;
   bdt: number;
-  bdt_24h_change: number; // eslint-disable-line
+  bdt_24h_change: number;
   bhd: number;
-  bhd_24h_change: number; // eslint-disable-line
+  bhd_24h_change: number;
   bmd: number;
-  bmd_24h_change: number; // eslint-disable-line
+  bmd_24h_change: number;
   brl: number;
-  brl_24h_change: number; // eslint-disable-line
+  brl_24h_change: number;
   cad: number;
-  cad_24h_change: number; // eslint-disable-line
+  cad_24h_change: number;
   chf: number;
-  chf_24h_change: number; // eslint-disable-line
+  chf_24h_change: number;
   clp: number;
-  clp_24h_change: number; // eslint-disable-line
+  clp_24h_change: number;
   cny: number;
-  cny_24h_change: number; // eslint-disable-line
+  cny_24h_change: number;
   czk: number;
-  czk_24h_change: number; // eslint-disable-line
+  czk_24h_change: number;
   dkk: number;
-  dkk_24h_change: number; // eslint-disable-line
+  dkk_24h_change: number;
   eur: number;
-  eur_24h_change: number; // eslint-disable-line
+  eur_24h_change: number;
   gbp: number;
-  gbp_24h_change: number; // eslint-disable-line
+  gbp_24h_change: number;
   hkd: number;
-  hkd_24h_change: number; // eslint-disable-line
+  hkd_24h_change: number;
   huf: number;
-  huf_24h_change: number; // eslint-disable-line
+  huf_24h_change: number;
   idr: number;
-  idr_24h_change: number; // eslint-disable-line
+  idr_24h_change: number;
   ils: number;
-  ils_24h_change: number; // eslint-disable-line
+  ils_24h_change: number;
   inr: number;
-  inr_24h_change: number; // eslint-disable-line
+  inr_24h_change: number;
   jpy: number;
-  jpy_24h_change: number; // eslint-disable-line
+  jpy_24h_change: number;
   krw: number;
-  krw_24h_change: number; // eslint-disable-line
+  krw_24h_change: number;
   kwd: number;
-  kwd_24h_change: number; // eslint-disable-line
+  kwd_24h_change: number;
   lkr: number;
-  lkr_24h_change: number; // eslint-disable-line
+  lkr_24h_change: number;
   mmk: number;
-  mmk_24h_change: number; // eslint-disable-line
+  mmk_24h_change: number;
   mxn: number;
-  mxn_24h_change: number; // eslint-disable-line
+  mxn_24h_change: number;
   myr: number;
-  myr_24h_change: number; // eslint-disable-line
+  myr_24h_change: number;
   ngn: number;
-  ngn_24h_change: number; // eslint-disable-line
+  ngn_24h_change: number;
   nok: number;
-  nok_24h_change: number; // eslint-disable-line
+  nok_24h_change: number;
   nzd: number;
-  nzd_24h_change: number; // eslint-disable-line
+  nzd_24h_change: number;
   php: number;
-  php_24h_change: number; // eslint-disable-line
+  php_24h_change: number;
   pkr: number;
-  pkr_24h_change: number; // eslint-disable-line
+  pkr_24h_change: number;
   pln: number;
-  pln_24h_change: number; // eslint-disable-line
+  pln_24h_change: number;
   rub: number;
-  rub_24h_change: number; // eslint-disable-line
+  rub_24h_change: number;
   sar: number;
-  sar_24h_change: number; // eslint-disable-line
+  sar_24h_change: number;
   sek: number;
-  sek_24h_change: number; // eslint-disable-line
+  sek_24h_change: number;
   sgd: number;
-  sgd_24h_change: number; // eslint-disable-line
+  sgd_24h_change: number;
   thb: number;
-  thb_24h_change: number; // eslint-disable-line
+  thb_24h_change: number;
   try: number;
-  try_24h_change: number; // eslint-disable-line
+  try_24h_change: number;
   twd: number;
-  twd_24h_change: number; // eslint-disable-line
+  twd_24h_change: number;
   uah: number;
-  uah_24h_change: number; // eslint-disable-line
+  uah_24h_change: number;
   usd: number;
-  usd_24h_change: number; // eslint-disable-line
+  usd_24h_change: number;
   vef: number;
-  vef_24h_change: number; // eslint-disable-line
+  vef_24h_change: number;
   vnd: number;
-  vnd_24h_change: number; // eslint-disable-line
+  vnd_24h_change: number;
   xdr: number;
-  xdr_24h_change: number; // eslint-disable-line
+  xdr_24h_change: number;
   zar: number;
-  zar_24h_change: number; // eslint-disable-line
+  zar_24h_change: number;
+  /* eslint-enable */
 };
 
 export type TokensPriceJson = Record<NetworkName | TokenName, TokenPriceJson>;

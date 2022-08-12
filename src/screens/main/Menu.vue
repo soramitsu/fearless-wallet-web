@@ -33,8 +33,11 @@ export default class Menu extends Vue {
   checkActive(menuItem: MenuItemType) {
     return (
       menuItem.toLowerCase() === this.currentRouteName ||
-      (menuItem === 'Wallet' && this.$route.params.token !== undefined) ||
-      (menuItem === 'Wallet' && this.$route.name === 'Account')
+      (menuItem === 'Wallet' &&
+        (this.$route.params.token !== undefined ||
+          this.$route.name === Components.Accounts ||
+          this.$route.name === Components.Export ||
+          this.$route.name === Components.Network))
     );
   }
 

@@ -293,7 +293,6 @@ export default class CurrencyItem extends Vue {
   }
 
   .img-container {
-    width: 60px;
     margin: auto;
     user-select: none;
 

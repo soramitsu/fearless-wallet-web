@@ -32,7 +32,7 @@
 import Logo from '@/components/Logo.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import Rotate from '@/components/Rotate.vue';
-import { Component, Vue, PropSync } from 'vue-property-decorator';
+import { Component, Vue, PropSync, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
@@ -55,10 +55,6 @@ export default class Header extends Vue {
     return this.$route.name === Components.Token;
   }
 
-  get targetElement() {
-    return this.$refs[this.walletNameRef] as HTMLElement;
-  }
-
   get name() {
     return this.selectedWallet.name;
   }
@@ -69,6 +65,14 @@ export default class Header extends Vue {
 
   get statusConnectedText() {
     return Date.now() ? 'Connected' : 'Not connected';
+  }
+
+  @Watch('syncedShowSelectWalletPopup')
+  updateZIndex() {
+    const targetElement = this.$refs[this.walletNameRef] as HTMLElement;
+
+    if (this.syncedShowSelectWalletPopup) targetElement.style.zIndex = '200';
+    else targetElement.style.zIndex = '0';
   }
 
   backToWallet() {
@@ -85,12 +89,6 @@ export default class Header extends Vue {
 
   toggleSelectWalletPopupVisible() {
     this.syncedShowSelectWalletPopup = !this.syncedShowSelectWalletPopup;
-
-    if (!this.syncedShowSelectWalletPopup) {
-      this.targetElement.style.zIndex = '200';
-    } else {
-      this.targetElement.style.zIndex = '0';
-    }
   }
 }
 </script>

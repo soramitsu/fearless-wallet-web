@@ -20,6 +20,7 @@
       verticalPlacement="center"
       sizeWidth="big"
       placeholder="Search in networks"
+      :top="10"
       :showIcon="true"
       :showSearch="true"
       :showBorder="true"
@@ -198,7 +199,7 @@ export default class Wallet extends Vue {
 
   get optionsNetworks() {
     return [
-      { label: 'All networks', value: 'All networks', path: 'globus.svg' },
+      { label: 'All networks', value: 'All networks', path: 'globus.svg', isAll: true },
       ...this.networks.map(({ name }) => {
         return { label: firstCharToUp(name), value: name, path: `networks/${getImgPathByNetworkName(name)}` };
       }),

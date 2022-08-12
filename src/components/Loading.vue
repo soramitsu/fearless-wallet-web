@@ -30,21 +30,21 @@
     border: 8px solid $pink-color;
     border-color: $pink-color transparent transparent;
     animation: arc 2s linear infinite;
+
+    @keyframes arc {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
   }
 
   .logo {
     height: 39px;
     width: 70px;
     margin-top: 20px;
-  }
-
-  @keyframes arc {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
   }
 }
 </style>

@@ -1,7 +1,7 @@
 <template>
   <Popup
     sizeWidth="big"
-    class="popup-with-choice"
+    class="select-popup"
     :headerText="header"
     :placeholder="placeholder"
     :showSearch="showSearch"
@@ -11,17 +11,14 @@
     :handlerClose="handlerClose"
     :horizontalPlacement="horizontalPlacement"
     :verticalPlacement="verticalPlacement"
+    :showBlur="showBlur"
+    :showAnimation="showAnimation"
     :top="top"
     :left="left"
   >
-    <div
-      v-for="({ label, value, path }, index) in options"
-      :key="label"
-      :class="rowClasses(value)"
-      @click="toggle(value)"
-    >
+    <div v-for="{ label, value, path } in options" :key="label" :class="rowClasses(value)" @click="toggle(value)">
       <div class="description">
-        <img v-if="showIcon" :src="getImg(path, index)" class="img" />
+        <img v-if="showIcon" :src="getImg(path)" class="img" />
 
         {{ label }}
       </div>
@@ -41,6 +38,7 @@ type SpaceSize = 'small' | 'medium' | 'big';
 })
 export default class SelectPopup extends Vue {
   icons: string[] = [];
+  formattedOptions: Record<string, string>[] = [];
 
   @VModel({ type: String }) VModel!: string;
   @Prop(Array) options!: Record<string, string>[];
@@ -55,10 +53,23 @@ export default class SelectPopup extends Vue {
   @Prop({ default: false }) showSearch!: boolean;
   @Prop({ default: false }) showBorder!: boolean;
   @Prop({ default: false }) staticHeight!: boolean;
+  @Prop({ default: true }) showBlur!: boolean;
+  @Prop({ default: true }) showAnimation!: boolean;
   @Prop({ default: 'medium' }) sizeWidth!: boolean;
   @Prop(Function) toggleValue!: (value: string) => void;
   @Prop(Function) handlerClose!: VoidFunction;
   @Prop({ default: () => () => null }) handlerFilter!: (value: string) => void;
+
+  beforeMount() {
+    const index = this.options.findIndex(({ value }) => value === this.VModel);
+    const selectedElement = this.options[index];
+    const indexInsertion = this.options[0].isAll && index !== 0 ? 1 : 0;
+
+    this.options.splice(index, 1);
+    this.options.splice(indexInsertion, 0, selectedElement);
+
+    this.options.forEach(({ path }) => this.getImg(path));
+  }
 
   getImg(path: string) {
     return require(`@/assets/${path}`);
@@ -81,7 +92,7 @@ export default class SelectPopup extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.popup-with-choice {
+.select-popup {
   .row {
     color: rgba(255, 255, 255, 0.75);
     text-align: left;

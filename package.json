@@ -21,6 +21,7 @@
     "@open-web3/orml-types": "^1.0.1",
     "@polkadot/api": "^7.9.1",
     "@polkadot/extension-base": "^0.44.1",
+    "@polkadot/extension-chains": "^0.44.5",
     "@polkadot/extension-inject": "^0.44.1",
     "@polkadot/ui-keyring": "^1.0.1",
     "@polkadot/vue-identicon": "^1.4.1",

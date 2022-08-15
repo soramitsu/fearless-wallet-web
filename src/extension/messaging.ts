@@ -1,3 +1,6 @@
+// Copyright 2019-2022 @polkadot/extension-ui authors & contributors
+// SPDX-License-Identifier: Apache-2.0
+
 import type {
   AccountJson,
   AllowedPath,
@@ -18,6 +21,7 @@ import type {
   SubscriptionMessageTypes,
 } from '@polkadot/extension-base/background/types';
 import type { Message } from '@polkadot/extension-base/types';
+import type { Chain } from '@polkadot/extension-chains/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
@@ -25,7 +29,31 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 
 import { PORT_EXTENSION } from '@polkadot/extension-base/defaults';
 import { getId } from '@polkadot/extension-base/utils/getId';
-import { MetadataDef } from '@polkadot/extension-inject/types';
+import { metadataExpand } from '@polkadot/extension-chains';
+import { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
+import { selectableNetworks } from '@polkadot/networks';
+
+const metadataGets = new Map<string, Promise<MetadataDef | null>>();
+
+export function getSavedMeta(genesisHash: string): Promise<MetadataDef | null> | undefined {
+  return metadataGets.get(genesisHash);
+}
+
+export function setSavedMeta(
+  genesisHash: string,
+  def: Promise<MetadataDef | null>
+): Map<string, Promise<MetadataDef | null>> {
+  return metadataGets.set(genesisHash, def);
+}
+
+const allChains: MetadataDefBase[] = selectableNetworks
+  .filter(({ genesisHash }) => !!genesisHash.length)
+  .map((network) => ({
+    chain: network.displayName,
+    genesisHash: network.genesisHash[0],
+    icon: network.icon,
+    ss58Format: network.prefix,
+  }));
 
 interface Handler {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -67,18 +95,15 @@ port.onMessage.addListener((data: Message['data']): void => {
 function sendMessage<TMessageType extends MessageTypesWithNullRequest>(
   message: TMessageType
 ): Promise<ResponseTypes[TMessageType]>;
-
 function sendMessage<TMessageType extends MessageTypesWithNoSubscriptions>(
   message: TMessageType,
   request: RequestTypes[TMessageType]
 ): Promise<ResponseTypes[TMessageType]>;
-
 function sendMessage<TMessageType extends MessageTypesWithSubscriptions>(
   message: TMessageType,
   request: RequestTypes[TMessageType],
   subscriber: (data: SubscriptionMessageTypes[TMessageType]) => void
 ): Promise<ResponseTypes[TMessageType]>;
-
 function sendMessage<TMessageType extends MessageTypes>(
   message: TMessageType,
   request?: RequestTypes[TMessageType],
@@ -124,8 +149,8 @@ export async function forgetAccount(address: string): Promise<boolean> {
   return sendMessage('pri(accounts.forget)', { address });
 }
 
-export async function approveAuthRequest(id: string) {
-  return sendMessage('pri(authorize.approve)', { id });
+export async function approveAuthRequest(id: string, authorizedAccounts: string[]): Promise<boolean> {
+  return sendMessage('pri(authorize.approve)', { authorizedAccounts, id });
 }
 
 export async function approveMetaRequest(id: string): Promise<boolean> {
@@ -192,6 +217,42 @@ export async function getAllMetatdata(): Promise<MetadataDef[]> {
   return sendMessage('pri(metadata.list)');
 }
 
+export async function getMetadata(genesisHash?: string | null, isPartial = false): Promise<Chain | null> {
+  if (!genesisHash) {
+    return null;
+  }
+
+  let request = getSavedMeta(genesisHash);
+
+  if (!request) {
+    request = sendMessage('pri(metadata.get)', genesisHash || null);
+    setSavedMeta(genesisHash, request);
+  }
+
+  const def = await request;
+
+  if (def) {
+    return metadataExpand(def, isPartial);
+  } else if (isPartial) {
+    const chain = allChains.find((chain) => chain.genesisHash === genesisHash);
+
+    if (chain) {
+      return metadataExpand(
+        {
+          ...chain,
+          specVersion: 0,
+          tokenDecimals: 15,
+          tokenSymbol: 'Unit',
+          types: {},
+        },
+        isPartial
+      );
+    }
+  }
+
+  return null;
+}
+
 export async function rejectMetaRequest(id: string): Promise<boolean> {
   return sendMessage('pri(metadata.reject)', { id });
 }
@@ -210,6 +271,14 @@ export async function getAuthList(): Promise<ResponseAuthorizeList> {
 
 export async function removeAuthorization(url: string): Promise<ResponseAuthorizeList> {
   return sendMessage('pri(authorize.remove)', url);
+}
+
+export async function updateAuthorization(authorizedAccounts: string[], url: string): Promise<void> {
+  return sendMessage('pri(authorize.update)', { authorizedAccounts, url });
+}
+
+export async function deleteAuthRequest(requestId: string): Promise<void> {
+  return sendMessage('pri(authorize.delete.request)', requestId);
 }
 
 export async function subscribeMetadataRequests(cb: (accounts: MetadataRequest[]) => void): Promise<boolean> {

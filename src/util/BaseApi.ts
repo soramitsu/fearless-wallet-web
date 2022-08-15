@@ -7,11 +7,11 @@ import { isHex } from '@polkadot/util';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import type { KeyringPair$Json, KeyringPair$Meta, KeyringPair } from '@polkadot/keyring/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
-import type { WordCount } from '@polkadot/util-crypto/mnemonic/generate';
+// import type { WordCount } from '@polkadot/util-crypto/mnemonic/generate';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult } from '@/interfaces/common';
 import type { Wallet } from '@/store/accounts/types';
-
+type WordCount = 12 | 15 | 18 | 21 | 24;
 export default class BaseApi {
   private static createFromJson(json: KeyringPair$Json): KeyringPair {
     const pair = keyring.createFromJson(json);

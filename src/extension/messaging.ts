@@ -124,8 +124,8 @@ export async function forgetAccount(address: string): Promise<boolean> {
   return sendMessage('pri(accounts.forget)', { address });
 }
 
-export async function approveAuthRequest(id: string) {
-  return sendMessage('pri(authorize.approve)', { id });
+export async function approveAuthRequest(id: string, authorizedAccounts: string[]) {
+  return sendMessage('pri(authorize.approve)', { id, authorizedAccounts });
 }
 
 export async function approveMetaRequest(id: string): Promise<boolean> {

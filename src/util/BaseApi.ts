@@ -7,7 +7,6 @@ import { isHex } from '@polkadot/util';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import type { KeyringPair$Json, KeyringPair$Meta, KeyringPair } from '@polkadot/keyring/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
-// import type { WordCount } from '@polkadot/util-crypto/mnemonic/generate';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult } from '@/interfaces/common';
 import type { Wallet } from '@/store/accounts/types';

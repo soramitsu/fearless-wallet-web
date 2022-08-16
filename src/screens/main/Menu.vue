@@ -48,7 +48,7 @@ export default class Menu extends Vue {
 <style lang="scss" scoped>
 .menu {
   display: flex;
-  flex: 0 0 80px;
+  flex: 0 0 65px;
   justify-content: space-around;
   align-items: center;
   z-index: 199;

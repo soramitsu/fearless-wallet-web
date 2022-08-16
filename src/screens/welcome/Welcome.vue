@@ -38,7 +38,7 @@
     <Layout
       v-else-if="walletConnectionStatus"
       :walletConnectionStatus="walletConnectionStatus"
-      @reset="changWalletConnectionStatus"
+      @reset="changeWalletConnectionStatus"
     />
   </div>
 </template>
@@ -68,7 +68,7 @@ export default class Welcome extends Vue {
     alert('privacy policy');
   }
 
-  changWalletConnectionStatus(value: WalletConnectionStatus = '') {
+  changeWalletConnectionStatus(value: WalletConnectionStatus = '') {
     this.walletConnectionStatus = value;
   }
 }

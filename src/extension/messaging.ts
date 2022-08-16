@@ -35,14 +35,11 @@ import { selectableNetworks } from '@polkadot/networks';
 
 const metadataGets = new Map<string, Promise<MetadataDef | null>>();
 
-export function getSavedMeta(genesisHash: string): Promise<MetadataDef | null> | undefined {
+function getSavedMeta(genesisHash: string): Promise<MetadataDef | null> | undefined {
   return metadataGets.get(genesisHash);
 }
 
-export function setSavedMeta(
-  genesisHash: string,
-  def: Promise<MetadataDef | null>
-): Map<string, Promise<MetadataDef | null>> {
+function setSavedMeta(genesisHash: string, def: Promise<MetadataDef | null>): Map<string, Promise<MetadataDef | null>> {
   return metadataGets.set(genesisHash, def);
 }
 
@@ -56,15 +53,12 @@ const allChains: MetadataDefBase[] = selectableNetworks
   }));
 
 interface Handler {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   resolve: (data: any) => void;
   reject: (error: Error) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   subscriber?: (data: any) => void;
 }
 
 type Handlers = Record<string, Handler>;
-
 const port = chrome.runtime.connect({ name: PORT_EXTENSION });
 const handlers: Handlers = {};
 

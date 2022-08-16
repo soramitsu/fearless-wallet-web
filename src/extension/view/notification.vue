@@ -57,11 +57,13 @@ export default {
     },
     onMounted() {
       Promise.all([
-        // subscribeAccounts(this.setAccounts),
+        subscribeAccounts(this.setAccounts),
         subscribeAuthorizeRequests(this.setReq),
-        // subscribeMetadataRequests(this.setMetaReq),
-        // subscribeSigningRequests(this.setSignReq),
-      ]);
+        subscribeMetadataRequests(this.setMetaReq),
+        subscribeSigningRequests(this.setSignReq),
+      ]).then((res) => {
+        console.log(res, this.$data);
+      });
     },
     approveAuthReq() {
       approveAuthRequest(this.requests[0][0].id, this.accounts);

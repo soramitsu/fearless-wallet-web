@@ -178,7 +178,7 @@ export default class ImportWallet extends Vue {
   }
 
   .type-import {
-    color: rgba(255, 255, 255, 0.75);
+    color: $default-white;
     margin: 8px 0;
     text-align: left;
     width: 100%;

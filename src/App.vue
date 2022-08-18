@@ -1,8 +1,9 @@
 <template>
   <div id="app">
     <div class="drag"></div>
+    <!-- <Transaction /> -->
     <!-- <Authorize /> -->
-    <Auth />
+    <ManageAuths />
     <!-- <router-view /> -->
   </div>
 </template>
@@ -17,12 +18,14 @@ import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import keyring from '@polkadot/ui-keyring';
 import NetworksController from '@/controllers/networksController';
+import Transaction from '@/screens/signing/Transaction.vue';
+import ManageAuths from '@/screens/authorize/ManageAuths.vue';
 import Authorize from '@/screens/authorize/Authorize.vue';
-import Auth from './screens/authorize/Auth.vue';
 @Component({
   components: {
+    Transaction,
     Authorize,
-    Auth,
+    ManageAuths,
   },
 })
 export default class App extends Vue {

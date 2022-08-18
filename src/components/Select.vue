@@ -50,7 +50,7 @@ export default class Select extends Vue {
   }
 
   .s-select .s-placeholder {
-    color: rgba(255, 255, 255, 0.75) !important;
+    color: $default-white !important;
     margin-top: 12px !important;
     padding-left: 25px !important;
   }
@@ -73,7 +73,7 @@ export default class Select extends Vue {
 }
 
 .el-select-dropdown__item {
-  color: rgba(255, 255, 255, 0.75) !important;
+  color: $default-white !important;
 
   &:hover {
     background-color: rgba(255, 255, 255, 0.1) !important;

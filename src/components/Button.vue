@@ -20,7 +20,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type FontSize = 'small' | 'medium' | 'big';
-type Type = 'primary' | 'secondary';
+type Type = 'primary' | 'secondary' | 'link';
 
 @Component
 export default class Button extends Vue {
@@ -65,6 +65,15 @@ export default class Button extends Vue {
         {
           'secondary-hover': this.hover,
           'secondary-border-hover': this.border && this.hover,
+        },
+      ];
+    }
+    if (this.type === 'link') {
+      return [
+        `button-font-size-${this.fontSize}`,
+        'link',
+        {
+          'link-hover': this.hover,
         },
       ];
     }
@@ -142,5 +151,13 @@ export default class Button extends Vue {
 
 .secondary-border-hover:hover {
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.link {
+  color: $default-white !important;
+}
+
+.link-hover:hover {
+  color: $default-white !important;
 }
 </style>

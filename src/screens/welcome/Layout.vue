@@ -222,14 +222,14 @@ export default class Layout extends Vue {
   get header() {
     if (this.isCreateWallet) {
       if (this.currentIndexPage === 1) return 'Create new wallet';
-      else if (this.currentIndexPage === 2) return 'Backup the passphrase for your new wallet';
-      else if (this.currentIndexPage === 3) return 'Confirm the passphrase';
-      else if (this.showPasswordForm) return 'Set up password';
+      if (this.currentIndexPage === 2) return 'Backup the passphrase for your new wallet';
+      if (this.currentIndexPage === 3) return 'Confirm the passphrase';
+      if (this.showPasswordForm) return 'Set up password';
     }
 
     if (this.currentIndexPage === 1) return 'Import wallet';
-    else if (this.currentIndexPage === 2) return 'Make up a nickname';
-    else if (this.currentIndexPage === 3) return 'Enter password';
+    if (this.currentIndexPage === 2) return 'Make up a nickname';
+    if (this.currentIndexPage === 3) return 'Enter password';
 
     return '';
   }
@@ -248,13 +248,14 @@ export default class Layout extends Vue {
     if (this.isImportWallet) {
       if (this.currentIndexPage === 1) {
         return !this.mnemonic && !this.rawSeed && (Object.keys(this.json).length === 0 || !this.passwordJson);
-      } else if (this.currentIndexPage === 2) return !this.nickname;
+      }
+
+      if (this.currentIndexPage === 2) return !this.nickname;
     }
 
     // isCreateWallet
     if (this.currentIndexPage === 1) return !this.nickname;
-    else if (this.currentIndexPage === 3)
-      return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
+    if (this.currentIndexPage === 3) return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
 
     return false;
   }

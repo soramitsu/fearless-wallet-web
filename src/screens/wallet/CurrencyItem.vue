@@ -260,7 +260,7 @@ export default class CurrencyItem extends Vue {
     .third-row {
       display: flex;
       font-size: 12px;
-      color: rgba(255, 255, 255, 0.75);
+      color: $default-white;
     }
 
     .price {

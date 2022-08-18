@@ -1,5 +1,12 @@
 <template>
-  <AboveForm header="Manage dApp access" :blur="true" :closeHandler="onChangeState">
+  <AboveForm
+    header="Manage dApp access"
+    :showBackIcon="true"
+    :blur="true"
+    :handlerBack="onChangeState"
+    :closeHandler="onChangeState"
+  >
+    <SearchInput v-model="filterValue" placeholder="Search in networks" class="manage-auths__search" :isBig="true" />
     <SCol v-for="el in data" width="100%" v-bind:key="el.text">
       <SRow>
         <SCol :span="10" class="s-flex s-justify-start">
@@ -9,7 +16,7 @@
           <SRow flex justify="space-around">
             <Switcher v-model="el.state" />
 
-            <img class="trash" src="@/assets/trash.svg" @click="onChangeState" />
+            <img class="trash" src="@/assets/trash.svg" @click="onDeleteConnection" />
           </SRow>
         </SCol>
       </SRow>
@@ -20,17 +27,18 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import AuthItem from '@/screens/authorize/AuthItem.vue';
 import Switcher from '@/components/Switcher.vue';
 import AboveForm from '@/components/AboveForm.vue';
+import SearchInput from '@/components/SearchInput.vue';
 @Component({
   components: {
-    AuthItem,
     AboveForm,
     Switcher,
+    SearchInput,
   },
 })
 export default class Auth extends Vue {
+  filterValue = '';
   data = [
     {
       name: 'polkadot/apps',
@@ -42,7 +50,7 @@ export default class Auth extends Vue {
     },
   ];
 
-  onChangeState(event: Event) {
+  onDeleteConnection(event: Event) {
     console.log(event);
   }
 }
@@ -64,5 +72,9 @@ export default class Auth extends Vue {
 }
 .trash {
   cursor: pointer;
+}
+.manage-auths__search {
+  width: 100%;
+  margin-bottom: 17px;
 }
 </style>

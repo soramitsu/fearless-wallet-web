@@ -1,0 +1,52 @@
+<template>
+  <Corners class="alert-container" isWarning size="big">
+    <div class="alert__content">
+      <Hint class="alert__header" size="big" iconName="warning-orange" text="Attention" />
+      <p class="alert__message">
+        Only approve this request if you trust the application. Approving gives the application access to the addresses
+        of you accounts
+      </p>
+    </div>
+  </Corners>
+</template>
+
+<script>
+import { Vue, Component } from 'vue-property-decorator';
+import Corners from '@/components/Corners.vue';
+import Hint from '@/components/Hint.vue';
+
+@Component({
+  components: {
+    Corners,
+    Hint,
+  },
+})
+export default class Container extends Vue {}
+</script>
+
+<style lang="scss" scoped>
+.alert-container {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 16px;
+  border: 1px solid rgba(238, 119, 0, 0.27) !important;
+  clip-path: $big-clip-path-left-top-and-right-bottom;
+  border-radius: $default-border-radius;
+  width: 100%;
+}
+
+.alert__content {
+  width: 100%;
+}
+.alert__header {
+  margin-bottom: 6px;
+  font-size: 16px !important;
+  line-height: 150%;
+  color: $default-white !important;
+}
+.alert__message {
+  font-weight: 400;
+  line-height: 150%;
+  color: $default-white;
+  text-align: start;
+}
+</style>

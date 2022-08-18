@@ -72,7 +72,7 @@ export default class PopupWithSelect extends Vue {
 <style lang="scss" scoped>
 .popup-with-choice {
   .row {
-    color: rgba(255, 255, 255, 0.75);
+    color: $default-white;
     text-align: left;
     width: 100%;
     height: 24px;

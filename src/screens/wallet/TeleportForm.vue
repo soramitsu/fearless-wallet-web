@@ -364,7 +364,7 @@ export default class TeleportForm extends Vue {
 
     .transferrable-label {
       font-size: 14px;
-      color: rgba(255, 255, 255, 0.75);
+      color: $default-white;
       text-align: left;
     }
 
@@ -418,7 +418,7 @@ export default class TeleportForm extends Vue {
         align-items: flex-end;
 
         .sub-value {
-          color: rgba(255, 255, 255, 0.75);
+          color: $default-white;
           font-weight: 300;
           font-size: 12px;
           margin-top: 3px;

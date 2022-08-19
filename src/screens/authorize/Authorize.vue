@@ -1,24 +1,30 @@
 <template>
   <AboveForm :blur="true" header="Authorize" :closeHandler="onClick">
-    <div class="auth">
+    <div class="authorize">
       <div>
-        <p class="authorize-message">
+        <p class="authorize__content">
           An application, self-identifying as
-          <span class="authorize-message--name">polkadotjs/app</span> is requesting access from my
-          <span class="authorize-message--link">http://url.com.</span>
+          <span class="authorize__content--name">{{ name }}</span> is requesting access from my
+          <span class="authorize__content--link">{{ url }}</span>
         </p>
         <Alert />
       </div>
-      <div class="buttons">
-        <Button width="100%" text="Yes, allow this application access" size="big" fontSize="big" @click="onClick" />
-        <Button width="100%" type="link" text="Reject" size="big" fontSize="medium" @click="onClick" />
+      <div class="authorize__control">
+        <Button
+          width="100%"
+          text="Yes, allow this application access"
+          size="big"
+          fontSize="big"
+          @click="$emit('authorizeApp')"
+        />
+        <Button width="100%" type="link" text="Reject" size="big" fontSize="medium" @click="$emit('rejectApp')" />
       </div>
     </div>
   </AboveForm>
 </template>
 
 <script lang="ts">
-import Vue from 'vue';
+import { Vue, Prop } from 'vue-property-decorator';
 // import {
 //   subscribeAccounts,
 //   subscribeAuthorizeRequests,
@@ -42,6 +48,9 @@ import Component from 'vue-class-component';
   },
 })
 export default class Authorize extends Vue {
+  @Prop(String) url!: string;
+  @Prop(String) name!: string;
+
   onClick(event: Event) {
     console.log(event.target);
   }
@@ -49,35 +58,30 @@ export default class Authorize extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.warning {
-  background: red;
-}
-.auth {
+.authorize {
   display: flex;
   flex-flow: column;
   justify-content: space-between;
   height: 90%;
-}
-.authorize-message {
-  font-size: 16px;
-  font-weight: 400px;
-  margin-bottom: 20px;
-}
-.authorize-message--name {
-  color: #bb77ff;
-}
-.authorize-message--link {
-  color: #bb77ff;
-  cursor: pointer;
-}
 
-.reject-button {
-  color: #ffffffbf;
-}
-.buttons {
-  display: flex;
-  flex-flow: column;
-  justify-content: space-between;
-  height: 90px;
+  .authorize__content {
+    font-size: 16px;
+    font-weight: 400px;
+    margin-bottom: 20px;
+  }
+  .authorize__content--name {
+    color: #bb77ff;
+  }
+  .authorize__content--link {
+    color: #bb77ff;
+    cursor: pointer;
+  }
+
+  .authorize__control {
+    display: flex;
+    flex-flow: column;
+    justify-content: space-between;
+    height: 90px;
+  }
 }
 </style>

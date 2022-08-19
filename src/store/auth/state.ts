@@ -1,5 +1,5 @@
 export type AuthState = {
-  requests: string[];
+  requests: Record<string, string>[];
 };
 
 const state = (): AuthState => {

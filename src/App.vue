@@ -2,8 +2,9 @@
   <div id="app">
     <div class="drag"></div>
     <!-- <Transaction /> -->
+    <SignRequest />
     <!-- <Authorize /> -->
-    <ManageAuths />
+    <!-- <ManageAuths /> -->
     <!-- <router-view /> -->
   </div>
 </template>
@@ -21,9 +22,11 @@ import NetworksController from '@/controllers/networksController';
 import Transaction from '@/screens/signing/Transaction.vue';
 import ManageAuths from '@/screens/authorize/ManageAuths.vue';
 import Authorize from '@/screens/authorize/Authorize.vue';
+import SignRequest from '@/screens/signing/SignRequest.vue';
 @Component({
   components: {
     Transaction,
+    SignRequest,
     Authorize,
     ManageAuths,
   },

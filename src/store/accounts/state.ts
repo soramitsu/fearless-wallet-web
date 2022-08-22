@@ -1,14 +1,15 @@
-import { SelectedWallet } from './types';
+import { accountController } from '@/controllers/accountController';
+import type { SelectedWallet } from './types';
 
 export type State = {
-  password: string;
   selectedWallet: SelectedWallet;
+  selectedFiat: string;
 };
 
 const state = (): State => {
   return {
     selectedWallet: { address: '', ethereumAddress: '', name: '' },
-    password: '',
+    selectedFiat: accountController.getSelectedFiat(),
   };
 };
 

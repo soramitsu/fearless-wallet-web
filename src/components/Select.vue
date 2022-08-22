@@ -1,7 +1,7 @@
 <template>
   <Corners :size="size">
     <div :class="containerSelectClasses">
-      <s-select v-model="vModel" :placeholder="placeholder" :size="size">
+      <s-select v-model="vModel" :placeholder="placeholder" :size="size" :disabled="disabled">
         <s-option v-for="{ value, label } in options" :key="label" :value="value" :label="label" />
       </s-select>
     </div>
@@ -26,6 +26,7 @@ export default class Select extends Vue {
   @VModel({ type: String }) vModel!: string;
   @Prop(String) placeholder!: string;
   @Prop(Array) options!: Options[];
+  @Prop(Boolean) disabled!: boolean;
   @Prop({ default: 'medium' }) size!: Size;
 
   get containerSelectClasses() {

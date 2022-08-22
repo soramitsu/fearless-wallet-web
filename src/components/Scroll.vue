@@ -7,6 +7,7 @@
 <style lang="scss" scoped>
 .scroll {
   overflow-y: auto;
+  overflow-x: hidden;
   width: 100%;
   height: 100%;
 }

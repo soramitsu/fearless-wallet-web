@@ -1,8 +1,7 @@
 import store from '@/store';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
-import { Networks } from '@/store/networks/types';
-import { decodeAddress, encodeAddress } from '@polkadot/util-crypto';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import type { Networks } from '@/store/networks/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
 export default class NetworksController {
@@ -10,16 +9,22 @@ export default class NetworksController {
     return store.getters[NetworksGettersTypes.getNetworks];
   }
 
-  public static async loadNetworksInfo(): Promise<void> {
+  public static async loadNetworks(): Promise<void> {
     const url = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/v2/chains/chains.json';
 
     await store.dispatch(NetworksActionTypes.LOAD_NETWORKS, { url });
   }
 
-  public static async loadAssetsInfo(): Promise<void> {
+  public static async loadAssets(): Promise<void> {
     const url = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v2/chains/assets_dev.json';
 
-    await store.dispatch(NetworksActionTypes.LOAD_ASSETS_INFO, { url });
+    await store.dispatch(NetworksActionTypes.LOAD_ASSETS, { url });
+  }
+
+  public static async loadFiats(): Promise<void> {
+    const url = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';
+
+    await store.dispatch(NetworksActionTypes.LOAD_FIATS, { url });
   }
 
   public static async loadTokensPrice(): Promise<void> {
@@ -30,22 +35,7 @@ export default class NetworksController {
     await store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, loadHistory });
   }
 
-  public static formatAddress(address: string, networkName: string): string {
-    const publicKey = decodeAddress(address, false);
-    const networks = this.getNetworks();
-    const network = networks.find(({ name }) => name === networkName);
-    const prefix = network?.addressPrefix;
-
-    return encodeAddress(publicKey, prefix);
-  }
-
-  public static validateAddress(address: string): boolean {
-    try {
-      decodeAddress(address, false);
-
-      return true;
-    } catch {
-      return false;
-    }
+  public static async updateActiveNode(networkName: string, nodeUrl: string, oldNodeUrl: string): Promise<void> {
+    await store.dispatch(NetworksActionTypes.UPDATE_ACTIVE_NODE, { networkName, nodeUrl, oldNodeUrl });
   }
 }

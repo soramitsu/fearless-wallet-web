@@ -13,7 +13,7 @@ Vue.config.productionTip = false;
 Vue.config.devtools = process.env.NODE_ENV === 'development';
 
 cryptoWaitReady().then((): void => {
-  console.log('crypto initialized');
+  console.info('crypto initialized');
 
   // load all the keyring data
   keyring.loadAll({
@@ -21,7 +21,7 @@ cryptoWaitReady().then((): void => {
     type: 'sr25519',
   });
 
-  console.log('initialization completed');
+  console.info('initialization completed');
 
   new Vue({
     store,

@@ -1,19 +1,22 @@
-import { RouteConfig } from 'vue-router';
-import Welcome from '@/screens/welcome/Welcome.vue';
-import Wallet from '@/screens/wallet/Wallet.vue';
+import Accounts from '@/screens/accounts/Accounts.vue';
+import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import Crowdloans from '@/screens/crowdloans/Crowdloans.vue';
 import Dex from '@/screens/dex/Dex.vue';
-import Staking from '@/screens/staking/Staking.vue';
+import Export from '@/screens/accounts/Export.vue';
 import History from '@/screens/history/History.vue';
-import Token from '@/screens/wallet/token/Token.vue';
-import Main from '@/screens/main/Main.vue';
-import WelcomeBack from '@/screens/welcomeBack/WelcomeBack.vue';
-import AccountController from '@/controllers/accountController';
 import keyring from '@polkadot/ui-keyring';
+import Main from '@/screens/main/Main.vue';
+import Network from '@/screens/accounts/Network.vue';
+import Staking from '@/screens/staking/Staking.vue';
+import Token from '@/screens/wallet/token/Token.vue';
+import Wallet from '@/screens/wallet/Wallet.vue';
+import Welcome from '@/screens/welcome/Welcome.vue';
+import AddWallet from '@/screens/addWallet/AddWallet.vue';
+import { RouteConfig } from 'vue-router';
 
 export enum Components {
   Welcome = 'Welcome',
-  WelcomeBack = 'WelcomeBack',
+  AddWallet = 'AddWallet',
   Main = 'Main',
   Wallet = 'Wallet',
   Crowdloans = 'Crowdloans',
@@ -21,23 +24,24 @@ export enum Components {
   Staking = 'Staking',
   History = 'History',
   Token = 'Token',
+  AccountsLayout = 'AccountsLayout',
+  Accounts = 'Accounts',
+  Network = 'Network',
+  Export = 'Export',
 }
 
-const accountController = new AccountController();
 const haveAccounts = () => keyring.getAccounts().length > 0;
-const isSavedPassword = () => accountController.isSavedPassword();
-const isCorrectPasswordAge = () => accountController.isCorrectPasswordAge();
-const redirectToWelcomeBack = () => isSavedPassword() && !isCorrectPasswordAge();
 
 const routes: Array<RouteConfig> = [
   {
     path: '/welcome',
     name: Components.Welcome,
     component: Welcome,
-    beforeEnter: (to, from, next) => {
-      if (redirectToWelcomeBack()) next({ name: Components.WelcomeBack });
-      else next();
-    },
+  },
+  {
+    path: '/add-wallet/:type',
+    name: Components.AddWallet,
+    component: AddWallet,
   },
   {
     path: '/main',
@@ -54,6 +58,28 @@ const routes: Array<RouteConfig> = [
         path: 'wallet',
         name: Components.Wallet,
         component: Wallet,
+      },
+      {
+        path: 'accounts',
+        name: Components.AccountsLayout,
+        component: AccountsLayout,
+        children: [
+          {
+            path: '/',
+            name: Components.Accounts,
+            component: Accounts,
+          },
+          {
+            path: ':network',
+            name: Components.Network,
+            component: Network,
+          },
+          {
+            path: ':network/export',
+            name: Components.Export,
+            component: Export,
+          },
+        ],
       },
       {
         path: ':network/:token',
@@ -82,18 +108,7 @@ const routes: Array<RouteConfig> = [
       },
     ],
     beforeEnter: (to, from, next) => {
-      if (redirectToWelcomeBack()) next({ name: Components.WelcomeBack });
-      else if (!haveAccounts()) next({ name: Components.Welcome });
-      else next();
-    },
-  },
-  {
-    path: '/welcome-back',
-    name: Components.WelcomeBack,
-    component: WelcomeBack,
-    beforeEnter: (to, from, next) => {
-      if (!isSavedPassword()) next({ name: Components.Welcome });
-      else if (isCorrectPasswordAge()) next({ name: Components.Wallet });
+      if (!haveAccounts()) next({ name: Components.Welcome });
       else next();
     },
   },

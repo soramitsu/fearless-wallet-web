@@ -46,23 +46,23 @@
     <div class="activity-block">
       <template v-if="!showAssetsManagementForm">
         <CircleButton
-          iconName="send-gray"
+          iconName="send-white"
           backgroundColor="black"
           class="button"
-          @click="toggleVisibleActivityForm('showSendForm', true, currency.getAllFields())"
+          @click="toggleVisibleActivityForm('showSendForm', true, currency)"
         />
 
         <CircleButton
-          iconName="receive-grey"
+          iconName="receive-white"
           backgroundColor="black"
           class="button"
-          @click="toggleVisibleActivityForm('showReceiveForm', true, currency.getAllFields())"
+          @click="toggleVisibleActivityForm('showReceiveForm', true, currency)"
         />
 
         <CircleButton
           iconName="chevron-right"
           backgroundColor="none"
-          :backgroundColorHover="true"
+          backgroundColorHover="black"
           @click="openTokenPage"
         />
       </template>
@@ -73,13 +73,16 @@
 </template>
 
 <script lang="ts">
+import CircleButton from '@/components/CircleButton.vue';
+import Switcher from '@/components/Switcher.vue';
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/util/numbers';
-import { Currency } from '@/interfaces/currencies';
-import CircleButton from '@/components/CircleButton.vue';
-import Switcher from '@/components/Switcher.vue';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import type { Currency } from '@/interfaces/currencies';
+import type { SelectedWallet } from '@/store/accounts/types';
 
 @Component({
   components: {
@@ -93,26 +96,28 @@ export default class CurrencyItem extends Vue {
   @Prop(Object) currency!: Currency;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
   get showCurrencyItem() {
     return !this.showAssetsManagementForm ? this.currencyVisible : true;
   }
 
   get changePriceClasses() {
-    const { usd24HoursChange } = this.currency;
+    const { hours24Change } = this.currency;
     const classes = ['price'];
 
-    if (usd24HoursChange > 0) classes.push('up-price');
-    else if (usd24HoursChange < 0) classes.push('down-price');
+    if (hours24Change > 0) classes.push('up-price');
+    else if (hours24Change < 0) classes.push('down-price');
 
     return classes;
   }
 
   get usd24HoursChangeString() {
-    const { usd24HoursChange } = this.currency;
-    const change = formattedNumber(usd24HoursChange);
+    const { hours24Change } = this.currency;
+    const change = +formattedNumber(hours24Change);
 
-    return usd24HoursChange > 0 ? `+${change}%` : usd24HoursChange < 0 ? `${change}%` : '';
+    return change > 0 ? `+${change}%` : change < 0 ? `${change}%` : '';
   }
 
   get tokenString() {
@@ -120,19 +125,19 @@ export default class CurrencyItem extends Vue {
   }
 
   get countTokensString() {
-    const totalCountTokens = this.currency.getTotalCountTokens();
+    const totalCountTokens = +this.currency.getTotalCountTokens(this.selectedWallet);
 
     return formattedNumber(totalCountTokens, 4);
   }
 
   get totalBalanceString() {
-    const totalBalance = this.currency.getTotalBalance();
+    const totalBalance = +this.currency.getTotalBalance(this.selectedWallet);
 
-    return `$${formattedPrice(totalBalance)}`;
+    return `${this.fiatSymbol}${formattedPrice(totalBalance)}`;
   }
 
   get priceString() {
-    return `$${formattedPrice(this.currency.price)}`;
+    return `${this.fiatSymbol}${formattedPrice(this.currency.price)}`;
   }
 
   get upperNetworkName() {
@@ -140,7 +145,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get availableInNetworks() {
-    return this.currency.getAvailableInNetworks();
+    return this.currency.getAvailableInNetworks(this.selectedWallet);
   }
 
   get isAdditional() {
@@ -156,7 +161,7 @@ export default class CurrencyItem extends Vue {
   }
 
   @Watch('currencyVisible')
-  filter(value: boolean) {
+  toggleCurrencyVisible(value: boolean) {
     this.currency.setCurrencyVisible(value);
   }
 
@@ -216,9 +221,6 @@ export default class CurrencyItem extends Vue {
   }
 
   .descriptions-column {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
     width: 100%;
 
     .row {
@@ -291,8 +293,8 @@ export default class CurrencyItem extends Vue {
   }
 
   .img-container {
-    width: 60px;
     margin: auto;
+    user-select: none;
 
     .main-network-img {
       width: 32px;
@@ -304,6 +306,7 @@ export default class CurrencyItem extends Vue {
     width: 12px;
     margin-right: 3px;
     opacity: 0.5;
+    user-select: none;
 
     &:last-child {
       margin-right: 0;

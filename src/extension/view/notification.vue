@@ -66,10 +66,7 @@ export default {
       });
     },
     approveAuthReq() {
-      approveAuthRequest(this.requests[0][0].id, this.accounts);
-    },
-    rejectAuthReq() {
-      removeAuthorization(this.requests[0][0].id);
+      approveAuthRequest(this.requests[0][0].id);
     },
   },
 };

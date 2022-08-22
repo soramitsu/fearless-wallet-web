@@ -13,8 +13,8 @@ import AccountsStore from './storeChrome/Accounts';
 Vue.config.productionTip = false;
 Vue.config.devtools = process.env.NODE_ENV === 'development';
 
-cryptoWaitReady().then(async () => {
-  console.log('crypto initialized');
+cryptoWaitReady().then((): void => {
+  console.info('crypto initialized');
 
   // load all the keyring data
   await keyring.loadAll({
@@ -22,7 +22,7 @@ cryptoWaitReady().then(async () => {
     type: 'sr25519',
   });
 
-  console.log('initialization completed');
+  console.info('initialization completed');
 
   new Vue({
     store,

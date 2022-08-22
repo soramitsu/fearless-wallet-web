@@ -1,5 +1,5 @@
 <template>
-  <div class="circle-button" :class="backgroundClass" @click="$emit('click')">
+  <div class="circle-button" :class="backgroundClass" @click="$emit('click', $event)">
     <img :src="img" :class="imageClasses" />
   </div>
 </template>
@@ -13,7 +13,7 @@ type BackgroundType = 'none' | 'black' | 'light-black';
 export default class CircleButton extends Vue {
   @Prop(String) iconName!: string;
   @Prop(String) backgroundColor!: BackgroundType;
-  @Prop({ default: false }) backgroundColorHover!: boolean;
+  @Prop(String) backgroundColorHover!: BackgroundType;
 
   get backgroundClass() {
     const _class = `background-${this.backgroundColor}`;
@@ -21,13 +21,13 @@ export default class CircleButton extends Vue {
     return [
       _class,
       {
-        [`${_class}-hover`]: this.backgroundColor === 'none' && this.backgroundColorHover,
+        [`${_class}-hover-${this.backgroundColorHover}`]: this.backgroundColor === 'none',
       },
     ];
   }
 
   get imageClasses() {
-    const shiftLeft = ['chevron-left', 'send', 'send-gray'].includes(this.iconName);
+    const shiftLeft = ['chevron-left', 'send', 'send-white'].includes(this.iconName);
     const shiftRight = ['chevron-right'].includes(this.iconName);
 
     return [
@@ -54,9 +54,10 @@ export default class CircleButton extends Vue {
   justify-content: center;
   align-items: center;
   border-radius: 50%;
+  user-select: none;
 
   .image {
-    opacity: 0.85;
+    filter: invert(0.35);
   }
 
   .image-shift-left {
@@ -71,7 +72,7 @@ export default class CircleButton extends Vue {
     cursor: pointer;
 
     .image {
-      opacity: 1;
+      filter: invert(0.2);
     }
   }
 }
@@ -80,9 +81,15 @@ export default class CircleButton extends Vue {
   background: none;
 }
 
-.background-none-hover {
+.background-none-hover-black {
   &:hover {
     background-color: rgba(0, 0, 0, 0.25);
+  }
+}
+
+.background-none-hover-light-black {
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
   }
 }
 

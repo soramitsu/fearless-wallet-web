@@ -12,8 +12,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
 import NetworkItem from './NetworkItem.vue';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component({
   components: {

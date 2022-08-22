@@ -15,7 +15,7 @@
         :name="name"
         :showIcon="selectedWallet.address === address"
         :balance="getBalance(address)"
-        :percent="getPercent(address)"
+        :percent="getPercent()"
         class="total"
         @click="updateSelectedWallet(address)"
       />
@@ -30,18 +30,19 @@
 </template>
 
 <script lang="ts">
+import Popup from '@/components/Popup.vue';
+import TotalBalance from '@/screens/wallet/TotalBalance.vue';
+import keyring from '@polkadot/ui-keyring';
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { SelectedWallet, SetSelectedWalletProps } from '@/store/accounts/types';
 import { Components } from '@/router/routes';
-import { Currencies } from '@/interfaces/currencies';
-import { TMutation } from '@/interfaces/common';
-import Popup from '@/components/Popup.vue';
-import TotalBalance from '@/screens/wallet/TotalBalance.vue';
-import keyring from '@polkadot/ui-keyring';
+import { addNumbers } from '@/util/numbers';
+import type { SelectedWallet, SetSelectedWalletProps } from '@/store/accounts/types';
+import type { Currencies } from '@/interfaces/currencies';
+import type { TMutation } from '@/interfaces/common';
 
 @Component({
   components: {
@@ -63,7 +64,7 @@ export default class SelectWalletPopup extends Vue {
 
         return pair;
       })
-      .filter(({ type }) => type !== 'ethereum');
+      .filter(({ type, meta }) => type !== 'ethereum' && !meta.isReplacedAccount);
   }
 
   addWallet() {
@@ -71,18 +72,12 @@ export default class SelectWalletPopup extends Vue {
   }
 
   getBalance(address: string) {
-    const currencies = this.currencies[address];
+    const arr = this.currencies.map((currency) => currency.getTotalBalance({ address, ethereumAddress: address }));
 
-    return (
-      currencies?.reduce((sum, currency) => {
-        const totalBalance = currency.getTotalBalance();
-
-        return sum + totalBalance;
-      }, 0) ?? 0
-    );
+    return addNumbers(arr);
   }
 
-  getPercent(address: string) {
+  getPercent() {
     return 5.3;
   }
 

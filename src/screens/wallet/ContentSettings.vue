@@ -4,10 +4,10 @@
       <template v-if="!syncedShowAssetsManagementForm">
         <TabButton
           v-for="tabName in tabsOptions"
+          class="tab"
           :key="tabName"
           :name="tabName"
           :isActive="activeTabName === tabName"
-          class="tab"
           @click.native="openTab(tabName)"
         />
       </template>
@@ -21,18 +21,23 @@
     <div v-if="isCurrenciesTab" class="settings-part">
       <SearchInput v-if="!showAssetsManagementForm" v-model="filterValue" placeholder="Search" class="search" />
 
-      <CircleButton :iconName="iconName" backgroundColor="none" @click="toggleAssetsManagementVisible" />
+      <CircleButton
+        v-if="showAssetsManagementButton"
+        :iconName="iconName"
+        backgroundColor="none"
+        @click="toggleAssetsManagementVisible"
+      />
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
-import type { TabWallet } from '@/interfaces/common';
 import TabButton from '@/components/TabButton.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import Switcher from '@/components/Switcher.vue';
+import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
+import type { TabWallet } from '@/interfaces/common';
 
 @Component({
   components: {
@@ -43,13 +48,14 @@ import Switcher from '@/components/Switcher.vue';
   },
 })
 export default class ContentSettings extends Vue {
-  readonly tabsOptions: TabWallet[] = ['Currencies', 'NFTs'];
+  readonly tabsOptions: TabWallet[] = ['Currencies']; // ['Currencies', 'NFTs']
 
   filterValue = '';
 
   @PropSync('activeTabName', { type: String }) syncedActiveTabName!: TabWallet;
   @PropSync('showAssetsManagementForm', { type: Boolean }) syncedShowAssetsManagementForm!: boolean;
   @PropSync('hideZeroBalance', { type: Boolean }) syncedHideZeroBalance!: boolean;
+  @Prop(Boolean) showAssetsManagementButton!: boolean;
   @Prop(Function) handlerFilter!: (value: string) => void;
 
   get iconName() {
@@ -80,12 +86,11 @@ export default class ContentSettings extends Vue {
   display: flex;
   justify-content: space-between;
   margin-bottom: 10px;
-  width: 100%;
+  margin-right: 16px;
 
   .settings-part {
     display: flex;
     align-items: center;
-    margin-right: 16px;
     height: 42px;
 
     .tab {
@@ -112,6 +117,7 @@ export default class ContentSettings extends Vue {
     font-size: 14px;
     line-height: 18px;
     margin-left: 8px;
+    user-select: none;
   }
 }
 </style>

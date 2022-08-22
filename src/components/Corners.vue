@@ -61,7 +61,7 @@ export default class Corners extends Vue {
 
   .corner-size-big {
     position: absolute;
-    clip-path: polygon(6.8px 0, calc(100% - 7px) 0, 100% calc(100% - 16px), 0 calc(100% - 16px));
+    clip-path: polygon(6.8px 0, calc(100% - 7px) 0, 100% calc(100% - 30px), 0 calc(100% - 30px));
     width: 40px;
     height: 40px;
   }

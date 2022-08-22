@@ -1,6 +1,6 @@
 <template>
   <div class="wallet">
-    <div class="header">
+    <header class="header">
       <TotalBalance :balance="totalBalance" :percent="totalPercent" />
 
       <SelectNetworkButton
@@ -9,17 +9,21 @@
         :isActive="showSelectNetworkPopup"
         @click="toggleSelectNetworkPopupVisible"
       />
-    </div>
+    </header>
 
-    <PopupWithSelect
+    <SelectPopup
       v-if="showSelectNetworkPopup"
       v-model="selectedNetwork"
       header="Select Network"
       space="big"
       horizontalPlacement="right"
       verticalPlacement="center"
+      sizeWidth="big"
+      placeholder="Search in networks"
+      :top="10"
       :showIcon="true"
       :showSearch="true"
+      :showBorder="true"
       :staticHeight="true"
       :options="filteredOptionsNetworks"
       :toggleValue="toggleSelectedNetwork"
@@ -27,13 +31,14 @@
       :handlerFilter="handlerFilter.bind(null, 'popupFilterValue')"
     />
 
-    <Corners size="big" :bottomRightCorner="false">
+    <ContentForm :height="390">
       <div class="content">
         <ContentSettings
           :activeTabName="activeTabName"
           :showAssetsManagementForm="showAssetsManagementForm"
           :hideZeroBalance="hideZeroBalance"
           :handlerFilter="handlerFilter.bind(null, 'filterValue')"
+          :showAssetsManagementButton="existSavedSequence"
           @update:activeTabName="updateActiveTabName"
           @update:showAssetsManagementForm="toggleAssetsManagementFormVisible"
           @update:hideZeroBalance="toggleHideZeroBalance"
@@ -42,7 +47,7 @@
         <Scroll>
           <Currencies
             v-if="showCurrencies"
-            :currencies="filterCurrencies"
+            :currencies="filteredCurrencies"
             :selectedNetwork="selectedNetwork"
             :showAssetsManagementForm="showAssetsManagementForm"
             :hideZeroBalance="hideZeroBalance"
@@ -52,11 +57,10 @@
           <NFTs v-else-if="showNfts" />
         </Scroll>
       </div>
-    </Corners>
+    </ContentForm>
 
     <SendForm
       v-if="showSendForm"
-      :currencies="currenciesForSelectedWallet"
       :_selectedToken="selectedCurrency.token"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false)"
@@ -71,6 +75,17 @@
 </template>
 
 <script lang="ts">
+import Scroll from '@/components/Scroll.vue';
+import ContentForm from '@/components/ContentForm.vue';
+import SelectPopup from '@/components/SelectPopup.vue';
+import SelectNetworkButton from './SelectNetworkButton.vue';
+import ReceiveForm from './ReceiveForm.vue';
+import SendForm from './SendForm.vue';
+import ContentSettings from './ContentSettings.vue';
+import Currencies from './Currencies.vue';
+import TotalBalance from './TotalBalance.vue';
+import NFTs from './NFTs.vue';
+import { accountController } from '@/controllers/accountController';
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -79,118 +94,95 @@ import { SelectedWallet } from '@/store/accounts/types';
 import { Networks, SetCurrenciesProps } from '@/store/networks/types';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { getImgPathByNetworkName } from '@/util/imgPath';
-import { getCurrencies } from '@/util/currenciesHelper';
+import { defaultSortingCurrencies } from '@/util/currenciesHelper';
 import { firstCharToUp } from '@/util/helpers';
-import { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
-import { TMutation } from '@/interfaces/common';
-import type { TabWallet } from '@/interfaces/common';
-import Scroll from '@/components/Scroll.vue';
-import Corners from '@/components/Corners.vue';
-import PopupWithSelect from '@/components/PopupWithSelect.vue';
-import SelectNetworkButton from './SelectNetworkButton.vue';
-import ReceiveForm from './ReceiveForm.vue';
-import SendForm from './SendForm.vue';
-import ContentSettings from './ContentSettings.vue';
-import Currencies from './Currencies.vue';
-import TotalBalance from './TotalBalance.vue';
-import NFTs from './NFTs.vue';
-import AccountController from '@/controllers/accountController';
+import { addNumbers } from '@/util/numbers';
+import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
+import type { TMutation, TabWallet } from '@/interfaces/common';
 
 @Component({
   components: {
-    PopupWithSelect,
-    SelectNetworkButton,
-    SendForm,
-    ReceiveForm,
-    ContentSettings,
-    Currencies,
     NFTs,
     Scroll,
+    SendForm,
+    Currencies,
+    ContentForm,
+    ReceiveForm,
     TotalBalance,
-    Corners,
+    SelectPopup,
+    ContentSettings,
+    SelectNetworkButton,
   },
 })
 export default class Wallet extends Vue {
   readonly selectNetworkButtonRef = 'selectNetworkButton';
-  readonly accountController = new AccountController();
   showAssetsManagementForm = false;
   hideZeroBalance = false;
+  existSavedSequence = false;
+  showSendForm = false;
+  showReceiveForm = false;
+  showSelectNetworkPopup = false;
+  selectedNetwork = 'All networks';
+  activeTabName: TabWallet = 'Currencies';
+  popupFilterValue = '';
+  filterValue = '';
   selectedCurrency!: {
     mainNetwork: string;
     token: string;
   };
 
-  existSavedSequence = false;
-  activeTabName: TabWallet = 'Currencies';
-  showSendForm = false;
-  showReceiveForm = false;
-  showSelectNetworkPopup = false;
-  selectedNetwork = 'All networks';
-  popupFilterValue = '';
-  filterValue = '';
-
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
   @Getter(NetworksGettersTypes.getAllNetworksIsLoaded) allNetworksIsLoaded!: boolean;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
 
-  get currenciesForSelectedWallet() {
-    const subsequenceTokens = this.accountController.getSubsequenceTokens();
-    const currencies = [
-      ...(this.currencies[this.selectedWallet.address] ?? []),
-      ...(this.currencies[this.selectedWallet.ethereumAddress] ?? []),
-    ];
+  get sortedCurrencies() {
+    if (this.selectedWallet.address === '') return [];
 
-    // at the first launch of the extension sort by balance
-    if (!this.existSavedSequence) {
-      currencies.sort((currency1, currency2) => {
-        const totalCountTokensOne = currency1.getTotalCountTokens();
-        const totalCountTokensTwo = currency2.getTotalCountTokens();
+    const subsequenceTokens = accountController.getSubsequenceTokens();
+    const currencies = [...(this.currencies ?? [])];
 
-        if (totalCountTokensOne || totalCountTokensTwo) {
-          const totalBalanceOne = currency1.getTotalBalance();
-          const totalBalanceTwo = currency2.getTotalBalance();
-
-          return totalBalanceTwo - totalBalanceOne;
-        }
-
-        return totalCountTokensTwo - totalCountTokensOne;
-      });
-    } else {
+    // at the first launch of the extension sort by fiat balance
+    if (!this.existSavedSequence) return defaultSortingCurrencies(currencies, this.selectedWallet);
+    else
       currencies.sort(({ mainNetwork: mainNetwork1 }, { mainNetwork: mainNetwork2 }) => {
         const index1 = subsequenceTokens.indexOf(mainNetwork1);
         const index2 = subsequenceTokens.indexOf(mainNetwork2);
 
         return index1 - index2;
       });
-    }
 
     return currencies;
   }
 
-  get filterCurrencies() {
-    if (this.showAssetsManagementForm) return this.currenciesForSelectedWallet;
+  get filteredCurrencies() {
+    if (this.showAssetsManagementForm) return this.sortedCurrencies;
 
     const filter = this.filterValue.trim().toLowerCase();
 
-    return this.currenciesForSelectedWallet
-      .filter((currency) => {
-        if (this.selectedNetwork === 'All networks') return true;
+    return this.sortedCurrencies.filter((currency) => {
+      const isAllNetworks = this.selectedNetwork === 'All networks';
+      const availableInSelectedNetwork = isAllNetworks
+        ? false
+        : currency
+            .getAvailableInNetworks(this.selectedWallet)
+            .map(({ network }) => network)
+            .includes(this.selectedNetwork);
 
-        const availableInNetworks = currency.getAvailableInNetworks();
+      // if a network is selected and there is no currency in this network
+      if (!isAllNetworks && !availableInSelectedNetwork) return false;
 
-        return availableInNetworks.map(({ network }) => network).includes(this.selectedNetwork);
-      })
-      .filter(({ mainNetwork }) => mainNetwork.includes(filter));
+      const { mainNetwork, token } = currency;
+
+      return mainNetwork.includes(filter) || token.includes(filter);
+    });
   }
 
   get totalBalance() {
-    return this.currenciesForSelectedWallet.reduce((sum, currency) => {
-      const totalBalance = currency.getTotalBalance();
+    const arr = this.sortedCurrencies.map((currency) => currency.getTotalBalance(this.selectedWallet));
 
-      return sum + totalBalance;
-    }, 0);
+    return addNumbers(arr);
   }
 
   get totalPercent() {
@@ -207,7 +199,7 @@ export default class Wallet extends Vue {
 
   get optionsNetworks() {
     return [
-      { label: 'All networks', value: 'All networks', path: 'globus.svg' },
+      { label: 'All networks', value: 'All networks', path: 'globus.svg', isAll: true },
       ...this.networks.map(({ name }) => {
         return { label: firstCharToUp(name), value: name, path: `networks/${getImgPathByNetworkName(name)}` };
       }),
@@ -224,17 +216,16 @@ export default class Wallet extends Vue {
   setSubsequenceTokens() {
     if (this.existSavedSequence) return;
 
-    const subsequence = this.currenciesForSelectedWallet.map(({ mainNetwork }) => mainNetwork);
-    const currencies = getCurrencies(this.currenciesForSelectedWallet, this.selectedWallet);
+    const subsequence = this.sortedCurrencies.map(({ mainNetwork }) => mainNetwork);
 
-    this.accountController.setSubsequenceTokens(subsequence);
-    this.setCurrencies({ currencies });
+    accountController.setSubsequenceTokens(subsequence);
+    this.setCurrencies({ currencies: this.sortedCurrencies });
     this.existSavedSequence = true;
   }
 
   mounted() {
-    this.hideZeroBalance = this.accountController.getHideZeroBalanceValue();
-    this.existSavedSequence = this.accountController.getSubsequenceTokens().length > 0;
+    this.hideZeroBalance = accountController.getHideZeroBalanceValue();
+    this.existSavedSequence = accountController.getSubsequenceTokens().length > 0;
   }
 
   toggleAssetsManagementFormVisible(value = true) {
@@ -243,7 +234,7 @@ export default class Wallet extends Vue {
 
   toggleHideZeroBalance(value: boolean) {
     this.hideZeroBalance = value;
-    this.accountController.setHideZeroBalanceValue(value);
+    accountController.setHideZeroBalanceValue(value);
   }
 
   toggleVisibleActivityForm(field: 'showSendForm' | 'showReceiveForm', value = true, currency: Currency) {
@@ -258,6 +249,8 @@ export default class Wallet extends Vue {
 
   toggleSelectedNetwork(value: string) {
     this.selectedNetwork = value;
+    this.toggleSelectNetworkPopupVisible();
+    this.handlerFilter('popupFilterValue', '');
   }
 
   toggleSelectNetworkPopupVisible() {
@@ -285,15 +278,15 @@ export default class Wallet extends Vue {
   width: 100%;
   height: 100%;
 
+  .content-form-height {
+    height: 390px;
+  }
+
   .content {
+    padding: 16px 0 0 16px;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    padding: 16px 0 0 16px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background-color: rgba(255, 255, 255, 0.05);
-    clip-path: $big-clip-path-left-top;
-    border-radius: 8px;
-    height: 418px;
   }
 
   .header {

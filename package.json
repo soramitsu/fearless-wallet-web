@@ -48,6 +48,7 @@
     "@types/jest": "^26.0.19",
     "@types/lodash": "^4.14.174",
     "@types/node": "^16.11.6",
+    "@types/qrcode": "^1.5.0",
     "@typescript-eslint/eslint-plugin": "^5.2.0",
     "@typescript-eslint/parser": "^5.2.0",
     "@vue/cli-plugin-babel": "~5.0.8",

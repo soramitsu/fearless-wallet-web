@@ -3,15 +3,14 @@
     <div class="alert__content">
       <Hint class="alert__header" size="big" iconName="warning-orange" text="Attention" />
       <p class="alert__message">
-        Only approve this request if you trust the application. Approving gives the application access to the addresses
-        of you accounts
+        {{ message }}
       </p>
     </div>
   </Corners>
 </template>
 
-<script>
-import { Vue, Component } from 'vue-property-decorator';
+<script lang="ts">
+import { Vue, Component, Prop } from 'vue-property-decorator';
 import Corners from '@/components/Corners.vue';
 import Hint from '@/components/Hint.vue';
 
@@ -21,7 +20,9 @@ import Hint from '@/components/Hint.vue';
     Hint,
   },
 })
-export default class Container extends Vue {}
+export default class Container extends Vue {
+  @Prop(String) message!: string;
+}
 </script>
 
 <style lang="scss" scoped>

@@ -7,7 +7,7 @@
           <span class="authorize__content--name">{{ name }}</span> is requesting access from my
           <span class="authorize__content--link">{{ url }}</span>
         </p>
-        <Alert />
+        <Alert :message="alertMessage" />
       </div>
       <div class="authorize__control">
         <Button
@@ -50,6 +50,8 @@ import Component from 'vue-class-component';
 export default class Authorize extends Vue {
   @Prop(String) url!: string;
   @Prop(String) name!: string;
+  alertMessage =
+    'Only approve this request if you trust the application. Approving gives the application access to the addresses of you accounts';
 
   onClick(event: Event) {
     console.log(event.target);

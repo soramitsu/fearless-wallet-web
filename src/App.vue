@@ -69,7 +69,6 @@ export default class App extends Vue {
   font-feature-settings: 'tnum' on, 'lnum' on;
   height: $extension-height;
   width: $extension-width;
-  border-radius: $default-border-radius;
   color: white;
   text-align: center;
   padding: 0 16px 16px 16px;

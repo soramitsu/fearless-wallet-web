@@ -31,7 +31,7 @@
       :handlerFilter="handlerFilter.bind(null, 'popupFilterValue')"
     />
 
-    <ContentForm :height="418">
+    <ContentForm :height="390">
       <div class="content">
         <ContentSettings
           :activeTabName="activeTabName"
@@ -279,7 +279,7 @@ export default class Wallet extends Vue {
   height: 100%;
 
   .content-form-height {
-    height: 418px;
+    height: 390px;
   }
 
   .content {

@@ -1,12 +1,13 @@
-import { AssetsJson, Networks } from './types';
-import { Currencies } from '@/interfaces/currencies';
-import { GetterTree } from 'vuex';
-import { History } from '@/interfaces/history';
-import { State } from './state';
+import type { AssetJson, FiatJson, Networks } from './types';
+import type { Currencies } from '@/interfaces/currencies';
+import type { GetterTree } from 'vuex';
+import type { History } from '@/interfaces/history';
+import type { State } from './state';
 
 export enum GettersTypes {
   getNetworks = 'getNetworks',
-  getAssetsInfo = 'getAssetsInfo',
+  getAssets = 'getAssets',
+  getFiats = 'getFiats',
   getHistory = 'getHistory',
   getCurrencies = 'getCurrencies',
   getAllNetworksIsLoaded = 'getAllNetworksIsLoaded',
@@ -14,7 +15,8 @@ export enum GettersTypes {
 
 export type Getters = {
   [GettersTypes.getNetworks](state: State, getters?: GetterTree<State, State> & Getters): Networks;
-  [GettersTypes.getAssetsInfo](state: State, getters?: GetterTree<State, State> & Getters): AssetsJson[];
+  [GettersTypes.getAssets](state: State, getters?: GetterTree<State, State> & Getters): AssetJson[];
+  [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): History;
   [GettersTypes.getCurrencies](state: State, getters?: GetterTree<State, State> & Getters): Currencies;
   [GettersTypes.getAllNetworksIsLoaded](state: State, getters?: GetterTree<State, State> & Getters): boolean;
@@ -24,8 +26,11 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getNetworks]({ networks }): Networks {
     return networks;
   },
-  [GettersTypes.getAssetsInfo]({ assets }): AssetsJson[] {
+  [GettersTypes.getAssets]({ assets }): AssetJson[] {
     return assets;
+  },
+  [GettersTypes.getFiats]({ fiats }): FiatJson[] {
+    return fiats;
   },
   [GettersTypes.getHistory]({ history }): History {
     return history;

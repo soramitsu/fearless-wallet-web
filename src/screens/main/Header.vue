@@ -1,5 +1,5 @@
 <template>
-  <div class="header">
+  <header class="header">
     <div class="header-part" :ref="walletNameRef">
       <div class="logo-container">
         <CircleButton v-if="showBackIcon" backgroundColor="light-black" iconName="chevron-left" @click="backToWallet" />
@@ -10,7 +10,7 @@
       <div class="wallet-name-block" @click="toggleSelectWalletPopupVisible">
         <div class="wallet-name">{{ name }}</div>
 
-        <Rotate :isActive="showSelectWalletPopup">
+        <Rotate :isActive="syncedShowSelectWalletPopup">
           <s-icon name="chevron-bottom-16" />
         </Rotate>
       </div>
@@ -18,53 +18,41 @@
     <div class="header-part">
       <CircleButton iconName="expand" backgroundColor="light-black" class="button-margin" @click="fullScreen" />
 
-      <CircleButton iconName="lock" backgroundColor="light-black" class="button-margin" @click="lock" />
-
       <div class="background-ellipse button-margin">
         <div :class="statusConnectedClasses"></div>
         {{ statusConnectedText }}
       </div>
 
-      <CircleButton iconName="settings" class="button-margin" backgroundColor="none" @click="openSettings" />
+      <CircleButton iconName="settings" class="button-margin" backgroundColor="none" @click="toggleSettingsVisible" />
     </div>
-
-    <SelectWalletPopup v-if="showSelectWalletPopup" @close="toggleSelectWalletPopupVisible" />
-  </div>
+  </header>
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store/accounts/types';
-import { Components } from '@/router/routes';
-import AccountController from '@/controllers/accountController';
 import Logo from '@/components/Logo.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import Rotate from '@/components/Rotate.vue';
-import SelectWalletPopup from './SelectWalletPopup.vue';
+import { Component, Vue, PropSync, Watch } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { Components } from '@/router/routes';
+import type { SelectedWallet } from '@/store/accounts/types';
 
 @Component({
   components: {
     Logo,
-    CircleButton,
     Rotate,
-    SelectWalletPopup,
+    CircleButton,
   },
 })
 export default class Header extends Vue {
   walletNameRef = 'walletName';
-  accountController = new AccountController();
-  showSelectWalletPopup = false;
 
+  @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get showBackIcon() {
     return this.$route.name === Components.Token;
-  }
-
-  get targetElement() {
-    return this.$refs[this.walletNameRef] as HTMLElement;
   }
 
   get name() {
@@ -79,31 +67,28 @@ export default class Header extends Vue {
     return Date.now() ? 'Connected' : 'Not connected';
   }
 
-  toggleSelectWalletPopupVisible() {
-    this.showSelectWalletPopup = !this.showSelectWalletPopup;
+  @Watch('syncedShowSelectWalletPopup')
+  updateZIndex() {
+    const targetElement = this.$refs[this.walletNameRef] as HTMLElement;
 
-    if (this.showSelectWalletPopup) {
-      this.targetElement.style.zIndex = '200';
-    } else {
-      this.targetElement.style.zIndex = '0';
-    }
+    if (this.syncedShowSelectWalletPopup) targetElement.style.zIndex = '200';
+    else targetElement.style.zIndex = '0';
   }
 
   backToWallet() {
     this.$router.push({ name: Components.Wallet });
   }
 
-  lock() {
-    this.accountController.updatedPasswordDateCreated(0);
-    this.$router.push({ name: Components.WelcomeBack });
-  }
-
   fullScreen() {
     alert(`fullScreen`);
   }
 
-  openSettings() {
-    alert(`settings`);
+  toggleSettingsVisible() {
+    this.$emit('toggleSettingsVisible');
+  }
+
+  toggleSelectWalletPopupVisible() {
+    this.syncedShowSelectWalletPopup = !this.syncedShowSelectWalletPopup;
   }
 }
 </script>
@@ -165,6 +150,7 @@ export default class Header extends Vue {
       font-size: 12px;
       border-radius: 20px;
       background-color: rgba(255, 255, 255, 0.1);
+      user-select: none;
     }
   }
 

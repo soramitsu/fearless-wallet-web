@@ -1,56 +1,57 @@
-import keyring from '@polkadot/ui-keyring';
+import BaseApi from '@/util/BaseApi';
 import LocalStorageController from '@/controllers/localStorageController';
 import NetworksController from '@/controllers/networksController';
 import store from '@/store';
 import teleportInfo from '@/consts/teleport';
-import { AssetsJson } from '@/store/networks/types';
-import { AvailableInNetworks } from '@/interfaces/currencies';
 import { BN, isFunction } from '@polkadot/util';
+import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import { FPNumber } from '@/util/fp';
+import { getReplacedMetaTyped } from '@/util/helpers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import type { AvailableInNetworks, Balances, BalanceFP, AvailableInNetworksFP } from '@/interfaces/currencies';
+import type {
+  AssetJson,
+  UpdateCurrencyProps,
+  UpdateCurrencyBalanceProps,
+  TokenPriceJson,
+  KeyTokenPriceJson,
+} from '@/store/networks/types';
 import type { SubmittableExtrinsic } from '@polkadot/api-base/types';
 import type { MainNetworkName } from '@/consts/teleport';
+import type { SignerOptions } from '@polkadot/api/submittable/types';
+import type { Wallet } from '@/store/accounts/types';
 
 const XCM_LOC = ['xcm', 'xcmPallet', 'polkadotXcm'];
 
-export interface Props {
-  mainNetwork: string;
-  token: string;
-  price: number;
-  usd24HoursChange: number;
-  availableInNetworks: AvailableInNetworks[];
-  precision: number;
-}
-
-interface CountTokens {
-  total: FPNumber;
-  frozen: FPNumber;
-  locked: FPNumber;
-  reserved: FPNumber;
-  transferable: FPNumber;
-}
-
 export default class CurrencyController {
   private readonly lsCurrency = new LocalStorageController('currency');
-  private readonly currencyVisibleStorageName: string;
-  private readonly decimals: FPNumber;
-  private availableInNetworks: AvailableInNetworks[];
+  private readonly currencyVisibleStorageName = 'currency_visible';
   public transfer!: SubmittableExtrinsic<'promise'> | undefined;
-  public mainNetwork: string;
-  public token: string;
-  public price: number;
-  public usd24HoursChange: number;
-  public precision: number;
+  public options: Partial<SignerOptions> = {};
+  public balances: Balances = {};
+  public price = 0;
+  public hours24Change = 0;
 
-  constructor({ mainNetwork, token, price, usd24HoursChange, availableInNetworks, precision }: Props) {
-    this.mainNetwork = mainNetwork;
-    this.token = token;
-    this.price = price;
-    this.usd24HoursChange = usd24HoursChange;
-    this.availableInNetworks = availableInNetworks;
-    this.precision = precision;
-    this.decimals = this.getDecimals();
-    this.currencyVisibleStorageName = `visible-${token}`;
+  constructor(
+    public mainNetwork: string,
+    public token: string,
+    public tokensPrice: TokenPriceJson,
+    public precision: number
+  ) {
+    console.info();
+  }
+
+  public updatePrice(selectedFiat: string) {
+    const hours24ChangeField = `${selectedFiat}_24h_change` as KeyTokenPriceJson;
+
+    this.price = this.tokensPrice[selectedFiat as KeyTokenPriceJson] ?? 0;
+    this.hours24Change = this.tokensPrice[hours24ChangeField] ?? 0;
+  }
+
+  private getCurrenciesVisible(): Record<string, boolean> {
+    const currencyVisible = this.lsCurrency.get(this.currencyVisibleStorageName);
+
+    return currencyVisible.value ?? {};
   }
 
   private calculateCost(count: FPNumber): FPNumber {
@@ -59,157 +60,215 @@ export default class CurrencyController {
     return count.mul(FPPrice);
   }
 
-  private getDecimals(): FPNumber {
-    return new FPNumber(10 ** this.precision);
+  private getAvailableInNetworksIncludingReplacedAccounts(wallet: Wallet): AvailableInNetworksFP[] {
+    const { address, ethereumAddress } = wallet;
+    const availableInNetworks = this.balances[address] ?? this.balances[ethereumAddress] ?? [];
+
+    const replacedAccounts = BaseApi.getReplacedAccounts(wallet);
+    const replacedNetworks = replacedAccounts.reduce((result, { address: _address, meta }) => {
+      const { replacedSettings } = getReplacedMetaTyped(meta);
+      const replacedNetworks = replacedSettings[address] ?? replacedSettings[ethereumAddress];
+
+      replacedNetworks.forEach((network) => (result[network] = _address));
+
+      return result;
+    }, {} as Record<string, string>);
+
+    return availableInNetworks.map((item) => {
+      const { network } = item;
+      let { balance } = item;
+
+      const replacedAddress = replacedNetworks[network];
+      const replacedAvailableInNetworks = this.balances[replacedAddress];
+
+      if (replacedAvailableInNetworks) {
+        const { balance: replacedBalance } = replacedAvailableInNetworks.find( // eslint-disable-line
+          ({ network: _network }) => _network === network
+        )!;
+
+        balance = replacedBalance;
+      }
+
+      return { network, balance };
+    });
   }
 
-  private countTokens(): CountTokens {
-    const availableInNetworks = this.availableInNetworks.reduce(
-      (obj, { balance: { total, frozen, locked, reserved, transferable } }) => {
-        const FPTotal = new FPNumber(total);
-        const FPFrozen = new FPNumber(frozen);
-        const FPLocked = new FPNumber(locked);
-        const FPReserved = new FPNumber(reserved);
-        const FPTransferable = new FPNumber(transferable);
+  private countTotalTokens(wallet: Wallet): BalanceFP {
+    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
 
+    return availableInNetworks.reduce(
+      (obj, { balance: { total, frozen, locked, reserved, transferable } }) => {
         return {
-          total: obj.total.add(FPTotal),
-          frozen: obj.frozen.add(FPFrozen),
-          locked: obj.locked.add(FPLocked),
-          reserved: obj.reserved.add(FPReserved),
-          transferable: obj.transferable.add(FPTransferable),
+          total: obj.total.add(total),
+          frozen: obj.frozen.add(frozen),
+          locked: obj.locked.add(locked),
+          reserved: obj.reserved.add(reserved),
+          transferable: obj.transferable.add(transferable),
         };
       },
       {
-        total: new FPNumber(0),
-        frozen: new FPNumber(0),
-        locked: new FPNumber(0),
-        reserved: new FPNumber(0),
-        transferable: new FPNumber(0),
+        total: FPNumber.ZERO,
+        frozen: FPNumber.ZERO,
+        locked: FPNumber.ZERO,
+        reserved: FPNumber.ZERO,
+        transferable: FPNumber.ZERO,
       }
     );
+  }
 
-    for (const field in availableInNetworks) {
-      const typedFiled = field as keyof typeof availableInNetworks;
+  public getTransactionAddress(wallet: Wallet, network: string): string {
+    const { address, ethereumAddress } = wallet;
+    const replacedAccount = BaseApi.getReplacedAccountByNetwork(wallet, network);
 
-      availableInNetworks[typedFiled] = availableInNetworks[typedFiled].div(this.decimals);
+    if (replacedAccount) {
+      const { address } = replacedAccount;
+
+      return address;
     }
 
-    return availableInNetworks;
+    const isEthereumNetwork = ETHEREUM_NETWORKS.includes(network);
+    const addressByNetwork = isEthereumNetwork ? ethereumAddress : address;
+
+    return addressByNetwork;
   }
 
-  private _getTotalCountTokens(): FPNumber {
-    return this.countTokens().total;
+  public updateCurrency({ precision, tokensPrice, selectedFiat }: UpdateCurrencyProps): void {
+    this.precision = precision ?? this.precision;
+    this.tokensPrice = tokensPrice ?? this.tokensPrice;
+
+    this.updatePrice(selectedFiat);
   }
 
-  public addNumbers(values: number[]): number {
-    return values.reduce((sum, number) => sum.add(new FPNumber(number)), new FPNumber(0)).toNumber();
+  public updateCurrencyBalance({ walletAddress, currency }: UpdateCurrencyBalanceProps): CurrencyController {
+    const { network: networkProp, balance } = currency;
+    const { frozen, locked, reserved, total, transferable } = balance;
+    const oldBalances = { ...this.balances };
+    let balancesForAddress = oldBalances[walletAddress];
+
+    const newValue = {
+      network: networkProp,
+      balance: {
+        frozen: FPNumber.fromCodecValue(frozen, this.precision),
+        locked: FPNumber.fromCodecValue(locked, this.precision),
+        reserved: FPNumber.fromCodecValue(reserved, this.precision),
+        total: FPNumber.fromCodecValue(total, this.precision),
+        transferable: FPNumber.fromCodecValue(transferable, this.precision),
+      },
+    };
+
+    if (balancesForAddress) {
+      const index = balancesForAddress.findIndex(({ network }) => network === networkProp);
+
+      if (index === -1) balancesForAddress.push(newValue);
+      else balancesForAddress.splice(index, 1, newValue);
+    } else balancesForAddress = [newValue];
+
+    this.balances = { ...oldBalances, [walletAddress]: balancesForAddress };
+
+    return this;
   }
 
-  public getTotalCountTokens(): number {
-    return this._getTotalCountTokens().toNumber();
+  public getTotalCountTokens(wallet: Wallet): string {
+    return this.countTotalTokens(wallet).total.toString();
   }
 
-  public getTransferableCountTokens(): number {
-    return this.countTokens().transferable.toNumber();
+  public getTransferableCountTokens(networkProp: string, wallet: Wallet): string {
+    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
+    const balance = availableInNetworks.find(({ network }) => network === networkProp)?.balance;
+
+    if (!balance) return '';
+
+    return balance.transferable.toString();
   }
 
-  public getTransferableCountTokensMinusFee(fee: number): number {
+  public getTransferableCountTokensMinusFee(fee: string, networkProp: string, wallet: Wallet): FPNumber {
     const FPFee = new FPNumber(fee);
-    const result = this.countTokens().transferable.sub(FPFee).toNumber();
+    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
+    const { transferable } = availableInNetworks.find(({ network }) => network === networkProp)!.balance; // eslint-disable-line
+    const result = transferable.sub(FPFee);
 
-    return result > 0 ? result : 0;
+    return FPNumber.lt(result, FPNumber.ZERO) ? FPNumber.ZERO : result;
   }
 
-  public isValidCountTokens(count: number, fee: number): boolean {
-    const transferableCountTokensMinusFee = this.getTransferableCountTokensMinusFee(fee);
+  public isValidCountTokens(count: string, fee: string, network: string, wallet: Wallet): boolean {
+    const transferableCountTokensMinusFee = this.getTransferableCountTokensMinusFee(fee, network, wallet);
 
-    return count <= transferableCountTokensMinusFee;
+    return FPNumber.lte(new FPNumber(count), transferableCountTokensMinusFee);
   }
 
-  public getAvailableInNetworks(): AvailableInNetworks[] {
-    return this.availableInNetworks.map(({ balance: { frozen, locked, reserved, total, transferable }, network }) => {
+  public getAvailableInNetworks(wallet: Wallet): AvailableInNetworks[] {
+    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
+
+    return availableInNetworks.map(({ balance: { frozen, locked, reserved, total, transferable }, network }) => {
       return {
         network,
         balance: {
-          frozen: new FPNumber(frozen).div(this.decimals).toString(),
-          locked: new FPNumber(locked).div(this.decimals).toString(),
-          reserved: new FPNumber(reserved).div(this.decimals).toString(),
-          total: new FPNumber(total).div(this.decimals).toString(),
-          transferable: new FPNumber(transferable).div(this.decimals).toString(),
+          frozen: frozen.toString(),
+          locked: locked.toString(),
+          reserved: reserved.toString(),
+          total: total.toString(),
+          transferable: transferable.toString(),
         },
       };
     });
   }
 
-  public getAllFields(): Props {
-    return {
-      token: this.token,
-      mainNetwork: this.mainNetwork,
-      availableInNetworks: this.availableInNetworks,
-      price: this.price,
-      usd24HoursChange: this.usd24HoursChange,
-      precision: this.precision,
-    };
-  }
-
-  public getTotalBalance(): number {
-    const countTokens = this._getTotalCountTokens();
+  public getTotalBalance(wallet: Wallet): string {
+    const countTokens = this.countTotalTokens(wallet).total;
     const cost = this.calculateCost(countTokens);
 
-    return cost.toNumber();
+    return cost.toString();
   }
 
-  public getCostOfTokens(count: number): number {
-    return this.calculateCost(new FPNumber(count)).toNumber();
+  public getCostOfTokens(count: string): string {
+    return this.calculateCost(new FPNumber(count)).toString();
   }
 
-  public getBalanceInNetwork(_network: string): number {
-    const total = this.availableInNetworks.find(({ network }) => network === _network)?.balance.total ?? 0;
+  public getBalanceInNetwork(_network: string, wallet: Wallet): string {
+    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
+    const total = availableInNetworks.find(({ network }) => network === _network)?.balance.total ?? FPNumber.ZERO;
 
-    return this.calculateCost(new FPNumber(total)).div(this.decimals).toNumber();
+    return this.calculateCost(total).toString();
   }
 
-  public getCountsTokensByPrice(cost: number): number {
+  public getCountTokensByPrice(cost: string): string {
     const FPCost = new FPNumber(cost);
     const price = new FPNumber(this.price);
 
-    return FPCost.div(price).toNumber();
+    return FPCost.div(price).toString();
   }
 
   public getCurrencyVisible(): boolean {
-    const lsVisible = this.lsCurrency.get(this.currencyVisibleStorageName);
+    const currenciesVisible = this.getCurrenciesVisible();
 
-    return lsVisible.value ?? true;
+    return currenciesVisible[this.token] ?? true;
   }
 
   public setCurrencyVisible(value: boolean): void {
-    this.lsCurrency.set(this.currencyVisibleStorageName, value, {}, { saveDateCreated: false });
+    const currenciesVisible = this.getCurrenciesVisible();
+
+    currenciesVisible[this.token] = value;
+
+    this.lsCurrency.set(this.currencyVisibleStorageName, currenciesVisible);
   }
 
-  private static getAssets(token: string): AssetsJson {
-    const assets: AssetsJson[] = store.getters[NetworksGettersTypes.getAssetsInfo];
+  private static getAssets(token: string): AssetJson {
+    const assets: AssetJson[] = store.getters[NetworksGettersTypes.getAssets];
 
-    return assets.find(({ id }) => id === token)!;
+    return assets.find(({ id }) => id === token)!; // eslint-disable-line
   }
 
-  private static getDecimals(token: string): FPNumber {
-    const precision = CurrencyController.getAssets(token)?.precision ?? 0;
-    const decimals = new FPNumber(10 ** +precision);
+  public static getHumanValue(token: string, value: string): string {
+    const precision = +CurrencyController.getAssets(token)?.precision ?? 0;
 
-    return decimals;
-  }
-
-  public static getAroundValue(token: string, value: string): number {
-    const decimals = this.getDecimals(token);
-
-    return new FPNumber(value).div(decimals).toNumber();
+    return FPNumber.fromCodecValue(value, precision).toString();
   }
 
   public static getPrecisionValue(token: string, amount: string): string {
-    const decimals = this.getDecimals(token);
+    const precision = +CurrencyController.getAssets(token)?.precision ?? 0;
+    const value = amount === '' ? 0 : +amount;
 
-    return Math.floor(new FPNumber(amount === '' ? 0 : +amount).mul(decimals).toNumber()).toString();
+    return new FPNumber(value, precision).toCodecString();
   }
 
   public getParaId(originalNetworkName: string, destinationNetworkName: string) {
@@ -228,32 +287,35 @@ export default class CurrencyController {
     //   : undefined;
   }
 
-  public createSendTransfer(to: string, networkName: string, token: string, amount: string): void {
-    const precisionAmount = CurrencyController.getPrecisionValue(token, amount);
+  public createSendTransfer(to: string, networkName: string, amount: string): void {
+    const precisionAmount = CurrencyController.getPrecisionValue(this.token, amount);
     const networks = NetworksController.getNetworks();
-    const { api } = networks.find(({ name }) => name === networkName)!; // eslint-disable-line
+    const { api, settings: { DefaultTip } } = networks.find(({ name }) => name === networkName)!; // eslint-disable-line
+    const options = { tip: DefaultTip };
 
     try {
-      this.transfer = api.tx.balances.transfer(to, precisionAmount.toString());
+      this.transfer = api.tx.balances.transfer(to, precisionAmount);
+      this.options = options;
     } catch {
       this.transfer = undefined;
+      this.options = {};
     }
   }
 
   public async createTeleportTransfer(
-    recipientId: string,
+    wallet: Wallet,
     originalNetworkName: string,
     destinationNetworkName: string,
-    token: string,
     amount: string
   ): Promise<void> {
+    const recipientId = this.getTransactionAddress(wallet, destinationNetworkName);
     const networks = NetworksController.getNetworks();
     const { api } = networks.find(({ name }) => name === originalNetworkName)!; // eslint-disable-line
     const m = XCM_LOC.filter((x) => api.tx[x] && isFunction(api.tx[x].limitedTeleportAssets))[0];
     const isParaTeleport = m === 'polkadotXcm';
-    const precisionAmount = CurrencyController.getPrecisionValue(token, amount);
+    const precisionAmount = CurrencyController.getPrecisionValue(this.token, amount);
     const tx = api.tx[m].limitedTeleportAssets;
-    const accountId32 = api.createType('AccountId32', recipientId).toHex();
+    const publicKey = BaseApi.decodeAddress(recipientId);
     const recipientParaId = this.getParaId(originalNetworkName, destinationNetworkName);
 
     if (!recipientParaId) {
@@ -262,45 +324,40 @@ export default class CurrencyController {
       return;
     }
 
-    const params = getParams(isParaTeleport, recipientParaId, accountId32, new BN(precisionAmount));
+    const params = getParams(isParaTeleport, recipientParaId, publicKey, new BN(precisionAmount));
 
     this.transfer = tx(...params);
   }
 
-  public async getPartialFee(from: string, returnNumberType = false): Promise<number | FPNumber> {
-    if (!this.transfer) return returnNumberType ? 0 : new FPNumber(0);
+  public async getPartialFee(from: string): Promise<string> {
+    if (!this.transfer) return '0';
 
     const { partialFee } = await this.transfer.paymentInfo(from);
-    const [fee, unit] = partialFee.toHuman().split(' ');
-    const precision = unit[0] === 'm' ? 3 : unit[0] === 'µ' ? 6 : 1;
-    const decimals = new FPNumber(10 ** precision);
-    const result = new FPNumber(fee).div(decimals);
+    const result = new FPNumber(partialFee, this.precision);
 
-    return returnNumberType ? +result.toNumber().toFixed(5) : result;
+    return result.toString();
   }
 
   public async send(from: string, amount: string): Promise<void> {
-    const pair = keyring.getPair(from);
+    const pair = BaseApi.getPair(from);
 
-    pair.unlock();
-
-    const unsubscribe = await this.transfer!.signAndSend(pair, ({ status }) => {
+    const unsubscribe = await this.transfer!.signAndSend(pair, this.options, ({ status }) => {
       if (status.isInBlock) {
-        console.log(`Successful transfer of ${amount} with hash ${status.asInBlock.toHex()}`);
+        console.info(`Successful transfer of ${amount} with hash ${status.asInBlock.toHex()}`);
       } else if (status.isFinalized) {
-        console.log(`Transaction finalized at blockHash ${status.asFinalized}`);
+        console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
 
         unsubscribe();
 
         pair.lock();
       } else {
-        console.log(`Status of transfer: ${status.type}`);
+        console.info(`Status of transfer: ${status.type}`);
       }
     });
   }
 }
 
-function getParams(isParaTeleport: boolean, recipientParaId: number, accountId32: string, amount: BN) {
+function getParams(isParaTeleport: boolean, recipientParaId: number, accountId32: string | Uint8Array, amount: BN) {
   return [
     {
       V1: isParaTeleport

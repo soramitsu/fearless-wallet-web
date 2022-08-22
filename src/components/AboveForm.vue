@@ -51,6 +51,8 @@ export default class AboveForm extends Vue {
 
 <style lang="scss" scoped>
 .above-form-background {
+  @include opacity;
+
   height: $extension-height;
   width: $extension-width;
   border-radius: $default-border-radius;
@@ -58,16 +60,6 @@ export default class AboveForm extends Vue {
   top: 0;
   left: 0;
   z-index: 299;
-  animation: opacity 0.3s;
-
-  @keyframes opacity {
-    0% {
-      opacity: 0;
-    }
-    100% {
-      opacity: 1;
-    }
-  }
 
   .above-form {
     position: relative;
@@ -79,14 +71,14 @@ export default class AboveForm extends Vue {
     clip-path: polygon(100% 0, 100% 100%, 0 100%, 0 4%, 4% 0);
     // animation: transform 0.3s forwards;
 
-    @keyframes transform {
-      0% {
-        transform: translateY(10%);
-      }
-      100% {
-        transform: translateY(0);
-      }
-    }
+    // @keyframes transform {
+    //   0% {
+    //     transform: translateY(10%);
+    //   }
+    //   100% {
+    //     transform: translateY(0);
+    //   }
+    // }
 
     .content {
       height: 496px;
@@ -130,6 +122,7 @@ export default class AboveForm extends Vue {
       display: flex;
       flex-direction: column;
       justify-content: center;
+      user-select: none;
     }
 
     .icon-back {

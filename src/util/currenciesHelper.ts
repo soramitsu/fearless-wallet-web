@@ -1,41 +1,61 @@
-import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
-import { Currency, Currencies } from '@/interfaces/currencies';
-import { SelectedWallet } from '@/store/accounts/types';
 import CurrencyController from '@/controllers/currencyController';
-import keyring from '@polkadot/ui-keyring';
-import { Networks } from '@/store/networks/types';
-
-export function getCurrencies(currency: Currency[], { address, ethereumAddress }: SelectedWallet) {
-  const substrate = currency.filter(({ mainNetwork }) => !ETHEREUM_NETWORKS.includes(mainNetwork));
-  const ethereum = currency.filter(({ mainNetwork }) => ETHEREUM_NETWORKS.includes(mainNetwork));
-
-  return {
-    [address]: substrate,
-    [ethereumAddress]: ethereum,
-  } as Currencies;
-}
+import type { Currencies, Currency } from '@/interfaces/currencies';
+import type { Networks, TokenPriceJson } from '@/store/networks/types';
+import type { Wallet } from '@/store/accounts/types';
 
 export function getMockCurrencies(networks: Networks): Currencies {
-  const currencyArray: Currency[] = networks.map(({ name, assets }) => {
-    return new CurrencyController({
-      availableInNetworks: [],
-      mainNetwork: name,
-      price: 0,
-      token: assets[0]?.assetId,
-      usd24HoursChange: 0,
-      precision: 0,
-    });
-  });
+  const currencies: Currencies = networks
+    .reduce((result, network) => {
+      const { assets, name } = network;
+      const token = assets[0]?.assetId;
+      const tokenIndex = result.findIndex(({ token: tokenExist }) => tokenExist === token);
 
-  const currencies: Currencies = {};
-  const substrate = currencyArray.filter(({ mainNetwork }) => !ETHEREUM_NETWORKS.includes(mainNetwork));
-  const ethereum = currencyArray.filter(({ mainNetwork }) => ETHEREUM_NETWORKS.includes(mainNetwork));
+      if (tokenIndex === -1)
+        result.push({
+          mainNetwork: name,
+          token,
+          precision: 0,
+          tokenPriceJson: {} as TokenPriceJson,
+        });
 
-  keyring.getAccounts().forEach(({ address }) => {
-    const { type } = keyring.getPair(address);
-
-    currencies[address] = type === 'ethereum' ? ethereum : substrate;
-  });
+      return result;
+    }, [] as any[])
+    .map(
+      ({ mainNetwork, tokenPriceJson, precision, token }) =>
+        new CurrencyController(mainNetwork, token, tokenPriceJson, precision)
+    );
 
   return currencies;
+}
+
+export function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet) {
+  const relayChains = [];
+  const currenciesWithTokens = currencies.filter((currency) => currency.getTotalCountTokens(wallet) !== '0');
+  const currenciesWithoutTokens = currencies.filter((currency) => currency.getTotalCountTokens(wallet) === '0');
+
+  const dotIndex = currenciesWithoutTokens.findIndex(({ token }) => token === 'dot');
+  const ksmIndex = currenciesWithoutTokens.findIndex(({ token }) => token === 'ksm');
+
+  if (dotIndex !== -1) {
+    const dot = currenciesWithoutTokens.splice(dotIndex, 1)[0];
+
+    relayChains.push(dot);
+  }
+
+  if (ksmIndex !== -1) {
+    const ksm = currenciesWithoutTokens.splice(ksmIndex, 1)[0];
+
+    relayChains.push(ksm);
+  }
+
+  currenciesWithTokens.sort((currency1, currency2) => {
+    const totalBalanceOne = +currency1.getTotalBalance(wallet);
+    const totalBalanceTwo = +currency2.getTotalBalance(wallet);
+
+    return totalBalanceTwo - totalBalanceOne;
+  });
+
+  currenciesWithoutTokens.sort(({ token: token1 }, { token: token2 }) => token1.localeCompare(token2));
+
+  return [...currenciesWithTokens, ...relayChains, ...currenciesWithoutTokens];
 }

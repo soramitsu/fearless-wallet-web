@@ -12,9 +12,9 @@
     >
       <div class="send-form-content">
         <template v-if="step === 1">
-          <Select v-model="selectedNetwork" :options="optionsNetwork" placeholder="Network" size="big" class="row" />
-
           <Select v-model="selectedToken" :options="optionsCurrency" placeholder="Currency" size="big" class="row" />
+
+          <Select v-model="selectedNetwork" :options="optionsNetwork" placeholder="Network" size="big" class="row" />
 
           <Input v-model="recipient" placeholder="Send to" size="big" class="row" />
 
@@ -37,7 +37,7 @@
           </div>
 
           <div class="row transferrable">
-            <div>
+            <div class="transferrable-part">
               <div class="transferrable-label">Transferrable</div>
               <div class="transferrable-descriptions">
                 <div class="transferrable-amount">{{ transferrableAmount }}</div>
@@ -45,7 +45,7 @@
               </div>
             </div>
 
-            <div class="transferrable-value">
+            <div class="transferrable-part">
               <div class="transferrable-label">Transferrable</div>
               <div class="transferrable-descriptions">
                 <div class="transferrable-amount">${{ transferrableValue }}</div>
@@ -69,7 +69,7 @@
                 <div class="name">Coins</div>
                 <div class="column">
                   <div>{{ amountString }}</div>
-                  <div class="sub-value">{{ valueString }}</div>
+                  <div v-if="showValue" class="value">{{ valueString }}</div>
                 </div>
               </div>
               <div class="summary-row">
@@ -90,44 +90,45 @@
       </div>
     </ActivityForm>
 
-    <SendingPopup
-      v-if="showSendingPopup"
-      :header="headerSendingPopup"
-      :popupLoading="sendingPopupLoading"
-      :handlerClose="sendingPopupClose"
+    <ConfirmationPasswordPopup
+      v-if="showConfirmationPasswordPopup"
+      header="Send Funds"
+      :currency="currency"
       :amount="amount"
       :value="value"
+      :address="addressByNetwork"
       :token="selectedToken"
       :firstNetwork="selectedNetwork"
+      @close="confirmationPasswordPopupClose"
     />
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import { GettersTypes as ApiGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store/accounts/types';
-import { Networks } from '@/store/networks/types';
-import { firstCharToUp } from '@/util/helpers';
-import { Currency } from '@/interfaces/currencies';
-import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
-import NetworksController from '@/controllers/networksController';
+import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
 import FloatInput from '@/components/FloatInput.vue';
 import Select from '@/components/Select.vue';
 import Corners from '@/components/Corners.vue';
 import ActivityForm from './ActivityForm.vue';
-import SendingPopup from './SendingPopup.vue';
+import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import MaxButton from './MaxButton.vue';
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import { GettersTypes as ApiGettersTypes, GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { SelectedWallet } from '@/store/accounts/types';
+import { Networks } from '@/store/networks/types';
+import { firstCharToUp } from '@/util/helpers';
+import { formattedNumber, formattedPrice, addNumbers } from '@/util/numbers';
+import type { Currencies } from '@/interfaces/currencies';
 
 @Component({
   components: {
     ActivityForm,
     Input,
     Select,
-    SendingPopup,
+    ConfirmationPasswordPopup,
     Corners,
     MaxButton,
     FloatInput,
@@ -135,9 +136,8 @@ import MaxButton from './MaxButton.vue';
 })
 export default class SendForm extends Vue {
   isValidCountTokens = true;
-  showSendingPopup = false;
-  sendingPopupLoading = false;
-  partialFee = 0;
+  showConfirmationPasswordPopup = false;
+  partialFee = '';
   selectedNetwork = '';
   selectedToken = '';
   recipient = '';
@@ -146,28 +146,32 @@ export default class SendForm extends Vue {
   step = 1;
 
   @Prop(Function) closeForm!: VoidFunction;
-  @Prop(Array) currencies!: Currency[];
   @Prop(String) _selectedNetwork!: string;
   @Prop(String) _selectedToken!: string;
   @Getter(ApiGettersTypes.getNetworks) networks!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
 
   get amountString() {
     return `${+this.amount} ${this.selectedTokenUpper}`;
   }
 
+  get showValue() {
+    return this.value !== '0';
+  }
+
   get valueString() {
-    return `$${this.value}`;
+    return `$${formattedPrice(+this.value)}`;
   }
 
   get partialFeeString() {
-    return `${this.partialFee} ${this.selectedTokenUpper}`;
+    return `${formattedNumber(+this.partialFee, 7)} ${this.selectedTokenUpper}`;
   }
 
   get totalString() {
-    const total = this.currentCurrency?.addNumbers([+this.amount, this.partialFee]);
+    const total = addNumbers([this.amount, this.partialFee]);
 
-    return `${total} ${this.selectedTokenUpper}`;
+    return `${formattedNumber(+total, 7)} ${this.selectedTokenUpper}`;
   }
 
   get showBackIcon() {
@@ -175,19 +179,15 @@ export default class SendForm extends Vue {
   }
 
   get isReadonlyValueInput() {
-    return this.currentCurrency?.price === 0;
-  }
-
-  get headerSendingPopup() {
-    return this.sendingPopupLoading ? 'Send Funds' : 'Successful sending';
+    return this.currency?.price === 0;
   }
 
   get buttonText() {
     if (this.step === 2) return 'Send';
 
-    if (!this.currentCurrency) return '';
+    if (!this.currency) return '';
 
-    const { token } = this.currentCurrency;
+    const { token } = this.currency;
 
     if (this.recipient !== '' && !this.isValidRecipientAddress) return 'Incorrect address';
     else if (!this.isValidCountTokens) return `Insufficient balance ${token.toUpperCase()}`;
@@ -198,11 +198,11 @@ export default class SendForm extends Vue {
   get buttonDisabled() {
     if (this.step === 2) return false;
 
-    return !this.isAllFieldsCorrect || +this.amount === 0 || this.partialFee === 0;
+    return !this.isAllFieldsCorrect || +this.amount === 0 || this.partialFee === '';
   }
 
   get isAllFieldsCorrect() {
-    if (!this.currentCurrency) return false;
+    if (!this.currency) return false;
 
     return (
       !!this.selectedNetwork &&
@@ -214,37 +214,40 @@ export default class SendForm extends Vue {
   }
 
   get isValidRecipientAddress() {
-    return NetworksController.validateAddress(this.recipient);
+    return BaseApi.validateAddress(this.recipient);
   }
 
   get addressByNetwork() {
-    const { address, ethereumAddress } = this.selectedWallet;
-    const isEthereumNetwork = ETHEREUM_NETWORKS.includes(this.selectedNetwork);
-    const addressByNetwork = isEthereumNetwork ? ethereumAddress : address;
-
-    return addressByNetwork;
+    return this.currency?.getTransactionAddress(this.selectedWallet, this.selectedNetwork) ?? '';
   }
 
   get formattedAddressTo() {
     return `${this.recipient.slice(0, 7)}...${this.recipient.slice(-8)}`;
   }
 
-  get currentCurrency() {
-    return this.currencies.find(({ mainNetwork }) => mainNetwork === this.selectedNetwork);
+  get currency() {
+    return this.currencies.find(({ token }) => token === this.selectedToken);
   }
 
   get optionsNetwork() {
-    return this.networks.map(({ name }) => {
-      return { label: firstCharToUp(name), value: name };
-    });
+    const availableInNetworks = this.currency?.getAvailableInNetworks(this.selectedWallet);
+
+    return availableInNetworks?.map(({ network }) => ({
+      label: firstCharToUp(network),
+      value: `${network}`,
+    }));
   }
 
   get transferrableAmount() {
-    return this.currentCurrency?.getTransferableCountTokens() ?? 0;
+    const count = +(this.currency?.getTransferableCountTokens(this.selectedNetwork, this.selectedWallet) ?? 0);
+
+    return formattedNumber(count, 4);
   }
 
   get transferrableValue() {
-    return this.currentCurrency?.getCostOfTokens(this.transferrableAmount);
+    const cost = +(this.currency?.getCostOfTokens(this.transferrableAmount) ?? 0);
+
+    return formattedPrice(cost);
   }
 
   get selectedTokenUpper() {
@@ -252,17 +255,13 @@ export default class SendForm extends Vue {
   }
 
   get optionsCurrency() {
-    const token = this.currentCurrency?.token ?? '';
-
-    return this.currentCurrency?.getAvailableInNetworks().map(() => ({
-      label: token.toUpperCase(),
-      value: `${token}`,
-    }));
+    return this.currencies.map(({ token }) => ({ label: token.toUpperCase(), value: token }));
   }
 
-  @Watch('selectedNetwork')
-  updateSelectedToken() {
-    this.selectedToken = this.optionsCurrency?.[0]?.value ?? '';
+  @Watch('selectedToken')
+  updateSelectedNetwork() {
+    this.selectedNetwork = this.optionsNetwork?.[0]?.value ?? '';
+    this.amount = '';
   }
 
   @Watch('selectedNetwork')
@@ -270,63 +269,79 @@ export default class SendForm extends Vue {
   @Watch('recipient')
   @Watch('amount')
   async createSendTransfer() {
-    this.partialFee = 0;
+    this.partialFee = '';
 
     if (!this.isValidRecipientAddress) return;
 
-    this.currentCurrency!.createSendTransfer(this.recipient, this.selectedNetwork, this.selectedToken, this.amount);
-
-    const partialFee = (await this.currentCurrency!.getPartialFee(this.addressByNetwork, true)) as number;
+    const partialFee = await this.createTransferAndGetFee();
 
     this.partialFee = partialFee;
-    this.isValidCountTokens = this.currentCurrency!.isValidCountTokens(+this.amount, partialFee);
+    this.isValidCountTokens = this.currency!.isValidCountTokens( // eslint-disable-line
+      this.amount,
+      partialFee,
+      this.selectedNetwork,
+      this.selectedWallet
+    );
   }
 
   mounted() {
-    this.selectedNetwork = this._selectedNetwork;
     this.selectedToken = this._selectedToken;
+
+    this.$nextTick(() => {
+      const index = this.optionsNetwork?.findIndex(({ value }) => value === this._selectedNetwork);
+
+      this.selectedNetwork = index !== -1 ? this._selectedNetwork : this.optionsNetwork?.[0]?.value ?? '';
+    });
+  }
+
+  async createTransferAndGetFee(amount?: string) {
+    this.currency!.createSendTransfer(this.recipient, this.selectedNetwork, amount ?? this.amount); // eslint-disable-line
+
+    return await this.currency!.getPartialFee(this.addressByNetwork); // eslint-disable-line
   }
 
   changeAmount(amount: string) {
-    this.value = this.currentCurrency?.getCostOfTokens(+amount).toString() ?? '';
+    this.value = this.currency?.getCostOfTokens(amount).toString() ?? '';
   }
 
   changeValue(value: string) {
-    this.amount = this.currentCurrency?.getCountsTokensByPrice(+value).toString() ?? '';
+    this.amount = this.currency?.getCountTokensByPrice(value).toString() ?? '';
   }
 
   handlerBack() {
-    this.step = 1;
+    this.step -= 1;
   }
 
-  sendingPopupClose() {
-    this.showSendingPopup = false;
+  confirmationPasswordPopupClose(closeForm: boolean) {
+    this.showConfirmationPasswordPopup = false;
 
-    this.closeForm();
+    if (closeForm) this.closeForm();
   }
 
   async setMaxValue() {
-    if (!this.currentCurrency) return;
+    if (!this.currency) return;
 
-    const transferableCountTokens = this.currentCurrency.getTransferableCountTokensMinusFee(this.partialFee).toString();
+    const maxTransferableCountTokens = this.currency?.getTransferableCountTokens(
+      this.selectedNetwork,
+      this.selectedWallet
+    );
+    const partialFee = await this.createTransferAndGetFee(maxTransferableCountTokens);
+    const transferableCountTokens = this.currency
+      .getTransferableCountTokensMinusFee(partialFee, this.selectedNetwork, this.selectedWallet)
+      .toString();
 
     this.amount = transferableCountTokens;
-    this.value = this.currentCurrency.getCostOfTokens(+transferableCountTokens).toString();
+    this.value = this.currency.getCostOfTokens(transferableCountTokens).toString();
   }
 
-  async handlerButton() {
-    if (this.step === 1) {
-      this.step += 1;
+  handlerButton() {
+    if (this.step === 2) {
+      this.showConfirmationPasswordPopup = true;
 
       return;
     }
 
-    this.showSendingPopup = true;
-    this.sendingPopupLoading = true;
-
-    await this.currentCurrency?.send(this.addressByNetwork, this.amount);
-
-    this.sendingPopupLoading = false;
+    this.step += 1;
   }
 }
 </script>
@@ -363,31 +378,32 @@ export default class SendForm extends Vue {
 
   .transferrable {
     display: flex;
+    justify-content: space-between;
 
-    .transferrable-label {
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.75);
-      text-align: left;
-    }
+    .transferrable-part {
+      width: 235px;
 
-    .transferrable-descriptions {
-      display: flex;
-      line-height: 25px;
-    }
+      .transferrable-label {
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.75);
+        text-align: left;
+      }
 
-    .transferrable-amount {
-      font-weight: 600;
-      font-size: 16px;
-      color: $pink-lavender-color;
-    }
+      .transferrable-descriptions {
+        display: flex;
+        line-height: 25px;
+      }
 
-    .transferrable-token {
-      margin-left: 5px;
-      color: rgba(255, 255, 255, 0.9);
-    }
+      .transferrable-amount {
+        font-weight: 600;
+        font-size: 16px;
+        color: $pink-lavender-color;
+      }
 
-    .transferrable-value {
-      margin-left: 163px;
+      .transferrable-token {
+        margin-left: 5px;
+        color: rgba(255, 255, 255, 0.9);
+      }
     }
   }
 
@@ -433,7 +449,7 @@ export default class SendForm extends Vue {
         flex-direction: column;
         align-items: flex-end;
 
-        .sub-value {
+        .value {
           color: rgba(255, 255, 255, 0.75);
           font-weight: 300;
           font-size: 12px;

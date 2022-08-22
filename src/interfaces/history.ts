@@ -1,4 +1,4 @@
-import { WalletAddress, NetworkName } from '@/interfaces/common';
+import type { WalletAddress, NetworkName } from '@/interfaces/common';
 
 type Reward = {
   amount: string;
@@ -46,3 +46,14 @@ export interface HistoryItem {
 export type HistoryForNetwork = Record<WalletAddress, HistoryItem>;
 
 export type History = Record<NetworkName, HistoryForNetwork>;
+
+export enum TransferType {
+  incoming = 'Incoming',
+  outgoing = 'Outgoing',
+}
+
+export enum TransactionType {
+  transfer = 'transfer',
+  reward = 'reward',
+  extrinsic = 'extrinsic',
+}

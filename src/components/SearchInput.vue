@@ -25,6 +25,7 @@ export default class SearchInput extends Vue {
 .search-input {
   display: flex;
   align-items: center;
+  user-select: none;
 
   .s-icon-basic-search-24 {
     color: rgba(255, 255, 255, 0.5);
@@ -34,7 +35,7 @@ export default class SearchInput extends Vue {
 
   .search-input-path {
     clip-path: $medium-clip-path-left-top-and-right-bottom;
-    width: 230px;
+    width: 280px;
   }
 }
 </style>

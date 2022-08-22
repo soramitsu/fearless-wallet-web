@@ -42,14 +42,14 @@
 
       <BorderButton
         text="Buy"
-        iconName="plus"
+        iconName="plus-pink"
         type="secondary"
         width="125px"
         @click="toggleVisible('showBuyForm', true)"
       />
     </div>
 
-    <Corners size="big" :bottomRightCorner="false">
+    <ContentForm :height="336">
       <div class="content">
         <div class="content-settings">
           <div class="history-label">History</div>
@@ -67,11 +67,10 @@
           <History :history="formattedHistory" :token="selectedToken" :filterHistoryValue="filterHistoryValue" />
         </Scroll>
       </div>
-    </Corners>
+    </ContentForm>
 
     <SendForm
       v-if="showSendForm"
-      :currencies="currenciesForSelectedWallet"
       :_selectedNetwork="selectedNetwork"
       :_selectedToken="selectedToken"
       :closeForm="toggleVisible.bind(null, 'showSendForm', false)"
@@ -85,7 +84,6 @@
 
     <TeleportForm
       v-if="showTeleportForm"
-      :currencies="currenciesForSelectedWallet"
       :_originalNetwork="selectedNetwork"
       :_selectedToken="selectedToken"
       :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
@@ -93,13 +91,16 @@
 
     <BuyForm v-if="showBuyForm" :closeForm="toggleVisible.bind(null, 'showBuyForm', false)" />
 
-    <PopupWithSelect
+    <SelectPopup
       v-if="showSelectNetworkPopup"
       v-model="selectedNetwork"
       header="Select Network"
       space="big"
       horizontalPlacement="right"
       verticalPlacement="center"
+      placeholder="Search in networks"
+      :top="10"
+      :showBorder="true"
       :showIcon="true"
       :showSearch="true"
       :staticHeight="true"
@@ -112,6 +113,20 @@
 </template>
 
 <script lang="ts">
+import BorderButton from '@/components/BorderButton.vue';
+import Scroll from '@/components/Scroll.vue';
+import Corners from '@/components/Corners.vue';
+import Dropdown from '@/components/Dropdown.vue';
+import ContentForm from '@/components/ContentForm.vue';
+import History from './History.vue';
+import TabButton from '@/components/TabButton.vue';
+import ReceiveForm from '../ReceiveForm.vue';
+import SendForm from '../SendForm.vue';
+import TeleportForm from '../TeleportForm.vue';
+import BuyForm from '../BuyForm.vue';
+import SelectNetworkButton from '../SelectNetworkButton.vue';
+import SelectPopup from '@/components/SelectPopup.vue';
+import BaseApi from '@/util/BaseApi';
 import { Component, Vue } from 'vue-property-decorator';
 import { Currencies } from '@/interfaces/currencies';
 import { Getter } from 'vuex-class';
@@ -123,36 +138,24 @@ import { Components } from '@/router/routes';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { firstCharToUp } from '@/util/helpers';
 import { formattedNumber, formattedPrice } from '@/util/numbers';
-import { History as THistory } from '@/interfaces/history';
-import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import type { FilterHistory } from '@/interfaces/common';
-import BorderButton from '@/components/BorderButton.vue';
-import Scroll from '@/components/Scroll.vue';
-import Dropdown from '@/components/Dropdown.vue';
-import Corners from '@/components/Corners.vue';
-import History from './History.vue';
-import TabButton from '@/components/TabButton.vue';
-import ReceiveForm from '../ReceiveForm.vue';
-import SendForm from '../SendForm.vue';
-import TeleportForm from '../TeleportForm.vue';
-import BuyForm from '../BuyForm.vue';
-import SelectNetworkButton from '../SelectNetworkButton.vue';
-import PopupWithSelect from '@/components/PopupWithSelect.vue';
+import type { History as THistory } from '@/interfaces/history';
 
 @Component({
   components: {
-    BorderButton,
     Scroll,
-    TabButton,
-    History,
-    ReceiveForm,
-    SendForm,
-    TeleportForm,
-    BuyForm,
-    Dropdown,
     Corners,
+    History,
+    BuyForm,
+    SendForm,
+    Dropdown,
+    TabButton,
+    ReceiveForm,
+    SelectPopup,
+    ContentForm,
+    TeleportForm,
+    BorderButton,
     SelectNetworkButton,
-    PopupWithSelect,
   },
 })
 export default class Token extends Vue {
@@ -174,8 +177,9 @@ export default class Token extends Vue {
 
   @Getter(NetworksGettersTypes.getNetworks) networks!: NetworksType;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getHistory) history!: THistory;
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
   get optionsNetworks() {
     return this.networks.map(({ name }) => ({
@@ -191,31 +195,27 @@ export default class Token extends Vue {
     return this.optionsNetworks.filter(({ label }) => label.toLowerCase().includes(filter));
   }
 
-  get currenciesForSelectedWallet() {
-    return [
-      ...(this.currencies[this.selectedWallet.address] ?? []),
-      ...(this.currencies[this.selectedWallet.ethereumAddress] ?? []),
-    ];
-  }
-
   get currentCurrency() {
-    return this.currenciesForSelectedWallet.find(
-      ({ token, mainNetwork }) => token === this.selectedToken && mainNetwork === this.selectedNetwork
-    );
+    return this.currencies.find(({ token }) => token === this.selectedToken);
   }
 
   get formattedHistory() {
-    const { address, ethereumAddress } = this.selectedWallet;
-    const isEthereumNetwork = ETHEREUM_NETWORKS.includes(this.selectedNetwork);
-    const addressByNetwork = isEthereumNetwork ? ethereumAddress : address;
+    const addressByNetwork = BaseApi.getDefaultAddressByNetworkIncludingReplacedAccount(
+      this.selectedWallet,
+      this.selectedNetwork
+    );
     const historyForNetwork = this.history[this.selectedNetwork];
     const historyForWalletAddress = historyForNetwork?.[addressByNetwork]?.nodes ?? [];
+
+    const index = (this.currentCurrency?.balances[addressByNetwork] ?? []).findIndex(
+      ({ network }) => network === this.selectedNetwork
+    );
 
     // TODO: fix
     // Now the history hierarchy is as follows = network: { walletAddress: { history } }
     // should become like this = network: { walletAddress: { token: { history } } }
     // when non-native tokens are added, it needs to be fixed
-    if (this.selectedNetwork !== this.currentCurrency?.mainNetwork) {
+    if (index === -1) {
       return [];
     }
 
@@ -223,7 +223,7 @@ export default class Token extends Vue {
   }
 
   get tokenPriceString() {
-    return `1 ${this.selectedToken.toUpperCase()} = $${formattedPrice(this.price ?? 0)}`;
+    return `1 ${this.selectedToken.toUpperCase()} = ${this.fiatSymbol}${formattedPrice(this.price ?? 0)}`;
   }
 
   get selectedNetwork() {
@@ -241,7 +241,7 @@ export default class Token extends Vue {
   get countTokensString() {
     if (!this.currentCurrency) return `${this.selectedToken.toUpperCase()} 0`;
 
-    const availableInNetworks = this.currentCurrency.getAvailableInNetworks();
+    const availableInNetworks = this.currentCurrency.getAvailableInNetworks(this.selectedWallet);
     const balance = availableInNetworks.find(({ network }) => network === this.selectedNetwork)?.balance;
     const total = formattedNumber(+(balance?.total ?? 0), 4);
 
@@ -251,9 +251,9 @@ export default class Token extends Vue {
   get balanceInNetworkString() {
     if (!this.currentCurrency) return `$ 0`;
 
-    const total = this.currentCurrency.getBalanceInNetwork(this.selectedNetwork);
+    const total = this.currentCurrency.getBalanceInNetwork(this.selectedNetwork, this.selectedWallet);
 
-    return `$ ${formattedNumber(total)}`;
+    return `${this.fiatSymbol} ${formattedNumber(+total)}`;
   }
 
   handlerFilter(value: string) {
@@ -270,6 +270,9 @@ export default class Token extends Vue {
         network: network,
       },
     });
+
+    this.handlerFilter('');
+    this.toggleSelectNetworkPopupVisible();
   }
 
   toggleSelectNetworkPopupVisible() {
@@ -312,6 +315,11 @@ export default class Token extends Vue {
       .count-tokens {
         font-weight: 600;
         font-size: 28px;
+        white-space: nowrap;
+        text-align: left;
+        max-width: 265px;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .balance-in-network {
@@ -333,13 +341,9 @@ export default class Token extends Vue {
   }
 
   .content {
+    height: 100%;
     display: flex;
     flex-direction: column;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background-color: rgba(255, 255, 255, 0.05);
-    clip-path: $big-clip-path-left-top;
-    border-radius: 8px;
-    height: 336px;
 
     .content-settings {
       display: flex;

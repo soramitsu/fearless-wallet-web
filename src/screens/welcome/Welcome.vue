@@ -1,65 +1,53 @@
 <template>
   <div class="welcome-page">
-    <template v-if="!walletConnectionStatus">
-      <div class="first-page">
-        <Logo class="description" size="big" text="Fearless Wallet" subtext="The DeFi Wallet From The Future" />
+    <div class="first-page">
+      <Logo class="description" size="big" text="Fearless Wallet" subtext="The DeFi Wallet From The Future" />
 
-        <div>
-          <Button
-            width="100%"
-            text="Create a new wallet"
-            class="create-button"
-            size="big"
-            fontSize="big"
-            @click="changWalletConnectionStatus('isCreateWallet')"
-          />
+      <div>
+        <Button
+          width="100%"
+          text="Create a new wallet"
+          class="create-button"
+          size="big"
+          fontSize="big"
+          @click="openAddWalletComponent('create')"
+        />
 
-          <Button
-            class="import-button"
-            width="100%"
-            text="I already have a wallet"
-            size="big"
-            fontSize="big"
-            type="secondary"
-            :border="false"
-            @click="changWalletConnectionStatus('isImportWallet')"
-          />
+        <Button
+          class="import-button"
+          width="100%"
+          text="I already have a wallet"
+          size="big"
+          fontSize="big"
+          type="secondary"
+          :border="false"
+          @click="openAddWalletComponent('import')"
+        />
 
-          <div class="privacy-policy">
-            By continuing you agree with
-            <span class="important-text" @click="openTermsAndConditions">Terms and Conditions </span>
-            and
-            <span class="important-text" @click="openPrivacyPolicy"> Privacy Policy</span>
-          </div>
+        <div class="privacy-policy">
+          By continuing you agree with
+          <span class="important-text" @click="openTermsAndConditions">Terms and Conditions </span>
+          and
+          <span class="important-text" @click="openPrivacyPolicy"> Privacy Policy</span>
         </div>
       </div>
-    </template>
-
-    <Layout
-      v-else-if="walletConnectionStatus"
-      :walletConnectionStatus="walletConnectionStatus"
-      @reset="changWalletConnectionStatus"
-    />
+    </div>
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-import Layout from './Layout.vue';
 import Logo from '@/components/Logo.vue';
 import Button from '@/components/Button.vue';
-import type { WalletConnectionStatus } from '@/interfaces/common';
+import { Component, Vue } from 'vue-property-decorator';
+import { Components } from '@/router/routes';
 
 @Component({
   components: {
-    Layout,
     Logo,
     Button,
   },
 })
 export default class Welcome extends Vue {
-  walletConnectionStatus: WalletConnectionStatus = '';
-
   openTermsAndConditions() {
     alert('Terms and Conditions');
   }
@@ -68,8 +56,8 @@ export default class Welcome extends Vue {
     alert('privacy policy');
   }
 
-  changWalletConnectionStatus(value: WalletConnectionStatus = '') {
-    this.walletConnectionStatus = value;
+  openAddWalletComponent(type: string) {
+    this.$router.push({ name: Components.AddWallet, params: { type } });
   }
 }
 </script>

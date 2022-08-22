@@ -57,7 +57,6 @@ export default {
       ]);
     },
     approveAuthReq() {
-      console.log(this.request, this.requests);
       approveAuthRequest(this.requests[0][0].id);
     },
   },

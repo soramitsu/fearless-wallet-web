@@ -133,6 +133,7 @@ export default class Logo extends Vue {
 
   .img {
     margin: 0 auto;
+    user-select: none;
   }
 
   .text {

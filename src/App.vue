@@ -7,15 +7,15 @@
 </template>
 
 <script lang="ts">
+import keyring from '@polkadot/ui-keyring';
+import NetworksController from '@/controllers/networksController';
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation } from 'vuex-class';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { SetSelectedWalletProps } from '@/store/accounts/types';
-import { TMutation } from '@/interfaces/common';
+import type { SetSelectedWalletProps } from '@/store/accounts/types';
+import type { TMutation } from '@/interfaces/common';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-import keyring from '@polkadot/ui-keyring';
-import NetworksController from '@/controllers/networksController';
 
 @Component
 export default class App extends Vue {
@@ -28,8 +28,9 @@ export default class App extends Vue {
   }
 
   async mounted() {
-    const { loadNetworksInfo, loadAssetsInfo, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
-    await Promise.all([loadNetworksInfo(), loadAssetsInfo()]);
+    const { loadNetworks, loadAssets, loadFiats, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
+
+    await Promise.all([loadNetworks(), loadAssets(), loadFiats()]);
     await loadTokensPrice();
 
     let loadHistory = true;
@@ -37,7 +38,15 @@ export default class App extends Vue {
     // @ts-ignore
     this.subscribeAccounts = keyring.accounts.subject;
     this.subscribeAccounts.subscribe(async (accounts) => {
-      const selectedWalletAddress = Object.entries(accounts).find(([, { type }]) => type !== 'ethereum')?.[0];
+      const selectedWalletAddress = Object.entries(accounts).find(
+        ([
+          ,
+          {
+            type,
+            json: { meta },
+          },
+        ]) => type !== 'ethereum' && !meta.isReplacedAccount
+      )?.[0];
 
       if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
 

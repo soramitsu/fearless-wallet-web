@@ -3,7 +3,7 @@
     <Draggable v-model="filteredCurrencies" handle=".handle">
       <CurrencyItem
         v-for="currency in filteredCurrencies"
-        :key="currency.mainNetwork"
+        :key="currency.token"
         :currency="currency"
         :showAssetsManagementForm="showAssetsManagementForm"
         :toggleVisibleActivityForm="toggleVisibleActivityForm"
@@ -13,18 +13,17 @@
 </template>
 
 <script lang="ts">
+import CurrencyItem from './CurrencyItem.vue';
+import Draggable from 'vuedraggable';
+import { accountController } from '@/controllers/accountController';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Mutation, Getter } from 'vuex-class';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store/accounts/types';
-import { SetCurrenciesProps } from '@/store/networks/types';
-import { TMutation } from '@/interfaces/common';
-import { Currency } from '@/interfaces/currencies';
-import { getCurrencies } from '@/util/currenciesHelper';
-import CurrencyItem from './CurrencyItem.vue';
-import AccountController from '@/controllers/accountController';
-import Draggable from 'vuedraggable';
+import type { SelectedWallet } from '@/store/accounts/types';
+import type { SetCurrenciesProps } from '@/store/networks/types';
+import type { TMutation } from '@/interfaces/common';
+import type { Currency } from '@/interfaces/currencies';
 
 @Component({
   components: {
@@ -33,8 +32,6 @@ import Draggable from 'vuedraggable';
   },
 })
 export default class Currencies extends Vue {
-  readonly accountController = new AccountController();
-
   @Prop(Array) currencies!: Currency[];
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
@@ -47,14 +44,13 @@ export default class Currencies extends Vue {
   get filteredCurrencies() {
     if (this.showAssetsManagementForm || !this.hideZeroBalance) return this.currencies;
 
-    return this.currencies.filter((currency) => currency.getTotalCountTokens() !== 0);
+    return this.currencies.filter((currency) => currency.getTotalCountTokens(this.selectedWallet) !== '0');
   }
 
-  set filteredCurrencies(value) {
-    const currencies = getCurrencies(value, this.selectedWallet);
-
+  set filteredCurrencies(currencies) {
     this.setCurrencies({ currencies });
-    this.accountController.setSubsequenceTokens(value.map(({ mainNetwork }) => mainNetwork));
+
+    accountController.setSubsequenceTokens(currencies.map(({ mainNetwork }) => mainNetwork));
   }
 }
 </script>

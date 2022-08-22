@@ -7,9 +7,10 @@
       :maxlength="maxlength"
       :showPassword="showPassword"
       :isError="isError"
+      :readonly="readonly"
     />
 
-    <div v-show="isError" class="error-descriptions">{{ errorDescriptions }}</div>
+    <div v-show="showErrorText" class="error-descriptions">{{ errorDescriptions }}</div>
   </div>
 </template>
 
@@ -27,6 +28,11 @@ export default class ValidatedInput extends Vue {
   @Prop(Boolean) isError!: boolean;
   @Prop({ default: 50 }) maxlength!: number;
   @Prop({ default: false }) showPassword!: boolean;
+  @Prop({ default: false }) readonly!: boolean;
+
+  get showErrorText() {
+    return this.isError && this.errorDescriptions;
+  }
 }
 </script>
 
@@ -40,7 +46,7 @@ export default class ValidatedInput extends Vue {
     font-size: 14px;
     color: #ee7700;
     text-align: left;
-    margin: 14px 0;
+    margin-top: 15px;
   }
 }
 </style>

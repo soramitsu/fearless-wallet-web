@@ -33,7 +33,11 @@ export default class Menu extends Vue {
   checkActive(menuItem: MenuItemType) {
     return (
       menuItem.toLowerCase() === this.currentRouteName ||
-      (menuItem === 'Wallet' && this.$route.params.token !== undefined)
+      (menuItem === 'Wallet' &&
+        (this.$route.params.token !== undefined ||
+          this.$route.name === Components.Accounts ||
+          this.$route.name === Components.Export ||
+          this.$route.name === Components.Network))
     );
   }
 
@@ -51,6 +55,7 @@ export default class Menu extends Vue {
   flex: 0 0 80px;
   justify-content: space-around;
   align-items: center;
+  user-select: none;
   z-index: 199;
   width: $extension-width;
   margin: 0 0 -16px -16px;

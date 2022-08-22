@@ -1,25 +1,34 @@
 <template>
   <div :class="popupBackgroundClasses" @click="backgroundClick">
-    <div :class="popupContainerClasses" :style="popupContainerStyle">
-      <div v-if="showHeader" class="header">
-        <SearchInput v-if="showSearch" v-model="filterValue" placeholder="Search in networks" class="search" />
+    <Corners
+      size="big"
+      :left="left"
+      :top="top"
+      :topLeftCorner="showBorder"
+      :bottomRightCorner="showBorder"
+      :style="popupContainerStyle"
+    >
+      <div :class="popupContainerClasses">
+        <div v-if="showHeader" class="header">
+          <SearchInput v-if="showSearch" v-model="filterValue" :placeholder="placeholder" />
 
-        <template v-else>
-          <div class="button"></div>
-          <div class="header-text">{{ headerText }}</div>
-        </template>
+          <template v-else>
+            <div class="button"></div>
+            <div class="header-text">{{ headerText }}</div>
+          </template>
 
-        <s-button type="link" class="button" @click="close">
-          <s-icon name="basic-close-24" />
-        </s-button>
-      </div>
-
-      <Scroll>
-        <div class="content">
-          <slot></slot>
+          <s-button type="link" class="button" @click="close">
+            <s-icon name="basic-close-24" />
+          </s-button>
         </div>
-      </Scroll>
-    </div>
+
+        <Scroll>
+          <div class="content">
+            <slot></slot>
+          </div>
+        </Scroll>
+      </div>
+    </Corners>
   </div>
 </template>
 
@@ -27,12 +36,18 @@
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import Scroll from './Scroll.vue';
 import SearchInput from './SearchInput.vue';
+import Corners from './Corners.vue';
 
 type HorizontalPlacement = 'left' | 'center' | 'right';
 type VerticalPlacement = 'top' | 'center' | 'bottom';
+type Size = 'mini' | 'medium' | 'big';
 
 @Component({
-  components: { Scroll, SearchInput },
+  components: {
+    Scroll,
+    SearchInput,
+    Corners,
+  },
 })
 export default class Popup extends Vue {
   filterValue = '';
@@ -41,10 +56,15 @@ export default class Popup extends Vue {
   @Prop({ default: () => () => null }) handlerFilter!: (value: string) => void;
   @Prop(Number) top!: number;
   @Prop(Number) left!: number;
-  @Prop({ default: true }) showHeader!: boolean;
   @Prop({ default: '' }) headerText!: string;
+  @Prop({ default: '' }) placeholder!: string;
+  @Prop({ default: true }) showHeader!: boolean;
+  @Prop({ default: true }) showBlur!: boolean;
+  @Prop({ default: true }) showAnimation!: boolean;
   @Prop({ default: false }) showSearch!: boolean;
+  @Prop({ default: false }) showBorder!: boolean;
   @Prop({ default: false }) staticHeight!: boolean;
+  @Prop({ default: 'medium' }) sizeWidth!: Size;
   @Prop({ default: 'center' }) horizontalPlacement!: HorizontalPlacement;
   @Prop({ default: 'center' }) verticalPlacement!: VerticalPlacement;
 
@@ -53,16 +73,25 @@ export default class Popup extends Vue {
       'popup-background',
       `popup-background-horizontal-placement-${this.horizontalPlacement}`,
       `popup-background-vertical-placement-${this.verticalPlacement}`,
+      {
+        'popup-background-blur': this.showBlur,
+        'popup-background-animation': this.showAnimation,
+      },
     ];
   }
 
   get popupContainerClasses() {
-    return [
+    const classes = [
       'popup-container',
       {
         'static-height': this.staticHeight,
+        border: this.showBorder,
       },
     ];
+
+    if (this.sizeWidth) classes.push(`width-${this.sizeWidth}`);
+
+    return classes;
   }
 
   get popupContainerStyle() {
@@ -100,38 +129,42 @@ export default class Popup extends Vue {
   position: absolute;
   top: 0;
   left: 0;
-  background-color: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(5px);
   z-index: 199;
   padding: 16px;
-  animation: opacity 0.3s;
-
-  @keyframes opacity {
-    0% {
-      opacity: 0;
-    }
-    100% {
-      opacity: 1;
-    }
-  }
 
   .popup-container {
     display: flex;
     flex-direction: column;
     position: relative;
     top: 0;
-    min-height: 100px;
-    min-width: 280px;
-    max-height: 390px;
+    min-height: 90px;
+    min-width: 230px;
+    max-height: 410px;
     max-width: 480px;
     background-color: #111111;
     clip-path: $big-clip-path-left-top-and-right-bottom;
     border-radius: $default-border-radius;
-    padding: 20px 0 30px;
+    padding: 15px 0;
   }
 
   .static-height {
-    height: 390px;
+    height: 410px;
+  }
+
+  .width-big {
+    width: 370px;
+  }
+
+  .width-medium {
+    width: 300px;
+  }
+
+  .width-mini {
+    width: 230px;
+  }
+
+  .border {
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .content {
@@ -144,30 +177,39 @@ export default class Popup extends Vue {
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    height: 25px;
-    margin-bottom: 15px;
     padding-left: 16px;
     padding-right: 22px;
+    margin-bottom: 10px;
 
     .header-text {
       font-weight: 700;
       font-size: 18px;
       color: rgba(255, 255, 255, 0.75);
     }
-
-    .search {
-      width: 300px;
-    }
   }
 
   .s-icon-basic-close-24 {
     color: rgba(255, 255, 255, 0.65);
+
+    &:hover {
+      color: rgba(255, 255, 255, 0.8);
+    }
   }
 
   .button {
     padding: 0;
     width: 20px;
+    height: 20px;
   }
+}
+
+.popup-background-blur {
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+}
+
+.popup-background-animation {
+  @include opacity;
 }
 
 .popup-background-horizontal-placement-left {

@@ -2,12 +2,14 @@ import Vue from 'vue';
 import Vuex from 'vuex';
 import networks from './networks';
 import account from './accounts';
+import auth from './auth';
 import Modules from './types';
 
 const files = require.context('.', false, /\.ts$/);
 export const modules: Modules = {
   networks,
   account,
+  auth,
 };
 
 files.keys().forEach((key) => {

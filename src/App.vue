@@ -1,11 +1,7 @@
 <template>
   <div id="app">
     <div class="drag"></div>
-    <!-- <Transaction /> -->
-    <SignRequest />
-    <!-- <Authorize /> -->
-    <!-- <ManageAuths /> -->
-    <!-- <router-view /> -->
+    <router-view />
   </div>
 </template>
 

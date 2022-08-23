@@ -21,6 +21,7 @@ export default class Corners extends Vue {
   @Prop({ default: true }) topLeftCorner!: boolean;
   @Prop({ default: true }) bottomRightCorner!: boolean;
   @Prop({ default: 'medium' }) size!: Size;
+  @Prop(Boolean) isWarning!: boolean;
 
   get slotContainerClasses() {
     return [
@@ -46,7 +47,10 @@ export default class Corners extends Vue {
     // for "small" and "mini" sizes also medium
     const sizeName = this.size === 'big' ? 'big' : 'medium';
 
-    return [`corner-size-${sizeName}`, this.isError ? 'corner-border-error' : 'corner-border'];
+    const classes = [`corner-size-${sizeName}`, this.isError ? 'corner-border-error' : 'corner-border'];
+    if (this.isWarning) classes.push('corner-border--warning');
+
+    return classes;
   }
 }
 </script>
@@ -76,33 +80,36 @@ export default class Corners extends Vue {
   .hover:hover ~ .corner-border {
     border-top: 1px solid rgba(255, 255, 255, 0.2);
   }
+}
+.corner-border--warning {
+  border-top: 1px solid rgba(238, 119, 0, 0.27) !important;
+}
 
-  .corner-border-error {
-    border-top: 1px solid $error-color;
-  }
+.corner-border-error {
+  border-top: 1px solid $error-color;
+}
 
-  .top-left[class~='corner-size-big'] {
-    transform: rotate(315deg);
-    top: 4px;
-    left: 4px;
-  }
+.top-left[class~='corner-size-big'] {
+  transform: rotate(315deg);
+  top: 3px;
+  left: 3px;
+}
 
-  .bottom-right[class~='corner-size-big'] {
-    transform: rotate(135deg);
-    bottom: 4px;
-    right: 4px;
-  }
+.bottom-right[class~='corner-size-big'] {
+  transform: rotate(135deg);
+  bottom: 3px;
+  right: 3px;
+}
 
-  .top-left[class~='corner-size-medium'] {
-    transform: rotate(315deg);
-    top: 1px;
-    left: 1px;
-  }
+.top-left[class~='corner-size-medium'] {
+  transform: rotate(315deg);
+  top: 1px;
+  left: 1px;
+}
 
-  .bottom-right[class~='corner-size-medium'] {
-    transform: rotate(135deg);
-    bottom: 1px;
-    right: 1px;
-  }
+.bottom-right[class~='corner-size-medium'] {
+  transform: rotate(135deg);
+  bottom: 1px;
+  right: 1px;
 }
 </style>

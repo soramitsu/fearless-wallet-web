@@ -1,7 +1,8 @@
 <template>
   <div class="main_app">
-    <h1>Here is auth dApp</h1>
-    <button @click="approveAuthReq">Approve</button>
+    <h1>{{ this.requestText }}</h1>
+    <button @click="approveAuthReq">Yes, allow this application access</button>
+    <button @click="approveAuthReq">Reject</button>
   </div>
 </template>
 
@@ -12,6 +13,7 @@ import {
   subscribeSigningRequests,
   subscribeMetadataRequests,
   approveAuthRequest,
+  removeAuthorization,
 } from '../messaging';
 export default {
   name: 'Notification',
@@ -31,8 +33,13 @@ export default {
         return this.requests;
       },
       set(data) {
-        this.requests.push(data);
+        this.requests.push(...data);
       },
+    },
+    requestText() {
+      if (this.requests.length)
+        return `An application, self-identifying as ${this.requests[0][0].request.origin} is requesting access from ${this.requests[0][0].url}.`;
+      else return 'await';
     },
   },
   methods: {
@@ -54,7 +61,9 @@ export default {
         subscribeAuthorizeRequests(this.setReq),
         subscribeMetadataRequests(this.setMetaReq),
         subscribeSigningRequests(this.setSignReq),
-      ]);
+      ]).then((res) => {
+        console.log(res, this.$data);
+      });
     },
     approveAuthReq() {
       approveAuthRequest(this.requests[0][0].id);

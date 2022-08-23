@@ -6,6 +6,7 @@ import Vue from 'vue';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import './styles';
 import './plugins';
+import AccountsStore from './storeChrome/Accounts';
 
 // import AccountsStore from './storeChrome/Accounts';
 

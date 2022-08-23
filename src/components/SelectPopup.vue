@@ -94,7 +94,7 @@ export default class SelectPopup extends Vue {
 <style lang="scss" scoped>
 .select-popup {
   .row {
-    color: rgba(255, 255, 255, 0.75);
+    color: $default-white;
     text-align: left;
     width: 100%;
     height: 24px;

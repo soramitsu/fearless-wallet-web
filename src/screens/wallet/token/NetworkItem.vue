@@ -61,7 +61,7 @@ export default class NetworkItem extends Vue {
   align-items: center;
   width: 100%;
   padding: 14px 16px 14px 18px;
-  color: rgba(255, 255, 255, 0.75);
+  color: $default-white;
 
   &:first-child {
     margin-top: 11px;

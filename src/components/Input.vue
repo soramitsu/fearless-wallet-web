@@ -81,7 +81,7 @@ export default class Input extends Vue {
   }
 
   .s-input .s-placeholder {
-    color: rgba(255, 255, 255, 0.75) !important;
+    color: $default-white !important;
   }
 
   .s-placeholder + .el-input {

@@ -1,7 +1,6 @@
 <template>
   <div id="app">
     <div class="drag"></div>
-
     <router-view />
   </div>
 </template>
@@ -20,7 +19,6 @@ import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 @Component
 export default class App extends Vue {
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
-
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
 
   get style() {
@@ -34,8 +32,6 @@ export default class App extends Vue {
     await loadTokensPrice();
 
     let loadHistory = true;
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
     this.subscribeAccounts = keyring.accounts.subject;
     this.subscribeAccounts.subscribe(async (accounts) => {
       const selectedWalletAddress = Object.entries(accounts).find(

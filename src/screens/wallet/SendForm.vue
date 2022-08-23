@@ -414,7 +414,7 @@ export default class SendForm extends Vue {
   }
 
   .s-icon-arrows-arrow-right-24 {
-    color: rgba(255, 255, 255, 0.75);
+    color: $default-white;
     font-size: 30px !important;
   }
 

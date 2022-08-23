@@ -184,7 +184,7 @@ export default class Popup extends Vue {
     .header-text {
       font-weight: 700;
       font-size: 18px;
-      color: rgba(255, 255, 255, 0.75);
+      color: $default-white;
     }
   }
 

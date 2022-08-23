@@ -1,6 +1,6 @@
 <template>
   <div class="search-input">
-    <Input v-model="vModel" :placeholder="placeholder" size="small" class="search-input-path" />
+    <Input v-model="vModel" :placeholder="placeholder" size="small" :class="getClasses" />
 
     <s-icon name="basic-search-24" />
   </div>
@@ -18,6 +18,11 @@ import Input from '@/components/Input.vue';
 export default class SearchInput extends Vue {
   @VModel({ type: String }) vModel!: string;
   @Prop(String) placeholder!: string;
+  @Prop({ default: false }) isBig!: boolean;
+
+  get getClasses() {
+    return ['search-input-path', this.isBig ? 'search-input-big' : 'search-input-medium'];
+  }
 }
 </script>
 
@@ -35,7 +40,12 @@ export default class SearchInput extends Vue {
 
   .search-input-path {
     clip-path: $medium-clip-path-left-top-and-right-bottom;
-    width: 280px;
+  }
+  .search-input-medium {
+    width: 230px;
+  }
+  .search-input-big {
+    width: 100%;
   }
 }
 </style>

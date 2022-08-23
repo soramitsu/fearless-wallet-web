@@ -14,7 +14,14 @@ yarn serve
 ```
 yarn build
 ```
-
+### Build extension
+```
+yarn build:extension
+```
+###  Build extension in watch mode
+```
+yarn build-watch:extension
+```
 ### Run your unit tests
 ```
 yarn test:unit
@@ -29,6 +36,5 @@ yarn test:e2e
 ```
 yarn lint
 ```
-
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).

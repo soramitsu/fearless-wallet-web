@@ -10,8 +10,8 @@
     "test:unit": "vue-cli-service test:unit",
     "test:e2e": "vue-cli-service test:e2e",
     "lint": "vue-cli-service lint",
-    "electron:build": "vue-cli-service electron:build",
-    "electron:serve": "vue-cli-service electron:serve",
+    "electron:build": "env VUE_CLI_SERVICE_CONFIG_PATH=vue.config.desktop.js vue-cli-service electron:build",
+    "electron:serve": "env VUE_CLI_SERVICE_CONFIG_PATH=vue.config.desktop.js vue-cli-service electron:serve",
     "postinstall": "electron-builder install-app-deps",
     "postuninstall": "electron-builder install-app-deps",
     "test:all": "yarn test:unit"

@@ -20,7 +20,7 @@ export default {};
 <style lang="scss" scoped>
 .container {
   display: grid;
-  grid-template-rows: 50px 1fr 90px;
+  grid-template-rows: 50px 1fr 110px;
   align-items: end;
   gap: 24px;
   height: 100%;
@@ -34,11 +34,5 @@ export default {};
 }
 .header > .header__logo {
   padding-right: 20px;
-}
-.footer {
-  display: flex;
-  flex-flow: row;
-  justify-content: space-between;
-  height: 50px;
 }
 </style>

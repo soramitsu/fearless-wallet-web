@@ -91,14 +91,14 @@ export default class Corners extends Vue {
 
 .top-left[class~='corner-size-big'] {
   transform: rotate(315deg);
-  top: 4px;
-  left: 4px;
+  top: 3px;
+  left: 3px;
 }
 
 .bottom-right[class~='corner-size-big'] {
   transform: rotate(135deg);
-  bottom: 4px;
-  right: 4px;
+  bottom: 3px;
+  right: 3px;
 }
 
 .top-left[class~='corner-size-medium'] {

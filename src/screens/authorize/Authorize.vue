@@ -24,21 +24,12 @@
 </template>
 
 <script lang="ts">
-import { Vue, Prop } from 'vue-property-decorator';
-// import {
-//   subscribeAccounts,
-//   subscribeAuthorizeRequests,
-//   subscribeSigningRequests,
-//   subscribeMetadataRequests,
-//   approveAuthRequest,
-//   removeAuthorization,
-// } from '@/extension/messaging';
+import { Vue, Prop, Component } from 'vue-property-decorator';
 import Button from '@/components/Button.vue';
 import Hint from '@/components/Hint.vue';
 import Alert from '@/screens/authorize/Alert.vue';
 import AboveForm from '@/components/AboveForm.vue';
 
-import Component from 'vue-class-component';
 @Component({
   components: {
     Button,
@@ -83,7 +74,7 @@ export default class Authorize extends Vue {
     display: flex;
     flex-flow: column;
     justify-content: space-between;
-    height: 90px;
+    height: 110px;
   }
 }
 </style>

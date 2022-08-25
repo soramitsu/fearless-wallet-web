@@ -26,6 +26,7 @@ module.exports = defineConfig({
   chainWebpack: (config) => {
     config.plugin('define').tap((definitions) => {
       definitions[0]['process.env'].EXTENSION_PREFIX = JSON.stringify(process.env.EXTENSION_PREFIX);
+
       return definitions;
     });
 

@@ -1,16 +1,16 @@
 <template>
   <div :class="backgroundClasses">
     <div class="above-form">
-      <div class="header-content">
+      <div class="header-content" :class="!showLogo && !showBackIcon ? 'header-content--centered' : ''">
         <div v-if="showBackIcon" class="icon icon-back" @click="handlerBack">
           <img src="@/assets/chevron-left.svg" />
         </div>
-        <div v-else class="icon">
+        <div v-else-if="showLogo" class="icon">
           <img src="@/assets/fw-logo.svg" />
         </div>
         <div class="header">{{ header }}</div>
         <div class="activity-block">
-          <div class="icon" @click="closeHandler">
+          <div v-if="showCloseIcon" class="icon" @click="closeHandler">
             <s-icon name="basic-close-24" />
           </div>
           <div v-show="showAcceptIcon" class="icon" @click="saveChanges">
@@ -33,6 +33,8 @@ export default class AboveForm extends Vue {
   @Prop({ default: '' }) header!: string;
   @Prop({ default: false }) showAcceptIcon!: boolean;
   @Prop({ default: false }) showBackIcon!: boolean;
+  @Prop({ default: false }) showLogo!: boolean;
+  @Prop({ default: true }) showCloseIcon!: boolean;
   @Prop({ default: false }) blur!: boolean;
   @Prop({ default: () => () => null }) saveChanges!: VoidFunction;
   @Prop({ default: () => () => null }) handlerBack!: VoidFunction;
@@ -116,7 +118,9 @@ export default class AboveForm extends Vue {
       padding: 16px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
-
+    .header-content--centered {
+      justify-content: center;
+    }
     .icon {
       margin-left: 5px;
       display: flex;

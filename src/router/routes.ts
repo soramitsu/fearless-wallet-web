@@ -1,18 +1,22 @@
-import Accounts from '@/screens/accounts/Accounts.vue';
-import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
-import Crowdloans from '@/screens/crowdloans/Crowdloans.vue';
 import Dex from '@/screens/dex/Dex.vue';
 import Export from '@/screens/accounts/Export.vue';
 import History from '@/screens/history/History.vue';
 import keyring from '@polkadot/ui-keyring';
-import Main from '@/screens/main/Main.vue';
 import Network from '@/screens/accounts/Network.vue';
 import Staking from '@/screens/staking/Staking.vue';
 import Token from '@/screens/wallet/token/Token.vue';
 import Wallet from '@/screens/wallet/Wallet.vue';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import AddWallet from '@/screens/addWallet/AddWallet.vue';
+import ManageAuths from '@/screens/authorize/ManageAuths.vue';
+
 import { RouteConfig } from 'vue-router';
+import store from '@/store';
+const Accounts = () => import('@/screens/accounts/Accounts.vue');
+const AccountsLayout = () => import('@/screens/accounts/AccountsLayout.vue');
+const Main = () => import('@/screens/main/Main.vue');
+const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
+const Authorize = () => import('@/screens/authorize/Authorize.vue');
 
 export enum Components {
   Welcome = 'Welcome',
@@ -28,9 +32,11 @@ export enum Components {
   Accounts = 'Accounts',
   Network = 'Network',
   Export = 'Export',
+  ManageAuths = 'ManageAuths',
+  Authorize = 'Authorize',
 }
-
 const haveAccounts = () => keyring.getAccounts().length > 0;
+const haveRequests = () => store.getters.getRequest.length;
 
 const routes: Array<RouteConfig> = [
   {
@@ -44,6 +50,11 @@ const routes: Array<RouteConfig> = [
     component: AddWallet,
   },
   {
+    path: 'authorize',
+    name: Components.Authorize,
+    component: Authorize,
+  },
+  {
     path: '/main',
     name: Components.Main,
     component: Main,
@@ -53,6 +64,11 @@ const routes: Array<RouteConfig> = [
         beforeEnter: (to, from, next) => {
           next({ name: Components.Wallet });
         },
+      },
+      {
+        path: 'manageauths',
+        name: Components.ManageAuths,
+        component: ManageAuths,
       },
       {
         path: 'wallet',
@@ -107,14 +123,31 @@ const routes: Array<RouteConfig> = [
         component: History,
       },
     ],
+
     beforeEnter: (to, from, next) => {
+      console.log(haveAccounts(), haveRequests());
+      if (haveRequests()) next({ name: Components.Authorize });
       if (!haveAccounts()) next({ name: Components.Welcome });
       else next();
     },
   },
   {
     path: '/*',
-    redirect: () => (haveAccounts() ? { name: Components.Wallet } : { name: Components.Welcome }),
+    redirect: () => {
+      if (haveRequests()) {
+        return {
+          name: Components.Authorize,
+        };
+      }
+      if (haveAccounts()) {
+        return {
+          name: Components.Wallet,
+        };
+      }
+      return {
+        name: Components.Welcome,
+      };
+    },
   },
 ];
 

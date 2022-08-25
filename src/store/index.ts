@@ -3,7 +3,7 @@ import Vuex from 'vuex';
 import networks from './networks';
 import account from './accounts';
 import auth from './auth';
-import Modules from './types';
+import type Modules from './types';
 
 const files = require.context('.', false, /\.ts$/);
 export const modules: Modules = {

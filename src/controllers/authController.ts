@@ -1,28 +1,36 @@
 import {
-  approveAuthRequest,
+  getAuthList,
   subscribeAccounts,
   subscribeAuthorizeRequests,
   subscribeMetadataRequests,
   subscribeSigningRequests,
 } from '@/extension/messaging';
+import {
+  AccountJson,
+  AuthorizeRequest,
+  MetadataRequest,
+  SigningRequest,
+} from '@polkadot/extension-base/background/types';
 export default class AuthController {
-  private requests: string[] = [];
-
-  get getRequests() {
-    return this.requests;
+  static async subscribeToAuths(setAuths: (accounts: AuthorizeRequest[]) => void) {
+    await subscribeAuthorizeRequests(setAuths);
   }
 
-  log(res: any) {
-    console.log(res);
+  static async subscribeToAccounts(setAccounts: (accounts: AccountJson[]) => void) {
+    await subscribeAccounts(setAccounts);
   }
 
-  subscribe() {
-    Promise.all([
-      subscribeAccounts(this.log),
-      subscribeAuthorizeRequests(this.log),
-      subscribeMetadataRequests(this.log),
-      subscribeSigningRequests(this.log),
-    ]).catch(console.error);
+  static async subscribeToMetadata(setMetadata: (accounts: MetadataRequest[]) => void) {
+    await subscribeMetadataRequests(setMetadata);
+  }
+
+  static async subscribeToSigning(setRequests: (accounts: SigningRequest[]) => void) {
+    await subscribeSigningRequests(setRequests);
+  }
+
+  static async getAuthList() {
+    const { list } = await getAuthList();
+    return list;
   }
 }
-export const authController = new AuthController();
+export const authController = AuthController;

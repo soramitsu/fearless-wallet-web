@@ -1,34 +1,31 @@
 <template>
-  <AboveForm :blur="true" header="Authorize" :closeHandler="onClick">
+  <AboveForm :blur="true" header="Authorize" :showCloseIcon="false">
     <div class="authorize">
       <div>
         <p class="authorize__content">
           An application, self-identifying as
-          <span class="authorize__content--name">{{ name }}</span> is requesting access from my
-          <span class="authorize__content--link">{{ url }}</span>
+          <span class="authorize__content--name"></span> is requesting access from my
+          <span class="authorize__content--link"></span>
         </p>
         <Alert :message="alertMessage" />
       </div>
       <div class="authorize__control">
-        <Button
-          width="100%"
-          text="Yes, allow this application access"
-          size="big"
-          fontSize="big"
-          @click="$emit('authorizeApp')"
-        />
-        <Button width="100%" type="link" text="Reject" size="big" fontSize="medium" @click="$emit('rejectApp')" />
+        <Button width="100%" text="Yes, allow this application access" size="big" fontSize="big" @click="onApprove" />
+        <Button width="100%" type="link" text="Reject" size="big" fontSize="medium" @click="onReject" />
       </div>
     </div>
   </AboveForm>
 </template>
 
-<script lang="ts">
-import { Vue, Prop, Component } from 'vue-property-decorator';
+<script setup lang="ts">
+import { Vue, Component } from 'vue-property-decorator';
 import Button from '@/components/Button.vue';
 import Hint from '@/components/Hint.vue';
-import Alert from '@/screens/authorize/Alert.vue';
+import Alert from '@/components/Alert.vue';
 import AboveForm from '@/components/AboveForm.vue';
+import store from '@/store';
+import { Components } from '@/router/routes';
+import { ActionTypes } from '@/store/auth/actions';
 
 @Component({
   components: {
@@ -39,13 +36,31 @@ import AboveForm from '@/components/AboveForm.vue';
   },
 })
 export default class Authorize extends Vue {
-  @Prop(String) url!: string;
-  @Prop(String) name!: string;
+  get getRequest() {
+    return store.getters.getRequest();
+  }
+
+  mounted() {
+    console.log(this.$route.params);
+  }
+
   alertMessage =
     'Only approve this request if you trust the application. Approving gives the application access to the addresses of you accounts';
 
-  onClick(event: Event) {
-    console.log(event.target);
+  back() {
+    this.$router.push({ name: Components.Wallet });
+  }
+
+  onApprove() {
+    const [request] = store.getters.getRequest;
+    store.dispatch(ActionTypes.APPROVE_REQUEST, request);
+    this.$router.push({ name: Components.Wallet });
+  }
+
+  onReject() {
+    const [request] = store.getters.getRequest;
+    store.dispatch(ActionTypes.REJECT_REQUEST, request);
+    this.$router.push({ name: Components.Wallet });
   }
 }
 </script>

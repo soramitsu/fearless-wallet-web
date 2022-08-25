@@ -15,6 +15,7 @@ import type { SetSelectedWalletProps } from '@/store/accounts/types';
 import type { TMutation } from '@/interfaces/common';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import store from './store';
 
 @Component
 export default class App extends Vue {
@@ -27,7 +28,7 @@ export default class App extends Vue {
 
   async mounted() {
     const { loadNetworks, loadAssets, loadFiats, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
-
+    store.dispatch('SUBSCRIBE_TO_DAPP_EVENTS');
     await Promise.all([loadNetworks(), loadAssets(), loadFiats()]);
     await loadTokensPrice();
 

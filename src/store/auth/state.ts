@@ -1,12 +1,9 @@
-type DAppRequests = string[];
-
-export type State = {
-  requests: DAppRequests;
-};
+import { State } from './types';
 
 const state = (): State => {
   return {
     requests: [],
+    authList: {},
   };
 };
 

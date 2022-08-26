@@ -36,7 +36,6 @@ export enum Components {
   Authorize = 'Authorize',
 }
 const haveAccounts = () => keyring.getAccounts().length > 0;
-const haveRequests = () => store.getters.getRequest.length;
 
 const routes: Array<RouteConfig> = [
   {
@@ -125,8 +124,6 @@ const routes: Array<RouteConfig> = [
     ],
 
     beforeEnter: (to, from, next) => {
-      console.log(haveAccounts(), haveRequests());
-      if (haveRequests()) next({ name: Components.Authorize });
       if (!haveAccounts()) next({ name: Components.Welcome });
       else next();
     },
@@ -134,11 +131,6 @@ const routes: Array<RouteConfig> = [
   {
     path: '/*',
     redirect: () => {
-      if (haveRequests()) {
-        return {
-          name: Components.Authorize,
-        };
-      }
       if (haveAccounts()) {
         return {
           name: Components.Wallet,

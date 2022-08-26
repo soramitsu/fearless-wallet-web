@@ -20,13 +20,13 @@ const mutations: MutationTree<State> & Mutations = {
     state.requests.push(payload);
   },
   [MutationTypes.DELETE_AUTH_REQUEST](state) {
-    state.requests.shift();
+    const [, ...requests] = state.requests;
+    state.requests = requests;
   },
   [MutationTypes.SET_AUTHLIST](state, { list }) {
     state.authList = list;
   },
   [MutationTypes.DELETE_AUTHLIST_ITEM](state, id) {
-    console.log(id, state.authList);
     delete state.authList[id];
   },
 };

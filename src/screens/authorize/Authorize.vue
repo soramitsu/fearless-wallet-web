@@ -4,8 +4,8 @@
       <div>
         <p class="authorize__content">
           An application, self-identifying as
-          <span class="authorize__content--name"></span> is requesting access from my
-          <span class="authorize__content--link"></span>
+          <span class="authorize__content--name">{{ requests[0].request.origin }}</span> is requesting access from my
+          <span class="authorize__content--link">{{ requests[0].url }}</span>
         </p>
         <Alert :message="alertMessage" />
       </div>
@@ -26,6 +26,8 @@ import AboveForm from '@/components/AboveForm.vue';
 import store from '@/store';
 import { Components } from '@/router/routes';
 import { ActionTypes } from '@/store/auth/actions';
+import { Getter } from 'vuex-class';
+import { AuthorizeRequest } from '@polkadot/extension-base/background/types';
 
 @Component({
   components: {
@@ -36,29 +38,18 @@ import { ActionTypes } from '@/store/auth/actions';
   },
 })
 export default class Authorize extends Vue {
-  get getRequest() {
-    return store.getters.getRequest();
-  }
-
-  mounted() {
-    console.log(this.$route.params);
-  }
-
+  @Getter('getRequest') requests!: AuthorizeRequest[];
   alertMessage =
     'Only approve this request if you trust the application. Approving gives the application access to the addresses of you accounts';
 
-  back() {
-    this.$router.push({ name: Components.Wallet });
-  }
-
   onApprove() {
-    const [request] = store.getters.getRequest;
+    const [request] = this.requests;
     store.dispatch(ActionTypes.APPROVE_REQUEST, request);
     this.$router.push({ name: Components.Wallet });
   }
 
   onReject() {
-    const [request] = store.getters.getRequest;
+    const [request] = this.requests;
     store.dispatch(ActionTypes.REJECT_REQUEST, request);
     this.$router.push({ name: Components.Wallet });
   }

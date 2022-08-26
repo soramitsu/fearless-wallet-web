@@ -26,11 +26,8 @@ import store from '@/store';
     Switcher,
   },
 })
-export default class AuthsList extends Vue {
+export default class AuthItem extends Vue {
   @PropSync('requests', { type: Object }) requestsData!: AuthUrlInfo;
-  mounted() {
-    console.log(this.requestsData, 'auth item');
-  }
 
   removeConnection() {
     const { id } = this.requestsData;

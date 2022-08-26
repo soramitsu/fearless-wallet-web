@@ -8,8 +8,8 @@
     :closeHandler="back"
   >
     <SearchInput v-model="filterValue" placeholder="Search in networks" class="manage-auths__search" :isBig="true" />
-    <Fragment v-for="(el, key) in getAuth" v-bind:key="key">
-      <AuthsList :requests="el" />
+    <Fragment v-for="(el, key) in filteredList" v-bind:key="key">
+      <AuthItem :requests="el" />
     </Fragment>
   </AboveForm>
 </template>
@@ -20,65 +20,47 @@ import Switcher from '@/components/Switcher.vue';
 import { Fragment } from 'vue-fragment';
 import AboveForm from '@/components/AboveForm.vue';
 import SearchInput from '@/components/SearchInput.vue';
-import AuthsList from '@/screens/authorize/AuthsList.vue';
+import AuthItem from '@/screens/authorize/AuthItem.vue';
 import { Components } from '@/router/routes';
 import store from '@/store';
 import type { AuthUrlInfo } from '@polkadot/extension-base/background/handlers/State';
+import { Getter } from 'vuex-class';
 
 @Component({
   components: {
     AboveForm,
-    AuthsList,
+    AuthItem,
     Fragment,
     Switcher,
     SearchInput,
   },
-  computed: {
-    getAuth() {
-      if (Object.keys(store.getters.getAuthList).length) {
-        return Object.keys(store.getters.getAuthList as unknown as Record<string, AuthUrlInfo>)
-          .filter((el) => {
-            return store.getters.getAuthList[el].origin.includes('');
-          })
-          .map((el) => {
-            return store.getters.getAuthList[el];
-          });
-      }
-    },
-  },
 })
 export default class ManageAuths extends Vue {
   filterValue = '';
-  value: string[] = [];
+  filteredList: Record<string, AuthUrlInfo> = {};
+  @Getter('getAuthList') authlist!: Record<string, AuthUrlInfo>;
   @Watch('filterValue')
   filter(value: string) {
-    this.FilteredData(value);
+    this.filteredData(value);
   }
 
-  FilteredData(value: string) {
-    if (Object.keys(store.getters.getAuthList).length) {
-      const filtered = Object.keys(store.getters.getAuthList as unknown as Record<string, AuthUrlInfo>)
-        .filter((el) => {
-          return store.getters.getAuthList[el].origin.includes(value);
-        })
-        .map((el) => {
-          return store.getters.getAuthList[el];
-        });
-
-      this.value = filtered;
+  filteredData(value: string) {
+    if (Object.keys(this.authlist).length) {
+      const filtered = Object.entries<AuthUrlInfo>(this.authlist).filter(([, info]) => {
+        return info.origin.includes(value);
+      });
+      this.filteredList = Object.fromEntries(filtered);
+      console.log(this.filteredList, value);
     }
   }
 
   async beforeCreate() {
-    store.dispatch('GET_AUTHLIST');
+    await store.dispatch('GET_AUTHLIST');
+    this.filteredList = this.authlist;
   }
 
   back() {
     this.$router.push({ name: Components.Wallet });
-  }
-
-  onDeleteConnection(event: Event) {
-    console.log(event);
   }
 }
 </script>

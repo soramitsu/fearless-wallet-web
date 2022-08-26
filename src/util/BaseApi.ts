@@ -189,6 +189,13 @@ export default class BaseApi {
     return keyring.getAccounts();
   }
 
+  public static getPolkadotAddresses(): string[] {
+    return keyring
+      .getAccounts()
+      .filter((el) => el.address.startsWith('5'))
+      .map((el) => el.address);
+  }
+
   public static getPair(address: string): KeyringPair {
     return keyring.getPair(address);
   }

@@ -1,10 +1,12 @@
 <template>
-  <Corners class="alert-container" isWarning size="big">
-    <div class="alert__content">
-      <Hint class="alert__header" size="big" iconName="warning-orange" text="Attention" />
-      <p class="alert__message">
-        {{ message }}
-      </p>
+  <Corners isWarning size="big">
+    <div class="alert-container">
+      <div class="alert__content">
+        <Hint class="alert__header" size="big" iconName="warning-orange" text="Attention" />
+        <p class="alert__message">
+          {{ message }}
+        </p>
+      </div>
     </div>
   </Corners>
 </template>

@@ -11,7 +11,7 @@ import {
 import { AuthorizeRequest } from '@polkadot/extension-base/background/types';
 import router from '@/router';
 import { Components } from '@/router/routes';
-import BaseApi from '../../util/BaseApi';
+import BaseApi from '@/util/BaseApi';
 
 export enum ActionTypes {
   SUBSCRIBE_TO_DAPP_EVENTS = 'SUBSCRIBE_TO_DAPP_EVENTS',
@@ -47,7 +47,6 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.SUBSCRIBE_TO_DAPP_EVENTS]({ commit }) {
     const callback = (requests: AuthorizeRequest[]) => {
       const [request] = requests;
-      console.log(requests, 'requests');
       if (request) {
         commit(MutationTypes.SET_AUTH_REQUEST, request);
 
@@ -60,7 +59,6 @@ const actions: ActionTree<State, State> & Actions = {
   },
   async [ActionTypes.APPROVE_REQUEST]({ commit }, payload) {
     const adresses = BaseApi.getPolkadotAddresses();
-    console.log(adresses);
     await approveAuthRequest(payload.id, adresses); // add real accounts
     commit(MutationTypes.DELETE_AUTH_REQUEST);
   },
@@ -76,8 +74,7 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.DELETE_AUTH_CONNECTION]({ commit, state }, id) {
-    const list = await removeAuthorization(id);
-    commit(MutationTypes.SET_AUTHLIST, list);
+    await removeAuthorization(id);
     commit(MutationTypes.DELETE_AUTHLIST_ITEM, id);
   },
   async [ActionTypes.DECLINE_AUTH_CONNECTION]({ commit }, id) {

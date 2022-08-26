@@ -1,6 +1,7 @@
 import type { MutationTree } from 'vuex';
 import type { State } from './types';
 import { AuthorizeRequest, ResponseAuthorizeList } from '@polkadot/extension-base/background/types';
+import Vue from 'vue';
 
 export enum MutationTypes {
   SET_AUTH_REQUEST = 'SET_AUTH_REQUEST',
@@ -20,14 +21,13 @@ const mutations: MutationTree<State> & Mutations = {
     state.requests.push(payload);
   },
   [MutationTypes.DELETE_AUTH_REQUEST](state) {
-    const [, ...requests] = state.requests;
-    state.requests = requests;
+    state.requests.shift();
   },
   [MutationTypes.SET_AUTHLIST](state, { list }) {
     state.authList = list;
   },
   [MutationTypes.DELETE_AUTHLIST_ITEM](state, id) {
-    delete state.authList[id];
+    Vue.delete(state.authList, id);
   },
 };
 

@@ -8,8 +8,8 @@
     :closeHandler="back"
   >
     <SearchInput v-model="filterValue" placeholder="Search in networks" class="manage-auths__search" :isBig="true" />
-    <Fragment v-for="(el, key) in filteredList" v-bind:key="key">
-      <AuthItem :requests="el" />
+    <Fragment v-for="el in filteredList" v-bind:key="el.id">
+      <AuthItem :request="el" @onRemoveAuth="removeAuth" />
     </Fragment>
   </AboveForm>
 </template>
@@ -39,19 +39,22 @@ export default class ManageAuths extends Vue {
   filterValue = '';
   filteredList: Record<string, AuthUrlInfo> = {};
   @Getter('getAuthList') authlist!: Record<string, AuthUrlInfo>;
+
   @Watch('filterValue')
   filter(value: string) {
     this.filteredData(value);
   }
 
   filteredData(value: string) {
-    if (Object.keys(this.authlist).length) {
-      const filtered = Object.entries<AuthUrlInfo>(this.authlist).filter(([, info]) => {
-        return info.origin.includes(value);
-      });
-      this.filteredList = Object.fromEntries(filtered);
-      console.log(this.filteredList, value);
-    }
+    const filtered = Object.entries<AuthUrlInfo>(this.authlist).filter(([, info]) => {
+      return info.origin.includes(value);
+    });
+
+    this.filteredList = Object.fromEntries(filtered);
+  }
+
+  async removeAuth(id: string) {
+    await store.dispatch('DELETE_AUTH_CONNECTION', id);
   }
 
   async beforeCreate() {

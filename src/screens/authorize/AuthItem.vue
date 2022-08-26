@@ -1,14 +1,14 @@
 <template>
-  <SCol width="100%" v-bind:key="requestsData.id">
+  <SCol width="100%" v-bind:key="request.id">
     <SRow>
       <SCol :span="10" class="s-flex s-justify-start">
-        <span class="auth-item-name">{{ requestsData.origin }}</span>
+        <span class="auth-item-name">{{ request.origin }}</span>
       </SCol>
       <SCol :span="2">
         <SRow flex justify="space-around">
-          <Switcher :value="requestsData.isAllowed" />
+          <Switcher :value="request.isAllowed" />
 
-          <img class="trash" src="@/assets/trash.svg" @click="removeConnection()" />
+          <img class="trash" src="@/assets/trash.svg" @click="$emit('onRemoveAuth', request.id)" />
         </SRow>
       </SCol>
     </SRow>
@@ -17,7 +17,7 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component, PropSync } from 'vue-property-decorator';
+import { Vue, Component, Prop } from 'vue-property-decorator';
 import Switcher from '@/components/Switcher.vue';
 import { AuthUrlInfo } from '@polkadot/extension-base/background/handlers/State';
 import store from '@/store';
@@ -27,12 +27,7 @@ import store from '@/store';
   },
 })
 export default class AuthItem extends Vue {
-  @PropSync('requests', { type: Object }) requestsData!: AuthUrlInfo;
-
-  removeConnection() {
-    const { id } = this.requestsData;
-    store.dispatch('DELETE_AUTH_CONNECTION', id);
-  }
+  @Prop(Object) request!: AuthUrlInfo;
 }
 </script>
 

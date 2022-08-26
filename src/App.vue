@@ -1,6 +1,7 @@
 <template>
   <div id="app">
     <div class="drag"></div>
+
     <router-view />
   </div>
 </template>
@@ -19,6 +20,7 @@ import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 @Component
 export default class App extends Vue {
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
+
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
 
   get style() {

@@ -1,16 +1,25 @@
 <template>
   <div class="main">
     <Header
+      ref="header"
       :showSelectWalletPopup="showSelectWalletPopup"
+      :highlightSettingsIcon="highlightSettingsIcon"
       @update:showSelectWalletPopup="setSelectWalletPopupVisible"
       @toggleSettingsVisible="toggleSettingsVisible"
     />
 
     <SelectWalletPopup v-if="showSelectWalletPopup" @close="setSelectWalletPopupVisible(false)" />
 
-    <SettingsPopup v-if="showSettings" :handlerClose="toggleSettingsVisible" @openFiatsPopup="toggleFiatsPopup" />
+    <SettingsPopup
+      v-if="showSettings"
+      :handlerClose="toggleSettingsVisible"
+      @openFiatsPopup="toggleFiatsPopupVisible"
+      @openAboutPopup="toggleAboutPopupVisible"
+    />
 
-    <FiatsPopup v-if="showFiatsPopup" :handlerClose="toggleFiatsPopup" />
+    <FiatsPopup v-if="showFiatsPopup" :handlerClose="toggleFiatsPopupVisible" />
+
+    <AboutPopup v-if="showAboutPopup" :handlerClose="toggleAboutPopupVisible" />
 
     <router-view></router-view>
 
@@ -25,12 +34,14 @@ import Menu from './Menu.vue';
 import SelectWalletPopup from './SelectWalletPopup.vue';
 import SettingsPopup from './SettingsPopup.vue';
 import FiatsPopup from './FiatsPopup.vue';
+import AboutPopup from './AboutPopup.vue';
 
 @Component({
   components: {
     Menu,
     Header,
     FiatsPopup,
+    AboutPopup,
     SettingsPopup,
     SelectWalletPopup,
   },
@@ -38,9 +49,20 @@ import FiatsPopup from './FiatsPopup.vue';
 export default class Main extends Vue {
   showSettings = false;
   showFiatsPopup = false;
+  showAboutPopup = false;
   showSelectWalletPopup = false;
 
-  toggleFiatsPopup() {
+  get highlightSettingsIcon() {
+    return this.showSettings || this.showAboutPopup || this.showFiatsPopup;
+  }
+
+  toggleAboutPopupVisible() {
+    this.showAboutPopup = !this.showAboutPopup;
+
+    if (this.showAboutPopup) this.toggleSettingsVisible();
+  }
+
+  toggleFiatsPopupVisible() {
     this.showFiatsPopup = !this.showFiatsPopup;
 
     if (this.showFiatsPopup) this.toggleSettingsVisible();

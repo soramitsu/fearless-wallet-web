@@ -20,7 +20,7 @@
       verticalPlacement="center"
       sizeWidth="big"
       placeholder="Search in networks"
-      :top="10"
+      :top="25"
       :showIcon="true"
       :showSearch="true"
       :showBorder="true"
@@ -31,7 +31,7 @@
       :handlerFilter="handlerFilter.bind(null, 'popupFilterValue')"
     />
 
-    <ContentForm :height="390">
+    <ContentForm :height="394">
       <div class="content">
         <ContentSettings
           :activeTabName="activeTabName"
@@ -278,10 +278,6 @@ export default class Wallet extends Vue {
   width: 100%;
   height: 100%;
 
-  .content-form-height {
-    height: 390px;
-  }
-
   .content {
     padding: 16px 0 0 16px;
     height: 100%;
@@ -293,7 +289,7 @@ export default class Wallet extends Vue {
     width: 100%;
     display: flex;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
   }
 }
 </style>

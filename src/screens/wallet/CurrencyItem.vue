@@ -19,7 +19,7 @@
             v-for="{ network } in availableInNetworksPart"
             :key="network"
             :src="getImg(network)"
-            class="mini-network-img"
+            class="minor-network-img"
           />
 
           <div v-if="isAdditional" class="additional">+{{ additionalCount }}</div>
@@ -94,6 +94,7 @@ export default class CurrencyItem extends Vue {
   currencyVisible = true;
 
   @Prop(Object) currency!: Currency;
+  @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -302,7 +303,7 @@ export default class CurrencyItem extends Vue {
     }
   }
 
-  .mini-network-img {
+  .minor-network-img {
     width: 12px;
     margin-right: 3px;
     opacity: 0.5;

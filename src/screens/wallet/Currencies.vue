@@ -5,6 +5,7 @@
         v-for="currency in filteredCurrencies"
         :key="currency.token"
         :currency="currency"
+        :selectedNetwork="selectedNetwork"
         :showAssetsManagementForm="showAssetsManagementForm"
         :toggleVisibleActivityForm="toggleVisibleActivityForm"
       />

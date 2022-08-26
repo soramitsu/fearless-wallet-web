@@ -4,7 +4,7 @@
     <div class="row">
       <BorderButton
         text="Follow on Twitter"
-        iconName="twitter"
+        iconName="twitter-red"
         class="follow-button"
         type="secondary"
         width="256px"
@@ -13,16 +13,16 @@
 
       <BorderButton
         text="Join on Telegram"
-        iconName="telegram"
+        iconName="telegram-red"
         type="secondary"
         width="256px"
-        @click="openPage('https://t.me/sora_xor')"
+        @click="openPage('https://t.me/fearlesswallet')"
       />
     </div>
     <div class="row">
       <BorderButton
         text="Read on Medium"
-        iconName="medium"
+        iconName="medium-red"
         type="secondary"
         width="256px"
         @click="openPage('https://medium.com/fearlesswallet')"

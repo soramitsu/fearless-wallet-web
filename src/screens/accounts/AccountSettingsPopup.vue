@@ -27,13 +27,9 @@
         <img src="@/assets/copy-2.svg" class="icon" />
         <div class="label">Copy address</div>
       </div>
-      <div class="row" @click="open()">
+      <div class="row" @click="openSubscan">
         <img src="@/assets/globus.svg" class="icon" />
         <div class="label">View in Subscan</div>
-      </div>
-      <div class="row" @click="open(false)">
-        <img src="@/assets/globus.svg" class="icon" />
-        <div class="label">View in Polkascan</div>
       </div>
     </div>
   </Popup>
@@ -44,7 +40,6 @@ import Popup from '@/components/Popup.vue';
 import BaseApi from '@/util/BaseApi';
 import { Getter } from 'vuex-class';
 import { Components } from '@/router/routes';
-import { firstCharToUp } from '@/util/helpers';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import type { SelectedWallet } from '@/store/accounts/types';
@@ -83,12 +78,8 @@ export default class AccountSettingsPopup extends Vue {
     this.close();
   }
 
-  open(isSubscan = true) {
-    if (isSubscan) window.open(`https://${this.selectedNetwork}.subscan.io/account/${this.addressByNetwork}`);
-    else
-      window.open(
-        `https://explorer.polkascan.io/${firstCharToUp(this.selectedNetwork)}/account/${this.addressByNetwork}`
-      );
+  openSubscan() {
+    window.open(`https://${this.selectedNetwork}.subscan.io/account/${this.addressByNetwork}`);
 
     this.close();
   }

@@ -49,7 +49,7 @@
       />
     </div>
 
-    <ContentForm :height="336">
+    <ContentForm :height="306">
       <div class="content">
         <div class="content-settings">
           <div class="history-label">History</div>
@@ -99,7 +99,7 @@
       horizontalPlacement="right"
       verticalPlacement="center"
       placeholder="Search in networks"
-      :top="10"
+      :top="25"
       :showBorder="true"
       :showIcon="true"
       :showSearch="true"

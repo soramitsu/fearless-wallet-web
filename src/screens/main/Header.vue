@@ -23,7 +23,13 @@
         {{ statusConnectedText }}
       </div>
 
-      <CircleButton iconName="settings" class="button-margin" backgroundColor="none" @click="toggleSettingsVisible" />
+      <CircleButton
+        :ref="settingsNameRef"
+        iconName="settings"
+        class="button-margin"
+        backgroundColor="none"
+        @click="toggleSettingsVisible"
+      />
     </div>
   </header>
 </template>
@@ -32,7 +38,7 @@
 import Logo from '@/components/Logo.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import Rotate from '@/components/Rotate.vue';
-import { Component, Vue, PropSync, Watch } from 'vue-property-decorator';
+import { Component, Vue, PropSync, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
@@ -47,7 +53,9 @@ import type { SelectedWallet } from '@/store/accounts/types';
 })
 export default class Header extends Vue {
   walletNameRef = 'walletName';
+  settingsNameRef = 'settingsName';
 
+  @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
@@ -68,10 +76,18 @@ export default class Header extends Vue {
   }
 
   @Watch('syncedShowSelectWalletPopup')
-  updateZIndex() {
+  updateZIndexSelectWalletPopup() {
     const targetElement = this.$refs[this.walletNameRef] as HTMLElement;
 
     if (this.syncedShowSelectWalletPopup) targetElement.style.zIndex = '200';
+    else targetElement.style.zIndex = '0';
+  }
+
+  @Watch('highlightSettingsIcon')
+  updateZIndexShowSettings(value: boolean) {
+    const targetElement = (this.$refs[this.settingsNameRef] as Vue).$el as HTMLElement;
+
+    if (value) targetElement.style.zIndex = '200';
     else targetElement.style.zIndex = '0';
   }
 

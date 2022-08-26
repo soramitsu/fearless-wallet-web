@@ -37,7 +37,7 @@
 
         <img src="@/assets/chevron-right.svg" class="chevron-right" />
       </div>
-      <div class="row">
+      <div class="row" @click="openAboutPopup">
         <div class="description">
           <img src="@/assets/info.svg" class="icon" />
 
@@ -69,6 +69,10 @@ export default class SettingsPopup extends Vue {
 
   openFiatsPopup() {
     this.$emit('openFiatsPopup');
+  }
+
+  openAboutPopup() {
+    this.$emit('openAboutPopup');
   }
 
   open(name: SettingsItemType) {

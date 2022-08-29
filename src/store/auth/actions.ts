@@ -3,20 +3,20 @@ import type { State } from './types';
 import { Mutations, MutationTypes } from './mutations';
 import {
   subscribeAuthorizeRequests,
-  subscribeAccounts,
   approveAuthRequest,
   deleteAuthRequest,
   getAuthList,
   removeAuthorization,
   updateAuthorization,
 } from '@/extension/messaging';
-import { AuthorizeRequest } from '@polkadot/extension-base/background/types';
+import { AccountJson, AuthorizeRequest } from '@polkadot/extension-base/background/types';
 import router from '@/router';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
 
 export enum ActionTypes {
   SUBSCRIBE_TO_DAPP_EVENTS = 'SUBSCRIBE_TO_DAPP_EVENTS',
+  SUBSCRIBE_TO_ACCOUNTS = 'SUBSCRIBE_TO_ACCOUNTS',
   APPROVE_REQUEST = 'APPROVE_AUTH_REQUEST',
   REJECT_REQUEST = 'REJECT_AUTH_REQUEST',
   GET_AUTHLIST = 'GET_AUTHLIST',
@@ -53,9 +53,11 @@ const actions: ActionTree<State, State> & Actions = {
     };
     subscribeAuthorizeRequests(callback);
   },
+
   async [ActionTypes.APPROVE_REQUEST]({ commit }, payload) {
     const adresses = BaseApi.getPolkadotAddresses();
-    await approveAuthRequest(payload.id, adresses); // add real accounts
+    await approveAuthRequest(payload.id, adresses);
+
     commit(MutationTypes.DELETE_AUTH_REQUEST);
   },
 

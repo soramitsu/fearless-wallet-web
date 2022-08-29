@@ -49,10 +49,6 @@ export default class ManageAuths extends Vue {
     store.dispatch('UPDATE_AUTH_CONNECTION', id);
   }
 
-  toggleAuth(url: string) {
-    store.dispatch('UPDATE_AUTH_CONNECTION', url);
-  }
-
   filteredData(value: string) {
     const filtered = Object.entries<AuthUrlInfo>(this.authlist).filter(([, info]) => {
       return info.origin.includes(value);

@@ -20,16 +20,6 @@ class AccountController {
     this.lsAccount.set(this.selectedFiatStorageName, fiat);
   }
 
-  public getHideZeroBalanceValue(): boolean {
-    const lsVisible = this.lsAccount.get(this.hideZeroBalanceStorageName);
-
-    return lsVisible.value ?? false;
-  }
-
-  public setHideZeroBalanceValue(value: boolean): void {
-    this.lsAccount.set(this.hideZeroBalanceStorageName, value);
-  }
-
   public getSubsequenceTokens(): string[] {
     const subsequenceTokens = this.lsAccount.get(this.subsequenceTokensStorageName);
 

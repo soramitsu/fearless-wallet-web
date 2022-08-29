@@ -41,17 +41,19 @@
           :showAssetsManagementButton="existSavedSequence"
           @update:activeTabName="updateActiveTabName"
           @update:showAssetsManagementForm="toggleAssetsManagementFormVisible"
-          @update:hideZeroBalance="toggleHideZeroBalance"
+          @update:hideZeroBalance="toggleCurrenciesVisible"
         />
 
         <Scroll>
           <Currencies
             v-if="showCurrencies"
+            :key="hideZeroBalance"
             :currencies="filteredCurrencies"
             :selectedNetwork="selectedNetwork"
             :showAssetsManagementForm="showAssetsManagementForm"
             :hideZeroBalance="hideZeroBalance"
             :toggleVisibleActivityForm="toggleVisibleActivityForm"
+            @toggleHideZeroBalance="toggleHideZeroBalance"
           />
 
           <NFTs v-else-if="showNfts" />
@@ -115,8 +117,8 @@ import type { TMutation, TabWallet } from '@/interfaces/common';
 export default class Wallet extends Vue {
   readonly selectNetworkButtonRef = 'selectNetworkButton';
   showAssetsManagementForm = false;
-  hideZeroBalance = false;
   existSavedSequence = false;
+  hideZeroBalance = false;
   showSendForm = false;
   showReceiveForm = false;
   showSelectNetworkPopup = false;
@@ -223,7 +225,6 @@ export default class Wallet extends Vue {
   }
 
   mounted() {
-    this.hideZeroBalance = accountController.getHideZeroBalanceValue();
     this.existSavedSequence = accountController.getSubsequenceTokens().length > 0;
   }
 
@@ -231,9 +232,26 @@ export default class Wallet extends Vue {
     this.showAssetsManagementForm = value;
   }
 
-  toggleHideZeroBalance(value: boolean) {
-    this.hideZeroBalance = value;
-    accountController.setHideZeroBalanceValue(value);
+  toggleCurrenciesVisible(value: boolean) {
+    if (value) {
+      this.currencies.forEach((currency) => {
+        const isZeroBalance = currency.getTotalCountTokens(this.selectedWallet) === '0';
+
+        if (isZeroBalance) currency.setCurrencyVisible(false);
+      });
+    }
+
+    this.toggleHideZeroBalance();
+  }
+
+  toggleHideZeroBalance() {
+    const findIndex = this.currencies.findIndex((currency) => {
+      const visible = currency.getCurrencyVisible();
+
+      return currency.getTotalCountTokens(this.selectedWallet) === '0' && visible;
+    });
+
+    this.hideZeroBalance = findIndex === -1;
   }
 
   toggleVisibleActivityForm(field: 'showSendForm' | 'showReceiveForm', value = true, currency: Currency) {

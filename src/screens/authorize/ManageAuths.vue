@@ -51,7 +51,7 @@ export default class Auth extends Vue {
   ];
 
   onDeleteConnection(event: Event) {
-    console.log(event);
+    console.info(event);
   }
 }
 </script>

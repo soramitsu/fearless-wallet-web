@@ -1,7 +1,6 @@
 <template>
   <div>
     <Popup
-      :showBlur="true"
       :showBorder="true"
       :staticHeight="true"
       :showAnimation="false"

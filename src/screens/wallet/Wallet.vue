@@ -1,7 +1,7 @@
 <template>
   <div class="wallet">
-    <header class="header">
-      <TotalBalance :balance="totalBalance" :percent="totalPercent" />
+    <header class="wallet-header">
+      <div class="wallet-balance">{{ fiatSymbol }} {{ totalBalance }}</div>
 
       <SelectNetworkButton
         :ref="selectNetworkButtonRef"
@@ -83,7 +83,6 @@ import ReceiveForm from './ReceiveForm.vue';
 import SendForm from './SendForm.vue';
 import ContentSettings from './ContentSettings.vue';
 import Currencies from './Currencies.vue';
-import TotalBalance from './TotalBalance.vue';
 import NFTs from './NFTs.vue';
 import { accountController } from '@/controllers/accountController';
 import { Component, Vue, Watch } from 'vue-property-decorator';
@@ -96,7 +95,7 @@ import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutatio
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { defaultSortingCurrencies } from '@/util/currenciesHelper';
 import { firstCharToUp } from '@/util/helpers';
-import { addNumbers } from '@/util/numbers';
+import { formattedNumber, addNumbers } from '@/util/numbers';
 import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
 import type { TMutation, TabWallet } from '@/interfaces/common';
 
@@ -108,7 +107,6 @@ import type { TMutation, TabWallet } from '@/interfaces/common';
     Currencies,
     ContentForm,
     ReceiveForm,
-    TotalBalance,
     SelectPopup,
     ContentSettings,
     SelectNetworkButton,
@@ -135,6 +133,7 @@ export default class Wallet extends Vue {
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
   @Getter(NetworksGettersTypes.getAllNetworksIsLoaded) allNetworksIsLoaded!: boolean;
+  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
 
   get sortedCurrencies() {
@@ -182,7 +181,7 @@ export default class Wallet extends Vue {
   get totalBalance() {
     const arr = this.sortedCurrencies.map((currency) => currency.getTotalBalance(this.selectedWallet));
 
-    return addNumbers(arr);
+    return formattedNumber(+addNumbers(arr));
   }
 
   get totalPercent() {
@@ -276,7 +275,7 @@ export default class Wallet extends Vue {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100%;
+  height: 450px;
 
   .content {
     padding: 16px 0 0 16px;
@@ -285,11 +284,20 @@ export default class Wallet extends Vue {
     flex-direction: column;
   }
 
-  .header {
+  .wallet-header {
     width: 100%;
+    height: 46px;
     display: flex;
     justify-content: space-between;
     margin-bottom: 10px;
+  }
+
+  .wallet-balance {
+    margin: auto 0;
+    font-weight: 800;
+    font-size: 22px;
+    line-height: 28px;
+    max-width: 220px;
   }
 }
 </style>

@@ -1,13 +1,6 @@
 <template>
-  <div :class="popupBackgroundClasses" @click="backgroundClick">
-    <Corners
-      size="big"
-      :left="left"
-      :top="top"
-      :topLeftCorner="showBorder"
-      :bottomRightCorner="showBorder"
-      :style="popupContainerStyle"
-    >
+  <div :class="popupBackgroundClasses" :style="popupBackgroundStyles" @click="backgroundClick">
+    <Corners size="big" :topLeftCorner="showBorder" :bottomRightCorner="showBorder" :style="popupContainerStyle">
       <div :class="popupContainerClasses">
         <div v-if="showHeader" class="header">
           <SearchInput v-if="showSearch" v-model="filterValue" :placeholder="placeholder" />
@@ -40,7 +33,7 @@ import Corners from './Corners.vue';
 
 type HorizontalPlacement = 'left' | 'center' | 'right';
 type VerticalPlacement = 'top' | 'center' | 'bottom';
-type Size = 'mini' | 'medium' | 'big';
+type Size = 'mini' | 'small' | 'medium' | 'big';
 
 @Component({
   components: {
@@ -61,6 +54,7 @@ export default class Popup extends Vue {
   @Prop({ default: true }) showHeader!: boolean;
   @Prop({ default: true }) showBlur!: boolean;
   @Prop({ default: true }) showAnimation!: boolean;
+  @Prop({ default: true }) showBackground!: boolean;
   @Prop({ default: false }) showSearch!: boolean;
   @Prop({ default: false }) showBorder!: boolean;
   @Prop({ default: false }) staticHeight!: boolean;
@@ -69,15 +63,22 @@ export default class Popup extends Vue {
   @Prop({ default: 'center' }) verticalPlacement!: VerticalPlacement;
 
   get popupBackgroundClasses() {
-    return [
+    const classes = [
       'popup-background',
-      `popup-background-horizontal-placement-${this.horizontalPlacement}`,
-      `popup-background-vertical-placement-${this.verticalPlacement}`,
       {
-        'popup-background-blur': this.showBlur,
+        'popup-background-blur': this.showBlur && this.showBackground,
         'popup-background-animation': this.showAnimation,
+        'popup-background-container': this.showBackground,
       },
     ];
+
+    if (this.showBackground)
+      classes.push(
+        `popup-background-horizontal-placement-${this.horizontalPlacement}`,
+        `popup-background-vertical-placement-${this.verticalPlacement}`
+      );
+
+    return classes;
   }
 
   get popupContainerClasses() {
@@ -94,7 +95,7 @@ export default class Popup extends Vue {
     return classes;
   }
 
-  get popupContainerStyle() {
+  get topLeftStyles() {
     const styles: Record<string, string> = {};
 
     if (this.top) styles.top = `${this.top}px`;
@@ -102,6 +103,14 @@ export default class Popup extends Vue {
     if (this.left) styles.left = `${this.left}px`;
 
     return styles;
+  }
+
+  get popupBackgroundStyles() {
+    return !this.showBackground ? this.topLeftStyles : {};
+  }
+
+  get popupContainerStyle() {
+    return this.showBackground ? this.topLeftStyles : {};
   }
 
   @Watch('filterValue')
@@ -122,15 +131,11 @@ export default class Popup extends Vue {
 
 <style lang="scss" scoped>
 .popup-background {
-  height: $extension-height;
-  width: $extension-width;
-  border-radius: $default-border-radius;
   display: flex;
   position: absolute;
   top: 0;
   left: 0;
   z-index: 199;
-  padding: 16px;
 
   .popup-container {
     display: flex;
@@ -157,6 +162,10 @@ export default class Popup extends Vue {
 
   .width-medium {
     width: 300px;
+  }
+
+  .width-small {
+    width: 285px;
   }
 
   .width-mini {
@@ -201,6 +210,12 @@ export default class Popup extends Vue {
     width: 20px;
     height: 20px;
   }
+}
+
+.popup-background-container {
+  height: $extension-height;
+  width: $extension-width;
+  padding: 16px;
 }
 
 .popup-background-blur {

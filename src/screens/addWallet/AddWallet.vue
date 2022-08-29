@@ -130,7 +130,7 @@ import { Components } from '@/router/routes';
 import { INVALID_MESSAGES, InvalidValueName } from '@/consts/invalidMessages';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/ethereumNetworks';
 import { INITIAL_DERIVATION_PATH } from '@/consts/derivationPath';
-import type { DerivationPath, ImportType, ValidateJsonResult } from '@/interfaces/common';
+import type { DerivationPath, ImportType, ValidateJsonResult, MnemonicConfirmation } from '@/interfaces/common';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { SelectedWallet } from '@/store/accounts/types';
 
@@ -166,7 +166,7 @@ export default class AddWallet extends Vue {
   displayMockPassword = false;
   showAdvancedForm = false;
   showAddEthereumAccountPopup = false;
-  selectedMnemonicElements: string[] = [];
+  selectedMnemonicElements: MnemonicConfirmation[] = [];
   invalidValueName: InvalidValueName = '';
   typeImport: ImportType = 'mnemonic';
   derivationPath = INITIAL_DERIVATION_PATH;
@@ -527,7 +527,10 @@ export default class AddWallet extends Vue {
       : ({ value: true } as ValidateJsonResult);
 
     const isValidSequenceMnemonic = this.isCreateWallet
-      ? BaseApi.isValidSequenceMnemonic(this.mnemonic, this.selectedMnemonicElements)
+      ? BaseApi.isValidSequenceMnemonic(
+          this.mnemonic,
+          this.selectedMnemonicElements.map(({ word }) => word)
+        )
       : true;
 
     this.invalidValueName = !isValidSequenceMnemonic
@@ -615,7 +618,7 @@ export default class AddWallet extends Vue {
     BaseApi.replaceAccountFromSeed(suri, this.walletPassword, type, parent, this.replacedNetwork);
   }
 
-  updateSelectedMnemonicElements(value: string[]) {
+  updateSelectedMnemonicElements(value: MnemonicConfirmation[]) {
     this.selectedMnemonicElements = value;
   }
 
@@ -624,7 +627,8 @@ export default class AddWallet extends Vue {
   }
 
   back() {
-    if (this.step === 3 && this.ethereumRawSeed === '' && this.ethereumJson === '') this.step -= 1;
+    if (this.step === 3 && this.ethereumRawSeed === '' && this.ethereumJson === '' && this.isImportWallet)
+      this.step -= 1;
     else if (this.step === 4 && this.isReplaceAccount) this.step -= 2;
     else if (this.step === 2) {
       this.ethereumRawSeed = '';

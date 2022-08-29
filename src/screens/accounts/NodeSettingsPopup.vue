@@ -1,7 +1,7 @@
 <template>
   <Popup
+    sizeWidth="mini"
     :showHeader="false"
-    :showBlur="true"
     :showBorder="true"
     :handlerClose="handlerClose"
     :top="top"

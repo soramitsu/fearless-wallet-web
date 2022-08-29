@@ -64,6 +64,7 @@ export default class NodeItem extends Vue {
 
   &:last-child {
     margin-bottom: 16px;
+    border-bottom: none;
   }
 
   .url {

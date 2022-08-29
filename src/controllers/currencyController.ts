@@ -172,6 +172,13 @@ export default class CurrencyController {
     return this.countTotalTokens(wallet).total.toString();
   }
 
+  public getTotalCountTokensByNetwork(wallet: Wallet, _network: string): string {
+    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
+    const balance = availableInNetworks.find(({ network }) => network === _network)?.balance;
+
+    return balance?.total.toString() ?? '';
+  }
+
   public getTransferableCountTokens(networkProp: string, wallet: Wallet): string {
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
     const balance = availableInNetworks.find(({ network }) => network === networkProp)?.balance;
@@ -224,7 +231,7 @@ export default class CurrencyController {
     return this.calculateCost(new FPNumber(count)).toString();
   }
 
-  public getBalanceInNetwork(_network: string, wallet: Wallet): string {
+  public getBalanceInNetwork(wallet: Wallet, _network: string): string {
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
     const total = availableInNetworks.find(({ network }) => network === _network)?.balance.total ?? FPNumber.ZERO;
 

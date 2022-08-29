@@ -45,7 +45,7 @@ export default class Authorize extends Vue {
     'Only approve this request if you trust the application. Approving gives the application access to the addresses of you accounts';
 
   onClick(event: Event) {
-    console.log(event.target);
+    console.info(event.target);
   }
 }
 </script>

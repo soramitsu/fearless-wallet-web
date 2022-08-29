@@ -126,15 +126,21 @@ export default class CurrencyItem extends Vue {
   }
 
   get countTokensString() {
-    const totalCountTokens = +this.currency.getTotalCountTokens(this.selectedWallet);
+    const totalCountTokens =
+      this.selectedNetwork !== 'All networks'
+        ? +this.currency.getTotalCountTokensByNetwork(this.selectedWallet, this.selectedNetwork)
+        : +this.currency.getTotalCountTokens(this.selectedWallet);
 
     return formattedNumber(totalCountTokens, 4);
   }
 
   get totalBalanceString() {
-    const totalBalance = +this.currency.getTotalBalance(this.selectedWallet);
+    const balance =
+      this.selectedNetwork !== 'All networks'
+        ? +this.currency.getBalanceInNetwork(this.selectedWallet, this.selectedNetwork)
+        : +this.currency.getTotalBalance(this.selectedWallet);
 
-    return `${this.fiatSymbol}${formattedPrice(totalBalance)}`;
+    return `${this.fiatSymbol}${formattedPrice(balance)}`;
   }
 
   get priceString() {
@@ -158,7 +164,9 @@ export default class CurrencyItem extends Vue {
   }
 
   get availableInNetworksPart() {
-    return [...this.availableInNetworks].splice(0, this.isAdditional ? 4 : 5);
+    return this.selectedNetwork !== 'All networks'
+      ? [{ network: this.selectedNetwork }]
+      : [...this.availableInNetworks].splice(0, this.isAdditional ? 4 : 5);
   }
 
   @Watch('currencyVisible')
@@ -186,12 +194,13 @@ export default class CurrencyItem extends Vue {
 
   openTokenPage() {
     const { token, mainNetwork } = this.currency;
+    const network = this.selectedNetwork !== 'All networks' ? this.selectedNetwork : mainNetwork;
 
     this.$router.push({
       name: Components.Token,
       params: {
-        token: token,
-        network: mainNetwork,
+        token,
+        network,
       },
     });
   }

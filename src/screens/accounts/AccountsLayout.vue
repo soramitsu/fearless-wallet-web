@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <ContentForm :height="480">
+  <div class="11">
+    <ContentForm :height="450">
       <div class="accounts-layout">
         <div class="navigation">
           <div class="left-part">

@@ -177,7 +177,6 @@ export default class Network extends Vue {
 .network {
   display: flex;
   flex-direction: column;
-  height: 100%;
   margin-right: 16px;
 
   .row {

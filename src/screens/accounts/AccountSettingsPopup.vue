@@ -60,7 +60,7 @@ export default class AccountSettingsPopup extends Vue {
     if (this.buttonTopClick === undefined) return 110;
 
     if (this.buttonTopClick > 300) {
-      const subtractionNumber = this.showReplaceAccount ? 265 : 225;
+      const subtractionNumber = this.showReplaceAccount ? 221 : 181;
 
       return this.buttonTopClick - subtractionNumber;
     }

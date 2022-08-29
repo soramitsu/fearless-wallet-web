@@ -55,7 +55,6 @@ export default class AboveForm extends Vue {
 
   height: $extension-height;
   width: $extension-width;
-  border-radius: $default-border-radius;
   position: absolute;
   top: 0;
   left: 0;
@@ -64,9 +63,8 @@ export default class AboveForm extends Vue {
   .above-form {
     position: relative;
     top: 80px;
-    border-radius: $default-border-radius;
     width: $extension-width;
-    height: 560px;
+    height: $extension-height - $header-height -32px;
     background-color: #111111;
     clip-path: polygon(100% 0, 100% 100%, 0 100%, 0 4%, 4% 0);
     animation: transform 0.3s forwards;
@@ -81,7 +79,7 @@ export default class AboveForm extends Vue {
     }
 
     .content {
-      height: 496px;
+      height: 456px;
       padding: 16px;
     }
 

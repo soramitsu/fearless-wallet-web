@@ -36,7 +36,7 @@
             />
           </div>
 
-          <div class="row transferrable">
+          <div class="transferrable">
             <div class="transferrable-part">
               <div class="transferrable-label">Transferrable</div>
               <div class="transferrable-descriptions">
@@ -379,6 +379,7 @@ export default class SendForm extends Vue {
   .transferrable {
     display: flex;
     justify-content: space-between;
+    margin-top: 10px;
 
     .transferrable-part {
       width: 235px;

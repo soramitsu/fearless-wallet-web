@@ -1,11 +1,10 @@
 <template>
   <div class="mnemonic-backup-form">
-    <div class="hint-container">
-      <Hint
-        iconName="warning"
-        text="Use a non-digital way to backup. Write it down on paper (or etch it into metal) and make sure not to loose it."
-      />
-    </div>
+    <Hint
+      class="seed-hint"
+      iconName="warning"
+      text="Use a non-digital way to backup. Write it down on paper (or etch it into metal) and make sure not to loose it."
+    />
 
     <MnemonicColumns :mnemonic="mnemonic" />
 
@@ -47,14 +46,12 @@ export default class MnemonicBackupForm extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.mnemonic-backup-form {
-  .hint-container {
-    border-radius: $default-border-radius;
-    width: 480px;
-    height: 48px;
-    padding: 8px 16px;
-    background-color: rgba(255, 255, 255, 0.24);
-    margin: 0 auto 10px;
-  }
+.seed-hint {
+  border-radius: $default-border-radius;
+  width: 480px;
+  height: 48px;
+  padding: 8px 16px;
+  background-color: rgba(255, 255, 255, 0.24);
+  margin: 0 auto;
 }
 </style>

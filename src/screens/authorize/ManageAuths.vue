@@ -9,7 +9,7 @@
   >
     <SearchInput v-model="filterValue" placeholder="Search in networks" class="manage-auths__search" :isBig="true" />
     <Fragment v-for="el in filteredList" v-bind:key="el.id">
-      <AuthItem :request="el" @onRemoveAuth="removeAuth" />
+      <AuthItem :request="el" @onRemoveAuth="removeAuth" @onChange="onChange" />
     </Fragment>
   </AboveForm>
 </template>
@@ -43,6 +43,14 @@ export default class ManageAuths extends Vue {
   @Watch('filterValue')
   filter(value: string) {
     this.filteredData(value);
+  }
+
+  onChange(id: string) {
+    store.dispatch('UPDATE_AUTH_CONNECTION', id);
+  }
+
+  toggleAuth(url: string) {
+    store.dispatch('UPDATE_AUTH_CONNECTION', url);
   }
 
   filteredData(value: string) {

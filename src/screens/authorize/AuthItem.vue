@@ -6,7 +6,7 @@
       </SCol>
       <SCol :span="2">
         <SRow flex justify="space-around">
-          <Switcher :value="request.isAllowed" />
+          <Switcher :value="request.isAllowed" :onChange="$emit('onChange', request.id)" />
 
           <img class="trash" src="@/assets/trash.svg" @click="$emit('onRemoveAuth', request.id)" />
         </SRow>
@@ -20,7 +20,6 @@
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import Switcher from '@/components/Switcher.vue';
 import { AuthUrlInfo } from '@polkadot/extension-base/background/handlers/State';
-import store from '@/store';
 @Component({
   components: {
     Switcher,

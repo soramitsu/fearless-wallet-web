@@ -8,12 +8,14 @@ export enum MutationTypes {
   DELETE_AUTH_REQUEST = 'DELETE_AUTH_REQUEST',
   SET_AUTHLIST = 'SET_AUTHLIST',
   DELETE_AUTHLIST_ITEM = 'DELETE_AUTHLIST_ITEM',
+  TOGGLE_AUTH_STATE = 'TOGGLE_AUTH_STATE',
 }
 export type Mutations = {
   [MutationTypes.SET_AUTH_REQUEST](state: State, props: AuthorizeRequest): void;
   [MutationTypes.DELETE_AUTH_REQUEST](state: State): void;
   [MutationTypes.SET_AUTHLIST](state: State, payload: ResponseAuthorizeList): void;
   [MutationTypes.DELETE_AUTHLIST_ITEM](state: State, payload: string): void;
+  [MutationTypes.TOGGLE_AUTH_STATE](state: State, payload: string): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -24,10 +26,16 @@ const mutations: MutationTree<State> & Mutations = {
     state.requests.shift();
   },
   [MutationTypes.SET_AUTHLIST](state, { list }) {
-    state.authList = list;
+    Object.keys(list).forEach((key) => {
+      if (!state.authList[key]) Vue.set(state.authList, key, list[key]);
+    });
   },
   [MutationTypes.DELETE_AUTHLIST_ITEM](state, id) {
     Vue.delete(state.authList, id);
+  },
+  [MutationTypes.TOGGLE_AUTH_STATE](state, id) {
+    const { isAllowed } = state.authList[id];
+    state.authList[id].isAllowed = !isAllowed;
   },
 };
 

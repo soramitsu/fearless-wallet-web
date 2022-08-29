@@ -21,7 +21,6 @@ export enum ActionTypes {
   REJECT_REQUEST = 'REJECT_AUTH_REQUEST',
   GET_AUTHLIST = 'GET_AUTHLIST',
   DELETE_AUTH_CONNECTION = 'DELETE_AUTH_CONNECTION',
-  UPDATE_AUTH_CONNECTION = 'UPDATE_AUTH_CONNECTION',
 }
 
 type AugmentedActionContext = {
@@ -33,10 +32,6 @@ export type Actions = {
   [ActionTypes.APPROVE_REQUEST](context: AugmentedActionContext, props: AuthorizeRequest): Promise<void>;
   [ActionTypes.REJECT_REQUEST](context: AugmentedActionContext, props: AuthorizeRequest): Promise<void>;
   [ActionTypes.GET_AUTHLIST](context: AugmentedActionContext): Promise<void>;
-  [ActionTypes.UPDATE_AUTH_CONNECTION](
-    context: AugmentedActionContext,
-    payload: AuthorizeRequest['url']
-  ): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
@@ -74,13 +69,6 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.DELETE_AUTH_CONNECTION]({ commit }, id) {
     await removeAuthorization(id);
     commit(MutationTypes.DELETE_AUTHLIST_ITEM, id);
-  },
-  async [ActionTypes.UPDATE_AUTH_CONNECTION](state, id) {
-    const accounts = BaseApi.getPolkadotAddresses();
-    if (state.getters.getAuthList[id].isAllowed) await updateAuthorization(accounts, id);
-    else await updateAuthorization([], id);
-
-    state.commit(MutationTypes.TOGGLE_AUTH_STATE, id);
   },
 };
 

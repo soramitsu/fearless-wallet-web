@@ -2,7 +2,10 @@ import type { MutationTree } from 'vuex';
 import type { State } from './types';
 import { AuthorizeRequest, ResponseAuthorizeList } from '@polkadot/extension-base/background/types';
 import Vue from 'vue';
-
+type TogglePayload = {
+  id: string;
+  value: boolean;
+};
 export enum MutationTypes {
   SET_AUTH_REQUEST = 'SET_AUTH_REQUEST',
   DELETE_AUTH_REQUEST = 'DELETE_AUTH_REQUEST',
@@ -15,7 +18,7 @@ export type Mutations = {
   [MutationTypes.DELETE_AUTH_REQUEST](state: State): void;
   [MutationTypes.SET_AUTHLIST](state: State, payload: ResponseAuthorizeList): void;
   [MutationTypes.DELETE_AUTHLIST_ITEM](state: State, payload: string): void;
-  [MutationTypes.TOGGLE_AUTH_STATE](state: State, payload: string): void;
+  [MutationTypes.TOGGLE_AUTH_STATE](state: State, payload: TogglePayload): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -33,9 +36,8 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.DELETE_AUTHLIST_ITEM](state, id) {
     Vue.delete(state.authList, id);
   },
-  [MutationTypes.TOGGLE_AUTH_STATE](state, id) {
-    const { isAllowed } = state.authList[id];
-    state.authList[id].isAllowed = !isAllowed;
+  [MutationTypes.TOGGLE_AUTH_STATE](state, { id, value }) {
+    state.authList[id].isAllowed = value;
   },
 };
 

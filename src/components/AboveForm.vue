@@ -1,7 +1,7 @@
 <template>
   <div :class="backgroundClasses">
     <div class="above-form">
-      <div class="header-content" :class="!showLogo && !showBackIcon ? 'header-content--centered' : ''">
+      <div class="header-content" :class="isContentCentered">
         <div v-if="showBackIcon" class="icon icon-back" @click="handlerBack">
           <img src="@/assets/chevron-left.svg" />
         </div>
@@ -39,6 +39,9 @@ export default class AboveForm extends Vue {
   @Prop({ default: () => () => null }) saveChanges!: VoidFunction;
   @Prop({ default: () => () => null }) handlerBack!: VoidFunction;
   @Prop(Function) closeHandler!: VoidFunction;
+  get isContentCentered() {
+    return !this.showLogo && !this.showBackIcon ? 'header-content--centered' : '';
+  }
 
   get backgroundClasses() {
     return [

@@ -21,7 +21,6 @@ export default class Corners extends Vue {
   @Prop({ default: true }) topLeftCorner!: boolean;
   @Prop({ default: true }) bottomRightCorner!: boolean;
   @Prop({ default: 'medium' }) size!: Size;
-  @Prop(Boolean) isWarning!: boolean;
 
   get slotContainerClasses() {
     return [
@@ -48,7 +47,6 @@ export default class Corners extends Vue {
     const sizeName = this.size === 'big' ? 'big' : 'medium';
 
     const classes = [`corner-size-${sizeName}`, this.isError ? 'corner-border-error' : 'corner-border'];
-    if (this.isWarning) classes.push('corner-border--warning');
 
     return classes;
   }
@@ -80,9 +78,6 @@ export default class Corners extends Vue {
   .hover:hover ~ .corner-border {
     border-top: 1px solid rgba(255, 255, 255, 0.2);
   }
-}
-.corner-border--warning {
-  border-top: 1px solid rgba(238, 119, 0, 0.27) !important;
 }
 
 .corner-border-error {

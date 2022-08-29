@@ -4,8 +4,8 @@
       <div>
         <p class="authorize__content">
           An application, self-identifying as
-          <span class="authorize__content--name">{{ requests[0].request.origin }}</span> is requesting access from my
-          <span class="authorize__content--link">{{ requests[0].url }}</span>
+          <span class="authorize__content--name">{{ request.origin }}</span> is requesting access from my
+          <span class="authorize__content--link">{{ request.url }}</span>
         </p>
         <Alert :message="alertMessage" />
       </div>
@@ -17,7 +17,7 @@
   </AboveForm>
 </template>
 
-<script setup lang="ts">
+<script lang="ts">
 import { Vue, Component } from 'vue-property-decorator';
 import Button from '@/components/Button.vue';
 import Hint from '@/components/Hint.vue';
@@ -42,15 +42,18 @@ export default class Authorize extends Vue {
   alertMessage =
     'Only approve this request if you trust the application. Approving gives the application access to the addresses of you accounts';
 
-  onApprove() {
+  get request() {
     const [request] = this.requests;
-    store.dispatch(ActionTypes.APPROVE_REQUEST, request);
+    return request;
+  }
+
+  onApprove() {
+    store.dispatch(ActionTypes.APPROVE_REQUEST, this.request);
     this.$router.push({ name: Components.Wallet });
   }
 
   onReject() {
-    const [request] = this.requests;
-    store.dispatch(ActionTypes.REJECT_REQUEST, request);
+    store.dispatch(ActionTypes.REJECT_REQUEST, this.request);
     this.$router.push({ name: Components.Wallet });
   }
 }

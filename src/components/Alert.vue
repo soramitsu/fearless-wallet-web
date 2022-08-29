@@ -1,5 +1,5 @@
 <template>
-  <Corners isWarning size="big">
+  <Corners isError size="big">
     <div class="alert-container">
       <div class="alert__content">
         <Hint class="alert__header" size="big" iconName="warning-orange" text="Attention" />

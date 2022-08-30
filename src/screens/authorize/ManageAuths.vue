@@ -1,12 +1,5 @@
 <template>
-  <AboveForm
-    header="Manage dApp access"
-    :showBackIcon="true"
-    :blur="true"
-    :handlerBack="back"
-    :showCloseIcon="false"
-    :closeHandler="back"
-  >
+  <AboveForm header="Manage dApp access" :showBackIcon="true" :blur="true" :closeHandler="back">
     <SearchInput v-model="filterValue" placeholder="Search in networks" class="manage-auths__search" :isBig="true" />
     <Fragment v-for="el in filteredList" v-bind:key="el.id">
       <AuthItem :request="el" @onRemoveAuth="removeAuth" @onChange="onChange" />

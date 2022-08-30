@@ -1,11 +1,11 @@
 <template>
   <div :class="backgroundClasses">
     <div class="above-form">
-      <div class="header-content" :class="isContentCentered">
-        <div v-if="showBackIcon" class="icon icon-back" @click="handlerBack">
+      <div class="header-content">
+        <div v-if="showBackIcon" class="icon icon-back">
           <img src="@/assets/chevron-left.svg" />
         </div>
-        <div v-else-if="showLogo" class="icon">
+        <div v-else class="icon">
           <img src="@/assets/fw-logo.svg" />
         </div>
         <div class="header">{{ header }}</div>
@@ -33,16 +33,10 @@ export default class AboveForm extends Vue {
   @Prop({ default: '' }) header!: string;
   @Prop({ default: false }) showAcceptIcon!: boolean;
   @Prop({ default: false }) showBackIcon!: boolean;
-  @Prop({ default: false }) showLogo!: boolean;
-  @Prop({ default: true }) showCloseIcon!: boolean;
   @Prop({ default: false }) blur!: boolean;
   @Prop({ default: () => () => null }) saveChanges!: VoidFunction;
   @Prop({ default: () => () => null }) handlerBack!: VoidFunction;
   @Prop(Function) closeHandler!: VoidFunction;
-
-  get isContentCentered() {
-    return !this.showLogo && !this.showBackIcon ? 'header-content--centered' : '';
-  }
 
   get backgroundClasses() {
     return [
@@ -122,9 +116,7 @@ export default class AboveForm extends Vue {
       padding: 16px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
-    .header-content--centered {
-      justify-content: center;
-    }
+
     .icon {
       margin-left: 5px;
       display: flex;

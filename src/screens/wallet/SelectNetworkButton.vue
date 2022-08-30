@@ -11,9 +11,9 @@
 </template>
 
 <script lang="ts">
+import { Component, Vue, Prop } from 'vue-property-decorator';
 import Rotate from '@/components/Rotate.vue';
 import Corners from '@/components/Corners.vue';
-import { Component, Vue, Prop } from 'vue-property-decorator';
 import { firstCharToUp } from '@/util/helpers';
 
 @Component({

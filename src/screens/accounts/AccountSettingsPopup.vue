@@ -40,14 +40,14 @@
 </template>
 
 <script lang="ts">
+import { Getter } from 'vuex-class';
+import { Component, Vue, Prop } from 'vue-property-decorator';
+import type { SelectedWallet } from '@/store/accounts/types';
 import Popup from '@/components/Popup.vue';
 import BaseApi from '@/util/BaseApi';
-import { Getter } from 'vuex-class';
 import { Components } from '@/router/routes';
 import { firstCharToUp } from '@/util/helpers';
-import { Component, Vue, Prop } from 'vue-property-decorator';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import type { SelectedWallet } from '@/store/accounts/types';
 
 @Component({
   components: { Popup },

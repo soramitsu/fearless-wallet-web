@@ -61,18 +61,18 @@
 </template>
 
 <script lang="ts">
+import { Vue, Component, Watch } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import NodeItem from './NodeItem.vue';
+import type { SelectedWallet } from '@/store/accounts/types';
+import type { Networks, Node } from '@/store/networks/types';
 import NetworksController from '@/controllers/networksController';
 import BaseApi from '@/util/BaseApi';
 import Switcher from '@/components/Switcher.vue';
-import NodeItem from './NodeItem.vue';
 import { accountController } from '@/controllers/accountController';
-import { Vue, Component, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import type { SelectedWallet } from '@/store/accounts/types';
-import type { Networks, Node } from '@/store/networks/types';
 
 @Component({
   components: {

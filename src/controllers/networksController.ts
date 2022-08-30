@@ -1,8 +1,8 @@
+import type { Networks } from '@/store/networks/types';
+import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import type { Networks } from '@/store/networks/types';
-import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
 export default class NetworksController {
   static getNetworks(): Networks {

@@ -68,6 +68,7 @@ export default class Button extends Vue {
         },
       ];
     }
+
     if (this.type === 'link') {
       return [
         `button-font-size-${this.fontSize}`,

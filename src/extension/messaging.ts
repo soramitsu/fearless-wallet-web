@@ -1,6 +1,11 @@
 // Copyright 2019-2022 @polkadot/extension-ui authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { PORT_EXTENSION } from '@polkadot/extension-base/defaults';
+import { getId } from '@polkadot/extension-base/utils/getId';
+import { metadataExpand } from '@polkadot/extension-chains';
+import { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
+import { selectableNetworks } from '@polkadot/networks';
 import type {
   AccountJson,
   AllowedPath,
@@ -26,12 +31,6 @@ import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-
-import { PORT_EXTENSION } from '@polkadot/extension-base/defaults';
-import { getId } from '@polkadot/extension-base/utils/getId';
-import { metadataExpand } from '@polkadot/extension-chains';
-import { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
-import { selectableNetworks } from '@polkadot/networks';
 
 const metadataGets = new Map<string, Promise<MetadataDef | null>>();
 

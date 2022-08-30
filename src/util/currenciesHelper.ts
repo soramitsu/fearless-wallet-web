@@ -1,7 +1,7 @@
-import CurrencyController from '@/controllers/currencyController';
 import type { Currencies, Currency } from '@/interfaces/currencies';
 import type { Networks, TokenPriceJson } from '@/store/networks/types';
 import type { Wallet } from '@/store/accounts/types';
+import CurrencyController from '@/controllers/currencyController';
 
 export function getMockCurrencies(networks: Networks): Currencies {
   const currencies: Currencies = networks

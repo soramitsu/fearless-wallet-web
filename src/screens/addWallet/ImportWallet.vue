@@ -40,10 +40,10 @@
 </template>
 
 <script lang="ts">
-import Input from '@/components/Input.vue';
-import Select from '@/components/Select.vue';
 import { Component, Vue, Prop, Watch, VModel, PropSync } from 'vue-property-decorator';
 import type { DerivationPath, ImportType } from '@/interfaces/common';
+import Input from '@/components/Input.vue';
+import Select from '@/components/Select.vue';
 
 @Component({
   components: {

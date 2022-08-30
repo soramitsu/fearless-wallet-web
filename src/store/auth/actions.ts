@@ -1,6 +1,7 @@
+import { AccountJson, AuthorizeRequest } from '@polkadot/extension-base/background/types';
+import { Mutations, MutationTypes } from './mutations';
 import type { ActionTree, ActionContext } from 'vuex';
 import type { State } from './types';
-import { Mutations, MutationTypes } from './mutations';
 import {
   subscribeAuthorizeRequests,
   approveAuthRequest,
@@ -9,7 +10,6 @@ import {
   removeAuthorization,
   updateAuthorization,
 } from '@/extension/messaging';
-import { AccountJson, AuthorizeRequest } from '@polkadot/extension-base/background/types';
 import router from '@/router';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
@@ -38,6 +38,7 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.SUBSCRIBE_TO_DAPP_EVENTS]({ commit }) {
     const callback = (requests: AuthorizeRequest[]) => {
       const [request] = requests;
+
       if (request) {
         commit(MutationTypes.SET_AUTH_REQUEST, request);
 
@@ -46,6 +47,7 @@ const actions: ActionTree<State, State> & Actions = {
         });
       }
     };
+
     subscribeAuthorizeRequests(callback);
   },
 

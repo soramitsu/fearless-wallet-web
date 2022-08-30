@@ -73,19 +73,19 @@
 </template>
 
 <script lang="ts">
-import ContentForm from '@/components/ContentForm.vue';
-import Input from '@/components/Input.vue';
+import { Vue, Component } from 'vue-property-decorator';
 import ExportForm from './ExportForm.vue';
-import CircleButton from '@/components/CircleButton.vue';
-import Scroll from '@/components/Scroll.vue';
 import EditNodeForm from './EditNodeForm.vue';
 import NodeSettingsPopup from './NodeSettingsPopup.vue';
-import NotificationPopup from '@/components/NotificationPopup.vue';
 import ReplacePopup from './ReplacePopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
 import Network from './Network.vue';
+import ContentForm from '@/components/ContentForm.vue';
+import Input from '@/components/Input.vue';
+import CircleButton from '@/components/CircleButton.vue';
+import Scroll from '@/components/Scroll.vue';
+import NotificationPopup from '@/components/NotificationPopup.vue';
 import { accountController } from '@/controllers/accountController';
-import { Vue, Component } from 'vue-property-decorator';
 import { Components } from '@/router/routes';
 
 type NotificationType = 'delete' | 'export' | '';

@@ -15,11 +15,11 @@
 </template>
 
 <script lang="ts">
+import { Vue, Component, Prop } from 'vue-property-decorator';
 import AboveForm from '@/components/AboveForm.vue';
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
 import { accountController } from '@/controllers/accountController';
-import { Vue, Component, Prop } from 'vue-property-decorator';
 import { firstCharToUp } from '@/util/helpers';
 
 @Component({

@@ -18,8 +18,8 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import TransactionContent from '@/layouts/TransactionContent.vue';
 import QRCode from 'qrcode';
+import TransactionContent from '@/layouts/TransactionContent.vue';
 import Button from '@/components/Button.vue';
 
 @Component({

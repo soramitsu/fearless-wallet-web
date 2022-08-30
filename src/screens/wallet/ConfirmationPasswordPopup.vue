@@ -47,16 +47,16 @@
 </template>
 
 <script lang="ts">
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import type { Currencies, Currency } from '@/interfaces/currencies';
 import Loading from '@/components/Loading.vue';
 import Popup from '@/components/Popup.vue';
 import Button from '@/components/Button.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import BaseApi from '@/util/BaseApi';
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import type { Currencies, Currency } from '@/interfaces/currencies';
 
 @Component({
   components: {

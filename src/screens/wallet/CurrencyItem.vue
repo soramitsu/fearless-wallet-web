@@ -73,16 +73,16 @@
 </template>
 
 <script lang="ts">
-import CircleButton from '@/components/CircleButton.vue';
-import Switcher from '@/components/Switcher.vue';
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import type { Currency } from '@/interfaces/currencies';
+import type { SelectedWallet } from '@/store/accounts/types';
+import CircleButton from '@/components/CircleButton.vue';
+import Switcher from '@/components/Switcher.vue';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/util/numbers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import type { Currency } from '@/interfaces/currencies';
-import type { SelectedWallet } from '@/store/accounts/types';
 
 @Component({
   components: {

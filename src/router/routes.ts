@@ -1,7 +1,8 @@
+import keyring from '@polkadot/ui-keyring';
+import { RouteConfig } from 'vue-router';
 import Dex from '@/screens/dex/Dex.vue';
 import Export from '@/screens/accounts/Export.vue';
 import History from '@/screens/history/History.vue';
-import keyring from '@polkadot/ui-keyring';
 import Network from '@/screens/accounts/Network.vue';
 import Staking from '@/screens/staking/Staking.vue';
 import Token from '@/screens/wallet/token/Token.vue';
@@ -10,7 +11,6 @@ import Welcome from '@/screens/welcome/Welcome.vue';
 import AddWallet from '@/screens/addWallet/AddWallet.vue';
 import ManageAuths from '@/screens/authorize/ManageAuths.vue';
 
-import { RouteConfig } from 'vue-router';
 import store from '@/store';
 const Accounts = () => import('@/screens/accounts/Accounts.vue');
 const AccountsLayout = () => import('@/screens/accounts/AccountsLayout.vue');

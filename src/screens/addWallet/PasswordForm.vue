@@ -27,9 +27,9 @@
 </template>
 
 <script lang="ts">
+import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
 import Hint from '@/components/Hint.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
-import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
 
 @Component({
   components: { Hint, ValidatedInput },

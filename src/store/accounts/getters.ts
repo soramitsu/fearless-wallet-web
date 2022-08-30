@@ -1,9 +1,9 @@
-import store from '@/store';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import type { GetterTree } from 'vuex';
 import type { SelectedWallet } from './types';
 import type { State } from './state';
 import type { FiatJson } from '../networks/types';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import store from '@/store';
 
 export enum GettersTypes {
   getSelectedWallet = 'getSelectedWallet',

@@ -21,8 +21,8 @@ import { ActionTypes as AuthActionTypes } from './store/auth/actions';
 export default class App extends Vue {
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
-
   @Action(AuthActionTypes.SUBSCRIBE_TO_DAPP_EVENTS) subscribeToDAppEvents!: () => Promise<void>;
+
   get style() {
     return { 'background-image': 'url(./img/background.9b667fcd.png)' };
   }

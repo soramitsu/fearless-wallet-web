@@ -2,7 +2,7 @@
   <div :class="backgroundClasses">
     <div class="above-form">
       <div class="header-content">
-        <div v-if="showBackIcon" class="icon icon-back" @click="handlerBack">
+        <div v-if="showBackIcon" class="icon icon-back">
           <img src="@/assets/chevron-left.svg" />
         </div>
         <div v-else class="icon">
@@ -10,7 +10,7 @@
         </div>
         <div class="header">{{ header }}</div>
         <div class="activity-block">
-          <div class="icon" @click="closeHandler">
+          <div v-if="showCloseIcon" class="icon" @click="closeHandler">
             <s-icon name="basic-close-24" />
           </div>
           <div v-show="showAcceptIcon" class="icon" @click="saveChanges">

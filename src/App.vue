@@ -9,17 +9,19 @@
 import keyring from '@polkadot/ui-keyring';
 import NetworksController from '@/controllers/networksController';
 import { Component, Vue } from 'vue-property-decorator';
-import { Mutation } from 'vuex-class';
+import { Mutation, Action } from 'vuex-class';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import type { SetSelectedWalletProps } from '@/store/accounts/types';
 import type { TMutation } from '@/interfaces/common';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import { ActionTypes as AuthActionTypes } from './store/auth/actions';
 
 @Component
 export default class App extends Vue {
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
+  @Action(AuthActionTypes.SUBSCRIBE_TO_DAPP_EVENTS) subscribeToDAppEvents!: () => Promise<void>;
 
   get style() {
     return { 'background-image': 'url(./img/background.9b667fcd.png)' };
@@ -28,7 +30,7 @@ export default class App extends Vue {
   async mounted() {
     const { loadNetworks, loadAssets, loadFiats, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
 
-    await Promise.all([loadNetworks(), loadAssets(), loadFiats()]);
+    await Promise.all([this.subscribeToDAppEvents(), loadNetworks(), loadAssets(), loadFiats()]);
     await loadTokensPrice();
 
     let loadHistory = true;

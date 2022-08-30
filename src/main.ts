@@ -7,7 +7,8 @@ import { cryptoWaitReady } from '@polkadot/util-crypto';
 import './styles';
 import './plugins';
 import AccountsStore from './storeChrome/Accounts';
-
+import { Plugin } from 'vue-fragment';
+Vue.use(Plugin);
 // import AccountsStore from './storeChrome/Accounts';
 
 Vue.config.productionTip = false;

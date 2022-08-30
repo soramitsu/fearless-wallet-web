@@ -3,11 +3,11 @@ import getters from './getters';
 import state from './state';
 import actions from './actions';
 
-const account = {
+const auth = {
   state,
   mutations,
   getters,
   actions,
 };
 
-export default account;
+export default auth;

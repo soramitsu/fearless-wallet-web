@@ -39,6 +39,7 @@ export default class AboveForm extends Vue {
   @Prop({ default: () => () => null }) saveChanges!: VoidFunction;
   @Prop({ default: () => () => null }) handlerBack!: VoidFunction;
   @Prop(Function) closeHandler!: VoidFunction;
+
   get isContentCentered() {
     return !this.showLogo && !this.showBackIcon ? 'header-content--centered' : '';
   }

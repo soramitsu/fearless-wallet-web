@@ -35,9 +35,10 @@ export enum Components {
   ManageAuths = 'ManageAuths',
   Authorize = 'Authorize',
 }
-const haveAccounts = () => keyring.getAccounts().length > 0;
 
+const haveAccounts = () => keyring.getAccounts().length > 0;
 const haveRequests = () => store.getters.getAuthList.length;
+
 const routes: Array<RouteConfig> = [
   {
     path: '/welcome',
@@ -136,13 +137,7 @@ const routes: Array<RouteConfig> = [
       else next();
     },
     redirect: () => {
-      return haveAccounts()
-        ? {
-            name: Components.Wallet,
-          }
-        : {
-            name: Components.Welcome,
-          };
+      return { name: haveAccounts() ? Components.Wallet : Components.Welcome };
     },
   },
 ];

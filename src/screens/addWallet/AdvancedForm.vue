@@ -43,12 +43,12 @@
 </template>
 
 <script lang="ts">
-import AboveForm from '@/components/AboveForm.vue';
-import Input from '@/components/Input.vue';
-import Select from '@/components/Select.vue';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { DerivationPath } from '@/interfaces/common';
 import type { KeypairType } from '@polkadot/util-crypto/types';
+import AboveForm from '@/components/AboveForm.vue';
+import Input from '@/components/Input.vue';
+import Select from '@/components/Select.vue';
 
 @Component({
   components: {

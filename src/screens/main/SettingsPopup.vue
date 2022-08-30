@@ -20,8 +20,8 @@
 </template>
 
 <script lang="ts">
-import Popup from '@/components/Popup.vue';
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import Popup from '@/components/Popup.vue';
 import { Components } from '@/router/routes';
 import SettingMenuItem from '@/layouts/SettingMenuItem.vue';
 type SettingsItemType = 'Accounts';

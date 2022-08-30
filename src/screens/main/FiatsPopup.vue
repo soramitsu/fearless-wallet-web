@@ -21,14 +21,14 @@
 </template>
 
 <script lang="ts">
-import SelectPopup from '@/components/SelectPopup.vue';
 import { Getter, Action } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import type { FiatJson } from '@/store/networks/types';
+import type { SetSelectedFiat } from '@/store/accounts/types';
+import SelectPopup from '@/components/SelectPopup.vue';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import type { FiatJson } from '@/store/networks/types';
-import type { SetSelectedFiat } from '@/store/accounts/types';
 
 @Component({
   components: { SelectPopup },

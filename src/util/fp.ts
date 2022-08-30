@@ -85,6 +85,7 @@ export class FPNumber {
     if (!numbers || !numbers.length) {
       return null;
     }
+
     const precision = numbers[0].precision;
     const filtered = numbers.map((item) => equalizedBN(item, precision));
     return new FPNumber(BigNumber.min(...filtered), precision);
@@ -208,13 +209,16 @@ export class FPNumber {
         if (typeof data === 'number') {
           return (data * 10 ** precision).toFixed();
         }
+
         if (typeof data === 'string') {
           if (!checkFinityString(data)) {
             return data;
           }
+
           const withoutFormatting = data.replace(/[, ]/g, '');
           const [integer, fractional] = withoutFormatting.split('.');
           let fractionalPart = '';
+
           if (fractional) {
             fractionalPart =
               fractional.length > precision
@@ -225,15 +229,19 @@ export class FPNumber {
           } else {
             fractionalPart = `${Array(precision).fill(0).join('')}`;
           }
+
           return `${integer}${fractionalPart}`;
         }
+
         if ('toString' in (data as any)) {
           const json = data.toJSON() as any;
           // `BalanceInfo` or `Balance` check
           return json && !isNil(json.balance) ? `${json.balance}`.replace(/[, ]/g, '') : data.toString();
         }
+
         return 0;
       };
+
       this.value = new BigNumber(formatted()).dp(0, FPNumber.DEFAULT_ROUND_MODE);
     }
   }
@@ -247,19 +255,24 @@ export class FPNumber {
 
   public format(dp = FPNumber.DEFAULT_DECIMAL_PLACES, format?: BigNumber.Format): string {
     const value = this.value.div(10 ** this.precision);
+
     if (value.isZero()) {
       return value.toFormat(format ?? {});
     }
+
     let formatted = value.dp(dp, FPNumber.DEFAULT_ROUND_MODE);
+
     if (formatted.isZero()) {
       // First significant character
       formatted = new BigNumber(value.toFormat().replace(/(0\.0*[1-9])([0-9]*)/, '$1'));
     }
+
     return formatted.toFormat(format ?? {});
   }
 
   public toLocaleString(): string {
-    let [integer, decimal] = this.format().split('.');
+    let [integer] = this.format().split('.');
+    const [, decimal] = this.format().split('.');
 
     if (integer.length > 3) {
       const integerReversed = integer.split('').reverse();
@@ -267,13 +280,16 @@ export class FPNumber {
       integer = integerReversed
         .reduce((prev, current, index) => {
           prev += current;
+
           if (++index % 3 === 0 && index !== integerReversed.length) {
             // Avoid thousands' delimiter for negative numbers
             if (index === lastIndex && integerReversed[lastIndex] === '-') {
               return prev;
             }
+
             prev += FPNumber.DELIMITERS_CONFIG.thousand;
           }
+
           return prev;
         })
         .split('')
@@ -310,6 +326,7 @@ export class FPNumber {
     if (!this.isFinity()) {
       return '0';
     }
+
     return this.value.dp(dp, FPNumber.DEFAULT_ROUND_MODE).toFixed();
   }
 
@@ -322,6 +339,7 @@ export class FPNumber {
     if (!this.isFinity()) {
       return 0;
     }
+
     return this.value.dp(dp, FPNumber.DEFAULT_ROUND_MODE).toNumber();
   }
 

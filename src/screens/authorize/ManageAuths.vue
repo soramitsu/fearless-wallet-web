@@ -9,15 +9,15 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import Switcher from '@/components/Switcher.vue';
 import { Fragment } from 'vue-fragment';
+import { Getter } from 'vuex-class';
+import type { AuthUrlInfo } from '@polkadot/extension-base/background/handlers/State';
+import Switcher from '@/components/Switcher.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import AuthItem from '@/screens/authorize/AuthItem.vue';
 import { Components } from '@/router/routes';
 import store from '@/store';
-import type { AuthUrlInfo } from '@polkadot/extension-base/background/handlers/State';
-import { Getter } from 'vuex-class';
 
 @Component({
   components: {

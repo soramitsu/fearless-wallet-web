@@ -75,9 +75,8 @@
 </template>
 
 <script lang="ts">
-import Scroll from '@/components/Scroll.vue';
-import ContentForm from '@/components/ContentForm.vue';
-import SelectPopup from '@/components/SelectPopup.vue';
+import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Getter, Mutation } from 'vuex-class';
 import SelectNetworkButton from './SelectNetworkButton.vue';
 import ReceiveForm from './ReceiveForm.vue';
 import SendForm from './SendForm.vue';
@@ -85,9 +84,12 @@ import ContentSettings from './ContentSettings.vue';
 import Currencies from './Currencies.vue';
 import TotalBalance from './TotalBalance.vue';
 import NFTs from './NFTs.vue';
+import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
+import type { TMutation, TabWallet } from '@/interfaces/common';
+import Scroll from '@/components/Scroll.vue';
+import ContentForm from '@/components/ContentForm.vue';
+import SelectPopup from '@/components/SelectPopup.vue';
 import { accountController } from '@/controllers/accountController';
-import { Component, Vue, Watch } from 'vue-property-decorator';
-import { Getter, Mutation } from 'vuex-class';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
@@ -97,8 +99,6 @@ import { getImgPathByNetworkName } from '@/util/imgPath';
 import { defaultSortingCurrencies } from '@/util/currenciesHelper';
 import { firstCharToUp } from '@/util/helpers';
 import { addNumbers } from '@/util/numbers';
-import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
-import type { TMutation, TabWallet } from '@/interfaces/common';
 
 @Component({
   components: {

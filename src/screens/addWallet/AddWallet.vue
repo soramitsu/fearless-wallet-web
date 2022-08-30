@@ -110,11 +110,8 @@
 </template>
 
 <script lang="ts">
-import BaseApi from '@/util/BaseApi';
-import NotificationPopup from '@/components/NotificationPopup.vue';
-import CircleButton from '@/components/CircleButton.vue';
-import Input from '@/components/Input.vue';
-import Button from '@/components/Button.vue';
+import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
 import CreateWallet from './CreateWallet.vue';
 import FinishForm from './FinishForm.vue';
 import PasswordForm from './PasswordForm.vue';
@@ -123,16 +120,19 @@ import NicknameForm from './NicknameForm.vue';
 import AdvancedForm from './AdvancedForm.vue';
 import AdvancedButton from './AdvancedButton.vue';
 import AddEthereumAccountPopup from './AddEthereumAccountPopup.vue';
-import { Component, Vue, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+import type { DerivationPath, ImportType, ValidateJsonResult } from '@/interfaces/common';
+import type { KeyringPair$Json } from '@polkadot/keyring/types';
+import type { SelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import BaseApi from '@/util/BaseApi';
+import NotificationPopup from '@/components/NotificationPopup.vue';
+import CircleButton from '@/components/CircleButton.vue';
+import Input from '@/components/Input.vue';
+import Button from '@/components/Button.vue';
 import { Components } from '@/router/routes';
 import { INVALID_MESSAGES, InvalidValueName } from '@/consts/invalidMessages';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/ethereumNetworks';
 import { INITIAL_DERIVATION_PATH } from '@/consts/derivationPath';
-import type { DerivationPath, ImportType, ValidateJsonResult } from '@/interfaces/common';
-import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import type { SelectedWallet } from '@/store/accounts/types';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
 

@@ -9,7 +9,7 @@
     "build-watch:extension": "env VUE_CLI_SERVICE_CONFIG_PATH=vue.config.extension.js vue-cli-service  --env.NODE_ENV=development build-watch --mode development",
     "test:unit": "vue-cli-service test:unit",
     "test:e2e": "vue-cli-service test:e2e",
-    "lint": "vue-cli-service lint",
+    "lint": "vue-cli-service lint --fix",
     "electron:build": "env VUE_CLI_SERVICE_CONFIG_PATH=vue.config.desktop.js vue-cli-service electron:build",
     "electron:serve": "env VUE_CLI_SERVICE_CONFIG_PATH=vue.config.desktop.js vue-cli-service electron:serve",
     "postinstall": "electron-builder install-app-deps",
@@ -46,6 +46,7 @@
     "vuex-class": "^0.3.2"
   },
   "devDependencies": {
+    "@rushstack/eslint-patch": "^1.1.4",
     "@types/chrome": "^0.0.179",
     "@types/electron-devtools-installer": "^2.2.0",
     "@types/jest": "^26.0.19",
@@ -62,7 +63,7 @@
     "@vue/cli-plugin-unit-jest": "~5.0.8",
     "@vue/cli-plugin-vuex": "~5.0.8",
     "@vue/cli-service": "~5.0.8",
-    "@vue/eslint-config-prettier": "^6.0.0",
+    "@vue/eslint-config-prettier": "^7.0.0",
     "@vue/eslint-config-standard": "^6.1.0",
     "@vue/eslint-config-typescript": "^8.0.0",
     "@vue/test-utils": "^1.2.2",

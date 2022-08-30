@@ -23,9 +23,9 @@
 </template>
 
 <script lang="ts">
+import { Component, Vue, Prop } from 'vue-property-decorator';
 import Button from '@/components/Button.vue';
 import AboveForm from '@/components/AboveForm.vue';
-import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component({
   components: {

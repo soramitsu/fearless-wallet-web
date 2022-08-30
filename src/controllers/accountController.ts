@@ -1,5 +1,5 @@
-import LocalStorageController from '@/controllers/localStorageController';
 import type { Node } from '@/store/networks/types';
+import LocalStorageController from '@/controllers/localStorageController';
 
 class AccountController {
   private readonly lsAccount = new LocalStorageController('account');

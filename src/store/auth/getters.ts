@@ -1,7 +1,7 @@
 import { AuthUrlInfo } from '@polkadot/extension-base/background/handlers/State';
 import { AuthorizeRequest } from '@polkadot/extension-base/background/types';
-import type { GetterTree } from 'vuex';
 import { State } from './types';
+import type { GetterTree } from 'vuex';
 
 export enum GettersTypes {
   getRequest = 'getRequest',

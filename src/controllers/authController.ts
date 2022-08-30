@@ -1,16 +1,16 @@
 import {
+  AccountJson,
+  AuthorizeRequest,
+  MetadataRequest,
+  SigningRequest,
+} from '@polkadot/extension-base/background/types';
+import {
   getAuthList,
   subscribeAccounts,
   subscribeAuthorizeRequests,
   subscribeMetadataRequests,
   subscribeSigningRequests,
 } from '@/extension/messaging';
-import {
-  AccountJson,
-  AuthorizeRequest,
-  MetadataRequest,
-  SigningRequest,
-} from '@polkadot/extension-base/background/types';
 export default class AuthController {
   static async subscribeToAuths(setAuths: (accounts: AuthorizeRequest[]) => void) {
     await subscribeAuthorizeRequests(setAuths);

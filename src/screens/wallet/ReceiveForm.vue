@@ -17,13 +17,13 @@
 </template>
 
 <script lang="ts">
-import BaseApi from '@/util/BaseApi';
-import ActivityForm from './ActivityForm.vue';
 import QrCode from 'qrcode.vue';
-import Select from '@/components/Select.vue';
-import Button from '@/components/Button.vue';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import ActivityForm from './ActivityForm.vue';
+import BaseApi from '@/util/BaseApi';
+import Select from '@/components/Select.vue';
+import Button from '@/components/Button.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store/accounts/types';

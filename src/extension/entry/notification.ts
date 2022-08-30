@@ -1,9 +1,9 @@
-import App from '@/App.vue';
 import keyring from '@polkadot/ui-keyring';
-import router from '@/router';
-import store from '@/store';
 import Vue from 'vue';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
+import App from '@/App.vue';
+import router from '@/router';
+import store from '@/store';
 import '@/styles';
 import '@/plugins';
 

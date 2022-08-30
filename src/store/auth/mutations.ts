@@ -1,7 +1,7 @@
-import type { MutationTree } from 'vuex';
-import type { State } from './types';
 import { AuthorizeRequest, ResponseAuthorizeList } from '@polkadot/extension-base/background/types';
 import Vue from 'vue';
+import type { MutationTree } from 'vuex';
+import type { State } from './types';
 type TogglePayload = {
   id: string;
   value: boolean;

@@ -18,8 +18,8 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import Switcher from '@/components/Switcher.vue';
 import { AuthUrlInfo } from '@polkadot/extension-base/background/handlers/State';
+import Switcher from '@/components/Switcher.vue';
 import store from '@/store';
 
 @Component({

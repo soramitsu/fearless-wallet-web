@@ -105,23 +105,23 @@
 </template>
 
 <script lang="ts">
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import ActivityForm from './ActivityForm.vue';
+import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
+import MaxButton from './MaxButton.vue';
+import type { Currencies } from '@/interfaces/currencies';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
 import FloatInput from '@/components/FloatInput.vue';
 import Select from '@/components/Select.vue';
 import Corners from '@/components/Corners.vue';
-import ActivityForm from './ActivityForm.vue';
-import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
-import MaxButton from './MaxButton.vue';
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import { GettersTypes as ApiGettersTypes, GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Networks } from '@/store/networks/types';
 import { firstCharToUp } from '@/util/helpers';
 import { formattedNumber, formattedPrice, addNumbers } from '@/util/numbers';
-import type { Currencies } from '@/interfaces/currencies';
 
 @Component({
   components: {

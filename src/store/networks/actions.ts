@@ -1,14 +1,5 @@
 import axios from 'axios';
-import BaseApi from '@/util/BaseApi';
-import settingsNetworks from '@/networks';
-import { accountController } from '@/controllers/accountController';
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
-import { formatBalance } from '@/util/balances';
-import { getHistory } from '@/subquery/history';
-import { getReplacedMetaTyped } from '@/util/helpers';
-import { getMockCurrencies } from '@/util/currenciesHelper';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { MutationTypes } from './mutations';
 import type { Mutations } from './mutations';
 import type { Settings } from '@/networks';
@@ -30,6 +21,15 @@ import type {
   Accounts,
 } from './types';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
+import BaseApi from '@/util/BaseApi';
+import settingsNetworks from '@/networks';
+import { accountController } from '@/controllers/accountController';
+import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
+import { formatBalance } from '@/util/balances';
+import { getHistory } from '@/subquery/history';
+import { getReplacedMetaTyped } from '@/util/helpers';
+import { getMockCurrencies } from '@/util/currenciesHelper';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 export enum ActionTypes {
   LOAD_NETWORKS = 'LOAD_NETWORKS',

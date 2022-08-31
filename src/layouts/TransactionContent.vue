@@ -20,7 +20,7 @@ export default {};
 <style lang="scss" scoped>
 .container {
   display: grid;
-  grid-template-rows: 50px 1fr 110px;
+  grid-template-rows: 50px 370px 100px;
   align-items: end;
   gap: 24px;
   height: 100%;

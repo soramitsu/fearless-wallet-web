@@ -17,6 +17,8 @@ const AccountsLayout = () => import('@/screens/accounts/AccountsLayout.vue');
 const Main = () => import('@/screens/main/Main.vue');
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Authorize = () => import('@/screens/authorize/Authorize.vue');
+const Transaction = () => import('@/screens/signing/Transaction.vue');
+const SignRequest = () => import('@/screens/signing/SignRequest.vue');
 
 export enum Components {
   Welcome = 'Welcome',
@@ -34,10 +36,13 @@ export enum Components {
   Export = 'Export',
   ManageAuths = 'ManageAuths',
   Authorize = 'Authorize',
+  Transaction = 'Transaction',
+  SignRequest = 'SignRequest',
 }
 
 const haveAccounts = () => keyring.getAccounts().length > 0;
-const haveRequests = () => store.getters.getAuthList.length;
+const haveAuthRequests = () => store.getters.getAuthList.length;
+const haveSignRequests = () => store.getters.getAuthList.length;
 
 const routes: Array<RouteConfig> = [
   {
@@ -54,6 +59,16 @@ const routes: Array<RouteConfig> = [
     path: 'authorize',
     name: Components.Authorize,
     component: Authorize,
+  },
+  {
+    path: 'signing',
+    name: Components.SignRequest,
+    component: SignRequest,
+  },
+  {
+    path: 'transaction',
+    name: Components.Transaction,
+    component: Transaction,
   },
   {
     path: '/main',
@@ -133,7 +148,8 @@ const routes: Array<RouteConfig> = [
   {
     path: '/*',
     beforeEnter: (to, from, next) => {
-      if (haveRequests()) next({ name: Components.Authorize });
+      if (haveAuthRequests()) next({ name: Components.Authorize });
+      if (haveSignRequests()) next({ name: Components.SignRequest });
       else next();
     },
     redirect: () => {

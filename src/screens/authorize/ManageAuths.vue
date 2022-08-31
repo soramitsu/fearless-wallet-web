@@ -17,7 +17,6 @@ import AboveForm from '@/components/AboveForm.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import AuthItem from '@/screens/authorize/AuthItem.vue';
 import { Components } from '@/router/routes';
-import store from '@/store';
 
 @Component({
   components: {
@@ -39,7 +38,7 @@ export default class ManageAuths extends Vue {
   }
 
   onChange(id: string) {
-    store.dispatch('UPDATE_AUTH_CONNECTION', id);
+    this.$store.dispatch('UPDATE_AUTH_CONNECTION', id);
   }
 
   filteredData(value: string) {
@@ -51,11 +50,11 @@ export default class ManageAuths extends Vue {
   }
 
   async removeAuth(id: string) {
-    await store.dispatch('DELETE_AUTH_CONNECTION', id);
+    await this.$store.dispatch('DELETE_AUTH_CONNECTION', id);
   }
 
   async beforeCreate() {
-    await store.dispatch('GET_AUTHLIST');
+    await this.$store.dispatch('GET_AUTHLIST');
     this.filteredList = this.authlist;
   }
 

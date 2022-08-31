@@ -2,16 +2,18 @@
   <TransactionContent>
     <template slot="content">
       <div class="qr-container">
-        <Corners class="qr-wrapper" size="big">
-          <span class="qr-header">Fearless connect mobile QR code</span>
-          <img class="qr-code" :src="qr" v-if="qr" />
+        <Corners size="big">
+          <div class="qr-wrapper">
+            <span class="qr-header">Fearless connect mobile QR code</span>
+            <img class="qr-code" :src="qr" v-if="qr" />
+          </div>
         </Corners>
         <div class="choice">OR</div>
       </div>
     </template>
     <template slot="control">
-      <Button size="big" class="button" text="Continue with Exension" />
-      <Button size="mini" type="link" text="Cancel" />
+      <Button size="big" class="button" text="Continue with Exension" @click="withExtension" />
+      <Button size="mini" type="link" text="Cancel" @click="onCancel" />
     </template>
   </TransactionContent>
 </template>
@@ -19,17 +21,24 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import QRCode from 'qrcode';
+import { Getter } from 'vuex-class';
+import { ResponseSigning } from '@polkadot/extension-base/background/types';
+import { Components } from '../../router/routes';
 import TransactionContent from '@/layouts/TransactionContent.vue';
 import Button from '@/components/Button.vue';
-
+import Corners from '@/components/Corners.vue';
+import { ActionTypes as SignActionTypes } from '@/store/sign/actions';
 @Component({
   components: {
     TransactionContent,
+    Corners,
     Button,
   },
 })
 export default class SignRequest extends Vue {
   value = '';
+  @Getter('getSignRequest') request!: ResponseSigning;
+
   get qr() {
     return this.value;
   }
@@ -50,6 +59,12 @@ export default class SignRequest extends Vue {
       this.qr = url;
     });
   }
+  withExtension() {
+    this.$router.push({ name: Components.Transaction });
+  }
+  onCancel() {
+    this.$store.dispatch(SignActionTypes.SIGN_CANCEL, this.request.id);
+  }
 }
 </script>
 
@@ -57,9 +72,11 @@ export default class SignRequest extends Vue {
 .qr-container {
   height: 100%;
 }
+
 .qr-header {
   font-size: 18px;
 }
+
 .qr-wrapper {
   position: relative;
   padding: 16px;
@@ -69,15 +86,17 @@ export default class SignRequest extends Vue {
   border-radius: $default-border-radius;
   width: 100%;
   display: grid;
-  grid-template-rows: 30px 1fr 1px;
-  gap: 55px;
+  grid-template-rows: 30px 1fr 10px;
+  gap: 24px;
   place-items: start;
   align-items: center;
 }
+
 .choice {
   display: block;
   margin-top: 24px;
 }
+
 .qr-code {
   place-items: center;
   width: 222px;

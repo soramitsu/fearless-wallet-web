@@ -120,7 +120,7 @@ import NicknameForm from './NicknameForm.vue';
 import AdvancedForm from './AdvancedForm.vue';
 import AdvancedButton from './AdvancedButton.vue';
 import AddEthereumAccountPopup from './AddEthereumAccountPopup.vue';
-import type { DerivationPath, ImportType, ValidateJsonResult } from '@/interfaces/common';
+import type { DerivationPath, ImportType, ValidateJsonResult, MnemonicConfirmation } from '@/interfaces/common';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { SelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';

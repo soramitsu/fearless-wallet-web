@@ -14,9 +14,9 @@
 </template>
 
 <script lang="ts">
+import { Component, Vue, Prop } from 'vue-property-decorator';
 import Popup from '@/components/Popup.vue';
 import Button from '@/components/Button.vue';
-import { Component, Vue, Prop } from 'vue-property-decorator';
 import { getProviderUrl } from '@/util/currenciesHelper';
 
 @Component({

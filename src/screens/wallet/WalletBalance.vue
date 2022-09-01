@@ -15,9 +15,9 @@
 </template>
 
 <script lang="ts">
-import Corners from '@/components/Corners.vue';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import Corners from '@/components/Corners.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { formattedNumber } from '@/util/numbers';
 

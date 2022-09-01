@@ -35,7 +35,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, PropSync, Watch } from 'vue-property-decorator';
+import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { SelectedWallet } from '@/store/accounts/types';
 import Logo from '@/components/Logo.vue';

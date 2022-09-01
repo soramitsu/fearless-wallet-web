@@ -80,7 +80,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
     NodeItem,
   },
 })
-export default class Network extends Vue {
+export default class Nodes extends Vue {
   autoSelectNodes = true;
   activeNode = { name: '', url: '' };
   customNodes: Node[] = [];

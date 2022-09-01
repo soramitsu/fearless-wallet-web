@@ -1,7 +1,5 @@
 import keyring from '@polkadot/ui-keyring';
 import { decodeAddress, encodeAddress, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
-import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
-import { getReplacedMetaTyped } from '@/util/helpers';
 import { isHex } from '@polkadot/util';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import type { KeyringPair$Json, KeyringPair$Meta, KeyringPair } from '@polkadot/keyring/types';
@@ -9,8 +7,12 @@ import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult } from '@/interfaces/common';
 import type { Wallet } from '@/store/accounts/types';
+import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
+import { getReplacedMetaTyped, getMetaTyped } from '@/util/helpers';
 import NetworksController from '@/controllers/networksController';
+
 type WordCount = 12 | 15 | 18 | 21 | 24;
+
 export default class BaseApi {
   private static createFromJson(json: KeyringPair$Json): KeyringPair {
     const pair = keyring.createFromJson(json);

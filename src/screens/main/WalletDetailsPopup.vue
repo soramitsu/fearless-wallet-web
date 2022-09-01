@@ -21,14 +21,14 @@
 </template>
 
 <script lang="ts">
-import Popup from '@/components/Popup.vue';
-import BaseApi from '@/util/BaseApi';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Components } from '@/router/routes';
 import { Mutation } from 'vuex-class';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import type { SetSelectedWalletProps } from '@/store/accounts/types';
 import type { TMutation } from '@/interfaces/common';
+import Popup from '@/components/Popup.vue';
+import BaseApi from '@/util/BaseApi';
+import { Components } from '@/router/routes';
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 
 @Component({
   components: { Popup },

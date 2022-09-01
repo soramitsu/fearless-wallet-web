@@ -116,9 +116,9 @@ import { Getter } from 'vuex-class';
 import ReceiveForm from '../ReceiveForm.vue';
 import SendForm from '../SendForm.vue';
 import TeleportForm from '../TeleportForm.vue';
-import BuyForm from '../BuyForm.vue';
 import SelectNetworkButton from '../SelectNetworkButton.vue';
 import History from './History.vue';
+import BuyPopup from './BuyPopup.vue';
 import type { FilterHistory } from '@/interfaces/common';
 import type { History as THistory } from '@/interfaces/history';
 import BorderButton from '@/components/BorderButton.vue';
@@ -144,8 +144,8 @@ import { formattedNumber, formattedPrice } from '@/util/numbers';
     Scroll,
     Corners,
     History,
-    BuyForm,
     SendForm,
+    BuyPopup,
     Dropdown,
     TabButton,
     ReceiveForm,

@@ -99,7 +99,7 @@ import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutatio
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { defaultSortingCurrencies } from '@/util/currenciesHelper';
 import { firstCharToUp } from '@/util/helpers';
-import { addNumbers } from '@/util/numbers';
+import { addNumbers, formattedNumber } from '@/util/numbers';
 
 @Component({
   components: {

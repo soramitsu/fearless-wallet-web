@@ -1,5 +1,5 @@
-import { accountController } from '@/controllers/accountController';
 import type { SelectedWallet, Accounts } from './types';
+import { accountController } from '@/controllers/accountController';
 
 export type State = {
   selectedWallet: SelectedWallet;

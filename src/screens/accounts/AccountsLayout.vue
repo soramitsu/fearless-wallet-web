@@ -78,13 +78,13 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component } from 'vue-property-decorator';
+import { Vue, Component, Watch } from 'vue-property-decorator';
 import ExportForm from './ExportForm.vue';
 import EditNodeForm from './EditNodeForm.vue';
 import NodeSettingsPopup from './NodeSettingsPopup.vue';
 import ReplacePopup from './ReplacePopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
-import Network from './Network.vue';
+import Nodes from './Nodes.vue';
 import ContentForm from '@/components/ContentForm.vue';
 import Input from '@/components/Input.vue';
 import CircleButton from '@/components/CircleButton.vue';
@@ -258,7 +258,7 @@ export default class AccountsLayout extends Vue {
   }
 
   childUpdatedNode() {
-    (this.$refs[this.routerViewRef] as Network).updatedCustomNodes();
+    (this.$refs[this.routerViewRef] as Nodes).updatedCustomNodes();
   }
 
   openNotificationPopup(type: NotificationType) {

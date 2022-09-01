@@ -88,8 +88,8 @@
 </template>
 
 <script lang="ts">
-import Popup from '@/components/Popup.vue';
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import Popup from '@/components/Popup.vue';
 
 @Component({
   components: { Popup },

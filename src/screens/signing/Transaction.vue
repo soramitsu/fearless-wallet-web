@@ -59,6 +59,7 @@ import WalletInfo from '@/screens/signing/WalletInfo.vue';
 import TransactionContent from '@/layouts/TransactionContent.vue';
 import Corners from '@/components/Corners.vue';
 import TransactionInfo from '@/screens/signing/TransactionInfo.vue';
+
 @Component({
   components: {
     WalletInfo,
@@ -86,6 +87,7 @@ export default class Auth extends Vue {
 
   async mounted() {
     const { isLocked } = await isSignLocked(this.request.id);
+
     this.isLocked = isLocked;
   }
 

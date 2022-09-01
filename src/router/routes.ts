@@ -149,7 +149,7 @@ const routes: Array<RouteConfig> = [
     path: '/*',
     beforeEnter: (to, from, next) => {
       if (haveAuthRequests()) next({ name: Components.Authorize });
-      if (haveSignRequests()) next({ name: Components.SignRequest });
+      else if (haveSignRequests()) next({ name: Components.SignRequest });
       else next();
     },
     redirect: () => {

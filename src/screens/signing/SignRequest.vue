@@ -21,6 +21,7 @@
     </template>
     <template slot="control">
       <Button size="big" class="button" text="Continue with Exension" @click="withExtension" />
+
       <Button size="mini" type="link" text="Cancel" @click="onCancel" />
     </template>
   </TransactionContent>

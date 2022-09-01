@@ -52,19 +52,7 @@ export default class BaseApi {
 
     return { replaced: false };
   }
-  refreshAccountPasswordCache(pair: KeyringPair): number {
-    const { address } = pair;
 
-    const remainingTime = Date.now();
-
-    if (remainingTime < 0) {
-      pair.lock();
-
-      return 0;
-    }
-
-    return remainingTime;
-  }
   private static getWalletIncludingReplacedAccount(wallet: Wallet, network: string): Wallet {
     const replacedAccountByNetwork = BaseApi.getReplacedAccountByNetwork(wallet, network);
     const address = replacedAccountByNetwork?.address;

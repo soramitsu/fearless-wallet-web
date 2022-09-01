@@ -58,7 +58,6 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.APPROVE_REQUEST]({ commit }, payload) {
     const addresses = BaseApi.getPolkadotAddresses();
-    console.info(addresses);
     await approveAuthRequest(payload.id, addresses);
 
     commit(MutationTypes.DELETE_AUTH_REQUEST);

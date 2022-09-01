@@ -86,7 +86,6 @@ export default class Auth extends Vue {
 
   async mounted() {
     const { isLocked } = await isSignLocked(this.request.id);
-    console.log(this.request);
     this.isLocked = isLocked;
   }
 
@@ -95,21 +94,7 @@ export default class Auth extends Vue {
       ? 'Remember my password for the next 15 minutes'
       : 'Extend the period without password by 15 minutes';
   }
-  mortalityAsString(era: ExtrinsicEra, hexBlockNumber: string): string {
-    if (era.isImmortalEra) {
-      return `immortal`;
-    }
 
-    // const blockNumber = bnToBn(hexBlockNumber);
-    // const mortal = era.asMortalEra;
-    // const birth = formatNumber(mortal.birth(blockNumber));
-    // const death = formatNumber(mortal.death(blockNumber));
-
-    return `mortal, valid from  to `;
-  }
-  get prepLifeTime() {
-    return this.mortalityAsString(this.payload.era as unknown as ExtrinsicEra, this.payload.blockNumber);
-  }
   onApprove() {
     try {
       if (!this.isSavePass) BaseApi.unlockPair(this.payload.address, this.password);

@@ -42,7 +42,7 @@ export default class NodeItem extends Vue {
   }
 
   changeNode(event: Event) {
-    const classList = (event.target as any)?.classList;
+    const classList = (event.target as HTMLDivElement)?.classList;
 
     if (
       classList.contains('node-item') ||

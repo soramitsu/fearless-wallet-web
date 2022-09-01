@@ -38,13 +38,24 @@ import { ActionTypes } from '@/store/auth/actions';
   },
 })
 export default class Authorize extends Vue {
-  @Getter('getRequest') requests!: AuthorizeRequest[];
-
   alertMessage =
     'Only approve this request if you trust the application. Approving gives the application access to the addresses of you accounts';
 
-  onClick(event: Event) {
-    console.log(event.target);
+  @Getter('getRequest') requests!: AuthorizeRequest[];
+
+  get request() {
+    const [request] = this.requests;
+    return request;
+  }
+
+  onApprove() {
+    store.dispatch(ActionTypes.APPROVE_REQUEST, this.request);
+    this.$router.push({ name: Components.Wallet });
+  }
+
+  onReject() {
+    store.dispatch(ActionTypes.REJECT_REQUEST, this.request);
+    this.$router.push({ name: Components.Wallet });
   }
 }
 </script>

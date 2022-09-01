@@ -33,7 +33,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 @Component({
   components: { SelectPopup },
 })
-export default class Main extends Vue {
+export default class FiatsPopup extends Vue {
   filterValue = '';
 
   @Prop(Function) handlerClose!: VoidFunction;

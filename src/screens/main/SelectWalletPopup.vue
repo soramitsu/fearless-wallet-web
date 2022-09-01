@@ -22,7 +22,7 @@
         @updateSelectedWallet="updateSelectedWallet(address)"
       />
 
-      <BorderButton text="Add wallet" iconName="plus-pink" type="secondary" @click="addWallet" />
+      <BorderButton text="Add wallet" iconName="plus-pink" @click="addWallet" />
     </div>
   </Popup>
 </template>

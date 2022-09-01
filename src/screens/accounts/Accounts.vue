@@ -11,7 +11,7 @@
         :network="network"
         :token="token"
         :address="address"
-        @openAccountSettings="openAccountSettings(...arguments, true)"
+        @openAccountSettingsPopup="openAccountSettingsPopup(...arguments, true)"
       />
     </template>
 
@@ -24,7 +24,7 @@
         :network="network"
         :token="token"
         :address="address"
-        @openAccountSettings="openAccountSettings"
+        @openAccountSettingsPopup="openAccountSettingsPopup"
       />
     </template>
   </div>
@@ -35,7 +35,6 @@ import ContentForm from '@/components/ContentForm.vue';
 import Input from '@/components/Input.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import Scroll from '@/components/Scroll.vue';
-import AccountSettingsPopup from './AccountSettingsPopup.vue';
 import AccountsItem from './AccountsItem.vue';
 import BaseApi from '@/util/BaseApi';
 import { Getter } from 'vuex-class';
@@ -53,7 +52,6 @@ import type { Networks } from '@/store/networks/types';
     Input,
     CircleButton,
     Scroll,
-    AccountSettingsPopup,
     AccountsItem,
   },
 })
@@ -118,8 +116,8 @@ export default class Account extends Vue {
     this.$router.push({ name: Components.Wallet });
   }
 
-  openAccountSettings(network: string, event: Event, isReplaceAccount = false) {
-    this.$emit('openAccountSettings', network, event, isReplaceAccount);
+  openAccountSettingsPopup(network: string, event: Event, isReplaceAccount = false) {
+    this.$emit('openAccountSettingsPopup', network, event, isReplaceAccount);
   }
 }
 </script>

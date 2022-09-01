@@ -1,7 +1,6 @@
 <template>
   <div class="main">
     <Header
-      ref="header"
       :showSelectWalletPopup="showSelectWalletPopup"
       :highlightSettingsIcon="highlightSettingsIcon"
       @update:showSelectWalletPopup="setSelectWalletPopupVisible"
@@ -10,7 +9,6 @@
 
     <SelectWalletPopup
       v-if="showSelectWalletPopup"
-      ref="SelectWalletPopup"
       @close="setSelectWalletPopupVisible(false)"
       @toggleWalletDetailsPopupVisible="toggleWalletDetailsPopupVisible"
     />

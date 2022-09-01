@@ -12,7 +12,7 @@
       </div>
     </div>
 
-    <div class="content-block">
+    <div class="content-wrapper">
       <div class="content">
         <div class="content-header">{{ header }}</div>
 
@@ -677,7 +677,7 @@ export default class AddWallet extends Vue {
     }
   }
 
-  .content-block {
+  .content-wrapper {
     height: 100%;
     width: 100%;
     display: flex;

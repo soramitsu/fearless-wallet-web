@@ -1,7 +1,6 @@
 <template>
   <Popup
     :showHeader="false"
-    :showBlur="false"
     :showBorder="true"
     :handlerClose="handlerClose"
     :top="top"
@@ -86,7 +85,7 @@ export default class AccountSettingsPopup extends Vue {
 
   openNetwork() {
     this.$router.push({
-      name: Components.Network,
+      name: Components.Nodes,
       params: {
         network: this.selectedNetwork,
       },

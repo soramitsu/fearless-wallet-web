@@ -36,7 +36,8 @@ export default class CurrencyController {
     public mainNetwork: string,
     public token: string,
     public tokensPrice: TokenPriceJson,
-    public precision: number
+    public precision: number,
+    public providers: string[]
   ) {
     console.info();
   }

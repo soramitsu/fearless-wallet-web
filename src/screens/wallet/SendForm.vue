@@ -18,7 +18,7 @@
 
           <Input v-model="recipient" placeholder="Send to" size="big" class="row" />
 
-          <div class="row amount-block">
+          <div class="row amount-wrapper">
             <MaxButton class="max-button-amount" @click="setMaxValue" />
             <MaxButton v-show="!isReadonlyValueInput" class="max-button-value" @click="setMaxValue" />
 
@@ -362,7 +362,7 @@ export default class SendForm extends Vue {
     }
   }
 
-  .amount-block {
+  .amount-wrapper {
     display: flex;
     justify-content: space-between;
     align-items: center;

@@ -9,7 +9,7 @@
           <img src="@/assets/fw-logo.svg" />
         </div>
         <div class="header">{{ header }}</div>
-        <div class="activity-block">
+        <div class="activity">
           <div class="icon" @click="closeHandler">
             <s-icon name="basic-close-24" />
           </div>
@@ -138,7 +138,7 @@ export default class AboveForm extends Vue {
       margin: auto 0;
     }
 
-    .activity-block {
+    .activity {
       display: flex;
       justify-content: right;
     }

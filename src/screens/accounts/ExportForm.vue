@@ -90,10 +90,6 @@ export default class ExportForm extends Vue {
     flex-direction: column;
   }
 
-  .info-block {
-    margin: 25px 0;
-  }
-
   .export-type-input {
     width: 100%;
   }

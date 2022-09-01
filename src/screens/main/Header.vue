@@ -7,8 +7,8 @@
         <Logo v-else size="small" />
       </div>
 
-      <div class="wallet-name-block" @click="toggleSelectWalletPopupVisible">
-        <div class="wallet-name">{{ name }}</div>
+      <div class="wallet-name" @click="toggleSelectWalletPopupVisible">
+        <div class="name">{{ name }}</div>
 
         <Rotate :isActive="syncedShowSelectWalletPopup">
           <s-icon name="chevron-bottom-16" />
@@ -52,8 +52,8 @@ import type { SelectedWallet } from '@/store/accounts/types';
   },
 })
 export default class Header extends Vue {
-  walletNameRef = 'walletName';
-  settingsNameRef = 'settingsName';
+  readonly walletNameRef = 'walletName';
+  readonly settingsNameRef = 'settingsName';
 
   @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
@@ -79,16 +79,14 @@ export default class Header extends Vue {
   updateZIndexSelectWalletPopup() {
     const targetElement = this.$refs[this.walletNameRef] as HTMLElement;
 
-    if (this.syncedShowSelectWalletPopup) targetElement.style.zIndex = '200';
-    else targetElement.style.zIndex = '0';
+    targetElement.style.zIndex = this.syncedShowSelectWalletPopup ? '200' : '0';
   }
 
   @Watch('highlightSettingsIcon')
   updateZIndexShowSettings(value: boolean) {
     const targetElement = (this.$refs[this.settingsNameRef] as Vue).$el as HTMLElement;
 
-    if (value) targetElement.style.zIndex = '200';
-    else targetElement.style.zIndex = '0';
+    targetElement.style.zIndex = value ? '200' : '0';
   }
 
   backToWallet() {
@@ -132,7 +130,7 @@ export default class Header extends Vue {
     display: flex;
     align-items: center;
 
-    .wallet-name-block {
+    .wallet-name {
       display: flex;
       align-items: center;
 
@@ -140,7 +138,7 @@ export default class Header extends Vue {
         cursor: pointer;
       }
 
-      .wallet-name {
+      .name {
         display: flex;
         font-weight: 700;
         font-size: 24px;

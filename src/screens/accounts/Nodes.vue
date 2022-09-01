@@ -8,7 +8,7 @@
 
         <div>
           <div class="network-name">{{ selectedNetworkUpper }}</div>
-          <div class="address-block" @click="copyAddress">
+          <div class="address-wrapper" @click="copyAddress">
             <div class="address">{{ address }}</div>
 
             <img src="@/assets/copy.svg" class="copy" />
@@ -33,7 +33,7 @@
         :url="url"
         :isActive="getActiveStatus(name, url)"
         :isRemoveBorderBottom="getRemoveValue(index)"
-        @changeNode="changeNode"
+        @changeNode="changeNode(name, url)"
       />
     </div>
     <div class="custom-nodes">
@@ -54,8 +54,8 @@
       :isCustomNode="true"
       :isActive="getActiveStatus(name, url)"
       :isRemoveBorderBottom="getRemoveValue(index, true)"
-      @changeNode="changeNode"
-      @openNodeSettings="$emit('openNodeSettings', selectedNetwork, name, url)"
+      @changeNode="changeNode(name, url)"
+      @openNodeSettingsPopup="$emit('openNodeSettingsPopup', selectedNetwork, name, url, $event)"
     />
   </div>
 </template>
@@ -254,7 +254,7 @@ export default class Network extends Vue {
         text-align: left;
       }
 
-      .address-block {
+      .address-wrapper {
         display: flex;
         align-items: center;
         width: 135px;

@@ -10,7 +10,6 @@
       <BorderButton
         v-for="(mnemonicElement, index) in mnemonicMix"
         :key="index"
-        type="secondary"
         size="small"
         fontSize="small"
         borderRadius="mini"

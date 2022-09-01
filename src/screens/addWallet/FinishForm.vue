@@ -6,7 +6,6 @@
         text="Follow on Twitter"
         iconName="twitter-pink"
         class="follow-button"
-        type="secondary"
         width="256px"
         @click="openPage('https://twitter.com/Soramitsu_co')"
       />
@@ -14,7 +13,6 @@
       <BorderButton
         text="Join on Telegram"
         iconName="telegram-pink"
-        type="secondary"
         width="256px"
         @click="openPage('https://t.me/fearlesswallet')"
       />
@@ -23,7 +21,6 @@
       <BorderButton
         text="Read on Medium"
         iconName="medium-pink"
-        type="secondary"
         width="256px"
         @click="openPage('https://medium.com/fearlesswallet')"
       />
@@ -31,7 +28,6 @@
       <BorderButton
         text="Learn on Wiki"
         iconName="file-dock"
-        type="secondary"
         width="256px"
         @click="openPage('https://wiki.sora.org/master')"
       />

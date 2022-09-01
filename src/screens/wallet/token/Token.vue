@@ -15,37 +15,29 @@
       />
     </div>
 
-    <div class="activity-block">
-      <BorderButton
-        text="Send"
-        iconName="send"
-        type="secondary"
-        width="125px"
-        @click="toggleVisible('showSendForm', true)"
-      />
+    <div class="activity">
+      <BorderButton class="activity-button" text="Send" iconName="send" @click="toggleVisible('showSendForm', true)" />
 
       <BorderButton
+        class="activity-button"
         text="Receive"
         iconName="receive"
-        type="secondary"
-        width="125px"
         @click="toggleVisible('showReceiveForm', true)"
       />
 
       <BorderButton
+        class="activity-button"
         text="Teleport"
         iconName="teleport"
-        type="secondary"
-        width="125px"
         @click="toggleVisible('showTeleportForm', true)"
       />
 
       <BorderButton
+        v-if="showBuyButton"
+        class="activity-button"
         text="Buy"
         iconName="plus-pink"
-        type="secondary"
-        width="125px"
-        @click="toggleVisible('showBuyForm', true)"
+        @click="toggleVisible('showBuyPopup', true)"
       />
     </div>
 
@@ -89,7 +81,13 @@
       :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
     />
 
-    <BuyForm v-if="showBuyForm" :closeForm="toggleVisible.bind(null, 'showBuyForm', false)" />
+    <BuyPopup
+      v-if="showBuyPopup"
+      :token="selectedToken"
+      :address="displayAddressByNetwork"
+      :providers="providers"
+      :closePopup="toggleVisible.bind(null, 'showBuyPopup', false)"
+    />
 
     <SelectPopup
       v-if="showSelectNetworkPopup"
@@ -123,7 +121,7 @@ import TabButton from '@/components/TabButton.vue';
 import ReceiveForm from '../ReceiveForm.vue';
 import SendForm from '../SendForm.vue';
 import TeleportForm from '../TeleportForm.vue';
-import BuyForm from '../BuyForm.vue';
+import BuyPopup from './BuyPopup.vue';
 import SelectNetworkButton from '../SelectNetworkButton.vue';
 import SelectPopup from '@/components/SelectPopup.vue';
 import BaseApi from '@/util/BaseApi';
@@ -146,7 +144,7 @@ import type { History as THistory } from '@/interfaces/history';
     Scroll,
     Corners,
     History,
-    BuyForm,
+    BuyPopup,
     SendForm,
     Dropdown,
     TabButton,
@@ -172,7 +170,7 @@ export default class Token extends Vue {
   showSendForm = false;
   showReceiveForm = false;
   showTeleportForm = false;
-  showBuyForm = false;
+  showBuyPopup = false;
   showSelectNetworkPopup = false;
 
   @Getter(NetworksGettersTypes.getNetworks) networks!: NetworksType;
@@ -180,6 +178,14 @@ export default class Token extends Vue {
   @Getter(NetworksGettersTypes.getHistory) history!: THistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+
+  get providers() {
+    return this.currentCurrency?.providers ?? [];
+  }
+
+  get showBuyButton() {
+    return this.providers.length !== 0 && this.currentCurrency?.mainNetwork === this.selectedNetwork;
+  }
 
   get optionsNetworks() {
     return this.networks.map(({ name }) => ({
@@ -197,6 +203,10 @@ export default class Token extends Vue {
 
   get currentCurrency() {
     return this.currencies.find(({ token }) => token === this.selectedToken);
+  }
+
+  get displayAddressByNetwork() {
+    return BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.selectedNetwork);
   }
 
   get formattedHistory() {
@@ -289,7 +299,7 @@ export default class Token extends Vue {
     this.filterHistoryValue = name;
   }
 
-  toggleVisible(field: 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyForm', value: boolean) {
+  toggleVisible(field: 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup', value: boolean) {
     this[field] = value;
   }
 }
@@ -300,7 +310,7 @@ export default class Token extends Vue {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100%;
+  height: 450px;
 
   .token-header {
     display: flex;
@@ -336,10 +346,20 @@ export default class Token extends Vue {
     }
   }
 
-  .activity-block {
+  .activity {
     display: flex;
     justify-content: space-between;
     margin-bottom: 10px;
+
+    .activity-button {
+      flex-grow: 1;
+      margin-left: 5px;
+      width: 125px;
+
+      &:first-child {
+        margin-left: 0;
+      }
+    }
   }
 
   .content {

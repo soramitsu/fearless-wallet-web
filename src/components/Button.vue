@@ -49,7 +49,7 @@ export default class Button extends Vue {
   get containerButtonStyle() {
     const styles: Record<string, string> = {};
 
-    if (this.width) styles.width = this.width;
+    if (this.width) styles.width = `${this.width}`;
 
     return styles;
   }

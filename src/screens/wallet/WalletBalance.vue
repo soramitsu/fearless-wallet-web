@@ -8,7 +8,7 @@
       </div>
 
       <div class="dots-container">
-        <img src="@/assets/dots-horizontal.svg" class="dots" ref="dotsHorizontal" />
+        <img src="@/assets/dots-horizontal.svg" class="dots" :ref="dotsHorizontalRef" />
       </div>
     </div>
   </Corners>
@@ -25,6 +25,7 @@ import { formattedNumber } from '@/util/numbers';
   components: { Corners },
 })
 export default class WalletBalance extends Vue {
+  readonly dotsHorizontalRef = 'dotsHorizontal';
   showWalletMenu = false;
 
   @Prop({ default: '' }) name!: string;
@@ -67,7 +68,7 @@ export default class WalletBalance extends Vue {
 
     if (!(classList.contains('dots-container') || classList.contains('dots'))) this.$emit('updateSelectedWallet');
     else {
-      const buttonTop = (this.$refs.dotsHorizontal as Element).getBoundingClientRect().top;
+      const buttonTop = (this.$refs[this.dotsHorizontalRef] as Element).getBoundingClientRect().top;
 
       this.$emit('setShowWalletDetailsPopupVisible', buttonTop);
     }

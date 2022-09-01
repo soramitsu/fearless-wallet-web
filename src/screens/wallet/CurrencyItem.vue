@@ -43,7 +43,7 @@
         {{ totalBalanceString }}
       </div>
     </div>
-    <div class="activity-block">
+    <div class="activity">
       <template v-if="!showAssetsManagementForm">
         <CircleButton
           iconName="send-white"
@@ -294,7 +294,7 @@ export default class CurrencyItem extends Vue {
     font-size: 20px;
   }
 
-  .activity-block {
+  .activity {
     display: flex;
     align-items: center;
     margin-left: 16px;

@@ -6,7 +6,7 @@ import Export from '@/screens/accounts/Export.vue';
 import History from '@/screens/history/History.vue';
 import keyring from '@polkadot/ui-keyring';
 import Main from '@/screens/main/Main.vue';
-import Network from '@/screens/accounts/Network.vue';
+import Nodes from '@/screens/accounts/Nodes.vue';
 import Staking from '@/screens/staking/Staking.vue';
 import Token from '@/screens/wallet/token/Token.vue';
 import Wallet from '@/screens/wallet/Wallet.vue';
@@ -26,7 +26,7 @@ export enum Components {
   Token = 'Token',
   AccountsLayout = 'AccountsLayout',
   Accounts = 'Accounts',
-  Network = 'Network',
+  Nodes = 'Nodes',
   Export = 'Export',
 }
 
@@ -71,8 +71,8 @@ const routes: Array<RouteConfig> = [
           },
           {
             path: ':network',
-            name: Components.Network,
-            component: Network,
+            name: Components.Nodes,
+            component: Nodes,
           },
           {
             path: ':network/export',

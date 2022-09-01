@@ -12,10 +12,10 @@
     </div>
 
     <CircleButton
-      ref="circleButton"
+      :ref="circleButtonRef"
       iconName="dots-horizontal"
       backgroundColor="light-black"
-      @click="openAccountSettings(network)"
+      @click="openAccountSettingsPopup(network)"
     />
   </div>
 </template>
@@ -29,6 +29,8 @@ import { getImgPathByNetworkName } from '@/util/imgPath';
   components: { CircleButton },
 })
 export default class AccountsItem extends Vue {
+  readonly circleButtonRef = 'circleButton';
+
   @Prop(String) network!: string;
   @Prop(String) token!: string;
   @Prop(String) address!: string;
@@ -43,10 +45,10 @@ export default class AccountsItem extends Vue {
     return string.toUpperCase();
   }
 
-  openAccountSettings(name: string) {
-    const buttonTop = (this.$refs.circleButton as Vue).$el.getBoundingClientRect().top;
+  openAccountSettingsPopup(name: string) {
+    const buttonTop = (this.$refs[this.circleButtonRef] as Vue).$el.getBoundingClientRect().top;
 
-    this.$emit('openAccountSettings', name, buttonTop);
+    this.$emit('openAccountSettingsPopup', name, buttonTop);
   }
 }
 </script>

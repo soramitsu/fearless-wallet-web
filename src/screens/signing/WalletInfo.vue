@@ -1,12 +1,12 @@
 <template>
   <Corners size="big">
     <div class="transaction__header">
-      <img class="wallet__logo" src="@/assets/wallet-logo.svg" />
+      <img class="wallet__logo" src="@/assets/wallet-logo-transaction.svg" />
       <div class="wallet-info__content">
         <span class="wallet__name">{{ name }}</span>
         <div class="wallet-info__address-container">
-          <span class="wallet__address">{{ address }}</span>
-          <img class="wallet-info__clipboard" src="@/assets/clipboard.svg" />
+          <span ref="address" class="wallet__address" @click="saveToClipboard">{{ address }}</span>
+          <img class="wallet-info__clipboard" src="@/assets/clipboard.svg" @click="saveToClipboard" />
         </div>
         <div class="network__badge-wrapper">
           <div class="network__badge">{{ network }}</div>
@@ -28,6 +28,12 @@ export default class WalletInfo extends Vue {
   @Prop(String) address!: string;
   @Prop(String) network!: string;
   @Prop(String) name!: string;
+  $refs!: {
+    address: HTMLSpanElement;
+  };
+  saveToClipboard() {
+    navigator.clipboard.writeText(this.$refs.address.innerText);
+  }
 }
 </script>
 
@@ -35,7 +41,7 @@ export default class WalletInfo extends Vue {
 .transaction__header {
   position: relative;
   background: rgba(255, 255, 255, 0.05);
-  padding: 16px;
+  padding: 9px;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-radius: $default-border-radius;
@@ -71,6 +77,10 @@ export default class WalletInfo extends Vue {
 }
 .wallet-info__clipboard {
   width: 24px;
+  cursor: pointer;
+}
+.wallet-info__clipboard:hover {
+  fill: #7700ee;
 }
 
 .wallet__name {
@@ -83,6 +93,7 @@ export default class WalletInfo extends Vue {
   font-size: 14px;
   max-width: 400px;
   overflow: hidden;
+  cursor: pointer;
   text-overflow: ellipsis;
   margin-right: 14px;
 }

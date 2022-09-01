@@ -31,7 +31,7 @@ export default class AuthController {
 
   static async getAuthList() {
     const { list } = await getAuthList();
+
     return list;
   }
 }
-export const authController = AuthController;

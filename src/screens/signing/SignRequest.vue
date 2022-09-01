@@ -5,7 +5,15 @@
         <Corners size="big">
           <div class="qr-wrapper">
             <span class="qr-header">Fearless connect mobile QR code</span>
-            <img class="qr-code" :src="qr" v-if="qr" />
+            <QrCode
+              class="qr-code"
+              value="Sora"
+              :size="200"
+              render-as="svg"
+              :margin="10"
+              foreground="#FFFFFF"
+              background="#ffffff00"
+            />
           </div>
         </Corners>
         <div class="choice">OR</div>
@@ -20,18 +28,20 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import QRCode from 'qrcode';
 import { Getter } from 'vuex-class';
 import { ResponseSigning } from '@polkadot/extension-base/background/types';
-import { Components } from '../../router/routes';
+import QrCode from 'qrcode.vue';
+import { Components } from '@/router/routes';
 import TransactionContent from '@/layouts/TransactionContent.vue';
 import Button from '@/components/Button.vue';
 import Corners from '@/components/Corners.vue';
 import { ActionTypes as SignActionTypes } from '@/store/sign/actions';
+
 @Component({
   components: {
     TransactionContent,
     Corners,
+    QrCode,
     Button,
   },
 })
@@ -39,26 +49,6 @@ export default class SignRequest extends Vue {
   value = '';
   @Getter('getSignRequest') request!: ResponseSigning;
 
-  get qr() {
-    return this.value;
-  }
-
-  set qr(value: string) {
-    this.value = value;
-  }
-
-  mounted() {
-    QRCode.toDataURL('Soramitsu', {
-      width: 222,
-      margin: 0,
-      color: {
-        dark: '#FFFFFF',
-        light: '#ffffff00',
-      },
-    }).then((url: string) => {
-      this.qr = url;
-    });
-  }
   withExtension() {
     this.$router.push({ name: Components.Transaction });
   }

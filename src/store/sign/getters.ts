@@ -25,8 +25,10 @@ const getters: GetterTree<State, State> & Getters = {
 
     return payload;
   },
+
   [GettersTypes.getSignRequest](state): SigningRequest {
     const [request] = state.requests;
+
     return request;
   },
 };

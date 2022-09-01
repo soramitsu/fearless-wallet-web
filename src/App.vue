@@ -2,14 +2,17 @@
   <div id="app">
     <div class="drag"></div>
     <router-view />
+    <!-- <Transaction /> -->
+    <!-- <SignRequest /> -->
   </div>
 </template>
 
 <script lang="ts">
-import { keyring } from '@polkadot/ui-keyring';
+import keyring from '@polkadot/ui-keyring';
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation } from 'vuex-class';
 import store from './store';
+import BaseApi from './util/BaseApi';
 import type { SetSelectedWalletProps } from '@/store/accounts/types';
 import type { TMutation } from '@/interfaces/common';
 import type { BehaviorSubject } from 'rxjs';
@@ -18,10 +21,17 @@ import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
 import { ActionTypes as SignActionTypes } from '@/store/sign/actions';
 
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import Transaction from '@/screens/signing/Transaction.vue';
+import SignRequest from '@/screens/signing/SignRequest.vue';
 
 import NetworksController from '@/controllers/networksController';
 
-@Component
+@Component({
+  components: {
+    Transaction,
+    SignRequest,
+  },
+})
 export default class App extends Vue {
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
@@ -37,7 +47,6 @@ export default class App extends Vue {
 
     await Promise.all([loadNetworks(), loadAssets(), loadFiats()]);
     await loadTokensPrice();
-
     let loadHistory = true;
     this.subscribeAccounts = keyring.accounts.subject;
     this.subscribeAccounts.subscribe(async (accounts) => {

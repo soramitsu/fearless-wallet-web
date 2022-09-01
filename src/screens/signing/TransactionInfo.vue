@@ -16,7 +16,7 @@ import { Fragment } from 'vue-fragment';
 })
 export default class TransactionInfo extends Vue {
   @Prop(String) name!: string;
-  @Prop(String || Number) value!: string | number;
+  @Prop([String, Number]) value!: string | number;
 }
 </script>
 
@@ -28,9 +28,11 @@ export default class TransactionInfo extends Vue {
   line-height: 20px;
   text-transform: uppercase;
 }
+
 .value {
   max-width: 370px;
   overflow: hidden;
+  line-height: 20px;
   text-overflow: ellipsis;
 }
 </style>

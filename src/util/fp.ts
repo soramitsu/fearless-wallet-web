@@ -74,6 +74,7 @@ export class FPNumber {
   public static max(...numbers: Array<FPNumber>): FPNumber {
     const precision = numbers[0].precision;
     const filtered = numbers.map((item) => equalizedBN(item, precision));
+
     return new FPNumber(BigNumber.max(...filtered), precision);
   }
 
@@ -88,6 +89,7 @@ export class FPNumber {
 
     const precision = numbers[0].precision;
     const filtered = numbers.map((item) => equalizedBN(item, precision));
+
     return new FPNumber(BigNumber.min(...filtered), precision);
   }
 
@@ -187,6 +189,7 @@ export class FPNumber {
    */
   public static fromCodecValue(value: number | string, precision: number = FPNumber.DEFAULT_PRECISION): FPNumber {
     const filtered = typeof value === 'string' ? value.replace(/[, ]/g, '') : value;
+
     return new FPNumber(new BigNumber(filtered), precision);
   }
 
@@ -235,6 +238,7 @@ export class FPNumber {
 
         if ('toString' in (data as any)) {
           const json = data.toJSON() as any;
+
           // `BalanceInfo` or `Balance` check
           return json && !isNil(json.balance) ? `${json.balance}`.replace(/[, ]/g, '') : data.toString();
         }
@@ -305,6 +309,7 @@ export class FPNumber {
    */
   public toString(): string {
     const result = this.value.div(10 ** this.precision);
+
     return result.toFormat();
   }
 
@@ -314,6 +319,7 @@ export class FPNumber {
    */
   public toFixed(dp = 4): string {
     const result = this.value.div(10 ** this.precision);
+
     return result.toFixed(dp, FPNumber.DEFAULT_ROUND_MODE);
   }
 
@@ -350,6 +356,7 @@ export class FPNumber {
   public toNumber(dp: number = FPNumber.DEFAULT_DECIMAL_PLACES): number {
     let result = this.value.div(10 ** this.precision);
     result = result.dp(dp, FPNumber.DEFAULT_ROUND_MODE);
+
     return result.toNumber();
   }
 

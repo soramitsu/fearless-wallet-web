@@ -16,11 +16,16 @@ export enum ActionTypes {
 type AugmentedActionContext = {
   commit<K extends keyof Mutations>(key: K, payload?: Parameters<Mutations[K]>[1]): ReturnType<Mutations[K]>;
 } & Omit<ActionContext<State, any>, 'commit'>;
+type ApprovePayload = {
+  id: string;
+  isSavePass: boolean;
+  password?: string;
+};
 
 export type Actions = {
   [ActionTypes.SUBSCRIBE_SIGN_EVENTS](context: AugmentedActionContext): Promise<void>;
   [ActionTypes.SIGN_CANCEL](context: AugmentedActionContext, id: string): Promise<void>;
-  [ActionTypes.APPROVE_SIGN_PASSWORD](context: AugmentedActionContext, id: string): Promise<void>;
+  [ActionTypes.APPROVE_SIGN_PASSWORD](context: AugmentedActionContext, payload: ApprovePayload): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
@@ -40,12 +45,15 @@ const actions: ActionTree<State, State> & Actions = {
     subscribeSigningRequests(callback);
   },
 
-  async [ActionTypes.APPROVE_SIGN_PASSWORD](context, id) {
-    SignController.approveSignPassword(id, false, '199527');
+  async [ActionTypes.APPROVE_SIGN_PASSWORD]({ commit }, { id, isSavePass, password }) {
+    SignController.approveSignPassword(id, isSavePass, password);
+
+    router.push({ name: Components.Wallet });
   },
 
   async [ActionTypes.SIGN_CANCEL](context, id) {
     cancelSignRequest(id);
+    router.push({ name: Components.Wallet });
   },
 };
 

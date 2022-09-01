@@ -9,42 +9,11 @@
     horizontalPlacement="right"
   >
     <div class="settings">
-      <div class="row" @click="open('Accounts')">
-        <div class="description">
-          <img src="@/assets/account.svg" class="icon" />
-
-          <div class="label">Accounts</div>
-        </div>
-
-        <img src="@/assets/chevron-right.svg" class="chevron-right" />
-      </div>
-      <div class="row" @click="openFiatsPopup">
-        <div class="description">
-          <img src="@/assets/dollar-circle.svg" class="icon" />
-
-          <div class="label">Currency</div>
-        </div>
-
-        <img src="@/assets/chevron-right.svg" class="chevron-right" />
-      </div>
-      <div class="row">
-        <div class="description">
-          <img src="@/assets/language.svg" class="icon" />
-
-          <div class="label">Language</div>
-        </div>
-
-        <img src="@/assets/chevron-right.svg" class="chevron-right" />
-      </div>
-      <div class="row">
-        <div class="description">
-          <img src="@/assets/info.svg" class="icon" />
-
-          <div class="label">About</div>
-        </div>
-
-        <img src="@/assets/chevron-right.svg" class="chevron-right" />
-      </div>
+      <SettingMenuItem title="Accounts" icon="account" @onOpen="open('Accounts')" />
+      <SettingMenuItem title="Currency" icon="dollar-circle" @onOpen="openFiatsPopup" />
+      <SettingMenuItem title="Language" icon="language" @onOpen="open('Language')" />
+      <SettingMenuItem title="About" icon="info" />
+      <SettingMenuItem title="Manage dApp access" icon="networks/polkadot" @onOpen="open('ManageAuths')" />
     </div>
   </Popup>
 </template>

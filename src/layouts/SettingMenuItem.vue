@@ -63,7 +63,6 @@ export default class SettingsMenuItem extends Vue {
 
   .label {
     margin: auto 0 auto 10px;
-    width: 160px;
     text-align: left;
   }
 }

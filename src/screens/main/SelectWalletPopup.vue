@@ -105,7 +105,7 @@ export default class SelectWalletPopup extends Vue {
 
 <style lang="scss" scoped>
 .wallet-content {
-  padding: 0 16px;
+  padding: 0 $default-padding;
   height: 100%;
   margin-bottom: 3px;
 }

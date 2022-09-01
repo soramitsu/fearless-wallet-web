@@ -371,7 +371,7 @@ export default class Token extends Vue {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin: 11px 16px 5px 18px;
+      margin: 11px $default-padding 5px 18px;
 
       .history-label {
         font-weight: 600;

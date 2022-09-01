@@ -296,7 +296,7 @@ export default class Wallet extends Vue {
   height: 450px;
 
   .content {
-    padding: 16px 0 0 16px;
+    padding: $default-padding 0 0 $default-padding;
     height: 100%;
     display: flex;
     flex-direction: column;

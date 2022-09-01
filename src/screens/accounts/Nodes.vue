@@ -194,7 +194,7 @@ export default class Nodes extends Vue {
     display: flex;
     justify-content: space-between;
     margin-right: 9px;
-    padding-bottom: 16px;
+    padding-bottom: $default-padding;
 
     .plus {
       filter: invert(0.5);

@@ -9,7 +9,7 @@
 <script lang="ts">
 import keyring from '@polkadot/ui-keyring';
 import { Component, Vue } from 'vue-property-decorator';
-import { Mutation, Action } from 'vuex-class';
+import { Mutation } from 'vuex-class';
 import store from './store';
 import type { SetSelectedWalletProps, setAccountsProps } from '@/store/accounts/types';
 import type { TMutation } from '@/interfaces/common';
@@ -25,7 +25,6 @@ export default class App extends Vue {
 
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
-  @Action(AuthActionTypes.SUBSCRIBE_TO_DAPP_EVENTS) subscribeToDAppEvents!: () => Promise<void>;
 
   get style() {
     return { 'background-image': 'url(./img/background.9b667fcd.png)' };
@@ -77,7 +76,7 @@ export default class App extends Vue {
   width: $extension-width;
   color: white;
   text-align: center;
-  padding: 0 16px 16px 16px;
+  padding: 0 $default-padding $default-padding $default-padding;
   background-image: url(./assets/background.png);
 
   .drag {

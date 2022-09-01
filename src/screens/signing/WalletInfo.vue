@@ -23,7 +23,7 @@ export default class WalletInfo extends Vue {}
 .transaction__header {
   position: relative;
   background: rgba(255, 255, 255, 0.05);
-  padding: 16px;
+  padding: $default-padding;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-radius: $default-border-radius;
@@ -31,6 +31,7 @@ export default class WalletInfo extends Vue {}
   display: flex;
   flex-flow: column;
 }
+
 .network__badge {
   position: absolute;
   background: greenyellow;

@@ -84,7 +84,7 @@ export default class WalletBalance extends Vue {
   text-align: left;
   opacity: 0.9;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 10px 16px;
+  padding: 10px $default-padding;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;

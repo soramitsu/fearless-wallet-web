@@ -132,7 +132,7 @@ export default class HistoryItem extends Vue {
 .history-item {
   display: flex;
   margin: 11px 16px 0 16px;
-  padding-bottom: 16px;
+  padding-bottom: $default-padding;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 
   &:last-child {

@@ -202,7 +202,7 @@ export default class Main extends Vue {
   display: flex;
   flex-direction: column;
   text-align: left;
-  padding: 0 16px;
+  padding: 0 $default-padding;
 
   .header {
     font-weight: 700;

@@ -28,7 +28,7 @@ export default class Container extends Vue {
 <style lang="scss" scoped>
 .alert-container {
   background: rgba(255, 255, 255, 0.05);
-  padding: 16px;
+  padding: $default-padding;
   border: 1px solid rgba(238, 119, 0, 0.27) !important;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-radius: $default-border-radius;
@@ -38,12 +38,14 @@ export default class Container extends Vue {
 .alert__content {
   width: 100%;
 }
+
 .alert__header {
   margin-bottom: 6px;
-  font-size: 16px !important;
+  font-size: $default-padding !important;
   line-height: 150%;
   color: $default-white !important;
 }
+
 .alert__message {
   font-weight: 400;
   line-height: 150%;

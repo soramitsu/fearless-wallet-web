@@ -65,7 +65,7 @@ export default class AboveForm extends Vue {
     position: relative;
     top: 80px;
     width: $extension-width;
-    height: $extension-height - $header-height -32px;
+    height: $extension-height - $header-height -$default-padding - $default-padding;
     background-color: #111111;
     clip-path: polygon(100% 0, 100% 100%, 0 100%, 0 4%, 4% 0);
     animation: transform 0.3s forwards;
@@ -81,7 +81,7 @@ export default class AboveForm extends Vue {
 
     .content {
       height: 456px;
-      padding: 16px;
+      padding: $default-padding;
     }
 
     .s-icon-basic-close-24 {
@@ -112,7 +112,7 @@ export default class AboveForm extends Vue {
       font-size: 24px;
       display: flex;
       justify-content: space-between;
-      padding: 16px;
+      padding: $default-padding;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 

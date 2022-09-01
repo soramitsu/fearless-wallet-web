@@ -186,7 +186,7 @@ export default class Popup extends Vue {
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    padding-left: 16px;
+    padding-left: $default-padding;
     padding-right: 22px;
     margin-bottom: 10px;
 
@@ -215,7 +215,7 @@ export default class Popup extends Vue {
 .popup-background-container {
   height: $extension-height;
   width: $extension-width;
-  padding: 16px;
+  padding: $default-padding;
 }
 
 .popup-background-blur {

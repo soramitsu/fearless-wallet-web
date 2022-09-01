@@ -45,7 +45,7 @@ export default class SettingsPopup extends Vue {
 
 <style lang="scss" scoped>
 .buy-content {
-  padding: 0 16px;
+  padding: 0 $default-padding;
   margin: 10px 0 3px;
 
   .provider-button {

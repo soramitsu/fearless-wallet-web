@@ -303,7 +303,7 @@ export default class AccountsLayout extends Vue {
 
 <style lang="scss" scoped>
 .accounts-layout {
-  padding: 10px 0 0 16px;
+  padding: 10px 0 0 $default-padding;
   display: flex;
   flex-direction: column;
   height: 100%;

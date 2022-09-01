@@ -46,12 +46,11 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { SigningRequest } from '@polkadot/extension-base/background/types';
-import { bnToBn, formatNumber } from '@polkadot/util';
 import { isSignLocked } from '../../extension/messaging';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
-import type { ExtrinsicEra } from '@polkadot/types/interfaces';
+
 import BaseApi from '@/util/BaseApi';
-import { SelectedWallet } from '@/store/accounts/types';
+
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
 import Checkbox from '@/components/Checkbox.vue';
@@ -74,7 +73,7 @@ import TransactionInfo from '@/screens/signing/TransactionInfo.vue';
 export default class Auth extends Vue {
   @Getter('getSignRequestPayload') payload!: SignerPayloadJSON;
   @Getter('getSignRequest') request!: SigningRequest;
-  @Getter('getSelectedWallet') selectedWallet!: SelectedWallet;
+
   isLocked = false;
   password = '';
   isErrorPassword = false;
@@ -123,14 +122,17 @@ export default class Auth extends Vue {
 .wallet-info {
   margin-bottom: 14px;
 }
+
 .transaction__password {
   margin-bottom: 14px;
 }
+
 .transaction__checkbox {
   width: 100%;
   display: flex;
   align-items: flex-start;
 }
+
 .transaction__info {
   position: relative;
   background: rgba(255, 255, 255, 0.05);
@@ -143,6 +145,7 @@ export default class Auth extends Vue {
   flex-flow: column;
   margin-bottom: 14px;
 }
+
 .transaction__list {
   display: grid;
   grid-template-columns: 100px 1fr;

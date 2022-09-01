@@ -72,9 +72,11 @@ export default class Authorize extends Vue {
     font-weight: 400px;
     margin-bottom: 20px;
   }
+
   .authorize__content--name {
     color: #bb77ff;
   }
+
   .authorize__content--link {
     color: #bb77ff;
     cursor: pointer;

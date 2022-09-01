@@ -47,8 +47,9 @@ import { ActionTypes as SignActionTypes } from '@/store/sign/actions';
   },
 })
 export default class SignRequest extends Vue {
-  value = '';
   @Getter('getSignRequest') request!: ResponseSigning;
+
+  value = '';
 
   withExtension() {
     this.$router.push({ name: Components.Transaction });

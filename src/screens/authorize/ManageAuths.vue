@@ -28,9 +28,10 @@ import { Components } from '@/router/routes';
   },
 })
 export default class ManageAuths extends Vue {
+  @Getter('getAuthList') authlist!: Record<string, AuthUrlInfo>;
+
   filterValue = '';
   filteredList: Record<string, AuthUrlInfo> = {};
-  @Getter('getAuthList') authlist!: Record<string, AuthUrlInfo>;
 
   @Watch('filterValue')
   filter(value: string) {

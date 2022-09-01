@@ -28,6 +28,7 @@ import Switcher from '@/components/Switcher.vue';
 })
 export default class AuthItem extends Vue {
   @Prop(Object) request!: AuthUrlInfo;
+
   get value() {
     return this.request.isAllowed === undefined ? true : this.request.isAllowed;
   }

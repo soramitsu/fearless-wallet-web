@@ -9,10 +9,10 @@
 </template>
 
 <script lang="ts">
-import HistoryItem from './HistoryItem.vue';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { HistoryNode } from '@/interfaces/history';
+import HistoryItem from './HistoryItem.vue';
 import type { FilterHistory } from '@/interfaces/common';
+import { HistoryNode } from '@/interfaces/history';
 
 @Component({
   components: { HistoryItem },

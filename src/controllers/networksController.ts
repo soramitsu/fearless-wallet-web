@@ -1,8 +1,8 @@
+import type { Networks } from '@/store/networks/types';
+import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import type { Networks } from '@/store/networks/types';
-import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
 const NETWORKS_URL = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/v2/chains/chains.json';
 const ASSETS_URL = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v2/chains/assets_dev.json';

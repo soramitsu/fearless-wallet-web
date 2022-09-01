@@ -36,9 +36,9 @@
 </template>
 
 <script lang="ts">
+import { Component, Vue } from 'vue-property-decorator';
 import Logo from '@/components/Logo.vue';
 import BorderButton from '@/components/BorderButton.vue';
-import { Component, Vue } from 'vue-property-decorator';
 
 @Component({
   components: {

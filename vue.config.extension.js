@@ -1,7 +1,7 @@
-const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
-const { defineConfig } = require('@vue/cli-service');
 const path = require('path');
 const fs = require('fs');
+const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
+const { defineConfig } = require('@vue/cli-service');
 const baseConfig = require('./vue.config.base');
 const outputFolder = path.resolve('dist/extension');
 const pages = {};
@@ -26,6 +26,7 @@ module.exports = defineConfig({
   chainWebpack: (config) => {
     config.plugin('define').tap((definitions) => {
       definitions[0]['process.env'].EXTENSION_PREFIX = JSON.stringify(process.env.EXTENSION_PREFIX);
+
       return definitions;
     });
 

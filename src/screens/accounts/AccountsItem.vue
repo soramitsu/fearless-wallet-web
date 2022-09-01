@@ -21,8 +21,8 @@
 </template>
 
 <script lang="ts">
-import CircleButton from '@/components/CircleButton.vue';
 import { Vue, Component, Prop } from 'vue-property-decorator';
+import CircleButton from '@/components/CircleButton.vue';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 
 @Component({

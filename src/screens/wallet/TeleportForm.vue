@@ -104,23 +104,23 @@
 </template>
 
 <script lang="ts">
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import ActivityForm from './ActivityForm.vue';
+import MaxButton from './MaxButton.vue';
+import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
+import type { Currencies } from '@/interfaces/currencies';
 import Loading from '@/components/Loading.vue';
 import Select from '@/components/Select.vue';
 import FloatInput from '@/components/FloatInput.vue';
 import Popup from '@/components/Popup.vue';
-import ActivityForm from './ActivityForm.vue';
-import MaxButton from './MaxButton.vue';
-import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import Corners from '@/components/Corners.vue';
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Networks } from '@/store/networks/types';
 import { firstCharToUp } from '@/util/helpers';
 import { addNumbers, formattedNumber, formattedPrice } from '@/util/numbers';
-import type { Currencies } from '@/interfaces/currencies';
 
 @Component({
   components: {

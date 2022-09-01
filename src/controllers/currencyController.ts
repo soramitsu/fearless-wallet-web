@@ -1,13 +1,4 @@
-import BaseApi from '@/util/BaseApi';
-import LocalStorageController from '@/controllers/localStorageController';
-import NetworksController from '@/controllers/networksController';
-import store from '@/store';
-import teleportInfo from '@/consts/teleport';
 import { BN, isFunction } from '@polkadot/util';
-import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
-import { FPNumber } from '@/util/fp';
-import { getReplacedMetaTyped } from '@/util/helpers';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import type { AvailableInNetworks, Balances, BalanceFP, AvailableInNetworksFP } from '@/interfaces/currencies';
 import type {
   AssetJson,
@@ -20,6 +11,15 @@ import type { SubmittableExtrinsic } from '@polkadot/api-base/types';
 import type { MainNetworkName } from '@/consts/teleport';
 import type { SignerOptions } from '@polkadot/api/submittable/types';
 import type { Wallet } from '@/store/accounts/types';
+import BaseApi from '@/util/BaseApi';
+import LocalStorageController from '@/controllers/localStorageController';
+import NetworksController from '@/controllers/networksController';
+import store from '@/store';
+import teleportInfo from '@/consts/teleport';
+import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
+import { FPNumber } from '@/util/fp';
+import { getReplacedMetaTyped } from '@/util/helpers';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 const XCM_LOC = ['xcm', 'xcmPallet', 'polkadotXcm'];
 

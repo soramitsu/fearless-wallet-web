@@ -111,23 +111,25 @@
 </template>
 
 <script lang="ts">
+import { Component, Vue } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import ReceiveForm from '../ReceiveForm.vue';
+import SendForm from '../SendForm.vue';
+import TeleportForm from '../TeleportForm.vue';
+import BuyForm from '../BuyForm.vue';
+import SelectNetworkButton from '../SelectNetworkButton.vue';
+import History from './History.vue';
+import type { FilterHistory } from '@/interfaces/common';
+import type { History as THistory } from '@/interfaces/history';
 import BorderButton from '@/components/BorderButton.vue';
 import Scroll from '@/components/Scroll.vue';
 import Corners from '@/components/Corners.vue';
 import Dropdown from '@/components/Dropdown.vue';
 import ContentForm from '@/components/ContentForm.vue';
-import History from './History.vue';
 import TabButton from '@/components/TabButton.vue';
-import ReceiveForm from '../ReceiveForm.vue';
-import SendForm from '../SendForm.vue';
-import TeleportForm from '../TeleportForm.vue';
-import BuyPopup from './BuyPopup.vue';
-import SelectNetworkButton from '../SelectNetworkButton.vue';
 import SelectPopup from '@/components/SelectPopup.vue';
 import BaseApi from '@/util/BaseApi';
-import { Component, Vue } from 'vue-property-decorator';
 import { Currencies } from '@/interfaces/currencies';
-import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store/accounts/types';
@@ -136,15 +138,13 @@ import { Components } from '@/router/routes';
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { firstCharToUp } from '@/util/helpers';
 import { formattedNumber, formattedPrice } from '@/util/numbers';
-import type { FilterHistory } from '@/interfaces/common';
-import type { History as THistory } from '@/interfaces/history';
 
 @Component({
   components: {
     Scroll,
     Corners,
     History,
-    BuyPopup,
+    BuyForm,
     SendForm,
     Dropdown,
     TabButton,

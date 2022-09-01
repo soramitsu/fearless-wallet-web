@@ -1,12 +1,16 @@
-import App from '@/App.vue';
 import keyring from '@polkadot/ui-keyring';
-import router from '@/router';
-import store from '@/store';
 import Vue from 'vue';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
+import { Plugin } from 'vue-fragment';
+import router from '@/router';
+import store from '@/store';
+
+import App from '@/App.vue';
+
 import '@/styles';
 import '@/plugins';
 
+Vue.use(Plugin);
 // import AccountsStore from './storeChrome/Accounts';
 
 Vue.config.productionTip = false;

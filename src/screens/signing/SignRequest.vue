@@ -1,5 +1,5 @@
 <template>
-  <TransactionLayout>
+  <TransactionContent>
     <template slot="content">
       <div class="qr-container">
         <Corners class="qr-wrapper" size="big">
@@ -13,17 +13,18 @@
       <Button size="big" class="button" text="Continue with Exension" />
       <Button size="mini" type="link" text="Cancel" />
     </template>
-  </TransactionLayout>
+  </TransactionContent>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import TransactionLayout from '@/screens/signing/TransactionLayout.vue';
 import QRCode from 'qrcode';
+import TransactionContent from '@/layouts/TransactionContent.vue';
 import Button from '@/components/Button.vue';
+
 @Component({
   components: {
-    TransactionLayout,
+    TransactionContent,
     Button,
   },
 })

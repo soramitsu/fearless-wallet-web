@@ -16,12 +16,11 @@
 </template>
 
 <script lang="ts">
+import { Component, Vue, Prop } from 'vue-property-decorator';
+import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
 import Logo from '@/components/Logo.vue';
 import CurrencyController from '@/controllers/currencyController';
-import secondsToMilliseconds from 'date-fns/secondsToMilliseconds/index';
-import { Component, Vue, Prop } from 'vue-property-decorator';
 import { firstCharToUp } from '@/util/helpers';
-import { format, isToday, isThisYear } from 'date-fns';
 import { HistoryNode, TransferType, TransactionType as TTransaction } from '@/interfaces/history';
 import { formattedNumber } from '@/util/numbers';
 

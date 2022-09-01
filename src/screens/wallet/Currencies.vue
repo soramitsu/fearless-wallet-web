@@ -13,17 +13,17 @@
 </template>
 
 <script lang="ts">
-import CurrencyItem from './CurrencyItem.vue';
 import Draggable from 'vuedraggable';
-import { accountController } from '@/controllers/accountController';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Mutation, Getter } from 'vuex-class';
-import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import CurrencyItem from './CurrencyItem.vue';
 import type { SelectedWallet } from '@/store/accounts/types';
 import type { SetCurrenciesProps } from '@/store/networks/types';
 import type { TMutation } from '@/interfaces/common';
 import type { Currency } from '@/interfaces/currencies';
+import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
+import { accountController } from '@/controllers/accountController';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({
   components: {

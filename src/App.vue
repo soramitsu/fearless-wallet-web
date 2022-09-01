@@ -8,14 +8,15 @@
 
 <script lang="ts">
 import keyring from '@polkadot/ui-keyring';
-import NetworksController from '@/controllers/networksController';
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation } from 'vuex-class';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import type { SetSelectedWalletProps, setAccountsProps } from '@/store/accounts/types';
+import type { SetSelectedWalletProps } from '@/store/accounts/types';
 import type { TMutation } from '@/interfaces/common';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import NetworksController from '@/controllers/networksController';
 
 @Component
 export default class App extends Vue {
@@ -31,8 +32,8 @@ export default class App extends Vue {
   async mounted() {
     const { loadNetworks, loadAssets, loadFiats, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
 
-    await Promise.all([loadNetworks(), loadAssets()]);
-    await Promise.all([loadTokensPrice(), loadFiats()]);
+    await Promise.all([loadNetworks(), loadAssets(), loadFiats()]);
+    await loadTokensPrice();
 
     let loadHistory = true;
     this.subscribeAccounts = keyring.accounts.subject;

@@ -1,60 +1,54 @@
 <template>
-  <AboveForm
-    header="Manage dApp access"
-    :showBackIcon="true"
-    :blur="true"
-    :handlerBack="onChangeState"
-    :closeHandler="onChangeState"
-  >
+  <AboveForm header="Manage dApp access" :showCloseIcon="true" :blur="true" :closeHandler="back">
     <SearchInput v-model="filterValue" placeholder="Search in networks" class="manage-auths__search" :isBig="true" />
-    <SCol v-for="el in data" width="100%" v-bind:key="el.text">
-      <SRow>
-        <SCol :span="10" class="s-flex s-justify-start">
-          <span class="auth-item-name">{{ el.name }}</span>
-        </SCol>
-        <SCol :span="2">
-          <SRow flex justify="space-around">
-            <Switcher v-model="el.state" />
-
-            <img class="trash" src="@/assets/trash.svg" @click="onDeleteConnection" />
-          </SRow>
-        </SCol>
-      </SRow>
-      <SDivider class="divider" />
-    </SCol>
+    <Fragment v-for="el in filteredList" v-bind:key="el.id">
+      <AuthItem :request="el" @onRemoveAuth="removeAuth" @onChange="onChange" />
+    </Fragment>
   </AboveForm>
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Fragment } from 'vue-fragment';
+import { Getter } from 'vuex-class';
+import type { AuthUrlInfo } from '@polkadot/extension-base/background/handlers/State';
 import Switcher from '@/components/Switcher.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import SearchInput from '@/components/SearchInput.vue';
+import AuthItem from '@/screens/authorize/AuthItem.vue';
+import { Components } from '@/router/routes';
+import store from '@/store';
+
 @Component({
   components: {
     AboveForm,
+    AuthItem,
+    Fragment,
     Switcher,
     SearchInput,
   },
 })
-export default class Auth extends Vue {
+export default class ManageAuths extends Vue {
   filterValue = '';
-  data = [
-    {
-      name: 'polkadot/apps',
-      state: true,
-    },
-    {
-      name: 'polkaswap',
-      state: false,
-    },
-  ];
+  filteredList: Record<string, AuthUrlInfo> = {};
+  @Getter('getAuthList') authlist!: Record<string, AuthUrlInfo>;
 
-  onDeleteConnection(event: Event) {
-    console.info(event);
+  @Watch('filterValue')
+  filter(value: string) {
+    this.filteredData(value);
   }
-}
-</script>
+
+  onChange(id: string) {
+    store.dispatch('UPDATE_AUTH_CONNECTION', id);
+  }
+
+  filteredData(value: string) {
+    const filtered = Object.entries<AuthUrlInfo>(this.authlist).filter(([, info]) => {
+      return info.origin.includes(value);
+    });
+
+    this.filteredList = Object.fromEntries(filtered);
+  }
 
 <style lang="scss" scoped>
 .divider {
@@ -73,6 +67,9 @@ export default class Auth extends Vue {
 .trash {
   cursor: pointer;
 }
+</script>
+
+<style lang="scss" scoped>
 .manage-auths__search {
   width: 100%;
   margin-bottom: 17px;

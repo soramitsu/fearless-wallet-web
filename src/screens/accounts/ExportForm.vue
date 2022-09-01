@@ -13,19 +13,19 @@
 </template>
 
 <script lang="ts">
+import { Getter } from 'vuex-class';
+import { saveAs } from 'file-saver';
+import { Vue, Component, Prop } from 'vue-property-decorator';
+import type { SelectedWallet } from '@/store/accounts/types';
+import type { Networks } from '@/store/networks/types';
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
 import BaseApi from '@/util/BaseApi';
 import AboveForm from '@/components/AboveForm.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import InformationBlock from '@/components/InformationBlock.vue';
-import { Getter } from 'vuex-class';
-import { saveAs } from 'file-saver';
-import { Vue, Component, Prop } from 'vue-property-decorator';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import type { SelectedWallet } from '@/store/accounts/types';
-import type { Networks } from '@/store/networks/types';
 
 @Component({
   components: {

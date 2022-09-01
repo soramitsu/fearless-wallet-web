@@ -2,7 +2,7 @@
   <div :class="backgroundClasses">
     <div class="above-form">
       <div class="header-content">
-        <div v-if="showBackIcon" class="icon icon-back" @click="handlerBack">
+        <div v-if="showBackIcon" class="icon icon-back">
           <img src="@/assets/chevron-left.svg" />
         </div>
         <div v-else class="icon">
@@ -33,6 +33,7 @@ export default class AboveForm extends Vue {
   @Prop({ default: '' }) header!: string;
   @Prop({ default: false }) showAcceptIcon!: boolean;
   @Prop({ default: false }) showBackIcon!: boolean;
+  @Prop({ default: false }) showCloseIcon!: boolean;
   @Prop({ default: false }) blur!: boolean;
   @Prop({ default: () => () => null }) saveChanges!: VoidFunction;
   @Prop({ default: () => () => null }) handlerBack!: VoidFunction;

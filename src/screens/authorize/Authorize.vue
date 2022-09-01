@@ -1,34 +1,33 @@
 <template>
-  <AboveForm :blur="true" header="Authorize" :closeHandler="onClick">
+  <AboveForm :blur="true" header="Authorize" :showCloseIcon="false">
     <div class="authorize">
       <div>
         <p class="authorize__content">
           An application, self-identifying as
-          <span class="authorize__content--name">{{ name }}</span> is requesting access from my
-          <span class="authorize__content--link">{{ url }}</span>
+          <span class="authorize__content--name">{{ request.origin }}</span> is requesting access from my
+          <span class="authorize__content--link">{{ request.url }}</span>
         </p>
         <Alert :message="alertMessage" />
       </div>
       <div class="authorize__control">
-        <Button
-          width="100%"
-          text="Yes, allow this application access"
-          size="big"
-          fontSize="big"
-          @click="$emit('authorizeApp')"
-        />
-        <Button width="100%" type="link" text="Reject" size="big" fontSize="medium" @click="$emit('rejectApp')" />
+        <Button width="100%" text="Yes, allow this application access" size="big" fontSize="big" @click="onApprove" />
+        <Button width="100%" type="link" text="Reject" size="big" fontSize="medium" @click="onReject" />
       </div>
     </div>
   </AboveForm>
 </template>
 
 <script lang="ts">
-import { Vue, Prop, Component } from 'vue-property-decorator';
+import { Vue, Component } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import { AuthorizeRequest } from '@polkadot/extension-base/background/types';
 import Button from '@/components/Button.vue';
 import Hint from '@/components/Hint.vue';
-import Alert from '@/screens/authorize/Alert.vue';
+import Alert from '@/components/Alert.vue';
 import AboveForm from '@/components/AboveForm.vue';
+import store from '@/store';
+import { Components } from '@/router/routes';
+import { ActionTypes } from '@/store/auth/actions';
 
 @Component({
   components: {
@@ -39,13 +38,13 @@ import AboveForm from '@/components/AboveForm.vue';
   },
 })
 export default class Authorize extends Vue {
-  @Prop(String) url!: string;
-  @Prop(String) name!: string;
+  @Getter('getRequest') requests!: AuthorizeRequest[];
+
   alertMessage =
     'Only approve this request if you trust the application. Approving gives the application access to the addresses of you accounts';
 
   onClick(event: Event) {
-    console.info(event.target);
+    console.log(event.target);
   }
 }
 </script>

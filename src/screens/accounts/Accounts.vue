@@ -31,20 +31,21 @@
 </template>
 
 <script lang="ts">
+import { Getter } from 'vuex-class';
+import { Vue, Component } from 'vue-property-decorator';
+import AccountSettingsPopup from './AccountSettingsPopup.vue';
+import AccountsItem from './AccountsItem.vue';
+import type { SelectedWallet } from '@/store/accounts/types';
+import type { Networks } from '@/store/networks/types';
 import ContentForm from '@/components/ContentForm.vue';
 import Input from '@/components/Input.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import Scroll from '@/components/Scroll.vue';
-import AccountsItem from './AccountsItem.vue';
 import BaseApi from '@/util/BaseApi';
-import { Getter } from 'vuex-class';
-import { Vue, Component } from 'vue-property-decorator';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { getImgPathByNetworkName } from '@/util/imgPath';
-import type { SelectedWallet } from '@/store/accounts/types';
-import type { Networks } from '@/store/networks/types';
 
 @Component({
   components: {

@@ -1,9 +1,9 @@
 import keyring from '@polkadot/ui-keyring';
-import { getMetaTyped } from '@/util/helpers';
-import { accountController } from '@/controllers/accountController';
 import type { MutationTree } from 'vuex';
 import type { SetSelectedWalletProps, SetSelectedFiatProps, setAccountsProps } from './types';
 import type { State } from './state';
+import { accountController } from '@/controllers/accountController';
+import { getMetaTyped } from '@/util/helpers';
 
 export enum MutationTypes {
   SET_SELECTED_WALLET = 'SET_SELECTED_WALLET',

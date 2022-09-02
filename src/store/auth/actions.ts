@@ -8,7 +8,6 @@ import {
   deleteAuthRequest,
   getAuthList,
   removeAuthorization,
-  updateAuthorization,
 } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';
@@ -52,8 +51,8 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.APPROVE_REQUEST]({ commit }, payload) {
-    const adresses = BaseApi.getPolkadotAddresses();
-    await approveAuthRequest(payload.id, adresses);
+    const addresses = BaseApi.getPolkadotAddresses();
+    await approveAuthRequest(payload.id, addresses);
 
     commit(MutationTypes.DELETE_AUTH_REQUEST);
   },

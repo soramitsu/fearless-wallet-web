@@ -11,6 +11,7 @@
       </div>
       <div class="authorize__control">
         <Button width="100%" text="Yes, allow this application access" size="big" fontSize="big" @click="onApprove" />
+
         <Button width="100%" type="link" text="Reject" size="big" fontSize="medium" @click="onReject" />
       </div>
     </div>

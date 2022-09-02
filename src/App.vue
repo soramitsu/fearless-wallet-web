@@ -6,9 +6,9 @@
 </template>
 
 <script lang="ts">
-import keyring from '@polkadot/ui-keyring';
+import { keyring } from '@polkadot/ui-keyring';
 import { Component, Vue } from 'vue-property-decorator';
-import { Mutation, Action } from 'vuex-class';
+import { Mutation } from 'vuex-class';
 import store from './store';
 import type { SetSelectedWalletProps } from '@/store/accounts/types';
 import type { TMutation } from '@/interfaces/common';

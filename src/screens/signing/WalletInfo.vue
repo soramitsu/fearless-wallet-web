@@ -8,9 +8,9 @@
           <span ref="address" class="wallet__address" @click="saveToClipboard">{{ address }}</span>
           <img class="wallet-info__clipboard" src="@/assets/clipboard.svg" @click="saveToClipboard" />
         </div>
-        <div class="network__badge-wrapper">
+        <!-- <div class="network__badge-wrapper">
           <div class="network__badge">{{ network }}</div>
-        </div>
+        </div> -->
       </div>
     </div>
   </Corners>

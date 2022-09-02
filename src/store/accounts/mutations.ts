@@ -22,6 +22,8 @@ const mutations: MutationTree<State> & Mutations = {
     const { meta } = keyring.getPair(selectedWalletAddress);
     const { name, ethereumAddress } = getMetaTyped(meta);
 
+    accountController.setSelectedWalletAddress(selectedWalletAddress);
+
     state.selectedWallet = {
       address: selectedWalletAddress,
       ethereumAddress,
@@ -30,11 +32,11 @@ const mutations: MutationTree<State> & Mutations = {
   },
 
   [MutationTypes.SET_SELECTED_FIAT](state, { fiatName, currencies }) {
-    state.selectedFiat = fiatName;
-
     accountController.setSelectedFiat(fiatName);
 
     currencies.forEach((currency) => currency.updatePrice(fiatName));
+
+    state.selectedFiat = fiatName;
   },
 
   [MutationTypes.SET_ACCOUNTS](state, { accounts }) {

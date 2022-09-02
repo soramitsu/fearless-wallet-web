@@ -26,21 +26,23 @@
         </div>
       </div>
       <div class="row second-row">
-        <div class="currency-name">
+        <div class="currency-name overflow">
           {{ tokenString }}
         </div>
-        <div class="count-tokens">
+        <div class="count-tokens overflow">
           {{ countTokensString }}
         </div>
       </div>
       <div class="row third-row">
-        <div class="row">
+        <div class="overflow row">
           {{ priceString }}
 
           <div :class="changePriceClasses">{{ usd24HoursChangeString }}</div>
         </div>
 
-        {{ totalBalanceString }}
+        <div>
+          {{ totalBalanceString }}
+        </div>
       </div>
     </div>
     <div class="activity">
@@ -106,7 +108,7 @@ export default class CurrencyItem extends Vue {
 
   get changePriceClasses() {
     const { hours24Change } = this.currency;
-    const classes = ['price'];
+    const classes = ['price-change'];
 
     if (hours24Change > 0) classes.push('up-price');
     else if (hours24Change < 0) classes.push('down-price');
@@ -275,19 +277,26 @@ export default class CurrencyItem extends Vue {
       display: flex;
       font-size: 12px;
       color: $default-white;
-    }
 
-    .price {
-      margin-left: 2px;
-    }
+      .price-change {
+        margin-left: 2px;
+      }
 
-    .up-price {
-      color: rgba(126, 222, 155, 0.75);
-    }
+      .up-price {
+        color: rgba(126, 222, 155, 0.75);
+      }
 
-    .down-price {
-      color: #d0021b;
+      .down-price {
+        color: #d0021b;
+      }
     }
+  }
+
+  .overflow {
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .second-row-left {

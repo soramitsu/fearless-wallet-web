@@ -59,6 +59,8 @@ export default class Main extends Vue {
 
   toggleSelectedFiat(fiatName: string) {
     this.setSelectedFiat({ fiatName });
+
+    this.handlerClose();
   }
 }
 </script>

@@ -84,10 +84,10 @@ export default class NodeItem extends Vue {
     font-size: 14px;
     text-align: left;
     margin-top: 5px;
-    overflow: hidden;
-    text-overflow: ellipsis;
     width: 410px;
     color: #888888;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 

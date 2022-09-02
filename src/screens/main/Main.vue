@@ -32,7 +32,7 @@
 
     <AboutPopup v-if="showAboutPopup" :handlerClose="toggleAboutPopupVisible" />
 
-    <router-view></router-view>
+    <router-view @openFiatsPopup="toggleFiatsPopupVisible"></router-view>
 
     <Menu />
   </div>
@@ -81,7 +81,7 @@ export default class Main extends Vue {
   toggleFiatsPopupVisible() {
     this.showFiatsPopup = !this.showFiatsPopup;
 
-    if (this.showFiatsPopup) this.toggleSettingsVisible();
+    if (this.showFiatsPopup) this.showSettings = false;
   }
 
   toggleSettingsVisible() {

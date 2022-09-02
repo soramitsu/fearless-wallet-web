@@ -1,7 +1,7 @@
 <template>
   <div class="wallet">
     <header class="wallet-header">
-      <div class="wallet-balance">{{ fiatSymbol }} {{ totalBalance }}</div>
+      <div class="wallet-balance" @click="$emit('openFiatsPopup')">{{ fiatSymbol }} {{ totalBalance }}</div>
 
       <SelectNetworkButton
         :ref="selectNetworkButtonRef"
@@ -303,7 +303,6 @@ export default class Wallet extends Vue {
   }
 
   .wallet-header {
-    width: 100%;
     height: 46px;
     display: flex;
     justify-content: space-between;
@@ -315,7 +314,15 @@ export default class Wallet extends Vue {
     font-weight: 800;
     font-size: 22px;
     line-height: 28px;
-    max-width: 220px;
+    min-width: 75px;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &:hover {
+      cursor: pointer;
+    }
   }
 }
 </style>

@@ -88,14 +88,15 @@ export default class AccountsItem extends Vue {
       font-size: 12px;
       font-weight: 700;
       color: rgba(255, 255, 255, 0.5);
-      margin-bottom: 5px;
+      height: 16px;
     }
 
     .token-name {
       font-weight: 700;
       color: rgba(255, 255, 255, 1);
       font-size: 20px;
-      margin-bottom: 5px;
+      height: 30px;
+      line-height: 30px;
     }
 
     .address {
@@ -105,6 +106,7 @@ export default class AccountsItem extends Vue {
       text-align: left;
       overflow: hidden;
       text-overflow: ellipsis;
+      height: 16px;
     }
   }
 }

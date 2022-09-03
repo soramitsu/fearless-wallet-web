@@ -1,4 +1,4 @@
-import keyring from '@polkadot/ui-keyring';
+import { keyring } from '@polkadot/ui-keyring';
 import { RouteConfig } from 'vue-router';
 import Dex from '@/screens/dex/Dex.vue';
 import Export from '@/screens/accounts/Export.vue';
@@ -17,6 +17,7 @@ const AccountsLayout = () => import('@/screens/accounts/AccountsLayout.vue');
 const Main = () => import('@/screens/main/Main.vue');
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Authorize = () => import('@/screens/authorize/Authorize.vue');
+const MetaRequest = () => import('@/screens/metadata/Metadata.vue');
 
 export enum Components {
   Welcome = 'Welcome',
@@ -34,6 +35,7 @@ export enum Components {
   Export = 'Export',
   ManageAuths = 'ManageAuths',
   Authorize = 'Authorize',
+  MetaRequest = 'MetaRequest',
 }
 
 const haveAccounts = () => keyring.getAccounts().length > 0;
@@ -54,6 +56,11 @@ const routes: Array<RouteConfig> = [
     path: 'authorize',
     name: Components.Authorize,
     component: Authorize,
+  },
+  {
+    path: 'meta',
+    name: Components.MetaRequest,
+    component: MetaRequest,
   },
   {
     path: '/main',

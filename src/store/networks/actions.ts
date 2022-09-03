@@ -250,7 +250,6 @@ export function connectToApi(name: string, url: string, autoConnectMs = 0) {
     // console.info(`%c${name.toUpperCase()}. API connection successful.`, 'background:green;color:#fff');
   } catch (ex) {
     // api.disconnect();
-
     console.info(`%c${name.toUpperCase()}. Connection to api failed.`, 'background:red;color:#fff');
   }
 

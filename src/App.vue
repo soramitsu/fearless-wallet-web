@@ -15,6 +15,8 @@ import type { TMutation } from '@/interfaces/common';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
+import { ActionTypes as MetaActionTypes } from '@/store/metadata/actions';
+
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 
 import NetworksController from '@/controllers/networksController';
@@ -32,6 +34,7 @@ export default class App extends Vue {
     const { loadNetworks, loadAssets, loadFiats, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
 
     await store.dispatch(AuthActionTypes.SUBSCRIBE_TO_DAPP_EVENTS); //TODO refactor to @Action
+    await store.dispatch(MetaActionTypes.SUBSCRIBE_TO_METADATA_REQUESTS); //TODO refactor to @Action
 
     await Promise.all([loadNetworks(), loadAssets(), loadFiats()]);
     await loadTokensPrice();

@@ -51,9 +51,6 @@ export default class Authorize extends Vue {
 
   alertMessage =
     'This approval will add the metadata to your extension instance, allowing future requests to be decoded using this metadata';
-  mounted() {
-    console.log(this.request);
-  }
 
   get request() {
     const [request] = this.requests;

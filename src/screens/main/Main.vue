@@ -28,7 +28,7 @@
       @openAboutPopup="toggleAboutPopupVisible"
     />
 
-    <FiatsPopup v-if="showFiatsPopup" :handlerClose="toggleFiatsPopupVisible" />
+    <FiatsPopup v-if="showFiatsPopup" :showAnimation="showFiatPopupAnimation" :handlerClose="toggleFiatsPopupVisible" />
 
     <AboutPopup v-if="showAboutPopup" :handlerClose="toggleAboutPopupVisible" />
 
@@ -67,6 +67,7 @@ export default class Main extends Vue {
   showAboutPopup = false;
   showSelectWalletPopup = false;
   showWalletDetailsPopup = false;
+  showFiatPopupAnimation = false;
 
   get highlightSettingsIcon() {
     return this.showSettings || this.showAboutPopup || this.showFiatsPopup;
@@ -78,7 +79,8 @@ export default class Main extends Vue {
     if (this.showAboutPopup) this.toggleSettingsVisible();
   }
 
-  toggleFiatsPopupVisible() {
+  toggleFiatsPopupVisible(showFiatPopupAnimation = false) {
+    this.showFiatPopupAnimation = !this.showFiatsPopup ? showFiatPopupAnimation : false;
     this.showFiatsPopup = !this.showFiatsPopup;
 
     if (this.showFiatsPopup) this.showSettings = false;

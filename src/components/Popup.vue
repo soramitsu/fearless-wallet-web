@@ -7,7 +7,7 @@
 
           <template v-else>
             <div class="button"></div>
-            <div class="header-text">{{ headerText }}</div>
+            <div v-if="headerText" class="header-text">{{ headerText }}</div>
           </template>
 
           <s-button type="link" class="button" @click="close">

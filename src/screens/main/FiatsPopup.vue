@@ -11,7 +11,7 @@
       :showSearch="true"
       :staticHeight="true"
       :showBorder="true"
-      :showAnimation="false"
+      :showAnimation="showAnimation"
       :options="filteredOptionsFiats"
       :toggleValue="toggleSelectedFiat"
       :handlerClose="handlerClose"
@@ -36,6 +36,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 export default class Main extends Vue {
   filterValue = '';
 
+  @Prop(Boolean) showAnimation!: boolean;
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(NetworksGettersTypes.getFiats) fiats!: FiatJson[];
   @Getter(AccountsGettersTypes.getSelectedFiat) selectedFiat!: string;

@@ -1,7 +1,7 @@
 <template>
   <div class="wallet">
     <header class="wallet-header">
-      <div class="wallet-balance" @click="$emit('openFiatsPopup')">{{ fiatSymbol }} {{ totalBalance }}</div>
+      <div class="wallet-balance" @click="$emit('openFiatsPopup', true)">{{ fiatSymbol }} {{ totalBalance }}</div>
 
       <SelectNetworkButton
         :ref="selectNetworkButtonRef"

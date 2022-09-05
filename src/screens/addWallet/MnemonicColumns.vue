@@ -26,11 +26,12 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import type { MnemonicConfirmation } from '@/interfaces/common';
 
 @Component
 export default class MnemonicColumns extends Vue {
   @Prop(String) mnemonic!: string;
-  @Prop(Array) selectedMnemonicElements!: string[];
+  @Prop(Array) selectedMnemonicElements!: MnemonicConfirmation[];
 
   get mnemonicArray() {
     return this.mnemonic.split(' ');
@@ -53,7 +54,7 @@ export default class MnemonicColumns extends Vue {
   }
 
   getMnemonicElement(mnemonicElement: string, index: number) {
-    return !this.selectedMnemonicElements ? mnemonicElement : this.selectedMnemonicElements[index];
+    return !this.selectedMnemonicElements ? mnemonicElement : this.selectedMnemonicElements[index]?.word ?? '';
   }
 
   getNumberString(number: number) {

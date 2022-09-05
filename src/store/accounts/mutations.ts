@@ -1,6 +1,6 @@
 import keyring from '@polkadot/ui-keyring';
 import type { MutationTree } from 'vuex';
-import type { SetSelectedWalletProps, SetSelectedFiatProps } from './types';
+import type { SetSelectedWalletProps, SetSelectedFiatProps, setAccountsProps } from './types';
 import type { State } from './state';
 import { accountController } from '@/controllers/accountController';
 import { getMetaTyped } from '@/util/helpers';
@@ -8,11 +8,13 @@ import { getMetaTyped } from '@/util/helpers';
 export enum MutationTypes {
   SET_SELECTED_WALLET = 'SET_SELECTED_WALLET',
   SET_SELECTED_FIAT = 'SET_SELECTED_FIAT',
+  SET_ACCOUNTS = 'SET_ACCOUNTS',
 }
 
 export type Mutations = {
   [MutationTypes.SET_SELECTED_WALLET](state: State, props: SetSelectedWalletProps): void;
   [MutationTypes.SET_SELECTED_FIAT](state: State, props: SetSelectedFiatProps): void;
+  [MutationTypes.SET_ACCOUNTS](state: State, props: setAccountsProps): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -33,6 +35,10 @@ const mutations: MutationTree<State> & Mutations = {
     accountController.setSelectedFiat(fiatName);
 
     currencies.forEach((currency) => currency.updatePrice(fiatName));
+  },
+
+  [MutationTypes.SET_ACCOUNTS](state, { accounts }) {
+    state.accounts = accounts;
   },
 };
 

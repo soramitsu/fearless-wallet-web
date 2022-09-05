@@ -3,15 +3,15 @@ import { RouteConfig } from 'vue-router';
 import Dex from '@/screens/dex/Dex.vue';
 import Export from '@/screens/accounts/Export.vue';
 import History from '@/screens/history/History.vue';
-import Network from '@/screens/accounts/Network.vue';
+import Nodes from '@/screens/accounts/Nodes.vue';
 import Staking from '@/screens/staking/Staking.vue';
 import Token from '@/screens/wallet/token/Token.vue';
 import Wallet from '@/screens/wallet/Wallet.vue';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import AddWallet from '@/screens/addWallet/AddWallet.vue';
 import ManageAuths from '@/screens/authorize/ManageAuths.vue';
-
 import store from '@/store';
+
 const Accounts = () => import('@/screens/accounts/Accounts.vue');
 const AccountsLayout = () => import('@/screens/accounts/AccountsLayout.vue');
 const Main = () => import('@/screens/main/Main.vue');
@@ -32,7 +32,7 @@ export enum Components {
   Token = 'Token',
   AccountsLayout = 'AccountsLayout',
   Accounts = 'Accounts',
-  Network = 'Network',
+  Nodes = 'Nodes',
   Export = 'Export',
   ManageAuths = 'ManageAuths',
   Authorize = 'Authorize',
@@ -103,8 +103,8 @@ const routes: Array<RouteConfig> = [
           },
           {
             path: ':network',
-            name: Components.Network,
-            component: Network,
+            name: Components.Nodes,
+            component: Nodes,
           },
           {
             path: ':network/export',

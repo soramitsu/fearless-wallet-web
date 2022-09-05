@@ -398,7 +398,7 @@ export default class TeleportForm extends Vue {
   }
 
   .summary {
-    padding: 16px;
+    padding: $default-padding;
     background-color: rgba(255, 255, 255, 0.05) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     clip-path: $big-clip-path-left-top-and-right-bottom;

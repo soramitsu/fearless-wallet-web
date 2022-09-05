@@ -1,7 +1,6 @@
 <template>
   <Popup
     :showHeader="false"
-    :showBlur="false"
     :showBorder="true"
     :handlerClose="handlerClose"
     :top="top"
@@ -27,13 +26,9 @@
         <img src="@/assets/copy-2.svg" class="icon" />
         <div class="label">Copy address</div>
       </div>
-      <div class="row" @click="open()">
+      <div class="row" @click="openSubscan">
         <img src="@/assets/globus.svg" class="icon" />
         <div class="label">View in Subscan</div>
-      </div>
-      <div class="row" @click="open(false)">
-        <img src="@/assets/globus.svg" class="icon" />
-        <div class="label">View in Polkascan</div>
       </div>
     </div>
   </Popup>
@@ -46,7 +41,6 @@ import type { SelectedWallet } from '@/store/accounts/types';
 import Popup from '@/components/Popup.vue';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
-import { firstCharToUp } from '@/util/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({
@@ -65,7 +59,7 @@ export default class AccountSettingsPopup extends Vue {
     if (this.buttonTopClick === undefined) return 110;
 
     if (this.buttonTopClick > 300) {
-      const subtractionNumber = this.showReplaceAccount ? 265 : 225;
+      const subtractionNumber = this.showReplaceAccount ? 221 : 181;
 
       return this.buttonTopClick - subtractionNumber;
     }
@@ -83,19 +77,15 @@ export default class AccountSettingsPopup extends Vue {
     this.close();
   }
 
-  open(isSubscan = true) {
-    if (isSubscan) window.open(`https://${this.selectedNetwork}.subscan.io/account/${this.addressByNetwork}`);
-    else
-      window.open(
-        `https://explorer.polkascan.io/${firstCharToUp(this.selectedNetwork)}/account/${this.addressByNetwork}`
-      );
+  openSubscan() {
+    window.open(`https://${this.selectedNetwork}.subscan.io/account/${this.addressByNetwork}`);
 
     this.close();
   }
 
   openNetwork() {
     this.$router.push({
-      name: Components.Network,
+      name: Components.Nodes,
       params: {
         network: this.selectedNetwork,
       },

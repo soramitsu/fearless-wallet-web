@@ -1,15 +1,15 @@
 <template>
-  <div class="currencies">
-    <Draggable v-model="filteredCurrencies" handle=".handle">
-      <CurrencyItem
-        v-for="currency in filteredCurrencies"
-        :key="currency.token"
-        :currency="currency"
-        :showAssetsManagementForm="showAssetsManagementForm"
-        :toggleVisibleActivityForm="toggleVisibleActivityForm"
-      />
-    </Draggable>
-  </div>
+  <Draggable v-model="filteredCurrencies" handle=".handle">
+    <CurrencyItem
+      v-for="currency in filteredCurrencies"
+      :key="currency.token"
+      :currency="currency"
+      :selectedNetwork="selectedNetwork"
+      :showAssetsManagementForm="showAssetsManagementForm"
+      :toggleVisibleActivityForm="toggleVisibleActivityForm"
+      @toggleHideZeroBalance="$emit('toggleHideZeroBalance')"
+    />
+  </Draggable>
 </template>
 
 <script lang="ts">
@@ -44,7 +44,7 @@ export default class Currencies extends Vue {
   get filteredCurrencies() {
     if (this.showAssetsManagementForm || !this.hideZeroBalance) return this.currencies;
 
-    return this.currencies.filter((currency) => currency.getTotalCountTokens(this.selectedWallet) !== '0');
+    return this.currencies;
   }
 
   set filteredCurrencies(currencies) {
@@ -54,8 +54,3 @@ export default class Currencies extends Vue {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-.currencies {
-}
-</style>

@@ -9,8 +9,8 @@
           <img src="@/assets/fw-logo.svg" />
         </div>
         <div class="header">{{ header }}</div>
-        <div class="activity-block">
-          <div v-if="showCloseIcon" class="icon" @click="closeHandler">
+        <div class="activity">
+          <div class="icon" @click="closeHandler">
             <s-icon name="basic-close-24" />
           </div>
           <div v-show="showAcceptIcon" class="icon" @click="saveChanges">
@@ -56,7 +56,6 @@ export default class AboveForm extends Vue {
 
   height: $extension-height;
   width: $extension-width;
-  border-radius: $default-border-radius;
   position: absolute;
   top: 0;
   left: 0;
@@ -65,25 +64,24 @@ export default class AboveForm extends Vue {
   .above-form {
     position: relative;
     top: 80px;
-    border-radius: $default-border-radius;
     width: $extension-width;
-    height: 560px;
+    height: $extension-height - $header-height -$default-padding - $default-padding;
     background-color: #111111;
     clip-path: polygon(100% 0, 100% 100%, 0 100%, 0 4%, 4% 0);
-    // animation: transform 0.3s forwards;
+    animation: transform 0.3s forwards;
 
-    // @keyframes transform {
-    //   0% {
-    //     transform: translateY(10%);
-    //   }
-    //   100% {
-    //     transform: translateY(0);
-    //   }
-    // }
+    @keyframes transform {
+      0% {
+        transform: translateY(10%);
+      }
+      100% {
+        transform: translateY(0);
+      }
+    }
 
     .content {
-      height: 496px;
-      padding: 16px;
+      height: 456px;
+      padding: $default-padding;
     }
 
     .s-icon-basic-close-24 {
@@ -114,7 +112,7 @@ export default class AboveForm extends Vue {
       font-size: 24px;
       display: flex;
       justify-content: space-between;
-      padding: 16px;
+      padding: $default-padding;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
@@ -141,7 +139,7 @@ export default class AboveForm extends Vue {
       margin: auto 0;
     }
 
-    .activity-block {
+    .activity {
       display: flex;
       justify-content: right;
     }

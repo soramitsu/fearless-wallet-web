@@ -5,16 +5,16 @@
     <MnemonicColumns :mnemonic="mnemonic" :selectedMnemonicElements="selectedMnemonicElements" />
 
     <div class="hint">Select words in the right order:</div>
+
     <div class="words">
       <BorderButton
         v-for="(mnemonicElement, index) in mnemonicMix"
         :key="index"
-        type="secondary"
         size="small"
         fontSize="small"
         borderRadius="mini"
         :text="mnemonicElement"
-        :class="addButtonClasses(mnemonicElement)"
+        :class="addButtonClasses(mnemonicElement, index)"
         @click="updateSelectedMnemonicElements(mnemonicElement, index)"
       />
     </div>
@@ -24,6 +24,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import MnemonicColumns from './MnemonicColumns.vue';
+import type { MnemonicConfirmation } from '@/interfaces/common';
 import BorderButton from '@/components/BorderButton.vue';
 
 @Component({
@@ -34,29 +35,33 @@ import BorderButton from '@/components/BorderButton.vue';
 })
 export default class MnemonicConfirmationForm extends Vue {
   @Prop(String) mnemonic!: string;
-  @PropSync('selectedMnemonicElements', { type: Array }) syncedSelectedMnemonicElements!: string[];
-
-  get mnemonicArray() {
-    return this.mnemonic.split(' ');
-  }
+  @PropSync('selectedMnemonicElements', { type: Array }) syncedSelectedMnemonicElements!: MnemonicConfirmation[];
 
   get mnemonicMix() {
-    return this.mnemonicArray;
+    return this.mnemonic.split(' ').sort(() => Math.random() - 0.5);
   }
 
-  addButtonClasses(word: string) {
+  addButtonClasses(word: string, index: number) {
+    const findIndex = this.syncedSelectedMnemonicElements.findIndex(
+      ({ word: _word, initialIndex }) => _word === word && initialIndex === index
+    );
+
     return [
       'button-mnemonic',
       {
-        'inactive-button': this.syncedSelectedMnemonicElements.includes(word),
+        'inactive-button': findIndex !== -1,
       },
     ];
   }
 
-  updateSelectedMnemonicElements(element: string) {
-    if (this.syncedSelectedMnemonicElements.includes(element)) return;
+  updateSelectedMnemonicElements(word: string, index: number) {
+    const findIndex = this.syncedSelectedMnemonicElements.findIndex(
+      ({ word: _word, initialIndex }) => _word === word && initialIndex === index
+    );
 
-    this.syncedSelectedMnemonicElements.push(element);
+    if (findIndex !== -1) return;
+
+    this.syncedSelectedMnemonicElements.push({ word, initialIndex: index });
   }
 }
 </script>
@@ -64,7 +69,7 @@ export default class MnemonicConfirmationForm extends Vue {
 <style lang="scss" scoped>
 .mnemonic-confirmation-form {
   .hint {
-    margin: 20px 0 26px;
+    margin: 7px 0;
   }
 
   .words {
@@ -76,7 +81,6 @@ export default class MnemonicConfirmationForm extends Vue {
   .warning {
     height: 48px;
     line-height: 170%;
-    margin-bottom: 10px;
   }
 
   .button-mnemonic {

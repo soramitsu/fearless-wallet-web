@@ -60,7 +60,7 @@ export default class NetworkItem extends Vue {
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  padding: 14px 16px 14px 18px;
+  padding: 14px $default-padding 14px 18px;
   color: $default-white;
 
   &:first-child {

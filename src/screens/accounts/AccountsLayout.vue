@@ -1,36 +1,40 @@
 <template>
   <div>
-    <ContentForm :height="480">
+    <ContentForm :height="450">
       <div class="accounts-layout">
         <div class="navigation">
           <div class="left-part">
             <img src="@/assets/arrow-left-circle.svg" class="chevron" @click="back" />
+
             <div>{{ path }}</div>
           </div>
 
           <CircleButton
             v-if="showHeaderMenu"
+            :ref="dotsVerticalRef"
             iconName="dots-vertical"
             backgroundColor="none"
             backgroundColorHover="light-black"
-            @click="openAccountSettings(network)"
+            @click="openAccountSettingsPopup(network)"
           />
         </div>
+
         <Scroll>
           <router-view
-            ref="content"
+            :ref="routerViewRef"
             :password="password"
             @setPassword="setPassword"
             @openEditNodeForm="openEditNodeForm"
-            @openNodeSettings="openNodeSettings"
-            @openAccountSettings="openAccountSettings"
+            @openAccountSettingsPopup="openAccountSettingsPopup"
+            @openNodeSettingsPopup="openNodeSettingsPopup"
+            @closeNodeSettings="closeNodeSettings"
           />
         </Scroll>
       </div>
     </ContentForm>
 
     <AccountSettingsPopup
-      v-if="showAccountSettings"
+      v-if="showAccountSettingsPopup"
       :selectedNetwork="selectedNetwork"
       :handlerClose="closeAccountSettings"
       :showSwitchNode="isAccountsRoute"
@@ -49,8 +53,9 @@
     />
 
     <NodeSettingsPopup
-      v-if="showNodeSettings"
+      v-if="showNodeSettingsPopup"
       :handlerClose="closeNodeSettings"
+      :buttonTopClick="buttonTopClick"
       @openEditNodeForm="openEditNodeForm"
       @openNotificationPopup="openNotificationPopup"
     />
@@ -73,13 +78,13 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component } from 'vue-property-decorator';
+import { Vue, Component, Watch } from 'vue-property-decorator';
 import ExportForm from './ExportForm.vue';
 import EditNodeForm from './EditNodeForm.vue';
 import NodeSettingsPopup from './NodeSettingsPopup.vue';
 import ReplacePopup from './ReplacePopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
-import Network from './Network.vue';
+import Nodes from './Nodes.vue';
 import ContentForm from '@/components/ContentForm.vue';
 import Input from '@/components/Input.vue';
 import CircleButton from '@/components/CircleButton.vue';
@@ -105,6 +110,8 @@ type NotificationType = 'delete' | 'export' | '';
   },
 })
 export default class AccountsLayout extends Vue {
+  readonly dotsVerticalRef = 'dotsVertical';
+  readonly routerViewRef = 'routerView';
   password = '';
   selectedNetwork = '';
   selectedNodeName = '';
@@ -113,9 +120,9 @@ export default class AccountsLayout extends Vue {
   buttonTopClick = 0;
   showReplaceAccount = true;
   showReplacePopup = false;
-  showAccountSettings = false;
+  showAccountSettingsPopup = false;
   showEditNodeForm = false;
-  showNodeSettings = false;
+  showNodeSettingsPopup = false;
 
   get headers() {
     return this.notificationType === 'delete'
@@ -162,7 +169,7 @@ export default class AccountsLayout extends Vue {
   }
 
   get isNetworkRoute() {
-    return this.routeName === Components.Network;
+    return this.routeName === Components.Nodes;
   }
 
   get isExportRoute() {
@@ -177,16 +184,23 @@ export default class AccountsLayout extends Vue {
     return this.notificationType !== '';
   }
 
+  @Watch('showAccountSettingsPopup')
+  updateZIndexDotsVertical(value: boolean) {
+    const targetElement = (this.$refs[this.dotsVerticalRef] as Vue)?.$el as HTMLElement;
+
+    if (targetElement) targetElement.style.zIndex = value ? '200' : '0';
+  }
+
   setPassword(password: string) {
     this.password = password;
   }
 
   handlerButton() {
     if (this.notificationType === 'delete') this.deleteNode();
-    else if (this.notificationType === 'export') this.openExportAccount();
+    else if (this.notificationType === 'export') this.openExportAccountScreen();
   }
 
-  openExportAccount() {
+  openExportAccountScreen() {
     this.$router.push({
       name: Components.Export,
       params: {
@@ -197,26 +211,27 @@ export default class AccountsLayout extends Vue {
     this.closeNotificationPopup();
   }
 
-  openAccountSettings(network = '', buttonTop: number, isReplaceAccount: boolean) {
-    this.showAccountSettings = true;
+  openAccountSettingsPopup(network = '', buttonTop: number, isReplaceAccount: boolean) {
+    this.showAccountSettingsPopup = true;
     this.selectedNetwork = network;
     this.buttonTopClick = buttonTop;
     this.showReplaceAccount = !isReplaceAccount;
   }
 
   closeAccountSettings(isReset = true) {
-    this.showAccountSettings = false;
+    this.showAccountSettingsPopup = false;
 
     if (isReset) {
       this.selectedNetwork = '';
     }
   }
 
-  openNodeSettings(network = '', nodeName = '', nodeUrl = '') {
-    this.showNodeSettings = true;
+  openNodeSettingsPopup(network = '', nodeName = '', nodeUrl = '', buttonTop: number) {
+    this.showNodeSettingsPopup = true;
     this.selectedNetwork = network;
     this.selectedNodeName = nodeName;
     this.selectedNodeUrl = nodeUrl;
+    this.buttonTopClick = buttonTop;
   }
 
   openEditNodeForm(network: string) {
@@ -243,7 +258,7 @@ export default class AccountsLayout extends Vue {
   }
 
   childUpdatedNode() {
-    (this.$refs.content as Network).updatedCustomNodes();
+    (this.$refs[this.routerViewRef] as Nodes).updatedCustomNodes();
   }
 
   openNotificationPopup(type: NotificationType) {
@@ -266,7 +281,12 @@ export default class AccountsLayout extends Vue {
   }
 
   closeNodeSettings() {
-    this.showNodeSettings = false;
+    this.showNodeSettingsPopup = false;
+
+    if (!this.showEditNodeForm) {
+      this.selectedNodeName = '';
+      this.selectedNodeUrl = '';
+    }
   }
 
   closeReplacePopup() {
@@ -283,7 +303,7 @@ export default class AccountsLayout extends Vue {
 
 <style lang="scss" scoped>
 .accounts-layout {
-  padding: 10px 0 0 16px;
+  padding: 10px 0 0 $default-padding;
   display: flex;
   flex-direction: column;
   height: 100%;

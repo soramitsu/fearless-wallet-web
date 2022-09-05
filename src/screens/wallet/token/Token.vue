@@ -327,11 +327,11 @@ export default class Token extends Vue {
       .count-tokens {
         font-weight: 600;
         font-size: 28px;
-        white-space: nowrap;
         text-align: left;
         max-width: 265px;
         overflow: hidden;
         text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .balance-in-network {

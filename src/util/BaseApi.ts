@@ -8,8 +8,8 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult } from '@/interfaces/common';
 import type { Wallet } from '@/store/accounts/types';
 import { createAccountSuri, jsonRestore } from '@/extension/messaging';
-import { getReplacedMetaTyped, getReplacedMetaTyped, getMetaTyped } from '@/util/helpers';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
+import { getReplacedMetaTyped, getMetaTyped } from '@/util/helpers';
 import NetworksController from '@/controllers/networksController';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;
@@ -147,24 +147,12 @@ export default class BaseApi {
     return pair;
   }
 
-  public static replaceAccountFromJson(
-    json: KeyringPair$Json,
-    password: string,
-    parentAddress: string,
-    network: string
-  ): void {
-    const { address } = BaseApi.createFromJson(json);
-    const { replaced } = BaseApi.checkAndReplaceDuplicateAccount(address, parentAddress, network);
+  public static addKeypairFromJson(json: KeyringPair$Json, password: string): KeyringPair {
+    const pair = keyring.restoreAccount(json, password);
 
-    if (replaced) return;
-
-    json.meta.isReplacedAccount = true;
-    json.meta.replacedSettings = {
-      [parentAddress]: [network],
-    };
-
-    keyring.restoreAccount(json, password);
     jsonRestore(json, password); //for proper work of extension
+
+    return pair;
   }
 
   public static replaceAccountFromSeed(
@@ -186,6 +174,26 @@ export default class BaseApi {
     };
 
     BaseApi.addKeypair(suri, password, meta, type);
+  }
+
+  public static replaceAccountFromJson(
+    json: KeyringPair$Json,
+    password: string,
+    parentAddress: string,
+    network: string
+  ): void {
+    const { address } = BaseApi.createFromJson(json);
+    const { replaced } = BaseApi.checkAndReplaceDuplicateAccount(address, parentAddress, network);
+
+    if (replaced) return;
+
+    json.meta.isReplacedAccount = true;
+    json.meta.replacedSettings = {
+      [parentAddress]: [network],
+    };
+
+    keyring.restoreAccount(json, password);
+    jsonRestore(json, password); //for proper work of extension
   }
 
   public static isDuplicateKeypair(address: string): boolean {
@@ -218,13 +226,6 @@ export default class BaseApi {
 
   public static getKeyringPair(address: string): KeyringPair {
     return keyring.getPair(address);
-  }
-
-  public static addKeypairFromJson(json: KeyringPair$Json, password: string): KeyringPair {
-    const pair = keyring.restoreAccount(json, password);
-    jsonRestore(json, password);
-
-    return pair;
   }
 
   public static isEthereumNetwork(network: string): boolean {
@@ -272,12 +273,18 @@ export default class BaseApi {
 
     if (isEthereumNetwork) return ethereumAddress;
 
-    const publicKey = this.decodeAddress(address);
-    const networks = NetworksController.getNetworks();
-    const network = networks.find(({ name }) => name === networkName);
-    const prefix = network?.addressPrefix;
+    // the only case for try/catch
+    // if the user used  ethereum account instead of a substratum account(via json or private key)
+    try {
+      const publicKey = this.decodeAddress(address);
+      const networks = NetworksController.getNetworks();
+      const network = networks.find(({ name }) => name === networkName);
+      const prefix = network?.addressPrefix;
 
-    return encodeAddress(publicKey, prefix);
+      return encodeAddress(publicKey, prefix);
+    } catch {
+      return ethereumAddress;
+    }
   }
 
   public static unlockPair(from: string, password: string): void {

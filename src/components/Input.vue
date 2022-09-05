@@ -1,6 +1,6 @@
 <template>
   <Corners :isError="isError" :size="size">
-    <div :class="containerInputClasses">
+    <div :class="containerInputClasses" spellcheck="false">
       <s-input
         v-model="vModel"
         :class="inputClasses"

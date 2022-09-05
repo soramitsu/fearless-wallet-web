@@ -1,5 +1,5 @@
 <template>
-  <Popup :handlerClose="handlerClose" :showBorder="true" :headerText="''">
+  <Popup :showBorder="true" :showAnimation="false" :handlerClose="handlerClose">
     <div class="replace-popup">
       <div class="header">Replace {{ network }} account</div>
 

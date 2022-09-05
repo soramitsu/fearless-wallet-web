@@ -19,21 +19,31 @@
           <Input v-model="recipient" placeholder="Send to" size="big" class="row" />
 
           <div class="row amount-wrapper">
-            <MaxButton class="max-button-amount" @click="setMaxValue" />
-            <MaxButton v-show="!isReadonlyValueInput" class="max-button-value" @click="setMaxValue" />
-
-            <FloatInput v-model="amount" placeholder="Amount" size="big" styleInput="pink" @change="changeAmount" />
-
-            <img src="@/assets/equals.svg" />
-
             <FloatInput
-              v-model="value"
-              placeholder="Value"
+              v-model="amount"
+              class="input-amount"
+              placeholder="Amount"
               size="big"
               styleInput="pink"
-              :readonly="isReadonlyValueInput"
-              @change="changeValue"
+              @change="changeAmount"
             />
+
+            <MaxButton class="max-button-two" @click="setMaxValue" />
+
+            <template v-if="showValueInput">
+              <img src="@/assets/equals.svg" class="img-equals" />
+
+              <FloatInput
+                v-model="value"
+                class="input-amount"
+                placeholder="Value"
+                size="big"
+                styleInput="pink"
+                @change="changeValue"
+              />
+
+              <MaxButton class="max-button-one" @click="setMaxValue" />
+            </template>
           </div>
 
           <div class="transferrable">
@@ -48,7 +58,7 @@
             <div class="transferrable-part">
               <div class="transferrable-label">Transferrable</div>
               <div class="transferrable-descriptions">
-                <div class="transferrable-amount">${{ transferrableValue }}</div>
+                <div class="transferrable-amount">{{ fiatSymbol }}{{ transferrableValue }}</div>
               </div>
             </div>
           </div>
@@ -151,6 +161,7 @@ export default class SendForm extends Vue {
   @Getter(ApiGettersTypes.getNetworks) networks!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
+  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
   get amountString() {
     return `${+this.amount} ${this.selectedTokenUpper}`;
@@ -161,7 +172,7 @@ export default class SendForm extends Vue {
   }
 
   get valueString() {
-    return `$${formattedPrice(+this.value)}`;
+    return `${this.fiatSymbol}${formattedPrice(+this.value)}`;
   }
 
   get partialFeeString() {
@@ -178,8 +189,8 @@ export default class SendForm extends Vue {
     return this.step === 2;
   }
 
-  get isReadonlyValueInput() {
-    return this.currency?.price === 0;
+  get showValueInput() {
+    return this.currency?.price !== 0;
   }
 
   get buttonText() {
@@ -367,11 +378,19 @@ export default class SendForm extends Vue {
     justify-content: space-between;
     align-items: center;
 
-    .max-button-amount {
+    .input-amount {
+      flex: 1 1 235px;
+    }
+
+    .img-equals {
+      margin: 0 15px;
+    }
+
+    .max-button-one {
       left: 180px;
     }
 
-    .max-button-value {
+    .max-button-two {
       right: 35px;
     }
   }

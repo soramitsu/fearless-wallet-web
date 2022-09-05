@@ -1,7 +1,7 @@
 import '@polkadot/extension-inject/crossenv';
 
 import handlers from '@polkadot/extension-base/background/handlers';
-import keyring from '@polkadot/ui-keyring';
+import { keyring } from '@polkadot/ui-keyring';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import type { RequestSignatures, TransportRequestMessage } from '@polkadot/extension-base/background/types';
 // import AccountsStore from './storeChrome/Accounts';

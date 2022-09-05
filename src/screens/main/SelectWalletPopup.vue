@@ -77,7 +77,7 @@ export default class SelectWalletPopup extends Vue {
   }
 
   walletPopupClick(event: Event) {
-    const classList = (event.target as any)?.classList;
+    const classList = (event.target as HTMLDivElement)?.classList;
 
     if (!(classList.contains('dots-container') || classList.contains('dots')))
       this.$emit('toggleWalletDetailsPopupVisible', false);

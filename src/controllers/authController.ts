@@ -11,6 +11,7 @@ import {
   subscribeMetadataRequests,
   subscribeSigningRequests,
 } from '@/extension/messaging';
+
 export default class AuthController {
   static async subscribeToAuths(setAuths: (accounts: AuthorizeRequest[]) => void) {
     await subscribeAuthorizeRequests(setAuths);
@@ -34,4 +35,3 @@ export default class AuthController {
     return list;
   }
 }
-export const authController = AuthController;

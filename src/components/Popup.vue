@@ -119,7 +119,7 @@ export default class Popup extends Vue {
   }
 
   backgroundClick(event: Event) {
-    if ((event.target as any)?.classList.contains('popup-background')) this.close();
+    if ((event.target as HTMLDivElement)?.classList.contains('popup-background')) this.close();
   }
 
   close() {

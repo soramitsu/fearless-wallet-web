@@ -10,9 +10,9 @@
   >
     <div class="settings">
       <SettingMenuItem title="Accounts" icon="account" @onOpen="open('Accounts')" />
-      <SettingMenuItem title="Currency" icon="dollar-circle" @onOpen="openFiatsPopup" />
+      <SettingMenuItem title="Currency" icon="dollar-circle" @onOpen="openPopup('openFiatsPopup')" />
       <SettingMenuItem title="Language" icon="language" @onOpen="open('Language')" />
-      <SettingMenuItem title="About" icon="info" />
+      <SettingMenuItem title="About" icon="info" @onOpen="openPopup('openAboutPopup')" />
       <SettingMenuItem title="Manage dApp access" icon="networks/polkadot" @onOpen="open('ManageAuths')" />
     </div>
   </Popup>
@@ -23,6 +23,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import Popup from '@/components/Popup.vue';
 import { Components } from '@/router/routes';
 import SettingMenuItem from '@/layouts/SettingMenuItem.vue';
+
 type SettingsItemType = 'Accounts';
 
 @Component({
@@ -35,12 +36,8 @@ export default class SettingsPopup extends Vue {
     return this.$route.name;
   }
 
-  openFiatsPopup() {
-    this.$emit('openFiatsPopup');
-  }
-
-  openAboutPopup() {
-    this.$emit('openAboutPopup');
+  openPopup(value: string) {
+    this.$emit(value);
   }
 
   open(name: SettingsItemType) {

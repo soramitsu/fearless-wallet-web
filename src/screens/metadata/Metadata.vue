@@ -40,6 +40,7 @@ export default class Authorize extends Vue {
 
   get request() {
     const [request] = this.requests;
+
     return request;
   }
 

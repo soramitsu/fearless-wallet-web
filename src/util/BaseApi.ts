@@ -8,7 +8,7 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult } from '@/interfaces/common';
 import type { Wallet } from '@/store/accounts/types';
 import { createAccountSuri, jsonRestore } from '@/extension/messaging';
-import { getReplacedMetaTyped, getReplacedMetaTyped, getMetaTyped } from '@/util/helpers';
+import { getReplacedMetaTyped, getMetaTyped } from '@/util/helpers';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import NetworksController from '@/controllers/networksController';
 

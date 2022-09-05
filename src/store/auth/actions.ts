@@ -47,11 +47,7 @@ const actions: ActionTree<State, State> & Actions = {
       }
     };
 
-    const accountCallback = (accounts: AccountJson[]) => {
-      return accounts;
-    };
-
-    Promise.all([subscribeAccounts(accountCallback), subscribeAuthorizeRequests(callback)]);
+    subscribeAuthorizeRequests(callback);
   },
 
   async [ActionTypes.APPROVE_REQUEST]({ commit }, payload) {

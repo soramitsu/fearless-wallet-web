@@ -2,16 +2,9 @@ import { MetadataRequest } from '@polkadot/extension-base/background/types';
 import { Mutations, MutationTypes } from './mutations';
 import type { ActionTree, ActionContext } from 'vuex';
 import type { State } from './types';
-import {
-  approveAuthRequest,
-  deleteAuthRequest,
-  subscribeMetadataRequests,
-  approveMetaRequest,
-  rejectMetaRequest,
-} from '@/extension/messaging';
+import { subscribeMetadataRequests, approveMetaRequest, rejectMetaRequest } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';
-import BaseApi from '@/util/BaseApi';
 
 export enum ActionTypes {
   SUBSCRIBE_TO_METADATA_REQUESTS = 'SUBSCRIBE_TO_METADATA_REQUESTS',
@@ -34,7 +27,7 @@ const actions: ActionTree<State, State> & Actions = {
     const callback = (requests: MetadataRequest[]) => {
       const [request] = requests;
 
-      if (request) {
+      if (request && request.id) {
         commit(MutationTypes.SET_METADATA_REQUEST, request);
 
         router.push({

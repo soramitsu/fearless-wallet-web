@@ -102,8 +102,7 @@ export default class SelectPopup extends Vue {
     justify-content: space-between;
     align-items: center;
     font-weight: 600;
-    padding-left: 16px;
-    padding-right: 16px;
+    padding: 0 $default-padding;
 
     &:hover {
       cursor: pointer;

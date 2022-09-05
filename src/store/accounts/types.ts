@@ -1,4 +1,5 @@
 import type { Currencies } from '@/interfaces/currencies';
+import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
 export interface Wallet {
   address: string;
@@ -9,6 +10,8 @@ export interface SelectedWallet extends Wallet {
   name: string;
 }
 
+export type Accounts = SubjectInfo;
+
 // mutations
 export type SetSelectedWalletProps = {
   selectedWalletAddress: string;
@@ -17,6 +20,10 @@ export type SetSelectedWalletProps = {
 export type SetSelectedFiatProps = {
   fiatName: string;
   currencies: Currencies;
+};
+
+export type setAccountsProps = {
+  accounts: Accounts;
 };
 
 // actions

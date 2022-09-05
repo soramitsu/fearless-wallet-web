@@ -18,7 +18,7 @@
 
           <Input v-model="recipient" placeholder="Send to" size="big" class="row" />
 
-          <div class="row amount-block">
+          <div class="row amount-wrapper">
             <MaxButton class="max-button-amount" @click="setMaxValue" />
             <MaxButton v-show="!isReadonlyValueInput" class="max-button-value" @click="setMaxValue" />
 
@@ -36,7 +36,7 @@
             />
           </div>
 
-          <div class="row transferrable">
+          <div class="transferrable">
             <div class="transferrable-part">
               <div class="transferrable-label">Transferrable</div>
               <div class="transferrable-descriptions">
@@ -362,7 +362,7 @@ export default class SendForm extends Vue {
     }
   }
 
-  .amount-block {
+  .amount-wrapper {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -379,6 +379,7 @@ export default class SendForm extends Vue {
   .transferrable {
     display: flex;
     justify-content: space-between;
+    margin-top: 10px;
 
     .transferrable-part {
       width: 235px;

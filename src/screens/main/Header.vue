@@ -7,8 +7,8 @@
         <Logo v-else size="small" />
       </div>
 
-      <div class="wallet-name-block" @click="toggleSelectWalletPopupVisible">
-        <div class="wallet-name">{{ name }}</div>
+      <div class="wallet-name" @click="toggleSelectWalletPopupVisible">
+        <div class="name">{{ name }}</div>
 
         <Rotate :isActive="syncedShowSelectWalletPopup">
           <s-icon name="chevron-bottom-16" />
@@ -23,13 +23,19 @@
         {{ statusConnectedText }}
       </div>
 
-      <CircleButton iconName="settings" class="button-margin" backgroundColor="none" @click="toggleSettingsVisible" />
+      <CircleButton
+        :ref="settingsNameRef"
+        iconName="settings"
+        class="button-margin"
+        backgroundColor="none"
+        @click="toggleSettingsVisible"
+      />
     </div>
   </header>
 </template>
 
 <script lang="ts">
-import { Component, Vue, PropSync, Watch } from 'vue-property-decorator';
+import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { SelectedWallet } from '@/store/accounts/types';
 import Logo from '@/components/Logo.vue';
@@ -46,8 +52,10 @@ import { Components } from '@/router/routes';
   },
 })
 export default class Header extends Vue {
-  walletNameRef = 'walletName';
+  readonly walletNameRef = 'walletName';
+  readonly settingsNameRef = 'settingsName';
 
+  @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
@@ -68,11 +76,17 @@ export default class Header extends Vue {
   }
 
   @Watch('syncedShowSelectWalletPopup')
-  updateZIndex() {
+  updateZIndexSelectWalletPopup() {
     const targetElement = this.$refs[this.walletNameRef] as HTMLElement;
 
-    if (this.syncedShowSelectWalletPopup) targetElement.style.zIndex = '200';
-    else targetElement.style.zIndex = '0';
+    targetElement.style.zIndex = this.syncedShowSelectWalletPopup ? '200' : '0';
+  }
+
+  @Watch('highlightSettingsIcon')
+  updateZIndexShowSettings(value: boolean) {
+    const targetElement = (this.$refs[this.settingsNameRef] as Vue).$el as HTMLElement;
+
+    targetElement.style.zIndex = value ? '200' : '0';
   }
 
   backToWallet() {
@@ -97,7 +111,7 @@ export default class Header extends Vue {
 .header {
   display: flex;
   justify-content: space-between;
-  min-height: 48px;
+  height: $header-height;
   margin-bottom: 16px;
 
   .logo-container {
@@ -116,7 +130,7 @@ export default class Header extends Vue {
     display: flex;
     align-items: center;
 
-    .wallet-name-block {
+    .wallet-name {
       display: flex;
       align-items: center;
 
@@ -124,7 +138,7 @@ export default class Header extends Vue {
         cursor: pointer;
       }
 
-      .wallet-name {
+      .name {
         display: flex;
         font-weight: 700;
         font-size: 24px;

@@ -7,9 +7,10 @@
 
     <CircleButton
       v-if="isCustomNode"
+      :ref="dotsHorizontalRef"
       iconName="dots-horizontal"
       backgroundColor="light-black"
-      @click="$emit('openNodeSettings', name, url)"
+      @click="openNodeSettingsPopup"
     />
   </div>
 </template>
@@ -22,6 +23,8 @@ import CircleButton from '@/components/CircleButton.vue';
   components: { CircleButton },
 })
 export default class NodeItem extends Vue {
+  readonly dotsHorizontalRef = 'dotsHorizontal';
+
   @Prop(String) name!: string;
   @Prop(String) url!: string;
   @Prop(Boolean) isActive!: boolean;
@@ -39,7 +42,7 @@ export default class NodeItem extends Vue {
   }
 
   changeNode(event: Event) {
-    const classList = (event.target as any)?.classList;
+    const classList = (event.target as HTMLDivElement)?.classList;
 
     if (
       classList.contains('node-item') ||
@@ -47,7 +50,16 @@ export default class NodeItem extends Vue {
       classList.contains('url') ||
       classList.contains('name')
     )
-      this.$emit('changeNode', this.name, this.url);
+      this.$emit('changeNode');
+  }
+
+  openNodeSettingsPopup() {
+    const targetElement = (this.$refs[this.dotsHorizontalRef] as Vue)?.$el as HTMLElement;
+    const buttonTop = targetElement.getBoundingClientRect().top;
+
+    targetElement.style.zIndex = '200';
+
+    this.$emit('openNodeSettingsPopup', buttonTop);
   }
 }
 </script>
@@ -64,6 +76,7 @@ export default class NodeItem extends Vue {
 
   &:last-child {
     margin-bottom: 16px;
+    border-bottom: none;
   }
 
   .url {

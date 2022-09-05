@@ -1,6 +1,7 @@
 <template>
   <div id="app">
     <div class="drag"></div>
+
     <router-view />
   </div>
 </template>
@@ -8,21 +9,22 @@
 <script lang="ts">
 import keyring from '@polkadot/ui-keyring';
 import { Component, Vue } from 'vue-property-decorator';
-import { Mutation, Action } from 'vuex-class';
+import { Mutation } from 'vuex-class';
 import store from './store';
-import type { SetSelectedWalletProps } from '@/store/accounts/types';
+import type { SetSelectedWalletProps, setAccountsProps } from '@/store/accounts/types';
 import type { TMutation } from '@/interfaces/common';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-
 import NetworksController from '@/controllers/networksController';
 
 @Component
 export default class App extends Vue {
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
+
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
+  @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
 
   get style() {
     return { 'background-image': 'url(./img/background.9b667fcd.png)' };
@@ -39,6 +41,8 @@ export default class App extends Vue {
     let loadHistory = true;
     this.subscribeAccounts = keyring.accounts.subject;
     this.subscribeAccounts.subscribe(async (accounts) => {
+      this.setAccounts({ accounts });
+
       const selectedWalletAddress = Object.entries(accounts).find(
         ([
           ,
@@ -72,7 +76,7 @@ export default class App extends Vue {
   width: $extension-width;
   color: white;
   text-align: center;
-  padding: 0 16px 16px 16px;
+  padding: 0 $default-padding $default-padding $default-padding;
   background-image: url(./assets/background.png);
 
   .drag {

@@ -19,7 +19,7 @@
             v-for="{ network } in availableInNetworksPart"
             :key="network"
             :src="getImg(network)"
-            class="mini-network-img"
+            class="minor-network-img"
           />
 
           <div v-if="isAdditional" class="additional">+{{ additionalCount }}</div>
@@ -43,7 +43,7 @@
         {{ totalBalanceString }}
       </div>
     </div>
-    <div class="activity-block">
+    <div class="activity">
       <template v-if="!showAssetsManagementForm">
         <CircleButton
           iconName="send-white"
@@ -94,6 +94,7 @@ export default class CurrencyItem extends Vue {
   currencyVisible = true;
 
   @Prop(Object) currency!: Currency;
+  @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -125,15 +126,21 @@ export default class CurrencyItem extends Vue {
   }
 
   get countTokensString() {
-    const totalCountTokens = +this.currency.getTotalCountTokens(this.selectedWallet);
+    const totalCountTokens =
+      this.selectedNetwork !== 'All networks'
+        ? +this.currency.getTotalCountTokensByNetwork(this.selectedWallet, this.selectedNetwork)
+        : +this.currency.getTotalCountTokens(this.selectedWallet);
 
     return formattedNumber(totalCountTokens, 4);
   }
 
   get totalBalanceString() {
-    const totalBalance = +this.currency.getTotalBalance(this.selectedWallet);
+    const balance =
+      this.selectedNetwork !== 'All networks'
+        ? +this.currency.getBalanceInNetwork(this.selectedWallet, this.selectedNetwork)
+        : +this.currency.getTotalBalance(this.selectedWallet);
 
-    return `${this.fiatSymbol}${formattedPrice(totalBalance)}`;
+    return `${this.fiatSymbol}${formattedPrice(balance)}`;
   }
 
   get priceString() {
@@ -157,12 +164,16 @@ export default class CurrencyItem extends Vue {
   }
 
   get availableInNetworksPart() {
-    return [...this.availableInNetworks].splice(0, this.isAdditional ? 4 : 5);
+    return this.selectedNetwork !== 'All networks'
+      ? [{ network: this.selectedNetwork }]
+      : [...this.availableInNetworks].splice(0, this.isAdditional ? 4 : 5);
   }
 
   @Watch('currencyVisible')
   toggleCurrencyVisible(value: boolean) {
     this.currency.setCurrencyVisible(value);
+
+    this.$nextTick(() => this.$emit('toggleHideZeroBalance'));
   }
 
   mounted() {
@@ -185,12 +196,13 @@ export default class CurrencyItem extends Vue {
 
   openTokenPage() {
     const { token, mainNetwork } = this.currency;
+    const network = this.selectedNetwork !== 'All networks' ? this.selectedNetwork : mainNetwork;
 
     this.$router.push({
       name: Components.Token,
       params: {
-        token: token,
-        network: mainNetwork,
+        token,
+        network,
       },
     });
   }
@@ -282,7 +294,7 @@ export default class CurrencyItem extends Vue {
     font-size: 20px;
   }
 
-  .activity-block {
+  .activity {
     display: flex;
     align-items: center;
     margin-left: 16px;
@@ -302,7 +314,7 @@ export default class CurrencyItem extends Vue {
     }
   }
 
-  .mini-network-img {
+  .minor-network-img {
     width: 12px;
     margin-right: 3px;
     opacity: 0.5;

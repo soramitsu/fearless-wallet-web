@@ -12,7 +12,7 @@
       </div>
     </div>
 
-    <div class="content-block">
+    <div class="content-wrapper">
       <div class="content">
         <div class="content-header">{{ header }}</div>
 
@@ -120,7 +120,7 @@ import NicknameForm from './NicknameForm.vue';
 import AdvancedForm from './AdvancedForm.vue';
 import AdvancedButton from './AdvancedButton.vue';
 import AddEthereumAccountPopup from './AddEthereumAccountPopup.vue';
-import type { DerivationPath, ImportType, ValidateJsonResult } from '@/interfaces/common';
+import type { DerivationPath, ImportType, ValidateJsonResult, MnemonicConfirmation } from '@/interfaces/common';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { SelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -166,7 +166,7 @@ export default class AddWallet extends Vue {
   displayMockPassword = false;
   showAdvancedForm = false;
   showAddEthereumAccountPopup = false;
-  selectedMnemonicElements: string[] = [];
+  selectedMnemonicElements: MnemonicConfirmation[] = [];
   invalidValueName: InvalidValueName = '';
   typeImport: ImportType = 'mnemonic';
   derivationPath = INITIAL_DERIVATION_PATH;
@@ -527,7 +527,10 @@ export default class AddWallet extends Vue {
       : ({ value: true } as ValidateJsonResult);
 
     const isValidSequenceMnemonic = this.isCreateWallet
-      ? BaseApi.isValidSequenceMnemonic(this.mnemonic, this.selectedMnemonicElements)
+      ? BaseApi.isValidSequenceMnemonic(
+          this.mnemonic,
+          this.selectedMnemonicElements.map(({ word }) => word)
+        )
       : true;
 
     this.invalidValueName = !isValidSequenceMnemonic
@@ -615,7 +618,7 @@ export default class AddWallet extends Vue {
     BaseApi.replaceAccountFromSeed(suri, this.walletPassword, type, parent, this.replacedNetwork);
   }
 
-  updateSelectedMnemonicElements(value: string[]) {
+  updateSelectedMnemonicElements(value: MnemonicConfirmation[]) {
     this.selectedMnemonicElements = value;
   }
 
@@ -624,7 +627,8 @@ export default class AddWallet extends Vue {
   }
 
   back() {
-    if (this.step === 3 && this.ethereumRawSeed === '' && this.ethereumJson === '') this.step -= 1;
+    if (this.step === 3 && this.ethereumRawSeed === '' && this.ethereumJson === '' && this.isImportWallet)
+      this.step -= 1;
     else if (this.step === 4 && this.isReplaceAccount) this.step -= 2;
     else if (this.step === 2) {
       this.ethereumRawSeed = '';
@@ -673,7 +677,7 @@ export default class AddWallet extends Vue {
     }
   }
 
-  .content-block {
+  .content-wrapper {
     height: 100%;
     width: 100%;
     display: flex;

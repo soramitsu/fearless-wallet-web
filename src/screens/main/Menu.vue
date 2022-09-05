@@ -21,6 +21,7 @@ type MenuItemType = 'Wallet' | 'Crowdloans' | 'Staking' | 'DEX' | 'History';
   components: { MenuItem },
 })
 export default class Menu extends Vue {
+  walletItems = [Components.Accounts, Components.Export, Components.Nodes];
   menuItems: MenuItemType[] = ['Wallet', 'Crowdloans', 'Staking', 'DEX', 'History'];
   selectedItem = 'Wallet';
 
@@ -31,13 +32,11 @@ export default class Menu extends Vue {
   }
 
   checkActive(menuItem: MenuItemType) {
+    const isHighlightWalletItem = this.walletItems.includes(this.$route.name as any);
+
     return (
       menuItem.toLowerCase() === this.currentRouteName ||
-      (menuItem === 'Wallet' &&
-        (this.$route.params.token !== undefined ||
-          this.$route.name === Components.Accounts ||
-          this.$route.name === Components.Export ||
-          this.$route.name === Components.Network))
+      (menuItem === 'Wallet' && (this.$route.params.token !== undefined || isHighlightWalletItem))
     );
   }
 
@@ -52,14 +51,14 @@ export default class Menu extends Vue {
 <style lang="scss" scoped>
 .menu {
   display: flex;
-  flex: 0 0 65px;
+  flex: 0 0 70px;
   justify-content: space-around;
   align-items: center;
   user-select: none;
   z-index: 199;
   width: $extension-width;
   margin: 0 0 -16px -16px;
-  border-radius: 0 0 $default-border-radius $default-border-radius;
+  border-radius: 0 0 $default-border-radius;
   // background-color: rgba(0, 0, 0, 0.5);
   // backdrop-filter: blur(10px);
 }

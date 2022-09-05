@@ -7,10 +7,12 @@ import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult } from '@/interfaces/common';
 import type { Wallet } from '@/store/accounts/types';
-import { getReplacedMetaTyped } from '@/util/helpers';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
+import { getReplacedMetaTyped, getMetaTyped } from '@/util/helpers';
 import NetworksController from '@/controllers/networksController';
+
 type WordCount = 12 | 15 | 18 | 21 | 24;
+
 export default class BaseApi {
   private static createFromJson(json: KeyringPair$Json): KeyringPair {
     const pair = keyring.createFromJson(json);
@@ -81,8 +83,9 @@ export default class BaseApi {
   }
 
   public static getReplacedAccountByNetwork(wallet: Wallet, network: string): KeyringPair | undefined {
+    const { address, ethereumAddress } = wallet;
+
     return BaseApi.getReplacedAccounts(wallet).find(({ meta }) => {
-      const { address, ethereumAddress } = wallet;
       const { replacedSettings } = getReplacedMetaTyped(meta);
       const networksList = replacedSettings[address] ?? replacedSettings[ethereumAddress];
 
@@ -274,5 +277,30 @@ export default class BaseApi {
     const pair = keyring.getPair(from);
 
     pair.unlock(password);
+  }
+
+  public static deleteAccount(address: string): void {
+    keyring.forgetAccount(address);
+  }
+
+  public static deleteWallet(address: string): number {
+    const { meta } = BaseApi.getPair(address);
+    const { ethereumAddress } = getMetaTyped(meta);
+
+    BaseApi.deleteAccount(address);
+
+    if (ethereumAddress !== '') BaseApi.deleteAccount(ethereumAddress);
+
+    // delete replaced accounts
+    BaseApi.getReplacedAccounts({ address, ethereumAddress })
+      .filter(({ meta }) => {
+        const { replacedSettings } = getReplacedMetaTyped(meta);
+
+        // if replaced account are used only for this main wallet
+        return Object.keys(replacedSettings).length === 1;
+      })
+      .forEach(({ address }) => BaseApi.deleteAccount(address));
+
+    return Object.keys(BaseApi.getAccounts()).length;
   }
 }

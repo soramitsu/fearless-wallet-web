@@ -11,6 +11,7 @@ import { keyring } from '@polkadot/ui-keyring';
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation } from 'vuex-class';
 import store from './store';
+import BaseApi from './util/BaseApi';
 import type { SetSelectedWalletProps, setAccountsProps } from '@/store/accounts/types';
 import type { TMutation } from '@/interfaces/common';
 import type { BehaviorSubject } from 'rxjs';
@@ -18,9 +19,9 @@ import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
 import { ActionTypes as MetaActionTypes } from '@/store/metadata/actions';
 import { ActionTypes as SignActionTypes } from '@/store/sign/actions';
-
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import NetworksController from '@/controllers/networksController';
+import { accountController } from '@/controllers/accountController';
 
 @Component
 export default class App extends Vue {
@@ -34,34 +35,43 @@ export default class App extends Vue {
   }
 
   async mounted() {
+    let loadHistory = true;
     const { loadNetworks, loadAssets, loadFiats, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
+
     await store.dispatch(AuthActionTypes.SUBSCRIBE_TO_DAPP_EVENTS); //TODO refactor to @Action
     await store.dispatch(MetaActionTypes.SUBSCRIBE_TO_METADATA_REQUESTS); //TODO refactor to @Action
     await store.dispatch(SignActionTypes.SUBSCRIBE_SIGN_EVENTS); //TODO refactor to @Action
 
     await Promise.all([loadNetworks(), loadAssets(), loadFiats()]);
     await loadTokensPrice();
-    let loadHistory = true;
+
     this.subscribeAccounts = keyring.accounts.subject;
     this.subscribeAccounts.subscribe(async (accounts) => {
       this.setAccounts({ accounts });
-
-      const selectedWalletAddress = Object.entries(accounts).find(
-        ([
-          ,
-          {
-            type,
-            json: { meta },
-          },
-        ]) => type !== 'ethereum' && !meta.isReplacedAccount
-      )?.[0];
-
-      if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
 
       await subscribeToBalancesOfNetworks(accounts, loadHistory);
 
       loadHistory = false;
     });
+
+    this.setWallet();
+  }
+
+  setWallet() {
+    const LSSelectedWalletAddress = accountController.getSelectedWalletAddress();
+    const selectedWalletAddress = LSSelectedWalletAddress || this.findWalletAddress();
+
+    if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
+  }
+
+  findWalletAddress() {
+    const accounts = BaseApi.getAccounts().map(({ address }) => BaseApi.getPair(address));
+
+    const address = Object.entries(accounts).find(
+      ([, { type, meta }]) => type !== 'ethereum' && !meta.isReplacedAccount
+    )?.[0];
+
+    return address ?? '';
   }
 
   beforeUnmount() {

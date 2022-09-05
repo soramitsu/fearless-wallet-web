@@ -13,7 +13,6 @@ import {
   subscribeSigningRequests,
   subscribeMetadataRequests,
   approveAuthRequest,
-  removeAuthorization,
 } from '../messaging';
 export default {
   name: 'Notification',

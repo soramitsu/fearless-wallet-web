@@ -13,6 +13,7 @@
           class="input row"
           errorDescriptions="Incorrect password"
           :isError="isErrorPassword"
+          :showPassword="true"
         />
 
         <Button
@@ -89,7 +90,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transferAmountString() {
-    return `-${this.amount} ${this.token}`;
+    return `-${this.amount} ${this.token.toUpperCase()}`;
   }
 
   get transferValueString() {

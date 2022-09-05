@@ -30,10 +30,32 @@
             class="row"
           />
 
-          <div class="container-amount">
-            <MaxButton class="max-button-amount" @click="setMaxValue" />
+          <div class="row amount-wrapper">
+            <FloatInput
+              v-model="amount"
+              class="input-amount"
+              size="big"
+              styleInput="pink"
+              placeholder="Amount"
+              @change="changeAmount"
+            />
 
-            <FloatInput v-model="amount" placeholder="Amount" size="big" styleInput="pink" type="number" class="row" />
+            <MaxButton class="max-button-two" @click="setMaxValue" />
+
+            <template v-if="showValueInput">
+              <img src="@/assets/equals.svg" class="img-equals" />
+
+              <FloatInput
+                v-model="value"
+                class="input-amount"
+                size="big"
+                styleInput="pink"
+                placeholder="Value"
+                @change="changeValue"
+              />
+
+              <MaxButton class="max-button-one" @click="setMaxValue" />
+            </template>
           </div>
 
           <div class="row transferrable">
@@ -143,6 +165,7 @@ export default class TeleportForm extends Vue {
   originalNetwork = '';
   destinationNetwork = '';
   amount = '';
+  value = '';
   step = 1;
 
   @Prop(Function) closeForm!: VoidFunction;
@@ -151,9 +174,14 @@ export default class TeleportForm extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
+  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
   get showValue() {
     return this.value !== '0';
+  }
+
+  get showValueInput() {
+    return this.currency?.price !== 0;
   }
 
   get originalNetworkString() {
@@ -169,11 +197,7 @@ export default class TeleportForm extends Vue {
   }
 
   get valueString() {
-    return `$${formattedPrice(+this.value)}`;
-  }
-
-  get value() {
-    return this.currency?.getCostOfTokens(this.amount).toString() ?? '';
+    return `${this.fiatSymbol}${formattedPrice(+this.value)}`;
   }
 
   get originalNetworkPartialFeeString() {
@@ -328,6 +352,14 @@ export default class TeleportForm extends Vue {
     if (closeForm) this.closeForm();
   }
 
+  changeAmount(amount: string) {
+    this.value = this.currency?.getCostOfTokens(amount).toString() ?? '';
+  }
+
+  changeValue(value: string) {
+    this.amount = this.currency?.getCountTokensByPrice(value).toString() ?? '';
+  }
+
   handlerBack() {
     this.step = 1;
   }
@@ -356,12 +388,25 @@ export default class TeleportForm extends Vue {
     }
   }
 
-  .container-amount {
-    position: relative;
+  .amount-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 
-    .max-button-amount {
-      right: 25px;
-      top: 20px;
+    .input-amount {
+      flex: 1 1 235px;
+    }
+
+    .img-equals {
+      margin: 0 15px;
+    }
+
+    .max-button-one {
+      left: 180px;
+    }
+
+    .max-button-two {
+      right: 35px;
     }
   }
 

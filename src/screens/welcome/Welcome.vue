@@ -1,35 +1,44 @@
 <template>
   <div class="welcome-page">
-    <div class="first-page">
+    <div>
+      <div class="back-wallet-container">
+        <CircleButton
+          v-if="showBackWalletIcon"
+          backgroundColor="light-black"
+          iconName="chevron-left"
+          @click="backWallet"
+        />
+      </div>
+
       <Logo class="description" size="big" text="Fearless Wallet" subtext="The DeFi Wallet From The Future" />
+    </div>
 
-      <div>
-        <Button
-          width="100%"
-          text="Create a new wallet"
-          class="create-button"
-          size="big"
-          fontSize="big"
-          @click="openAddWalletComponent('create')"
-        />
+    <div>
+      <Button
+        width="100%"
+        text="Create a new wallet"
+        class="create-button"
+        size="big"
+        fontSize="big"
+        @click="openAddWalletComponent('create')"
+      />
 
-        <Button
-          class="import-button"
-          width="100%"
-          text="I already have a wallet"
-          size="big"
-          fontSize="big"
-          type="secondary"
-          :border="false"
-          @click="openAddWalletComponent('import')"
-        />
+      <Button
+        class="import-button"
+        width="100%"
+        text="I already have a wallet"
+        size="big"
+        fontSize="big"
+        type="secondary"
+        :border="false"
+        @click="openAddWalletComponent('import')"
+      />
 
-        <div class="privacy-policy">
-          By continuing you agree with
-          <span class="important-text" @click="openTermsAndConditions">Terms and Conditions </span>
-          and
-          <span class="important-text" @click="openPrivacyPolicy"> Privacy Policy</span>
-        </div>
+      <div class="privacy-policy">
+        By continuing you agree with
+        <span class="important-text" @click="openTermsAndConditions">Terms and Conditions </span>
+        and
+        <span class="important-text" @click="openPrivacyPolicy"> Privacy Policy</span>
       </div>
     </div>
   </div>
@@ -40,20 +49,31 @@ import { Component, Vue } from 'vue-property-decorator';
 import Logo from '@/components/Logo.vue';
 import Button from '@/components/Button.vue';
 import { Components } from '@/router/routes';
+import CircleButton from '@/components/CircleButton.vue';
+import BaseApi from '@/util/BaseApi';
 
 @Component({
   components: {
     Logo,
     Button,
+    CircleButton,
   },
 })
 export default class Welcome extends Vue {
+  get showBackWalletIcon() {
+    return BaseApi.getAccounts().length !== 0;
+  }
+
   openTermsAndConditions() {
     alert('Terms and Conditions');
   }
 
   openPrivacyPolicy() {
     alert('privacy policy');
+  }
+
+  backWallet() {
+    this.$router.push({ name: Components.Wallet });
   }
 
   openAddWalletComponent(type: string) {
@@ -67,16 +87,14 @@ export default class Welcome extends Vue {
   display: flex;
   flex-direction: column;
   height: $default-height-page;
+  justify-content: space-between;
 
-  .first-page {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
+  .back-wallet-container {
+    height: 32px;
   }
 
   .description {
-    margin-top: 101px;
+    margin-top: 69px;
   }
 
   .privacy-policy {

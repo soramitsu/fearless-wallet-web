@@ -67,7 +67,12 @@ export default class ExportForm extends Vue {
     );
     const keyringPair = BaseApi.getPair(addressSubstrate);
     const keyringPair$Json = keyringPair.toJson(this.password);
-    const meta = { ...keyringPair$Json.meta, genesisHash: `0x${chainId}` };
+    const meta = { ...keyringPair$Json.meta, genesisHash: `0x${chainId}` } as Record<string, string>;
+
+    delete meta['ethereumAddress'];
+    delete meta['isReplacedAccount'];
+    delete meta['replacedSettings'];
+
     const jsonSubstrate = JSON.stringify({ ...keyringPair$Json, meta });
     const blobSubstrate = new Blob([jsonSubstrate], { type: 'application/json; charset=utf-8' });
 

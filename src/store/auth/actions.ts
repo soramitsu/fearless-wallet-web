@@ -8,6 +8,7 @@ import {
   deleteAuthRequest,
   getAuthList,
   removeAuthorization,
+  subscribeAccounts,
 } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';

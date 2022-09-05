@@ -1,13 +1,13 @@
 <template>
   <Popup
-    :showHeader="false"
-    :showBorder="true"
-    :handlerClose="handlerClose"
-    :top="top"
-    :left="-17"
     sizeWidth="mini"
     verticalPlacement="top"
     horizontalPlacement="right"
+    :top="top"
+    :left="-17"
+    :showBorder="true"
+    :showHeader="false"
+    :handlerClose="handlerClose"
   >
     <div class="account-settings">
       <div class="row" @click="openNotificationPopup">

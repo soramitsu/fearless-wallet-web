@@ -79,16 +79,23 @@ export default class ImportWallet extends Vue {
   }
 
   get field() {
-    return this.typeImport === 'mnemonic'
-      ? 'mnemonic'
-      : this.typeImport === 'rawSeed'
-      ? this.isReplaceAccount
+    if (this.typeImport === 'mnemonic') return 'mnemonic';
+
+    if (this.typeImport === 'rawSeed') {
+      return this.isReplaceAccount
         ? this.isEthereumReplacedNetwork
           ? 'ethereumRawSeed'
           : 'substrateRawSeed'
         : this.step === 1
         ? 'substrateRawSeed'
-        : 'ethereumRawSeed'
+        : 'ethereumRawSeed';
+    }
+
+    // typeImport === 'json'
+    return this.isReplaceAccount
+      ? this.isEthereumReplacedNetwork
+        ? 'ethereumJson'
+        : 'substrateJson'
       : this.step === 1
       ? 'substrateJson'
       : 'ethereumJson';

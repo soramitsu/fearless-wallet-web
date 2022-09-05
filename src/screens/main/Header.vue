@@ -1,13 +1,18 @@
 <template>
   <header class="header">
-    <div class="header-part" :ref="walletNameRef">
+    <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
       <div class="logo-container">
-        <CircleButton v-if="showBackIcon" backgroundColor="light-black" iconName="chevron-left" @click="backToWallet" />
+        <CircleButton
+          v-if="showBackIcon"
+          backgroundColor="light-black"
+          iconName="chevron-left"
+          @click.stop="backToWallet"
+        />
 
         <Logo v-else size="small" />
       </div>
 
-      <div class="wallet-name" @click="toggleSelectWalletPopupVisible">
+      <div class="wallet-name">
         <div class="name">{{ name }}</div>
 
         <Rotate :isActive="syncedShowSelectWalletPopup">
@@ -126,17 +131,24 @@ export default class Header extends Vue {
     font-size: 18px !important;
   }
 
+  .header-part-left {
+    &:hover {
+      cursor: pointer;
+    }
+  }
+
   .header-part {
     display: flex;
     align-items: center;
 
+    &:hover {
+      cursor: pointer;
+    }
+
     .wallet-name {
       display: flex;
       align-items: center;
-
-      &:hover {
-        cursor: pointer;
-      }
+      height: 48px;
 
       .name {
         display: flex;

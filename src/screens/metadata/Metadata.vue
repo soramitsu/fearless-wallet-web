@@ -82,9 +82,11 @@ export default class Authorize extends Vue {
     font-weight: 400px;
     margin-bottom: 20px;
   }
+
   .authorize__content--name {
     color: #bb77ff;
   }
+
   .authorize__content--link {
     color: #bb77ff;
     cursor: pointer;
@@ -97,6 +99,7 @@ export default class Authorize extends Vue {
     height: 110px;
   }
 }
+
 .transaction__info {
   position: relative;
   background: rgba(255, 255, 255, 0.05);
@@ -109,9 +112,11 @@ export default class Authorize extends Vue {
   flex-flow: column;
   margin-bottom: 14px;
 }
+
 .alert {
   margin-bottom: 10px;
 }
+
 .transaction__list {
   display: grid;
   grid-template-columns: 100px 1fr;

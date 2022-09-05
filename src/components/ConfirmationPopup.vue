@@ -52,7 +52,7 @@ export default class ConfirmationPopup extends Vue {
   .activity-bock {
     display: flex;
     justify-content: space-between;
-    padding: 0 16px;
+    padding: 0 $default-padding;
   }
 }
 </style>

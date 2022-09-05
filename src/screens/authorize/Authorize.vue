@@ -11,6 +11,7 @@
       </div>
       <div class="authorize__control">
         <Button width="100%" text="Yes, allow this application access" size="big" fontSize="big" @click="onApprove" />
+
         <Button width="100%" type="link" text="Reject" size="big" fontSize="medium" @click="onReject" />
       </div>
     </div>
@@ -25,7 +26,6 @@ import Button from '@/components/Button.vue';
 import Hint from '@/components/Hint.vue';
 import Alert from '@/components/Alert.vue';
 import AboveForm from '@/components/AboveForm.vue';
-import store from '@/store';
 import { Components } from '@/router/routes';
 import { ActionTypes } from '@/store/auth/actions';
 
@@ -38,23 +38,24 @@ import { ActionTypes } from '@/store/auth/actions';
   },
 })
 export default class Authorize extends Vue {
-  @Getter('getRequest') requests!: AuthorizeRequest[];
-
   alertMessage =
     'Only approve this request if you trust the application. Approving gives the application access to the addresses of you accounts';
 
+  @Getter('getRequest') requests!: AuthorizeRequest[];
+
   get request() {
     const [request] = this.requests;
+
     return request;
   }
 
   onApprove() {
-    store.dispatch(ActionTypes.APPROVE_REQUEST, this.request);
+    this.$store.dispatch(ActionTypes.APPROVE_REQUEST, this.request);
     this.$router.push({ name: Components.Wallet });
   }
 
   onReject() {
-    store.dispatch(ActionTypes.REJECT_REQUEST, this.request);
+    this.$store.dispatch(ActionTypes.REJECT_REQUEST, this.request);
     this.$router.push({ name: Components.Wallet });
   }
 }
@@ -72,9 +73,11 @@ export default class Authorize extends Vue {
     font-weight: 400px;
     margin-bottom: 20px;
   }
+
   .authorize__content--name {
     color: #bb77ff;
   }
+
   .authorize__content--link {
     color: #bb77ff;
     cursor: pointer;

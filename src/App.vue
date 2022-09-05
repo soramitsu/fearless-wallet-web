@@ -1,30 +1,39 @@
 <template>
   <div id="app">
     <div class="drag"></div>
+
     <router-view />
   </div>
 </template>
 
 <script lang="ts">
-import keyring from '@polkadot/ui-keyring';
+import { keyring } from '@polkadot/ui-keyring';
 import { Component, Vue } from 'vue-property-decorator';
-import { Mutation, Action } from 'vuex-class';
+import { Mutation } from 'vuex-class';
 import store from './store';
-import type { SetSelectedWalletProps } from '@/store/accounts/types';
+import type { SetSelectedWalletProps, setAccountsProps } from '@/store/accounts/types';
 import type { TMutation } from '@/interfaces/common';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
 import { ActionTypes as MetaActionTypes } from '@/store/metadata/actions';
 
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { ActionTypes as SignActionTypes } from '@/store/sign/actions';
 
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import NetworksController from '@/controllers/networksController';
 
-@Component
+@Component({
+  components: {
+    Transaction,
+    SignRequest,
+  },
+})
 export default class App extends Vue {
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
+
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
+  @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
 
   get style() {
     return { 'background-image': 'url(./img/background.9b667fcd.png)' };
@@ -32,16 +41,17 @@ export default class App extends Vue {
 
   async mounted() {
     const { loadNetworks, loadAssets, loadFiats, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
-
     await store.dispatch(AuthActionTypes.SUBSCRIBE_TO_DAPP_EVENTS); //TODO refactor to @Action
     await store.dispatch(MetaActionTypes.SUBSCRIBE_TO_METADATA_REQUESTS); //TODO refactor to @Action
+    await store.dispatch(SignActionTypes.SUBSCRIBE_SIGN_EVENTS); //TODO refactor to @Action
 
     await Promise.all([loadNetworks(), loadAssets(), loadFiats()]);
     await loadTokensPrice();
-
     let loadHistory = true;
     this.subscribeAccounts = keyring.accounts.subject;
     this.subscribeAccounts.subscribe(async (accounts) => {
+      this.setAccounts({ accounts });
+
       const selectedWalletAddress = Object.entries(accounts).find(
         ([
           ,
@@ -75,7 +85,7 @@ export default class App extends Vue {
   width: $extension-width;
   color: white;
   text-align: center;
-  padding: 0 16px 16px 16px;
+  padding: 0 $default-padding $default-padding $default-padding;
   background-image: url(./assets/background.png);
 
   .drag {

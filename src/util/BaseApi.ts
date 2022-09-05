@@ -1,4 +1,4 @@
-import keyring from '@polkadot/ui-keyring';
+import { keyring } from '@polkadot/ui-keyring';
 import { decodeAddress, encodeAddress, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
 import { isHex } from '@polkadot/util';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
@@ -7,10 +7,13 @@ import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult } from '@/interfaces/common';
 import type { Wallet } from '@/store/accounts/types';
-import { getReplacedMetaTyped } from '@/util/helpers';
+import { createAccountSuri, jsonRestore } from '@/extension/messaging';
+import { getReplacedMetaTyped, getReplacedMetaTyped, getMetaTyped } from '@/util/helpers';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import NetworksController from '@/controllers/networksController';
+
 type WordCount = 12 | 15 | 18 | 21 | 24;
+
 export default class BaseApi {
   private static createFromJson(json: KeyringPair$Json): KeyringPair {
     const pair = keyring.createFromJson(json);
@@ -43,9 +46,10 @@ export default class BaseApi {
 
       return { replaced: true };
     }
+
     // when a user tries to replace an account with the same account
     // this is wrong, it is not necessary to do so to avoid mistakes
-    else if (isDuplicateKeypair) {
+    if (isDuplicateKeypair) {
       throw new Error('Such an account already exists');
     }
 
@@ -81,8 +85,9 @@ export default class BaseApi {
   }
 
   public static getReplacedAccountByNetwork(wallet: Wallet, network: string): KeyringPair | undefined {
+    const { address, ethereumAddress } = wallet;
+
     return BaseApi.getReplacedAccounts(wallet).find(({ meta }) => {
-      const { address, ethereumAddress } = wallet;
       const { replacedSettings } = getReplacedMetaTyped(meta);
       const networksList = replacedSettings[address] ?? replacedSettings[ethereumAddress];
 
@@ -135,6 +140,9 @@ export default class BaseApi {
 
   public static addKeypair(suri: string, password: string, meta: KeyringPair$Meta, type: KeypairType): KeyringPair {
     const { pair } = keyring.addUri(suri, password, meta, type);
+    const name = meta.name as string;
+
+    createAccountSuri(name, password, suri, type); //for proper work of extension
 
     return pair;
   }
@@ -156,6 +164,7 @@ export default class BaseApi {
     };
 
     keyring.restoreAccount(json, password);
+    jsonRestore(json, password); //for proper work of extension
   }
 
   public static replaceAccountFromSeed(
@@ -213,6 +222,7 @@ export default class BaseApi {
 
   public static addKeypairFromJson(json: KeyringPair$Json, password: string): KeyringPair {
     const pair = keyring.restoreAccount(json, password);
+    jsonRestore(json, password);
 
     return pair;
   }
@@ -274,5 +284,30 @@ export default class BaseApi {
     const pair = keyring.getPair(from);
 
     pair.unlock(password);
+  }
+
+  public static deleteAccount(address: string): void {
+    keyring.forgetAccount(address);
+  }
+
+  public static deleteWallet(address: string): number {
+    const { meta } = BaseApi.getPair(address);
+    const { ethereumAddress } = getMetaTyped(meta);
+
+    BaseApi.deleteAccount(address);
+
+    if (ethereumAddress !== '') BaseApi.deleteAccount(ethereumAddress);
+
+    // delete replaced accounts
+    BaseApi.getReplacedAccounts({ address, ethereumAddress })
+      .filter(({ meta }) => {
+        const { replacedSettings } = getReplacedMetaTyped(meta);
+
+        // if replaced account are used only for this main wallet
+        return Object.keys(replacedSettings).length === 1;
+      })
+      .forEach(({ address }) => BaseApi.deleteAccount(address));
+
+    return Object.keys(BaseApi.getAccounts()).length;
   }
 }

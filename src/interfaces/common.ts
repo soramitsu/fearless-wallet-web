@@ -24,13 +24,18 @@ export type NetworkName = string;
 
 export type DerivationPath = typeof INITIAL_DERIVATION_PATH;
 
-interface ValidateJsonResult1 {
+interface ValidateJsonResultPositive {
   value: true;
 }
 
-interface ValidateJsonResult2 {
+interface ValidateJsonResultNegative {
   value: false;
   errorType: InvalidValueName;
 }
 
-export type ValidateJsonResult = ValidateJsonResult1 | ValidateJsonResult2;
+export type ValidateJsonResult = ValidateJsonResultPositive | ValidateJsonResultNegative;
+
+export interface MnemonicConfirmation {
+  word: string;
+  initialIndex: number;
+}

@@ -1,4 +1,4 @@
-import { AuthorizeRequest } from '@polkadot/extension-base/background/types';
+import { AccountJson, AuthorizeRequest } from '@polkadot/extension-base/background/types';
 import { Mutations, MutationTypes } from './mutations';
 import type { ActionTree, ActionContext } from 'vuex';
 import type { State } from './types';
@@ -8,7 +8,6 @@ import {
   deleteAuthRequest,
   getAuthList,
   removeAuthorization,
-  updateAuthorization,
 } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';
@@ -48,12 +47,16 @@ const actions: ActionTree<State, State> & Actions = {
       }
     };
 
-    subscribeAuthorizeRequests(callback);
+    const accountCallback = (accounts: AccountJson[]) => {
+      return accounts;
+    };
+
+    Promise.all([subscribeAccounts(accountCallback), subscribeAuthorizeRequests(callback)]);
   },
 
   async [ActionTypes.APPROVE_REQUEST]({ commit }, payload) {
-    const adresses = BaseApi.getPolkadotAddresses();
-    await approveAuthRequest(payload.id, adresses);
+    const addresses = BaseApi.getPolkadotAddresses();
+    await approveAuthRequest(payload.id, addresses);
 
     commit(MutationTypes.DELETE_AUTH_REQUEST);
   },

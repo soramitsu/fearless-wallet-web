@@ -3,21 +3,23 @@ import { RouteConfig } from 'vue-router';
 import Dex from '@/screens/dex/Dex.vue';
 import Export from '@/screens/accounts/Export.vue';
 import History from '@/screens/history/History.vue';
-import Network from '@/screens/accounts/Network.vue';
+import Nodes from '@/screens/accounts/Nodes.vue';
 import Staking from '@/screens/staking/Staking.vue';
 import Token from '@/screens/wallet/token/Token.vue';
 import Wallet from '@/screens/wallet/Wallet.vue';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import AddWallet from '@/screens/addWallet/AddWallet.vue';
 import ManageAuths from '@/screens/authorize/ManageAuths.vue';
-
+import Accounts from '@/screens/accounts/Accounts.vue';
+import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
+import Main from '@/screens/main/Main.vue';
+import Crowdloans from '@/screens/crowdloans/Crowdloans.vue';
 import store from '@/store';
-const Accounts = () => import('@/screens/accounts/Accounts.vue');
-const AccountsLayout = () => import('@/screens/accounts/AccountsLayout.vue');
-const Main = () => import('@/screens/main/Main.vue');
-const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
+
 const Authorize = () => import('@/screens/authorize/Authorize.vue');
 const MetaRequest = () => import('@/screens/metadata/Metadata.vue');
+const Transaction = () => import('@/screens/signing/Transaction.vue');
+const SignRequest = () => import('@/screens/signing/SignRequest.vue');
 
 export enum Components {
   Welcome = 'Welcome',
@@ -31,15 +33,18 @@ export enum Components {
   Token = 'Token',
   AccountsLayout = 'AccountsLayout',
   Accounts = 'Accounts',
-  Network = 'Network',
+  Nodes = 'Nodes',
   Export = 'Export',
   ManageAuths = 'ManageAuths',
   Authorize = 'Authorize',
   MetaRequest = 'MetaRequest',
+  Transaction = 'Transaction',
+  SignRequest = 'SignRequest',
 }
 
 const haveAccounts = () => keyring.getAccounts().length > 0;
-const haveRequests = () => store.getters.getAuthList.length;
+const haveAuthRequests = () => store.getters.getAuthList.length;
+const haveSignRequests = () => store.getters.getAuthList.length;
 
 const routes: Array<RouteConfig> = [
   {
@@ -61,6 +66,16 @@ const routes: Array<RouteConfig> = [
     path: 'meta',
     name: Components.MetaRequest,
     component: MetaRequest,
+  },
+  {
+    path: 'signing',
+    name: Components.SignRequest,
+    component: SignRequest,
+  },
+  {
+    path: 'transaction',
+    name: Components.Transaction,
+    component: Transaction,
   },
   {
     path: '/main',
@@ -95,8 +110,8 @@ const routes: Array<RouteConfig> = [
           },
           {
             path: ':network',
-            name: Components.Network,
-            component: Network,
+            name: Components.Nodes,
+            component: Nodes,
           },
           {
             path: ':network/export',
@@ -140,7 +155,8 @@ const routes: Array<RouteConfig> = [
   {
     path: '/*',
     beforeEnter: (to, from, next) => {
-      if (haveRequests()) next({ name: Components.Authorize });
+      if (haveAuthRequests()) next({ name: Components.Authorize });
+      else if (haveSignRequests()) next({ name: Components.SignRequest });
       else next();
     },
     redirect: () => {

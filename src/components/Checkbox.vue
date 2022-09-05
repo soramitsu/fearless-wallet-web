@@ -1,9 +1,9 @@
 <template>
-  <s-checkbox class="fw-checkbox" v-model="value" :size="size" :label="label" />
+  <s-checkbox class="fw-checkbox" v-model="vModel" :size="size" :label="label" />
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
 
 enum CheckboxSizes {
   'medium' = '24',
@@ -11,10 +11,9 @@ enum CheckboxSizes {
 
 @Component
 export default class Checkbox extends Vue {
-  // @VModel({ type: Boolean }) vModel!: boolean;
+  @VModel({ type: Boolean }) vModel!: boolean;
   @Prop(String) label!: string;
   @Prop({ default: 'medium' }) size!: CheckboxSizes;
-  value = true;
 }
 </script>
 

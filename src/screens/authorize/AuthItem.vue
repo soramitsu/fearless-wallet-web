@@ -6,7 +6,7 @@
       </SCol>
       <SCol :span="2">
         <SRow flex justify="space-around">
-          <Switcher v-model="value" />
+          <!-- <Switcher v-model="value" /> -->
 
           <img class="trash" src="@/assets/trash.svg" @click="$emit('onRemoveAuth', request.id)" />
         </SRow>
@@ -20,7 +20,6 @@
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { AuthUrlInfo } from '@polkadot/extension-base/background/handlers/State';
 import Switcher from '@/components/Switcher.vue';
-import store from '@/store';
 
 @Component({
   components: {
@@ -29,12 +28,13 @@ import store from '@/store';
 })
 export default class AuthItem extends Vue {
   @Prop(Object) request!: AuthUrlInfo;
+
   get value() {
     return this.request.isAllowed === undefined ? true : this.request.isAllowed;
   }
 
   set value(value: boolean) {
-    store.commit('TOGGLE_AUTH_STATE', {
+    this.$store.commit('TOGGLE_AUTH_STATE', {
       id: this.request.id,
       value,
     });

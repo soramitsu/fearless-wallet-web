@@ -1,6 +1,7 @@
 <template>
   <AboveForm header="Manage dApp access" :showCloseIcon="true" :blur="true" :closeHandler="back">
     <SearchInput v-model="filterValue" placeholder="Search in networks" class="manage-auths__search" :isBig="true" />
+
     <Fragment v-for="el in filteredList" v-bind:key="el.id">
       <AuthItem :request="el" @onRemoveAuth="removeAuth" @onChange="onChange" />
     </Fragment>
@@ -17,7 +18,6 @@ import AboveForm from '@/components/AboveForm.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import AuthItem from '@/screens/authorize/AuthItem.vue';
 import { Components } from '@/router/routes';
-import store from '@/store';
 
 @Component({
   components: {
@@ -29,9 +29,10 @@ import store from '@/store';
   },
 })
 export default class ManageAuths extends Vue {
+  @Getter('getAuthList') authlist!: Record<string, AuthUrlInfo>;
+
   filterValue = '';
   filteredList: Record<string, AuthUrlInfo> = {};
-  @Getter('getAuthList') authlist!: Record<string, AuthUrlInfo>;
 
   @Watch('filterValue')
   filter(value: string) {
@@ -39,7 +40,7 @@ export default class ManageAuths extends Vue {
   }
 
   onChange(id: string) {
-    store.dispatch('UPDATE_AUTH_CONNECTION', id);
+    this.$store.dispatch('UPDATE_AUTH_CONNECTION', id);
   }
 
   filteredData(value: string) {
@@ -50,12 +51,16 @@ export default class ManageAuths extends Vue {
     this.filteredList = Object.fromEntries(filtered);
   }
 
+  onDeleteConnection(event: Event) {
+    console.info(event);
+  }
+
   async removeAuth(id: string) {
-    await store.dispatch('DELETE_AUTH_CONNECTION', id);
+    await this.$store.dispatch('DELETE_AUTH_CONNECTION', id);
   }
 
   async beforeCreate() {
-    await store.dispatch('GET_AUTHLIST');
+    await this.$store.dispatch('GET_AUTHLIST');
     this.filteredList = this.authlist;
   }
 
@@ -66,6 +71,26 @@ export default class ManageAuths extends Vue {
 </script>
 
 <style lang="scss" scoped>
+.divider {
+  background-color: rgba(255, 255, 255, 0.1);
+  margin: 17px 0;
+}
+
+.auth-item-name {
+  font-size: 16px;
+}
+
+.img-button {
+  background-image: url('@/assets/trash.svg');
+  background-size: 16px 16px;
+  height: 16px;
+  width: 16px;
+}
+
+.trash {
+  cursor: pointer;
+}
+
 .manage-auths__search {
   width: 100%;
   margin-bottom: 17px;

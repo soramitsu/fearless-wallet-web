@@ -1,30 +1,28 @@
 <template>
   <Popup
-    class="select-wallet-popup"
     horizontalPlacement="left"
     verticalPlacement="top"
+    sizeWidth="small"
     :showHeader="false"
+    :showBorder="true"
     :handlerClose="close"
-    :top="49"
-    :left="42"
+    :top="55"
+    @click.native="walletPopupClick"
   >
     <div class="wallet-content">
-      <TotalBalance
+      <WalletBalance
         v-for="({ meta: { name }, address }, index) in wallets"
         :key="name + index"
         :name="name"
-        :showIcon="selectedWallet.address === address"
+        :isSelected="selectedWallet.address === address"
         :balance="getBalance(address)"
         :percent="getPercent()"
         class="total"
-        @click="updateSelectedWallet(address)"
+        @setShowWalletDetailsPopupVisible="toggleWalletDetailsPopupVisible(...arguments, address)"
+        @updateSelectedWallet="updateSelectedWallet(address)"
       />
 
-      <div class="add-wallet" @click="addWallet">
-        <s-icon name="basic-plus-24" class="icon" />
-
-        Add wallet
-      </div>
+      <BorderButton text="Add wallet" iconName="plus-pink" @click="addWallet" />
     </div>
   </Popup>
 </template>
@@ -33,11 +31,12 @@
 import keyring from '@polkadot/ui-keyring';
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
-import type { SelectedWallet, SetSelectedWalletProps } from '@/store/accounts/types';
+import type { SelectedWallet, SetSelectedWalletProps, Accounts } from '@/store/accounts/types';
 import type { Currencies } from '@/interfaces/currencies';
 import type { TMutation } from '@/interfaces/common';
 import Popup from '@/components/Popup.vue';
-import TotalBalance from '@/screens/wallet/TotalBalance.vue';
+import WalletBalance from '@/screens/wallet/WalletBalance.vue';
+import BorderButton from '@/components/BorderButton.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
@@ -47,19 +46,19 @@ import { addNumbers } from '@/util/numbers';
 @Component({
   components: {
     Popup,
-    TotalBalance,
+    BorderButton,
+    WalletBalance,
   },
 })
 export default class SelectWalletPopup extends Vue {
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
+  @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
 
   get wallets() {
-    const accounts = keyring.getAccounts();
-
-    return accounts
-      .map(({ address }) => {
+    return Object.keys(this.accounts)
+      .map((address) => {
         const pair = keyring.getPair(address);
 
         return pair;
@@ -77,8 +76,11 @@ export default class SelectWalletPopup extends Vue {
     return addNumbers(arr);
   }
 
-  getPercent() {
-    return 5.3;
+  walletPopupClick(event: Event) {
+    const classList = (event.target as HTMLDivElement)?.classList;
+
+    if (!(classList.contains('dots-container') || classList.contains('dots')))
+      this.$emit('toggleWalletDetailsPopupVisible', false);
   }
 
   updateSelectedWallet(address: string) {
@@ -90,38 +92,25 @@ export default class SelectWalletPopup extends Vue {
   close() {
     this.$emit('close');
   }
+
+  getPercent() {
+    return 5.3;
+  }
+
+  toggleWalletDetailsPopupVisible(buttonTop: number, address: string) {
+    this.$emit('toggleWalletDetailsPopupVisible', undefined, buttonTop, address);
+  }
 }
 </script>
 
 <style lang="scss" scoped>
-.select-wallet-popup {
-  .wallet-content {
-    padding: 0 16px;
-  }
+.wallet-content {
+  padding: 0 $default-padding;
+  height: 100%;
+  margin-bottom: 3px;
+}
 
-  .total {
-    margin-bottom: 12px;
-  }
-
-  .add-wallet {
-    display: flex;
-    align-items: center;
-    font-weight: 600;
-    font-size: 14px;
-    line-height: 18px;
-    color: #888888;
-    margin-top: 21px;
-    opacity: 0.9;
-
-    &:hover {
-      cursor: pointer;
-      opacity: 1;
-    }
-
-    .s-icon-basic-plus-24 {
-      color: rgba(255, 255, 255, 0.5);
-      margin-right: 15px;
-    }
-  }
+.total {
+  margin-bottom: 12px;
 }
 </style>

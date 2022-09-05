@@ -11,7 +11,7 @@
         :network="network"
         :token="token"
         :address="address"
-        @openAccountSettings="openAccountSettings(...arguments, true)"
+        @openAccountSettingsPopup="openAccountSettingsPopup(...arguments, true)"
       />
     </template>
 
@@ -24,7 +24,7 @@
         :network="network"
         :token="token"
         :address="address"
-        @openAccountSettings="openAccountSettings"
+        @openAccountSettingsPopup="openAccountSettingsPopup"
       />
     </template>
   </div>
@@ -53,7 +53,6 @@ import { getImgPathByNetworkName } from '@/util/imgPath';
     Input,
     CircleButton,
     Scroll,
-    AccountSettingsPopup,
     AccountsItem,
   },
 })
@@ -118,8 +117,8 @@ export default class Account extends Vue {
     this.$router.push({ name: Components.Wallet });
   }
 
-  openAccountSettings(network: string, event: Event, isReplaceAccount = false) {
-    this.$emit('openAccountSettings', network, event, isReplaceAccount);
+  openAccountSettingsPopup(network: string, event: Event, isReplaceAccount = false) {
+    this.$emit('openAccountSettingsPopup', network, event, isReplaceAccount);
   }
 }
 </script>

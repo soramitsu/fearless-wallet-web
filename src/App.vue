@@ -16,10 +16,17 @@ import type { TMutation } from '@/interfaces/common';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
+import { ActionTypes as SignActionTypes } from '@/store/sign/actions';
+
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import NetworksController from '@/controllers/networksController';
 
-@Component
+@Component({
+  components: {
+    Transaction,
+    SignRequest,
+  },
+})
 export default class App extends Vue {
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
 
@@ -32,12 +39,11 @@ export default class App extends Vue {
 
   async mounted() {
     const { loadNetworks, loadAssets, loadFiats, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
-
     await store.dispatch(AuthActionTypes.SUBSCRIBE_TO_DAPP_EVENTS); //TODO refactor to @Action
+    await store.dispatch(SignActionTypes.SUBSCRIBE_SIGN_EVENTS); //TODO refactor to @Action
 
     await Promise.all([loadNetworks(), loadAssets(), loadFiats()]);
     await loadTokensPrice();
-
     let loadHistory = true;
     this.subscribeAccounts = keyring.accounts.subject;
     this.subscribeAccounts.subscribe(async (accounts) => {

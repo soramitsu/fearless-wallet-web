@@ -20,7 +20,6 @@
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { AuthUrlInfo } from '@polkadot/extension-base/background/handlers/State';
 import Switcher from '@/components/Switcher.vue';
-import store from '@/store';
 
 @Component({
   components: {
@@ -35,7 +34,7 @@ export default class AuthItem extends Vue {
   }
 
   set value(value: boolean) {
-    store.commit('TOGGLE_AUTH_STATE', {
+    this.$store.commit('TOGGLE_AUTH_STATE', {
       id: this.request.id,
       value,
     });

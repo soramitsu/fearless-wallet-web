@@ -8,8 +8,8 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult } from '@/interfaces/common';
 import type { Wallet } from '@/store/accounts/types';
 import { createAccountSuri, jsonRestore } from '@/extension/messaging';
-import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import { getReplacedMetaTyped, getMetaTyped } from '@/util/helpers';
+import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import NetworksController from '@/controllers/networksController';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;

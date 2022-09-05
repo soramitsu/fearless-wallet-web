@@ -22,7 +22,7 @@ export default {};
   display: grid;
   grid-template-rows: 70px 370px 100px;
   align-items: end;
-  gap: 24px;
+  gap: 20px;
   height: 100%;
 }
 .header {

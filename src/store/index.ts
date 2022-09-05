@@ -4,6 +4,7 @@ import networks from './networks';
 import account from './accounts';
 import auth from './auth';
 import sign from './sign';
+import meta from './metadata';
 
 import type Modules from './types';
 
@@ -12,6 +13,7 @@ export const modules: Modules = {
   networks,
   account,
   auth,
+  meta,
   sign,
 };
 

@@ -9,14 +9,15 @@
 <script lang="ts">
 import { keyring } from '@polkadot/ui-keyring';
 import { Component, Vue } from 'vue-property-decorator';
-import { Mutation } from 'vuex-class';
-import store from './store';
+import { Action, Mutation } from 'vuex-class';
+
 import BaseApi from './util/BaseApi';
 import type { SetSelectedWalletProps, setAccountsProps } from '@/store/accounts/types';
 import type { TMutation } from '@/interfaces/common';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
+import { ActionTypes as MetaActionTypes } from '@/store/metadata/actions';
 import { ActionTypes as SignActionTypes } from '@/store/sign/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import NetworksController from '@/controllers/networksController';
@@ -25,7 +26,9 @@ import { accountController } from '@/controllers/accountController';
 @Component
 export default class App extends Vue {
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
-
+  @Action(MetaActionTypes.SUBSCRIBE_TO_METADATA_REQUESTS) metaSubscribe!: () => Promise<void>;
+  @Action(AuthActionTypes.SUBSCRIBE_TO_DAPP_EVENTS) authSubscribe!: () => Promise<void>;
+  @Action(SignActionTypes.SUBSCRIBE_SIGN_EVENTS) signSubscribe!: () => Promise<void>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
 
@@ -37,8 +40,9 @@ export default class App extends Vue {
     let loadHistory = true;
     const { loadNetworks, loadAssets, loadFiats, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
 
-    await store.dispatch(AuthActionTypes.SUBSCRIBE_TO_DAPP_EVENTS); //TODO refactor to @Action
-    await store.dispatch(SignActionTypes.SUBSCRIBE_SIGN_EVENTS); //TODO refactor to @Action
+    await this.authSubscribe();
+    await this.metaSubscribe();
+    await this.signSubscribe();
 
     await Promise.all([loadNetworks(), loadAssets(), loadFiats()]);
     await loadTokensPrice();

@@ -3,6 +3,7 @@ import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { ASSETS_URL, FIATS_URL, NETWORKS_URL } from '@/consts/urls';
 
 export default class NetworksController {
   static getNetworks(): Networks {
@@ -10,21 +11,15 @@ export default class NetworksController {
   }
 
   public static async loadNetworks(): Promise<void> {
-    const url = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/v2/chains/chains.json';
-
-    await store.dispatch(NetworksActionTypes.LOAD_NETWORKS, { url });
+    await store.dispatch(NetworksActionTypes.LOAD_NETWORKS, { url: NETWORKS_URL });
   }
 
   public static async loadAssets(): Promise<void> {
-    const url = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v2/chains/assets_dev.json';
-
-    await store.dispatch(NetworksActionTypes.LOAD_ASSETS, { url });
+    await store.dispatch(NetworksActionTypes.LOAD_ASSETS, { url: ASSETS_URL });
   }
 
   public static async loadFiats(): Promise<void> {
-    const url = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';
-
-    await store.dispatch(NetworksActionTypes.LOAD_FIATS, { url });
+    await store.dispatch(NetworksActionTypes.LOAD_FIATS, { url: FIATS_URL });
   }
 
   public static async loadTokensPrice(): Promise<void> {

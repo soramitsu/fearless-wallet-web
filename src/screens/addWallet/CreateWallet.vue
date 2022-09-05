@@ -3,6 +3,7 @@
     <MnemonicBackupForm v-if="showMnemonicBackupForm" :mnemonic="mnemonic">
       <slot></slot>
     </MnemonicBackupForm>
+
     <MnemonicConfirmationForm
       v-if="showMnemonicConfirmationForm"
       :mnemonic="mnemonic"
@@ -16,7 +17,7 @@
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import MnemonicConfirmationForm from './MnemonicConfirmationForm.vue';
 import MnemonicBackupForm from './MnemonicBackupForm.vue';
-import type { DerivationPath } from '@/interfaces/common';
+import type { DerivationPath, MnemonicConfirmation } from '@/interfaces/common';
 
 @Component({
   components: {
@@ -28,7 +29,7 @@ export default class CreateWallet extends Vue {
   @Prop(Number) step!: number;
   @Prop(String) mnemonic!: string;
   @Prop(Object) derivationPath!: DerivationPath;
-  @PropSync('selectedMnemonicElements', { type: Array }) syncedSelectedMnemonicElements!: string[];
+  @PropSync('selectedMnemonicElements', { type: Array }) syncedSelectedMnemonicElements!: MnemonicConfirmation[];
 
   get showMnemonicBackupForm() {
     return this.step === 2;
@@ -38,7 +39,7 @@ export default class CreateWallet extends Vue {
     return this.step === 3;
   }
 
-  updateSelectedMnemonicElements(value: string[]) {
+  updateSelectedMnemonicElements(value: MnemonicConfirmation[]) {
     this.syncedSelectedMnemonicElements = value;
   }
 }

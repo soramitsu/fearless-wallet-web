@@ -1,12 +1,12 @@
 <template>
   <Popup
+    sizeWidth="mini"
     :showHeader="false"
-    :showBlur="true"
     :showBorder="true"
     :handlerClose="handlerClose"
     :top="top"
-    :left="-17"
-    verticalPlacement="center"
+    :left="-35"
+    verticalPlacement="top"
     horizontalPlacement="right"
   >
     <div class="node-settings">
@@ -30,10 +30,15 @@ import Popup from '@/components/Popup.vue';
   components: { Popup },
 })
 export default class NodeSettingsPopup extends Vue {
+  @Prop(Number) buttonTopClick!: number;
   @Prop(Function) handlerClose!: VoidFunction;
 
   get top() {
-    return 0;
+    if (this.buttonTopClick < 300) {
+      return this.buttonTopClick + 18;
+    }
+
+    return this.buttonTopClick - 110;
   }
 }
 </script>

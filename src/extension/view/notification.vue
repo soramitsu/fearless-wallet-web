@@ -62,7 +62,7 @@ export default {
         subscribeMetadataRequests(this.setMetaReq),
         subscribeSigningRequests(this.setSignReq),
       ]).then((res) => {
-        console.log(res, this.$data);
+        console.info(res, this.$data);
       });
     },
     approveAuthReq() {

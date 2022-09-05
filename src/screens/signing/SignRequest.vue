@@ -62,7 +62,7 @@ export default class SignRequest extends Vue {
 }
 .qr-wrapper {
   position: relative;
-  padding: 16px;
+  padding: $default-padding;
   background: #ffffff00;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   clip-path: $big-clip-path-left-top-and-right-bottom;

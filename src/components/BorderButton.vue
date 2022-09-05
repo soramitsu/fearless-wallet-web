@@ -1,6 +1,7 @@
 <template>
   <Corners :hover="hover" :size="size" :topLeftCorner="topLeftCorner" :bottomRightCorner="bottomRightCorner">
     <Button
+      type="secondary"
       :border="true"
       :borderRadius="borderRadius"
       :disabled="disabled"
@@ -9,7 +10,6 @@
       :size="size"
       :fontSize="fontSize"
       :text="text"
-      :type="type"
       :width="width"
       @click="$emit('click')"
     />

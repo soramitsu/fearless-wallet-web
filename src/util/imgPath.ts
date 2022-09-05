@@ -47,7 +47,7 @@ export function getImgPathByNetworkName(network = '') {
     case 'moonbeam':
       return 'moonbeam.svg';
     case 'moonbase alpha':
-      return 'moonbase alpha.svg';
+      return 'moonbase_alpha.svg';
     case 'genshiro':
       return 'genshiro.svg';
     case 'robonomics':

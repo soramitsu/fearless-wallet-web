@@ -8,6 +8,7 @@ export function getMockCurrencies(networks: Networks): Currencies {
     .reduce((result, network) => {
       const { assets, name } = network;
       const token = assets[0]?.assetId;
+      const purchaseProviders = assets[0]?.purchaseProviders ?? [];
       const tokenIndex = result.findIndex(({ token: tokenExist }) => tokenExist === token);
 
       if (tokenIndex === -1)
@@ -16,13 +17,14 @@ export function getMockCurrencies(networks: Networks): Currencies {
           token,
           precision: 0,
           tokenPriceJson: {} as TokenPriceJson,
+          purchaseProviders,
         });
 
       return result;
     }, [] as any[])
     .map(
-      ({ mainNetwork, tokenPriceJson, precision, token }) =>
-        new CurrencyController(mainNetwork, token, tokenPriceJson, precision)
+      ({ mainNetwork, tokenPriceJson, precision, token, purchaseProviders }) =>
+        new CurrencyController(mainNetwork, token, tokenPriceJson, precision, purchaseProviders)
     );
 
   return currencies;
@@ -58,4 +60,15 @@ export function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet)
   currenciesWithoutTokens.sort(({ token: token1 }, { token: token2 }) => token1.localeCompare(token2));
 
   return [...currenciesWithTokens, ...relayChains, ...currenciesWithoutTokens];
+}
+
+export function getProviderUrl(providerName: string, token: string, address: string) {
+  switch (providerName) {
+    case 'moonpay':
+      return `https://buy.moonpay.com/?currencyCode=${token}&walletAddress=${address}&showWalletAddressForm=true`;
+    case 'ramp':
+      return `https://buy.ramp.network/?swapAsset=${token.toUpperCase()}&userAddress=${address}`;
+    default:
+      return '';
+  }
 }

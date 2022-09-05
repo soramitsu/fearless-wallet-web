@@ -4,26 +4,23 @@
     <div class="row">
       <BorderButton
         text="Follow on Twitter"
-        iconName="twitter"
+        iconName="twitter-pink"
         class="follow-button"
-        type="secondary"
         width="256px"
         @click="openPage('https://twitter.com/Soramitsu_co')"
       />
 
       <BorderButton
         text="Join on Telegram"
-        iconName="telegram"
-        type="secondary"
+        iconName="telegram-pink"
         width="256px"
-        @click="openPage('https://t.me/sora_xor')"
+        @click="openPage('https://t.me/fearlesswallet')"
       />
     </div>
     <div class="row">
       <BorderButton
         text="Read on Medium"
-        iconName="medium"
-        type="secondary"
+        iconName="medium-pink"
         width="256px"
         @click="openPage('https://medium.com/fearlesswallet')"
       />
@@ -31,7 +28,6 @@
       <BorderButton
         text="Learn on Wiki"
         iconName="file-dock"
-        type="secondary"
         width="256px"
         @click="openPage('https://wiki.sora.org/master')"
       />

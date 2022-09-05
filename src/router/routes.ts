@@ -44,7 +44,8 @@ export enum Components {
 
 const haveAccounts = () => keyring.getAccounts().length > 0;
 const haveAuthRequests = () => store.getters.getAuthList.length;
-const haveSignRequests = () => store.getters.getAuthList.length;
+const haveSignRequests = () => store.getters.getSignList.length;
+const haveMetaRequests = () => store.getters.getMetaList.length;
 
 const routes: Array<RouteConfig> = [
   {
@@ -157,6 +158,7 @@ const routes: Array<RouteConfig> = [
     beforeEnter: (to, from, next) => {
       if (haveAuthRequests()) next({ name: Components.Authorize });
       else if (haveSignRequests()) next({ name: Components.SignRequest });
+      else if (haveMetaRequests()) next({ name: Components.MetaRequest });
       else next();
     },
     redirect: () => {

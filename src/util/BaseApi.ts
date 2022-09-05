@@ -1,4 +1,4 @@
-import keyring from '@polkadot/ui-keyring';
+import { keyring } from '@polkadot/ui-keyring';
 import { decodeAddress, encodeAddress, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
 import { isHex } from '@polkadot/util';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
@@ -7,6 +7,7 @@ import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult } from '@/interfaces/common';
 import type { Wallet } from '@/store/accounts/types';
+import { createAccountSuri, jsonRestore } from '@/extension/messaging';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import { getReplacedMetaTyped, getMetaTyped } from '@/util/helpers';
 import NetworksController from '@/controllers/networksController';
@@ -139,12 +140,17 @@ export default class BaseApi {
 
   public static addKeypair(suri: string, password: string, meta: KeyringPair$Meta, type: KeypairType): KeyringPair {
     const { pair } = keyring.addUri(suri, password, meta, type);
+    const name = meta.name as string;
+
+    createAccountSuri(name, password, suri, type); //for proper work of extension
 
     return pair;
   }
 
   public static addKeypairFromJson(json: KeyringPair$Json, password: string): KeyringPair {
     const pair = keyring.restoreAccount(json, password);
+
+    jsonRestore(json, password); //for proper work of extension
 
     return pair;
   }
@@ -187,6 +193,7 @@ export default class BaseApi {
     };
 
     keyring.restoreAccount(json, password);
+    jsonRestore(json, password); //for proper work of extension
   }
 
   public static isDuplicateKeypair(address: string): boolean {

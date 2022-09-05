@@ -80,7 +80,8 @@ export default class ImportWallet extends Vue {
 
   get field() {
     if (this.typeImport === 'mnemonic') return 'mnemonic';
-    else if (this.typeImport === 'rawSeed') {
+
+    if (this.typeImport === 'rawSeed') {
       return this.isReplaceAccount
         ? this.isEthereumReplacedNetwork
           ? 'ethereumRawSeed'

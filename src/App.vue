@@ -18,17 +18,11 @@ import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
 import { ActionTypes as SignActionTypes } from '@/store/sign/actions';
-
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import NetworksController from '@/controllers/networksController';
 import { accountController } from '@/controllers/accountController';
 
-@Component({
-  components: {
-    Transaction,
-    SignRequest,
-  },
-})
+@Component
 export default class App extends Vue {
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
 

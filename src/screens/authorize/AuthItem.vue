@@ -6,7 +6,7 @@
       </SCol>
       <SCol :span="2">
         <SRow flex justify="space-around">
-          <Switcher v-model="value" />
+          <!-- <Switcher v-model="value" /> -->
 
           <img class="trash" src="@/assets/trash.svg" @click="$emit('onRemoveAuth', request.id)" />
         </SRow>

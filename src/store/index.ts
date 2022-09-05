@@ -16,7 +16,7 @@ export const modules: Modules = {
 };
 
 files.keys().forEach((key) => {
-  const ignoredFiles = ['./index.ts', './types.ts', './helpers.ts'];
+  const ignoredFiles = ['./index.ts', './types.ts'];
 
   if (ignoredFiles.includes(key)) return;
 

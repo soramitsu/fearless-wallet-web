@@ -40,7 +40,7 @@ export default class FiatsPopup extends Vue {
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(NetworksGettersTypes.getFiats) fiats!: FiatJson[];
   @Getter(AccountsGettersTypes.getSelectedFiat) selectedFiat!: string;
-  @Action(AccountsActionTypes.SET_SELECTED_FIAT) setSelectedFiat!: (prop: SetSelectedFiat) => void;
+  @Action(AccountsActionTypes.SET_SELECTED_FIAT) setSelectedFiat!: (prop: SetSelectedFiat) => Promise<void>;
 
   get filteredOptionsFiats() {
     const filter = this.filterValue.trim().toLowerCase();

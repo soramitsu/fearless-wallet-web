@@ -1,7 +1,6 @@
 import type { AssetJson, FiatJson, Networks, TokensPriceJson } from './types';
 import type { Currencies } from '@/interfaces/currencies';
 import type { History } from '@/interfaces/history';
-import type { Subscription } from 'rxjs';
 
 export type State = {
   networks: Networks;
@@ -10,7 +9,6 @@ export type State = {
   fiats: FiatJson[];
   history: History;
   currencies: Currencies;
-  subscriptionsBalances: Subscription[];
   allNetworksIsLoaded: boolean;
 };
 
@@ -21,7 +19,6 @@ const state = (): State => {
     assets: [],
     fiats: [],
     currencies: [],
-    subscriptionsBalances: [],
     allNetworksIsLoaded: false,
     history: {},
   };

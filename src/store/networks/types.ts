@@ -1,12 +1,13 @@
-import { ApiPromise, WsProvider } from '@polkadot/api';
-import { Subscription } from 'rxjs';
+import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { Currencies } from '@/interfaces/currencies';
 import type { HistoryItem } from '@/interfaces/history';
-import type { WalletAddress } from '@/interfaces/common';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { KeyringJson } from '@polkadot/ui-keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { AccountBalance } from '@/interfaces/balances';
+import type { Mutations } from './mutations';
+import type { ActionContext } from 'vuex';
+import type { State } from './state';
 
 export type Node = {
   url: string;
@@ -64,7 +65,6 @@ type Network = {
   isEthereumNetwork: boolean;
   settings: Record<string, any>;
   externalApi: ExternalApi;
-  subscriptionsBalances?: Record<WalletAddress, Subscription>;
 };
 
 export type Networks = Network[];
@@ -219,12 +219,6 @@ export type SetAllNetworksIsLoaded = {
   value: boolean;
 };
 
-export type SetSubscriptionsBalancesProps = {
-  walletAddress: string;
-  subscriptionsBalances: Subscription;
-  networkName: string;
-};
-
 export type UpdateCurrencyProps = {
   token: string;
   tokensPrice: TokenPriceJson;
@@ -279,3 +273,7 @@ export type UpdateActiveNode = {
   nodeUrl: string;
   oldNodeUrl: string;
 };
+
+export type AugmentedActionContext = {
+  commit<K extends keyof Mutations>(key: K, payload: Parameters<Mutations[K]>[1]): ReturnType<Mutations[K]>;
+} & Omit<ActionContext<State, any>, 'commit'>;

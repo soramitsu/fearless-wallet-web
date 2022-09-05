@@ -3,6 +3,8 @@ import Vuex from 'vuex';
 import networks from './networks';
 import account from './accounts';
 import auth from './auth';
+import sign from './sign';
+
 import type Modules from './types';
 
 const files = require.context('.', false, /\.ts$/);
@@ -10,6 +12,7 @@ export const modules: Modules = {
   networks,
   account,
   auth,
+  sign,
 };
 
 files.keys().forEach((key) => {

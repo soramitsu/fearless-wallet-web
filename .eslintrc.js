@@ -47,6 +47,7 @@ module.exports = {
       'error',
       { blankLine: 'always', prev: 'block-like', next: '*' },
       { blankLine: 'always', prev: '*', next: 'block-like' },
+      { blankLine: 'always', prev: '*', next: 'return' },
       { blankLine: 'always', prev: 'block', next: '*' },
       { blankLine: 'always', prev: '*', next: 'block' },
     ],

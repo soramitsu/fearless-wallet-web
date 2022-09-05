@@ -1,4 +1,4 @@
-import keyring from '@polkadot/ui-keyring';
+import { keyring } from '@polkadot/ui-keyring';
 import { decodeAddress, encodeAddress, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
 import { isHex } from '@polkadot/util';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
@@ -45,9 +45,10 @@ export default class BaseApi {
 
       return { replaced: true };
     }
+
     // when a user tries to replace an account with the same account
     // this is wrong, it is not necessary to do so to avoid mistakes
-    else if (isDuplicateKeypair) {
+    if (isDuplicateKeypair) {
       throw new Error('Such an account already exists');
     }
 

@@ -28,7 +28,7 @@
         />
       </template>
 
-      <Loading v-else-if="loading" />
+      <Loader v-else-if="loading" />
 
       <template v-else>
         <div class="descriptions">
@@ -51,7 +51,7 @@
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Currencies, Currency } from '@/interfaces/currencies';
-import Loading from '@/components/Loading.vue';
+import Loader from '@/components/Loader.vue';
 import Popup from '@/components/Popup.vue';
 import Button from '@/components/Button.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
@@ -62,9 +62,9 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 @Component({
   components: {
     Popup,
-    ValidatedInput,
     Button,
-    Loading,
+    Loader,
+    ValidatedInput,
   },
 })
 export default class ConfirmationPasswordPopup extends Vue {

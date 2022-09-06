@@ -30,3 +30,7 @@ export type setAccountsProps = {
 export type SetSelectedFiat = {
   fiatName: string;
 };
+
+export type SetSelectedWallet = {
+  selectedWalletAddress: string;
+};

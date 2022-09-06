@@ -1,10 +1,8 @@
 import axios from 'axios';
-import { ApiPromise, WsProvider } from '@polkadot/api';
 import { MutationTypes } from './mutations';
-import type { Mutations } from './mutations';
 import type { Settings } from '@/networks';
 import type { State } from './state';
-import type { ActionContext, ActionTree } from 'vuex';
+import type { ActionTree } from 'vuex';
 import type {
   NetworkJson,
   Networks,
@@ -19,17 +17,16 @@ import type {
   ExternalApi,
   UpdateActiveNode,
   Accounts,
+  AugmentedActionContext,
 } from './types';
-import type { AccountData } from '@polkadot/types/interfaces/balances';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
 import { accountController } from '@/controllers/accountController';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
-import { formatBalance } from '@/util/balances';
 import { getHistory } from '@/subquery/history';
 import { getReplacedMetaTyped } from '@/util/helpers';
 import { getMockCurrencies } from '@/util/currenciesHelper';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { connectToApi, saveHistory, subscribeToBalances } from '@/util/networksAndAssetsHelper';
 
 export enum ActionTypes {
   LOAD_NETWORKS = 'LOAD_NETWORKS',
@@ -40,10 +37,6 @@ export enum ActionTypes {
   SUBSCRIBE_TO_BALANCES = 'SUBSCRIBE_TO_BALANCES',
   UPDATE_ACTIVE_NODE = 'UPDATE_ACTIVE_NODE',
 }
-
-type AugmentedActionContext = {
-  commit<K extends keyof Mutations>(key: K, payload: Parameters<Mutations[K]>[1]): ReturnType<Mutations[K]>;
-} & Omit<ActionContext<State, any>, 'commit'>;
 
 export type Actions = {
   [ActionTypes.LOAD_NETWORKS](store: AugmentedActionContext, props: LoadNetworks): Promise<void>;
@@ -82,7 +75,6 @@ const actions: ActionTree<State, State> & Actions = {
           chainId,
           addressPrefix,
           isEthereumNetwork,
-          subscriptionsBalances: {},
           externalApi,
           settings,
         };
@@ -147,6 +139,8 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.SUBSCRIBE_TO_BALANCES](context, { accounts, loadHistory, networksProps }) {
+    console.log('accounts', accounts);
+
     const { commit, state } = context;
     const { networks: networksStore } = state;
 
@@ -157,7 +151,7 @@ const actions: ActionTree<State, State> & Actions = {
     // if the list of networks is not transferred, then we subscribe to all
     const networks = networksProps ?? networksStore;
     const promises = networks.map(async (network) => {
-      const { api, subscriptionsBalances, isEthereumNetwork, name: networkName, assets, externalApi } = network;
+      const { api, isEthereumNetwork, name: networkName, assets, externalApi } = network;
       const token = assets[0]?.assetId;
 
       await api.isReadyOrError;
@@ -167,26 +161,17 @@ const actions: ActionTree<State, State> & Actions = {
           const { isReplacedAccount, replacedSettings } = getReplacedMetaTyped(json.meta);
           const networksList = Object.values(replacedSettings ?? []).flat();
 
-          // if it is a replaced account and the iterated network is not in the list
+          // if it is a replaced account and the iterated network is not in the networksList
           if (isReplacedAccount && !networksList.includes(networkName)) return;
 
           // ethereum accounts only subscribe to the ethereum networks and
           // substrate accounts only subscribe to the substrate networks
           if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
 
-          // unsubscribing from previous subscriptions(case when we added a new wallet)
-          subscriptionsBalances?.[walletAddress]?.unsubscribe();
-
           if (loadHistory && networkName !== 'moonbase alpha')
             saveHistory(walletAddress, networkName, externalApi, context);
 
-          const unsubscribe = subscribe(context, api, token, networkName, walletAddress);
-
-          commit(MutationTypes.SET_SUBSCRIPTIONS_BALANCES, {
-            networkName,
-            walletAddress,
-            subscriptionsBalances: unsubscribe,
-          });
+          subscribeToBalances(context, api, token, networkName, walletAddress);
         });
       } catch (ex) {
         console.info(
@@ -237,70 +222,5 @@ const actions: ActionTree<State, State> & Actions = {
     await dispatch(ActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, loadHistory: false, networksProps: [network] });
   },
 };
-
-export function connectToApi(name: string, url: string, autoConnectMs = 0) {
-  const provider = new WsProvider(url, autoConnectMs);
-  const api = new ApiPromise({ provider });
-
-  try {
-    api.connect();
-
-    // console.info(`%c${name.toUpperCase()}. API connection successful.`, 'background:green;color:#fff');
-  } catch (ex) {
-    // api.disconnect();
-    console.info(`%c${name.toUpperCase()}. Connection to api failed.`, 'background:red;color:#fff');
-  }
-
-  return { provider, api };
-}
-
-async function saveHistory(address: string, network: string, api: ExternalApi, context: AugmentedActionContext) {
-  const { commit, dispatch } = context;
-  const formattedAddress = BaseApi.formatAddress({ address, ethereumAddress: address }, network);
-
-  const history = await dispatch(ActionTypes.LOAD_HISTORY, {
-    historyExternalApi: api.history,
-    walletAddress: formattedAddress,
-  });
-
-  commit(MutationTypes.SET_HISTORY, {
-    networkName: network,
-    walletAddress: address,
-    history,
-  });
-}
-
-function subscribe(context: AugmentedActionContext, api: ApiPromise, token: string, network: string, address: string) {
-  const { getters, commit, state, rootState } = context;
-  const { tokensPriceJson } = state;
-  const tokensPrice = tokensPriceJson[token] ?? {};
-  const precision = getters[NetworksGettersTypes.getAssets].find((kek: any) => kek.id === token)?.precision ?? 0;
-  const selectedFiat = rootState.account.selectedFiat;
-
-  commit(MutationTypes.UPDATE_CURRENCY, {
-    token,
-    tokensPrice,
-    precision,
-    selectedFiat,
-  });
-
-  const unsubscribe = api.rx.query.system.account(address).subscribe(async (result) => {
-    const data = (result as any).data;
-    const balance = formatBalance(data as AccountData, precision);
-
-    const currency = {
-      network,
-      token,
-      balance,
-    };
-
-    commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
-      walletAddress: address,
-      currency,
-    });
-  });
-
-  return unsubscribe;
-}
 
 export default actions;

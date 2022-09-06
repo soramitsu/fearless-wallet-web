@@ -2,11 +2,14 @@ import { MutationTypes } from './mutations';
 import type { ActionTree, ActionContext } from 'vuex';
 import type { Mutations } from './mutations';
 import type { State } from './state';
-import type { SetSelectedFiat } from './types';
+import type { SetSelectedFiat, SetSelectedWallet } from './types';
 import type { Currencies } from '@/interfaces/currencies';
+import { defaultSortingCurrencies } from '@/util/currenciesHelper';
+import { accountController } from '@/controllers/accountController';
 
 export enum ActionTypes {
   SET_SELECTED_FIAT = 'SET_SELECTED_FIAT',
+  SET_SELECTED_WALLET = 'SET_SELECTED_WALLET',
 }
 
 type AugmentedActionContext = {
@@ -15,6 +18,7 @@ type AugmentedActionContext = {
 
 export type Actions = {
   [ActionTypes.SET_SELECTED_FIAT](context: AugmentedActionContext, props: SetSelectedFiat): Promise<void>;
+  [ActionTypes.SET_SELECTED_WALLET](context: AugmentedActionContext, props: SetSelectedWallet): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
@@ -25,6 +29,20 @@ const actions: ActionTree<State, State> & Actions = {
       fiatName,
       currencies,
     });
+  },
+
+  async [ActionTypes.SET_SELECTED_WALLET]({ rootState, commit, state }, { selectedWalletAddress }) {
+    commit(MutationTypes.SET_SELECTED_WALLET, {
+      selectedWalletAddress,
+    });
+
+    // TODO: try to get rid of setTimeout
+    setTimeout(() => {
+      const currencies: Currencies = defaultSortingCurrencies(rootState.networks.currencies, state.selectedWallet);
+      const sequence = currencies.map(({ token }) => token);
+
+      accountController.setSequenceTokens(sequence, selectedWalletAddress);
+    }, 1000);
   },
 };
 

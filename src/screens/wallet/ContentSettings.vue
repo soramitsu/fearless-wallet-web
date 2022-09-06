@@ -21,12 +21,7 @@
     <div v-if="isCurrenciesTab" class="settings-part">
       <SearchInput v-if="!showAssetsManagementForm" v-model="filterValue" placeholder="Search" class="search" />
 
-      <CircleButton
-        v-if="showAssetsManagementButton"
-        :iconName="iconName"
-        backgroundColor="none"
-        @click="toggleAssetsManagementVisible"
-      />
+      <CircleButton :iconName="iconName" backgroundColor="none" @click="toggleAssetsManagementVisible" />
     </div>
   </div>
 </template>
@@ -55,7 +50,6 @@ export default class ContentSettings extends Vue {
   @PropSync('activeTabName', { type: String }) syncedActiveTabName!: TabWallet;
   @PropSync('showAssetsManagementForm', { type: Boolean }) syncedShowAssetsManagementForm!: boolean;
   @PropSync('hideZeroBalance', { type: Boolean }) syncedHideZeroBalance!: boolean;
-  @Prop(Boolean) showAssetsManagementButton!: boolean;
   @Prop(Function) handlerFilter!: (value: string) => void;
 
   get iconName() {

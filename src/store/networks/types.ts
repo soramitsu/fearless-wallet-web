@@ -8,11 +8,14 @@ import type { AccountBalance } from '@/interfaces/balances';
 import type { Mutations } from './mutations';
 import type { ActionContext } from 'vuex';
 import type { State } from './state';
+import type { WalletAddress } from '@/interfaces/common';
 
 export type Node = {
   url: string;
   name: string;
 };
+
+export type ActiveNodes = Record<WalletAddress, Node>;
 
 export type Assets = {
   assetId: string;
@@ -66,6 +69,10 @@ type Network = {
   settings: Record<string, any>;
   externalApi: ExternalApi;
 };
+
+type DisconnectNetwork = Omit<Network, 'api' | 'provider'>;
+
+export type DisconnectNetworks = DisconnectNetwork[];
 
 export type Networks = Network[];
 
@@ -235,8 +242,14 @@ export type UpdateCurrencyBalanceProps = {
   };
 };
 
-export type UpdateActiveNodeProps = {
-  networkName: string;
+export type SetNetworkActiveNodeProps = {
+  network: string;
+  name: string;
+  url: string;
+};
+
+export type SetNetworkApi = {
+  network: string;
   provider: WsProvider;
   api: ApiPromise;
 };
@@ -268,12 +281,15 @@ export type SubscribeToBalances = {
   networksProps?: Networks;
 };
 
-export type UpdateActiveNode = {
-  networkName: string;
+export type ToggleActiveNode = {
+  network: string;
+  nodeName: string;
   nodeUrl: string;
   oldNodeUrl: string;
 };
 
-export type AugmentedActionContext = {
+export type Commit = {
   commit<K extends keyof Mutations>(key: K, payload: Parameters<Mutations[K]>[1]): ReturnType<Mutations[K]>;
-} & Omit<ActionContext<State, any>, 'commit'>;
+};
+
+export type AugmentedActionContext = Commit & Omit<ActionContext<State, any>, 'commit'>;

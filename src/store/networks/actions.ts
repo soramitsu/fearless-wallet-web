@@ -5,7 +5,7 @@ import type { State } from './state';
 import type { ActionTree } from 'vuex';
 import type {
   NetworkJson,
-  Networks,
+  DisconnectNetworks,
   AssetJson,
   FiatJson,
   LoadNetworks,
@@ -15,18 +15,17 @@ import type {
   LoadFiats,
   TokensPriceJson,
   ExternalApi,
-  UpdateActiveNode,
+  ToggleActiveNode,
   Accounts,
   AugmentedActionContext,
 } from './types';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
-import { accountController } from '@/controllers/accountController';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import { getHistory } from '@/subquery/history';
 import { getReplacedMetaTyped } from '@/util/helpers';
 import { getMockCurrencies } from '@/util/currenciesHelper';
-import { connectToApi, saveHistory, subscribeToBalances } from '@/util/networksAndAssetsHelper';
+import { connectToApi, connectToNetworksApi, saveHistory, subscribeToBalances } from '@/util/networksAndAssetsHelper';
 
 export enum ActionTypes {
   LOAD_NETWORKS = 'LOAD_NETWORKS',
@@ -35,7 +34,7 @@ export enum ActionTypes {
   LOAD_TOKENS_PRICE = 'LOAD_TOKENS_PRICE',
   LOAD_HISTORY = 'LOAD_HISTORY',
   SUBSCRIBE_TO_BALANCES = 'SUBSCRIBE_TO_BALANCES',
-  UPDATE_ACTIVE_NODE = 'UPDATE_ACTIVE_NODE',
+  TOGGLE_ACTIVE_NODE = 'TOGGLE_ACTIVE_NODE',
 }
 
 export type Actions = {
@@ -45,31 +44,24 @@ export type Actions = {
   [ActionTypes.LOAD_TOKENS_PRICE](store: AugmentedActionContext): Promise<void>;
   [ActionTypes.LOAD_HISTORY](store: AugmentedActionContext, props: LoadHistory): Promise<void>;
   [ActionTypes.SUBSCRIBE_TO_BALANCES](store: AugmentedActionContext, props: SubscribeToBalances): Promise<void>;
-  [ActionTypes.UPDATE_ACTIVE_NODE](store: AugmentedActionContext, props: UpdateActiveNode): Promise<void>;
+  [ActionTypes.TOGGLE_ACTIVE_NODE](store: AugmentedActionContext, props: ToggleActiveNode): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
-  async [ActionTypes.LOAD_NETWORKS]({ commit }, { url, autoConnectMs = 0 }) {
+  async [ActionTypes.LOAD_NETWORKS](context, { url, autoConnectMs = 0 }) {
+    const { commit } = context;
     const { data } = await axios.get(url);
     const networksJson: NetworkJson[] = data;
-    const autoSelectNodes = accountController.getAutoSelectNodesValue();
-    const activeNodes = accountController.getActiveNodes();
 
-    const networks: Networks = networksJson.map(
+    const disconnectNetworks: DisconnectNetworks = networksJson.map(
       ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi, chainId }) => {
         const networkName = name.toLocaleLowerCase();
         const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
         const externalApi = originalExternalApi ?? ({} as ExternalApi);
-        const autoSelectNode = autoSelectNodes[networkName] ?? true;
-        const url = autoSelectNode ? nodes[0].url : activeNodes[networkName].url;
         const settings = settingsNetworks[networkName as Settings] ?? {};
-
-        const { api, provider } = connectToApi(name, url, autoConnectMs);
 
         return {
           name: networkName,
-          provider,
-          api,
           nodes,
           assets,
           chainId,
@@ -81,6 +73,7 @@ const actions: ActionTree<State, State> & Actions = {
       }
     );
 
+    const networks = connectToNetworksApi(disconnectNetworks, autoConnectMs, context);
     const currencies = getMockCurrencies(networks);
 
     commit(MutationTypes.SET_CURRENCIES, { currencies });
@@ -150,6 +143,8 @@ const actions: ActionTree<State, State> & Actions = {
 
     // if the list of networks is not transferred, then we subscribe to all
     const networks = networksProps ?? networksStore;
+    console.log(networks);
+
     const promises = networks.map(async (network) => {
       const { api, isEthereumNetwork, name: networkName, assets, externalApi } = network;
       const token = assets[0]?.assetId;
@@ -190,26 +185,28 @@ const actions: ActionTree<State, State> & Actions = {
     });
   },
 
-  async [ActionTypes.UPDATE_ACTIVE_NODE](
+  async [ActionTypes.TOGGLE_ACTIVE_NODE](
     { state, commit, dispatch },
-    { networkName, nodeUrl: nodeUrlProp, oldNodeUrl }
+    { network, nodeName, nodeUrl: nodeUrlProp, oldNodeUrl }
   ) {
     const networks = state.networks;
-    const network = networks.find(({ name }) => name === networkName)!; // eslint-disable-line
-    const nodeUrl = nodeUrlProp === '' ? network.nodes[0].url : nodeUrlProp;
+    const networkApi = networks.find(({ name }) => name === network)!; // eslint-disable-line
+    const nodeUrl = nodeUrlProp === '' ? networkApi.nodes[0].url : nodeUrlProp;
 
-    if (nodeUrl === oldNodeUrl || (oldNodeUrl === '' && nodeUrl === network.nodes[0].url)) return;
-
-    network.api.disconnect();
-    network.provider.disconnect();
-
-    const { provider, api } = connectToApi(networkName, nodeUrl, 0);
-
-    commit(MutationTypes.UPDATE_ACTIVE_NODE, {
-      networkName,
-      provider,
-      api,
+    commit(MutationTypes.SET_NETWORK_ACTIVE_NODE, {
+      network,
+      name: nodeName,
+      url: nodeUrlProp,
     });
+
+    if (nodeUrl === oldNodeUrl || (oldNodeUrl === '' && nodeUrl === networkApi.nodes[0].url)) return;
+
+    await networkApi.api.disconnect();
+    await networkApi.provider.disconnect();
+
+    const { provider, api } = connectToApi(network, nodeUrl, 0);
+
+    commit(MutationTypes.SET_NETWORK_API, { network, provider, api });
 
     const accounts = BaseApi.getAccounts().reduce((result, { address, meta }) => {
       const { type } = BaseApi.getPair(address);
@@ -219,7 +216,7 @@ const actions: ActionTree<State, State> & Actions = {
       return result;
     }, {} as Accounts);
 
-    await dispatch(ActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, loadHistory: false, networksProps: [network] });
+    await dispatch(ActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, loadHistory: false, networksProps: [networkApi] });
   },
 };
 

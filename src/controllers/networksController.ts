@@ -30,7 +30,12 @@ export default class NetworksController {
     await store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, loadHistory });
   }
 
-  public static async updateActiveNode(networkName: string, nodeUrl: string, oldNodeUrl: string): Promise<void> {
-    await store.dispatch(NetworksActionTypes.UPDATE_ACTIVE_NODE, { networkName, nodeUrl, oldNodeUrl });
+  public static async toggleActiveNode(
+    network: string,
+    nodeName: string,
+    nodeUrl: string,
+    oldNodeUrl: string
+  ): Promise<void> {
+    await store.dispatch(NetworksActionTypes.TOGGLE_ACTIVE_NODE, { network, nodeName, nodeUrl, oldNodeUrl });
   }
 }

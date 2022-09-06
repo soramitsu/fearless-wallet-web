@@ -10,8 +10,10 @@ import type {
   SetCurrenciesProps,
   SetAllNetworksIsLoaded,
   SetHistoryProps,
-  UpdateActiveNodeProps,
+  SetNetworkActiveNodeProps,
+  SetNetworkApi,
 } from './types';
+import { accountController } from '@/controllers/accountController';
 
 export enum MutationTypes {
   SET_NETWORKS = 'SET_NETWORKS',
@@ -23,7 +25,8 @@ export enum MutationTypes {
   SET_ALL_NETWORKS_IS_LOADED = 'SET_ALL_NETWORKS_IS_LOADED',
   UPDATE_CURRENCY = 'UPDATE_CURRENCY',
   UPDATE_CURRENCY_BALANCE = 'UPDATE_CURRENCY_BALANCE',
-  UPDATE_ACTIVE_NODE = 'UPDATE_ACTIVE_NODE',
+  SET_NETWORK_ACTIVE_NODE = 'SET_NETWORK_ACTIVE_NODE',
+  SET_NETWORK_API = 'SET_NETWORK_API',
 }
 
 export type Mutations = {
@@ -36,7 +39,8 @@ export type Mutations = {
   [MutationTypes.SET_ALL_NETWORKS_IS_LOADED](state: State, props: SetAllNetworksIsLoaded): void;
   [MutationTypes.UPDATE_CURRENCY](state: State, props: UpdateCurrencyProps): void;
   [MutationTypes.UPDATE_CURRENCY_BALANCE](state: State, props: UpdateCurrencyBalanceProps): void;
-  [MutationTypes.UPDATE_ACTIVE_NODE](state: State, props: UpdateActiveNodeProps): void;
+  [MutationTypes.SET_NETWORK_ACTIVE_NODE](state: State, props: SetNetworkActiveNodeProps): void;
+  [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApi): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -98,9 +102,17 @@ const mutations: MutationTree<State> & Mutations = {
     state.allNetworksIsLoaded = value;
   },
 
-  [MutationTypes.UPDATE_ACTIVE_NODE](state, { networkName, provider, api }) {
+  [MutationTypes.SET_NETWORK_ACTIVE_NODE](state, { network, name, url }) {
+    const oldActiveNodes = state.activeNodes;
+
+    accountController.setActiveNode({ name, url }, network);
+
+    state.activeNodes = { ...oldActiveNodes, [network]: { name, url } };
+  },
+
+  [MutationTypes.SET_NETWORK_API](state, { network, provider, api }) {
     const networks = state.networks;
-    const networkIndex = networks.findIndex(({ name }) => name === networkName)!; // eslint-disable-line
+    const networkIndex = networks.findIndex(({ name }) => name === network)!; // eslint-disable-line
 
     networks[networkIndex].provider = provider;
     networks[networkIndex].api = api;

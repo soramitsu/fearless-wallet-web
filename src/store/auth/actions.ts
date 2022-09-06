@@ -1,4 +1,4 @@
-import { AccountJson, AuthorizeRequest } from '@polkadot/extension-base/background/types';
+import { AuthorizeRequest } from '@polkadot/extension-base/background/types';
 import { Mutations, MutationTypes } from './mutations';
 import type { ActionTree, ActionContext } from 'vuex';
 import type { State } from './types';
@@ -8,7 +8,6 @@ import {
   deleteAuthRequest,
   getAuthList,
   removeAuthorization,
-  subscribeAccounts,
 } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';

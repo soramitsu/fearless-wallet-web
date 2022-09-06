@@ -1,4 +1,4 @@
-import keyring from '@polkadot/ui-keyring';
+import { keyring } from '@polkadot/ui-keyring';
 import Vue from 'vue';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { Plugin } from 'vue-fragment';

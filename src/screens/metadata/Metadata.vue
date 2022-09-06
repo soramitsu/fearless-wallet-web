@@ -3,12 +3,12 @@
     <Corners size="big">
       <div class="transaction__info">
         <dl class="transaction__list">
-          <TransactionInfo name="from" value="request.url" />
-          <TransactionInfo name="chain" value="payload.blockHash" />
-          <TransactionInfo name="icon" value="payload.specVersion" />
-          <TransactionInfo name="decimals" value="payload.method" />
-          <TransactionInfo name="symbol" value="payload.era" />
-          <TransactionInfo name="upgrade" value="payload.era" />
+          <TransactionInfo name="from" :value="request.url" />
+          <TransactionInfo name="chain" :value="request.request.chain" />
+          <TransactionInfo name="icon" :value="request.request.specVersion" />
+          <TransactionInfo name="decimals" :value="request.request.tokenDecimals" />
+          <TransactionInfo name="symbol" :value="request.request.tokenSymbol" />
+          <TransactionInfo name="upgrade" :value="request.request.metaCalls" />
         </dl>
       </div>
     </Corners>
@@ -46,7 +46,7 @@ import { ActionTypes } from '@/store/metadata/actions';
     Hint,
   },
 })
-export default class Authorize extends Vue {
+export default class MetaRequest extends Vue {
   @Getter('getMetaRequest') requests!: MetadataRequest[];
 
   alertMessage =

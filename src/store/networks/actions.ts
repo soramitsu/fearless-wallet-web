@@ -139,8 +139,6 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.SUBSCRIBE_TO_BALANCES](context, { accounts, loadHistory, networksProps }) {
-    console.log('accounts', accounts);
-
     const { commit, state } = context;
     const { networks: networksStore } = state;
 

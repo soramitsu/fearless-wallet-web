@@ -14,12 +14,12 @@ import Accounts from '@/screens/accounts/Accounts.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import Main from '@/screens/main/Main.vue';
 import Crowdloans from '@/screens/crowdloans/Crowdloans.vue';
-import store from '@/store';
+import Authorize from '@/screens/authorize/Authorize.vue';
+import MetaRequest from '@/screens/metadata/Metadata.vue';
+import Transaction from '@/screens/signing/Transaction.vue';
+import SignRequest from '@/screens/signing/SignRequest.vue';
 
-const Authorize = () => import('@/screens/authorize/Authorize.vue');
-const MetaRequest = () => import('@/screens/metadata/Metadata.vue');
-const Transaction = () => import('@/screens/signing/Transaction.vue');
-const SignRequest = () => import('@/screens/signing/SignRequest.vue');
+import store from '@/store';
 
 export enum Components {
   Welcome = 'Welcome',

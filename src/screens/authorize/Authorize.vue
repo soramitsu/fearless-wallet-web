@@ -26,13 +26,13 @@
 import { Vue, Component } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { AuthorizeRequest } from '@polkadot/extension-base/background/types';
-import { keyring } from '@polkadot/ui-keyring';
 import Button from '@/components/Button.vue';
 import Hint from '@/components/Hint.vue';
 import Alert from '@/components/Alert.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import { Components } from '@/router/routes';
 import { ActionTypes } from '@/store/auth/actions';
+import BaseApi from '@/util/BaseApi';
 
 @Component({
   components: {
@@ -50,7 +50,7 @@ export default class Authorize extends Vue {
   @Getter('getRequest') requests!: AuthorizeRequest[];
 
   get isAccountsExists() {
-    return keyring.getAccounts().length > 0;
+    return BaseApi.getAccounts().length > 0;
   }
 
   get request() {

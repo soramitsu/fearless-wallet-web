@@ -17,6 +17,7 @@ import Crowdloans from '@/screens/crowdloans/Crowdloans.vue';
 import store from '@/store';
 
 const Authorize = () => import('@/screens/authorize/Authorize.vue');
+const MetaRequest = () => import('@/screens/metadata/Metadata.vue');
 const Transaction = () => import('@/screens/signing/Transaction.vue');
 const SignRequest = () => import('@/screens/signing/SignRequest.vue');
 
@@ -36,13 +37,15 @@ export enum Components {
   Export = 'Export',
   ManageAuths = 'ManageAuths',
   Authorize = 'Authorize',
+  MetaRequest = 'MetaRequest',
   Transaction = 'Transaction',
   SignRequest = 'SignRequest',
 }
 
 const haveAccounts = () => keyring.getAccounts().length > 0;
 const haveAuthRequests = () => store.getters.getAuthList.length;
-const haveSignRequests = () => store.getters.getAuthList.length;
+const haveSignRequests = () => store.getters.getSignList.length;
+const haveMetaRequests = () => store.getters.getMetaList.length;
 
 const routes: Array<RouteConfig> = [
   {
@@ -59,6 +62,11 @@ const routes: Array<RouteConfig> = [
     path: 'authorize',
     name: Components.Authorize,
     component: Authorize,
+  },
+  {
+    path: 'meta',
+    name: Components.MetaRequest,
+    component: MetaRequest,
   },
   {
     path: 'signing',
@@ -150,6 +158,7 @@ const routes: Array<RouteConfig> = [
     beforeEnter: (to, from, next) => {
       if (haveAuthRequests()) next({ name: Components.Authorize });
       else if (haveSignRequests()) next({ name: Components.SignRequest });
+      else if (haveMetaRequests()) next({ name: Components.MetaRequest });
       else next();
     },
     redirect: () => {

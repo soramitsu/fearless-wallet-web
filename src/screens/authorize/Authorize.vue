@@ -66,7 +66,7 @@ export default class Authorize extends Vue {
   display: flex;
   flex-flow: column;
   justify-content: space-between;
-  height: 90%;
+  height: 100%;
 
   .authorize__content {
     font-size: 16px;

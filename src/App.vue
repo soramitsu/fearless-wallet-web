@@ -16,6 +16,7 @@ import type { TMutation } from '@/interfaces/common';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
+import { ActionTypes as MetaActionTypes } from '@/store/metadata/actions';
 import { ActionTypes as SignActionTypes } from '@/store/sign/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -31,6 +32,7 @@ export default class App extends Vue {
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
   @Action(AuthActionTypes.SUBSCRIBE_TO_DAPP_EVENTS) subscribeToDAppEvents!: () => TMutation<unknown>;
   @Action(SignActionTypes.SUBSCRIBE_SIGN_EVENTS) subscribeSignEvents!: () => TMutation<unknown>;
+  @Action(MetaActionTypes.SUBSCRIBE_TO_METADATA_REQUESTS) metaSubscribe!: () => Promise<void>;
 
   get style() {
     return { 'background-image': 'url(./img/background.9b667fcd.png)' };
@@ -40,8 +42,9 @@ export default class App extends Vue {
     let loadHistory = true;
     const { loadNetworks, loadAssets, loadFiats, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
 
-    await this.subscribeToDAppEvents();
-    await this.subscribeSignEvents();
+    await this.authSubscribe();
+    await this.metaSubscribe();
+    await this.signSubscribe();
 
     await Promise.all([loadNetworks(), loadAssets(), loadFiats()]);
     await loadTokensPrice();

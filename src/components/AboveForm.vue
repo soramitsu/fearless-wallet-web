@@ -10,7 +10,7 @@
         </div>
         <div class="header">{{ header }}</div>
         <div class="activity">
-          <div class="icon" @click="closeHandler">
+          <div v-if="showCloseIcon" class="icon" @click="closeHandler">
             <s-icon name="basic-close-24" />
           </div>
           <div v-show="showAcceptIcon" class="icon" @click="saveChanges">

@@ -14,7 +14,7 @@ import { Fragment } from 'vue-fragment';
     Fragment,
   },
 })
-export default class TransactionInfo extends Vue {
+export default class InfoItem extends Vue {
   @Prop(String) name!: string;
   @Prop([String, Number]) value!: string | number;
 }

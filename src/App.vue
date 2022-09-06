@@ -30,8 +30,8 @@ export default class App extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
-  @Action(AuthActionTypes.SUBSCRIBE_TO_DAPP_EVENTS) subscribeToDAppEvents!: () => TMutation<unknown>;
-  @Action(SignActionTypes.SUBSCRIBE_SIGN_EVENTS) subscribeSignEvents!: () => TMutation<unknown>;
+  @Action(AuthActionTypes.SUBSCRIBE_TO_DAPP_EVENTS) authSubscribe!: () => TMutation<unknown>;
+  @Action(SignActionTypes.SUBSCRIBE_SIGN_EVENTS) signSubscribe!: () => TMutation<unknown>;
   @Action(MetaActionTypes.SUBSCRIBE_TO_METADATA_REQUESTS) metaSubscribe!: () => Promise<void>;
 
   get style() {

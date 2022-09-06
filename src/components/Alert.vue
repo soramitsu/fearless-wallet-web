@@ -1,5 +1,5 @@
 <template>
-  <Corners isError size="big">
+  <Corners :isError="true" size="big">
     <div class="alert-container">
       <div class="alert__content">
         <Hint class="alert__header" size="big" iconName="warning-orange" text="Attention" />

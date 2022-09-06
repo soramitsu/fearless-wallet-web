@@ -8,9 +8,6 @@
           <span ref="address" class="wallet__address" @click="saveToClipboard">{{ address }}</span>
           <img class="wallet-info__clipboard" src="@/assets/clipboard.svg" @click="saveToClipboard" />
         </div>
-        <!-- <div class="network__badge-wrapper">
-          <div class="network__badge">{{ network }}</div>
-        </div> -->
       </div>
     </div>
   </Corners>
@@ -26,7 +23,6 @@ import Corners from '@/components/Corners.vue';
 })
 export default class WalletInfo extends Vue {
   @Prop(String) address!: string;
-  @Prop(String) network!: string;
   @Prop(String) name!: string;
 
   $refs!: {

@@ -1,23 +1,25 @@
 <template>
   <AboveForm :blur="true" header="Authorize" :showCloseIcon="false">
-    <div v-if="isAccountsExists" class="authorize">
-      <div>
-        <p class="authorize__content">
-          An application, self-identifying as
-          <span class="authorize__content--name">{{ request.origin }}</span> is requesting access from my
-          <span class="authorize__content--link">{{ request.url }}</span>
-        </p>
-        <Alert :message="alertMessage" />
-      </div>
-      <div class="authorize__control">
-        <Button width="100%" text="Yes, allow this application access" size="big" fontSize="big" @click="onApprove" />
+    <div class="authorize">
+      <template v-if="isAccountsExists">
+        <div>
+          <p class="authorize__content">
+            An application, self-identifying as
+            <span class="authorize__content--name">{{ request.origin }}</span> is requesting access from my
+            <span class="authorize__content--link">{{ request.url }}</span>
+          </p>
+          <Alert :message="alertMessage" />
+        </div>
+        <div class="authorize__control">
+          <Button width="100%" text="Yes, allow this application access" size="big" fontSize="big" @click="onApprove" />
 
-        <Button width="100%" type="link" text="Reject" size="big" fontSize="medium" @click="onReject" />
-      </div>
-    </div>
-    <div v-else class="authorize">
-      <Alert :message="noAccountsMessage" />
-      <Button width="100%" text="Understood" size="big" fontSize="big" @click="onReject" />
+          <Button width="100%" type="link" text="Reject" size="big" fontSize="medium" @click="onReject" />
+        </div>
+      </template>
+      <template v-else>
+        <Alert :message="noAccountsMessage" />
+        <Button width="100%" text="Understood" size="big" fontSize="big" @click="onReject" />
+      </template>
     </div>
   </AboveForm>
 </template>
@@ -47,7 +49,7 @@ export default class Authorize extends Vue {
     'Only approve this request if you trust the application. Approving gives the application access to the addresses of you accounts';
   noAccountsMessage = "You do not have any account. Please create an account and refresh the application's page.";
 
-  @Getter('getRequest') requests!: AuthorizeRequest[];
+  @Getter('getAuthRequests') requests!: AuthorizeRequest[];
 
   get isAccountsExists() {
     return BaseApi.getAccounts().length > 0;
@@ -60,12 +62,12 @@ export default class Authorize extends Vue {
   }
 
   onApprove() {
-    this.$store.dispatch(ActionTypes.APPROVE_REQUEST, this.request);
+    this.$store.dispatch(ActionTypes.APPROVE_AUTH_REQUEST, this.request);
     this.$router.push({ name: Components.Wallet });
   }
 
   onReject() {
-    this.$store.dispatch(ActionTypes.REJECT_REQUEST, this.request);
+    this.$store.dispatch(ActionTypes.REJECT_AUTH_REQUEST, this.request);
     this.$router.push({ name: Components.Wallet });
   }
 }

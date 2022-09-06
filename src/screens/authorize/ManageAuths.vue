@@ -2,18 +2,20 @@
   <AboveForm header="Manage dApp access" :blur="true" :closeHandler="back">
     <SearchInput v-model="filterValue" placeholder="Search in networks" class="manage-auths__search" :isBig="true" />
 
-    <Fragment v-for="el in filteredList" v-bind:key="el.id">
-      <AuthItem :request="el" @onRemoveAuth="removeAuth" @onChange="onChange" />
-    </Fragment>
+    <AuthItem
+      v-for="el in filteredList"
+      v-bind:key="el.id"
+      :request="el"
+      @onRemoveAuth="removeAuth"
+      @onChange="onChange"
+    />
   </AboveForm>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { Fragment } from 'vue-fragment';
 import { Getter } from 'vuex-class';
 import type { AuthUrlInfo } from '@polkadot/extension-base/background/handlers/State';
-import Switcher from '@/components/Switcher.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import AuthItem from '@/screens/authorize/AuthItem.vue';
@@ -23,8 +25,6 @@ import { Components } from '@/router/routes';
   components: {
     AboveForm,
     AuthItem,
-    Fragment,
-    Switcher,
     SearchInput,
   },
 })
@@ -33,6 +33,11 @@ export default class ManageAuths extends Vue {
 
   filterValue = '';
   filteredList: Record<string, AuthUrlInfo> = {};
+
+  async beforeCreate() {
+    await this.$store.dispatch('GET_AUTHLIST');
+    this.filteredList = this.authlist;
+  }
 
   @Watch('filterValue')
   filter(value: string) {
@@ -57,11 +62,6 @@ export default class ManageAuths extends Vue {
 
   async removeAuth(id: string) {
     await this.$store.dispatch('DELETE_AUTH_CONNECTION', id);
-  }
-
-  async beforeCreate() {
-    await this.$store.dispatch('GET_AUTHLIST');
-    this.filteredList = this.authlist;
   }
 
   back() {

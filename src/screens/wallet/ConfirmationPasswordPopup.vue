@@ -32,12 +32,11 @@
 
       <template v-else>
         <div class="descriptions">
-          <img :src="getImg(firstNetwork)" class="network-img" />
+          <NetworkLogo :network="firstNetwork" classes="network-img" />
 
           <template v-if="secondNetwork">
             <s-icon name="arrows-arrow-right-24" />
-
-            <img :src="getImg(secondNetwork)" class="network-img" />
+            <NetworkLogo :network="secondNetwork" classes="network-img" />
           </template>
         </div>
         <div class="transfer-amount">{{ transferAmountString }}</div>
@@ -56,7 +55,6 @@ import Popup from '@/components/Popup.vue';
 import Button from '@/components/Button.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import BaseApi from '@/util/BaseApi';
-import { getImgPathByNetworkName } from '@/util/imgPath';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component({
@@ -106,10 +104,6 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.loading) return;
 
     this.$emit('close', this.isUnlock);
-  }
-
-  getImg(network: string) {
-    return require(`@/assets/networks/${getImgPathByNetworkName(network)}`);
   }
 
   async send() {

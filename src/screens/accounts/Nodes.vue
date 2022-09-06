@@ -3,7 +3,7 @@
     <div class="network-description">
       <div class="description">
         <div class="img-container">
-          <img :src="imgPath" class="main-network-img" />
+          <NetworkLogo :network="selectedNetwork" classes="main-network-img" />
         </div>
 
         <div>
@@ -70,14 +70,15 @@ import NetworksController from '@/controllers/networksController';
 import BaseApi from '@/util/BaseApi';
 import Switcher from '@/components/Switcher.vue';
 import { accountController } from '@/controllers/accountController';
-import { getImgPathByNetworkName } from '@/util/imgPath';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import NetworkLogo from '@/components/NetworkLogo.vue';
 
 @Component({
   components: {
     Switcher,
     NodeItem,
+    NetworkLogo,
   },
 })
 export default class Nodes extends Vue {
@@ -112,10 +113,6 @@ export default class Nodes extends Vue {
 
   get selectedNetworkUpper() {
     return this.$route.params.network.toUpperCase();
-  }
-
-  get imgPath() {
-    return require(`@/assets/networks/${getImgPathByNetworkName(this.selectedNetwork)}`);
   }
 
   mounted() {

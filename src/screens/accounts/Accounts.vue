@@ -44,7 +44,6 @@ import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
-import { getImgPathByNetworkName } from '@/util/imgPath';
 
 @Component({
   components: {
@@ -104,12 +103,6 @@ export default class Account extends Vue {
         };
       })
       .filter(({ network }) => !this.replacedAccountsItems.map(({ network }) => network).includes(network));
-  }
-
-  getImg(network: string) {
-    if (network === '') return '';
-
-    return require(`@/assets/networks/${getImgPathByNetworkName(network)}`);
   }
 
   back() {

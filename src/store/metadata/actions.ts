@@ -7,7 +7,7 @@ import router from '@/router';
 import { Components } from '@/router/routes';
 
 export enum ActionTypes {
-  SUBSCRIBE_TO_METADATA_REQUESTS = 'SUBSCRIBE_TO_METADATA_REQUESTS',
+  SUBSCRIBE_METADATA_REQUESTS = 'SUBSCRIBE_METADATA_REQUESTS',
   APPROVE_METADATA_REQUEST = 'APPROVE_METADATA_REQUEST',
   REJECT_METADATA_REQUEST = 'REJECT_METADATA_REQUEST',
 }
@@ -17,13 +17,13 @@ type AugmentedActionContext = {
 } & Omit<ActionContext<State, any>, 'commit'>;
 
 export type Actions = {
-  [ActionTypes.SUBSCRIBE_TO_METADATA_REQUESTS](context: AugmentedActionContext): Promise<void>;
+  [ActionTypes.SUBSCRIBE_METADATA_REQUESTS](context: AugmentedActionContext): Promise<void>;
   [ActionTypes.APPROVE_METADATA_REQUEST](context: AugmentedActionContext, props: MetadataRequest): Promise<void>;
   [ActionTypes.REJECT_METADATA_REQUEST](context: AugmentedActionContext, props: MetadataRequest): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
-  async [ActionTypes.SUBSCRIBE_TO_METADATA_REQUESTS]({ commit }) {
+  async [ActionTypes.SUBSCRIBE_METADATA_REQUESTS]({ commit }) {
     const callback = (requests: MetadataRequest[]) => {
       const [request] = requests;
 

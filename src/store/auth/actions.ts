@@ -14,10 +14,9 @@ import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
 
 export enum ActionTypes {
-  SUBSCRIBE_TO_DAPP_EVENTS = 'SUBSCRIBE_TO_DAPP_EVENTS',
-  SUBSCRIBE_TO_ACCOUNTS = 'SUBSCRIBE_TO_ACCOUNTS',
-  APPROVE_REQUEST = 'APPROVE_AUTH_REQUEST',
-  REJECT_REQUEST = 'REJECT_AUTH_REQUEST',
+  SUBSCRIBE_AUTH_REQUESTS = 'SUBSCRIBE_AUTH_REQUESTS',
+  APPROVE_AUTH_REQUEST = 'APPROVE_AUTH_REQUEST',
+  REJECT_AUTH_REQUEST = 'REJECT_AUTH_REQUEST',
   GET_AUTHLIST = 'GET_AUTHLIST',
   DELETE_AUTH_CONNECTION = 'DELETE_AUTH_CONNECTION',
 }
@@ -27,14 +26,14 @@ type AugmentedActionContext = {
 } & Omit<ActionContext<State, any>, 'commit'>;
 
 export type Actions = {
-  [ActionTypes.SUBSCRIBE_TO_DAPP_EVENTS](context: AugmentedActionContext): Promise<void>;
-  [ActionTypes.APPROVE_REQUEST](context: AugmentedActionContext, props: AuthorizeRequest): Promise<void>;
-  [ActionTypes.REJECT_REQUEST](context: AugmentedActionContext, props: AuthorizeRequest): Promise<void>;
+  [ActionTypes.SUBSCRIBE_AUTH_REQUESTS](context: AugmentedActionContext): Promise<void>;
+  [ActionTypes.APPROVE_AUTH_REQUEST](context: AugmentedActionContext, props: AuthorizeRequest): Promise<void>;
+  [ActionTypes.REJECT_AUTH_REQUEST](context: AugmentedActionContext, props: AuthorizeRequest): Promise<void>;
   [ActionTypes.GET_AUTHLIST](context: AugmentedActionContext): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
-  async [ActionTypes.SUBSCRIBE_TO_DAPP_EVENTS]({ commit }) {
+  async [ActionTypes.SUBSCRIBE_AUTH_REQUESTS]({ commit }) {
     const callback = (requests: AuthorizeRequest[]) => {
       const [request] = requests;
 
@@ -50,14 +49,14 @@ const actions: ActionTree<State, State> & Actions = {
     subscribeAuthorizeRequests(callback);
   },
 
-  async [ActionTypes.APPROVE_REQUEST]({ commit }, payload) {
+  async [ActionTypes.APPROVE_AUTH_REQUEST]({ commit }, payload) {
     const addresses = BaseApi.getPolkadotAddresses();
     await approveAuthRequest(payload.id, addresses);
 
     commit(MutationTypes.DELETE_AUTH_REQUEST);
   },
 
-  async [ActionTypes.REJECT_REQUEST]({ commit }, payload) {
+  async [ActionTypes.REJECT_AUTH_REQUEST]({ commit }, payload) {
     await deleteAuthRequest(payload.id);
     commit(MutationTypes.DELETE_AUTH_REQUEST);
   },

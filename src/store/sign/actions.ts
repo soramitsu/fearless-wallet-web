@@ -8,7 +8,7 @@ import router from '@/router';
 import { Components } from '@/router/routes';
 
 export enum ActionTypes {
-  SUBSCRIBE_SIGN_EVENTS = 'SUBSCRIBE_SIGN_EVENTS',
+  SUBSCRIBE_SIGN_REQUESTS = 'SUBSCRIBE_SIGN_REQUESTS',
   SIGN_CANCEL = 'SIGN_CANCEL',
   APPROVE_SIGN_PASSWORD = 'APPROVE_SIGN_PASSWORD',
 }
@@ -16,6 +16,7 @@ export enum ActionTypes {
 type AugmentedActionContext = {
   commit<K extends keyof Mutations>(key: K, payload?: Parameters<Mutations[K]>[1]): ReturnType<Mutations[K]>;
 } & Omit<ActionContext<State, any>, 'commit'>;
+
 type ApprovePayload = {
   id: string;
   isSavePass: boolean;
@@ -23,13 +24,13 @@ type ApprovePayload = {
 };
 
 export type Actions = {
-  [ActionTypes.SUBSCRIBE_SIGN_EVENTS](context: AugmentedActionContext): Promise<void>;
+  [ActionTypes.SUBSCRIBE_SIGN_REQUESTS](context: AugmentedActionContext): Promise<void>;
   [ActionTypes.SIGN_CANCEL](context: AugmentedActionContext, id: string): Promise<void>;
   [ActionTypes.APPROVE_SIGN_PASSWORD](context: AugmentedActionContext, payload: ApprovePayload): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
-  async [ActionTypes.SUBSCRIBE_SIGN_EVENTS]({ commit }) {
+  async [ActionTypes.SUBSCRIBE_SIGN_REQUESTS]({ commit }) {
     const callback = (requests: SigningRequest[]) => {
       const [request] = requests;
 

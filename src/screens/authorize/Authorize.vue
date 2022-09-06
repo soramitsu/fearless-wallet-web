@@ -1,6 +1,6 @@
 <template>
   <AboveForm :blur="true" header="Authorize" :showCloseIcon="false">
-    <div class="authorize">
+    <div v-if="isAccountsExists" class="authorize">
       <div>
         <p class="authorize__content">
           An application, self-identifying as
@@ -15,6 +15,10 @@
         <Button width="100%" type="link" text="Reject" size="big" fontSize="medium" @click="onReject" />
       </div>
     </div>
+    <div v-else class="authorize">
+      <Alert :message="noAccountsMessage" />
+      <Button width="100%" text="Understood" size="big" fontSize="big" @click="onReject" />
+    </div>
   </AboveForm>
 </template>
 
@@ -28,6 +32,7 @@ import Alert from '@/components/Alert.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import { Components } from '@/router/routes';
 import { ActionTypes } from '@/store/auth/actions';
+import BaseApi from '@/util/BaseApi';
 
 @Component({
   components: {
@@ -40,8 +45,13 @@ import { ActionTypes } from '@/store/auth/actions';
 export default class Authorize extends Vue {
   alertMessage =
     'Only approve this request if you trust the application. Approving gives the application access to the addresses of you accounts';
+  noAccountsMessage = "You do not have any account. Please create an account and refresh the application's page.";
 
   @Getter('getRequest') requests!: AuthorizeRequest[];
+
+  get isAccountsExists() {
+    return BaseApi.getAccounts().length > 0;
+  }
 
   get request() {
     const [request] = this.requests;

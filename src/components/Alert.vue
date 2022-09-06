@@ -32,7 +32,7 @@ export default class Container extends Vue {
 .alert-container {
   background: rgba(255, 255, 255, 0.05);
   padding: $default-padding;
-  border: 1px solid rgba(238, 119, 0, 0.27) !important;
+  border: 1px solid $error-color;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-radius: $default-border-radius;
   width: 100%;

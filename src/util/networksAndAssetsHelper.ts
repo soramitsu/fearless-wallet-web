@@ -1,11 +1,18 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
-import type { ExternalApi, AugmentedActionContext as Context } from '@/store/networks/types';
+import type {
+  ExternalApi,
+  Networks,
+  DisconnectNetworks,
+  AugmentedActionContext as Context,
+  Commit,
+} from '@/store/networks/types';
 import { formatBalance } from '@/util/balances';
 import BaseApi from '@/util/BaseApi';
 import { MutationTypes } from '@/store/networks/mutations';
 import { ActionTypes } from '@/store/networks/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { accountController } from '@/controllers/accountController';
 
 function connectToApi(name: string, url: string, autoConnectMs = 0) {
   const provider = new WsProvider(url, autoConnectMs);
@@ -22,6 +29,30 @@ function connectToApi(name: string, url: string, autoConnectMs = 0) {
   }
 
   return { provider, api };
+}
+
+function connectToNetworksApi(networks: DisconnectNetworks, autoConnectMs: number, context: Context): Networks {
+  const { commit } = context;
+  const autoSelectNodes = accountController.getAutoSelectNodesValue();
+  const activeNodes = accountController.getActiveNodes();
+
+  return networks.map((network) => {
+    const { name, nodes } = network;
+
+    const autoSelectNode = autoSelectNodes[name] ?? true;
+    const url = autoSelectNode ? nodes[0].url : activeNodes[name].url;
+    const nodeName = autoSelectNode ? nodes[0].name : activeNodes[name].name;
+
+    commit(MutationTypes.SET_NETWORK_ACTIVE_NODE, {
+      network: name,
+      name: nodeName,
+      url,
+    });
+
+    const { api, provider } = connectToApi(name, url, autoConnectMs);
+
+    return { ...network, api, provider };
+  });
 }
 
 async function saveHistory(address: string, network: string, api: ExternalApi, context: Context) {
@@ -71,4 +102,4 @@ function subscribeToBalances(context: Context, api: ApiPromise, token: string, n
   });
 }
 
-export { connectToApi, saveHistory, subscribeToBalances };
+export { connectToApi, connectToNetworksApi, saveHistory, subscribeToBalances };

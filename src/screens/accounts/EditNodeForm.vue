@@ -2,11 +2,17 @@
   <AboveForm header="New Node" :closeHandler="closeForm">
     <div class="add-node-form">
       <div>
-        <Input v-model="networkCharUp" placeholder="Network" size="big" :readonly="true" class="row" />
+        <Input v-model="networkCharUp" placeholder="Network" size="big" class="row" :readonly="true" />
 
-        <Input v-model="name" placeholder="NAME" size="big" class="row" />
+        <Input v-model="name" placeholder="NAME" size="big" class="row" :maxlength="45" />
 
-        <Input v-model="url" placeholder="URL ADDRESS" size="big" class="row" />
+        <ValidatedInput
+          v-model="url"
+          placeholder="URL ADDRESS"
+          class="row"
+          errorDescriptions="Invalid node address format"
+          :isError="isErrorUrlNode"
+        />
       </div>
 
       <Button size="big" :text="buttonText" :disabled="buttonDisabled" @click="updateNodes" />
@@ -21,12 +27,15 @@ import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
 import { accountController } from '@/controllers/accountController';
 import { firstCharToUp } from '@/util/helpers';
+import ValidatedInput from '@/components/ValidatedInput.vue';
+import NetworksController from '@/controllers/networksController';
 
 @Component({
   components: {
-    AboveForm,
     Input,
     Button,
+    AboveForm,
+    ValidatedInput,
   },
 })
 export default class EditNodeForm extends Vue {
@@ -37,6 +46,7 @@ export default class EditNodeForm extends Vue {
   @Prop(String) network!: string;
   @Prop(String) _name!: string;
   @Prop(String) _url!: string;
+  @Prop(Boolean) isActive!: boolean;
 
   get buttonText() {
     return this.isEdit ? 'Save' : 'Add node';
@@ -46,12 +56,24 @@ export default class EditNodeForm extends Vue {
     return this._name !== '';
   }
 
+  get isErrorUrlNode() {
+    return this.url !== '' && !this.url.includes('wss://');
+  }
+
   get networkCharUp() {
     return firstCharToUp(this.network);
   }
 
+  get isUrlChanged() {
+    return this.url !== this._url;
+  }
+
+  get isNameChanged() {
+    return this.name !== this._name;
+  }
+
   get buttonDisabled() {
-    return this.name === '' || this.url === '';
+    return this.name === '' || this.url === '' || this.isErrorUrlNode || (!this.isUrlChanged && !this.isNameChanged);
   }
 
   mounted() {
@@ -64,6 +86,8 @@ export default class EditNodeForm extends Vue {
       name: this._name,
       url: this._url,
     });
+
+    if (this.isActive) NetworksController.toggleActiveNode(this.network, this.name, this.url, this._url);
 
     this.closeForm(true);
   }

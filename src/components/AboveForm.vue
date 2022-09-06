@@ -31,10 +31,10 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 @Component
 export default class AboveForm extends Vue {
   @Prop({ default: '' }) header!: string;
+  @Prop({ default: false }) blur!: boolean;
   @Prop({ default: false }) showAcceptIcon!: boolean;
   @Prop({ default: false }) showBackIcon!: boolean;
-  @Prop({ default: false }) showCloseIcon!: boolean;
-  @Prop({ default: false }) blur!: boolean;
+  @Prop({ default: true }) showCloseIcon!: boolean;
   @Prop({ default: () => () => null }) saveChanges!: VoidFunction;
   @Prop({ default: () => () => null }) handlerBack!: VoidFunction;
   @Prop(Function) closeHandler!: VoidFunction;

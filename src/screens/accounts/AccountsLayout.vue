@@ -49,6 +49,7 @@
       :_name="selectedNodeName"
       :_url="selectedNodeUrl"
       :network="selectedNetwork"
+      :isActive="selectedNodeIsActive"
       :closeForm="closeEditNodeForm"
     />
 
@@ -116,13 +117,14 @@ export default class AccountsLayout extends Vue {
   selectedNetwork = '';
   selectedNodeName = '';
   selectedNodeUrl = '';
-  notificationType: NotificationType = '';
+  selectedNodeIsActive = false;
   buttonTopClick = 0;
   showReplaceAccount = true;
   showReplacePopup = false;
   showAccountSettingsPopup = false;
   showEditNodeForm = false;
   showNodeSettingsPopup = false;
+  notificationType: NotificationType = '';
 
   get headers() {
     return this.notificationType === 'delete'
@@ -226,11 +228,12 @@ export default class AccountsLayout extends Vue {
     }
   }
 
-  openNodeSettingsPopup(network = '', nodeName = '', nodeUrl = '', buttonTop: number) {
+  openNodeSettingsPopup(network = '', nodeName = '', nodeUrl = '', buttonTop: number, isActive: boolean) {
     this.showNodeSettingsPopup = true;
     this.selectedNetwork = network;
     this.selectedNodeName = nodeName;
     this.selectedNodeUrl = nodeUrl;
+    this.selectedNodeIsActive = isActive;
     this.buttonTopClick = buttonTop;
   }
 

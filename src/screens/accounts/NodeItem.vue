@@ -59,7 +59,7 @@ export default class NodeItem extends Vue {
 
     targetElement.style.zIndex = '200';
 
-    this.$emit('openNodeSettingsPopup', buttonTop);
+    this.$emit('openNodeSettingsPopup', buttonTop, this.isActive);
   }
 }
 </script>
@@ -83,8 +83,9 @@ export default class NodeItem extends Vue {
     font-weight: 400;
     font-size: 14px;
     text-align: left;
-    margin-top: 5px;
     width: 410px;
+    height: 21px;
+    line-height: 21px;
     color: #888888;
     overflow: hidden;
     text-overflow: ellipsis;

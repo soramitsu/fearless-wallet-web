@@ -55,7 +55,7 @@
       :isActive="getActiveStatus(name, url)"
       :isRemoveBorderBottom="getRemoveValue(index, true)"
       @changeNode="changeNode(name, url)"
-      @openNodeSettingsPopup="$emit('openNodeSettingsPopup', selectedNetwork, name, url, $event)"
+      @openNodeSettingsPopup="openNodeSettingsPopup(name, url, ...arguments)"
     />
   </div>
 </template>
@@ -65,7 +65,7 @@ import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import NodeItem from './NodeItem.vue';
 import type { SelectedWallet } from '@/store/accounts/types';
-import type { Networks, Node } from '@/store/networks/types';
+import type { Networks, Node, ActiveNodes } from '@/store/networks/types';
 import NetworksController from '@/controllers/networksController';
 import BaseApi from '@/util/BaseApi';
 import Switcher from '@/components/Switcher.vue';
@@ -82,11 +82,15 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 })
 export default class Nodes extends Vue {
   autoSelectNodes = true;
-  activeNode = { name: '', url: '' };
   customNodes: Node[] = [];
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
+  @Getter(NetworksGettersTypes.getActiveNodes) activeNodes!: ActiveNodes;
+
+  get activeNode() {
+    return this.activeNodes[this.selectedNetwork] ?? { url: '', name: '' };
+  }
 
   get address() {
     if (this.selectedWallet.address === '') return '';
@@ -116,7 +120,6 @@ export default class Nodes extends Vue {
 
   mounted() {
     this.autoSelectNodes = accountController.getAutoSelectNodesValueByNetwork(this.selectedNetwork);
-    this.activeNode = accountController.getActiveNodesByNetwork(this.selectedNetwork);
 
     this.updatedCustomNodes();
   }
@@ -127,10 +130,18 @@ export default class Nodes extends Vue {
 
     if (value) this.changeNode();
     else if (this.activeNode.name === '') {
-      const { name, url } = this.defaultNodes?.[0];
+      const defaultNodes = this.defaultNodes?.[0];
 
-      this.changeNode(name, url);
+      if (defaultNodes !== undefined) {
+        const { name, url } = defaultNodes;
+
+        this.changeNode(name, url);
+      }
     }
+  }
+
+  openNodeSettingsPopup(name: string, url: string, buttonTop: number, isActive: boolean) {
+    this.$emit('openNodeSettingsPopup', this.selectedNetwork, name, url, buttonTop, isActive);
   }
 
   updatedCustomNodes() {
@@ -140,14 +151,9 @@ export default class Nodes extends Vue {
   changeNode(name = '', url = '') {
     const { url: oldUrl } = this.activeNode;
 
-    this.activeNode = { name, url };
-    accountController.setActiveNode({ name, url }, this.selectedNetwork);
+    NetworksController.toggleActiveNode(this.selectedNetwork, name, url, oldUrl);
 
-    if (oldUrl !== url) {
-      NetworksController.updateActiveNode(this.selectedNetwork, url, oldUrl);
-    }
-
-    if (name !== '') this.autoSelectNodes = false;
+    if (name !== '' && url !== '') this.autoSelectNodes = false;
   }
 
   copyAddress() {
@@ -155,15 +161,16 @@ export default class Nodes extends Vue {
   }
 
   getActiveStatus(nodeName: string, url: string) {
-    return nodeName === this.activeNode.name && this.activeNode.url === url;
+    return nodeName === this.activeNode.name && this.activeNode.url === url && !this.autoSelectNodes;
   }
 
   getRemoveValue(index: number, isCustomNode = false) {
     const nodes = isCustomNode ? this.customNodes : this.defaultNodes;
+    const { name: activeNodeName, url: activeNodeUrl } = this.activeNode;
 
-    const activeNodeIndex = nodes.findIndex(
-      ({ name, url }) => name === this.activeNode.name && this.activeNode.url === url
-    );
+    if (this.autoSelectNodes) return;
+
+    const activeNodeIndex = nodes.findIndex(({ name, url }) => name === activeNodeName && activeNodeUrl === url);
 
     if (activeNodeIndex !== -1) {
       // remove the border if it is the active node or the previous node

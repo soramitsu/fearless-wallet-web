@@ -1,6 +1,7 @@
 import type { AssetJson, FiatJson, Networks, TokensPriceJson } from './types';
 import type { Currencies } from '@/interfaces/currencies';
 import type { History } from '@/interfaces/history';
+import type { ActiveNodes } from '@/store/networks/types';
 
 export type State = {
   networks: Networks;
@@ -10,6 +11,7 @@ export type State = {
   history: History;
   currencies: Currencies;
   allNetworksIsLoaded: boolean;
+  activeNodes: ActiveNodes;
 };
 
 const state = (): State => {
@@ -21,6 +23,7 @@ const state = (): State => {
     currencies: [],
     allNetworksIsLoaded: false,
     history: {},
+    activeNodes: {},
   };
 };
 

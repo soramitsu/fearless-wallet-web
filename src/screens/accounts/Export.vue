@@ -13,7 +13,7 @@
         v-model="password"
         errorDescriptions="Incorrect password"
         placeholder="Password for this wallet"
-        :isError="isError"
+        :isError="isWrongPassword"
         :showPassword="true"
         :maxlength="25"
       />
@@ -49,7 +49,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 })
 export default class Export extends Vue {
   password = '';
-  isError = false;
+  isWrongPassword = false;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
@@ -59,7 +59,7 @@ export default class Export extends Vue {
 
   @Watch('password')
   filter() {
-    this.isError = false;
+    this.isWrongPassword = false;
   }
 
   checkPassword() {
@@ -71,7 +71,7 @@ export default class Export extends Vue {
     try {
       BaseApi.unlockPair(addressByNetwork, this.password);
     } catch (ex) {
-      this.isError = true;
+      this.isWrongPassword = true;
 
       return;
     }

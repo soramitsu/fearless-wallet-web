@@ -38,7 +38,6 @@
           :showAssetsManagementForm="showAssetsManagementForm"
           :hideZeroBalance="hideZeroBalance"
           :handlerFilter="handlerFilter.bind(null, 'filterValue')"
-          :showAssetsManagementButton="existSavedSequence"
           @update:activeTabName="updateActiveTabName"
           @update:showAssetsManagementForm="toggleAssetsManagementFormVisible"
           @update:hideZeroBalance="toggleCurrenciesVisible"
@@ -77,7 +76,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import SelectNetworkButton from './SelectNetworkButton.vue';
 import ReceiveForm from './ReceiveForm.vue';
@@ -97,10 +96,8 @@ import { SelectedWallet } from '@/store/accounts/types';
 import { Networks, SetCurrenciesProps } from '@/store/networks/types';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { getImgPathByNetworkName } from '@/util/imgPath';
-import { defaultSortingCurrencies } from '@/util/currenciesHelper';
 import { firstCharToUp } from '@/util/helpers';
 import { addNumbers, formattedNumber } from '@/util/numbers';
-
 @Component({
   components: {
     NFTs,
@@ -117,7 +114,6 @@ import { addNumbers, formattedNumber } from '@/util/numbers';
 export default class Wallet extends Vue {
   readonly selectNetworkButtonRef = 'selectNetworkButton';
   showAssetsManagementForm = false;
-  existSavedSequence = false;
   hideZeroBalance = false;
   showSendForm = false;
   showReceiveForm = false;
@@ -134,27 +130,22 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
-  @Getter(NetworksGettersTypes.getAllNetworksIsLoaded) allNetworksIsLoaded!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
 
   get sortedCurrencies() {
-    if (this.selectedWallet.address === '') return [];
+    const { address } = this.selectedWallet;
 
-    const subsequenceTokens = accountController.getSubsequenceTokens();
-    const currencies = [...(this.currencies ?? [])];
+    if (address === '') return [];
 
-    // at the first launch of the extension sort by fiat balance
-    if (!this.existSavedSequence) return defaultSortingCurrencies(currencies, this.selectedWallet);
-    else
-      currencies.sort(({ mainNetwork: mainNetwork1 }, { mainNetwork: mainNetwork2 }) => {
-        const index1 = subsequenceTokens.indexOf(mainNetwork1);
-        const index2 = subsequenceTokens.indexOf(mainNetwork2);
+    const sequence = accountController.getSequenceTokens(address) as string[];
 
-        return index1 - index2;
-      });
+    return this.currencies.sort(({ token: token1 }, { token: token2 }) => {
+      const index1 = sequence.indexOf(token1);
+      const index2 = sequence.indexOf(token2);
 
-    return currencies;
+      return index1 - index2;
+    });
   }
 
   get filteredCurrencies() {
@@ -211,21 +202,6 @@ export default class Wallet extends Vue {
     const filter = this.popupFilterValue.trim().toLowerCase();
 
     return this.optionsNetworks.filter(({ label }) => label.toLowerCase().includes(filter));
-  }
-
-  @Watch('allNetworksIsLoaded')
-  setSubsequenceTokens() {
-    if (this.existSavedSequence) return;
-
-    const subsequence = this.sortedCurrencies.map(({ mainNetwork }) => mainNetwork);
-
-    accountController.setSubsequenceTokens(subsequence);
-    this.setCurrencies({ currencies: this.sortedCurrencies });
-    this.existSavedSequence = true;
-  }
-
-  mounted() {
-    this.existSavedSequence = accountController.getSubsequenceTokens().length > 0;
   }
 
   toggleAssetsManagementFormVisible(value = true) {

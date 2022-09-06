@@ -132,7 +132,6 @@ import ActivityForm from './ActivityForm.vue';
 import MaxButton from './MaxButton.vue';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import type { Currencies } from '@/interfaces/currencies';
-import Loading from '@/components/Loading.vue';
 import Select from '@/components/Select.vue';
 import FloatInput from '@/components/FloatInput.vue';
 import Popup from '@/components/Popup.vue';
@@ -146,14 +145,13 @@ import { addNumbers, formattedNumber, formattedPrice } from '@/util/numbers';
 
 @Component({
   components: {
-    ActivityForm,
-    Select,
     Popup,
-    Loading,
-    ConfirmationPasswordPopup,
-    MaxButton,
+    Select,
     Corners,
     FloatInput,
+    MaxButton,
+    ActivityForm,
+    ConfirmationPasswordPopup,
   },
 })
 export default class TeleportForm extends Vue {

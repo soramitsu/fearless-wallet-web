@@ -48,9 +48,12 @@ export default class Currencies extends Vue {
   }
 
   set filteredCurrencies(currencies) {
+    const { address } = this.selectedWallet;
+    const sequence = currencies.map(({ token }) => token);
+
     this.setCurrencies({ currencies });
 
-    accountController.setSubsequenceTokens(currencies.map(({ mainNetwork }) => mainNetwork));
+    accountController.setSequenceTokens(sequence, address);
   }
 }
 </script>

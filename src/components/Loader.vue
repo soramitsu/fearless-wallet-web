@@ -1,5 +1,5 @@
 <template functional>
-  <div class="loading">
+  <div class="loader">
     <div class="circle">
       <img src="@/assets/fw-pink-logo.svg" class="logo" />
     </div>
@@ -7,7 +7,7 @@
 </template>
 
 <style lang="scss" scoped>
-.loading {
+.loader {
   margin: auto;
 
   .circle {

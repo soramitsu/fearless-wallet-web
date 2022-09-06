@@ -94,7 +94,7 @@ export default class CurrencyController {
     });
   }
 
-  private countTotalTokens(wallet: Wallet): BalanceFP {
+  private countTokens(wallet: Wallet): BalanceFP {
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
 
     return availableInNetworks.reduce(
@@ -170,7 +170,7 @@ export default class CurrencyController {
   }
 
   public getTotalCountTokens(wallet: Wallet): string {
-    return this.countTotalTokens(wallet).total.toString();
+    return this.countTokens(wallet).total.toString();
   }
 
   public getTotalCountTokensByNetwork(wallet: Wallet, _network: string): string {
@@ -222,7 +222,7 @@ export default class CurrencyController {
   }
 
   public getTotalBalance(wallet: Wallet): string {
-    const countTokens = this.countTotalTokens(wallet).total;
+    const countTokens = this.countTokens(wallet).total;
     const cost = this.calculateCost(countTokens);
 
     return cost.toString();

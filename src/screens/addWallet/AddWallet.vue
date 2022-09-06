@@ -111,7 +111,7 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { Getter, Mutation } from 'vuex-class';
+import { Getter, Action } from 'vuex-class';
 import CreateWallet from './CreateWallet.vue';
 import FinishForm from './FinishForm.vue';
 import PasswordForm from './PasswordForm.vue';
@@ -125,12 +125,11 @@ import type {
   ImportType,
   ValidateJsonResult,
   MnemonicConfirmation,
-  TMutation,
+  TAction,
 } from '@/interfaces/common';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import type { SelectedWallet, SetSelectedWalletProps } from '@/store/accounts/types';
+import type { SelectedWallet, SetSelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import BaseApi from '@/util/BaseApi';
 import NotificationPopup from '@/components/NotificationPopup.vue';
 import CircleButton from '@/components/CircleButton.vue';
@@ -140,6 +139,7 @@ import { Components } from '@/router/routes';
 import { INVALID_MESSAGES, InvalidValueName } from '@/consts/invalidMessages';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/ethereumNetworks';
 import { INITIAL_DERIVATION_PATH } from '@/consts/derivationPath';
+import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
 
@@ -179,7 +179,7 @@ export default class AddWallet extends Vue {
   derivationPath = INITIAL_DERIVATION_PATH;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
+  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
 
   get replacedNetwork() {
     return this.$route.params.network ?? '';

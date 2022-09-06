@@ -4,7 +4,7 @@ import LocalStorageController from '@/controllers/localStorageController';
 class AccountController {
   private readonly lsAccount = new LocalStorageController('account');
   private readonly hideZeroBalanceStorageName = 'hide-zero-balance';
-  private readonly subsequenceTokensStorageName = 'subsequence-tokens';
+  private readonly sequenceTokensStorageName = 'sequence-tokens';
   private readonly autoSelectNodesStorageName = 'auto-select-nodes';
   private readonly activeNodeStorageName = 'active-node';
   private readonly customNodesStorageName = 'custom-nodes';
@@ -31,14 +31,25 @@ class AccountController {
     this.lsAccount.set(this.selectedFiatStorageName, fiat);
   }
 
-  public getSubsequenceTokens(): string[] {
-    const subsequenceTokens = this.lsAccount.get(this.subsequenceTokensStorageName);
+  public getSequenceTokens(address?: string): string[] | Record<string, string> {
+    const sequencesTokens = this.lsAccount.get(this.sequenceTokensStorageName);
+    const value = sequencesTokens.value;
 
-    return subsequenceTokens.value?.split(',') ?? [];
+    if (address) {
+      return (value?.[address]?.split(',') as string[]) ?? [];
+    }
+
+    return value ?? {};
   }
 
-  public setSubsequenceTokens(value: string[]): void {
-    this.lsAccount.set(this.subsequenceTokensStorageName, value.join());
+  public setSequenceTokens(sequence: string[], address: string): void {
+    const prevSequence = this.getSequenceTokens();
+    const newSequence = {
+      ...prevSequence,
+      [address]: sequence.join(),
+    };
+
+    this.lsAccount.set(this.sequenceTokensStorageName, newSequence);
   }
 
   public getAutoSelectNodesValue(): Record<string, boolean> {

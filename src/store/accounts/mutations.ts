@@ -1,9 +1,10 @@
-import keyring from '@polkadot/ui-keyring';
 import type { MutationTree } from 'vuex';
 import type { SetSelectedWalletProps, SetSelectedFiatProps, setAccountsProps } from './types';
 import type { State } from './state';
+import BaseApi from '@/util/BaseApi';
 import { accountController } from '@/controllers/accountController';
 import { getMetaTyped } from '@/util/helpers';
+import { defaultSortingCurrencies } from '@/util/currenciesHelper';
 
 export enum MutationTypes {
   SET_SELECTED_WALLET = 'SET_SELECTED_WALLET',
@@ -19,7 +20,7 @@ export type Mutations = {
 
 const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_SELECTED_WALLET](state, { selectedWalletAddress }) {
-    const { meta } = keyring.getPair(selectedWalletAddress);
+    const { meta } = BaseApi.getPair(selectedWalletAddress);
     const { name, ethereumAddress } = getMetaTyped(meta);
 
     accountController.setSelectedWalletAddress(selectedWalletAddress);

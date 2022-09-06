@@ -28,12 +28,12 @@
 </template>
 
 <script lang="ts">
-import keyring from '@polkadot/ui-keyring';
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import type { SelectedWallet, SetSelectedWalletProps, Accounts } from '@/store/accounts/types';
 import type { Currencies } from '@/interfaces/currencies';
 import type { TMutation } from '@/interfaces/common';
+import BaseApi from '@/util/BaseApi';
 import Popup from '@/components/Popup.vue';
 import WalletBalance from '@/screens/wallet/WalletBalance.vue';
 import BorderButton from '@/components/BorderButton.vue';
@@ -59,7 +59,7 @@ export default class SelectWalletPopup extends Vue {
   get wallets() {
     return Object.keys(this.accounts)
       .map((address) => {
-        const pair = keyring.getPair(address);
+        const pair = BaseApi.getPair(address);
 
         return pair;
       })

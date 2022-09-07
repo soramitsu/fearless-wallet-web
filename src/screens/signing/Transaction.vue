@@ -38,7 +38,6 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { SigningRequest } from '@polkadot/extension-base/background/types';
-import { bnToBn, formatNumber } from '@polkadot/util';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { registry } from '@/util/registry';
@@ -97,14 +96,9 @@ export default class Auth extends Vue {
   }
 
   mortalityAsString(era: ExtrinsicEra, hexBlockNumber: string) {
-    if (era.isImmortalEra) {
-      return 'immortal';
-    }
+    if (era.isImmortalEra) return 'immortal';
 
-    const blockNumber = bnToBn(hexBlockNumber);
-    const mortal = era.asMortalEra;
-    const birth = formatNumber(mortal.birth(blockNumber));
-    const death = formatNumber(mortal.death(blockNumber));
+    const { birth, death } = BaseApi.mortalityDecode(era, hexBlockNumber);
 
     return `mortal, valid from ${birth} to ${death}`;
   }

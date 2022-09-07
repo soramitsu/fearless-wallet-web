@@ -1,12 +1,13 @@
 import { keyring } from '@polkadot/ui-keyring';
 import { decodeAddress, encodeAddress, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
-import { isHex } from '@polkadot/util';
+import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import type { KeyringPair$Json, KeyringPair$Meta, KeyringPair } from '@polkadot/keyring/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult } from '@/interfaces/common';
 import type { Wallet } from '@/store/accounts/types';
+import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { createAccountSuri, jsonRestore } from '@/extension/messaging';
 import { getReplacedMetaTyped, getMetaTyped } from '@/util/helpers';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
@@ -61,6 +62,15 @@ export default class BaseApi {
     const address = replacedAccountByNetwork?.address;
 
     return address ? ({ address, ethereumAddress: address } as Wallet) : wallet;
+  }
+
+  public static mortalityDecode(era: ExtrinsicEra, hexBlockNumber: string) {
+    const blockNumber = bnToBn(hexBlockNumber);
+    const mortal = era.asMortalEra;
+    const birth = formatNumber(mortal.birth(blockNumber));
+    const death = formatNumber(mortal.death(blockNumber));
+
+    return { birth, death };
   }
 
   public static createFromUri(suri: string, type: KeypairType): KeyringPair {

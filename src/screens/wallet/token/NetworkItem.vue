@@ -1,7 +1,7 @@
 <template>
   <div :class="classes" @click="openNetwork">
     <div class="left-part">
-      <NetworkLogo classes="img" />
+      <NetworkLogo :network="network" classes="img" />
 
       <div class="name">{{ networkNameWithFirstCharUp }}</div>
     </div>

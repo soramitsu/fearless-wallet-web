@@ -24,6 +24,7 @@
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import CircleButton from '@/components/CircleButton.vue';
 import NetworkLogo from '@/components/NetworkLogo.vue';
+
 @Component({
   components: { CircleButton, NetworkLogo },
 })

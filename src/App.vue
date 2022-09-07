@@ -96,6 +96,12 @@ export default class App extends Vue {
 }
 </script>
 
+<style lang="scss">
+body {
+  background-color: rgb(54, 49, 52);
+}
+</style>
+
 <style lang="scss" scoped>
 #app {
   font-family: 'Sora';
@@ -107,6 +113,7 @@ export default class App extends Vue {
   text-align: center;
   padding: 0 $default-padding $default-padding $default-padding;
   background-image: url(./assets/background.png);
+  margin: 0 auto;
 
   .drag {
     height: 16px;

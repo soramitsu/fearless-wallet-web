@@ -135,6 +135,9 @@ export default class Popup extends Vue {
   position: absolute;
   top: 0;
   left: 0;
+  bottom: 0;
+  right: 0;
+  margin: 0 auto;
   z-index: 199;
 
   .popup-container {

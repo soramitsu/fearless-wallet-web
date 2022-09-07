@@ -288,8 +288,6 @@ export type ToggleActiveNode = {
   oldNodeUrl: string;
 };
 
-export type Commit = {
+export type AugmentedActionContext = {
   commit<K extends keyof Mutations>(key: K, payload: Parameters<Mutations[K]>[1]): ReturnType<Mutations[K]>;
-};
-
-export type AugmentedActionContext = Commit & Omit<ActionContext<State, any>, 'commit'>;
+} & Omit<ActionContext<State, any>, 'commit'>;

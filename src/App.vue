@@ -30,9 +30,9 @@ export default class App extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
-  @Action(AuthActionTypes.SUBSCRIBE_AUTH_REQUESTS) authSubscribe!: () => TAction<unknown>;
-  @Action(SignActionTypes.SUBSCRIBE_SIGN_REQUESTS) signSubscribe!: () => TAction<unknown>;
-  @Action(MetaActionTypes.SUBSCRIBE_METADATA_REQUESTS) metaSubscribe!: () => TAction<unknown>;
+  @Action(AuthActionTypes.SUBSCRIBE_AUTH_REQUESTS) authSubscribe!: () => void;
+  @Action(SignActionTypes.SUBSCRIBE_SIGN_REQUESTS) signSubscribe!: () => void;
+  @Action(MetaActionTypes.SUBSCRIBE_METADATA_REQUESTS) metaSubscribe!: () => void;
 
   get style() {
     return { 'background-image': 'url(./img/background.9b667fcd.png)' };

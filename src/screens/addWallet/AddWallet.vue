@@ -8,7 +8,7 @@
         <div v-for="num in countSteps" :key="num" :class="getClassesStep(num)"></div>
       </div>
       <div class="icon-background">
-        <CircleButton iconName="expand" backgroundColor="light-black" @click="fullScreen" />
+        <CircleButton iconName="expand" backgroundColor="light-black" @click="openFullScreen" />
       </div>
     </div>
 
@@ -651,8 +651,8 @@ export default class AddWallet extends Vue {
     this.selectedMnemonicElements = value;
   }
 
-  fullScreen() {
-    alert('full screen');
+  openFullScreen() {
+    BaseApi.windowOpen('/');
   }
 
   back() {

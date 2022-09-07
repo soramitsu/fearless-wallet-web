@@ -32,7 +32,7 @@
         :name="name"
         :url="url"
         :isActive="getActiveStatus(name, url)"
-        :isRemoveBorderBottom="getRemoveValue(index)"
+        :isRemoveBorderBottom="getRemoveBorderBottomValue(index)"
         @changeNode="changeNode(name, url)"
       />
     </div>
@@ -161,7 +161,7 @@ export default class Nodes extends Vue {
     return nodeName === this.activeNode.name && this.activeNode.url === url && !this.autoSelectNodes;
   }
 
-  getRemoveValue(index: number, isCustomNode = false) {
+  getRemoveBorderBottomValue(index: number, isCustomNode = false) {
     const nodes = isCustomNode ? this.customNodes : this.defaultNodes;
     const { name: activeNodeName, url: activeNodeUrl } = this.activeNode;
 

@@ -5,7 +5,6 @@ import type {
   Networks,
   DisconnectNetworks,
   AugmentedActionContext as Context,
-  Commit,
 } from '@/store/networks/types';
 import { formatBalance } from '@/util/balances';
 import BaseApi from '@/util/BaseApi';

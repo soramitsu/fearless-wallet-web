@@ -11,7 +11,7 @@
     <div class="settings">
       <SettingMenuItem title="Accounts" icon="account" @onOpen="open('Accounts')" />
       <SettingMenuItem title="Currency" icon="dollar-circle" @onOpen="openPopup('openFiatsPopup')" />
-      <SettingMenuItem title="Language" icon="language" @onOpen="open('Language')" />
+      <SettingMenuItem title="Language" icon="language" />
       <SettingMenuItem title="About" icon="info" @onOpen="openPopup('openAboutPopup')" />
       <SettingMenuItem title="Manage dApp access" icon="networks/polkadot" @onOpen="open('ManageAuths')" />
     </div>
@@ -24,7 +24,7 @@ import Popup from '@/components/Popup.vue';
 import { Components } from '@/router/routes';
 import SettingMenuItem from '@/layouts/SettingMenuItem.vue';
 
-type SettingsItemType = 'Accounts';
+type SettingsItemType = 'Accounts' | 'ManageAuths';
 
 @Component({
   components: { Popup, SettingMenuItem },

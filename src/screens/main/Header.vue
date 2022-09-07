@@ -21,7 +21,7 @@
       </div>
     </div>
     <div class="header-part">
-      <CircleButton iconName="expand" backgroundColor="light-black" class="button-margin" @click="fullScreen" />
+      <CircleButton iconName="expand" backgroundColor="light-black" class="button-margin" @click="openFullScreen" />
 
       <div class="background-ellipse button-margin">
         <div :class="statusConnectedClasses"></div>
@@ -48,6 +48,7 @@ import CircleButton from '@/components/CircleButton.vue';
 import Rotate from '@/components/Rotate.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
+import BaseApi from '@/util/BaseApi';
 
 @Component({
   components: {
@@ -98,8 +99,8 @@ export default class Header extends Vue {
     this.$router.push({ name: Components.Wallet });
   }
 
-  fullScreen() {
-    alert(`fullScreen`);
+  openFullScreen() {
+    BaseApi.windowOpen('/');
   }
 
   toggleSettingsVisible() {
@@ -152,10 +153,14 @@ export default class Header extends Vue {
 
       .name {
         display: flex;
+        max-width: 220px;
         font-weight: 700;
         font-size: 24px;
         margin: 0 5px 0 10px;
         align-items: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
     }
 

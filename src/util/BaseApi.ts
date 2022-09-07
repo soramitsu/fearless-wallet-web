@@ -9,7 +9,7 @@ import type { ValidateJsonResult } from '@/interfaces/common';
 import type { Wallet } from '@/store/accounts/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { createAccountSuri, jsonRestore } from '@/extension/messaging';
-import { getReplacedMetaTyped, getMetaTyped } from '@/util/helpers';
+import { getReplacedMetaTyped, getMetaTyped, isExtension } from '@/util/helpers';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import NetworksController from '@/controllers/networksController';
 
@@ -326,5 +326,13 @@ export default class BaseApi {
       .forEach(({ address }) => BaseApi.deleteAccount(address));
 
     return Object.keys(BaseApi.getAccounts()).length;
+  }
+
+  public static windowOpen(path: string): void {
+    if (!isExtension()) return;
+
+    const url = `${chrome.extension.getURL('popup.html')}#${path}`;
+
+    chrome.tabs.create({ url });
   }
 }

@@ -4,7 +4,7 @@
       <img class="header__logo" src="@/assets/wallet-logo.svg" />
       <span>Transaction</span>
     </div>
-    <div>
+    <div class="content">
       <slot name="content"></slot>
     </div>
     <div>
@@ -20,7 +20,7 @@ export default {};
 <style lang="scss" scoped>
 .container {
   display: grid;
-  grid-template-rows: 70px 370px 100px;
+  grid-template-rows: 50px minmax(300px, 400px) 100px;
   align-items: end;
   gap: 20px;
   height: 100%;
@@ -31,6 +31,9 @@ export default {};
   align-items: center;
   font-size: 24px;
   height: 100%;
+}
+.content {
+  max-height: 400px;
 }
 .header > .header__logo {
   padding-right: 20px;

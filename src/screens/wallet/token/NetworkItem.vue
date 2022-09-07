@@ -1,7 +1,7 @@
 <template>
   <div :class="classes" @click="openNetwork">
     <div class="left-part">
-      <img :src="getImg()" class="img" />
+      <NetworkLogo :network="network" classes="img" />
 
       <div class="name">{{ networkNameWithFirstCharUp }}</div>
     </div>
@@ -12,11 +12,15 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { getImgPathByNetworkName } from '@/util/imgPath';
 import { firstCharToUp } from '@/util/helpers';
 import { Components } from '@/router/routes';
+import NetworkLogo from '@/components/NetworkLogo.vue';
 
-@Component
+@Component({
+  components: {
+    NetworkLogo,
+  },
+})
 export default class NetworkItem extends Vue {
   @Prop(String) network!: string;
   @Prop(Number) totalCountTokens!: number;
@@ -34,10 +38,6 @@ export default class NetworkItem extends Vue {
 
   get networkNameWithFirstCharUp() {
     return firstCharToUp(this.network);
-  }
-
-  getImg() {
-    return require(`@/assets/networks/${getImgPathByNetworkName(this.network)}`);
   }
 
   openNetwork() {

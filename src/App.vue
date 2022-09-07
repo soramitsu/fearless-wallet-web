@@ -12,7 +12,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import BaseApi from './util/BaseApi';
 import type { SetSelectedWalletProps, setAccountsProps, Accounts } from '@/store/accounts/types';
-import type { TMutation } from '@/interfaces/common';
+import type { TAction, TMutation } from '@/interfaces/common';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
@@ -30,9 +30,9 @@ export default class App extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
-  @Action(AuthActionTypes.SUBSCRIBE_TO_DAPP_EVENTS) authSubscribe!: () => TMutation<unknown>;
-  @Action(SignActionTypes.SUBSCRIBE_SIGN_EVENTS) signSubscribe!: () => TMutation<unknown>;
-  @Action(MetaActionTypes.SUBSCRIBE_TO_METADATA_REQUESTS) metaSubscribe!: () => Promise<void>;
+  @Action(AuthActionTypes.SUBSCRIBE_AUTH_REQUESTS) authSubscribe!: () => void;
+  @Action(SignActionTypes.SUBSCRIBE_SIGN_REQUESTS) signSubscribe!: () => void;
+  @Action(MetaActionTypes.SUBSCRIBE_METADATA_REQUESTS) metaSubscribe!: () => void;
 
   get style() {
     return { 'background-image': 'url(./img/background.9b667fcd.png)' };

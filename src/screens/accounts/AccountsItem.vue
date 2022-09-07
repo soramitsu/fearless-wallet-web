@@ -2,7 +2,7 @@
   <div class="accounts-item">
     <div class="left-part">
       <div class="img-container">
-        <img :src="getImg(network)" class="main-network-img" />
+        <NetworkLogo :network="network" classes="main-network-img" />
       </div>
       <div class="description">
         <div class="network-name">{{ getUpperValue(network) }}</div>
@@ -23,10 +23,10 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import CircleButton from '@/components/CircleButton.vue';
-import { getImgPathByNetworkName } from '@/util/imgPath';
+import NetworkLogo from '@/components/NetworkLogo.vue';
 
 @Component({
-  components: { CircleButton },
+  components: { CircleButton, NetworkLogo },
 })
 export default class AccountsItem extends Vue {
   readonly circleButtonRef = 'circleButton';
@@ -34,12 +34,6 @@ export default class AccountsItem extends Vue {
   @Prop(String) network!: string;
   @Prop(String) token!: string;
   @Prop(String) address!: string;
-
-  getImg(network: string) {
-    if (network === '') return '';
-
-    return require(`@/assets/networks/${getImgPathByNetworkName(network)}`);
-  }
 
   getUpperValue(string: string) {
     return string.toUpperCase();

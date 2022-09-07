@@ -1,24 +1,16 @@
 <template>
   <TransactionContent>
     <template slot="content">
-      <WalletInfo
-        class="wallet-info"
-        :name="request.account.name"
-        :address="request.account.address"
-        network="Kusama"
-      />
+      <WalletInfo class="wallet-info" :name="request.account.name" :address="request.account.address" />
 
-      <Corners size="big">
-        <div class="transaction__info">
-          <dl class="transaction__list">
-            <TransactionInfo v-if="payload.blockHash" name="from" :value="request.url" />
-            <TransactionInfo v-if="payload.blockHash" name="blockHash" :value="payload.blockHash" />
-            <TransactionInfo v-if="payload.version" name="version" :value="payload.specVersion" />
-            <TransactionInfo v-if="payload.method" name="method Data" :value="payload.method" />
-            <TransactionInfo v-if="payload.era" name="lifetime" :value="payload.era" />
-          </dl>
-        </div>
-      </Corners>
+      <InfoList>
+        <InfoItem name="from" :value="request.url" />
+        <InfoItem name="genesis" :value="typedPayload.genesisHash" />
+        <InfoItem name="version" :value="typedPayload.specVersion" />
+        <InfoItem name="nounce" :value="typedPayload.nonce" />
+        <InfoItem name="method Data" :value="typedPayload.method" />
+        <InfoItem name="lifetime" :value="morality" />
+      </InfoList>
 
       <Input
         v-if="isLocked"
@@ -46,34 +38,33 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { SigningRequest } from '@polkadot/extension-base/background/types';
-import { isSignLocked } from '../../extension/messaging';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
-
+import type { ExtrinsicEra } from '@polkadot/types/interfaces';
+import { registry } from '@/util/registry';
+import { isSignLocked } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
-
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
 import Checkbox from '@/components/Checkbox.vue';
 import WalletInfo from '@/screens/signing/WalletInfo.vue';
 import TransactionContent from '@/layouts/TransactionContent.vue';
-import Corners from '@/components/Corners.vue';
-import TransactionInfo from '@/screens/signing/TransactionInfo.vue';
+import InfoList from '@/layouts/InfoList.vue';
+import InfoItem from '@/screens/signing/InfoItem.vue';
 
 @Component({
   components: {
     WalletInfo,
     TransactionContent,
-    TransactionInfo,
+    InfoItem,
+    InfoList,
     Input,
     Button,
-    Corners,
     Checkbox,
   },
 })
 export default class Auth extends Vue {
   @Getter('getSignRequestPayload') payload!: SignerPayloadJSON;
   @Getter('getSignRequest') request!: SigningRequest;
-
   isLocked = false;
   password = '';
   isErrorPassword = false;
@@ -82,6 +73,10 @@ export default class Auth extends Vue {
   @Watch('isSavePass')
   update(value: boolean) {
     this.isSavePass = value;
+  }
+
+  get typedPayload() {
+    return registry.createType('ExtrinsicPayload', this.payload, { version: this.payload.version });
   }
 
   async mounted() {
@@ -94,6 +89,18 @@ export default class Auth extends Vue {
     return this.isLocked
       ? 'Remember my password for the next 15 minutes'
       : 'Extend the period without password by 15 minutes';
+  }
+
+  get morality() {
+    return this.mortalityAsString(this.typedPayload.era, this.payload.blockNumber);
+  }
+
+  mortalityAsString(era: ExtrinsicEra, hexBlockNumber: string) {
+    if (era.isImmortalEra) return 'immortal';
+
+    const { birth, death } = BaseApi.mortalityDecode(era, hexBlockNumber);
+
+    return `mortal, valid from ${birth} to ${death}`;
   }
 
   onApprove() {
@@ -131,25 +138,5 @@ export default class Auth extends Vue {
   width: 100%;
   display: flex;
   align-items: flex-start;
-}
-
-.transaction__info {
-  position: relative;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  clip-path: $big-clip-path-left-top-and-right-bottom;
-  border-radius: $default-border-radius;
-  width: 100%;
-  display: flex;
-  flex-flow: column;
-  margin-bottom: 14px;
-}
-
-.transaction__list {
-  display: grid;
-  grid-template-columns: 100px 1fr;
-  place-items: start;
-  gap: 12px;
 }
 </style>

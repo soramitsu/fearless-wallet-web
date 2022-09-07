@@ -5,7 +5,7 @@
     </div>
 
     <div class="img-container">
-      <img :src="getImg(currency.mainNetwork)" class="main-network-img" />
+      <NetworkLogo :network="currency.mainNetwork" classes="main-network-img" />
     </div>
 
     <div class="descriptions-column">
@@ -15,11 +15,11 @@
         </div>
 
         <div class="available-networks">
-          <img
+          <NetworkLogo
             v-for="{ network } in availableInNetworksPart"
             :key="network"
-            :src="getImg(network)"
-            class="minor-network-img"
+            :network="network"
+            classes="minor-network-img"
           />
 
           <div v-if="isAdditional" class="additional">+{{ additionalCount }}</div>
@@ -80,8 +80,8 @@ import { Getter } from 'vuex-class';
 import type { Currency } from '@/interfaces/currencies';
 import type { SelectedWallet } from '@/store/accounts/types';
 import CircleButton from '@/components/CircleButton.vue';
+import NetworkLogo from '@/components/NetworkLogo.vue';
 import Switcher from '@/components/Switcher.vue';
-import { getImgPathByNetworkName } from '@/util/imgPath';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/util/numbers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -90,6 +90,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
   components: {
     CircleButton,
     Switcher,
+    NetworkLogo,
   },
 })
 export default class CurrencyItem extends Vue {
@@ -180,12 +181,6 @@ export default class CurrencyItem extends Vue {
 
   mounted() {
     this.currencyVisible = this.currency.getCurrencyVisible();
-  }
-
-  getImg(network: string) {
-    if (network === '') return '';
-
-    return require(`@/assets/networks/${getImgPathByNetworkName(network)}`);
   }
 
   send() {

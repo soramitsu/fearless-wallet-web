@@ -4,17 +4,17 @@ import { State } from './types';
 import type { GetterTree } from 'vuex';
 
 export enum GettersTypes {
-  getRequest = 'getRequest',
+  getAuthRequests = 'getAuthRequests',
   getAuthList = 'getAuthList',
 }
 
 export type Getters = {
-  [GettersTypes.getRequest](state: State, getters?: GetterTree<State, State> & Getters): AuthorizeRequest[];
+  [GettersTypes.getAuthRequests](state: State, getters?: GetterTree<State, State> & Getters): AuthorizeRequest[];
   [GettersTypes.getAuthList](state: State, getters?: GetterTree<State, State> & Getters): Record<string, AuthUrlInfo>;
 };
 
 const getters: GetterTree<State, State> & Getters = {
-  [GettersTypes.getRequest](state): AuthorizeRequest[] {
+  [GettersTypes.getAuthRequests](state): AuthorizeRequest[] {
     return state.requests;
   },
   [GettersTypes.getAuthList](state): Record<string, AuthUrlInfo> {

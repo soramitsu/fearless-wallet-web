@@ -7,6 +7,14 @@ export const INVALID_MESSAGES = {
     text: 'Mnemonic is invalid',
     subtext: 'Please, make sure your input contains 12 words.',
   },
+  substrateDP: {
+    text: 'Substrate Derivation Path is invalid',
+    subtext: 'Please, substrate derivation path correctness and try again.',
+  },
+  ethereumDP: {
+    text: 'Ethereum Derivation Path is invalid',
+    subtext: 'Please, ethereum derivation path correctness and try again.',
+  },
   rawSeed: {
     text: 'Keystore decryption failed',
     subtext: 'Please, make sure that your input contains 64 hex symbols.',

@@ -55,6 +55,7 @@ export default class NotificationPopup extends Vue {
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: 0 10px;
 
   .img {
     margin-bottom: 20px;

@@ -44,7 +44,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { DerivationPath } from '@/interfaces/common';
+import type { DerivationPaths } from '@/interfaces/common';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import AboveForm from '@/components/AboveForm.vue';
 import Input from '@/components/Input.vue';
@@ -69,7 +69,7 @@ export default class AdvancedForm extends Vue {
   substrateKeypairType = '';
   ethereumKeypairType = 'ETHEREUM';
 
-  @Prop(Object) derivationPath!: DerivationPath;
+  @Prop(Object) derivationPaths!: DerivationPaths;
   @Prop({ default: true }) showEthereumDP!: boolean;
   @Prop({ default: true }) showSubstrateDP!: boolean;
 
@@ -82,9 +82,9 @@ export default class AdvancedForm extends Vue {
   }
 
   mounted() {
-    this.substrateDP = this.derivationPath.substrate.value;
-    this.ethereumDP = this.derivationPath.ethereum.value;
-    this.substrateKeypairType = this.derivationPath.substrate.keypairType;
+    this.substrateDP = this.derivationPaths.substrate.value;
+    this.ethereumDP = this.derivationPaths.ethereum.value;
+    this.substrateKeypairType = this.derivationPaths.substrate.keypairType;
   }
 
   closeAdvancedForm() {
@@ -92,7 +92,7 @@ export default class AdvancedForm extends Vue {
   }
 
   saveChanges() {
-    const derivationPath: DerivationPath = {
+    const derivationPaths: DerivationPaths = {
       substrate: {
         value: this.substrateDP,
         keypairType: this.substrateKeypairType as KeypairType,
@@ -103,7 +103,7 @@ export default class AdvancedForm extends Vue {
       },
     };
 
-    this.$emit('updateDP', derivationPath);
+    this.$emit('updateDP', derivationPaths);
     this.closeAdvancedForm();
   }
 }

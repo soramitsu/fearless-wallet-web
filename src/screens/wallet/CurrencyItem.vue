@@ -175,8 +175,6 @@ export default class CurrencyItem extends Vue {
   @Watch('currencyVisible')
   toggleCurrencyVisible(value: boolean) {
     this.currency.setCurrencyVisible(value);
-
-    this.$nextTick(() => this.$emit('toggleHideZeroBalance'));
   }
 
   mounted() {

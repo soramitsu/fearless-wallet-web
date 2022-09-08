@@ -143,7 +143,6 @@ const actions: ActionTree<State, State> & Actions = {
 
     // if the list of networks is not transferred, then we subscribe to all
     const networks = networksProps ?? networksStore;
-    console.log(networks);
 
     const promises = networks.map(async (network) => {
       const { api, isEthereumNetwork, name: networkName, assets, externalApi } = network;

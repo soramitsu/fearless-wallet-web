@@ -7,7 +7,6 @@
       :selectedNetwork="selectedNetwork"
       :showAssetsManagementForm="showAssetsManagementForm"
       :toggleVisibleActivityForm="toggleVisibleActivityForm"
-      @toggleHideZeroBalance="$emit('toggleHideZeroBalance')"
     />
   </Draggable>
 </template>
@@ -35,15 +34,12 @@ export default class Currencies extends Vue {
   @Prop(Array) currencies!: Currency[];
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
-  @Prop(Boolean) hideZeroBalance!: boolean;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
 
   get filteredCurrencies() {
-    if (this.showAssetsManagementForm || !this.hideZeroBalance) return this.currencies;
-
     return this.currencies;
   }
 

@@ -41,7 +41,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch, VModel, PropSync } from 'vue-property-decorator';
-import type { DerivationPath, ImportType } from '@/interfaces/common';
+import type { ImportType } from '@/interfaces/common';
 import Input from '@/components/Input.vue';
 import Select from '@/components/Select.vue';
 
@@ -67,7 +67,6 @@ export default class ImportWallet extends Vue {
   @Prop(Number) step!: number;
   @Prop(Boolean) isReplaceAccount!: boolean;
   @Prop(Boolean) isEthereumReplacedNetwork!: boolean;
-  @Prop(Object) derivationPath!: DerivationPath;
   @PropSync('passwordJson', { type: String }) syncedPasswordJson!: string;
 
   get inputValue() {

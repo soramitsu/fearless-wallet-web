@@ -38,7 +38,6 @@
           :step="step"
           :mnemonic="mnemonic"
           :selectedMnemonicElements="selectedMnemonicElements"
-          :derivationPath="derivationPath"
           @update:selectedMnemonicElements="updateSelectedMnemonicElements"
         >
           <AdvancedButton @click="toggleAdvancedFormVisible" />
@@ -54,7 +53,6 @@
           :substrateJson="substrateJson"
           :ethereumJson="ethereumJson"
           :passwordJson="passwordJson"
-          :derivationPath="derivationPath"
           :isReplaceAccount="isReplaceAccount"
           :isEthereumReplacedNetwork="isEthereumReplacedNetwork"
           @setImportValue="setImportValue"
@@ -66,7 +64,7 @@
 
         <AdvancedForm
           v-if="showAdvancedForm"
-          :derivationPath="derivationPath"
+          :derivationPaths="derivationPaths"
           :showEthereumDP="showEthereumDP"
           :showSubstrateDP="showSubstrateDP"
           @updateDP="updateDP"
@@ -121,7 +119,7 @@ import AdvancedForm from './AdvancedForm.vue';
 import AdvancedButton from './AdvancedButton.vue';
 import AddEthereumAccountPopup from './AddEthereumAccountPopup.vue';
 import type {
-  DerivationPath,
+  DerivationPaths,
   ImportType,
   ValidateJsonResult,
   MnemonicConfirmation,
@@ -138,7 +136,7 @@ import Button from '@/components/Button.vue';
 import { Components } from '@/router/routes';
 import { INVALID_MESSAGES, InvalidValueName } from '@/consts/invalidMessages';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/ethereumNetworks';
-import { INITIAL_DERIVATION_PATH } from '@/consts/derivationPath';
+import { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
@@ -176,7 +174,7 @@ export default class AddWallet extends Vue {
   selectedMnemonicElements: MnemonicConfirmation[] = [];
   invalidValueName: InvalidValueName = '';
   typeImport: ImportType = 'mnemonic';
-  derivationPath = INITIAL_DERIVATION_PATH;
+  derivationPaths = INITIAL_DERIVATION_PATHS;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
@@ -361,7 +359,7 @@ export default class AddWallet extends Vue {
   get suriSubstrate() {
     const {
       substrate: { value: substrateDerivationPath },
-    } = this.derivationPath;
+    } = this.derivationPaths;
 
     return `${this.mnemonic || this.substrateRawSeed}${substrateDerivationPath.trim()}`;
   }
@@ -369,7 +367,7 @@ export default class AddWallet extends Vue {
   get suriEthereum() {
     const {
       ethereum: { value: ethereumDerivationPath },
-    } = this.derivationPath;
+    } = this.derivationPaths;
 
     const ethereumDP = (
       ethereumDerivationPath.length !== 0
@@ -404,7 +402,7 @@ export default class AddWallet extends Vue {
       const {
         substrate: { keypairType: substrateKeypairType },
         ethereum: { keypairType: ethereumKeypairType },
-      } = this.derivationPath;
+      } = this.derivationPaths;
       const suri = this.isEthereumReplacedNetwork ? this.suriEthereum : this.suriSubstrate;
       const type = this.isEthereumReplacedNetwork ? ethereumKeypairType : substrateKeypairType;
       const { address } = BaseApi.createFromUri(suri, type);
@@ -454,8 +452,8 @@ export default class AddWallet extends Vue {
     this.showAdvancedForm = value;
   }
 
-  updateDP(derivationPath: DerivationPath) {
-    this.derivationPath = derivationPath;
+  updateDP(derivationPaths: DerivationPaths) {
+    this.derivationPaths = derivationPaths;
   }
 
   reset() {
@@ -466,6 +464,7 @@ export default class AddWallet extends Vue {
     this.ethereumJson = '';
     this.passwordSubstrateJson = '';
     this.passwordEthereumJson = '';
+    this.derivationPaths = INITIAL_DERIVATION_PATHS;
   }
 
   setImportValue(value: string & (KeyringPair$Json | Record<string, never>), field: AddWalletField) {
@@ -487,7 +486,13 @@ export default class AddWallet extends Vue {
   }
 
   handlerCloseNotificationPopup() {
-    if (this.invalidValueName === 'jsonInvalid') this.substrateJson = '';
+    if (this.invalidValueName === 'jsonInvalid') {
+      if (this.step === 1) this.substrateJson = '';
+      else if (this.step === 2) this.ethereumJson = '';
+    }
+
+    if (this.step === 1) this.passwordSubstrateJson = '';
+    else if (this.step === 2) this.passwordEthereumJson = '';
 
     this.invalidValueName = '';
     this.selectedMnemonicElements = [];
@@ -539,17 +544,22 @@ export default class AddWallet extends Vue {
   }
 
   validateSuri() {
-    const isValidMnemonic = this.mnemonic ? BaseApi.isMnemonic(this.mnemonic) : true;
+    const { ethereum, substrate } = this.derivationPaths;
+    const isValidMnemonic = this.mnemonic ? BaseApi.isValidPhrase(this.mnemonic) : true;
+    const isValidSubstratePhrase = substrate.value ? BaseApi.isValidSubstrateDerivationPath(substrate) : true;
+    const isValidEthereumDP = ethereum.value ? BaseApi.isValidEthereumDerivationPath(ethereum.value) : true;
     const isValidSubstrateRawSeed = this.substrateRawSeed ? BaseApi.isHex(this.substrateRawSeed) : true;
     const isValidEthereumRawSeed = this.ethereumRawSeed ? BaseApi.isHex(this.ethereumRawSeed) : true;
 
-    const validatedSubstrateJson = this.substrateJson
-      ? BaseApi.isValidJson(this.substrateJSON, this.passwordSubstrateJson)
-      : ({ value: true } as ValidateJsonResult);
+    const validatedSubstrateJson =
+      this.substrateJson !== ''
+        ? BaseApi.isValidJson(this.substrateJSON, this.passwordSubstrateJson)
+        : ({ value: true } as ValidateJsonResult);
 
-    const validatedEthereumJson = this.ethereumJson
-      ? BaseApi.isValidJson(this.ethereumJSON, this.passwordEthereumJson)
-      : ({ value: true } as ValidateJsonResult);
+    const validatedEthereumJson =
+      this.ethereumJson !== ''
+        ? BaseApi.isValidJson(this.ethereumJSON, this.passwordEthereumJson)
+        : ({ value: true } as ValidateJsonResult);
 
     const isValidSequenceMnemonic = this.isCreateWallet
       ? BaseApi.isValidSequenceMnemonic(
@@ -558,17 +568,13 @@ export default class AddWallet extends Vue {
         )
       : true;
 
-    this.invalidValueName = !isValidSequenceMnemonic
-      ? 'mnemonicSequence'
-      : !isValidMnemonic
-      ? 'mnemonic'
-      : !isValidSubstrateRawSeed || !isValidEthereumRawSeed
-      ? 'rawSeed'
-      : !validatedSubstrateJson.value
-      ? validatedSubstrateJson.errorType
-      : !validatedEthereumJson.value
-      ? validatedEthereumJson.errorType
-      : '';
+    if (!isValidSequenceMnemonic) this.invalidValueName = 'mnemonicSequence';
+    else if (!isValidMnemonic) this.invalidValueName = 'mnemonic';
+    else if (!isValidSubstratePhrase) this.invalidValueName = 'substrateDP';
+    else if (!isValidEthereumDP) this.invalidValueName = 'ethereumDP';
+    else if (!isValidSubstrateRawSeed || !isValidEthereumRawSeed) this.invalidValueName = 'rawSeed';
+    else if (!validatedSubstrateJson.value) this.invalidValueName = validatedSubstrateJson.errorType;
+    else if (!validatedEthereumJson.value) this.invalidValueName = validatedEthereumJson.errorType;
   }
 
   replaceAccount() {
@@ -594,7 +600,7 @@ export default class AddWallet extends Vue {
     const {
       substrate: { keypairType: substrateKeypairType },
       ethereum: { keypairType: ethereumKeypairType },
-    } = this.derivationPath;
+    } = this.derivationPaths;
 
     if (this.suriEthereum !== '') {
       const { address: ethereumAddress } = BaseApi.addKeypair(
@@ -630,7 +636,7 @@ export default class AddWallet extends Vue {
     const {
       substrate: { keypairType: substrateKeypairType },
       ethereum: { keypairType: ethereumKeypairType },
-    } = this.derivationPath;
+    } = this.derivationPaths;
 
     const parent = this.isEthereumReplacedNetwork ? this.selectedWallet.ethereumAddress : this.selectedWallet.address;
     const suri = this.isEthereumReplacedNetwork ? this.suriEthereum : this.suriSubstrate;

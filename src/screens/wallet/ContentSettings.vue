@@ -8,15 +8,16 @@
           :key="tabName"
           :name="tabName"
           :isActive="activeTabName === tabName"
-          @click.native="openTab(tabName)"
+          @click="openTab(tabName)"
         />
       </template>
 
-      <template v-else>
-        <Switcher v-model="syncedHideZeroBalance" />
-
-        <div class="hide-balance-text">Hide with empty balance</div>
-      </template>
+      <TabButton
+        v-else
+        name="Hide zero balances"
+        title="turn off the visibility of assets with zero balances"
+        @click="$emit('toggleCurrenciesVisible')"
+      />
     </div>
     <div v-if="isCurrenciesTab" class="settings-part">
       <SearchInput v-if="!showAssetsManagementForm" v-model="filterValue" placeholder="Search" class="search" />
@@ -49,7 +50,6 @@ export default class ContentSettings extends Vue {
 
   @PropSync('activeTabName', { type: String }) syncedActiveTabName!: TabWallet;
   @PropSync('showAssetsManagementForm', { type: Boolean }) syncedShowAssetsManagementForm!: boolean;
-  @PropSync('hideZeroBalance', { type: Boolean }) syncedHideZeroBalance!: boolean;
   @Prop(Function) handlerFilter!: (value: string) => void;
 
   get iconName() {

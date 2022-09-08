@@ -1,5 +1,5 @@
 import type { InvalidValueName } from '@/consts/invalidMessages';
-import type { INITIAL_DERIVATION_PATH } from '@/consts/derivationPath';
+import type { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 
 export type TMutation<T> = (props: T) => void;
 export type TAction<T> = (props: T) => void;
@@ -23,7 +23,8 @@ export type FilterHistory = 'all' | 'transfer' | 'reward' | 'extrinsic';
 export type WalletAddress = string;
 export type NetworkName = string;
 
-export type DerivationPath = typeof INITIAL_DERIVATION_PATH;
+export type DerivationPath = typeof INITIAL_DERIVATION_PATHS.substrate;
+export type DerivationPaths = typeof INITIAL_DERIVATION_PATHS;
 
 interface ValidateJsonResultPositive {
   value: true;

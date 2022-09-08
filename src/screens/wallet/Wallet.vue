@@ -36,23 +36,20 @@
         <ContentSettings
           :activeTabName="activeTabName"
           :showAssetsManagementForm="showAssetsManagementForm"
-          :hideZeroBalance="hideZeroBalance"
           :handlerFilter="handlerFilter.bind(null, 'filterValue')"
           @update:activeTabName="updateActiveTabName"
           @update:showAssetsManagementForm="toggleAssetsManagementFormVisible"
-          @update:hideZeroBalance="toggleCurrenciesVisible"
+          @toggleCurrenciesVisible="toggleCurrenciesVisible"
         />
 
         <Scroll>
           <Currencies
             v-if="showCurrencies"
-            :key="hideZeroBalance"
+            :key="currenciesKey"
             :currencies="filteredCurrencies"
             :selectedNetwork="selectedNetwork"
             :showAssetsManagementForm="showAssetsManagementForm"
-            :hideZeroBalance="hideZeroBalance"
             :toggleVisibleActivityForm="toggleVisibleActivityForm"
-            @toggleHideZeroBalance="toggleHideZeroBalance"
           />
 
           <NFTs v-else-if="showNfts" />
@@ -114,10 +111,10 @@ import { addNumbers, formattedNumber } from '@/util/numbers';
 export default class Wallet extends Vue {
   readonly selectNetworkButtonRef = 'selectNetworkButton';
   showAssetsManagementForm = false;
-  hideZeroBalance = false;
   showSendForm = false;
   showReceiveForm = false;
   showSelectNetworkPopup = false;
+  currenciesKey = 0;
   selectedNetwork = 'All networks';
   activeTabName: TabWallet = 'Currencies';
   popupFilterValue = '';
@@ -208,26 +205,14 @@ export default class Wallet extends Vue {
     this.showAssetsManagementForm = value;
   }
 
-  toggleCurrenciesVisible(value: boolean) {
-    if (value) {
-      this.currencies.forEach((currency) => {
-        const isZeroBalance = currency.getTotalCountTokens(this.selectedWallet) === '0';
+  toggleCurrenciesVisible() {
+    this.currencies.forEach((currency) => {
+      const isZeroBalance = currency.getTotalCountTokens(this.selectedWallet) === '0';
 
-        if (isZeroBalance) currency.setCurrencyVisible(false);
-      });
-    }
-
-    this.toggleHideZeroBalance();
-  }
-
-  toggleHideZeroBalance() {
-    const findIndex = this.currencies.findIndex((currency) => {
-      const visible = currency.getCurrencyVisible();
-
-      return currency.getTotalCountTokens(this.selectedWallet) === '0' && visible;
+      if (isZeroBalance) currency.setCurrencyVisible(false);
     });
 
-    this.hideZeroBalance = findIndex === -1;
+    this.currenciesKey += 1;
   }
 
   toggleVisibleActivityForm(field: 'showSendForm' | 'showReceiveForm', value = true, currency: Currency) {

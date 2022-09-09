@@ -65,11 +65,12 @@ import InfoItem from '@/screens/signing/InfoItem.vue';
 export default class Auth extends Vue {
   @Getter('getSignRequestPayload') payload!: SignerPayloadJSON;
   @Getter('getSignRequest') request!: SigningRequest;
+
   isLocked = false;
   password = '';
   isErrorPassword = false;
-
   isSavePass = false;
+
   @Watch('isSavePass')
   update(value: boolean) {
     this.isSavePass = value;
@@ -83,6 +84,7 @@ export default class Auth extends Vue {
     const { isLocked } = await isSignLocked(this.request.id);
 
     this.isLocked = isLocked;
+    this.isSavePass = !this.isLocked;
   }
 
   get prepLabel() {
@@ -105,7 +107,7 @@ export default class Auth extends Vue {
 
   onApprove() {
     try {
-      if (!this.isSavePass) BaseApi.unlockPair(this.payload.address, this.password);
+      if (this.isLocked) BaseApi.unlockPair(this.payload.address, this.password);
     } catch {
       this.isErrorPassword = true;
 

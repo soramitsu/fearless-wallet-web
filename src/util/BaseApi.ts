@@ -360,7 +360,7 @@ export default class BaseApi {
   public static getFirstSubstrateWalletAddress(): string {
     const accounts = BaseApi.getAccounts().map(({ address }) => BaseApi.getPair(address));
 
-    const { address } = accounts.find(({ type, meta }) => type !== 'ethereum' && !meta.isReplacedAccount)!;
+    const address = accounts.find(({ type, meta }) => type !== 'ethereum' && !meta.isReplacedAccount)?.address;
 
     return address ?? '';
   }

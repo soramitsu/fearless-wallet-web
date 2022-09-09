@@ -56,6 +56,7 @@ export default class Corners extends Vue {
 <style lang="scss" scoped>
 .corners {
   position: relative;
+  margin-bottom: 3px;
 
   .corner-size-big {
     position: absolute;

@@ -34,9 +34,9 @@
             <FloatInput
               v-model="amount"
               class="input-amount"
+              placeholder="Amount"
               size="big"
               styleInput="pink"
-              placeholder="Amount"
               @change="changeAmount"
             />
 
@@ -44,6 +44,8 @@
 
             <template v-if="showValueInput">
               <img src="@/assets/equals.svg" class="img-equals" />
+
+              <div v-show="showFiatSymbol" class="fiat-symbol">{{ fiatSymbol }}</div>
 
               <FloatInput
                 v-model="value"
@@ -173,6 +175,10 @@ export default class TeleportForm extends Vue {
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+
+  get showFiatSymbol() {
+    return this.value !== '';
+  }
 
   get showValue() {
     return this.value !== '0';
@@ -405,6 +411,13 @@ export default class TeleportForm extends Vue {
 
     .max-button-two {
       right: 35px;
+    }
+
+    .fiat-symbol {
+      position: absolute;
+      right: 230px;
+      font-size: 14px;
+      margin-top: 11px;
     }
   }
 

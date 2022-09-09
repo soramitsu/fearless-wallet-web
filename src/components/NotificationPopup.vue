@@ -6,7 +6,21 @@
       <div class="text">{{ text }}</div>
       <div :class="classesSubtext">{{ subtext }}</div>
 
-      <Button v-if="showButton" size="medium" class="button" :text="buttonText" @click="handlerButton" />
+      <Button
+        v-if="showAcceptButton"
+        class="button"
+        size="medium"
+        :text="acceptButtonText"
+        @click="handlerAcceptButton"
+      />
+
+      <BorderButton
+        v-if="showRejectButton"
+        class="button reject-button"
+        size="medium"
+        :text="rejectButtonText"
+        @click="handlerClose"
+      />
     </div>
   </Popup>
 </template>
@@ -15,26 +29,32 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import Popup from './Popup.vue';
 import Button from './Button.vue';
+import BorderButton from './BorderButton.vue';
 
 interface Headers {
   text: string;
   subtext: string;
 }
 
+type Size = 'mini' | 'small' | 'medium' | 'big';
+
 @Component({
   components: {
     Popup,
     Button,
+    BorderButton,
   },
 })
 export default class NotificationPopup extends Vue {
   @Prop({ default: () => ({ text: '', subtext: '' }) }) headers!: Headers;
-  @Prop({ default: false }) showButton!: boolean;
+  @Prop({ default: false }) showAcceptButton!: boolean;
+  @Prop({ default: false }) showRejectButton!: boolean;
   @Prop({ default: true }) showWarningIcon!: boolean;
-  @Prop(String) buttonText!: string;
-  @Prop(String) sizeWidth!: string;
+  @Prop({ default: 'medium' }) sizeWidth!: Size;
+  @Prop({ default: 'Cancel' }) rejectButtonText!: string;
+  @Prop(String) acceptButtonText!: string;
   @Prop(Function) handlerClose!: VoidFunction;
-  @Prop(Function) handlerButton!: VoidFunction;
+  @Prop(Function) handlerAcceptButton!: VoidFunction;
 
   get text() {
     return this.headers?.text ?? '';
@@ -71,6 +91,11 @@ export default class NotificationPopup extends Vue {
   .button {
     margin-top: 20px;
     width: 150px;
+    width: 100%;
+  }
+
+  .reject-button {
+    margin-top: 10px;
   }
 }
 

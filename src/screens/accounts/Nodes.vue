@@ -53,7 +53,7 @@
       :url="url"
       :isCustomNode="true"
       :isActive="getActiveStatus(name, url)"
-      :isRemoveBorderBottom="getRemoveValue(index, true)"
+      :isRemoveBorderBottom="getRemoveBorderBottomValue(index, true)"
       @changeNode="changeNode(name, url)"
       @openNodeSettingsPopup="openNodeSettingsPopup(name, url, ...arguments)"
     />

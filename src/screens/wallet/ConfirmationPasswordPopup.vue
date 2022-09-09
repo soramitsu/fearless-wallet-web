@@ -1,5 +1,5 @@
 <template>
-  <Popup :header="popupHeader" :handlerClose="close" sizeWidth="big" class="sending-popup">
+  <Popup class="sending-popup" headerType="completed" sizeWidth="big" :headerText="popupHeader" :handlerClose="close">
     <div class="popup-content">
       <template v-if="!isUnlock">
         <img src="@/assets/lock-green.svg" />
@@ -54,6 +54,7 @@ import Loader from '@/components/Loader.vue';
 import Popup from '@/components/Popup.vue';
 import Button from '@/components/Button.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
+import NetworkLogo from '@/components/NetworkLogo.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
@@ -62,6 +63,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
     Popup,
     Button,
     Loader,
+    NetworkLogo,
     ValidatedInput,
   },
 })
@@ -74,17 +76,15 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(String) amount!: string;
   @Prop(String) value!: string;
   @Prop(String) token!: string;
-  @Prop(String) header!: string;
   @Prop(String) firstNetwork!: string;
   @Prop(String) secondNetwork!: string;
   @Prop(String) address!: string;
   @Prop(Object) currency!: Currency;
-  @Prop(Function) handlerClose!: VoidFunction;
 
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
 
   get popupHeader() {
-    return this.loading ? 'Transaction done' : this.header;
+    return !this.isUnlock || this.loading ? '' : 'Transaction done';
   }
 
   get transferAmountString() {

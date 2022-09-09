@@ -33,6 +33,8 @@
             <template v-if="showValueInput">
               <img src="@/assets/equals.svg" class="img-equals" />
 
+              <div v-show="showFiatSymbol" class="fiat-symbol">{{ fiatSymbol }}</div>
+
               <FloatInput
                 v-model="value"
                 class="input-amount"
@@ -46,7 +48,7 @@
             </template>
           </div>
 
-          <div class="transferrable">
+          <div class="transferrable row">
             <div class="transferrable-part">
               <div class="transferrable-label">Transferrable</div>
               <div class="transferrable-descriptions">
@@ -102,7 +104,6 @@
 
     <ConfirmationPasswordPopup
       v-if="showConfirmationPasswordPopup"
-      header="Send Funds"
       :currency="currency"
       :amount="amount"
       :value="value"
@@ -126,6 +127,7 @@ import Input from '@/components/Input.vue';
 import FloatInput from '@/components/FloatInput.vue';
 import Select from '@/components/Select.vue';
 import Corners from '@/components/Corners.vue';
+import NetworkLogo from '@/components/NetworkLogo.vue';
 import { GettersTypes as ApiGettersTypes, GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
@@ -135,13 +137,14 @@ import { formattedNumber, formattedPrice, addNumbers } from '@/util/numbers';
 
 @Component({
   components: {
-    ActivityForm,
     Input,
     Select,
-    ConfirmationPasswordPopup,
     Corners,
     MaxButton,
     FloatInput,
+    NetworkLogo,
+    ActivityForm,
+    ConfirmationPasswordPopup,
   },
 })
 export default class SendForm extends Vue {
@@ -165,6 +168,10 @@ export default class SendForm extends Vue {
 
   get amountString() {
     return `${+this.amount} ${this.selectedTokenUpper}`;
+  }
+
+  get showFiatSymbol() {
+    return this.value !== '';
   }
 
   get showValue() {
@@ -366,7 +373,7 @@ export default class SendForm extends Vue {
   }
 
   .row {
-    margin-top: 16px;
+    margin-top: 10px;
 
     &:first-child {
       margin-top: 0;
@@ -393,12 +400,18 @@ export default class SendForm extends Vue {
     .max-button-two {
       right: 35px;
     }
+
+    .fiat-symbol {
+      position: absolute;
+      right: 230px;
+      font-size: 14px;
+      margin-top: 11px;
+    }
   }
 
   .transferrable {
     display: flex;
     justify-content: space-between;
-    margin-top: 10px;
 
     .transferrable-part {
       width: 235px;

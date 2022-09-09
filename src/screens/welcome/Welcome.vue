@@ -51,6 +51,7 @@ import Button from '@/components/Button.vue';
 import { Components } from '@/router/routes';
 import CircleButton from '@/components/CircleButton.vue';
 import BaseApi from '@/util/BaseApi';
+import { TERMS_URL, PRIVACY_URL } from '@/consts/urls';
 
 @Component({
   components: {
@@ -65,11 +66,11 @@ export default class Welcome extends Vue {
   }
 
   openTermsAndConditions() {
-    alert('Terms and Conditions');
+    window.open(TERMS_URL);
   }
 
   openPrivacyPolicy() {
-    alert('privacy policy');
+    window.open(PRIVACY_URL);
   }
 
   backWallet() {

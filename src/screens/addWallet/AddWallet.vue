@@ -93,9 +93,8 @@
 
     <NotificationPopup
       v-if="showNotificationPopup"
-      sizeWidth="medium"
-      :handlerClose="handlerCloseNotificationPopup"
       :headers="invalidMessages"
+      :handlerClose="handlerCloseNotificationPopup"
     />
 
     <AddEthereumAccountPopup

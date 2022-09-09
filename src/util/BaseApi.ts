@@ -5,7 +5,6 @@ import {
   mnemonicGenerate,
   mnemonicValidate,
   hdValidatePath,
-  keyExtractSuri,
 } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
@@ -356,5 +355,13 @@ export default class BaseApi {
     const url = `${chrome.extension.getURL('popup.html')}#${path}`;
 
     chrome.tabs.create({ url });
+  }
+
+  public static getFirstSubstrateWalletAddress(): string {
+    const accounts = BaseApi.getAccounts().map(({ address }) => BaseApi.getPair(address));
+
+    const { address } = accounts.find(({ type, meta }) => type !== 'ethereum' && !meta.isReplacedAccount)!;
+
+    return address ?? '';
   }
 }

@@ -64,12 +64,14 @@
     <NotificationPopup
       v-if="showNotificationPopup"
       sizeWidth="big"
-      :buttonText="buttonText"
-      :showButton="true"
+      rejectButtonText="Cancel"
+      :acceptButtonText="acceptButtonText"
+      :showAcceptButton="true"
+      :showRejectButton="true"
       :showWarningIcon="showWarningIcon"
       :headers="headers"
       :handlerClose="closeNotificationPopup"
-      :handlerButton="handlerButton"
+      :handlerAcceptButton="handlerAcceptButton"
     />
 
     <ReplacePopup v-if="showReplacePopup" :selectedNetwork="selectedNetwork" :handlerClose="closeReplacePopup" />
@@ -150,7 +152,7 @@ export default class AccountsLayout extends Vue {
     return this.notificationType === 'delete';
   }
 
-  get buttonText() {
+  get acceptButtonText() {
     return this.notificationType === 'delete' ? 'Delete' : this.notificationType === 'export' ? 'Export JSON ' : '';
   }
 
@@ -197,7 +199,7 @@ export default class AccountsLayout extends Vue {
     this.password = password;
   }
 
-  handlerButton() {
+  handlerAcceptButton() {
     if (this.notificationType === 'delete') this.deleteNode();
     else if (this.notificationType === 'export') this.openExportAccountScreen();
   }

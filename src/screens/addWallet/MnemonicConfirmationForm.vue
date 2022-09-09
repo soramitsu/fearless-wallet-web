@@ -9,10 +9,10 @@
     <div class="words">
       <BorderButton
         v-for="(mnemonicElement, index) in mnemonicMix"
-        :key="index"
         size="small"
         fontSize="small"
         borderRadius="mini"
+        :key="index"
         :text="mnemonicElement"
         :class="addButtonClasses(mnemonicElement, index)"
         @click="updateSelectedMnemonicElements(mnemonicElement, index)"

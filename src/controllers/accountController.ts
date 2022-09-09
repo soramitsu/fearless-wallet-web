@@ -17,7 +17,7 @@ class AccountController {
     return lsFiat.value ?? '';
   }
 
-  public setSelectedWalletAddress(address: string): void {
+  public setSelectedWalletAddress(address = ''): void {
     this.lsAccount.set(this.selectedWalletStorageName, address);
   }
 

@@ -1,8 +1,8 @@
 import type { InvalidValueName } from '@/consts/invalidMessages';
 import type { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 
-export type TMutation<T> = (props: T) => void;
-export type TAction<T> = (props: T) => void;
+export type TMutation<T> = (props?: T) => void;
+export type TAction<T> = (props?: T) => Promise<void>;
 
 export interface Meta {
   name: string;

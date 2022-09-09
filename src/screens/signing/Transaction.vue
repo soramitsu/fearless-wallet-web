@@ -65,11 +65,12 @@ import InfoItem from '@/screens/signing/InfoItem.vue';
 export default class Auth extends Vue {
   @Getter('getSignRequestPayload') payload!: SignerPayloadJSON;
   @Getter('getSignRequest') request!: SigningRequest;
+
   isLocked = false;
   password = '';
   isErrorPassword = false;
-
   isSavePass = false;
+
   @Watch('isSavePass')
   update(value: boolean) {
     this.isSavePass = value;

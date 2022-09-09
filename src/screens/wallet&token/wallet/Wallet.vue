@@ -75,9 +75,9 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
-import SelectNetworkButton from './SelectNetworkButton.vue';
-import ReceiveForm from './ReceiveForm.vue';
-import SendForm from './SendForm.vue';
+import SendForm from '../SendForm.vue';
+import ReceiveForm from '../ReceiveForm.vue';
+import SelectNetworkButton from '../SelectNetworkButton.vue';
 import ContentSettings from './ContentSettings.vue';
 import Currencies from './Currencies.vue';
 import NFTs from './NFTs.vue';
@@ -95,6 +95,7 @@ import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutatio
 import { getImgPathByNetworkName } from '@/util/imgPath';
 import { firstCharToUp } from '@/util/helpers';
 import { addNumbers, formattedNumber } from '@/util/numbers';
+
 @Component({
   components: {
     NFTs,

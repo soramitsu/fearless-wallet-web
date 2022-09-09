@@ -1,17 +1,24 @@
 import { keyring } from '@polkadot/ui-keyring';
-import { decodeAddress, encodeAddress, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
+import {
+  decodeAddress,
+  encodeAddress,
+  mnemonicGenerate,
+  mnemonicValidate,
+  hdValidatePath,
+} from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import type { KeyringPair$Json, KeyringPair$Meta, KeyringPair } from '@polkadot/keyring/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import type { ValidateJsonResult } from '@/interfaces/common';
+import type { ValidateJsonResult, DerivationPath } from '@/interfaces/common';
 import type { Wallet } from '@/store/accounts/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { createAccountSuri, jsonRestore } from '@/extension/messaging';
 import { getReplacedMetaTyped, getMetaTyped, isExtension } from '@/util/helpers';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import NetworksController from '@/controllers/networksController';
+import { VALID_MNEMONIC } from '@/consts/derivationPath';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;
 
@@ -133,8 +140,22 @@ export default class BaseApi {
     return isHex(value);
   }
 
-  public static isMnemonic(value: string): boolean {
+  public static isValidPhrase(value: string): boolean {
     return mnemonicValidate(value);
+  }
+
+  public static isValidSubstrateDerivationPath({ value, keypairType }: DerivationPath): boolean {
+    try {
+      BaseApi.createFromUri(`${VALID_MNEMONIC}${value}`, keypairType);
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  public static isValidEthereumDerivationPath(value: string): boolean {
+    return hdValidatePath(value);
   }
 
   public static isValidSequenceMnemonic(mnemonic: string, selectedMnemonicElements: string[]): boolean {
@@ -254,7 +275,7 @@ export default class BaseApi {
     try {
       const pair = BaseApi.createFromJson(json);
 
-      pair.unlock(passwordJson);
+      pair.decodePkcs8(passwordJson);
 
       return { value: true };
     } catch ({ message }) {
@@ -334,5 +355,13 @@ export default class BaseApi {
     const url = `${chrome.extension.getURL('popup.html')}#${path}`;
 
     chrome.tabs.create({ url });
+  }
+
+  public static getFirstSubstrateWalletAddress(): string {
+    const accounts = BaseApi.getAccounts().map(({ address }) => BaseApi.getPair(address));
+
+    const { address } = accounts.find(({ type, meta }) => type !== 'ethereum' && !meta.isReplacedAccount)!;
+
+    return address ?? '';
   }
 }

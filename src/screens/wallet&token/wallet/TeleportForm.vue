@@ -130,9 +130,9 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import ActivityForm from './ActivityForm.vue';
-import MaxButton from './MaxButton.vue';
-import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
+import ActivityForm from '../ActivityForm.vue';
+import MaxButton from '../token/MaxButton.vue';
+import ConfirmationPasswordPopup from '../token/ConfirmationPasswordPopup.vue';
 import type { Currencies } from '@/interfaces/currencies';
 import Select from '@/components/Select.vue';
 import FloatInput from '@/components/FloatInput.vue';

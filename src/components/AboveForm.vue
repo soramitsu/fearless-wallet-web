@@ -2,7 +2,7 @@
   <div :class="backgroundClasses">
     <div class="above-form">
       <div class="header-content">
-        <div v-if="showBackIcon" class="icon icon-back">
+        <div v-if="showBackIcon" class="icon icon-back" @click="handlerBack">
           <img src="@/assets/chevron-left.svg" />
         </div>
         <div v-else class="icon">

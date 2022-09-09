@@ -17,7 +17,7 @@
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import MnemonicConfirmationForm from './MnemonicConfirmationForm.vue';
 import MnemonicBackupForm from './MnemonicBackupForm.vue';
-import type { DerivationPath, MnemonicConfirmation } from '@/interfaces/common';
+import type { MnemonicConfirmation } from '@/interfaces/common';
 
 @Component({
   components: {
@@ -28,7 +28,6 @@ import type { DerivationPath, MnemonicConfirmation } from '@/interfaces/common';
 export default class CreateWallet extends Vue {
   @Prop(Number) step!: number;
   @Prop(String) mnemonic!: string;
-  @Prop(Object) derivationPath!: DerivationPath;
   @PropSync('selectedMnemonicElements', { type: Array }) syncedSelectedMnemonicElements!: MnemonicConfirmation[];
 
   get showMnemonicBackupForm() {

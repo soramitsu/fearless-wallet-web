@@ -1,6 +1,6 @@
 <template>
   <Corners>
-    <div :class="tabButtonClasses">
+    <div :class="tabButtonClasses" @click="$emit('click')" :title="title">
       {{ name }}
     </div>
   </Corners>
@@ -15,6 +15,7 @@ import Corners from '@/components/Corners.vue';
 })
 export default class TabButton extends Vue {
   @Prop({ default: '' }) name!: string;
+  @Prop({ default: '' }) title!: string;
   @Prop({ default: false }) isActive!: boolean;
 
   get tabButtonClasses() {

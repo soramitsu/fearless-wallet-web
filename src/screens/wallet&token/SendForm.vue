@@ -18,35 +18,15 @@
 
           <Input v-model="recipient" placeholder="Send to" size="big" class="row" />
 
-          <div class="row amount-wrapper">
-            <FloatInput
-              v-model="amount"
-              class="input-amount"
-              placeholder="Amount"
-              size="big"
-              styleInput="pink"
-              @change="changeAmount"
-            />
-
-            <MaxButton class="max-button-two" @click="setMaxValue" />
-
-            <template v-if="showValueInput">
-              <img src="@/assets/equals.svg" class="img-equals" />
-
-              <div v-show="showFiatSymbol" class="fiat-symbol">{{ fiatSymbol }}</div>
-
-              <FloatInput
-                v-model="value"
-                class="input-amount"
-                placeholder="Value"
-                size="big"
-                styleInput="pink"
-                @change="changeValue"
-              />
-
-              <MaxButton class="max-button-one" @click="setMaxValue" />
-            </template>
-          </div>
+          <AmountInputs
+            class="row"
+            :amount="amount"
+            :value="value"
+            :currency="currency"
+            @setMaxValue="setMaxValue"
+            @update:amount="updateAmount"
+            @update:value="updateValue"
+          />
 
           <div class="transferrable row">
             <div class="transferrable-part">
@@ -119,6 +99,7 @@
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import ActivityForm from './ActivityForm.vue';
+import AmountInputs from './AmountInputs.vue';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import MaxButton from './MaxButton.vue';
 import type { Currencies } from '@/interfaces/currencies';
@@ -143,6 +124,7 @@ import { formattedNumber, formattedPrice, addNumbers } from '@/util/numbers';
     MaxButton,
     FloatInput,
     NetworkLogo,
+    AmountInputs,
     ActivityForm,
     ConfirmationPasswordPopup,
   },
@@ -170,10 +152,6 @@ export default class SendForm extends Vue {
     return `${+this.amount} ${this.selectedTokenUpper}`;
   }
 
-  get showFiatSymbol() {
-    return this.value !== '';
-  }
-
   get showValue() {
     return this.value !== '0';
   }
@@ -194,10 +172,6 @@ export default class SendForm extends Vue {
 
   get showBackIcon() {
     return this.step === 2;
-  }
-
-  get showValueInput() {
-    return this.currency?.price !== 0;
   }
 
   get buttonText() {
@@ -318,12 +292,12 @@ export default class SendForm extends Vue {
     return await this.currency!.getPartialFee(this.addressByNetwork); // eslint-disable-line
   }
 
-  changeAmount(amount: string) {
-    this.value = this.currency?.getCostOfTokens(amount).toString() ?? '';
+  updateAmount(value: string) {
+    this.amount = value;
   }
 
-  changeValue(value: string) {
-    this.amount = this.currency?.getCountTokensByPrice(value).toString() ?? '';
+  updateValue(value: string) {
+    this.value = value;
   }
 
   handlerBack() {
@@ -377,35 +351,6 @@ export default class SendForm extends Vue {
 
     &:first-child {
       margin-top: 0;
-    }
-  }
-
-  .amount-wrapper {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    .input-amount {
-      flex: 1 1 235px;
-    }
-
-    .img-equals {
-      margin: 0 15px;
-    }
-
-    .max-button-one {
-      left: 180px;
-    }
-
-    .max-button-two {
-      right: 35px;
-    }
-
-    .fiat-symbol {
-      position: absolute;
-      right: 230px;
-      font-size: 14px;
-      margin-top: 11px;
     }
   }
 

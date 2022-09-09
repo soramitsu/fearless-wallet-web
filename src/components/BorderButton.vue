@@ -23,7 +23,6 @@ import Button from './Button.vue';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type FontSize = 'small' | 'medium' | 'big';
-type Type = 'primary' | 'secondary';
 
 @Component({
   components: {
@@ -35,7 +34,6 @@ export default class BorderButton extends Vue {
   @Prop(String) text!: string;
   @Prop(String) width!: string;
   @Prop(String) iconName!: string;
-  @Prop({ default: 'primary' }) type!: Type;
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'medium' }) fontSize!: FontSize;
   @Prop({ default: 'medium' }) borderRadius!: Size;
@@ -45,5 +43,3 @@ export default class BorderButton extends Vue {
   @Prop({ default: true }) bottomRightCorner!: boolean;
 }
 </script>
-
-<style lang="scss" scoped></style>

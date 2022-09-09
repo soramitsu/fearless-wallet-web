@@ -30,35 +30,15 @@
             class="row"
           />
 
-          <div class="row amount-wrapper">
-            <FloatInput
-              v-model="amount"
-              class="input-amount"
-              placeholder="Amount"
-              size="big"
-              styleInput="pink"
-              @change="changeAmount"
-            />
-
-            <MaxButton class="max-button-two" @click="setMaxValue" />
-
-            <template v-if="showValueInput">
-              <img src="@/assets/equals.svg" class="img-equals" />
-
-              <div v-show="showFiatSymbol" class="fiat-symbol">{{ fiatSymbol }}</div>
-
-              <FloatInput
-                v-model="value"
-                class="input-amount"
-                size="big"
-                styleInput="pink"
-                placeholder="Value"
-                @change="changeValue"
-              />
-
-              <MaxButton class="max-button-one" @click="setMaxValue" />
-            </template>
-          </div>
+          <AmountInputs
+            class="row"
+            :amount="amount"
+            :value="value"
+            :currency="currency"
+            @setMaxValue="setMaxValue"
+            @update:amount="updateAmount"
+            @update:value="updateValue"
+          />
 
           <div class="row transferrable">
             <div class="transferrable-label">Transferrable</div>
@@ -133,6 +113,7 @@ import { Getter } from 'vuex-class';
 import ActivityForm from './ActivityForm.vue';
 import MaxButton from './MaxButton.vue';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
+import AmountInputs from './AmountInputs.vue';
 import type { Currencies } from '@/interfaces/currencies';
 import Select from '@/components/Select.vue';
 import FloatInput from '@/components/FloatInput.vue';
@@ -150,9 +131,10 @@ import { addNumbers, formattedNumber, formattedPrice } from '@/util/numbers';
     Popup,
     Select,
     Corners,
-    FloatInput,
     MaxButton,
+    FloatInput,
     ActivityForm,
+    AmountInputs,
     ConfirmationPasswordPopup,
   },
 })
@@ -325,6 +307,14 @@ export default class TeleportForm extends Vue {
     });
   }
 
+  updateAmount(value: string) {
+    this.amount = value;
+  }
+
+  updateValue(value: string) {
+    this.value = value;
+  }
+
   async createTransferAndGetFee(amount?: string) {
     this.currency!.createTeleportTransfer( // eslint-disable-line
       this.selectedWallet,
@@ -389,35 +379,6 @@ export default class TeleportForm extends Vue {
       &:first-child {
         margin-top: 0;
       }
-    }
-  }
-
-  .amount-wrapper {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    .input-amount {
-      flex: 1 1 235px;
-    }
-
-    .img-equals {
-      margin: 0 15px;
-    }
-
-    .max-button-one {
-      left: 180px;
-    }
-
-    .max-button-two {
-      right: 35px;
-    }
-
-    .fiat-symbol {
-      position: absolute;
-      right: 230px;
-      font-size: 14px;
-      margin-top: 11px;
     }
   }
 

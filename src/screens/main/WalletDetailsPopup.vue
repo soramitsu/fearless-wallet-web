@@ -7,7 +7,7 @@
     :showBackground="false"
     :handlerClose="close"
     :top="top"
-    :left="315"
+    :left="300"
   >
     <div class="wallet-details">
       <div class="row" @click="openWalletDetails">
@@ -50,7 +50,17 @@ export default class WalletDetailsPopup extends Vue {
     const walletsCount = BaseApi.deleteWallet(this.selectedWalletAddress);
 
     if (walletsCount === 0) this.$router.push({ name: Components.Welcome });
-    else this.close();
+    else {
+      this.setWallet();
+
+      this.close();
+    }
+  }
+
+  setWallet() {
+    const selectedWalletAddress = BaseApi.getFirstSubstrateWalletAddress();
+
+    if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
   }
 
   openWalletDetails() {

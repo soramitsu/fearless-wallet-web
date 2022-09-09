@@ -7,7 +7,7 @@
 
           <template v-else>
             <div class="button"></div>
-            <div v-if="headerText" class="header-text">{{ headerText }}</div>
+            <div v-if="headerText" :class="headerClasses">{{ headerText }}</div>
           </template>
 
           <s-button type="link" class="button" @click="close">
@@ -34,6 +34,7 @@ import Corners from './Corners.vue';
 type HorizontalPlacement = 'left' | 'center' | 'right';
 type VerticalPlacement = 'top' | 'center' | 'bottom';
 type Size = 'mini' | 'small' | 'medium' | 'big';
+type HeaderType = 'completed' | 'default';
 
 @Component({
   components: {
@@ -61,14 +62,15 @@ export default class Popup extends Vue {
   @Prop({ default: 'medium' }) sizeWidth!: Size;
   @Prop({ default: 'center' }) horizontalPlacement!: HorizontalPlacement;
   @Prop({ default: 'center' }) verticalPlacement!: VerticalPlacement;
+  @Prop({ default: 'default' }) headerType!: HeaderType;
 
   get popupBackgroundClasses() {
     const classes = [
       'popup-background',
+      this.showBackground ? 'popup-background-show' : 'popup-background-hide',
       {
         'popup-background-blur': this.showBlur && this.showBackground,
         'popup-background-animation': this.showAnimation,
-        'popup-background-container': this.showBackground,
       },
     ];
 
@@ -91,6 +93,17 @@ export default class Popup extends Vue {
     ];
 
     if (this.sizeWidth) classes.push(`width-${this.sizeWidth}`);
+
+    return classes;
+  }
+
+  get headerClasses() {
+    const classes = [
+      {
+        'header-text': this.headerType === 'completed',
+        'header-text-completed': this.headerType === 'completed',
+      },
+    ];
 
     return classes;
   }
@@ -139,6 +152,8 @@ export default class Popup extends Vue {
   right: 0;
   margin: 0 auto;
   z-index: 199;
+  width: fit-content;
+  height: fit-content;
 
   .popup-container {
     display: flex;
@@ -198,6 +213,10 @@ export default class Popup extends Vue {
       font-size: 18px;
       color: $default-white;
     }
+
+    .header-text-completed {
+      color: #00ee77;
+    }
   }
 
   .s-icon-basic-close-24 {
@@ -215,10 +234,15 @@ export default class Popup extends Vue {
   }
 }
 
-.popup-background-container {
+.popup-background-show {
   height: $extension-height;
   width: $extension-width;
   padding: $default-padding;
+}
+
+.popup-background-hide {
+  width: fit-content;
+  height: fit-content;
 }
 
 .popup-background-blur {

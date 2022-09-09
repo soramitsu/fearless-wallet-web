@@ -118,9 +118,9 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import ActivityForm from './ActivityForm.vue';
-import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
-import MaxButton from './MaxButton.vue';
+import ActivityForm from '../ActivityForm.vue';
+import ConfirmationPasswordPopup from '../token/ConfirmationPasswordPopup.vue';
+import MaxButton from '../token/MaxButton.vue';
 import type { Currencies } from '@/interfaces/currencies';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';

@@ -70,6 +70,8 @@ export default class Auth extends Vue {
   isErrorPassword = false;
 
   isSavePass = false;
+  updateSave = true;
+
   @Watch('isSavePass')
   update(value: boolean) {
     this.isSavePass = value;
@@ -83,6 +85,7 @@ export default class Auth extends Vue {
     const { isLocked } = await isSignLocked(this.request.id);
 
     this.isLocked = isLocked;
+    this.isSavePass = this.isLocked ? false : true;
   }
 
   get prepLabel() {
@@ -105,7 +108,7 @@ export default class Auth extends Vue {
 
   onApprove() {
     try {
-      if (!this.isSavePass) BaseApi.unlockPair(this.payload.address, this.password);
+      if (this.isLocked) BaseApi.unlockPair(this.payload.address, this.password);
     } catch {
       this.isErrorPassword = true;
 

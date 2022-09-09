@@ -357,6 +357,10 @@ export default class BaseApi {
     chrome.tabs.create({ url });
   }
 
+  public static useIsPopup(): boolean {
+    return window.innerWidth <= 560;
+  }
+
   public static getFirstSubstrateWalletAddress(): string {
     const accounts = BaseApi.getAccounts().map(({ address }) => BaseApi.getPair(address));
 

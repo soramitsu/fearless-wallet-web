@@ -8,7 +8,12 @@
         <div v-for="num in countSteps" :key="num" :class="getClassesStep(num)"></div>
       </div>
       <div class="icon-background">
-        <CircleButton iconName="expand" backgroundColor="light-black" @click="openFullScreen" />
+        <CircleButton
+          v-if="showFullScreenIcon"
+          iconName="expand"
+          backgroundColor="light-black"
+          @click="openFullScreen"
+        />
       </div>
     </div>
 
@@ -192,6 +197,10 @@ export default class AddWallet extends Vue {
 
   get showReplacedNetwork() {
     return this.replacedNetwork !== '' && this.step === 1;
+  }
+
+  get showFullScreenIcon() {
+    return BaseApi.useIsPopup();
   }
 
   get isEthereumReplacedNetwork() {

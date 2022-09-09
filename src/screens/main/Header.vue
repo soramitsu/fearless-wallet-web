@@ -21,7 +21,13 @@
       </div>
     </div>
     <div class="header-part">
-      <CircleButton iconName="expand" backgroundColor="light-black" class="button-margin" @click="openFullScreen" />
+      <CircleButton
+        v-if="showFullScreenIcon"
+        iconName="expand"
+        backgroundColor="light-black"
+        class="button-margin"
+        @click="openFullScreen"
+      />
 
       <div class="background-ellipse button-margin">
         <div :class="statusConnectedClasses"></div>
@@ -64,6 +70,10 @@ export default class Header extends Vue {
   @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get showFullScreenIcon() {
+    return BaseApi.useIsPopup();
+  }
 
   get showBackIcon() {
     return this.$route.name === Components.Token;

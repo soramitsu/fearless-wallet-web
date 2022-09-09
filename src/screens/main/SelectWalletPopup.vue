@@ -30,12 +30,12 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
+import WalletBalance from './WalletBalance.vue';
 import type { SelectedWallet, SetSelectedWalletProps, Accounts } from '@/store/accounts/types';
 import type { Currencies } from '@/interfaces/currencies';
 import type { TMutation } from '@/interfaces/common';
 import BaseApi from '@/util/BaseApi';
 import Popup from '@/components/Popup.vue';
-import WalletBalance from '@/screens/wallet/WalletBalance.vue';
 import BorderButton from '@/components/BorderButton.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';

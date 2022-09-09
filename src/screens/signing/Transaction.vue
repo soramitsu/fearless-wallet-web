@@ -70,7 +70,6 @@ export default class Auth extends Vue {
   isErrorPassword = false;
 
   isSavePass = false;
-  updateSave = true;
 
   @Watch('isSavePass')
   update(value: boolean) {

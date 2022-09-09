@@ -70,7 +70,6 @@ export default class Auth extends Vue {
   isErrorPassword = false;
 
   isSavePass = false;
-
   @Watch('isSavePass')
   update(value: boolean) {
     this.isSavePass = value;
@@ -84,7 +83,7 @@ export default class Auth extends Vue {
     const { isLocked } = await isSignLocked(this.request.id);
 
     this.isLocked = isLocked;
-    this.isSavePass = this.isLocked ? false : true;
+    this.isSavePass = !this.isLocked;
   }
 
   get prepLabel() {

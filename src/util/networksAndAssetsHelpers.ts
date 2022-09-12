@@ -54,22 +54,6 @@ function connectToNetworksApi(networks: DisconnectNetworks, autoConnectMs: numbe
   });
 }
 
-async function saveHistory(address: string, network: string, api: ExternalApi, context: Context) {
-  const { commit, dispatch } = context;
-  const formattedAddress = BaseApi.formatAddress({ address, ethereumAddress: address }, network);
-
-  const history = await dispatch(ActionTypes.LOAD_HISTORY, {
-    historyExternalApi: api.history,
-    walletAddress: formattedAddress,
-  });
-
-  commit(MutationTypes.SET_HISTORY, {
-    networkName: network,
-    walletAddress: address,
-    history,
-  });
-}
-
 function subscribeToBalances(context: Context, api: ApiPromise, token: string, network: string, address: string) {
   const { getters, commit, state, rootState } = context;
   const { tokensPriceJson } = state;
@@ -101,4 +85,4 @@ function subscribeToBalances(context: Context, api: ApiPromise, token: string, n
   });
 }
 
-export { connectToApi, connectToNetworksApi, saveHistory, subscribeToBalances };
+export { connectToApi, connectToNetworksApi, subscribeToBalances };

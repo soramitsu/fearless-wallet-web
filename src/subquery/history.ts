@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export async function getHistory(url: string, pageSize: number, cursor: number | null, walletAddress: string) {
+export async function getHistory(url: string, walletAddress: string, pageSize: number, cursor: number | null) {
   const {
     data: { data },
   } = await axios.post(url, {

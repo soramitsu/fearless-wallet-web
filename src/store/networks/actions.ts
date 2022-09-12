@@ -25,7 +25,8 @@ import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import { getHistory } from '@/subquery/history';
 import { getReplacedMetaTyped } from '@/util/helpers';
 import { getMockCurrencies } from '@/util/currenciesHelper';
-import { connectToApi, connectToNetworksApi, saveHistory, subscribeToBalances } from '@/util/networksAndAssetsHelper';
+import { connectToApi, connectToNetworksApi, subscribeToBalances } from '@/util/networksAndAssetsHelpers';
+import { PAGE_SIZE } from '@/consts/history';
 
 export enum ActionTypes {
   LOAD_NETWORKS = 'LOAD_NETWORKS',
@@ -115,26 +116,35 @@ const actions: ActionTree<State, State> & Actions = {
     commit(MutationTypes.SET_TOKENS_PRICE, { tokensPriceJson: tokensPrice });
   },
 
-  async [ActionTypes.LOAD_HISTORY](context, { historyExternalApi, walletAddress }) {
-    const mockHistory = {};
-    const pageSize = 20;
+  async [ActionTypes.LOAD_HISTORY]({ commit }, { network: { externalApi, name: networkName }, walletAddress }) {
+    if (networkName === 'moonbase alpha') return;
+
+    const historyExternalApi = externalApi.history;
+    const formattedAddress = BaseApi.formatAddress(
+      { address: walletAddress, ethereumAddress: walletAddress },
+      networkName
+    );
     const cursor = null;
 
-    if (!historyExternalApi) return mockHistory;
+    if (!historyExternalApi) return;
 
     const { type, url } = historyExternalApi;
 
-    if (type !== 'subquery' || url === '') return mockHistory;
+    if (type !== 'subquery' || url === '') return;
 
-    const history = await getHistory(url, pageSize, cursor, walletAddress);
+    const history = await getHistory(url, formattedAddress, PAGE_SIZE, cursor);
 
-    return history ?? mockHistory;
+    commit(MutationTypes.SET_HISTORY, {
+      networkName,
+      walletAddress,
+      history,
+    });
   },
 
   async [ActionTypes.SUBSCRIBE_TO_BALANCES](context, { accounts, loadHistory, networksProps }) {
     console.info('accounts', accounts);
 
-    const { commit, state } = context;
+    const { commit, dispatch, state } = context;
     const { networks: networksStore } = state;
 
     commit(MutationTypes.SET_ALL_NETWORKS_IS_LOADED, {
@@ -145,7 +155,7 @@ const actions: ActionTree<State, State> & Actions = {
     const networks = networksProps ?? networksStore;
 
     const promises = networks.map(async (network) => {
-      const { api, isEthereumNetwork, name: networkName, assets, externalApi } = network;
+      const { api, isEthereumNetwork, name: networkName, assets } = network;
       const token = assets[0]?.assetId;
 
       await api.isReadyOrError;
@@ -162,8 +172,11 @@ const actions: ActionTree<State, State> & Actions = {
           // substrate accounts only subscribe to the substrate networks
           if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
 
-          if (loadHistory && networkName !== 'moonbase alpha')
-            saveHistory(walletAddress, networkName, externalApi, context);
+          if (loadHistory)
+            dispatch(ActionTypes.LOAD_HISTORY, {
+              network,
+              walletAddress,
+            });
 
           subscribeToBalances(context, api, token, networkName, walletAddress);
         });

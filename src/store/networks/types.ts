@@ -269,6 +269,7 @@ export type LoadFiats = {
 };
 
 export type LoadHistory = {
+  network: Network;
   historyExternalApi: ExternalApiElement;
   walletAddress: string;
 };

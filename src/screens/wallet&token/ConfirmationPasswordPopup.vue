@@ -16,13 +16,16 @@
           :showPassword="true"
         />
 
+        <div class="remember__checkbox">
+          <Checkbox v-model="isSavePass" size="medium" :label="prepLabel" />
+        </div>
+
         <Button
           text="Continue"
           width="100%"
           size="medium"
           fontSize="big"
           type="primary"
-          class="row"
           :border="false"
           @click="send"
         />
@@ -36,6 +39,7 @@
 
           <template v-if="secondNetwork">
             <s-icon name="arrows-arrow-right-24" />
+
             <NetworkLogo :network="secondNetwork" classes="network-img" />
           </template>
         </div>
@@ -57,12 +61,14 @@ import ValidatedInput from '@/components/ValidatedInput.vue';
 import NetworkLogo from '@/components/NetworkLogo.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import Checkbox from '@/components/Checkbox.vue';
 
 @Component({
   components: {
     Popup,
     Button,
     Loader,
+    Checkbox,
     NetworkLogo,
     ValidatedInput,
   },
@@ -72,6 +78,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   loading = false;
   isErrorPassword = false;
   isUnlock = false;
+  isSavePass = false;
 
   @Prop(String) amount!: string;
   @Prop(String) value!: string;
@@ -82,6 +89,12 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(Object) currency!: Currency;
 
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
+
+  get prepLabel() {
+    return !this.isUnlock
+      ? 'Do not ask for a password for 15 min.'
+      : 'Extend the period without password by 15 minutes';
+  }
 
   get popupHeader() {
     return !this.isUnlock || this.loading ? '' : 'Transaction done';
@@ -107,11 +120,9 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async send() {
-    try {
-      BaseApi.unlockPair(this.address, this.password);
+    this.isUnlock = BaseApi.unlockPair(this.address, this.password);
 
-      this.isUnlock = true;
-    } catch {
+    if (!this.isUnlock) {
       this.isErrorPassword = true;
 
       return;
@@ -180,6 +191,12 @@ export default class ConfirmationPasswordPopup extends Vue {
     .transfer-value {
       font-size: 16px;
       color: rgba(255, 255, 255, 0.5);
+    }
+
+    .remember__checkbox {
+      width: 100%;
+      display: flex;
+      align-items: flex-start;
     }
   }
 }

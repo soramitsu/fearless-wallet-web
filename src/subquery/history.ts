@@ -1,6 +1,12 @@
 import axios from 'axios';
+import type { HistoryItem } from '@/interfaces/history';
 
-export async function getHistory(url: string, walletAddress: string, pageSize: number, cursor: number | null) {
+export async function loadHistory(
+  url: string,
+  address: string,
+  pageSize: number,
+  cursor: number | null
+): Promise<HistoryItem> {
   const {
     data: { data },
   } = await axios.post(url, {
@@ -10,7 +16,7 @@ export async function getHistory(url: string, walletAddress: string, pageSize: n
           first: ${pageSize},
           orderBy: TIMESTAMP_DESC,
           filter: {
-            address:{equalTo:"${walletAddress}"}
+            address:{equalTo:"${address}"}
           }
         ) {
           pageInfo {

@@ -120,7 +120,7 @@ import TeleportForm from '../TeleportForm.vue';
 import BuyPopup from '../BuyPopup.vue';
 import History from './History.vue';
 import type { FilterHistory } from '@/interfaces/common';
-import type { History as THistory } from '@/interfaces/history';
+import type { GetHistory } from '@/interfaces/history';
 import BorderButton from '@/components/BorderButton.vue';
 import Scroll from '@/components/Scroll.vue';
 import Corners from '@/components/Corners.vue';
@@ -175,9 +175,9 @@ export default class Token extends Vue {
 
   @Getter(NetworksGettersTypes.getNetworks) networks!: NetworksType;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
-  @Getter(NetworksGettersTypes.getHistory) history!: THistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
 
   get providers() {
     return this.currentCurrency?.providers ?? [];
@@ -214,7 +214,7 @@ export default class Token extends Vue {
       this.selectedWallet,
       this.selectedNetwork
     );
-    const historyForNetwork = this.history[this.selectedNetwork];
+    const historyForNetwork = this.getHistory(this.selectedNetwork);
     const historyForWalletAddress = historyForNetwork?.[addressByNetwork]?.nodes ?? [];
 
     const index = (this.currentCurrency?.balances[addressByNetwork] ?? []).findIndex(

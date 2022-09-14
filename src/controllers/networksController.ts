@@ -1,4 +1,4 @@
-import type { Networks } from '@/store/networks/types';
+import type { Networks, AssetJson } from '@/store/networks/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
@@ -26,8 +26,26 @@ export default class NetworksController {
     await store.dispatch(NetworksActionTypes.LOAD_TOKENS_PRICE);
   }
 
-  public static async subscribeToBalancesOfNetworks(accounts: SubjectInfo, loadHistory: boolean): Promise<void> {
-    await store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, loadHistory });
+  public static async loadHistory(networkName: string, walletAddress: string, delay?: number): Promise<void> {
+    if (delay) {
+      const timeout = delay * 1000;
+
+      setTimeout(() => {
+        store.dispatch(NetworksActionTypes.LOAD_HISTORY, { networkName, walletAddress });
+      }, timeout);
+
+      return;
+    }
+
+    await store.dispatch(NetworksActionTypes.LOAD_HISTORY, { networkName, walletAddress });
+  }
+
+  public static async subscribeToBalancesOfNetworks(accounts: SubjectInfo): Promise<void> {
+    await store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts });
+  }
+
+  public static getAssets(): AssetJson[] {
+    return store.getters[NetworksGettersTypes.getAssets];
   }
 
   public static async toggleActiveNode(

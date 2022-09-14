@@ -26,6 +26,7 @@
           size="medium"
           fontSize="big"
           type="primary"
+          :disabled="disabledButton"
           :border="false"
           @click="send"
         />
@@ -89,6 +90,10 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(Object) currency!: Currency;
 
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
+
+  get disabledButton() {
+    return this.password === '' || this.isErrorPassword;
+  }
 
   get prepLabel() {
     return !this.isUnlock

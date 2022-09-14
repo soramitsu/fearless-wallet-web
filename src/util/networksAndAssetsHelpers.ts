@@ -1,17 +1,11 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
-import type {
-  ExternalApi,
-  Networks,
-  DisconnectNetworks,
-  AugmentedActionContext as Context,
-} from '@/store/networks/types';
+import type { Networks, DisconnectNetworks, AugmentedActionContext as Context } from '@/store/networks/types';
 import { formatBalance } from '@/util/balances';
-import BaseApi from '@/util/BaseApi';
 import { MutationTypes } from '@/store/networks/mutations';
-import { ActionTypes } from '@/store/networks/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { accountController } from '@/controllers/accountController';
+import NetworksController from '@/controllers/networksController';
 
 function connectToApi(name: string, url: string, autoConnectMs = 0) {
   const provider = new WsProvider(url, autoConnectMs);
@@ -56,9 +50,9 @@ function connectToNetworksApi(networks: DisconnectNetworks, autoConnectMs: numbe
 
 function subscribeToBalances(context: Context, api: ApiPromise, token: string, network: string, address: string) {
   const { getters, commit, state, rootState } = context;
-  const { tokensPriceJson } = state;
+  const { tokensPriceJson, assets } = state;
   const tokensPrice = tokensPriceJson[token] ?? {};
-  const precision = getters[NetworksGettersTypes.getAssets].find((kek: any) => kek.id === token)?.precision ?? 0;
+  const precision = +(assets.find((asset) => asset.id === token)?.precision ?? 0);
   const selectedFiat = rootState.account.selectedFiat;
 
   commit(MutationTypes.UPDATE_CURRENCY, {
@@ -71,6 +65,9 @@ function subscribeToBalances(context: Context, api: ApiPromise, token: string, n
   api.rx.query.system.account(address).subscribe(async (result) => {
     const data = (result as any).data;
     const balance = formatBalance(data as AccountData, precision);
+    const historyForNetwork = getters[NetworksGettersTypes.getHistory](network);
+    const historyForAddress = historyForNetwork?.[address];
+    const delay = historyForAddress ? 45 : 0;
 
     const currency = {
       network,
@@ -82,6 +79,8 @@ function subscribeToBalances(context: Context, api: ApiPromise, token: string, n
       walletAddress: address,
       currency,
     });
+
+    NetworksController.loadHistory(network, address, delay);
   });
 }
 

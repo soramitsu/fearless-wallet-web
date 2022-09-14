@@ -14,20 +14,18 @@ import type { Wallet } from '@/store/accounts/types';
 import BaseApi from '@/util/BaseApi';
 import LocalStorageController from '@/controllers/localStorageController';
 import NetworksController from '@/controllers/networksController';
-import store from '@/store';
-import teleportInfo from '@/consts/teleport';
+import { XCM_LOC, teleportInfo } from '@/consts/teleport';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import { FPNumber } from '@/util/fp';
 import { getReplacedMetaTyped } from '@/util/helpers';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
-const XCM_LOC = ['xcm', 'xcmPallet', 'polkadotXcm'];
+type Options = Partial<SignerOptions> & { networkName?: string };
 
 export default class CurrencyController {
   private readonly lsCurrency = new LocalStorageController('currency');
   private readonly currencyVisibleStorageName = 'currency_visible';
   public transfer!: SubmittableExtrinsic<'promise'> | undefined;
-  public options: Partial<SignerOptions> = {};
+  public options: Options = {};
   public balances: Balances = {};
   public price = 0;
   public hours24Change = 0;
@@ -260,20 +258,20 @@ export default class CurrencyController {
     this.lsCurrency.set(this.currencyVisibleStorageName, currenciesVisible);
   }
 
-  private static getAssets(token: string): AssetJson {
-    const assets: AssetJson[] = store.getters[NetworksGettersTypes.getAssets];
+  private getAssets(token: string): AssetJson {
+    const assets: AssetJson[] = NetworksController.getAssets();
 
     return assets.find(({ id }) => id === token)!; // eslint-disable-line
   }
 
-  public static getHumanValue(token: string, value: string): string {
-    const precision = +CurrencyController.getAssets(token)?.precision ?? 0;
+  public getHumanValue(value: string): string {
+    const precision = +this.getAssets(this.token)?.precision ?? 0;
 
     return FPNumber.fromCodecValue(value, precision).toString();
   }
 
-  public static getPrecisionValue(token: string, amount: string): string {
-    const precision = +CurrencyController.getAssets(token)?.precision ?? 0;
+  public getPrecisionValue(amount: string): string {
+    const precision = +this.getAssets(this.token)?.precision ?? 0;
     const value = amount === '' ? 0 : +amount;
 
     return new FPNumber(value, precision).toCodecString();
@@ -296,10 +294,10 @@ export default class CurrencyController {
   }
 
   public createSendTransfer(to: string, networkName: string, amount: string): void {
-    const precisionAmount = CurrencyController.getPrecisionValue(this.token, amount);
+    const precisionAmount = this.getPrecisionValue(amount);
     const networks = NetworksController.getNetworks();
     const { api, settings: { DefaultTip } } = networks.find(({ name }) => name === networkName)!; // eslint-disable-line
-    const options = { tip: DefaultTip };
+    const options = { tip: DefaultTip, networkName };
 
     try {
       this.transfer = api.tx.balances.transfer(to, precisionAmount);
@@ -321,13 +319,14 @@ export default class CurrencyController {
     const { api } = networks.find(({ name }) => name === originalNetworkName)!; // eslint-disable-line
     const m = XCM_LOC.filter((x) => api.tx[x] && isFunction(api.tx[x].limitedTeleportAssets))[0];
     const isParaTeleport = m === 'polkadotXcm';
-    const precisionAmount = CurrencyController.getPrecisionValue(this.token, amount);
+    const precisionAmount = this.getPrecisionValue(amount);
     const tx = api.tx[m].limitedTeleportAssets;
     const publicKey = BaseApi.decodeAddress(recipientId);
     const recipientParaId = this.getParaId(originalNetworkName, destinationNetworkName);
 
     if (!recipientParaId) {
       this.transfer = undefined;
+      this.options = {};
 
       return;
     }
@@ -335,6 +334,7 @@ export default class CurrencyController {
     const params = getParams(isParaTeleport, recipientParaId, publicKey, new BN(precisionAmount));
 
     this.transfer = tx(...params);
+    this.options = { networkName: originalNetworkName };
   }
 
   public async getPartialFee(from: string): Promise<string> {
@@ -348,16 +348,20 @@ export default class CurrencyController {
 
   public async send(from: string, amount: string): Promise<void> {
     const pair = BaseApi.getPair(from);
+    const options = this.options;
+    const networkName = options.networkName!; //eslint-disable-line
 
-    const unsubscribe = await this.transfer!.signAndSend(pair, this.options, ({ status }) => {
+    delete options.networkName;
+
+    const unsubscribe = await this.transfer!.signAndSend(pair, this.options, ({ status }) => { //eslint-disable-line
       if (status.isInBlock) {
         console.info(`Successful transfer of ${amount} with hash ${status.asInBlock.toHex()}`);
       } else if (status.isFinalized) {
         console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
 
-        unsubscribe();
-
         pair.lock();
+
+        unsubscribe();
       } else {
         console.info(`Status of transfer: ${status.type}`);
       }

@@ -3,7 +3,7 @@
     <div class="network-description">
       <div class="description">
         <div class="img-container">
-          <NetworkLogo :network="selectedNetwork" classes="main-network-img" />
+          <NetworkLogo :name="selectedNetwork" />
         </div>
 
         <div>
@@ -241,10 +241,6 @@ export default class Nodes extends Vue {
     .img-container {
       width: 50px;
       margin: auto 0;
-
-      .main-network-img {
-        width: 32px;
-      }
     }
 
     .description {

@@ -1,6 +1,6 @@
 <template>
   <div class="history-item">
-    <Logo size="mini" typeLogo="secondary" />
+    <NetworkLogo :name="token" />
 
     <div class="column">
       <div class="first-row">
@@ -18,20 +18,21 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
-import Logo from '@/components/Logo.vue';
-import CurrencyController from '@/controllers/currencyController';
+import { Getter } from 'vuex-class';
+import NetworkLogo from '@/components/NetworkLogo.vue';
 import { firstCharToUp } from '@/util/helpers';
 import { HistoryNode, TransferType, TransactionType as TTransaction } from '@/interfaces/history';
 import { formattedNumber } from '@/util/numbers';
+import { Currencies } from '@/interfaces/currencies';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component({
-  components: {
-    Logo,
-  },
+  components: { NetworkLogo },
 })
 export default class HistoryItem extends Vue {
   @Prop(Object) historyItem!: HistoryNode;
   @Prop(String) token!: string;
+  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
 
   get date() {
     const date = new Date(secondsToMilliseconds(+this.historyItem.timestamp));
@@ -66,24 +67,30 @@ export default class HistoryItem extends Vue {
     return '';
   }
 
+  get currentCurrency() {
+    return this.currencies.find(({ token }) => token === this.token);
+  }
+
   get value() {
+    if (!this.currentCurrency) return '';
+
     if (this.type === TTransaction.transfer) {
       const { amount } = this.historyItem[this.type];
-      const value = +CurrencyController.getHumanValue(this.token, amount);
+      const value = +this.currentCurrency.getHumanValue(amount);
 
       return `${this.signTransfer}${formattedNumber(value, 4)}`;
     }
 
     if (this.type === TTransaction.reward) {
       const { amount } = this.historyItem[this.type];
-      const value = +CurrencyController.getHumanValue(this.token, amount);
+      const value = +this.currentCurrency.getHumanValue(amount);
 
       return `+${formattedNumber(value, 4)}`;
     }
 
     // extrinsic
     const { fee } = this.historyItem[this.type];
-    const value = +CurrencyController.getHumanValue(this.token, fee);
+    const value = +this.currentCurrency.getHumanValue(fee);
 
     return `-${formattedNumber(value, 4)}`;
   }

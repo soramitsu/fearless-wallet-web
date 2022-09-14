@@ -57,7 +57,7 @@ export type NetworkJson = {
   options?: string[];
 };
 
-type Network = {
+export type Network = {
   name: string;
   api: ApiPromise;
   provider: WsProvider;
@@ -75,6 +75,8 @@ type DisconnectNetwork = Omit<Network, 'api' | 'provider'>;
 export type DisconnectNetworks = DisconnectNetwork[];
 
 export type Networks = Network[];
+
+export type GetNetwork = (networkName: string) => Network;
 
 export type AssetJson = {
   id: string;
@@ -220,6 +222,7 @@ export type SetHistoryProps = {
   history: HistoryItem;
   walletAddress: string;
   networkName: string;
+  isPreviously: boolean;
 };
 
 export type SetAllNetworksIsLoaded = {
@@ -269,15 +272,15 @@ export type LoadFiats = {
 };
 
 export type LoadHistory = {
-  historyExternalApi: ExternalApiElement;
+  networkName: string;
   walletAddress: string;
+  pageSize: number;
 };
 
 export type Accounts = Record<string, { type?: KeypairType; json: KeyringJson }> | SubjectInfo;
 
 export type SubscribeToBalances = {
   accounts: Accounts;
-  loadHistory: boolean;
   networksProps?: Networks;
 };
 

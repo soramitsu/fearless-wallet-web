@@ -1,16 +1,21 @@
 <template>
-  <s-dropdown type="button" buttonType="secondary" trigger="click" class="dropdown" size="mini" @select="handler">
-    {{ label }}
-    <template slot="menu">
-      <s-dropdown-item v-for="{ label, value } in options" :key="label" :value="value">{{ label }}</s-dropdown-item>
-    </template>
-  </s-dropdown>
+  <Corners>
+    <s-dropdown type="button" buttonType="secondary" trigger="click" class="dropdown" size="mini" @select="handler">
+      {{ label }}
+      <template slot="menu">
+        <s-dropdown-item v-for="{ label, value } in options" :key="label" :value="value">{{ label }}</s-dropdown-item>
+      </template>
+    </s-dropdown>
+  </Corners>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import Corners from '@/components/Corners.vue';
 
-@Component
+@Component({
+  components: { Corners },
+})
 export default class Dropdown extends Vue {
   @Prop(String) value!: string;
   @Prop(Array) options!: Record<string, string>[];

@@ -39,7 +39,6 @@ export default class App extends Vue {
   }
 
   async mounted() {
-    let loadHistory = true;
     const { loadNetworks, loadAssets, loadFiats, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
 
     await this.authSubscribe();
@@ -55,9 +54,7 @@ export default class App extends Vue {
 
       this.setAccounts({ accounts });
 
-      await subscribeToBalancesOfNetworks(newAccounts, loadHistory);
-
-      loadHistory = false;
+      await subscribeToBalancesOfNetworks(newAccounts);
     });
 
     this.setWallet();

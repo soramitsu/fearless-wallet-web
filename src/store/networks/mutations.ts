@@ -1,3 +1,4 @@
+import { es } from 'date-fns/locale';
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
 import type {
@@ -80,20 +81,66 @@ const mutations: MutationTree<State> & Mutations = {
     currentCurrency.updateCurrencyBalance({ walletAddress, currency });
   },
 
-  [MutationTypes.SET_HISTORY](state, { history: { nodes, pageInfo }, networkName, walletAddress }) {
+  [MutationTypes.SET_HISTORY](
+    state,
+    {
+      history: {
+        nodes,
+        pageInfo: { startCursor: startCursorProp, endCursor: endCursorProp },
+      },
+      networkName,
+      walletAddress,
+      isPreviously,
+    }
+  ) {
     const oldHistoryForWalletAddress = state.history[networkName]?.[walletAddress];
-    const startCursor = oldHistoryForWalletAddress?.pageInfo?.startCursor || pageInfo?.startCursor;
-    const endCursor = pageInfo?.endCursor;
+    const oldPageInfo = oldHistoryForWalletAddress?.pageInfo;
+    const oldStartCursor = oldPageInfo?.startCursor;
+    const oldEndCursor = oldPageInfo?.endCursor;
 
+    // loading history after sending tokens or teleporting tokens
+    if (isPreviously && !!oldEndCursor) {
+      const filteredNodes = nodes.filter(({ timestamp }) => {
+        const oldNodes = oldHistoryForWalletAddress.nodes;
+        const oldFirstTimespan = +oldNodes[0].timestamp ?? 0;
+
+        return +timestamp > oldFirstTimespan;
+      });
+
+      if (filteredNodes.length === 0) return;
+
+      const newHistoryForWalletAddress = {
+        nodes: [...(filteredNodes ?? []), ...(oldHistoryForWalletAddress?.nodes ?? [])],
+        pageInfo: {
+          startCursor: startCursorProp,
+          endCursor: oldEndCursor,
+        },
+      };
+
+      const historyForNetwork = {
+        ...state.history[networkName],
+        [walletAddress]: newHistoryForWalletAddress,
+      };
+
+      state.history = { ...state.history, [networkName]: historyForNetwork };
+
+      return;
+    }
+
+    // if this is first load or following one already saved
+    const startCursor = oldStartCursor ?? startCursorProp;
     const newHistoryForWalletAddress = {
       nodes: [...(oldHistoryForWalletAddress?.nodes ?? []), ...(nodes ?? [])],
       pageInfo: {
         startCursor,
-        endCursor,
+        endCursor: endCursorProp,
       },
     };
 
-    const historyForNetwork = { ...(state.history[networkName] ?? []), [walletAddress]: newHistoryForWalletAddress };
+    const historyForNetwork = {
+      ...(state.history[networkName] ?? []),
+      [walletAddress]: newHistoryForWalletAddress,
+    };
 
     state.history = { ...state.history, [networkName]: historyForNetwork };
   },

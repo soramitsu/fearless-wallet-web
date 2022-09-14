@@ -61,4 +61,6 @@ const teleportInfo: TeleportInfo = {
   },
 };
 
-export default teleportInfo;
+const XCM_LOC = ['xcm', 'xcmPallet', 'polkadotXcm'];
+
+export { teleportInfo, XCM_LOC };

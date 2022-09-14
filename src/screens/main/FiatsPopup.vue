@@ -2,15 +2,10 @@
   <div>
     <SelectPopup
       v-model="selectedFiat"
-      space="big"
       verticalPlacement="top"
       horizontalPlacement="right"
       placeholder="Search in currencies"
       :top="50"
-      :showIcon="true"
-      :showSearch="true"
-      :staticHeight="true"
-      :showBorder="true"
       :showAnimation="showAnimation"
       :options="filteredOptionsFiats"
       :toggleValue="toggleSelectedFiat"

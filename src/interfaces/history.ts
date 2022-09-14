@@ -47,6 +47,8 @@ export type HistoryForNetwork = Record<WalletAddress, HistoryItem>;
 
 export type History = Record<NetworkName, HistoryForNetwork>;
 
+export type GetHistory = (networkName: string) => HistoryForNetwork;
+
 export enum TransferType {
   incoming = 'Incoming',
   outgoing = 'Outgoing',

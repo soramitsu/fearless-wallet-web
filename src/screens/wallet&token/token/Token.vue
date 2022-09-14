@@ -89,17 +89,11 @@
       :closePopup="toggleVisible.bind(null, 'showBuyPopup', false)"
     />
 
-    <SelectPopup
+    <SelectNetworkPopup
       v-if="showSelectNetworkPopup"
       v-model="selectedNetwork"
-      header="Select Network"
-      horizontalPlacement="right"
-      placeholder="Search in networks"
-      :top="25"
-      :options="filterOptionsNetworks"
-      :toggleValue="toggleSelectedNetwork"
+      :toggleSelectedNetwork="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
-      :handlerFilter="handlerFilter"
     />
   </div>
 </template>
@@ -112,6 +106,7 @@ import ReceiveForm from '../ReceiveForm.vue';
 import SendForm from '../SendForm.vue';
 import TeleportForm from '../TeleportForm.vue';
 import BuyPopup from '../BuyPopup.vue';
+import SelectNetworkPopup from '../SelectNetworkPopup.vue';
 import History from './History.vue';
 import type { FilterHistory } from '@/interfaces/common';
 import type { GetHistory } from '@/interfaces/history';
@@ -121,16 +116,12 @@ import Corners from '@/components/Corners.vue';
 import Dropdown from '@/components/Dropdown.vue';
 import ContentForm from '@/components/ContentForm.vue';
 import TabButton from '@/components/TabButton.vue';
-import SelectPopup from '@/components/SelectPopup.vue';
 import BaseApi from '@/util/BaseApi';
 import { Currencies } from '@/interfaces/currencies';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { Networks as NetworksType } from '@/store/networks/types';
 import { Components } from '@/router/routes';
-import { getImgPathByNetworkOrTokenName } from '@/util/imgPath';
-import { firstCharToUp } from '@/util/helpers';
 import { formattedNumber, formattedPrice } from '@/util/numbers';
 
 @Component({
@@ -143,10 +134,10 @@ import { formattedNumber, formattedPrice } from '@/util/numbers';
     Dropdown,
     TabButton,
     ReceiveForm,
-    SelectPopup,
     ContentForm,
     TeleportForm,
     BorderButton,
+    SelectNetworkPopup,
     SelectNetworkButton,
   },
 })
@@ -160,14 +151,12 @@ export default class Token extends Vue {
   ];
 
   filterHistoryValue = 'all';
-  popupFilterValue = '';
   showSendForm = false;
   showReceiveForm = false;
   showTeleportForm = false;
   showBuyPopup = false;
   showSelectNetworkPopup = false;
 
-  @Getter(NetworksGettersTypes.getNetworks) networks!: NetworksType;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
@@ -179,20 +168,6 @@ export default class Token extends Vue {
 
   get showBuyButton() {
     return this.providers.length !== 0 && this.currentCurrency?.mainNetwork === this.selectedNetwork;
-  }
-
-  get optionsNetworks() {
-    return this.networks.map(({ name }) => ({
-      label: firstCharToUp(name),
-      value: name,
-      path: `networks/${getImgPathByNetworkOrTokenName(name)}`,
-    }));
-  }
-
-  get filterOptionsNetworks() {
-    const filter = this.popupFilterValue.trim().toLowerCase();
-
-    return this.optionsNetworks.filter(({ label }) => label.toLowerCase().includes(filter));
   }
 
   get currentCurrency() {
@@ -262,10 +237,6 @@ export default class Token extends Vue {
     return `${this.fiatSymbol} ${formattedNumber(+total)}`;
   }
 
-  handlerFilter(value: string) {
-    this.popupFilterValue = value;
-  }
-
   toggleSelectedNetwork(network: string) {
     if (this.selectedNetwork === network) return;
 
@@ -277,7 +248,6 @@ export default class Token extends Vue {
       },
     });
 
-    this.handlerFilter('');
     this.toggleSelectNetworkPopupVisible();
   }
 

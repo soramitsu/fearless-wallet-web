@@ -11,18 +11,12 @@
       />
     </header>
 
-    <SelectPopup
+    <SelectNetworkPopup
       v-if="showSelectNetworkPopup"
       v-model="selectedNetwork"
-      header="Select Network"
-      horizontalPlacement="right"
-      sizeWidth="big"
-      placeholder="Search in networks"
-      :top="25"
-      :options="filteredOptionsNetworks"
-      :toggleValue="toggleSelectedNetwork"
+      :allNetworks="true"
+      :toggleSelectedNetwork="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
-      :handlerFilter="handlerFilter.bind(null, 'popupFilterValue')"
     />
 
     <ContentForm :height="394">
@@ -30,7 +24,7 @@
         <ContentSettings
           :activeTabName="activeTabName"
           :showAssetsManagementForm="showAssetsManagementForm"
-          :handlerFilter="handlerFilter.bind(null, 'filterValue')"
+          :handlerFilter="handlerFilter"
           @update:activeTabName="updateActiveTabName"
           @update:showAssetsManagementForm="toggleAssetsManagementFormVisible"
           @toggleCurrenciesVisible="toggleCurrenciesVisible"
@@ -72,6 +66,7 @@ import { Getter, Mutation } from 'vuex-class';
 import SendForm from '../SendForm.vue';
 import ReceiveForm from '../ReceiveForm.vue';
 import SelectNetworkButton from '../SelectNetworkButton.vue';
+import SelectNetworkPopup from '../SelectNetworkPopup.vue';
 import ContentSettings from './ContentSettings.vue';
 import Currencies from './Currencies.vue';
 import NFTs from './NFTs.vue';
@@ -79,15 +74,12 @@ import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencie
 import type { TMutation, TabWallet } from '@/interfaces/common';
 import Scroll from '@/components/Scroll.vue';
 import ContentForm from '@/components/ContentForm.vue';
-import SelectPopup from '@/components/SelectPopup.vue';
 import { accountController } from '@/controllers/accountController';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { Networks, SetCurrenciesProps } from '@/store/networks/types';
+import { SetCurrenciesProps } from '@/store/networks/types';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
-import { getImgPathByNetworkOrTokenName } from '@/util/imgPath';
-import { firstCharToUp } from '@/util/helpers';
 import { addNumbers, formattedNumber } from '@/util/numbers';
 
 @Component({
@@ -98,8 +90,8 @@ import { addNumbers, formattedNumber } from '@/util/numbers';
     Currencies,
     ContentForm,
     ReceiveForm,
-    SelectPopup,
     ContentSettings,
+    SelectNetworkPopup,
     SelectNetworkButton,
   },
 })
@@ -112,7 +104,6 @@ export default class Wallet extends Vue {
   currenciesKey = 0;
   selectedNetwork = 'All networks';
   activeTabName: TabWallet = 'Currencies';
-  popupFilterValue = '';
   filterValue = '';
   selectedCurrency!: {
     mainNetwork: string;
@@ -120,7 +111,6 @@ export default class Wallet extends Vue {
   };
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
@@ -181,21 +171,6 @@ export default class Wallet extends Vue {
     return this.activeTabName === 'NFTs';
   }
 
-  get optionsNetworks() {
-    return [
-      { label: 'All networks', value: 'All networks', path: 'globus.svg', isAll: true },
-      ...this.networks.map(({ name }) => {
-        return { label: firstCharToUp(name), value: name, path: `networks/${getImgPathByNetworkOrTokenName(name)}` };
-      }),
-    ];
-  }
-
-  get filteredOptionsNetworks() {
-    const filter = this.popupFilterValue.trim().toLowerCase();
-
-    return this.optionsNetworks.filter(({ label }) => label.toLowerCase().includes(filter));
-  }
-
   toggleAssetsManagementFormVisible(value = true) {
     this.showAssetsManagementForm = value;
   }
@@ -220,10 +195,11 @@ export default class Wallet extends Vue {
       };
   }
 
-  toggleSelectedNetwork(value: string) {
-    this.selectedNetwork = value;
+  toggleSelectedNetwork(network: string) {
+    if (this.selectedNetwork === network) return;
+
+    this.selectedNetwork = network;
     this.toggleSelectNetworkPopupVisible();
-    this.handlerFilter('popupFilterValue', '');
   }
 
   toggleSelectNetworkPopupVisible() {
@@ -234,8 +210,8 @@ export default class Wallet extends Vue {
     targetElement.style.zIndex = this.showSelectNetworkPopup ? '200' : '0';
   }
 
-  handlerFilter(field: 'popupFilterValue' | 'filterValue', value: string) {
-    this[field] = value;
+  handlerFilter(value: string) {
+    this.filterValue = value;
   }
 
   updateActiveTabName(name: TabWallet) {

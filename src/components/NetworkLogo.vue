@@ -1,20 +1,28 @@
 <template>
-  <img :src="imgPath" :class="classes" :alt="network" />
+  <img :src="imgPath" :style="style" :alt="name" />
 </template>
 
 <script lang="ts">
 import { Vue, Prop, Component } from 'vue-property-decorator';
-import { getImgPathByNetworkName } from '@/util/imgPath';
+import { getImgPathByNetworkOrTokenName } from '@/util/imgPath';
 
 @Component
 export default class NetworkLogo extends Vue {
-  @Prop(String) network!: string;
-  @Prop({ default: '' }) classes!: string;
+  @Prop(String) name!: string;
+  @Prop({ default: 32 }) width!: number;
+
+  get style() {
+    const styles: Record<string, string> = {};
+
+    if (this.width) styles.width = `${this.width}px`;
+
+    return styles;
+  }
 
   get imgPath() {
-    if (this.network === '') return '';
+    if (this.name === '') return '';
 
-    return require(`@/assets/networks/${getImgPathByNetworkName(this.network)}`);
+    return require(`@/assets/networks/${getImgPathByNetworkOrTokenName(this.name)}`);
   }
 }
 </script>

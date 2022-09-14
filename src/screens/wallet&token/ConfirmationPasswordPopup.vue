@@ -36,12 +36,12 @@
 
       <template v-else>
         <div class="descriptions">
-          <NetworkLogo :network="firstNetwork" classes="network-img" />
+          <NetworkLogo :name="firstNetwork" :width="30" />
 
           <template v-if="secondNetwork">
             <s-icon name="arrows-arrow-right-24" />
 
-            <NetworkLogo :network="secondNetwork" classes="network-img" />
+            <NetworkLogo :name="secondNetwork" :width="30" />
           </template>
         </div>
         <div class="transfer-amount">{{ transferAmountString }}</div>
@@ -175,10 +175,6 @@ export default class ConfirmationPasswordPopup extends Vue {
       border-radius: 50px;
       margin-bottom: 20px;
       padding: 12px;
-
-      .network-img {
-        width: 30px;
-      }
 
       .s-icon-arrows-arrow-right-24 {
         color: rgba(255, 255, 255, 0.3);

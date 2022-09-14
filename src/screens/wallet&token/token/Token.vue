@@ -93,15 +93,9 @@
       v-if="showSelectNetworkPopup"
       v-model="selectedNetwork"
       header="Select Network"
-      space="big"
       horizontalPlacement="right"
-      verticalPlacement="center"
       placeholder="Search in networks"
       :top="25"
-      :showBorder="true"
-      :showIcon="true"
-      :showSearch="true"
-      :staticHeight="true"
       :options="filterOptionsNetworks"
       :toggleValue="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
@@ -135,7 +129,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Networks as NetworksType } from '@/store/networks/types';
 import { Components } from '@/router/routes';
-import { getImgPathByNetworkName } from '@/util/imgPath';
+import { getImgPathByNetworkOrTokenName } from '@/util/imgPath';
 import { firstCharToUp } from '@/util/helpers';
 import { formattedNumber, formattedPrice } from '@/util/numbers';
 
@@ -191,7 +185,7 @@ export default class Token extends Vue {
     return this.networks.map(({ name }) => ({
       label: firstCharToUp(name),
       value: name,
-      path: `networks/${getImgPathByNetworkName(name)}`,
+      path: `networks/${getImgPathByNetworkOrTokenName(name)}`,
     }));
   }
 

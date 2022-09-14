@@ -1,7 +1,7 @@
 <template>
   <div :class="classes" @click="openNetwork">
     <div class="left-part">
-      <NetworkLogo :network="network" classes="img" />
+      <NetworkLogo class="img" :name="network" :width="20" />
 
       <div class="name">{{ networkNameWithFirstCharUp }}</div>
     </div>
@@ -81,7 +81,6 @@ export default class NetworkItem extends Vue {
     display: flex;
 
     .img {
-      width: 20px;
       margin-right: 12px;
       opacity: 0.65;
     }

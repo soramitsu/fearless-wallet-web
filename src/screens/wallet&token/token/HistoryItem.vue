@@ -1,6 +1,6 @@
 <template>
   <div class="history-item">
-    <Logo size="mini" typeLogo="secondary" />
+    <NetworkLogo :name="token" />
 
     <div class="column">
       <div class="first-row">
@@ -19,7 +19,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
 import { Getter } from 'vuex-class';
-import Logo from '@/components/Logo.vue';
+import NetworkLogo from '@/components/NetworkLogo.vue';
 import { firstCharToUp } from '@/util/helpers';
 import { HistoryNode, TransferType, TransactionType as TTransaction } from '@/interfaces/history';
 import { formattedNumber } from '@/util/numbers';
@@ -27,9 +27,7 @@ import { Currencies } from '@/interfaces/currencies';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component({
-  components: {
-    Logo,
-  },
+  components: { NetworkLogo },
 })
 export default class HistoryItem extends Vue {
   @Prop(Object) historyItem!: HistoryNode;

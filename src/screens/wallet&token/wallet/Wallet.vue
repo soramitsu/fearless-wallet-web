@@ -15,16 +15,10 @@
       v-if="showSelectNetworkPopup"
       v-model="selectedNetwork"
       header="Select Network"
-      space="big"
       horizontalPlacement="right"
-      verticalPlacement="center"
       sizeWidth="big"
       placeholder="Search in networks"
       :top="25"
-      :showIcon="true"
-      :showSearch="true"
-      :showBorder="true"
-      :staticHeight="true"
       :options="filteredOptionsNetworks"
       :toggleValue="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
@@ -92,7 +86,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Networks, SetCurrenciesProps } from '@/store/networks/types';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
-import { getImgPathByNetworkName } from '@/util/imgPath';
+import { getImgPathByNetworkOrTokenName } from '@/util/imgPath';
 import { firstCharToUp } from '@/util/helpers';
 import { addNumbers, formattedNumber } from '@/util/numbers';
 
@@ -191,7 +185,7 @@ export default class Wallet extends Vue {
     return [
       { label: 'All networks', value: 'All networks', path: 'globus.svg', isAll: true },
       ...this.networks.map(({ name }) => {
-        return { label: firstCharToUp(name), value: name, path: `networks/${getImgPathByNetworkName(name)}` };
+        return { label: firstCharToUp(name), value: name, path: `networks/${getImgPathByNetworkOrTokenName(name)}` };
       }),
     ];
   }

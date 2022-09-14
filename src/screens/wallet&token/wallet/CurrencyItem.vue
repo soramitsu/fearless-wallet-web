@@ -5,7 +5,7 @@
     </div>
 
     <div class="img-container">
-      <NetworkLogo :network="currency.mainNetwork" classes="main-network-img" />
+      <NetworkLogo class="main-network-img" :name="currency.mainNetwork" :width="32" />
     </div>
 
     <div class="descriptions-column">
@@ -17,9 +17,10 @@
         <div class="available-networks">
           <NetworkLogo
             v-for="{ network } in availableInNetworksPart"
+            class="minor-network-img"
             :key="network"
-            :network="network"
-            classes="minor-network-img"
+            :name="network"
+            :width="12"
           />
 
           <div v-if="isAdditional" class="additional">+{{ additionalCount }}</div>
@@ -311,13 +312,11 @@ export default class CurrencyItem extends Vue {
     user-select: none;
 
     .main-network-img {
-      width: 32px;
       margin-right: 13px;
     }
   }
 
   .minor-network-img {
-    width: 12px;
     margin-right: 3px;
     opacity: 0.5;
     user-select: none;

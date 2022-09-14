@@ -1,38 +1,100 @@
 <template>
-  <div :class="classes">
-    <template>
-      <HistoryItem v-for="history in filteredHistory" :key="history.id" :historyItem="history" :token="token" />
-    </template>
+  <ContentForm :height="306">
+    <div class="history">
+      <div class="history-settings">
+        <div class="history-label">History</div>
 
-    <div v-if="isEmptyHistory">Will appear here history</div>
-  </div>
+        <Dropdown :value="filterHistoryValue" :options="historyDropdownOption" :handler="filterHistoryValueUpdate" />
+      </div>
+
+      <Scroll>
+        <div :class="classes">
+          <template>
+            <HistoryItem v-for="history in filteredHistory" :key="history.id" :historyItem="history" :token="token" />
+          </template>
+
+          <div v-if="isEmptyHistory">Will appear here history</div>
+        </div>
+      </Scroll>
+    </div>
+  </ContentForm>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
 import HistoryItem from './HistoryItem.vue';
 import type { FilterHistory } from '@/interfaces/common';
-import { HistoryNode } from '@/interfaces/history';
+import type { GetHistory } from '@/interfaces/history';
+import Scroll from '@/components/Scroll.vue';
+import Dropdown from '@/components/Dropdown.vue';
+import ContentForm from '@/components/ContentForm.vue';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { SelectedWallet } from '@/store/accounts/types';
+import BaseApi from '@/util/BaseApi';
+import { Currency } from '@/interfaces/currencies';
 
 @Component({
-  components: { HistoryItem },
+  components: {
+    Scroll,
+    Dropdown,
+    HistoryItem,
+    ContentForm,
+  },
 })
 export default class History extends Vue {
-  @Prop(Array) history!: HistoryNode[];
+  readonly historyDropdownOption = [
+    { label: 'All', value: 'all' },
+    { label: 'Transfer', value: 'transfer' },
+    { label: 'Reward', value: 'reward' },
+    { label: 'Extrinsic', value: 'extrinsic' },
+  ];
+  filterHistoryValue: FilterHistory = 'all';
+
   @Prop(String) token!: string;
-  @Prop(String) filterHistoryValue!: FilterHistory;
+  @Prop(Object) currency!: Currency;
+  @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get selectedNetwork() {
+    return this.$route.params.network;
+  }
 
   get isEmptyHistory() {
-    return this.filteredHistory.length === 0;
+    return this.filteredHistory?.length === 0;
   }
 
   get classes() {
     return [
-      'history',
+      'history-content',
       {
         'empty-history': this.isEmptyHistory,
       },
     ];
+  }
+
+  get history() {
+    const addressByNetwork = BaseApi.getDefaultAddressByNetworkIncludingReplacedAccount(
+      this.selectedWallet,
+      this.selectedNetwork
+    );
+    const historyForNetwork = this.getHistory(this.selectedNetwork);
+    const historyForWalletAddress = historyForNetwork?.[addressByNetwork]?.nodes ?? [];
+
+    const index = (this.currency?.balances[addressByNetwork] ?? []).findIndex(
+      ({ network }) => network === this.selectedNetwork
+    );
+
+    // TODO: fix
+    // Now the history hierarchy is as follows = network: { walletAddress: { history } }
+    // should become like this = network: { walletAddress: { token: { history } } }
+    // when non-native tokens are added, it needs to be fixed
+    if (index === -1) {
+      return [];
+    }
+
+    return historyForWalletAddress;
   }
 
   get filteredHistory() {
@@ -43,6 +105,10 @@ export default class History extends Vue {
 
     return filteredHistory;
   }
+
+  filterHistoryValueUpdate(name: FilterHistory) {
+    this.filterHistoryValue = name;
+  }
 }
 </script>
 
@@ -51,11 +117,28 @@ export default class History extends Vue {
   height: 100%;
   display: flex;
   flex-direction: column;
-}
 
-.empty-history {
-  align-items: center;
-  justify-content: center;
-  margin-top: -26px;
+  .history-settings {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 11px $default-padding 5px 18px;
+
+    .history-label {
+      font-weight: 600;
+    }
+  }
+
+  .history-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .empty-history {
+    align-items: center;
+    justify-content: center;
+    margin-top: -26px;
+  }
 }
 </style>

@@ -41,25 +41,7 @@
       />
     </div>
 
-    <ContentForm :height="306">
-      <div class="content">
-        <div class="content-settings">
-          <div class="history-label">History</div>
-
-          <Corners>
-            <Dropdown
-              :value="filterHistoryValue"
-              :options="historyDropdownOption"
-              :handler="filterHistoryValueUpdate"
-            />
-          </Corners>
-        </div>
-
-        <Scroll>
-          <History :history="formattedHistory" :token="selectedToken" :filterHistoryValue="filterHistoryValue" />
-        </Scroll>
-      </div>
-    </ContentForm>
+    <History :token="selectedToken" :currency="currentCurrency" />
 
     <SendForm
       v-if="showSendForm"
@@ -108,13 +90,7 @@ import TeleportForm from '../TeleportForm.vue';
 import BuyPopup from '../BuyPopup.vue';
 import SelectNetworkPopup from '../SelectNetworkPopup.vue';
 import History from './History.vue';
-import type { FilterHistory } from '@/interfaces/common';
-import type { GetHistory } from '@/interfaces/history';
 import BorderButton from '@/components/BorderButton.vue';
-import Scroll from '@/components/Scroll.vue';
-import Corners from '@/components/Corners.vue';
-import Dropdown from '@/components/Dropdown.vue';
-import ContentForm from '@/components/ContentForm.vue';
 import TabButton from '@/components/TabButton.vue';
 import BaseApi from '@/util/BaseApi';
 import { Currencies } from '@/interfaces/currencies';
@@ -126,15 +102,11 @@ import { formattedNumber, formattedPrice } from '@/util/numbers';
 
 @Component({
   components: {
-    Scroll,
-    Corners,
     History,
     SendForm,
     BuyPopup,
-    Dropdown,
     TabButton,
     ReceiveForm,
-    ContentForm,
     TeleportForm,
     BorderButton,
     SelectNetworkPopup,
@@ -143,24 +115,17 @@ import { formattedNumber, formattedPrice } from '@/util/numbers';
 })
 export default class Token extends Vue {
   readonly selectNetworkButtonRef = 'selectNetworkButton';
-  readonly historyDropdownOption = [
-    { label: 'All', value: 'all' },
-    { label: 'Transfer', value: 'transfer' },
-    { label: 'Reward', value: 'reward' },
-    { label: 'Extrinsic', value: 'extrinsic' },
-  ];
 
-  filterHistoryValue = 'all';
   showSendForm = false;
   showReceiveForm = false;
   showTeleportForm = false;
   showBuyPopup = false;
+  showHistoryDetailsPopup = false;
   showSelectNetworkPopup = false;
 
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
-  @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
 
   get providers() {
     return this.currentCurrency?.providers ?? [];
@@ -176,29 +141,6 @@ export default class Token extends Vue {
 
   get displayAddressByNetwork() {
     return BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.selectedNetwork);
-  }
-
-  get formattedHistory() {
-    const addressByNetwork = BaseApi.getDefaultAddressByNetworkIncludingReplacedAccount(
-      this.selectedWallet,
-      this.selectedNetwork
-    );
-    const historyForNetwork = this.getHistory(this.selectedNetwork);
-    const historyForWalletAddress = historyForNetwork?.[addressByNetwork]?.nodes ?? [];
-
-    const index = (this.currentCurrency?.balances[addressByNetwork] ?? []).findIndex(
-      ({ network }) => network === this.selectedNetwork
-    );
-
-    // TODO: fix
-    // Now the history hierarchy is as follows = network: { walletAddress: { history } }
-    // should become like this = network: { walletAddress: { token: { history } } }
-    // when non-native tokens are added, it needs to be fixed
-    if (index === -1) {
-      return [];
-    }
-
-    return historyForWalletAddress;
   }
 
   get tokenPriceString() {
@@ -257,10 +199,6 @@ export default class Token extends Vue {
     this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
 
     targetElement.style.zIndex = this.showSelectNetworkPopup ? '200' : '0';
-  }
-
-  filterHistoryValueUpdate(name: FilterHistory) {
-    this.filterHistoryValue = name;
   }
 
   toggleVisible(field: 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup', value: boolean) {
@@ -322,23 +260,6 @@ export default class Token extends Vue {
 
       &:first-child {
         margin-left: 0;
-      }
-    }
-  }
-
-  .content {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-
-    .content-settings {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 11px $default-padding 5px 18px;
-
-      .history-label {
-        font-weight: 600;
       }
     }
   }

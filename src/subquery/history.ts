@@ -5,7 +5,7 @@ export async function loadHistory(
   url: string,
   address: string,
   pageSize: number,
-  cursor: number | null
+  cursor: string | null
 ): Promise<HistoryItem> {
   const {
     data: { data },

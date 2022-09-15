@@ -149,7 +149,7 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.SUBSCRIBE_TO_BALANCES](context, { accounts, networksProps }) {
     console.info('accounts', accounts);
 
-    const { commit, dispatch, state } = context;
+    const { commit, state } = context;
     const { networks: networksStore } = state;
 
     commit(MutationTypes.SET_ALL_NETWORKS_IS_LOADED, {

@@ -41,7 +41,7 @@
       />
     </div>
 
-    <History :token="selectedToken" :currency="currentCurrency" />
+    <History :token="selectedToken" :currency="currentCurrency" @openHistoryDetailsPopup="openHistoryDetailsPopup" />
 
     <SendForm
       v-if="showSendForm"
@@ -77,6 +77,13 @@
       :toggleSelectedNetwork="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
     />
+
+    <HistoryDetailsPopup
+      v-if="showHistoryDetailsPopup"
+      :handlerClose="closeHistoryDetailsPopup"
+      :historyNode="historyNode"
+      :token="selectedToken"
+    />
   </div>
 </template>
 
@@ -89,7 +96,9 @@ import SendForm from '../SendForm.vue';
 import TeleportForm from '../TeleportForm.vue';
 import BuyPopup from '../BuyPopup.vue';
 import SelectNetworkPopup from '../SelectNetworkPopup.vue';
+import HistoryDetailsPopup from './HistoryDetailsPopup.vue';
 import History from './History.vue';
+import type { HistoryNode } from '@/interfaces/history';
 import BorderButton from '@/components/BorderButton.vue';
 import TabButton from '@/components/TabButton.vue';
 import BaseApi from '@/util/BaseApi';
@@ -99,6 +108,8 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/util/numbers';
+
+type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
 
 @Component({
   components: {
@@ -110,12 +121,14 @@ import { formattedNumber, formattedPrice } from '@/util/numbers';
     TeleportForm,
     BorderButton,
     SelectNetworkPopup,
+    HistoryDetailsPopup,
     SelectNetworkButton,
   },
 })
 export default class Token extends Vue {
   readonly selectNetworkButtonRef = 'selectNetworkButton';
 
+  historyNode: HistoryNode | Record<string, string> = {};
   showSendForm = false;
   showReceiveForm = false;
   showTeleportForm = false;
@@ -201,8 +214,18 @@ export default class Token extends Vue {
     targetElement.style.zIndex = this.showSelectNetworkPopup ? '200' : '0';
   }
 
-  toggleVisible(field: 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup', value: boolean) {
+  toggleVisible(field: ShowField, value: boolean) {
     this[field] = value;
+  }
+
+  openHistoryDetailsPopup(historyNode: HistoryNode) {
+    this.showHistoryDetailsPopup = true;
+    this.historyNode = historyNode;
+  }
+
+  closeHistoryDetailsPopup() {
+    this.showHistoryDetailsPopup = false;
+    this.historyNode = {};
   }
 }
 </script>

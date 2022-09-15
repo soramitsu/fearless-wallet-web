@@ -24,7 +24,7 @@
     "@polkadot/extension-chains": "^0.44.6",
     "@polkadot/extension-inject": "^0.44.6",
     "@polkadot/ui-keyring": "^2.9.6",
-    "@polkadot/vue-identicon": "^2.9.6",
+    "@polkadot/vue-identicon": "^2.9.8",
     "@soramitsu/soramitsu-js-ui": "^1.0.26",
     "@types/file-saver": "^2.0.5",
     "axios": "^0.27.2",

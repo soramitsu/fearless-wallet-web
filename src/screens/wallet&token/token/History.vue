@@ -10,7 +10,13 @@
       <Scroll>
         <div :class="classes">
           <template>
-            <HistoryItem v-for="history in filteredHistory" :key="history.id" :historyItem="history" :token="token" />
+            <HistoryItem
+              v-for="historyNode in filteredHistory"
+              :key="historyNode.id"
+              :historyNode="historyNode"
+              :token="token"
+              @click.native="$emit('openHistoryDetailsPopup', historyNode)"
+            />
           </template>
 
           <div v-if="isEmptyHistory">Will appear here history</div>
@@ -32,8 +38,8 @@ import ContentForm from '@/components/ContentForm.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import BaseApi from '@/util/BaseApi';
 import { Currency } from '@/interfaces/currencies';
+import BaseApi from '@/util/BaseApi';
 
 @Component({
   components: {

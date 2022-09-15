@@ -49,13 +49,11 @@
         <div class="item-value">{{ date }}</div>
       </div>
 
-      <template v-if="isReward">
-        <div class="item">
-          Era
+      <div v-if="isReward" class="item">
+        Era
 
-          <div class="item-value">{{ era }}</div>
-        </div>
-      </template>
+        <div class="item-value">{{ era }}</div>
+      </div>
 
       <div v-if="isTransfer" class="item">
         Amount
@@ -134,13 +132,13 @@ export default class SelectNetworkButton extends Vue {
   }
 
   get statusIsSuccess() {
-    if (this.type === 'transfer') {
+    if (this.isTransfer) {
       const { success } = this.historyNode.transfer;
 
       return success;
     }
 
-    if (this.type === 'extrinsic') {
+    if (this.isExtrinsic) {
       const { success } = this.historyNode.extrinsic;
 
       return success;
@@ -162,13 +160,13 @@ export default class SelectNetworkButton extends Vue {
   }
 
   get statusText() {
-    if (this.type === 'transfer') {
+    if (this.isTransfer) {
       const { success } = this.historyNode.transfer;
 
       return success ? 'Completed' : 'Reject';
     }
 
-    if (this.type === 'extrinsic') {
+    if (this.isExtrinsic) {
       const { success } = this.historyNode.extrinsic;
 
       return success ? 'Completed' : 'Reject';
@@ -233,7 +231,7 @@ export default class SelectNetworkButton extends Vue {
 
   .item {
     color: rgba(255, 255, 255, 0.75);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid $default-background-color;
     padding: $default-padding 0;
     display: flex;
     justify-content: space-between;

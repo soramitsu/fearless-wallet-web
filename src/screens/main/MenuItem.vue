@@ -10,7 +10,8 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { MenuItem as TMenuItem } from '@/interfaces/common';
+import type { MenuItem as TMenuItem } from '@/interfaces/common';
+import { MenuItems } from '@/interfaces/common';
 
 @Component({
   components: {},
@@ -24,7 +25,7 @@ export default class MenuItem extends Vue {
   }
 
   get img() {
-    const fileName = this.name === 'DEX' ? 'polkaswap' : this.name.toLowerCase();
+    const fileName = this.name === MenuItems.dex ? 'polkaswap' : this.name.toLowerCase();
 
     return require(`@/assets/${fileName}.svg`);
   }

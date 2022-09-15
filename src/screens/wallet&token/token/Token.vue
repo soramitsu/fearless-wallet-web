@@ -225,6 +225,7 @@ export default class Token extends Vue {
 
   closeHistoryDetailsPopup() {
     this.showHistoryDetailsPopup = false;
+    this.historyNode = {};
   }
 }
 </script>

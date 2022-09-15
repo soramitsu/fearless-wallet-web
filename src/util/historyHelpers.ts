@@ -80,7 +80,9 @@ export function getFormattedDate(historyNode: HistoryNode) {
 
   if (isToday(date)) {
     return format(date, 'HH:mm');
-  } else if (isThisYear(date)) {
+  }
+
+  if (isThisYear(date)) {
     return format(date, 'dd MMMM HH:mm');
   }
 

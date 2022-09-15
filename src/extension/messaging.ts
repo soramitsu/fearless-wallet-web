@@ -71,9 +71,7 @@ port.onMessage.addListener((data: Message['data']): void => {
     return;
   }
 
-  if (!handler.subscriber) {
-    delete handlers[data.id];
-  }
+  if (!handler.subscriber) delete handlers[data.id];
 
   if (data.subscription) {
     // eslint-disable-next-line @typescript-eslint/ban-types

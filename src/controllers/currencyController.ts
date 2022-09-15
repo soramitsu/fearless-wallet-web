@@ -353,13 +353,13 @@ export default class CurrencyController {
   public async send(from: string, amount: string): Promise<void> {
     const pair = BaseApi.getPair(from);
 
-    const unsubscribe = await this.transfer!.signAndSend(pair, this.options, ({ status }) => {
+    const unsubscribe = await this.transfer!.signAndSend(pair, this.options, async ({ status }) => {
       if (status.isInBlock) {
         console.info(`Successful transfer of ${amount} with hash ${status.asInBlock.toHex()}`);
       } else if (status.isFinalized) {
         console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
 
-        unsubscribe();
+        await unsubscribe();
 
         pair.lock();
       } else {

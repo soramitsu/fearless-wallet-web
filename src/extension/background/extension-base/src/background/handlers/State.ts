@@ -75,24 +75,23 @@ export async function initState() {
   extractMetadata(metaStore);
 
   await chrome.storage.local.set({
-    authUrls: {},
-    authRequests: {},
-    signRequests: {},
-    metaRequests: {},
     accountSubs: {},
     metaStore,
+    windows: [],
+    notification: 'popup',
     providers: {},
     registry: new TypeRegistry(),
     connectedTabsUrl: [],
     subscriptions: {},
     defaultAuthAccountSelection: [],
-    authSubject: new BehaviorSubject<AuthorizeRequest[]>([]),
-    metaSubject: new BehaviorSubject<MetadataRequest[]>([]),
-    signSubject: new BehaviorSubject<SigningRequest[]>([]),
   });
 }
 
 export default class State {
+  static authUrls: AuthUrls = {};
+  static authRequests: Record<string, AuthRequest> = {};
+  static metaRequests: Record<string, MetaRequest> = {};
+  static signRequests: Record<string, SignRequest> = {};
   static readonly authSubject: BehaviorSubject<AuthorizeRequest[]> = new BehaviorSubject<AuthorizeRequest[]>([]);
 
   static readonly metaSubject: BehaviorSubject<MetadataRequest[]> = new BehaviorSubject<MetadataRequest[]>([]);
@@ -110,47 +109,37 @@ export default class State {
   }
 
   static async numAuthRequests() {
-    const { authRequests } = await State.getFromStorage(['authRequests']);
+    // const { authRequests } = await State.getFromStorage(['authRequests']);
 
-    return Object.keys(authRequests).length;
+    return Object.keys(State.authRequests).length;
   }
 
   static async numMetaRequests() {
-    const { metaRequests } = await State.getFromStorage(['metaRequests']);
-
-    return Object.keys(metaRequests).length;
+    return Object.keys(State.metaRequests).length;
   }
 
   static async numSignRequests() {
-    const { signRequests } = await State.getFromStorage(['signRequests']);
-
-    return Object.keys(signRequests).length;
+    return Object.keys(State.signRequests).length;
   }
 
   static async allAuthRequests(): Promise<AuthorizeRequest[]> {
-    const { authRequests } = await State.getFromStorage(['authRequests']);
+    // const { authRequests } = await State.getFromStorage(['authRequests']);
 
-    return Object.values(authRequests).map(({ id, request, url }): AuthorizeRequest => ({ id, request, url }));
+    return Object.values(State.authRequests).map(({ id, request, url }): AuthorizeRequest => ({ id, request, url }));
   }
 
   static async allMetaRequests(): Promise<MetadataRequest[]> {
-    const { metaRequests } = await State.getFromStorage(['metaRequests']);
-
-    return Object.values(metaRequests).map(({ id, request, url }): MetadataRequest => ({ id, request, url }));
+    return Object.values(State.metaRequests).map(({ id, request, url }): MetadataRequest => ({ id, request, url }));
   }
 
   static async allSignRequests(): Promise<SigningRequest[]> {
-    const { signRequests } = await State.getFromStorage(['signRequests']);
-
-    return Object.values(signRequests).map(
+    return Object.values(State.signRequests).map(
       ({ account, id, request, url }): SigningRequest => ({ account, id, request, url })
     );
   }
 
   public async authUrls(): Promise<AuthUrls> {
-    const { authUrls } = await State.getFromStorage(['authUrls']);
-
-    return authUrls;
+    return State.authUrls;
   }
 
   static async popupClose(): Promise<void> {
@@ -163,13 +152,14 @@ export default class State {
 
   static async popupOpen(): Promise<void> {
     const { notification, windows } = await State.getFromStorage(['notification', 'windows']);
-
     if (notification && notification !== 'extension')
       chrome.windows.create(
         notification === 'window' ? NORMAL_WINDOW_OPTS : POPUP_WINDOW_OPTS,
+
         async (window): Promise<void> => {
           if (window) {
             windows.push(window.id || 0);
+
             await chrome.storage.local.set({ windows });
           }
         }
@@ -182,16 +172,15 @@ export default class State {
     reject: (error: Error) => void
   ): Resolver<AuthResponse> => {
     const complete = async (authorizedAccounts: string[] = []) => {
-      const { authRequests, authUrls } = await State.getFromStorage(['authRequests', 'authUrls']);
-
       const {
         id: idStr,
         request: { origin },
         url,
-      } = authRequests[id];
+      } = State.authRequests[id];
+
       const stripUrl = State.stripUrl(url);
 
-      authUrls[stripUrl] = {
+      State.authUrls[stripUrl] = {
         authorizedAccounts,
         count: 0,
         id: idStr,
@@ -202,8 +191,7 @@ export default class State {
       await State.saveCurrentAuthList();
       await State.updateDefaultAuthAccounts(authorizedAccounts);
 
-      delete authRequests[id];
-      await chrome.storage.local.set({ authRequests });
+      delete State.authRequests[id];
 
       State.updateIconAuth(true);
     };
@@ -221,8 +209,6 @@ export default class State {
   };
 
   static async updateCurrentTabsUrl(urls: string[]) {
-    const { authUrls } = await State.getFromStorage(['authUrls']);
-
     const connectedTabs = urls
       .map((url) => {
         let strippedUrl = '';
@@ -235,7 +221,7 @@ export default class State {
         }
 
         // return the stripped url only if this website is known
-        return !!strippedUrl && authUrls[strippedUrl] ? strippedUrl : undefined;
+        return !!strippedUrl && State.authUrls[strippedUrl] ? strippedUrl : undefined;
       })
       .filter((value) => !!value) as string[];
 
@@ -249,18 +235,13 @@ export default class State {
   }
 
   static async deleteAuthRequest(requestId: string) {
-    const { authRequests } = await State.getFromStorage(['authRequests']);
+    delete State.authRequests[requestId];
 
-    delete authRequests[requestId];
-
-    await chrome.storage.local.set({ authRequests });
     State.updateIconAuth(true);
   }
 
   static async saveCurrentAuthList() {
-    const { authUrls } = await State.getFromStorage(['authUrls']);
-
-    await chrome.storage.local.set({ authUrls });
+    await chrome.storage.local.set({ authUrls: State.authUrls });
   }
 
   static async saveDefaultAuthAccounts() {
@@ -281,11 +262,7 @@ export default class State {
     reject: (error: Error) => void
   ): Resolver<boolean> => {
     const complete = async (): Promise<void> => {
-      const { metaRequests } = await State.getFromStorage(['metaRequests']);
-
-      delete metaRequests[id];
-
-      await chrome.storage.local.set({ metaRequests });
+      delete State.metaRequests[id];
 
       State.updateIconMeta(true);
     };
@@ -308,11 +285,7 @@ export default class State {
     reject: (error: Error) => void
   ): Resolver<ResponseSigning> => {
     const complete = async (): Promise<void> => {
-      const { signRequests } = await State.getFromStorage(['signRequests']);
-
-      delete signRequests[id];
-
-      await chrome.storage.local.set({ signRequests });
+      delete State.signRequests[id];
 
       State.updateIconSign(true);
     };
@@ -356,51 +329,44 @@ export default class State {
   }
 
   static async removeAuthorization(url: string): Promise<AuthUrls> {
-    const { authUrls } = await State.getFromStorage(['authUrls']);
-    const entry = authUrls[url];
+    const entry = State.authUrls[url];
 
     assert(entry, `The source ${url} is not known`);
 
-    delete authUrls[url];
+    delete State.authUrls[url];
 
-    await chrome.storage.local.set({ authUrls });
+    await chrome.storage.local.set({ authUrls: State.authUrls });
 
     State.saveCurrentAuthList();
 
-    return authUrls;
+    return State.authUrls;
   }
 
   static async updateIconAuth(shouldClose?: boolean): Promise<void> {
-    // const { authSubject } = await State.getFromStorage(['authSubject']);
-
     const allAuthRequests = await State.allAuthRequests();
-    console.info(allAuthRequests, 'all authreq');
+
     State.authSubject.next(allAuthRequests);
 
     State.updateIcon(shouldClose);
   }
 
   static async updateIconMeta(shouldClose?: boolean): Promise<void> {
-    const { metaSubject } = await State.getFromStorage(['metaSubject']);
     const allMetaRequests = await State.allMetaRequests();
 
-    metaSubject.next(allMetaRequests);
+    State.metaSubject.next(allMetaRequests);
     State.updateIcon(shouldClose);
   }
 
   static async updateIconSign(shouldClose?: boolean): Promise<void> {
-    const { signSubject } = await State.getFromStorage(['signSubject']);
     const allSignRequests = await State.allSignRequests();
 
-    signSubject.next(allSignRequests);
+    State.signSubject.next(allSignRequests);
     State.updateIcon(shouldClose);
   }
 
   static async updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): Promise<void> {
-    const { authUrls } = await State.getFromStorage(['authUrls']);
-
     authorizedAccountDiff.forEach(([url, authorizedAccountDiff]) => {
-      authUrls[url].authorizedAccounts = authorizedAccountDiff;
+      State.authUrls[url].authorizedAccounts = authorizedAccountDiff;
     });
 
     State.saveCurrentAuthList();
@@ -410,16 +376,15 @@ export default class State {
     const idStr = State.stripUrl(url);
 
     // Do not enqueue duplicate authorization requests.
-    const { authRequests, authUrls } = await State.getFromStorage(['authRequests', 'authUrls']);
 
-    const isDuplicate = Object.values(authRequests).some((request) => request.idStr === idStr);
+    const isDuplicate = Object.values(State.authRequests).some((request) => request.idStr === idStr);
 
     assert(!isDuplicate, `The source ${url} has a pending authorization request`);
 
-    if (authUrls[idStr]) {
+    if (State.authUrls[idStr]) {
       // this url was seen in the past
       assert(
-        authUrls[idStr].authorizedAccounts || authUrls[idStr].isAllowed,
+        State.authUrls[idStr].authorizedAccounts || State.authUrls[idStr].isAllowed,
         `The source ${url} is not allowed to interact with this extension`
       );
 
@@ -429,28 +394,26 @@ export default class State {
       };
     }
 
-    return new Promise((resolve, reject): void => {
+    return new Promise((res, rej): void => {
       const id = getId();
 
-      authRequests[id] = {
-        ...State.authComplete(id, resolve, reject),
+      const { reject, resolve } = State.authComplete(id, res, rej);
+
+      State.authRequests[id] = {
+        reject,
+        resolve,
         id,
         idStr,
         request,
         url,
       };
-
-      chrome.storage.local.set({ authRequests }).then(() => {
-        State.updateIconAuth();
-        State.popupOpen();
-      });
+      State.updateIconAuth();
+      State.popupOpen();
     });
   }
 
   static async ensureUrlAuthorized(url: string): Promise<boolean> {
-    const { authUrls } = await State.getFromStorage(['authUrls']);
-
-    const entry = authUrls[State.stripUrl(url)];
+    const entry = State.authUrls[State.stripUrl(url)];
 
     assert(entry, `The source ${url} has not been enabled yet`);
 
@@ -458,41 +421,31 @@ export default class State {
   }
 
   static async injectMetadata(url: string, request: MetadataDef): Promise<boolean> {
-    const { metaRequests } = await State.getFromStorage(['metaRequests']);
-
     return new Promise((resolve, reject): void => {
       const id = getId();
 
-      metaRequests[id] = {
+      State.metaRequests[id] = {
         ...State.metaComplete(id, resolve, reject),
         id,
         request,
         url,
       };
 
-      chrome.storage.local.set({ metaRequests }).then(() => {
-        State.updateIconMeta();
-        State.popupOpen();
-      });
+      State.updateIconMeta();
+      State.popupOpen();
     });
   }
 
   static async getAuthRequest(id: string): Promise<AuthRequest> {
-    const { authRequests } = await State.getFromStorage(['authRequests']);
-
-    return authRequests[id];
+    return State.authRequests[id];
   }
 
   static async getMetaRequest(id: string): Promise<MetaRequest> {
-    const { metaRequests } = await State.getFromStorage(['metaRequests']);
-
-    return metaRequests[id];
+    return State.metaRequests[id];
   }
 
   static async getSignRequest(id: string): Promise<SignRequest> {
-    const { signRequests } = await State.getFromStorage(['signRequests']);
-
-    return signRequests[id];
+    return State.signRequests[id];
   }
 
   // List all providers the extension is exposing
@@ -603,20 +556,17 @@ export default class State {
 
   static async sign(url: string, request: RequestSign, account: AccountJson): Promise<ResponseSigning> {
     const id = getId();
-    const { signRequests } = await State.getFromStorage(['signRequests']);
 
     return new Promise((resolve, reject): void => {
-      signRequests[id] = {
+      State.signRequests[id] = {
         ...State.signComplete(id, resolve, reject),
         account,
         id,
         request,
         url,
       };
-      chrome.storage.local.set({ signRequests }).then(() => {
-        State.updateIconSign();
-        State.popupOpen();
-      });
+      State.updateIconSign();
+      State.popupOpen();
     });
   }
 }

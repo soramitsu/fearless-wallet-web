@@ -157,12 +157,9 @@ export default class Extension {
 
   static async accountsForget({ address }: RequestAccountForget): Promise<boolean> {
     const authorizedAccountsDiff: AuthorizedAccountsDiff = [];
-    const { authUrls, defaultAuthAccountSelection } = await State.getFromStorage([
-      'authUrls',
-      'defaultAuthAccountSelection',
-    ]);
+    const { defaultAuthAccountSelection } = await State.getFromStorage(['defaultAuthAccountSelection']);
     // cycle through authUrls and prepare the array of diff
-    Object.entries(authUrls).forEach(([url, urlInfo]) => {
+    Object.entries(State.authUrls).forEach(([url, urlInfo]) => {
       if (!urlInfo.authorizedAccounts.includes(address)) {
         return;
       }
@@ -244,7 +241,10 @@ export default class Extension {
     });
 
     port.onDisconnect.addListener((): void => {
-      unsubscribe(id);
+      async () => {
+        await unsubscribe(id);
+      };
+
       subscription.unsubscribe();
     });
 
@@ -257,7 +257,6 @@ export default class Extension {
     assert(queued, 'Unable to find request');
 
     const { resolve } = queued;
-
     resolve({ authorizedAccounts, result: true });
 
     return true;
@@ -268,19 +267,14 @@ export default class Extension {
   }
 
   static async getAuthList(): Promise<ResponseAuthorizeList> {
-    const { authUrls } = await State.getFromStorage(['authUrls']);
-
-    return { list: authUrls };
+    return { list: State.authUrls };
   }
 
   // FIXME This looks very much like what we have in accounts
   static async authorizeSubscribe(id: string, port: chrome.runtime.Port): Promise<boolean> {
     const cb = await createSubscription<'pri(authorize.requests)'>(id, port);
-    const { authSubject } = await State.getFromStorage(['authSubject']);
-    console.log(authSubject);
 
     const subscription = State.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
-    console.info(authSubject, 'after sub');
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);

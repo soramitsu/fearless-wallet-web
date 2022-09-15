@@ -68,8 +68,7 @@ function transformAccounts(accounts: SubjectInfo, anyType = false): InjectedAcco
 
 export default class Tabs {
   static async filterForAuthorizedAccounts(accounts: InjectedAccount[], url: string): Promise<InjectedAccount[]> {
-    const { authUrls } = await State.getFromStorage(['authUrls']);
-    const auth = authUrls[State.stripUrl(url)];
+    const auth = State.authUrls[State.stripUrl(url)];
 
     return accounts.filter((allAcc) =>
       auth.authorizedAccounts

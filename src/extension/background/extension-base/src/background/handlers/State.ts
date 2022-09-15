@@ -1,12 +1,12 @@
 // Copyright 2019-2022 @polkadot/extension-bg authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { BehaviorSubject, Subscription } from 'rxjs';
-
+import { BehaviorSubject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { knownGenesis } from '@polkadot/networks/defaults';
 import { assert } from '@polkadot/util';
 
+import { TypeRegistry } from '@polkadot/types';
 import { MetadataStore } from '../../stores';
 import {
   AuthorizeRequest,
@@ -17,7 +17,6 @@ import {
   MetaRequest,
   NORMAL_WINDOW_OPTS,
   POPUP_WINDOW_OPTS,
-  Providers,
   ResponseSigning,
   SigningRequest,
   SignRequest,
@@ -30,39 +29,12 @@ import {
   RequestRpcUnsubscribe,
   RequestSign,
   ResponseRpcListProviders,
+  IState,
 } from '../types';
 import { getId } from '../../utils/getId';
 import { withErrorLog } from './helpers';
-import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
+import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
-
-const AUTH_URLS_KEY = 'authUrls';
-const DEFAULT_AUTH_ACCOUNTS = 'defaultAuthAccounts';
-
-type CachedUnlocks = Record<string, number>;
-interface AccountSub {
-  subscription: Subscription;
-  url: string;
-}
-
-interface IState {
-  authRequests: Record<string, AuthRequest>;
-  metaRequests: Record<string, MetaRequest>;
-  signRequests: Record<string, SignRequest>;
-  authUrls: AuthUrls;
-  metaStore: MetadataStore;
-  injectedProviders: Map<chrome.runtime.Port, ProviderInterface>;
-  notification: string;
-  authSubject: BehaviorSubject<AuthorizeRequest[]>;
-  metaSubject: BehaviorSubject<MetadataRequest[]>;
-  signSubject: BehaviorSubject<SigningRequest[]>;
-  providers: Providers;
-  accountSubs: Record<string, AccountSub>;
-  windows: number[];
-  cachedUnlocks: CachedUnlocks;
-  connectedTabsUrl: string[];
-  defaultAuthAccountSelection: string[];
-}
 
 function extractMetadata(store: MetadataStore): void {
   store.allMap((map): void => {
@@ -98,39 +70,41 @@ function extractMetadata(store: MetadataStore): void {
   });
 }
 
-export function initState(providers: Providers = {}) {
+export async function initState() {
   const metaStore = new MetadataStore();
   extractMetadata(metaStore);
 
-  const authString = localStorage.getItem(AUTH_URLS_KEY) || '{}';
-  const previousAuth = JSON.parse(authString) as AuthUrls;
-
-  const defaultAuthString = localStorage.getItem(DEFAULT_AUTH_ACCOUNTS) || '[]';
-  const previousDefaultAuth = JSON.parse(defaultAuthString) as string[];
-
-  chrome.storage.local.set({
-    authUrls: previousAuth,
+  await chrome.storage.local.set({
+    authUrls: {},
     authRequests: {},
     signRequests: {},
     metaRequests: {},
     accountSubs: {},
     metaStore,
-    providers,
+    providers: {},
+    registry: new TypeRegistry(),
     connectedTabsUrl: [],
-    defaultAuthAccountSelection: previousDefaultAuth,
+    subscriptions: {},
+    defaultAuthAccountSelection: [],
+    authSubject: new BehaviorSubject<AuthorizeRequest[]>([]),
+    metaSubject: new BehaviorSubject<MetadataRequest[]>([]),
+    signSubject: new BehaviorSubject<SigningRequest[]>([]),
   });
 }
 
 export default class State {
+  static readonly authSubject: BehaviorSubject<AuthorizeRequest[]> = new BehaviorSubject<AuthorizeRequest[]>([]);
+
+  static readonly metaSubject: BehaviorSubject<MetadataRequest[]> = new BehaviorSubject<MetadataRequest[]>([]);
+
+  static readonly signSubject: BehaviorSubject<SigningRequest[]> = new BehaviorSubject<SigningRequest[]>([]);
+
   static get knownMetadata(): MetadataDef[] {
     return knownMetadata();
   }
 
   static async getFromStorage(key: (keyof IState)[]): Promise<Pick<IState, typeof key[number]>> {
-    const values = (await chrome.storage.local.get(key).then((value) => value)) as any as Pick<
-      IState,
-      typeof key[number]
-    >;
+    const values = (await chrome.storage.local.get(key).then((value) => value)) as Pick<IState, typeof key[number]>;
 
     return values;
   }
@@ -184,17 +158,18 @@ export default class State {
 
     windows?.forEach((id: number) => withErrorLog(() => chrome.windows.remove(id)));
 
-    chrome.storage.local.set({ windows: [] });
+    await chrome.storage.local.set({ windows: [] });
   }
 
   static async popupOpen(): Promise<void> {
     const { notification, windows } = await State.getFromStorage(['notification', 'windows']);
+
     if (notification && notification !== 'extension')
       chrome.windows.create(
         notification === 'window' ? NORMAL_WINDOW_OPTS : POPUP_WINDOW_OPTS,
         async (window): Promise<void> => {
           if (window) {
-            windows?.push(window.id || 0);
+            windows.push(window.id || 0);
             await chrome.storage.local.set({ windows });
           }
         }
@@ -214,8 +189,9 @@ export default class State {
         request: { origin },
         url,
       } = authRequests[id];
+      const stripUrl = State.stripUrl(url);
 
-      authUrls[State.stripUrl(url)] = {
+      authUrls[stripUrl] = {
         authorizedAccounts,
         count: 0,
         id: idStr,
@@ -223,11 +199,12 @@ export default class State {
         url,
       };
 
-      State.saveCurrentAuthList();
-      State.updateDefaultAuthAccounts(authorizedAccounts);
+      await State.saveCurrentAuthList();
+      await State.updateDefaultAuthAccounts(authorizedAccounts);
 
       delete authRequests[id];
-      chrome.storage.local.set({ authRequests });
+      await chrome.storage.local.set({ authRequests });
+
       State.updateIconAuth(true);
     };
 
@@ -260,9 +237,9 @@ export default class State {
         // return the stripped url only if this website is known
         return !!strippedUrl && authUrls[strippedUrl] ? strippedUrl : undefined;
       })
-      .filter((value) => !!value) as unknown as string[];
+      .filter((value) => !!value) as string[];
 
-    chrome.storage.local.set({ connectedTabsUrl: connectedTabs });
+    await chrome.storage.local.set({ connectedTabsUrl: connectedTabs });
   }
 
   static async getConnectedTabsUrl() {
@@ -276,24 +253,24 @@ export default class State {
 
     delete authRequests[requestId];
 
-    chrome.storage.local.set({ authRequests });
+    await chrome.storage.local.set({ authRequests });
     State.updateIconAuth(true);
   }
 
   static async saveCurrentAuthList() {
     const { authUrls } = await State.getFromStorage(['authUrls']);
 
-    localStorage.setItem(AUTH_URLS_KEY, JSON.stringify(authUrls));
+    await chrome.storage.local.set({ authUrls });
   }
 
   static async saveDefaultAuthAccounts() {
     const { defaultAuthAccountSelection } = await State.getFromStorage(['defaultAuthAccountSelection']);
 
-    localStorage.setItem(DEFAULT_AUTH_ACCOUNTS, JSON.stringify(defaultAuthAccountSelection));
+    await chrome.storage.local.set({ defaultAuthAccountSelection });
   }
 
   static async updateDefaultAuthAccounts(newList: string[]) {
-    chrome.storage.local.set({ defaultAuthAccountSelection: newList });
+    await chrome.storage.local.set({ defaultAuthAccountSelection: newList });
 
     State.saveDefaultAuthAccounts();
   }
@@ -308,7 +285,8 @@ export default class State {
 
       delete metaRequests[id];
 
-      chrome.storage.local.set({ metaRequests });
+      await chrome.storage.local.set({ metaRequests });
+
       State.updateIconMeta(true);
     };
 
@@ -334,7 +312,7 @@ export default class State {
 
       delete signRequests[id];
 
-      chrome.storage.local.set({ signRequests });
+      await chrome.storage.local.set({ signRequests });
 
       State.updateIconSign(true);
     };
@@ -367,6 +345,7 @@ export default class State {
     const authCount = await State.numAuthRequests();
     const metaCount = await State.numMetaRequests();
     const signCount = await State.numSignRequests();
+
     const text = authCount ? 'Auth' : metaCount ? 'Meta' : signCount ? `${signCount}` : '';
 
     withErrorLog(() => chrome.action.setBadgeText({ text }));
@@ -383,17 +362,21 @@ export default class State {
     assert(entry, `The source ${url} is not known`);
 
     delete authUrls[url];
-    chrome.storage.local.set({ authUrls });
+
+    await chrome.storage.local.set({ authUrls });
+
     State.saveCurrentAuthList();
 
     return authUrls;
   }
 
   static async updateIconAuth(shouldClose?: boolean): Promise<void> {
-    const { authSubject } = await State.getFromStorage(['authSubject']);
-    const allAuthRequests = await State.allAuthRequests();
+    // const { authSubject } = await State.getFromStorage(['authSubject']);
 
-    authSubject.next(allAuthRequests);
+    const allAuthRequests = await State.allAuthRequests();
+    console.info(allAuthRequests, 'all authreq');
+    State.authSubject.next(allAuthRequests);
+
     State.updateIcon(shouldClose);
   }
 
@@ -428,6 +411,7 @@ export default class State {
 
     // Do not enqueue duplicate authorization requests.
     const { authRequests, authUrls } = await State.getFromStorage(['authRequests', 'authUrls']);
+
     const isDuplicate = Object.values(authRequests).some((request) => request.idStr === idStr);
 
     assert(!isDuplicate, `The source ${url} has a pending authorization request`);
@@ -456,8 +440,10 @@ export default class State {
         url,
       };
 
-      State.updateIconAuth();
-      State.popupOpen();
+      chrome.storage.local.set({ authRequests }).then(() => {
+        State.updateIconAuth();
+        State.popupOpen();
+      });
     });
   }
 
@@ -476,6 +462,7 @@ export default class State {
 
     return new Promise((resolve, reject): void => {
       const id = getId();
+
       metaRequests[id] = {
         ...State.metaComplete(id, resolve, reject),
         id,
@@ -483,8 +470,10 @@ export default class State {
         url,
       };
 
-      State.updateIconMeta();
-      State.popupOpen();
+      chrome.storage.local.set({ metaRequests }).then(() => {
+        State.updateIconMeta();
+        State.popupOpen();
+      });
     });
   }
 
@@ -541,9 +530,10 @@ export default class State {
 
     // Instantiate the provider
     injectedProviders.set(port, providers[key].start());
+    await chrome.storage.local.set({ injectedProviders });
 
     // Close provider connection when page is closed
-    port.onDisconnect.addListener((): void => {
+    port.onDisconnect.addListener(async (): Promise<void> => {
       const provider = injectedProviders.get(port);
 
       if (provider) {
@@ -551,6 +541,7 @@ export default class State {
       }
 
       injectedProviders.delete(port);
+      await chrome.storage.local.set({ injectedProviders });
     });
 
     return Promise.resolve(providers[key].meta);
@@ -605,7 +596,7 @@ export default class State {
   }
 
   static async setNotification(notification: string): Promise<boolean> {
-    chrome.storage.local.set({ notification });
+    await chrome.storage.local.set({ notification });
 
     return true;
   }
@@ -622,9 +613,10 @@ export default class State {
         request,
         url,
       };
-
-      State.updateIconSign();
-      State.popupOpen();
+      chrome.storage.local.set({ signRequests }).then(() => {
+        State.updateIconSign();
+        State.popupOpen();
+      });
     });
   }
 }

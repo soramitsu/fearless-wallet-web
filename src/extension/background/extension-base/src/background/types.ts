@@ -4,7 +4,9 @@
 /* eslint-disable no-use-before-define */
 
 import { TypeRegistry } from '@polkadot/types';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { ALLOWED_PATH } from '../defaults';
+import MetadataStore from '../stores/Metadata';
 import type {
   InjectedAccount,
   InjectedMetadataKnown,
@@ -507,4 +509,32 @@ export enum NotificationOptions {
   None,
   Normal,
   PopUp,
+}
+
+export type CachedUnlocks = Record<string, number>;
+export interface AccountSub {
+  subscription: Subscription;
+  url: string;
+}
+type Subscriptions = Record<string, chrome.runtime.Port>;
+
+export interface IState {
+  authRequests: Record<string, AuthRequest>;
+  metaRequests: Record<string, MetaRequest>;
+  signRequests: Record<string, SignRequest>;
+  authUrls: AuthUrls;
+  registry: TypeRegistry;
+  metaStore: MetadataStore;
+  injectedProviders: Map<chrome.runtime.Port, ProviderInterface>;
+  notification: string;
+  subscriptions: Subscriptions;
+  authSubject: BehaviorSubject<AuthorizeRequest[]>;
+  metaSubject: BehaviorSubject<MetadataRequest[]>;
+  signSubject: BehaviorSubject<SigningRequest[]>;
+  providers: Providers;
+  accountSubs: Record<string, AccountSub>;
+  windows: number[];
+  cachedUnlocks: CachedUnlocks;
+  connectedTabsUrl: string[];
+  defaultAuthAccountSelection: string[];
 }

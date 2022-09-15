@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@polkadot/extension-base/defaults';
-import { TypeRegistry } from '@polkadot/types';
-import keyring from '@polkadot/ui-keyring';
+import { keyring } from '@polkadot/ui-keyring';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { assert, isHex } from '@polkadot/util';
 import { keyExtractSuri, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
@@ -62,14 +61,9 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 
-type CachedUnlocks = Record<string, number>;
-
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
 const ETH_DERIVE_DEFAULT = "/m/44'/60'/0'/0/0";
-
-// a global registry to use internally
-const registry = new TypeRegistry();
 
 function getSuri(seed: string, type?: KeypairType): string {
   return type === 'ethereum' ? `${seed}${ETH_DERIVE_DEFAULT}` : seed;
@@ -241,8 +235,8 @@ export default class Extension {
     }
   }
 
-  static accountsSubscribe(id: string, port: chrome.runtime.Port): boolean {
-    const cb = createSubscription<'pri(accounts.subscribe)'>(id, port);
+  static async accountsSubscribe(id: string, port: chrome.runtime.Port): Promise<boolean> {
+    const cb = await createSubscription<'pri(accounts.subscribe)'>(id, port);
     const subscription = accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
       const acc = await Extension.transformAccounts(accounts);
 
@@ -281,10 +275,12 @@ export default class Extension {
 
   // FIXME This looks very much like what we have in accounts
   static async authorizeSubscribe(id: string, port: chrome.runtime.Port): Promise<boolean> {
-    const cb = createSubscription<'pri(authorize.requests)'>(id, port);
+    const cb = await createSubscription<'pri(authorize.requests)'>(id, port);
     const { authSubject } = await State.getFromStorage(['authSubject']);
+    console.log(authSubject);
 
-    const subscription = authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
+    const subscription = State.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
+    console.info(authSubject, 'after sub');
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -329,10 +325,10 @@ export default class Extension {
   }
 
   static async metadataSubscribe(id: string, port: chrome.runtime.Port): Promise<boolean> {
-    const cb = createSubscription<'pri(metadata.requests)'>(id, port);
-    const { metaSubject } = await State.getFromStorage(['metaSubject']);
+    const cb = await createSubscription<'pri(metadata.requests)'>(id, port);
+    // const { metaSubject } = await State.getFromStorage(['metaSubject']);
 
-    const subscription = metaSubject.subscribe((requests: MetadataRequest[]): void => cb(requests));
+    const subscription = State.metaSubject.subscribe((requests: MetadataRequest[]): void => cb(requests));
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -409,16 +405,11 @@ export default class Extension {
 
   static async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
     const queued = await State.getSignRequest(id);
-
+    const { registry } = await State.getFromStorage(['registry']);
     assert(queued, 'Unable to find request');
 
     const { reject, request, resolve } = queued;
     const pair = keyring.getPair(queued.account.address);
-
-    // unlike queued.account.address the following
-    // address is encoded with the default prefix
-    // which what is used for password caching mapping
-    const { address } = pair;
 
     if (!pair) {
       reject(new Error('Unable to find pair'));
@@ -511,10 +502,10 @@ export default class Extension {
 
   // FIXME This looks very much like what we have in authorization
   static async signingSubscribe(id: string, port: chrome.runtime.Port): Promise<boolean> {
-    const cb = createSubscription<'pri(signing.requests)'>(id, port);
-    const { signSubject } = await State.getFromStorage(['signSubject']);
+    const cb = await createSubscription<'pri(signing.requests)'>(id, port);
+    // const { signSubject } = await State.getFromStorage(['signSubject']);
 
-    const subscription = signSubject.subscribe((requests: SigningRequest[]): void => cb(requests));
+    const subscription = State.signSubject.subscribe((requests: SigningRequest[]): void => cb(requests));
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -623,7 +614,7 @@ export default class Extension {
         return Extension.deleteAuthRequest(request as string);
 
       case 'pri(authorize.requests)':
-        return port && Extension.authorizeSubscribe(id, port);
+        return port && (await Extension.authorizeSubscribe(id, port));
 
       case 'pri(authorize.update)':
         return Extension.authorizeUpdate(request as RequestUpdateAuthorizedAccounts);

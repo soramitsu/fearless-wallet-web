@@ -4,7 +4,7 @@
 import { PHISHING_PAGE_REDIRECT } from '@polkadot/extension-base/defaults';
 import { canDerive } from '@polkadot/extension-base/utils';
 import { checkIfDenied } from '@polkadot/phishing';
-import keyring from '@polkadot/ui-keyring';
+import { keyring } from '@polkadot/ui-keyring';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { assert, isNumber } from '@polkadot/util';
 
@@ -80,7 +80,7 @@ export default class Tabs {
     );
   }
 
-  static authorize(url: string, request: RequestAuthorizeTab): Promise<AuthResponse> {
+  static async authorize(url: string, request: RequestAuthorizeTab): Promise<AuthResponse> {
     return State.authorizeUrl(url, request);
   }
 
@@ -91,7 +91,7 @@ export default class Tabs {
   }
 
   static async accountsSubscribeAuthorized(url: string, id: string, port: chrome.runtime.Port): Promise<string> {
-    const cb = createSubscription<'pub(accounts.subscribe)'>(id, port);
+    const cb = await createSubscription<'pub(accounts.subscribe)'>(id, port);
     const { accountSubs } = await State.getFromStorage(['accountSubs']);
     accountSubs[id] = {
       subscription: accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
@@ -175,7 +175,7 @@ export default class Tabs {
   }
 
   static async rpcSubscribe(request: RequestRpcSubscribe, id: string, port: chrome.runtime.Port): Promise<boolean> {
-    const innerCb = createSubscription<'pub(rpc.subscribe)'>(id, port);
+    const innerCb = await createSubscription<'pub(rpc.subscribe)'>(id, port);
     const cb = (_error: Error | null, data: SubscriptionMessageTypes['pub(rpc.subscribe)']): void => innerCb(data);
     const subscriptionId = await State.rpcSubscribe(request, cb, port);
 
@@ -187,8 +187,8 @@ export default class Tabs {
     return true;
   }
 
-  static rpcSubscribeConnected(request: null, id: string, port: chrome.runtime.Port): Promise<boolean> {
-    const innerCb = createSubscription<'pub(rpc.subscribeConnected)'>(id, port);
+  static async rpcSubscribeConnected(request: null, id: string, port: chrome.runtime.Port): Promise<boolean> {
+    const innerCb = await createSubscription<'pub(rpc.subscribeConnected)'>(id, port);
     const cb = (_error: Error | null, data: SubscriptionMessageTypes['pub(rpc.subscribeConnected)']): void =>
       innerCb(data);
 

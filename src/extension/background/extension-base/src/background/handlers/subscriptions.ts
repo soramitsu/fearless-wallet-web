@@ -1,17 +1,15 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import State from './State';
 import type { MessageTypesWithSubscriptions, SubscriptionMessageTypes } from '../types';
 
-type Subscriptions = Record<string, chrome.runtime.Port>;
-
-const subscriptions: Subscriptions = {};
-
 // return a subscription callback, that will send the data to the caller via the port
-export function createSubscription<TMessageType extends MessageTypesWithSubscriptions>(
+export async function createSubscription<TMessageType extends MessageTypesWithSubscriptions>(
   id: string,
   port: chrome.runtime.Port
-): (data: SubscriptionMessageTypes[TMessageType]) => void {
+): Promise<(data: SubscriptionMessageTypes[TMessageType]) => void> {
+  const { subscriptions } = await State.getFromStorage(['subscriptions']);
   subscriptions[id] = port;
 
   return (subscription: unknown): void => {
@@ -22,11 +20,14 @@ export function createSubscription<TMessageType extends MessageTypesWithSubscrip
 }
 
 // clear a previous subscriber
-export function unsubscribe(id: string): void {
+export async function unsubscribe(id: string): Promise<void> {
+  const { subscriptions } = await State.getFromStorage(['subscriptions']);
+
   if (subscriptions[id]) {
     console.info(`Unsubscribing from ${id}`);
 
     delete subscriptions[id];
+    await chrome.storage.local.set({ subscriptions });
   } else {
     console.error(`Unable to unsubscribe from ${id}`);
   }

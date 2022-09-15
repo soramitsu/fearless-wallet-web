@@ -11,7 +11,6 @@ if (!EXTENSION_PREFIX && !process.env.PORT_PREFIX) {
 }
 
 const PORT_PREFIX = `${EXTENSION_PREFIX || 'unknown'}-${process.env.PORT_PREFIX || 'unknown'}`;
-console.info(EXTENSION_PREFIX, PORT_PREFIX);
 
 const PORT_CONTENT = `${PORT_PREFIX}-content`;
 const PORT_EXTENSION = `${PORT_PREFIX}-extension`;

@@ -83,7 +83,8 @@ export default class CurrencyController {
       const replacedAvailableInNetworks = this.balances[replacedAddress];
 
       if (replacedAvailableInNetworks) {
-        const { balance: replacedBalance } = replacedAvailableInNetworks.find( // eslint-disable-line
+        const { balance: replacedBalance } = replacedAvailableInNetworks.find(
+          // eslint-disable-line
           ({ network: _network }) => _network === network
         )!;
 
@@ -298,7 +299,10 @@ export default class CurrencyController {
   public createSendTransfer(to: string, networkName: string, amount: string): void {
     const precisionAmount = CurrencyController.getPrecisionValue(this.token, amount);
     const networks = NetworksController.getNetworks();
-    const { api, settings: { DefaultTip } } = networks.find(({ name }) => name === networkName)!; // eslint-disable-line
+    const {
+      api,
+      settings: { DefaultTip },
+    } = networks.find(({ name }) => name === networkName)!; // eslint-disable-line
     const options = { tip: DefaultTip };
 
     try {

@@ -26,7 +26,7 @@ type Extrinsic = {
   success: boolean;
 };
 
-export type HistoryNode = {
+type HistoryNode = {
   id: string;
   address: string;
   timestamp: string;
@@ -35,7 +35,7 @@ export type HistoryNode = {
   transfer: Transfer;
 };
 
-export interface HistoryItem {
+interface HistoryItem {
   nodes: HistoryNode[];
   pageInfo: {
     startCursor: string;
@@ -43,19 +43,32 @@ export interface HistoryItem {
   };
 }
 
-export type HistoryForNetwork = Record<WalletAddress, HistoryItem>;
+type HistoryForNetwork = Record<WalletAddress, HistoryItem>;
 
-export type History = Record<NetworkName, HistoryForNetwork>;
+type History = Record<NetworkName, HistoryForNetwork>;
 
-export type GetHistory = (networkName: string) => HistoryForNetwork;
+type GetHistory = (networkName: string) => HistoryForNetwork;
 
-export enum TransferType {
+enum TransferType {
   incoming = 'Incoming',
   outgoing = 'Outgoing',
 }
 
-export enum TransactionType {
+enum TransactionType {
   transfer = 'transfer',
   reward = 'reward',
   extrinsic = 'extrinsic',
 }
+
+export {
+  TransactionType,
+  TransferType,
+  GetHistory,
+  History,
+  HistoryForNetwork,
+  Extrinsic,
+  HistoryItem,
+  Reward,
+  HistoryNode,
+  Transfer,
+};

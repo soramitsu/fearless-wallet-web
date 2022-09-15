@@ -35,7 +35,7 @@ import { Getter } from 'vuex-class';
 import { Vue, Component } from 'vue-property-decorator';
 import AccountsItem from './AccountsItem.vue';
 import type { SelectedWallet } from '@/store/accounts/types';
-import type { Networks } from '@/store/networks/types';
+import type { Networks } from '@/interfaces/networks';
 import ContentForm from '@/components/ContentForm.vue';
 import Input from '@/components/Input.vue';
 import CircleButton from '@/components/CircleButton.vue';

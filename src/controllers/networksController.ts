@@ -1,4 +1,5 @@
-import type { Networks, AssetJson } from '@/store/networks/types';
+import type { AssetJson } from '@/interfaces/assets';
+import type { Networks } from '@/interfaces/networks';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';

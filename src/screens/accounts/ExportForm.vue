@@ -17,7 +17,7 @@ import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import type { SelectedWallet } from '@/store/accounts/types';
-import type { Networks } from '@/store/networks/types';
+import type { Networks } from '@/interfaces/networks';
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
 import BaseApi from '@/util/BaseApi';

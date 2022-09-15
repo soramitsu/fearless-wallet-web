@@ -1,4 +1,3 @@
-import { es } from 'date-fns/locale';
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
 import type {

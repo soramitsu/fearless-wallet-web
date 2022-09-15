@@ -1,4 +1,8 @@
-import type { ActiveNodes, GetNetwork, AssetJson, FiatJson, Networks } from './types';
+import type { AssetJson } from '@/interfaces/assets';
+import type { ActiveNodes } from '@/interfaces/nodes';
+import type { FiatJson } from '@/interfaces/common';
+import type { GetNetwork } from './types';
+import type { Networks } from '@/interfaces/networks';
 import type { GetHistory } from '@/interfaces/history';
 import type { Currencies } from '@/interfaces/currencies';
 import type { GetterTree } from 'vuex';

@@ -41,3 +41,13 @@ export interface MnemonicConfirmation {
   word: string;
   initialIndex: number;
 }
+
+export enum MenuItems {
+  wallet = 'Wallet',
+  crowdloans = 'Crowdloans',
+  staking = 'Staking',
+  dex = 'DEX',
+  history = 'History',
+}
+
+export type MenuItem = 'Wallet' | 'Crowdloans' | 'Staking' | 'DEX' | 'History';

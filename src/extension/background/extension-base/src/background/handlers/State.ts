@@ -402,7 +402,8 @@ export default class State {
   }
 
   static async ensureUrlAuthorized(url: string): Promise<boolean> {
-    const entry = State.authUrls[stripUrl(url)];
+    const stripedUrl = stripUrl(url);
+    const entry = State.authUrls[stripedUrl];
 
     assert(entry, `The source ${url} has not been enabled yet`);
 

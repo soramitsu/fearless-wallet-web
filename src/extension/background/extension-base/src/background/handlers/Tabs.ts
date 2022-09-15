@@ -10,7 +10,7 @@ import { assert, isNumber } from '@polkadot/util';
 
 import RequestBytesSign from '../RequestBytesSign';
 import RequestExtrinsicSign from '../RequestExtrinsicSign';
-import { withErrorLog } from './helpers';
+import { stripUrl, withErrorLog } from './helpers';
 import State from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
 import type {
@@ -68,7 +68,8 @@ function transformAccounts(accounts: SubjectInfo, anyType = false): InjectedAcco
 
 export default class Tabs {
   static async filterForAuthorizedAccounts(accounts: InjectedAccount[], url: string): Promise<InjectedAccount[]> {
-    const auth = State.authUrls[State.stripUrl(url)];
+    const stripedUrl = stripUrl(url);
+    const auth = State.authUrls[stripedUrl];
 
     return accounts.filter((allAcc) =>
       auth.authorizedAccounts

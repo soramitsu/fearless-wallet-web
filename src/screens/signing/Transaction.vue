@@ -5,13 +5,12 @@
 
       <InfoList>
         <InfoItem name="from" :value="request.url" />
-        <InfoItem name="genesis" :value="typedPayload.genesisHash" />
-        <InfoItem name="version" :value="typedPayload.specVersion" />
-        <InfoItem name="nounce" :value="typedPayload.nonce" />
-        <InfoItem name="method Data" :value="typedPayload.method" />
+        <InfoItem name="genesis" :value="genesisHash" />
+        <InfoItem name="version" :value="specVersion" />
+        <InfoItem name="nounce" :value="nonce" />
+        <InfoItem name="method Data" :value="method" />
         <InfoItem name="lifetime" :value="morality" />
       </InfoList>
-
       <Input
         v-if="isLocked"
         ref="input"
@@ -77,7 +76,24 @@ export default class Auth extends Vue {
   }
 
   get typedPayload() {
+    registry.setSignedExtensions(this.payload.signedExtensions);
+
     return registry.createType('ExtrinsicPayload', this.payload, { version: this.payload.version });
+  }
+  get specVersion() {
+    return this.typedPayload.specVersion.toNumber();
+  }
+
+  get genesisHash() {
+    return this.typedPayload.genesisHash.toString();
+  }
+
+  get nonce() {
+    return this.typedPayload.nonce.toString();
+  }
+
+  get method() {
+    return this.typedPayload.method.toString();
   }
 
   async mounted() {

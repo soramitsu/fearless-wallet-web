@@ -1,7 +1,7 @@
 import type { GetterTree } from 'vuex';
 import type { SelectedWallet, Accounts } from './types';
 import type { State } from './state';
-import type { FiatJson } from '../networks/types';
+import type { FiatJson } from '@/interfaces/common';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import store from '@/store';
 

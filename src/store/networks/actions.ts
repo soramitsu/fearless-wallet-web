@@ -4,21 +4,19 @@ import type { Settings } from '@/networks';
 import type { State } from './state';
 import type { ActionTree } from 'vuex';
 import type {
-  NetworkJson,
-  DisconnectNetworks,
-  AssetJson,
-  FiatJson,
   LoadNetworks,
   LoadHistory,
   SubscribeToBalances,
   LoadAssets,
   LoadFiats,
-  TokensPriceJson,
-  ExternalApi,
   ToggleActiveNode,
   Accounts,
   AugmentedActionContext,
 } from './types';
+import type { FiatJson } from '@/interfaces/common';
+import type { AssetJson } from '@/interfaces/assets';
+import type { NetworkJson, DisconnectNetworks, ExternalApi } from '@/interfaces/networks';
+import type { TokensPriceJson } from '@/interfaces/tokens';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';

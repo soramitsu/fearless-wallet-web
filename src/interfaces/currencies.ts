@@ -3,12 +3,12 @@ import type { AccountBalance } from '@/interfaces/balances';
 import type CurrencyController from '@/controllers/currencyController';
 import type { FPNumber } from '@/util/fp';
 
-export interface AvailableInNetworks {
+interface AvailableInNetworks {
   network: string;
   balance: AccountBalance;
 }
 
-export interface BalanceFP {
+interface BalanceFP {
   total: FPNumber;
   frozen: FPNumber;
   locked: FPNumber;
@@ -16,10 +16,12 @@ export interface BalanceFP {
   transferable: FPNumber;
 }
 
-export type AvailableInNetworksFP = Omit<AvailableInNetworks, 'balance'> & { balance: BalanceFP };
+type AvailableInNetworksFP = Omit<AvailableInNetworks, 'balance'> & { balance: BalanceFP };
 
-export type Balances = Record<WalletAddress, AvailableInNetworksFP[]>;
+type Balances = Record<WalletAddress, AvailableInNetworksFP[]>;
 
-export type Currency = CurrencyController;
+type Currency = CurrencyController;
 
-export type Currencies = Currency[];
+type Currencies = Currency[];
+
+export { AvailableInNetworksFP, Balances, Currencies, AvailableInNetworks, BalanceFP, Currency };

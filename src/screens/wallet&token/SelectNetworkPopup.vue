@@ -16,10 +16,10 @@
 <script lang="ts">
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import type { Networks as NetworksType } from '@/interfaces/networks';
 import { firstCharToUp } from '@/util/helpers';
 import SelectPopup from '@/components/SelectPopup.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { Networks as NetworksType } from '@/store/networks/types';
 import { getImgPathByNetworkOrTokenName } from '@/util/imgPath';
 
 interface Options {

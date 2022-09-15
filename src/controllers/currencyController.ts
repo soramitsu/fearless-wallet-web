@@ -1,12 +1,8 @@
 import { BN, isFunction } from '@polkadot/util';
 import type { AvailableInNetworks, Balances, BalanceFP, AvailableInNetworksFP } from '@/interfaces/currencies';
-import type {
-  AssetJson,
-  UpdateCurrencyProps,
-  UpdateCurrencyBalanceProps,
-  TokenPriceJson,
-  KeyTokenPriceJson,
-} from '@/store/networks/types';
+import type { UpdateCurrencyProps, UpdateCurrencyBalanceProps } from '@/store/networks/types';
+import type { AssetJson } from '@/interfaces/assets';
+import type { TokenPriceJson, KeysTokenPriceJson } from '@/interfaces/tokens';
 import type { SubmittableExtrinsic } from '@polkadot/api-base/types';
 import type { MainNetworkName } from '@/consts/teleport';
 import type { SignerOptions } from '@polkadot/api/submittable/types';
@@ -41,9 +37,9 @@ export default class CurrencyController {
   }
 
   public updatePrice(selectedFiat: string) {
-    const hours24ChangeField = `${selectedFiat}_24h_change` as KeyTokenPriceJson;
+    const hours24ChangeField = `${selectedFiat}_24h_change` as KeysTokenPriceJson;
 
-    this.price = this.tokensPrice[selectedFiat as KeyTokenPriceJson] ?? 0;
+    this.price = this.tokensPrice[selectedFiat as KeysTokenPriceJson] ?? 0;
     this.hours24Change = this.tokensPrice[hours24ChangeField] ?? 0;
   }
 

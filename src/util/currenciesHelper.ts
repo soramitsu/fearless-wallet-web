@@ -1,5 +1,6 @@
 import type { Currencies, Currency } from '@/interfaces/currencies';
-import type { Networks, TokenPriceJson } from '@/store/networks/types';
+import type { TokenPriceJson } from '@/interfaces/tokens';
+import type { Networks } from '@/interfaces/networks';
 import type { Wallet } from '@/store/accounts/types';
 import CurrencyController from '@/controllers/currencyController';
 

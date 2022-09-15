@@ -1,6 +1,7 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
-import type { Networks, DisconnectNetworks, AugmentedActionContext as Context } from '@/store/networks/types';
+import type { AugmentedActionContext as Context } from '@/store/networks/types';
+import type { Networks, DisconnectNetworks } from '@/interfaces/networks';
 import { formatBalance } from '@/util/balances';
 import { MutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';

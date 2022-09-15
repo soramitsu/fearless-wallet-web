@@ -1,6 +1,6 @@
 import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
 import type { HistoryNode } from '@/interfaces/history';
-import type { AssetJson } from '@/store/networks/types';
+import type { AssetJson } from '@/interfaces/assets';
 import { TransactionType, TransferType } from '@/interfaces/history';
 import { firstCharToUp } from '@/util/helpers';
 import { formattedNumber } from '@/util/numbers';

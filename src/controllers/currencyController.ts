@@ -258,20 +258,10 @@ export default class CurrencyController {
     this.lsCurrency.set(this.currencyVisibleStorageName, currenciesVisible);
   }
 
-  private getAssets(token: string): AssetJson {
-    const assets: AssetJson[] = NetworksController.getAssets();
-
-    return assets.find(({ id }) => id === token)!; // eslint-disable-line
-  }
-
-  public getHumanValue(value: string): string {
-    const precision = +this.getAssets(this.token)?.precision ?? 0;
-
-    return FPNumber.fromCodecValue(value, precision).toString();
-  }
-
   public getPrecisionValue(amount: string): string {
-    const precision = +this.getAssets(this.token)?.precision ?? 0;
+    const assets: AssetJson[] = NetworksController.getAssets();
+    const tokenAssets = assets.find(({ id }) => id === this.token)!; // eslint-disable-line
+    const precision = +tokenAssets?.precision ?? 0;
     const value = amount === '' ? 0 : +amount;
 
     return new FPNumber(value, precision).toCodecString();

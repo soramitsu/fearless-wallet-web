@@ -8,7 +8,7 @@ import { assert, isHex } from '@polkadot/util';
 import { keyExtractSuri, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
 
 import { withErrorLog } from './helpers';
-import State from './State';
+import State, { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
 import type {
   AccountJson,
@@ -187,17 +187,21 @@ export default class Extension {
   static async refreshAccountPasswordCache(pair: KeyringPair): Promise<number> {
     const { address } = pair;
     const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
+    console.log(cachedUnlocks, 'cachedUnlocks');
+
     const savedExpiry = cachedUnlocks[address] || 0;
     const remainingTime = savedExpiry - Date.now();
 
     if (remainingTime < 0) {
       cachedUnlocks[address] = 0;
 
-      chrome.storage.local.set({ cachedUnlocks });
+      await chrome.storage.local.set({ cachedUnlocks });
       pair.lock();
 
       return 0;
     }
+
+    await chrome.storage.local.set({ cachedUnlocks });
 
     return remainingTime;
   }
@@ -399,7 +403,7 @@ export default class Extension {
 
   static async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
     const queued = await State.getSignRequest(id);
-    const { registry } = await State.getFromStorage(['registry']);
+    const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
     assert(queued, 'Unable to find request');
 
     const { reject, request, resolve } = queued;
@@ -411,7 +415,9 @@ export default class Extension {
       return false;
     }
 
-    this.refreshAccountPasswordCache(pair);
+    const { address } = pair;
+
+    Extension.refreshAccountPasswordCache(pair);
 
     // if the keyring pair is locked, the password is needed
     if (pair.isLocked && !password) {
@@ -437,9 +443,10 @@ export default class Extension {
     }
 
     const result = request.sign(registry, pair);
+    cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
 
     if (savePass) {
-      chrome.storage.local.set({ cachedUnlocks: Date.now() + PASSWORD_EXPIRY_MS });
+      chrome.storage.local.set({ cachedUnlocks });
     } else {
       pair.lock();
     }
@@ -478,7 +485,7 @@ export default class Extension {
 
   static async signingIsLocked({ id }: RequestSigningIsLocked): Promise<ResponseSigningIsLocked> {
     const queued = await State.getSignRequest(id);
-
+    console.log(queued, 'queued');
     assert(queued, 'Unable to find request');
 
     const address = queued.request.payload.address;
@@ -704,7 +711,7 @@ export default class Extension {
         return Extension.signingCancel(request as RequestSigningCancel);
 
       case 'pri(signing.isLocked)':
-        return Extension.signingIsLocked(request as RequestSigningIsLocked);
+        return await Extension.signingIsLocked(request as RequestSigningIsLocked);
 
       case 'pri(signing.requests)':
         return port && Extension.signingSubscribe(id, port);

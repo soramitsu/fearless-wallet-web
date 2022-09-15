@@ -32,7 +32,7 @@ import {
   IState,
 } from '../types';
 import { getId } from '../../utils/getId';
-import { withErrorLog } from './helpers';
+import { stripUrl, withErrorLog } from './helpers';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 
@@ -70,18 +70,19 @@ function extractMetadata(store: MetadataStore): void {
   });
 }
 
+export const registry = new TypeRegistry();
+const metaStore = new MetadataStore();
+
 export async function initState() {
-  const metaStore = new MetadataStore();
   extractMetadata(metaStore);
 
   await chrome.storage.local.set({
     accountSubs: {},
-    metaStore,
     windows: [],
     notification: 'popup',
     providers: {},
-    registry: new TypeRegistry(),
     connectedTabsUrl: [],
+    cachedUnlocks: {},
     subscriptions: {},
     defaultAuthAccountSelection: [],
   });
@@ -178,9 +179,9 @@ export default class State {
         url,
       } = State.authRequests[id];
 
-      const stripUrl = State.stripUrl(url);
+      const stripedUrl = stripUrl(url);
 
-      State.authUrls[stripUrl] = {
+      State.authUrls[stripedUrl] = {
         authorizedAccounts,
         count: 0,
         id: idStr,
@@ -215,7 +216,7 @@ export default class State {
 
         // the assert in stripUrl may throw for new tabs with "chrome://newtab/"
         try {
-          strippedUrl = State.stripUrl(url);
+          strippedUrl = stripUrl(url);
         } catch (e) {
           console.error(e);
         }
@@ -302,18 +303,6 @@ export default class State {
     };
   };
 
-  static stripUrl(url: string): string {
-    assert(
-      url &&
-        (url.startsWith('http:') || url.startsWith('https:') || url.startsWith('ipfs:') || url.startsWith('ipns:')),
-      `Invalid url ${url}, expected to start with http: or https: or ipfs: or ipns:`
-    );
-
-    const parts = url.split('/');
-
-    return parts[2];
-  }
-
   static async updateIcon(shouldClose?: boolean): Promise<void> {
     const authCount = await State.numAuthRequests();
     const metaCount = await State.numMetaRequests();
@@ -373,7 +362,7 @@ export default class State {
   }
 
   static async authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<AuthResponse> {
-    const idStr = State.stripUrl(url);
+    const idStr = stripUrl(url);
 
     // Do not enqueue duplicate authorization requests.
 
@@ -413,7 +402,7 @@ export default class State {
   }
 
   static async ensureUrlAuthorized(url: string): Promise<boolean> {
-    const entry = State.authUrls[State.stripUrl(url)];
+    const entry = State.authUrls[stripUrl(url)];
 
     assert(entry, `The source ${url} has not been enabled yet`);
 
@@ -541,8 +530,6 @@ export default class State {
   }
 
   static async saveMetadata(meta: MetadataDef): Promise<void> {
-    const { metaStore } = await State.getFromStorage(['metaStore']);
-
     metaStore.set(meta.genesisHash, meta);
 
     addMetadata(meta);

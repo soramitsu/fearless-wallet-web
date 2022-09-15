@@ -1,5 +1,6 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+import { assert } from '@polkadot/util';
 
 export function withErrorLog(fn: () => unknown): void {
   try {
@@ -11,4 +12,15 @@ export function withErrorLog(fn: () => unknown): void {
   } catch (e) {
     console.error(e);
   }
+}
+
+export function stripUrl(url: string): string {
+  assert(
+    url && (url.startsWith('http:') || url.startsWith('https:') || url.startsWith('ipfs:') || url.startsWith('ipns:')),
+    `Invalid url ${url}, expected to start with http: or https: or ipfs: or ipns:`
+  );
+
+  const parts = url.split('/');
+
+  return parts[2];
 }

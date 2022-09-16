@@ -92,7 +92,7 @@ export function getFormattedDate(historyNode: HistoryNode) {
 export function getHumanValue(value: string, token: string) {
   const assets: AssetJson[] = NetworksController.getAssets();
   const tokenAssets = assets.find(({ id }) => id === token)!; // eslint-disable-line
-  const precision = +tokenAssets?.precision ?? 0;
+  const precision = tokenAssets?.precision ?? 0;
 
   return +FPNumber.fromCodecValue(value, precision).toString();
 }

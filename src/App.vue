@@ -45,7 +45,8 @@ export default class App extends Vue {
     await this.metaSubscribe();
     await this.signSubscribe();
 
-    await Promise.all([loadNetworks(), loadAssets(), loadFiats()]);
+    await loadAssets();
+    await Promise.all([loadNetworks(), loadFiats()]);
     await loadTokensPrice();
 
     this.subscribeAccounts = keyring.accounts.subject;

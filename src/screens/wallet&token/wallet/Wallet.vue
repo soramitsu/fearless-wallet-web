@@ -23,8 +23,9 @@
       <div class="content">
         <ContentSettings
           :activeTabName="activeTabName"
+          :filterValue="filterValue"
           :showAssetsManagementForm="showAssetsManagementForm"
-          :handlerFilter="handlerFilter"
+          @update:filterValue="updateFilterValue"
           @update:activeTabName="updateActiveTabName"
           @update:showAssetsManagementForm="toggleAssetsManagementFormVisible"
           @toggleCurrenciesVisible="toggleCurrenciesVisible"
@@ -210,7 +211,7 @@ export default class Wallet extends Vue {
     targetElement.style.zIndex = this.showSelectNetworkPopup ? '200' : '0';
   }
 
-  handlerFilter(value: string) {
+  updateFilterValue(value: string) {
     this.filterValue = value;
   }
 

@@ -158,8 +158,8 @@ const actions: ActionTree<State, State> & Actions = {
     const networks = networksProps ?? networksStore;
 
     const promises = networks.map(async (network) => {
-      const { api, isEthereumNetwork, name: networkName, assets } = network;
-      const token = assets[0]?.assetId;
+      const { api, isEthereumNetwork, name: networkName, assets: networkAssets } = network;
+      const utilityTokenId = networkAssets.find(({ isUtility }) => isUtility)!.assetId; // eslint-disable-line
 
       await api.isReadyOrError;
 
@@ -175,7 +175,7 @@ const actions: ActionTree<State, State> & Actions = {
           // substrate accounts only subscribe to the substrate networks
           if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
 
-          subscribeToBalances(context, api, token, networkName, walletAddress);
+          subscribeToBalances(context, api, utilityTokenId, networkName, walletAddress);
         });
       } catch (ex) {
         console.info(

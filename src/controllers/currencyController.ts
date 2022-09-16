@@ -28,6 +28,7 @@ export default class CurrencyController {
 
   constructor(
     public mainNetwork: string,
+    public tokenId: string,
     public token: string,
     public tokensPrice: TokenPriceJson,
     public precision: number,
@@ -257,7 +258,7 @@ export default class CurrencyController {
   public getPrecisionValue(amount: string): string {
     const assets: AssetJson[] = NetworksController.getAssets();
     const tokenAssets = assets.find(({ id }) => id === this.token)!; // eslint-disable-line
-    const precision = +tokenAssets?.precision ?? 0;
+    const precision = tokenAssets?.precision ?? 0;
     const value = amount === '' ? 0 : +amount;
 
     return new FPNumber(value, precision).toCodecString();

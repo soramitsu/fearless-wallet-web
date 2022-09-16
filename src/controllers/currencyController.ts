@@ -34,8 +34,6 @@ export default class CurrencyController {
     public precision: number,
     public providers: string[]
   ) {
-    // const utilityToken = assets.find(({ id }) => id === utilityTokenId)!.symbol; // eslint-disable-line
-
     console.info();
   }
 

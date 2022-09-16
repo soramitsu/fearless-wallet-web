@@ -39,6 +39,7 @@ export function getImgPathByNetworkOrTokenName(value = '') {
       return 'shiden.svg';
 
     case 'bifrost':
+    case 'bifrost polkadot':
     case 'bnc':
       return 'bifrost.svg';
 
@@ -216,7 +217,7 @@ export function getImgPathByNetworkOrTokenName(value = '') {
     case 'lit':
       return 'litmus.svg';
 
-    case 'litentry ':
+    case 'litentry':
     case 'lit2': // fix
       return 'litentry.svg';
 

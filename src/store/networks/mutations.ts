@@ -67,7 +67,7 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.UPDATE_CURRENCY](state, currency) {
     const { tokenId } = currency;
     const { currencies } = state;
-    const currencyIndex = currencies?.findIndex(({ tokenId: existTokenId }) => existTokenId === tokenId);
+    const currencyIndex = currencies?.findIndex(({ tokenId: savedTokenId }) => savedTokenId === tokenId);
 
     currencies[currencyIndex].updateCurrency(currency);
   },
@@ -75,7 +75,7 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.UPDATE_CURRENCY_BALANCE](state, { walletAddress, currency }) {
     const { tokenId } = currency;
     const { currencies } = state;
-    const currentCurrency = currencies.find(({ tokenId: existTokenId }) => existTokenId === tokenId)!; //eslint-disable-line
+    const currentCurrency = currencies.find(({ tokenId: savedTokenId }) => savedTokenId === tokenId)!; //eslint-disable-line
 
     currentCurrency.updateCurrencyBalance({ walletAddress, currency });
   },

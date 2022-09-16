@@ -88,26 +88,6 @@ function subscribeToBalances(context: Context, api: ApiPromise, tokenId: string,
   });
 }
 
-function getReplacedChainAccounts(networks: Networks, wallet: Wallet) {
-  const assets = NetworksController.getAssets();
-
-  return networks
-    .map(({ name, assets: networkAssets }) => {
-      const tokenId = networkAssets.find(({ isUtility }) => isUtility)!.assetId; // eslint-disable-line
-      const token = assets.find(({ id }) => id === tokenId)!.symbol; // eslint-disable-line
-      const account = BaseApi.getReplacedAccountByNetwork(wallet, name);
-      const address = account?.address;
-      const formattedAddress = address ? BaseApi.formatAddress({ address, ethereumAddress: address }, name) : '';
-
-      return {
-        network: name,
-        token,
-        address: formattedAddress,
-      };
-    })
-    .filter(({ address }) => address !== '');
-}
-
 function getChainAccounts(networks: Networks, wallet: Wallet): ChainAccount[] {
   const assets = NetworksController.getAssets();
 

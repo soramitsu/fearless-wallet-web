@@ -20,7 +20,7 @@
       />
     </div>
     <div v-if="isCurrenciesTab" class="settings-part">
-      <SearchInput v-if="!showAssetsManagementForm" v-model="filterValue" placeholder="Search" class="search" />
+      <SearchInput v-if="!showAssetsManagementForm" v-model="syncedFilterValue" placeholder="Search" class="search" />
 
       <CircleButton :iconName="iconName" backgroundColor="none" @click="toggleAssetsManagementVisible" />
     </div>
@@ -28,7 +28,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
+import { Component, Vue, PropSync } from 'vue-property-decorator';
 import type { TabWallet } from '@/interfaces/common';
 import TabButton from '@/components/TabButton.vue';
 import CircleButton from '@/components/CircleButton.vue';
@@ -46,11 +46,9 @@ import Switcher from '@/components/Switcher.vue';
 export default class ContentSettings extends Vue {
   readonly tabsOptions: TabWallet[] = ['Currencies']; // ['Currencies', 'NFTs']
 
-  filterValue = '';
-
   @PropSync('activeTabName', { type: String }) syncedActiveTabName!: TabWallet;
+  @PropSync('filterValue', { type: String }) syncedFilterValue!: TabWallet;
   @PropSync('showAssetsManagementForm', { type: Boolean }) syncedShowAssetsManagementForm!: boolean;
-  @Prop(Function) handlerFilter!: (value: string) => void;
 
   get iconName() {
     return this.syncedShowAssetsManagementForm ? 'close' : 'filter';
@@ -58,11 +56,6 @@ export default class ContentSettings extends Vue {
 
   get isCurrenciesTab() {
     return this.syncedActiveTabName === 'Currencies';
-  }
-
-  @Watch('filterValue')
-  filter(value: string) {
-    this.handlerFilter(value);
   }
 
   openTab(name: TabWallet) {

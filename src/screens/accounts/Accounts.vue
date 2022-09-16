@@ -40,10 +40,10 @@ import ContentForm from '@/components/ContentForm.vue';
 import Input from '@/components/Input.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import Scroll from '@/components/Scroll.vue';
-import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
+import { getChainAccounts } from '@/util/networksAndAssetsHelpers';
 
 @Component({
   components: {
@@ -69,40 +69,20 @@ export default class Account extends Vue {
     return this.sharedAccountsItems.length > 0;
   }
 
+  get chainAccounts() {
+    return getChainAccounts(this.networks, this.selectedWallet);
+  }
+
   get replacedAccountsItems() {
     if (this.selectedWallet.address === '') return [];
 
-    return this.networks
-      .map(({ name, assets }) => {
-        const token = assets[0].assetId;
-        const accounts = BaseApi.getReplacedAccountByNetwork(this.selectedWallet, name);
-        const address = accounts?.address;
-        const formattedAddress = address ? BaseApi.formatAddress({ address, ethereumAddress: address }, name) : '';
-
-        return {
-          network: name,
-          token,
-          address: formattedAddress,
-        };
-      })
-      .filter(({ address }) => address !== '');
+    return this.chainAccounts.filter(({ isReplaced }) => isReplaced);
   }
 
   get sharedAccountsItems() {
     if (this.selectedWallet.address === '') return [];
 
-    return this.networks
-      .map(({ name, assets }) => {
-        const address = BaseApi.formatAddress(this.selectedWallet, name);
-        const token = assets[0].assetId;
-
-        return {
-          network: name,
-          token,
-          address,
-        };
-      })
-      .filter(({ network }) => !this.replacedAccountsItems.map(({ network }) => network).includes(network));
+    return this.chainAccounts.filter(({ isReplaced }) => !isReplaced);
   }
 
   back() {

@@ -65,17 +65,17 @@ const mutations: MutationTree<State> & Mutations = {
   },
 
   [MutationTypes.UPDATE_CURRENCY](state, currency) {
-    const { token } = currency;
+    const { tokenId } = currency;
     const { currencies } = state;
-    const currencyIndex = currencies?.findIndex(({ token: existToken }) => existToken === token);
+    const currencyIndex = currencies?.findIndex(({ tokenId: existTokenId }) => existTokenId === tokenId);
 
     currencies[currencyIndex].updateCurrency(currency);
   },
 
   [MutationTypes.UPDATE_CURRENCY_BALANCE](state, { walletAddress, currency }) {
-    const { token } = currency;
+    const { tokenId } = currency;
     const { currencies } = state;
-    const currentCurrency = currencies.find(({ token: existToken }) => existToken === token)!; //eslint-disable-line
+    const currentCurrency = currencies.find(({ tokenId: existTokenId }) => existTokenId === tokenId)!; //eslint-disable-line
 
     currentCurrency.updateCurrencyBalance({ walletAddress, currency });
   },

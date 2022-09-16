@@ -27,7 +27,7 @@ import Button from '@/components/Button.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { Networks } from '@/store/networks/types';
+import { Networks } from '@/interfaces/networks';
 import { firstCharToUp } from '@/util/helpers';
 
 @Component({

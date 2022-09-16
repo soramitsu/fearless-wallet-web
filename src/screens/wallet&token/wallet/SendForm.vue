@@ -131,7 +131,7 @@ import NetworkLogo from '@/components/NetworkLogo.vue';
 import { GettersTypes as ApiGettersTypes, GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { Networks } from '@/store/networks/types';
+import { Networks } from '@/interfaces/networks';
 import { firstCharToUp } from '@/util/helpers';
 import { formattedNumber, formattedPrice, addNumbers } from '@/util/numbers';
 

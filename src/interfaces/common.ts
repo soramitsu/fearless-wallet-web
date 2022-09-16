@@ -59,6 +59,13 @@ type FiatJson = {
   icon: string;
 };
 
+type ChainAccount = {
+  network: string;
+  token: string;
+  address: string;
+  isReplaced: boolean;
+};
+
 export {
   DerivationPath,
   DerivationPaths,
@@ -78,4 +85,5 @@ export {
   ReplacedMeta,
   Meta,
   MnemonicConfirmation,
+  ChainAccount,
 };

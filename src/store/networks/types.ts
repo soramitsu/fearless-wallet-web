@@ -49,7 +49,7 @@ export type SetAllNetworksIsLoaded = {
 };
 
 export type UpdateCurrencyProps = {
-  token: string;
+  tokenId: string;
   tokensPrice: TokenPriceJson;
   precision: number;
   selectedFiat: string;
@@ -59,7 +59,7 @@ export type UpdateCurrencyBalanceProps = {
   walletAddress: string;
   currency: {
     network: string;
-    token: string;
+    tokenId: string;
     balance: AccountBalance;
   };
 };

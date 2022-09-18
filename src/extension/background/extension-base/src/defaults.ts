@@ -22,7 +22,7 @@ const PHISHING_PAGE_REDIRECT = '/phishing-page-detected';
 const PASSWORD_EXPIRY_MIN = 15;
 const PASSWORD_EXPIRY_MS = PASSWORD_EXPIRY_MIN * 60 * 1000;
 
-// console.log(`Extension is sending and receiving messages on ${PORT_PREFIX}-*`);
+console.info(`Extension is sending and receiving messages on ${PORT_PREFIX}-*`);
 
 export {
   ALLOWED_PATH,

@@ -4,6 +4,7 @@ import type { Message } from '@polkadot/extension-base/types';
 
 class Content {
   private port = chrome.runtime.connect({ name: PORT_CONTENT });
+
   private setListeners() {
     this.port.onMessage.addListener((data): void => {
       window.postMessage({ ...data, origin: MESSAGE_ORIGIN_CONTENT }, '*');

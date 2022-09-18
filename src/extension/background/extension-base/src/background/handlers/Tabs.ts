@@ -4,7 +4,6 @@
 import { PHISHING_PAGE_REDIRECT } from '@polkadot/extension-base/defaults';
 import { canDerive } from '@polkadot/extension-base/utils';
 import { checkIfDenied } from '@polkadot/phishing';
-import { keyring } from '@polkadot/ui-keyring';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { assert, isNumber } from '@polkadot/util';
 
@@ -14,6 +13,7 @@ import { stripUrl, withErrorLog } from './helpers';
 import State from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
 import type {
+  AccountSub,
   AuthResponse,
   MessageTypes,
   RequestAccountList,
@@ -38,6 +38,7 @@ import type {
   MetadataDef,
   ProviderMeta,
 } from '@polkadot/extension-inject/types';
+import { keyring } from '@/controllers/keyringChrome';
 
 function transformAccounts(accounts: SubjectInfo, anyType = false): InjectedAccount[] {
   return Object.values(accounts)
@@ -67,6 +68,8 @@ function transformAccounts(accounts: SubjectInfo, anyType = false): InjectedAcco
 }
 
 export default class Tabs {
+  static accountSubs: Record<string, AccountSub> = {};
+
   static async filterForAuthorizedAccounts(accounts: InjectedAccount[], url: string): Promise<InjectedAccount[]> {
     const stripedUrl = stripUrl(url);
     const auth = State.authUrls[stripedUrl];
@@ -92,16 +95,15 @@ export default class Tabs {
 
   static async accountsSubscribeAuthorized(url: string, id: string, port: chrome.runtime.Port): Promise<string> {
     const cb = await createSubscription<'pub(accounts.subscribe)'>(id, port);
-    const { accountSubs } = await State.getFromStorage(['accountSubs']);
-    accountSubs[id] = {
+    Tabs.accountSubs[id] = {
       subscription: accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
         const transformedAccounts = transformAccounts(accounts);
+        chrome.storage.local.set({ transformAccounts });
         const auths = await Tabs.filterForAuthorizedAccounts(transformedAccounts, url);
         cb(auths);
       }),
       url,
     };
-    chrome.storage.local.set({ accountSubs });
 
     port.onDisconnect.addListener((): void => {
       Tabs.accountsUnsubscribe(url, { id });
@@ -111,19 +113,16 @@ export default class Tabs {
   }
 
   static async accountsUnsubscribe(url: string, { id }: RequestAccountUnsubscribe): Promise<boolean> {
-    const { accountSubs } = await State.getFromStorage(['accountSubs']);
-
-    const sub = accountSubs[id];
+    const sub = Tabs.accountSubs[id];
 
     if (!sub || sub.url !== url) {
       return false;
     }
 
-    delete accountSubs[id];
+    delete Tabs.accountSubs[id];
 
     unsubscribe(id);
     sub.subscription.unsubscribe();
-    chrome.storage.local.set({ accountSubs });
 
     return true;
   }

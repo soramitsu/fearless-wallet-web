@@ -14,9 +14,7 @@ export async function createSubscription<TMessageType extends MessageTypesWithSu
   await chrome.storage.local.set({ subscriptions });
 
   return (subscription: unknown): void => {
-    if (subscriptions[id]) {
-      port.postMessage({ id, subscription });
-    }
+    if (subscriptions[id]) port.postMessage({ id, subscription });
   };
 }
 

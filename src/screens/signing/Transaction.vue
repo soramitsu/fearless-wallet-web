@@ -39,7 +39,7 @@ import { Getter } from 'vuex-class';
 import { SigningRequest } from '@polkadot/extension-base/background/types';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
-import { registry } from '@/util/registry';
+import { registry } from '@/extension/background/extension-base/src/background/handlers/State';
 import { isSignLocked } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';

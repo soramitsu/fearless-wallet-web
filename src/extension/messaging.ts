@@ -4,7 +4,7 @@
 import { metadataExpand } from '@polkadot/extension-chains';
 import { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
 import { selectableNetworks } from '@polkadot/networks';
-import { getId } from './background/extension-base/src/utils/getId';
+import { getId } from './background/extension-base/src/utils';
 import { PORT_EXTENSION } from './background/extension-base/src/defaults';
 import type {
   AccountJson,

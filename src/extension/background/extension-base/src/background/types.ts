@@ -529,5 +529,4 @@ export interface IState {
   windows: number[];
   cachedUnlocks: CachedUnlocks;
   connectedTabsUrl: string[];
-  defaultAuthAccountSelection: string[];
 }

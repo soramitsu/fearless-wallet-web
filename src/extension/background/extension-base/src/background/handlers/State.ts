@@ -31,7 +31,7 @@ import {
   ResponseRpcListProviders,
   IState,
 } from '../types';
-import { getId } from '../../utils/getId';
+import { getId } from '../../utils';
 import { stripUrl, withErrorLog } from './helpers';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
@@ -77,26 +77,25 @@ export async function initState() {
   extractMetadata(metaStore);
 
   await chrome.storage.local.set({
+    authUrls: {},
+    defaultAuthAccountSelection: [],
     accountSubs: {},
     windows: [],
     notification: 'popup',
     providers: {},
     connectedTabsUrl: [],
     cachedUnlocks: {},
-    subscriptions: {},
-    defaultAuthAccountSelection: [],
   });
 }
 
 export default class State {
   static authUrls: AuthUrls = {};
+  static defaultAuthAccountSelection: string[] = [];
   static authRequests: Record<string, AuthRequest> = {};
   static metaRequests: Record<string, MetaRequest> = {};
   static signRequests: Record<string, SignRequest> = {};
   static readonly authSubject: BehaviorSubject<AuthorizeRequest[]> = new BehaviorSubject<AuthorizeRequest[]>([]);
-
   static readonly metaSubject: BehaviorSubject<MetadataRequest[]> = new BehaviorSubject<MetadataRequest[]>([]);
-
   static readonly signSubject: BehaviorSubject<SigningRequest[]> = new BehaviorSubject<SigningRequest[]>([]);
 
   static get knownMetadata(): MetadataDef[] {
@@ -109,17 +108,15 @@ export default class State {
     return values;
   }
 
-  static async numAuthRequests() {
-    // const { authRequests } = await State.getFromStorage(['authRequests']);
-
+  private static async numAuthRequests() {
     return Object.keys(State.authRequests).length;
   }
 
-  static async numMetaRequests() {
+  private static async numMetaRequests() {
     return Object.keys(State.metaRequests).length;
   }
 
-  static async numSignRequests() {
+  private static async numSignRequests() {
     return Object.keys(State.signRequests).length;
   }
 
@@ -166,7 +163,14 @@ export default class State {
         }
       );
   }
-
+  static async injectFromStorage() {
+    const { authUrls, defaultAuthAccountSelection } = await chrome.storage.local.get([
+      'authUrls',
+      'defaultAuthAccountSelection',
+    ]);
+    State.authUrls = authUrls;
+    State.defaultAuthAccountSelection = defaultAuthAccountSelection;
+  }
   static authComplete = (
     id: string,
     resolve: (resValue: AuthResponse) => void,
@@ -241,14 +245,12 @@ export default class State {
     State.updateIconAuth(true);
   }
 
-  static async saveCurrentAuthList() {
+  private static async saveCurrentAuthList() {
     await chrome.storage.local.set({ authUrls: State.authUrls });
   }
 
-  static async saveDefaultAuthAccounts() {
-    const { defaultAuthAccountSelection } = await State.getFromStorage(['defaultAuthAccountSelection']);
-
-    await chrome.storage.local.set({ defaultAuthAccountSelection });
+  private static async saveDefaultAuthAccounts() {
+    await chrome.storage.local.set({ defaultAuthAccountSelection: State });
   }
 
   static async updateDefaultAuthAccounts(newList: string[]) {
@@ -257,7 +259,7 @@ export default class State {
     State.saveDefaultAuthAccounts();
   }
 
-  static metaComplete = (
+  private static metaComplete = (
     id: string,
     resolve: (result: boolean) => void,
     reject: (error: Error) => void
@@ -280,7 +282,7 @@ export default class State {
     };
   };
 
-  static signComplete = (
+  private static signComplete = (
     id: string,
     resolve: (result: ResponseSigning) => void,
     reject: (error: Error) => void
@@ -365,7 +367,6 @@ export default class State {
     const idStr = stripUrl(url);
 
     // Do not enqueue duplicate authorization requests.
-
     const isDuplicate = Object.values(State.authRequests).some((request) => request.idStr === idStr);
 
     assert(!isDuplicate, `The source ${url} has a pending authorization request`);
@@ -396,6 +397,7 @@ export default class State {
         request,
         url,
       };
+
       State.updateIconAuth();
       State.popupOpen();
     });

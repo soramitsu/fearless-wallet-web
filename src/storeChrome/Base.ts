@@ -1,5 +1,3 @@
-/// <reference types="chrome"/>
-
 // Пока можно не ревьюить, взял из Poldadot extension
 
 type StoreValue = Record<string, unknown>;

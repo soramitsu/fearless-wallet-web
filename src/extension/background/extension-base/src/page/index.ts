@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { MESSAGE_ORIGIN_PAGE } from '../defaults';
-import { getId } from '../utils/getId';
+import { getId } from '../utils';
 import Injected from './Injected';
 import type {
   MessageTypes,

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@polkadot/extension-base/defaults';
-import { keyring } from '@polkadot/ui-keyring';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { assert, isHex } from '@polkadot/util';
 import { keyExtractSuri, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
@@ -60,6 +59,7 @@ import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
+import { keyring } from '@/controllers/keyringChrome';
 
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
@@ -75,18 +75,15 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
 
 export default class Extension {
   static async transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
-    const { defaultAuthAccountSelection } = await State.getFromStorage(['defaultAuthAccountSelection']);
-
-    return Object.values(accounts).map(
-      ({ json: { address, meta }, type }): AccountJson => ({
+    return Object.values(accounts).map(({ json: { address, meta }, type }): AccountJson => {
+      return {
         address,
-        isDefaultAuthSelected: defaultAuthAccountSelection.includes(address),
+        isDefaultAuthSelected: State.defaultAuthAccountSelection.includes(address),
         ...meta,
         type,
-      })
-    );
+      };
+    });
   }
-
   static accountsCreateExternal({ address, genesisHash, name }: RequestAccountCreateExternal): boolean {
     keyring.addExternal(address, { genesisHash, name });
 
@@ -157,7 +154,7 @@ export default class Extension {
 
   static async accountsForget({ address }: RequestAccountForget): Promise<boolean> {
     const authorizedAccountsDiff: AuthorizedAccountsDiff = [];
-    const { defaultAuthAccountSelection } = await State.getFromStorage(['defaultAuthAccountSelection']);
+
     // cycle through authUrls and prepare the array of diff
     Object.entries(State.authUrls).forEach(([url, urlInfo]) => {
       if (!urlInfo.authorizedAccounts.includes(address)) {
@@ -173,7 +170,7 @@ export default class Extension {
     State.updateAuthorizedAccounts(authorizedAccountsDiff);
 
     // cycle through default account selection for auth and remove any occurence of the account
-    const newDefaultAuthAccounts = defaultAuthAccountSelection.filter(
+    const newDefaultAuthAccounts = State.defaultAuthAccountSelection.filter(
       (defaultSelectionAddress) => defaultSelectionAddress !== address
     );
 
@@ -187,7 +184,6 @@ export default class Extension {
   static async refreshAccountPasswordCache(pair: KeyringPair): Promise<number> {
     const { address } = pair;
     const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
-    console.log(cachedUnlocks, 'cachedUnlocks');
 
     const savedExpiry = cachedUnlocks[address] || 0;
     const remainingTime = savedExpiry - Date.now();
@@ -485,7 +481,6 @@ export default class Extension {
 
   static async signingIsLocked({ id }: RequestSigningIsLocked): Promise<ResponseSigningIsLocked> {
     const queued = await State.getSignRequest(id);
-    console.log(queued, 'queued');
     assert(queued, 'Unable to find request');
 
     const address = queued.request.payload.address;

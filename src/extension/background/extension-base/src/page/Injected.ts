@@ -10,11 +10,8 @@ import type { Injected } from '@polkadot/extension-inject/types';
 
 export default class implements Injected {
   public readonly accounts: Accounts;
-
   public readonly metadata: Metadata;
-
   public readonly provider: PostMessageProvider;
-
   public readonly signer: Signer;
 
   constructor(sendRequest: SendRequest) {

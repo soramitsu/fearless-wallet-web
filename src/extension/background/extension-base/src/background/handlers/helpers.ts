@@ -1,6 +1,9 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+import { InjectedAccount } from '@polkadot/extension-inject/types';
+import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { assert } from '@polkadot/util';
+import { canDerive } from '../../utils';
 
 export function withErrorLog(fn: () => unknown): void {
   try {
@@ -23,4 +26,31 @@ export function stripUrl(url: string): string {
   const parts = url.split('/');
 
   return parts[2];
+}
+
+export function transformAccounts(accounts: SubjectInfo, anyType = false): InjectedAccount[] {
+  return Object.values(accounts)
+    .filter(
+      ({
+        json: {
+          meta: { isHidden },
+        },
+      }) => !isHidden
+    )
+    .filter(({ type }) => (anyType ? true : canDerive(type)))
+    .sort((a, b) => (a.json.meta.whenCreated || 0) - (b.json.meta.whenCreated || 0))
+    .map(
+      ({
+        json: {
+          address,
+          meta: { genesisHash, name },
+        },
+        type,
+      }): InjectedAccount => ({
+        address,
+        genesisHash,
+        name,
+        type,
+      })
+    );
 }

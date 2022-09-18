@@ -209,9 +209,7 @@ export async function getAllMetatdata(): Promise<MetadataDef[]> {
 }
 
 export async function getMetadata(genesisHash?: string | null, isPartial = false): Promise<Chain | null> {
-  if (!genesisHash) {
-    return null;
-  }
+  if (!genesisHash) return null;
 
   let request = getSavedMeta(genesisHash);
 

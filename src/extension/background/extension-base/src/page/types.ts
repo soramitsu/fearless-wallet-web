@@ -9,6 +9,15 @@ import type {
   ResponseTypes,
   SubscriptionMessageTypes,
 } from '../background/types';
+export interface Handler {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  resolve: (data?: any) => void;
+  reject: (error: Error) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  subscriber?: (data: any) => void;
+}
+
+export type Handlers = Record<string, Handler>;
 
 export interface SendRequest {
   <TMessageType extends MessageTypesWithNullRequest>(message: TMessageType): Promise<ResponseTypes[TMessageType]>;

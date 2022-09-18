@@ -4,6 +4,7 @@
 import { MESSAGE_ORIGIN_PAGE } from '../defaults';
 import { getId } from '../utils';
 import Injected from './Injected';
+import { Handlers } from './types';
 import type {
   MessageTypes,
   MessageTypesWithNoSubscriptions,
@@ -22,16 +23,6 @@ import type {
 //  - on response, the loader creates a reponse event
 //  - this injector, listens on the events, maps it to the original
 //  - resolves/rejects the promise with the result (or sub data)
-
-export interface Handler {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  resolve: (data?: any) => void;
-  reject: (error: Error) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  subscriber?: (data: any) => void;
-}
-
-export type Handlers = Record<string, Handler>;
 
 const handlers: Handlers = {};
 

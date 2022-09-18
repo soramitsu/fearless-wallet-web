@@ -3,11 +3,10 @@
 
 import { assert } from '@polkadot/util';
 
-import { PORT_EXTENSION } from '../../defaults';
-
 import Extension from './Extension';
 import Tabs from './Tabs';
 import type { MessageTypes, TransportRequestMessage } from '../types';
+import { PORT_EXTENSION } from '@/extension/background/extension-base/src/defaults';
 
 export default function handler<TMessageType extends MessageTypes>(
   { id, message, request }: TransportRequestMessage<TMessageType>,
@@ -15,9 +14,7 @@ export default function handler<TMessageType extends MessageTypes>(
   extensionPortName = PORT_EXTENSION
 ): void {
   const isExtension = !port || port?.name === extensionPortName;
-
   const sender = port?.sender as chrome.runtime.MessageSender;
-
   const from = isExtension ? 'extension' : (sender.tab && sender.tab.url) || sender.url || '<unknown>';
   const source = `${from}: ${id}: ${message}`;
 
@@ -41,8 +38,6 @@ export default function handler<TMessageType extends MessageTypes>(
       console.info(`[err] ${source}:: ${error.message}`);
 
       // only send message back to port if it's still connected
-      if (port) {
-        port.postMessage({ error: error.message, id });
-      }
+      if (port) port.postMessage({ error: error.message, id });
     });
 }

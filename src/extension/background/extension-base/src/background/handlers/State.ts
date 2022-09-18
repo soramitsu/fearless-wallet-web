@@ -7,7 +7,7 @@ import { knownGenesis } from '@polkadot/networks/defaults';
 import { assert } from '@polkadot/util';
 
 import { TypeRegistry } from '@polkadot/types';
-import { MetadataStore } from '../../stores';
+
 import {
   AuthorizeRequest,
   AuthRequest,
@@ -32,6 +32,7 @@ import {
   IState,
 } from '../types';
 import { getId } from '../../utils';
+import MetadataStore from '../../stores/Metadata';
 import { stripUrl, withErrorLog } from './helpers';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';

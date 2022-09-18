@@ -6,10 +6,6 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 
 let counter = 0;
 
-export function getId(): string {
-  return `${EXTENSION_PREFIX}.${Date.now()}.${++counter}`;
-}
+export const getId = () => `${EXTENSION_PREFIX}.${Date.now()}.${++counter}`;
 
-export function canDerive(type?: KeypairType): boolean {
-  return !!type && ['ed25519', 'sr25519', 'ecdsa', 'ethereum'].includes(type);
-}
+export const canDerive = (type?: KeypairType) => !!type && ['ed25519', 'sr25519', 'ecdsa', 'ethereum'].includes(type);

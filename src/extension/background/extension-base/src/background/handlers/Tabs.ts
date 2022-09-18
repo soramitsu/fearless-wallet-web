@@ -2,14 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { PHISHING_PAGE_REDIRECT } from '@polkadot/extension-base/defaults';
-import { canDerive } from '@polkadot/extension-base/utils';
 import { checkIfDenied } from '@polkadot/phishing';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { assert, isNumber } from '@polkadot/util';
 
 import RequestBytesSign from '../RequestBytesSign';
 import RequestExtrinsicSign from '../RequestExtrinsicSign';
-import { stripUrl, withErrorLog } from './helpers';
+import { stripUrl, transformAccounts, withErrorLog } from './helpers';
 import State from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
 import type {
@@ -39,33 +38,6 @@ import type {
   ProviderMeta,
 } from '@polkadot/extension-inject/types';
 import { keyring } from '@/controllers/keyringChrome';
-
-function transformAccounts(accounts: SubjectInfo, anyType = false): InjectedAccount[] {
-  return Object.values(accounts)
-    .filter(
-      ({
-        json: {
-          meta: { isHidden },
-        },
-      }) => !isHidden
-    )
-    .filter(({ type }) => (anyType ? true : canDerive(type)))
-    .sort((a, b) => (a.json.meta.whenCreated || 0) - (b.json.meta.whenCreated || 0))
-    .map(
-      ({
-        json: {
-          address,
-          meta: { genesisHash, name },
-        },
-        type,
-      }): InjectedAccount => ({
-        address,
-        genesisHash,
-        name,
-        type,
-      })
-    );
-}
 
 export default class Tabs {
   static accountSubs: Record<string, AccountSub> = {};
@@ -115,9 +87,7 @@ export default class Tabs {
   static async accountsUnsubscribe(url: string, { id }: RequestAccountUnsubscribe): Promise<boolean> {
     const sub = Tabs.accountSubs[id];
 
-    if (!sub || sub.url !== url) {
-      return false;
-    }
+    if (!sub || sub.url !== url) return false;
 
     delete Tabs.accountSubs[id];
 
@@ -236,13 +206,9 @@ export default class Tabs {
     url: string,
     port?: chrome.runtime.Port
   ): Promise<ResponseTypes[keyof ResponseTypes]> {
-    if (type === 'pub(phishing.redirectIfDenied)') {
-      return Tabs.redirectIfPhishing(url);
-    }
+    if (type === 'pub(phishing.redirectIfDenied)') return Tabs.redirectIfPhishing(url);
 
-    if (type !== 'pub(authorize.tab)') {
-      State.ensureUrlAuthorized(url);
-    }
+    if (type !== 'pub(authorize.tab)') State.ensureUrlAuthorized(url);
 
     switch (type) {
       case 'pub(authorize.tab)':

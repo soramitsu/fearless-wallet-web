@@ -12,7 +12,6 @@ const l = logger('PostMessageProvider');
 
 type CallbackHandler = (error?: null | Error, value?: unknown) => void;
 
-// Same as https://github.com/polkadot-js/api/blob/57ca9a9c3204339e1e1f693fcacc33039868dc27/packages/rpc-provider/src/ws/Provider.ts#L17
 interface SubscriptionHandler {
   callback: CallbackHandler;
   type: string;
@@ -57,7 +56,6 @@ export default class PostMessageProvider implements InjectedProvider {
   /**
    * @description Manually disconnect from the connection, clearing autoconnect logic
    */
-  // eslint-disable-next-line @typescript-eslint/require-await
   public async connect(): Promise<void> {
     // FIXME This should see if the extension's state's provider can disconnect
     console.error('PostMessageProvider.disconnect() is not implemented.');
@@ -66,7 +64,6 @@ export default class PostMessageProvider implements InjectedProvider {
   /**
    * @description Manually disconnect from the connection, clearing autoconnect logic
    */
-  // eslint-disable-next-line @typescript-eslint/require-await
   public async disconnect(): Promise<void> {
     // FIXME This should see if the extension's state's provider can disconnect
     console.error('PostMessageProvider.disconnect() is not implemented.');
@@ -137,11 +134,7 @@ export default class PostMessageProvider implements InjectedProvider {
     sendRequest('pub(rpc.subscribeConnected)', null, (connected) => {
       this.#isConnected = connected;
 
-      if (connected) {
-        this.#eventemitter.emit('connected');
-      } else {
-        this.#eventemitter.emit('disconnected');
-      }
+      connected ? this.#eventemitter.emit('connected') : this.#eventemitter.emit('disconnected');
 
       return true;
     });

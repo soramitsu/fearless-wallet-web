@@ -39,14 +39,14 @@ export default class App extends Vue {
   }
 
   async mounted() {
-    let loadHistory = true;
     const { loadNetworks, loadAssets, loadFiats, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
 
     await this.authSubscribe();
     await this.metaSubscribe();
     await this.signSubscribe();
 
-    await Promise.all([loadNetworks(), loadAssets(), loadFiats()]);
+    await loadAssets();
+    await Promise.all([loadNetworks(), loadFiats()]);
     await loadTokensPrice();
 
     this.subscribeAccounts = keyring.accounts.subject;
@@ -55,9 +55,7 @@ export default class App extends Vue {
 
       this.setAccounts({ accounts });
 
-      await subscribeToBalancesOfNetworks(newAccounts, loadHistory);
-
-      loadHistory = false;
+      await subscribeToBalancesOfNetworks(newAccounts);
     });
 
     this.setWallet();

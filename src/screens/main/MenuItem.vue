@@ -10,14 +10,14 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-
-type MenuValue = 'Wallet' | 'Crowdloans' | 'Staking' | 'DEX' | 'History';
+import type { MenuItem as TMenuItem } from '@/interfaces/common';
+import { MenuItems } from '@/interfaces/common';
 
 @Component({
   components: {},
 })
 export default class MenuItem extends Vue {
-  @Prop(String) name!: MenuValue;
+  @Prop(String) name!: TMenuItem;
   @Prop({ default: false }) isActive!: boolean;
 
   get menuItemClasses() {
@@ -25,7 +25,7 @@ export default class MenuItem extends Vue {
   }
 
   get img() {
-    const fileName = this.name === 'DEX' ? 'polkaswap' : this.name.toLowerCase();
+    const fileName = this.name === MenuItems.dex ? 'polkaswap' : this.name.toLowerCase();
 
     return require(`@/assets/${fileName}.svg`);
   }

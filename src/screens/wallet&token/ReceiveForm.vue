@@ -21,13 +21,13 @@ import QrCode from 'qrcode.vue';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import ActivityForm from './ActivityForm.vue';
+import type { Networks } from '@/interfaces/networks';
 import BaseApi from '@/util/BaseApi';
 import Select from '@/components/Select.vue';
 import Button from '@/components/Button.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { Networks } from '@/store/networks/types';
 import { firstCharToUp } from '@/util/helpers';
 
 @Component({

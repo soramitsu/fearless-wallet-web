@@ -47,12 +47,12 @@ export default class SelectPopup extends Vue {
   @Prop(Number) left!: number;
   @Prop({ default: 'center' }) horizontalPlacement!: string;
   @Prop({ default: 'center' }) verticalPlacement!: string;
-  @Prop({ default: 'medium' }) space!: SpaceSize;
+  @Prop({ default: 'big' }) space!: SpaceSize;
   @Prop({ default: '' }) placeholder!: string;
-  @Prop({ default: false }) showIcon!: boolean;
-  @Prop({ default: false }) showSearch!: boolean;
-  @Prop({ default: false }) showBorder!: boolean;
-  @Prop({ default: false }) staticHeight!: boolean;
+  @Prop({ default: true }) showIcon!: boolean;
+  @Prop({ default: true }) staticHeight!: boolean;
+  @Prop({ default: true }) showSearch!: boolean;
+  @Prop({ default: true }) showBorder!: boolean;
   @Prop({ default: true }) showBlur!: boolean;
   @Prop({ default: true }) showAnimation!: boolean;
   @Prop({ default: 'medium' }) sizeWidth!: boolean;

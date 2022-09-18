@@ -46,7 +46,7 @@ const actions: ActionTree<State, State> & Actions = {
     subscribeSigningRequests(callback);
   },
 
-  async [ActionTypes.APPROVE_SIGN_PASSWORD]({ commit }, { id, isSavePass, password }) {
+  async [ActionTypes.APPROVE_SIGN_PASSWORD](context, { id, isSavePass, password }) {
     SignController.approveSignPassword(id, isSavePass, password);
 
     router.push({ name: Components.Wallet });

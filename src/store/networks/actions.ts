@@ -4,28 +4,27 @@ import type { Settings } from '@/networks';
 import type { State } from './state';
 import type { ActionTree } from 'vuex';
 import type {
-  NetworkJson,
-  DisconnectNetworks,
-  AssetJson,
-  FiatJson,
   LoadNetworks,
   LoadHistory,
   SubscribeToBalances,
   LoadAssets,
   LoadFiats,
-  TokensPriceJson,
-  ExternalApi,
   ToggleActiveNode,
   Accounts,
   AugmentedActionContext,
 } from './types';
+import type { FiatJson } from '@/interfaces/common';
+import type { AssetJson } from '@/interfaces/assets';
+import type { NetworkJson, DisconnectNetworks, ExternalApi } from '@/interfaces/networks';
+import type { TokensPriceJson } from '@/interfaces/tokens';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
 import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
-import { getHistory } from '@/subquery/history';
+import { loadHistory } from '@/subquery/history';
 import { getReplacedMetaTyped } from '@/util/helpers';
 import { getMockCurrencies } from '@/util/currenciesHelper';
-import { connectToApi, connectToNetworksApi, saveHistory, subscribeToBalances } from '@/util/networksAndAssetsHelper';
+import { connectToApi, connectToNetworksApi, subscribeToBalances } from '@/util/networksAndAssetsHelpers';
+import { PAGE_SIZE } from '@/consts/history';
 
 export enum ActionTypes {
   LOAD_NETWORKS = 'LOAD_NETWORKS',
@@ -115,23 +114,37 @@ const actions: ActionTree<State, State> & Actions = {
     commit(MutationTypes.SET_TOKENS_PRICE, { tokensPriceJson: tokensPrice });
   },
 
-  async [ActionTypes.LOAD_HISTORY](context, { historyExternalApi, walletAddress }) {
-    const mockHistory = {};
-    const pageSize = 20;
+  async [ActionTypes.LOAD_HISTORY]({ commit, getters }, { networkName, walletAddress, pageSize = PAGE_SIZE }) {
+    if (networkName === 'moonbase alpha') return;
+
+    const { externalApi } = getters.getNetwork(networkName);
+    const historyExternalApi = externalApi.history;
+
+    if (!historyExternalApi) return;
+
+    const formattedAddress = BaseApi.formatAddress(
+      { address: walletAddress, ethereumAddress: walletAddress },
+      networkName
+    );
+    const { type, url } = historyExternalApi;
     const cursor = null;
 
-    if (!historyExternalApi) return mockHistory;
+    // const historyForNetwork = getters.getHistory(networkName);
+    // const cursor = historyForNetwork?.[walletAddress]?.pageInfo.endCursor ?? null;
 
-    const { type, url } = historyExternalApi;
+    if (type !== 'subquery' || url === '') return;
 
-    if (type !== 'subquery' || url === '') return mockHistory;
+    const history = await loadHistory(url, formattedAddress, pageSize, cursor);
 
-    const history = await getHistory(url, pageSize, cursor, walletAddress);
-
-    return history ?? mockHistory;
+    commit(MutationTypes.SET_HISTORY, {
+      networkName,
+      walletAddress,
+      history,
+      isPreviously: cursor === null,
+    });
   },
 
-  async [ActionTypes.SUBSCRIBE_TO_BALANCES](context, { accounts, loadHistory, networksProps }) {
+  async [ActionTypes.SUBSCRIBE_TO_BALANCES](context, { accounts, networksProps }) {
     console.info('accounts', accounts);
 
     const { commit, state } = context;
@@ -145,8 +158,8 @@ const actions: ActionTree<State, State> & Actions = {
     const networks = networksProps ?? networksStore;
 
     const promises = networks.map(async (network) => {
-      const { api, isEthereumNetwork, name: networkName, assets, externalApi } = network;
-      const token = assets[0]?.assetId;
+      const { api, isEthereumNetwork, name: networkName, assets: networkAssets } = network;
+      const utilityTokenId = networkAssets.find(({ isUtility }) => isUtility)!.assetId; // eslint-disable-line
 
       await api.isReadyOrError;
 
@@ -162,10 +175,7 @@ const actions: ActionTree<State, State> & Actions = {
           // substrate accounts only subscribe to the substrate networks
           if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
 
-          if (loadHistory && networkName !== 'moonbase alpha')
-            saveHistory(walletAddress, networkName, externalApi, context);
-
-          subscribeToBalances(context, api, token, networkName, walletAddress);
+          subscribeToBalances(context, api, utilityTokenId, networkName, walletAddress);
         });
       } catch (ex) {
         console.info(

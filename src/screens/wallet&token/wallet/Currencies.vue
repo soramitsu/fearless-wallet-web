@@ -2,7 +2,7 @@
   <Draggable v-model="filteredCurrencies" handle=".handle">
     <CurrencyItem
       v-for="currency in filteredCurrencies"
-      :key="currency.token"
+      :key="currency.tokenId"
       :currency="currency"
       :selectedNetwork="selectedNetwork"
       :showAssetsManagementForm="showAssetsManagementForm"

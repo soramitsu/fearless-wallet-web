@@ -11,10 +11,12 @@ type CodecString = string;
  *
  * frozen = locked + reserved
  */
-export type AccountBalance = {
+type AccountBalance = {
   reserved: CodecString;
   total: CodecString;
   locked: CodecString;
   transferable: CodecString;
   frozen: CodecString;
 };
+
+export { AccountBalance };

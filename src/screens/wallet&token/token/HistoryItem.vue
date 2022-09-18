@@ -1,10 +1,10 @@
 <template>
   <div class="history-item">
-    <Logo size="mini" typeLogo="secondary" />
+    <NetworkLogo :name="token" />
 
     <div class="column">
       <div class="first-row">
-        <div>{{ formattedId }}</div>
+        <div>{{ hash }}</div>
         <div>{{ value }} {{ tokenToUpperCase }}</div>
       </div>
       <div class="second-row">
@@ -17,32 +17,19 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
-import Logo from '@/components/Logo.vue';
-import CurrencyController from '@/controllers/currencyController';
-import { firstCharToUp } from '@/util/helpers';
-import { HistoryNode, TransferType, TransactionType as TTransaction } from '@/interfaces/history';
-import { formattedNumber } from '@/util/numbers';
+import type { HistoryNode } from '@/interfaces/history';
+import NetworkLogo from '@/components/NetworkLogo.vue';
+import { getHash, getType, getTypeFormatted, getFormattedDate, getHistoryValue } from '@/util/historyHelpers';
 
 @Component({
-  components: {
-    Logo,
-  },
+  components: { NetworkLogo },
 })
 export default class HistoryItem extends Vue {
-  @Prop(Object) historyItem!: HistoryNode;
+  @Prop(Object) historyNode!: HistoryNode;
   @Prop(String) token!: string;
 
   get date() {
-    const date = new Date(secondsToMilliseconds(+this.historyItem.timestamp));
-
-    if (isToday(date)) {
-      return format(date, 'HH:mm');
-    } else if (isThisYear(date)) {
-      return format(date, 'dd MMMM HH:mm');
-    }
-
-    return format(date, 'dd MMMM yyyy HH:mm');
+    return getFormattedDate(this.historyNode);
   }
 
   get tokenToUpperCase() {
@@ -50,80 +37,19 @@ export default class HistoryItem extends Vue {
   }
 
   get type() {
-    const { reward, transfer } = this.historyItem;
-
-    return transfer !== null ? TTransaction.transfer : reward !== null ? TTransaction.reward : TTransaction.extrinsic;
-  }
-
-  get signTransfer() {
-    if (this.type === TTransaction.transfer) {
-      const splitId = this.historyItem.id.split('-');
-      const typeTransaction = splitId[splitId.length - 1];
-
-      return typeTransaction === 'to' ? '+' : '-';
-    }
-
-    return '';
+    return getType(this.historyNode);
   }
 
   get value() {
-    if (this.type === TTransaction.transfer) {
-      const { amount } = this.historyItem[this.type];
-      const value = +CurrencyController.getHumanValue(this.token, amount);
-
-      return `${this.signTransfer}${formattedNumber(value, 4)}`;
-    }
-
-    if (this.type === TTransaction.reward) {
-      const { amount } = this.historyItem[this.type];
-      const value = +CurrencyController.getHumanValue(this.token, amount);
-
-      return `+${formattedNumber(value, 4)}`;
-    }
-
-    // extrinsic
-    const { fee } = this.historyItem[this.type];
-    const value = +CurrencyController.getHumanValue(this.token, fee);
-
-    return `-${formattedNumber(value, 4)}`;
+    return getHistoryValue(this.historyNode, this.token);
   }
 
-  get formattedId() {
-    if (this.type === TTransaction.transfer) {
-      const { to } = this.historyItem[this.type];
-
-      return this.cut(to);
-    }
-
-    if (this.type === TTransaction.reward) {
-      const { validator } = this.historyItem[this.type];
-
-      return this.cut(validator);
-    }
-
-    // extrinsic
-    const { module } = this.historyItem[this.type];
-
-    return firstCharToUp(module);
+  get hash() {
+    return getHash(this.historyNode);
   }
 
   get typeFormatted() {
-    if (this.type === TTransaction.transfer) {
-      return this.signTransfer === '+' ? TransferType.incoming : TransferType.outgoing;
-    }
-
-    if (this.type === TTransaction.extrinsic) {
-      const { call } = this.historyItem[this.type];
-
-      return `${firstCharToUp(call)}${call === 'transfer' ? ' fee' : ''}`;
-    }
-
-    // reward
-    return firstCharToUp(this.type);
-  }
-
-  cut(value: string) {
-    return `${value.slice(0, 7)}...${value.slice(-8)}`;
+    return getTypeFormatted(this.historyNode);
   }
 }
 </script>
@@ -131,9 +57,13 @@ export default class HistoryItem extends Vue {
 <style lang="scss" scoped>
 .history-item {
   display: flex;
-  margin: 11px 16px 0 16px;
-  padding-bottom: $default-padding;
+  margin: 0 16px;
+  padding: $default-padding 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+  &:hover {
+    cursor: pointer;
+  }
 
   &:last-child {
     border: none;
@@ -157,6 +87,7 @@ export default class HistoryItem extends Vue {
       justify-content: space-between;
       color: rgba(255, 255, 255, 0.64);
       font-size: 14px;
+      margin-top: 2px;
     }
   }
 }

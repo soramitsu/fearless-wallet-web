@@ -318,10 +318,16 @@ export default class BaseApi {
     }
   }
 
-  public static unlockPair(from: string, password: string): void {
+  public static unlockPair(from: string, password: string): boolean {
     const pair = keyring.getPair(from);
 
-    pair.unlock(password);
+    try {
+      pair.unlock(password);
+
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   public static deleteAccount(address: string): void {

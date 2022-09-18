@@ -115,6 +115,7 @@ import MaxButton from './MaxButton.vue';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import AmountInputs from './AmountInputs.vue';
 import type { Currencies } from '@/interfaces/currencies';
+import type { Networks } from '@/interfaces/networks';
 import Select from '@/components/Select.vue';
 import FloatInput from '@/components/FloatInput.vue';
 import Popup from '@/components/Popup.vue';
@@ -122,7 +123,6 @@ import Corners from '@/components/Corners.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { Networks } from '@/store/networks/types';
 import { firstCharToUp } from '@/util/helpers';
 import { addNumbers, formattedNumber, formattedPrice } from '@/util/numbers';
 

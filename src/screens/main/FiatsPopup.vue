@@ -2,15 +2,10 @@
   <div>
     <SelectPopup
       v-model="selectedFiat"
-      space="big"
       verticalPlacement="top"
       horizontalPlacement="right"
       placeholder="Search in currencies"
       :top="50"
-      :showIcon="true"
-      :showSearch="true"
-      :staticHeight="true"
-      :showBorder="true"
       :showAnimation="showAnimation"
       :options="filteredOptionsFiats"
       :toggleValue="toggleSelectedFiat"
@@ -23,9 +18,8 @@
 <script lang="ts">
 import { Getter, Action } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { FiatJson } from '@/store/networks/types';
+import type { FiatJson, TAction } from '@/interfaces/common';
 import type { SetSelectedFiat } from '@/store/accounts/types';
-import type { TAction } from '@/interfaces/common';
 import SelectPopup from '@/components/SelectPopup.vue';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';

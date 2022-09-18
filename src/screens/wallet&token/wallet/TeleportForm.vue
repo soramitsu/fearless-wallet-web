@@ -141,7 +141,7 @@ import Corners from '@/components/Corners.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { Networks } from '@/store/networks/types';
+import { Networks } from '@/interfaces/networks';
 import { firstCharToUp } from '@/util/helpers';
 import { addNumbers, formattedNumber, formattedPrice } from '@/util/numbers';
 

@@ -1,12 +1,16 @@
-import type { AssetJson, FiatJson, Networks } from './types';
+import type { AssetJson } from '@/interfaces/assets';
+import type { ActiveNodes } from '@/interfaces/nodes';
+import type { FiatJson } from '@/interfaces/common';
+import type { GetNetwork } from './types';
+import type { Networks } from '@/interfaces/networks';
+import type { GetHistory } from '@/interfaces/history';
 import type { Currencies } from '@/interfaces/currencies';
 import type { GetterTree } from 'vuex';
-import type { History } from '@/interfaces/history';
 import type { State } from './state';
-import type { ActiveNodes } from '@/store/networks/types';
 
 export enum GettersTypes {
   getNetworks = 'getNetworks',
+  getNetwork = 'getNetwork',
   getAssets = 'getAssets',
   getFiats = 'getFiats',
   getHistory = 'getHistory',
@@ -17,9 +21,10 @@ export enum GettersTypes {
 
 export type Getters = {
   [GettersTypes.getNetworks](state: State, getters?: GetterTree<State, State> & Getters): Networks;
+  [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
   [GettersTypes.getAssets](state: State, getters?: GetterTree<State, State> & Getters): AssetJson[];
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
-  [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): History;
+  [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
   [GettersTypes.getCurrencies](state: State, getters?: GetterTree<State, State> & Getters): Currencies;
   [GettersTypes.getAllNetworksIsLoaded](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getActiveNodes](state: State, getters?: GetterTree<State, State> & Getters): ActiveNodes;
@@ -29,15 +34,22 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getNetworks]({ networks }): Networks {
     return networks;
   },
+  [GettersTypes.getNetwork]:
+    ({ networks }) =>
+    (networkName: string) => {
+      return networks.find(({ name }) => name === networkName)!; // eslint-disable-line
+    },
   [GettersTypes.getAssets]({ assets }): AssetJson[] {
     return assets;
   },
   [GettersTypes.getFiats]({ fiats }): FiatJson[] {
     return fiats;
   },
-  [GettersTypes.getHistory]({ history }): History {
-    return history;
-  },
+  [GettersTypes.getHistory]:
+    ({ history }) =>
+    (networkName: string) => {
+      return history[networkName];
+    },
   [GettersTypes.getCurrencies]({ currencies }): Currencies {
     return currencies;
   },

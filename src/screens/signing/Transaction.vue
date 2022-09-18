@@ -34,7 +34,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { SigningRequest } from '@polkadot/extension-base/background/types';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
@@ -69,11 +69,6 @@ export default class Auth extends Vue {
   password = '';
   isErrorPassword = false;
   isSavePass = false;
-
-  @Watch('isSavePass')
-  update(value: boolean) {
-    this.isSavePass = value;
-  }
 
   get typedPayload() {
     registry.setSignedExtensions(this.payload.signedExtensions);
@@ -122,12 +117,10 @@ export default class Auth extends Vue {
   }
 
   onApprove() {
-    try {
-      if (this.isLocked) BaseApi.unlockPair(this.payload.address, this.password);
-    } catch {
-      this.isErrorPassword = true;
+    if (this.isLocked) {
+      this.isErrorPassword = !BaseApi.unlockPair(this.payload.address, this.password);
 
-      return;
+      if (this.isErrorPassword) return;
     }
 
     this.$store.dispatch('APPROVE_SIGN_PASSWORD', {

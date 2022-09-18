@@ -1,4 +1,4 @@
-import type { Node } from '@/store/networks/types';
+import type { Node } from '@/interfaces/nodes';
 import LocalStorageController from '@/controllers/localStorageController';
 
 class AccountController {

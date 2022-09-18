@@ -1,30 +1,30 @@
 import type { InvalidValueName } from '@/consts/invalidMessages';
 import { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 
-export type TMutation<T> = (props?: T) => void;
-export type TAction<T> = (props?: T) => Promise<void>;
+type TMutation<T> = (props?: T) => void;
+type TAction<T> = (props?: T) => Promise<void>;
 
-export interface Meta {
+interface Meta {
   name: string;
   ethereumAddress: string;
 }
 
 type ParentAddress = string;
 
-export interface ReplacedMeta {
+interface ReplacedMeta {
   isReplacedAccount: true;
   replacedSettings: Record<ParentAddress, string[]>;
 }
 
-export type TabWallet = 'Currencies' | 'NFTs';
-export type ImportType = 'mnemonic' | 'rawSeed' | 'json';
-export type FilterHistory = 'all' | 'transfer' | 'reward' | 'extrinsic';
+type TabWallet = 'Currencies' | 'NFTs';
+type ImportType = 'mnemonic' | 'rawSeed' | 'json';
+type FilterHistory = 'all' | 'transfer' | 'reward' | 'extrinsic';
 
-export type WalletAddress = string;
-export type NetworkName = string;
+type WalletAddress = string;
+type NetworkName = string;
 
-export type DerivationPath = typeof INITIAL_DERIVATION_PATHS.substrate;
-export type DerivationPaths = typeof INITIAL_DERIVATION_PATHS;
+type DerivationPath = typeof INITIAL_DERIVATION_PATHS.substrate;
+type DerivationPaths = typeof INITIAL_DERIVATION_PATHS;
 
 interface ValidateJsonResultPositive {
   value: true;
@@ -35,9 +35,55 @@ interface ValidateJsonResultNegative {
   errorType: InvalidValueName;
 }
 
-export type ValidateJsonResult = ValidateJsonResultPositive | ValidateJsonResultNegative;
+type ValidateJsonResult = ValidateJsonResultPositive | ValidateJsonResultNegative;
 
-export interface MnemonicConfirmation {
+interface MnemonicConfirmation {
   word: string;
   initialIndex: number;
 }
+
+enum MenuItems {
+  wallet = 'Wallet',
+  crowdloans = 'Crowdloans',
+  staking = 'Staking',
+  dex = 'DEX',
+  history = 'History',
+}
+
+type MenuItem = 'Wallet' | 'Crowdloans' | 'Staking' | 'DEX' | 'History';
+
+type FiatJson = {
+  id: string;
+  symbol: string;
+  name: string;
+  icon: string;
+};
+
+type ChainAccount = {
+  network: string;
+  token: string;
+  address: string;
+  isReplaced: boolean;
+};
+
+export {
+  DerivationPath,
+  DerivationPaths,
+  FiatJson,
+  FilterHistory,
+  ImportType,
+  InvalidValueName,
+  MenuItem,
+  MenuItems,
+  NetworkName,
+  ParentAddress,
+  TAction,
+  TMutation,
+  TabWallet,
+  ValidateJsonResult,
+  WalletAddress,
+  ReplacedMeta,
+  Meta,
+  MnemonicConfirmation,
+  ChainAccount,
+};

@@ -1,19 +1,25 @@
 import type { Currencies, Currency } from '@/interfaces/currencies';
-import type { Networks, TokenPriceJson } from '@/store/networks/types';
+import type { TokenPriceJson } from '@/interfaces/tokens';
+import type { Networks } from '@/interfaces/networks';
 import type { Wallet } from '@/store/accounts/types';
 import CurrencyController from '@/controllers/currencyController';
+import NetworksController from '@/controllers/networksController';
 
 export function getMockCurrencies(networks: Networks): Currencies {
-  const currencies: Currencies = networks
+  const assets = NetworksController.getAssets();
+
+  const currencies = networks
     .reduce((result, network) => {
-      const { assets, name } = network;
-      const token = assets[0]?.assetId;
-      const purchaseProviders = assets[0]?.purchaseProviders ?? [];
-      const tokenIndex = result.findIndex(({ token: tokenExist }) => tokenExist === token);
+      const { assets: networkAssets, name } = network;
+      const tokenId = networkAssets.find(({ isUtility }) => isUtility)!.assetId; // eslint-disable-line
+      const token = assets.find(({ id }) => id === tokenId)!.symbol; // eslint-disable-line
+      const purchaseProviders = networkAssets[0]?.purchaseProviders ?? [];
+      const tokenIndex = result.findIndex(({ tokenId: savedTokenId }) => savedTokenId === tokenId);
 
       if (tokenIndex === -1)
         result.push({
           mainNetwork: name,
+          tokenId,
           token,
           precision: 0,
           tokenPriceJson: {} as TokenPriceJson,
@@ -23,8 +29,8 @@ export function getMockCurrencies(networks: Networks): Currencies {
       return result;
     }, [] as any[])
     .map(
-      ({ mainNetwork, tokenPriceJson, precision, token, purchaseProviders }) =>
-        new CurrencyController(mainNetwork, token, tokenPriceJson, precision, purchaseProviders)
+      ({ mainNetwork, tokenPriceJson, precision, tokenId, token, purchaseProviders }) =>
+        new CurrencyController(mainNetwork, tokenId, token, tokenPriceJson, precision, purchaseProviders)
     );
 
   return currencies;

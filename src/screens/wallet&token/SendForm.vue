@@ -103,6 +103,7 @@ import AmountInputs from './AmountInputs.vue';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import MaxButton from './MaxButton.vue';
 import type { Currencies } from '@/interfaces/currencies';
+import type { Networks } from '@/interfaces/networks';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
 import FloatInput from '@/components/FloatInput.vue';
@@ -112,7 +113,6 @@ import NetworkLogo from '@/components/NetworkLogo.vue';
 import { GettersTypes as ApiGettersTypes, GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { Networks } from '@/store/networks/types';
 import { firstCharToUp } from '@/util/helpers';
 import { formattedNumber, formattedPrice, addNumbers } from '@/util/numbers';
 

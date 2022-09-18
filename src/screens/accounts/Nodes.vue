@@ -3,7 +3,7 @@
     <div class="network-description">
       <div class="description">
         <div class="img-container">
-          <NetworkLogo :network="selectedNetwork" classes="main-network-img" />
+          <NetworkLogo :name="selectedNetwork" />
         </div>
 
         <div>
@@ -65,7 +65,8 @@ import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import NodeItem from './NodeItem.vue';
 import type { SelectedWallet } from '@/store/accounts/types';
-import type { Networks, Node, ActiveNodes } from '@/store/networks/types';
+import type { Node, ActiveNodes } from '@/interfaces/nodes';
+import type { Networks } from '@/interfaces/networks';
 import NetworksController from '@/controllers/networksController';
 import BaseApi from '@/util/BaseApi';
 import Switcher from '@/components/Switcher.vue';
@@ -241,10 +242,6 @@ export default class Nodes extends Vue {
     .img-container {
       width: 50px;
       margin: auto 0;
-
-      .main-network-img {
-        width: 32px;
-      }
     }
 
     .description {

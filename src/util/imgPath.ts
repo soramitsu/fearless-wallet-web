@@ -1,4 +1,6 @@
-export function getImgPathByNetworkOrTokenName(value = '') {
+import type { RelayChainName } from '@/consts/teleport';
+
+export function getImgPathByNetworkOrTokenName(value = '', relayChain?: RelayChainName) {
   switch (value.toLowerCase()) {
     case 'statemine':
       return 'statemine.svg';
@@ -165,7 +167,7 @@ export function getImgPathByNetworkOrTokenName(value = '') {
 
     case 'sora kusama':
     case 'xor':
-      return 'SORA.svg';
+      return 'sora.svg';
 
     case 'composable finance':
     case 'layr':
@@ -189,7 +191,7 @@ export function getImgPathByNetworkOrTokenName(value = '') {
 
     case 'datahighway tanganika':
     case 'dhx':
-      return 'DataHighway.svg';
+      return 'datahighway.svg';
 
     case 'gm parachain':
     case 'fren':
@@ -211,23 +213,41 @@ export function getImgPathByNetworkOrTokenName(value = '') {
     case 'mgx':
       return 'mangata.svg';
 
-    ////////////////////// TODO: fix icons
-
-    case 'litmus':
-    case 'lit':
-      return 'litmus.svg';
+    //////////////////////
 
     case 'litentry':
-    case 'lit2': // fix
       return 'litentry.svg';
 
-    case 'khala':
-    case 'pha':
-      return 'khala.svg';
+    case 'litmus':
+      return 'litmus.svg';
+
+    case 'lit':
+      switch (relayChain?.toLocaleLowerCase()) {
+        case 'polkadot':
+          return 'litentry.svg';
+        case 'kusama':
+          return 'litmus.svg';
+        default:
+          return '_default.svg';
+      }
+
+    //////////////////////
 
     case 'phala':
-    case 'pha2': // fix
       return 'phala.svg';
+
+    case 'khala':
+      return 'khala.svg';
+
+    case 'pha':
+      switch (relayChain?.toLocaleLowerCase()) {
+        case 'polkadot':
+          return 'phala.svg';
+        case 'kusama':
+          return 'khala.svg';
+        default:
+          return '_default.svg';
+      }
 
     //////////////////////
 

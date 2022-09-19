@@ -10,10 +10,11 @@ function getMockCurrencies(networks: Networks): Currencies {
 
   const currencies = networks
     .reduce((result, network) => {
-      const { assets: networkAssets, name } = network;
+      const { assets: networkAssets, name, parentId } = network;
       const tokenId = networkAssets.find(({ isUtility }) => isUtility)!.assetId; // eslint-disable-line
       const token = assets.find(({ id }) => id === tokenId)!.symbol; // eslint-disable-line
       const purchaseProviders = networkAssets[0]?.purchaseProviders ?? [];
+      const parentNetwork = networks.find(({ chainId }) => chainId === parentId)?.name;
       const tokenIndex = result.findIndex(({ tokenId: savedTokenId }) => savedTokenId === tokenId);
 
       if (tokenIndex === -1)
@@ -21,6 +22,7 @@ function getMockCurrencies(networks: Networks): Currencies {
           mainNetwork: name,
           tokenId,
           token,
+          parentNetwork,
           precision: 0,
           tokenPriceJson: {} as TokenPriceJson,
           purchaseProviders,
@@ -29,8 +31,8 @@ function getMockCurrencies(networks: Networks): Currencies {
       return result;
     }, [] as any[])
     .map(
-      ({ mainNetwork, tokenPriceJson, precision, tokenId, token, purchaseProviders }) =>
-        new CurrencyController(mainNetwork, tokenId, token, tokenPriceJson, precision, purchaseProviders)
+      ({ mainNetwork, tokenPriceJson, precision, tokenId, parentNetwork, token, purchaseProviders }) =>
+        new CurrencyController(mainNetwork, tokenId, token, tokenPriceJson, precision, purchaseProviders, parentNetwork)
     );
 
   return currencies;
@@ -80,10 +82,10 @@ function getProviderUrl(providerName: string, token: string, address: string) {
 }
 
 function getCurrencyOptions(currencies: Currencies) {
-  return currencies.map(({ token, tokenId, mainNetwork }) => {
+  return currencies.map(({ token, tokenId, parentNetwork }) => {
     const tokenUpper = token.toUpperCase();
     const filteredOptions = currencies.filter(({ token: _token }) => _token === token);
-    const label = filteredOptions.length > 1 ? `${tokenUpper} (${mainNetwork.toUpperCase()})` : tokenUpper;
+    const label = filteredOptions.length > 1 ? `${tokenUpper} (${parentNetwork.toUpperCase()})` : tokenUpper;
 
     return {
       label,

@@ -16,7 +16,7 @@ import type { Wallet } from '@/store/accounts/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { createAccountSuri, jsonRestore } from '@/extension/messaging';
 import { getReplacedMetaTyped, getMetaTyped, isExtension } from '@/util/helpers';
-import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
+import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
 

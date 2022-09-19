@@ -139,7 +139,7 @@ import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
 import { Components } from '@/router/routes';
 import { INVALID_MESSAGES, InvalidValueName } from '@/consts/invalidMessages';
-import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/ethereumNetworks';
+import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/networks';
 import { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 

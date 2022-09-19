@@ -4,14 +4,14 @@ import type { UpdateCurrencyProps, UpdateCurrencyBalanceProps } from '@/store/ne
 import type { AssetJson } from '@/interfaces/assets';
 import type { TokenPriceJson, KeysTokenPriceJson } from '@/interfaces/tokens';
 import type { SubmittableExtrinsic } from '@polkadot/api-base/types';
-import type { MainNetworkName } from '@/consts/teleport';
+import type { RelayChainName } from '@/consts/teleport';
 import type { SignerOptions } from '@polkadot/api/submittable/types';
 import type { Wallet } from '@/store/accounts/types';
 import BaseApi from '@/util/BaseApi';
 import LocalStorageController from '@/controllers/localStorageController';
 import NetworksController from '@/controllers/networksController';
 import { XCM_LOC, teleportInfo } from '@/consts/teleport';
-import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
+import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { FPNumber } from '@/util/fp';
 import { getReplacedMetaTyped } from '@/util/helpers';
 
@@ -23,6 +23,7 @@ export default class CurrencyController {
   public balances: Balances = {};
   public price = 0;
   public hours24Change = 0;
+  public parentNetwork!: RelayChainName;
 
   constructor(
     public mainNetwork: string,
@@ -30,9 +31,10 @@ export default class CurrencyController {
     public token: string,
     public tokensPrice: TokenPriceJson,
     public precision: number,
-    public providers: string[]
+    public providers: string[],
+    parentNetwork: RelayChainName
   ) {
-    console.info();
+    if (parentNetwork) this.parentNetwork = parentNetwork;
   }
 
   public updatePrice(selectedFiat: string) {
@@ -265,15 +267,15 @@ export default class CurrencyController {
 
   public getParaId(originalNetworkName: string, destinationNetworkName: string) {
     const isTeleportToMainNetwork =
-      teleportInfo[destinationNetworkName as MainNetworkName]?.parachains[originalNetworkName];
+      teleportInfo[destinationNetworkName as RelayChainName]?.parachains[originalNetworkName];
 
     return (
-      teleportInfo[originalNetworkName as MainNetworkName]?.parachains[destinationNetworkName]?.paraId ??
+      teleportInfo[originalNetworkName as RelayChainName]?.parachains[destinationNetworkName]?.paraId ??
       (isTeleportToMainNetwork ? -1 : undefined)
     );
 
     // return !isParaTeleport
-    //   ? teleportInfo[originalNetworkName as MainNetworkName]?.parachains[destinationNetworkName]?.paraId
+    //   ? teleportInfo[originalNetworkName as RelayChainName]?.parachains[destinationNetworkName]?.paraId
     //   : isTeleportToMainNetwork
     //   ? -1
     //   : undefined;

@@ -54,6 +54,7 @@ type Network = {
   nodes: Node[];
   assets: NetworkAssets[];
   chainId: string;
+  parentId?: string;
   addressPrefix: number;
   isEthereumNetwork: boolean;
   settings: Record<string, any>;

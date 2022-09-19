@@ -19,7 +19,7 @@ import type { NetworkJson, DisconnectNetworks, ExternalApi } from '@/interfaces/
 import type { TokensPriceJson } from '@/interfaces/tokens';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
-import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
+import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { loadHistory } from '@/subquery/history';
 import { getReplacedMetaTyped } from '@/util/helpers';
 import { getMockCurrencies } from '@/util/currenciesHelper';
@@ -53,7 +53,7 @@ const actions: ActionTree<State, State> & Actions = {
     const networksJson: NetworkJson[] = data;
 
     const disconnectNetworks: DisconnectNetworks = networksJson.map(
-      ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi, chainId }) => {
+      ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi, chainId, parentId }) => {
         const networkName = name.toLocaleLowerCase();
         const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
         const externalApi = originalExternalApi ?? ({} as ExternalApi);
@@ -64,6 +64,7 @@ const actions: ActionTree<State, State> & Actions = {
           nodes,
           assets,
           chainId,
+          parentId,
           addressPrefix,
           isEthereumNetwork,
           externalApi,

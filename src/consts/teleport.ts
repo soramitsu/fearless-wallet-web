@@ -1,4 +1,4 @@
-export type MainNetworkName = 'kusama' | 'polkadot' | 'westend' | 'rococo';
+export type RelayChainName = 'kusama' | 'polkadot' | 'westend' | 'rococo';
 
 interface BaseInfo {
   teleport: number[];
@@ -12,7 +12,7 @@ interface Info extends BaseInfo {
   parachains: Record<string, ParachainsInfo>;
 }
 
-type TeleportInfo = Record<MainNetworkName, Info>;
+type TeleportInfo = Record<RelayChainName, Info>;
 
 const teleportInfo: TeleportInfo = {
   kusama: {

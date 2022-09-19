@@ -41,11 +41,7 @@
       />
     </div>
 
-    <History
-      :tokenId="selectedTokenId"
-      :currency="currentCurrency"
-      @openHistoryDetailsPopup="openHistoryDetailsPopup"
-    />
+    <History :currency="currentCurrency" @openHistoryDetailsPopup="openHistoryDetailsPopup" />
 
     <SendForm
       v-if="showSendForm"

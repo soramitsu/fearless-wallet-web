@@ -17,10 +17,10 @@
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Networks as NetworksType } from '@/interfaces/networks';
-import { firstCharToUp } from '@/util/helpers';
+import { firstCharToUp } from '@/helpers/common';
 import SelectPopup from '@/components/SelectPopup.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { getImgPathByNetworkOrTokenName } from '@/util/imgPath';
+import { getImgPathByNetworkOrTokenName } from '@/helpers/imgPath';
 
 interface Options {
   label: string;

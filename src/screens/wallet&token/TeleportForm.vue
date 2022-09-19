@@ -122,9 +122,9 @@ import Corners from '@/components/Corners.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { firstCharToUp } from '@/util/helpers';
-import { addNumbers, formattedNumber, formattedPrice } from '@/util/numbers';
-import { getCurrencyOptions } from '@/util/currenciesHelper';
+import { firstCharToUp } from '@/helpers/common';
+import { addNumbers, formattedNumber, formattedPrice } from '@/helpers/numbers';
+import { getCurrencyOptions } from '@/helpers/currencies';
 
 @Component({
   components: {

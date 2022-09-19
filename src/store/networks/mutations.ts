@@ -64,20 +64,18 @@ const mutations: MutationTree<State> & Mutations = {
     state.tokensPriceJson = tokensPriceJson;
   },
 
-  [MutationTypes.UPDATE_CURRENCY](state, currency) {
-    const { tokenId } = currency;
+  [MutationTypes.UPDATE_CURRENCY](state, { precision, selectedFiat, tokenId, tokensPrice }) {
     const { currencies } = state;
-    const currencyIndex = currencies?.findIndex(({ tokenId: savedTokenId }) => savedTokenId === tokenId);
+    const currentCurrency = currencies?.find(({ tokenId: savedTokenId }) => savedTokenId === tokenId)!; //eslint-disable-line
 
-    currencies[currencyIndex].updateCurrency(currency);
+    currentCurrency.updateCurrency({ precision, tokensPrice, selectedFiat });
   },
 
-  [MutationTypes.UPDATE_CURRENCY_BALANCE](state, { walletAddress, currency }) {
-    const { tokenId } = currency;
+  [MutationTypes.UPDATE_CURRENCY_BALANCE](state, { walletAddress, network, tokenId, balance }) {
     const { currencies } = state;
     const currentCurrency = currencies.find(({ tokenId: savedTokenId }) => savedTokenId === tokenId)!; //eslint-disable-line
 
-    currentCurrency.updateCurrencyBalance({ walletAddress, currency });
+    currentCurrency.updateCurrencyBalance({ walletAddress, network, balance });
   },
 
   [MutationTypes.SET_HISTORY](

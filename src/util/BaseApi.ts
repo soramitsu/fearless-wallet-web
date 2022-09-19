@@ -15,7 +15,7 @@ import type { ValidateJsonResult, DerivationPath } from '@/interfaces/common';
 import type { Wallet } from '@/store/accounts/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { createAccountSuri, jsonRestore } from '@/extension/messaging';
-import { getReplacedMetaTyped, getMetaTyped, isExtension } from '@/util/helpers';
+import { getReplacedMetaTyped, getMetaTyped, isExtension } from '@/helpers/common';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';

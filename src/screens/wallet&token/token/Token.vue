@@ -108,7 +108,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Components } from '@/router/routes';
-import { formattedNumber, formattedPrice } from '@/util/numbers';
+import { formattedNumber, formattedPrice } from '@/helpers/numbers';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
 

@@ -4,7 +4,7 @@ import type { Mutations } from './mutations';
 import type { State } from './state';
 import type { SetSelectedFiat, SetSelectedWallet } from './types';
 import type { Currencies } from '@/interfaces/currencies';
-import { defaultSortingCurrencies } from '@/util/currenciesHelper';
+import { defaultSortingCurrencies } from '@/helpers/currencies';
 import { accountController } from '@/controllers/accountController';
 
 export enum ActionTypes {

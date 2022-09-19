@@ -81,7 +81,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { SetCurrenciesProps } from '@/store/networks/types';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
-import { addNumbers, formattedNumber } from '@/util/numbers';
+import { addNumbers, formattedNumber } from '@/helpers/numbers';
 
 @Component({
   components: {

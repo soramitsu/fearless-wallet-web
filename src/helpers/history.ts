@@ -2,8 +2,8 @@ import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
 import type { HistoryNode } from '@/interfaces/history';
 import type { AssetJson } from '@/interfaces/assets';
 import { TransactionType, TransferType } from '@/interfaces/history';
-import { firstCharToUp } from '@/util/helpers';
-import { formattedNumber } from '@/util/numbers';
+import { firstCharToUp } from '@/helpers/common';
+import { formattedNumber } from '@/helpers/numbers';
 import { FPNumber } from '@/util/fp';
 import NetworksController from '@/controllers/networksController';
 

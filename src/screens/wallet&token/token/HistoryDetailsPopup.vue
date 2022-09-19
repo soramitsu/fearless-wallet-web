@@ -111,7 +111,7 @@ import {
   getHistoryValue,
   getFormattedDate,
   getHumanTransferFee,
-} from '@/util/historyHelpers';
+} from '@/helpers/history';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 

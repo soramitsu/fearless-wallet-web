@@ -59,11 +59,9 @@ export type UpdateCurrencyProps = {
 
 export type UpdateCurrencyBalanceProps = {
   walletAddress: string;
-  currency: {
-    network: string;
-    tokenId: string;
-    balance: AccountBalance;
-  };
+  network: string;
+  tokenId: string;
+  balance: AccountBalance;
 };
 
 export type SetNetworkActiveNodeProps = {

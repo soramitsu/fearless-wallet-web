@@ -113,9 +113,9 @@ import NetworkLogo from '@/components/NetworkLogo.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { firstCharToUp } from '@/util/helpers';
-import { formattedNumber, formattedPrice, addNumbers } from '@/util/numbers';
-import { getCurrencyOptions } from '@/util/currenciesHelper';
+import { firstCharToUp } from '@/helpers/common';
+import { formattedNumber, formattedPrice, addNumbers } from '@/helpers/numbers';
+import { getCurrencyOptions } from '@/helpers/currencies';
 
 @Component({
   components: {

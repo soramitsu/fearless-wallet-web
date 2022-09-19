@@ -21,9 +21,15 @@ import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { loadHistory } from '@/subquery/history';
-import { getReplacedMetaTyped } from '@/util/helpers';
-import { getMockCurrencies } from '@/util/currenciesHelper';
-import { connectToApi, connectToNetworksApi, subscribeToBalances } from '@/util/networksAndAssetsHelpers';
+import { getReplacedMetaTyped } from '@/helpers/common';
+import { getMockCurrencies } from '@/helpers/currencies';
+import {
+  connectToApi,
+  connectToNetworksApi,
+  subscribeToBalancesUtilityTokens,
+  subscribeToBalancesOrmlTokens,
+  updateCurrencyInfo,
+} from '@/helpers/networksConnection';
 import { PAGE_SIZE } from '@/consts/history';
 
 export enum ActionTypes {
@@ -146,10 +152,8 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.SUBSCRIBE_TO_BALANCES](context, { accounts, networksProps }) {
-    console.info('accounts', accounts);
-
     const { commit, state } = context;
-    const { networks: networksStore } = state;
+    const { networks: networksStore, assets } = state;
 
     commit(MutationTypes.SET_ALL_NETWORKS_IS_LOADED, {
       value: false,
@@ -161,31 +165,25 @@ const actions: ActionTree<State, State> & Actions = {
     const promises = networks.map(async (network) => {
       const { api, isEthereumNetwork, name: networkName, assets: networkAssets } = network;
       const utilityTokenId = networkAssets.find(({ isUtility }) => isUtility)!.assetId; // eslint-disable-line
+      const precision = assets.find((asset) => asset.id === utilityTokenId)?.precision ?? 0;
 
       await api.isReadyOrError;
 
-      try {
-        Object.entries(accounts).forEach(async ([walletAddress, { type, json }]) => {
-          const { isReplacedAccount, replacedSettings } = getReplacedMetaTyped(json.meta);
-          const networksList = Object.values(replacedSettings ?? []).flat();
+      Object.entries(accounts).forEach(async ([walletAddress, { type, json }]) => {
+        const { isReplacedAccount, replacedSettings } = getReplacedMetaTyped(json.meta);
+        const networksList = Object.values(replacedSettings ?? []).flat();
 
-          // if it is a replaced account and the iterated network is not in the networksList
-          if (isReplacedAccount && !networksList.includes(networkName)) return;
+        // if it is a replaced account and the iterated network is not in the networksList
+        if (isReplacedAccount && !networksList.includes(networkName)) return;
 
-          // ethereum accounts only subscribe to the ethereum networks and
-          // substrate accounts only subscribe to the substrate networks
-          if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
+        // ethereum accounts only subscribe to the ethereum networks and
+        // substrate accounts only subscribe to the substrate networks
+        if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
 
-          subscribeToBalances(context, api, utilityTokenId, networkName, walletAddress);
-        });
-      } catch (ex) {
-        console.info(
-          `
-            Subscribe to ${networkName.toUpperCase()} failed
-            ${ex}
-          `
-        );
-      }
+        updateCurrencyInfo(context, utilityTokenId, precision);
+        subscribeToBalancesUtilityTokens(context, api, utilityTokenId, networkName, walletAddress, precision);
+        subscribeToBalancesOrmlTokens(context, api, utilityTokenId, networkName, walletAddress, precision);
+      });
     });
 
     await Promise.allSettled(promises);

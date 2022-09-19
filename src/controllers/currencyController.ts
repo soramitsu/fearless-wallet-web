@@ -13,7 +13,7 @@ import NetworksController from '@/controllers/networksController';
 import { XCM_LOC, teleportInfo } from '@/consts/teleport';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { FPNumber } from '@/util/fp';
-import { getReplacedMetaTyped } from '@/util/helpers';
+import { getReplacedMetaTyped } from '@/helpers/common';
 
 export default class CurrencyController {
   private readonly lsCurrency = new LocalStorageController('currency');
@@ -129,15 +129,18 @@ export default class CurrencyController {
     return addressByNetwork;
   }
 
-  public updateCurrency({ precision, tokensPrice, selectedFiat }: UpdateCurrencyProps): void {
+  public updateCurrency({ precision, tokensPrice, selectedFiat }: Omit<UpdateCurrencyProps, 'tokenId'>): void {
     this.precision = precision ?? this.precision;
     this.tokensPrice = tokensPrice ?? this.tokensPrice;
 
     this.updatePrice(selectedFiat);
   }
 
-  public updateCurrencyBalance({ walletAddress, currency }: UpdateCurrencyBalanceProps): CurrencyController {
-    const { network: networkProp, balance } = currency;
+  public updateCurrencyBalance({
+    walletAddress,
+    network: networkProp,
+    balance,
+  }: Omit<UpdateCurrencyBalanceProps, 'tokenId'>): CurrencyController {
     const { frozen, locked, reserved, total, transferable } = balance;
     const oldBalances = { ...this.balances };
     let balancesForAddress = oldBalances[walletAddress];

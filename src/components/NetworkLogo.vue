@@ -5,7 +5,7 @@
 <script lang="ts">
 import { Vue, Prop, Component } from 'vue-property-decorator';
 import type { RelayChainName } from '@/consts/teleport';
-import { getImgPathByNetworkOrTokenName } from '@/util/imgPath';
+import { getImgPathByNetworkOrTokenName } from '@/helpers/imgPath';
 
 @Component
 export default class NetworkLogo extends Vue {

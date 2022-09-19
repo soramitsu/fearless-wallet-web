@@ -23,7 +23,7 @@ import type { GetTokenName } from '@/store/networks/types';
 import type { Networks } from '@/interfaces/networks';
 import type { RelayChainName } from '@/consts/teleport';
 import NetworkLogo from '@/components/NetworkLogo.vue';
-import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, cut } from '@/util/historyHelpers';
+import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, cut } from '@/helpers/history';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component({

@@ -84,7 +84,7 @@ import CircleButton from '@/components/CircleButton.vue';
 import NetworkLogo from '@/components/NetworkLogo.vue';
 import Switcher from '@/components/Switcher.vue';
 import { Components } from '@/router/routes';
-import { formattedNumber, formattedPrice } from '@/util/numbers';
+import { formattedNumber, formattedPrice } from '@/helpers/numbers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({

@@ -80,9 +80,14 @@ const routes: Array<RouteConfig> = [
   },
   {
     path: '/main',
-    name: Components.Main,
     component: Main,
     children: [
+      {
+        path: '',
+        beforeEnter: (to, from, next) => {
+          next({ name: Components.Wallet });
+        },
+      },
       {
         path: 'manageauths',
         name: Components.ManageAuths,
@@ -95,9 +100,13 @@ const routes: Array<RouteConfig> = [
       },
       {
         path: 'accounts',
-        name: Components.AccountsLayout,
         component: AccountsLayout,
         children: [
+          {
+            path: '/',
+            name: Components.Accounts,
+            component: Accounts,
+          },
           {
             path: ':network',
             name: Components.Nodes,

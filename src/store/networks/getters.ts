@@ -1,7 +1,7 @@
 import type { AssetJson } from '@/interfaces/assets';
 import type { ActiveNodes } from '@/interfaces/nodes';
 import type { FiatJson } from '@/interfaces/common';
-import type { GetNetwork } from './types';
+import type { GetNetwork, GetTokenName } from './types';
 import type { Networks } from '@/interfaces/networks';
 import type { GetHistory } from '@/interfaces/history';
 import type { Currencies } from '@/interfaces/currencies';
@@ -12,6 +12,7 @@ export enum GettersTypes {
   getNetworks = 'getNetworks',
   getNetwork = 'getNetwork',
   getAssets = 'getAssets',
+  getTokenName = 'getTokenName',
   getFiats = 'getFiats',
   getHistory = 'getHistory',
   getCurrencies = 'getCurrencies',
@@ -23,6 +24,7 @@ export type Getters = {
   [GettersTypes.getNetworks](state: State, getters?: GetterTree<State, State> & Getters): Networks;
   [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
   [GettersTypes.getAssets](state: State, getters?: GetterTree<State, State> & Getters): AssetJson[];
+  [GettersTypes.getTokenName](state: State, getters?: GetterTree<State, State> & Getters): GetTokenName;
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
   [GettersTypes.getCurrencies](state: State, getters?: GetterTree<State, State> & Getters): Currencies;
@@ -42,6 +44,11 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getAssets]({ assets }): AssetJson[] {
     return assets;
   },
+  [GettersTypes.getTokenName]:
+    ({ assets }) =>
+    (tokenId: string) => {
+      return assets.find(({ id }) => id === tokenId)?.symbol ?? '';
+    },
   [GettersTypes.getFiats]({ fiats }): FiatJson[] {
     return fiats;
   },

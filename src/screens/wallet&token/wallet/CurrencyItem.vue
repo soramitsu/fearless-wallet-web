@@ -191,13 +191,13 @@ export default class CurrencyItem extends Vue {
   }
 
   openTokenPage() {
-    const { token, mainNetwork } = this.currency;
+    const { mainNetwork, tokenId } = this.currency;
     const network = this.selectedNetwork !== 'All networks' ? this.selectedNetwork : mainNetwork;
 
     this.$router.push({
       name: Components.Token,
       params: {
-        token,
+        tokenId,
         network,
       },
     });

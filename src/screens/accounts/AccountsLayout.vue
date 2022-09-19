@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <ContentForm :height="450">
+  <div class="layout">
+    <ContentForm :height="447">
       <div class="accounts-layout">
         <div class="navigation">
           <div class="left-part">
@@ -307,34 +307,38 @@ export default class AccountsLayout extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.accounts-layout {
-  padding: 10px 0 0 $default-padding;
-  display: flex;
-  flex-direction: column;
+.layout {
   height: 100%;
 
-  .navigation {
+  .accounts-layout {
+    padding: 10px 0 0 $default-padding;
     display: flex;
-    justify-content: space-between;
-    color: rgba(255, 255, 255, 0.75);
-    font-weight: 700;
-    margin: 0 10px 16px 10px;
-    min-height: 32px;
+    flex-direction: column;
+    height: 100%;
 
-    .left-part {
+    .navigation {
       display: flex;
-      align-items: center;
-    }
+      justify-content: space-between;
+      color: rgba(255, 255, 255, 0.75);
+      font-weight: 700;
+      margin: 0 10px 16px 10px;
+      min-height: 32px;
 
-    .chevron {
-      margin-right: 15px;
-      filter: invert(0.35);
-      width: 20px;
-      height: 20px;
+      .left-part {
+        display: flex;
+        align-items: center;
+      }
 
-      &:hover {
-        cursor: pointer;
-        filter: invert(0);
+      .chevron {
+        margin-right: 15px;
+        filter: invert(0.35);
+        width: 20px;
+        height: 20px;
+
+        &:hover {
+          cursor: pointer;
+          filter: invert(0);
+        }
       }
     }
   }

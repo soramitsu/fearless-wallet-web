@@ -48,7 +48,7 @@
 
     <SendForm
       v-if="showSendForm"
-      :_selectedToken="selectedCurrency.token"
+      :_selectedTokenId="selectedCurrency.tokenId"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false)"
     />
@@ -108,7 +108,7 @@ export default class Wallet extends Vue {
   filterValue = '';
   selectedCurrency!: {
     mainNetwork: string;
-    token: string;
+    tokenId: string;
   };
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -192,7 +192,7 @@ export default class Wallet extends Vue {
     if (currency)
       this.selectedCurrency = {
         mainNetwork: currency.mainNetwork,
-        token: currency.token,
+        tokenId: currency.tokenId,
       };
   }
 

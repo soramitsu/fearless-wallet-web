@@ -5,7 +5,7 @@ import type { Wallet } from '@/store/accounts/types';
 import CurrencyController from '@/controllers/currencyController';
 import NetworksController from '@/controllers/networksController';
 
-export function getMockCurrencies(networks: Networks): Currencies {
+function getMockCurrencies(networks: Networks): Currencies {
   const assets = NetworksController.getAssets();
 
   const currencies = networks
@@ -36,7 +36,7 @@ export function getMockCurrencies(networks: Networks): Currencies {
   return currencies;
 }
 
-export function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet) {
+function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet) {
   const relayChains = [];
   const currenciesWithTokens = currencies.filter((currency) => currency.getTotalCountTokens(wallet) !== '0');
   const currenciesWithoutTokens = currencies.filter((currency) => currency.getTotalCountTokens(wallet) === '0');
@@ -68,7 +68,7 @@ export function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet)
   return [...currenciesWithTokens, ...relayChains, ...currenciesWithoutTokens];
 }
 
-export function getProviderUrl(providerName: string, token: string, address: string) {
+function getProviderUrl(providerName: string, token: string, address: string) {
   switch (providerName) {
     case 'moonpay':
       return `https://buy.moonpay.com/?currencyCode=${token}&walletAddress=${address}&showWalletAddressForm=true`;
@@ -78,3 +78,18 @@ export function getProviderUrl(providerName: string, token: string, address: str
       return '';
   }
 }
+
+function getCurrencyOptions(currencies: Currencies) {
+  return currencies.map(({ token, tokenId, mainNetwork }) => {
+    const tokenUpper = token.toUpperCase();
+    const filteredOptions = currencies.filter(({ token: _token }) => _token === token);
+    const label = filteredOptions.length > 1 ? `${tokenUpper} (${mainNetwork.toUpperCase()})` : tokenUpper;
+
+    return {
+      label,
+      value: tokenId,
+    };
+  });
+}
+
+export { getCurrencyOptions, getProviderUrl, defaultSortingCurrencies, getMockCurrencies };

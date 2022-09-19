@@ -1,5 +1,5 @@
 <template>
-  <div class="amount-wrapper">
+  <div :class="classes">
     <FloatInput
       v-model="syncedAmount"
       class="input-amount"
@@ -50,6 +50,10 @@ export default class TeleportForm extends Vue {
   @PropSync('value', { type: String }) syncedValue!: string;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
+  get classes() {
+    return ['amount-wrapper', this.showValueInput ? 'short-inputs' : 'long-inputs'];
+  }
+
   get showFiatSymbol() {
     return this.syncedValue !== '';
   }
@@ -73,11 +77,19 @@ export default class TeleportForm extends Vue {
 </script>
 
 <style lang="scss">
-.amount-wrapper {
+.short-inputs {
   .s-input .el-input {
     width: 140px;
   }
+}
 
+.long-inputs {
+  .s-input .el-input {
+    width: 420px;
+  }
+}
+
+.amount-wrapper {
   .s-input__input {
     flex: 0 !important;
   }

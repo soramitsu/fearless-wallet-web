@@ -17,16 +17,24 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
 import type { HistoryNode } from '@/interfaces/history';
+import type { GetTokenName } from '@/store/networks/types';
 import NetworkLogo from '@/components/NetworkLogo.vue';
-import { getHash, getType, getTypeFormatted, getFormattedDate, getHistoryValue } from '@/util/historyHelpers';
+import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, cut } from '@/util/historyHelpers';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component({
   components: { NetworkLogo },
 })
 export default class HistoryItem extends Vue {
   @Prop(Object) historyNode!: HistoryNode;
-  @Prop(String) token!: string;
+  @Prop(String) tokenId!: string;
+  @Getter(NetworksGettersTypes.getTokenName) getTokenName!: GetTokenName;
+
+  get token() {
+    return this.getTokenName(this.tokenId);
+  }
 
   get date() {
     return getFormattedDate(this.historyNode);
@@ -41,11 +49,20 @@ export default class HistoryItem extends Vue {
   }
 
   get value() {
-    return getHistoryValue(this.historyNode, this.token);
+    return getHistoryValue(this.historyNode, this.tokenId);
   }
 
   get hash() {
-    return getHash(this.historyNode);
+    if (this.type === 'transfer') {
+      return cut(this.historyNode.transfer.to);
+    }
+
+    if (this.type === 'reward') {
+      return this.historyNode.reward.validator;
+    }
+
+    // extrinsic
+    return cut(this.historyNode.extrinsic.hash);
   }
 
   get typeFormatted() {

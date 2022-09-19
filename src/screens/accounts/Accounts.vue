@@ -36,7 +36,6 @@ import { Vue, Component } from 'vue-property-decorator';
 import AccountsItem from './AccountsItem.vue';
 import type { SelectedWallet } from '@/store/accounts/types';
 import type { Networks } from '@/interfaces/networks';
-import ContentForm from '@/components/ContentForm.vue';
 import Input from '@/components/Input.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import Scroll from '@/components/Scroll.vue';
@@ -47,7 +46,6 @@ import { getChainAccounts } from '@/util/networksAndAssetsHelpers';
 
 @Component({
   components: {
-    ContentForm,
     Input,
     CircleButton,
     Scroll,

@@ -16,6 +16,8 @@ import type { FiatJson } from '@/interfaces/common';
 // getters
 export type GetNetwork = (networkName: string) => Network;
 
+export type GetTokenName = (tokenId: string) => string;
+
 // Mutations
 export type SetNetworksStatusProps = {
   networks: Networks;

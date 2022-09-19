@@ -1,7 +1,7 @@
 import type { NetworkName } from './networks';
 
-/* eslint-disable */
 type TokenPriceJson = {
+/* eslint-disable */
   aed: number;
   aed_24h_change: number;
   ars: number;

@@ -76,7 +76,8 @@ export default class CurrencyController {
       const replacedAvailableInNetworks = this.balances[replacedAddress];
 
       if (replacedAvailableInNetworks) {
-        const { balance: replacedBalance } = replacedAvailableInNetworks.find( // eslint-disable-line
+        const { balance: replacedBalance } = replacedAvailableInNetworks.find(
+          // eslint-disable-line
           ({ network: _network }) => _network === network
         )!;
 

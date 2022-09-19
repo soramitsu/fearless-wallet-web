@@ -5,13 +5,12 @@
 
       <InfoList>
         <InfoItem name="from" :value="request.url" />
-        <InfoItem name="genesis" :value="typedPayload.genesisHash" />
-        <InfoItem name="version" :value="typedPayload.specVersion" />
-        <InfoItem name="nounce" :value="typedPayload.nonce" />
-        <InfoItem name="method Data" :value="typedPayload.method" />
+        <InfoItem name="genesis" :value="genesisHash" />
+        <InfoItem name="version" :value="specVersion" />
+        <InfoItem name="nounce" :value="nonce" />
+        <InfoItem name="method Data" :value="method" />
         <InfoItem name="lifetime" :value="morality" />
       </InfoList>
-
       <Input
         v-if="isLocked"
         ref="input"
@@ -40,7 +39,7 @@ import { Getter } from 'vuex-class';
 import { SigningRequest } from '@polkadot/extension-base/background/types';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
-import { registry } from '@/util/registry';
+import { registry } from '@/extension/background/extension-base/src/background/handlers/State';
 import { isSignLocked } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
@@ -72,7 +71,24 @@ export default class Auth extends Vue {
   isSavePass = false;
 
   get typedPayload() {
+    registry.setSignedExtensions(this.payload.signedExtensions);
+
     return registry.createType('ExtrinsicPayload', this.payload, { version: this.payload.version });
+  }
+  get specVersion() {
+    return this.typedPayload.specVersion.toNumber();
+  }
+
+  get genesisHash() {
+    return this.typedPayload.genesisHash.toString();
+  }
+
+  get nonce() {
+    return this.typedPayload.nonce.toString();
+  }
+
+  get method() {
+    return this.typedPayload.method.toString();
   }
 
   async mounted() {

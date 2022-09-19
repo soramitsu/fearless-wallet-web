@@ -1,6 +1,5 @@
-/// <reference types="chrome"/>
-
-// Пока можно не ревьюить, взял из Poldadot extension
+// Copyright 2019-2022 @polkadot/extension-base authors & contributors
+// SPDX-License-Identifier: Apache-2.0
 
 type StoreValue = Record<string, unknown>;
 

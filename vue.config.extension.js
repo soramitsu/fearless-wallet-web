@@ -26,10 +26,10 @@ module.exports = defineConfig({
   chainWebpack: (config) => {
     config.plugin('define').tap((definitions) => {
       definitions[0]['process.env'].EXTENSION_PREFIX = JSON.stringify(process.env.EXTENSION_PREFIX);
+      definitions[0]['process.env'].PORT_PREFIX = JSON.stringify(process.env.PORT_PREFIX);
 
       return definitions;
     });
-
     config.plugin('copy').use(require('copy-webpack-plugin'), [
       {
         patterns: [
@@ -47,6 +47,7 @@ module.exports = defineConfig({
   },
   configureWebpack: (config) => {
     config.plugins.push(new NodePolyfillPlugin());
+    config.devtool = process.env.NODE_ENV === 'development' ? 'inline-source-map' : false;
     config.module.rules
       .filter((rule) => {
         return rule.test.toString().indexOf('scss') !== -1;

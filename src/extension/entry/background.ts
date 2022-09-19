@@ -1,20 +1,27 @@
-import '@polkadot/extension-inject/crossenv';
-
-import handlers from '@polkadot/extension-base/background/handlers';
-import { keyring } from '@polkadot/ui-keyring';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
+import handlers from '../background/extension-base/src/background/handlers';
+import State, { initState } from '../background/extension-base/src/background/handlers/State';
 import type { RequestSignatures, TransportRequestMessage } from '@polkadot/extension-base/background/types';
-// import AccountsStore from './storeChrome/Accounts';
+import { keyring } from '@/controllers/keyringChrome';
 
-chrome.runtime.onConnect.addListener((port): void => {
-  port.onMessage.addListener((data: TransportRequestMessage<keyof RequestSignatures>) => handlers(data, port));
-  port.onDisconnect.addListener(() => console.warn(`Disconnected from ${port.name}`));
+chrome.runtime.onInstalled.addListener(async () => {
+  await initState();
+
+  await chrome.storage.local.get(null).then((store) => {
+    console.info(store, 'chrome store on install');
+  });
+});
+
+chrome.runtime.onConnect.addListener((tab): void => {
+  State.injectFromStorage();
+
+  tab.onMessage.addListener((data: TransportRequestMessage<keyof RequestSignatures>) => handlers(data, tab));
+  tab.onDisconnect.addListener(() => console.warn(`Disconnected from ${tab.name}`));
 });
 
 cryptoWaitReady()
   .then((): void => {
     keyring.loadAll({
-      // store: new AccountsStore(),
       type: 'sr25519',
     });
   })

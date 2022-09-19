@@ -1,3 +1,3 @@
 import { TypeRegistry } from '@polkadot/types';
 
-export const registry = new TypeRegistry();
+// export const registry = new TypeRegistry();

@@ -165,7 +165,7 @@ export function getImgPathByNetworkOrTokenName(value = '') {
 
     case 'sora kusama':
     case 'xor':
-      return 'sora.svg';
+      return 'SORA.svg';
 
     case 'composable finance':
     case 'layr':
@@ -189,7 +189,7 @@ export function getImgPathByNetworkOrTokenName(value = '') {
 
     case 'datahighway tanganika':
     case 'dhx':
-      return 'datahighway.svg';
+      return 'DataHighway.svg';
 
     case 'gm parachain':
     case 'fren':

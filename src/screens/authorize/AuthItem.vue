@@ -6,7 +6,7 @@
       </SCol>
       <SCol :span="2">
         <SRow flex justify="space-around">
-          <img class="trash" src="@/assets/trash.svg" @click="$emit('onRemoveAuth', request.id)" />
+          <img class="trash" src="@/assets/trash.svg" @click="$emit('onRemoveAuth', prepUrl)" />
         </SRow>
       </SCol>
     </SRow>
@@ -17,6 +17,7 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { AuthUrlInfo } from '@polkadot/extension-base/background/handlers/State';
+import { stripUrl } from '@/extension/background/extension-base/src/background/handlers/helpers';
 import Switcher from '@/components/Switcher.vue';
 
 @Component({
@@ -26,6 +27,10 @@ import Switcher from '@/components/Switcher.vue';
 })
 export default class AuthItem extends Vue {
   @Prop(Object) request!: AuthUrlInfo;
+
+  get prepUrl() {
+    return stripUrl(this.request.url);
+  }
 
   get value() {
     return this.request.isAllowed === undefined ? true : this.request.isAllowed;

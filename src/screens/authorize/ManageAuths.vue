@@ -60,8 +60,8 @@ export default class ManageAuths extends Vue {
     console.info(event);
   }
 
-  async removeAuth(id: string) {
-    await this.$store.dispatch('DELETE_AUTH_CONNECTION', id);
+  async removeAuth(url: string) {
+    await this.$store.dispatch('DELETE_AUTH_CONNECTION', url);
   }
 
   back() {

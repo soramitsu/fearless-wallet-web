@@ -59,22 +59,22 @@ const routes: Array<RouteConfig> = [
     component: AddWallet,
   },
   {
-    path: 'authorize',
+    path: '/authorize',
     name: Components.Authorize,
     component: Authorize,
   },
   {
-    path: 'meta',
+    path: '/meta',
     name: Components.MetaRequest,
     component: MetaRequest,
   },
   {
-    path: 'signing',
+    path: '/signing',
     name: Components.SignRequest,
     component: SignRequest,
   },
   {
-    path: 'transaction',
+    path: '/transaction',
     name: Components.Transaction,
     component: Transaction,
   },
@@ -83,12 +83,6 @@ const routes: Array<RouteConfig> = [
     name: Components.Main,
     component: Main,
     children: [
-      {
-        path: '',
-        beforeEnter: (to, from, next) => {
-          next({ name: Components.Wallet });
-        },
-      },
       {
         path: 'manageauths',
         name: Components.ManageAuths,
@@ -104,11 +98,6 @@ const routes: Array<RouteConfig> = [
         name: Components.AccountsLayout,
         component: AccountsLayout,
         children: [
-          {
-            path: '/',
-            name: Components.Accounts,
-            component: Accounts,
-          },
           {
             path: ':network',
             name: Components.Nodes,

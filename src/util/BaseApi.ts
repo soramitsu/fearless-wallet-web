@@ -358,7 +358,7 @@ export default class BaseApi {
   public static windowOpen(path: string): void {
     if (!isExtension()) return;
 
-    const url = `${chrome.extension.getURL('popup.html')}#${path}`;
+    const url = `${chrome.runtime.getURL('popup.html')}#${path}`;
 
     chrome.tabs.create({ url });
   }

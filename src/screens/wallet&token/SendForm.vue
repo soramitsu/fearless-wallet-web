@@ -12,7 +12,7 @@
     >
       <div class="send-form-content">
         <template v-if="step === 1">
-          <Select v-model="selectedToken" :options="optionsCurrency" placeholder="Currency" size="big" class="row" />
+          <Select v-model="selectedTokenId" :options="optionsCurrency" placeholder="Currency" size="big" class="row" />
 
           <Select v-model="selectedNetwork" :options="optionsNetwork" placeholder="Network" size="big" class="row" />
 
@@ -88,7 +88,6 @@
       :amount="amount"
       :value="value"
       :address="addressByNetwork"
-      :token="selectedToken"
       :firstNetwork="selectedNetwork"
       @close="confirmationPasswordPopupClose"
     />
@@ -104,17 +103,19 @@ import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import MaxButton from './MaxButton.vue';
 import type { Currencies } from '@/interfaces/currencies';
 import type { Networks } from '@/interfaces/networks';
+import type { GetTokenName } from '@/store/networks/types';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
 import FloatInput from '@/components/FloatInput.vue';
 import Select from '@/components/Select.vue';
 import Corners from '@/components/Corners.vue';
 import NetworkLogo from '@/components/NetworkLogo.vue';
-import { GettersTypes as ApiGettersTypes, GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { firstCharToUp } from '@/util/helpers';
 import { formattedNumber, formattedPrice, addNumbers } from '@/util/numbers';
+import { getCurrencyOptions } from '@/util/currenciesHelper';
 
 @Component({
   components: {
@@ -134,7 +135,7 @@ export default class SendForm extends Vue {
   showConfirmationPasswordPopup = false;
   partialFee = '';
   selectedNetwork = '';
-  selectedToken = '';
+  selectedTokenId = '';
   recipient = '';
   amount = '';
   value = '';
@@ -142,11 +143,12 @@ export default class SendForm extends Vue {
 
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) _selectedNetwork!: string;
-  @Prop(String) _selectedToken!: string;
-  @Getter(ApiGettersTypes.getNetworks) networks!: Networks;
+  @Prop(String) _selectedTokenId!: string;
+  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
+  @Getter(NetworksGettersTypes.getTokenName) getTokenName!: GetTokenName;
 
   get amountString() {
     return `${+this.amount} ${this.selectedTokenUpper}`;
@@ -198,7 +200,7 @@ export default class SendForm extends Vue {
 
     return (
       !!this.selectedNetwork &&
-      !!this.selectedToken &&
+      !!this.selectedTokenId &&
       !!this.amount &&
       this.isValidRecipientAddress &&
       this.isValidCountTokens
@@ -218,7 +220,7 @@ export default class SendForm extends Vue {
   }
 
   get currency() {
-    return this.currencies.find(({ token }) => token === this.selectedToken);
+    return this.currencies.find(({ tokenId }) => tokenId === this.selectedTokenId);
   }
 
   get optionsNetwork() {
@@ -242,22 +244,26 @@ export default class SendForm extends Vue {
     return formattedPrice(cost);
   }
 
+  get selectedToken() {
+    return this.getTokenName(this.selectedTokenId);
+  }
+
   get selectedTokenUpper() {
     return this.selectedToken.toUpperCase();
   }
 
   get optionsCurrency() {
-    return this.currencies.map(({ token }) => ({ label: token.toUpperCase(), value: token }));
+    return getCurrencyOptions(this.currencies);
   }
 
-  @Watch('selectedToken')
+  @Watch('selectedTokenId')
   updateSelectedNetwork() {
     this.selectedNetwork = this.optionsNetwork?.[0]?.value ?? '';
     this.amount = '';
   }
 
   @Watch('selectedNetwork')
-  @Watch('selectedToken')
+  @Watch('selectedTokenId')
   @Watch('recipient')
   @Watch('amount')
   async createSendTransfer() {
@@ -277,7 +283,7 @@ export default class SendForm extends Vue {
   }
 
   mounted() {
-    this.selectedToken = this._selectedToken;
+    this.selectedTokenId = this._selectedTokenId;
 
     this.$nextTick(() => {
       const index = this.optionsNetwork?.findIndex(({ value }) => value === this._selectedNetwork);

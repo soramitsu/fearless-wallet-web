@@ -41,12 +41,16 @@
       />
     </div>
 
-    <History :token="selectedToken" :currency="currentCurrency" @openHistoryDetailsPopup="openHistoryDetailsPopup" />
+    <History
+      :tokenId="selectedTokenId"
+      :currency="currentCurrency"
+      @openHistoryDetailsPopup="openHistoryDetailsPopup"
+    />
 
     <SendForm
       v-if="showSendForm"
       :_selectedNetwork="selectedNetwork"
-      :_selectedToken="selectedToken"
+      :_selectedTokenId="selectedTokenId"
       :closeForm="toggleVisible.bind(null, 'showSendForm', false)"
     />
 
@@ -59,7 +63,7 @@
     <TeleportForm
       v-if="showTeleportForm"
       :_originalNetwork="selectedNetwork"
-      :_selectedToken="selectedToken"
+      :_selectedTokenId="selectedTokenId"
       :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
     />
 
@@ -82,7 +86,7 @@
       v-if="showHistoryDetailsPopup"
       :handlerClose="closeHistoryDetailsPopup"
       :historyNode="historyNode"
-      :token="selectedToken"
+      :tokenId="selectedTokenId"
     />
   </div>
 </template>
@@ -99,6 +103,7 @@ import SelectNetworkPopup from '../SelectNetworkPopup.vue';
 import HistoryDetailsPopup from './HistoryDetailsPopup.vue';
 import History from './History.vue';
 import type { HistoryNode } from '@/interfaces/history';
+import type { GetTokenName } from '@/store/networks/types';
 import BorderButton from '@/components/BorderButton.vue';
 import TabButton from '@/components/TabButton.vue';
 import BaseApi from '@/util/BaseApi';
@@ -137,6 +142,7 @@ export default class Token extends Vue {
   showSelectNetworkPopup = false;
 
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
+  @Getter(NetworksGettersTypes.getTokenName) getTokenName!: GetTokenName;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
@@ -149,7 +155,7 @@ export default class Token extends Vue {
   }
 
   get currentCurrency() {
-    return this.currencies.find(({ token }) => token === this.selectedToken);
+    return this.currencies.find(({ tokenId }) => tokenId === this.selectedTokenId);
   }
 
   get displayAddressByNetwork() {
@@ -164,8 +170,12 @@ export default class Token extends Vue {
     return this.$route.params.network;
   }
 
+  get selectedTokenId() {
+    return this.$route.params.tokenId;
+  }
+
   get selectedToken() {
-    return this.$route.params.token;
+    return this.getTokenName(this.selectedTokenId);
   }
 
   get price() {
@@ -198,7 +208,7 @@ export default class Token extends Vue {
     this.$router.push({
       name: Components.Token,
       params: {
-        token: this.selectedToken,
+        tokenId: this.selectedTokenId,
         network: network,
       },
     });

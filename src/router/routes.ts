@@ -122,7 +122,7 @@ const routes: Array<RouteConfig> = [
         ],
       },
       {
-        path: ':network/:token',
+        path: ':network/:tokenId',
         name: Components.Token,
         component: Token,
       },

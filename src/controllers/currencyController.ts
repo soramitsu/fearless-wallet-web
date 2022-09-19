@@ -15,13 +15,11 @@ import { ETHEREUM_NETWORKS } from '@/consts/ethereumNetworks';
 import { FPNumber } from '@/util/fp';
 import { getReplacedMetaTyped } from '@/util/helpers';
 
-type Options = Partial<SignerOptions> & { networkName?: string };
-
 export default class CurrencyController {
   private readonly lsCurrency = new LocalStorageController('currency');
   private readonly currencyVisibleStorageName = 'currency_visible';
   public transfer!: SubmittableExtrinsic<'promise'> | undefined;
-  public options: Options = {};
+  public options: Partial<SignerOptions> = {};
   public balances: Balances = {};
   public price = 0;
   public hours24Change = 0;
@@ -257,7 +255,7 @@ export default class CurrencyController {
 
   public getPrecisionValue(amount: string): string {
     const assets: AssetJson[] = NetworksController.getAssets();
-    const tokenAssets = assets.find(({ id }) => id === this.token)!; // eslint-disable-line
+    const tokenAssets = assets.find(({ id }) => id === this.tokenId)!; // eslint-disable-line
     const precision = tokenAssets?.precision ?? 0;
     const value = amount === '' ? 0 : +amount;
 
@@ -284,7 +282,7 @@ export default class CurrencyController {
     const precisionAmount = this.getPrecisionValue(amount);
     const networks = NetworksController.getNetworks();
     const { api, settings: { DefaultTip } } = networks.find(({ name }) => name === networkName)!; // eslint-disable-line
-    const options = { tip: DefaultTip, networkName };
+    const options = { tip: DefaultTip };
 
     try {
       this.transfer = api.tx.balances.transfer(to, precisionAmount);
@@ -313,7 +311,6 @@ export default class CurrencyController {
 
     if (!recipientParaId) {
       this.transfer = undefined;
-      this.options = {};
 
       return;
     }
@@ -321,7 +318,6 @@ export default class CurrencyController {
     const params = getParams(isParaTeleport, recipientParaId, publicKey, new BN(precisionAmount));
 
     this.transfer = tx(...params);
-    this.options = { networkName: originalNetworkName };
   }
 
   public async getPartialFee(from: string): Promise<string> {
@@ -335,12 +331,9 @@ export default class CurrencyController {
 
   public async send(from: string, amount: string): Promise<void> {
     const pair = BaseApi.getPair(from);
-    const options = this.options;
-    const networkName = options.networkName!; //eslint-disable-line
 
-    delete options.networkName;
-
-    const unsubscribe = await this.transfer!.signAndSend(pair, this.options, ({ status }) => { //eslint-disable-line
+    const unsubscribe = await this.transfer!.signAndSend(pair, this.options, ({ status }) => {
+      //eslint-disable-line
       if (status.isInBlock) {
         console.info(`Successful transfer of ${amount} with hash ${status.asInBlock.toHex()}`);
       } else if (status.isFinalized) {

@@ -36,7 +36,7 @@ export default class Menu extends Vue {
 
     return (
       menuItem.toLowerCase() === this.currentRouteName ||
-      (menuItem === 'Wallet' && (this.$route.params.token !== undefined || isHighlightWalletItem))
+      (menuItem === 'Wallet' && (this.$route.params.tokenId !== undefined || isHighlightWalletItem))
     );
   }
 

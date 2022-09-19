@@ -83,12 +83,10 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   @Prop(String) amount!: string;
   @Prop(String) value!: string;
-  @Prop(String) token!: string;
   @Prop(String) firstNetwork!: string;
   @Prop(String) secondNetwork!: string;
   @Prop(String) address!: string;
   @Prop(Object) currency!: Currency;
-
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
 
   get disabledButton() {
@@ -106,7 +104,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transferAmountString() {
-    return `-${this.amount} ${this.token.toUpperCase()}`;
+    return `-${this.amount} ${this.currency.token.toUpperCase()}`;
   }
 
   get transferValueString() {

@@ -12,7 +12,7 @@
     >
       <div class="teleport-form-content">
         <template v-if="step === 1">
-          <Select v-model="selectedToken" :options="optionsCurrency" placeholder="Currency" size="big" class="row" />
+          <Select v-model="selectedTokenId" :options="optionsCurrency" placeholder="Currency" size="big" class="row" />
 
           <Select
             v-model="originalNetwork"
@@ -94,11 +94,9 @@
 
     <ConfirmationPasswordPopup
       v-if="showConfirmationPasswordPopup"
-      header="Teleport"
       :currency="currency"
       :amount="amount"
       :value="value"
-      :token="selectedToken"
       :address="addressByNetwork"
       :firstNetwork="originalNetwork"
       :secondNetwork="destinationNetwork"
@@ -116,6 +114,7 @@ import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import AmountInputs from './AmountInputs.vue';
 import type { Currencies } from '@/interfaces/currencies';
 import type { Networks } from '@/interfaces/networks';
+import type { GetTokenName } from '@/store/networks/types';
 import Select from '@/components/Select.vue';
 import FloatInput from '@/components/FloatInput.vue';
 import Popup from '@/components/Popup.vue';
@@ -125,6 +124,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { firstCharToUp } from '@/util/helpers';
 import { addNumbers, formattedNumber, formattedPrice } from '@/util/numbers';
+import { getCurrencyOptions } from '@/util/currenciesHelper';
 
 @Component({
   components: {
@@ -143,7 +143,7 @@ export default class TeleportForm extends Vue {
   showConfirmationPasswordPopup = false;
   originalNetworkPartialFee = '';
   destinationNetworkPartialFee = '';
-  selectedToken = '';
+  selectedTokenId = '';
   originalNetwork = '';
   destinationNetwork = '';
   amount = '';
@@ -152,11 +152,12 @@ export default class TeleportForm extends Vue {
 
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) _originalNetwork!: string;
-  @Prop(String) _selectedToken!: string;
+  @Prop(String) _selectedTokenId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
-  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(NetworksGettersTypes.getTokenName) getTokenName!: GetTokenName;
 
   get showFiatSymbol() {
     return this.value !== '';
@@ -206,6 +207,10 @@ export default class TeleportForm extends Vue {
     return formattedNumber(count, 4);
   }
 
+  get selectedToken() {
+    return this.getTokenName(this.selectedTokenId);
+  }
+
   get selectedTokenUpper() {
     return this.selectedToken.toUpperCase();
   }
@@ -224,7 +229,7 @@ export default class TeleportForm extends Vue {
   }
 
   get currency() {
-    return this.currencies.find(({ token }) => token === this.selectedToken);
+    return this.currencies.find(({ tokenId }) => tokenId === this.selectedTokenId);
   }
 
   get showBackIcon() {
@@ -245,7 +250,7 @@ export default class TeleportForm extends Vue {
     if (!this.currency) return false;
 
     return (
-      !!this.selectedToken &&
+      !!this.selectedTokenId &&
       !!this.originalNetwork &&
       !!this.destinationNetwork &&
       !!this.amount &&
@@ -254,7 +259,7 @@ export default class TeleportForm extends Vue {
   }
 
   get optionsCurrency() {
-    return this.currencies.map(({ token }) => ({ label: token.toUpperCase(), value: token }));
+    return getCurrencyOptions(this.currencies);
   }
 
   get optionsNetwork() {
@@ -270,7 +275,7 @@ export default class TeleportForm extends Vue {
     return this.currency?.getTransactionAddress(this.selectedWallet, this.originalNetwork) ?? '';
   }
 
-  @Watch('selectedToken')
+  @Watch('selectedTokenId')
   updateSelectedNetwork() {
     this.originalNetwork = this.optionsNetwork?.[0]?.value ?? '';
     this.destinationNetwork = '';
@@ -279,7 +284,7 @@ export default class TeleportForm extends Vue {
 
   @Watch('originalNetwork')
   @Watch('destinationNetwork')
-  @Watch('selectedToken')
+  @Watch('selectedTokenId')
   @Watch('amount')
   async createTeleportTransfer() {
     this.originalNetworkPartialFee = '';
@@ -298,7 +303,7 @@ export default class TeleportForm extends Vue {
   }
 
   mounted() {
-    this.selectedToken = this._selectedToken;
+    this.selectedTokenId = this._selectedTokenId;
 
     this.$nextTick(() => {
       const index = this.optionsNetwork?.findIndex(({ value }) => value === this._originalNetwork);
@@ -334,10 +339,12 @@ export default class TeleportForm extends Vue {
       this.selectedWallet
     );
     const partialFee = await this.createTransferAndGetFee(maxTransferableCountTokens);
-
-    this.amount = this.currency
+    const transferableCountTokens = this.currency
       .getTransferableCountTokensMinusFee(partialFee, this.originalNetwork, this.selectedWallet)
       .toString();
+
+    this.amount = transferableCountTokens;
+    this.value = this.currency.getCostOfTokens(transferableCountTokens).toString();
   }
 
   confirmationPasswordPopupClose(closeForm: boolean) {

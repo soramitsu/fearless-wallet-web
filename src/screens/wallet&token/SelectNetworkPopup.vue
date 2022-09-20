@@ -20,7 +20,7 @@ import type { Networks as NetworksType } from '@/interfaces/networks';
 import { firstCharToUp } from '@/helpers/common';
 import SelectPopup from '@/components/SelectPopup.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { getImgPathByNetworkOrTokenName } from '@/helpers/imgPath';
+import { getImgPath } from '@/helpers/imgPath';
 
 interface Options {
   label: string;
@@ -47,7 +47,7 @@ export default class SelectNetworkButton extends Vue {
         return {
           label: firstCharToUp(name),
           value: name,
-          path: `networks/${getImgPathByNetworkOrTokenName(name)}`,
+          path: getImgPath(name),
         };
       }),
     ];

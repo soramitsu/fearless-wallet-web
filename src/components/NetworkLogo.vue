@@ -5,7 +5,7 @@
 <script lang="ts">
 import { Vue, Prop, Component } from 'vue-property-decorator';
 import type { RelayChainName } from '@/consts/teleport';
-import { getImgPathByNetworkOrTokenName } from '@/helpers/imgPath';
+import { getImgPath } from '@/helpers/imgPath';
 
 @Component
 export default class NetworkLogo extends Vue {
@@ -24,7 +24,7 @@ export default class NetworkLogo extends Vue {
   get imgPath() {
     if (this.name === '') return '';
 
-    return require(`@/assets/networks/${getImgPathByNetworkOrTokenName(this.name, this.relayChain)}`);
+    return require(`@/assets/${getImgPath(this.name, this.relayChain)}`);
   }
 }
 </script>

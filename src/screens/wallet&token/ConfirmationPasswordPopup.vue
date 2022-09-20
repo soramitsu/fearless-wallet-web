@@ -7,6 +7,7 @@
         <div class="text row">Enter password to confirm the transaction</div>
 
         <ValidatedInput
+          v-if="!isUnlocked"
           v-model="password"
           placeholder="Password"
           size="big"
@@ -54,6 +55,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import { isSignLocked } from '../../extension/messaging';
 import type { Currencies, Currency } from '@/interfaces/currencies';
 import Loader from '@/components/Loader.vue';
 import Popup from '@/components/Popup.vue';
@@ -86,6 +88,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(String) firstNetwork!: string;
   @Prop(String) secondNetwork!: string;
   @Prop(String) address!: string;
+  @Prop(String) transactionId!: string;
+  @Prop({ default: false }) isSendFromExtension!: boolean;
   @Prop(Object) currency!: Currency;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
 
@@ -122,18 +126,30 @@ export default class ConfirmationPasswordPopup extends Vue {
     this.$emit('close', this.isUnlock);
   }
 
+  async mounted() {
+    if (this.isSendFromExtension) {
+      const { isLocked } = await isSignLocked(this.transactionId);
+      this.isUnlock = !isLocked;
+      this.isSavePass = this.isUnlock;
+    }
+  }
+
   async send() {
-    this.isUnlock = BaseApi.unlockPair(this.address, this.password);
-
     if (!this.isUnlock) {
-      this.isErrorPassword = true;
+      this.isErrorPassword = !BaseApi.unlockPair(this.address, this.password);
 
-      return;
+      if (this.isErrorPassword) return;
     }
 
     this.loading = true;
 
-    await this.currency?.send(this.address, this.amount);
+    if (this.isSendFromExtension) {
+      this.$store.dispatch('APPROVE_SIGN_PASSWORD', {
+        id: this.transactionId,
+        isSavePass: this.isSavePass,
+        password: this.password,
+      });
+    } else await this.currency?.send(this.address, this.amount);
 
     this.loading = false;
   }

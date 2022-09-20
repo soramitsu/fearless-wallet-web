@@ -1,7 +1,7 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { AugmentedActionContext as Context } from '@/store/networks/types';
-import type { Networks, DisconnectNetworks } from '@/interfaces/networks';
+import type { Networks, DisconnectNetworks, NetworkAssets, Network } from '@/interfaces/networks';
 import { formatBalance } from '@/util/balances';
 import { MutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -49,80 +49,81 @@ function connectToNetworksApi(networks: DisconnectNetworks, autoConnectMs: numbe
   });
 }
 
-function updateCurrencyInfo(context: Context, tokenId: string, precision: number) {
-  const { commit, state, rootState } = context;
-  const { tokensPriceJson } = state;
-  const tokensPrice = tokensPriceJson[tokenId] ?? {};
-  const selectedFiat = rootState.account.selectedFiat;
+function updateCurrencyInfo(context: Context, network: Network) {
+  const { commit, rootState } = context;
+  const { assets: networkAssets, parentId } = network;
 
-  commit(MutationTypes.UPDATE_CURRENCY, {
-    tokenId,
-    tokensPrice,
-    precision,
-    selectedFiat,
+  networkAssets.forEach(({ assetId }) => {
+    const selectedFiat = rootState.account.selectedFiat;
+
+    commit(MutationTypes.UPDATE_CURRENCY, {
+      tokenId: assetId,
+      selectedFiat,
+      parentId,
+    });
   });
 }
 
-function subscribeToBalancesUtilityTokens(
+function subscribeUtilityTokensBalances(
   context: Context,
   api: ApiPromise,
   tokenId: string,
-  network: string,
   address: string,
-  precision: number
+  network: Network
 ) {
-  const { getters, commit } = context;
+  const { getters, commit, state } = context;
+  const { assets } = state;
+  const { name: networkName, parentId } = network;
+  const precision = assets.find((asset) => asset.id === tokenId)?.precision ?? 0;
 
   api.rx.query.system.account(address).subscribe(async (result) => {
     const data = (result as any).data;
     const balance = formatBalance(data as AccountData, precision);
-    const historyForNetwork = getters[NetworksGettersTypes.getHistory](network);
+    const historyForNetwork = getters[NetworksGettersTypes.getHistory](networkName);
     const historyForAddress = historyForNetwork?.[address];
     const delay = historyForAddress ? 45 : 0;
 
     commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
       walletAddress: address,
-      network,
+      network: networkName,
       tokenId,
       balance,
+      parentId,
     });
 
-    NetworksController.loadHistory(network, address, delay);
+    NetworksController.loadHistory(networkName, address, delay);
   });
 }
 
-function subscribeToBalancesOrmlTokens(
+function subscribeOrmlTokensBalances(
   context: Context,
   api: ApiPromise,
-  tokenId: string,
-  network: string,
   address: string,
-  precision: number
+  ormlTokensIds: NetworkAssets[]
 ) {
-  const { getters, commit } = context;
+  const { commit, state } = context;
+  const { assets } = state;
 
-  api.rx.query.system.account(address).subscribe(async (result) => {
-    const data = (result as any).data;
-    const balance = formatBalance(data as AccountData, precision);
-    const historyForNetwork = getters[NetworksGettersTypes.getHistory](network);
-    const historyForAddress = historyForNetwork?.[address];
-    const delay = historyForAddress ? 45 : 0;
+  ormlTokensIds.forEach(({ assetId }) => {
+    const { symbol } = assets.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const options = { Token: symbol.toUpperCase() };
 
-    commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
-      walletAddress: address,
-      network,
-      tokenId,
-      balance,
-    });
+    // api.rx.query.tokens?.accounts(address, options).subscribe(async (result) => {
+    //   const data = (result as any).data;
 
-    NetworksController.loadHistory(network, address, delay);
+    //   console.log(symbol, result);
+
+    //   // const balance = formatBalance(data as AccountData);
+
+    //   // console.log('balance', balance);
+    // });
   });
 }
 
 export {
   connectToApi,
   connectToNetworksApi,
-  subscribeToBalancesUtilityTokens,
-  subscribeToBalancesOrmlTokens,
+  subscribeUtilityTokensBalances,
+  subscribeOrmlTokensBalances,
   updateCurrencyInfo,
 };

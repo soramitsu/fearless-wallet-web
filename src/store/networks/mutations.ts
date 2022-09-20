@@ -64,16 +64,33 @@ const mutations: MutationTree<State> & Mutations = {
     state.tokensPriceJson = tokensPriceJson;
   },
 
-  [MutationTypes.UPDATE_CURRENCY](state, { precision, selectedFiat, tokenId, tokensPrice }) {
-    const { currencies } = state;
-    const currentCurrency = currencies?.find(({ tokenId: savedTokenId }) => savedTokenId === tokenId)!; //eslint-disable-line
+  [MutationTypes.UPDATE_CURRENCY](state, { selectedFiat, tokenId, parentId }) {
+    const { currencies, assets, networks, tokensPriceJson } = state;
+    const { precision, symbol } = assets.find(({ id }) => id === tokenId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name;
+    const tokensPrice = tokensPriceJson[tokenId] ?? {};
+
+    const currentCurrency = currencies.find(({ tokenId: _tokenId, token: _token, relayChain: _relayChain,}) => { //eslint-disable-line
+      const isExistingTokenId = _tokenId === tokenId;
+      const isExistingTokenSymbol = _token === symbol && _relayChain === relayChain;
+
+      return isExistingTokenId || isExistingTokenSymbol;
+    })!;
 
     currentCurrency.updateCurrency({ precision, tokensPrice, selectedFiat });
   },
 
-  [MutationTypes.UPDATE_CURRENCY_BALANCE](state, { walletAddress, network, tokenId, balance }) {
-    const { currencies } = state;
-    const currentCurrency = currencies.find(({ tokenId: savedTokenId }) => savedTokenId === tokenId)!; //eslint-disable-line
+  [MutationTypes.UPDATE_CURRENCY_BALANCE](state, { walletAddress, network, tokenId, balance, parentId }) {
+    const { currencies, assets, networks } = state;
+    const { symbol } = assets.find(({ id }) => id === tokenId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name;
+
+    const currentCurrency = currencies.find(({ tokenId: _tokenId, token: _token, relayChain: _relayChain,}) => { //eslint-disable-line
+      const isExistingTokenId = _tokenId === tokenId;
+      const isExistingTokenSymbol = _token === symbol && _relayChain === relayChain;
+
+      return isExistingTokenId || isExistingTokenSymbol;
+    })!;
 
     currentCurrency.updateCurrencyBalance({ walletAddress, network, balance });
   },

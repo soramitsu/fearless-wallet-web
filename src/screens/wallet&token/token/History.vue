@@ -15,7 +15,7 @@
               :key="historyNode.id"
               :historyNode="historyNode"
               :tokenId="currency.tokenId"
-              :parentNetwork="currency.parentNetwork"
+              :relayChain="currency.relayChain"
               @click.native="$emit('openHistoryDetailsPopup', historyNode)"
             />
           </template>

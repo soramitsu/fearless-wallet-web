@@ -52,9 +52,8 @@ export type SetAllNetworksIsLoaded = {
 
 export type UpdateCurrencyProps = {
   tokenId: string;
-  tokensPrice: TokenPriceJson;
-  precision: number;
   selectedFiat: string;
+  parentId: string | undefined;
 };
 
 export type UpdateCurrencyBalanceProps = {
@@ -62,6 +61,7 @@ export type UpdateCurrencyBalanceProps = {
   network: string;
   tokenId: string;
   balance: AccountBalance;
+  parentId: string | undefined;
 };
 
 export type SetNetworkActiveNodeProps = {

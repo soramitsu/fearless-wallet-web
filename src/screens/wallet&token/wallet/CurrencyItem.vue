@@ -5,7 +5,7 @@
     </div>
 
     <div class="img-container">
-      <NetworkLogo class="main-network-img" :name="currency.mainNetwork" :width="32" />
+      <NetworkLogo class="main-network-img" :name="currency.token" :relayChain="currency.relayChain" :width="32" />
     </div>
 
     <div class="descriptions-column">

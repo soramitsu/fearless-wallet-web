@@ -10,29 +10,35 @@ function getMockCurrencies(networks: Networks): Currencies {
 
   const currencies = networks
     .reduce((result, network) => {
-      const { assets: networkAssets, name, parentId } = network;
-      const tokenId = networkAssets.find(({ isUtility }) => isUtility)!.assetId; // eslint-disable-line
-      const token = assets.find(({ id }) => id === tokenId)!.symbol; // eslint-disable-line
-      const purchaseProviders = networkAssets[0]?.purchaseProviders ?? [];
-      const parentNetwork = networks.find(({ chainId }) => chainId === parentId)?.name;
-      const tokenIndex = result.findIndex(({ tokenId: savedTokenId }) => savedTokenId === tokenId);
+      const { assets: networkAssets, name: mainNetwork, parentId } = network;
+      const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNetwork;
 
-      if (tokenIndex === -1)
-        result.push({
-          mainNetwork: name,
-          tokenId,
-          token,
-          parentNetwork,
-          precision: 0,
-          tokenPriceJson: {} as TokenPriceJson,
-          purchaseProviders,
+      networkAssets.forEach(({ assetId, purchaseProviders }) => {
+        const { symbol } = assets.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+        const tokenIndex = result.findIndex(({ assetId: _assetId, symbol: _symbol, relayChain: _relayChain }) => {
+          const isExistingTokenId = _assetId === assetId;
+          const isExistingTokenSymbol = _symbol === symbol && _relayChain === relayChain;
+
+          return isExistingTokenId || isExistingTokenSymbol;
         });
+
+        if (tokenIndex === -1)
+          result.push({
+            mainNetwork,
+            assetId,
+            symbol,
+            relayChain,
+            precision: 0,
+            tokenPriceJson: {} as TokenPriceJson,
+            providers: purchaseProviders ?? [],
+          });
+      });
 
       return result;
     }, [] as any[])
     .map(
-      ({ mainNetwork, tokenPriceJson, precision, tokenId, parentNetwork, token, purchaseProviders }) =>
-        new CurrencyController(mainNetwork, tokenId, token, tokenPriceJson, precision, purchaseProviders, parentNetwork)
+      ({ mainNetwork, tokenPriceJson, precision, assetId, symbol, relayChain, providers }) =>
+        new CurrencyController(mainNetwork, assetId, symbol, tokenPriceJson, precision, providers, relayChain)
     );
 
   return currencies;
@@ -82,10 +88,10 @@ function getProviderUrl(providerName: string, token: string, address: string) {
 }
 
 function getCurrencyOptions(currencies: Currencies) {
-  return currencies.map(({ token, tokenId, parentNetwork }) => {
+  return currencies.map(({ token, tokenId, relayChain }) => {
     const tokenUpper = token.toUpperCase();
     const filteredOptions = currencies.filter(({ token: _token }) => _token === token);
-    const label = filteredOptions.length > 1 ? `${tokenUpper} (${parentNetwork.toUpperCase()})` : tokenUpper;
+    const label = filteredOptions.length > 1 ? `${tokenUpper} (${relayChain.toUpperCase()})` : tokenUpper;
 
     return {
       label,

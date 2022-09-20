@@ -1,6 +1,6 @@
 <template>
   <div class="history-item">
-    <NetworkLogo :name="token" :relayChain="parentNetwork" />
+    <NetworkLogo :name="token" :relayChain="relayChain" />
 
     <div class="column">
       <div class="first-row">
@@ -32,7 +32,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 export default class HistoryItem extends Vue {
   @Prop(Object) historyNode!: HistoryNode;
   @Prop(String) tokenId!: string;
-  @Prop(String) parentNetwork!: RelayChainName;
+  @Prop(String) relayChain!: RelayChainName;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getTokenName) getTokenName!: GetTokenName;
 

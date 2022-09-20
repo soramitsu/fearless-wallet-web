@@ -26,8 +26,8 @@ import { getMockCurrencies } from '@/helpers/currencies';
 import {
   connectToApi,
   connectToNetworksApi,
-  subscribeToBalancesUtilityTokens,
-  subscribeToBalancesOrmlTokens,
+  subscribeUtilityTokensBalances,
+  subscribeOrmlTokensBalances,
   updateCurrencyInfo,
 } from '@/helpers/networksConnection';
 import { PAGE_SIZE } from '@/consts/history';
@@ -100,22 +100,22 @@ const actions: ActionTree<State, State> & Actions = {
     commit(MutationTypes.SET_FIATS, { fiats: fiatsJson });
   },
 
-  async [ActionTypes.LOAD_TOKENS_PRICE]({ commit, state: { networks, assets, fiats } }) {
-    const assetsIds = networks.map(({ assets }) => assets[0].assetId);
+  async [ActionTypes.LOAD_TOKENS_PRICE]({ commit, state: { assets, fiats } }) {
     const urlFiatsPart = fiats.map(({ id }) => id).join('%2C');
-    const urlTokensPart = assets
-      .filter(({ priceId, id }) => assetsIds.includes(id) && !!priceId)
-      .map(({ priceId }) => priceId)
-      .join('%2C');
+    const urlsTokens = assets.filter(({ priceId }) => !!priceId).map(({ priceId }) => priceId);
+    const urlTokensPart = [...new Set(urlsTokens)].join('%2C');
+
     const url = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${urlFiatsPart}&include_24hr_change=true&ids=${urlTokensPart}`;
     const { data } = await axios.get(url);
     const tokensPriceJson: TokensPriceJson = data;
     const tokensPrice: TokensPriceJson = {};
 
-    for (const network in tokensPriceJson) {
-      const assetId = assets.find(({ priceId }) => priceId === network)!.id;
+    for (const priceId in tokensPriceJson) {
+      const assetIdS = assets.filter(({ priceId: _priceId }) => _priceId === priceId);
 
-      tokensPrice[assetId] = tokensPriceJson[network];
+      assetIdS.forEach(({ id }) => {
+        tokensPrice[id] = tokensPriceJson[priceId];
+      });
     }
 
     commit(MutationTypes.SET_TOKENS_PRICE, { tokensPriceJson: tokensPrice });
@@ -153,7 +153,7 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.SUBSCRIBE_TO_BALANCES](context, { accounts, networksProps }) {
     const { commit, state } = context;
-    const { networks: networksStore, assets } = state;
+    const { networks: networksStore } = state;
 
     commit(MutationTypes.SET_ALL_NETWORKS_IS_LOADED, {
       value: false,
@@ -164,25 +164,25 @@ const actions: ActionTree<State, State> & Actions = {
 
     const promises = networks.map(async (network) => {
       const { api, isEthereumNetwork, name: networkName, assets: networkAssets } = network;
-      const utilityTokenId = networkAssets.find(({ isUtility }) => isUtility)!.assetId; // eslint-disable-line
-      const precision = assets.find((asset) => asset.id === utilityTokenId)?.precision ?? 0;
+      const { assetId: utilityTokenId } = networkAssets.find(({ isUtility }) => isUtility)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+      const ormlTokensIds = networkAssets.filter(({ type }) => type === 'ormlAsset');
 
       await api.isReadyOrError;
 
       Object.entries(accounts).forEach(async ([walletAddress, { type, json }]) => {
         const { isReplacedAccount, replacedSettings } = getReplacedMetaTyped(json.meta);
-        const networksList = Object.values(replacedSettings ?? []).flat();
+        const replacedNetworksList = Object.values(replacedSettings ?? []).flat();
 
         // if it is a replaced account and the iterated network is not in the networksList
-        if (isReplacedAccount && !networksList.includes(networkName)) return;
+        if (isReplacedAccount && !replacedNetworksList.includes(networkName)) return;
 
         // ethereum accounts only subscribe to the ethereum networks and
         // substrate accounts only subscribe to the substrate networks
         if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
 
-        updateCurrencyInfo(context, utilityTokenId, precision);
-        subscribeToBalancesUtilityTokens(context, api, utilityTokenId, networkName, walletAddress, precision);
-        subscribeToBalancesOrmlTokens(context, api, utilityTokenId, networkName, walletAddress, precision);
+        updateCurrencyInfo(context, network);
+        subscribeUtilityTokensBalances(context, api, utilityTokenId, walletAddress, network);
+        subscribeOrmlTokensBalances(context, api, walletAddress, ormlTokensIds);
       });
     });
 
@@ -198,7 +198,7 @@ const actions: ActionTree<State, State> & Actions = {
     { network, nodeName, nodeUrl: nodeUrlProp, oldNodeUrl }
   ) {
     const networks = state.networks;
-    const networkApi = networks.find(({ name }) => name === network)!; // eslint-disable-line
+    const networkApi = networks.find(({ name }) => name === network)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
     const nodeUrl = nodeUrlProp === '' ? networkApi.nodes[0].url : nodeUrlProp;
 
     commit(MutationTypes.SET_NETWORK_ACTIVE_NODE, {

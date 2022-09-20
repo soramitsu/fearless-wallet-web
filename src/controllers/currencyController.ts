@@ -1,6 +1,5 @@
 import { BN, isFunction } from '@polkadot/util';
 import type { AvailableInNetworks, Balances, BalanceFP, AvailableInNetworksFP } from '@/interfaces/currencies';
-import type { UpdateCurrencyProps, UpdateCurrencyBalanceProps } from '@/store/networks/types';
 import type { AssetJson } from '@/interfaces/assets';
 import type { TokenPriceJson, KeysTokenPriceJson } from '@/interfaces/tokens';
 import type { SubmittableExtrinsic } from '@polkadot/api-base/types';
@@ -23,7 +22,7 @@ export default class CurrencyController {
   public balances: Balances = {};
   public price = 0;
   public hours24Change = 0;
-  public parentNetwork!: RelayChainName;
+  public relayChain!: RelayChainName;
 
   constructor(
     public mainNetwork: string,
@@ -32,9 +31,9 @@ export default class CurrencyController {
     public tokensPrice: TokenPriceJson,
     public precision: number,
     public providers: string[],
-    parentNetwork: RelayChainName
+    relayChain: RelayChainName
   ) {
-    if (parentNetwork) this.parentNetwork = parentNetwork;
+    if (relayChain) this.relayChain = relayChain;
   }
 
   public updatePrice(selectedFiat: string) {
@@ -129,24 +128,20 @@ export default class CurrencyController {
     return addressByNetwork;
   }
 
-  public updateCurrency({ precision, tokensPrice, selectedFiat }: Omit<UpdateCurrencyProps, 'tokenId'>): void {
+  public updateCurrency({ precision, tokensPrice, selectedFiat }: Record<string, any>): void {
     this.precision = precision ?? this.precision;
     this.tokensPrice = tokensPrice ?? this.tokensPrice;
 
     this.updatePrice(selectedFiat);
   }
 
-  public updateCurrencyBalance({
-    walletAddress,
-    network: networkProp,
-    balance,
-  }: Omit<UpdateCurrencyBalanceProps, 'tokenId'>): CurrencyController {
+  public updateCurrencyBalance({ walletAddress, network, balance }: Record<string, any>): CurrencyController {
     const { frozen, locked, reserved, total, transferable } = balance;
     const oldBalances = { ...this.balances };
     let balancesForAddress = oldBalances[walletAddress];
 
     const newValue = {
-      network: networkProp,
+      network,
       balance: {
         frozen: FPNumber.fromCodecValue(frozen, this.precision),
         locked: FPNumber.fromCodecValue(locked, this.precision),
@@ -157,7 +152,7 @@ export default class CurrencyController {
     };
 
     if (balancesForAddress) {
-      const index = balancesForAddress.findIndex(({ network }) => network === networkProp);
+      const index = balancesForAddress.findIndex(({ network: _network }) => _network === network);
 
       if (index === -1) balancesForAddress.push(newValue);
       else balancesForAddress.splice(index, 1, newValue);

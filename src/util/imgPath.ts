@@ -1,6 +1,47 @@
 import type { RelayChainName } from '@/consts/teleport';
 
-export function getImgPathByNetworkOrTokenName(value = '', relayChain?: RelayChainName) {
+const NETWORKS_PATH = 'networks';
+const ORML_PATH = 'orml';
+
+function getOrmlFileName(value: string) {
+  switch (value.toLowerCase()) {
+    case 'ausd':
+      return 'aUSD.svg';
+    case 'lcdot':
+      return 'lcDOT.svg';
+    case 'tdot':
+      return 'tDOT.svg';
+    case 'tai':
+      return 'TAI.svg';
+    case 'ldot':
+      return 'lDOT.svg';
+    case 'vsksm':
+      return 'vsKSM.svg';
+    case 'taiksm':
+      return 'taiKSM.svg';
+    case 'aris':
+      return 'ARIS.svg';
+    case 'lksm':
+      return 'LKSM.svg';
+    case 'kusd':
+      return 'KUSD.svg';
+    case 'rmrk':
+      return 'RMRK.svg';
+    case 'kbtc':
+      return 'KBTC.svg';
+    case 'usdt':
+      return 'USDT.svg';
+    case 'zlk':
+      return 'ZLK.svg';
+    case 'eqd':
+      return 'EQD.svg';
+
+    default:
+      return '';
+  }
+}
+
+function getImgPathByNetworkOrTokenName(value = '', relayChain?: RelayChainName) {
   switch (value.toLowerCase()) {
     case 'statemine':
       return 'statemine.svg';
@@ -213,6 +254,14 @@ export function getImgPathByNetworkOrTokenName(value = '', relayChain?: RelayCha
     case 'mgx':
       return 'mangata.svg';
 
+    case 'amplitude':
+    case 'ampe':
+      return 'amplitude.svg';
+
+    case 'darwinia parachain':
+    case 'ring':
+      return 'darwinia.svg';
+
     //////////////////////
 
     case 'litentry':
@@ -255,3 +304,13 @@ export function getImgPathByNetworkOrTokenName(value = '', relayChain?: RelayCha
       return '_default.svg';
   }
 }
+
+function getImgPath(value: string, relayChain?: RelayChainName) {
+  const ormlFileName = getOrmlFileName(value);
+
+  if (ormlFileName !== '') return `${ORML_PATH}/${ormlFileName}`;
+
+  return `${NETWORKS_PATH}/${getImgPathByNetworkOrTokenName(value, relayChain)}`;
+}
+
+export { getImgPath };

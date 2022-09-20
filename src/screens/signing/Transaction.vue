@@ -18,7 +18,6 @@
       @close="onClose"
       :address="payload.address"
       :transactionId="request.id"
-      :isSendFromExtension="true"
     />
 
     <Button size="big" class="button" text="Sign the transaction" @click="onSign" />
@@ -32,7 +31,6 @@ import { SigningRequest } from '@polkadot/extension-base/background/types';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { registry } from '@/extension/background/extension-base/src/background/handlers/State';
-import { isSignLocked } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
@@ -62,9 +60,6 @@ export default class Auth extends Vue {
   @Getter('getSignRequest') request!: SigningRequest;
 
   isLocked = false;
-  password = '';
-  isErrorPassword = false;
-  isSavePass = false;
   isSignPopupVisible = false;
 
   get typedPayload() {
@@ -72,6 +67,7 @@ export default class Auth extends Vue {
 
     return registry.createType('ExtrinsicPayload', this.payload, { version: this.payload.version });
   }
+
   get specVersion() {
     return this.typedPayload.specVersion.toNumber();
   }
@@ -88,13 +84,6 @@ export default class Auth extends Vue {
     return this.typedPayload.method.toString();
   }
 
-  async mounted() {
-    const { isLocked } = await isSignLocked(this.request.id);
-
-    this.isLocked = isLocked;
-    this.isSavePass = !this.isLocked;
-  }
-
   get morality() {
     return this.mortalityAsString(this.typedPayload.era, this.payload.blockNumber);
   }
@@ -108,11 +97,7 @@ export default class Auth extends Vue {
   }
 
   onSign() {
-    if (this.isLocked) {
-      this.isSignPopupVisible = true;
-
-      return;
-    }
+    this.isSignPopupVisible = true;
   }
 
   onClose() {

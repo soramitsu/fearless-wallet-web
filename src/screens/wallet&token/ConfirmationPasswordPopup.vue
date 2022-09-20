@@ -1,13 +1,13 @@
 <template>
   <Popup class="sending-popup" headerType="completed" sizeWidth="big" :headerText="popupHeader" :handlerClose="close">
     <div class="popup-content">
-      <template v-if="!isUnlock">
+      <template v-if="!loading">
         <img src="@/assets/lock-green.svg" />
 
         <div class="text row">Enter password to confirm the transaction</div>
 
         <ValidatedInput
-          v-if="!isUnlocked"
+          v-if="!isUnlock"
           v-model="password"
           placeholder="Password"
           size="big"
@@ -55,8 +55,9 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { isSignLocked } from '../../extension/messaging';
 import type { Currencies, Currency } from '@/interfaces/currencies';
+import { isSignLocked } from '@/extension/messaging';
+import { isExtension } from '@/util/helpers';
 import Loader from '@/components/Loader.vue';
 import Popup from '@/components/Popup.vue';
 import Button from '@/components/Button.vue';
@@ -89,7 +90,6 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(String) secondNetwork!: string;
   @Prop(String) address!: string;
   @Prop(String) transactionId!: string;
-  @Prop({ default: false }) isSendFromExtension!: boolean;
   @Prop(Object) currency!: Currency;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
 
@@ -127,8 +127,9 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async mounted() {
-    if (this.isSendFromExtension) {
+    if (isExtension()) {
       const { isLocked } = await isSignLocked(this.transactionId);
+
       this.isUnlock = !isLocked;
       this.isSavePass = this.isUnlock;
     }
@@ -143,8 +144,8 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     this.loading = true;
 
-    if (this.isSendFromExtension) {
-      this.$store.dispatch('APPROVE_SIGN_PASSWORD', {
+    if (isExtension()) {
+      await this.$store.dispatch('APPROVE_SIGN_PASSWORD', {
         id: this.transactionId,
         isSavePass: this.isSavePass,
         password: this.password,

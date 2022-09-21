@@ -1,12 +1,16 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
+import { assetFromToken } from '@equilab/api';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { AugmentedActionContext as Context } from '@/store/networks/types';
-import type { Networks, DisconnectNetworks, NetworkAssets, Network } from '@/interfaces/networks';
+import type { Networks, DisconnectNetworks, Network } from '@/interfaces/networks';
+import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
 import { formatBalance } from '@/util/balances';
 import { MutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { accountController } from '@/controllers/accountController';
 import NetworksController from '@/controllers/networksController';
+
+const ORML_PALLETS_TYPES = ['ormlChain'];
 
 function connectToApi(name: string, url: string, autoConnectMs = 0) {
   const provider = new WsProvider(url, autoConnectMs);
@@ -64,17 +68,18 @@ function updateCurrencyInfo(context: Context, network: Network) {
   });
 }
 
-function subscribeUtilityTokensBalances(
-  context: Context,
-  api: ApiPromise,
-  tokenId: string,
-  address: string,
-  network: Network
-) {
+function subscribeUtilityTokensBalances(context: Context, address: string, network: Network) {
+  const { name: networkName, parentId, api, assets: networkAssets } = network;
+  const networkUtilityAsset = networkAssets.find( // eslint-disable-line
+    ({ isUtility, type }) => isUtility && !ORML_PALLETS_TYPES.includes(type as string) && type !== 'equilibrium'
+  )!;
+
+  if (!networkUtilityAsset) return;
+
   const { getters, commit, state } = context;
   const { assets } = state;
-  const { name: networkName, parentId } = network;
-  const precision = assets.find((asset) => asset.id === tokenId)?.precision ?? 0;
+  const { assetId, type } = networkUtilityAsset;
+  const precision = assets.find((asset) => asset.id === assetId)?.precision ?? 0;
 
   api.rx.query.system.account(address).subscribe(async (result) => {
     const data = (result as any).data;
@@ -86,44 +91,60 @@ function subscribeUtilityTokensBalances(
     commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
       walletAddress: address,
       network: networkName,
-      tokenId,
+      tokenId: assetId,
       balance,
       parentId,
+      type,
     });
 
     NetworksController.loadHistory(networkName, address, delay);
   });
 }
 
-function subscribeOrmlTokensBalances(
-  context: Context,
-  api: ApiPromise,
-  address: string,
-  ormlTokensIds: NetworkAssets[]
-) {
+function subscribeOrmlTokensBalances(context: Context, address: string, network: Network) {
   const { commit, state } = context;
   const { assets } = state;
+  const { name: networkName, api, assets: networkAssets, parentId } = network;
 
-  ormlTokensIds.forEach(({ assetId }) => {
+  networkAssets.forEach(({ assetId, type }) => {
+    if (type === undefined) return;
+
+    const precision = assets.find((asset) => asset.id === assetId)?.precision ?? 0;
     const { symbol } = assets.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
     const options = { Token: symbol.toUpperCase() };
 
-    // api.rx.query.tokens?.accounts(address, options).subscribe(async (result) => {
-    //   const data = (result as any).data;
+    if (type === 'stableAssetPoolToken' || type === 'foreignAsset' || type === 'liquidCrowdloan') return; // TODO: fix
+    if (symbol === 'csm') return; // TODO: fix
 
-    //   console.log(symbol, result);
+    const isEquilibrium = type === 'equilibrium';
+    const assetEquilibrium = assetFromToken(symbol)[0];
+    const pallet = isEquilibrium
+      ? api.rx.query.eqBalances.account(address, assetEquilibrium)
+      : api.rx.query.tokens?.accounts(address, options);
 
-    //   // const balance = formatBalance(data as AccountData);
+    pallet.subscribe(async (data) => {
+      const balance = formatBalance(data as any as OrmlAccountData, precision);
+      console.log(symbol, balance);
 
-    //   // console.log('balance', balance);
-    // });
+      commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
+        walletAddress: address,
+        network: networkName,
+        tokenId: assetId,
+        balance,
+        parentId,
+        type,
+      });
+    });
   });
 }
 
-export {
-  connectToApi,
-  connectToNetworksApi,
-  subscribeUtilityTokensBalances,
-  subscribeOrmlTokensBalances,
-  updateCurrencyInfo,
-};
+async function subscribeTokensBalances(context: Context, address: string, network: Network) {
+  const { api } = network;
+
+  await api.isReadyOrError;
+
+  subscribeUtilityTokensBalances(context, address, network);
+  subscribeOrmlTokensBalances(context, address, network);
+}
+
+export { connectToApi, connectToNetworksApi, updateCurrencyInfo, subscribeTokensBalances };

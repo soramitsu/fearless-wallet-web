@@ -5,7 +5,12 @@
     </div>
 
     <div class="img-container">
-      <NetworkLogo class="main-network-img" :name="currency.token" :relayChain="currency.relayChain" :width="32" />
+      <NetworkLogo
+        class="main-network-img"
+        :name="currency.displayName"
+        :relayChain="currency.relayChain"
+        :width="32"
+      />
     </div>
 
     <div class="descriptions-column">
@@ -126,7 +131,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get tokenString() {
-    return this.currency?.token.toUpperCase();
+    return this.currency?.displayName.toUpperCase();
   }
 
   get countTokensString() {
@@ -152,7 +157,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get upperNetworkName() {
-    return this.currency.mainNetwork.toUpperCase();
+    return this.currency.mainNetwork.toUpperCase() ?? '';
   }
 
   get availableInNetworks() {
@@ -192,7 +197,16 @@ export default class CurrencyItem extends Vue {
 
   openTokenPage() {
     const { mainNetwork, tokenId } = this.currency;
-    const network = this.selectedNetwork !== 'All networks' ? this.selectedNetwork : mainNetwork;
+    const availableInNetworks = this.currency.getAvailableInNetworks(this.selectedWallet);
+    const availableNetwork = availableInNetworks[0]?.network ?? '';
+    const network =
+      this.selectedNetwork !== 'All networks'
+        ? this.selectedNetwork
+        : mainNetwork !== ''
+        ? mainNetwork
+        : availableNetwork !== ''
+        ? availableNetwork
+        : 'polkadot';
 
     this.$router.push({
       name: Components.Token,
@@ -211,6 +225,8 @@ export default class CurrencyItem extends Vue {
   padding: 8px 0 8px 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   margin-right: 16px;
+  height: 78px;
+  align-items: center;
 
   &:last-child {
     border-bottom: none;

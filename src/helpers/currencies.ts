@@ -1,9 +1,22 @@
+import { BN } from '@polkadot/util';
 import type { Currencies, Currency } from '@/interfaces/currencies';
 import type { TokenPriceJson } from '@/interfaces/tokens';
 import type { Networks } from '@/interfaces/networks';
 import type { Wallet } from '@/store/accounts/types';
+import type { RelayChainName } from '@/consts/teleport';
 import CurrencyController from '@/controllers/currencyController';
 import NetworksController from '@/controllers/networksController';
+
+type CurrencyMock = {
+  mainNetwork: string;
+  assetId: string;
+  symbol: string;
+  displayName?: string;
+  relayChain: RelayChainName;
+  precision: number;
+  tokenPriceJson: TokenPriceJson;
+  providers: string[];
+};
 
 function getMockCurrencies(networks: Networks): Currencies {
   const assets = NetworksController.getAssets();
@@ -11,34 +24,52 @@ function getMockCurrencies(networks: Networks): Currencies {
   const currencies = networks
     .reduce((result, network) => {
       const { assets: networkAssets, name: mainNetwork, parentId } = network;
-      const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNetwork;
+      const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNetwork) as RelayChainName;
 
-      networkAssets.forEach(({ assetId, purchaseProviders }) => {
-        const { symbol } = assets.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-        const tokenIndex = result.findIndex(({ assetId: _assetId, symbol: _symbol, relayChain: _relayChain }) => {
-          const isExistingTokenId = _assetId === assetId;
-          const isExistingTokenSymbol = _symbol === symbol && _relayChain === relayChain;
+      networkAssets.forEach(({ assetId, purchaseProviders, isUtility }) => {
+        const { symbol, displayName } = assets.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+        const currencyIndex = result.findIndex(
+          ({ assetId: _assetId, relayChain: _relayChain, displayName: _displayName }) => {
+            const isExistingTokenId = _assetId === assetId;
+            const isExistingDisplayName = _displayName === displayName;
+            const isExistingToken = isExistingDisplayName && _relayChain === relayChain;
 
-          return isExistingTokenId || isExistingTokenSymbol;
-        });
+            return isExistingTokenId || isExistingToken;
+          }
+        );
 
-        if (tokenIndex === -1)
-          result.push({
-            mainNetwork,
+        if (currencyIndex === -1) {
+          const newCurrency = {
+            mainNetwork: isUtility ? mainNetwork : '',
             assetId,
             symbol,
+            displayName: displayName ?? symbol,
             relayChain,
             precision: 0,
             tokenPriceJson: {} as TokenPriceJson,
             providers: purchaseProviders ?? [],
-          });
+          };
+
+          result.push(newCurrency);
+        } else if (isUtility && result[currencyIndex].mainNetwork === '') {
+          result[currencyIndex].mainNetwork = mainNetwork;
+        }
       });
 
       return result;
-    }, [] as any[])
+    }, [] as CurrencyMock[])
     .map(
-      ({ mainNetwork, tokenPriceJson, precision, assetId, symbol, relayChain, providers }) =>
-        new CurrencyController(mainNetwork, assetId, symbol, tokenPriceJson, precision, providers, relayChain)
+      ({ mainNetwork, tokenPriceJson, precision, assetId, symbol, relayChain, providers, displayName }) =>
+        new CurrencyController(
+          mainNetwork,
+          assetId,
+          symbol,
+          displayName,
+          tokenPriceJson,
+          precision,
+          providers,
+          relayChain
+        )
     );
 
   return currencies;
@@ -100,4 +131,54 @@ function getCurrencyOptions(currencies: Currencies) {
   });
 }
 
-export { getCurrencyOptions, getProviderUrl, defaultSortingCurrencies, getMockCurrencies };
+function getParams(isParaTeleport: boolean, recipientParaId: number, accountId32: string | Uint8Array, amount: string) {
+  return [
+    {
+      V1: isParaTeleport
+        ? {
+            interior: 'Here',
+            parents: 1,
+          }
+        : {
+            interior: {
+              X1: {
+                ParaChain: recipientParaId,
+              },
+            },
+            parents: 0,
+          },
+    },
+    {
+      V1: {
+        interior: {
+          X1: {
+            AccountId32: {
+              id: accountId32,
+              network: 'Any',
+            },
+          },
+        },
+        parents: 0,
+      },
+    },
+    {
+      V1: [
+        {
+          fun: {
+            Fungible: new BN(amount),
+          },
+          id: {
+            Concrete: {
+              interior: 'Here',
+              parents: isParaTeleport ? 1 : 0,
+            },
+          },
+        },
+      ],
+    },
+    0,
+    { Unlimited: null },
+  ];
+}
+
+export { getCurrencyOptions, getProviderUrl, defaultSortingCurrencies, getMockCurrencies, getParams };

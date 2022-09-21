@@ -8,9 +8,9 @@ import type { AccountBalance } from '@/interfaces/balances';
 import type { Mutations } from './mutations';
 import type { ActionContext } from 'vuex';
 import type { State } from './state';
-import type { Networks, Network } from '@/interfaces/networks';
+import type { Networks, Network, NetworkAssetsType } from '@/interfaces/networks';
 import type { AssetJson } from '@/interfaces/assets';
-import type { TokensPriceJson, TokenPriceJson } from '@/interfaces/tokens';
+import type { TokensPriceJson } from '@/interfaces/tokens';
 import type { FiatJson } from '@/interfaces/common';
 
 // getters
@@ -62,6 +62,7 @@ export type UpdateCurrencyBalanceProps = {
   tokenId: string;
   balance: AccountBalance;
   parentId: string | undefined;
+  type: NetworkAssetsType | undefined;
 };
 
 export type SetNetworkActiveNodeProps = {

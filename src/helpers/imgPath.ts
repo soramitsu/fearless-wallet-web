@@ -35,7 +35,6 @@ function getOrmlFileName(value: string) {
       return 'ZLK.svg';
     case 'eqd':
       return 'EQD.svg';
-
     default:
       return '';
   }
@@ -52,12 +51,14 @@ function getImgPathByNetworkOrTokenName(value = '', relayChain?: RelayChainName)
     case 'kico':
       return 'kico.svg';
 
+    case 'encointer on kusama':
+      return 'encointer.svg';
+
     case 'polkadot':
     case 'dot':
       return 'polkadot.svg';
 
     case 'kusama':
-    case 'encointer on kusama':
     case 'ksm':
       return 'kusama.svg';
 

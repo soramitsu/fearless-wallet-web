@@ -1,5 +1,5 @@
 import type { AssetJson } from '@/interfaces/assets';
-import type { Networks } from '@/interfaces/networks';
+import type { Networks, Network } from '@/interfaces/networks';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
@@ -9,6 +9,10 @@ import { ASSETS_URL, FIATS_URL, NETWORKS_URL } from '@/consts/urls';
 export default class NetworksController {
   static getNetworks(): Networks {
     return store.getters[NetworksGettersTypes.getNetworks];
+  }
+
+  static getNetwork(networkName: string): Network {
+    return store.getters[NetworksGettersTypes.getNetwork](networkName);
   }
 
   public static async loadNetworks(): Promise<void> {

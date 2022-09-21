@@ -24,14 +24,23 @@ type ExternalApi = {
   explorers?: Explorer[];
 };
 
-type NetworkAssetsType = 'ormlAsset' | 'vToken' | 'vsToken' | 'foreignAsset' | 'stable';
+type NetworkAssetsType =
+  | 'ormlAsset'
+  | 'vToken'
+  | 'vsToken'
+  | 'foreignAsset'
+  | 'stable'
+  | 'liquidCrowdloan'
+  | 'stableAssetPoolToken'
+  | 'equilibrium'
+  | 'ormlChain';
 
 type NetworkAssets = {
   assetId: string;
   staking?: string;
   purchaseProviders?: string[];
   isUtility?: true;
-  type: NetworkAssetsType;
+  type?: NetworkAssetsType;
 };
 
 type NetworkJson = {

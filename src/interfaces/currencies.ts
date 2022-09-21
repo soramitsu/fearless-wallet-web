@@ -2,6 +2,7 @@ import type { WalletAddress } from '@/interfaces/common';
 import type { AccountBalance } from '@/interfaces/balances';
 import type CurrencyController from '@/controllers/currencyController';
 import type { FPNumber } from '@/util/fp';
+import type { NetworkAssetsType } from '@/interfaces/networks';
 
 interface AvailableInNetworks {
   network: string;
@@ -16,7 +17,10 @@ interface BalanceFP {
   transferable: FPNumber;
 }
 
-type AvailableInNetworksFP = Omit<AvailableInNetworks, 'balance'> & { balance: BalanceFP };
+type AvailableInNetworksFP = Omit<AvailableInNetworks, 'balance'> & {
+  balance: BalanceFP;
+  type: NetworkAssetsType | 'native';
+};
 
 type Balances = Record<WalletAddress, AvailableInNetworksFP[]>;
 

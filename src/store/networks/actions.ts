@@ -26,8 +26,7 @@ import { getMockCurrencies } from '@/helpers/currencies';
 import {
   connectToApi,
   connectToNetworksApi,
-  subscribeUtilityTokensBalances,
-  subscribeOrmlTokensBalances,
+  subscribeTokensBalances,
   updateCurrencyInfo,
 } from '@/helpers/networksConnection';
 import { PAGE_SIZE } from '@/consts/history';
@@ -163,13 +162,9 @@ const actions: ActionTree<State, State> & Actions = {
     const networks = networksProps ?? networksStore;
 
     const promises = networks.map(async (network) => {
-      const { api, isEthereumNetwork, name: networkName, assets: networkAssets } = network;
-      const { assetId: utilityTokenId } = networkAssets.find(({ isUtility }) => isUtility)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-      const ormlTokensIds = networkAssets.filter(({ type }) => type === 'ormlAsset');
+      const { isEthereumNetwork, name: networkName } = network;
 
-      await api.isReadyOrError;
-
-      Object.entries(accounts).forEach(async ([walletAddress, { type, json }]) => {
+      Object.entries(accounts).forEach(async ([walletAddress, { type: accountType, json }]) => {
         const { isReplacedAccount, replacedSettings } = getReplacedMetaTyped(json.meta);
         const replacedNetworksList = Object.values(replacedSettings ?? []).flat();
 
@@ -178,11 +173,11 @@ const actions: ActionTree<State, State> & Actions = {
 
         // ethereum accounts only subscribe to the ethereum networks and
         // substrate accounts only subscribe to the substrate networks
-        if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
+        if ((!isEthereumNetwork && accountType === 'ethereum') || (isEthereumNetwork && accountType !== 'ethereum'))
+          return;
 
         updateCurrencyInfo(context, network);
-        subscribeUtilityTokensBalances(context, api, utilityTokenId, walletAddress, network);
-        subscribeOrmlTokensBalances(context, api, walletAddress, ormlTokensIds);
+        subscribeTokensBalances(context, walletAddress, network);
       });
     });
 

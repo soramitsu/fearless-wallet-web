@@ -80,7 +80,7 @@ const mutations: MutationTree<State> & Mutations = {
     currentCurrency.updateCurrency({ precision, tokensPrice, selectedFiat });
   },
 
-  [MutationTypes.UPDATE_CURRENCY_BALANCE](state, { walletAddress, network, tokenId, balance, parentId }) {
+  [MutationTypes.UPDATE_CURRENCY_BALANCE](state, { walletAddress, network, tokenId, balance, parentId, type }) {
     const { currencies, assets, networks } = state;
     const { symbol } = assets.find(({ id }) => id === tokenId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
     const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name;
@@ -92,7 +92,7 @@ const mutations: MutationTree<State> & Mutations = {
       return isExistingTokenId || isExistingTokenSymbol;
     })!;
 
-    currentCurrency.updateCurrencyBalance({ walletAddress, network, balance });
+    currentCurrency.updateCurrencyBalance({ walletAddress, network, balance, type });
   },
 
   [MutationTypes.SET_HISTORY](

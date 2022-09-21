@@ -80,7 +80,7 @@ function subscribeUtilityTokensBalances(context: Context, address: string, netwo
   api.rx.query.system.account(address).subscribe(async (result) => {
     const data = (result as any).data;
     const balance = formatBalance(data as AccountData, precision);
-    const historyForNetwork = getters[NetworksGettersTypes.getHistory](networkName);
+    const historyForNetwork = getters[NetworksGettersTypes.getHistory](assetId, address, networkName);
     const historyForAddress = historyForNetwork?.[address];
     const delay = historyForAddress ? 45 : 0;
 
@@ -93,7 +93,7 @@ function subscribeUtilityTokensBalances(context: Context, address: string, netwo
       type,
     });
 
-    NetworksController.loadHistory(networkName, address, delay);
+    NetworksController.loadHistory(networkName, address, assetId, delay);
   });
 }
 

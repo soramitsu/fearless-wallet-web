@@ -95,27 +95,18 @@ const mutations: MutationTree<State> & Mutations = {
     currentCurrency.updateCurrencyBalance({ walletAddress, network, balance, type, precision });
   },
 
-  [MutationTypes.SET_HISTORY](
-    state,
-    {
-      history: {
-        nodes,
-        pageInfo: { startCursor: startCursorProp, endCursor: endCursorProp },
-      },
-      networkName,
-      walletAddress,
-      isPreviously,
-    }
-  ) {
-    const oldHistoryForWalletAddress = state.history[networkName]?.[walletAddress];
-    const oldPageInfo = oldHistoryForWalletAddress?.pageInfo;
+  [MutationTypes.SET_HISTORY](state, { history, networkName, walletAddress, isPreviously, assetId }) {
+    const { nodes, pageInfo } = history;
+    const { startCursor: startCursorProp, endCursor: endCursorProp } = pageInfo;
+    const oldHistory = state.history[assetId]?.[walletAddress]?.[networkName];
+    const oldPageInfo = oldHistory?.pageInfo;
     const oldStartCursor = oldPageInfo?.startCursor;
     const oldEndCursor = oldPageInfo?.endCursor;
 
     // loading history after sending tokens or teleporting tokens
     if (isPreviously && !!oldEndCursor) {
       const filteredNodes = nodes.filter(({ timestamp }) => {
-        const oldNodes = oldHistoryForWalletAddress.nodes;
+        const oldNodes = oldHistory.nodes;
         const oldFirstTimespan = +oldNodes[0].timestamp ?? 0;
 
         return +timestamp > oldFirstTimespan;
@@ -123,40 +114,50 @@ const mutations: MutationTree<State> & Mutations = {
 
       if (filteredNodes.length === 0) return;
 
-      const newHistoryForWalletAddress = {
-        nodes: [...(filteredNodes ?? []), ...(oldHistoryForWalletAddress?.nodes ?? [])],
+      const newHistoryForNetwork = {
+        nodes: [...(filteredNodes ?? []), ...(oldHistory?.nodes ?? [])],
         pageInfo: {
           startCursor: startCursorProp,
           endCursor: oldEndCursor,
         },
       };
 
-      const historyForNetwork = {
-        ...state.history[networkName],
-        [walletAddress]: newHistoryForWalletAddress,
+      const historyForWalletAddress = {
+        ...state.history[assetId]?.[networkName],
+        [networkName]: newHistoryForNetwork,
       };
 
-      state.history = { ...state.history, [networkName]: historyForNetwork };
+      const historyForAssetId = {
+        ...(state.history[assetId] ?? []),
+        [walletAddress]: historyForWalletAddress,
+      };
+
+      state.history = { ...state.history, [assetId]: historyForAssetId };
 
       return;
     }
 
     // if this is first load or following one already saved
     const startCursor = oldStartCursor ?? startCursorProp;
-    const newHistoryForWalletAddress = {
-      nodes: [...(oldHistoryForWalletAddress?.nodes ?? []), ...(nodes ?? [])],
+    const newHistoryForNetwork = {
+      nodes: [...(oldHistory?.nodes ?? []), ...(nodes ?? [])],
       pageInfo: {
         startCursor,
         endCursor: endCursorProp,
       },
     };
 
-    const historyForNetwork = {
-      ...(state.history[networkName] ?? []),
-      [walletAddress]: newHistoryForWalletAddress,
+    const historyForWalletAddress = {
+      ...(state.history[assetId]?.[networkName] ?? []),
+      [networkName]: newHistoryForNetwork,
     };
 
-    state.history = { ...state.history, [networkName]: historyForNetwork };
+    const historyForAssetId = {
+      ...(state.history[assetId] ?? []),
+      [walletAddress]: historyForWalletAddress,
+    };
+
+    state.history = { ...state.history, [assetId]: historyForAssetId };
   },
 
   [MutationTypes.SET_ALL_NETWORKS_IS_LOADED](state, { value }) {

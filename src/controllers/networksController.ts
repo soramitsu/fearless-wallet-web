@@ -31,18 +31,23 @@ export default class NetworksController {
     await store.dispatch(NetworksActionTypes.LOAD_TOKENS_PRICE);
   }
 
-  public static async loadHistory(networkName: string, walletAddress: string, delay?: number): Promise<void> {
-    if (delay) {
+  public static async loadHistory(
+    networkName: string,
+    walletAddress: string,
+    assetId: string,
+    delay: number
+  ): Promise<void> {
+    if (delay !== 0) {
       const timeout = delay * 1000;
 
       setTimeout(() => {
-        store.dispatch(NetworksActionTypes.LOAD_HISTORY, { networkName, walletAddress });
+        store.dispatch(NetworksActionTypes.LOAD_HISTORY, { networkName, walletAddress, assetId });
       }, timeout);
 
       return;
     }
 
-    await store.dispatch(NetworksActionTypes.LOAD_HISTORY, { networkName, walletAddress });
+    await store.dispatch(NetworksActionTypes.LOAD_HISTORY, { networkName, walletAddress, assetId });
   }
 
   public static async subscribeToBalancesOfNetworks(accounts: SubjectInfo): Promise<void> {

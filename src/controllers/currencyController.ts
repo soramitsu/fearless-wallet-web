@@ -1,6 +1,11 @@
 import { isFunction } from '@polkadot/util';
-import type { AvailableInNetworks, Balances, BalanceFP, AvailableInNetworksFP } from '@/interfaces/currencies';
-import type { AssetJson } from '@/interfaces/assets';
+import type {
+  AvailableInNetworks,
+  Balances,
+  BalanceFP,
+  AvailableInNetworksFP,
+  TypeAsset,
+} from '@/interfaces/currencies';
 import type { TokenPriceJson, KeysTokenPriceJson } from '@/interfaces/tokens';
 import type { SubmittableExtrinsic, SignerOptions } from '@polkadot/api/submittable/types';
 import type { RelayChainName } from '@/consts/teleport';
@@ -13,6 +18,13 @@ import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { FPNumber } from '@/util/fp';
 import { getReplacedMetaTyped } from '@/helpers/common';
 import { getParams } from '@/helpers/currencies';
+
+type NetworkProps = {
+  label: string;
+  value: string;
+  precision: number;
+  type: TypeAsset;
+};
 
 export default class CurrencyController {
   private readonly lsCurrency = new LocalStorageController('currency');
@@ -30,7 +42,6 @@ export default class CurrencyController {
     public token: string,
     displayName: string | undefined,
     public tokensPrice: TokenPriceJson,
-    public precision: number,
     public providers: string[],
     public relayChain: RelayChainName
   ) {
@@ -71,7 +82,7 @@ export default class CurrencyController {
     }, {} as Record<string, string>);
 
     return availableInNetworks.map((item) => {
-      const { network, type } = item;
+      const { network, type, precision } = item;
       let { balance } = item;
 
       const replacedAddress = replacedNetworks[network];
@@ -85,7 +96,7 @@ export default class CurrencyController {
         balance = replacedBalance;
       }
 
-      return { network, balance, type };
+      return { network, balance, type, precision };
     });
   }
 
@@ -128,27 +139,27 @@ export default class CurrencyController {
     return addressByNetwork;
   }
 
-  public updateCurrency({ precision, tokensPrice, selectedFiat }: Record<string, any>): void {
-    this.precision = precision ?? this.precision;
+  public updateCurrency({ tokensPrice, selectedFiat }: Record<string, any>): void {
     this.tokensPrice = tokensPrice ?? this.tokensPrice;
 
     this.updatePrice(selectedFiat);
   }
 
-  public updateCurrencyBalance({ walletAddress, network, balance, type }: Record<string, any>): void {
+  public updateCurrencyBalance({ walletAddress, network, balance, type, precision }: Record<string, any>): void {
     const { frozen, locked, reserved, total, transferable } = balance;
     const oldBalances = { ...this.balances };
     let balancesForAddress = oldBalances[walletAddress];
 
     const newValue = {
       network,
+      precision,
       type: type ?? 'native',
       balance: {
-        frozen: FPNumber.fromCodecValue(frozen, this.precision),
-        locked: FPNumber.fromCodecValue(locked, this.precision),
-        reserved: FPNumber.fromCodecValue(reserved, this.precision),
-        total: FPNumber.fromCodecValue(total, this.precision),
-        transferable: FPNumber.fromCodecValue(transferable, this.precision),
+        frozen: FPNumber.fromCodecValue(frozen, precision),
+        locked: FPNumber.fromCodecValue(locked, precision),
+        reserved: FPNumber.fromCodecValue(reserved, precision),
+        total: FPNumber.fromCodecValue(total, precision),
+        transferable: FPNumber.fromCodecValue(transferable, precision),
       },
     };
 
@@ -200,10 +211,13 @@ export default class CurrencyController {
   public getAvailableInNetworks(wallet: Wallet): AvailableInNetworks[] {
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
 
-    return availableInNetworks.map(({ balance: { frozen, locked, reserved, total, transferable }, network, type }) => {
+    return availableInNetworks.map(({ balance, network, type, precision }) => {
+      const { frozen, locked, reserved, total, transferable } = balance;
+
       return {
         network,
         type,
+        precision,
         balance: {
           frozen: frozen.toString(),
           locked: locked.toString(),
@@ -254,10 +268,7 @@ export default class CurrencyController {
     this.lsCurrency.set(this.currencyVisibleStorageName, currenciesVisible);
   }
 
-  public getPrecisionValue(amount: string): string {
-    const assets: AssetJson[] = NetworksController.getAssets();
-    const tokenAssets = assets.find(({ id }) => id === this.tokenId)!; // eslint-disable-line
-    const precision = tokenAssets?.precision ?? 0;
+  public getPrecisionValue(amount: string, precision: number): string {
     const value = amount === '' ? 0 : +amount;
 
     return new FPNumber(value, precision).toCodecString();
@@ -279,13 +290,30 @@ export default class CurrencyController {
     //   : undefined;
   }
 
-  public createSendTransfer(to: string, networkName: string, amount: string): void {
-    const precisionAmount = this.getPrecisionValue(amount);
-    const { api, settings: { DefaultTip } } = NetworksController.getNetwork(networkName); // eslint-disable-line
+  public createSendTransfer(to: string, networkName: string, amount: string, { precision, type }: NetworkProps): void {
+    const precisionAmount = this.getPrecisionValue(amount, precision);
+    const {
+      api: { tx },
+      settings: { DefaultTip },
+    } = NetworksController.getNetwork(networkName);
     const options = { tip: DefaultTip };
 
     try {
-      this.transfer = api.tx.balances.transfer(to, precisionAmount);
+      if (type === 'native') this.transfer = tx.balances.transfer(to, precisionAmount);
+      else if (type === 'ormlChain') {
+        const ormlChainOptions = { Token: this.token.toUpperCase() };
+
+        this.transfer = tx.tokens.transfer(to, ormlChainOptions, precisionAmount);
+      } else if (type === 'ormlAsset') {
+        const ormlOptions = { Token: this.token.toUpperCase() };
+
+        this.transfer = tx.currencies.transfer(to, ormlOptions, precisionAmount);
+      } else if (type === 'equilibrium') {
+        const equilibriumAsset = BaseApi.getEquilibriumAssetName(this.token);
+
+        this.transfer = tx.eqBalances.transfer(equilibriumAsset, to, precisionAmount);
+      }
+
       this.options = options;
     } catch {
       this.transfer = undefined;
@@ -297,7 +325,8 @@ export default class CurrencyController {
     wallet: Wallet,
     originalNetworkName: string,
     destinationNetworkName: string,
-    amount: string
+    amount: string,
+    { precision }: NetworkProps
   ): Promise<void> {
     const recipientParaId = this.getParaId(originalNetworkName, destinationNetworkName);
 
@@ -312,20 +341,19 @@ export default class CurrencyController {
     const { api } = networks.find(({ name }) => name === originalNetworkName)!; // eslint-disable-line
     const m = XCM_LOC.filter((x) => api.tx[x] && isFunction(api.tx[x].limitedTeleportAssets))[0];
     const isParaTeleport = m === 'polkadotXcm';
-    const precisionAmount = this.getPrecisionValue(amount);
+    const precisionAmount = this.getPrecisionValue(amount, precision);
     const tx = api.tx[m].limitedTeleportAssets;
     const publicKey = BaseApi.decodeAddress(recipientId);
-
     const params = getParams(isParaTeleport, recipientParaId, publicKey, precisionAmount);
 
     this.transfer = tx(...params);
   }
 
-  public async getPartialFee(from: string): Promise<string> {
+  public async getPartialFee(from: string, { precision }: NetworkProps): Promise<string> {
     if (!this.transfer) return '0';
 
     const { partialFee } = await this.transfer.paymentInfo(from);
-    const result = new FPNumber(partialFee as any, this.precision);
+    const result = new FPNumber(partialFee as any, precision);
 
     return result.toString();
   }

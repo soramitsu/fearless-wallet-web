@@ -44,6 +44,7 @@ export type SetHistoryProps = {
   walletAddress: string;
   networkName: string;
   isPreviously: boolean;
+  assetId: string;
 };
 
 export type SetAllNetworksIsLoaded = {
@@ -94,6 +95,7 @@ export type LoadFiats = {
 export type LoadHistory = {
   networkName: string;
   walletAddress: string;
+  assetId: string;
   pageSize: number;
 };
 

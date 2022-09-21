@@ -120,7 +120,7 @@ const actions: ActionTree<State, State> & Actions = {
     commit(MutationTypes.SET_TOKENS_PRICE, { tokensPriceJson: tokensPrice });
   },
 
-  async [ActionTypes.LOAD_HISTORY]({ commit, getters }, { networkName, walletAddress, pageSize = PAGE_SIZE }) {
+  async [ActionTypes.LOAD_HISTORY]({ commit, getters }, { networkName, walletAddress, pageSize = PAGE_SIZE, assetId }) {
     if (networkName === 'moonbase alpha') return;
 
     const { externalApi } = getters.getNetwork(networkName);
@@ -147,6 +147,7 @@ const actions: ActionTree<State, State> & Actions = {
       walletAddress,
       history,
       isPreviously: cursor === null,
+      assetId,
     });
   },
 

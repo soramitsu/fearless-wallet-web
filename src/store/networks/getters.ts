@@ -54,8 +54,8 @@ const getters: GetterTree<State, State> & Getters = {
   },
   [GettersTypes.getHistory]:
     ({ history }) =>
-    (networkName: string) => {
-      return history[networkName];
+    (assetId: string, walletAddress: string, networkName: string) => {
+      return history[assetId]?.[walletAddress]?.[networkName];
     },
   [GettersTypes.getCurrencies]({ currencies }): Currencies {
     return currencies;

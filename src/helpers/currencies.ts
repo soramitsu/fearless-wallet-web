@@ -121,7 +121,12 @@ function getCurrencyOptions(currencies: Currencies) {
   });
 }
 
-function getParams(isParaTeleport: boolean, recipientParaId: number, accountId32: string | Uint8Array, amount: string) {
+function getParams(
+  isParaTeleport: boolean,
+  relayChainParaId: number,
+  accountId32: string | Uint8Array,
+  amount: string
+) {
   return [
     {
       V1: isParaTeleport
@@ -132,7 +137,7 @@ function getParams(isParaTeleport: boolean, recipientParaId: number, accountId32
         : {
             interior: {
               X1: {
-                ParaChain: recipientParaId,
+                ParaChain: relayChainParaId,
               },
             },
             parents: 0,

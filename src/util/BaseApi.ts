@@ -8,6 +8,7 @@ import {
 } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
+import { assetFromToken } from '@equilab/api';
 import type { KeyringPair$Json, KeyringPair$Meta, KeyringPair } from '@polkadot/keyring/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
@@ -373,5 +374,9 @@ export default class BaseApi {
     const address = accounts.find(({ type, meta }) => type !== 'ethereum' && !meta.isReplacedAccount)?.address;
 
     return address ?? '';
+  }
+
+  public static getEquilibriumAssetName(symbol: string): number {
+    return assetFromToken(symbol)[0];
   }
 }

@@ -64,35 +64,35 @@ const mutations: MutationTree<State> & Mutations = {
     state.tokensPriceJson = tokensPriceJson;
   },
 
-  [MutationTypes.UPDATE_CURRENCY](state, { selectedFiat, tokenId, parentId }) {
+  [MutationTypes.UPDATE_CURRENCY](state, { selectedFiat, assetId, parentId }) {
     const { currencies, assets, networks, tokensPriceJson } = state;
-    const { precision, symbol } = assets.find(({ id }) => id === tokenId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const { symbol } = assets.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
     const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name;
-    const tokensPrice = tokensPriceJson[tokenId] ?? {};
+    const tokensPrice = tokensPriceJson[assetId] ?? {};
 
     const currentCurrency = currencies.find(({ tokenId: _tokenId, token: _token, relayChain: _relayChain,}) => { //eslint-disable-line
-      const isExistingTokenId = _tokenId === tokenId;
+      const isExistingTokenId = _tokenId === assetId;
       const isExistingTokenSymbol = _token === symbol && _relayChain === relayChain;
 
       return isExistingTokenId || isExistingTokenSymbol;
     })!;
 
-    currentCurrency.updateCurrency({ precision, tokensPrice, selectedFiat });
+    currentCurrency.updateCurrency({ tokensPrice, selectedFiat });
   },
 
-  [MutationTypes.UPDATE_CURRENCY_BALANCE](state, { walletAddress, network, tokenId, balance, parentId, type }) {
+  [MutationTypes.UPDATE_CURRENCY_BALANCE](state, { walletAddress, network, assetId, balance, parentId, type }) {
     const { currencies, assets, networks } = state;
-    const { symbol } = assets.find(({ id }) => id === tokenId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const { symbol, precision } = assets.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
     const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name;
 
     const currentCurrency = currencies.find(({ tokenId: _tokenId, token: _token, relayChain: _relayChain,}) => { //eslint-disable-line
-      const isExistingTokenId = _tokenId === tokenId;
+      const isExistingTokenId = _tokenId === assetId;
       const isExistingTokenSymbol = _token === symbol && _relayChain === relayChain;
 
       return isExistingTokenId || isExistingTokenSymbol;
     })!;
 
-    currentCurrency.updateCurrencyBalance({ walletAddress, network, balance, type });
+    currentCurrency.updateCurrencyBalance({ walletAddress, network, balance, type, precision });
   },
 
   [MutationTypes.SET_HISTORY](

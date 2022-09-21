@@ -4,8 +4,12 @@ import type CurrencyController from '@/controllers/currencyController';
 import type { FPNumber } from '@/util/fp';
 import type { NetworkAssetsType } from '@/interfaces/networks';
 
+type TypeAsset = NetworkAssetsType | 'native';
+
 interface AvailableInNetworks {
   network: string;
+  precision: number;
+  type: TypeAsset;
   balance: AccountBalance;
 }
 
@@ -19,7 +23,6 @@ interface BalanceFP {
 
 type AvailableInNetworksFP = Omit<AvailableInNetworks, 'balance'> & {
   balance: BalanceFP;
-  type: NetworkAssetsType | 'native';
 };
 
 type Balances = Record<WalletAddress, AvailableInNetworksFP[]>;
@@ -28,4 +31,4 @@ type Currency = CurrencyController;
 
 type Currencies = Currency[];
 
-export { AvailableInNetworksFP, Balances, Currencies, AvailableInNetworks, BalanceFP, Currency };
+export { AvailableInNetworksFP, Balances, Currencies, AvailableInNetworks, BalanceFP, Currency, TypeAsset };

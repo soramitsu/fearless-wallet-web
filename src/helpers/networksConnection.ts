@@ -1,5 +1,4 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { assetFromToken } from '@equilab/api';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { AugmentedActionContext as Context } from '@/store/networks/types';
 import type { Networks, DisconnectNetworks, Network } from '@/interfaces/networks';
@@ -9,6 +8,7 @@ import { MutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { accountController } from '@/controllers/accountController';
 import NetworksController from '@/controllers/networksController';
+import BaseApi from '@/util/BaseApi';
 
 const ORML_PALLETS_TYPES = ['ormlChain'];
 
@@ -18,11 +18,7 @@ function connectToApi(name: string, url: string, autoConnectMs = 0) {
 
   try {
     api.connect();
-
-    // console.info(`%c${name.toUpperCase()}. API connection successful.`, 'background:green;color:#fff');
   } catch (ex) {
-    // api.disconnect();
-
     console.info(`%c${name.toUpperCase()}. Connection to api failed.`, 'background:red;color:#fff');
   }
 
@@ -61,7 +57,7 @@ function updateCurrencyInfo(context: Context, network: Network) {
     const selectedFiat = rootState.account.selectedFiat;
 
     commit(MutationTypes.UPDATE_CURRENCY, {
-      tokenId: assetId,
+      assetId,
       selectedFiat,
       parentId,
     });
@@ -91,7 +87,7 @@ function subscribeUtilityTokensBalances(context: Context, address: string, netwo
     commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
       walletAddress: address,
       network: networkName,
-      tokenId: assetId,
+      assetId,
       balance,
       parentId,
       type,
@@ -117,19 +113,19 @@ function subscribeOrmlTokensBalances(context: Context, address: string, network:
     if (symbol === 'csm') return; // TODO: fix
 
     const isEquilibrium = type === 'equilibrium';
-    const assetEquilibrium = assetFromToken(symbol)[0];
+    const equilibriumAsset = BaseApi.getEquilibriumAssetName(symbol);
+    const query = api.rx.query;
     const pallet = isEquilibrium
-      ? api.rx.query.eqBalances.account(address, assetEquilibrium)
-      : api.rx.query.tokens?.accounts(address, options);
+      ? query.eqBalances.account(address, equilibriumAsset)
+      : query.tokens?.accounts(address, options);
 
     pallet.subscribe(async (data) => {
       const balance = formatBalance(data as any as OrmlAccountData, precision);
-      console.log(symbol, balance);
 
       commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
         walletAddress: address,
         network: networkName,
-        tokenId: assetId,
+        assetId,
         balance,
         parentId,
         type,

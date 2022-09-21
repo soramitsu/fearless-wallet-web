@@ -35,6 +35,8 @@ function getOrmlFileName(value: string) {
       return 'ZLK.svg';
     case 'eqd':
       return 'EQD.svg';
+    case 'vksm':
+      return 'vKSM.svg';
     default:
       return '';
   }
@@ -228,7 +230,7 @@ function getImgPathByNetworkOrTokenName(value = '', relayChain?: RelayChainName)
       return 'pichiu.svg';
 
     case 'equilibrium':
-    case '25969':
+    case 'eq':
       return 'equilibrium.svg';
 
     case 'datahighway tanganika':

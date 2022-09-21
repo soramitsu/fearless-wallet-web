@@ -13,7 +13,6 @@ type CurrencyMock = {
   symbol: string;
   displayName?: string;
   relayChain: RelayChainName;
-  precision: number;
   tokenPriceJson: TokenPriceJson;
   providers: string[];
 };
@@ -27,7 +26,8 @@ function getMockCurrencies(networks: Networks): Currencies {
       const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNetwork) as RelayChainName;
 
       networkAssets.forEach(({ assetId, purchaseProviders, isUtility }) => {
-        const { symbol, displayName } = assets.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+        const { symbol, displayName: _displayName } = assets.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+        const displayName = _displayName ?? symbol;
         const currencyIndex = result.findIndex(
           ({ assetId: _assetId, relayChain: _relayChain, displayName: _displayName }) => {
             const isExistingTokenId = _assetId === assetId;
@@ -41,11 +41,10 @@ function getMockCurrencies(networks: Networks): Currencies {
         if (currencyIndex === -1) {
           const newCurrency = {
             mainNetwork: isUtility ? mainNetwork : '',
-            assetId,
+            assetId: assetId,
             symbol,
             displayName: displayName ?? symbol,
             relayChain,
-            precision: 0,
             tokenPriceJson: {} as TokenPriceJson,
             providers: purchaseProviders ?? [],
           };
@@ -59,17 +58,8 @@ function getMockCurrencies(networks: Networks): Currencies {
       return result;
     }, [] as CurrencyMock[])
     .map(
-      ({ mainNetwork, tokenPriceJson, precision, assetId, symbol, relayChain, providers, displayName }) =>
-        new CurrencyController(
-          mainNetwork,
-          assetId,
-          symbol,
-          displayName,
-          tokenPriceJson,
-          precision,
-          providers,
-          relayChain
-        )
+      ({ mainNetwork, tokenPriceJson, assetId, symbol, relayChain, providers, displayName }) =>
+        new CurrencyController(mainNetwork, assetId, symbol, displayName, tokenPriceJson, providers, relayChain)
     );
 
   return currencies;
@@ -119,9 +109,9 @@ function getProviderUrl(providerName: string, token: string, address: string) {
 }
 
 function getCurrencyOptions(currencies: Currencies) {
-  return currencies.map(({ token, tokenId, relayChain }) => {
-    const tokenUpper = token.toUpperCase();
-    const filteredOptions = currencies.filter(({ token: _token }) => _token === token);
+  return currencies.map(({ tokenId, relayChain, displayName }) => {
+    const tokenUpper = displayName.toUpperCase();
+    const filteredOptions = currencies.filter(({ displayName: _displayName }) => _displayName === displayName);
     const label = filteredOptions.length > 1 ? `${tokenUpper} (${relayChain.toUpperCase()})` : tokenUpper;
 
     return {

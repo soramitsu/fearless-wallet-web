@@ -265,9 +265,11 @@ export default class TeleportForm extends Vue {
   get optionsNetwork() {
     const availableInNetworks = this.currency?.getAvailableInNetworks(this.selectedWallet);
 
-    return availableInNetworks?.map(({ network }) => ({
+    return availableInNetworks?.map(({ network, precision, type }) => ({
       label: firstCharToUp(network),
       value: `${network}`,
+      precision,
+      type,
     }));
   }
 
@@ -289,7 +291,7 @@ export default class TeleportForm extends Vue {
   async createTeleportTransfer() {
     this.originalNetworkPartialFee = '';
 
-    if (!this.isValidTeleportDirection) return;
+    if (!this.isValidTeleportDirection || this.originalNetwork === '') return;
 
     const partialFee = await this.createTransferAndGetFee();
 
@@ -320,15 +322,18 @@ export default class TeleportForm extends Vue {
     this.value = value;
   }
 
-  async createTransferAndGetFee(amount?: string) {
+  createTransferAndGetFee(amount?: string) {
+    const networkProps = this.optionsNetwork!.find(({ value }) => value === this.originalNetwork)!; // eslint-disable-line
+
     this.currency!.createTeleportTransfer( // eslint-disable-line
       this.selectedWallet,
       this.originalNetwork,
       this.destinationNetwork,
-      amount ?? this.amount
+      amount ?? this.amount,
+      networkProps
     );
 
-    return await this.currency!.getPartialFee(this.addressByNetwork); // eslint-disable-line
+    return this.currency!.getPartialFee(this.addressByNetwork, networkProps); // eslint-disable-line
   }
 
   async setMaxValue() {

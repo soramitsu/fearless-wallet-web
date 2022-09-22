@@ -125,6 +125,7 @@ import { SelectedWallet } from '@/store/accounts/types';
 import { firstCharToUp } from '@/helpers/common';
 import { addNumbers, formattedNumber, formattedPrice } from '@/helpers/numbers';
 import { getCurrencyOptions } from '@/helpers/currencies';
+import { getParaId } from '@/util/teleport';
 
 @Component({
   components: {
@@ -243,7 +244,7 @@ export default class TeleportForm extends Vue {
   }
 
   get isValidTeleportDirection() {
-    return this.currency?.getParaId(this.originalNetwork, this.destinationNetwork) !== undefined;
+    return getParaId(this.originalNetwork, this.destinationNetwork) !== undefined;
   }
 
   get isAllFieldsCorrect() {

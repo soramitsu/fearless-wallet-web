@@ -1,4 +1,4 @@
-import type { RelayChainName } from '@/consts/teleport';
+import type { RelayChainName } from '@/interfaces/teleport';
 
 const NETWORKS_PATH = 'networks';
 const ORML_PATH = 'orml';

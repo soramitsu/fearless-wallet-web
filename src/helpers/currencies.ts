@@ -1,9 +1,8 @@
-import { BN } from '@polkadot/util';
 import type { Currencies, Currency } from '@/interfaces/currencies';
 import type { TokenPriceJson } from '@/interfaces/tokens';
 import type { Networks } from '@/interfaces/networks';
 import type { Wallet } from '@/store/accounts/types';
-import type { RelayChainName } from '@/consts/teleport';
+import type { RelayChainName } from '@/interfaces/teleport';
 import CurrencyController from '@/controllers/currencyController';
 import NetworksController from '@/controllers/networksController';
 
@@ -25,7 +24,7 @@ function getMockCurrencies(networks: Networks): Currencies {
       const { assets: networkAssets, name: mainNetwork, parentId } = network;
       const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNetwork) as RelayChainName;
 
-      networkAssets.forEach(({ assetId, purchaseProviders, isUtility }) => {
+      networkAssets.forEach(({ assetId, purchaseProviders, isUtility, isNative }) => {
         const { symbol, displayName: _displayName } = assets.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
         const displayName = _displayName ?? symbol;
         const currencyIndex = result.findIndex(
@@ -40,7 +39,7 @@ function getMockCurrencies(networks: Networks): Currencies {
 
         if (currencyIndex === -1) {
           const newCurrency = {
-            mainNetwork: isUtility ? mainNetwork : '',
+            mainNetwork: isUtility || isNative ? mainNetwork : '',
             assetId: assetId,
             symbol,
             displayName: displayName ?? symbol,
@@ -50,7 +49,7 @@ function getMockCurrencies(networks: Networks): Currencies {
           };
 
           result.push(newCurrency);
-        } else if (isUtility && result[currencyIndex].mainNetwork === '') {
+        } else if ((isUtility || isNative) && result[currencyIndex].mainNetwork === '') {
           result[currencyIndex].mainNetwork = mainNetwork;
         }
       });
@@ -121,59 +120,4 @@ function getCurrencyOptions(currencies: Currencies) {
   });
 }
 
-function getParams(
-  isParaTeleport: boolean,
-  relayChainParaId: number,
-  accountId32: string | Uint8Array,
-  amount: string
-) {
-  return [
-    {
-      V1: isParaTeleport
-        ? {
-            interior: 'Here',
-            parents: 1,
-          }
-        : {
-            interior: {
-              X1: {
-                ParaChain: relayChainParaId,
-              },
-            },
-            parents: 0,
-          },
-    },
-    {
-      V1: {
-        interior: {
-          X1: {
-            AccountId32: {
-              id: accountId32,
-              network: 'Any',
-            },
-          },
-        },
-        parents: 0,
-      },
-    },
-    {
-      V1: [
-        {
-          fun: {
-            Fungible: new BN(amount),
-          },
-          id: {
-            Concrete: {
-              interior: 'Here',
-              parents: isParaTeleport ? 1 : 0,
-            },
-          },
-        },
-      ],
-    },
-    0,
-    { Unlimited: null },
-  ];
-}
-
-export { getCurrencyOptions, getProviderUrl, defaultSortingCurrencies, getMockCurrencies, getParams };
+export { getCurrencyOptions, getProviderUrl, defaultSortingCurrencies, getMockCurrencies };

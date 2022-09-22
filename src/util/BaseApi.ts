@@ -5,6 +5,7 @@ import {
   mnemonicGenerate,
   mnemonicValidate,
   hdValidatePath,
+  evmToAddress,
 } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
@@ -288,6 +289,14 @@ export default class BaseApi {
 
   public static decodeAddress(address: string): Uint8Array {
     return decodeAddress(address, false);
+  }
+
+  public static evmToAddress(address: string, networkName: string) {
+    const networks = NetworksController.getNetworks();
+    const network = networks.find(({ name }) => name === networkName);
+    const prefix = network?.addressPrefix;
+
+    return evmToAddress(address, prefix);
   }
 
   public static validateAddress(address: string): boolean {

@@ -123,7 +123,7 @@ const mutations: MutationTree<State> & Mutations = {
       };
 
       const historyForWalletAddress = {
-        ...state.history[assetId]?.[networkName],
+        ...state.history[assetId]?.[walletAddress],
         [networkName]: newHistoryForNetwork,
       };
 
@@ -148,7 +148,7 @@ const mutations: MutationTree<State> & Mutations = {
     };
 
     const historyForWalletAddress = {
-      ...(state.history[assetId]?.[networkName] ?? []),
+      ...(state.history[assetId]?.[walletAddress] ?? []),
       [networkName]: newHistoryForNetwork,
     };
 

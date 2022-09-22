@@ -8,16 +8,21 @@ import type {
 } from '@/interfaces/currencies';
 import type { TokenPriceJson, KeysTokenPriceJson } from '@/interfaces/tokens';
 import type { SubmittableExtrinsic, SignerOptions } from '@polkadot/api/submittable/types';
-import type { RelayChainName } from '@/consts/teleport';
+import type { RelayChainName } from '@/interfaces/teleport';
 import type { Wallet } from '@/store/accounts/types';
 import BaseApi from '@/util/BaseApi';
 import LocalStorageController from '@/controllers/localStorageController';
 import NetworksController from '@/controllers/networksController';
-import { XCM_LOC, teleportInfo } from '@/consts/teleport';
+import {
+  XCM_LOC,
+  FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT,
+  getNativeTeleportParams,
+  getParachainTeleportParams,
+  getParaId,
+} from '@/util/teleport';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { FPNumber } from '@/util/fp';
 import { getReplacedMetaTyped } from '@/helpers/common';
-import { getParams } from '@/helpers/currencies';
 
 type NetworkProps = {
   label: string;
@@ -274,29 +279,13 @@ export default class CurrencyController {
     return new FPNumber(value, precision).toCodecString();
   }
 
-  public getParaId(originalNetworkName: string, destinationNetworkName: string) {
-    const isTeleportToMainNetwork =
-      teleportInfo[destinationNetworkName as RelayChainName]?.parachains[originalNetworkName];
-
-    return (
-      teleportInfo[originalNetworkName as RelayChainName]?.parachains[destinationNetworkName]?.paraId ??
-      (isTeleportToMainNetwork ? -1 : undefined)
-    );
-
-    // return !isParaTeleport
-    //   ? teleportInfo[originalNetworkName as RelayChainName]?.parachains[destinationNetworkName]?.paraId
-    //   : isTeleportToMainNetwork
-    //   ? -1
-    //   : undefined;
-  }
-
   public createSendTransfer(to: string, networkName: string, amount: string, { precision, type }: NetworkProps): void {
     const precisionAmount = this.getPrecisionValue(amount, precision);
     const {
       api: { tx },
       settings: { DefaultTip },
     } = NetworksController.getNetwork(networkName);
-    const options = { tip: DefaultTip };
+    const transferOptions = { tip: DefaultTip };
 
     try {
       if (type === 'native') this.transfer = tx.balances.transfer(to, precisionAmount);
@@ -314,7 +303,7 @@ export default class CurrencyController {
         this.transfer = tx.eqBalances.transfer(equilibriumAsset, to, precisionAmount);
       }
 
-      this.options = options;
+      this.options = transferOptions;
     } catch {
       this.transfer = undefined;
       this.options = {};
@@ -323,28 +312,56 @@ export default class CurrencyController {
 
   public async createTeleportTransfer(
     wallet: Wallet,
-    originalNetworkName: string,
-    destinationNetworkName: string,
+    originNet: string,
+    destNet: string,
     amount: string,
     { precision }: NetworkProps
   ): Promise<void> {
-    const recipientParaId = this.getParaId(originalNetworkName, destinationNetworkName);
+    const chainId = getParaId(originNet, destNet);
+    const toAddress = this.getTransactionAddress(wallet, destNet);
+    const precisionAmount = this.getPrecisionValue(amount, precision);
 
-    if (!recipientParaId) {
-      this.transfer = undefined;
+    if (chainId === undefined) return;
+
+    if (chainId < 2000) {
+      // Case RelayChain -> ParaChain (polkadot -> statemint, kusama -> statemine) chainId = 1000/1001, pallet = xcmPallet
+      // Case ParaChain -> RelayChain (statemint -> polkadot, statemine -> kusama) chainId = -1, pallet = polkadotXcm
+      this.createNativeTeleportTransfer(originNet, toAddress, precisionAmount, chainId);
 
       return;
     }
 
-    const recipientId = this.getTransactionAddress(wallet, destinationNetworkName);
+    // Case ParaChain -> ParaChain && ParaChain -> RelayChain
+    this.createParachainTeleportTransfer(originNet, destNet, chainId, toAddress, precisionAmount);
+  }
+
+  public async createParachainTeleportTransfer(
+    originNet: string,
+    destNet: string,
+    chainId: number,
+    toAddress: string,
+    precisionAmount: string
+  ): Promise<void> {
     const networks = NetworksController.getNetworks();
-    const { api } = networks.find(({ name }) => name === originalNetworkName)!; // eslint-disable-line
-    const m = XCM_LOC.filter((x) => api.tx[x] && isFunction(api.tx[x].limitedTeleportAssets))[0];
-    const isParaTeleport = m === 'polkadotXcm';
-    const precisionAmount = this.getPrecisionValue(amount, precision);
-    const tx = api.tx[m].limitedTeleportAssets;
-    const publicKey = BaseApi.decodeAddress(recipientId);
-    const params = getParams(isParaTeleport, recipientParaId, publicKey, precisionAmount);
+    const { api } = networks.find(({ name }) => name === originNet)!; // eslint-disable-line
+    const ormlOptions = { Token: this.token.toUpperCase() };
+    const params = getParachainTeleportParams(originNet, destNet, chainId, toAddress);
+
+    this.transfer = api.tx.xTokens.transfer(ormlOptions, precisionAmount, params, FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT);
+  }
+
+  public async createNativeTeleportTransfer(
+    originNet: string,
+    toAddress: string,
+    precisionAmount: string,
+    chainId: number
+  ): Promise<void> {
+    const networks = NetworksController.getNetworks();
+    const { api } = networks.find(({ name }) => name === originNet)!; // eslint-disable-line
+    const pallet = XCM_LOC.find((pallet) => api.tx[pallet] && isFunction(api.tx[pallet].limitedTeleportAssets))!; // eslint-disable-line
+    const isToRelayChainTeleport = pallet === 'polkadotXcm';
+    const tx = api.tx[pallet].limitedTeleportAssets;
+    const params = getNativeTeleportParams(isToRelayChainTeleport, chainId, toAddress, precisionAmount);
 
     this.transfer = tx(...params);
   }

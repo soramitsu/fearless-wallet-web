@@ -40,6 +40,7 @@ type NetworkAssets = {
   staking?: string;
   purchaseProviders?: string[];
   isUtility?: true;
+  isNative?: true;
   type?: NetworkAssetsType;
 };
 

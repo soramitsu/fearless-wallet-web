@@ -14,7 +14,6 @@
     <SelectNetworkPopup
       v-if="showSelectNetworkPopup"
       v-model="selectedNetwork"
-      :allNetworks="true"
       :toggleSelectedNetwork="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
     />
@@ -148,9 +147,9 @@ export default class Wallet extends Vue {
       // if a network is selected and there is no currency in this network
       if (!isAllNetworks && !availableInSelectedNetwork) return false;
 
-      const { mainNetwork, token } = currency;
+      const { mainNetwork, displayName } = currency;
 
-      return mainNetwork.includes(filter) || token.includes(filter);
+      return mainNetwork.includes(filter) || displayName.includes(filter);
     });
   }
 

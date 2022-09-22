@@ -74,6 +74,7 @@
     <SelectNetworkPopup
       v-if="showSelectNetworkPopup"
       v-model="selectedNetwork"
+      :relayChain="relayChain"
       :toggleSelectedNetwork="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
     />
@@ -144,6 +145,10 @@ export default class Token extends Vue {
 
   get providers() {
     return this.currentCurrency?.providers ?? [];
+  }
+
+  get relayChain() {
+    return this.currentCurrency?.relayChain;
   }
 
   get showBuyButton() {

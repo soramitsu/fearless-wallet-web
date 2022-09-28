@@ -1,25 +1,12 @@
 export type RelayChainName = 'polkadot' | 'kusama';
+import type { NetworkName } from '@/interfaces/common';
 
 interface BaseInfo {
   teleport: number[];
-}
-
-interface ParachainsInfo extends BaseInfo {
   paraId: number;
+  supportedToken: string[];
 }
 
-interface Info extends BaseInfo {
-  parachains: Record<string, ParachainsInfo>;
-}
+type SupportedCrossChain = Record<RelayChainName, Record<NetworkName, BaseInfo>>;
 
-interface ParachainsInfo {
-  paraId: number;
-}
-
-interface Info {
-  parachains: Record<string, ParachainsInfo>;
-}
-
-type TeleportInfo = Record<RelayChainName, Info>;
-
-export { TeleportInfo };
+export { SupportedCrossChain };

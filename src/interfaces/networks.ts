@@ -47,6 +47,7 @@ type NetworkAssets = {
 type NetworkJson = {
   chainId: string;
   parentId?: string;
+  paraId?: string;
   name: string;
   externalApi?: ExternalApi;
   assets: NetworkAssets[];
@@ -65,6 +66,7 @@ type Network = {
   assets: NetworkAssets[];
   chainId: string;
   parentId?: string;
+  paraId?: string;
   addressPrefix: number;
   isEthereumNetwork: boolean;
   settings: Record<string, any>;

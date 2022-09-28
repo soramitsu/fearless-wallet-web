@@ -1,50 +1,98 @@
 import { BN } from '@polkadot/util';
-import type { TeleportInfo, RelayChainName } from '@/interfaces/teleport';
+import type { SupportedCrossChain, RelayChainName } from '@/interfaces/teleport';
 import BaseApi from '@/util/BaseApi';
-import { RELAY_CHAINS } from '@/consts/networks';
+import { RELAY_CHAINS, NATIVE_NETWORKS } from '@/consts/networks';
+import NetworksController from '@/controllers/networksController';
 
 const FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT = 5000000000;
 
-const XCM_LOC = ['xcm', 'xcmPallet', 'polkadotXcm'];
+const XCM_NATIVE_PALLETS = ['xcm', 'xcmPallet', 'polkadotXcm'];
 
-const SUPPORTED_CROSS_CHAIN: TeleportInfo = {
-  kusama: {
-    teleport: [1000, 1001],
-    parachains: {
-      statemine: {
-        paraId: 1000,
-        teleport: [-1],
-      },
-      encointer: {
-        paraId: 1001,
-        teleport: [-1],
-      },
+const SUPPORTED_CROSS_CHAIN: SupportedCrossChain = {
+  polkadot: {
+    polkadot: {
+      paraId: -1,
+      teleport: [1000, 2006, 2000],
+      supportedToken: ['DOT'],
+    },
+    statemint: {
+      paraId: 1000,
+      teleport: [-1, 2006, 2000],
+      supportedToken: ['DOT'],
+    },
+    astar: {
+      paraId: 2006,
+      teleport: [-1],
+      supportedToken: ['DOT'],
+    },
+    acala: {
+      paraId: 2000,
+      teleport: [-1],
+      supportedToken: ['DOT'],
     },
   },
-  polkadot: {
-    teleport: [1000],
-    parachains: {
-      statemint: {
-        paraId: 1000,
-        teleport: [-1],
-      },
+  kusama: {
+    kusama: {
+      paraId: -1,
+      teleport: [1000, 1001, 2000, 2001, 2007],
+      supportedToken: ['KSM'],
+    },
+    statemine: {
+      paraId: 1000,
+      teleport: [-1, 1001, 2000, 2001, 2007],
+      supportedToken: ['KSM'],
+    },
+    'encointer on kusama': {
+      paraId: 1001,
+      teleport: [-1, 1000, 2000, 2001, 2007],
+      supportedToken: ['KSM'],
+    },
+    karura: {
+      paraId: 2000,
+      teleport: [-1, 1000, 1001, 2001, 2007],
+      supportedToken: ['KSM'],
+    },
+    bifrost: {
+      paraId: 2001,
+      teleport: [-1, 1000, 1001, 2000, 2007],
+      supportedToken: ['KSM'],
+    },
+    shiden: {
+      paraId: 2007,
+      teleport: [-1, 1000, 1001, 2000, 2001],
+      supportedToken: ['KSM'],
     },
   },
 };
 
-function getParaId(originalNetworkName: string, destinationNetworkName: string) {
-  const paraId =
-    SUPPORTED_CROSS_CHAIN[originalNetworkName as RelayChainName]?.parachains[destinationNetworkName]?.paraId;
+function getParaId(relayChain: RelayChainName, originNet: string, destNet: string) {
+  const originNetProps = SUPPORTED_CROSS_CHAIN[relayChain][originNet];
+  const destNetProps = SUPPORTED_CROSS_CHAIN[relayChain]?.[destNet];
 
-  if (paraId) return paraId;
+  if (originNetProps === undefined || destNetProps === undefined) return;
 
-  const isTeleportToMainNetwork =
-    SUPPORTED_CROSS_CHAIN[destinationNetworkName as RelayChainName]?.parachains[originalNetworkName];
+  const { teleport } = originNetProps;
+  const { paraId } = destNetProps;
 
-  return isTeleportToMainNetwork ? -1 : undefined;
+  if (teleport.includes(paraId)) return paraId;
+
+  return;
 }
 
-function getNativeTeleportParams(isToRelayChainTeleport: boolean, chainId: number, toAddress: string, amount: string) {
+function isNativeNetwork(originNet: string, destNet?: string) {
+  const IsNativeOriginNet = NATIVE_NETWORKS.includes(originNet);
+
+  return destNet ? IsNativeOriginNet && NATIVE_NETWORKS.includes(destNet) : IsNativeOriginNet;
+}
+
+function isRelayChain(network: string) {
+  return RELAY_CHAINS.includes(network);
+}
+
+function getNativeTeleportParams(destNet: string, toAddress: string, amount: string) {
+  const isToRelayChainTeleport = isRelayChain(destNet);
+  const { paraId: _paraId } = NetworksController.getNetwork(destNet);
+  const paraId = +(_paraId ?? isToRelayChainTeleport ? '-1' : '-2'); // '-2' fiction
   const publicKey = BaseApi.decodeAddress(toAddress);
   const receiverLocation = { AccountId32: { network: 'Any', id: publicKey } };
   const value = new BN(amount);
@@ -52,7 +100,7 @@ function getNativeTeleportParams(isToRelayChainTeleport: boolean, chainId: numbe
   const destinationChain = {
     V1: isToRelayChainTeleport
       ? { interior: 'Here', parents: 1 }
-      : { interior: { X1: { ParaChain: chainId } }, parents: 0 },
+      : { interior: { X1: { ParaChain: paraId } }, parents: 0 },
   };
 
   const receiver = { V1: { parents: 0, interior: { X1: receiverLocation } } };
@@ -71,19 +119,23 @@ function getNativeTeleportParams(isToRelayChainTeleport: boolean, chainId: numbe
     ],
   };
 
-  return [destinationChain, receiver, asset, 0, { Unlimited: null }];
+  const params: any[] = [destinationChain, receiver, asset, 0];
+
+  if (isNativeNetwork(destNet)) params.push({ Unlimited: null });
+
+  return params;
 }
 
-function getParachainTeleportParams(originNet: string, destNet: string, chainId: number, toAddress: string) {
-  const ss58Address =
-    destNet === 'astar' || destNet === 'shiden' ? BaseApi.evmToAddress(toAddress, destNet) : toAddress;
-  const publicKey = BaseApi.decodeAddress(ss58Address);
+function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: string) {
+  const { paraId: _paraId } = NetworksController.getNetwork(destNet);
+  const paraId = +(_paraId as string);
+  const publicKey = BaseApi.decodeAddress(toAddress);
   const receiverLocation = { AccountId32: { network: 'Any', id: publicKey } };
 
-  //  parachain -> parachain
-  if (RELAY_CHAINS.includes(originNet)) {
+  //  parachain -> parachain & relaychain -> parachain
+  if (!RELAY_CHAINS.includes(destNet)) {
     const interior = {
-      X2: [{ Parachain: chainId }, { AccountId32: { network: 'Any', id: publicKey } }],
+      X2: [{ Parachain: paraId }, receiverLocation],
     };
 
     return { V1: { parents: 1, interior } };
@@ -102,9 +154,10 @@ function getParachainTeleportParams(originNet: string, destNet: string, chainId:
 
 export {
   SUPPORTED_CROSS_CHAIN,
-  XCM_LOC,
+  XCM_NATIVE_PALLETS,
   FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT,
   getNativeTeleportParams,
-  getParachainTeleportParams,
+  getOrmlTeleportParams,
   getParaId,
+  isNativeNetwork,
 };

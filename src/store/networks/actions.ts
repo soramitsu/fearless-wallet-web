@@ -58,7 +58,7 @@ const actions: ActionTree<State, State> & Actions = {
     const networksJson: NetworkJson[] = data;
 
     const disconnectNetworks: DisconnectNetworks = networksJson.map(
-      ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi, chainId, parentId }) => {
+      ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi, chainId, parentId, paraId }) => {
         const networkName = name.toLocaleLowerCase();
         const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
         const externalApi = originalExternalApi ?? ({} as ExternalApi);
@@ -70,6 +70,7 @@ const actions: ActionTree<State, State> & Actions = {
           assets,
           chainId,
           parentId,
+          paraId,
           addressPrefix,
           isEthereumNetwork,
           externalApi,
@@ -103,7 +104,6 @@ const actions: ActionTree<State, State> & Actions = {
     const urlFiatsPart = fiats.map(({ id }) => id).join('%2C');
     const urlsTokens = assets.filter(({ priceId }) => !!priceId).map(({ priceId }) => priceId);
     const urlTokensPart = [...new Set(urlsTokens)].join('%2C');
-
     const url = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${urlFiatsPart}&include_24hr_change=true&ids=${urlTokensPart}`;
     const { data } = await axios.get(url);
     const tokensPriceJson: TokensPriceJson = data;

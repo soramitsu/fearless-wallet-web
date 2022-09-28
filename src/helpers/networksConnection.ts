@@ -9,6 +9,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { accountController } from '@/controllers/accountController';
 import NetworksController from '@/controllers/networksController';
 import BaseApi from '@/util/BaseApi';
+import { getOptions } from '@/consts/assets';
 
 const ORML_PALLETS_TYPES = ['ormlChain'];
 
@@ -107,9 +108,8 @@ function subscribeOrmlTokensBalances(context: Context, address: string, network:
 
     const precision = assets.find((asset) => asset.id === assetId)?.precision ?? 0;
     const { symbol } = assets.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-    const options = { Token: symbol.toUpperCase() };
+    const options = getOptions(symbol, type, assetId);
 
-    if (type === 'stableAssetPoolToken' || type === 'foreignAsset' || type === 'liquidCrowdloan') return; // TODO: fix
     if (symbol === 'csm') return; // TODO: fix
 
     const isEquilibrium = type === 'equilibrium';

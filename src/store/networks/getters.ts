@@ -47,7 +47,13 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getTokenName]:
     ({ assets }) =>
     (tokenId: string) => {
-      return assets.find(({ id }) => id === tokenId)?.symbol ?? '';
+      const asset  = assets.find(({ id }) => id === tokenId); // eslint-disable-line
+
+      if (!asset) return '';
+
+      const { symbol, displayName } = asset;
+
+      return displayName ?? symbol;
     },
   [GettersTypes.getFiats]({ fiats }): FiatJson[] {
     return fiats;

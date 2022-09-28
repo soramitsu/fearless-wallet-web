@@ -137,19 +137,15 @@ export default class Wallet extends Vue {
 
     return this.sortedCurrencies.filter((currency) => {
       const isAllNetworks = this.selectedNetwork === 'All networks';
-      const availableInSelectedNetwork = isAllNetworks
-        ? false
-        : currency
-            .getAvailableInNetworks(this.selectedWallet)
-            .map(({ network }) => network)
-            .includes(this.selectedNetwork);
+      const availableInNetworks = currency.getAvailableInNetworks(this.selectedWallet).map(({ network }) => network);
+      const availableInSelectedNetwork = availableInNetworks.includes(this.selectedNetwork);
 
       // if a network is selected and there is no currency in this network
       if (!isAllNetworks && !availableInSelectedNetwork) return false;
 
-      const { mainNetwork, displayName } = currency;
+      const { displayName } = currency;
 
-      return mainNetwork.includes(filter) || displayName.includes(filter);
+      return availableInNetworks.join(' ').includes(filter) || displayName.includes(filter);
     });
   }
 

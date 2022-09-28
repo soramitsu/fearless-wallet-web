@@ -14,15 +14,16 @@ import BaseApi from '@/util/BaseApi';
 import LocalStorageController from '@/controllers/localStorageController';
 import NetworksController from '@/controllers/networksController';
 import {
-  XCM_LOC,
+  XCM_NATIVE_PALLETS,
   FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT,
   getNativeTeleportParams,
-  getParachainTeleportParams,
-  getParaId,
+  getOrmlTeleportParams,
+  isNativeNetwork,
 } from '@/util/teleport';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { FPNumber } from '@/util/fp';
 import { getReplacedMetaTyped } from '@/helpers/common';
+import { getOptions } from '@/consts/assets';
 
 type NetworkProps = {
   label: string;
@@ -262,13 +263,13 @@ export default class CurrencyController {
   public getCurrencyVisible(): boolean {
     const currenciesVisible = this.getCurrenciesVisible();
 
-    return currenciesVisible[this.token] ?? true;
+    return currenciesVisible[this.displayName] ?? true;
   }
 
   public setCurrencyVisible(value: boolean): void {
     const currenciesVisible = this.getCurrenciesVisible();
 
-    currenciesVisible[this.token] = value;
+    currenciesVisible[this.displayName] = value;
 
     this.lsCurrency.set(this.currencyVisibleStorageName, currenciesVisible);
   }
@@ -286,22 +287,16 @@ export default class CurrencyController {
       settings: { DefaultTip },
     } = NetworksController.getNetwork(networkName);
     const transferOptions = { tip: DefaultTip };
+    const ormlOptions = getOptions(this.token, type, this.tokenId);
 
     try {
       if (type === 'native') this.transfer = tx.balances.transfer(to, precisionAmount);
-      else if (type === 'ormlChain') {
-        const ormlChainOptions = { Token: this.token.toUpperCase() };
-
-        this.transfer = tx.tokens.transfer(to, ormlChainOptions, precisionAmount);
-      } else if (type === 'ormlAsset') {
-        const ormlOptions = { Token: this.token.toUpperCase() };
-
-        this.transfer = tx.currencies.transfer(to, ormlOptions, precisionAmount);
-      } else if (type === 'equilibrium') {
+      else if (type === 'equilibrium') {
         const equilibriumAsset = BaseApi.getEquilibriumAssetName(this.token);
 
         this.transfer = tx.eqBalances.transfer(equilibriumAsset, to, precisionAmount);
-      }
+      } else if (type === 'ormlChain') this.transfer = tx.tokens.transfer(to, ormlOptions, precisionAmount);
+      else this.transfer = tx.currencies.transfer(to, ormlOptions, precisionAmount);
 
       this.options = transferOptions;
     } catch {
@@ -317,53 +312,51 @@ export default class CurrencyController {
     amount: string,
     { precision }: NetworkProps
   ): Promise<void> {
-    const chainId = getParaId(originNet, destNet);
     const toAddress = this.getTransactionAddress(wallet, destNet);
     const precisionAmount = this.getPrecisionValue(amount, precision);
 
-    if (chainId === undefined) return;
-
-    if (chainId < 2000) {
-      // Case RelayChain -> ParaChain (polkadot -> statemint, kusama -> statemine) chainId = 1000/1001, pallet = xcmPallet
-      // Case ParaChain -> RelayChain (statemint -> polkadot, statemine -> kusama) chainId = -1, pallet = polkadotXcm
-      this.createNativeTeleportTransfer(originNet, toAddress, precisionAmount, chainId);
+    if (isNativeNetwork(originNet)) {
+      // Case RelayChain -> Nonnative ParaChain (polkadot -> acala, etc; kusama -> bifrost, etc) paraId = 2000-2999, pallet = xcmPallet, module = reserveTransferAssets
+      // Case RelayChain -> Native ParaChain (polkadot -> statemint; kusama -> statemine, encointer) paraId = 1000-1999, pallet = xcmPallet, module = limitedTeleportAssets
+      // Case Native ParaChain -> RelayChain (statemint -> polkadot; statemine, encointer -> kusama) paraId = -1, pallet = polkadotXcm, module = limitedTeleportAssets
+      // TODO: add case: Native ParaChain -> Nonnative ParaChain
+      // TODO: add case: Native ParaChain -> Native ParaChain
+      this.createNativeTeleportTransfer(originNet, destNet, toAddress, precisionAmount);
 
       return;
     }
 
-    // Case ParaChain -> ParaChain && ParaChain -> RelayChain
-    this.createParachainTeleportTransfer(originNet, destNet, chainId, toAddress, precisionAmount);
-  }
-
-  public async createParachainTeleportTransfer(
-    originNet: string,
-    destNet: string,
-    chainId: number,
-    toAddress: string,
-    precisionAmount: string
-  ): Promise<void> {
-    const networks = NetworksController.getNetworks();
-    const { api } = networks.find(({ name }) => name === originNet)!; // eslint-disable-line
-    const ormlOptions = { Token: this.token.toUpperCase() };
-    const params = getParachainTeleportParams(originNet, destNet, chainId, toAddress);
-
-    this.transfer = api.tx.xTokens.transfer(ormlOptions, precisionAmount, params, FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT);
+    // Case Nonnative ParaChain -> Nonnative ParaChain (karura, etc -> bifrost, etc) paraId = 2000-2999
+    // Case Nonnative ParaChain -> RelayChain (karura, etc -> kusama, etc; acala, etc  -> polkadot)
+    this.createOrmlTeleportTransfer(originNet, destNet, toAddress, precisionAmount);
   }
 
   public async createNativeTeleportTransfer(
     originNet: string,
+    destNet: string,
     toAddress: string,
-    precisionAmount: string,
-    chainId: number
+    precisionAmount: string
   ): Promise<void> {
-    const networks = NetworksController.getNetworks();
-    const { api } = networks.find(({ name }) => name === originNet)!; // eslint-disable-line
-    const pallet = XCM_LOC.find((pallet) => api.tx[pallet] && isFunction(api.tx[pallet].limitedTeleportAssets))!; // eslint-disable-line
-    const isToRelayChainTeleport = pallet === 'polkadotXcm';
-    const tx = api.tx[pallet].limitedTeleportAssets;
-    const params = getNativeTeleportParams(isToRelayChainTeleport, chainId, toAddress, precisionAmount);
+    const { api } = NetworksController.getNetwork(originNet);
+    const module = isNativeNetwork(destNet) ? 'limitedTeleportAssets' : 'reserveTransferAssets';
+    const pallet = XCM_NATIVE_PALLETS.find((pallet) => api.tx[pallet] && isFunction(api.tx[pallet][module]))!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const tx = api.tx[pallet][module];
+    const params = getNativeTeleportParams(destNet, toAddress, precisionAmount);
 
     this.transfer = tx(...params);
+  }
+
+  public async createOrmlTeleportTransfer(
+    originNet: string,
+    destNet: string,
+    toAddress: string,
+    precisionAmount: string
+  ): Promise<void> {
+    const { api } = NetworksController.getNetwork(originNet);
+    const ormlOptions = { Token: this.token.toUpperCase() };
+    const params = getOrmlTeleportParams(originNet, destNet, toAddress);
+
+    this.transfer = api.tx.xTokens.transfer(ormlOptions, precisionAmount, params, FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT);
   }
 
   public async getPartialFee(from: string, { precision }: NetworkProps): Promise<string> {

@@ -3,7 +3,7 @@
     <template slot="control">
       <Button size="big" class="button" text="Continue with Exension" @click="withExtension" />
 
-      <Button v-if="isBeaconAvailible" size="big" class="button" text="Continue with Beacon" @click="withExtension" />
+      <Button v-if="isBeaconAvailable" size="big" class="button" text="Continue with Beacon" @click="withExtension" />
 
       <Alert v-else :message="beaconNotAvailibleAlertMessage" />
 
@@ -18,7 +18,6 @@ import { Getter } from 'vuex-class';
 import { ResponseSigning } from '@polkadot/extension-base/background/types';
 import QrCode from 'qrcode.vue';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
-import { SelectedWallet } from '@/store/accounts/types';
 import { fearlessConnector } from '@/controllers/beaconController';
 import { ActionTypes as SignActionTypes } from '@/store/sign/actions';
 import { Components } from '@/router/routes';
@@ -37,13 +36,13 @@ import Corners from '@/components/Corners.vue';
 export default class SignRequest extends Vue {
   @Getter('getSignRequest') request!: ResponseSigning;
   @Getter('getSignRequestPayload') payload!: SignerPayloadJSON;
-  @Getter('getSelectedWallet') setSelectedWallet!: SelectedWallet;
 
+  isBeaconAvailable = false;
   beaconNotAvailibleAlertMessage = 'Connect your mobile phone with Beacon to sign transactions on mobile device';
   value = '';
 
-  get isBeaconAvailible() {
-    return this.setSelectedWallet.isBeaconConnected;
+  async mounted() {
+    this.isBeaconAvailable = await fearlessConnector.isBeaconConnected(this.payload.address);
   }
 
   withExtension() {

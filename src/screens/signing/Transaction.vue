@@ -75,6 +75,7 @@ export default class Auth extends Vue {
 
     return registry.createType('ExtrinsicPayload', this.payload, { version: this.payload.version });
   }
+
   get specVersion() {
     return this.typedPayload.specVersion.toNumber();
   }

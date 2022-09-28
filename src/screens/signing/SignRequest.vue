@@ -1,26 +1,11 @@
 <template>
   <TransactionContent>
-    <template slot="content">
-      <div class="qr-container">
-        <Corners size="big">
-          <div class="qr-wrapper">
-            <span class="qr-header">Fearless connect mobile QR code</span>
-            <QrCode
-              class="qr-code"
-              value="Sora"
-              :size="200"
-              render-as="svg"
-              :margin="10"
-              foreground="#FFFFFF"
-              background="#ffffff00"
-            />
-          </div>
-        </Corners>
-        <div class="choice">OR</div>
-      </div>
-    </template>
     <template slot="control">
       <Button size="big" class="button" text="Continue with Exension" @click="withExtension" />
+
+      <Button v-if="isBeaconAvailible" size="big" class="button" text="Continue with Beacon" @click="withExtension" />
+
+      <Alert v-else :message="beaconNotAvailibleAlertMessage" />
 
       <Button size="mini" type="link" text="Cancel" @click="onCancel" />
     </template>
@@ -32,11 +17,14 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { ResponseSigning } from '@polkadot/extension-base/background/types';
 import QrCode from 'qrcode.vue';
+import type { SignerPayloadJSON } from '@polkadot/types/types';
+import { SelectedWallet } from '@/store/accounts/types';
+import { fearlessConnector } from '@/controllers/beaconController';
+import { ActionTypes as SignActionTypes } from '@/store/sign/actions';
 import { Components } from '@/router/routes';
 import TransactionContent from '@/layouts/TransactionContent.vue';
 import Button from '@/components/Button.vue';
 import Corners from '@/components/Corners.vue';
-import { ActionTypes as SignActionTypes } from '@/store/sign/actions';
 
 @Component({
   components: {
@@ -48,12 +36,24 @@ import { ActionTypes as SignActionTypes } from '@/store/sign/actions';
 })
 export default class SignRequest extends Vue {
   @Getter('getSignRequest') request!: ResponseSigning;
+  @Getter('getSignRequestPayload') payload!: SignerPayloadJSON;
+  @Getter('getSelectedWallet') setSelectedWallet!: SelectedWallet;
 
+  beaconNotAvailibleAlertMessage = 'Connect your mobile phone with Beacon to sign transactions on mobile device';
   value = '';
+
+  get isBeaconAvailible() {
+    return this.setSelectedWallet.isBeaconConnected;
+  }
 
   withExtension() {
     this.$router.push({ name: Components.Transaction });
   }
+
+  withBeacon() {
+    fearlessConnector.sendRequest(this.payload);
+  }
+
   onCancel() {
     this.$store.dispatch(SignActionTypes.SIGN_CANCEL, this.request.id);
   }

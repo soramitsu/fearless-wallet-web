@@ -34,19 +34,7 @@
         @click="openAddWalletComponent('import')"
       />
 
-      <Button
-        class="import-button"
-        width="100%"
-        text="Connect with Beacon"
-        size="big"
-        fontSize="big"
-        type="secondary"
-        :border="false"
-        @click="connectBeacon"
-      />
-      <AboveForm v-if="isQRshown" :closeHandler="back">
-        <img :src="qrPayload" />
-      </AboveForm>
+      <BeaconConnect />
 
       <div class="privacy-policy">
         By continuing you agree with
@@ -60,8 +48,6 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import QRCode from 'qrcode';
-import { fearlessConnector } from '@/controllers/beaconController';
 import Logo from '@/components/Logo.vue';
 import Button from '@/components/Button.vue';
 import { Components } from '@/router/routes';
@@ -69,44 +55,30 @@ import CircleButton from '@/components/CircleButton.vue';
 import BaseApi from '@/util/BaseApi';
 import { TERMS_URL, PRIVACY_URL } from '@/consts/urls';
 import AboveForm from '@/components/AboveForm.vue';
+import BeaconConnect from '@/screens/beaconUI/BeaconConnect.vue';
 
 @Component({
   components: {
     Logo,
     Button,
     CircleButton,
+    BeaconConnect,
     AboveForm,
   },
 })
 export default class Welcome extends Vue {
-  isQRshown = false;
-  qrPayload = '';
+  store: any;
 
   get showBackWalletIcon() {
     return BaseApi.getAccounts().length !== 0;
   }
 
-  back() {
-    this.isQRshown = false;
-  }
-
-  mounted() {
-    fearlessConnector.onPairingRequest(async (payload) => {
-      this.qrPayload = await QRCode.toDataURL(payload);
-      this.isQRshown = true;
-    });
-  }
   openTermsAndConditions() {
     window.open(TERMS_URL);
   }
 
   openPrivacyPolicy() {
     window.open(PRIVACY_URL);
-  }
-
-  connectBeacon() {
-    if (this.qrPayload.length) this.isQRshown = true;
-    else fearlessConnector.connect();
   }
 
   backWallet() {
@@ -155,3 +127,5 @@ export default class Welcome extends Vue {
   }
 }
 </style>
+
+function encodeAddress(address: PermissionSuccess, arg1: number) { throw new Error('Function not implemented.'); }

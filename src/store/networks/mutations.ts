@@ -1,7 +1,6 @@
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
 import type {
-  UpdateCurrencyProps,
   SetNetworksStatusProps,
   UpdateCurrencyBalanceProps,
   SetAssetsProps,
@@ -23,7 +22,6 @@ export enum MutationTypes {
   SET_CURRENCIES = 'SET_CURRENCIES',
   SET_HISTORY = 'SET_HISTORY',
   SET_ALL_NETWORKS_IS_LOADED = 'SET_ALL_NETWORKS_IS_LOADED',
-  UPDATE_CURRENCY = 'UPDATE_CURRENCY',
   UPDATE_CURRENCY_BALANCE = 'UPDATE_CURRENCY_BALANCE',
   SET_NETWORK_ACTIVE_NODE = 'SET_NETWORK_ACTIVE_NODE',
   SET_NETWORK_API = 'SET_NETWORK_API',
@@ -37,7 +35,6 @@ export type Mutations = {
   [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
   [MutationTypes.SET_ALL_NETWORKS_IS_LOADED](state: State, props: SetAllNetworksIsLoaded): void;
-  [MutationTypes.UPDATE_CURRENCY](state: State, props: UpdateCurrencyProps): void;
   [MutationTypes.UPDATE_CURRENCY_BALANCE](state: State, props: UpdateCurrencyBalanceProps): void;
   [MutationTypes.SET_NETWORK_ACTIVE_NODE](state: State, props: SetNetworkActiveNodeProps): void;
   [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApi): void;
@@ -52,37 +49,23 @@ const mutations: MutationTree<State> & Mutations = {
     state.currencies = currencies;
   },
 
-  [MutationTypes.SET_ASSETS](state, { assets }) {
-    state.assets = assets;
+  [MutationTypes.SET_ASSETS](state, { assetsJson }) {
+    state.assetsJson = assetsJson;
   },
 
   [MutationTypes.SET_FIATS](state, { fiats }) {
     state.fiats = fiats.map((fiat) => ({ ...fiat }));
   },
 
-  [MutationTypes.SET_TOKENS_PRICE](state, { tokensPriceJson }) {
-    state.tokensPriceJson = tokensPriceJson;
-  },
+  [MutationTypes.SET_TOKENS_PRICE](state, { tokensPrice }) {
+    state.tokensPrice = tokensPrice;
 
-  [MutationTypes.UPDATE_CURRENCY](state, { selectedFiat, assetId, parentId }) {
-    const { currencies, assets, networks, tokensPriceJson } = state;
-    const { symbol } = assets.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-    const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name;
-    const tokensPrice = tokensPriceJson[assetId] ?? {};
-
-    const currentCurrency = currencies.find(({ tokenId: _tokenId, token: _token, relayChain: _relayChain,}) => { //eslint-disable-line
-      const isExistingTokenId = _tokenId === assetId;
-      const isExistingTokenSymbol = _token === symbol && _relayChain === relayChain;
-
-      return isExistingTokenId || isExistingTokenSymbol;
-    })!;
-
-    currentCurrency.updateCurrency({ tokensPrice, selectedFiat });
+    state.currencies.forEach((currency) => currency.updatePrice());
   },
 
   [MutationTypes.UPDATE_CURRENCY_BALANCE](state, { walletAddress, network, assetId, balance, parentId, type }) {
-    const { currencies, assets, networks } = state;
-    const { symbol, precision } = assets.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const { currencies, assetsJson, networks } = state;
+    const { symbol, precision } = assetsJson.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
     const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name;
 
     const currentCurrency = currencies.find(({ tokenId: _tokenId, token: _token, relayChain: _relayChain,}) => { //eslint-disable-line

@@ -6,7 +6,6 @@ import type {
   AvailableInNetworksFP,
   TypeAsset,
 } from '@/interfaces/currencies';
-import type { TokenPriceJson, KeysTokenPriceJson } from '@/interfaces/tokens';
 import type { SubmittableExtrinsic, SignerOptions } from '@polkadot/api/submittable/types';
 import type { RelayChainName } from '@/interfaces/teleport';
 import type { Wallet } from '@/store/accounts/types';
@@ -34,7 +33,7 @@ type NetworkProps = {
 
 export default class CurrencyController {
   private readonly lsCurrency = new LocalStorageController('currency');
-  private readonly currencyVisibleStorageName = 'currency_visible';
+  private readonly visibleStorageName = 'visible';
   public transfer!: SubmittableExtrinsic<'promise'> | undefined;
   public options: Partial<SignerOptions> = {};
   public balances: Balances = {};
@@ -47,22 +46,21 @@ export default class CurrencyController {
     public tokenId: string,
     public token: string,
     displayName: string | undefined,
-    public tokensPrice: TokenPriceJson,
     public providers: string[],
     public relayChain: RelayChainName
   ) {
     this.displayName = displayName ?? token;
   }
 
-  public updatePrice(selectedFiat: string) {
-    const hours24ChangeField = `${selectedFiat}_24h_change` as KeysTokenPriceJson;
+  public updatePrice() {
+    const { price, hours24Change } = NetworksController.getTokenPrice(this.tokenId);
 
-    this.price = this.tokensPrice[selectedFiat as KeysTokenPriceJson] ?? 0;
-    this.hours24Change = this.tokensPrice[hours24ChangeField] ?? 0;
+    this.price = price ?? 0;
+    this.hours24Change = hours24Change ?? 0;
   }
 
   private getCurrenciesVisible(): Record<string, boolean> {
-    const currencyVisible = this.lsCurrency.get(this.currencyVisibleStorageName);
+    const currencyVisible = this.lsCurrency.get(this.visibleStorageName);
 
     return currencyVisible.value ?? {};
   }
@@ -143,12 +141,6 @@ export default class CurrencyController {
     const addressByNetwork = isEthereumNetwork ? ethereumAddress : address;
 
     return addressByNetwork;
-  }
-
-  public updateCurrency({ tokensPrice, selectedFiat }: Record<string, any>): void {
-    this.tokensPrice = tokensPrice ?? this.tokensPrice;
-
-    this.updatePrice(selectedFiat);
   }
 
   public updateCurrencyBalance({ walletAddress, network, balance, type, precision }: Record<string, any>): void {
@@ -271,7 +263,7 @@ export default class CurrencyController {
 
     currenciesVisible[this.displayName] = value;
 
-    this.lsCurrency.set(this.currencyVisibleStorageName, currenciesVisible);
+    this.lsCurrency.set(this.visibleStorageName, currenciesVisible);
   }
 
   public getPrecisionValue(amount: string, precision: number): string {

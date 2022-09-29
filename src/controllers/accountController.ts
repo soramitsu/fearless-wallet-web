@@ -3,7 +3,6 @@ import LocalStorageController from '@/controllers/localStorageController';
 
 class AccountController {
   private readonly lsAccount = new LocalStorageController('account');
-  private readonly hideZeroBalanceStorageName = 'hide-zero-balance';
   private readonly sequenceTokensStorageName = 'sequence-tokens';
   private readonly autoSelectNodesStorageName = 'auto-select-nodes';
   private readonly activeNodeStorageName = 'active-node';

@@ -50,21 +50,6 @@ function connectToNetworksApi(networks: DisconnectNetworks, autoConnectMs: numbe
   });
 }
 
-function updateCurrencyInfo(context: Context, network: Network) {
-  const { commit, rootState } = context;
-  const { assets: networkAssets, parentId } = network;
-
-  networkAssets.forEach(({ assetId }) => {
-    const selectedFiat = rootState.account.selectedFiat;
-
-    commit(MutationTypes.UPDATE_CURRENCY, {
-      assetId,
-      selectedFiat,
-      parentId,
-    });
-  });
-}
-
 function subscribeUtilityTokensBalances(context: Context, address: string, network: Network) {
   const { name: networkName, parentId, api, assets: networkAssets } = network;
   const networkUtilityAsset = networkAssets.find( // eslint-disable-line
@@ -74,9 +59,9 @@ function subscribeUtilityTokensBalances(context: Context, address: string, netwo
   if (!networkUtilityAsset) return;
 
   const { getters, commit, state } = context;
-  const { assets } = state;
+  const { assetsJson } = state;
   const { assetId, type } = networkUtilityAsset;
-  const precision = assets.find((asset) => asset.id === assetId)?.precision ?? 0;
+  const precision = assetsJson.find((asset) => asset.id === assetId)?.precision ?? 0;
 
   api.rx.query.system.account(address).subscribe(async (result) => {
     const data = (result as any).data;
@@ -100,14 +85,14 @@ function subscribeUtilityTokensBalances(context: Context, address: string, netwo
 
 function subscribeOrmlTokensBalances(context: Context, address: string, network: Network) {
   const { commit, state } = context;
-  const { assets } = state;
+  const { assetsJson } = state;
   const { name: networkName, api, assets: networkAssets, parentId } = network;
 
   networkAssets.forEach(({ assetId, type }) => {
     if (type === undefined) return;
 
-    const precision = assets.find((asset) => asset.id === assetId)?.precision ?? 0;
-    const { symbol } = assets.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const precision = assetsJson.find((asset) => asset.id === assetId)?.precision ?? 0;
+    const { symbol } = assetsJson.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
     const options = getOptions(symbol, type, assetId);
 
     if (symbol === 'csm') return; // TODO: fix
@@ -143,4 +128,4 @@ async function subscribeTokensBalances(context: Context, address: string, networ
   subscribeOrmlTokensBalances(context, address, network);
 }
 
-export { connectToApi, connectToNetworksApi, updateCurrencyInfo, subscribeTokensBalances };
+export { connectToApi, connectToNetworksApi, subscribeTokensBalances };

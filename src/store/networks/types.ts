@@ -10,13 +10,15 @@ import type { ActionContext } from 'vuex';
 import type { State } from './state';
 import type { Networks, Network, NetworkAssetsType } from '@/interfaces/networks';
 import type { AssetJson } from '@/interfaces/assets';
-import type { TokensPriceJson } from '@/interfaces/tokens';
+import type { TokensPrice, TokenPrice } from '@/interfaces/tokens';
 import type { FiatJson } from '@/interfaces/common';
 
 // getters
 export type GetNetwork = (networkName: string) => Network;
 
-export type GetTokenName = (tokenId: string) => string;
+export type GetTokenName = (assetId: string) => string;
+
+export type GetTokenPrice = (assetId: string) => TokenPrice;
 
 // Mutations
 export type SetNetworksStatusProps = {
@@ -24,7 +26,7 @@ export type SetNetworksStatusProps = {
 };
 
 export type SetAssetsProps = {
-  assets: AssetJson[];
+  assetsJson: AssetJson[];
 };
 
 export type SetFiatsProps = {
@@ -32,7 +34,7 @@ export type SetFiatsProps = {
 };
 
 export type SetTokensPriceProps = {
-  tokensPriceJson: TokensPriceJson;
+  tokensPrice: TokensPrice;
 };
 
 export type SetCurrenciesProps = {
@@ -49,12 +51,6 @@ export type SetHistoryProps = {
 
 export type SetAllNetworksIsLoaded = {
   value: boolean;
-};
-
-export type UpdateCurrencyProps = {
-  assetId: string;
-  selectedFiat: string;
-  parentId: string | undefined;
 };
 
 export type UpdateCurrencyBalanceProps = {

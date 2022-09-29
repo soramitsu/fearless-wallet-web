@@ -1,5 +1,4 @@
 import type { Currencies, Currency } from '@/interfaces/currencies';
-import type { TokenPriceJson } from '@/interfaces/tokens';
 import type { Networks } from '@/interfaces/networks';
 import type { Wallet } from '@/store/accounts/types';
 import type { RelayChainName } from '@/interfaces/teleport';
@@ -12,12 +11,11 @@ type CurrencyMock = {
   symbol: string;
   displayName?: string;
   relayChain: RelayChainName;
-  tokenPriceJson: TokenPriceJson;
   providers: string[];
 };
 
 function getMockCurrencies(networks: Networks): Currencies {
-  const assets = NetworksController.getAssets();
+  const assetsJson = NetworksController.getAssetsJson();
 
   const currencies = networks
     .reduce((result, network) => {
@@ -25,7 +23,7 @@ function getMockCurrencies(networks: Networks): Currencies {
       const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNetwork) as RelayChainName;
 
       networkAssets.forEach(({ assetId, purchaseProviders, isUtility, isNative }) => {
-        const { symbol, displayName: _displayName } = assets.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+        const { symbol, displayName: _displayName } = assetsJson.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
         const displayName = _displayName ?? symbol;
         const currencyIndex = result.findIndex(
           ({ assetId: _assetId, relayChain: _relayChain, displayName: _displayName }) => {
@@ -44,7 +42,6 @@ function getMockCurrencies(networks: Networks): Currencies {
             symbol,
             displayName: displayName ?? symbol,
             relayChain,
-            tokenPriceJson: {} as TokenPriceJson,
             providers: purchaseProviders ?? [],
           };
 
@@ -57,8 +54,8 @@ function getMockCurrencies(networks: Networks): Currencies {
       return result;
     }, [] as CurrencyMock[])
     .map(
-      ({ mainNetwork, tokenPriceJson, assetId, symbol, relayChain, providers, displayName }) =>
-        new CurrencyController(mainNetwork, assetId, symbol, displayName, tokenPriceJson, providers, relayChain)
+      ({ mainNetwork, assetId, symbol, relayChain, providers, displayName }) =>
+        new CurrencyController(mainNetwork, assetId, symbol, displayName, providers, relayChain)
     );
 
   return currencies;

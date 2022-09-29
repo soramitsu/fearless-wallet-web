@@ -1,6 +1,7 @@
 import type { AssetJson } from '@/interfaces/assets';
 import type { Networks, Network } from '@/interfaces/networks';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import type { TokenPrice } from '@/interfaces/tokens';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -13,6 +14,14 @@ export default class NetworksController {
 
   static getNetwork(networkName: string): Network {
     return store.getters[NetworksGettersTypes.getNetwork](networkName);
+  }
+
+  public static getAssetsJson(): AssetJson[] {
+    return store.getters[NetworksGettersTypes.getAssetsJson];
+  }
+
+  public static getTokenPrice(assetId: string): TokenPrice {
+    return store.getters[NetworksGettersTypes.getTokenPrice](assetId);
   }
 
   public static async loadNetworks(): Promise<void> {
@@ -52,10 +61,6 @@ export default class NetworksController {
 
   public static async subscribeToBalancesOfNetworks(accounts: SubjectInfo): Promise<void> {
     await store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts });
-  }
-
-  public static getAssets(): AssetJson[] {
-    return store.getters[NetworksGettersTypes.getAssets];
   }
 
   public static async toggleActiveNode(

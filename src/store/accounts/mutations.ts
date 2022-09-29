@@ -34,9 +34,9 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_SELECTED_FIAT](state, { fiatName, currencies }) {
     accountController.setSelectedFiat(fiatName);
 
-    currencies.forEach((currency) => currency.updatePrice(fiatName));
-
     state.selectedFiat = fiatName;
+
+    currencies.forEach((currency) => currency.updatePrice());
   },
 
   [MutationTypes.SET_ACCOUNTS](state, { accounts }) {

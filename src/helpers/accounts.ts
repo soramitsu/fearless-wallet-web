@@ -5,11 +5,11 @@ import BaseApi from '@/util/BaseApi';
 import NetworksController from '@/controllers/networksController';
 
 function getChainAccounts(networks: Networks, wallet: Wallet): ChainAccount[] {
-  const assets = NetworksController.getAssets();
+  const assetsJson = NetworksController.getAssetsJson();
 
   return networks.map(({ name, assets: networkAssets }) => {
     const tokenId = networkAssets.find(({ isUtility }) => isUtility)!.assetId; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-    const token = assets.find(({ id }) => id === tokenId)!.symbol; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const token = assetsJson.find(({ id }) => id === tokenId)!.symbol; // eslint-disable-line @typescript-eslint/no-non-null-assertion
     const replacedAccount = BaseApi.getReplacedAccountByNetwork(wallet, name);
     const replacedAddress = replacedAccount?.address;
 

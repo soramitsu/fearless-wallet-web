@@ -1,6 +1,6 @@
 import { SigningRequest } from '@polkadot/extension-base/background/types';
 import type { MutationTree } from 'vuex';
-import type { State } from './types';
+import type { State } from './state';
 
 export enum MutationTypes {
   SET_SIGN_REQUEST = 'SET_SIGN_REQUEST',

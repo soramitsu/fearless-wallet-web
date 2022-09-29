@@ -1,6 +1,6 @@
 import { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import { SigningRequest } from '@polkadot/extension-base/background/types';
-import { State } from './types';
+import { State } from './state';
 import type { GetterTree } from 'vuex';
 
 export enum GettersTypes {

@@ -28,8 +28,8 @@ const ASSETS_OPTIONS: Record<TypeAsset, Record<string, Record<string, any>>> = {
 
 function getOptions(symbol: string, type: TypeAsset, assetId: string) {
   if (type === 'foreignAsset') {
-    const assets: AssetJson[] = NetworksController.getAssets();
-    const { currencyId } = assets.find(({ id }) => id === assetId)!; // eslint-disable-line
+    const assetsJson: AssetJson[] = NetworksController.getAssetsJson();
+    const { currencyId } = assetsJson.find(({ id }) => id === assetId)!; // eslint-disable-line
 
     return { ForeignAsset: currencyId };
   }

@@ -10,6 +10,7 @@ export enum GettersTypes {
   getSelectedFiat = 'getSelectedFiat',
   getFiatSymbol = 'getFiatSymbol',
   getAccounts = 'getAccounts',
+  getAddresses = 'getAddresses',
 }
 
 export type Getters = {
@@ -17,6 +18,7 @@ export type Getters = {
   [GettersTypes.getSelectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getFiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
+  [GettersTypes.getAddresses](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
 };
 
 const getters: GetterTree<State, State> & Getters = {
@@ -34,6 +36,9 @@ const getters: GetterTree<State, State> & Getters = {
   },
   [GettersTypes.getAccounts]({ accounts }): Accounts {
     return accounts;
+  },
+  [GettersTypes.getAddresses]({ addresses }): Accounts {
+    return addresses;
   },
 };
 

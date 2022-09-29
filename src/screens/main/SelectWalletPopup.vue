@@ -13,7 +13,7 @@
       <WalletBalance
         v-for="({ meta: { name }, address }, index) in wallets"
         :key="name + index"
-        :name="name"
+        :name="prepName(name, address)"
         :isSelected="selectedWallet.address === address"
         :balance="getBalance(address)"
         :percent="getPercent()"
@@ -30,6 +30,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
+import { keyring } from '@polkadot/ui-keyring';
 import WalletBalance from './WalletBalance.vue';
 import type { SelectedWallet, SetSelectedWalletProps, Accounts } from '@/store/accounts/types';
 import type { Currencies } from '@/interfaces/currencies';
@@ -53,21 +54,38 @@ import { addNumbers } from '@/util/numbers';
 export default class SelectWalletPopup extends Vue {
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
+  @Getter(AccountsGettersTypes.getAddresses) addresses!: Accounts;
+
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
 
   get wallets() {
-    return Object.keys(this.accounts)
+    const accounts = Object.keys(this.accounts)
       .map((address) => {
         const pair = BaseApi.getPair(address);
 
         return pair;
       })
       .filter(({ type, meta }) => type !== 'ethereum' && !meta.isReplacedAccount);
+
+    const addresses = Object.keys(this.addresses).map((address) => {
+      const keyringAddress = BaseApi.getAddress(address);
+
+      return keyringAddress;
+    });
+
+    return [...addresses, ...accounts];
   }
 
   addWallet() {
     this.$router.push({ name: Components.Welcome });
+  }
+
+  prepName(name: string, address: string) {
+    //TEMP SOLUTION MOVETO WALLETBALANCE IN THE FUTURE
+    const isConnectedToBeacon = !!keyring.getAddress(address, 'address');
+
+    return isConnectedToBeacon ? `🅱️${name}🅱️` : name;
   }
 
   getBalance(address: string) {

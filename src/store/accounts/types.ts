@@ -4,20 +4,13 @@ import type { SingleAddress, SubjectInfo } from '@polkadot/ui-keyring/observable
 export interface Wallet {
   address: string;
   ethereumAddress: string;
-  isBeaconConnected?: boolean;
 }
 
 export interface SelectedWallet extends Wallet {
   name: string;
 }
-export interface AccountInfo extends SingleAddress {
-  isBeaconConnected?: boolean;
-}
-interface ExtendedSubjectInfo {
-  [index: string]: AccountInfo;
-}
 
-export type Accounts = ExtendedSubjectInfo;
+export type Accounts = SubjectInfo;
 
 // mutations
 export type SetSelectedWalletProps = {
@@ -31,6 +24,10 @@ export type SetSelectedFiatProps = {
 
 export type setAccountsProps = {
   accounts: Accounts;
+};
+
+export type setAddressesProps = {
+  addresses: Accounts;
 };
 
 // actions

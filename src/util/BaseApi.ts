@@ -237,6 +237,10 @@ export default class BaseApi {
     return keyring.getAccounts();
   }
 
+  public static getAddresses(): KeyringAddress[] {
+    return keyring.getAddresses();
+  }
+
   public static getPolkadotAddresses(): string[] {
     return keyring
       .getAccounts()
@@ -246,6 +250,10 @@ export default class BaseApi {
 
   public static getPair(address: string): KeyringPair {
     return keyring.getPair(address);
+  }
+
+  public static getAddress(address: string) {
+    return keyring.getAddress(address);
   }
 
   public static isDuplicateReplacedKeypair(addressProp: string): boolean {

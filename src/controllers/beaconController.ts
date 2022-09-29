@@ -64,6 +64,10 @@ class BeaconController {
     return new BeaconController();
   }
 
+  getAccounts() {
+    return this.app.getActiveAccount();
+  }
+
   async isBeaconConnected(_address?: string) {
     const beaconAccount = await this.app.getActiveAccount();
 

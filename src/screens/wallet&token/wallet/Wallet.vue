@@ -175,7 +175,7 @@ export default class Wallet extends Vue {
     this.currencies.forEach((currency) => {
       const isZeroBalance = currency.getTotalCountTokens(this.selectedWallet) === '0';
 
-      if (isZeroBalance) currency.setCurrencyVisible(false);
+      if (isZeroBalance) currency.setCurrencyVisible(this.selectedWallet.address, false);
     });
 
     this.currenciesKey += 1;

@@ -8,7 +8,7 @@ class AccountController {
   private readonly activeNodeStorageName = 'active-node';
   private readonly customNodesStorageName = 'custom-nodes';
   private readonly selectedFiatStorageName = 'selected-fiat';
-  private readonly selectedWalletStorageName = 'selected-wallet-address';
+  private readonly selectedWalletStorageName = 'selected-wallet';
 
   public getSelectedWalletAddress(): string {
     const lsFiat = this.lsAccount.get(this.selectedWalletStorageName);

@@ -135,15 +135,19 @@ const actions: ActionTree<State, State> & Actions = {
 
     if (type !== 'subquery' || url === '') return;
 
-    const history = await loadHistory(url, formattedAddress, pageSize, cursor);
+    try {
+      const history = await loadHistory(url, formattedAddress, pageSize, cursor);
 
-    commit(MutationTypes.SET_HISTORY, {
-      networkName,
-      walletAddress,
-      history,
-      isPreviously: cursor === null,
-      assetId,
-    });
+      commit(MutationTypes.SET_HISTORY, {
+        networkName,
+        walletAddress,
+        history,
+        isPreviously: cursor === null,
+        assetId,
+      });
+    } catch {
+      console.log(`failed to load history for ${networkName}`);
+    }
   },
 
   async [ActionTypes.SUBSCRIBE_TO_BALANCES](context, { accounts, networksProps }) {

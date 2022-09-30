@@ -110,7 +110,7 @@ export default class CurrencyItem extends Vue {
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
   get showCurrencyItem() {
-    return !this.showAssetsManagementForm ? this.currencyVisible : true;
+    return this.showAssetsManagementForm || this.currencyVisible;
   }
 
   get changePriceClasses() {
@@ -180,19 +180,20 @@ export default class CurrencyItem extends Vue {
 
   @Watch('currencyVisible')
   toggleCurrencyVisible(value: boolean) {
-    this.currency.setCurrencyVisible(value);
+    this.currency.setCurrencyVisible(this.selectedWallet.address, value);
+  }
+
+  @Watch('selectedWallet')
+  updateCurrencyVisible() {
+    this.getCurrencyVisible();
   }
 
   mounted() {
-    this.currencyVisible = this.currency.getCurrencyVisible();
+    this.getCurrencyVisible();
   }
 
-  send() {
-    alert('send');
-  }
-
-  receive() {
-    alert('Receive');
+  getCurrencyVisible() {
+    this.currencyVisible = this.currency.getCurrencyVisible(this.selectedWallet.address);
   }
 
   openTokenPage() {

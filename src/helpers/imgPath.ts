@@ -265,6 +265,10 @@ function getImgPathByNetworkOrTokenName(value = '', relayChain?: RelayChainName)
     case 'ring':
       return 'darwinia.svg';
 
+    case 'kylin network':
+    case 'kyl':
+      return 'kylin network.svg';
+
     //////////////////////
 
     case 'litentry':

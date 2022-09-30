@@ -2,7 +2,7 @@ import type { AssetJson } from '@/interfaces/assets';
 import type { TypeAsset } from '@/interfaces/currencies';
 import NetworksController from '@/controllers/networksController';
 
-const ASSETS_OPTIONS: Record<TypeAsset, Record<string, Record<string, any>>> = {
+const ASSETS_OPTIONS: Record<TypeAsset, Record<string, Record<string, string>>> = {
   stableAssetPoolToken: {
     tdot: { StableAssetPoolToken: '0' },
     taiksm: { StableAssetPoolToken: '0' },
@@ -10,7 +10,6 @@ const ASSETS_OPTIONS: Record<TypeAsset, Record<string, Record<string, any>>> = {
   liquidCrowdloan: {
     lcdot: { LiquidCrowdloan: '13' },
   },
-  foreignAsset: {},
   vsToken: {
     ksm: { VSToken: 'KSM' },
   },
@@ -20,6 +19,7 @@ const ASSETS_OPTIONS: Record<TypeAsset, Record<string, Record<string, any>>> = {
   stable: {
     kusd: { Stable: 'KUSD' },
   },
+  foreignAsset: {},
   ormlAsset: {},
   ormlChain: {},
   equilibrium: {},

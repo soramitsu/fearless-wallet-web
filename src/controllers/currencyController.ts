@@ -59,12 +59,6 @@ export default class CurrencyController {
     this.hours24Change = hours24Change ?? 0;
   }
 
-  private getCurrenciesVisible(): Record<string, boolean> {
-    const currencyVisible = this.lsCurrency.get(this.visibleStorageName);
-
-    return currencyVisible.value ?? {};
-  }
-
   private calculateCost(count: FPNumber): FPNumber {
     const FPPrice = new FPNumber(this.price);
 
@@ -252,16 +246,21 @@ export default class CurrencyController {
     return FPCost.div(price).toString();
   }
 
-  public getCurrencyVisible(): boolean {
-    const currenciesVisible = this.getCurrenciesVisible();
+  public getCurrencyVisible(address: string): boolean {
+    const currenciesVisible = this.lsCurrency.get(this.visibleStorageName).value ?? {};
 
-    return currenciesVisible[this.displayName] ?? true;
+    return currenciesVisible?.[address]?.[this.displayName] ?? true;
   }
 
-  public setCurrencyVisible(value: boolean): void {
-    const currenciesVisible = this.getCurrenciesVisible();
+  public setCurrencyVisible(address: string, value: boolean): void {
+    const currenciesVisible = this.lsCurrency.get(this.visibleStorageName).value ?? {};
 
-    currenciesVisible[this.displayName] = value;
+    if (currenciesVisible[address]) {
+      currenciesVisible[address][this.displayName] = value;
+    } else {
+      currenciesVisible[address] = {};
+      currenciesVisible[address][this.displayName] = value;
+    }
 
     this.lsCurrency.set(this.visibleStorageName, currenciesVisible);
   }

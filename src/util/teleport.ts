@@ -1,83 +1,11 @@
 import { BN } from '@polkadot/util';
-import type { SupportedCrossChain, RelayChainName } from '@/interfaces/teleport';
-import BaseApi from '@/util/BaseApi';
 import { RELAY_CHAINS, NATIVE_NETWORKS } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';
+import BaseApi from '@/util/BaseApi';
 
 const FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT = 5000000000;
 
 const XCM_NATIVE_PALLETS = ['xcm', 'xcmPallet', 'polkadotXcm'];
-
-const SUPPORTED_CROSS_CHAIN: SupportedCrossChain = {
-  polkadot: {
-    polkadot: {
-      paraId: -1,
-      teleport: [1000, 2006, 2000],
-      supportedToken: ['DOT'],
-    },
-    statemint: {
-      paraId: 1000,
-      teleport: [-1, 2006, 2000],
-      supportedToken: ['DOT'],
-    },
-    astar: {
-      paraId: 2006,
-      teleport: [-1],
-      supportedToken: ['DOT'],
-    },
-    acala: {
-      paraId: 2000,
-      teleport: [-1],
-      supportedToken: ['DOT'],
-    },
-  },
-  kusama: {
-    kusama: {
-      paraId: -1,
-      teleport: [1000, 1001, 2000, 2001, 2007],
-      supportedToken: ['KSM'],
-    },
-    statemine: {
-      paraId: 1000,
-      teleport: [-1, 1001, 2000, 2001, 2007],
-      supportedToken: ['KSM'],
-    },
-    'encointer on kusama': {
-      paraId: 1001,
-      teleport: [-1, 1000, 2000, 2001, 2007],
-      supportedToken: ['KSM'],
-    },
-    karura: {
-      paraId: 2000,
-      teleport: [-1, 1000, 1001, 2001, 2007],
-      supportedToken: ['KSM'],
-    },
-    bifrost: {
-      paraId: 2001,
-      teleport: [-1, 1000, 1001, 2000, 2007],
-      supportedToken: ['KSM'],
-    },
-    shiden: {
-      paraId: 2007,
-      teleport: [-1, 1000, 1001, 2000, 2001],
-      supportedToken: ['KSM'],
-    },
-  },
-};
-
-function getParaId(relayChain: RelayChainName, originNet: string, destNet: string) {
-  const originNetProps = SUPPORTED_CROSS_CHAIN[relayChain][originNet];
-  const destNetProps = SUPPORTED_CROSS_CHAIN[relayChain]?.[destNet];
-
-  if (originNetProps === undefined || destNetProps === undefined) return;
-
-  const { teleport } = originNetProps;
-  const { paraId } = destNetProps;
-
-  if (teleport.includes(paraId)) return paraId;
-
-  return;
-}
 
 function isNativeNetwork(originNet: string, destNet?: string) {
   const IsNativeOriginNet = NATIVE_NETWORKS.includes(originNet);
@@ -153,11 +81,9 @@ function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: st
 }
 
 export {
-  SUPPORTED_CROSS_CHAIN,
   XCM_NATIVE_PALLETS,
   FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT,
   getNativeTeleportParams,
   getOrmlTeleportParams,
-  getParaId,
   isNativeNetwork,
 };

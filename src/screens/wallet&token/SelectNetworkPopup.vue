@@ -59,7 +59,9 @@ export default class SelectNetworkButton extends Vue {
 
     if (this.relayChain) {
       return options.filter(({ relayChain }) => relayChain === this.relayChain);
-    } else options.unshift({ label: 'All networks', value: 'All networks', path: 'globus.svg', isAll: true });
+    }
+
+    options.unshift({ label: 'All networks', value: 'All networks', path: 'globus.svg', isAll: true });
 
     return options;
   }

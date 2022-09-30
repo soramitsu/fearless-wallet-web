@@ -1,12 +1,3 @@
-export type RelayChainName = 'polkadot' | 'kusama';
-import type { NetworkName } from '@/interfaces/common';
+type RelayChainName = 'polkadot' | 'kusama' | 'westend' | 'rococo';
 
-interface BaseInfo {
-  teleport: number[];
-  paraId: number;
-  supportedToken: string[];
-}
-
-type SupportedCrossChain = Record<RelayChainName, Record<NetworkName, BaseInfo>>;
-
-export { SupportedCrossChain };
+export { RelayChainName };

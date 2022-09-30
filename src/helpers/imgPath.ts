@@ -278,7 +278,7 @@ function getImgPathByNetworkOrTokenName(value = '', relayChain?: RelayChainName)
       return 'litmus.svg';
 
     case 'lit':
-      switch (relayChain?.toLocaleLowerCase()) {
+      switch (relayChain?.toLowerCase()) {
         case 'polkadot':
           return 'litentry.svg';
         case 'kusama':
@@ -296,7 +296,7 @@ function getImgPathByNetworkOrTokenName(value = '', relayChain?: RelayChainName)
       return 'khala.svg';
 
     case 'pha':
-      switch (relayChain?.toLocaleLowerCase()) {
+      switch (relayChain?.toLowerCase()) {
         case 'polkadot':
           return 'phala.svg';
         case 'kusama':

@@ -1,41 +1,33 @@
 <template>
-  <TransactionContent>
-    <template slot="content">
-      <WalletInfo class="wallet-info" :name="request.account.name" :address="request.account.address" />
+  <AboveForm :blur="true" header="Transaction" :closeHandler="onReject">
+    <WalletInfo class="wallet-info" :name="request.account.name" :address="request.account.address" />
 
-      <InfoList>
-        <InfoItem name="from" :value="request.url" />
-        <InfoItem name="genesis" :value="genesisHash" />
-        <InfoItem name="version" :value="specVersion" />
-        <InfoItem name="nounce" :value="nonce" />
-        <InfoItem name="method Data" :value="method" />
-        <InfoItem name="lifetime" :value="morality" />
-      </InfoList>
-      <template v-if="isBeaconTransaction">
-        <Button size="big" class="button" text="Sign in mobile app" @click="withBeacon" />
-      </template>
-      <template v-else>
-        <Input
-          v-if="isLocked"
-          ref="input"
-          class="transaction__password"
-          v-model="password"
-          type="password"
-          placeholder="Password for this account"
-          :isError="isErrorPassword"
-        />
+    <InfoList>
+      <InfoItem name="from" :value="request.url" />
+      <InfoItem name="genesis" :value="genesisHash" />
+      <InfoItem name="version" :value="specVersion" />
+      <InfoItem name="nounce" :value="nonce" />
+      <InfoItem name="method Data" :value="method" />
+      <InfoItem name="lifetime" :value="morality" />
+    </InfoList>
 
-        <div class="transaction__checkbox">
-          <Checkbox v-model="isSavePass" size="medium" :label="prepLabel" />
-        </div>
-        <template slot="control">
-          <Button size="big" class="button" text="Sign the transaction" @click="onApprove" />
-
-          <Button size="mini" type="link" text="Cancel" @click="onReject" />
-        </template>
-      </template>
+    <template v-if="isMobileSignRequired">
+      <Button size="big" class="button" text="Sign the transaction" @click="onSignMobile" />
     </template>
-  </TransactionContent>
+
+    <template v-else>
+      <ConfirmationPasswordPopup
+        v-if="isSignPopupVisible"
+        text="Password for this account"
+        sizeWidth="medium"
+        @close="onClose"
+        :address="payload.address"
+        :transactionId="request.id"
+      />
+
+      <Button size="big" class="button" text="Sign the transaction" @click="onSign" />
+    </template>
+  </AboveForm>
 </template>
 
 <script lang="ts">
@@ -47,7 +39,6 @@ import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { fearlessConnector } from '@/controllers/beaconController';
 import { registry } from '@/extension/background/extension-base/src/background/handlers/State';
-import { isSignLocked } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
@@ -56,13 +47,17 @@ import WalletInfo from '@/screens/signing/WalletInfo.vue';
 import TransactionContent from '@/layouts/TransactionContent.vue';
 import InfoList from '@/layouts/InfoList.vue';
 import InfoItem from '@/screens/signing/InfoItem.vue';
+import AboveForm from '@/components/AboveForm.vue';
+import ConfirmationPasswordPopup from '@/screens/wallet&token/ConfirmationPasswordPopup.vue';
 @Component({
   components: {
     WalletInfo,
     TransactionContent,
+    ConfirmationPasswordPopup,
     InfoItem,
     InfoList,
     Input,
+    AboveForm,
     Button,
     Checkbox,
   },
@@ -72,14 +67,18 @@ export default class Auth extends Vue {
   @Getter('getSignRequest') request!: SigningRequest;
 
   isLocked = false;
-  password = '';
-  isErrorPassword = false;
-  isSavePass = false;
+  isSignPopupVisible = false;
 
   get typedPayload() {
     registry.setSignedExtensions(this.payload.signedExtensions);
 
     return registry.createType('ExtrinsicPayload', this.payload, { version: this.payload.version });
+  }
+
+  get isMobileSignRequired() {
+    const substrateAddress = encodeAddress(this.payload.address, 42);
+
+    return BaseApi.getAddress(substrateAddress);
   }
 
   get specVersion() {
@@ -98,28 +97,6 @@ export default class Auth extends Vue {
     return this.typedPayload.method.toString();
   }
 
-  get isBeaconTransaction() {
-    const substrateAccount = encodeAddress(this.payload.address, 42);
-
-    return BaseApi.getAddress(substrateAccount);
-  }
-
-  async mounted() {
-    console.log(this.isBeaconTransaction);
-
-    if (this.isBeaconTransaction) {
-      const { isLocked } = await isSignLocked(this.request.id);
-      this.isLocked = isLocked;
-      this.isSavePass = !this.isLocked;
-    }
-  }
-
-  get prepLabel() {
-    return this.isLocked
-      ? 'Remember my password for the next 15 minutes'
-      : 'Extend the period without password by 15 minutes';
-  }
-
   get morality() {
     return this.mortalityAsString(this.typedPayload.era, this.payload.blockNumber);
   }
@@ -132,22 +109,16 @@ export default class Auth extends Vue {
     return `mortal, valid from ${birth} to ${death}`;
   }
 
-  onApprove() {
-    if (this.isLocked) {
-      this.isErrorPassword = !BaseApi.unlockPair(this.payload.address, this.password);
-
-      if (this.isErrorPassword) return;
-    }
-
-    this.$store.dispatch('APPROVE_SIGN_PASSWORD', {
-      id: this.request.id,
-      isSavePass: this.isSavePass,
-      password: this.password,
-    });
+  onSign() {
+    this.isSignPopupVisible = true;
   }
 
-  withBeacon() {
+  onSignMobile() {
     fearlessConnector.sendRequest(this.payload);
+  }
+
+  onClose() {
+    this.isSignPopupVisible = false;
   }
 
   onReject() {

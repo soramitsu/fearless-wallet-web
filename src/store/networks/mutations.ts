@@ -1,7 +1,6 @@
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
 import type {
-  UpdateCurrencyProps,
   SetNetworksStatusProps,
   UpdateCurrencyBalanceProps,
   SetAssetsProps,
@@ -23,7 +22,6 @@ export enum MutationTypes {
   SET_CURRENCIES = 'SET_CURRENCIES',
   SET_HISTORY = 'SET_HISTORY',
   SET_ALL_NETWORKS_IS_LOADED = 'SET_ALL_NETWORKS_IS_LOADED',
-  UPDATE_CURRENCY = 'UPDATE_CURRENCY',
   UPDATE_CURRENCY_BALANCE = 'UPDATE_CURRENCY_BALANCE',
   SET_NETWORK_ACTIVE_NODE = 'SET_NETWORK_ACTIVE_NODE',
   SET_NETWORK_API = 'SET_NETWORK_API',
@@ -37,7 +35,6 @@ export type Mutations = {
   [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
   [MutationTypes.SET_ALL_NETWORKS_IS_LOADED](state: State, props: SetAllNetworksIsLoaded): void;
-  [MutationTypes.UPDATE_CURRENCY](state: State, props: UpdateCurrencyProps): void;
   [MutationTypes.UPDATE_CURRENCY_BALANCE](state: State, props: UpdateCurrencyBalanceProps): void;
   [MutationTypes.SET_NETWORK_ACTIVE_NODE](state: State, props: SetNetworkActiveNodeProps): void;
   [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApi): void;
@@ -52,55 +49,47 @@ const mutations: MutationTree<State> & Mutations = {
     state.currencies = currencies;
   },
 
-  [MutationTypes.SET_ASSETS](state, { assets }) {
-    state.assets = assets;
+  [MutationTypes.SET_ASSETS](state, { assetsJson }) {
+    state.assetsJson = assetsJson;
   },
 
   [MutationTypes.SET_FIATS](state, { fiats }) {
     state.fiats = fiats.map((fiat) => ({ ...fiat }));
   },
 
-  [MutationTypes.SET_TOKENS_PRICE](state, { tokensPriceJson }) {
-    state.tokensPriceJson = tokensPriceJson;
+  [MutationTypes.SET_TOKENS_PRICE](state, { tokensPrice }) {
+    state.tokensPrice = tokensPrice;
+
+    state.currencies.forEach((currency) => currency.updatePrice());
   },
 
-  [MutationTypes.UPDATE_CURRENCY](state, currency) {
-    const { tokenId } = currency;
-    const { currencies } = state;
-    const currencyIndex = currencies?.findIndex(({ tokenId: savedTokenId }) => savedTokenId === tokenId);
+  [MutationTypes.UPDATE_CURRENCY_BALANCE](state, { walletAddress, network, assetId, balance, parentId, type }) {
+    const { currencies, assetsJson, networks } = state;
+    const { symbol, precision } = assetsJson.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name;
 
-    currencies[currencyIndex].updateCurrency(currency);
+    const currentCurrency = currencies.find(({ tokenId: _tokenId, token: _token, relayChain: _relayChain,}) => { //eslint-disable-line
+      const isExistingTokenId = _tokenId === assetId;
+      const isExistingTokenSymbol = _token === symbol && _relayChain === relayChain;
+
+      return isExistingTokenId || isExistingTokenSymbol;
+    })!;
+
+    currentCurrency.updateCurrencyBalance({ walletAddress, network, balance, type, precision });
   },
 
-  [MutationTypes.UPDATE_CURRENCY_BALANCE](state, { walletAddress, currency }) {
-    const { tokenId } = currency;
-    const { currencies } = state;
-    const currentCurrency = currencies.find(({ tokenId: savedTokenId }) => savedTokenId === tokenId)!; //eslint-disable-line
-
-    currentCurrency.updateCurrencyBalance({ walletAddress, currency });
-  },
-
-  [MutationTypes.SET_HISTORY](
-    state,
-    {
-      history: {
-        nodes,
-        pageInfo: { startCursor: startCursorProp, endCursor: endCursorProp },
-      },
-      networkName,
-      walletAddress,
-      isPreviously,
-    }
-  ) {
-    const oldHistoryForWalletAddress = state.history[networkName]?.[walletAddress];
-    const oldPageInfo = oldHistoryForWalletAddress?.pageInfo;
+  [MutationTypes.SET_HISTORY](state, { history, networkName, walletAddress, isPreviously, assetId }) {
+    const { nodes, pageInfo } = history;
+    const { startCursor: startCursorProp, endCursor: endCursorProp } = pageInfo;
+    const oldHistory = state.history[assetId]?.[walletAddress]?.[networkName];
+    const oldPageInfo = oldHistory?.pageInfo;
     const oldStartCursor = oldPageInfo?.startCursor;
     const oldEndCursor = oldPageInfo?.endCursor;
 
     // loading history after sending tokens or teleporting tokens
     if (isPreviously && !!oldEndCursor) {
       const filteredNodes = nodes.filter(({ timestamp }) => {
-        const oldNodes = oldHistoryForWalletAddress.nodes;
+        const oldNodes = oldHistory.nodes;
         const oldFirstTimespan = +oldNodes[0].timestamp ?? 0;
 
         return +timestamp > oldFirstTimespan;
@@ -108,40 +97,50 @@ const mutations: MutationTree<State> & Mutations = {
 
       if (filteredNodes.length === 0) return;
 
-      const newHistoryForWalletAddress = {
-        nodes: [...(filteredNodes ?? []), ...(oldHistoryForWalletAddress?.nodes ?? [])],
+      const newHistoryForNetwork = {
+        nodes: [...(filteredNodes ?? []), ...(oldHistory?.nodes ?? [])],
         pageInfo: {
           startCursor: startCursorProp,
           endCursor: oldEndCursor,
         },
       };
 
-      const historyForNetwork = {
-        ...state.history[networkName],
-        [walletAddress]: newHistoryForWalletAddress,
+      const historyForWalletAddress = {
+        ...state.history[assetId]?.[walletAddress],
+        [networkName]: newHistoryForNetwork,
       };
 
-      state.history = { ...state.history, [networkName]: historyForNetwork };
+      const historyForAssetId = {
+        ...(state.history[assetId] ?? []),
+        [walletAddress]: historyForWalletAddress,
+      };
+
+      state.history = { ...state.history, [assetId]: historyForAssetId };
 
       return;
     }
 
     // if this is first load or following one already saved
     const startCursor = oldStartCursor ?? startCursorProp;
-    const newHistoryForWalletAddress = {
-      nodes: [...(oldHistoryForWalletAddress?.nodes ?? []), ...(nodes ?? [])],
+    const newHistoryForNetwork = {
+      nodes: [...(oldHistory?.nodes ?? []), ...(nodes ?? [])],
       pageInfo: {
         startCursor,
         endCursor: endCursorProp,
       },
     };
 
-    const historyForNetwork = {
-      ...(state.history[networkName] ?? []),
-      [walletAddress]: newHistoryForWalletAddress,
+    const historyForWalletAddress = {
+      ...(state.history[assetId]?.[walletAddress] ?? []),
+      [networkName]: newHistoryForNetwork,
     };
 
-    state.history = { ...state.history, [networkName]: historyForNetwork };
+    const historyForAssetId = {
+      ...(state.history[assetId] ?? []),
+      [walletAddress]: historyForWalletAddress,
+    };
+
+    state.history = { ...state.history, [assetId]: historyForAssetId };
   },
 
   [MutationTypes.SET_ALL_NETWORKS_IS_LOADED](state, { value }) {

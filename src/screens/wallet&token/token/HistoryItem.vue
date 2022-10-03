@@ -1,6 +1,6 @@
 <template>
   <div class="history-item">
-    <NetworkLogo :name="token" :relayChain="parentNetwork" />
+    <NetworkLogo :name="token" :relayChain="relayChain" />
 
     <div class="column">
       <div class="first-row">
@@ -21,9 +21,9 @@ import { Getter } from 'vuex-class';
 import type { HistoryNode } from '@/interfaces/history';
 import type { GetTokenName } from '@/store/networks/types';
 import type { Networks } from '@/interfaces/networks';
-import type { RelayChainName } from '@/consts/teleport';
+import type { RelayChainName } from '@/interfaces/teleport';
 import NetworkLogo from '@/components/NetworkLogo.vue';
-import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, cut } from '@/util/historyHelpers';
+import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, cut } from '@/helpers/history';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component({
@@ -32,7 +32,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 export default class HistoryItem extends Vue {
   @Prop(Object) historyNode!: HistoryNode;
   @Prop(String) tokenId!: string;
-  @Prop(String) parentNetwork!: RelayChainName;
+  @Prop(String) relayChain!: RelayChainName;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getTokenName) getTokenName!: GetTokenName;
 

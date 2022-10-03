@@ -59,6 +59,9 @@ export default class App extends Vue {
 
     this.subscribeAccounts.subscribe(async (accounts) => {
       const newAccounts = this.getNewAccounts(accounts);
+
+      console.info('accounts', newAccounts);
+
       this.setAccounts({ accounts });
 
       await subscribeToBalancesOfNetworks(newAccounts);
@@ -87,7 +90,7 @@ export default class App extends Vue {
   setWallet() {
     const LSSelectedWalletAddress = accountController.getSelectedWalletAddress();
     const selectedWalletAddress = LSSelectedWalletAddress || BaseApi.getFirstSubstrateWalletAddress();
-    console.log(selectedWalletAddress, 'selectedwallet');
+
     if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
   }
 

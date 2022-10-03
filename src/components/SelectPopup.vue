@@ -63,7 +63,7 @@ export default class SelectPopup extends Vue {
   beforeMount() {
     const index = this.options.findIndex(({ value }) => value === this.VModel);
     const selectedElement = this.options[index];
-    const indexInsertion = this.options[0].isAll && index !== 0 ? 1 : 0;
+    const indexInsertion = this.options[0]?.isAll && index !== 0 ? 1 : 0;
 
     this.options.splice(index, 1);
     this.options.splice(indexInsertion, 0, selectedElement);

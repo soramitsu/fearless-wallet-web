@@ -15,7 +15,7 @@
               :key="historyNode.id"
               :historyNode="historyNode"
               :tokenId="currency.tokenId"
-              :parentNetwork="currency.parentNetwork"
+              :relayChain="currency.relayChain"
               @click.native="$emit('openHistoryDetailsPopup', historyNode)"
             />
           </template>
@@ -85,20 +85,8 @@ export default class History extends Vue {
       this.selectedWallet,
       this.selectedNetwork
     );
-    const historyForNetwork = this.getHistory(this.selectedNetwork);
-    const historyForWalletAddress = historyForNetwork?.[addressByNetwork]?.nodes ?? [];
-
-    const index = (this.currency?.balances[addressByNetwork] ?? []).findIndex(
-      ({ network }) => network === this.selectedNetwork
-    );
-
-    // TODO: fix
-    // Now the history hierarchy is as follows = network: { walletAddress: { history } }
-    // should become like this = network: { walletAddress: { token: { history } } }
-    // when non-native tokens are added, it needs to be fixed
-    if (index === -1) {
-      return [];
-    }
+    const historyForNetwork = this.getHistory(this.currency?.tokenId, addressByNetwork, this.selectedNetwork);
+    const historyForWalletAddress = historyForNetwork?.nodes ?? [];
 
     return historyForWalletAddress;
   }

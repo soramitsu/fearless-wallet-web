@@ -11,7 +11,7 @@ interface OptionsProps {
 export default class LocalStorage {
   private prefix;
 
-  constructor(prefix = 'store') {
+  constructor(prefix: string) {
     this.prefix = `${prefix}_`;
   }
 

@@ -42,7 +42,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
-import { addNumbers } from '@/util/numbers';
+import { addNumbers } from '@/helpers/numbers';
 
 @Component({
   components: {

@@ -22,6 +22,7 @@ type FilterHistory = 'all' | 'transfer' | 'reward' | 'extrinsic';
 
 type WalletAddress = string;
 type NetworkName = string;
+type AssetName = string;
 
 type DerivationPath = typeof INITIAL_DERIVATION_PATHS.substrate;
 type DerivationPaths = typeof INITIAL_DERIVATION_PATHS;
@@ -86,4 +87,5 @@ export {
   Meta,
   MnemonicConfirmation,
   ChainAccount,
+  AssetName,
 };

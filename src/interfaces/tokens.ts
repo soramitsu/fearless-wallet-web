@@ -1,6 +1,6 @@
 import type { NetworkName } from './networks';
 
-type TokenPriceJson = {
+type TokenPrices = {
 /* eslint-disable */
   aed: number;
   aed_24h_change: number;
@@ -97,10 +97,15 @@ type TokenPriceJson = {
   /* eslint-enable */
 };
 
+interface TokenPrice {
+  price: number;
+  hours24Change: number;
+}
+
 type TokenName = string;
 
-type TokensPriceJson = Record<NetworkName | TokenName, TokenPriceJson>;
+type TokensPrice = Record<NetworkName | TokenName, TokenPrices>;
 
-type KeysTokenPriceJson = keyof TokenPriceJson;
+type KeysTokenPricesJson = keyof TokenPrices;
 
-export { KeysTokenPriceJson, TokensPriceJson, TokenName, TokenPriceJson };
+export { KeysTokenPricesJson, TokensPrice, TokenName, TokenPrices, TokenPrice };

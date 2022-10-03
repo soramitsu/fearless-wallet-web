@@ -14,7 +14,6 @@
     <SelectNetworkPopup
       v-if="showSelectNetworkPopup"
       v-model="selectedNetwork"
-      :allNetworks="true"
       :toggleSelectedNetwork="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
     />
@@ -81,7 +80,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { SetCurrenciesProps } from '@/store/networks/types';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
-import { addNumbers, formattedNumber } from '@/util/numbers';
+import { addNumbers, formattedNumber } from '@/helpers/numbers';
 
 @Component({
   components: {
@@ -138,19 +137,15 @@ export default class Wallet extends Vue {
 
     return this.sortedCurrencies.filter((currency) => {
       const isAllNetworks = this.selectedNetwork === 'All networks';
-      const availableInSelectedNetwork = isAllNetworks
-        ? false
-        : currency
-            .getAvailableInNetworks(this.selectedWallet)
-            .map(({ network }) => network)
-            .includes(this.selectedNetwork);
+      const availableInNetworks = currency.getAvailableInNetworks(this.selectedWallet).map(({ network }) => network);
+      const availableInSelectedNetwork = availableInNetworks.includes(this.selectedNetwork);
 
       // if a network is selected and there is no currency in this network
       if (!isAllNetworks && !availableInSelectedNetwork) return false;
 
-      const { mainNetwork, token } = currency;
+      const { displayName } = currency;
 
-      return mainNetwork.includes(filter) || token.includes(filter);
+      return availableInNetworks.join(' ').includes(filter) || displayName.includes(filter);
     });
   }
 
@@ -180,7 +175,7 @@ export default class Wallet extends Vue {
     this.currencies.forEach((currency) => {
       const isZeroBalance = currency.getTotalCountTokens(this.selectedWallet) === '0';
 
-      if (isZeroBalance) currency.setCurrencyVisible(false);
+      if (isZeroBalance) currency.setCurrencyVisible(this.selectedWallet.address, false);
     });
 
     this.currenciesKey += 1;

@@ -8,15 +8,17 @@ import type { AccountBalance } from '@/interfaces/balances';
 import type { Mutations } from './mutations';
 import type { ActionContext } from 'vuex';
 import type { State } from './state';
-import type { Networks, Network } from '@/interfaces/networks';
+import type { Networks, Network, NetworkAssetsType } from '@/interfaces/networks';
 import type { AssetJson } from '@/interfaces/assets';
-import type { TokensPriceJson, TokenPriceJson } from '@/interfaces/tokens';
+import type { TokensPrice, TokenPrice } from '@/interfaces/tokens';
 import type { FiatJson } from '@/interfaces/common';
 
 // getters
 export type GetNetwork = (networkName: string) => Network;
 
-export type GetTokenName = (tokenId: string) => string;
+export type GetTokenName = (assetId: string) => string;
+
+export type GetTokenPrice = (assetId: string) => TokenPrice;
 
 // Mutations
 export type SetNetworksStatusProps = {
@@ -24,7 +26,7 @@ export type SetNetworksStatusProps = {
 };
 
 export type SetAssetsProps = {
-  assets: AssetJson[];
+  assetsJson: AssetJson[];
 };
 
 export type SetFiatsProps = {
@@ -32,7 +34,7 @@ export type SetFiatsProps = {
 };
 
 export type SetTokensPriceProps = {
-  tokensPriceJson: TokensPriceJson;
+  tokensPrice: TokensPrice;
 };
 
 export type SetCurrenciesProps = {
@@ -44,26 +46,20 @@ export type SetHistoryProps = {
   walletAddress: string;
   networkName: string;
   isPreviously: boolean;
+  assetId: string;
 };
 
 export type SetAllNetworksIsLoaded = {
   value: boolean;
 };
 
-export type UpdateCurrencyProps = {
-  tokenId: string;
-  tokensPrice: TokenPriceJson;
-  precision: number;
-  selectedFiat: string;
-};
-
 export type UpdateCurrencyBalanceProps = {
   walletAddress: string;
-  currency: {
-    network: string;
-    tokenId: string;
-    balance: AccountBalance;
-  };
+  network: string;
+  assetId: string;
+  balance: AccountBalance;
+  parentId: string | undefined;
+  type: NetworkAssetsType | undefined;
 };
 
 export type SetNetworkActiveNodeProps = {
@@ -95,6 +91,7 @@ export type LoadFiats = {
 export type LoadHistory = {
   networkName: string;
   walletAddress: string;
+  assetId: string;
   pageSize: number;
 };
 

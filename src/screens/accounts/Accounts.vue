@@ -42,7 +42,7 @@ import Scroll from '@/components/Scroll.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
-import { getChainAccounts } from '@/util/networksAndAssetsHelpers';
+import { getChainAccounts } from '@/helpers/accounts';
 
 @Component({
   components: {

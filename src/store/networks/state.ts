@@ -1,5 +1,5 @@
 import type { Networks } from '@/interfaces/networks';
-import type { TokensPriceJson } from '@/interfaces/tokens';
+import type { TokensPrice } from '@/interfaces/tokens';
 import type { Currencies } from '@/interfaces/currencies';
 import type { History } from '@/interfaces/history';
 import type { FiatJson } from '@/interfaces/common';
@@ -8,8 +8,8 @@ import type { ActiveNodes } from '@/interfaces/nodes';
 
 export type State = {
   networks: Networks;
-  tokensPriceJson: TokensPriceJson;
-  assets: AssetJson[];
+  tokensPrice: TokensPrice;
+  assetsJson: AssetJson[];
   fiats: FiatJson[];
   history: History;
   currencies: Currencies;
@@ -20,8 +20,8 @@ export type State = {
 const state = (): State => {
   return {
     networks: [],
-    tokensPriceJson: {},
-    assets: [],
+    tokensPrice: {},
+    assetsJson: [],
     fiats: [],
     currencies: [],
     allNetworksIsLoaded: false,

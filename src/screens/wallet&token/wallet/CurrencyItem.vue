@@ -5,7 +5,12 @@
     </div>
 
     <div class="img-container">
-      <NetworkLogo class="main-network-img" :name="currency.mainNetwork" :width="32" />
+      <NetworkLogo
+        class="main-network-img"
+        :name="currency.displayName"
+        :relayChain="currency.relayChain"
+        :width="32"
+      />
     </div>
 
     <div class="descriptions-column">
@@ -84,7 +89,7 @@ import CircleButton from '@/components/CircleButton.vue';
 import NetworkLogo from '@/components/NetworkLogo.vue';
 import Switcher from '@/components/Switcher.vue';
 import { Components } from '@/router/routes';
-import { formattedNumber, formattedPrice } from '@/util/numbers';
+import { formattedNumber, formattedPrice } from '@/helpers/numbers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({
@@ -105,7 +110,7 @@ export default class CurrencyItem extends Vue {
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
   get showCurrencyItem() {
-    return !this.showAssetsManagementForm ? this.currencyVisible : true;
+    return this.showAssetsManagementForm || this.currencyVisible;
   }
 
   get changePriceClasses() {
@@ -126,7 +131,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get tokenString() {
-    return this.currency?.token.toUpperCase();
+    return this.currency?.displayName.toUpperCase();
   }
 
   get countTokensString() {
@@ -152,7 +157,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get upperNetworkName() {
-    return this.currency.mainNetwork.toUpperCase();
+    return this.currency.mainNetwork.toUpperCase() ?? '';
   }
 
   get availableInNetworks() {
@@ -175,24 +180,34 @@ export default class CurrencyItem extends Vue {
 
   @Watch('currencyVisible')
   toggleCurrencyVisible(value: boolean) {
-    this.currency.setCurrencyVisible(value);
+    this.currency.setCurrencyVisible(this.selectedWallet.address, value);
+  }
+
+  @Watch('selectedWallet')
+  updateCurrencyVisible() {
+    this.getCurrencyVisible();
   }
 
   mounted() {
-    this.currencyVisible = this.currency.getCurrencyVisible();
+    this.getCurrencyVisible();
   }
 
-  send() {
-    alert('send');
-  }
-
-  receive() {
-    alert('Receive');
+  getCurrencyVisible() {
+    this.currencyVisible = this.currency.getCurrencyVisible(this.selectedWallet.address);
   }
 
   openTokenPage() {
     const { mainNetwork, tokenId } = this.currency;
-    const network = this.selectedNetwork !== 'All networks' ? this.selectedNetwork : mainNetwork;
+    const availableInNetworks = this.currency.getAvailableInNetworks(this.selectedWallet);
+    const availableNetwork = availableInNetworks[0]?.network ?? '';
+    const network =
+      this.selectedNetwork !== 'All networks'
+        ? this.selectedNetwork
+        : mainNetwork !== ''
+        ? mainNetwork
+        : availableNetwork !== ''
+        ? availableNetwork
+        : 'polkadot';
 
     this.$router.push({
       name: Components.Token,
@@ -211,6 +226,8 @@ export default class CurrencyItem extends Vue {
   padding: 8px 0 8px 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   margin-right: 16px;
+  height: 78px;
+  align-items: center;
 
   &:last-child {
     border-bottom: none;

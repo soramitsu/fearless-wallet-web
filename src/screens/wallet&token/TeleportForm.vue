@@ -16,7 +16,7 @@
 
           <Select
             v-model="originalNetwork"
-            :options="optionsNetwork"
+            :options="optionsOriginalNetwork"
             placeholder="Original network"
             size="big"
             class="row"
@@ -24,7 +24,7 @@
 
           <Select
             v-model="destinationNetwork"
-            :options="optionsNetwork"
+            :options="optionsDestinationNetwork"
             placeholder="Destination network"
             size="big"
             class="row"
@@ -122,9 +122,10 @@ import Corners from '@/components/Corners.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { firstCharToUp } from '@/util/helpers';
-import { addNumbers, formattedNumber, formattedPrice } from '@/util/numbers';
-import { getCurrencyOptions } from '@/util/currenciesHelper';
+import { firstCharToUp } from '@/helpers/common';
+import { addNumbers, formattedNumber, formattedPrice } from '@/helpers/numbers';
+import { getCurrencyOptions } from '@/helpers/currencies';
+import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
 
 @Component({
   components: {
@@ -222,7 +223,7 @@ export default class TeleportForm extends Vue {
 
     const { token } = this.currency;
 
-    if (this.destinationNetwork !== '' && !this.isValidTeleportDirection) return 'Impossible to teleport';
+    if (this.destinationNetwork !== '' && !this.isValidDirection) return 'Impossible to teleport';
     else if (!this.isValidCountTokens) return `Insufficient balance ${token.toUpperCase()}`;
 
     return 'Next';
@@ -242,8 +243,12 @@ export default class TeleportForm extends Vue {
     return !this.isAllFieldsCorrect || +this.amount === 0 || this.originalNetworkPartialFee === '';
   }
 
-  get isValidTeleportDirection() {
-    return this.currency?.getParaId(this.originalNetwork, this.destinationNetwork) !== undefined;
+  get isValidDirection() {
+    // TODO: fix; from native parachains only to the relay chain
+    if (NATIVE_PARACHAINS.includes(this.originalNetwork) && !RELAY_CHAINS.includes(this.destinationNetwork))
+      return false;
+
+    return !!this.currency && this.originalNetwork !== '' && this.destinationNetwork !== '';
   }
 
   get isAllFieldsCorrect() {
@@ -262,13 +267,23 @@ export default class TeleportForm extends Vue {
     return getCurrencyOptions(this.currencies);
   }
 
-  get optionsNetwork() {
+  get optionsNetworks() {
     const availableInNetworks = this.currency?.getAvailableInNetworks(this.selectedWallet);
 
-    return availableInNetworks?.map(({ network }) => ({
+    return availableInNetworks?.map(({ network, precision, type }) => ({
       label: firstCharToUp(network),
-      value: `${network}`,
+      value: network,
+      precision,
+      type,
     }));
+  }
+
+  get optionsOriginalNetwork() {
+    return this.optionsNetworks?.filter(({ value }) => value !== this.destinationNetwork);
+  }
+
+  get optionsDestinationNetwork() {
+    return this.optionsNetworks?.filter(({ value }) => value !== this.originalNetwork);
   }
 
   get addressByNetwork() {
@@ -277,7 +292,7 @@ export default class TeleportForm extends Vue {
 
   @Watch('selectedTokenId')
   updateSelectedNetwork() {
-    this.originalNetwork = this.optionsNetwork?.[0]?.value ?? '';
+    this.originalNetwork = this.optionsNetworks?.[0]?.value ?? '';
     this.destinationNetwork = '';
     this.amount = '';
   }
@@ -289,7 +304,7 @@ export default class TeleportForm extends Vue {
   async createTeleportTransfer() {
     this.originalNetworkPartialFee = '';
 
-    if (!this.isValidTeleportDirection) return;
+    if (!this.isValidDirection || this.originalNetwork === '') return;
 
     const partialFee = await this.createTransferAndGetFee();
 
@@ -306,9 +321,9 @@ export default class TeleportForm extends Vue {
     this.selectedTokenId = this._selectedTokenId;
 
     this.$nextTick(() => {
-      const index = this.optionsNetwork?.findIndex(({ value }) => value === this._originalNetwork);
+      const index = this.optionsNetworks?.findIndex(({ value }) => value === this._originalNetwork);
 
-      this.originalNetwork = index !== -1 ? this._originalNetwork : this.optionsNetwork?.[0]?.value ?? '';
+      this.originalNetwork = index !== -1 ? this._originalNetwork : this.optionsNetworks?.[0]?.value ?? '';
     });
   }
 
@@ -320,15 +335,18 @@ export default class TeleportForm extends Vue {
     this.value = value;
   }
 
-  async createTransferAndGetFee(amount?: string) {
+  createTransferAndGetFee(amount?: string) {
+    const networkProps = this.optionsNetworks!.find(({ value }) => value === this.originalNetwork)!; // eslint-disable-line
+
     this.currency!.createTeleportTransfer( // eslint-disable-line
       this.selectedWallet,
       this.originalNetwork,
       this.destinationNetwork,
-      amount ?? this.amount
+      amount ?? this.amount,
+      networkProps
     );
 
-    return await this.currency!.getPartialFee(this.addressByNetwork); // eslint-disable-line
+    return this.currency!.getPartialFee(this.addressByNetwork, networkProps); // eslint-disable-line
   }
 
   async setMaxValue() {
@@ -452,6 +470,7 @@ export default class TeleportForm extends Vue {
         display: flex;
         flex-direction: column;
         align-items: flex-end;
+        width: 240px;
 
         .value {
           color: rgba(255, 255, 255, 0.75);

@@ -1,4 +1,4 @@
-import type { RelayChainName } from '@/consts/teleport';
+import type { RelayChainName } from '@/interfaces/teleport';
 
 const NETWORKS_PATH = 'networks';
 const ORML_PATH = 'orml';
@@ -35,7 +35,8 @@ function getOrmlFileName(value: string) {
       return 'ZLK.svg';
     case 'eqd':
       return 'EQD.svg';
-
+    case 'vksm':
+      return 'vKSM.svg';
     default:
       return '';
   }
@@ -52,12 +53,14 @@ function getImgPathByNetworkOrTokenName(value = '', relayChain?: RelayChainName)
     case 'kico':
       return 'kico.svg';
 
+    case 'encointer on kusama':
+      return 'encointer.svg';
+
     case 'polkadot':
     case 'dot':
       return 'polkadot.svg';
 
     case 'kusama':
-    case 'encointer on kusama':
     case 'ksm':
       return 'kusama.svg';
 
@@ -227,7 +230,7 @@ function getImgPathByNetworkOrTokenName(value = '', relayChain?: RelayChainName)
       return 'pichiu.svg';
 
     case 'equilibrium':
-    case '25969':
+    case 'eq':
       return 'equilibrium.svg';
 
     case 'datahighway tanganika':
@@ -262,6 +265,10 @@ function getImgPathByNetworkOrTokenName(value = '', relayChain?: RelayChainName)
     case 'ring':
       return 'darwinia.svg';
 
+    case 'kylin network':
+    case 'kyl':
+      return 'kylin network.svg';
+
     //////////////////////
 
     case 'litentry':
@@ -271,7 +278,7 @@ function getImgPathByNetworkOrTokenName(value = '', relayChain?: RelayChainName)
       return 'litmus.svg';
 
     case 'lit':
-      switch (relayChain?.toLocaleLowerCase()) {
+      switch (relayChain?.toLowerCase()) {
         case 'polkadot':
           return 'litentry.svg';
         case 'kusama':
@@ -289,7 +296,7 @@ function getImgPathByNetworkOrTokenName(value = '', relayChain?: RelayChainName)
       return 'khala.svg';
 
     case 'pha':
-      switch (relayChain?.toLocaleLowerCase()) {
+      switch (relayChain?.toLowerCase()) {
         case 'polkadot':
           return 'phala.svg';
         case 'kusama':

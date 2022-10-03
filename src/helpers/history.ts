@@ -2,8 +2,8 @@ import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
 import type { HistoryNode } from '@/interfaces/history';
 import type { AssetJson } from '@/interfaces/assets';
 import { TransactionType, TransferType } from '@/interfaces/history';
-import { firstCharToUp } from '@/util/helpers';
-import { formattedNumber } from '@/util/numbers';
+import { firstCharToUp } from '@/helpers/common';
+import { formattedNumber } from '@/helpers/numbers';
 import { FPNumber } from '@/util/fp';
 import NetworksController from '@/controllers/networksController';
 
@@ -68,52 +68,52 @@ export function getFormattedDate(historyNode: HistoryNode) {
   return format(date, 'dd MMMM yyyy HH:mm');
 }
 
-export function getHumanValue(value: string, tokenId: string) {
-  const assets: AssetJson[] = NetworksController.getAssets();
-  const tokenAssets = assets.find(({ id }) => id === tokenId)!; // eslint-disable-line
+export function getHumanValue(value: string, assetId: string) {
+  const assetsJson: AssetJson[] = NetworksController.getAssetsJson();
+  const tokenAssets = assetsJson.find(({ id }) => id === assetId)!; // eslint-disable-line
   const precision = tokenAssets?.precision ?? 0;
 
   return +FPNumber.fromCodecValue(value, precision).toString();
 }
 
-export function getHistoryValue(historyNode: HistoryNode, tokenId: string) {
+export function getHistoryValue(historyNode: HistoryNode, assetId: string) {
   const type = getType(historyNode);
   const signTransfer = getSignTransfer(historyNode);
 
   if (type === TransactionType.transfer) {
     const { amount } = historyNode[type];
-    const value = getHumanValue(amount, tokenId);
+    const value = getHumanValue(amount, assetId);
 
     return `${signTransfer}${formattedNumber(value, 4)}`;
   }
 
   if (type === TransactionType.reward) {
     const { amount } = historyNode[type];
-    const value = getHumanValue(amount, tokenId);
+    const value = getHumanValue(amount, assetId);
 
     return `+${formattedNumber(value, 4)}`;
   }
 
   // extrinsic
   const { fee } = historyNode[type];
-  const value = getHumanValue(fee, tokenId);
+  const value = getHumanValue(fee, assetId);
 
   return `-${formattedNumber(value, 4)}`;
 }
 
-export function getHumanTransferFee(historyNode: HistoryNode, tokenId: string) {
+export function getHumanTransferFee(historyNode: HistoryNode, assetId: string) {
   const type = getType(historyNode);
 
   if (type === TransactionType.transfer) {
     const { fee } = historyNode.transfer;
-    const value = getHumanValue(fee, tokenId);
+    const value = getHumanValue(fee, assetId);
 
     return `-${formattedNumber(value, 4)}`;
   }
 
   if (type === TransactionType.extrinsic) {
     const { fee } = historyNode.extrinsic;
-    const value = getHumanValue(fee, tokenId);
+    const value = getHumanValue(fee, assetId);
 
     return `-${formattedNumber(value, 4)}`;
   }

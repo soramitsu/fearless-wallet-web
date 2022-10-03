@@ -1,7 +1,7 @@
 import { AuthorizeRequest } from '@polkadot/extension-base/background/types';
 import { Mutations, MutationTypes } from './mutations';
 import type { ActionTree, ActionContext } from 'vuex';
-import type { State } from './types';
+import type { State } from './state';
 import {
   subscribeAuthorizeRequests,
   approveAuthRequest,

@@ -5,10 +5,11 @@ import {
   mnemonicGenerate,
   mnemonicValidate,
   hdValidatePath,
+  evmToAddress,
 } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
-import { Base } from '@polkadot/ui-keyring/Base';
+import { assetFromToken } from '@equilab/api';
 import type { KeyringPair$Json, KeyringPair$Meta, KeyringPair } from '@polkadot/keyring/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
@@ -16,7 +17,7 @@ import type { ValidateJsonResult, DerivationPath } from '@/interfaces/common';
 import type { Wallet } from '@/store/accounts/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { createAccountSuri, jsonRestore } from '@/extension/messaging';
-import { getReplacedMetaTyped, getMetaTyped, isExtension } from '@/util/helpers';
+import { getReplacedMetaTyped, getMetaTyped, isExtension } from '@/helpers/common';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
@@ -312,6 +313,14 @@ export default class BaseApi {
     return decodeAddress(address, false);
   }
 
+  public static evmToAddress(address: string, networkName: string) {
+    const networks = NetworksController.getNetworks();
+    const network = networks.find(({ name }) => name === networkName);
+    const prefix = network?.addressPrefix;
+
+    return evmToAddress(address, prefix);
+  }
+
   public static validateAddress(address: string): boolean {
     try {
       this.decodeAddress(address);
@@ -409,5 +418,9 @@ export default class BaseApi {
     if (addresess.length) return addresess[0].address;
 
     return '';
+  }
+
+  public static getEquilibriumAssetName(symbol: string): number {
+    return assetFromToken(symbol)[0];
   }
 }

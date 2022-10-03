@@ -1,6 +1,7 @@
 export type AssetJson = {
   id: string;
   symbol: string;
+  displayName?: string;
   chainId: string;
   precision: number;
   priceId?: string;

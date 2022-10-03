@@ -3,11 +3,9 @@ import getters from './getters';
 import mutations from './mutations';
 import state from './state';
 
-const api = {
+export default {
   state,
   mutations,
   getters,
   actions,
 };
-
-export default api;

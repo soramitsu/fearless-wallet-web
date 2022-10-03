@@ -1,53 +1,62 @@
-import { BN, isFunction } from '@polkadot/util';
-import type { AvailableInNetworks, Balances, BalanceFP, AvailableInNetworksFP } from '@/interfaces/currencies';
-import type { UpdateCurrencyProps, UpdateCurrencyBalanceProps } from '@/store/networks/types';
-import type { AssetJson } from '@/interfaces/assets';
-import type { TokenPriceJson, KeysTokenPriceJson } from '@/interfaces/tokens';
-import type { SubmittableExtrinsic } from '@polkadot/api-base/types';
-import type { RelayChainName } from '@/consts/teleport';
-import type { SignerOptions } from '@polkadot/api/submittable/types';
+import { isFunction } from '@polkadot/util';
+import type {
+  AvailableInNetworks,
+  Balances,
+  BalanceFP,
+  AvailableInNetworksFP,
+  TypeAsset,
+} from '@/interfaces/currencies';
+import type { SubmittableExtrinsic, SignerOptions } from '@polkadot/api/submittable/types';
+import type { RelayChainName } from '@/interfaces/teleport';
 import type { Wallet } from '@/store/accounts/types';
 import BaseApi from '@/util/BaseApi';
 import LocalStorageController from '@/controllers/localStorageController';
 import NetworksController from '@/controllers/networksController';
-import { XCM_LOC, teleportInfo } from '@/consts/teleport';
+import {
+  XCM_NATIVE_PALLETS,
+  FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT,
+  getNativeTeleportParams,
+  getOrmlTeleportParams,
+  isNativeNetwork,
+} from '@/util/teleport';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { FPNumber } from '@/util/fp';
-import { getReplacedMetaTyped } from '@/util/helpers';
+import { getReplacedMetaTyped } from '@/helpers/common';
+import { getOptions } from '@/consts/assets';
+
+type NetworkProps = {
+  label: string;
+  value: string;
+  precision: number;
+  type: TypeAsset;
+};
 
 export default class CurrencyController {
   private readonly lsCurrency = new LocalStorageController('currency');
-  private readonly currencyVisibleStorageName = 'currency_visible';
+  private readonly visibleStorageName = 'visible';
   public transfer!: SubmittableExtrinsic<'promise'> | undefined;
   public options: Partial<SignerOptions> = {};
   public balances: Balances = {};
   public price = 0;
   public hours24Change = 0;
-  public parentNetwork!: RelayChainName;
+  public displayName!: string;
 
   constructor(
     public mainNetwork: string,
     public tokenId: string,
     public token: string,
-    public tokensPrice: TokenPriceJson,
-    public precision: number,
+    displayName: string | undefined,
     public providers: string[],
-    parentNetwork: RelayChainName
+    public relayChain: RelayChainName
   ) {
-    if (parentNetwork) this.parentNetwork = parentNetwork;
+    this.displayName = displayName ?? token;
   }
 
-  public updatePrice(selectedFiat: string) {
-    const hours24ChangeField = `${selectedFiat}_24h_change` as KeysTokenPriceJson;
+  public updatePrice() {
+    const { price, hours24Change } = NetworksController.getTokenPrice(this.tokenId);
 
-    this.price = this.tokensPrice[selectedFiat as KeysTokenPriceJson] ?? 0;
-    this.hours24Change = this.tokensPrice[hours24ChangeField] ?? 0;
-  }
-
-  private getCurrenciesVisible(): Record<string, boolean> {
-    const currencyVisible = this.lsCurrency.get(this.currencyVisibleStorageName);
-
-    return currencyVisible.value ?? {};
+    this.price = price ?? 0;
+    this.hours24Change = hours24Change ?? 0;
   }
 
   private calculateCost(count: FPNumber): FPNumber {
@@ -71,22 +80,21 @@ export default class CurrencyController {
     }, {} as Record<string, string>);
 
     return availableInNetworks.map((item) => {
-      const { network } = item;
+      const { network, type, precision } = item;
       let { balance } = item;
 
       const replacedAddress = replacedNetworks[network];
       const replacedAvailableInNetworks = this.balances[replacedAddress];
 
       if (replacedAvailableInNetworks) {
-        const { balance: replacedBalance } = replacedAvailableInNetworks.find(
-          // eslint-disable-line
+        const { balance: replacedBalance } = replacedAvailableInNetworks.find( // eslint-disable-line
           ({ network: _network }) => _network === network
         )!;
 
         balance = replacedBalance;
       }
 
-      return { network, balance };
+      return { network, balance, type, precision };
     });
   }
 
@@ -129,40 +137,32 @@ export default class CurrencyController {
     return addressByNetwork;
   }
 
-  public updateCurrency({ precision, tokensPrice, selectedFiat }: UpdateCurrencyProps): void {
-    this.precision = precision ?? this.precision;
-    this.tokensPrice = tokensPrice ?? this.tokensPrice;
-
-    this.updatePrice(selectedFiat);
-  }
-
-  public updateCurrencyBalance({ walletAddress, currency }: UpdateCurrencyBalanceProps): CurrencyController {
-    const { network: networkProp, balance } = currency;
+  public updateCurrencyBalance({ walletAddress, network, balance, type, precision }: Record<string, any>): void {
     const { frozen, locked, reserved, total, transferable } = balance;
     const oldBalances = { ...this.balances };
     let balancesForAddress = oldBalances[walletAddress];
 
     const newValue = {
-      network: networkProp,
+      network,
+      precision,
+      type: type ?? 'native',
       balance: {
-        frozen: FPNumber.fromCodecValue(frozen, this.precision),
-        locked: FPNumber.fromCodecValue(locked, this.precision),
-        reserved: FPNumber.fromCodecValue(reserved, this.precision),
-        total: FPNumber.fromCodecValue(total, this.precision),
-        transferable: FPNumber.fromCodecValue(transferable, this.precision),
+        frozen: FPNumber.fromCodecValue(frozen, precision),
+        locked: FPNumber.fromCodecValue(locked, precision),
+        reserved: FPNumber.fromCodecValue(reserved, precision),
+        total: FPNumber.fromCodecValue(total, precision),
+        transferable: FPNumber.fromCodecValue(transferable, precision),
       },
     };
 
     if (balancesForAddress) {
-      const index = balancesForAddress.findIndex(({ network }) => network === networkProp);
+      const index = balancesForAddress.findIndex(({ network: _network }) => _network === network);
 
       if (index === -1) balancesForAddress.push(newValue);
       else balancesForAddress.splice(index, 1, newValue);
     } else balancesForAddress = [newValue];
 
     this.balances = { ...oldBalances, [walletAddress]: balancesForAddress };
-
-    return this;
   }
 
   public getTotalCountTokens(wallet: Wallet): string {
@@ -203,9 +203,13 @@ export default class CurrencyController {
   public getAvailableInNetworks(wallet: Wallet): AvailableInNetworks[] {
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
 
-    return availableInNetworks.map(({ balance: { frozen, locked, reserved, total, transferable }, network }) => {
+    return availableInNetworks.map(({ balance, network, type, precision }) => {
+      const { frozen, locked, reserved, total, transferable } = balance;
+
       return {
         network,
+        type,
+        precision,
         balance: {
           frozen: frozen.toString(),
           locked: locked.toString(),
@@ -242,54 +246,50 @@ export default class CurrencyController {
     return FPCost.div(price).toString();
   }
 
-  public getCurrencyVisible(): boolean {
-    const currenciesVisible = this.getCurrenciesVisible();
+  public getCurrencyVisible(address: string): boolean {
+    const currenciesVisible = this.lsCurrency.get(this.visibleStorageName).value ?? {};
 
-    return currenciesVisible[this.token] ?? true;
+    return currenciesVisible?.[address]?.[this.displayName] ?? true;
   }
 
-  public setCurrencyVisible(value: boolean): void {
-    const currenciesVisible = this.getCurrenciesVisible();
+  public setCurrencyVisible(address: string, value: boolean): void {
+    const currenciesVisible = this.lsCurrency.get(this.visibleStorageName).value ?? {};
 
-    currenciesVisible[this.token] = value;
+    if (currenciesVisible[address]) {
+      currenciesVisible[address][this.displayName] = value;
+    } else {
+      currenciesVisible[address] = {};
+      currenciesVisible[address][this.displayName] = value;
+    }
 
-    this.lsCurrency.set(this.currencyVisibleStorageName, currenciesVisible);
+    this.lsCurrency.set(this.visibleStorageName, currenciesVisible);
   }
 
-  public getPrecisionValue(amount: string): string {
-    const assets: AssetJson[] = NetworksController.getAssets();
-    const tokenAssets = assets.find(({ id }) => id === this.tokenId)!; // eslint-disable-line
-    const precision = tokenAssets?.precision ?? 0;
+  public getPrecisionValue(amount: string, precision: number): string {
     const value = amount === '' ? 0 : +amount;
 
     return new FPNumber(value, precision).toCodecString();
   }
 
-  public getParaId(originalNetworkName: string, destinationNetworkName: string) {
-    const isTeleportToMainNetwork =
-      teleportInfo[destinationNetworkName as RelayChainName]?.parachains[originalNetworkName];
-
-    return (
-      teleportInfo[originalNetworkName as RelayChainName]?.parachains[destinationNetworkName]?.paraId ??
-      (isTeleportToMainNetwork ? -1 : undefined)
-    );
-
-    // return !isParaTeleport
-    //   ? teleportInfo[originalNetworkName as RelayChainName]?.parachains[destinationNetworkName]?.paraId
-    //   : isTeleportToMainNetwork
-    //   ? -1
-    //   : undefined;
-  }
-
-  public createSendTransfer(to: string, networkName: string, amount: string): void {
-    const precisionAmount = this.getPrecisionValue(amount);
-    const networks = NetworksController.getNetworks();
-    const { api, settings: { DefaultTip } } = networks.find(({ name }) => name === networkName)!; // eslint-disable-line
-    const options = { tip: DefaultTip };
+  public createSendTransfer(to: string, networkName: string, amount: string, { precision, type }: NetworkProps): void {
+    const precisionAmount = this.getPrecisionValue(amount, precision);
+    const {
+      api: { tx },
+      settings: { DefaultTip },
+    } = NetworksController.getNetwork(networkName);
+    const transferOptions = { tip: DefaultTip };
+    const ormlOptions = getOptions(this.token, type, this.tokenId);
 
     try {
-      this.transfer = api.tx.balances.transfer(to, precisionAmount);
-      this.options = options;
+      if (type === 'native') this.transfer = tx.balances.transfer(to, precisionAmount);
+      else if (type === 'equilibrium') {
+        const equilibriumAsset = BaseApi.getEquilibriumAssetName(this.token);
+
+        this.transfer = tx.eqBalances.transfer(equilibriumAsset, to, precisionAmount);
+      } else if (type === 'ormlChain') this.transfer = tx.tokens.transfer(to, ormlOptions, precisionAmount);
+      else this.transfer = tx.currencies.transfer(to, ormlOptions, precisionAmount);
+
+      this.options = transferOptions;
     } catch {
       this.transfer = undefined;
       this.options = {};
@@ -298,36 +298,63 @@ export default class CurrencyController {
 
   public async createTeleportTransfer(
     wallet: Wallet,
-    originalNetworkName: string,
-    destinationNetworkName: string,
-    amount: string
+    originNet: string,
+    destNet: string,
+    amount: string,
+    { precision }: NetworkProps
   ): Promise<void> {
-    const recipientId = this.getTransactionAddress(wallet, destinationNetworkName);
-    const networks = NetworksController.getNetworks();
-    const { api } = networks.find(({ name }) => name === originalNetworkName)!; // eslint-disable-line
-    const m = XCM_LOC.filter((x) => api.tx[x] && isFunction(api.tx[x].limitedTeleportAssets))[0];
-    const isParaTeleport = m === 'polkadotXcm';
-    const precisionAmount = this.getPrecisionValue(amount);
-    const tx = api.tx[m].limitedTeleportAssets;
-    const publicKey = BaseApi.decodeAddress(recipientId);
-    const recipientParaId = this.getParaId(originalNetworkName, destinationNetworkName);
+    const toAddress = this.getTransactionAddress(wallet, destNet);
+    const precisionAmount = this.getPrecisionValue(amount, precision);
 
-    if (!recipientParaId) {
-      this.transfer = undefined;
+    if (isNativeNetwork(originNet)) {
+      // Case RelayChain -> Nonnative ParaChain (polkadot -> acala, etc; kusama -> bifrost, etc) paraId = 2000-2999, pallet = xcmPallet, module = reserveTransferAssets
+      // Case RelayChain -> Native ParaChain (polkadot -> statemint; kusama -> statemine, encointer) paraId = 1000-1999, pallet = xcmPallet, module = limitedTeleportAssets
+      // Case Native ParaChain -> RelayChain (statemint -> polkadot; statemine, encointer -> kusama) paraId = -1, pallet = polkadotXcm, module = limitedTeleportAssets
+      // TODO: add case: Native ParaChain -> Nonnative ParaChain
+      // TODO: add case: Native ParaChain -> Native ParaChain
+      this.createNativeTeleportTransfer(originNet, destNet, toAddress, precisionAmount);
 
       return;
     }
 
-    const params = getParams(isParaTeleport, recipientParaId, publicKey, new BN(precisionAmount));
+    // Case Nonnative ParaChain -> Nonnative ParaChain (karura, etc -> bifrost, etc) paraId = 2000-2999
+    // Case Nonnative ParaChain -> RelayChain (karura, etc -> kusama, etc; acala, etc  -> polkadot)
+    this.createOrmlTeleportTransfer(originNet, destNet, toAddress, precisionAmount);
+  }
+
+  public async createNativeTeleportTransfer(
+    originNet: string,
+    destNet: string,
+    toAddress: string,
+    precisionAmount: string
+  ): Promise<void> {
+    const { api } = NetworksController.getNetwork(originNet);
+    const module = isNativeNetwork(destNet) ? 'limitedTeleportAssets' : 'reserveTransferAssets';
+    const pallet = XCM_NATIVE_PALLETS.find((pallet) => api.tx[pallet] && isFunction(api.tx[pallet][module]))!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const tx = api.tx[pallet][module];
+    const params = getNativeTeleportParams(destNet, toAddress, precisionAmount);
 
     this.transfer = tx(...params);
   }
 
-  public async getPartialFee(from: string): Promise<string> {
+  public async createOrmlTeleportTransfer(
+    originNet: string,
+    destNet: string,
+    toAddress: string,
+    precisionAmount: string
+  ): Promise<void> {
+    const { api } = NetworksController.getNetwork(originNet);
+    const ormlOptions = { Token: this.token.toUpperCase() };
+    const params = getOrmlTeleportParams(originNet, destNet, toAddress);
+
+    this.transfer = api.tx.xTokens.transfer(ormlOptions, precisionAmount, params, FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT);
+  }
+
+  public async getPartialFee(from: string, { precision }: NetworkProps): Promise<string> {
     if (!this.transfer) return '0';
 
     const { partialFee } = await this.transfer.paymentInfo(from);
-    const result = new FPNumber(partialFee, this.precision);
+    const result = new FPNumber(partialFee as any, precision);
 
     return result.toString();
   }
@@ -335,8 +362,7 @@ export default class CurrencyController {
   public async send(from: string, amount: string): Promise<void> {
     const pair = BaseApi.getPair(from);
 
-    const unsubscribe = await this.transfer!.signAndSend(pair, this.options, ({ status }) => {
-      //eslint-disable-line
+    const unsubscribe = await this.transfer!.signAndSend(pair, this.options, ({ status }) => { //eslint-disable-line
       if (status.isInBlock) {
         console.info(`Successful transfer of ${amount} with hash ${status.asInBlock.toHex()}`);
       } else if (status.isFinalized) {
@@ -350,54 +376,4 @@ export default class CurrencyController {
       }
     });
   }
-}
-
-function getParams(isParaTeleport: boolean, recipientParaId: number, accountId32: string | Uint8Array, amount: BN) {
-  return [
-    {
-      V1: isParaTeleport
-        ? {
-            interior: 'Here',
-            parents: 1,
-          }
-        : {
-            interior: {
-              X1: {
-                ParaChain: recipientParaId,
-              },
-            },
-            parents: 0,
-          },
-    },
-    {
-      V1: {
-        interior: {
-          X1: {
-            AccountId32: {
-              id: accountId32,
-              network: 'Any',
-            },
-          },
-        },
-        parents: 0,
-      },
-    },
-    {
-      V1: [
-        {
-          fun: {
-            Fungible: amount,
-          },
-          id: {
-            Concrete: {
-              interior: 'Here',
-              parents: isParaTeleport ? 1 : 0,
-            },
-          },
-        },
-      ],
-    },
-    0,
-    { Unlimited: null },
-  ];
 }

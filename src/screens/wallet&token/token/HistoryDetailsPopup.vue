@@ -111,7 +111,7 @@ import {
   getHistoryValue,
   getFormattedDate,
   getHumanTransferFee,
-} from '@/util/historyHelpers';
+} from '@/helpers/history';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 
@@ -123,7 +123,6 @@ import BaseApi from '@/util/BaseApi';
   },
 })
 export default class SelectNetworkButton extends Vue {
-  @Prop({ default: false }) allNetworks!: boolean;
   @Prop(String) tokenId!: string;
   @Prop(Object) historyNode!: HistoryNode;
   @Prop(Function) handlerClose!: VoidFunction;
@@ -254,7 +253,9 @@ export default class SelectNetworkButton extends Vue {
   }
 
   openSubscan() {
-    const url = `https://${this.selectedNetwork}.subscan.io/extrinsic/${this.addressByNetwork}`;
+    const url = this.isExtrinsic
+      ? `https://${this.selectedNetwork}.subscan.io/extrinsic/${this.hash}`
+      : `https://${this.selectedNetwork}.subscan.io/account/${this.addressByNetwork}`;
 
     window.open(url);
   }

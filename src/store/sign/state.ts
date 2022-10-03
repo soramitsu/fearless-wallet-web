@@ -1,4 +1,8 @@
-import { State } from './types';
+import { SigningRequest } from '@polkadot/extension-base/background/types';
+
+export type State = {
+  requests: SigningRequest[];
+};
 
 const state = (): State => {
   return {

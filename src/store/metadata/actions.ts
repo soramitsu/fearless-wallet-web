@@ -1,7 +1,7 @@
 import { MetadataRequest } from '@polkadot/extension-base/background/types';
 import { Mutations, MutationTypes } from './mutations';
 import type { ActionTree, ActionContext } from 'vuex';
-import type { State } from './types';
+import type { State } from './state';
 import { subscribeMetadataRequests, approveMetaRequest, rejectMetaRequest } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';

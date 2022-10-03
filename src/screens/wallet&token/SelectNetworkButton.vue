@@ -14,7 +14,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import Rotate from '@/components/Rotate.vue';
 import Corners from '@/components/Corners.vue';
-import { firstCharToUp } from '@/util/helpers';
+import { firstCharToUp } from '@/helpers/common';
 
 @Component({
   components: {

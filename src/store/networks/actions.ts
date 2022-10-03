@@ -16,14 +16,14 @@ import type {
 import type { FiatJson } from '@/interfaces/common';
 import type { AssetJson } from '@/interfaces/assets';
 import type { NetworkJson, DisconnectNetworks, ExternalApi } from '@/interfaces/networks';
-import type { TokensPriceJson } from '@/interfaces/tokens';
+import type { TokensPrice } from '@/interfaces/tokens';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { loadHistory } from '@/subquery/history';
-import { getReplacedMetaTyped } from '@/util/helpers';
-import { getMockCurrencies } from '@/util/currenciesHelper';
-import { connectToApi, connectToNetworksApi, subscribeToBalances } from '@/util/networksAndAssetsHelpers';
+import { getReplacedMetaTyped } from '@/helpers/common';
+import { getMockCurrencies } from '@/helpers/currencies';
+import { connectToApi, connectToNetworksApi, subscribeTokensBalances } from '@/helpers/networksConnection';
 import { PAGE_SIZE } from '@/consts/history';
 
 export enum ActionTypes {
@@ -53,7 +53,7 @@ const actions: ActionTree<State, State> & Actions = {
     const networksJson: NetworkJson[] = data;
 
     const disconnectNetworks: DisconnectNetworks = networksJson.map(
-      ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi, chainId, parentId }) => {
+      ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi, chainId, parentId, paraId }) => {
         const networkName = name.toLocaleLowerCase();
         const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
         const externalApi = originalExternalApi ?? ({} as ExternalApi);
@@ -65,6 +65,7 @@ const actions: ActionTree<State, State> & Actions = {
           assets,
           chainId,
           parentId,
+          paraId,
           addressPrefix,
           isEthereumNetwork,
           externalApi,
@@ -84,7 +85,7 @@ const actions: ActionTree<State, State> & Actions = {
     const { data } = await axios.get(url);
     const assetsJson: AssetJson[] = data;
 
-    commit(MutationTypes.SET_ASSETS, { assets: assetsJson });
+    commit(MutationTypes.SET_ASSETS, { assetsJson });
   },
 
   async [ActionTypes.LOAD_FIATS]({ commit }, { url }) {
@@ -94,28 +95,27 @@ const actions: ActionTree<State, State> & Actions = {
     commit(MutationTypes.SET_FIATS, { fiats: fiatsJson });
   },
 
-  async [ActionTypes.LOAD_TOKENS_PRICE]({ commit, state: { networks, assets, fiats } }) {
-    const assetsIds = networks.map(({ assets }) => assets[0].assetId);
+  async [ActionTypes.LOAD_TOKENS_PRICE]({ commit, state: { assetsJson, fiats } }) {
     const urlFiatsPart = fiats.map(({ id }) => id).join('%2C');
-    const urlTokensPart = assets
-      .filter(({ priceId, id }) => assetsIds.includes(id) && !!priceId)
-      .map(({ priceId }) => priceId)
-      .join('%2C');
+    const urlsTokens = assetsJson.filter(({ priceId }) => !!priceId).map(({ priceId }) => priceId);
+    const urlTokensPart = [...new Set(urlsTokens)].join('%2C');
     const url = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${urlFiatsPart}&include_24hr_change=true&ids=${urlTokensPart}`;
     const { data } = await axios.get(url);
-    const tokensPriceJson: TokensPriceJson = data;
-    const tokensPrice: TokensPriceJson = {};
+    const typedData = data as TokensPrice;
+    const tokensPrice = {} as TokensPrice;
 
-    for (const network in tokensPriceJson) {
-      const assetId = assets.find(({ priceId }) => priceId === network)!.id;
+    for (const priceId in typedData) {
+      const assetIdS = assetsJson.filter(({ priceId: _priceId }) => _priceId === priceId);
 
-      tokensPrice[assetId] = tokensPriceJson[network];
+      assetIdS.forEach(({ id }) => {
+        tokensPrice[id] = data[priceId];
+      });
     }
 
-    commit(MutationTypes.SET_TOKENS_PRICE, { tokensPriceJson: tokensPrice });
+    commit(MutationTypes.SET_TOKENS_PRICE, { tokensPrice });
   },
 
-  async [ActionTypes.LOAD_HISTORY]({ commit, getters }, { networkName, walletAddress, pageSize = PAGE_SIZE }) {
+  async [ActionTypes.LOAD_HISTORY]({ commit, getters }, { networkName, walletAddress, pageSize = PAGE_SIZE, assetId }) {
     if (networkName === 'moonbase alpha') return;
 
     const { externalApi } = getters.getNetwork(networkName);
@@ -135,19 +135,22 @@ const actions: ActionTree<State, State> & Actions = {
 
     if (type !== 'subquery' || url === '') return;
 
-    const history = await loadHistory(url, formattedAddress, pageSize, cursor);
+    try {
+      const history = await loadHistory(url, formattedAddress, pageSize, cursor);
 
-    commit(MutationTypes.SET_HISTORY, {
-      networkName,
-      walletAddress,
-      history,
-      isPreviously: cursor === null,
-    });
+      commit(MutationTypes.SET_HISTORY, {
+        networkName,
+        walletAddress,
+        history,
+        isPreviously: cursor === null,
+        assetId,
+      });
+    } catch {
+      console.log(`failed to load history for ${networkName}`);
+    }
   },
 
   async [ActionTypes.SUBSCRIBE_TO_BALANCES](context, { accounts, networksProps }) {
-    console.info('accounts', accounts);
-
     const { commit, state } = context;
     const { networks: networksStore } = state;
 
@@ -159,33 +162,22 @@ const actions: ActionTree<State, State> & Actions = {
     const networks = networksProps ?? networksStore;
 
     const promises = networks.map(async (network) => {
-      const { api, isEthereumNetwork, name: networkName, assets: networkAssets } = network;
-      const utilityTokenId = networkAssets.find(({ isUtility }) => isUtility)!.assetId; // eslint-disable-line
+      const { isEthereumNetwork, name: networkName } = network;
 
-      await api.isReadyOrError;
+      Object.entries(accounts).forEach(async ([walletAddress, { type: accountType, json }]) => {
+        const { isReplacedAccount, replacedSettings } = getReplacedMetaTyped(json.meta);
+        const replacedNetworksList = Object.values(replacedSettings ?? []).flat();
 
-      try {
-        Object.entries(accounts).forEach(async ([walletAddress, { type, json }]) => {
-          const { isReplacedAccount, replacedSettings } = getReplacedMetaTyped(json.meta);
-          const networksList = Object.values(replacedSettings ?? []).flat();
+        // if it is a replaced account and the iterated network is not in the networksList
+        if (isReplacedAccount && !replacedNetworksList.includes(networkName)) return;
 
-          // if it is a replaced account and the iterated network is not in the networksList
-          if (isReplacedAccount && !networksList.includes(networkName)) return;
+        // ethereum accounts only subscribe to the ethereum networks and
+        // substrate accounts only subscribe to the substrate networks
+        if ((!isEthereumNetwork && accountType === 'ethereum') || (isEthereumNetwork && accountType !== 'ethereum'))
+          return;
 
-          // ethereum accounts only subscribe to the ethereum networks and
-          // substrate accounts only subscribe to the substrate networks
-          if ((!isEthereumNetwork && type === 'ethereum') || (isEthereumNetwork && type !== 'ethereum')) return;
-
-          subscribeToBalances(context, api, utilityTokenId, networkName, walletAddress);
-        });
-      } catch (ex) {
-        console.info(
-          `
-            Subscribe to ${networkName.toUpperCase()} failed
-            ${ex}
-          `
-        );
-      }
+        subscribeTokensBalances(context, walletAddress, network);
+      });
     });
 
     await Promise.allSettled(promises);
@@ -200,7 +192,7 @@ const actions: ActionTree<State, State> & Actions = {
     { network, nodeName, nodeUrl: nodeUrlProp, oldNodeUrl }
   ) {
     const networks = state.networks;
-    const networkApi = networks.find(({ name }) => name === network)!; // eslint-disable-line
+    const networkApi = networks.find(({ name }) => name === network)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
     const nodeUrl = nodeUrlProp === '' ? networkApi.nodes[0].url : nodeUrlProp;
 
     commit(MutationTypes.SET_NETWORK_ACTIVE_NODE, {

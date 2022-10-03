@@ -1,7 +1,6 @@
 import { MetadataRequest } from '@polkadot/extension-base/background/types';
-import Vue from 'vue';
 import type { MutationTree } from 'vuex';
-import type { State } from './types';
+import type { State } from './state';
 
 export enum MutationTypes {
   SET_METADATA_REQUEST = 'SET_AUTH_REQUEST',

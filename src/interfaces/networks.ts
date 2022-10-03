@@ -24,19 +24,30 @@ type ExternalApi = {
   explorers?: Explorer[];
 };
 
-type NetworkAssetsType = 'ormlAsset' | 'vToken' | 'vsToken' | 'foreignAsset' | 'stable';
+type NetworkAssetsType =
+  | 'ormlAsset'
+  | 'vToken'
+  | 'vsToken'
+  | 'foreignAsset'
+  | 'stable'
+  | 'liquidCrowdloan'
+  | 'stableAssetPoolToken'
+  | 'equilibrium'
+  | 'ormlChain';
 
 type NetworkAssets = {
   assetId: string;
   staking?: string;
   purchaseProviders?: string[];
   isUtility?: true;
-  type: NetworkAssetsType;
+  isNative?: true;
+  type?: NetworkAssetsType;
 };
 
 type NetworkJson = {
   chainId: string;
   parentId?: string;
+  paraId?: string;
   name: string;
   externalApi?: ExternalApi;
   assets: NetworkAssets[];
@@ -55,6 +66,7 @@ type Network = {
   assets: NetworkAssets[];
   chainId: string;
   parentId?: string;
+  paraId?: string;
   addressPrefix: number;
   isEthereumNetwork: boolean;
   settings: Record<string, any>;

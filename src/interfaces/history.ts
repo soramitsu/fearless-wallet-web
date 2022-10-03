@@ -1,4 +1,4 @@
-import type { WalletAddress, NetworkName } from '@/interfaces/common';
+import type { WalletAddress, NetworkName, AssetName } from '@/interfaces/common';
 
 type Reward = {
   amount: string;
@@ -43,11 +43,13 @@ interface HistoryItem {
   };
 }
 
-type HistoryForNetwork = Record<WalletAddress, HistoryItem>;
+type HistoryForWalletAddress = Record<NetworkName, HistoryItem>;
 
-type History = Record<NetworkName, HistoryForNetwork>;
+type HistoryForAssetId = Record<WalletAddress, HistoryForWalletAddress>;
 
-type GetHistory = (networkName: string) => HistoryForNetwork;
+type History = Record<AssetName, HistoryForAssetId>;
+
+type GetHistory = (assetId: AssetName, walletAddress: WalletAddress, networkName: NetworkName) => HistoryItem;
 
 enum TransferType {
   incoming = 'Incoming',
@@ -65,7 +67,7 @@ export {
   TransferType,
   GetHistory,
   History,
-  HistoryForNetwork,
+  HistoryForWalletAddress,
   Extrinsic,
   HistoryItem,
   Reward,

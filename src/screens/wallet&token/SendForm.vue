@@ -113,9 +113,9 @@ import NetworkLogo from '@/components/NetworkLogo.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { firstCharToUp } from '@/util/helpers';
-import { formattedNumber, formattedPrice, addNumbers } from '@/util/numbers';
-import { getCurrencyOptions } from '@/util/currenciesHelper';
+import { firstCharToUp } from '@/helpers/common';
+import { formattedNumber, formattedPrice, addNumbers } from '@/helpers/numbers';
+import { getCurrencyOptions } from '@/helpers/currencies';
 
 @Component({
   components: {
@@ -226,9 +226,11 @@ export default class SendForm extends Vue {
   get optionsNetwork() {
     const availableInNetworks = this.currency?.getAvailableInNetworks(this.selectedWallet);
 
-    return availableInNetworks?.map(({ network }) => ({
+    return availableInNetworks?.map(({ network, precision, type }) => ({
       label: firstCharToUp(network),
       value: `${network}`,
+      precision,
+      type,
     }));
   }
 
@@ -269,7 +271,7 @@ export default class SendForm extends Vue {
   async createSendTransfer() {
     this.partialFee = '';
 
-    if (!this.isValidRecipientAddress) return;
+    if (!this.isValidRecipientAddress || this.selectedNetwork === '') return;
 
     const partialFee = await this.createTransferAndGetFee();
 
@@ -292,10 +294,12 @@ export default class SendForm extends Vue {
     });
   }
 
-  async createTransferAndGetFee(amount?: string) {
-    this.currency!.createSendTransfer(this.recipient, this.selectedNetwork, amount ?? this.amount); // eslint-disable-line
+  createTransferAndGetFee(amount?: string) {
+    const networkProps = this.optionsNetwork!.find(({ value }) => value === this.selectedNetwork)!; // eslint-disable-line
 
-    return await this.currency!.getPartialFee(this.addressByNetwork); // eslint-disable-line
+    this.currency!.createSendTransfer(this.recipient, this.selectedNetwork, amount ?? this.amount, networkProps); // eslint-disable-line
+
+    return this.currency!.getPartialFee(this.addressByNetwork, networkProps); // eslint-disable-line
   }
 
   updateAmount(value: string) {

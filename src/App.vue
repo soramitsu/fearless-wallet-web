@@ -53,6 +53,8 @@ export default class App extends Vue {
     this.subscribeAccounts.subscribe(async (accounts) => {
       const newAccounts = this.getNewAccounts(accounts);
 
+      console.info('accounts', newAccounts);
+
       this.setAccounts({ accounts });
 
       await subscribeToBalancesOfNetworks(newAccounts);

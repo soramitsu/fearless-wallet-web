@@ -3,13 +3,12 @@ import LocalStorageController from '@/controllers/localStorageController';
 
 class AccountController {
   private readonly lsAccount = new LocalStorageController('account');
-  private readonly hideZeroBalanceStorageName = 'hide-zero-balance';
   private readonly sequenceTokensStorageName = 'sequence-tokens';
   private readonly autoSelectNodesStorageName = 'auto-select-nodes';
   private readonly activeNodeStorageName = 'active-node';
   private readonly customNodesStorageName = 'custom-nodes';
   private readonly selectedFiatStorageName = 'selected-fiat';
-  private readonly selectedWalletStorageName = 'selected-wallet-address';
+  private readonly selectedWalletStorageName = 'selected-wallet';
 
   public getSelectedWalletAddress(): string {
     const lsFiat = this.lsAccount.get(this.selectedWalletStorageName);

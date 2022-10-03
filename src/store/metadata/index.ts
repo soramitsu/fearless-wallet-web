@@ -3,11 +3,9 @@ import getters from './getters';
 import state from './state';
 import actions from './actions';
 
-const meta = {
+export default {
   state,
   mutations,
   getters,
   actions,
 };
-
-export default meta;

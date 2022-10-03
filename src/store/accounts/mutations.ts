@@ -3,7 +3,7 @@ import type { SetSelectedWalletProps, SetSelectedFiatProps, setAccountsProps } f
 import type { State } from './state';
 import BaseApi from '@/util/BaseApi';
 import { accountController } from '@/controllers/accountController';
-import { getMetaTyped } from '@/util/helpers';
+import { getMetaTyped } from '@/helpers/common';
 
 export enum MutationTypes {
   SET_SELECTED_WALLET = 'SET_SELECTED_WALLET',
@@ -34,9 +34,9 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_SELECTED_FIAT](state, { fiatName, currencies }) {
     accountController.setSelectedFiat(fiatName);
 
-    currencies.forEach((currency) => currency.updatePrice(fiatName));
-
     state.selectedFiat = fiatName;
+
+    currencies.forEach((currency) => currency.updatePrice());
   },
 
   [MutationTypes.SET_ACCOUNTS](state, { accounts }) {

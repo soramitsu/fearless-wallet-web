@@ -108,7 +108,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transferAmountString() {
-    return `-${this.amount} ${this.currency.token.toUpperCase()}`;
+    return `-${this.amount} ${this.currency.displayName.toUpperCase()}`;
   }
 
   get transferValueString() {

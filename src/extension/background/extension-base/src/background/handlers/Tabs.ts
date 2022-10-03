@@ -8,7 +8,7 @@ import { assert, isNumber } from '@polkadot/util';
 
 import RequestBytesSign from '../RequestBytesSign';
 import RequestExtrinsicSign from '../RequestExtrinsicSign';
-import { stripUrl, transformAccounts, withErrorLog } from './helpers';
+import { stripUrl, transformAccounts, transformAddresses, withErrorLog } from './helpers';
 import State from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
 import type {
@@ -61,8 +61,10 @@ export default class Tabs {
 
   static async accountsListAuthorized(url: string, { anyType }: RequestAccountList): Promise<InjectedAccount[]> {
     const transformedAccounts = transformAccounts(accountsObservable.subject.getValue(), anyType);
+    const transformedAddresses = transformAddresses(keyring.addresses.subject.value);
+    const totalAccounts = [...transformedAccounts, ...transformedAddresses];
 
-    return await Tabs.filterForAuthorizedAccounts(transformedAccounts, url);
+    return await Tabs.filterForAuthorizedAccounts(totalAccounts, url);
   }
 
   static async accountsSubscribeAuthorized(url: string, id: string, port: chrome.runtime.Port): Promise<string> {
@@ -114,9 +116,12 @@ export default class Tabs {
 
   static extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
     const address = request.address;
-    const pair = Tabs.getSigningPair(address);
+    let meta;
 
-    return State.sign(url, new RequestExtrinsicSign(request), { address, ...pair.meta });
+    if (keyring.getAccount(address)) meta = Tabs.getSigningPair(address).meta;
+    else if (keyring.getAddress(address)) meta = keyring.getAddress(address)?.meta;
+
+    return State.sign(url, new RequestExtrinsicSign(request), { address, ...meta });
   }
 
   static metadataProvide(url: string, request: MetadataDef): Promise<boolean> {

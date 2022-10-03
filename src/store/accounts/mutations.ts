@@ -31,10 +31,12 @@ const mutations: MutationTree<State> & Mutations = {
       const address = BaseApi.getAddress(selectedWalletAddress);
 
       if (!address) return;
+
       meta = address.meta;
     }
 
     const { name, ethereumAddress } = getMetaTyped(meta);
+    console.log(name, ethereumAddress);
     accountController.setSelectedWalletAddress(selectedWalletAddress);
 
     state.selectedWallet = {

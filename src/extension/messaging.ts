@@ -6,6 +6,8 @@ import { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
 import { selectableNetworks } from '@polkadot/networks';
 import { getId } from './background/extension-base/src/utils';
 import { PORT_EXTENSION } from './background/extension-base/src/defaults';
+import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types';
+
 import type {
   AccountJson,
   AllowedPath,
@@ -27,8 +29,7 @@ import type {
 } from './background/extension-base/src/background/types';
 import type { Message } from './background/extension-base/src/types';
 import type { Chain } from '@polkadot/extension-chains/types';
-import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
+import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 
@@ -194,6 +195,18 @@ export async function createAccountSuri(
   genesisHash?: string
 ): Promise<boolean> {
   return sendMessage('pri(accounts.create.suri)', { genesisHash, name, password, suri, type });
+}
+
+export async function createAddress(meta: KeyringPair$Meta, address: string): Promise<boolean> {
+  return sendMessage('pri(addresses.create)', { meta, address });
+}
+
+export async function removeAddress(address: string): Promise<boolean> {
+  return sendMessage('pri(addresses.remove)', { address });
+}
+
+export async function getAddresses(): Promise<KeyringAddress[]> {
+  return sendMessage('pri(addresses.get)');
 }
 
 export async function createSeed(

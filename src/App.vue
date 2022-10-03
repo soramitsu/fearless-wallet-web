@@ -87,7 +87,7 @@ export default class App extends Vue {
   setWallet() {
     const LSSelectedWalletAddress = accountController.getSelectedWalletAddress();
     const selectedWalletAddress = LSSelectedWalletAddress || BaseApi.getFirstSubstrateWalletAddress();
-
+    console.log(selectedWalletAddress, 'selectedwallet');
     if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
   }
 

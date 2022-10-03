@@ -11,24 +11,29 @@
         <InfoItem name="method Data" :value="method" />
         <InfoItem name="lifetime" :value="morality" />
       </InfoList>
-      <Input
-        v-if="isLocked"
-        ref="input"
-        class="transaction__password"
-        v-model="password"
-        type="password"
-        placeholder="Password for this account"
-        :isError="isErrorPassword"
-      />
+      <template v-if="isBeaconTransaction">
+        <Button size="big" class="button" text="Sign in mobile app" @click="withBeacon" />
+      </template>
+      <template v-else>
+        <Input
+          v-if="isLocked"
+          ref="input"
+          class="transaction__password"
+          v-model="password"
+          type="password"
+          placeholder="Password for this account"
+          :isError="isErrorPassword"
+        />
 
-      <div class="transaction__checkbox">
-        <Checkbox v-model="isSavePass" size="medium" :label="prepLabel" />
-      </div>
-    </template>
-    <template slot="control">
-      <Button size="big" class="button" text="Sign the transaction" @click="onApprove" />
+        <div class="transaction__checkbox">
+          <Checkbox v-model="isSavePass" size="medium" :label="prepLabel" />
+        </div>
+        <template slot="control">
+          <Button size="big" class="button" text="Sign the transaction" @click="onApprove" />
 
-      <Button size="mini" type="link" text="Cancel" @click="onReject" />
+          <Button size="mini" type="link" text="Cancel" @click="onReject" />
+        </template>
+      </template>
     </template>
   </TransactionContent>
 </template>
@@ -37,8 +42,10 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { SigningRequest } from '@polkadot/extension-base/background/types';
+import { encodeAddress } from '@polkadot/util-crypto';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
+import { fearlessConnector } from '@/controllers/beaconController';
 import { registry } from '@/extension/background/extension-base/src/background/handlers/State';
 import { isSignLocked } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
@@ -49,7 +56,6 @@ import WalletInfo from '@/screens/signing/WalletInfo.vue';
 import TransactionContent from '@/layouts/TransactionContent.vue';
 import InfoList from '@/layouts/InfoList.vue';
 import InfoItem from '@/screens/signing/InfoItem.vue';
-
 @Component({
   components: {
     WalletInfo,
@@ -92,11 +98,20 @@ export default class Auth extends Vue {
     return this.typedPayload.method.toString();
   }
 
-  async mounted() {
-    const { isLocked } = await isSignLocked(this.request.id);
+  get isBeaconTransaction() {
+    const substrateAccount = encodeAddress(this.payload.address, 42);
 
-    this.isLocked = isLocked;
-    this.isSavePass = !this.isLocked;
+    return BaseApi.getAddress(substrateAccount);
+  }
+
+  async mounted() {
+    console.log(this.isBeaconTransaction);
+
+    if (this.isBeaconTransaction) {
+      const { isLocked } = await isSignLocked(this.request.id);
+      this.isLocked = isLocked;
+      this.isSavePass = !this.isLocked;
+    }
   }
 
   get prepLabel() {
@@ -129,6 +144,10 @@ export default class Auth extends Vue {
       isSavePass: this.isSavePass,
       password: this.password,
     });
+  }
+
+  withBeacon() {
+    fearlessConnector.sendRequest(this.payload);
   }
 
   onReject() {

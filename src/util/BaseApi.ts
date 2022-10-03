@@ -8,6 +8,7 @@ import {
 } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
+import { Base } from '@polkadot/ui-keyring/Base';
 import type { KeyringPair$Json, KeyringPair$Meta, KeyringPair } from '@polkadot/keyring/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
@@ -71,6 +72,20 @@ export default class BaseApi {
     return address ? ({ address, ethereumAddress: address } as Wallet) : wallet;
   }
 
+  public static saveAddress(address: string, meta: KeyringPair$Meta) {
+    return keyring.saveAddress(address, meta, 'address');
+  }
+
+  public static forgetAddress(address: string) {
+    keyring.forgetAddress(address);
+  }
+
+  public static addressType(address: string) {
+    if (keyring.getAccount(address)) return 'account';
+    if (keyring.getAddress(address)) return 'address';
+
+    return null;
+  }
   public static mortalityDecode(era: ExtrinsicEra, hexBlockNumber: string) {
     const blockNumber = bnToBn(hexBlockNumber);
     const mortal = era.asMortalEra;
@@ -343,24 +358,30 @@ export default class BaseApi {
   }
 
   public static deleteWallet(address: string): number {
-    const { meta } = BaseApi.getPair(address);
-    const { ethereumAddress } = getMetaTyped(meta);
+    if (keyring.getAccount(address)) {
+      const { meta } = BaseApi.getPair(address);
+      const { ethereumAddress } = getMetaTyped(meta);
 
-    BaseApi.deleteAccount(address);
+      BaseApi.deleteAccount(address);
 
-    if (ethereumAddress !== '') BaseApi.deleteAccount(ethereumAddress);
+      if (ethereumAddress !== '') BaseApi.deleteAccount(ethereumAddress);
 
-    // delete replaced accounts
-    BaseApi.getReplacedAccounts({ address, ethereumAddress })
-      .filter(({ meta }) => {
-        const { replacedSettings } = getReplacedMetaTyped(meta);
+      // delete replaced accounts
+      BaseApi.getReplacedAccounts({ address, ethereumAddress })
+        .filter(({ meta }) => {
+          const { replacedSettings } = getReplacedMetaTyped(meta);
 
-        // if replaced account are used only for this main wallet
-        return Object.keys(replacedSettings).length === 1;
-      })
-      .forEach(({ address }) => BaseApi.deleteAccount(address));
+          // if replaced account are used only for this main wallet
+          return Object.keys(replacedSettings).length === 1;
+        })
+        .forEach(({ address }) => BaseApi.deleteAccount(address));
+    }
 
-    return Object.keys(BaseApi.getAccounts()).length;
+    if (BaseApi.getAddress(address)) keyring.forgetAddress(address);
+
+    const totalAccounts = Object.keys(BaseApi.getAddresses()).length + Object.keys(BaseApi.getAccounts()).length;
+
+    return totalAccounts;
   }
 
   public static windowOpen(path: string): void {
@@ -377,9 +398,16 @@ export default class BaseApi {
 
   public static getFirstSubstrateWalletAddress(): string {
     const accounts = BaseApi.getAccounts().map(({ address }) => BaseApi.getPair(address));
+    const addresess = BaseApi.getAddresses();
 
-    const address = accounts.find(({ type, meta }) => type !== 'ethereum' && !meta.isReplacedAccount)?.address;
+    if (accounts.length) {
+      const address = accounts.find(({ type, meta }) => type !== 'ethereum' && !meta.isReplacedAccount)?.address;
 
-    return address ?? '';
+      return address ?? '';
+    }
+
+    if (addresess.length) return addresess[0].address;
+
+    return '';
   }
 }

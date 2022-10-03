@@ -38,7 +38,7 @@ const actions: ActionTree<State, State> & Actions = {
         commit(MutationTypes.SET_SIGN_REQUEST, request);
 
         router.push({
-          name: Components.SignRequest,
+          name: Components.Transaction,
         });
       }
     };

@@ -81,6 +81,7 @@ export async function initState() {
     authUrls: {},
     defaultAuthAccountSelection: [],
     accountSubs: {},
+    addresses: {},
     windows: [],
     notification: 'popup',
     providers: {},
@@ -91,6 +92,7 @@ export async function initState() {
 
 export default class State {
   static authUrls: AuthUrls = {};
+
   static defaultAuthAccountSelection: string[] = [];
   static authRequests: Record<string, AuthRequest> = {};
   static metaRequests: Record<string, MetaRequest> = {};
@@ -164,6 +166,7 @@ export default class State {
         }
       );
   }
+
   static async injectFromStorage() {
     const { authUrls, defaultAuthAccountSelection } = await chrome.storage.local.get([
       'authUrls',
@@ -172,6 +175,7 @@ export default class State {
     State.authUrls = authUrls;
     State.defaultAuthAccountSelection = defaultAuthAccountSelection;
   }
+
   static authComplete = (
     id: string,
     resolve: (resValue: AuthResponse) => void,

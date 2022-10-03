@@ -50,8 +50,14 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.APPROVE_AUTH_REQUEST]({ commit }, payload) {
-    const addresses = BaseApi.getPolkadotAddresses();
-    await approveAuthRequest(payload.id, addresses);
+    const accounts = BaseApi.getPolkadotAddresses();
+    const addresess = BaseApi.getAddresses();
+
+    addresess.forEach(({ address }) => {
+      accounts.push(address);
+    });
+
+    await approveAuthRequest(payload.id, accounts);
 
     commit(MutationTypes.DELETE_AUTH_REQUEST);
   },

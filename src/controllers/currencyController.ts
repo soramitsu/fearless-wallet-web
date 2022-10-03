@@ -274,20 +274,20 @@ export default class CurrencyController {
   public createSendTransfer(to: string, networkName: string, amount: string, { precision, type }: NetworkProps): void {
     const precisionAmount = this.getPrecisionValue(amount, precision);
     const {
-      api: { tx },
+      api,
       settings: { DefaultTip },
     } = NetworksController.getNetwork(networkName);
     const transferOptions = { tip: DefaultTip };
     const ormlOptions = getOptions(this.token, type, this.tokenId);
 
     try {
-      if (type === 'native') this.transfer = tx.balances.transfer(to, precisionAmount);
+      if (type === 'native') this.transfer = api!.tx.balances.transfer(to, precisionAmount); // eslint-disable-line
       else if (type === 'equilibrium') {
         const equilibriumAsset = BaseApi.getEquilibriumAssetName(this.token);
 
-        this.transfer = tx.eqBalances.transfer(equilibriumAsset, to, precisionAmount);
-      } else if (type === 'ormlChain') this.transfer = tx.tokens.transfer(to, ormlOptions, precisionAmount);
-      else this.transfer = tx.currencies.transfer(to, ormlOptions, precisionAmount);
+        this.transfer = api!.tx.eqBalances.transfer(equilibriumAsset, to, precisionAmount); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+      } else if (type === 'ormlChain') this.transfer = api!.tx.tokens.transfer(to, ormlOptions, precisionAmount); // eslint-disable-line
+      else this.transfer = api!.tx.currencies.transfer(to, ormlOptions, precisionAmount); // eslint-disable-line @typescript-eslint/no-non-null-assertion
 
       this.options = transferOptions;
     } catch {
@@ -330,8 +330,8 @@ export default class CurrencyController {
   ): Promise<void> {
     const { api } = NetworksController.getNetwork(originNet);
     const module = isNativeNetwork(destNet) ? 'limitedTeleportAssets' : 'reserveTransferAssets';
-    const pallet = XCM_NATIVE_PALLETS.find((pallet) => api.tx[pallet] && isFunction(api.tx[pallet][module]))!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-    const tx = api.tx[pallet][module];
+    const pallet = XCM_NATIVE_PALLETS.find((pallet) => api!.tx[pallet] && isFunction(api!.tx[pallet][module]))!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const tx = api!.tx[pallet][module]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
     const params = getNativeTeleportParams(destNet, toAddress, precisionAmount);
 
     this.transfer = tx(...params);
@@ -347,7 +347,7 @@ export default class CurrencyController {
     const ormlOptions = { Token: this.token.toUpperCase() };
     const params = getOrmlTeleportParams(originNet, destNet, toAddress);
 
-    this.transfer = api.tx.xTokens.transfer(ormlOptions, precisionAmount, params, FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT);
+    this.transfer = api!.tx.xTokens.transfer(ormlOptions, precisionAmount, params, FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT); // eslint-disable-line @typescript-eslint/no-non-null-assertion
   }
 
   public async getPartialFee(from: string, { precision }: NetworkProps): Promise<string> {

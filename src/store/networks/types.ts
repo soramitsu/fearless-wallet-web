@@ -25,11 +25,11 @@ export type SetNetworksStatusProps = {
   networks: Networks;
 };
 
-export type SetAssetsProps = {
+export type SetAssetsJsonProps = {
   assetsJson: AssetJson[];
 };
 
-export type SetFiatsProps = {
+export type SetFiatsJsonProps = {
   fiats: FiatJson[];
 };
 
@@ -75,17 +75,10 @@ export type SetNetworkApi = {
 };
 
 // Actions
-export type LoadNetworks = {
-  url: string;
-  autoConnectMs: number;
-};
-
-export type LoadAssets = {
-  url: string;
-};
-
-export type LoadFiats = {
-  url: string;
+export type LoadJsons = {
+  chainsUrl: string;
+  assetsUrl: string;
+  fiatsUrl: string;
 };
 
 export type LoadHistory = {

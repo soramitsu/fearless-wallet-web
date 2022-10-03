@@ -1,4 +1,4 @@
-const NETWORKS_URL = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v3/chains/chains_dev.json';
+const CHAINS_URL = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v3/chains/chains_dev.json';
 const ASSETS_URL = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v3/chains/assets_dev.json';
 const FIATS_URL = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';
 
@@ -19,7 +19,7 @@ const EMAIL_URL = 'fearless@soramitsu.co.jp';
 export {
   ASSETS_URL,
   FIATS_URL,
-  NETWORKS_URL,
+  CHAINS_URL,
   TERMS_URL,
   PRIVACY_URL,
   FEARLESS_WALLET,

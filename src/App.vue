@@ -39,15 +39,12 @@ export default class App extends Vue {
   }
 
   async mounted() {
-    const { loadNetworks, loadAssets, loadFiats, loadTokensPrice, subscribeToBalancesOfNetworks } = NetworksController;
+    const { connectToNodes, loadJsons, subscribeToBalancesOfNetworks } = NetworksController;
 
-    await this.authSubscribe();
-    await this.metaSubscribe();
-    await this.signSubscribe();
+    await Promise.all([this.authSubscribe(), this.metaSubscribe(), this.signSubscribe()]);
 
-    await loadAssets();
-    await Promise.all([loadNetworks(), loadFiats()]);
-    await loadTokensPrice();
+    await loadJsons();
+    await connectToNodes();
 
     this.subscribeAccounts = keyring.accounts.subject;
     this.subscribeAccounts.subscribe(async (accounts) => {

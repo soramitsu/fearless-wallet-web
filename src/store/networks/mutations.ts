@@ -3,8 +3,8 @@ import type { State } from './state';
 import type {
   SetNetworksStatusProps,
   UpdateCurrencyBalanceProps,
-  SetAssetsProps,
-  SetFiatsProps,
+  SetAssetsJsonProps,
+  SetFiatsJsonProps,
   SetTokensPriceProps,
   SetCurrenciesProps,
   SetAllNetworksIsLoaded,
@@ -16,8 +16,8 @@ import { accountController } from '@/controllers/accountController';
 
 export enum MutationTypes {
   SET_NETWORKS = 'SET_NETWORKS',
-  SET_ASSETS = 'SET_ASSETS',
-  SET_FIATS = 'SET_FIATS',
+  SET_ASSETS_JSON = 'SET_ASSETS_JSON',
+  SET_FIATS_JSON = 'SET_FIATS_JSON',
   SET_TOKENS_PRICE = 'SET_TOKENS_PRICE',
   SET_CURRENCIES = 'SET_CURRENCIES',
   SET_HISTORY = 'SET_HISTORY',
@@ -29,8 +29,8 @@ export enum MutationTypes {
 
 export type Mutations = {
   [MutationTypes.SET_NETWORKS](state: State, props: SetNetworksStatusProps): void;
-  [MutationTypes.SET_ASSETS](state: State, props: SetAssetsProps): void;
-  [MutationTypes.SET_FIATS](state: State, props: SetFiatsProps): void;
+  [MutationTypes.SET_ASSETS_JSON](state: State, props: SetAssetsJsonProps): void;
+  [MutationTypes.SET_FIATS_JSON](state: State, props: SetFiatsJsonProps): void;
   [MutationTypes.SET_TOKENS_PRICE](state: State, props: SetTokensPriceProps): void;
   [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
@@ -49,11 +49,11 @@ const mutations: MutationTree<State> & Mutations = {
     state.currencies = currencies;
   },
 
-  [MutationTypes.SET_ASSETS](state, { assetsJson }) {
+  [MutationTypes.SET_ASSETS_JSON](state, { assetsJson }) {
     state.assetsJson = assetsJson;
   },
 
-  [MutationTypes.SET_FIATS](state, { fiats }) {
+  [MutationTypes.SET_FIATS_JSON](state, { fiats }) {
     state.fiats = fiats.map((fiat) => ({ ...fiat }));
   },
 

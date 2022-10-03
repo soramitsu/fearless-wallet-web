@@ -2,6 +2,8 @@ import type { AssetJson } from '@/interfaces/assets';
 import type { TypeAsset } from '@/interfaces/currencies';
 import NetworksController from '@/controllers/networksController';
 
+const ORML_PALLETS_TYPES = ['ormlChain', 'equilibrium'];
+
 const ASSETS_OPTIONS: Record<TypeAsset, Record<string, Record<string, string>>> = {
   stableAssetPoolToken: {
     tdot: { StableAssetPoolToken: '0' },
@@ -39,4 +41,4 @@ function getOptions(symbol: string, type: TypeAsset, assetId: string) {
   return specialOption ?? { Token: symbol.toUpperCase() };
 }
 
-export { ASSETS_OPTIONS, getOptions };
+export { ASSETS_OPTIONS, ORML_PALLETS_TYPES, getOptions };

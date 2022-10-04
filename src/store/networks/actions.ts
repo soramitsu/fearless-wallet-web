@@ -92,19 +92,24 @@ const actions: ActionTree<State, State> & Actions = {
     const urlsTokens = assetsJson.filter(({ priceId }) => !!priceId).map(({ priceId }) => priceId);
     const urlTokensPart = [...new Set(urlsTokens)].join('%2C');
     const url = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${urlFiatsPart}&include_24hr_change=true&ids=${urlTokensPart}`;
-    const { data } = await axios.get(url);
-    const typedData = data as TokensPrice;
-    const tokensPrice = {} as TokensPrice;
 
-    for (const priceId in typedData) {
-      const assetIdS = assetsJson.filter(({ priceId: _priceId }) => _priceId === priceId);
+    try {
+      const { data } = await axios.get(url);
+      const typedData = data as TokensPrice;
+      const tokensPrice = {} as TokensPrice;
 
-      assetIdS.forEach(({ id }) => {
-        tokensPrice[id] = data[priceId];
-      });
+      for (const priceId in typedData) {
+        const assetIdS = assetsJson.filter(({ priceId: _priceId }) => _priceId === priceId);
+
+        assetIdS.forEach(({ id }) => {
+          tokensPrice[id] = data[priceId];
+        });
+      }
+
+      commit(MutationTypes.SET_TOKENS_PRICE, { tokensPrice });
+    } catch {
+      console.info('coingecko request failed');
     }
-
-    commit(MutationTypes.SET_TOKENS_PRICE, { tokensPrice });
   },
 
   async [ActionTypes.LOAD_HISTORY]({ commit, getters }, { networkName, walletAddress, pageSize = PAGE_SIZE, assetId }) {

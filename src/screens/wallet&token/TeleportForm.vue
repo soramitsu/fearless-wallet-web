@@ -205,7 +205,7 @@ export default class TeleportForm extends Vue {
   get transferrableAmount() {
     const count = +(this.currency?.getTransferableCountTokens(this.originalNetwork, this.selectedWallet) ?? 0);
 
-    return formattedNumber(count, 4);
+    return formattedNumber(count, 4, false, true);
   }
 
   get selectedToken() {

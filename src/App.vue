@@ -34,12 +34,8 @@ export default class App extends Vue {
   @Action(SignActionTypes.SUBSCRIBE_SIGN_REQUESTS) signSubscribe!: TAction<unknown>;
   @Action(MetaActionTypes.SUBSCRIBE_METADATA_REQUESTS) metaSubscribe!: TAction<unknown>;
 
-  get style() {
-    return { 'background-image': 'url(./img/background.9b667fcd.png)' };
-  }
-
   async mounted() {
-    const { connectToNodes, loadJsons, subscribeToBalancesOfNetworks } = NetworksController;
+    const { loadJsons, connectToNodes, subscribeToBalancesOfNetworks } = NetworksController;
 
     await Promise.all([this.authSubscribe(), this.metaSubscribe(), this.signSubscribe()]);
 

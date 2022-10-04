@@ -25,6 +25,7 @@ import type { RelayChainName } from '@/interfaces/teleport';
 import NetworkLogo from '@/components/NetworkLogo.vue';
 import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, cut } from '@/helpers/history';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { TransactionType } from '@/interfaces/history';
 
 @Component({
   components: { NetworkLogo },
@@ -57,16 +58,18 @@ export default class HistoryItem extends Vue {
   }
 
   get hash() {
-    if (this.type === 'transfer') {
-      return cut(this.historyNode.transfer.to);
+    const { transfer, reward, extrinsic } = this.historyNode;
+
+    if (this.type === TransactionType.transfer) {
+      return cut(transfer.to);
     }
 
-    if (this.type === 'reward') {
-      return this.historyNode.reward.validator;
+    if (this.type === TransactionType.reward) {
+      return reward.validator;
     }
 
     // extrinsic
-    return cut(this.historyNode.extrinsic.hash);
+    return cut(extrinsic.hash);
   }
 
   get typeFormatted() {

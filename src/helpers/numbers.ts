@@ -1,13 +1,20 @@
 import { FPNumber } from '@/util/fp';
 
-export function formattedNumber(number: number, decimalsValue = 2, fixedValue = true): string {
+export function formattedNumber(
+  number: number,
+  decimalsValue = 2,
+  returnOriginNumber = true,
+  removeTrailingZeros = false
+): string {
   const decimals = 10 ** decimalsValue;
   const roundValue = Math.round(decimals * number) / decimals;
 
   // if roundValue is equal 0 and number is not equal 0, return origin number
-  if (roundValue === 0 && number >= 0.000000001) return number.toFixed(9);
+  if (returnOriginNumber && roundValue === 0 && number >= 0.000000001) return number.toFixed(9);
 
-  return fixedValue && roundValue !== 0 ? roundValue.toFixed(decimalsValue) : roundValue.toString();
+  if (removeTrailingZeros) return parseFloat(roundValue.toString()).toString();
+
+  return roundValue !== 0 ? roundValue.toFixed(decimalsValue) : roundValue.toString();
 }
 
 export function formattedPrice(price: number): string {

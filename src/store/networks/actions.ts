@@ -138,7 +138,7 @@ const actions: ActionTree<State, State> & Actions = {
         assetId,
       });
     } catch {
-      console.log(`failed to load history for ${networkName}`);
+      console.info(`failed to load history for ${networkName}`);
     }
   },
 

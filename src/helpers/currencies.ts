@@ -38,7 +38,7 @@ function getMockCurrencies(networks: Networks): Currencies {
         if (currencyIndex === -1) {
           const newCurrency = {
             mainNetwork: isUtility || isNative ? mainNetwork : '',
-            assetId: assetId,
+            assetId,
             symbol,
             displayName: displayName ?? symbol,
             relayChain,
@@ -46,8 +46,9 @@ function getMockCurrencies(networks: Networks): Currencies {
           };
 
           result.push(newCurrency);
-        } else if ((isUtility || isNative) && result[currencyIndex].mainNetwork === '') {
+        } else if (isUtility || isNative) {
           result[currencyIndex].mainNetwork = mainNetwork;
+          result[currencyIndex].assetId = assetId;
         }
       });
 

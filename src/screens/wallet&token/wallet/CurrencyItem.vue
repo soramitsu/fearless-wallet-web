@@ -140,7 +140,7 @@ export default class CurrencyItem extends Vue {
         ? +this.currency.getTotalCountTokensByNetwork(this.selectedWallet, this.selectedNetwork)
         : +this.currency.getTotalCountTokens(this.selectedWallet);
 
-    return formattedNumber(totalCountTokens, 4);
+    return formattedNumber(totalCountTokens, 4, false);
   }
 
   get totalBalanceString() {

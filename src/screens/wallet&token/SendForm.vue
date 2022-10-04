@@ -297,7 +297,7 @@ export default class SendForm extends Vue {
   createTransferAndGetFee(amount?: string) {
     const networkProps = this.optionsNetwork!.find(({ value }) => value === this.selectedNetwork)!; // eslint-disable-line
 
-    this.currency!.createSendTransfer(this.recipient, this.selectedNetwork, amount ?? this.amount, networkProps); // eslint-disable-line
+    this.currency!.createTransferExtrinsic(this.recipient, this.selectedNetwork, amount ?? this.amount, networkProps); // eslint-disable-line
 
     return this.currency!.getPartialFee(this.addressByNetwork, networkProps); // eslint-disable-line
   }

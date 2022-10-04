@@ -68,7 +68,7 @@ const mutations: MutationTree<State> & Mutations = {
     const { symbol, precision } = assetsJson.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
     const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name;
 
-    const currentCurrency = currencies.find(({ tokenId: _tokenId, token: _token, relayChain: _relayChain,}) => { //eslint-disable-line
+    const currentCurrency = currencies.find(({ tokenId: _tokenId, token: _token, relayChain: _relayChain }) => { //eslint-disable-line
       const isExistingTokenId = _tokenId === assetId;
       const isExistingTokenSymbol = _token === symbol && _relayChain === relayChain;
 

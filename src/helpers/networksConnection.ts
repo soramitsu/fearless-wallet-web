@@ -9,7 +9,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { accountController } from '@/controllers/accountController';
 import NetworksController from '@/controllers/networksController';
 import BaseApi from '@/util/BaseApi';
-import { ORML_PALLETS_TYPES, getOptions } from '@/consts/assets';
+import { ORML_PALLETS_TYPES, getOptions } from '@/util/assets';
 
 function connectToApi(name: string, url: string, autoConnectMs = 0) {
   const provider = new WsProvider(url, autoConnectMs);
@@ -66,8 +66,7 @@ function subscribeUtilityTokensBalances(context: Context, address: string, netwo
     const data = (result as any).data;
     const balance = formatBalance(data as AccountData, precision);
     const historyForNetwork = getters[NetworksGettersTypes.getHistory](assetId, address, networkName);
-    const historyForAddress = historyForNetwork?.[address];
-    const delay = historyForAddress ? 45 : 0;
+    const delay = historyForNetwork ? 45 : 0;
 
     commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
       walletAddress: address,

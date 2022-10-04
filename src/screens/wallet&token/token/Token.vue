@@ -190,9 +190,9 @@ export default class Token extends Vue {
       this.selectedWallet,
       this.selectedNetwork
     );
-    const total = formattedNumber(totalCountTokens, 4);
+    const total = formattedNumber(totalCountTokens, 4, false, true);
 
-    return `${this.selectedToken.toUpperCase()} ${+total}`;
+    return `${this.selectedToken.toUpperCase()} ${total}`;
   }
 
   get balanceInNetworkString() {

@@ -4,7 +4,7 @@
 
 <script lang="ts">
 import { Vue, Prop, Component } from 'vue-property-decorator';
-import type { RelayChainName } from '@/interfaces/teleport';
+import type { RelayChainName } from '@/interfaces';
 import { getImgPath } from '@/helpers/imgPath';
 
 @Component

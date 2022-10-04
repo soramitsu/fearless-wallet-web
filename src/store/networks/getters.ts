@@ -1,13 +1,15 @@
-import type { AssetJson } from '@/interfaces/assets';
-import type { ActiveNodes } from '@/interfaces/nodes';
-import type { FiatJson } from '@/interfaces/common';
+import type {
+  AssetJson,
+  ActiveNodes,
+  FiatJson,
+  Networks,
+  GetHistory,
+  Currencies,
+  KeysTokenPricesJson,
+} from '@/interfaces';
 import type { GetNetwork, GetTokenName, GetTokenPrice } from './types';
-import type { Networks } from '@/interfaces/networks';
-import type { GetHistory } from '@/interfaces/history';
-import type { Currencies } from '@/interfaces/currencies';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
-import type { KeysTokenPricesJson } from '@/interfaces/tokens';
 
 export enum GettersTypes {
   getNetworks = 'getNetworks',

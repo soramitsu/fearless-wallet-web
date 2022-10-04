@@ -1,7 +1,5 @@
-import type { Currencies, Currency } from '@/interfaces/currencies';
-import type { Networks } from '@/interfaces/networks';
+import type { Currencies, Currency, Networks, RelayChainName } from '@/interfaces';
 import type { Wallet } from '@/store/accounts/types';
-import type { RelayChainName } from '@/interfaces/teleport';
 import CurrencyController from '@/controllers/currencyController';
 import NetworksController from '@/controllers/networksController';
 import { MAIN_NETWORKS } from '@/consts/networks';

@@ -44,7 +44,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { DerivationPaths } from '@/interfaces/common';
+import type { DerivationPaths } from '@/interfaces';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import AboveForm from '@/components/AboveForm.vue';
 import Input from '@/components/Input.vue';

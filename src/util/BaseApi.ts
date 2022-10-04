@@ -13,7 +13,7 @@ import { assetFromToken } from '@equilab/api';
 import type { KeyringPair$Json, KeyringPair$Meta, KeyringPair } from '@polkadot/keyring/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import type { ValidateJsonResult, DerivationPath } from '@/interfaces/common';
+import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
 import type { Wallet } from '@/store/accounts/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { createAccountSuri, jsonRestore } from '@/extension/messaging';

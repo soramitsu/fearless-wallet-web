@@ -30,7 +30,6 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
-import { keyring } from '@polkadot/ui-keyring';
 import WalletBalance from './WalletBalance.vue';
 import type { SelectedWallet, SetSelectedWalletProps, Accounts } from '@/store/accounts/types';
 import type { Currencies } from '@/interfaces/currencies';
@@ -43,9 +42,11 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
 import { addNumbers } from '@/helpers/numbers';
+
 interface HTMLDivElementEvent extends Event {
   target: HTMLDivElement;
 }
+
 @Component({
   components: {
     Popup,
@@ -57,24 +58,15 @@ export default class SelectWalletPopup extends Vue {
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
   @Getter(AccountsGettersTypes.getAddresses) addresses!: Accounts;
-
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
 
   get wallets() {
     const accounts = Object.keys(this.accounts)
-      .map((address) => {
-        const pair = BaseApi.getPair(address);
-
-        return pair;
-      })
+      .map((address) => BaseApi.getPair(address))
       .filter(({ type, meta }) => type !== 'ethereum' && !meta.isReplacedAccount);
 
-    const addresses = Object.keys(this.addresses).map((address) => {
-      const keyringAddress = BaseApi.getAddress(address);
-
-      return keyringAddress;
-    });
+    const addresses = Object.keys(this.addresses).map((address) => BaseApi.getAddress(address));
 
     return [...addresses, ...accounts];
   }
@@ -85,7 +77,7 @@ export default class SelectWalletPopup extends Vue {
 
   prepName(name: string, address: string) {
     //TEMP SOLUTION MOVETO WALLETBALANCE IN THE FUTURE
-    const isConnectedToBeacon = !!BaseApi.addressType(address);
+    const isConnectedToBeacon = !!BaseApi.getAddressType(address);
 
     return isConnectedToBeacon ? `🅱️${name}🅱️` : name;
   }

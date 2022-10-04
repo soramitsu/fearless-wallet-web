@@ -5,7 +5,6 @@ import { BehaviorSubject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { knownGenesis } from '@polkadot/networks/defaults';
 import { assert } from '@polkadot/util';
-
 import { TypeRegistry } from '@polkadot/types';
 
 import {
@@ -92,7 +91,6 @@ export async function initState() {
 
 export default class State {
   static authUrls: AuthUrls = {};
-
   static defaultAuthAccountSelection: string[] = [];
   static authRequests: Record<string, AuthRequest> = {};
   static metaRequests: Record<string, MetaRequest> = {};
@@ -160,7 +158,6 @@ export default class State {
         async (window): Promise<void> => {
           if (window) {
             windows.push(window.id || 0);
-
             await chrome.storage.local.set({ windows });
           }
         }

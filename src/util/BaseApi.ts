@@ -81,9 +81,9 @@ export default class BaseApi {
     keyring.forgetAddress(address);
   }
 
-  public static addressType(address: string) {
-    if (keyring.getAccount(address)) return 'account';
-    if (keyring.getAddress(address)) return 'address';
+  public static getAddressType(address: string) {
+    if (BaseApi.getAccount(address)) return 'account';
+    if (BaseApi.getAddress(address)) return 'address';
 
     return null;
   }
@@ -249,8 +249,16 @@ export default class BaseApi {
     return accounts.map(({ address }) => address).includes(address);
   }
 
+  public static getAccount(address: string): KeyringAddress | undefined {
+    return keyring.getAccount(address);
+  }
+
   public static getAccounts(): KeyringAddress[] {
     return keyring.getAccounts();
+  }
+
+  public static getAddress(address: string): KeyringAddress | undefined {
+    return keyring.getAddress(address);
   }
 
   public static getAddresses(): KeyringAddress[] {
@@ -266,10 +274,6 @@ export default class BaseApi {
 
   public static getPair(address: string): KeyringPair {
     return keyring.getPair(address);
-  }
-
-  public static getAddress(address: string) {
-    return keyring.getAddress(address);
   }
 
   public static isDuplicateReplacedKeypair(addressProp: string): boolean {
@@ -367,7 +371,7 @@ export default class BaseApi {
   }
 
   public static deleteWallet(address: string): number {
-    if (BaseApi.addressType(address) === 'account') {
+    if (BaseApi.getAddressType(address) === 'account') {
       const { meta } = BaseApi.getPair(address);
       const { ethereumAddress } = getMetaTyped(meta);
 
@@ -388,7 +392,7 @@ export default class BaseApi {
 
     if (BaseApi.getAddress(address)) keyring.forgetAddress(address);
 
-    const totalAccounts = Object.keys(BaseApi.getAddresses()).length + Object.keys(BaseApi.getAccounts()).length;
+    const totalAccounts = BaseApi.getAddresses().length + BaseApi.getAccounts().length;
 
     return totalAccounts;
   }
@@ -407,7 +411,7 @@ export default class BaseApi {
 
   public static getFirstSubstrateWalletAddress(): string {
     const accounts = BaseApi.getAccounts().map(({ address }) => BaseApi.getPair(address));
-    const addresess = BaseApi.getAddresses();
+    const addresses = BaseApi.getAddresses();
 
     if (accounts.length) {
       const address = accounts.find(({ type, meta }) => type !== 'ethereum' && !meta.isReplacedAccount)?.address;
@@ -415,7 +419,7 @@ export default class BaseApi {
       return address ?? '';
     }
 
-    if (addresess.length) return addresess[0].address;
+    if (addresses.length) return addresses[0].address;
 
     return '';
   }

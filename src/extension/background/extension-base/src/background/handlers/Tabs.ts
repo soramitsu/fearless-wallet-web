@@ -117,7 +117,7 @@ export default class Tabs {
 
   static extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
     const address = request.address;
-    const addressType = BaseApi.addressType(address);
+    const addressType = BaseApi.getAddressType(address);
     let meta;
 
     if (addressType === 'account') meta = Tabs.getSigningPair(address).meta;

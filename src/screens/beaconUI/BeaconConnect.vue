@@ -74,7 +74,7 @@ export default class BeaconConnect extends Vue {
       };
       const substrateAccount = encodeAddress(payload.account.address);
 
-      if (BaseApi.addressType(substrateAccount)) {
+      if (BaseApi.getAddressType(substrateAccount)) {
         this.isError = true;
 
         fearlessConnector.disconnect();

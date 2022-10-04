@@ -9,8 +9,8 @@ import {
   defaultEventCallbacks,
   Serializer,
 } from '@airgap/beacon-sdk';
-import { getTzip10Link } from './beaconUtils';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
+import { getTzip10Link } from '@/util/beacon';
 
 import {
   PermissionSuccess,
@@ -23,7 +23,7 @@ import {
 class BeaconController {
   private readonly app: DAppClient;
   private static serializer = new Serializer();
-
+  private name = 'Fearless Wallet Extension';
   constructor() {
     this.app = getDAppClientInstance({
       name: 'Fearless Wallet Extension',
@@ -71,7 +71,7 @@ class BeaconController {
       blockchainData: {
         appMetadata: {
           senderId: 'sender',
-          name: 'Fearless Wallet Extension',
+          name: this.name,
         },
         networks: [{ genesisHash: '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3' }], //Polkadot genesis hash
         scopes: [SubstratePermissionScope.transfer],

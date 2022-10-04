@@ -58,7 +58,7 @@ export default class App extends Vue {
     this.subscribeAddresses = keyring.addresses.subject;
 
     this.subscribeAccounts.subscribe(async (accounts) => {
-      const newAccounts = this.getNewAccounts(accounts);
+      const newAccounts = this.getNewAccounts(accounts, 'account');
 
       console.info('accounts', newAccounts);
 
@@ -68,7 +68,8 @@ export default class App extends Vue {
     });
 
     this.subscribeAddresses.subscribe(async (addresses) => {
-      const newAddresses = this.getNewAccounts(addresses);
+      const newAddresses = this.getNewAccounts(addresses, 'address');
+
       this.setAddresses({ addresses });
 
       await subscribeToBalancesOfNetworks(newAddresses);
@@ -77,11 +78,16 @@ export default class App extends Vue {
     this.setWallet();
   }
 
-  getNewAccounts(accounts: SubjectInfo) {
+  getNewAccounts(accounts: SubjectInfo, type: 'account' | 'address') {
     const result = {} as SubjectInfo;
 
     for (const address in accounts) {
-      if (this.accounts[address] === undefined) result[address] = accounts[address];
+      if (type === 'account' && this.accounts[address] === undefined) {
+        result[address] = accounts[address];
+        continue;
+      }
+
+      if (type === 'address' && this.addresses[address] === undefined) result[address] = accounts[address];
     }
 
     return result;

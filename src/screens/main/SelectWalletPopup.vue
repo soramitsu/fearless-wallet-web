@@ -77,9 +77,9 @@ export default class SelectWalletPopup extends Vue {
 
   prepName(name: string, address: string) {
     //TEMP SOLUTION MOVETO WALLETBALANCE IN THE FUTURE
-    const isConnectedToBeacon = !!BaseApi.getAddressType(address);
+    const addressType = BaseApi.getAddressType(address);
 
-    return isConnectedToBeacon ? `🅱️${name}🅱️` : name;
+    return addressType === 'address' ? `🅱️${name}🅱️` : name;
   }
 
   getBalance(address: string) {

@@ -117,11 +117,10 @@ export default class Tabs {
 
   static extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
     const address = request.address;
-    const addressType = BaseApi.getAddressType(address);
     let meta;
 
-    if (addressType === 'account') meta = Tabs.getSigningPair(address).meta;
-    else if (addressType === 'address') meta = keyring.getAddress(address)?.meta;
+    if (keyring.getAccount(address)) meta = Tabs.getSigningPair(address).meta;
+    else if (keyring.getAddress(address)) meta = keyring.getAddress(address)?.meta;
 
     return State.sign(url, new RequestExtrinsicSign(request), { address, ...meta });
   }

@@ -10,19 +10,19 @@ import QRCode from 'qrcode';
 export default class QR extends Vue {
   @Prop(String) payload!: string;
   @Prop({
-    default: 0,
+    default: 5,
   })
   margin!: number;
   @Prop({
-    default: 200,
+    default: 300,
   })
   width!: number;
   @Prop({
-    default: '#FFFFFF',
+    default: '#111111',
   })
   foreground!: string;
   @Prop({
-    default: '#111111',
+    default: '#FFFFFF',
   })
   background!: string;
 

@@ -31,11 +31,6 @@ export type Getters = {
     getters?: GetterTree<State, State> & Getters,
     rootState?: any
   ): GetTokenPrice;
-  [GettersTypes.getTokenPrice](
-    state: State,
-    getters?: GetterTree<State, State> & Getters,
-    rootState?: any
-  ): GetTokenPrice;
   [GettersTypes.getTokenName](state: State, getters?: GetterTree<State, State> & Getters): GetTokenName;
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;

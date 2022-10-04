@@ -3,7 +3,7 @@
     <Button
       class="import-button"
       width="100%"
-      text="Connect with Beacon"
+      text="Connect with Mobile"
       size="big"
       fontSize="big"
       type="secondary"

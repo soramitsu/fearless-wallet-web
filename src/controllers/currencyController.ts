@@ -18,11 +18,12 @@ import {
   getNativeTeleportParams,
   getOrmlTeleportParams,
   isNativeNetwork,
+  getOrmlOptions,
 } from '@/util/teleport';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { FPNumber } from '@/util/fp';
 import { getReplacedMetaTyped } from '@/helpers/common';
-import { getOptions } from '@/consts/assets';
+import { getOptions } from '@/util/assets';
 
 type NetworkProps = {
   label: string;
@@ -34,7 +35,7 @@ type NetworkProps = {
 export default class CurrencyController {
   private readonly lsCurrency = new LocalStorageController('currency');
   private readonly visibleStorageName = 'visible';
-  public transfer!: SubmittableExtrinsic<'promise'> | undefined;
+  public extrinsic!: SubmittableExtrinsic<'promise'> | undefined;
   public options: Partial<SignerOptions> = {};
   public balances: Balances = {};
   public price = 0;
@@ -67,7 +68,7 @@ export default class CurrencyController {
 
   private getAvailableInNetworksIncludingReplacedAccounts(wallet: Wallet): AvailableInNetworksFP[] {
     const { address, ethereumAddress } = wallet;
-    const availableInNetworks = this.balances[address] ?? this.balances[ethereumAddress] ?? [];
+    const availableInNetworks = [...(this.balances[address] ?? []), ...(this.balances[ethereumAddress] ?? [])];
 
     const replacedAccounts = BaseApi.getReplacedAccounts(wallet);
     const replacedNetworks = replacedAccounts.reduce((result, { address: _address, meta }) => {
@@ -87,7 +88,7 @@ export default class CurrencyController {
       const replacedAvailableInNetworks = this.balances[replacedAddress];
 
       if (replacedAvailableInNetworks) {
-        const { balance: replacedBalance } = replacedAvailableInNetworks.find( // eslint-disable-line
+        const { balance: replacedBalance } = replacedAvailableInNetworks.find(
           ({ network: _network }) => _network === network
         )!;
 
@@ -188,7 +189,7 @@ export default class CurrencyController {
   public getTransferableCountTokensMinusFee(fee: string, networkProp: string, wallet: Wallet): FPNumber {
     const FPFee = new FPNumber(fee);
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
-    const { transferable } = availableInNetworks.find(({ network }) => network === networkProp)!.balance; // eslint-disable-line
+    const { transferable } = availableInNetworks.find(({ network }) => network === networkProp)!.balance;
     const result = transferable.sub(FPFee);
 
     return FPNumber.lt(result, FPNumber.ZERO) ? FPNumber.ZERO : result;
@@ -271,32 +272,41 @@ export default class CurrencyController {
     return new FPNumber(value, precision).toCodecString();
   }
 
-  public createSendTransfer(to: string, networkName: string, amount: string, { precision, type }: NetworkProps): void {
+  public createTransferExtrinsic(
+    to: string,
+    networkName: string,
+    amount: string,
+    { precision, type }: NetworkProps
+  ): void {
     const precisionAmount = this.getPrecisionValue(amount, precision);
     const {
-      api: { tx },
+      api,
       settings: { DefaultTip },
     } = NetworksController.getNetwork(networkName);
     const transferOptions = { tip: DefaultTip };
     const ormlOptions = getOptions(this.token, type, this.tokenId);
 
     try {
-      if (type === 'native') this.transfer = tx.balances.transfer(to, precisionAmount);
-      else if (type === 'equilibrium') {
+      if (type === 'native') {
+        this.extrinsic = api!.tx.balances.transfer(to, precisionAmount);
+      } else if (type === 'equilibrium') {
         const equilibriumAsset = BaseApi.getEquilibriumAssetName(this.token);
 
-        this.transfer = tx.eqBalances.transfer(equilibriumAsset, to, precisionAmount);
-      } else if (type === 'ormlChain') this.transfer = tx.tokens.transfer(to, ormlOptions, precisionAmount);
-      else this.transfer = tx.currencies.transfer(to, ormlOptions, precisionAmount);
+        this.extrinsic = api!.tx.eqBalances.transfer(equilibriumAsset, to, precisionAmount);
+      } else if (type === 'ormlChain') {
+        this.extrinsic = api!.tx.tokens.transfer(to, ormlOptions, precisionAmount);
+      } else {
+        this.extrinsic = api!.tx.currencies.transfer(to, ormlOptions, precisionAmount);
+      }
 
       this.options = transferOptions;
     } catch {
-      this.transfer = undefined;
+      this.extrinsic = undefined;
       this.options = {};
     }
   }
 
-  public async createTeleportTransfer(
+  public async createTeleportExtrinsic(
     wallet: Wallet,
     originNet: string,
     destNet: string,
@@ -312,17 +322,17 @@ export default class CurrencyController {
       // Case Native ParaChain -> RelayChain (statemint -> polkadot; statemine, encointer -> kusama) paraId = -1, pallet = polkadotXcm, module = limitedTeleportAssets
       // TODO: add case: Native ParaChain -> Nonnative ParaChain
       // TODO: add case: Native ParaChain -> Native ParaChain
-      this.createNativeTeleportTransfer(originNet, destNet, toAddress, precisionAmount);
+      this.createNativeTeleportExtrinsic(originNet, destNet, toAddress, precisionAmount);
 
       return;
     }
 
     // Case Nonnative ParaChain -> Nonnative ParaChain (karura, etc -> bifrost, etc) paraId = 2000-2999
     // Case Nonnative ParaChain -> RelayChain (karura, etc -> kusama, etc; acala, etc  -> polkadot)
-    this.createOrmlTeleportTransfer(originNet, destNet, toAddress, precisionAmount);
+    this.createOrmlTeleportExtrinsic(originNet, destNet, toAddress, precisionAmount);
   }
 
-  public async createNativeTeleportTransfer(
+  public async createNativeTeleportExtrinsic(
     originNet: string,
     destNet: string,
     toAddress: string,
@@ -330,50 +340,58 @@ export default class CurrencyController {
   ): Promise<void> {
     const { api } = NetworksController.getNetwork(originNet);
     const module = isNativeNetwork(destNet) ? 'limitedTeleportAssets' : 'reserveTransferAssets';
-    const pallet = XCM_NATIVE_PALLETS.find((pallet) => api.tx[pallet] && isFunction(api.tx[pallet][module]))!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-    const tx = api.tx[pallet][module];
+    const pallet = XCM_NATIVE_PALLETS.find((pallet) => api!.tx[pallet] && isFunction(api!.tx[pallet][module]))!;
+    const tx = api!.tx[pallet][module];
     const params = getNativeTeleportParams(destNet, toAddress, precisionAmount);
 
-    this.transfer = tx(...params);
+    this.extrinsic = tx(...params);
   }
 
-  public async createOrmlTeleportTransfer(
+  public async createOrmlTeleportExtrinsic(
     originNet: string,
     destNet: string,
     toAddress: string,
     precisionAmount: string
   ): Promise<void> {
     const { api } = NetworksController.getNetwork(originNet);
-    const ormlOptions = { Token: this.token.toUpperCase() };
+    const ormlOptions = getOrmlOptions(this.token, originNet);
     const params = getOrmlTeleportParams(originNet, destNet, toAddress);
 
-    this.transfer = api.tx.xTokens.transfer(ormlOptions, precisionAmount, params, FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT);
+    this.extrinsic = api!.tx.xTokens.transfer(ormlOptions, precisionAmount, params, FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT);
   }
 
   public async getPartialFee(from: string, { precision }: NetworkProps): Promise<string> {
-    if (!this.transfer) return '0';
+    if (!this.extrinsic) return '0';
 
-    const { partialFee } = await this.transfer.paymentInfo(from);
+    const { partialFee } = await this.extrinsic.paymentInfo(from);
     const result = new FPNumber(partialFee as any, precision);
 
     return result.toString();
   }
 
-  public async send(from: string, amount: string): Promise<void> {
+  public async send(from: string, amount: string): Promise<boolean> {
     const pair = BaseApi.getPair(from);
 
-    const unsubscribe = await this.transfer!.signAndSend(pair, this.options, ({ status }) => { //eslint-disable-line
-      if (status.isInBlock) {
-        console.info(`Successful transfer of ${amount} with hash ${status.asInBlock.toHex()}`);
-      } else if (status.isFinalized) {
-        console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
+    try {
+      const unsubscribe = await this.extrinsic!.signAndSend(pair, this.options, ({ status }) => { //eslint-disable-line
+        if (status.isInBlock) {
+          console.info(`Successful transfer of ${amount} with hash ${status.asInBlock.toHex()}`);
+        } else if (status.isFinalized) {
+          console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
 
-        pair.lock();
+          pair.lock();
 
-        unsubscribe();
-      } else {
-        console.info(`Status of transfer: ${status.type}`);
-      }
-    });
+          unsubscribe();
+        } else {
+          console.info(`Status of transfer: ${status.type}`);
+        }
+      });
+
+      return true;
+    } catch (ex) {
+      console.info(`Transaction failed ${ex}`);
+
+      return false;
+    }
   }
 }

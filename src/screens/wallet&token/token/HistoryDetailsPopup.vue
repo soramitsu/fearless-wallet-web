@@ -302,11 +302,11 @@ export default class SelectNetworkButton extends Vue {
       }
 
       .status-success {
-        color: #00ee77;
+        color: $success-color;
       }
 
       .status-reject {
-        color: #ed0e0e;
+        color: $reject-color;
       }
 
       .identicon {

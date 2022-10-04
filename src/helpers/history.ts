@@ -24,10 +24,11 @@ export function getType(historyNode: HistoryNode): TransactionType {
 }
 
 export function getSignTransfer(historyNode: HistoryNode) {
+  const { id } = historyNode;
   const type = getType(historyNode);
 
   if (type === TransactionType.transfer) {
-    const splitId = historyNode.id.split('-');
+    const splitId = id.split('-');
     const typeTransaction = splitId[splitId.length - 1];
 
     return typeTransaction === 'to' ? '+' : '-';
@@ -70,49 +71,51 @@ export function getFormattedDate(historyNode: HistoryNode) {
 
 export function getHumanValue(value: string, assetId: string) {
   const assetsJson: AssetJson[] = NetworksController.getAssetsJson();
-  const tokenAssets = assetsJson.find(({ id }) => id === assetId)!; // eslint-disable-line
+  const tokenAssets = assetsJson.find(({ id }) => id === assetId)!;
   const precision = tokenAssets?.precision ?? 0;
 
   return +FPNumber.fromCodecValue(value, precision).toString();
 }
 
 export function getHistoryValue(historyNode: HistoryNode, assetId: string) {
+  const { transfer, reward, extrinsic } = historyNode;
   const type = getType(historyNode);
   const signTransfer = getSignTransfer(historyNode);
 
   if (type === TransactionType.transfer) {
-    const { amount } = historyNode[type];
+    const { amount } = transfer;
     const value = getHumanValue(amount, assetId);
 
     return `${signTransfer}${formattedNumber(value, 4)}`;
   }
 
   if (type === TransactionType.reward) {
-    const { amount } = historyNode[type];
+    const { amount } = reward;
     const value = getHumanValue(amount, assetId);
 
     return `+${formattedNumber(value, 4)}`;
   }
 
   // extrinsic
-  const { fee } = historyNode[type];
+  const { fee } = extrinsic;
   const value = getHumanValue(fee, assetId);
 
   return `-${formattedNumber(value, 4)}`;
 }
 
 export function getHumanTransferFee(historyNode: HistoryNode, assetId: string) {
+  const { transfer, extrinsic } = historyNode;
   const type = getType(historyNode);
 
   if (type === TransactionType.transfer) {
-    const { fee } = historyNode.transfer;
+    const { fee } = transfer;
     const value = getHumanValue(fee, assetId);
 
     return `-${formattedNumber(value, 4)}`;
   }
 
   if (type === TransactionType.extrinsic) {
-    const { fee } = historyNode.extrinsic;
+    const { fee } = extrinsic;
     const value = getHumanValue(fee, assetId);
 
     return `-${formattedNumber(value, 4)}`;

@@ -205,7 +205,7 @@ export default class TeleportForm extends Vue {
   get transferrableAmount() {
     const count = +(this.currency?.getTransferableCountTokens(this.originalNetwork, this.selectedWallet) ?? 0);
 
-    return formattedNumber(count, 4);
+    return formattedNumber(count, 4, false, true);
   }
 
   get selectedToken() {
@@ -301,15 +301,15 @@ export default class TeleportForm extends Vue {
   @Watch('destinationNetwork')
   @Watch('selectedTokenId')
   @Watch('amount')
-  async createTeleportTransfer() {
+  async createTeleportExtrinsic() {
     this.originalNetworkPartialFee = '';
 
     if (!this.isValidDirection || this.originalNetwork === '') return;
 
-    const partialFee = await this.createTransferAndGetFee();
+    const partialFee = await this.createExtrinsicAndGetFee();
 
     this.originalNetworkPartialFee = partialFee;
-    this.isValidCountTokens = this.currency!.isValidCountTokens( // eslint-disable-line
+    this.isValidCountTokens = this.currency!.isValidCountTokens(
       this.amount,
       partialFee,
       this.originalNetwork,
@@ -335,10 +335,10 @@ export default class TeleportForm extends Vue {
     this.value = value;
   }
 
-  createTransferAndGetFee(amount?: string) {
-    const networkProps = this.optionsNetworks!.find(({ value }) => value === this.originalNetwork)!; // eslint-disable-line
+  createExtrinsicAndGetFee(amount?: string) {
+    const networkProps = this.optionsNetworks!.find(({ value }) => value === this.originalNetwork)!;
 
-    this.currency!.createTeleportTransfer( // eslint-disable-line
+    this.currency!.createTeleportExtrinsic(
       this.selectedWallet,
       this.originalNetwork,
       this.destinationNetwork,
@@ -346,7 +346,7 @@ export default class TeleportForm extends Vue {
       networkProps
     );
 
-    return this.currency!.getPartialFee(this.addressByNetwork, networkProps); // eslint-disable-line
+    return this.currency!.getPartialFee(this.addressByNetwork, networkProps);
   }
 
   async setMaxValue() {
@@ -356,7 +356,7 @@ export default class TeleportForm extends Vue {
       this.originalNetwork,
       this.selectedWallet
     );
-    const partialFee = await this.createTransferAndGetFee(maxTransferableCountTokens);
+    const partialFee = await this.createExtrinsicAndGetFee(maxTransferableCountTokens);
     const transferableCountTokens = this.currency
       .getTransferableCountTokensMinusFee(partialFee, this.originalNetwork, this.selectedWallet)
       .toString();

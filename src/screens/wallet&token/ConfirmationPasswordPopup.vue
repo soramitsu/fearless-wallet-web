@@ -55,7 +55,6 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { encodeAddress } from '@polkadot/util-crypto';
 import type { Currencies, Currency } from '@/interfaces/currencies';
 import { isSignLocked } from '@/extension/messaging';
 import { isExtension } from '@/helpers/common';
@@ -128,12 +127,12 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async mounted() {
-    if (isExtension()) {
-      const { isLocked } = await isSignLocked(this.transactionId);
+    if (isExtension()) return;
 
-      this.isUnlock = !isLocked;
-      this.isSavePass = this.isUnlock;
-    }
+    const { isLocked } = await isSignLocked(this.transactionId);
+
+    this.isUnlock = !isLocked;
+    this.isSavePass = this.isUnlock;
   }
 
   async send() {

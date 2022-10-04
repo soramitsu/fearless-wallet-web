@@ -118,9 +118,11 @@ class BeaconController {
     this.app.subscribeToEvent(BeaconEvent.PERMISSION_REQUEST_SUCCESS, callback);
   }
 
-  async sendRequest(payload: SignerPayloadJSON): Promise<void> {
-    console.log('SIGN JSON INVOKED', payload);
+  disconnect() {
+    this.app.disconnect();
+  }
 
+  async sendRequest(payload: SignerPayloadJSON): Promise<void> {
     const activeAccount = await this.app.getActiveAccount();
 
     if (!activeAccount) throw new Error('Beacon not set up.');

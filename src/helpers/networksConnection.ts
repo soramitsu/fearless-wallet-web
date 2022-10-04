@@ -52,7 +52,8 @@ function connectToNetworksApi(networks: DisconnectNetworks, autoConnectMs: numbe
 
 function subscribeUtilityTokensBalances(context: Context, address: string, network: Network) {
   const { name: networkName, parentId, api, assets: networkAssets } = network;
-  const networkUtilityAsset = networkAssets.find( // eslint-disable-line
+  const networkUtilityAsset = networkAssets.find(
+    // eslint-disable-line
     ({ isUtility, type }) => isUtility && !ORML_PALLETS_TYPES.includes(type as string) && type !== 'equilibrium'
   )!;
 
@@ -99,7 +100,7 @@ function subscribeOrmlTokensBalances(context: Context, address: string, network:
 
     const isEquilibrium = type === 'equilibrium';
     const equilibriumAsset = BaseApi.getEquilibriumAssetName(symbol);
-    const query = api.rx.query;
+    const query = api!.rx.query;
     const pallet = isEquilibrium
       ? query.eqBalances.account(address, equilibriumAsset)
       : query.tokens?.accounts(address, options);

@@ -11,13 +11,12 @@
         Copy address
       </div>
 
-      <QrCode :value="address" :size="200" render-as="svg" :margin="10" foreground="#bb77ff" background="#111111" />
+      <QR :payload="address" :width="200" foreground="#bb77ff" />
     </div>
   </ActivityForm>
 </template>
 
 <script lang="ts">
-import QrCode from 'qrcode.vue';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import ActivityForm from './ActivityForm.vue';
@@ -29,11 +28,12 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { firstCharToUp } from '@/helpers/common';
+import QR from '@/components/QR.vue';
 
 @Component({
   components: {
     ActivityForm,
-    QrCode,
+    QR,
     Select,
     Button,
   },

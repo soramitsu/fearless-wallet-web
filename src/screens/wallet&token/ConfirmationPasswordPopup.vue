@@ -151,7 +151,7 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     this.loading = true;
 
-    if (isExtension()) {
+    if (this.transactionId) {
       await this.$store.dispatch('APPROVE_SIGN_PASSWORD', {
         id: this.transactionId,
         isSavePass: this.isSavePass,

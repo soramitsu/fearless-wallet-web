@@ -76,14 +76,13 @@ const actions: ActionTree<State, State> & Actions = {
     commit(MutationTypes.SET_ASSETS_JSON, { assetsJson: assetsData as AssetJson[] });
     commit(MutationTypes.SET_FIATS_JSON, { fiats: fiatData as FiatJson[] });
     commit(MutationTypes.SET_NETWORKS, { networks });
+    commit(MutationTypes.SET_CURRENCIES, { currencies: getMockCurrencies(networks) });
   },
 
   async [ActionTypes.CONNECT_TO_NODES](context) {
     const { commit, state } = context;
     const networks = connectToNetworksApi(state.networks, context);
-    const currencies = getMockCurrencies(networks);
 
-    commit(MutationTypes.SET_CURRENCIES, { currencies });
     commit(MutationTypes.SET_NETWORKS, { networks });
   },
 

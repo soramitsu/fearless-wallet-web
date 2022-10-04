@@ -38,7 +38,6 @@ export default class App extends Vue {
     const { loadJsons, connectToNodes, subscribeToBalancesOfNetworks } = NetworksController;
 
     await Promise.all([this.authSubscribe(), this.metaSubscribe(), this.signSubscribe()]);
-
     await loadJsons();
     await connectToNodes();
 

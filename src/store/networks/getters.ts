@@ -13,7 +13,7 @@ export enum GettersTypes {
   getNetworks = 'getNetworks',
   getNetwork = 'getNetwork',
   getAssetsJson = 'getAssetsJson',
-  getTokenPrice = 'getTokenPriceJson',
+  getTokenPrice = 'getTokenPrice',
   getTokenName = 'getTokenName',
   getFiats = 'getFiats',
   getHistory = 'getHistory',

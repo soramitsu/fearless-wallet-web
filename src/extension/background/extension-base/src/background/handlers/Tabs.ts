@@ -8,7 +8,6 @@ import { assert, isNumber } from '@polkadot/util';
 
 import RequestBytesSign from '../RequestBytesSign';
 import RequestExtrinsicSign from '../RequestExtrinsicSign';
-import BaseApi from '../../../../../../util/BaseApi';
 import { stripUrl, transformAccounts, transformAddresses, withErrorLog } from './helpers';
 import State from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
@@ -38,6 +37,7 @@ import type {
   MetadataDef,
   ProviderMeta,
 } from '@polkadot/extension-inject/types';
+import BaseApi from '@/util/BaseApi';
 import { keyring } from '@/controllers/keyringChrome';
 
 export default class Tabs {
@@ -117,10 +117,11 @@ export default class Tabs {
 
   static extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
     const address = request.address;
+    const addressType = BaseApi.addressType(address);
     let meta;
 
-    if (BaseApi.addressType(address) === 'account') meta = Tabs.getSigningPair(address).meta;
-    else if (keyring.getAddress(address)) meta = keyring.getAddress(address)?.meta;
+    if (addressType === 'account') meta = Tabs.getSigningPair(address).meta;
+    else if (addressType === 'address') meta = keyring.getAddress(address)?.meta;
 
     return State.sign(url, new RequestExtrinsicSign(request), { address, ...meta });
   }

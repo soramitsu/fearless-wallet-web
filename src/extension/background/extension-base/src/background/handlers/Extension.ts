@@ -266,8 +266,6 @@ export default class Extension {
   }
 
   static async getAuthList(): Promise<ResponseAuthorizeList> {
-    console.log(State.authUrls, 'get authlist');
-
     return { list: State.authUrls };
   }
 
@@ -304,8 +302,6 @@ export default class Extension {
   }
 
   static metadataList(): MetadataDef[] {
-    console.log(State.knownMetadata);
-
     return State.knownMetadata;
   }
 

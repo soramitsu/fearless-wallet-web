@@ -9,9 +9,7 @@ import {
   defaultEventCallbacks,
   Serializer,
 } from '@airgap/beacon-sdk';
-import { keyring } from '@polkadot/ui-keyring';
 import { getTzip10Link } from './beaconUtils';
-import { accountController } from './accountController';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 
 import {
@@ -66,19 +64,6 @@ class BeaconController {
 
   getAccounts() {
     return this.app.getActiveAccount();
-  }
-
-  async isBeaconConnected(_address?: string) {
-    const beaconAccount = await this.app.getActiveAccount();
-
-    if (beaconAccount && beaconAccount.address) {
-      const selectedWallet = accountController.getSelectedWalletAddress(); //change to dynamic address
-      const substrateAddress = keyring.encodeAddress(beaconAccount.address, 42);
-
-      return selectedWallet === substrateAddress;
-    }
-
-    return false;
   }
 
   async connect() {
@@ -138,9 +123,8 @@ class BeaconController {
       blockchainIdentifier: 'substrate',
       type: BeaconMessageType.BlockchainRequest,
     };
-    const response = await this.app.request(request);
 
-    console.log('RESPONSE', response);
+    await this.app.request(request);
   }
 }
 

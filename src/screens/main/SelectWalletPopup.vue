@@ -43,7 +43,9 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
 import { addNumbers } from '@/helpers/numbers';
-
+interface HTMLDivElementEvent extends Event {
+  target: HTMLDivElement;
+}
 @Component({
   components: {
     Popup,
@@ -83,7 +85,7 @@ export default class SelectWalletPopup extends Vue {
 
   prepName(name: string, address: string) {
     //TEMP SOLUTION MOVETO WALLETBALANCE IN THE FUTURE
-    const isConnectedToBeacon = !!keyring.getAddress(address, 'address');
+    const isConnectedToBeacon = !!BaseApi.addressType(address);
 
     return isConnectedToBeacon ? `🅱️${name}🅱️` : name;
   }
@@ -94,8 +96,8 @@ export default class SelectWalletPopup extends Vue {
     return addNumbers(arr);
   }
 
-  walletPopupClick(event: Event) {
-    const classList = (event.target as HTMLDivElement)?.classList;
+  walletPopupClick(event: HTMLDivElementEvent) {
+    const classList = event.target?.classList;
 
     if (!(classList.contains('dots-container') || classList.contains('dots')))
       this.$emit('toggleWalletDetailsPopupVisible', false);

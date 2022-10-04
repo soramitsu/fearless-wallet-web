@@ -1,5 +1,5 @@
-import { keyring } from '@polkadot/ui-keyring';
 import { RouteConfig } from 'vue-router';
+import BaseApi from '@/util/BaseApi';
 import Dex from '@/screens/dex/Dex.vue';
 import Export from '@/screens/accounts/Export.vue';
 import History from '@/screens/history/History.vue';
@@ -40,7 +40,7 @@ export enum Components {
   Transaction = 'Transaction',
 }
 
-const haveAccounts = () => keyring.getAccounts().length > 0 || keyring.getAddresses().length > 0;
+const haveAccounts = () => BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
 const haveAuthRequests = () => store.getters.getAuthList.length;
 const haveSignRequests = () => store.getters.getSignList.length;
 const haveMetaRequests = () => store.getters.getMetaList.length;

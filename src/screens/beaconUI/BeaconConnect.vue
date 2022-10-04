@@ -26,7 +26,7 @@ import { keyring } from '@polkadot/ui-keyring';
 import { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import { Action } from 'vuex-class';
 import { encodeAddress } from '@polkadot/util-crypto';
-import BaseApi from '../../util/BaseApi';
+import BaseApi from '@/util/BaseApi';
 import { createAddress } from '@/extension/messaging';
 import { TAction } from '@/interfaces/common';
 import { SetSelectedWallet } from '@/store/accounts/types';

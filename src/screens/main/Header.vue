@@ -13,7 +13,7 @@
       </div>
 
       <div class="wallet-name">
-        <div class="name">{{ name }} {{ beaconStatus }}</div>
+        <div class="name">{{ name }}</div>
 
         <Rotate :isActive="syncedShowSelectWalletPopup">
           <s-icon name="chevron-bottom-16" />
@@ -49,7 +49,6 @@
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { SelectedWallet } from '@/store/accounts/types';
-import { fearlessConnector } from '@/controllers/beaconController';
 import Logo from '@/components/Logo.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import Rotate from '@/components/Rotate.vue';
@@ -72,8 +71,6 @@ export default class Header extends Vue {
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
-  isBeaconConnected = false;
-
   get showFullScreenIcon() {
     return BaseApi.useIsPopup();
   }
@@ -84,14 +81,6 @@ export default class Header extends Vue {
 
   get name() {
     return this.selectedWallet.name;
-  }
-
-  async beforeUpdate() {
-    this.isBeaconConnected = await fearlessConnector.isBeaconConnected();
-  }
-
-  get beaconStatus() {
-    return this.name && this.isBeaconConnected ? 'connected' : '';
   }
 
   get statusConnectedClasses() {

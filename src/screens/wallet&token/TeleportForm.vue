@@ -309,7 +309,7 @@ export default class TeleportForm extends Vue {
     const partialFee = await this.createExtrinsicAndGetFee();
 
     this.originalNetworkPartialFee = partialFee;
-    this.isValidCountTokens = this.currency!.isValidCountTokens( // eslint-disable-line
+    this.isValidCountTokens = this.currency!.isValidCountTokens(
       this.amount,
       partialFee,
       this.originalNetwork,
@@ -336,9 +336,9 @@ export default class TeleportForm extends Vue {
   }
 
   createExtrinsicAndGetFee(amount?: string) {
-    const networkProps = this.optionsNetworks!.find(({ value }) => value === this.originalNetwork)!; // eslint-disable-line
+    const networkProps = this.optionsNetworks!.find(({ value }) => value === this.originalNetwork)!;
 
-    this.currency!.createTeleportExtrinsic( // eslint-disable-line
+    this.currency!.createTeleportExtrinsic(
       this.selectedWallet,
       this.originalNetwork,
       this.destinationNetwork,
@@ -346,7 +346,7 @@ export default class TeleportForm extends Vue {
       networkProps
     );
 
-    return this.currency!.getPartialFee(this.addressByNetwork, networkProps); // eslint-disable-line
+    return this.currency!.getPartialFee(this.addressByNetwork, networkProps);
   }
 
   async setMaxValue() {

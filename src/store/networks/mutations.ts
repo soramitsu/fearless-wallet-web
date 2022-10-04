@@ -65,10 +65,10 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.UPDATE_CURRENCY_BALANCE](state, { walletAddress, network, assetId, balance, parentId, type }) {
     const { currencies, assetsJson, networks } = state;
-    const { symbol, precision } = assetsJson.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const { symbol, precision } = assetsJson.find(({ id }) => id === assetId)!;
     const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name;
 
-    const currentCurrency = currencies.find(({ tokenId: _tokenId, token: _token, relayChain: _relayChain }) => { //eslint-disable-line
+    const currentCurrency = currencies.find(({ tokenId: _tokenId, token: _token, relayChain: _relayChain }) => {
       const isExistingTokenId = _tokenId === assetId;
       const isExistingTokenSymbol = _token === symbol && _relayChain === relayChain;
 
@@ -157,7 +157,7 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.SET_NETWORK_API](state, { network, provider, api }) {
     const networks = state.networks;
-    const networkIndex = networks.findIndex(({ name }) => name === network)!; // eslint-disable-line
+    const networkIndex = networks.findIndex(({ name }) => name === network)!;
 
     networks[networkIndex].provider = provider;
     networks[networkIndex].api = api;

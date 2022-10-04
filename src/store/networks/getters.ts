@@ -47,7 +47,7 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getNetwork]:
     ({ networks }) =>
     (networkName: string) => {
-      return networks.find(({ name }) => name === networkName)!; // eslint-disable-line
+      return networks.find(({ name }) => name === networkName)!;
     },
   [GettersTypes.getAssetsJson]({ assetsJson }): AssetJson[] {
     return assetsJson;
@@ -71,7 +71,7 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getTokenName]:
     ({ assetsJson }) =>
     (assetId: string) => {
-      const asset  = assetsJson.find(({ id }) => id === assetId); // eslint-disable-line
+      const asset = assetsJson.find(({ id }) => id === assetId);
 
       if (!asset) return '';
 

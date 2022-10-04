@@ -3,9 +3,8 @@ import { RELAY_CHAINS, NATIVE_NETWORKS } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';
 import BaseApi from '@/util/BaseApi';
 
-const FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT = 5000000000;
-
 const XCM_NATIVE_PALLETS = ['xcm', 'xcmPallet', 'polkadotXcm'];
+const FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT = 5000000000;
 
 function isNativeNetwork(originNet: string, destNet?: string) {
   const IsNativeOriginNet = NATIVE_NETWORKS.includes(originNet);
@@ -15,6 +14,12 @@ function isNativeNetwork(originNet: string, destNet?: string) {
 
 function isRelayChain(network: string) {
   return RELAY_CHAINS.includes(network);
+}
+
+function getOrmlOptions(symbol: string, originNet: string) {
+  if (originNet === 'bit.country pioneer' && symbol === 'neer') return { NativeToken: 0 };
+
+  return { Token: symbol.toUpperCase() };
 }
 
 function getNativeTeleportParams(destNet: string, toAddress: string, amount: string) {
@@ -86,4 +91,5 @@ export {
   getNativeTeleportParams,
   getOrmlTeleportParams,
   isNativeNetwork,
+  getOrmlOptions,
 };

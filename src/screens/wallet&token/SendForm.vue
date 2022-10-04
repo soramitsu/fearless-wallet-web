@@ -237,7 +237,7 @@ export default class SendForm extends Vue {
   get transferrableAmount() {
     const count = +(this.currency?.getTransferableCountTokens(this.selectedNetwork, this.selectedWallet) ?? 0);
 
-    return formattedNumber(count, 4);
+    return formattedNumber(count, 4, false, true);
   }
 
   get transferrableValue() {
@@ -297,7 +297,7 @@ export default class SendForm extends Vue {
   createTransferAndGetFee(amount?: string) {
     const networkProps = this.optionsNetwork!.find(({ value }) => value === this.selectedNetwork)!; // eslint-disable-line
 
-    this.currency!.createSendTransfer(this.recipient, this.selectedNetwork, amount ?? this.amount, networkProps); // eslint-disable-line
+    this.currency!.createTransferExtrinsic(this.recipient, this.selectedNetwork, amount ?? this.amount, networkProps); // eslint-disable-line
 
     return this.currency!.getPartialFee(this.addressByNetwork, networkProps); // eslint-disable-line
   }

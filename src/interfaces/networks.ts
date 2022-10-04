@@ -60,8 +60,8 @@ type NetworkJson = {
 
 type Network = {
   name: string;
-  api: ApiPromise;
-  provider: WsProvider;
+  api?: ApiPromise;
+  provider?: WsProvider;
   nodes: Node[];
   assets: NetworkAssets[];
   chainId: string;
@@ -73,19 +73,6 @@ type Network = {
   externalApi: ExternalApi;
 };
 
-type DisconnectNetwork = Omit<Network, 'api' | 'provider'>;
-
-type DisconnectNetworks = DisconnectNetwork[];
-
 type Networks = Network[];
 
-export {
-  DisconnectNetworks,
-  Networks,
-  Network,
-  NetworkJson,
-  NetworkAssetsType,
-  NetworkAssets,
-  NetworkName,
-  ExternalApi,
-};
+export { Networks, Network, NetworkJson, NetworkAssetsType, NetworkAssets, NetworkName, ExternalApi };

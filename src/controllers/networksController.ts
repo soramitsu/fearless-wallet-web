@@ -5,7 +5,7 @@ import type { TokenPrice } from '@/interfaces/tokens';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { ASSETS_URL, FIATS_URL, NETWORKS_URL } from '@/consts/urls';
+import { ASSETS_URL, FIATS_URL, CHAINS_URL } from '@/consts/urls';
 
 export default class NetworksController {
   static getNetworks(): Networks {
@@ -24,19 +24,17 @@ export default class NetworksController {
     return store.getters[NetworksGettersTypes.getTokenPrice](assetId);
   }
 
-  public static async loadNetworks(): Promise<void> {
-    await store.dispatch(NetworksActionTypes.LOAD_NETWORKS, { url: NETWORKS_URL });
+  public static async connectToNodes(): Promise<void> {
+    await store.dispatch(NetworksActionTypes.CONNECT_TO_NODES);
   }
 
-  public static async loadAssets(): Promise<void> {
-    await store.dispatch(NetworksActionTypes.LOAD_ASSETS, { url: ASSETS_URL });
-  }
+  public static async loadJsons(): Promise<void> {
+    await store.dispatch(NetworksActionTypes.LOAD_JSONS, {
+      chainsUrl: CHAINS_URL,
+      assetsUrl: ASSETS_URL,
+      fiatsUrl: FIATS_URL,
+    });
 
-  public static async loadFiats(): Promise<void> {
-    await store.dispatch(NetworksActionTypes.LOAD_FIATS, { url: FIATS_URL });
-  }
-
-  public static async loadTokensPrice(): Promise<void> {
     await store.dispatch(NetworksActionTypes.LOAD_TOKENS_PRICE);
   }
 

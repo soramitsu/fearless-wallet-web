@@ -4,18 +4,16 @@ import type { Settings } from '@/networks';
 import type { State } from './state';
 import type { ActionTree } from 'vuex';
 import type {
-  LoadNetworks,
+  LoadJsons,
   LoadHistory,
   SubscribeToBalances,
-  LoadAssets,
-  LoadFiats,
   ToggleActiveNode,
   Accounts,
   AugmentedActionContext,
 } from './types';
 import type { FiatJson } from '@/interfaces/common';
 import type { AssetJson } from '@/interfaces/assets';
-import type { NetworkJson, DisconnectNetworks, ExternalApi } from '@/interfaces/networks';
+import type { NetworkJson, Networks, ExternalApi } from '@/interfaces/networks';
 import type { TokensPrice } from '@/interfaces/tokens';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
@@ -27,9 +25,8 @@ import { connectToApi, connectToNetworksApi, subscribeTokensBalances } from '@/h
 import { PAGE_SIZE } from '@/consts/history';
 
 export enum ActionTypes {
-  LOAD_NETWORKS = 'LOAD_NETWORKS',
-  LOAD_ASSETS = 'LOAD_ASSETS',
-  LOAD_FIATS = 'LOAD_FIATS',
+  LOAD_JSONS = 'LOAD_JSONS',
+  CONNECT_TO_NODES = 'CONNECT_TO_NODES',
   LOAD_TOKENS_PRICE = 'LOAD_TOKENS_PRICE',
   LOAD_HISTORY = 'LOAD_HISTORY',
   SUBSCRIBE_TO_BALANCES = 'SUBSCRIBE_TO_BALANCES',
@@ -37,9 +34,8 @@ export enum ActionTypes {
 }
 
 export type Actions = {
-  [ActionTypes.LOAD_NETWORKS](store: AugmentedActionContext, props: LoadNetworks): Promise<void>;
-  [ActionTypes.LOAD_ASSETS](store: AugmentedActionContext, props: LoadAssets): Promise<void>;
-  [ActionTypes.LOAD_FIATS](store: AugmentedActionContext, props: LoadFiats): Promise<void>;
+  [ActionTypes.LOAD_JSONS](store: AugmentedActionContext, props: LoadJsons): Promise<void>;
+  [ActionTypes.CONNECT_TO_NODES](store: AugmentedActionContext): Promise<void>;
   [ActionTypes.LOAD_TOKENS_PRICE](store: AugmentedActionContext): Promise<void>;
   [ActionTypes.LOAD_HISTORY](store: AugmentedActionContext, props: LoadHistory): Promise<void>;
   [ActionTypes.SUBSCRIBE_TO_BALANCES](store: AugmentedActionContext, props: SubscribeToBalances): Promise<void>;
@@ -47,14 +43,15 @@ export type Actions = {
 };
 
 const actions: ActionTree<State, State> & Actions = {
-  async [ActionTypes.LOAD_NETWORKS](context, { url, autoConnectMs = 0 }) {
-    const { commit } = context;
-    const { data } = await axios.get(url);
-    const networksJson: NetworkJson[] = data;
+  async [ActionTypes.LOAD_JSONS]({ commit }, { chainsUrl, assetsUrl, fiatsUrl }) {
+    const { data: chainsData } = await axios.get(chainsUrl);
+    const { data: assetsData } = await axios.get(assetsUrl);
+    const { data: fiatData } = await axios.get(fiatsUrl);
+    const networksJson: NetworkJson[] = chainsData;
 
-    const disconnectNetworks: DisconnectNetworks = networksJson.map(
+    const networks: Networks = networksJson.map(
       ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi, chainId, parentId, paraId }) => {
-        const networkName = name.toLocaleLowerCase();
+        const networkName = name.toLowerCase();
         const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
         const externalApi = originalExternalApi ?? ({} as ExternalApi);
         const settings = settingsNetworks[networkName as Settings] ?? {};
@@ -70,29 +67,23 @@ const actions: ActionTree<State, State> & Actions = {
           isEthereumNetwork,
           externalApi,
           settings,
+          api: undefined,
+          provider: undefined,
         };
       }
     );
 
-    const networks = connectToNetworksApi(disconnectNetworks, autoConnectMs, context);
-    const currencies = getMockCurrencies(networks);
-
-    commit(MutationTypes.SET_CURRENCIES, { currencies });
+    commit(MutationTypes.SET_ASSETS_JSON, { assetsJson: assetsData as AssetJson[] });
+    commit(MutationTypes.SET_FIATS_JSON, { fiats: fiatData as FiatJson[] });
     commit(MutationTypes.SET_NETWORKS, { networks });
+    commit(MutationTypes.SET_CURRENCIES, { currencies: getMockCurrencies(networks) });
   },
 
-  async [ActionTypes.LOAD_ASSETS]({ commit }, { url }) {
-    const { data } = await axios.get(url);
-    const assetsJson: AssetJson[] = data;
+  async [ActionTypes.CONNECT_TO_NODES](context) {
+    const { commit, state } = context;
+    const networks = connectToNetworksApi(state.networks, context);
 
-    commit(MutationTypes.SET_ASSETS, { assetsJson });
-  },
-
-  async [ActionTypes.LOAD_FIATS]({ commit }, { url }) {
-    const { data } = await axios.get(url);
-    const fiatsJson: FiatJson[] = data;
-
-    commit(MutationTypes.SET_FIATS, { fiats: fiatsJson });
+    commit(MutationTypes.SET_NETWORKS, { networks });
   },
 
   async [ActionTypes.LOAD_TOKENS_PRICE]({ commit, state: { assetsJson, fiats } }) {
@@ -100,19 +91,24 @@ const actions: ActionTree<State, State> & Actions = {
     const urlsTokens = assetsJson.filter(({ priceId }) => !!priceId).map(({ priceId }) => priceId);
     const urlTokensPart = [...new Set(urlsTokens)].join('%2C');
     const url = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${urlFiatsPart}&include_24hr_change=true&ids=${urlTokensPart}`;
-    const { data } = await axios.get(url);
-    const typedData = data as TokensPrice;
-    const tokensPrice = {} as TokensPrice;
 
-    for (const priceId in typedData) {
-      const assetIdS = assetsJson.filter(({ priceId: _priceId }) => _priceId === priceId);
+    try {
+      const { data } = await axios.get(url);
+      const typedData = data as TokensPrice;
+      const tokensPrice = {} as TokensPrice;
 
-      assetIdS.forEach(({ id }) => {
-        tokensPrice[id] = data[priceId];
-      });
+      for (const priceId in typedData) {
+        const assetIdS = assetsJson.filter(({ priceId: _priceId }) => _priceId === priceId);
+
+        assetIdS.forEach(({ id }) => {
+          tokensPrice[id] = data[priceId];
+        });
+      }
+
+      commit(MutationTypes.SET_TOKENS_PRICE, { tokensPrice });
+    } catch {
+      console.info('coingecko request failed');
     }
-
-    commit(MutationTypes.SET_TOKENS_PRICE, { tokensPrice });
   },
 
   async [ActionTypes.LOAD_HISTORY]({ commit, getters }, { networkName, walletAddress, pageSize = PAGE_SIZE, assetId }) {
@@ -146,7 +142,7 @@ const actions: ActionTree<State, State> & Actions = {
         assetId,
       });
     } catch {
-      console.log(`failed to load history for ${networkName}`);
+      console.info(`failed to load history for ${networkName}`);
     }
   },
 
@@ -203,8 +199,8 @@ const actions: ActionTree<State, State> & Actions = {
 
     if (nodeUrl === oldNodeUrl || (oldNodeUrl === '' && nodeUrl === networkApi.nodes[0].url)) return;
 
-    await networkApi.api.disconnect();
-    await networkApi.provider.disconnect();
+    await networkApi.api!.disconnect(); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    await networkApi.provider!.disconnect(); // eslint-disable-line @typescript-eslint/no-non-null-assertion
 
     const { provider, api } = connectToApi(network, nodeUrl, 0);
 

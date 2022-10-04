@@ -1,5 +1,5 @@
 <template>
-  <Popup class="sending-popup" headerType="completed" sizeWidth="big" :headerText="popupHeader" :handlerClose="close">
+  <Popup class="sending-popup" :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close">
     <div class="popup-content">
       <template v-if="!loading">
         <img src="@/assets/lock-green.svg" />
@@ -57,7 +57,7 @@ import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Currencies, Currency } from '@/interfaces/currencies';
 import { isSignLocked } from '@/extension/messaging';
-import { isExtension } from '@/util/helpers';
+import { isExtension } from '@/helpers/common';
 import Loader from '@/components/Loader.vue';
 import Popup from '@/components/Popup.vue';
 import Button from '@/components/Button.vue';
@@ -83,6 +83,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   isErrorPassword = false;
   isUnlock = false;
   isSavePass = false;
+  isSuccessfulTransaction = false;
 
   @Prop(String) amount!: string;
   @Prop(String) value!: string;
@@ -103,8 +104,14 @@ export default class ConfirmationPasswordPopup extends Vue {
       : 'Extend the period without password by 15 minutes';
   }
 
+  get headerType() {
+    return this.isSuccessfulTransaction ? 'success' : 'failed';
+  }
+
   get popupHeader() {
-    return !this.isUnlock || this.loading ? '' : 'Transaction done';
+    if (!this.isUnlock || this.loading) return '';
+
+    return this.isSuccessfulTransaction ? 'Transaction done' : 'Transaction failed';
   }
 
   get transferAmountString() {
@@ -150,7 +157,7 @@ export default class ConfirmationPasswordPopup extends Vue {
         isSavePass: this.isSavePass,
         password: this.password,
       });
-    } else await this.currency?.send(this.address, this.amount);
+    } else this.isSuccessfulTransaction = await this.currency?.send(this.address, this.amount);
 
     this.loading = false;
   }

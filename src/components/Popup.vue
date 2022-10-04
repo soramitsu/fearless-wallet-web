@@ -34,7 +34,7 @@ import Corners from './Corners.vue';
 type HorizontalPlacement = 'left' | 'center' | 'right';
 type VerticalPlacement = 'top' | 'center' | 'bottom';
 type Size = 'mini' | 'small' | 'medium' | 'big';
-type HeaderType = 'completed' | 'default';
+type HeaderType = 'default' | 'success' | 'failed';
 
 @Component({
   components: {
@@ -99,9 +99,10 @@ export default class Popup extends Vue {
 
   get headerClasses() {
     const classes = [
+      'header-text',
       {
-        'header-text': this.headerType === 'completed',
-        'header-text-completed': this.headerType === 'completed',
+        'header-text-success': this.headerType === 'success',
+        'header-text-failed': this.headerType === 'failed',
       },
     ];
 
@@ -214,8 +215,12 @@ export default class Popup extends Vue {
       color: $default-white;
     }
 
-    .header-text-completed {
-      color: #00ee77;
+    .header-text-success {
+      color: $success-color;
+    }
+
+    .header-text-failed {
+      color: $reject-color;
     }
   }
 

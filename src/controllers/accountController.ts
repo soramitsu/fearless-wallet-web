@@ -30,15 +30,17 @@ class AccountController {
     this.lsAccount.set(this.selectedFiatStorageName, fiat);
   }
 
-  public getSequenceTokens(address?: string): string[] | Record<string, string> {
+  public getSequenceTokens(): Record<string, string> {
     const sequencesTokens = this.lsAccount.get(this.sequenceTokensStorageName);
     const value = sequencesTokens.value;
 
-    if (address) {
-      return (value?.[address]?.split(',') as string[]) ?? [];
-    }
-
     return value ?? {};
+  }
+
+  public getSequenceTokensByAddress(address: string): string[] {
+    const sequencesTokens = this.getSequenceTokens();
+
+    return (sequencesTokens?.[address]?.split(',') as string[]) ?? [];
   }
 
   public setSequenceTokens(sequence: string[], address: string): void {

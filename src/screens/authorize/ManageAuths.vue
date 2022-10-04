@@ -1,6 +1,6 @@
 <template>
   <AboveForm header="Manage dApp access" :blur="true" :closeHandler="back">
-    <SearchInput v-model="filterValue" placeholder="Search in networks" class="manage-auths__search" :isBig="true" />
+    <SearchInput v-model="filterValue" placeholder="Search in networks" class="manage-auths__search" width="100%" />
 
     <AuthItem
       v-for="el in filteredList"

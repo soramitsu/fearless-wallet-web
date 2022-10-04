@@ -45,7 +45,7 @@ export default class Currencies extends Vue {
 
   set filteredCurrencies(currencies) {
     const { address } = this.selectedWallet;
-    const sequence = currencies.map(({ token }) => token);
+    const sequence = currencies.map(({ displayName, relayChain }) => `${displayName}-${relayChain}`);
 
     this.setCurrencies({ currencies });
 

@@ -4,6 +4,7 @@ import type { Wallet } from '@/store/accounts/types';
 import type { RelayChainName } from '@/interfaces/teleport';
 import CurrencyController from '@/controllers/currencyController';
 import NetworksController from '@/controllers/networksController';
+import { MAIN_NETWORKS } from '@/consts/networks';
 
 type CurrencyMock = {
   mainNetwork: string;
@@ -19,12 +20,13 @@ function getMockCurrencies(networks: Networks): Currencies {
 
   const currencies = networks
     .reduce((result, network) => {
-      const { assets: networkAssets, name: mainNetwork, parentId } = network;
-      const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNetwork) as RelayChainName;
+      const { assets: networkAssets, name: mainNet, parentId } = network;
+      const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNet) as RelayChainName;
 
       networkAssets.forEach(({ assetId, purchaseProviders, isUtility, isNative }) => {
         const { symbol, displayName: _displayName } = assetsJson.find(({ id }) => id === assetId)!;
         const displayName = _displayName ?? symbol;
+        const mainNetwork = MAIN_NETWORKS[symbol] ?? mainNet;
         const currencyIndex = result.findIndex(
           ({ assetId: _assetId, relayChain: _relayChain, displayName: _displayName }) => {
             const isExistingTokenId = _assetId === assetId;
@@ -37,7 +39,7 @@ function getMockCurrencies(networks: Networks): Currencies {
 
         if (currencyIndex === -1) {
           const newCurrency = {
-            mainNetwork: isUtility || isNative ? mainNetwork : '',
+            mainNetwork,
             assetId,
             symbol,
             displayName: displayName ?? symbol,

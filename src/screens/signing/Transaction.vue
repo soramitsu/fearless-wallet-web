@@ -11,16 +11,22 @@
       <InfoItem name="lifetime" :value="morality" />
     </InfoList>
 
-    <ConfirmationPasswordPopup
-      v-if="isSignPopupVisible"
-      text="Password for this account"
-      sizeWidth="medium"
-      @close="onClose"
-      :address="payload.address"
-      :transactionId="request.id"
-    />
+    <template v-if="isMobileSignRequired">
+      <Button size="big" class="button" text="Sign the transaction" @click="onSignMobile" />
+    </template>
 
-    <Button size="big" class="button" text="Sign the transaction" @click="onSign" />
+    <template v-else>
+      <ConfirmationPasswordPopup
+        v-if="isSignPopupVisible"
+        text="Password for this account"
+        sizeWidth="medium"
+        @close="onClose"
+        :address="payload.address"
+        :transactionId="request.id"
+      />
+
+      <Button size="big" class="button" text="Sign the transaction" @click="onSign" />
+    </template>
   </AboveForm>
 </template>
 
@@ -28,8 +34,10 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { SigningRequest } from '@polkadot/extension-base/background/types';
+import { encodeAddress } from '@polkadot/util-crypto';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
+import { fearlessConnector } from '@/controllers/beaconController';
 import { registry } from '@/extension/background/extension-base/src/background/handlers/State';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
@@ -41,7 +49,6 @@ import InfoList from '@/layouts/InfoList.vue';
 import InfoItem from '@/screens/signing/InfoItem.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&token/ConfirmationPasswordPopup.vue';
-
 @Component({
   components: {
     WalletInfo,
@@ -66,6 +73,12 @@ export default class Auth extends Vue {
     registry.setSignedExtensions(this.payload.signedExtensions);
 
     return registry.createType('ExtrinsicPayload', this.payload, { version: this.payload.version });
+  }
+
+  get isMobileSignRequired() {
+    const substrateAddress = encodeAddress(this.payload.address, 42);
+
+    return BaseApi.getAddress(substrateAddress);
   }
 
   get specVersion() {
@@ -98,6 +111,10 @@ export default class Auth extends Vue {
 
   onSign() {
     this.isSignPopupVisible = true;
+  }
+
+  onSignMobile() {
+    fearlessConnector.sendRequest(this.payload);
   }
 
   onClose() {

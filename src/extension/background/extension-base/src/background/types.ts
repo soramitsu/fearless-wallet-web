@@ -17,7 +17,7 @@ import type {
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { JsonRpcResponse, ProviderInterface } from '@polkadot/rpc-provider/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
+import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 
@@ -79,6 +79,13 @@ export interface SigningRequest {
   request: RequestSign;
   url: string;
 }
+export interface RequestAddressCreate {
+  address: string;
+  meta: KeyringPair$Meta;
+}
+export interface RequestAddressRemove {
+  address: string;
+}
 
 export type ConnectedTabsUrlResponse = string[];
 
@@ -88,6 +95,11 @@ export interface RequestSignatures {
   'pri(accounts.create.external)': [RequestAccountCreateExternal, boolean];
   'pri(accounts.create.hardware)': [RequestAccountCreateHardware, boolean];
   'pri(accounts.create.suri)': [RequestAccountCreateSuri, boolean];
+
+  'pri(addresses.create)': [RequestAddressCreate, boolean];
+  'pri(addresses.remove)': [RequestAddressRemove, boolean];
+  'pri(addresses.get)': [null, KeyringAddress[]];
+
   'pri(accounts.edit)': [RequestAccountEdit, boolean];
   'pri(accounts.export)': [RequestAccountExport, ResponseAccountExport];
   'pri(accounts.batchExport)': [RequestAccountBatchExport, ResponseAccountsExport];

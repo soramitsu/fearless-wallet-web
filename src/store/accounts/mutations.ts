@@ -1,6 +1,8 @@
+import { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import type { MutationTree } from 'vuex';
-import type { SetSelectedWalletProps, SetSelectedFiatProps, setAccountsProps } from './types';
+import type { SetSelectedWalletProps, SetSelectedFiatProps, setAccountsProps, setAddressesProps } from './types';
 import type { State } from './state';
+import type { KeyringPair$Meta } from '@polkadot/keyring/types';
 import BaseApi from '@/util/BaseApi';
 import { accountController } from '@/controllers/accountController';
 import { getMetaTyped } from '@/helpers/common';
@@ -9,19 +11,30 @@ export enum MutationTypes {
   SET_SELECTED_WALLET = 'SET_SELECTED_WALLET',
   SET_SELECTED_FIAT = 'SET_SELECTED_FIAT',
   SET_ACCOUNTS = 'SET_ACCOUNTS',
+  SET_ADDRESSES = 'SET_ADDRESSES',
 }
 
 export type Mutations = {
   [MutationTypes.SET_SELECTED_WALLET](state: State, props: SetSelectedWalletProps): void;
   [MutationTypes.SET_SELECTED_FIAT](state: State, props: SetSelectedFiatProps): void;
   [MutationTypes.SET_ACCOUNTS](state: State, props: setAccountsProps): void;
+  [MutationTypes.SET_ADDRESSES](state: State, props: setAddressesProps): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_SELECTED_WALLET](state, { selectedWalletAddress }) {
-    const { meta } = BaseApi.getPair(selectedWalletAddress);
-    const { name, ethereumAddress } = getMetaTyped(meta);
+    let meta: KeyringPair$Meta | KeyringJson$Meta;
 
+    if (BaseApi.getAddressType(selectedWalletAddress) === 'account') meta = BaseApi.getPair(selectedWalletAddress).meta;
+    else {
+      const address = BaseApi.getAddress(selectedWalletAddress);
+
+      if (!address) return;
+
+      meta = address.meta;
+    }
+
+    const { name, ethereumAddress } = getMetaTyped(meta);
     accountController.setSelectedWalletAddress(selectedWalletAddress);
 
     state.selectedWallet = {
@@ -41,6 +54,10 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.SET_ACCOUNTS](state, { accounts }) {
     state.accounts = accounts;
+  },
+
+  [MutationTypes.SET_ADDRESSES](state, { addresses }) {
+    state.addresses = addresses;
   },
 };
 

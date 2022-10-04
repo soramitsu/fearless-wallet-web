@@ -5,6 +5,7 @@ export type State = {
   selectedWallet: SelectedWallet;
   selectedFiat: string;
   accounts: Accounts;
+  addresses: Accounts;
 };
 
 const state = (): State => {
@@ -12,6 +13,7 @@ const state = (): State => {
     selectedWallet: { address: '', ethereumAddress: '', name: '' },
     selectedFiat: accountController.getSelectedFiat(),
     accounts: {},
+    addresses: {},
   };
 };
 

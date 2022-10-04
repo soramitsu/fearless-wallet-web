@@ -13,7 +13,7 @@
       <WalletBalance
         v-for="({ meta: { name }, address }, index) in wallets"
         :key="name + index"
-        :name="name"
+        :name="prepName(name, address)"
         :isSelected="selectedWallet.address === address"
         :balance="getBalance(address)"
         :percent="getPercent()"
@@ -43,6 +43,10 @@ import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutatio
 import { Components } from '@/router/routes';
 import { addNumbers } from '@/helpers/numbers';
 
+interface HTMLDivElementEvent extends Event {
+  target: HTMLDivElement;
+}
+
 @Component({
   components: {
     Popup,
@@ -53,21 +57,29 @@ import { addNumbers } from '@/helpers/numbers';
 export default class SelectWalletPopup extends Vue {
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
+  @Getter(AccountsGettersTypes.getAddresses) addresses!: Accounts;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
 
   get wallets() {
-    return Object.keys(this.accounts)
-      .map((address) => {
-        const pair = BaseApi.getPair(address);
-
-        return pair;
-      })
+    const accounts = Object.keys(this.accounts)
+      .map((address) => BaseApi.getPair(address))
       .filter(({ type, meta }) => type !== 'ethereum' && !meta.isReplacedAccount);
+
+    const addresses = Object.keys(this.addresses).map((address) => BaseApi.getAddress(address));
+
+    return [...addresses, ...accounts];
   }
 
   addWallet() {
     this.$router.push({ name: Components.Welcome });
+  }
+
+  prepName(name: string, address: string) {
+    //TEMP SOLUTION MOVETO WALLETBALANCE IN THE FUTURE
+    const addressType = BaseApi.getAddressType(address);
+
+    return addressType === 'address' ? `🅱️${name}🅱️` : name;
   }
 
   getBalance(address: string) {
@@ -76,8 +88,8 @@ export default class SelectWalletPopup extends Vue {
     return addNumbers(arr);
   }
 
-  walletPopupClick(event: Event) {
-    const classList = (event.target as HTMLDivElement)?.classList;
+  walletPopupClick(event: HTMLDivElementEvent) {
+    const classList = event.target?.classList;
 
     if (!(classList.contains('dots-container') || classList.contains('dots')))
       this.$emit('toggleWalletDetailsPopupVisible', false);

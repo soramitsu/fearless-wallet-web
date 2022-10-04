@@ -52,7 +52,7 @@ export default class Authorize extends Vue {
   @Getter('getAuthRequests') requests!: AuthorizeRequest[];
 
   get isAccountsExists() {
-    return BaseApi.getAccounts().length > 0;
+    return BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
   }
 
   get request() {

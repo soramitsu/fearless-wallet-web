@@ -134,12 +134,12 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async mounted() {
-    if (isExtension()) {
-      const { isLocked } = await isSignLocked(this.transactionId);
+    if (!isExtension()) return;
 
-      this.isUnlock = !isLocked;
-      this.isSavePass = this.isUnlock;
-    }
+    const { isLocked } = await isSignLocked(this.transactionId);
+
+    this.isUnlock = !isLocked;
+    this.isSavePass = this.isUnlock;
   }
 
   async send() {
@@ -151,7 +151,7 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     this.loading = true;
 
-    if (isExtension()) {
+    if (this.transactionId) {
       await this.$store.dispatch('APPROVE_SIGN_PASSWORD', {
         id: this.transactionId,
         isSavePass: this.isSavePass,

@@ -28,6 +28,7 @@ import type {
   RequestAccountTie,
   RequestAccountValidate,
   RequestActiveTabsUrlUpdate,
+  RequestAddressCreate,
   RequestAuthorizeApprove,
   RequestBatchRestore,
   RequestDeriveCreate,
@@ -115,9 +116,7 @@ export default class Extension {
     assert(pair, 'Unable to find pair');
 
     try {
-      if (!pair.isLocked) {
-        pair.lock();
-      }
+      if (!pair.isLocked) pair.lock();
 
       pair.decodePkcs8(oldPass);
     } catch (error) {
@@ -416,13 +415,9 @@ export default class Extension {
     Extension.refreshAccountPasswordCache(pair);
 
     // if the keyring pair is locked, the password is needed
-    if (pair.isLocked && !password) {
-      reject(new Error('Password needed to unlock the account'));
-    }
+    if (pair.isLocked && !password) reject(new Error('Password needed to unlock the account'));
 
-    if (pair.isLocked) {
-      pair.decodePkcs8(password);
-    }
+    if (pair.isLocked) pair.decodePkcs8(password);
 
     const { payload } = request;
 
@@ -441,11 +436,8 @@ export default class Extension {
     const result = request.sign(registry, pair);
     cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
 
-    if (savePass) {
-      chrome.storage.local.set({ cachedUnlocks });
-    } else {
-      pair.lock();
-    }
+    if (savePass) chrome.storage.local.set({ cachedUnlocks });
+    else pair.lock();
 
     resolve({
       id,
@@ -588,6 +580,18 @@ export default class Extension {
     return State.getConnectedTabsUrl();
   }
 
+  static createAddress(request: RequestAddressCreate) {
+    keyring.saveAddress(request.address, request.meta, 'address');
+  }
+
+  static removeAddress(address: string) {
+    keyring.forgetAddress(address);
+  }
+
+  static getAddresses() {
+    return keyring.getAddresses();
+  }
+
   // Weird thought, the eslint override is not needed in Tabs
   // eslint-disable-next-line @typescript-eslint/require-await
   static async handle<TMessageType extends MessageTypes>(
@@ -611,6 +615,15 @@ export default class Extension {
 
       case 'pri(authorize.requests)':
         return port && (await Extension.authorizeSubscribe(id, port));
+
+      case 'pri(addresses.create)':
+        return Extension.createAddress(request as RequestAddressCreate);
+
+      case 'pri(addresses.remove)':
+        return Extension.removeAddress(request as string);
+
+      case 'pri(addresses.get)':
+        return Extension.getAddresses();
 
       case 'pri(authorize.update)':
         return Extension.authorizeUpdate(request as RequestUpdateAuthorizedAccounts);

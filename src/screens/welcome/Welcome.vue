@@ -34,6 +34,8 @@
         @click="openAddWalletComponent('import')"
       />
 
+      <BeaconConnect />
+
       <div class="privacy-policy">
         By continuing you agree with
         <span class="important-text" @click="openTermsAndConditions">Terms and Conditions </span>
@@ -52,15 +54,21 @@ import { Components } from '@/router/routes';
 import CircleButton from '@/components/CircleButton.vue';
 import BaseApi from '@/util/BaseApi';
 import { TERMS_URL, PRIVACY_URL } from '@/consts/urls';
+import AboveForm from '@/components/AboveForm.vue';
+import BeaconConnect from '@/screens/beaconUI/BeaconConnect.vue';
 
 @Component({
   components: {
     Logo,
     Button,
     CircleButton,
+    BeaconConnect,
+    AboveForm,
   },
 })
 export default class Welcome extends Vue {
+  store: any;
+
   get showBackWalletIcon() {
     return BaseApi.getAccounts().length !== 0;
   }
@@ -119,3 +127,5 @@ export default class Welcome extends Vue {
   }
 }
 </style>
+
+function encodeAddress(address: PermissionSuccess, arg1: number) { throw new Error('Function not implemented.'); }

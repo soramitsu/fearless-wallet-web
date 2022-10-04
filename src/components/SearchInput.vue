@@ -1,6 +1,6 @@
 <template>
-  <div class="search-input">
-    <Input v-model="vModel" :placeholder="placeholder" size="small" :class="getClasses" />
+  <div class="search-input-wrapper">
+    <Input v-model="vModel" :placeholder="placeholder" size="small" :style="inputStyle" />
 
     <s-icon name="basic-search-24" />
   </div>
@@ -18,16 +18,29 @@ import Input from '@/components/Input.vue';
 export default class SearchInput extends Vue {
   @VModel({ type: String }) vModel!: string;
   @Prop(String) placeholder!: string;
-  @Prop({ default: false }) isBig!: boolean;
+  @Prop(String) width!: string;
 
-  get getClasses() {
-    return ['search-input-path', this.isBig ? 'search-input-big' : 'search-input-medium'];
+  get inputStyle() {
+    const styles: Record<string, string> = {};
+
+    if (this.width) styles.width = `${this.width}`;
+
+    return styles;
   }
 }
 </script>
 
+<style lang="scss">
+.search-input-wrapper {
+  .s-input__input {
+    width: calc(100% - 20px);
+    flex: none;
+  }
+}
+</style>
+
 <style lang="scss" scoped>
-.search-input {
+.search-input-wrapper {
   display: flex;
   align-items: center;
   user-select: none;
@@ -36,16 +49,6 @@ export default class SearchInput extends Vue {
     color: rgba(255, 255, 255, 0.5);
     font-size: 20px !important;
     margin-left: -30px;
-  }
-
-  .search-input-path {
-    clip-path: $medium-clip-path-left-top-and-right-bottom;
-  }
-  .search-input-medium {
-    width: 230px;
-  }
-  .search-input-big {
-    width: 100%;
   }
 }
 </style>

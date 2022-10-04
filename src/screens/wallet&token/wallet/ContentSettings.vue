@@ -20,7 +20,13 @@
       />
     </div>
     <div v-if="isCurrenciesTab" class="settings-part">
-      <SearchInput v-if="!showAssetsManagementForm" v-model="syncedFilterValue" placeholder="Search" class="search" />
+      <SearchInput
+        v-if="!showAssetsManagementForm"
+        v-model="syncedFilterValue"
+        placeholder="Search"
+        width="185px"
+        class="search"
+      />
 
       <CircleButton :iconName="iconName" backgroundColor="none" @click="toggleAssetsManagementVisible" />
     </div>
@@ -96,7 +102,6 @@ export default class ContentSettings extends Vue {
 
   .search {
     margin-right: 16px;
-    width: 185px;
   }
 
   .hide-balance-text {

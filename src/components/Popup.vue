@@ -3,7 +3,7 @@
     <Corners size="big" :topLeftCorner="showBorder" :bottomRightCorner="showBorder" :style="popupContainerStyle">
       <div :class="popupContainerClasses">
         <div v-if="showHeader" class="header">
-          <SearchInput v-if="showSearch" v-model="filterValue" :placeholder="placeholder" />
+          <SearchInput v-if="showSearch" v-model="filterValue" :placeholder="placeholder" width="230px" />
 
           <template v-else>
             <div class="button"></div>

@@ -367,7 +367,7 @@ export default class BaseApi {
   }
 
   public static deleteWallet(address: string): number {
-    if (keyring.getAccount(address)) {
+    if (BaseApi.addressType(address) === 'account') {
       const { meta } = BaseApi.getPair(address);
       const { ethereumAddress } = getMetaTyped(meta);
 

@@ -8,6 +8,7 @@ import { assert, isNumber } from '@polkadot/util';
 
 import RequestBytesSign from '../RequestBytesSign';
 import RequestExtrinsicSign from '../RequestExtrinsicSign';
+import BaseApi from '../../../../../../util/BaseApi';
 import { stripUrl, transformAccounts, transformAddresses, withErrorLog } from './helpers';
 import State from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
@@ -118,7 +119,7 @@ export default class Tabs {
     const address = request.address;
     let meta;
 
-    if (keyring.getAccount(address)) meta = Tabs.getSigningPair(address).meta;
+    if (BaseApi.addressType(address) === 'account') meta = Tabs.getSigningPair(address).meta;
     else if (keyring.getAddress(address)) meta = keyring.getAddress(address)?.meta;
 
     return State.sign(url, new RequestExtrinsicSign(request), { address, ...meta });

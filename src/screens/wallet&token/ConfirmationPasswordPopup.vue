@@ -139,7 +139,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (!this.isUnlock) {
       this.isErrorPassword = !BaseApi.unlockPair(this.address, this.password);
 
-      if (this.isErrorPassword) return;
+      if (this.isErrorPassword) if (this.isErrorPassword) return;
     }
 
     this.loading = true;

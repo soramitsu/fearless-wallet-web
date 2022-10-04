@@ -9,7 +9,7 @@ import {
   defaultEventCallbacks,
   Serializer,
 } from '@airgap/beacon-sdk';
-import keyring from '@polkadot/ui-keyring';
+import { keyring } from '@polkadot/ui-keyring';
 import { getTzip10Link } from './beaconUtils';
 import { accountController } from './accountController';
 import type { SignerPayloadJSON } from '@polkadot/types/types';

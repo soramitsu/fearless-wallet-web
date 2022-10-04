@@ -13,7 +13,7 @@ export enum GettersTypes {
   getNetworks = 'getNetworks',
   getNetwork = 'getNetwork',
   getAssetsJson = 'getAssetsJson',
-  getTokenPrice = 'getTokenPrice',
+  getTokenPrice = 'getTokenPriceJson',
   getTokenName = 'getTokenName',
   getFiats = 'getFiats',
   getHistory = 'getHistory',
@@ -26,6 +26,11 @@ export type Getters = {
   [GettersTypes.getNetworks](state: State, getters?: GetterTree<State, State> & Getters): Networks;
   [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
   [GettersTypes.getAssetsJson](state: State, getters?: GetterTree<State, State> & Getters): AssetJson[];
+  [GettersTypes.getTokenPrice](
+    state: State,
+    getters?: GetterTree<State, State> & Getters,
+    rootState?: any
+  ): GetTokenPrice;
   [GettersTypes.getTokenPrice](
     state: State,
     getters?: GetterTree<State, State> & Getters,

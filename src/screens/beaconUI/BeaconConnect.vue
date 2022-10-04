@@ -26,6 +26,7 @@ import { keyring } from '@polkadot/ui-keyring';
 import { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import { Action } from 'vuex-class';
 import { encodeAddress } from '@polkadot/util-crypto';
+import BaseApi from '../../util/BaseApi';
 import { createAddress } from '@/extension/messaging';
 import { TAction } from '@/interfaces/common';
 import { SetSelectedWallet } from '@/store/accounts/types';
@@ -72,9 +73,8 @@ export default class BeaconConnect extends Vue {
         name: 'beacon_acc',
       };
       const substrateAccount = encodeAddress(payload.account.address);
-      console.log(!!keyring.getAccount(substrateAccount) || !!keyring.getAddress(substrateAccount));
 
-      if (!!keyring.getAccount(substrateAccount) || !!keyring.getAddress(substrateAccount)) {
+      if (BaseApi.addressType(substrateAccount)) {
         this.isError = true;
 
         fearlessConnector.disconnect();

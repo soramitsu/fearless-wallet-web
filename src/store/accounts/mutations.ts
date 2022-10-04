@@ -1,4 +1,3 @@
-import { keyring } from '@polkadot/ui-keyring';
 import { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import type { MutationTree } from 'vuex';
 import type { SetSelectedWalletProps, SetSelectedFiatProps, setAccountsProps, setAddressesProps } from './types';
@@ -26,7 +25,7 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_SELECTED_WALLET](state, { selectedWalletAddress }) {
     let meta: KeyringPair$Meta | KeyringJson$Meta;
 
-    if (keyring.getAccount(selectedWalletAddress)) meta = BaseApi.getPair(selectedWalletAddress).meta;
+    if (BaseApi.addressType(selectedWalletAddress) === 'account') meta = BaseApi.getPair(selectedWalletAddress).meta;
     else {
       const address = BaseApi.getAddress(selectedWalletAddress);
 
@@ -36,7 +35,6 @@ const mutations: MutationTree<State> & Mutations = {
     }
 
     const { name, ethereumAddress } = getMetaTyped(meta);
-    console.log(name, ethereumAddress);
     accountController.setSelectedWalletAddress(selectedWalletAddress);
 
     state.selectedWallet = {

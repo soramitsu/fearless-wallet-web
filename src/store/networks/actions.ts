@@ -22,7 +22,6 @@ import { loadHistory } from '@/subquery/history';
 import { getReplacedMetaTyped } from '@/helpers/common';
 import { getMockCurrencies } from '@/helpers/currencies';
 import { connectToApi, connectToNetworksApi, subscribeTokensBalances } from '@/helpers/networksConnection';
-import { PAGE_SIZE } from '@/consts/history';
 
 export enum ActionTypes {
   LOAD_JSONS = 'LOAD_JSONS',
@@ -41,6 +40,8 @@ export type Actions = {
   [ActionTypes.SUBSCRIBE_TO_BALANCES](store: AugmentedActionContext, props: SubscribeToBalances): Promise<void>;
   [ActionTypes.TOGGLE_ACTIVE_NODE](store: AugmentedActionContext, props: ToggleActiveNode): Promise<void>;
 };
+
+const PAGE_SIZE = 100;
 
 const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.LOAD_JSONS]({ commit }, { chainsUrl, assetsUrl, fiatsUrl }) {
@@ -107,12 +108,28 @@ const actions: ActionTree<State, State> & Actions = {
 
       commit(MutationTypes.SET_TOKENS_PRICE, { tokensPrice });
     } catch {
-      console.info('coingecko request failed');
+      console.info('%c Coingecko request failed', 'background:red;color:#fff');
     }
   },
 
   async [ActionTypes.LOAD_HISTORY]({ commit, getters }, { networkName, walletAddress, pageSize = PAGE_SIZE, assetId }) {
-    if (networkName === 'moonbase alpha') return;
+    const array = [
+      'pichiu network',
+      'kabocha',
+      'kico',
+      'centrifuge',
+      'parallel heiko',
+      'datahighway tanganika',
+      'efinity',
+      'composable finance',
+      'quartz',
+      'litentry',
+      'dorafactory network',
+      'parallel',
+      'integritee shell',
+    ];
+
+    if (array.includes(networkName)) return; // Subquery does not work for these networks
 
     const { externalApi } = getters.getNetwork(networkName);
     const historyExternalApi = externalApi.history;
@@ -142,7 +159,7 @@ const actions: ActionTree<State, State> & Actions = {
         assetId,
       });
     } catch {
-      console.info(`failed to load history for ${networkName}`);
+      console.info(`%c failed to load history for ${networkName}`, 'background:orange;color:#fff');
     }
   },
 

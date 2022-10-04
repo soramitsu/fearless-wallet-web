@@ -9,21 +9,12 @@ import './styles';
 import './plugins';
 
 Vue.use(Plugin);
-// import AccountsStore from './storeChrome/Accounts';
 
 Vue.config.productionTip = false;
 Vue.config.devtools = process.env.NODE_ENV === 'development';
 
 cryptoWaitReady().then((): void => {
-  console.info('crypto initialized');
-
-  // load all the keyring data
-  keyring.loadAll({
-    // store: new AccountsStore(),
-    type: 'sr25519',
-  });
-
-  console.info('initialization completed');
+  keyring.loadAll({ type: 'sr25519' });
 
   new Vue({
     store,

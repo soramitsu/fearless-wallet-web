@@ -120,11 +120,11 @@ export default class Wallet extends Vue {
 
     if (address === '') return [];
 
-    const sequence = accountController.getSequenceTokens(address) as string[];
+    const sequence = accountController.getSequenceTokensByAddress(address);
 
-    return this.currencies.sort(({ token: token1 }, { token: token2 }) => {
-      const index1 = sequence.indexOf(token1);
-      const index2 = sequence.indexOf(token2);
+    return this.currencies.sort(({ token: token1, relayChain: RC1 }, { token: token2, relayChain: RC2 }) => {
+      const index1 = sequence.indexOf(`${token1}-${RC1}`);
+      const index2 = sequence.indexOf(`${token2}-${RC2}`);
 
       return index1 - index2;
     });

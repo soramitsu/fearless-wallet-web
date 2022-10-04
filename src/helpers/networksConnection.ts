@@ -51,7 +51,7 @@ function connectToNetworksApi(networks: Networks, context: Context): Networks {
 
 function subscribeUtilityTokensBalances(context: Context, address: string, network: Network) {
   const { name: networkName, parentId, api, assets: networkAssets } = network;
-  const networkUtilityAsset = networkAssets.find( // eslint-disable-line
+  const networkUtilityAsset = networkAssets.find(
     ({ isUtility, type }) => isUtility && !ORML_PALLETS_TYPES.includes(type as string)
   )!;
 
@@ -60,9 +60,9 @@ function subscribeUtilityTokensBalances(context: Context, address: string, netwo
   const { getters, commit, state } = context;
   const { assetsJson } = state;
   const { assetId, type } = networkUtilityAsset;
-  const { precision } = assetsJson.find((asset) => asset.id === assetId)!; // eslint-disable-line
+  const { precision } = assetsJson.find((asset) => asset.id === assetId)!;
 
-  api!.rx.query.system.account(address).subscribe(async (result) => { // eslint-disable-line
+  api!.rx.query.system.account(address).subscribe(async (result) => {
     const data = (result as any).data;
     const balance = formatBalance(data as AccountData, precision);
     const historyForNetwork = getters[NetworksGettersTypes.getHistory](assetId, address, networkName);
@@ -89,15 +89,15 @@ function subscribeOrmlTokensBalances(context: Context, address: string, network:
   networkAssets.forEach(({ assetId, type }) => {
     if (type === undefined) return;
 
-    const { precision } = assetsJson.find((asset) => asset.id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-    const { symbol } = assetsJson.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const { precision } = assetsJson.find((asset) => asset.id === assetId)!;
+    const { symbol } = assetsJson.find(({ id }) => id === assetId)!;
     const options = getOptions(symbol, type, assetId);
 
     if (symbol === 'csm') return; // TODO: fix
 
     const isEquilibrium = type === 'equilibrium';
     const equilibriumAsset = BaseApi.getEquilibriumAssetName(symbol);
-    const query = api!.rx.query; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const query = api!.rx.query;
     const pallet = isEquilibrium
       ? query.eqBalances.account(address, equilibriumAsset)
       : query.tokens?.accounts(address, options);
@@ -120,7 +120,7 @@ function subscribeOrmlTokensBalances(context: Context, address: string, network:
 async function subscribeTokensBalances(context: Context, address: string, network: Network) {
   const { api } = network;
 
-  await api!.isReadyOrError; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+  await api!.isReadyOrError;
 
   subscribeUtilityTokensBalances(context, address, network);
   subscribeOrmlTokensBalances(context, address, network);

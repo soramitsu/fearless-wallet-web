@@ -8,8 +8,8 @@ function getChainAccounts(networks: Networks, wallet: Wallet): ChainAccount[] {
   const assetsJson = NetworksController.getAssetsJson();
 
   return networks.map(({ name, assets: networkAssets }) => {
-    const tokenId = networkAssets.find(({ isUtility }) => isUtility)!.assetId; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-    const token = assetsJson.find(({ id }) => id === tokenId)!.symbol; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const tokenId = networkAssets.find(({ isUtility }) => isUtility)!.assetId;
+    const token = assetsJson.find(({ id }) => id === tokenId)!.symbol;
     const replacedAccount = BaseApi.getReplacedAccountByNetwork(wallet, name);
     const replacedAddress = replacedAccount?.address;
 

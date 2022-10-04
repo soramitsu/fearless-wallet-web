@@ -276,7 +276,7 @@ export default class SendForm extends Vue {
     const partialFee = await this.createTransferAndGetFee();
 
     this.partialFee = partialFee;
-    this.isValidCountTokens = this.currency!.isValidCountTokens( // eslint-disable-line
+    this.isValidCountTokens = this.currency!.isValidCountTokens(
       this.amount,
       partialFee,
       this.selectedNetwork,
@@ -295,11 +295,11 @@ export default class SendForm extends Vue {
   }
 
   createTransferAndGetFee(amount?: string) {
-    const networkProps = this.optionsNetwork!.find(({ value }) => value === this.selectedNetwork)!; // eslint-disable-line
+    const networkProps = this.optionsNetwork!.find(({ value }) => value === this.selectedNetwork)!;
 
-    this.currency!.createTransferExtrinsic(this.recipient, this.selectedNetwork, amount ?? this.amount, networkProps); // eslint-disable-line
+    this.currency!.createTransferExtrinsic(this.recipient, this.selectedNetwork, amount ?? this.amount, networkProps);
 
-    return this.currency!.getPartialFee(this.addressByNetwork, networkProps); // eslint-disable-line
+    return this.currency!.getPartialFee(this.addressByNetwork, networkProps);
   }
 
   updateAmount(value: string) {

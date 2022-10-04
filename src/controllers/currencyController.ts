@@ -88,7 +88,7 @@ export default class CurrencyController {
       const replacedAvailableInNetworks = this.balances[replacedAddress];
 
       if (replacedAvailableInNetworks) {
-        const { balance: replacedBalance } = replacedAvailableInNetworks.find( // eslint-disable-line
+        const { balance: replacedBalance } = replacedAvailableInNetworks.find(
           ({ network: _network }) => _network === network
         )!;
 
@@ -189,7 +189,7 @@ export default class CurrencyController {
   public getTransferableCountTokensMinusFee(fee: string, networkProp: string, wallet: Wallet): FPNumber {
     const FPFee = new FPNumber(fee);
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
-    const { transferable } = availableInNetworks.find(({ network }) => network === networkProp)!.balance; // eslint-disable-line
+    const { transferable } = availableInNetworks.find(({ network }) => network === networkProp)!.balance;
     const result = transferable.sub(FPFee);
 
     return FPNumber.lt(result, FPNumber.ZERO) ? FPNumber.ZERO : result;
@@ -288,15 +288,15 @@ export default class CurrencyController {
 
     try {
       if (type === 'native') {
-        this.extrinsic = api!.tx.balances.transfer(to, precisionAmount); // eslint-disable-line
+        this.extrinsic = api!.tx.balances.transfer(to, precisionAmount);
       } else if (type === 'equilibrium') {
         const equilibriumAsset = BaseApi.getEquilibriumAssetName(this.token);
 
-        this.extrinsic = api!.tx.eqBalances.transfer(equilibriumAsset, to, precisionAmount); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+        this.extrinsic = api!.tx.eqBalances.transfer(equilibriumAsset, to, precisionAmount);
       } else if (type === 'ormlChain') {
-        this.extrinsic = api!.tx.tokens.transfer(to, ormlOptions, precisionAmount); // eslint-disable-line
+        this.extrinsic = api!.tx.tokens.transfer(to, ormlOptions, precisionAmount);
       } else {
-        this.extrinsic = api!.tx.currencies.transfer(to, ormlOptions, precisionAmount); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+        this.extrinsic = api!.tx.currencies.transfer(to, ormlOptions, precisionAmount);
       }
 
       this.options = transferOptions;
@@ -340,8 +340,8 @@ export default class CurrencyController {
   ): Promise<void> {
     const { api } = NetworksController.getNetwork(originNet);
     const module = isNativeNetwork(destNet) ? 'limitedTeleportAssets' : 'reserveTransferAssets';
-    const pallet = XCM_NATIVE_PALLETS.find((pallet) => api!.tx[pallet] && isFunction(api!.tx[pallet][module]))!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-    const tx = api!.tx[pallet][module]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const pallet = XCM_NATIVE_PALLETS.find((pallet) => api!.tx[pallet] && isFunction(api!.tx[pallet][module]))!;
+    const tx = api!.tx[pallet][module];
     const params = getNativeTeleportParams(destNet, toAddress, precisionAmount);
 
     this.extrinsic = tx(...params);
@@ -357,7 +357,7 @@ export default class CurrencyController {
     const ormlOptions = getOrmlOptions(this.token, originNet);
     const params = getOrmlTeleportParams(originNet, destNet, toAddress);
 
-    this.extrinsic = api!.tx.xTokens.transfer(ormlOptions, precisionAmount, params, FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    this.extrinsic = api!.tx.xTokens.transfer(ormlOptions, precisionAmount, params, FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT);
   }
 
   public async getPartialFee(from: string, { precision }: NetworkProps): Promise<string> {

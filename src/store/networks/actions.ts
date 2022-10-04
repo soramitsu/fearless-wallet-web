@@ -188,7 +188,7 @@ const actions: ActionTree<State, State> & Actions = {
     { network, nodeName, nodeUrl: nodeUrlProp, oldNodeUrl }
   ) {
     const networks = state.networks;
-    const networkApi = networks.find(({ name }) => name === network)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const networkApi = networks.find(({ name }) => name === network)!;
     const nodeUrl = nodeUrlProp === '' ? networkApi.nodes[0].url : nodeUrlProp;
 
     commit(MutationTypes.SET_NETWORK_ACTIVE_NODE, {
@@ -199,8 +199,8 @@ const actions: ActionTree<State, State> & Actions = {
 
     if (nodeUrl === oldNodeUrl || (oldNodeUrl === '' && nodeUrl === networkApi.nodes[0].url)) return;
 
-    await networkApi.api!.disconnect(); // eslint-disable-line @typescript-eslint/no-non-null-assertion
-    await networkApi.provider!.disconnect(); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    await networkApi.api!.disconnect();
+    await networkApi.provider!.disconnect();
 
     const { provider, api } = connectToApi(network, nodeUrl, 0);
 

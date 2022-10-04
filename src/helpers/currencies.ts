@@ -23,7 +23,7 @@ function getMockCurrencies(networks: Networks): Currencies {
       const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNetwork) as RelayChainName;
 
       networkAssets.forEach(({ assetId, purchaseProviders, isUtility, isNative }) => {
-        const { symbol, displayName: _displayName } = assetsJson.find(({ id }) => id === assetId)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+        const { symbol, displayName: _displayName } = assetsJson.find(({ id }) => id === assetId)!;
         const displayName = _displayName ?? symbol;
         const currencyIndex = result.findIndex(
           ({ assetId: _assetId, relayChain: _relayChain, displayName: _displayName }) => {

@@ -1,5 +1,4 @@
-import type { AssetJson } from '@/interfaces/assets';
-import type { TypeAsset } from '@/interfaces/currencies';
+import type { AssetJson, TypeAsset } from '@/interfaces';
 import NetworksController from '@/controllers/networksController';
 
 const ORML_PALLETS_TYPES = ['ormlChain', 'equilibrium'];

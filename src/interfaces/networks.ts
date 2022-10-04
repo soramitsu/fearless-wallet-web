@@ -1,5 +1,5 @@
 import type { ApiPromise, WsProvider } from '@polkadot/api';
-import type { Node } from '@/interfaces/nodes';
+import type { Node } from '@/interfaces';
 
 type TypesForMobile = {
   url: string;

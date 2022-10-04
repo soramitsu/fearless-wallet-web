@@ -1,6 +1,5 @@
 import type { Wallet } from '@/store/accounts/types';
-import type { ChainAccount } from '@/interfaces/common';
-import type { Networks } from '@/interfaces/networks';
+import type { ChainAccount, Networks } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import NetworksController from '@/controllers/networksController';
 

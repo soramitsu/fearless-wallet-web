@@ -1,17 +1,22 @@
 import type { ApiPromise, WsProvider } from '@polkadot/api';
-import type { Currencies } from '@/interfaces/currencies';
-import type { HistoryItem } from '@/interfaces/history';
+import type {
+  Currencies,
+  HistoryItem,
+  AccountBalance,
+  Networks,
+  Network,
+  NetworkAssetsType,
+  AssetJson,
+  TokensPrice,
+  TokenPrice,
+  FiatJson,
+} from '@/interfaces';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { KeyringJson } from '@polkadot/ui-keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import type { AccountBalance } from '@/interfaces/balances';
 import type { Mutations } from './mutations';
 import type { ActionContext } from 'vuex';
 import type { State } from './state';
-import type { Networks, Network, NetworkAssetsType } from '@/interfaces/networks';
-import type { AssetJson } from '@/interfaces/assets';
-import type { TokensPrice, TokenPrice } from '@/interfaces/tokens';
-import type { FiatJson } from '@/interfaces/common';
 
 // getters
 export type GetNetwork = (networkName: string) => Network;

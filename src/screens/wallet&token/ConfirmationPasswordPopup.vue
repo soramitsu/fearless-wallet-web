@@ -1,12 +1,13 @@
 <template>
   <Popup class="sending-popup" :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close">
     <div class="popup-content">
-      <template v-if="!isUnlock">
+      <template v-if="!loading">
         <img src="@/assets/lock-green.svg" />
 
         <div class="text row">Enter password to confirm the transaction</div>
 
         <ValidatedInput
+          v-if="!isUnlock"
           v-model="password"
           placeholder="Password"
           size="big"
@@ -55,6 +56,8 @@
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Currencies, Currency } from '@/interfaces/currencies';
+import { isSignLocked } from '@/extension/messaging';
+import { isExtension } from '@/helpers/common';
 import Loader from '@/components/Loader.vue';
 import Popup from '@/components/Popup.vue';
 import Button from '@/components/Button.vue';
@@ -87,6 +90,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(String) firstNetwork!: string;
   @Prop(String) secondNetwork!: string;
   @Prop(String) address!: string;
+  @Prop(String) transactionId!: string;
   @Prop(Object) currency!: Currency;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
 
@@ -129,18 +133,31 @@ export default class ConfirmationPasswordPopup extends Vue {
     this.$emit('close', this.isUnlock);
   }
 
+  async mounted() {
+    if (isExtension()) {
+      const { isLocked } = await isSignLocked(this.transactionId);
+
+      this.isUnlock = !isLocked;
+      this.isSavePass = this.isUnlock;
+    }
+  }
+
   async send() {
-    this.isUnlock = BaseApi.unlockPair(this.address, this.password);
-
     if (!this.isUnlock) {
-      this.isErrorPassword = true;
+      this.isErrorPassword = !BaseApi.unlockPair(this.address, this.password);
 
-      return;
+      if (this.isErrorPassword) return;
     }
 
     this.loading = true;
 
-    this.isSuccessfulTransaction = await this.currency?.send(this.address, this.amount);
+    if (isExtension()) {
+      await this.$store.dispatch('APPROVE_SIGN_PASSWORD', {
+        id: this.transactionId,
+        isSavePass: this.isSavePass,
+        password: this.password,
+      });
+    } else this.isSuccessfulTransaction = await this.currency?.send(this.address, this.amount);
 
     this.loading = false;
   }

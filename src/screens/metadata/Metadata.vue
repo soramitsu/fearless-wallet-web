@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :blur="true" header="Metadata" :showCloseIcon="false">
+  <AboveForm :blur="true" header="Metadata" :closeHandler="onReject">
     <InfoList>
       <InfoItem name="from" :value="request.url" />
       <InfoItem name="chain" :value="request.request.chain" />
@@ -13,7 +13,6 @@
     </div>
     <div class="authorize__control">
       <Button width="100%" text="Yes, allow this application access" size="big" fontSize="big" @click="onApprove" />
-      <Button width="100%" type="link" text="Reject" size="big" fontSize="medium" @click="onReject" />
     </div>
   </AboveForm>
 </template>

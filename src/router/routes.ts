@@ -1,5 +1,5 @@
-import { keyring } from '@polkadot/ui-keyring';
 import { RouteConfig } from 'vue-router';
+import BaseApi from '@/util/BaseApi';
 import Dex from '@/screens/dex/Dex.vue';
 import Export from '@/screens/accounts/Export.vue';
 import History from '@/screens/history/History.vue';
@@ -17,7 +17,6 @@ import Crowdloans from '@/screens/crowdloans/Crowdloans.vue';
 import Authorize from '@/screens/authorize/Authorize.vue';
 import MetaRequest from '@/screens/metadata/Metadata.vue';
 import Transaction from '@/screens/signing/Transaction.vue';
-import SignRequest from '@/screens/signing/SignRequest.vue';
 
 import store from '@/store';
 
@@ -39,10 +38,9 @@ export enum Components {
   Authorize = 'Authorize',
   MetaRequest = 'MetaRequest',
   Transaction = 'Transaction',
-  SignRequest = 'SignRequest',
 }
 
-const haveAccounts = () => keyring.getAccounts().length > 0;
+const haveAccounts = () => BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
 const haveAuthRequests = () => store.getters.getAuthList.length;
 const haveSignRequests = () => store.getters.getSignList.length;
 const haveMetaRequests = () => store.getters.getMetaList.length;
@@ -67,11 +65,6 @@ const routes: Array<RouteConfig> = [
     path: '/meta',
     name: Components.MetaRequest,
     component: MetaRequest,
-  },
-  {
-    path: '/signing',
-    name: Components.SignRequest,
-    component: SignRequest,
   },
   {
     path: '/transaction',
@@ -155,7 +148,7 @@ const routes: Array<RouteConfig> = [
     path: '/*',
     beforeEnter: (to, from, next) => {
       if (haveAuthRequests()) next({ name: Components.Authorize });
-      else if (haveSignRequests()) next({ name: Components.SignRequest });
+      else if (haveSignRequests()) next({ name: Components.Transaction });
       else if (haveMetaRequests()) next({ name: Components.MetaRequest });
       else next();
     },

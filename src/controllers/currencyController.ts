@@ -5,9 +5,9 @@ import type {
   BalanceFP,
   AvailableInNetworksFP,
   TypeAsset,
-} from '@/interfaces/currencies';
+  RelayChainName,
+} from '@/interfaces';
 import type { SubmittableExtrinsic, SignerOptions } from '@polkadot/api/submittable/types';
-import type { RelayChainName } from '@/interfaces/teleport';
 import type { Wallet } from '@/store/accounts/types';
 import BaseApi from '@/util/BaseApi';
 import LocalStorageController from '@/controllers/localStorageController';
@@ -373,7 +373,8 @@ export default class CurrencyController {
     const pair = BaseApi.getPair(from);
 
     try {
-      const unsubscribe = await this.extrinsic!.signAndSend(pair, this.options, ({ status }) => { //eslint-disable-line
+      const unsubscribe = await this.extrinsic!.signAndSend(pair, this.options, ({ status }) => {
+        //eslint-disable-line
         if (status.isInBlock) {
           console.info(`Successful transfer of ${amount} with hash ${status.asInBlock.toHex()}`);
         } else if (status.isFinalized) {

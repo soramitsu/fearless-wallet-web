@@ -54,3 +54,21 @@ export function transformAccounts(accounts: SubjectInfo, anyType = false): Injec
       })
     );
 }
+
+export function transformAddresses(addresses: SubjectInfo): InjectedAccount[] {
+  return Object.values(addresses)
+    .sort((a, b) => (a.json.meta.whenCreated || 0) - (b.json.meta.whenCreated || 0))
+    .map(
+      ({
+        json: {
+          address,
+          meta: { name },
+        },
+        type,
+      }): InjectedAccount => ({
+        address,
+        name,
+        type,
+      })
+    );
+}

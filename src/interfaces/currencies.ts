@@ -1,8 +1,6 @@
-import type { WalletAddress } from '@/interfaces/common';
-import type { AccountBalance } from '@/interfaces/balances';
+import type { WalletAddress, AccountBalance, NetworkAssetsType } from '@/interfaces';
 import type CurrencyController from '@/controllers/currencyController';
 import type { FPNumber } from '@/util/fp';
-import type { NetworkAssetsType } from '@/interfaces/networks';
 
 type TypeAsset = NetworkAssetsType | 'native';
 

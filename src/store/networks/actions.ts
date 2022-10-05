@@ -11,9 +11,7 @@ import type {
   Accounts,
   AugmentedActionContext,
 } from './types';
-import type { FiatJson } from '@/interfaces/common';
-import type { AssetJson, AssetsPrice } from '@/interfaces/assets';
-import type { NetworkJson, Networks, ExternalApi } from '@/interfaces/networks';
+import type { FiatJson, AssetJson, NetworkJson, Networks, ExternalApi, AssetsPrice } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';

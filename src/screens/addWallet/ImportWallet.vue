@@ -41,7 +41,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch, VModel, PropSync } from 'vue-property-decorator';
-import type { ImportType } from '@/interfaces/common';
+import type { ImportType } from '@/interfaces';
 import Input from '@/components/Input.vue';
 import Select from '@/components/Select.vue';
 

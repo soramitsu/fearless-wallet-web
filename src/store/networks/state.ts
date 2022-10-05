@@ -1,9 +1,4 @@
-import type { Networks } from '@/interfaces/networks';
-import type { AssetsPrice, AssetJson } from '@/interfaces/assets';
-import type { Currencies } from '@/interfaces/currencies';
-import type { History } from '@/interfaces/history';
-import type { FiatJson } from '@/interfaces/common';
-import type { ActiveNodes } from '@/interfaces/nodes';
+import type { Networks, AssetsPrice, Currencies, History, FiatJson, AssetJson, ActiveNodes } from '@/interfaces';
 
 export type State = {
   networks: Networks;

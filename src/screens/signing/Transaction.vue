@@ -40,7 +40,7 @@ import TransactionContent from '@/layouts/TransactionContent.vue';
 import InfoList from '@/layouts/InfoList.vue';
 import InfoItem from '@/screens/signing/InfoItem.vue';
 import AboveForm from '@/components/AboveForm.vue';
-import ConfirmationPasswordPopup from '@/screens/wallet&token/ConfirmationPasswordPopup.vue';
+import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 
 @Component({
   components: {

@@ -76,7 +76,7 @@ export default class Header extends Vue {
   }
 
   get showBackIcon() {
-    return this.$route.name === Components.Token;
+    return this.$route.name === Components.Asset;
   }
 
   get name() {

@@ -9,16 +9,15 @@ import type { Mutations } from './mutations';
 import type { ActionContext } from 'vuex';
 import type { State } from './state';
 import type { Networks, Network, NetworkAssetsType } from '@/interfaces/networks';
-import type { AssetJson } from '@/interfaces/assets';
-import type { TokensPrice, TokenPrice } from '@/interfaces/tokens';
+import type { AssetJson, AssetsPrice, AssetPrice } from '@/interfaces/assets';
 import type { FiatJson } from '@/interfaces/common';
 
 // getters
 export type GetNetwork = (networkName: string) => Network;
 
-export type GetTokenName = (assetId: string) => string;
+export type GetAssetName = (assetId: string) => string;
 
-export type GetTokenPrice = (assetId: string) => TokenPrice;
+export type GetAssetPrice = (assetId: string) => AssetPrice;
 
 // Mutations
 export type SetNetworksStatusProps = {
@@ -33,8 +32,8 @@ export type SetFiatsJsonProps = {
   fiats: FiatJson[];
 };
 
-export type SetTokensPriceProps = {
-  tokensPrice: TokensPrice;
+export type SetAssetsPriceProps = {
+  assetsPrice: AssetsPrice;
 };
 
 export type SetCurrenciesProps = {

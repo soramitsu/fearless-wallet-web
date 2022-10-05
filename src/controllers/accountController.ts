@@ -3,7 +3,7 @@ import LocalStorageController from '@/controllers/localStorageController';
 
 class AccountController {
   private readonly lsAccount = new LocalStorageController('account');
-  private readonly sequenceTokensStorageName = 'sequence-tokens';
+  private readonly sequenceAssetsStorageName = 'sequence-assets';
   private readonly autoSelectNodesStorageName = 'auto-select-nodes';
   private readonly activeNodeStorageName = 'active-node';
   private readonly customNodesStorageName = 'custom-nodes';
@@ -30,27 +30,27 @@ class AccountController {
     this.lsAccount.set(this.selectedFiatStorageName, fiat);
   }
 
-  public getSequenceTokens(): Record<string, string> {
-    const sequencesTokens = this.lsAccount.get(this.sequenceTokensStorageName);
-    const value = sequencesTokens.value;
+  public getSequenceAssets(): Record<string, string> {
+    const sequencesAssets = this.lsAccount.get(this.sequenceAssetsStorageName);
+    const value = sequencesAssets.value;
 
     return value ?? {};
   }
 
-  public getSequenceTokensByAddress(address: string): string[] {
-    const sequencesTokens = this.getSequenceTokens();
+  public getSequenceAssetsByAddress(address: string): string[] {
+    const sequencesAssets = this.getSequenceAssets();
 
-    return (sequencesTokens?.[address]?.split(',') as string[]) ?? [];
+    return (sequencesAssets?.[address]?.split(',') as string[]) ?? [];
   }
 
-  public setSequenceTokens(sequence: string[], address: string): void {
-    const prevSequence = this.getSequenceTokens();
+  public setSequenceAssets(sequence: string[], address: string): void {
+    const prevSequence = this.getSequenceAssets();
     const newSequence = {
       ...prevSequence,
       [address]: sequence.join(),
     };
 
-    this.lsAccount.set(this.sequenceTokensStorageName, newSequence);
+    this.lsAccount.set(this.sequenceAssetsStorageName, newSequence);
   }
 
   public getAutoSelectNodesValue(): Record<string, boolean> {

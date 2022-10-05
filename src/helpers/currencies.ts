@@ -29,11 +29,11 @@ function getMockCurrencies(networks: Networks): Currencies {
         const mainNetwork = MAIN_NETWORKS[symbol] ?? mainNet;
         const currencyIndex = result.findIndex(
           ({ assetId: _assetId, relayChain: _relayChain, displayName: _displayName }) => {
-            const isExistingTokenId = _assetId === assetId;
+            const isExistingAssetId = _assetId === assetId;
             const isExistingDisplayName = _displayName === displayName;
-            const isExistingToken = isExistingDisplayName && _relayChain === relayChain;
+            const isExistingAsset = isExistingDisplayName && _relayChain === relayChain;
 
-            return isExistingTokenId || isExistingToken;
+            return isExistingAssetId || isExistingAsset;
           }
         );
 
@@ -66,56 +66,56 @@ function getMockCurrencies(networks: Networks): Currencies {
 
 function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet) {
   const relayChains = [];
-  const currenciesWithTokens = currencies.filter((currency) => currency.getTotalCountTokens(wallet) !== '0');
-  const currenciesWithoutTokens = currencies.filter((currency) => currency.getTotalCountTokens(wallet) === '0');
+  const currenciesWithAssets = currencies.filter((currency) => currency.getTotalCountAssets(wallet) !== '0');
+  const currenciesWithoutAssets = currencies.filter((currency) => currency.getTotalCountAssets(wallet) === '0');
 
-  const dotIndex = currenciesWithoutTokens.findIndex(({ token }) => token === 'dot');
-  const ksmIndex = currenciesWithoutTokens.findIndex(({ token }) => token === 'ksm');
+  const dotIndex = currenciesWithoutAssets.findIndex(({ asset }) => asset === 'dot');
+  const ksmIndex = currenciesWithoutAssets.findIndex(({ asset }) => asset === 'ksm');
 
   if (dotIndex !== -1) {
-    const dot = currenciesWithoutTokens.splice(dotIndex, 1)[0];
+    const dot = currenciesWithoutAssets.splice(dotIndex, 1)[0];
 
     relayChains.push(dot);
   }
 
   if (ksmIndex !== -1) {
-    const ksm = currenciesWithoutTokens.splice(ksmIndex, 1)[0];
+    const ksm = currenciesWithoutAssets.splice(ksmIndex, 1)[0];
 
     relayChains.push(ksm);
   }
 
-  currenciesWithTokens.sort((currency1, currency2) => {
+  currenciesWithAssets.sort((currency1, currency2) => {
     const totalBalanceOne = +currency1.getTotalBalance(wallet);
     const totalBalanceTwo = +currency2.getTotalBalance(wallet);
 
     return totalBalanceTwo - totalBalanceOne;
   });
 
-  currenciesWithoutTokens.sort(({ token: token1 }, { token: token2 }) => token1.localeCompare(token2));
+  currenciesWithoutAssets.sort(({ asset: asset1 }, { asset: asset2 }) => asset1.localeCompare(asset2));
 
-  return [...currenciesWithTokens, ...relayChains, ...currenciesWithoutTokens];
+  return [...currenciesWithAssets, ...relayChains, ...currenciesWithoutAssets];
 }
 
-function getProviderUrl(providerName: string, token: string, address: string) {
+function getProviderUrl(providerName: string, asset: string, address: string) {
   switch (providerName) {
     case 'moonpay':
-      return `https://buy.moonpay.com/?currencyCode=${token}&walletAddress=${address}&showWalletAddressForm=true`;
+      return `https://buy.moonpay.com/?currencyCode=${asset}&walletAddress=${address}&showWalletAddressForm=true`;
     case 'ramp':
-      return `https://buy.ramp.network/?swapAsset=${token.toUpperCase()}&userAddress=${address}`;
+      return `https://buy.ramp.network/?swapAsset=${asset.toUpperCase()}&userAddress=${address}`;
     default:
       return '';
   }
 }
 
 function getCurrencyOptions(currencies: Currencies) {
-  return currencies.map(({ tokenId, relayChain, displayName }) => {
-    const tokenUpper = displayName.toUpperCase();
+  return currencies.map(({ assetId, relayChain, displayName }) => {
+    const assetUpper = displayName.toUpperCase();
     const filteredOptions = currencies.filter(({ displayName: _displayName }) => _displayName === displayName);
-    const label = filteredOptions.length > 1 ? `${tokenUpper} (${relayChain.toUpperCase()})` : tokenUpper;
+    const label = filteredOptions.length > 1 ? `${assetUpper} (${relayChain.toUpperCase()})` : assetUpper;
 
     return {
       label,
-      value: tokenId,
+      value: assetId,
     };
   });
 }

@@ -44,17 +44,17 @@ export default class CurrencyController {
 
   constructor(
     public mainNetwork: string,
-    public tokenId: string,
-    public token: string,
+    public assetId: string,
+    public asset: string,
     displayName: string | undefined,
     public providers: string[],
     public relayChain: RelayChainName
   ) {
-    this.displayName = displayName ?? token;
+    this.displayName = displayName ?? asset;
   }
 
   public updatePrice() {
-    const { price, hours24Change } = NetworksController.getTokenPrice(this.tokenId);
+    const { price, hours24Change } = NetworksController.getAssetPrice(this.assetId);
 
     this.price = price ?? 0;
     this.hours24Change = hours24Change ?? 0;
@@ -99,7 +99,7 @@ export default class CurrencyController {
     });
   }
 
-  private countTokens(wallet: Wallet): BalanceFP {
+  private countAssets(wallet: Wallet): BalanceFP {
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
 
     return availableInNetworks.reduce(
@@ -166,18 +166,18 @@ export default class CurrencyController {
     this.balances = { ...oldBalances, [walletAddress]: balancesForAddress };
   }
 
-  public getTotalCountTokens(wallet: Wallet): string {
-    return this.countTokens(wallet).total.toString();
+  public getTotalCountAssets(wallet: Wallet): string {
+    return this.countAssets(wallet).total.toString();
   }
 
-  public getTotalCountTokensByNetwork(wallet: Wallet, _network: string): string {
+  public getTotalCountAssetsByNetwork(wallet: Wallet, _network: string): string {
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
     const balance = availableInNetworks.find(({ network }) => network === _network)?.balance;
 
     return balance?.total.toString() ?? '';
   }
 
-  public getTransferableCountTokens(networkProp: string, wallet: Wallet): string {
+  public getTransferableCountAssets(networkProp: string, wallet: Wallet): string {
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
     const balance = availableInNetworks.find(({ network }) => network === networkProp)?.balance;
 
@@ -186,7 +186,7 @@ export default class CurrencyController {
     return balance.transferable.toString();
   }
 
-  public getTransferableCountTokensMinusFee(fee: string, networkProp: string, wallet: Wallet): FPNumber {
+  public getTransferableCountAssetsMinusFee(fee: string, networkProp: string, wallet: Wallet): FPNumber {
     const FPFee = new FPNumber(fee);
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
     const { transferable } = availableInNetworks.find(({ network }) => network === networkProp)!.balance;
@@ -195,10 +195,10 @@ export default class CurrencyController {
     return FPNumber.lt(result, FPNumber.ZERO) ? FPNumber.ZERO : result;
   }
 
-  public isValidCountTokens(count: string, fee: string, network: string, wallet: Wallet): boolean {
-    const transferableCountTokensMinusFee = this.getTransferableCountTokensMinusFee(fee, network, wallet);
+  public isValidCountAssets(count: string, fee: string, network: string, wallet: Wallet): boolean {
+    const transferableCountAssetsMinusFee = this.getTransferableCountAssetsMinusFee(fee, network, wallet);
 
-    return FPNumber.lte(new FPNumber(count), transferableCountTokensMinusFee);
+    return FPNumber.lte(new FPNumber(count), transferableCountAssetsMinusFee);
   }
 
   public getAvailableInNetworks(wallet: Wallet): AvailableInNetworks[] {
@@ -223,13 +223,13 @@ export default class CurrencyController {
   }
 
   public getTotalBalance(wallet: Wallet): string {
-    const countTokens = this.countTokens(wallet).total;
-    const cost = this.calculateCost(countTokens);
+    const countAssets = this.countAssets(wallet).total;
+    const cost = this.calculateCost(countAssets);
 
     return cost.toString();
   }
 
-  public getCostOfTokens(count: string): string {
+  public getCostOfAssets(count: string): string {
     return this.calculateCost(new FPNumber(count)).toString();
   }
 
@@ -240,7 +240,7 @@ export default class CurrencyController {
     return this.calculateCost(total).toString();
   }
 
-  public getCountTokensByPrice(cost: string): string {
+  public getCountAssetsByPrice(cost: string): string {
     const FPCost = new FPNumber(cost);
     const price = new FPNumber(this.price);
 
@@ -284,13 +284,13 @@ export default class CurrencyController {
       settings: { DefaultTip },
     } = NetworksController.getNetwork(networkName);
     const transferOptions = { tip: DefaultTip };
-    const ormlOptions = getOptions(this.token, type, this.tokenId);
+    const ormlOptions = getOptions(this.asset, type, this.assetId);
 
     try {
       if (type === 'native') {
         this.extrinsic = api!.tx.balances.transfer(to, precisionAmount);
       } else if (type === 'equilibrium') {
-        const equilibriumAsset = BaseApi.getEquilibriumAssetName(this.token);
+        const equilibriumAsset = BaseApi.getEquilibriumAssetName(this.asset);
 
         this.extrinsic = api!.tx.eqBalances.transfer(equilibriumAsset, to, precisionAmount);
       } else if (type === 'ormlChain') {
@@ -354,7 +354,7 @@ export default class CurrencyController {
     precisionAmount: string
   ): Promise<void> {
     const { api } = NetworksController.getNetwork(originNet);
-    const ormlOptions = getOrmlOptions(this.token, originNet);
+    const ormlOptions = getOrmlOptions(this.asset, originNet);
     const params = getOrmlTeleportParams(originNet, destNet, toAddress);
 
     this.extrinsic = api!.tx.xTokens.transfer(ormlOptions, precisionAmount, params, FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT);

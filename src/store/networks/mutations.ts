@@ -5,7 +5,7 @@ import type {
   UpdateCurrencyBalanceProps,
   SetAssetsJsonProps,
   SetFiatsJsonProps,
-  SetTokensPriceProps,
+  SetAssetsPriceProps,
   SetCurrenciesProps,
   SetAllNetworksIsLoaded,
   SetHistoryProps,
@@ -18,7 +18,7 @@ export enum MutationTypes {
   SET_NETWORKS = 'SET_NETWORKS',
   SET_ASSETS_JSON = 'SET_ASSETS_JSON',
   SET_FIATS_JSON = 'SET_FIATS_JSON',
-  SET_TOKENS_PRICE = 'SET_TOKENS_PRICE',
+  SET_ASSET_PRICE = 'SET_ASSET_PRICE',
   SET_CURRENCIES = 'SET_CURRENCIES',
   SET_HISTORY = 'SET_HISTORY',
   SET_ALL_NETWORKS_IS_LOADED = 'SET_ALL_NETWORKS_IS_LOADED',
@@ -31,7 +31,7 @@ export type Mutations = {
   [MutationTypes.SET_NETWORKS](state: State, props: SetNetworksStatusProps): void;
   [MutationTypes.SET_ASSETS_JSON](state: State, props: SetAssetsJsonProps): void;
   [MutationTypes.SET_FIATS_JSON](state: State, props: SetFiatsJsonProps): void;
-  [MutationTypes.SET_TOKENS_PRICE](state: State, props: SetTokensPriceProps): void;
+  [MutationTypes.SET_ASSET_PRICE](state: State, props: SetAssetsPriceProps): void;
   [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
   [MutationTypes.SET_ALL_NETWORKS_IS_LOADED](state: State, props: SetAllNetworksIsLoaded): void;
@@ -57,8 +57,8 @@ const mutations: MutationTree<State> & Mutations = {
     state.fiats = fiats.map((fiat) => ({ ...fiat }));
   },
 
-  [MutationTypes.SET_TOKENS_PRICE](state, { tokensPrice }) {
-    state.tokensPrice = tokensPrice;
+  [MutationTypes.SET_ASSET_PRICE](state, { assetsPrice }) {
+    state.assetsPrice = assetsPrice;
 
     state.currencies.forEach((currency) => currency.updatePrice());
   },
@@ -68,11 +68,11 @@ const mutations: MutationTree<State> & Mutations = {
     const { symbol, precision } = assetsJson.find(({ id }) => id === assetId)!;
     const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name;
 
-    const currentCurrency = currencies.find(({ tokenId: _tokenId, token: _token, relayChain: _relayChain }) => {
-      const isExistingTokenId = _tokenId === assetId;
-      const isExistingTokenSymbol = _token === symbol && _relayChain === relayChain;
+    const currentCurrency = currencies.find(({ assetId: _assetId, asset, relayChain: _relayChain }) => {
+      const isExistingAssetId = _assetId === assetId;
+      const isExistingSymbol = asset === symbol && _relayChain === relayChain;
 
-      return isExistingTokenId || isExistingTokenSymbol;
+      return isExistingAssetId || isExistingSymbol;
     })!;
 
     currentCurrency.updateCurrencyBalance({ walletAddress, network, balance, type, precision });
@@ -86,7 +86,7 @@ const mutations: MutationTree<State> & Mutations = {
     const oldStartCursor = oldPageInfo?.startCursor;
     const oldEndCursor = oldPageInfo?.endCursor;
 
-    // loading history after sending tokens or teleporting tokens
+    // loading history after sending assets or teleporting assets
     if (isPreviously && !!oldEndCursor) {
       const filteredNodes = nodes.filter(({ timestamp }) => {
         const oldNodes = oldHistory.nodes;

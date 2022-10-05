@@ -2,7 +2,7 @@
   <Draggable v-model="filteredCurrencies" handle=".handle">
     <CurrencyItem
       v-for="currency in filteredCurrencies"
-      :key="currency.tokenId"
+      :key="currency.assetId"
       :currency="currency"
       :selectedNetwork="selectedNetwork"
       :showAssetsManagementForm="showAssetsManagementForm"
@@ -49,7 +49,7 @@ export default class Currencies extends Vue {
 
     this.setCurrencies({ currencies });
 
-    accountController.setSequenceTokens(sequence, address);
+    accountController.setSequenceAssets(sequence, address);
   }
 }
 </script>

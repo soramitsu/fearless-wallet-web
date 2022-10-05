@@ -49,7 +49,7 @@ function connectToNetworksApi(networks: Networks, context: Context): Networks {
   });
 }
 
-function subscribeUtilityTokensBalances(context: Context, address: string, network: Network) {
+function subscribeUtilityAssetsBalances(context: Context, address: string, network: Network) {
   const { name: networkName, parentId, api, assets: networkAssets } = network;
   const networkUtilityAsset = networkAssets.find(
     ({ isUtility, type }) => isUtility && !ORML_PALLETS_TYPES.includes(type as string)
@@ -81,7 +81,7 @@ function subscribeUtilityTokensBalances(context: Context, address: string, netwo
   });
 }
 
-function subscribeOrmlTokensBalances(context: Context, address: string, network: Network) {
+function subscribeOrmlAssetsBalances(context: Context, address: string, network: Network) {
   const { commit, state } = context;
   const { assetsJson } = state;
   const { name: networkName, api, assets: networkAssets, parentId } = network;
@@ -117,13 +117,13 @@ function subscribeOrmlTokensBalances(context: Context, address: string, network:
   });
 }
 
-async function subscribeTokensBalances(context: Context, address: string, network: Network) {
+async function subscribeAssetsBalances(context: Context, address: string, network: Network) {
   const { api } = network;
 
   await api!.isReadyOrError;
 
-  subscribeUtilityTokensBalances(context, address, network);
-  subscribeOrmlTokensBalances(context, address, network);
+  subscribeUtilityAssetsBalances(context, address, network);
+  subscribeOrmlAssetsBalances(context, address, network);
 }
 
-export { connectToApi, connectToNetworksApi, subscribeTokensBalances };
+export { connectToApi, connectToNetworksApi, subscribeAssetsBalances };

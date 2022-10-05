@@ -14,7 +14,7 @@
               v-for="historyNode in filteredHistory"
               :key="historyNode.id"
               :historyNode="historyNode"
-              :tokenId="currency.tokenId"
+              :assetId="currency.assetId"
               :relayChain="currency.relayChain"
               @click.native="$emit('openHistoryDetailsPopup', historyNode)"
             />
@@ -84,7 +84,7 @@ export default class History extends Vue {
       this.selectedWallet,
       this.selectedNetwork
     );
-    const historyForNetwork = this.getHistory(this.currency?.tokenId, addressByNetwork, this.selectedNetwork);
+    const historyForNetwork = this.getHistory(this.currency?.assetId, addressByNetwork, this.selectedNetwork);
     const historyForWalletAddress = historyForNetwork?.nodes ?? [];
 
     return historyForWalletAddress;

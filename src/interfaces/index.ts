@@ -7,4 +7,4 @@ export * from '@/interfaces/history';
 export * from '@/interfaces/networks';
 export * from '@/interfaces/nodes';
 export * from '@/interfaces/teleport';
-export * from '@/interfaces/tokens';
+export * from '@/interfaces/assets';

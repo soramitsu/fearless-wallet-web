@@ -7,8 +7,8 @@ import type {
   Network,
   NetworkAssetsType,
   AssetJson,
-  TokensPrice,
-  TokenPrice,
+  AssetsPrice,
+  AssetPrice,
   FiatJson,
 } from '@/interfaces';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
@@ -21,9 +21,9 @@ import type { State } from './state';
 // getters
 export type GetNetwork = (networkName: string) => Network;
 
-export type GetTokenName = (assetId: string) => string;
+export type GetAssetName = (assetId: string) => string;
 
-export type GetTokenPrice = (assetId: string) => TokenPrice;
+export type GetAssetPrice = (assetId: string) => AssetPrice;
 
 // Mutations
 export type SetNetworksStatusProps = {
@@ -38,8 +38,8 @@ export type SetFiatsJsonProps = {
   fiats: FiatJson[];
 };
 
-export type SetTokensPriceProps = {
-  tokensPrice: TokensPrice;
+export type SetAssetsPriceProps = {
+  assetsPrice: AssetsPrice;
 };
 
 export type SetCurrenciesProps = {

@@ -12,7 +12,7 @@
     >
       <div class="send-form-content">
         <template v-if="step === 1">
-          <Select v-model="selectedTokenId" :options="optionsCurrency" placeholder="Currency" size="big" class="row" />
+          <Select v-model="selectedAssetId" :options="optionsCurrency" placeholder="Currency" size="big" class="row" />
 
           <Select v-model="selectedNetwork" :options="optionsNetwork" placeholder="Network" size="big" class="row" />
 
@@ -33,7 +33,7 @@
               <div class="transferrable-label">Transferrable</div>
               <div class="transferrable-descriptions">
                 <div class="transferrable-amount">{{ transferrableAmount }}</div>
-                <div class="transferrable-token">{{ selectedTokenUpper }}</div>
+                <div class="transferrable-assets">{{ selectedAssetUpper }}</div>
               </div>
             </div>
 
@@ -102,7 +102,7 @@ import AmountInputs from './AmountInputs.vue';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import MaxButton from './MaxButton.vue';
 import type { Currencies, Networks } from '@/interfaces';
-import type { GetTokenName } from '@/store/networks/types';
+import type { GetAssetName } from '@/store/networks/types';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
 import FloatInput from '@/components/FloatInput.vue';
@@ -130,11 +130,11 @@ import { getCurrencyOptions } from '@/helpers/currencies';
   },
 })
 export default class SendForm extends Vue {
-  isValidCountTokens = true;
+  isValidCountAssets = true;
   showConfirmationPasswordPopup = false;
   partialFee = '';
   selectedNetwork = '';
-  selectedTokenId = '';
+  selectedAssetId = '';
   recipient = '';
   amount = '';
   value = '';
@@ -142,15 +142,15 @@ export default class SendForm extends Vue {
 
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) _selectedNetwork!: string;
-  @Prop(String) _selectedTokenId!: string;
+  @Prop(String) _selectedAssetId!: string;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
-  @Getter(NetworksGettersTypes.getTokenName) getTokenName!: GetTokenName;
+  @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
 
   get amountString() {
-    return `${+this.amount} ${this.selectedTokenUpper}`;
+    return `${+this.amount} ${this.selectedAssetUpper}`;
   }
 
   get showValue() {
@@ -162,13 +162,13 @@ export default class SendForm extends Vue {
   }
 
   get partialFeeString() {
-    return `${formattedNumber(+this.partialFee, 7)} ${this.selectedTokenUpper}`;
+    return `${formattedNumber(+this.partialFee, 7)} ${this.selectedAssetUpper}`;
   }
 
   get totalString() {
     const total = addNumbers([this.amount, this.partialFee]);
 
-    return `${formattedNumber(+total, 7)} ${this.selectedTokenUpper}`;
+    return `${formattedNumber(+total, 7)} ${this.selectedAssetUpper}`;
   }
 
   get showBackIcon() {
@@ -180,10 +180,8 @@ export default class SendForm extends Vue {
 
     if (!this.currency) return '';
 
-    const { token } = this.currency;
-
     if (this.recipient !== '' && !this.isValidRecipientAddress) return 'Incorrect address';
-    else if (!this.isValidCountTokens) return `Insufficient balance ${token.toUpperCase()}`;
+    else if (!this.isValidCountAssets) return `Insufficient balance ${this.selectedAssetUpper}`;
 
     return 'Continue';
   }
@@ -199,10 +197,10 @@ export default class SendForm extends Vue {
 
     return (
       !!this.selectedNetwork &&
-      !!this.selectedTokenId &&
+      !!this.selectedAssetId &&
       !!this.amount &&
       this.isValidRecipientAddress &&
-      this.isValidCountTokens
+      this.isValidCountAssets
     );
   }
 
@@ -219,7 +217,7 @@ export default class SendForm extends Vue {
   }
 
   get currency() {
-    return this.currencies.find(({ tokenId }) => tokenId === this.selectedTokenId);
+    return this.currencies.find(({ assetId }) => assetId === this.selectedAssetId);
   }
 
   get optionsNetwork() {
@@ -234,37 +232,37 @@ export default class SendForm extends Vue {
   }
 
   get transferrableAmount() {
-    const count = +(this.currency?.getTransferableCountTokens(this.selectedNetwork, this.selectedWallet) ?? 0);
+    const count = +(this.currency?.getTransferableCountAssets(this.selectedNetwork, this.selectedWallet) ?? 0);
 
     return formattedNumber(count, 4, false, true);
   }
 
   get transferrableValue() {
-    const cost = +(this.currency?.getCostOfTokens(this.transferrableAmount) ?? 0);
+    const cost = +(this.currency?.getCostOfAssets(this.transferrableAmount) ?? 0);
 
     return formattedPrice(cost);
   }
 
-  get selectedToken() {
-    return this.getTokenName(this.selectedTokenId);
+  get selectedAsset() {
+    return this.getAssetName(this.selectedAssetId);
   }
 
-  get selectedTokenUpper() {
-    return this.selectedToken.toUpperCase();
+  get selectedAssetUpper() {
+    return this.selectedAsset.toUpperCase();
   }
 
   get optionsCurrency() {
     return getCurrencyOptions(this.currencies);
   }
 
-  @Watch('selectedTokenId')
+  @Watch('selectedAssetId')
   updateSelectedNetwork() {
     this.selectedNetwork = this.optionsNetwork?.[0]?.value ?? '';
     this.amount = '';
   }
 
   @Watch('selectedNetwork')
-  @Watch('selectedTokenId')
+  @Watch('selectedAssetId')
   @Watch('recipient')
   @Watch('amount')
   async createSendTransfer() {
@@ -275,7 +273,7 @@ export default class SendForm extends Vue {
     const partialFee = await this.createTransferAndGetFee();
 
     this.partialFee = partialFee;
-    this.isValidCountTokens = this.currency!.isValidCountTokens(
+    this.isValidCountAssets = this.currency!.isValidCountAssets(
       this.amount,
       partialFee,
       this.selectedNetwork,
@@ -284,7 +282,7 @@ export default class SendForm extends Vue {
   }
 
   mounted() {
-    this.selectedTokenId = this._selectedTokenId;
+    this.selectedAssetId = this._selectedAssetId;
 
     this.$nextTick(() => {
       const index = this.optionsNetwork?.findIndex(({ value }) => value === this._selectedNetwork);
@@ -322,17 +320,17 @@ export default class SendForm extends Vue {
   async setMaxValue() {
     if (!this.currency) return;
 
-    const maxTransferableCountTokens = this.currency?.getTransferableCountTokens(
+    const maxTransferableCountAssets = this.currency?.getTransferableCountAssets(
       this.selectedNetwork,
       this.selectedWallet
     );
-    const partialFee = await this.createTransferAndGetFee(maxTransferableCountTokens);
-    const transferableCountTokens = this.currency
-      .getTransferableCountTokensMinusFee(partialFee, this.selectedNetwork, this.selectedWallet)
+    const partialFee = await this.createTransferAndGetFee(maxTransferableCountAssets);
+    const transferableCountAssets = this.currency
+      .getTransferableCountAssetsMinusFee(partialFee, this.selectedNetwork, this.selectedWallet)
       .toString();
 
-    this.amount = transferableCountTokens;
-    this.value = this.currency.getCostOfTokens(transferableCountTokens).toString();
+    this.amount = transferableCountAssets;
+    this.value = this.currency.getCostOfAssets(transferableCountAssets).toString();
   }
 
   handlerButton() {
@@ -387,7 +385,7 @@ export default class SendForm extends Vue {
         color: $pink-lavender-color;
       }
 
-      .transferrable-token {
+      .transferrable-assets {
         margin-left: 5px;
         color: rgba(255, 255, 255, 0.9);
       }

@@ -1,10 +1,10 @@
 <template>
-  <div class="token">
-    <div class="token-header">
+  <div class="asset">
+    <div class="asset-header">
       <div class="descriptions">
-        <div class="count-tokens">{{ countTokensString }}</div>
+        <div class="count-assets">{{ countAssetsString }}</div>
         <div class="balance-in-network">{{ balanceInNetworkString }}</div>
-        <div class="price">{{ tokenPriceString }}</div>
+        <div class="price">{{ assetPriceString }}</div>
       </div>
 
       <SelectNetworkButton
@@ -46,7 +46,7 @@
     <SendForm
       v-if="showSendForm"
       :_selectedNetwork="selectedNetwork"
-      :_selectedTokenId="selectedTokenId"
+      :_selectedAssetId="selectedAssetId"
       :closeForm="toggleVisible.bind(null, 'showSendForm', false)"
     />
 
@@ -59,13 +59,13 @@
     <TeleportForm
       v-if="showTeleportForm"
       :_originalNetwork="selectedNetwork"
-      :_selectedTokenId="selectedTokenId"
+      :_selectedAssetId="selectedAssetId"
       :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
     />
 
     <BuyPopup
       v-if="showBuyPopup"
-      :token="selectedToken"
+      :asset="selectedAsset"
       :address="displayAddressByNetwork"
       :providers="providers"
       :closePopup="toggleVisible.bind(null, 'showBuyPopup', false)"
@@ -83,7 +83,7 @@
       v-if="showHistoryDetailsPopup"
       :handlerClose="closeHistoryDetailsPopup"
       :historyNode="historyNode"
-      :tokenId="selectedTokenId"
+      :assetId="selectedAssetId"
     />
   </div>
 </template>
@@ -100,7 +100,7 @@ import SelectNetworkPopup from '../SelectNetworkPopup.vue';
 import HistoryDetailsPopup from './HistoryDetailsPopup.vue';
 import History from './History.vue';
 import type { HistoryNode } from '@/interfaces/history';
-import type { GetTokenName } from '@/store/networks/types';
+import type { GetAssetName } from '@/store/networks/types';
 import BorderButton from '@/components/BorderButton.vue';
 import TabButton from '@/components/TabButton.vue';
 import BaseApi from '@/util/BaseApi';
@@ -127,7 +127,7 @@ type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'show
     SelectNetworkButton,
   },
 })
-export default class Token extends Vue {
+export default class Asset extends Vue {
   readonly selectNetworkButtonRef = 'selectNetworkButton';
 
   historyNode: HistoryNode | Record<string, string> = {};
@@ -139,7 +139,7 @@ export default class Token extends Vue {
   showSelectNetworkPopup = false;
 
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
-  @Getter(NetworksGettersTypes.getTokenName) getTokenName!: GetTokenName;
+  @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
@@ -156,43 +156,43 @@ export default class Token extends Vue {
   }
 
   get currentCurrency() {
-    return this.currencies.find(({ tokenId }) => tokenId === this.selectedTokenId);
+    return this.currencies.find(({ assetId }) => assetId === this.selectedAssetId);
   }
 
   get displayAddressByNetwork() {
     return BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.selectedNetwork);
   }
 
-  get tokenPriceString() {
-    return `1 ${this.selectedToken.toUpperCase()} = ${this.fiatSymbol}${formattedPrice(this.price ?? 0)}`;
+  get assetPriceString() {
+    return `1 ${this.selectedAsset.toUpperCase()} = ${this.fiatSymbol}${formattedPrice(this.price ?? 0)}`;
   }
 
   get selectedNetwork() {
     return this.$route.params.network;
   }
 
-  get selectedTokenId() {
-    return this.$route.params.tokenId;
+  get selectedAssetId() {
+    return this.$route.params.assetId;
   }
 
-  get selectedToken() {
-    return this.getTokenName(this.selectedTokenId);
+  get selectedAsset() {
+    return this.getAssetName(this.selectedAssetId);
   }
 
   get price() {
     return this.currentCurrency?.price;
   }
 
-  get countTokensString() {
-    if (!this.currentCurrency) return `${this.selectedToken.toUpperCase()} 0`;
+  get countAssetsString() {
+    if (!this.currentCurrency) return `${this.selectedAsset.toUpperCase()} 0`;
 
-    const totalCountTokens = +this.currentCurrency.getTotalCountTokensByNetwork(
+    const totalCountAssets = +this.currentCurrency.getTotalCountAssetsByNetwork(
       this.selectedWallet,
       this.selectedNetwork
     );
-    const total = formattedNumber(totalCountTokens, 4, false, true);
+    const total = formattedNumber(totalCountAssets, 4, false, true);
 
-    return `${this.selectedToken.toUpperCase()} ${total}`;
+    return `${this.selectedAsset.toUpperCase()} ${total}`;
   }
 
   get balanceInNetworkString() {
@@ -207,9 +207,9 @@ export default class Token extends Vue {
     if (this.selectedNetwork === network) return;
 
     this.$router.push({
-      name: Components.Token,
+      name: Components.Asset,
       params: {
-        tokenId: this.selectedTokenId,
+        assetId: this.selectedAssetId,
         network: network,
       },
     });
@@ -242,13 +242,13 @@ export default class Token extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.token {
+.asset {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 450px;
 
-  .token-header {
+  .asset-header {
     display: flex;
     justify-content: space-between;
     margin-bottom: 16px;
@@ -260,7 +260,7 @@ export default class Token extends Vue {
       align-items: flex-start;
       height: 70px;
 
-      .count-tokens {
+      .count-assets {
         font-weight: 600;
         font-size: 28px;
         text-align: left;

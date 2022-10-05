@@ -5,9 +5,9 @@ import type {
   Networks,
   GetHistory,
   Currencies,
-  KeysTokenPricesJson,
+  KeysAssetPricesJson,
 } from '@/interfaces';
-import type { GetNetwork, GetTokenName, GetTokenPrice } from './types';
+import type { GetNetwork, GetAssetName, GetAssetPrice } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 
@@ -15,8 +15,8 @@ export enum GettersTypes {
   getNetworks = 'getNetworks',
   getNetwork = 'getNetwork',
   getAssetsJson = 'getAssetsJson',
-  getTokenPrice = 'getTokenPrice',
-  getTokenName = 'getTokenName',
+  getAssetPrice = 'getAssetPrice',
+  getAssetName = 'getAssetName',
   getFiats = 'getFiats',
   getHistory = 'getHistory',
   getCurrencies = 'getCurrencies',
@@ -28,12 +28,12 @@ export type Getters = {
   [GettersTypes.getNetworks](state: State, getters?: GetterTree<State, State> & Getters): Networks;
   [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
   [GettersTypes.getAssetsJson](state: State, getters?: GetterTree<State, State> & Getters): AssetJson[];
-  [GettersTypes.getTokenPrice](
+  [GettersTypes.getAssetPrice](
     state: State,
     getters?: GetterTree<State, State> & Getters,
     rootState?: any
-  ): GetTokenPrice;
-  [GettersTypes.getTokenName](state: State, getters?: GetterTree<State, State> & Getters): GetTokenName;
+  ): GetAssetPrice;
+  [GettersTypes.getAssetName](state: State, getters?: GetterTree<State, State> & Getters): GetAssetName;
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
   [GettersTypes.getCurrencies](state: State, getters?: GetterTree<State, State> & Getters): Currencies;
@@ -59,18 +59,18 @@ const getters: GetterTree<State, State> & Getters = {
     return fiats;
   },
 
-  [GettersTypes.getTokenPrice]:
-    ({ tokensPrice }, getters, rootState) =>
+  [GettersTypes.getAssetPrice]:
+    ({ assetsPrice }, getters, rootState) =>
     (assetId: string) => {
       const selectedFiat = rootState.account.selectedFiat;
-      const hours24ChangeField = `${selectedFiat}_24h_change` as KeysTokenPricesJson;
-      const price = tokensPrice[assetId]?.[selectedFiat as KeysTokenPricesJson];
-      const hours24Change = tokensPrice[assetId]?.[hours24ChangeField];
+      const hours24ChangeField = `${selectedFiat}_24h_change` as KeysAssetPricesJson;
+      const price = assetsPrice[assetId]?.[selectedFiat as KeysAssetPricesJson];
+      const hours24Change = assetsPrice[assetId]?.[hours24ChangeField];
 
       return { price, hours24Change };
     },
 
-  [GettersTypes.getTokenName]:
+  [GettersTypes.getAssetName]:
     ({ assetsJson }) =>
     (assetId: string) => {
       const asset = assetsJson.find(({ id }) => id === assetId);

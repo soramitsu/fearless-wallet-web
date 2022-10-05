@@ -11,19 +11,19 @@ import type {
   Accounts,
   AugmentedActionContext,
 } from './types';
-import type { FiatJson, AssetJson, NetworkJson, Networks, ExternalApi, TokensPrice } from '@/interfaces';
+import type { FiatJson, AssetJson, NetworkJson, Networks, ExternalApi, AssetsPrice } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { loadHistory } from '@/subquery/history';
 import { getReplacedMetaTyped } from '@/helpers/common';
 import { getMockCurrencies } from '@/helpers/currencies';
-import { connectToApi, connectToNetworksApi, subscribeTokensBalances } from '@/helpers/networksConnection';
+import { connectToApi, connectToNetworksApi, subscribeAssetsBalances } from '@/helpers/networksConnection';
 
 export enum ActionTypes {
   LOAD_JSONS = 'LOAD_JSONS',
   CONNECT_TO_NODES = 'CONNECT_TO_NODES',
-  LOAD_TOKENS_PRICE = 'LOAD_TOKENS_PRICE',
+  LOAD_ASSETS_PRICE = 'LOAD_ASSETS_PRICE',
   LOAD_HISTORY = 'LOAD_HISTORY',
   SUBSCRIBE_TO_BALANCES = 'SUBSCRIBE_TO_BALANCES',
   TOGGLE_ACTIVE_NODE = 'TOGGLE_ACTIVE_NODE',
@@ -32,7 +32,7 @@ export enum ActionTypes {
 export type Actions = {
   [ActionTypes.LOAD_JSONS](store: AugmentedActionContext, props: LoadJsons): Promise<void>;
   [ActionTypes.CONNECT_TO_NODES](store: AugmentedActionContext): Promise<void>;
-  [ActionTypes.LOAD_TOKENS_PRICE](store: AugmentedActionContext): Promise<void>;
+  [ActionTypes.LOAD_ASSETS_PRICE](store: AugmentedActionContext): Promise<void>;
   [ActionTypes.LOAD_HISTORY](store: AugmentedActionContext, props: LoadHistory): Promise<void>;
   [ActionTypes.SUBSCRIBE_TO_BALANCES](store: AugmentedActionContext, props: SubscribeToBalances): Promise<void>;
   [ActionTypes.TOGGLE_ACTIVE_NODE](store: AugmentedActionContext, props: ToggleActiveNode): Promise<void>;
@@ -84,26 +84,26 @@ const actions: ActionTree<State, State> & Actions = {
     commit(MutationTypes.SET_NETWORKS, { networks });
   },
 
-  async [ActionTypes.LOAD_TOKENS_PRICE]({ commit, state: { assetsJson, fiats } }) {
+  async [ActionTypes.LOAD_ASSETS_PRICE]({ commit, state: { assetsJson, fiats } }) {
     const urlFiatsPart = fiats.map(({ id }) => id).join('%2C');
-    const urlsTokens = assetsJson.filter(({ priceId }) => !!priceId).map(({ priceId }) => priceId);
-    const urlTokensPart = [...new Set(urlsTokens)].join('%2C');
-    const url = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${urlFiatsPart}&include_24hr_change=true&ids=${urlTokensPart}`;
+    const urlsAssets = assetsJson.filter(({ priceId }) => !!priceId).map(({ priceId }) => priceId);
+    const urlAssetsPart = [...new Set(urlsAssets)].join('%2C');
+    const url = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${urlFiatsPart}&include_24hr_change=true&ids=${urlAssetsPart}`;
 
     try {
       const { data } = await axios.get(url);
-      const typedData = data as TokensPrice;
-      const tokensPrice = {} as TokensPrice;
+      const typedData = data as AssetsPrice;
+      const assetsPrice = {} as AssetsPrice;
 
       for (const priceId in typedData) {
         const assetIdS = assetsJson.filter(({ priceId: _priceId }) => _priceId === priceId);
 
         assetIdS.forEach(({ id }) => {
-          tokensPrice[id] = data[priceId];
+          assetsPrice[id] = data[priceId];
         });
       }
 
-      commit(MutationTypes.SET_TOKENS_PRICE, { tokensPrice });
+      commit(MutationTypes.SET_ASSET_PRICE, { assetsPrice });
     } catch {
       console.info('%c Coingecko request failed', 'background:red;color:#fff');
     }
@@ -186,7 +186,7 @@ const actions: ActionTree<State, State> & Actions = {
         if ((!isEthereumNetwork && accountType === 'ethereum') || (isEthereumNetwork && accountType !== 'ethereum'))
           return;
 
-        subscribeTokensBalances(context, walletAddress, network);
+        subscribeAssetsBalances(context, walletAddress, network);
       });
     });
 

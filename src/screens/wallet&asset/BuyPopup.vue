@@ -25,18 +25,18 @@ import { getProviderUrl } from '@/helpers/currencies';
     Button,
   },
 })
-export default class SettingsPopup extends Vue {
-  @Prop(String) token!: string;
+export default class BuyPopup extends Vue {
+  @Prop(String) asset!: string;
   @Prop(String) address!: string;
   @Prop(Array) providers!: string[];
   @Prop(Function) closePopup!: VoidFunction;
 
   get headerText() {
-    return `Buy ${this.token.toUpperCase()} with`;
+    return `Buy ${this.asset.toUpperCase()} with`;
   }
 
   openProvider(providerName: string) {
-    const url = getProviderUrl(providerName, this.token, this.address);
+    const url = getProviderUrl(providerName, this.asset, this.address);
 
     window.open(url);
   }

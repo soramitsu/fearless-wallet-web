@@ -6,10 +6,10 @@
       <div class="row label">Accounts with unique secrets</div>
 
       <AccountsItem
-        v-for="{ network, token, address } in replacedAccountsItems"
+        v-for="{ network, asset, address } in replacedAccountsItems"
         :key="network"
         :network="network"
-        :token="token"
+        :asset="asset"
         :address="address"
         @openAccountSettingsPopup="openAccountSettingsPopup(...arguments, true)"
       />
@@ -19,10 +19,10 @@
       <div class="row label">Default accounts with a shared secret</div>
 
       <AccountsItem
-        v-for="{ network, token, address } in sharedAccountsItems"
+        v-for="{ network, asset, address } in sharedAccountsItems"
         :key="network"
         :network="network"
-        :token="token"
+        :asset="asset"
         :address="address"
         @openAccountSettingsPopup="openAccountSettingsPopup"
       />

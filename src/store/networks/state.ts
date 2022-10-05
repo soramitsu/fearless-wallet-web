@@ -1,8 +1,8 @@
-import type { Networks, TokensPrice, Currencies, History, FiatJson, AssetJson, ActiveNodes } from '@/interfaces';
+import type { Networks, AssetsPrice, Currencies, History, FiatJson, AssetJson, ActiveNodes } from '@/interfaces';
 
 export type State = {
   networks: Networks;
-  tokensPrice: TokensPrice;
+  assetsPrice: AssetsPrice;
   assetsJson: AssetJson[];
   fiats: FiatJson[];
   history: History;
@@ -14,7 +14,7 @@ export type State = {
 const state = (): State => {
   return {
     networks: [],
-    tokensPrice: {},
+    assetsPrice: {},
     assetsJson: [],
     fiats: [],
     currencies: [],

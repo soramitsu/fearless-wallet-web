@@ -6,7 +6,7 @@
       </div>
       <div class="description">
         <div class="network-name">{{ getUpperValue(network) }}</div>
-        <div class="token-name">{{ getUpperValue(token) }}</div>
+        <div class="asset-name">{{ getUpperValue(asset) }}</div>
         <div class="address">{{ address }}</div>
       </div>
     </div>
@@ -32,7 +32,7 @@ export default class AccountsItem extends Vue {
   readonly circleButtonRef = 'circleButton';
 
   @Prop(String) network!: string;
-  @Prop(String) token!: string;
+  @Prop(String) asset!: string;
   @Prop(String) address!: string;
 
   getUpperValue(string: string) {
@@ -81,7 +81,7 @@ export default class AccountsItem extends Vue {
       height: 16px;
     }
 
-    .token-name {
+    .asset-name {
       font-weight: 700;
       color: rgba(255, 255, 255, 1);
       font-size: 20px;

@@ -1,4 +1,4 @@
-import type { WalletAddress, NetworkName, AssetName } from '@/interfaces/common';
+import type { WalletAddress, NetworkName, AssetName } from '@/interfaces';
 
 type Reward = {
   amount: string;

@@ -43,7 +43,7 @@ export enum Components {
 const haveAccounts = () => BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
 const haveAuthRequests = () => store.getters.getAuthList.length;
 const haveSignRequests = () => store.getters.getSignList.length;
-const haveMetaRequests = () => store.getters.getMetaList.length;
+const haveMetaRequests = () => store.getters.getMetaRequests.length;
 
 const routes: Array<RouteConfig> = [
   {
@@ -90,6 +90,12 @@ const routes: Array<RouteConfig> = [
         path: 'wallet',
         name: Components.Wallet,
         component: Wallet,
+        beforeEnter: (to, from, next) => {
+          if (haveAuthRequests()) next({ name: Components.Authorize });
+          else if (haveSignRequests()) next({ name: Components.Transaction });
+          else if (haveMetaRequests()) next({ name: Components.MetaRequest });
+          else next();
+        },
       },
       {
         path: 'accounts',
@@ -146,12 +152,7 @@ const routes: Array<RouteConfig> = [
   },
   {
     path: '/*',
-    beforeEnter: (to, from, next) => {
-      if (haveAuthRequests()) next({ name: Components.Authorize });
-      else if (haveSignRequests()) next({ name: Components.Transaction });
-      else if (haveMetaRequests()) next({ name: Components.MetaRequest });
-      else next();
-    },
+
     redirect: () => {
       return { name: haveAccounts() ? Components.Wallet : Components.Welcome };
     },

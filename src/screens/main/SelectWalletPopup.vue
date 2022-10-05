@@ -13,8 +13,9 @@
       <WalletBalance
         v-for="({ meta: { name }, address }, index) in wallets"
         :key="name + index"
-        :name="prepName(name, address)"
+        :name="name"
         :isSelected="selectedWallet.address === address"
+        :isMobile="isMobile(address)"
         :balance="getBalance(address)"
         :percent="getPercent()"
         class="total"
@@ -74,11 +75,8 @@ export default class SelectWalletPopup extends Vue {
     this.$router.push({ name: Components.Welcome });
   }
 
-  prepName(name: string, address: string) {
-    //TEMP SOLUTION MOVETO WALLETBALANCE IN THE FUTURE
-    const addressType = BaseApi.getAddressType(address);
-
-    return addressType === 'address' ? `🅱️${name}🅱️` : name;
+  isMobile(address: string) {
+    return BaseApi.getAddressType(address) === 'address';
   }
 
   getBalance(address: string) {

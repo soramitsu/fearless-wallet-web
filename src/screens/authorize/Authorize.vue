@@ -1,19 +1,20 @@
 <template>
-  <AboveForm :blur="true" header="Authorize" :showCloseIcon="false">
+  <AboveForm :blur="true" header="Authorize" :closeHandler="onReject">
     <div class="authorize">
       <template v-if="isAccountsExists">
         <div>
-          <p class="authorize__content">
-            An application, self-identifying as
-            <span class="authorize__content--name">{{ request.origin }}</span> is requesting access from my
-            <span class="authorize__content--link">{{ request.url }}</span>
-          </p>
-          <Alert :message="alertMessage" />
+          <Alert>
+            <p class="authorize__content">
+              An application, self-identifying as
+              <span class="authorize__content--name">{{ request.request.origin }}</span> is requesting access from my
+              <span class="authorize__content--link">{{ request.url }}</span>
+            </p>
+          </Alert>
+
+          <SelectAuthAccount :accounts="accs" />
         </div>
         <div class="authorize__control">
           <Button width="100%" text="Yes, allow this application access" size="big" fontSize="big" @click="onApprove" />
-
-          <Button width="100%" type="link" text="Reject" size="big" fontSize="medium" @click="onReject" />
         </div>
       </template>
       <template v-else>
@@ -27,30 +28,35 @@
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { AuthorizeRequest } from '@polkadot/extension-base/background/types';
+import { AuthorizeRequest } from '@extension-base/background/types';
+import { Accounts } from '@/store/accounts/types';
 import Button from '@/components/Button.vue';
 import Hint from '@/components/Hint.vue';
 import Alert from '@/components/Alert.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import { Components } from '@/router/routes';
-import { ActionTypes } from '@/store/auth/actions';
+import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
+import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import SelectAuthAccount from '@/screens/authorize/SelectAuthAccount.vue';
 import BaseApi from '@/util/BaseApi';
 
 @Component({
   components: {
     Button,
+    SelectAuthAccount,
     AboveForm,
     Alert,
     Hint,
   },
 })
 export default class Authorize extends Vue {
-  alertMessage =
-    'Only approve this request if you trust the application. Approving gives the application access to the addresses of you accounts';
   noAccountsMessage = "You do not have any account. Please create an account and refresh the application's page.";
 
-  @Getter('getAuthRequests') requests!: AuthorizeRequest[];
-
+  @Getter(AuthGettersTypes.getAuthRequests) requests!: AuthorizeRequest[];
+  @Getter(AccountsGettersTypes.getWallets) wallets!: Record<string, Accounts>;
+  @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
+  accs: Record<string, string>[] = [];
   get isAccountsExists() {
     return BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
   }
@@ -61,13 +67,25 @@ export default class Authorize extends Vue {
     return request;
   }
 
+  mounted() {
+    console.log(this.request);
+    this.accs[0] = {
+      name: 'test1',
+      address: '22342fdsfsdfsdfsdfddffdfdfdfdfdfdfd',
+    };
+    this.accs[1] = {
+      name: 'test2',
+      address: '22342fdsfsdfsdfsdfddffdfdfdfdfdfdfd',
+    };
+  }
+
   onApprove() {
-    this.$store.dispatch(ActionTypes.APPROVE_AUTH_REQUEST, this.request);
+    this.$store.dispatch(AuthActionTypes.APPROVE_AUTH_REQUEST, this.request);
     this.$router.push({ name: Components.Wallet });
   }
 
   onReject() {
-    this.$store.dispatch(ActionTypes.REJECT_AUTH_REQUEST, this.request);
+    this.$store.dispatch(AuthActionTypes.REJECT_AUTH_REQUEST, this.request);
     this.$router.push({ name: Components.Wallet });
   }
 }
@@ -78,12 +96,12 @@ export default class Authorize extends Vue {
   display: flex;
   flex-flow: column;
   justify-content: space-between;
-  height: 90%;
+  height: 100%;
 
   .authorize__content {
-    font-size: 16px;
+    font-size: 14px;
+    line-height: 21px;
     font-weight: 400px;
-    margin-bottom: 20px;
   }
 
   .authorize__content--name {
@@ -99,7 +117,6 @@ export default class Authorize extends Vue {
     display: flex;
     flex-flow: column;
     justify-content: space-between;
-    height: 110px;
   }
 }
 </style>

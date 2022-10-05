@@ -16,7 +16,8 @@
     "baseUrl": ".",
     "types": ["webpack-env", "jest", "node", "element-ui", "chrome"],
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@extension-base/*": ["src/extension/background/extension-base/src/*"]
     },
     "lib": ["esnext", "dom", "dom.iterable", "scripthost"]
   },

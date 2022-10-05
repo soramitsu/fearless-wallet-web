@@ -1,4 +1,4 @@
-import { MetadataRequest } from '@polkadot/extension-base/background/types';
+import { MetadataRequest } from '@extension-base/background/types';
 import { Mutations, MutationTypes } from './mutations';
 import type { ActionTree, ActionContext } from 'vuex';
 import type { State } from './state';

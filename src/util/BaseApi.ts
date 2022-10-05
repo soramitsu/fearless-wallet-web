@@ -10,6 +10,8 @@ import {
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import { assetFromToken } from '@equilab/api';
+import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import { BehaviorSubject } from 'rxjs';
 import type { KeyringPair$Json, KeyringPair$Meta, KeyringPair } from '@polkadot/keyring/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
@@ -87,6 +89,14 @@ export default class BaseApi {
 
     return null;
   }
+
+  static getAllAddresses() {
+    const accounts = BaseApi.getPolkadotAddresses();
+    const addresses = BaseApi.getAddresses();
+
+    return [...accounts, ...addresses];
+  }
+
   public static mortalityDecode(era: ExtrinsicEra, hexBlockNumber: string) {
     const blockNumber = bnToBn(hexBlockNumber);
     const mortal = era.asMortalEra;
@@ -263,6 +273,14 @@ export default class BaseApi {
 
   public static getAddresses(): KeyringAddress[] {
     return keyring.getAddresses();
+  }
+
+  public static getAccountsSubject(): BehaviorSubject<SubjectInfo> {
+    return keyring.accounts.subject;
+  }
+
+  public static getAddressesSubject(): BehaviorSubject<SubjectInfo> {
+    return keyring.addresses.subject;
   }
 
   public static getPolkadotAddresses(): string[] {

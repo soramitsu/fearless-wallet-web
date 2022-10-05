@@ -20,7 +20,7 @@
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { MetadataRequest } from '@polkadot/extension-base/background/types';
+import { MetadataRequest } from '@extension-base/background/types';
 import InfoItem from '../signing/InfoItem.vue';
 import Corners from '@/components/Corners.vue';
 import Button from '@/components/Button.vue';
@@ -44,7 +44,7 @@ import InfoList from '@/layouts/InfoList.vue';
   },
 })
 export default class MetaRequest extends Vue {
-  @Getter('getMetaRequest') requests!: MetadataRequest[];
+  @Getter('getMetaRequests') requests!: MetadataRequest[];
 
   alertMessage =
     'This approval will add the metadata to your extension instance, allowing future requests to be decoded using this metadata';

@@ -1,5 +1,4 @@
-import { AuthUrlInfo } from '@polkadot/extension-base/background/handlers/State';
-import { AuthorizeRequest } from '@polkadot/extension-base/background/types';
+import { AuthorizeRequest, AuthUrlInfo } from '@extension-base/background/types';
 
 export type State = {
   requests: AuthorizeRequest[];

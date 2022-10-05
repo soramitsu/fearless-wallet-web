@@ -98,7 +98,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Identicon from '@polkadot/vue-identicon';
+import { Identicon } from '@polkadot/vue-identicon';
 import { Getter } from 'vuex-class';
 import type { HistoryNode } from '@/interfaces/history';
 import type { SelectedWallet } from '@/store/accounts/types';

@@ -5,7 +5,7 @@
         <Hint class="alert__header" size="big" iconName="warning-orange" text="Attention" />
 
         <p class="alert__message">
-          {{ message }}
+          <slot>{{ message }}</slot>
         </p>
       </div>
     </div>
@@ -53,6 +53,6 @@ export default class Container extends Vue {
   font-weight: 400;
   line-height: 150%;
   color: $default-white;
-  text-align: start;
+  text-align: flex-start;
 }
 </style>

@@ -1,7 +1,7 @@
 import type { GetterTree } from 'vuex';
 import type { SelectedWallet, Accounts } from './types';
 import type { State } from './state';
-import type { FiatJson } from '@/interfaces/common';
+import type { FiatJson } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import store from '@/store';
 
@@ -11,6 +11,7 @@ export enum GettersTypes {
   getFiatSymbol = 'getFiatSymbol',
   getAccounts = 'getAccounts',
   getAddresses = 'getAddresses',
+  getWallets = 'getWallets',
 }
 
 export type Getters = {
@@ -19,6 +20,7 @@ export type Getters = {
   [GettersTypes.getFiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
   [GettersTypes.getAddresses](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
+  [GettersTypes.getWallets](state: State, getters?: GetterTree<State, State> & Getters): Record<string, Accounts>;
 };
 
 const getters: GetterTree<State, State> & Getters = {
@@ -39,6 +41,9 @@ const getters: GetterTree<State, State> & Getters = {
   },
   [GettersTypes.getAddresses]({ addresses }): Accounts {
     return addresses;
+  },
+  [GettersTypes.getWallets]({ addresses, accounts }): Record<string, Accounts> {
+    return { addresses, accounts };
   },
 };
 

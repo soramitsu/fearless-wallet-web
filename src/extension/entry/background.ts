@@ -1,7 +1,7 @@
 import { cryptoWaitReady } from '@polkadot/util-crypto';
-import handlers from '../background/extension-base/src/background/handlers';
-import State, { initState } from '../background/extension-base/src/background/handlers/State';
-import type { RequestSignatures, TransportRequestMessage } from '@polkadot/extension-base/background/types';
+import handlers from '@extension-base/background/handlers';
+import State, { initState } from '@extension-base/background/handlers/State';
+import type { RequestSignatures, TransportRequestMessage } from '@extension-base/background/types';
 import { keyring } from '@/controllers/keyringChrome';
 
 chrome.runtime.onInstalled.addListener(async () => {

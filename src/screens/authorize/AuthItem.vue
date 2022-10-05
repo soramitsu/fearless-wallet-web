@@ -16,8 +16,8 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import { AuthUrlInfo } from '@polkadot/extension-base/background/handlers/State';
-import { stripUrl } from '@/extension/background/extension-base/src/background/handlers/helpers';
+import { stripUrl } from '@extension-base/background/handlers/helpers';
+import { AuthUrlInfo } from '@extension-base/background/types';
 import Switcher from '@/components/Switcher.vue';
 
 @Component({

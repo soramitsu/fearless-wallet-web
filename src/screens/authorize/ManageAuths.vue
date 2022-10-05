@@ -15,7 +15,8 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { AuthUrlInfo } from '@polkadot/extension-base/background/handlers/State';
+
+import { AuthUrlInfo } from '@extension-base/background/types';
 import AboveForm from '@/components/AboveForm.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import AuthItem from '@/screens/authorize/AuthItem.vue';

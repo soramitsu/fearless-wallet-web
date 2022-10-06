@@ -41,7 +41,7 @@ export default class Authorize extends Vue {
     const { authorizedAccounts } = list[url];
 
     this.wallets.forEach((account) => {
-      const isAuthorized = authorizedAccounts.some((el) => el === account.address);
+      const isAuthorized = authorizedAccounts.some((el: string) => el === account.address);
 
       Vue.set(this.state, account.name, {
         name: account.name,
@@ -58,7 +58,6 @@ export default class Authorize extends Vue {
     this.state[name].active = value;
 
     const isAllActive = Object.values(this.state).every((el) => el.active === true);
-    console.log(isAllActive);
     this.selectAll = isAllActive;
 
     return this.state[name].active;

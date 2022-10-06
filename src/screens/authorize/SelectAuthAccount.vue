@@ -1,19 +1,26 @@
 <template>
   <div class="auth-accounts">
-    <Checkbox size="big" label="Select all" @change="onSelectAll" />
+    <Checkbox
+      size="big"
+      label="Select all"
+      v-model.lazy="syncSelectAll"
+      @change="(value) => $emit('onSelectAll', value)"
+    />
     <ul class="account__list">
-      <li v-for="({ name, address }, index) in accounts" class="auth-account" v-bind:key="index">
-        <Checkbox
-          class="account__checkbox"
-          size="big"
-          :label="name"
-          :id="address"
-          v-model="state[name]"
-          @change="onSelect"
-        />
-
+      <li v-for="(account, index) in accounts" class="auth-account" v-bind:key="index">
+        <div class="checkbox">
+          <Checkbox
+            class="account__checkbox"
+            size="big"
+            :name="account.address"
+            :label="account.name"
+            v-model.lazy="account.active"
+            @change="(value) => $emit('onSelect', value, account.name)"
+          />
+          <div v-if="account.isMobile" class="account__checkbox--mobile-icon">mobile</div>
+        </div>
         <div class="account__address">
-          <span>{{ address }}</span>
+          <span>{{ account.address }}</span>
           <img class="clipboard" src="@/assets/clipboard.svg" @click="toClipboard(address)" />
         </div>
       </li>
@@ -22,31 +29,22 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import Checkbox from '@/components/Checkbox.vue';
-import { getAuthList } from '@/extension/messaging';
 
 interface AccountsProp {
   name: string;
   address: string;
+  isMobile: boolean;
+  active: boolean;
 }
 
 @Component({
   components: { Checkbox },
 })
-export default class Authorize extends Vue {
-  @Prop(Array) accounts!: AccountsProp[];
-  state = {};
-
-  onSelect() {
-    console.log('select');
-  }
-  async mounted() {
-    const { list } = await getAuthList();
-  }
-  onSelectAll() {
-    console.log('selectAll');
-  }
+export default class SelectAuthAccount extends Vue {
+  @Prop(Object) accounts!: AccountsProp[];
+  @PropSync('selectAll', { type: Boolean }) syncSelectAll!: boolean;
 
   toClipBoard(address: string) {
     const clipboard = new Clipboard();
@@ -72,8 +70,27 @@ export default class Authorize extends Vue {
   border: 1px solid transparent;
   border-bottom-color: rgba(255, 255, 255, 0.1);
 }
+
 .account__checkbox {
   flex-shrink: 1;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.account__checkbox--mobile-icon {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+  letter-spacing: 0.03em;
+  line-height: 15px;
+  text-transform: uppercase;
+  border-radius: 30px;
+  text-align: center;
+  padding: 2px 6px;
 }
 
 .account__address {

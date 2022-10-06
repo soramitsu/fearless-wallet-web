@@ -1,5 +1,5 @@
 <template>
-  <s-checkbox class="fw-checkbox" v-model="vModel" :size="size" :label="label" />
+  <s-checkbox class="fw-checkbox" v-model.lazy="vModel" :size="size" :label="label" @change="onChange" />
 </template>
 
 <script lang="ts">
@@ -14,6 +14,10 @@ export default class Checkbox extends Vue {
   @VModel({ type: Boolean }) vModel!: boolean;
   @Prop(String) label!: string;
   @Prop({ default: 'medium' }) size!: CheckboxSizes;
+
+  onChange(value: boolean) {
+    this.$emit('change', value);
+  }
 }
 </script>
 

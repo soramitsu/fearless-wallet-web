@@ -13,6 +13,11 @@ export enum GettersTypes {
   getAddresses = 'getAddresses',
   getWallets = 'getWallets',
 }
+interface Account {
+  name: string;
+  address: string;
+  isMobile: boolean;
+}
 interface Wallet {
   type: string;
   json: {
@@ -28,7 +33,7 @@ export type Getters = {
   [GettersTypes.getFiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
   [GettersTypes.getAddresses](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
-  [GettersTypes.getWallets](state: State, getters?: GetterTree<State, State> & Getters): Record<string, string>[];
+  [GettersTypes.getWallets](state: State, getters?: GetterTree<State, State> & Getters): Account[];
 };
 
 const getters: GetterTree<State, State> & Getters = {
@@ -50,22 +55,26 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getAddresses]({ addresses }): Accounts {
     return addresses;
   },
-  [GettersTypes.getWallets]({ addresses, accounts }): Record<string, string>[] {
-    const wallets: Record<string, string>[] = [];
+  [GettersTypes.getWallets]({ addresses, accounts }): Account[] {
+    const wallets: Account[] = [];
     (Object.values(accounts) as any).forEach((wallet: Wallet) => {
       if (wallet.type !== 'ethereum')
         wallets.push({
           name: wallet.json.meta.name,
           address: wallet.json.address,
+          isMobile: false,
         });
     });
 
     (Object.values(addresses) as any).forEach((wallet: Wallet) => {
-      if (wallet.type !== 'etherium')
-        wallets.push({
+      if (wallet.type !== 'etherium') {
+        const account: Account = {
           name: wallet.json.meta.name,
           address: wallet.json.address,
-        });
+          isMobile: true,
+        };
+        wallets.push(account);
+      }
     });
 
     return wallets;

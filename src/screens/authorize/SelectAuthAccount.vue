@@ -1,6 +1,6 @@
 <template>
   <div class="auth-accounts">
-    <Checkbox label="Select all" @change="onSelectAll" />
+    <Checkbox size="big" label="Select all" @change="onSelectAll" />
     <ul class="account__list">
       <li v-for="({ name, address }, index) in accounts" class="auth-account" v-bind:key="index">
         <Checkbox
@@ -24,6 +24,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import Checkbox from '@/components/Checkbox.vue';
+import { getAuthList } from '@/extension/messaging';
 
 interface AccountsProp {
   name: string;
@@ -40,7 +41,9 @@ export default class Authorize extends Vue {
   onSelect() {
     console.log('select');
   }
-
+  async mounted() {
+    const { list } = await getAuthList();
+  }
   onSelectAll() {
     console.log('selectAll');
   }
@@ -75,7 +78,10 @@ export default class Authorize extends Vue {
 
 .account__address {
   position: relative;
-  padding-right: 40px;
+  width: 300px;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  padding-right: 30px;
 }
 
 .clipboard {
@@ -83,6 +89,7 @@ export default class Authorize extends Vue {
   cursor: pointer;
   position: absolute;
   right: 0;
+  top: 0;
 }
 
 .account__list {

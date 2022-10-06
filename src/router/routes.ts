@@ -89,7 +89,7 @@ const routes: Array<RouteConfig> = [
         component: ManageAuths,
       },
       {
-        path: 'updateauths/:origin',
+        path: 'updateauths/:url',
         name: Components.UpdateAuths,
         component: UpdateAuths,
       },

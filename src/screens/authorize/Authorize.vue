@@ -70,8 +70,6 @@ export default class Authorize extends Vue {
   }
 
   mounted() {
-    console.log(this.request);
-
     this.accs.push({
       name: 'test1',
       address: '22342fdsfsdfsdfsdfddffdfdfdfdfdfdfd',

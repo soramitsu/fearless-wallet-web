@@ -6,7 +6,7 @@
       </SCol>
       <SCol :span="3">
         <SRow flex justify="space-around">
-          <span class="authorized-account__count" @click="$emit('updateAuths', request.origin)">{{
+          <span class="authorized-account__count" @click="$emit('updateAuths', stripUrl)">{{
             authorizedAccounts
           }}</span>
           <img class="trash" src="@/assets/trash.svg" @click="$emit('onRemoveAuth', prepUrl)" />
@@ -28,6 +28,10 @@ export default class AuthItem extends Vue {
 
   get prepUrl() {
     return stripUrl(this.request.url);
+  }
+
+  get stripUrl() {
+    return this.request.url.split('/')[2];
   }
 
   get authorizedAccounts() {

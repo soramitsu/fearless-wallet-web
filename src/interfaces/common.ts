@@ -1,4 +1,5 @@
 import type { InvalidValueName } from '@/consts/invalidMessages';
+import type { AssetName } from './assets';
 import { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 
 type TMutation<T> = (props?: T) => void;
@@ -21,7 +22,6 @@ type ImportType = 'mnemonic' | 'rawSeed' | 'json';
 type FilterHistory = 'all' | 'transfer' | 'reward' | 'extrinsic';
 
 type WalletAddress = string;
-type AssetName = string;
 
 type DerivationPath = typeof INITIAL_DERIVATION_PATHS.substrate;
 type DerivationPaths = typeof INITIAL_DERIVATION_PATHS;
@@ -61,7 +61,7 @@ type FiatJson = {
 
 type ChainAccount = {
   network: string;
-  token: string;
+  asset: string;
   address: string;
   isReplaced: boolean;
 };

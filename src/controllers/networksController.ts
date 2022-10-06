@@ -1,5 +1,5 @@
-import type { AssetJson, Networks, Network, TokenPrice } from '@/interfaces';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import type { AssetJson, Networks, Network, AssetPrice } from '@/interfaces';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -18,8 +18,8 @@ export default class NetworksController {
     return store.getters[NetworksGettersTypes.getAssetsJson];
   }
 
-  public static getTokenPrice(assetId: string): TokenPrice {
-    return store.getters[NetworksGettersTypes.getTokenPrice](assetId);
+  public static getAssetPrice(assetId: string): AssetPrice {
+    return store.getters[NetworksGettersTypes.getAssetPrice](assetId);
   }
 
   public static async connectToNodes(): Promise<void> {
@@ -33,7 +33,7 @@ export default class NetworksController {
       fiatsUrl: FIATS_URL,
     });
 
-    await store.dispatch(NetworksActionTypes.LOAD_TOKENS_PRICE);
+    await store.dispatch(NetworksActionTypes.LOAD_ASSETS_PRICE);
   }
 
   public static async loadHistory(

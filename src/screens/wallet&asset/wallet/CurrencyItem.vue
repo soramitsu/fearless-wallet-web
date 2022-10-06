@@ -33,10 +33,10 @@
       </div>
       <div class="row second-row">
         <div class="currency-name overflow">
-          {{ tokenString }}
+          {{ assetString }}
         </div>
-        <div class="count-tokens overflow">
-          {{ countTokensString }}
+        <div class="count-assets overflow">
+          {{ countAssetsString }}
         </div>
       </div>
       <div class="row third-row">
@@ -71,7 +71,7 @@
           iconName="chevron-right"
           backgroundColor="none"
           backgroundColorHover="black"
-          @click="openTokenPage"
+          @click="openAssetPage"
         />
       </template>
 
@@ -130,17 +130,17 @@ export default class CurrencyItem extends Vue {
     return change > 0 ? `+${change}%` : change < 0 ? `${change}%` : '';
   }
 
-  get tokenString() {
+  get assetString() {
     return this.currency?.displayName.toUpperCase();
   }
 
-  get countTokensString() {
-    const totalCountTokens =
+  get countAssetsString() {
+    const totalCountAssets =
       this.selectedNetwork !== 'All networks'
-        ? +this.currency.getTotalCountTokensByNetwork(this.selectedWallet, this.selectedNetwork)
-        : +this.currency.getTotalCountTokens(this.selectedWallet);
+        ? +this.currency.getTotalCountAssetsByNetwork(this.selectedWallet, this.selectedNetwork)
+        : +this.currency.getTotalCountAssets(this.selectedWallet);
 
-    return formattedNumber(totalCountTokens, 4, false);
+    return formattedNumber(totalCountAssets, 4, false);
   }
 
   get totalBalanceString() {
@@ -196,8 +196,8 @@ export default class CurrencyItem extends Vue {
     this.currencyVisible = this.currency.getCurrencyVisible(this.selectedWallet.address);
   }
 
-  openTokenPage() {
-    const { mainNetwork, tokenId } = this.currency;
+  openAssetPage() {
+    const { mainNetwork, assetId } = this.currency;
     const availableInNetworks = this.currency.getAvailableInNetworks(this.selectedWallet);
     const availableNetwork = availableInNetworks[0]?.network ?? '';
     const network =
@@ -210,9 +210,9 @@ export default class CurrencyItem extends Vue {
         : 'polkadot';
 
     this.$router.push({
-      name: Components.Token,
+      name: Components.Asset,
       params: {
-        tokenId,
+        assetId,
         network,
       },
     });
@@ -279,7 +279,7 @@ export default class CurrencyItem extends Vue {
         font-size: 20px;
       }
 
-      .count-tokens {
+      .count-assets {
         font-size: 18px;
       }
     }

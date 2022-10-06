@@ -41,7 +41,7 @@ const actions: ActionTree<State, State> & Actions = {
       const currencies: Currencies = defaultSortingCurrencies(rootState.networks.currencies, state.selectedWallet);
       const sequence = currencies.map(({ displayName, relayChain }) => `${displayName}-${relayChain}`);
 
-      accountController.setSequenceTokens(sequence, selectedWalletAddress);
+      accountController.setSequenceAssets(sequence, selectedWalletAddress);
     }, 1000);
   },
 };

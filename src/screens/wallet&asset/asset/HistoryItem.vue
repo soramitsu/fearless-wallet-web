@@ -1,11 +1,11 @@
 <template>
   <div class="history-item">
-    <NetworkLogo :name="token" :relayChain="relayChain" />
+    <NetworkLogo :name="asset" :relayChain="relayChain" />
 
     <div class="column">
       <div class="first-row">
         <div>{{ hash }}</div>
-        <div>{{ value }} {{ tokenToUpperCase }}</div>
+        <div>{{ value }} {{ assetToUpperCase }}</div>
       </div>
       <div class="second-row">
         <div>{{ typeFormatted }}</div>
@@ -18,8 +18,8 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import type { GetAssetName } from '@/store/networks/types';
 import type { HistoryNode, Networks, RelayChainName } from '@/interfaces';
-import type { GetTokenName } from '@/store/networks/types';
 import NetworkLogo from '@/components/NetworkLogo.vue';
 import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, cut } from '@/helpers/history';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -30,21 +30,21 @@ import { TransactionType } from '@/interfaces/history';
 })
 export default class HistoryItem extends Vue {
   @Prop(Object) historyNode!: HistoryNode;
-  @Prop(String) tokenId!: string;
+  @Prop(String) assetId!: string;
   @Prop(String) relayChain!: RelayChainName;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
-  @Getter(NetworksGettersTypes.getTokenName) getTokenName!: GetTokenName;
+  @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
 
-  get token() {
-    return this.getTokenName(this.tokenId);
+  get asset() {
+    return this.getAssetName(this.assetId);
   }
 
   get date() {
     return getFormattedDate(this.historyNode);
   }
 
-  get tokenToUpperCase() {
-    return this.token.toUpperCase();
+  get assetToUpperCase() {
+    return this.asset.toUpperCase();
   }
 
   get type() {
@@ -52,7 +52,7 @@ export default class HistoryItem extends Vue {
   }
 
   get value() {
-    return getHistoryValue(this.historyNode, this.tokenId);
+    return getHistoryValue(this.historyNode, this.assetId);
   }
 
   get hash() {

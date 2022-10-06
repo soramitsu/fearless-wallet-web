@@ -47,7 +47,7 @@
 
     <SendForm
       v-if="showSendForm"
-      :_selectedTokenId="selectedCurrency.tokenId"
+      :_selectedAssetId="selectedCurrency.assetId"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false)"
     />
@@ -107,7 +107,7 @@ export default class Wallet extends Vue {
   filterValue = '';
   selectedCurrency!: {
     mainNetwork: string;
-    tokenId: string;
+    assetId: string;
   };
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -120,11 +120,13 @@ export default class Wallet extends Vue {
 
     if (address === '') return [];
 
-    const sequence = accountController.getSequenceTokensByAddress(address);
+    const sequence = accountController.getSequenceAssetsByAddress(address);
 
-    return this.currencies.sort(({ token: token1, relayChain: RC1 }, { token: token2, relayChain: RC2 }) => {
-      const index1 = sequence.indexOf(`${token1}-${RC1}`);
-      const index2 = sequence.indexOf(`${token2}-${RC2}`);
+    return this.currencies.sort((currency1, currency2) => {
+      const { displayName: displayName1, relayChain: relayChain1 } = currency1;
+      const { displayName: displayName2, relayChain: relayChain2 } = currency2;
+      const index1 = sequence.indexOf(`${displayName1}-${relayChain1}`);
+      const index2 = sequence.indexOf(`${displayName2}-${relayChain2}`);
 
       return index1 - index2;
     });
@@ -173,7 +175,7 @@ export default class Wallet extends Vue {
 
   toggleCurrenciesVisible() {
     this.currencies.forEach((currency) => {
-      const isZeroBalance = currency.getTotalCountTokens(this.selectedWallet) === '0';
+      const isZeroBalance = currency.getTotalCountAssets(this.selectedWallet) === '0';
 
       if (isZeroBalance) currency.setCurrencyVisible(this.selectedWallet.address, false);
     });
@@ -187,7 +189,7 @@ export default class Wallet extends Vue {
     if (currency)
       this.selectedCurrency = {
         mainNetwork: currency.mainNetwork,
-        tokenId: currency.tokenId,
+        assetId: currency.assetId,
       };
   }
 

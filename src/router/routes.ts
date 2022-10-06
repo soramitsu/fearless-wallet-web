@@ -5,8 +5,8 @@ import Export from '@/screens/accounts/Export.vue';
 import History from '@/screens/history/History.vue';
 import Nodes from '@/screens/accounts/Nodes.vue';
 import Staking from '@/screens/staking/Staking.vue';
-import Token from '@/screens/wallet&token/token/Token.vue';
-import Wallet from '@/screens/wallet&token/wallet/Wallet.vue';
+import Asset from '@/screens/wallet&asset/asset/Asset.vue';
+import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import AddWallet from '@/screens/addWallet/AddWallet.vue';
 import ManageAuths from '@/screens/authorize/ManageAuths.vue';
@@ -30,7 +30,7 @@ export enum Components {
   DEX = 'DEX',
   Staking = 'Staking',
   History = 'History',
-  Token = 'Token',
+  Asset = 'Asset',
   AccountsLayout = 'AccountsLayout',
   Accounts = 'Accounts',
   Nodes = 'Nodes',
@@ -126,9 +126,9 @@ const routes: Array<RouteConfig> = [
         ],
       },
       {
-        path: ':network/:tokenId',
-        name: Components.Token,
-        component: Token,
+        path: ':network/:assetId',
+        name: Components.Asset,
+        component: Asset,
       },
       {
         path: 'crowdloans',

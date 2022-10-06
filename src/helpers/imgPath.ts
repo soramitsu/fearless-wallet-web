@@ -42,7 +42,7 @@ function getOrmlFileName(value: string) {
   }
 }
 
-function getImgPathByNetworkOrTokenName(value = '', relayChain?: RelayChainName) {
+function getImgPathByNetworkOrAssetName(value = '', relayChain?: RelayChainName) {
   switch (value.toLowerCase()) {
     case 'statemine':
       return 'statemine.svg';
@@ -317,7 +317,7 @@ function getImgPath(value: string, relayChain?: RelayChainName) {
 
   if (ormlFileName !== '') return `${ORML_PATH}/${ormlFileName}`;
 
-  return `${NETWORKS_PATH}/${getImgPathByNetworkOrTokenName(value, relayChain)}`;
+  return `${NETWORKS_PATH}/${getImgPathByNetworkOrAssetName(value, relayChain)}`;
 }
 
 export { getImgPath };

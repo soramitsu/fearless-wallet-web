@@ -123,7 +123,7 @@ import BaseApi from '@/util/BaseApi';
   },
 })
 export default class SelectNetworkButton extends Vue {
-  @Prop(String) tokenId!: string;
+  @Prop(String) assetId!: string;
   @Prop(Object) historyNode!: HistoryNode;
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -213,7 +213,7 @@ export default class SelectNetworkButton extends Vue {
   }
 
   get transferFee() {
-    return getHumanTransferFee(this.historyNode, this.tokenId);
+    return getHumanTransferFee(this.historyNode, this.assetId);
   }
 
   get date() {
@@ -221,7 +221,7 @@ export default class SelectNetworkButton extends Vue {
   }
 
   get value() {
-    return getHistoryValue(this.historyNode, this.tokenId);
+    return getHistoryValue(this.historyNode, this.assetId);
   }
 
   get type() {

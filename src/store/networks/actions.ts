@@ -14,7 +14,7 @@ import type {
 import type { FiatJson, AssetJson, NetworkJson, Networks, ExternalApi, AssetsPrice } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
-import { ETHEREUM_NETWORKS } from '@/consts/networks';
+import { ETHEREUM_NETWORKS, NOT_SUPPORTED_SUBQUERY_NETWORKS } from '@/consts/networks';
 import { loadHistory } from '@/subquery/history';
 import { getReplacedMetaTyped } from '@/helpers/common';
 import { getMockCurrencies } from '@/helpers/currencies';
@@ -110,35 +110,20 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.LOAD_HISTORY]({ commit, getters }, { networkName, walletAddress, pageSize = PAGE_SIZE, assetId }) {
-    const array = [
-      'pichiu network',
-      'kabocha',
-      'kico',
-      'centrifuge',
-      'parallel heiko',
-      'datahighway tanganika',
-      'efinity',
-      'composable finance',
-      'quartz',
-      'litentry',
-      'dorafactory network',
-      'parallel',
-      'integritee shell',
-    ];
+    if (NOT_SUPPORTED_SUBQUERY_NETWORKS.includes(networkName)) return; // Subquery does not work for these networks
 
-    if (array.includes(networkName)) return; // Subquery does not work for these networks
+    const {
+      externalApi: { history: historyApi },
+    } = getters.getNetwork(networkName);
 
-    const { externalApi } = getters.getNetwork(networkName);
-    const historyExternalApi = externalApi.history;
+    if (!historyApi) return;
 
-    if (!historyExternalApi) return;
-
+    const cursor = null;
+    const { type, url } = historyApi;
     const formattedAddress = BaseApi.formatAddress(
       { address: walletAddress, ethereumAddress: walletAddress },
       networkName
     );
-    const { type, url } = historyExternalApi;
-    const cursor = null;
 
     // const historyForNetwork = getters.getHistory(networkName);
     // const cursor = historyForNetwork?.[walletAddress]?.pageInfo.endCursor ?? null;
@@ -216,19 +201,19 @@ const actions: ActionTree<State, State> & Actions = {
     await networkApi.api!.disconnect();
     await networkApi.provider!.disconnect();
 
-    const { provider, api } = connectToApi(network, nodeUrl, 0);
+    // const { api, provider } = connectToApi(nodeUrl);
 
-    commit(MutationTypes.SET_NETWORK_API, { network, provider, api });
+    // commit(MutationTypes.SET_NETWORK_API, { network, provider, api });
 
-    const accounts = BaseApi.getAccounts().reduce((result, { address, meta }) => {
-      const { type } = BaseApi.getPair(address);
+    // const accounts = BaseApi.getAccounts().reduce((result, { address, meta }) => {
+    //   const { type } = BaseApi.getPair(address);
 
-      result[address] = { type, json: { address, meta } };
+    //   result[address] = { type, json: { address, meta } };
 
-      return result;
-    }, {} as Accounts);
+    //   return result;
+    // }, {} as Accounts);
 
-    await dispatch(ActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, loadHistory: false, networksProps: [networkApi] });
+    // await dispatch(ActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, loadHistory: false, networksProps: [networkApi] });
   },
 };
 

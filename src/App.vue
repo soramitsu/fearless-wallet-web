@@ -38,13 +38,17 @@ export default class App extends Vue {
   @Action(AuthActionTypes.SUBSCRIBE_AUTH_REQUESTS) authSubscribe!: TAction<unknown>;
   @Action(SignActionTypes.SUBSCRIBE_SIGN_REQUESTS) signSubscribe!: TAction<unknown>;
   @Action(MetaActionTypes.SUBSCRIBE_METADATA_REQUESTS) metaSubscribe!: TAction<unknown>;
+  async beforeCreate() {
+    const { loadJsons, connectToNodes } = NetworksController;
 
-  async mounted() {
-    const { loadJsons, connectToNodes, subscribeToBalancesOfNetworks } = NetworksController;
-
-    await Promise.all([this.authSubscribe(), this.metaSubscribe(), this.signSubscribe()]);
     await loadJsons();
     await connectToNodes();
+  }
+
+  async mounted() {
+    const { subscribeToBalancesOfNetworks } = NetworksController;
+
+    await Promise.all([this.authSubscribe(), this.metaSubscribe(), this.signSubscribe()]);
 
     this.subscribeAccounts = BaseApi.getAccountsSubject();
     this.subscribeAddresses = BaseApi.getAddressesSubject();

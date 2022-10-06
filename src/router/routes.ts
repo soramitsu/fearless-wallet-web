@@ -17,6 +17,7 @@ import Crowdloans from '@/screens/crowdloans/Crowdloans.vue';
 import Authorize from '@/screens/authorize/Authorize.vue';
 import MetaRequest from '@/screens/metadata/Metadata.vue';
 import Transaction from '@/screens/signing/Transaction.vue';
+import UpdateAuths from '@/screens/authorize/UpdateAuths.vue';
 
 import store from '@/store';
 
@@ -38,6 +39,7 @@ export enum Components {
   Authorize = 'Authorize',
   MetaRequest = 'MetaRequest',
   Transaction = 'Transaction',
+  UpdateAuths = 'UpdateAuths',
 }
 
 const haveAccounts = () => BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
@@ -85,6 +87,11 @@ const routes: Array<RouteConfig> = [
         path: 'manageauths',
         name: Components.ManageAuths,
         component: ManageAuths,
+      },
+      {
+        path: 'updateauths/:origin',
+        name: Components.UpdateAuths,
+        component: UpdateAuths,
       },
       {
         path: 'wallet',

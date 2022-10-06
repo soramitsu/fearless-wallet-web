@@ -7,6 +7,7 @@
       v-bind:key="el.id"
       :request="el"
       @onRemoveAuth="removeAuth"
+      @updateAuths="updateAuthorizedAccount"
       @onChange="onChange"
     />
   </AboveForm>
@@ -15,8 +16,8 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-
 import { AuthUrlInfo } from '@extension-base/background/types';
+import { getAuthList } from '@/extension/messaging';
 import AboveForm from '@/components/AboveForm.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import AuthItem from '@/screens/authorize/AuthItem.vue';
@@ -61,8 +62,21 @@ export default class ManageAuths extends Vue {
     console.info(event);
   }
 
+  updateAuthorizedAccount(origin: string) {
+    this.$router.push({
+      name: Components.UpdateAuths,
+      params: {
+        origin,
+      },
+    });
+  }
   async removeAuth(url: string) {
     await this.$store.dispatch('DELETE_AUTH_CONNECTION', url);
+  }
+
+  async mounted() {
+    const list = await getAuthList();
+    console.log(list, 'list');
   }
 
   back() {

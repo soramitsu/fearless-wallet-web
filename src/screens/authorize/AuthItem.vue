@@ -1,11 +1,14 @@
 <template>
   <SCol width="100%" v-bind:key="request.id">
     <SRow>
-      <SCol :span="10" class="s-flex s-justify-start">
+      <SCol :span="9" class="s-flex s-justify-start">
         <span class="auth-item-name">{{ request.origin }}</span>
       </SCol>
-      <SCol :span="2">
+      <SCol :span="3">
         <SRow flex justify="space-around">
+          <span class="authorized-account__count" @click="$emit('updateAuths', request.origin)">{{
+            authorizedAccounts
+          }}</span>
           <img class="trash" src="@/assets/trash.svg" @click="$emit('onRemoveAuth', prepUrl)" />
         </SRow>
       </SCol>
@@ -18,13 +21,8 @@
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { stripUrl } from '@extension-base/background/handlers/helpers';
 import { AuthUrlInfo } from '@extension-base/background/types';
-import Switcher from '@/components/Switcher.vue';
 
-@Component({
-  components: {
-    Switcher,
-  },
-})
+@Component
 export default class AuthItem extends Vue {
   @Prop(Object) request!: AuthUrlInfo;
 
@@ -32,15 +30,13 @@ export default class AuthItem extends Vue {
     return stripUrl(this.request.url);
   }
 
-  get value() {
-    return this.request.isAllowed === undefined ? true : this.request.isAllowed;
-  }
+  get authorizedAccounts() {
+    const authListLenght = this.request.authorizedAccounts.length;
 
-  set value(value: boolean) {
-    this.$store.commit('TOGGLE_AUTH_STATE', {
-      id: this.request.id,
-      value,
-    });
+    if (!authListLenght) return `no accounts`;
+    if (authListLenght === 1) return `1 account`;
+
+    return `${authListLenght} accounts`;
   }
 }
 </script>
@@ -60,6 +56,12 @@ export default class AuthItem extends Vue {
   background-size: 16px 16px;
   height: 16px;
   width: 16px;
+}
+
+.authorized-account__count {
+  cursor: pointer;
+  white-space: nowrap;
+  color: rgba(0, 238, 119, 1);
 }
 
 .trash {

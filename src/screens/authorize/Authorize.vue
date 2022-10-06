@@ -10,8 +10,9 @@
               <span class="authorize__content--link">{{ request.url }}</span>
             </p>
           </Alert>
-
-          <SelectAuthAccount :accounts="accs" />
+          <div class="authorize-account-list">
+            <SelectAuthAccount :accounts="accs" />
+          </div>
         </div>
         <div class="authorize__control">
           <Button width="100%" text="Yes, allow this application access" size="big" fontSize="big" @click="onApprove" />
@@ -51,12 +52,13 @@ import BaseApi from '@/util/BaseApi';
   },
 })
 export default class Authorize extends Vue {
-  noAccountsMessage = "You do not have any account. Please create an account and refresh the application's page.";
+  noAccountsMessage = "You don't have any account. Please create an account and refresh the application's page.";
+  accs: Record<string, string>[] = [];
 
   @Getter(AuthGettersTypes.getAuthRequests) requests!: AuthorizeRequest[];
   @Getter(AccountsGettersTypes.getWallets) wallets!: Record<string, Accounts>;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
-  accs: Record<string, string>[] = [];
+
   get isAccountsExists() {
     return BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
   }
@@ -69,14 +71,27 @@ export default class Authorize extends Vue {
 
   mounted() {
     console.log(this.request);
-    this.accs[0] = {
+
+    this.accs.push({
       name: 'test1',
       address: '22342fdsfsdfsdfsdfddffdfdfdfdfdfdfd',
-    };
-    this.accs[1] = {
+    });
+    this.accs.push({
       name: 'test2',
       address: '22342fdsfsdfsdfsdfddffdfdfdfdfdfdfd',
-    };
+    });
+    this.accs.push({
+      name: 'test4',
+      address: '22342fdsfsdfsdfsdfddffdfdfdfdfdfdfd',
+    });
+    this.accs.push({
+      name: 'test3',
+      address: '22342fdsfsdfsdfsdfddffdfdfdfdfdfdfd',
+    });
+    this.accs.push({
+      name: 'test5',
+      address: '22342fdsfsdfsdfsdfddffdfdfdfdfdfdfd',
+    });
   }
 
   onApprove() {
@@ -117,6 +132,10 @@ export default class Authorize extends Vue {
     display: flex;
     flex-flow: column;
     justify-content: space-between;
+  }
+
+  .authorize-account-list {
+    height: 180px;
   }
 }
 </style>

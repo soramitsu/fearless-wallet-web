@@ -1,39 +1,96 @@
 <template>
   <div class="auth-accounts">
-    <Checkbox label="Select all" />
-    <div v-for="(account, index) in accounts" class="account" v-bind:key="index">
-      <Checkbox :label="account.name" />
-      <Identicon class="identicon" :size="24" theme="polkadot" :value="address" />
-      <span>{{ account.address }}</span>
-      <img src="@/assets/clipboard.svg" />
-    </div>
+    <Checkbox label="Select all" @change="onSelectAll" />
+    <ul class="account__list">
+      <li v-for="({ name, address }, index) in accounts" class="auth-account" v-bind:key="index">
+        <Checkbox
+          class="account__checkbox"
+          size="big"
+          :label="name"
+          :id="address"
+          v-model="state[name]"
+          @change="onSelect"
+        />
+
+        <div class="account__address">
+          <span>{{ address }}</span>
+          <img class="clipboard" src="@/assets/clipboard.svg" @click="toClipboard(address)" />
+        </div>
+      </li>
+    </ul>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import Checkbox from '@/components/Checkbox.vue';
+
 interface AccountsProp {
   name: string;
   address: string;
 }
+
 @Component({
   components: { Checkbox },
 })
 export default class Authorize extends Vue {
   @Prop(Array) accounts!: AccountsProp[];
+  state = {};
+
+  onSelect() {
+    console.log('select');
+  }
+
+  onSelectAll() {
+    console.log('selectAll');
+  }
+
+  toClipBoard(address: string) {
+    const clipboard = new Clipboard();
+    clipboard.writeText(address);
+  }
 }
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .auth-accounts {
   display: flex;
   flex-flow: column;
+  align-items: flex-start;
+  overflow-y: hidden;
 }
+
 .auth-account {
   display: flex;
   flex-flow: row nowrap;
   align-items: center;
   justify-content: space-between;
+  align-items: center;
+  border: 1px solid transparent;
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+.account__checkbox {
+  flex-shrink: 1;
+}
+
+.account__address {
+  position: relative;
+  padding-right: 40px;
+}
+
+.clipboard {
+  width: 18px;
+  cursor: pointer;
+  position: absolute;
+  right: 0;
+}
+
+.account__list {
+  padding: 0;
+  width: 100%;
+}
+
+.account__checkbox .el-checkbox__label {
+  font-size: 16px;
 }
 </style>

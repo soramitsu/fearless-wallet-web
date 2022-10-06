@@ -11,7 +11,12 @@
             </p>
           </Alert>
           <div class="authorize-account-list">
-            <SelectAuthAccount :accounts="accs" />
+            <SelectAuthAccount
+              :selectAll="selectAll"
+              :accounts="state"
+              @onSelectAll="onSelectAll"
+              @onSelect="onSelect"
+            />
           </div>
         </div>
         <div class="authorize__control">
@@ -41,7 +46,12 @@ import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import SelectAuthAccount from '@/screens/authorize/SelectAuthAccount.vue';
 import BaseApi from '@/util/BaseApi';
-
+interface AccountsProp {
+  name: string;
+  address: string;
+  isMobile: boolean;
+  active: boolean;
+}
 @Component({
   components: {
     Button,
@@ -53,10 +63,10 @@ import BaseApi from '@/util/BaseApi';
 })
 export default class Authorize extends Vue {
   noAccountsMessage = "You don't have any account. Please create an account and refresh the application's page.";
-  accs: Record<string, string>[] = [];
-
+  state: Record<string, AccountsProp> = {};
+  selectAll = true;
   @Getter(AuthGettersTypes.getAuthRequests) requests!: AuthorizeRequest[];
-  @Getter(AccountsGettersTypes.getWallets) wallets!: Record<string, Accounts>;
+  @Getter(AccountsGettersTypes.getWallets) wallets!: AccountsProp[];
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
 
   get isAccountsExists() {
@@ -70,30 +80,49 @@ export default class Authorize extends Vue {
   }
 
   mounted() {
-    this.accs.push({
-      name: 'test1',
-      address: '22342fdsfsdfsdfsdfddffdfdfdfdfdfdfd',
-    });
-    this.accs.push({
-      name: 'test2',
-      address: '22342fdsfsdfsdfsdfddffdfdfdfdfdfdfd',
-    });
-    this.accs.push({
-      name: 'test4',
-      address: '22342fdsfsdfsdfsdfddffdfdfdfdfdfdfd',
-    });
-    this.accs.push({
-      name: 'test3',
-      address: '22342fdsfsdfsdfsdfddffdfdfdfdfdfdfd',
-    });
-    this.accs.push({
-      name: 'test5',
-      address: '22342fdsfsdfsdfsdfddffdfdfdfdfdfdfd',
+    this.wallets.forEach((account) => {
+      Vue.set(this.state, account.name, {
+        name: account.name,
+        address: account.address,
+        isMobile: account.isMobile,
+        active: true,
+      });
     });
   }
 
+  onSelect(value: boolean, name: string) {
+    this.state[name].active = value;
+
+    const isAllActive = Object.values(this.state).every((el) => el.active === true);
+    this.selectAll = isAllActive;
+
+    return this.state[name].active;
+  }
+
+  onSelectAll(value: boolean) {
+    Object.keys(this.state).forEach((key) => {
+      Vue.set(this.state, key, {
+        ...this.state[key],
+        active: value,
+      });
+    });
+    this.selectAll = value;
+
+    return this.selectAll;
+  }
+
+  get prepAccounts() {
+    const result: string[] = [];
+
+    Object.values(this.state).map((el) => {
+      if (el.active) result.push(el.address);
+    });
+
+    return result;
+  }
+
   onApprove() {
-    this.$store.dispatch(AuthActionTypes.APPROVE_AUTH_REQUEST, this.request);
+    this.$store.dispatch(AuthActionTypes.APPROVE_AUTH_REQUEST, { request: this.request, accounts: this.prepAccounts });
     this.$router.push({ name: Components.Wallet });
   }
 

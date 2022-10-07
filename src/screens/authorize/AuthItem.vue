@@ -37,9 +37,7 @@ export default class AuthItem extends Vue {
   get authorizedAccounts() {
     const authListLenght = this.request.authorizedAccounts.length;
 
-    if (authListLenght === 1) return `1 account`;
-
-    return `${authListLenght || 0} accounts`;
+    return authListLenght === 1 ? `1 account` : `${authListLenght} accounts`;
   }
 }
 </script>

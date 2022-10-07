@@ -7,7 +7,6 @@
 </template>
 
 <script lang="ts">
-import { keyring } from '@polkadot/ui-keyring';
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import BaseApi from './util/BaseApi';
@@ -30,6 +29,7 @@ export default class App extends Vue {
 
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
   @Getter(AccountsGettersTypes.getAddresses) addresses!: Accounts;
+  @Getter(AccountsGettersTypes.getWallets) wallets!: Record<string, Accounts>;
 
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
@@ -38,16 +38,20 @@ export default class App extends Vue {
   @Action(AuthActionTypes.SUBSCRIBE_AUTH_REQUESTS) authSubscribe!: TAction<unknown>;
   @Action(SignActionTypes.SUBSCRIBE_SIGN_REQUESTS) signSubscribe!: TAction<unknown>;
   @Action(MetaActionTypes.SUBSCRIBE_METADATA_REQUESTS) metaSubscribe!: TAction<unknown>;
+  async beforeCreate() {
+    const { loadJsons, connectToNodes } = NetworksController;
 
-  async mounted() {
-    const { loadJsons, connectToNodes, subscribeToBalancesOfNetworks } = NetworksController;
-
-    await Promise.all([this.authSubscribe(), this.metaSubscribe(), this.signSubscribe()]);
     await loadJsons();
     await connectToNodes();
+  }
 
-    this.subscribeAccounts = keyring.accounts.subject;
-    this.subscribeAddresses = keyring.addresses.subject;
+  async mounted() {
+    const { subscribeToBalancesOfNetworks } = NetworksController;
+
+    await Promise.all([this.authSubscribe(), this.metaSubscribe(), this.signSubscribe()]);
+
+    this.subscribeAccounts = BaseApi.getAccountsSubject();
+    this.subscribeAddresses = BaseApi.getAddressesSubject();
 
     this.subscribeAccounts.subscribe(async (accounts) => {
       const newAccounts = this.getNewAccounts(accounts, 'accounts');

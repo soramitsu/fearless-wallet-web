@@ -1,4 +1,4 @@
-import { approveSignPassword, approveSignSignature, cancelSignRequest } from '../extension/messaging';
+import { approveSignPassword, approveSignSignature, cancelSignRequest } from '@/extension/messaging';
 export default class SignController {
   static async approveSignPassword(id: string, savePass: boolean, password?: string) {
     if (password) approveSignPassword(id, savePass, password);

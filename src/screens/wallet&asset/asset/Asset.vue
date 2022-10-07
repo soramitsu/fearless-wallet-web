@@ -91,16 +91,16 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import SelectNetworkButton from '../SelectNetworkButton.vue';
-import ReceiveForm from '../ReceiveForm.vue';
-import SendForm from '../SendForm.vue';
-import TeleportForm from '../TeleportForm.vue';
-import BuyPopup from '../BuyPopup.vue';
-import SelectNetworkPopup from '../SelectNetworkPopup.vue';
 import HistoryDetailsPopup from './HistoryDetailsPopup.vue';
 import History from './History.vue';
 import type { HistoryNode } from '@/interfaces/history';
 import type { GetAssetName } from '@/store/networks/types';
+import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
+import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
+import SendForm from '@/screens/wallet&asset/SendForm.vue';
+import TeleportForm from '@/screens/wallet&asset/TeleportForm.vue';
+import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
+import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import BorderButton from '@/components/BorderButton.vue';
 import TabButton from '@/components/TabButton.vue';
 import BaseApi from '@/util/BaseApi';

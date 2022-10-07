@@ -1,9 +1,4 @@
-import {
-  AccountJson,
-  AuthorizeRequest,
-  MetadataRequest,
-  SigningRequest,
-} from '@polkadot/extension-base/background/types';
+import { AccountJson, AuthorizeRequest, MetadataRequest, SigningRequest } from '@extension-base/background/types';
 import {
   getAuthList,
   subscribeAccounts,

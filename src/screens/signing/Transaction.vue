@@ -33,12 +33,12 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { SigningRequest } from '@polkadot/extension-base/background/types';
+import { SigningRequest } from '@extension-base/background/types';
 import { encodeAddress } from '@polkadot/util-crypto';
+import { registry } from '@extension-base/background/handlers/State';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { fearlessConnector } from '@/controllers/beaconController';
-import { registry } from '@/extension/background/extension-base/src/background/handlers/State';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
@@ -49,6 +49,8 @@ import InfoList from '@/layouts/InfoList.vue';
 import InfoItem from '@/screens/signing/InfoItem.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
+import { GettersTypes as SignGettersTypes } from '@/store/sign/getters';
+import { ActionTypes as SignActionsTypes } from '@/store/sign/actions';
 
 @Component({
   components: {
@@ -64,8 +66,8 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
   },
 })
 export default class Auth extends Vue {
-  @Getter('getSignRequestPayload') payload!: SignerPayloadJSON;
-  @Getter('getSignRequest') request!: SigningRequest;
+  @Getter(SignGettersTypes.getSignRequestPayload) payload!: SignerPayloadJSON;
+  @Getter(SignGettersTypes.getSignRequest) request!: SigningRequest;
 
   isLocked = false;
   isSignPopupVisible = false;
@@ -123,7 +125,7 @@ export default class Auth extends Vue {
   }
 
   onReject() {
-    this.$store.dispatch('SIGN_CANCEL', this.request.id);
+    this.$store.dispatch(SignActionsTypes.SIGN_CANCEL, this.request.id);
   }
 }
 </script>

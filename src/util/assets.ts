@@ -8,11 +8,11 @@ function getOptions(symbol: string, type: TypeAsset, assetId: string) {
   const { currencyId } = assetsJson.find(({ id }) => id === assetId)!;
 
   if (type === 'stable') return { Stable: symbol.toUpperCase() };
-  else if (type === 'vToken') return { VToken: symbol.toUpperCase() };
-  else if (type === 'vsToken') return { VSToken: symbol.toUpperCase() };
-  else if (type === 'foreignAsset') return { ForeignAsset: currencyId };
-  else if (type === 'liquidCrowdloan') return { LiquidCrowdloan: currencyId };
-  else if (type === 'stableAssetPoolToken') return { StableAssetPoolToken: currencyId };
+  if (type === 'vToken') return { VToken: symbol.toUpperCase() };
+  if (type === 'vsToken') return { VSToken: symbol.toUpperCase() };
+  if (type === 'foreignAsset') return { ForeignAsset: currencyId };
+  if (type === 'liquidCrowdloan') return { LiquidCrowdloan: currencyId };
+  if (type === 'stableAssetPoolToken') return { StableAssetPoolToken: currencyId };
 
   return { Token: symbol.toUpperCase() };
 }

@@ -3,7 +3,7 @@
     <Button
       class="import-button"
       width="100%"
-      text="Connect with Mobile"
+      text="Connect with Mobile Wallet"
       size="big"
       fontSize="big"
       type="secondary"
@@ -12,6 +12,7 @@
     />
 
     <AboveForm v-if="isQRshown" :closeHandler="close">
+      <span>Scan the QR code using the Fearless mobile app</span>
       <Alert v-if="isError" message="Alert something wrong" />
       <QR v-else :payload="qrPayload" />
     </AboveForm>

@@ -27,6 +27,10 @@ module.exports = defineConfig({
     config.plugin('define').tap((definitions) => {
       definitions[0]['process.env'].EXTENSION_PREFIX = JSON.stringify(process.env.EXTENSION_PREFIX);
       definitions[0]['process.env'].PORT_PREFIX = JSON.stringify(process.env.PORT_PREFIX);
+      config.resolve.alias.set(
+        '@extension-base',
+        path.resolve(__dirname, 'src/extension/background/extension-base/src')
+      );
 
       return definitions;
     });

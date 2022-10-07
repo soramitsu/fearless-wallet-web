@@ -1,4 +1,4 @@
-import { SigningRequest } from '@polkadot/extension-base/background/types';
+import { SigningRequest } from '@extension-base/background/types';
 import { Mutations, MutationTypes } from './mutations';
 import type { ActionTree, ActionContext } from 'vuex';
 import type { State } from './state';

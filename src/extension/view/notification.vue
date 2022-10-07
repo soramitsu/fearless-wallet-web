@@ -13,7 +13,8 @@ import {
   subscribeSigningRequests,
   subscribeMetadataRequests,
   approveAuthRequest,
-} from '../messaging';
+} from '@/extension/messaging';
+
 export default {
   name: 'Notification',
   data: function () {

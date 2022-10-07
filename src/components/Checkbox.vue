@@ -1,5 +1,5 @@
 <template>
-  <s-checkbox class="fw-checkbox" v-model="vModel" :size="size" :label="label" />
+  <s-checkbox class="fw-checkbox" v-model.lazy="vModel" :size="size" :label="label" @change="onChange" />
 </template>
 
 <script lang="ts">
@@ -14,6 +14,10 @@ export default class Checkbox extends Vue {
   @VModel({ type: Boolean }) vModel!: boolean;
   @Prop(String) label!: string;
   @Prop({ default: 'medium' }) size!: CheckboxSizes;
+
+  onChange(value: boolean) {
+    this.$emit('change', value);
+  }
 }
 </script>
 
@@ -22,9 +26,23 @@ export default class Checkbox extends Vue {
   border-color: $default-white !important;
   border-radius: 3px !important;
 
+  .el-checkbox__input > .el-checkbox__inner {
+    border-radius: 5px;
+  }
+
+  .el-checkbox__inner:hover {
+    border-color: rgba(119, 0, 238, 1);
+  }
+
+  .el-checkbox__input.is-checked > .el-checkbox__inner {
+    background-color: rgba(119, 0, 238, 1);
+    border-color: rgba(119, 0, 238, 1);
+  }
+
   .el-checkbox__inner {
     background-color: transparent;
   }
+
   .el-checkbox__label {
     color: $default-white !important;
   }

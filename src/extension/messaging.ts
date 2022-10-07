@@ -4,8 +4,8 @@
 import { metadataExpand } from '@polkadot/extension-chains';
 import { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
 import { selectableNetworks } from '@polkadot/networks';
-import { getId } from './background/extension-base/src/utils';
-import { PORT_EXTENSION } from './background/extension-base/src/defaults';
+import { getId } from '@extension-base/utils';
+import { PORT_EXTENSION } from '@extension-base/defaults';
 import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types';
 
 import type {
@@ -26,8 +26,8 @@ import type {
   SeedLengths,
   SigningRequest,
   SubscriptionMessageTypes,
-} from './background/extension-base/src/background/types';
-import type { Message } from './background/extension-base/src/types';
+} from '@extension-base/background/types';
+import type { Message } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';

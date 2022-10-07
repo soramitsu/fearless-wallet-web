@@ -1,17 +1,17 @@
-import { MetadataRequest } from '@polkadot/extension-base/background/types';
+import { MetadataRequest } from '@extension-base/background/types';
 import { State } from './state';
 import type { GetterTree } from 'vuex';
 
 export enum GettersTypes {
-  getMetaRequest = 'getMetaRequest',
+  getMetaRequests = 'getMetaRequests',
 }
 
 export type Getters = {
-  [GettersTypes.getMetaRequest](state: State, getters?: GetterTree<State, State> & Getters): MetadataRequest[];
+  [GettersTypes.getMetaRequests](state: State, getters?: GetterTree<State, State> & Getters): MetadataRequest[];
 };
 
 const getters: GetterTree<State, State> & Getters = {
-  [GettersTypes.getMetaRequest](state): MetadataRequest[] {
+  [GettersTypes.getMetaRequests](state): MetadataRequest[] {
     return state.requests;
   },
 };

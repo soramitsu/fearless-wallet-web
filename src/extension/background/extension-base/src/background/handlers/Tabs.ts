@@ -1,7 +1,7 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { PHISHING_PAGE_REDIRECT } from '@polkadot/extension-base/defaults';
+import { PHISHING_PAGE_REDIRECT } from '@extension-base/defaults';
 import { checkIfDenied } from '@polkadot/phishing';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { assert, isNumber } from '@polkadot/util';
@@ -37,7 +37,6 @@ import type {
   MetadataDef,
   ProviderMeta,
 } from '@polkadot/extension-inject/types';
-import BaseApi from '@/util/BaseApi';
 import { keyring } from '@/controllers/keyringChrome';
 
 export default class Tabs {

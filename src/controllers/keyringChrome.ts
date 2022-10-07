@@ -1,5 +1,5 @@
 import { Keyring } from '@polkadot/ui-keyring';
-import { accountStore } from '@/extension/background/extension-base/src/stores/Accounts';
+import { accountStore } from '@extension-base/stores/Accounts';
 
 class KeyringChrome extends Keyring {
   constructor() {

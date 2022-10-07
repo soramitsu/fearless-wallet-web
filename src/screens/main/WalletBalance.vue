@@ -3,6 +3,7 @@
     <div :class="contentClasses" @click="updateSelectedWallet">
       <div>
         <div v-if="name" class="name">{{ name }}</div>
+        <div v-if="isMobile" class="mobile">mobile</div>
         <div class="balance">{{ fiatSymbol }}{{ balanceString }}</div>
         <!-- <div :class="percentClasses">{{ percentString }}</div> -->
       </div>
@@ -30,6 +31,7 @@ export default class WalletBalance extends Vue {
 
   @Prop({ default: '' }) name!: string;
   @Prop(String) balance!: string;
+  @Prop(Boolean) isMobile!: boolean;
   @Prop(Number) percent!: number;
   @Prop({ default: false }) isSelected!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
@@ -98,6 +100,21 @@ export default class WalletBalance extends Vue {
 
   .name {
     margin-bottom: 4px;
+  }
+
+  .mobile {
+    position: absolute;
+    top: 12px;
+    right: 60px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.05);
+    letter-spacing: 0.03em;
+    line-height: 15px;
+    text-transform: uppercase;
+    border-radius: 30px;
+    text-align: center;
+    padding: 2px 6px;
   }
 
   .balance {

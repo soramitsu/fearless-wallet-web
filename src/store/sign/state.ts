@@ -1,4 +1,4 @@
-import { SigningRequest } from '@polkadot/extension-base/background/types';
+import { SigningRequest } from '@extension-base/background/types';
 
 export type State = {
   requests: SigningRequest[];

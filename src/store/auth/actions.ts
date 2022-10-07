@@ -1,4 +1,4 @@
-import { AuthorizeRequest } from '@polkadot/extension-base/background/types';
+import { AuthorizeRequest } from '@extension-base/background/types';
 import { Mutations, MutationTypes } from './mutations';
 import type { ActionTree, ActionContext } from 'vuex';
 import type { State } from './state';
@@ -11,7 +11,6 @@ import {
 } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';
-import BaseApi from '@/util/BaseApi';
 
 export enum ActionTypes {
   SUBSCRIBE_AUTH_REQUESTS = 'SUBSCRIBE_AUTH_REQUESTS',
@@ -27,7 +26,10 @@ type AugmentedActionContext = {
 
 export type Actions = {
   [ActionTypes.SUBSCRIBE_AUTH_REQUESTS](context: AugmentedActionContext): Promise<void>;
-  [ActionTypes.APPROVE_AUTH_REQUEST](context: AugmentedActionContext, props: AuthorizeRequest): Promise<void>;
+  [ActionTypes.APPROVE_AUTH_REQUEST](
+    context: AugmentedActionContext,
+    props: { request: AuthorizeRequest; accounts: string[] }
+  ): Promise<void>;
   [ActionTypes.REJECT_AUTH_REQUEST](context: AugmentedActionContext, props: AuthorizeRequest): Promise<void>;
   [ActionTypes.GET_AUTHLIST](context: AugmentedActionContext): Promise<void>;
 };
@@ -49,15 +51,8 @@ const actions: ActionTree<State, State> & Actions = {
     subscribeAuthorizeRequests(callback);
   },
 
-  async [ActionTypes.APPROVE_AUTH_REQUEST]({ commit }, payload) {
-    const accounts = BaseApi.getPolkadotAddresses();
-    const addresess = BaseApi.getAddresses();
-
-    addresess.forEach(({ address }) => {
-      accounts.push(address);
-    });
-
-    await approveAuthRequest(payload.id, accounts);
+  async [ActionTypes.APPROVE_AUTH_REQUEST]({ commit }, { request, accounts }) {
+    await approveAuthRequest(request.id, accounts);
 
     commit(MutationTypes.DELETE_AUTH_REQUEST);
   },

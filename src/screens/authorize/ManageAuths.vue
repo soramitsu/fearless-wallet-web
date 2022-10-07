@@ -7,6 +7,7 @@
       v-bind:key="el.id"
       :request="el"
       @onRemoveAuth="removeAuth"
+      @updateAuths="updateAuthorizedAccount"
       @onChange="onChange"
     />
   </AboveForm>
@@ -15,11 +16,12 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { AuthUrlInfo } from '@polkadot/extension-base/background/handlers/State';
+import { AuthUrlInfo } from '@extension-base/background/types';
 import AboveForm from '@/components/AboveForm.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import AuthItem from '@/screens/authorize/AuthItem.vue';
 import { Components } from '@/router/routes';
+import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
 
 @Component({
   components: {
@@ -29,7 +31,7 @@ import { Components } from '@/router/routes';
   },
 })
 export default class ManageAuths extends Vue {
-  @Getter('getAuthList') authlist!: Record<string, AuthUrlInfo>;
+  @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
 
   filterValue = '';
   filteredList: Record<string, AuthUrlInfo> = {};
@@ -56,10 +58,14 @@ export default class ManageAuths extends Vue {
     this.filteredList = Object.fromEntries(filtered);
   }
 
-  onDeleteConnection(event: Event) {
-    console.info(event);
+  updateAuthorizedAccount(url: string) {
+    this.$router.push({
+      name: Components.UpdateAuths,
+      params: {
+        url,
+      },
+    });
   }
-
   async removeAuth(url: string) {
     await this.$store.dispatch('DELETE_AUTH_CONNECTION', url);
   }
@@ -69,30 +75,3 @@ export default class ManageAuths extends Vue {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-.divider {
-  background-color: rgba(255, 255, 255, 0.1);
-  margin: 17px 0;
-}
-
-.auth-item-name {
-  font-size: 16px;
-}
-
-.img-button {
-  background-image: url('@/assets/trash.svg');
-  background-size: 16px 16px;
-  height: 16px;
-  width: 16px;
-}
-
-.trash {
-  cursor: pointer;
-}
-
-.manage-auths__search {
-  width: 100%;
-  margin-bottom: 17px;
-}
-</style>

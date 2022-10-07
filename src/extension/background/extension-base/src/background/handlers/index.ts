@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { assert } from '@polkadot/util';
+import { PORT_EXTENSION } from '@extension-base/defaults';
 import Extension from './Extension';
 import Tabs from './Tabs';
 import type { MessageTypes, TransportRequestMessage } from '../types';
-import { PORT_EXTENSION } from '@/extension/background/extension-base/src/defaults';
 
 export default function handler<TMessageType extends MessageTypes>(
   { id, message, request }: TransportRequestMessage<TMessageType>,

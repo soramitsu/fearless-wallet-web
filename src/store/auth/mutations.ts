@@ -1,17 +1,15 @@
-import { AuthorizeRequest, ResponseAuthorizeList } from '@polkadot/extension-base/background/types';
+import { AuthorizeRequest, ResponseAuthorizeList } from '@extension-base/background/types';
 import Vue from 'vue';
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
-type TogglePayload = {
-  id: string;
-  value: boolean;
-};
+
 export enum MutationTypes {
   SET_AUTH_REQUEST = 'SET_AUTH_REQUEST',
   DELETE_AUTH_REQUEST = 'DELETE_AUTH_REQUEST',
   SET_AUTHLIST = 'SET_AUTHLIST',
   DELETE_AUTHLIST_ITEM = 'DELETE_AUTHLIST_ITEM',
 }
+
 export type Mutations = {
   [MutationTypes.SET_AUTH_REQUEST](state: State, props: AuthorizeRequest): void;
   [MutationTypes.DELETE_AUTH_REQUEST](state: State): void;

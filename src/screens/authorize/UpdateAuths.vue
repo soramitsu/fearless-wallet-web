@@ -48,13 +48,17 @@ export default class Authorize extends Vue {
       });
     });
 
-    this.selectAll = Object.values(this.state).every((value) => value.active === true);
+    this.selectAll = this.isAllSelected();
+  }
+
+  isAllSelected() {
+    return Object.values(this.state).every((value) => value.active === true);
   }
 
   onSelect(value: boolean, name: string) {
     this.state[name].active = value;
 
-    const isAllActive = Object.values(this.state).every((el) => el.active === true);
+    const isAllActive = this.isAllSelected();
     this.selectAll = isAllActive;
 
     return this.state[name].active;

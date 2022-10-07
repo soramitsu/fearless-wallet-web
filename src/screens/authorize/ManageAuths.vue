@@ -58,10 +58,6 @@ export default class ManageAuths extends Vue {
     this.filteredList = Object.fromEntries(filtered);
   }
 
-  onDeleteConnection(event: Event) {
-    console.info(event);
-  }
-
   updateAuthorizedAccount(url: string) {
     this.$router.push({
       name: Components.UpdateAuths,

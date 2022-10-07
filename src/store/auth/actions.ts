@@ -11,7 +11,6 @@ import {
 } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';
-import BaseApi from '@/util/BaseApi';
 
 export enum ActionTypes {
   SUBSCRIBE_AUTH_REQUESTS = 'SUBSCRIBE_AUTH_REQUESTS',

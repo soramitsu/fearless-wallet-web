@@ -38,3 +38,20 @@ export type SetSelectedFiat = {
 export type SetSelectedWallet = {
   selectedWalletAddress: string;
 };
+
+export interface WalletInfo {
+  name: string;
+  address: string;
+  isMobile: boolean;
+  active: boolean;
+}
+
+export interface IWallet {
+  type: string;
+  json: {
+    address: string;
+    meta: {
+      name: string;
+    };
+  };
+}

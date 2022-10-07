@@ -1,11 +1,11 @@
 <template>
-  <SCol width="100%" v-bind:key="request.id">
+  <SCol class="auth-content" width="100%" v-bind:key="request.id">
     <SRow>
       <SCol :span="9" class="s-flex s-justify-start">
         <span class="auth-item-name">{{ request.origin }}</span>
       </SCol>
       <SCol :span="3">
-        <SRow flex justify="space-around">
+        <SRow flex justify="space-between">
           <span class="authorized-account__count" @click="$emit('updateAuths', stripUrl)">{{
             authorizedAccounts
           }}</span>
@@ -37,10 +37,9 @@ export default class AuthItem extends Vue {
   get authorizedAccounts() {
     const authListLenght = this.request.authorizedAccounts.length;
 
-    if (!authListLenght) return `no accounts`;
     if (authListLenght === 1) return `1 account`;
 
-    return `${authListLenght} accounts`;
+    return `${authListLenght || 0} accounts`;
   }
 }
 </script>
@@ -53,6 +52,10 @@ export default class AuthItem extends Vue {
 
 .auth-item-name {
   font-size: 16px;
+}
+
+.auth-content {
+  padding-top: 12px;
 }
 
 .img-button {

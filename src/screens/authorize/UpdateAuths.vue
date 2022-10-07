@@ -14,14 +14,11 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { getAuthList, updateAuthorization } from '@/extension/messaging';
 import SelectAuthAccount from '@/screens/authorize/SelectAuthAccount.vue';
+import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import AboveForm from '@/components/AboveForm.vue';
 import Button from '@/components/Button.vue';
-interface AccountsProp {
-  name: string;
-  address: string;
-  isMobile: boolean;
-  active: boolean;
-}
+import { WalletInfo } from '@/store/accounts/types';
+
 @Component({
   components: {
     SelectAuthAccount,
@@ -30,10 +27,10 @@ interface AccountsProp {
   },
 })
 export default class Authorize extends Vue {
-  @Getter('getWallets') wallets!: AccountsProp[];
+  @Getter(AccountGettersTypes.getWallets) wallets!: WalletInfo[];
 
   selectAll = false;
-  state: Record<string, AccountsProp> = {};
+  state: Record<string, WalletInfo> = {};
 
   async mounted() {
     const url = this.$route.params.url;

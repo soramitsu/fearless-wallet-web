@@ -21,6 +21,7 @@ import AboveForm from '@/components/AboveForm.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import AuthItem from '@/screens/authorize/AuthItem.vue';
 import { Components } from '@/router/routes';
+import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
 
 @Component({
   components: {
@@ -30,7 +31,7 @@ import { Components } from '@/router/routes';
   },
 })
 export default class ManageAuths extends Vue {
-  @Getter('getAuthList') authlist!: Record<string, AuthUrlInfo>;
+  @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
 
   filterValue = '';
   filteredList: Record<string, AuthUrlInfo> = {};
@@ -78,30 +79,3 @@ export default class ManageAuths extends Vue {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-.divider {
-  background-color: rgba(255, 255, 255, 0.1);
-  margin: 17px 0;
-}
-
-.auth-item-name {
-  font-size: 16px;
-}
-
-.img-button {
-  background-image: url('@/assets/trash.svg');
-  background-size: 16px 16px;
-  height: 16px;
-  width: 16px;
-}
-
-.trash {
-  cursor: pointer;
-}
-
-.manage-auths__search {
-  width: 100%;
-  margin-bottom: 17px;
-}
-</style>

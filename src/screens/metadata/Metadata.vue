@@ -31,6 +31,7 @@ import store from '@/store';
 import { Components } from '@/router/routes';
 import { ActionTypes } from '@/store/metadata/actions';
 import InfoList from '@/layouts/InfoList.vue';
+import { GettersTypes as MetaGettersTypes } from '@/store/metadata/getters';
 
 @Component({
   components: {
@@ -44,7 +45,7 @@ import InfoList from '@/layouts/InfoList.vue';
   },
 })
 export default class MetaRequest extends Vue {
-  @Getter('getMetaRequests') requests!: MetadataRequest[];
+  @Getter(MetaGettersTypes.getMetaRequests) requests!: MetadataRequest[];
 
   alertMessage =
     'This approval will add the metadata to your extension instance, allowing future requests to be decoded using this metadata';

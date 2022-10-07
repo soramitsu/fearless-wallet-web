@@ -104,7 +104,7 @@ export default class WalletBalance extends Vue {
 
   .mobile {
     position: absolute;
-    top: 10px;
+    top: 12px;
     right: 60px;
     font-size: 12px;
     color: rgba(255, 255, 255, 0.5);

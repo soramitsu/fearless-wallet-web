@@ -1,3 +1,4 @@
+import { IWallet } from './types';
 import type { GetterTree } from 'vuex';
 import type { SelectedWallet, Accounts } from './types';
 import type { State } from './state';
@@ -18,15 +19,7 @@ interface Account {
   address: string;
   isMobile: boolean;
 }
-interface Wallet {
-  type: string;
-  json: {
-    address: string;
-    meta: {
-      name: string;
-    };
-  };
-}
+
 export type Getters = {
   [GettersTypes.getSelectedWallet](state: State, getters?: GetterTree<State, State> & Getters): SelectedWallet;
   [GettersTypes.getSelectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
@@ -57,7 +50,7 @@ const getters: GetterTree<State, State> & Getters = {
   },
   [GettersTypes.getWallets]({ addresses, accounts }): Account[] {
     const wallets: Account[] = [];
-    (Object.values(accounts) as any).forEach((wallet: Wallet) => {
+    (Object.values(accounts) as any).forEach((wallet: IWallet) => {
       if (wallet.type !== 'ethereum')
         wallets.push({
           name: wallet.json.meta.name,
@@ -66,7 +59,7 @@ const getters: GetterTree<State, State> & Getters = {
         });
     });
 
-    (Object.values(addresses) as any).forEach((wallet: Wallet) => {
+    (Object.values(addresses) as any).forEach((wallet: IWallet) => {
       if (wallet.type !== 'etherium') {
         const account: Account = {
           name: wallet.json.meta.name,

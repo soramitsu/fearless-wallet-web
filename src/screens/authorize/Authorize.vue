@@ -35,7 +35,7 @@
 import { Vue, Component } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { AuthorizeRequest } from '@extension-base/background/types';
-import { Accounts } from '@/store/accounts/types';
+import { Accounts, WalletInfo } from '@/store/accounts/types';
 import Button from '@/components/Button.vue';
 import Hint from '@/components/Hint.vue';
 import Alert from '@/components/Alert.vue';
@@ -46,12 +46,7 @@ import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import SelectAuthAccount from '@/screens/authorize/SelectAuthAccount.vue';
 import BaseApi from '@/util/BaseApi';
-interface AccountsProp {
-  name: string;
-  address: string;
-  isMobile: boolean;
-  active: boolean;
-}
+
 @Component({
   components: {
     Button,
@@ -63,10 +58,11 @@ interface AccountsProp {
 })
 export default class Authorize extends Vue {
   noAccountsMessage = "You don't have any account. Please create an account and refresh the application's page.";
-  state: Record<string, AccountsProp> = {};
+  state: Record<string, WalletInfo> = {};
   selectAll = true;
+
   @Getter(AuthGettersTypes.getAuthRequests) requests!: AuthorizeRequest[];
-  @Getter(AccountsGettersTypes.getWallets) wallets!: AccountsProp[];
+  @Getter(AccountsGettersTypes.getWallets) wallets!: WalletInfo[];
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
 
   get isAccountsExists() {

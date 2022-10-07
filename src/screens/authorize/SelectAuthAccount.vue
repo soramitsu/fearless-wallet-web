@@ -31,19 +31,13 @@
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import Checkbox from '@/components/Checkbox.vue';
-
-interface AccountsProp {
-  name: string;
-  address: string;
-  isMobile: boolean;
-  active: boolean;
-}
+import { WalletInfo } from '@/store/accounts/types';
 
 @Component({
   components: { Checkbox },
 })
 export default class SelectAuthAccount extends Vue {
-  @Prop(Object) accounts!: AccountsProp[];
+  @Prop(Object) accounts!: WalletInfo[];
   @PropSync('selectAll', { type: Boolean }) syncSelectAll!: boolean;
 
   toClipBoard(address: string) {

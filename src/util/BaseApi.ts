@@ -90,13 +90,6 @@ export default class BaseApi {
     return null;
   }
 
-  static getAllAddresses() {
-    const accounts = BaseApi.getPolkadotAddresses();
-    const addresses = BaseApi.getAddresses();
-
-    return [...accounts, ...addresses];
-  }
-
   public static mortalityDecode(era: ExtrinsicEra, hexBlockNumber: string) {
     const blockNumber = bnToBn(hexBlockNumber);
     const mortal = era.asMortalEra;
@@ -281,13 +274,6 @@ export default class BaseApi {
 
   public static getAddressesSubject(): BehaviorSubject<SubjectInfo> {
     return keyring.addresses.subject;
-  }
-
-  public static getPolkadotAddresses(): string[] {
-    return keyring
-      .getAccounts()
-      .filter((el) => el.address.startsWith('5'))
-      .map((el) => el.address);
   }
 
   public static getPair(address: string): KeyringPair {

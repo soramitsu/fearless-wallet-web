@@ -19,8 +19,8 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import { stripUrl } from '@extension-base/background/handlers/helpers';
 import { AuthUrlInfo } from '@extension-base/background/types';
+import { stripUrl } from '@/extension/background/extension-base/src/background/handlers/helpers';
 
 @Component
 export default class AuthItem extends Vue {

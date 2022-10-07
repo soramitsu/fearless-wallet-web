@@ -79,10 +79,12 @@ export interface SigningRequest {
   request: RequestSign;
   url: string;
 }
+
 export interface RequestAddressCreate {
   address: string;
   meta: KeyringPair$Meta;
 }
+
 export interface RequestAddressRemove {
   address: string;
 }

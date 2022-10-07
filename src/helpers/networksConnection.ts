@@ -45,7 +45,7 @@ const disconnectHandler = (
   apiOptions.apiRetry += 1;
 
   if (apiOptions.apiRetry === MAX_CONTINUE_RETRY) {
-    console.log(`%cStopped using ${url} because max retries`, 'background:red;color:#fff');
+    console.info(`%cStopped using ${url} because max retries`, 'background:red;color:#fff');
 
     provider.disconnect();
 
@@ -56,7 +56,7 @@ const disconnectHandler = (
 
     connectToApi(context, network, apiOptions); // eslint-disable-line no-use-before-define
   } else {
-    console.log(`%cDisconnected from ${url} ${apiOptions.apiRetry} times`, 'background:orange;color:#fff');
+    console.info(`%cDisconnected from ${url} ${apiOptions.apiRetry} times`, 'background:orange;color:#fff');
   }
 };
 

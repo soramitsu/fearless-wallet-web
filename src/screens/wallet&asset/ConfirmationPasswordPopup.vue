@@ -1,7 +1,7 @@
 <template>
   <Popup class="sending-popup" :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close">
     <div class="popup-content">
-      <template v-if="!loading">
+      <template v-if="!isSendTransaction">
         <img src="@/assets/lock-green.svg" />
 
         <div class="text row">Enter password to confirm the transaction</div>
@@ -84,6 +84,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   isUnlock = false;
   isSavePass = false;
   isSuccessfulTransaction = false;
+  isSendTransaction = false;
 
   @Prop(String) amount!: string;
   @Prop(String) value!: string;
@@ -130,7 +131,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   close() {
     if (this.loading) return;
 
-    this.$emit('close', this.isUnlock);
+    this.$emit('close', this.isSendTransaction);
   }
 
   async mounted() {
@@ -150,6 +151,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     this.loading = true;
+    this.isSendTransaction = true;
 
     if (this.transactionId) {
       await this.$store.dispatch('APPROVE_SIGN_PASSWORD', {

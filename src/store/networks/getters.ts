@@ -20,7 +20,6 @@ export enum GettersTypes {
   getFiats = 'getFiats',
   getHistory = 'getHistory',
   getCurrencies = 'getCurrencies',
-  getAllNetworksIsLoaded = 'getAllNetworksIsLoaded',
   getActiveNodes = 'getActiveNodes',
 }
 
@@ -37,7 +36,6 @@ export type Getters = {
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
   [GettersTypes.getCurrencies](state: State, getters?: GetterTree<State, State> & Getters): Currencies;
-  [GettersTypes.getAllNetworksIsLoaded](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getActiveNodes](state: State, getters?: GetterTree<State, State> & Getters): ActiveNodes;
 };
 
@@ -90,10 +88,6 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.getCurrencies]({ currencies }): Currencies {
     return currencies;
-  },
-
-  [GettersTypes.getAllNetworksIsLoaded](state): boolean {
-    return state.allNetworksIsLoaded;
   },
 
   [GettersTypes.getActiveNodes](state): ActiveNodes {

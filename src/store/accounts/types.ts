@@ -1,5 +1,5 @@
 import type { Currencies } from '@/interfaces/currencies';
-import type { SingleAddress, SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
 export interface Wallet {
   address: string;

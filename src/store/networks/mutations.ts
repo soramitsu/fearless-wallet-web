@@ -7,7 +7,6 @@ import type {
   SetFiatsJsonProps,
   SetAssetsPriceProps,
   SetCurrenciesProps,
-  SetAllNetworksIsLoaded,
   SetHistoryProps,
   SetNetworkActiveNodeProps,
   SetNetworkApi,
@@ -21,7 +20,6 @@ export enum MutationTypes {
   SET_ASSET_PRICE = 'SET_ASSET_PRICE',
   SET_CURRENCIES = 'SET_CURRENCIES',
   SET_HISTORY = 'SET_HISTORY',
-  SET_ALL_NETWORKS_IS_LOADED = 'SET_ALL_NETWORKS_IS_LOADED',
   UPDATE_CURRENCY_BALANCE = 'UPDATE_CURRENCY_BALANCE',
   SET_NETWORK_ACTIVE_NODE = 'SET_NETWORK_ACTIVE_NODE',
   SET_NETWORK_API = 'SET_NETWORK_API',
@@ -34,7 +32,6 @@ export type Mutations = {
   [MutationTypes.SET_ASSET_PRICE](state: State, props: SetAssetsPriceProps): void;
   [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
-  [MutationTypes.SET_ALL_NETWORKS_IS_LOADED](state: State, props: SetAllNetworksIsLoaded): void;
   [MutationTypes.UPDATE_CURRENCY_BALANCE](state: State, props: UpdateCurrencyBalanceProps): void;
   [MutationTypes.SET_NETWORK_ACTIVE_NODE](state: State, props: SetNetworkActiveNodeProps): void;
   [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApi): void;
@@ -141,10 +138,6 @@ const mutations: MutationTree<State> & Mutations = {
     };
 
     state.history = { ...state.history, [assetId]: historyForAssetId };
-  },
-
-  [MutationTypes.SET_ALL_NETWORKS_IS_LOADED](state, { value }) {
-    state.allNetworksIsLoaded = value;
   },
 
   [MutationTypes.SET_NETWORK_ACTIVE_NODE](state, { network, name, url }) {

@@ -3,22 +3,16 @@ import { MutationTypes } from './mutations';
 import type { Settings } from '@/networks';
 import type { State } from './state';
 import type { ActionTree } from 'vuex';
-import type {
-  LoadJsons,
-  LoadHistory,
-  SubscribeToBalances,
-  ToggleActiveNode,
-  Accounts,
-  AugmentedActionContext,
-} from './types';
-import type { FiatJson, AssetJson, NetworkJson, Networks, ExternalApi, AssetsPrice } from '@/interfaces';
+import type { LoadJsons, LoadHistory, SubscribeToBalances, ToggleActiveNode, AugmentedActionContext } from './types';
+import type { FiatJson, AssetJson, NetworkJson, Networks, ExternalApi, AssetsPrice, ApiOptions } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
 import { ETHEREUM_NETWORKS, NOT_SUPPORTED_SUBQUERY_NETWORKS } from '@/consts/networks';
 import { loadHistory } from '@/subquery/history';
 import { getReplacedMetaTyped } from '@/helpers/common';
 import { getMockCurrencies } from '@/helpers/currencies';
-import { connectToApi, connectToNetworksApi, subscribeAssetsBalances } from '@/helpers/networksConnection';
+import { connectToApi, subscribeAssetsBalances } from '@/helpers/networksConnection';
+import { getAccounts } from '@/helpers/accounts';
 
 export enum ActionTypes {
   LOAD_JSONS = 'LOAD_JSONS',
@@ -78,10 +72,14 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.CONNECT_TO_NODES](context) {
-    const { commit, state } = context;
-    const networks = connectToNetworksApi(state.networks, context);
+    context.state.networks.forEach((network) => {
+      const apiOptions: ApiOptions = {
+        apiRetry: 0,
+        nodeIndex: 0,
+      };
 
-    commit(MutationTypes.SET_NETWORKS, { networks });
+      connectToApi(context, network, apiOptions);
+    });
   },
 
   async [ActionTypes.LOAD_ASSETS_PRICE]({ commit, state: { assetsJson, fiats } }) {
@@ -146,12 +144,7 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.SUBSCRIBE_TO_BALANCES](context, { accounts, networksProps }) {
-    const { commit, state } = context;
-    const { networks: networksStore } = state;
-
-    commit(MutationTypes.SET_ALL_NETWORKS_IS_LOADED, {
-      value: false,
-    });
+    const { networks: networksStore } = context.state;
 
     // if the list of networks is not transferred, then we subscribe to all
     const networks = networksProps ?? networksStore;
@@ -176,16 +169,10 @@ const actions: ActionTree<State, State> & Actions = {
     });
 
     await Promise.allSettled(promises);
-
-    commit(MutationTypes.SET_ALL_NETWORKS_IS_LOADED, {
-      value: true,
-    });
   },
 
-  async [ActionTypes.TOGGLE_ACTIVE_NODE](
-    { state, commit, dispatch },
-    { network, nodeName, nodeUrl: nodeUrlProp, oldNodeUrl }
-  ) {
+  async [ActionTypes.TOGGLE_ACTIVE_NODE](context, { network, nodeName, nodeUrl: nodeUrlProp, oldNodeUrl }) {
+    const { state, commit, dispatch } = context;
     const networks = state.networks;
     const networkApi = networks.find(({ name }) => name === network)!;
     const nodeUrl = nodeUrlProp === '' ? networkApi.nodes[0].url : nodeUrlProp;
@@ -198,22 +185,20 @@ const actions: ActionTree<State, State> & Actions = {
 
     if (nodeUrl === oldNodeUrl || (oldNodeUrl === '' && nodeUrl === networkApi.nodes[0].url)) return;
 
-    await networkApi.api!.disconnect();
-    await networkApi.provider!.disconnect();
+    await networkApi.provider?.disconnect();
 
-    // const { api, provider } = connectToApi(nodeUrl);
+    const apiOptions: ApiOptions = {
+      apiRetry: 0,
+      nodeIndex: 0,
+    };
 
-    // commit(MutationTypes.SET_NETWORK_API, { network, provider, api });
+    connectToApi(context, networkApi, apiOptions);
 
-    // const accounts = BaseApi.getAccounts().reduce((result, { address, meta }) => {
-    //   const { type } = BaseApi.getPair(address);
-
-    //   result[address] = { type, json: { address, meta } };
-
-    //   return result;
-    // }, {} as Accounts);
-
-    // await dispatch(ActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, loadHistory: false, networksProps: [networkApi] });
+    await dispatch(ActionTypes.SUBSCRIBE_TO_BALANCES, {
+      accounts: getAccounts(),
+      loadHistory: false,
+      networksProps: [networkApi],
+    });
   },
 };
 

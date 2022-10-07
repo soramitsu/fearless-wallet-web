@@ -51,9 +51,9 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.APPROVE_AUTH_REQUEST]({ commit }, payload) {
     const accounts = BaseApi.getPolkadotAddresses();
-    const addresess = BaseApi.getAddresses();
+    const addresses = BaseApi.getAddresses();
 
-    addresess.forEach(({ address }) => {
+    addresses.forEach(({ address }) => {
       accounts.push(address);
     });
 

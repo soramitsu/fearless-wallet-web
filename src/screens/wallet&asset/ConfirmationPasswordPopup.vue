@@ -55,7 +55,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import type { Currencies, Currency } from '@/interfaces/currencies';
+import type { Currencies, Currency, TAction } from '@/interfaces';
 import { isSignLocked } from '@/extension/messaging';
 import { isExtension } from '@/helpers/common';
 import Loader from '@/components/Loader.vue';
@@ -66,7 +66,7 @@ import NetworkLogo from '@/components/NetworkLogo.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import Checkbox from '@/components/Checkbox.vue';
-import { ActionTypes as SignActionsTypes, ActionsTypes } from '@/store/sign/actions';
+import { ActionTypes as SignActionsTypes, ApprovePayload } from '@/store/sign/actions';
 
 @Component({
   components: {
@@ -95,7 +95,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(String) transactionId!: string;
   @Prop(Object) currency!: Currency;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
-  @Action(SignActionsTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: ActionsTypes[SignActionsTypes.APPROVE_SIGN_PASSWORD];
+  @Action(SignActionsTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: TAction<ApprovePayload>;
 
   get disabledButton() {
     return this.password === '' || this.isErrorPassword;

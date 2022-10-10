@@ -50,7 +50,8 @@ import InfoItem from '@/screens/signing/InfoItem.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { GettersTypes as SignGettersTypes } from '@/store/sign/getters';
-import { ActionTypes as SignActionsTypes, ActionsTypes } from '@/store/sign/actions';
+import { ActionTypes as SignActionsTypes } from '@/store/sign/actions';
+import { TAction } from '@/interfaces';
 
 @Component({
   components: {
@@ -68,7 +69,7 @@ import { ActionTypes as SignActionsTypes, ActionsTypes } from '@/store/sign/acti
 export default class Auth extends Vue {
   @Getter(SignGettersTypes.getSignRequestPayload) payload!: SignerPayloadJSON;
   @Getter(SignGettersTypes.getSignRequest) request!: SigningRequest;
-  @Action(SignActionsTypes.SIGN_CANCEL) onSignCancel!: ActionsTypes[SignActionsTypes.SIGN_CANCEL];
+  @Action(SignActionsTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
 
   isLocked = false;
   isSignPopupVisible = false;

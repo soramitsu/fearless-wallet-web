@@ -17,7 +17,7 @@ type AugmentedActionContext = {
   commit<K extends keyof Mutations>(key: K, payload?: Parameters<Mutations[K]>[1]): ReturnType<Mutations[K]>;
 } & Omit<ActionContext<State, any>, 'commit'>;
 
-type ApprovePayload = {
+export type ApprovePayload = {
   id: string;
   isSavePass: boolean;
   password?: string;
@@ -27,12 +27,6 @@ export type Actions = {
   [ActionTypes.SUBSCRIBE_SIGN_REQUESTS](context: AugmentedActionContext): Promise<void>;
   [ActionTypes.SIGN_CANCEL](context: AugmentedActionContext, id: string): Promise<void>;
   [ActionTypes.APPROVE_SIGN_PASSWORD](context: AugmentedActionContext, payload: ApprovePayload): Promise<void>;
-};
-
-export type ActionsTypes = {
-  [ActionTypes.SUBSCRIBE_SIGN_REQUESTS](): Promise<void>;
-  [ActionTypes.SIGN_CANCEL](id: string): Promise<void>;
-  [ActionTypes.APPROVE_SIGN_PASSWORD](payload: ApprovePayload): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {

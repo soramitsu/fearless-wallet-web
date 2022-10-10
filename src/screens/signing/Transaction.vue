@@ -32,7 +32,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+import { Getter, Action } from 'vuex-class';
 import { SigningRequest } from '@extension-base/background/types';
 import { encodeAddress } from '@polkadot/util-crypto';
 import { registry } from '@extension-base/background/handlers/State';
@@ -50,7 +50,7 @@ import InfoItem from '@/screens/signing/InfoItem.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { GettersTypes as SignGettersTypes } from '@/store/sign/getters';
-import { ActionTypes as SignActionsTypes } from '@/store/sign/actions';
+import { ActionTypes as SignActionsTypes, ActionsTypes } from '@/store/sign/actions';
 
 @Component({
   components: {
@@ -68,6 +68,7 @@ import { ActionTypes as SignActionsTypes } from '@/store/sign/actions';
 export default class Auth extends Vue {
   @Getter(SignGettersTypes.getSignRequestPayload) payload!: SignerPayloadJSON;
   @Getter(SignGettersTypes.getSignRequest) request!: SigningRequest;
+  @Action(SignActionsTypes.SIGN_CANCEL) onSignCancel!: ActionsTypes[SignActionsTypes.SIGN_CANCEL];
 
   isLocked = false;
   isSignPopupVisible = false;
@@ -125,7 +126,7 @@ export default class Auth extends Vue {
   }
 
   onReject() {
-    this.$store.dispatch(SignActionsTypes.SIGN_CANCEL, this.request.id);
+    this.onSignCancel(this.request.id);
   }
 }
 </script>

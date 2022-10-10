@@ -29,6 +29,12 @@ export type Actions = {
   [ActionTypes.APPROVE_SIGN_PASSWORD](context: AugmentedActionContext, payload: ApprovePayload): Promise<void>;
 };
 
+export type ActionsTypes = {
+  [ActionTypes.SUBSCRIBE_SIGN_REQUESTS](): Promise<void>;
+  [ActionTypes.SIGN_CANCEL](id: string): Promise<void>;
+  [ActionTypes.APPROVE_SIGN_PASSWORD](payload: ApprovePayload): Promise<void>;
+};
+
 const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.SUBSCRIBE_SIGN_REQUESTS]({ commit }) {
     const callback = (requests: SigningRequest[]) => {

@@ -32,6 +32,15 @@ export type Actions = {
   ): Promise<void>;
   [ActionTypes.REJECT_AUTH_REQUEST](context: AugmentedActionContext, props: AuthorizeRequest): Promise<void>;
   [ActionTypes.GET_AUTHLIST](context: AugmentedActionContext): Promise<void>;
+  [ActionTypes.DELETE_AUTH_CONNECTION](context: AugmentedActionContext, props: string): Promise<void>;
+};
+
+export type ActionsTypes = {
+  [ActionTypes.SUBSCRIBE_AUTH_REQUESTS](): Promise<void>;
+  [ActionTypes.APPROVE_AUTH_REQUEST](props: { request: AuthorizeRequest; accounts: string[] }): Promise<void>;
+  [ActionTypes.REJECT_AUTH_REQUEST](props: AuthorizeRequest): Promise<void>;
+  [ActionTypes.GET_AUTHLIST](): Promise<void>;
+  [ActionTypes.DELETE_AUTH_CONNECTION](props: string): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {

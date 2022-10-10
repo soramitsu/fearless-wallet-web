@@ -33,7 +33,7 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+import { Getter, Action } from 'vuex-class';
 import { AuthorizeRequest } from '@extension-base/background/types';
 import { Accounts, WalletInfo } from '@/store/accounts/types';
 import Button from '@/components/Button.vue';
@@ -41,7 +41,7 @@ import Hint from '@/components/Hint.vue';
 import Alert from '@/components/Alert.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import { Components } from '@/router/routes';
-import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
+import { ActionTypes as AuthActionTypes, ActionsTypes } from '@/store/auth/actions';
 import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import SelectAuthAccount from '@/screens/authorize/SelectAuthAccount.vue';
@@ -64,6 +64,9 @@ export default class Authorize extends Vue {
   @Getter(AuthGettersTypes.getAuthRequests) requests!: AuthorizeRequest[];
   @Getter(AccountsGettersTypes.getWallets) wallets!: WalletInfo[];
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
+  @Action(AuthActionTypes.APPROVE_AUTH_REQUEST)
+  onApproveAuthRequest!: ActionsTypes[AuthActionTypes.APPROVE_AUTH_REQUEST];
+  @Action(AuthActionTypes.REJECT_AUTH_REQUEST) onRejectAuthRequest!: ActionsTypes[AuthActionTypes.REJECT_AUTH_REQUEST];
 
   get isAccountsExists() {
     return BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
@@ -118,12 +121,12 @@ export default class Authorize extends Vue {
   }
 
   onApprove() {
-    this.$store.dispatch(AuthActionTypes.APPROVE_AUTH_REQUEST, { request: this.request, accounts: this.prepAccounts });
+    this.onApproveAuthRequest({ request: this.request, accounts: this.prepAccounts });
     this.$router.push({ name: Components.Wallet });
   }
 
   onReject() {
-    this.$store.dispatch(AuthActionTypes.REJECT_AUTH_REQUEST, this.request);
+    this.onRejectAuthRequest(this.request);
     this.$router.push({ name: Components.Wallet });
   }
 }

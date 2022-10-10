@@ -35,7 +35,6 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { SigningRequest } from '@extension-base/background/types';
 import { encodeAddress } from '@polkadot/util-crypto';
-import { registry as kek } from '@extension-base/background/handlers/State';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { registry } from '@/extension/background/extension-base/src/background/handlers/State';

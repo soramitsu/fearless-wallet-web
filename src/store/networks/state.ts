@@ -7,7 +7,6 @@ export type State = {
   fiats: FiatJson[];
   history: History;
   currencies: Currencies;
-  allNetworksIsLoaded: boolean;
   activeNodes: ActiveNodes;
 };
 
@@ -18,7 +17,6 @@ const state = (): State => {
     assetsJson: [],
     fiats: [],
     currencies: [],
-    allNetworksIsLoaded: false,
     history: {},
     activeNodes: {},
   };

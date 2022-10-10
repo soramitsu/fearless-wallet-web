@@ -363,10 +363,14 @@ export default class CurrencyController {
   public async getPartialFee(from: string, { precision }: NetworkProps): Promise<string> {
     if (!this.extrinsic) return '0';
 
-    const { partialFee } = await this.extrinsic.paymentInfo(from);
-    const result = new FPNumber(partialFee as any, precision);
+    try {
+      const { partialFee } = await this.extrinsic.paymentInfo(from);
+      const result = new FPNumber(partialFee as any, precision);
 
-    return result.toString();
+      return result.toString();
+    } catch {
+      return '0';
+    }
   }
 
   public async send(from: string, amount: string): Promise<boolean> {
@@ -380,19 +384,19 @@ export default class CurrencyController {
         } else if (status.isFinalized) {
           console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
 
-          pair.lock();
-
           unsubscribe();
         } else {
           console.info(`Status of transfer: ${status.type}`);
         }
       });
-
-      return true;
     } catch (ex) {
       console.info(`Transaction failed ${ex}`);
 
       return false;
     }
+
+    pair.lock();
+
+    return true;
   }
 }

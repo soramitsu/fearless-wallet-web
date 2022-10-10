@@ -54,35 +54,37 @@ export default class App extends Vue {
     this.subscribeAddresses = BaseApi.getAddressesSubject();
 
     this.subscribeAccounts.subscribe(async (accounts) => {
-      const newAccounts = this.getNewAccounts(accounts, 'account');
+      const newAccounts = this.getNewAccounts(accounts, 'accounts');
+
       console.info('accounts', newAccounts);
 
       this.setAccounts({ accounts });
 
-      await subscribeToBalancesOfNetworks(newAccounts);
+      // subscribe only if the number of new accounts is not equal to the total number of accounts
+      if (Object.keys(accounts).length !== Object.keys(newAccounts).length)
+        await subscribeToBalancesOfNetworks(newAccounts);
     });
 
     this.subscribeAddresses.subscribe(async (addresses) => {
-      const newAddresses = this.getNewAccounts(addresses, 'address');
+      const newAddresses = this.getNewAccounts(addresses, 'addresses');
+
+      console.info('addresses', newAddresses);
 
       this.setAddresses({ addresses });
 
-      await subscribeToBalancesOfNetworks(newAddresses);
+      // subscribe only if the number of new addresses is not equal to the total number of accounts
+      if (Object.keys(addresses).length !== Object.keys(newAddresses).length)
+        await subscribeToBalancesOfNetworks(newAddresses);
     });
 
     this.setWallet();
   }
 
-  getNewAccounts(accounts: SubjectInfo, type: 'account' | 'address') {
+  getNewAccounts(accounts: SubjectInfo, type: 'accounts' | 'addresses') {
     const result = {} as SubjectInfo;
 
     for (const address in accounts) {
-      if (type === 'account' && this.accounts[address] === undefined) {
-        result[address] = accounts[address];
-        continue;
-      }
-
-      if (type === 'address' && this.addresses[address] === undefined) result[address] = accounts[address];
+      if (this[type][address] === undefined) result[address] = accounts[address];
     }
 
     return result;

@@ -396,9 +396,7 @@ export default class BaseApi {
 
     if (BaseApi.getAddress(address)) keyring.forgetAddress(address);
 
-    const totalAccounts = BaseApi.getAddresses().length + BaseApi.getAccounts().length;
-
-    return totalAccounts;
+    return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
   }
 
   public static windowOpen(path: string): void {

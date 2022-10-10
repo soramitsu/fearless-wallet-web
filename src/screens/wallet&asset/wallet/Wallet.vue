@@ -145,9 +145,11 @@ export default class Wallet extends Vue {
       // if a network is selected and there is no currency in this network
       if (!isAllNetworks && !availableInSelectedNetwork) return false;
 
-      const { displayName } = currency;
+      const { displayName, mainNetwork } = currency;
 
-      return availableInNetworks.join(' ').includes(filter) || displayName.includes(filter);
+      return (
+        availableInNetworks.join(' ').includes(filter) || displayName.includes(filter) || mainNetwork.includes(filter)
+      );
     });
   }
 

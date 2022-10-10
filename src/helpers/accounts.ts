@@ -1,5 +1,6 @@
 import type { Wallet } from '@/store/accounts/types';
 import type { ChainAccount, Networks } from '@/interfaces';
+import type { Accounts } from '@/store/networks/types';
 import BaseApi from '@/util/BaseApi';
 import NetworksController from '@/controllers/networksController';
 
@@ -30,4 +31,16 @@ function getChainAccounts(networks: Networks, wallet: Wallet): ChainAccount[] {
   });
 }
 
-export { getChainAccounts };
+function getAccounts(): Accounts {
+  const accounts = BaseApi.getAccounts().reduce((result, { address, meta }) => {
+    const { type } = BaseApi.getPair(address);
+
+    result[address] = { type, json: { address, meta } };
+
+    return result;
+  }, {} as Accounts);
+
+  return accounts;
+}
+
+export { getChainAccounts, getAccounts };

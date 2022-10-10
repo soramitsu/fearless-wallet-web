@@ -75,4 +75,11 @@ type Network = {
 
 type Networks = Network[];
 
-export { Networks, Network, NetworkJson, NetworkAssetsType, NetworkAssets, NetworkName, ExternalApi };
+interface ApiOptions {
+  apiRetry: number;
+  nodeIndex: number;
+  api?: ApiPromise;
+  provider?: WsProvider;
+}
+
+export { Networks, Network, NetworkJson, NetworkAssetsType, NetworkAssets, NetworkName, ExternalApi, ApiOptions };

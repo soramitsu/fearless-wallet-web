@@ -1,7 +1,7 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
-import type { AugmentedActionContext as Context } from '@/store/networks/types';
-import type { Networks, Network } from '@/interfaces';
+import type { AugmentedActionContext as Context, Accounts } from '@/store/networks/types';
+import type { Network, Node, ApiOptions } from '@/interfaces';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
 import { formatBalance } from '@/util/balances';
 import { MutationTypes } from '@/store/networks/mutations';
@@ -10,46 +10,86 @@ import { accountController } from '@/controllers/accountController';
 import NetworksController from '@/controllers/networksController';
 import BaseApi from '@/util/BaseApi';
 import { ORML_PALLETS_TYPES, getOptions } from '@/util/assets';
+import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
+import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
+import { getAccounts } from '@/helpers/accounts';
 
-function connectToApi(name: string, url: string, autoConnectMs = 0) {
-  const provider = new WsProvider(url, autoConnectMs);
-  const api = new ApiPromise({ provider });
-
-  try {
-    api.connect();
-  } catch (ex) {
-    console.info(`%c${name.toUpperCase()}. Connection to api failed.`, 'background:red;color:#fff');
-  }
-
-  return { provider, api };
-}
-
-function connectToNetworksApi(networks: Networks, context: Context): Networks {
-  const autoConnectMs = 0; // fix
+const connectedHandler = (context: Context, apiOptions: ApiOptions, { url, name }: Node, network: Network) => {
   const { commit } = context;
+  const networkName = network.name;
+
+  console.info(`%c connected to ${url}`, 'background:#77dd77;color:#fff');
+
+  apiOptions.apiRetry = 0;
+
+  commit(MutationTypes.SET_NETWORK_ACTIVE_NODE, {
+    network: networkName,
+    name,
+    url,
+  });
+
+  commit(MutationTypes.SET_NETWORK_API, {
+    network: networkName,
+    api: apiOptions.api!,
+    provider: apiOptions.provider!,
+  });
+};
+
+const disconnectHandler = (
+  context: Context,
+  apiOptions: ApiOptions,
+  { url }: Node,
+  network: Network,
+  provider: WsProvider
+) => {
+  apiOptions.apiRetry += 1;
+
+  if (apiOptions.apiRetry === MAX_CONTINUE_RETRY) {
+    console.info(`%cStopped using ${url} because max retries`, 'background:red;color:#fff');
+
+    provider.disconnect();
+
+    apiOptions.apiRetry = 0;
+    apiOptions.nodeIndex += 1;
+    apiOptions.api = undefined;
+    apiOptions.provider = undefined;
+
+    connectToApi(context, network, apiOptions); // eslint-disable-line no-use-before-define
+  } else {
+    console.info(`%cDisconnected from ${url} ${apiOptions.apiRetry} times`, 'background:orange;color:#fff');
+  }
+};
+
+const readyHandler = (context: Context, { url }: Node, network: Network, accounts: Accounts) => {
+  const { dispatch } = context;
+
+  console.info(`%c API ready ${url}`, 'background:green;color:#fff');
+
+  dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, loadHistory: false, networksProps: [network] });
+};
+
+function connectToApi(context: Context, network: Network, apiOptions: ApiOptions): void {
   const autoSelectNodes = accountController.getAutoSelectNodesValue();
   const activeNodes = accountController.getActiveNodes();
+  const { name: networkName, nodes } = network;
+  const autoSelectNode = autoSelectNodes[networkName] ?? true;
+  const nodesList = autoSelectNode ? nodes : [activeNodes[networkName]];
+  const node = nodesList[apiOptions.nodeIndex];
 
-  return networks.map((network) => {
-    const { name, nodes } = network;
+  if (node === undefined) return;
 
-    const autoSelectNode = autoSelectNodes[name] ?? true;
-    const url = autoSelectNode ? nodes[0].url : activeNodes[name].url;
-    const nodeName = autoSelectNode ? nodes[0].name : activeNodes[name].name;
+  const provider = new WsProvider(node.url, AUTO_CONNECT_MS);
+  const api = new ApiPromise({ provider });
 
-    commit(MutationTypes.SET_NETWORK_ACTIVE_NODE, {
-      network: name,
-      name: nodeName,
-      url,
-    });
+  apiOptions.api = api;
+  apiOptions.provider = provider;
 
-    const { api, provider } = connectToApi(name, url, autoConnectMs);
-
-    return { ...network, api, provider };
-  });
+  api.on('connected', () => connectedHandler(context, apiOptions, node, network));
+  api.on('disconnected', () => disconnectHandler(context, apiOptions, node, network, provider));
+  api.on('ready', () => readyHandler(context, node, network, getAccounts()));
 }
 
-function subscribeUtilityAssetsBalances(context: Context, address: string, network: Network) {
+function subscribeUtilityAssetsBalances(context: Context, address: string, network: Network): void {
   const { name: networkName, parentId, api, assets: networkAssets } = network;
   const networkUtilityAsset = networkAssets.find(
     ({ isUtility, type }) => isUtility && !ORML_PALLETS_TYPES.includes(type as string)
@@ -81,7 +121,7 @@ function subscribeUtilityAssetsBalances(context: Context, address: string, netwo
   });
 }
 
-function subscribeOrmlAssetsBalances(context: Context, address: string, network: Network) {
+function subscribeOrmlAssetsBalances(context: Context, address: string, network: Network): void {
   const { commit, state } = context;
   const { assetsJson } = state;
   const { name: networkName, api, assets: networkAssets, parentId } = network;
@@ -117,13 +157,15 @@ function subscribeOrmlAssetsBalances(context: Context, address: string, network:
   });
 }
 
-async function subscribeAssetsBalances(context: Context, address: string, network: Network) {
+async function subscribeAssetsBalances(context: Context, address: string, network: Network): Promise<void> {
   const { api } = network;
 
-  await api!.isReadyOrError;
+  if (api === undefined) return;
+
+  await api.isReadyOrError; // NOTE: now this is not necessary, since this function is called when the api is ready
 
   subscribeUtilityAssetsBalances(context, address, network);
   subscribeOrmlAssetsBalances(context, address, network);
 }
 
-export { connectToApi, connectToNetworksApi, subscribeAssetsBalances };
+export { connectToApi, subscribeAssetsBalances };

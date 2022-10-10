@@ -54,10 +54,6 @@ export type SetHistoryProps = {
   assetId: string;
 };
 
-export type SetAllNetworksIsLoaded = {
-  value: boolean;
-};
-
 export type UpdateCurrencyBalanceProps = {
   walletAddress: string;
   network: string;

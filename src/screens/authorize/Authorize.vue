@@ -35,13 +35,14 @@
 import { Vue, Component } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { AuthorizeRequest } from '@extension-base/background/types';
+import { TAction } from '../../interfaces';
 import { Accounts, WalletInfo } from '@/store/accounts/types';
 import Button from '@/components/Button.vue';
 import Hint from '@/components/Hint.vue';
 import Alert from '@/components/Alert.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import { Components } from '@/router/routes';
-import { ActionTypes as AuthActionTypes, ActionsTypes } from '@/store/auth/actions';
+import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
 import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import SelectAuthAccount from '@/screens/authorize/SelectAuthAccount.vue';
@@ -65,8 +66,8 @@ export default class Authorize extends Vue {
   @Getter(AccountsGettersTypes.getWallets) wallets!: WalletInfo[];
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
   @Action(AuthActionTypes.APPROVE_AUTH_REQUEST)
-  onApproveAuthRequest!: ActionsTypes[AuthActionTypes.APPROVE_AUTH_REQUEST];
-  @Action(AuthActionTypes.REJECT_AUTH_REQUEST) onRejectAuthRequest!: ActionsTypes[AuthActionTypes.REJECT_AUTH_REQUEST];
+  onApproveAuthRequest!: TAction<{ request: AuthorizeRequest; accounts: string[] }>;
+  @Action(AuthActionTypes.REJECT_AUTH_REQUEST) onRejectAuthRequest!: TAction<AuthorizeRequest>;
 
   get isAccountsExists() {
     return BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;

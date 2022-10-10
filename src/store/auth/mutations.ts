@@ -17,13 +17,6 @@ export type Mutations = {
   [MutationTypes.DELETE_AUTHLIST_ITEM](state: State, payload: string): void;
 };
 
-export type MutationsTypes = {
-  [MutationTypes.SET_AUTH_REQUEST](props: AuthorizeRequest): void;
-  [MutationTypes.DELETE_AUTH_REQUEST](): void;
-  [MutationTypes.SET_AUTHLIST](payload: ResponseAuthorizeList): void;
-  [MutationTypes.DELETE_AUTHLIST_ITEM](payload: string): void;
-};
-
 const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_AUTH_REQUEST](state, payload) {
     state.requests.push(payload);

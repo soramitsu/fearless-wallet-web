@@ -44,7 +44,7 @@ export default class AuthItem extends Vue {
 
 <style lang="scss" scoped>
 .divider {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: $default-background-color;
   margin: 17px 0;
 }
 

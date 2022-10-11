@@ -32,7 +32,7 @@ export default class Dropdown extends Vue {
   .el-button {
     clip-path: $medium-clip-path-left-top-and-right-bottom !important;
     background: none !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid $default-background-color !important;
     color: white !important;
   }
 
@@ -54,7 +54,7 @@ export default class Dropdown extends Vue {
   color: #ffffff !important;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.1) !important;
+    background-color: $default-background-color !important;
   }
 }
 

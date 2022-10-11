@@ -135,7 +135,7 @@ export default class Header extends Vue {
   }
 
   i {
-    color: rgba(255, 255, 255, 0.65);
+    color: $grayish-white;
   }
 
   .s-icon-arrows-arrows-diagonals-bltr-24 {
@@ -190,7 +190,7 @@ export default class Header extends Vue {
       padding: 0 12px;
       font-size: 12px;
       border-radius: 20px;
-      background-color: rgba(255, 255, 255, 0.1);
+      background-color: $default-background-color;
       user-select: none;
     }
   }

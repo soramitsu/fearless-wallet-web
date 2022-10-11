@@ -705,7 +705,7 @@ export default class AddWallet extends Vue {
         border-radius: 50%;
         width: 10px;
         height: 10px;
-        background-color: rgba(255, 255, 255, 0.1);
+        background-color: $default-background-color;
         margin-right: 8px;
 
         &:last-child {
@@ -746,7 +746,7 @@ export default class AddWallet extends Vue {
   .el-button.s-primary:disabled {
     background-color: rgba(238, 0, 119, 0.4);
     border: rgba(238, 0, 119, 0.4);
-    color: rgba(255, 255, 255, 0.5);
+    color: $gray-color;
   }
 
   .icon-container {

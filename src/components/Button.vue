@@ -134,20 +134,20 @@ export default class Button extends Vue {
 }
 
 .secondary {
-  background-color: rgba(255, 255, 255, 0.05) !important;
+  background-color: $secondary-background-color !important;
   color: #fff !important;
 }
 
 .secondary-hover:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
+  background-color: $default-background-color !important;
 }
 
 .secondary-border {
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid $default-background-color !important;
 }
 
 .secondary-border-none {
-  border: rgba(255, 255, 255, 0.05) !important;
+  border: $secondary-background-color !important;
 }
 
 .secondary-border-hover:hover {

@@ -224,7 +224,7 @@ export default class CurrencyItem extends Vue {
 .currency-item {
   display: flex;
   padding: 8px 0 8px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid $default-background-color;
   margin-right: 16px;
   height: 78px;
   align-items: center;
@@ -255,7 +255,7 @@ export default class CurrencyItem extends Vue {
 
     .first-row {
       font-size: 12px;
-      color: rgba(255, 255, 255, 0.5);
+      color: $gray-color;
       margin-bottom: 5px;
 
       .available-networks {

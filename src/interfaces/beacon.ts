@@ -10,9 +10,13 @@ import {
   SignPayloadResponse,
   BlockchainRequestV3,
   SubstrateMessageType,
+  ErrorResponse,
 } from '@airgap/beacon-sdk';
-import { BlockchainMessage } from '@airgap/beacon-types';
-import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
+import type { SignerPayloadJSON } from '@polkadot/types/types';
+export interface PermissionErrorPayload {
+  errorResponse: ErrorResponse;
+  walletInfo: WalletInfo;
+}
 
 export interface SubstratePermissionRequest extends PermissionRequestV3<'substrate'> {
   blockchainData: {
@@ -52,3 +56,5 @@ export interface SubstrateSignPayloadRequest extends BlockchainRequestV3<string>
     mode: 'submit' | 'submit-and-return' | 'return';
   };
 }
+
+export type TCallback<T> = (payload: T) => void;

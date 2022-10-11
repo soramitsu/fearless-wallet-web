@@ -90,7 +90,7 @@ export default class AboveForm extends Vue {
     .s-icon-basic-close-24 {
       font-weight: 400;
       opacity: 0.8;
-      color: rgba(255, 255, 255, 0.65);
+      color: $grayish-white;
 
       &:hover {
         cursor: pointer;
@@ -99,7 +99,6 @@ export default class AboveForm extends Vue {
     }
 
     .s-icon-basic-check-mark-24 {
-      color: rgba(255, 255, 255, 0.5);
       font-weight: 400;
       color: $pink-lavender-color;
       opacity: 0.8;
@@ -116,7 +115,7 @@ export default class AboveForm extends Vue {
       display: flex;
       justify-content: space-between;
       padding: $default-padding;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid $default-background-color;
     }
 
     .icon {

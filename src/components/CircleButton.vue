@@ -89,7 +89,7 @@ export default class CircleButton extends Vue {
 
 .background-none-hover-light-black {
   &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: $default-background-color;
   }
 }
 
@@ -98,6 +98,6 @@ export default class CircleButton extends Vue {
 }
 
 .background-light-black {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: $default-background-color;
 }
 </style>

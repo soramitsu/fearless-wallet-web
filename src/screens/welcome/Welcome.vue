@@ -34,7 +34,16 @@
         @click="openAddWalletComponent('import')"
       />
 
-      <BeaconConnect />
+      <Button
+        class="import-button"
+        width="100%"
+        text="Connect with Mobile Wallet"
+        size="big"
+        fontSize="big"
+        type="secondary"
+        :border="false"
+        @click="openAddWalletMobile"
+      />
 
       <div class="privacy-policy">
         By continuing you agree with
@@ -88,6 +97,12 @@ export default class Welcome extends Vue {
   openAddWalletComponent(type: string) {
     this.$router.push({ name: Components.AddWallet, params: { type } });
   }
+
+  openAddWalletMobile() {
+    this.$router.push({
+      name: Components.BeaconConnect,
+    });
+  }
 }
 </script>
 
@@ -111,7 +126,7 @@ export default class Welcome extends Vue {
     font-size: 12px;
     font-weight: 400;
     line-height: 16px;
-    color: rgba(255, 255, 255, 0.65);
+    color: $grayish-white;
 
     .important-text {
       color: rgb(199, 31, 95);

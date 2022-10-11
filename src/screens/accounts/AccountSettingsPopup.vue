@@ -110,7 +110,7 @@ export default class AccountSettingsPopup extends Vue {
 
 <style lang="scss" scoped>
 .account-settings {
-  color: rgba(255, 255, 255, 0.75);
+  color: $default-white;
   font-weight: 500;
 
   .row {

@@ -23,13 +23,13 @@ export default class Switcher extends Vue {
 <style lang="scss">
 .el-switch__core {
   background-color: #422539 !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid $default-background-color !important;
 }
 
 .is-checked {
   .el-switch__core {
     background-color: #7700ee !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid $default-background-color !important;
   }
 }
 </style>

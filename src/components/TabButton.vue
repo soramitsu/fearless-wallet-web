@@ -31,13 +31,13 @@ export default class TabButton extends Vue {
 
 <style lang="scss" scoped>
 .tab-button {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: $secondary-background-color;
   padding: 0 15px;
   border-radius: 4px;
   font-size: 13px;
   line-height: 36px;
   clip-path: $medium-clip-path-left-top-and-right-bottom;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid $default-background-color;
   height: 36px;
   user-select: none;
 
@@ -47,6 +47,6 @@ export default class TabButton extends Vue {
 }
 
 .active-background {
-  background-color: rgba(119, 0, 238, 0.25);
+  background-color: $pink-purple-color;
 }
 </style>

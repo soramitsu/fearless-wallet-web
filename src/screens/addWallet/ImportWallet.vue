@@ -144,7 +144,7 @@ export default class ImportWallet extends Vue {
 
 <style lang="scss">
 .s-icon-file-file-upload-24::before {
-  color: rgba(255, 255, 255, 0.5);
+  color: $gray-color;
 }
 
 .s-textarea {
@@ -175,7 +175,7 @@ export default class ImportWallet extends Vue {
   }
 
   .type-import {
-    color: rgba(255, 255, 255, 0.75);
+    color: $default-white;
     margin: 8px 0;
     text-align: left;
     width: 100%;

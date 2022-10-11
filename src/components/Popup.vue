@@ -192,7 +192,7 @@ export default class Popup extends Vue {
   }
 
   .border {
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid $default-background-color;
   }
 
   .content {
@@ -225,7 +225,7 @@ export default class Popup extends Vue {
   }
 
   .s-icon-basic-close-24 {
-    color: rgba(255, 255, 255, 0.65);
+    color: $grayish-white;
 
     &:hover {
       color: rgba(255, 255, 255, 0.8);

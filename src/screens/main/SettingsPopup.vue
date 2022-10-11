@@ -52,7 +52,7 @@ export default class SettingsPopup extends Vue {
 
 <style lang="scss" scoped>
 .settings {
-  color: rgba(255, 255, 255, 0.75);
+  color: $default-white;
   font-weight: 700;
   user-select: none;
 }

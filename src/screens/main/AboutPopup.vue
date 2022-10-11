@@ -124,12 +124,12 @@ export default class AboutPopup extends Vue {
 
   .header {
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.75);
+    color: $default-white;
   }
 
   .title {
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.5);
+    color: $gray-color;
     padding: 12px 0;
   }
 
@@ -159,7 +159,7 @@ export default class AboutPopup extends Vue {
         }
 
         .sub-label {
-          color: rgba(255, 255, 255, 0.75);
+          color: $default-white;
         }
       }
     }
@@ -178,13 +178,13 @@ export default class AboutPopup extends Vue {
       .label {
         font-weight: 700;
         font-size: 14px;
-        color: rgba(255, 255, 255, 0.75);
+        color: $default-white;
       }
 
       .sub-label {
         margin-top: 2px;
         font-size: 12px;
-        color: rgba(255, 255, 255, 0.65);
+        color: $grayish-white;
       }
     }
 

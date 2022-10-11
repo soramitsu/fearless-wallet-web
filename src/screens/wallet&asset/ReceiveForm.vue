@@ -77,7 +77,7 @@ export default class ReceiveForm extends Vue {
   }
 
   .address {
-    color: rgba(255, 255, 255, 0.75);
+    color: $default-white;
     font-size: 14px;
     margin-top: 25px;
   }

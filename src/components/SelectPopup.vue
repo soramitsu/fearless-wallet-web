@@ -106,7 +106,7 @@ export default class SelectPopup extends Vue {
 
     &:hover {
       cursor: pointer;
-      background-color: rgba(255, 255, 255, 0.05);
+      background-color: $secondary-background-color;
     }
 
     &:first-child {

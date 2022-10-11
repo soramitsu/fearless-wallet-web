@@ -30,10 +30,10 @@ export default class Hint extends Vue {
 
 <style lang="scss" scoped>
 .hint {
-  color: rgba(255, 255, 255, 0.65);
+  color: $grayish-white;
 
   i {
-    color: rgba(255, 255, 255, 0.65);
+    color: $grayish-white;
   }
 
   display: flex;

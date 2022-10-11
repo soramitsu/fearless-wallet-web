@@ -13,12 +13,14 @@ import type { SignerPayloadJSON } from '@polkadot/types/types';
 import { getTzip10Link } from '@/util/beacon';
 
 import {
+  PermissionErrorPayload,
   PermissionSuccess,
   RequestSentInfo,
   SignResponse,
   SubstratePermissionRequest,
   SubstrateSignPayloadRequest,
-} from '@/interfaces/beacon';
+  TCallback,
+} from '@/interfaces';
 
 class BeaconController {
   private readonly app: DAppClient;
@@ -31,9 +33,6 @@ class BeaconController {
       eventHandlers: {
         [BeaconEvent.PAIR_SUCCESS]: {
           handler: defaultEventCallbacks.PAIR_SUCCESS,
-        },
-        [BeaconEvent.PERMISSION_REQUEST_SENT]: {
-          handler: defaultEventCallbacks.PERMISSION_REQUEST_SENT,
         },
         [BeaconEvent.PERMISSION_REQUEST_SUCCESS]: {
           handler: defaultEventCallbacks.PERMISSION_REQUEST_SUCCESS,
@@ -66,6 +65,11 @@ class BeaconController {
     return this.app.getActiveAccount();
   }
 
+  async resetConnection() {
+    await this.app.setActiveAccount();
+    await this.app.disconnect();
+  }
+
   async connect() {
     const config: SubstratePermissionRequest = {
       blockchainData: {
@@ -82,6 +86,11 @@ class BeaconController {
 
     await this.app.permissionRequest(config);
   }
+  status() {
+    console.info(this.app.connectionStatus, 'connection status');
+    console.info(this.app.ready, 'ready');
+    console.info(this.app.preferredNetwork, 'prefferedNetwork');
+  }
 
   async onPairingRequest(callback: (payload: string) => void) {
     this.app.subscribeToEvent(BeaconEvent.PAIR_INIT, async (data) => {
@@ -91,16 +100,24 @@ class BeaconController {
     });
   }
 
-  async onSignRequest(callback: (payload: RequestSentInfo) => void) {
+  async onSignRequest(callback: TCallback<RequestSentInfo>) {
     this.app.subscribeToEvent(BeaconEvent.SIGN_REQUEST_SENT, callback);
   }
 
-  async onBlockChainRequest(callback: (payload: SignResponse) => void) {
+  async onBlockChainRequest(callback: TCallback<SignResponse>) {
     this.app.subscribeToEvent(BeaconEvent.SIGN_REQUEST_SUCCESS, callback);
   }
 
-  async onPermissionsResponse(callback: (payload: PermissionSuccess) => void) {
+  async onPermissionRequest(callback: TCallback<RequestSentInfo>) {
+    this.app.subscribeToEvent(BeaconEvent.PERMISSION_REQUEST_SENT, callback);
+  }
+
+  async onPermissionsResponse(callback: TCallback<PermissionSuccess>) {
     this.app.subscribeToEvent(BeaconEvent.PERMISSION_REQUEST_SUCCESS, callback);
+  }
+
+  async onPermissionsError(callback: TCallback<PermissionErrorPayload>) {
+    this.app.subscribeToEvent(BeaconEvent.PERMISSION_REQUEST_ERROR, callback);
   }
 
   disconnect() {

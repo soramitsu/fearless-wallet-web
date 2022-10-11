@@ -18,12 +18,14 @@ import Authorize from '@/screens/authorize/Authorize.vue';
 import MetaRequest from '@/screens/metadata/Metadata.vue';
 import Transaction from '@/screens/signing/Transaction.vue';
 import UpdateAuths from '@/screens/authorize/UpdateAuths.vue';
+import BeaconConnect from '@/screens/beaconUI/BeaconConnect.vue';
 
 import store from '@/store';
 
 export enum Components {
   Welcome = 'Welcome',
   AddWallet = 'AddWallet',
+  BeaconConnect = 'BeaconConnect',
   Main = 'Main',
   Wallet = 'Wallet',
   Crowdloans = 'Crowdloans',
@@ -57,6 +59,11 @@ const routes: Array<RouteConfig> = [
     path: '/add-wallet/:type',
     name: Components.AddWallet,
     component: AddWallet,
+  },
+  {
+    path: ' /add-mobile-wallet',
+    name: Components.BeaconConnect,
+    component: BeaconConnect,
   },
   {
     path: '/authorize',

@@ -283,7 +283,7 @@ export default class SendForm extends Vue {
 
   mounted() {
     this.selectedAssetId = this._selectedAssetId;
-
+    console.log(this.selectedWallet);
     this.$nextTick(() => {
       const index = this.optionsNetwork?.findIndex(({ value }) => value === this._selectedNetwork);
 
@@ -370,7 +370,7 @@ export default class SendForm extends Vue {
 
       .transferrable-label {
         font-size: 14px;
-        color: rgba(255, 255, 255, 0.75);
+        color: $default-white;
         text-align: left;
       }
 
@@ -405,8 +405,8 @@ export default class SendForm extends Vue {
 
   .summary {
     padding: 16px;
-    background-color: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background-color: $secondary-background-color !important;
+    border: 1px solid $default-background-color !important;
     clip-path: $big-clip-path-left-top-and-right-bottom;
     border-radius: $default-border-radius;
 
@@ -426,7 +426,7 @@ export default class SendForm extends Vue {
       }
 
       .name {
-        color: rgba(255, 255, 255, 0.5);
+        color: $gray-color;
       }
 
       .column {
@@ -435,7 +435,7 @@ export default class SendForm extends Vue {
         align-items: flex-end;
 
         .value {
-          color: rgba(255, 255, 255, 0.75);
+          color: $default-white;
           font-weight: 300;
           font-size: 12px;
           margin-top: 3px;

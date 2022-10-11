@@ -62,7 +62,7 @@ export default class SelectAuthAccount extends Vue {
   justify-content: space-between;
   align-items: center;
   border: 1px solid transparent;
-  border-bottom-color: rgba(255, 255, 255, 0.1);
+  border-bottom-color: $default-background-color;
 }
 
 .account__checkbox {
@@ -77,8 +77,8 @@ export default class SelectAuthAccount extends Vue {
 
 .account__checkbox--mobile-icon {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.05);
+  color: $gray-color;
+  background: $secondary-background-color;
   letter-spacing: 0.03em;
   line-height: 15px;
   text-transform: uppercase;

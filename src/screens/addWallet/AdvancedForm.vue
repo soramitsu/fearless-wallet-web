@@ -120,7 +120,7 @@ export default class AdvancedForm extends Vue {
   }
 
   .example-prompt {
-    color: rgba(255, 255, 255, 0.65);
+    color: $grayish-white;
     font-size: 14px;
     text-align: left;
     line-height: 180%;

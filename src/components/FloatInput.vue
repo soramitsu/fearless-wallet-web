@@ -66,7 +66,7 @@ export default class FloatInput extends Vue {
   position: relative;
 
   .s-input {
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid $default-background-color !important;
     padding-left: 25px !important;
   }
 
@@ -94,7 +94,7 @@ export default class FloatInput extends Vue {
   }
 
   .s-input {
-    background-color: rgba(255, 255, 255, 0.05) !important;
+    background-color: $secondary-background-color !important;
   }
 }
 

@@ -92,7 +92,7 @@ export default class ContentSettings extends Vue {
   }
 
   i {
-    color: rgba(255, 255, 255, 0.65);
+    color: $grayish-white;
     margin-left: 24px;
 
     &:hover {

@@ -197,7 +197,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     .descriptions {
       display: flex;
       justify-content: space-between;
-      background: rgba(255, 255, 255, 0.05);
+      background: $secondary-background-color;
       border-radius: 50px;
       margin-bottom: 20px;
       padding: 12px;
@@ -217,7 +217,7 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     .transfer-value {
       font-size: 16px;
-      color: rgba(255, 255, 255, 0.5);
+      color: $gray-color;
     }
 
     .remember__checkbox {

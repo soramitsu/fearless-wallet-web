@@ -273,7 +273,7 @@ export default class SelectNetworkButton extends Vue {
     padding: 0 $default-padding;
 
     .item {
-      color: rgba(255, 255, 255, 0.75);
+      color: $default-white;
       border-bottom: 1px solid $default-background-color;
       padding: $default-padding 0;
       display: flex;

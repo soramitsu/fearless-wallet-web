@@ -3,9 +3,9 @@
     <FloatInput
       v-model="syncedAmount"
       class="input-amount"
-      placeholder="Amount"
       size="big"
       styleInput="pink"
+      :placeholder="amountPlaceholder"
       @change="changeAmount"
     />
 
@@ -14,14 +14,14 @@
     <template v-if="showValueInput">
       <img src="@/assets/equals.svg" class="img-equals" />
 
-      <div v-show="showFiatSymbol" class="fiat-symbol">{{ fiatSymbol }}</div>
+      <!-- <div v-show="showFiatSymbol" class="fiat-symbol">{{ fiatSymbol }}</div> -->
 
       <FloatInput
         v-model="syncedValue"
         class="input-amount"
         size="big"
         styleInput="pink"
-        placeholder="Value"
+        :placeholder="valuePlaceholder"
         @change="changeValue"
       />
 
@@ -48,11 +48,24 @@ export default class TeleportForm extends Vue {
   @Prop(Object) currency!: Currency;
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('value', { type: String }) syncedValue!: string;
-  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  // @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.getFiatId) fiatId!: string;
 
-  get showFiatSymbol() {
-    return this.syncedValue !== '';
+  get amountPlaceholder() {
+    if (this.syncedAmount === '') return 'AMOUNT';
+
+    return `AMOUNT IN ${this.currency?.displayName.toUpperCase()}`;
   }
+
+  get valuePlaceholder() {
+    if (this.syncedValue === '') return 'VALUE';
+
+    return `VALUE IN ${this.fiatId.toUpperCase()}`;
+  }
+
+  // get showFiatSymbol() {
+  //   return this.syncedValue !== '';
+  // }
 
   get showValueInput() {
     return this.currency?.price !== 0;

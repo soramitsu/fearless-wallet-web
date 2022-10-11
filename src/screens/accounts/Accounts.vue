@@ -1,6 +1,6 @@
 <template>
   <div class="accounts">
-    <Input v-model="selectedWallet.name" placeholder="Wallet name" size="big" :readonly="true" />
+    <Input v-model="newName" placeholder="Wallet name" size="big" :maxlength="15" @blur="blurInputName" />
 
     <template v-if="showReplacedAccounts">
       <div class="row label">Accounts with unique secrets</div>
@@ -31,11 +31,11 @@
 </template>
 
 <script lang="ts">
-import { Getter } from 'vuex-class';
-import { Vue, Component } from 'vue-property-decorator';
+import { Getter, Mutation } from 'vuex-class';
+import { Vue, Component, Watch } from 'vue-property-decorator';
 import AccountsItem from './AccountsItem.vue';
-import type { SelectedWallet } from '@/store/accounts/types';
-import type { Networks } from '@/interfaces';
+import type { SelectedWallet, SetSelectedWalletProps } from '@/store/accounts/types';
+import type { Networks, TMutation } from '@/interfaces';
 import Input from '@/components/Input.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import Scroll from '@/components/Scroll.vue';
@@ -43,6 +43,8 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { getChainAccounts } from '@/helpers/accounts';
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import BaseApi from '@/util/BaseApi';
 
 @Component({
   components: {
@@ -55,9 +57,11 @@ import { getChainAccounts } from '@/helpers/accounts';
 export default class Account extends Vue {
   selectedNetwork = '';
   selectedAddress = '';
+  newName = '';
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
 
   get showReplacedAccounts() {
     return this.replacedAccountsItems.length > 0;
@@ -83,12 +87,35 @@ export default class Account extends Vue {
     return this.chainAccounts.filter(({ isReplaced }) => !isReplaced);
   }
 
+  @Watch('selectedWallet')
+  ethereumJsonChanged({ name }: SelectedWallet) {
+    this.newName = name;
+  }
+
+  mounted() {
+    this.newName = this.selectedWallet.name;
+  }
+
   back() {
     this.$router.push({ name: Components.Wallet });
   }
 
   openAccountSettingsPopup(network: string, event: Event, isReplaceAccount = false) {
     this.$emit('openAccountSettingsPopup', network, event, isReplaceAccount);
+  }
+
+  blurInputName() {
+    const { address, name } = this.selectedWallet;
+
+    if (this.newName === '') {
+      this.newName = name;
+
+      return;
+    }
+
+    BaseApi.updateName(address, this.newName);
+
+    this.setSelectedWallet({ selectedWalletAddress: address });
   }
 }
 </script>

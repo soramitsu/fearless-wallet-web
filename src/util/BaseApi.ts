@@ -429,4 +429,13 @@ export default class BaseApi {
   public static getEquilibriumAssetName(symbol: string): number {
     return assetFromToken(symbol)[0];
   }
+
+  static updateName(address: string, name: string): void {
+    const pair = BaseApi.getKeyringPair(address);
+    const meta = getMetaTyped(pair.meta);
+
+    meta.name = name;
+
+    keyring.saveAccountMeta(pair, meta as any);
+  }
 }

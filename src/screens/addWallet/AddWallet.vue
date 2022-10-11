@@ -26,7 +26,6 @@
           v-model="replaceNetworkUpper"
           placeholder="Network"
           size="big"
-          :maxlength="15"
           :readonly="true"
           class="selected-network"
         />

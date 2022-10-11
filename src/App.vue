@@ -9,6 +9,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
+import { encodeAddress } from '@polkadot/util-crypto';
 import BaseApi from './util/BaseApi';
 import type { SetSelectedWalletProps, setAccountsProps, Accounts, setAddressesProps } from '@/store/accounts/types';
 import type { TAction, TMutation } from '@/interfaces';
@@ -94,7 +95,11 @@ export default class App extends Vue {
     const LSSelectedWalletAddress = accountController.getSelectedWalletAddress();
     const selectedWalletAddress = LSSelectedWalletAddress || BaseApi.getFirstSubstrateWalletAddress();
 
-    if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
+    if (selectedWalletAddress) {
+      const selectedSubstrateAddress = encodeAddress(selectedWalletAddress);
+
+      this.setSelectedWallet({ selectedWalletAddress: selectedSubstrateAddress });
+    }
   }
 
   beforeUnmount() {

@@ -5,9 +5,24 @@
       <img class="icon" :src="icon" />
       {{ name }}
     </p>
+    <div class="reset__form" v-if="isResetUIShown">
+      <Alert :message="noAnswerMessage" />
 
-    <Button text="Reset Connection" @click="onResetConnection" />
-    <Button text="Cancel Request" @click="onCancelRequest" />
+      <Corners size="big">
+        <div class="corners__container">
+          <span>Did you make a mistake?</span>
+          <Button size="small" text="Reset Connection" @click="onResetConnection" />
+        </div>
+      </Corners>
+
+      <Corners size="big">
+        <div class="corners__container">
+          <span>Wallet not receiving request?</span>
+          <Button size="small" text="Cancel Request" @click="onCancelRequest" />
+        </div>
+      </Corners>
+    </div>
+    <Loader v-else />
   </div>
 </template>
 
@@ -16,27 +31,41 @@ import { Vue, Component, Prop } from 'vue-property-decorator';
 import { fearlessConnector } from '@/controllers/beaconController';
 import { RequestSentInfo } from '@/interfaces';
 import Button from '@/components/Button.vue';
+import Loader from '@/components/Loader.vue';
+import Corners from '@/components/Corners.vue';
+import Alert from '@/components/Alert.vue';
 
 @Component({
   components: {
     Button,
+    Loader,
+    Corners,
+    Alert,
   },
 })
 export default class PermissionRequest extends Vue {
   @Prop(Object) requestInfo!: RequestSentInfo;
+  isResetUIShown = false;
+  noAnswerMessage = 'No answer from your wallet received yet. Please make sure the wallet is open';
+
+  mounted() {
+    setTimeout(() => {
+      this.isResetUIShown = true;
+    }, 5000);
+  }
 
   get name() {
     return this.requestInfo.walletInfo.name;
   }
 
   get icon() {
-    this.requestInfo.extraInfo.resetCallback;
-
     return this.requestInfo.walletInfo.icon;
   }
+
   onResetConnection() {
     fearlessConnector.resetConnection();
   }
+
   onCancelRequest() {
     this.$router.back();
   }
@@ -49,10 +78,36 @@ export default class PermissionRequest extends Vue {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px;
 }
 
 .icon {
   width: 40px;
   height: 40px;
+  margin-left: 6px;
+  margin-right: 6px;
+}
+
+.content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reset__form {
+  display: flex;
+  flex-flow: column;
+  gap: 10px;
+}
+
+.corners__container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid $default-background-color;
+  background-color: $secondary-background-color;
+  clip-path: $big-clip-path-left-top;
+  width: 100%;
 }
 </style>

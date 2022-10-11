@@ -1,12 +1,24 @@
 <template>
-  <AboveForm v-if="isQRshown" :header="header" :closeHandler="close">
+  <AboveForm :header="header" :closeHandler="close">
     <template v-if="!requestInfo && qrPayload">
-      <span>{{ qrCodeHeader }}</span>
+      <h2 class="header">{{ qrCodeHeader }}</h2>
       <QR :payload="qrPayload" />
     </template>
-    <Loader v-else-if="!requestInfo && !qrPayload" />
 
-    <PermissionRequest v-if="requestInfo" :requestInfo="requestInfo" />
+    <div v-if="!qrPayload" class="loader">
+      <Loader />
+    </div>
+
+    <PermissionRequest v-if="requestInfo && !isPermissionsGranted" :requestInfo="requestInfo" />
+
+    <template v-if="isPermissionsGranted">
+      <InfoList>
+        <InfoItem name="address" :value="requestResponse.address" />
+        <InfoItem name="permissions" :value="requestResponse.scopes[0]" />
+      </InfoList>
+
+      <Button size="big" text="Understood" @click="close" />
+    </template>
   </AboveForm>
 </template>
 
@@ -16,8 +28,9 @@ import { keyring } from '@polkadot/ui-keyring';
 import { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import { Action } from 'vuex-class';
 import { encodeAddress } from '@polkadot/util-crypto';
+import { PermissionResponseOutput } from '@airgap/beacon-sdk';
 import type { SetSelectedWallet } from '@/store/accounts/types';
-import { PermissionSuccess, TAction, RequestSentInfo } from '@/interfaces';
+import { PermissionSuccess, TAction, RequestSentInfo, PermissionErrorPayload } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { createAddress } from '@/extension/messaging';
 import { fearlessConnector } from '@/controllers/beaconController';
@@ -28,24 +41,29 @@ import AboveForm from '@/components/AboveForm.vue';
 import QR from '@/components/QR.vue';
 import Loader from '@/components/Loader.vue';
 import PermissionRequest from '@/screens/beaconUI/PermissionRequest.vue';
-
+import InfoList from '@/layouts/InfoList.vue';
+import InfoItem from '@/screens/signing/InfoItem.vue';
 @Component({
   components: {
     Loader,
     QR,
+    InfoList,
+    InfoItem,
+    Button,
     AboveForm,
     PermissionRequest,
-    Button,
   },
 })
 export default class BeaconConnect extends Vue {
   @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
 
-  isQRshown = true;
   qrPayload = '';
   isRequest = false;
   requestInfo: RequestSentInfo | null = null;
+  requestResponse: PermissionResponseOutput | null = null;
   qrCodeHeader = 'Scan the QR code using the Fearless mobile app';
+  isPermissionsGranted = false;
+
   async mounted() {
     fearlessConnector.connect();
     this.initBeaconEvents();
@@ -53,33 +71,48 @@ export default class BeaconConnect extends Vue {
 
   initBeaconEvents() {
     fearlessConnector.onPairingRequest(this.onPairingRequest);
+    fearlessConnector.onPermissionsError(this.onPermissionError);
     fearlessConnector.onPermissionRequest(this.onPermissionRequest);
     fearlessConnector.onPermissionsResponse(this.onPermissionResponse);
   }
 
-  close() {
-    this.$router.back();
+  get isRequestSend() {
+    return !this.requestInfo && this.qrPayload;
   }
+
+  close() {
+    this.$router.push({ name: Components.Wallet });
+  }
+
   get header() {
+    if (this.isPermissionsGranted) return `Permissions granted by ${this.requestInfo?.walletInfo.name}`;
     if (this.requestInfo) return `Requesting...`;
 
     return 'Connect Mobile Wallet';
   }
+
   async onPairingRequest(payload: string) {
     this.qrPayload = payload;
-    this.isQRshown = true;
   }
 
   async onPermissionRequest(payload: RequestSentInfo) {
     this.requestInfo = payload;
-    console.log(this.requestInfo, 'request info');
+
     setTimeout(() => {
       this.isRequest = true;
     }, 2000);
   }
 
+  async onPermissionError(payload: PermissionErrorPayload) {
+    console.log(payload);
+  }
+
   async onPermissionResponse(payload: PermissionSuccess) {
+    this.isPermissionsGranted = true;
+    this.requestResponse = payload.output;
+
     const { address } = payload.account;
+
     const meta: KeyringJson$Meta = {
       name: 'beacon_acc',
     };
@@ -96,7 +129,6 @@ export default class BeaconConnect extends Vue {
     await createAddress(meta, address); //extenstion service worker
     this.setSelectedWallet({ selectedWalletAddress: address });
 
-    this.isQRshown = false;
     this.$router.push({ name: Components.Wallet });
   }
 }
@@ -105,5 +137,16 @@ export default class BeaconConnect extends Vue {
 <style lang="scss" scoped>
 .import-button {
   margin-top: 10px;
+}
+
+.header {
+  padding: 16px;
+}
+
+.loader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
 }
 </style>

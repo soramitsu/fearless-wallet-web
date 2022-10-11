@@ -1,5 +1,5 @@
 <template>
-  <div class="dex">
+  <div class="polkaswap">
     <ComingSoon :name="name" />
   </div>
 </template>
@@ -12,15 +12,15 @@ import { MenuItems } from '@/interfaces/common';
 @Component({
   components: { ComingSoon },
 })
-export default class Dex extends Vue {
+export default class Polkaswap extends Vue {
   get name() {
-    return MenuItems.dex;
+    return MenuItems.polkaswap;
   }
 }
 </script>
 
 <style lang="scss" scoped>
-.dex {
+.polkaswap {
   height: 100%;
 }
 </style>

@@ -8,16 +8,13 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { MenuItems } from '@/interfaces/common';
 
 @Component
 export default class ComingSoon extends Vue {
   @Prop(String) name!: string;
 
   getImg() {
-    const name = this.name === MenuItems.dex ? 'polkaswap' : this.name.toLowerCase();
-
-    return require(`@/assets/${name}.svg`);
+    return require(`@/assets/${this.name.toLowerCase()}.svg`);
   }
 }
 </script>

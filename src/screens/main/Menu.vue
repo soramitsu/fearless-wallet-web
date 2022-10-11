@@ -15,14 +15,14 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Components } from '@/router/routes';
 import MenuItem from '@/screens/main/MenuItem.vue';
 
-type MenuItemType = 'Wallet' | 'Crowdloans' | 'Staking' | 'DEX' | 'History';
+type MenuItemType = 'Wallet' | 'Crowdloans' | 'Staking' | 'Polkaswap' | 'History';
 
 @Component({
   components: { MenuItem },
 })
 export default class Menu extends Vue {
   walletItems = [Components.Accounts, Components.Export, Components.Nodes];
-  menuItems: MenuItemType[] = ['Wallet', 'Crowdloans', 'Staking', 'DEX', 'History'];
+  menuItems: MenuItemType[] = ['Wallet', 'Crowdloans', 'Staking', 'Polkaswap', 'History'];
   selectedItem = 'Wallet';
 
   get currentRouteName() {

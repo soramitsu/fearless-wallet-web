@@ -46,11 +46,11 @@ enum MenuItems {
   wallet = 'Wallet',
   crowdloans = 'Crowdloans',
   staking = 'Staking',
-  dex = 'DEX',
+  polkaswap = 'Polkaswap',
   history = 'History',
 }
 
-type MenuItem = 'Wallet' | 'Crowdloans' | 'Staking' | 'DEX' | 'History';
+type MenuItem = 'Wallet' | 'Crowdloans' | 'Staking' | 'Polkaswap' | 'History';
 
 type FiatJson = {
   id: string;

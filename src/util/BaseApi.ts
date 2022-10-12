@@ -370,6 +370,12 @@ export default class BaseApi {
     }
   }
 
+  public static lockPair(from: string): void {
+    const pair = keyring.getPair(from);
+
+    pair.lock();
+  }
+
   public static deleteAccount(address: string): void {
     keyring.forgetAccount(address);
   }

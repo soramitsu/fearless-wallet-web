@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="Export JSON" :closeHandler="closeForm.bind(null, '')">
+  <AboveForm header="Export JSON" :closeHandler="closeForm">
     <div class="export-form">
       <div class="export-content">
         <Input v-model="exportType" placeholder="Source type" size="big" class="export-type-input" :readonly="true" />
@@ -40,7 +40,7 @@ export default class ExportForm extends Vue {
   exportType = 'Restore JSON';
 
   @Prop(String) password!: string;
-  @Prop(Function) closeForm!: (password: string) => void;
+  @Prop(Function) closeHandler!: (password: string) => void;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
 
@@ -54,18 +54,25 @@ export default class ExportForm extends Vue {
     return JSON.stringify({ address });
   }
 
+  get addressByNetwork() {
+    return BaseApi.getDefaultAddressByNetworkIncludingReplacedAccount(this.selectedWallet, this.network);
+  }
+
+  closeForm() {
+    BaseApi.lockPair(this.addressByNetwork);
+
+    this.closeHandler('');
+  }
+
   proceed() {
     this.export();
-    this.closeForm('');
+    this.closeForm();
   }
 
   export() {
     const chainId = this.networks.find(({ name }) => name === this.network)!.chainId; //eslint-disable-line
-    const addressSubstrate = BaseApi.getDefaultAddressByNetworkIncludingReplacedAccount(
-      this.selectedWallet,
-      this.network
-    );
-    const keyringPair = BaseApi.getPair(addressSubstrate);
+
+    const keyringPair = BaseApi.getPair(this.addressByNetwork);
     const keyringPair$Json = keyringPair.toJson(this.password);
     const meta = { ...keyringPair$Json.meta, genesisHash: `0x${chainId}` } as Record<string, string>;
 
@@ -78,7 +85,7 @@ export default class ExportForm extends Vue {
 
     keyringPair.lock();
 
-    saveAs(blobSubstrate, `${addressSubstrate}.json`);
+    saveAs(blobSubstrate, `${this.addressByNetwork}.json`);
   }
 }
 </script>

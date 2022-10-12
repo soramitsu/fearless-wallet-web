@@ -76,7 +76,7 @@
 
     <ReplacePopup v-if="showReplacePopup" :selectedNetwork="selectedNetwork" :handlerClose="closeReplacePopup" />
 
-    <ExportForm v-if="showExportForm" :password="password" :closeForm="setPassword" />
+    <ExportForm v-if="showExportForm" :password="password" :closeHandler="setPassword" />
   </div>
 </template>
 

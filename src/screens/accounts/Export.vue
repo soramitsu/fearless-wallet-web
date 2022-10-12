@@ -68,13 +68,9 @@ export default class Export extends Vue {
       this.network
     );
 
-    try {
-      BaseApi.unlockPair(addressByNetwork, this.password);
-    } catch (ex) {
-      this.isWrongPassword = true;
+    this.isWrongPassword = !BaseApi.unlockPair(addressByNetwork, this.password);
 
-      return;
-    }
+    if (this.isWrongPassword) return;
 
     this.$emit('setPassword', this.password);
   }

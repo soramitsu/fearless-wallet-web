@@ -26,9 +26,11 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.SUBSCRIBE_METADATA_REQUESTS]({ commit }) {
     const callback = (requests: MetadataRequest[]) => {
       const [request] = requests;
+      console.log(request, 'metadata');
 
       if (request && request.id) {
         commit(MutationTypes.SET_METADATA_REQUEST, request);
+
         router.push({
           name: Components.MetaRequest,
         });

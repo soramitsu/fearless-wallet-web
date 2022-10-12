@@ -21,14 +21,17 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_AUTH_REQUEST](state, payload) {
     state.requests.push(payload);
   },
+
   [MutationTypes.DELETE_AUTH_REQUEST](state) {
     state.requests.shift();
   },
+
   [MutationTypes.SET_AUTHLIST](state, { list }) {
     Object.keys(list).forEach((key) => {
-      if (!state.authList[key]) Vue.set(state.authList, key, list[key]);
+      Vue.set(state.authList, key, list[key]);
     });
   },
+
   [MutationTypes.DELETE_AUTHLIST_ITEM](state, id) {
     Vue.delete(state.authList, id);
   },

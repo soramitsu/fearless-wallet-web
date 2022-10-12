@@ -11,8 +11,11 @@ import {
   BlockchainRequestV3,
   SubstrateMessageType,
   ErrorResponse,
+  BlockchainResponseV3,
 } from '@airgap/beacon-sdk';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
+import type { HexString } from '@polkadot/util/types';
+
 export interface PermissionErrorPayload {
   errorResponse: ErrorResponse;
   walletInfo: WalletInfo;
@@ -48,12 +51,19 @@ export interface SignResponse {
   walletInfo: WalletInfo;
 }
 
-export interface SubstrateSignPayloadRequest extends BlockchainRequestV3<string> {
+export interface SubstrateSignPayloadRequest extends BlockchainRequestV3<'substrate'> {
   blockchainData: {
     type: SubstrateMessageType.sign_payload_request;
     scope: SubstratePermissionScope.sign_payload_json;
     payload: SignerPayloadJSON;
     mode: 'submit' | 'submit-and-return' | 'return';
+  };
+}
+
+export interface SubstrateSignPayloadResponse extends BlockchainResponseV3<'substrate'> {
+  blockchainData: {
+    signature: HexString;
+    payload?: string;
   };
 }
 

@@ -35,13 +35,13 @@
 import { Vue, Component } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { AuthorizeRequest } from '@extension-base/background/types';
-import { TAction } from '../../interfaces';
-import { Accounts, WalletInfo } from '@/store/accounts/types';
+import { TAction } from '@/interfaces';
 import Button from '@/components/Button.vue';
 import Hint from '@/components/Hint.vue';
 import Alert from '@/components/Alert.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import { Components } from '@/router/routes';
+import { Accounts, WalletInfo } from '@/store/accounts/types';
 import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
 import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';

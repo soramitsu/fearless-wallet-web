@@ -49,7 +49,7 @@ export default class App extends Vue {
   async mounted() {
     const { subscribeToBalancesOfNetworks } = NetworksController;
 
-    await Promise.all([this.authSubscribe(), this.metaSubscribe(), this.signSubscribe()]);
+    Promise.all([this.authSubscribe(), this.metaSubscribe(), this.signSubscribe()]);
 
     this.subscribeAccounts = BaseApi.getAccountsSubject();
     this.subscribeAddresses = BaseApi.getAddressesSubject();

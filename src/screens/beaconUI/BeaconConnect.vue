@@ -12,12 +12,14 @@
     <PermissionRequest v-if="requestInfo && !isPermissionsGranted" :requestInfo="requestInfo" />
 
     <template v-if="isPermissionsGranted">
-      <InfoList>
-        <InfoItem name="address" :value="requestResponse.address" />
-        <InfoItem name="permissions" :value="requestResponse.scopes[0]" />
-      </InfoList>
+      <div class="permission__content">
+        <InfoList>
+          <InfoItem name="address" :value="requestResponse.address" />
+          <InfoItem name="permissions" :value="requestResponse.scopes[0]" />
+        </InfoList>
 
-      <Button size="big" text="Understood" @click="close" />
+        <Button size="big" text="Understood" @click="close" />
+      </div>
     </template>
   </AboveForm>
 </template>
@@ -30,10 +32,10 @@ import { Action } from 'vuex-class';
 import { encodeAddress } from '@polkadot/util-crypto';
 import { PermissionResponseOutput } from '@airgap/beacon-sdk';
 import type { SetSelectedWallet } from '@/store/accounts/types';
-import { PermissionSuccess, TAction, RequestSentInfo, PermissionErrorPayload } from '@/interfaces';
+import { PermissionSuccess, TAction, RequestSentInfo } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { createAddress } from '@/extension/messaging';
-import { fearlessConnector } from '@/controllers/beaconController';
+import { beaconController } from '@/controllers/beaconController';
 import { Components } from '@/router/routes';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 import Button from '@/components/Button.vue';
@@ -65,15 +67,14 @@ export default class BeaconConnect extends Vue {
   isPermissionsGranted = false;
 
   async mounted() {
-    fearlessConnector.connect();
+    beaconController.connect();
     this.initBeaconEvents();
   }
 
   initBeaconEvents() {
-    fearlessConnector.onPairingRequest(this.onPairingRequest);
-    fearlessConnector.onPermissionsError(this.onPermissionError);
-    fearlessConnector.onPermissionRequest(this.onPermissionRequest);
-    fearlessConnector.onPermissionsResponse(this.onPermissionResponse);
+    beaconController.onPairingRequest(this.onPairingRequest);
+    beaconController.onPermissionRequest(this.onPermissionRequest);
+    beaconController.onPermissionsResponse(this.onPermissionResponse);
   }
 
   get isRequestSend() {
@@ -103,10 +104,6 @@ export default class BeaconConnect extends Vue {
     }, 2000);
   }
 
-  async onPermissionError(payload: PermissionErrorPayload) {
-    console.log(payload);
-  }
-
   async onPermissionResponse(payload: PermissionSuccess) {
     this.isPermissionsGranted = true;
     this.requestResponse = payload.output;
@@ -119,7 +116,7 @@ export default class BeaconConnect extends Vue {
     const substrateAccount = encodeAddress(payload.account.address);
 
     if (BaseApi.getAddressType(substrateAccount)) {
-      fearlessConnector.disconnect();
+      beaconController.disconnect();
 
       return;
     }
@@ -137,6 +134,13 @@ export default class BeaconConnect extends Vue {
 <style lang="scss" scoped>
 .import-button {
   margin-top: 10px;
+}
+
+.permission__content {
+  height: 100%;
+  display: flex;
+  flex-flow: column;
+  justify-content: space-between;
 }
 
 .header {

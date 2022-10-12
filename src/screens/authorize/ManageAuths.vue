@@ -16,7 +16,7 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { AuthUrlInfo } from '@extension-base/background/types';
-import { TAction } from '../../interfaces';
+import { TAction } from '@/interfaces';
 import AboveForm from '@/components/AboveForm.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import AuthItem from '@/screens/authorize/AuthItem.vue';
@@ -33,14 +33,13 @@ import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
 })
 export default class ManageAuths extends Vue {
   @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
-  @Action(AuthActionTypes.GET_AUTHLIST)
-  getAuthList!: TAction<void>;
-  @Action(AuthActionTypes.DELETE_AUTH_CONNECTION)
-  deleteAuthConnection!: TAction<string>;
+  @Action(AuthActionTypes.GET_AUTHLIST) getAuthList!: TAction<void>;
+  @Action(AuthActionTypes.DELETE_AUTH_CONNECTION) deleteAuthConnection!: TAction<string>;
+
   filterValue = '';
   filteredList: Record<string, AuthUrlInfo> = {};
 
-  async beforeCreate() {
+  async mounted() {
     await this.getAuthList();
     this.filteredList = this.authlist;
   }
@@ -66,6 +65,7 @@ export default class ManageAuths extends Vue {
       },
     });
   }
+
   async removeAuth(url: string) {
     await this.deleteAuthConnection(url);
   }

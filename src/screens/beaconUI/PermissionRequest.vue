@@ -28,7 +28,7 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import { fearlessConnector } from '@/controllers/beaconController';
+import { beaconController } from '@/controllers/beaconController';
 import { RequestSentInfo } from '@/interfaces';
 import Button from '@/components/Button.vue';
 import Loader from '@/components/Loader.vue';
@@ -63,7 +63,7 @@ export default class PermissionRequest extends Vue {
   }
 
   onResetConnection() {
-    fearlessConnector.resetConnection();
+    beaconController.resetConnection();
   }
 
   onCancelRequest() {

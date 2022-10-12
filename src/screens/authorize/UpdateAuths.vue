@@ -12,6 +12,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import { Components } from '@/router/routes';
 import { getAuthList, updateAuthorization } from '@/extension/messaging';
 import SelectAuthAccount from '@/screens/authorize/SelectAuthAccount.vue';
 import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
@@ -101,10 +102,10 @@ export default class Authorize extends Vue {
     return result;
   }
 
-  updateAuths() {
-    updateAuthorization(this.prepAccounts, this.$route.params.url).then(() => {
-      this.$router.back();
-    });
+  async updateAuths() {
+    await updateAuthorization(this.prepAccounts, this.$route.params.url);
+
+    this.$router.push({ name: Components.ManageAuths });
   }
 }
 </script>

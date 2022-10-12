@@ -283,7 +283,6 @@ export default class SendForm extends Vue {
 
   mounted() {
     this.selectedAssetId = this._selectedAssetId;
-    console.log(this.selectedWallet);
     this.$nextTick(() => {
       const index = this.optionsNetwork?.findIndex(({ value }) => value === this._selectedNetwork);
 

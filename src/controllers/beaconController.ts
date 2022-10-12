@@ -8,7 +8,9 @@ import {
   BeaconEvent,
   defaultEventCallbacks,
   Serializer,
+  AccountInfo,
 } from '@airgap/beacon-sdk';
+
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import { getTzip10Link } from '@/util/beacon';
 
@@ -19,6 +21,7 @@ import {
   SignResponse,
   SubstratePermissionRequest,
   SubstrateSignPayloadRequest,
+  SubstrateSignPayloadResponse,
   TCallback,
 } from '@/interfaces';
 
@@ -31,12 +34,6 @@ class BeaconController {
       name: 'Fearless Wallet Extension',
       disableDefaultEvents: true,
       eventHandlers: {
-        [BeaconEvent.PAIR_SUCCESS]: {
-          handler: defaultEventCallbacks.PAIR_SUCCESS,
-        },
-        [BeaconEvent.PERMISSION_REQUEST_SUCCESS]: {
-          handler: defaultEventCallbacks.PERMISSION_REQUEST_SUCCESS,
-        },
         [BeaconEvent.PERMISSION_REQUEST_ERROR]: {
           handler: defaultEventCallbacks.PERMISSION_REQUEST_ERROR,
         },
@@ -86,11 +83,6 @@ class BeaconController {
 
     await this.app.permissionRequest(config);
   }
-  status() {
-    console.info(this.app.connectionStatus, 'connection status');
-    console.info(this.app.ready, 'ready');
-    console.info(this.app.preferredNetwork, 'prefferedNetwork');
-  }
 
   async onPairingRequest(callback: (payload: string) => void) {
     this.app.subscribeToEvent(BeaconEvent.PAIR_INIT, async (data) => {
@@ -124,7 +116,15 @@ class BeaconController {
     this.app.disconnect();
   }
 
-  async sendRequest(payload: SignerPayloadJSON): Promise<void> {
+  setActiveAccount(account: AccountInfo) {
+    this.app.setActiveAccount(account);
+  }
+
+  removeActiveAccount() {
+    this.app.clearActiveAccount();
+  }
+
+  async sendRequest(payload: SignerPayloadJSON): Promise<SubstrateSignPayloadResponse['blockchainData']> {
     const activeAccount = await this.app.getActiveAccount();
 
     if (!activeAccount) throw new Error('Beacon not set up.');
@@ -141,8 +141,10 @@ class BeaconController {
       type: BeaconMessageType.BlockchainRequest,
     };
 
-    await this.app.request(request);
+    const { blockchainData } = (await this.app.request(request)) as SubstrateSignPayloadResponse;
+
+    return blockchainData;
   }
 }
 
-export const fearlessConnector = BeaconController.create();
+export const beaconController = BeaconController.create();

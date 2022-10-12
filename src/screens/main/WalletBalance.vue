@@ -2,12 +2,12 @@
   <Corners size="big">
     <div :class="contentClasses" @click="updateSelectedWallet">
       <div class="content">
-        <div v-if="name" class="name">{{ name }}</div>
-        <div class="fiat">
-          <span class="fiat__balance">{{ fiatSymbol }}{{ balanceString }}</span>
+        <div class="name__container">
           <img v-if="isMobile" src="@/assets/mobile.svg" />
+          <div v-if="name" class="name">{{ name }}</div>
         </div>
-        <div :class="percentClasses">{{ percentString }}</div>
+        <span class="balance">{{ fiatSymbol }}{{ balanceString }}</span>
+        <!-- <div :class="percentClasses">{{ percentString }}</div> -->
       </div>
 
       <div class="dots-container">
@@ -104,23 +104,24 @@ export default class WalletBalance extends Vue {
     flex-grow: 1;
   }
 
-  .fiat {
+  .name__container {
     display: flex;
     flex-flow: row;
     height: 23px;
-    justify-content: space-between;
+    margin-bottom: 4px;
+    justify-content: flex-start;
+    gap: 4px;
     align-items: center;
   }
 
   .name {
-    margin-bottom: 4px;
     font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
     color: $gray-color;
   }
 
-  .fiat-balance {
+  .balance {
     font-weight: 800;
     font-size: 18px;
     line-height: 23px;

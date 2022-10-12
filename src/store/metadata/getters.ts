@@ -1,6 +1,6 @@
 import { MetadataRequest } from '@extension-base/background/types';
-import { State } from './state';
 import type { GetterTree } from 'vuex';
+import { State } from '@/store/metadata/state';
 
 export enum GettersTypes {
   getMetaRequests = 'getMetaRequests',

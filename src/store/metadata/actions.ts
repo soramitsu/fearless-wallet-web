@@ -29,7 +29,6 @@ const actions: ActionTree<State, State> & Actions = {
 
       if (request && request.id) {
         commit(MutationTypes.SET_METADATA_REQUEST, request);
-
         router.push({
           name: Components.MetaRequest,
         });

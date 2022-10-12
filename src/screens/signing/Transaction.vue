@@ -38,7 +38,7 @@ import { encodeAddress } from '@polkadot/util-crypto';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { registry } from '@/extension/background/extension-base/src/background/handlers/State';
-import { fearlessConnector } from '@/controllers/beaconController';
+import { beaconController } from '@/controllers/beaconController';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
@@ -119,7 +119,7 @@ export default class Auth extends Vue {
   }
 
   onSignMobile() {
-    fearlessConnector.sendRequest(this.payload);
+    beaconController.sendRequest(this.payload);
   }
 
   onClose() {

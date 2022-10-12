@@ -1,9 +1,9 @@
-import { MutationTypes } from './mutations';
 import type { ActionTree, ActionContext } from 'vuex';
-import type { Mutations } from './mutations';
-import type { State } from './state';
+import type { Mutations } from '@/store/accounts/mutations';
+import type { State } from '@/store/accounts/state';
 import type { SetSelectedFiat, SetSelectedWallet } from './types';
 import type { Currencies } from '@/interfaces/currencies';
+import { MutationTypes } from '@/store/accounts/mutations';
 import { defaultSortingCurrencies } from '@/helpers/currencies';
 import { accountController } from '@/controllers/accountController';
 

@@ -408,7 +408,7 @@ export default class BaseApi {
   }
 
   public static useIsPopup(): boolean {
-    return window.innerWidth <= 560;
+    return window.innerWidth <= 561;
   }
 
   public static getFirstSubstrateWalletAddress(): string {

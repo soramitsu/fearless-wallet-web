@@ -56,7 +56,6 @@ export default class Menu extends Vue {
   align-items: center;
   user-select: none;
   z-index: 199;
-  width: $extension-width;
   margin: 0 0 -16px -16px;
   border-radius: 0 0 $default-border-radius;
   // background-color: rgba(0, 0, 0, 0.5);

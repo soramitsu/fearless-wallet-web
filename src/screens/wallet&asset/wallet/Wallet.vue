@@ -224,7 +224,7 @@ export default class Wallet extends Vue {
 .wallet {
   display: flex;
   flex-direction: column;
-  width: calc(100% - 1px);
+  width: 100%;
   height: 450px;
 
   .content {

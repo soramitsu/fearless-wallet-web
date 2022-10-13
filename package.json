@@ -14,7 +14,8 @@
     "electron:serve": "env VUE_CLI_SERVICE_CONFIG_PATH=vue.config.desktop.js PORT_PREFIX=fearless EXTENSION_PREFIX=fw vue-cli-service electron:serve",
     "postinstall": "electron-builder install-app-deps",
     "postuninstall": "electron-builder install-app-deps",
-    "test:all": "yarn test:unit"
+    "test:all": "yarn test:unit",
+    "audit:desktop": "npx electronegativity -i ./ -x LimitNavigationGlobalCheck,PermissionRequestHandlerGlobalCheck"
   },
   "main": "index.js",
   "dependencies": {
@@ -48,9 +49,10 @@
     "vuex-class": "^0.3.2"
   },
   "devDependencies": {
+    "@doyensec/electronegativity": "^1.9.1",
     "@rushstack/eslint-patch": "^1.1.4",
     "@types/chrome": "^0.0.179",
-    "@types/electron-devtools-installer": "^2.2.0",
+    "@types/electron-devtools-installer": "^2.2.2",
     "@types/jest": "^26.0.19",
     "@types/lodash": "^4.14.174",
     "@types/node": "^16.11.6",
@@ -72,8 +74,8 @@
     "@vue/vue2-jest": "^27.0.0-alpha.3",
     "css-unicode-loader": "^1.0.3",
     "cypress": "^9.7.0",
-    "electron": "^13.0.0",
-    "electron-devtools-installer": "^3.1.0",
+    "electron": "^19.0.10",
+    "electron-devtools-installer": "^3.2.0",
     "eslint": "^7.29.0",
     "eslint-plugin-import": "^2.25.2",
     "eslint-plugin-node": "^11.1.0",
@@ -89,7 +91,7 @@
     "ts-jest": "^27.0.5",
     "typescript": "~4.5.5",
     "vue-cli-plugin-chrome-extension-cli": "^1.1.4",
-    "vue-cli-plugin-electron-builder": "^3.0.0-alpha.3",
+    "vue-cli-plugin-electron-builder": "^3.0.0-alpha.4",
     "vue-template-compiler": "^2.6.14"
   },
   "gitHooks": {

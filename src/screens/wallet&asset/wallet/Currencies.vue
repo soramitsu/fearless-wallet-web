@@ -1,5 +1,7 @@
 <template>
-  <Draggable v-model="filteredCurrencies" handle=".handle">
+  <div v-if="showAllAssetsHiddenText" class="info-text">{{ allAssetsHiddenText }}</div>
+
+  <Draggable v-else v-model="filteredCurrencies" handle=".handle">
     <CurrencyItem
       v-for="currency in filteredCurrencies"
       :key="currency.assetId"
@@ -23,6 +25,7 @@ import type { Currency } from '@/interfaces/currencies';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { accountController } from '@/controllers/accountController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { ALL_ASSETS_HIDDEN } from '@/consts/messages';
 
 @Component({
   components: {
@@ -39,13 +42,25 @@ export default class Currencies extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
 
+  get allAssetsHiddenText() {
+    return ALL_ASSETS_HIDDEN;
+  }
+
+  get showAllAssetsHiddenText() {
+    const visibleCurrencies = this.currencies.filter((currency) =>
+      currency.getCurrencyVisible(this.selectedWallet.address)
+    );
+
+    return visibleCurrencies.length === 0 && !this.showAssetsManagementForm;
+  }
+
   get filteredCurrencies() {
     return this.currencies;
   }
 
   set filteredCurrencies(currencies) {
     const { address } = this.selectedWallet;
-    const sequence = currencies.map(({ displayName, relayChain }) => `${displayName}-${relayChain}`);
+    const sequence = currencies.map(({ assetId }) => assetId);
 
     this.setCurrencies({ currencies });
 
@@ -53,3 +68,13 @@ export default class Currencies extends Vue {
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.info-text {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -16px;
+}
+</style>

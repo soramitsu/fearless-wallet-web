@@ -44,6 +44,8 @@ const PASSWORD_SAME = 'Please make sure the password you entered is the password
 
 const MOCK_PASSWORD = 'The wallet is already being used to replace other networks. The old password will be used.';
 
+const ALL_ASSETS_HIDDEN = 'You have hidden all assets.';
+
 type InvalidValueName = keyof typeof INVALID_MESSAGES | '';
 
 export {
@@ -52,6 +54,7 @@ export {
   PASSWORD_SAME,
   EXPORT_WARNING,
   INVALID_MESSAGES,
+  ALL_ASSETS_HIDDEN,
   EXPORT_ETHEREUM_WALLET_ERROR,
   InvalidValueName,
 };

@@ -6,7 +6,7 @@
           v-for="tabName in tabsOptions"
           class="tab"
           :key="tabName"
-          :name="tabName"
+          :text="tabName"
           :isActive="activeTabName === tabName"
           @click="openTab(tabName)"
         />
@@ -14,9 +14,9 @@
 
       <TabButton
         v-else
-        name="Hide zero balances"
+        :text="toggleButtonText"
         title="turn off the visibility of assets with zero balances"
-        @click="$emit('toggleCurrenciesVisible')"
+        @click="$emit('toggleCurrenciesVisible', allCurrenciesHidden)"
       />
     </div>
     <div v-if="isCurrenciesTab" class="settings-part">
@@ -34,12 +34,16 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, PropSync } from 'vue-property-decorator';
+import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
 import type { TabWallet } from '@/interfaces/common';
+import type { Currency } from '@/interfaces/currencies';
+import type { SelectedWallet } from '@/store/accounts/types';
 import TabButton from '@/components/TabButton.vue';
 import CircleButton from '@/components/CircleButton.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import Switcher from '@/components/Switcher.vue';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({
   components: {
@@ -55,6 +59,20 @@ export default class ContentSettings extends Vue {
   @PropSync('activeTabName', { type: String }) syncedActiveTabName!: TabWallet;
   @PropSync('filterValue', { type: String }) syncedFilterValue!: TabWallet;
   @PropSync('showAssetsManagementForm', { type: Boolean }) syncedShowAssetsManagementForm!: boolean;
+  @Prop(Array) currencies!: Currency[];
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get allCurrenciesHidden() {
+    const visibleCurrencies = this.currencies.filter((currency) =>
+      currency.getCurrencyVisible(this.selectedWallet.address)
+    );
+
+    return visibleCurrencies.length === 0;
+  }
+
+  get toggleButtonText() {
+    return this.allCurrenciesHidden ? 'Show all balances' : 'Hide zero balances';
+  }
 
   get iconName() {
     return this.syncedShowAssetsManagementForm ? 'close' : 'filter';

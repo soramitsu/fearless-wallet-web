@@ -39,7 +39,7 @@ const actions: ActionTree<State, State> & Actions = {
     // TODO: try to get rid of setTimeout
     setTimeout(() => {
       const currencies: Currencies = defaultSortingCurrencies(rootState.networks.currencies, state.selectedWallet);
-      const sequence = currencies.map(({ displayName, relayChain }) => `${displayName}-${relayChain}`);
+      const sequence = currencies.map(({ assetId }) => assetId);
 
       accountController.setSequenceAssets(sequence, selectedWalletAddress);
     }, 1000);

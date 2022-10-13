@@ -38,6 +38,20 @@ const EXPORT_WARNING =
 
 const EXPORT_ETHEREUM_WALLET_ERROR = 'You didn’t add an ethereum account.';
 
+const PASSWORD_INFO = 'This password protects your wallet. Make sure you remember it and do not share it with anybody.';
+
+const PASSWORD_SAME = 'Please make sure the password you entered is the password for your current wallet.';
+
+const MOCK_PASSWORD = 'The wallet is already being used to replace other networks. The old password will be used.';
+
 type InvalidValueName = keyof typeof INVALID_MESSAGES | '';
 
-export { INVALID_MESSAGES, EXPORT_ETHEREUM_WALLET_ERROR, EXPORT_WARNING, InvalidValueName };
+export {
+  MOCK_PASSWORD,
+  PASSWORD_INFO,
+  PASSWORD_SAME,
+  EXPORT_WARNING,
+  INVALID_MESSAGES,
+  EXPORT_ETHEREUM_WALLET_ERROR,
+  InvalidValueName,
+};

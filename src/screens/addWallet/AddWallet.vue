@@ -78,7 +78,8 @@
 
         <PasswordForm
           v-if="showPasswordForm"
-          :displayMockPassword="displayMockPassword"
+          :showMockPassword="showMockPassword"
+          :showSamePasswordText="isOnlyEthereumAccountFlow || isReplaceAccountFlow"
           @updateWalletPassword="updateWalletPassword"
         />
 
@@ -173,7 +174,7 @@ export default class AddWallet extends Vue {
   substrateJson = '';
   ethereumRawSeed = '';
   substrateRawSeed = '';
-  displayMockPassword = false;
+  showMockPassword = false;
   showAdvancedForm = false;
   showAddEthereumAccountPopup = false;
   selectedMnemonicElements: MnemonicConfirmation[] = [];
@@ -320,7 +321,7 @@ export default class AddWallet extends Vue {
 
   get disabledProceed() {
     // mutual logic step(password)
-    if (this.showPasswordForm) return !this.displayMockPassword && !this.walletPassword;
+    if (this.showPasswordForm) return !this.showMockPassword && !this.walletPassword;
 
     if (this.isImportWallet) {
       if (this.step === 1) {
@@ -408,8 +409,8 @@ export default class AddWallet extends Vue {
 
       const { address } = BaseApi.createFromUri(suri, type);
 
-      if (BaseApi.isDuplicateReplacedKeypair(address)) this.displayMockPassword = true;
-      else this.displayMockPassword = false;
+      if (BaseApi.isDuplicateReplacedKeypair(address)) this.showMockPassword = true;
+      else this.showMockPassword = false;
 
       return;
     }

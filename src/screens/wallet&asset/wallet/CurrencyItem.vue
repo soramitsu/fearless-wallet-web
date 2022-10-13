@@ -194,7 +194,13 @@ export default class CurrencyItem extends Vue {
   openAssetPage(event: Event) {
     const classList = (event.target as HTMLDivElement)?.classList;
 
-    if (classList.contains('button') || classList.contains('send-white') || classList.contains('receive-white')) return;
+    if (
+      this.showAssetsManagementForm ||
+      classList.contains('button') ||
+      classList.contains('send-white') ||
+      classList.contains('receive-white')
+    )
+      return;
 
     const { mainNetwork, assetId } = this.currency;
     const availableInNetworks = this.currency.getAvailableInNetworks(this.selectedWallet);

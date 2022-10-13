@@ -6,7 +6,7 @@
       placeholder="Enter password"
       :isError="isShortPassword"
       :showPassword="true"
-      :readonly="displayMockPassword"
+      :readonly="showMockPassword"
       :maxlength="25"
       class="row"
     />
@@ -30,6 +30,7 @@
 import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
 import Hint from '@/components/Hint.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
+import { MOCK_PASSWORD, PASSWORD_INFO, PASSWORD_SAME } from '@/consts/messages';
 
 @Component({
   components: { Hint, ValidatedInput },
@@ -38,7 +39,8 @@ export default class PasswordForm extends Vue {
   pass1 = '';
   pass2 = '';
 
-  @Prop(Boolean) displayMockPassword!: boolean;
+  @Prop(Boolean) showMockPassword!: boolean;
+  @Prop(Boolean) showSamePasswordText!: boolean;
 
   get isShortPassword() {
     return this.pass1.length !== 0 && this.pass1.length < 6;
@@ -49,17 +51,19 @@ export default class PasswordForm extends Vue {
   }
 
   get showPasswordConfirmation() {
-    return !this.displayMockPassword && this.pass1.length !== 0 && !this.isShortPassword;
+    return !this.showMockPassword && this.pass1.length !== 0 && !this.isShortPassword;
   }
 
   get hintText() {
-    return this.displayMockPassword
-      ? 'The wallet is already being used to replace other networks. Use the old password.'
-      : 'This password protects your wallet. Make sure you remember it and do not share it with anybody.';
+    if (this.showMockPassword) return MOCK_PASSWORD;
+
+    if (this.showSamePasswordText) return PASSWORD_SAME;
+
+    return PASSWORD_INFO;
   }
 
   mounted() {
-    if (this.displayMockPassword) this.pass1 = '000000';
+    if (this.showMockPassword) this.pass1 = '000000';
   }
 
   @Watch('pass1')

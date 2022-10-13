@@ -20,8 +20,8 @@ async function createWindow() {
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
-      nodeIntegration: true,
-      contextIsolation: false,
+      nodeIntegration: false, // To prevent all potential attacks
+      contextIsolation: true, // To prevent all potential attacks
     },
   });
 
@@ -49,6 +49,45 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+app.on('web-contents-created', (event, contents) => {
+  contents.on('will-attach-webview', (event, webPreferences, params) => {
+    // Strip away preload scripts if unused or verify their location is legitimate
+    delete webPreferences.preload;
+
+    // Disable Node.js integration
+    webPreferences.nodeIntegration = false;
+
+    // Verify URL being loaded, FOR EXAMPLE
+    // if (!params.src.startsWith('https://example.com/')) {
+    //   event.preventDefault();
+    // }
+    event.preventDefault(); // Since we don't need webviews, all attached webviews will be disabled
+  });
+  contents.on('will-navigate', (event, navigationUrl) => {
+    // Limit navigation
+    // const parsedUrl = new URL(navigationUrl);
+    // if (parsedUrl.origin !== 'https://example.com') {
+    //   event.preventDefault();
+    // }
+    event.preventDefault(); // Since we don't have navigation, we'll prevent all
+  });
+  contents.setWindowOpenHandler(({ url }) => {
+    // In this example, we'll ask the operating system
+    // to open this event's url in the default browser.
+    //
+    // See the following item for considerations regarding what
+    // URLs should be allowed through to shell.openExternal.
+    // if (isSafeForExternalOpen(url)) { TODO: [STEFAN] Add const for links
+    console.info(url);
+    setImmediate(() => {
+      shell.openExternal(url);
+    });
+    // }
+
+    return { action: 'deny' };
+  });
 });
 
 app.on('activate', () => {

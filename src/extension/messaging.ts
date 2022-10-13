@@ -59,11 +59,11 @@ interface Handler {
 }
 
 type Handlers = Record<string, Handler>;
-const port = chrome.runtime.connect({ name: PORT_EXTENSION });
+const port = chrome.runtime ? chrome.runtime.connect({ name: PORT_EXTENSION }) : null;
 const handlers: Handlers = {};
 
 // setup a listener for messages, any incoming resolves the promise
-port.onMessage.addListener((data: Message['data']): void => {
+port?.onMessage.addListener((data: Message['data']): void => {
   const handler = handlers[data.id];
 
   if (!handler) {
@@ -106,7 +106,7 @@ function sendMessage<TMessageType extends MessageTypes>(
 
     handlers[id] = { reject, resolve, subscriber };
 
-    port.postMessage({ id, message, request: request || {} });
+    port?.postMessage({ id, message, request: request || {} });
   });
 }
 

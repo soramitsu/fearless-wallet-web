@@ -10,6 +10,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import BaseApi from './util/BaseApi';
+import { isExtension } from './helpers/common';
 import type { SetSelectedWalletProps, setAccountsProps, Accounts, setAddressesProps } from '@/store/accounts/types';
 import type { TAction, TMutation } from '@/interfaces';
 import type { BehaviorSubject } from 'rxjs';
@@ -48,7 +49,7 @@ export default class App extends Vue {
   async mounted() {
     const { subscribeToBalancesOfNetworks } = NetworksController;
 
-    await Promise.all([this.authSubscribe(), this.metaSubscribe(), this.signSubscribe()]);
+    if (isExtension()) await Promise.all([this.authSubscribe(), this.metaSubscribe(), this.signSubscribe()]);
 
     this.subscribeAccounts = BaseApi.getAccountsSubject();
     this.subscribeAddresses = BaseApi.getAddressesSubject();

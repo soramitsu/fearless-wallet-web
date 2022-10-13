@@ -1,3 +1,4 @@
+const path = require('path');
 const { defineConfig } = require('@vue/cli-service');
 const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
 const baseConfig = require('./vue.config.base');
@@ -5,6 +6,13 @@ const baseConfig = require('./vue.config.base');
 module.exports = defineConfig({
   ...baseConfig,
   chainWebpack: (config) => {
+    config.plugin('define').tap((definitions) => {
+      definitions[0]['process.env'].EXTENSION_PREFIX = JSON.stringify(process.env.EXTENSION_PREFIX);
+      definitions[0]['process.env'].PORT_PREFIX = JSON.stringify(process.env.PORT_PREFIX);
+
+      return definitions;
+    });
+    config.resolve.alias.set('@extension-base', path.resolve(__dirname, 'src/extension/background/extension-base/src'));
     config.optimization.splitChunks({
       cacheGroups: {
         defaultVendors: {

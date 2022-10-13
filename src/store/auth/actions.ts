@@ -11,6 +11,7 @@ import {
 } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';
+import { isExtension } from '@/helpers/common';
 
 export enum ActionTypes {
   SUBSCRIBE_AUTH_REQUESTS = 'SUBSCRIBE_AUTH_REQUESTS',
@@ -64,6 +65,7 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.GET_AUTHLIST]({ commit }) {
+    if (!isExtension()) return;
     const list = await getAuthList();
     commit(MutationTypes.SET_AUTHLIST, list);
   },

@@ -23,7 +23,6 @@ import Button from '@/components/Button.vue';
 import BaseApi from '@/util/BaseApi';
 import AboveForm from '@/components/AboveForm.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
-import InformationBlock from '@/components/InformationBlock.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
@@ -33,7 +32,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
     Button,
     AboveForm,
     ValidatedInput,
-    InformationBlock,
   },
 })
 export default class ExportForm extends Vue {

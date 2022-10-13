@@ -24,6 +24,7 @@
         :network="network"
         :asset="asset"
         :address="address"
+        @openSourceTypePopup="$emit('openSourceTypePopup')"
         @openAccountSettingsPopup="openAccountSettingsPopup"
       />
     </template>

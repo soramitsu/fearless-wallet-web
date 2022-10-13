@@ -1,4 +1,4 @@
-import type { InvalidValueName } from '@/consts/invalidMessages';
+import type { InvalidValueName } from '@/consts/messages';
 import type { AssetName } from './assets';
 import { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 
@@ -72,7 +72,6 @@ export {
   FiatJson,
   FilterHistory,
   ImportType,
-  InvalidValueName,
   MenuItem,
   MenuItems,
   ParentAddress,

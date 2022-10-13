@@ -2,10 +2,8 @@
   <div class="export">
     <div class="description">
       <div class="header">Export JSON</div>
-      <InformationBlock
-        class="information"
-        text="Sharing or copying your secret is a high risk operation, don’t send it to anyone. Would you like to proceed with sharing/copying process?"
-      />
+
+      <InformationBlock class="information" :text="warningText" />
     </div>
 
     <div>
@@ -16,6 +14,7 @@
         :isError="isWrongPassword"
         :showPassword="true"
         :maxlength="25"
+        :readonly="noEthereumAccount"
       />
 
       <Button
@@ -24,6 +23,7 @@
         fontSize="big"
         width="100%"
         text="I want to export JSON"
+        :disabled="noEthereumAccount"
         @click="checkPassword"
       />
     </div>
@@ -39,6 +39,8 @@ import ValidatedInput from '@/components/ValidatedInput.vue';
 import InformationBlock from '@/components/InformationBlock.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { EXPORT_WARNING, EXPORT_ETHEREUM_WALLET_ERROR } from '@/consts/messages';
+import { ETHEREUM_NETWORKS } from '@/consts/networks';
 
 @Component({
   components: {
@@ -55,6 +57,14 @@ export default class Export extends Vue {
 
   get network() {
     return this.$route.params.network;
+  }
+
+  get noEthereumAccount() {
+    return this.selectedWallet.ethereumAddress === '' && ETHEREUM_NETWORKS.includes(this.network);
+  }
+
+  get warningText() {
+    return this.noEthereumAccount ? EXPORT_ETHEREUM_WALLET_ERROR : EXPORT_WARNING;
   }
 
   @Watch('password')

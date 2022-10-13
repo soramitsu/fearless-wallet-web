@@ -27,6 +27,7 @@
             @openEditNodeForm="openEditNodeForm"
             @openAccountSettingsPopup="openAccountSettingsPopup"
             @openNodeSettingsPopup="openNodeSettingsPopup"
+            @openSourceTypePopup="openSourceTypePopup"
             @closeNodeSettings="closeNodeSettings"
           />
         </Scroll>
@@ -76,6 +77,8 @@
 
     <ReplacePopup v-if="showReplacePopup" :selectedNetwork="selectedNetwork" :handlerClose="closeReplacePopup" />
 
+    <SourceTypePopup v-if="showSourceTypePopup" :handlerClose="closeSourceTypePopup" />
+
     <ExportForm v-if="showExportForm" :password="password" :closeHandler="setPassword" />
   </div>
 </template>
@@ -86,6 +89,7 @@ import ExportForm from './ExportForm.vue';
 import EditNodeForm from './EditNodeForm.vue';
 import NodeSettingsPopup from './NodeSettingsPopup.vue';
 import ReplacePopup from './ReplacePopup.vue';
+import SourceTypePopup from './SourceTypePopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
 import Nodes from './Nodes.vue';
 import ContentForm from '@/components/ContentForm.vue';
@@ -107,6 +111,7 @@ type NotificationType = 'delete' | 'export' | '';
     ReplacePopup,
     EditNodeForm,
     CircleButton,
+    SourceTypePopup,
     NodeSettingsPopup,
     NotificationPopup,
     AccountSettingsPopup,
@@ -123,6 +128,7 @@ export default class AccountsLayout extends Vue {
   buttonTopClick = 0;
   showReplaceAccount = true;
   showReplacePopup = false;
+  showSourceTypePopup = false;
   showAccountSettingsPopup = false;
   showEditNodeForm = false;
   showNodeSettingsPopup = false;
@@ -279,6 +285,10 @@ export default class AccountsLayout extends Vue {
     this.closeAccountSettings(false);
   }
 
+  openSourceTypePopup() {
+    this.showSourceTypePopup = true;
+  }
+
   closeNotificationPopup() {
     this.notificationType = '';
     this.selectedNodeName = '';
@@ -296,6 +306,10 @@ export default class AccountsLayout extends Vue {
 
   closeReplacePopup() {
     this.showReplacePopup = false;
+  }
+
+  closeSourceTypePopup() {
+    this.showSourceTypePopup = false;
   }
 
   back() {

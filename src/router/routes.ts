@@ -1,6 +1,6 @@
 import { RouteConfig } from 'vue-router';
 import BaseApi from '@/util/BaseApi';
-import Dex from '@/screens/dex/Dex.vue';
+import Polkaswap from '@/screens/polkaswap/Polkaswap.vue';
 import Export from '@/screens/accounts/Export.vue';
 import History from '@/screens/history/History.vue';
 import Nodes from '@/screens/accounts/Nodes.vue';
@@ -33,7 +33,7 @@ export enum Components {
   Main = 'Main',
   Wallet = 'Wallet',
   Crowdloans = 'Crowdloans',
-  DEX = 'DEX',
+  Polkaswap = 'Polkaswap',
   Staking = 'Staking',
   History = 'History',
   Asset = 'Asset',
@@ -147,9 +147,9 @@ const routes: Array<RouteConfig> = [
         component: Staking,
       },
       {
-        path: 'dex',
-        name: Components.DEX,
-        component: Dex,
+        path: 'Polkaswap',
+        name: Components.Polkaswap,
+        component: Polkaswap,
       },
       {
         path: 'history',

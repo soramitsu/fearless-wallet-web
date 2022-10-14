@@ -12,11 +12,11 @@
     >
       <div class="send-form-content">
         <template v-if="step === 1">
-          <Select v-model="selectedAssetId" :options="optionsCurrency" placeholder="Currency" size="big" class="row" />
+          <Select v-model="selectedAssetId" :options="optionsCurrency" placeholder="CURRENCY" size="big" class="row" />
 
-          <Select v-model="selectedNetwork" :options="optionsNetwork" placeholder="Network" size="big" class="row" />
+          <Select v-model="selectedNetwork" :options="optionsNetwork" placeholder="NETWORK" size="big" class="row" />
 
-          <Input v-model="recipient" placeholder="Send to" size="big" class="row" />
+          <Input v-model="recipient" placeholder="SEND TO" size="big" class="row" />
 
           <AmountInputs
             class="row"

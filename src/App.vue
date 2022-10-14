@@ -120,9 +120,11 @@ body {
   width: $extension-width;
   color: white;
   text-align: center;
+  margin: 0 auto;
   padding: 0 $default-padding $default-padding $default-padding;
   background-image: url(./assets/background.png);
-  margin: 0 auto;
+  background-position: center;
+  background-size: cover;
 
   .drag {
     height: 16px;

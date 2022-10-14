@@ -24,7 +24,7 @@ export default class ExportForm extends Vue {
   .info-text {
     text-align: left;
     font-size: 13px;
-    margin-left: 20px;
+    margin: auto 0 auto 20px;
     width: 420px;
     line-height: 170%;
   }

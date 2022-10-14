@@ -1,4 +1,4 @@
-import type { InvalidValueName } from '@/consts/invalidMessages';
+import type { InvalidValueName } from '@/consts/messages';
 import type { AssetName } from './assets';
 import { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 
@@ -46,11 +46,11 @@ enum MenuItems {
   wallet = 'Wallet',
   crowdloans = 'Crowdloans',
   staking = 'Staking',
-  dex = 'DEX',
+  polkaswap = 'Polkaswap',
   history = 'History',
 }
 
-type MenuItem = 'Wallet' | 'Crowdloans' | 'Staking' | 'DEX' | 'History';
+type MenuItem = 'Wallet' | 'Crowdloans' | 'Staking' | 'Polkaswap' | 'History';
 
 type FiatJson = {
   id: string;
@@ -72,7 +72,6 @@ export {
   FiatJson,
   FilterHistory,
   ImportType,
-  InvalidValueName,
   MenuItem,
   MenuItems,
   ParentAddress,

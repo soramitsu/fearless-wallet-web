@@ -12,11 +12,14 @@
     </div>
 
     <CircleButton
+      v-if="showSettingsIcon"
       :ref="circleButtonRef"
       iconName="dots-horizontal"
       backgroundColor="light-black"
       @click="openAccountSettingsPopup(network)"
     />
+
+    <img v-else src="@/assets/circle-plus-pink.svg" class="plus-icon" @click="$emit('openSourceTypePopup')" />
   </div>
 </template>
 
@@ -34,6 +37,10 @@ export default class AccountsItem extends Vue {
   @Prop(String) network!: string;
   @Prop(String) asset!: string;
   @Prop(String) address!: string;
+
+  get showSettingsIcon() {
+    return this.address !== '';
+  }
 
   getUpperValue(string: string) {
     return string.toUpperCase();
@@ -54,9 +61,20 @@ export default class AccountsItem extends Vue {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   justify-content: space-between;
   align-items: center;
+  height: 78px;
 
   &:last-child {
     border-bottom: none;
+  }
+
+  .plus-icon {
+    height: 32px;
+    filter: invert(0.05);
+
+    &:hover {
+      cursor: pointer;
+      filter: invert(0);
+    }
   }
 
   .left-part {
@@ -96,7 +114,6 @@ export default class AccountsItem extends Vue {
       text-align: left;
       overflow: hidden;
       text-overflow: ellipsis;
-      height: 16px;
     }
   }
 }

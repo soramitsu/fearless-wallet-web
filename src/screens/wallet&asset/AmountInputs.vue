@@ -14,7 +14,7 @@
     <template v-if="showValueInput">
       <img src="@/assets/equals.svg" class="img-equals" />
 
-      <!-- <div v-show="showFiatSymbol" class="fiat-symbol">{{ fiatSymbol }}</div> -->
+      <div v-show="showFiatSymbol" class="fiat-symbol">{{ fiatSymbol }}</div>
 
       <FloatInput
         v-model="syncedValue"
@@ -48,7 +48,7 @@ export default class TeleportForm extends Vue {
   @Prop(Object) currency!: Currency;
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('value', { type: String }) syncedValue!: string;
-  // @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getFiatId) fiatId!: string;
 
   get amountPlaceholder() {
@@ -63,9 +63,9 @@ export default class TeleportForm extends Vue {
     return `VALUE IN ${this.fiatId.toUpperCase()}`;
   }
 
-  // get showFiatSymbol() {
-  //   return this.syncedValue !== '';
-  // }
+  get showFiatSymbol() {
+    return this.syncedValue !== '';
+  }
 
   get showValueInput() {
     return this.currency?.price !== 0;

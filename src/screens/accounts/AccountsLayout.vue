@@ -315,7 +315,7 @@ export default class AccountsLayout extends Vue {
   back() {
     if (this.isAccountsRoute) this.$router.push({ name: Components.Wallet });
     else if (this.isNetworkRoute) this.$router.push({ name: Components.Accounts });
-    else if (this.isExportRoute) this.$router.go(-1);
+    else if (this.isExportRoute) this.$router.back();
   }
 }
 </script>

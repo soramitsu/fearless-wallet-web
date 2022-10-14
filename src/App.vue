@@ -107,6 +107,8 @@ export default class App extends Vue {
 <style lang="scss">
 body {
   background-color: rgb(54, 49, 52);
+  height: 100vh;
+  width: 100%;
 }
 </style>
 
@@ -115,6 +117,8 @@ body {
   font-family: 'Sora';
   font-style: normal;
   font-feature-settings: 'tnum' on, 'lnum' on;
+  min-height: $extension-height;
+  min-width: $extension-width;
   height: $extension-height;
   width: $extension-width;
   color: white;

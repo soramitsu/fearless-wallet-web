@@ -1,20 +1,22 @@
 <template>
-  <AboveForm header="Manage dApp access" :blur="true" :closeHandler="back">
-    <SearchInput v-model="filterValue" placeholder="Search in networks" class="manage-auths__search" width="100%" />
+  <div>
+    <AboveForm header="Manage dApp access" :blur="true" :closeHandler="handlerClose">
+      <SearchInput v-model="filterValue" placeholder="Search in networks" class="manage-auths__search" width="100%" />
 
-    <AuthItem
-      v-for="el in filteredList"
-      v-bind:key="el.id"
-      :request="el"
-      @onRemoveAuth="removeAuth"
-      @updateAuths="updateAuthorizedAccount"
-      @onChange="onChange"
-    />
-  </AboveForm>
+      <AuthItem
+        v-for="el in filteredList"
+        v-bind:key="el.id"
+        :request="el"
+        @onRemoveAuth="removeAuth"
+        @updateAuths="updateAuthorizedAccount"
+        @onChange="onChange"
+      />
+    </AboveForm>
+  </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { AuthUrlInfo } from '@extension-base/background/types';
 import AboveForm from '@/components/AboveForm.vue';
@@ -31,23 +33,21 @@ import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
   },
 })
 export default class ManageAuths extends Vue {
-  @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
-
   filterValue = '';
   filteredList: Record<string, AuthUrlInfo> = {};
 
-  async beforeCreate() {
-    await this.$store.dispatch('GET_AUTHLIST');
-    this.filteredList = this.authlist;
-  }
+  @Prop(Function) handlerClose!: VoidFunction;
+  @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
 
   @Watch('filterValue')
   filter(value: string) {
     this.filteredData(value);
   }
 
-  onChange(id: string) {
-    this.$store.dispatch('UPDATE_AUTH_CONNECTION', id);
+  async beforeCreate() {
+    await this.$store.dispatch('GET_AUTHLIST');
+
+    this.filteredList = this.authlist;
   }
 
   filteredData(value: string) {
@@ -66,12 +66,13 @@ export default class ManageAuths extends Vue {
       },
     });
   }
-  async removeAuth(url: string) {
-    await this.$store.dispatch('DELETE_AUTH_CONNECTION', url);
+
+  onChange(id: string) {
+    this.$store.dispatch('UPDATE_AUTH_CONNECTION', id);
   }
 
-  back() {
-    this.$router.push({ name: Components.Wallet });
+  async removeAuth(url: string) {
+    await this.$store.dispatch('DELETE_AUTH_CONNECTION', url);
   }
 }
 </script>

@@ -26,13 +26,16 @@
       :handlerClose="toggleSettingsVisible"
       @openFiatsPopup="toggleFiatsPopupVisible"
       @openAboutPopup="toggleAboutPopupVisible"
+      @openManageAuths="toggleManageAuthsVisible"
     />
 
     <FiatsPopup v-if="showFiatsPopup" :showAnimation="showFiatPopupAnimation" :handlerClose="toggleFiatsPopupVisible" />
 
     <AboutPopup v-if="showAboutPopup" :handlerClose="toggleAboutPopupVisible" />
 
-    <router-view @openFiatsPopup="toggleFiatsPopupVisible"></router-view>
+    <ManageAuths v-if="showManageAuthsVisible" :handlerClose="toggleManageAuthsVisible" />
+
+    <router-view class="main-child" @openFiatsPopup="toggleFiatsPopupVisible"></router-view>
 
     <Menu />
   </div>
@@ -47,6 +50,7 @@ import WalletDetailsPopup from './WalletDetailsPopup.vue';
 import SettingsPopup from './SettingsPopup.vue';
 import FiatsPopup from './FiatsPopup.vue';
 import AboutPopup from './AboutPopup.vue';
+import ManageAuths from '@/screens/authorize/ManageAuths.vue';
 
 @Component({
   components: {
@@ -54,6 +58,7 @@ import AboutPopup from './AboutPopup.vue';
     Header,
     FiatsPopup,
     AboutPopup,
+    ManageAuths,
     SettingsPopup,
     SelectWalletPopup,
     WalletDetailsPopup,
@@ -68,9 +73,16 @@ export default class Main extends Vue {
   showSelectWalletPopup = false;
   showWalletDetailsPopup = false;
   showFiatPopupAnimation = false;
+  showManageAuthsVisible = false;
 
   get highlightSettingsIcon() {
     return this.showSettings || this.showAboutPopup || this.showFiatsPopup;
+  }
+
+  toggleManageAuthsVisible() {
+    this.showManageAuthsVisible = !this.showManageAuthsVisible;
+
+    if (this.showManageAuthsVisible) this.toggleSettingsVisible();
   }
 
   toggleAboutPopupVisible() {
@@ -114,7 +126,13 @@ export default class Main extends Vue {
 .main {
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   width: 100%;
   height: $default-height-page;
+
+  .main-child {
+    height: $default-height-page;
+    width: $extension-height;
+  }
 }
 </style>

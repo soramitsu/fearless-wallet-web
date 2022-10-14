@@ -13,7 +13,7 @@
       <SettingMenuItem title="Currency" icon="dollar-circle" @onOpen="openPopup('openFiatsPopup')" />
       <SettingMenuItem title="Language" icon="language" />
       <SettingMenuItem title="About" icon="info" @onOpen="openPopup('openAboutPopup')" />
-      <SettingMenuItem title="Manage dApp access" icon="networks/polkadot" @onOpen="open('ManageAuths')" />
+      <SettingMenuItem title="Manage dApp access" icon="networks/polkadot" @onOpen="openPopup('openManageAuths')" />
     </div>
   </Popup>
 </template>
@@ -24,7 +24,7 @@ import Popup from '@/components/Popup.vue';
 import { Components } from '@/router/routes';
 import SettingMenuItem from '@/layouts/SettingMenuItem.vue';
 
-type SettingsItemType = 'Accounts' | 'ManageAuths';
+type SettingsItemType = 'Accounts';
 
 @Component({
   components: { Popup, SettingMenuItem },

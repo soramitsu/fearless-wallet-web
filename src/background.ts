@@ -1,6 +1,7 @@
 import { app, protocol, BrowserWindow, shell } from 'electron';
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
+import { isSafeForExternalOpen } from '@/consts/urls';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -52,23 +53,23 @@ app.on('window-all-closed', () => {
 });
 
 app.on('web-contents-created', (event, contents) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   contents.on('will-attach-webview', (event, webPreferences, params) => {
     // Strip away preload scripts if unused or verify their location is legitimate
     delete webPreferences.preload;
-
     // Disable Node.js integration
     webPreferences.nodeIntegration = false;
-
     // Verify URL being loaded, FOR EXAMPLE
-    // if (!params.src.startsWith('https://example.com/')) {
+    // if (!params.src.startsWith('SOME_URL')) {
     //   event.preventDefault();
     // }
     event.preventDefault(); // Since we don't need webviews, all attached webviews will be disabled
   });
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   contents.on('will-navigate', (event, navigationUrl) => {
-    // Limit navigation
+    // Limit navigation, FOR EXAMPLE
     // const parsedUrl = new URL(navigationUrl);
-    // if (parsedUrl.origin !== 'https://example.com') {
+    // if (parsedUrl.origin !== 'SOME_URL') {
     //   event.preventDefault();
     // }
     event.preventDefault(); // Since we don't have navigation, we'll prevent all
@@ -79,12 +80,11 @@ app.on('web-contents-created', (event, contents) => {
     //
     // See the following item for considerations regarding what
     // URLs should be allowed through to shell.openExternal.
-    // if (isSafeForExternalOpen(url)) { TODO: [STEFAN] Add const for links
-    console.info(url);
-    setImmediate(() => {
-      shell.openExternal(url);
-    });
-    // }
+    if (isSafeForExternalOpen(url)) {
+      setImmediate(() => {
+        shell.openExternal(url);
+      });
+    }
 
     return { action: 'deny' };
   });

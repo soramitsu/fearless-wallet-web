@@ -1,36 +1,67 @@
-const CHAINS_URL = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v3/chains/chains_dev.json';
-const ASSETS_URL = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v3/chains/assets_dev.json';
-const FIATS_URL = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';
+const CHAINS = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v3/chains/chains_dev.json';
+const ASSETS = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v3/chains/assets_dev.json';
+const FIATS = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';
 
-const TERMS_URL = 'https://fearlesswallet.io/terms/';
-const PRIVACY_URL = 'https://fearlesswallet.io/privacy/';
+const TERMS = 'https://fearlesswallet.io/terms/';
+const PRIVACY = 'https://fearlesswallet.io/privacy/';
 const FEARLESS_WALLET = 'https://fearlesswallet.io/';
-const WIKI_URL = 'https://wiki.sora.org/master';
-const GITHUB_URL = 'https://github.com/soramitsu/fearless-wallet-web';
-const TELEGRAM_URL = 'https://t.me/fearlesswallet';
-const MEDIUM_URL = 'https://www.instagram.com/fearless_wallet';
-const INSTAGRAM_URL = 'https://www.instagram.com/fearless_wallet';
-const TWITTER_URL = 'https://twitter.com/Soramitsu_co';
-const YOUTUBE_URL = 'https://www.youtube.com/fearlesswallet';
-const ANNOUNCEMENTS_URL = 'https://t.me/fearless_announcements';
-const FEARLESS_HAPPINESS_URL = 'https://t.me/fearlesshappiness';
-const EMAIL_URL = 'fearless@soramitsu.co.jp';
+const WIKI = 'https://wiki.sora.org/master';
+const GITHUB = 'https://github.com/soramitsu/fearless-wallet-web';
+const TELEGRAM = 'https://t.me/fearlesswallet';
+const MEDIUM = 'https://medium.com/fearlesswallet';
+const INSTAGRAM = 'https://www.instagram.com/fearless_wallet';
+const TWITTER = 'https://twitter.com/Soramitsu_co';
+const YOUTUBE = 'https://www.youtube.com/fearlesswallet';
+const ANNOUNCEMENTS = 'https://t.me/fearless_announcements';
+const FEARLESS_HAPPINESS = 'https://t.me/fearlesshappiness';
+const EMAIL = 'fearless@soramitsu.co.jp';
 
-export {
-  ASSETS_URL,
-  FIATS_URL,
-  CHAINS_URL,
-  TERMS_URL,
-  PRIVACY_URL,
+const URLS = {
+  ASSETS,
+  FIATS,
+  CHAINS,
+  TERMS,
+  PRIVACY,
   FEARLESS_WALLET,
-  GITHUB_URL,
-  WIKI_URL,
-  TELEGRAM_URL,
-  MEDIUM_URL,
-  INSTAGRAM_URL,
-  TWITTER_URL,
-  YOUTUBE_URL,
-  ANNOUNCEMENTS_URL,
-  FEARLESS_HAPPINESS_URL,
-  EMAIL_URL,
+  GITHUB,
+  WIKI,
+  TELEGRAM,
+  MEDIUM,
+  INSTAGRAM,
+  TWITTER,
+  YOUTUBE,
+  ANNOUNCEMENTS,
+  FEARLESS_HAPPINESS,
+  EMAIL,
 };
+
+const BASE_URLS_PREFIX = {
+  MOONPAY: 'https://buy.moonpay.com',
+  RAMP: 'https://buy.ramp.network',
+};
+
+const BASE_URLS_SUFFIX = {
+  SUBSCAN: 'subscan.io',
+};
+
+export function isSafeForExternalOpen(url: string): boolean {
+  if (!url) {
+    return false;
+  }
+
+  if (Object.values(URLS).includes(url)) {
+    return true;
+  }
+
+  if (Object.values(BASE_URLS_PREFIX).some((item) => url.startsWith(item))) {
+    return true;
+  }
+
+  if (Object.values(BASE_URLS_SUFFIX).some((item) => url.includes(item))) {
+    return true;
+  }
+
+  return false;
+}
+
+export default URLS;

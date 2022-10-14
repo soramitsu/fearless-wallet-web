@@ -143,7 +143,7 @@ function subscribeOrmlAssetsBalances(context: Context, address: string, network:
       : query.tokens?.accounts(address, options);
 
     pallet.subscribe(async (data) => {
-      const balance = formatBalance(data as any as OrmlAccountData, precision);
+      const balance = formatBalance(data as unknown as OrmlAccountData, precision);
 
       commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
         walletAddress: address,

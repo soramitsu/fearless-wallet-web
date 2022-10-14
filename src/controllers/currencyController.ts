@@ -365,7 +365,7 @@ export default class CurrencyController {
 
     try {
       const { partialFee } = await this.extrinsic.paymentInfo(from);
-      const result = new FPNumber(partialFee as any, precision);
+      const result = new FPNumber(partialFee, precision);
 
       return result.toString();
     } catch {

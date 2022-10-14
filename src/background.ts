@@ -21,8 +21,11 @@ async function createWindow() {
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
-      nodeIntegration: false, // To prevent all potential attacks
-      contextIsolation: true, // To prevent all potential attacks
+      // To prevent all potential attacks
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      disableBlinkFeatures: 'Auxclick',
     },
   });
 
@@ -35,12 +38,6 @@ async function createWindow() {
     // Load the index.html when not in development
     win.loadURL('app://./index.html');
   }
-
-  // It's required for external links
-  win.webContents.on('new-window', function (e, url) {
-    e.preventDefault();
-    shell.openExternal(url);
-  });
 }
 
 // Quit when all windows are closed.

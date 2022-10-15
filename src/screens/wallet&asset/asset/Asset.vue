@@ -102,7 +102,6 @@ import TeleportForm from '@/screens/wallet&asset/TeleportForm.vue';
 import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import BorderButton from '@/components/BorderButton.vue';
-import TabButton from '@/components/TabButton.vue';
 import BaseApi from '@/util/BaseApi';
 import { Currencies } from '@/interfaces/currencies';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -118,7 +117,6 @@ type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'show
     History,
     SendForm,
     BuyPopup,
-    TabButton,
     ReceiveForm,
     TeleportForm,
     BorderButton,

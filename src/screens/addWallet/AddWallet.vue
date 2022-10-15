@@ -4,7 +4,7 @@
       <div class="icon-container">
         <CircleButton v-if="showBackIcon" backgroundColor="light-black" iconName="chevron-left" @click="back" />
       </div>
-      <div v-if="countSteps > 1" class="steps">
+      <div class="steps">
         <div v-for="num in countSteps" :key="num" :class="getClassesStep(num)"></div>
       </div>
       <div class="icon-background">
@@ -26,7 +26,6 @@
           v-model="replaceNetworkUpper"
           placeholder="Network"
           size="big"
-          :maxlength="15"
           :readonly="true"
           class="selected-network"
         />
@@ -58,7 +57,8 @@
           :substrateJson="substrateJson"
           :ethereumJson="ethereumJson"
           :passwordJson="passwordJson"
-          :isReplaceAccount="isReplaceAccount"
+          :isOnlyEthereumAccountFlow="isOnlyEthereumAccountFlow"
+          :isReplaceAccountFlow="isReplaceAccountFlow"
           :isEthereumReplacedNetwork="isEthereumReplacedNetwork"
           @setImportValue="setImportValue"
           @reset="reset"
@@ -78,7 +78,8 @@
 
         <PasswordForm
           v-if="showPasswordForm"
-          :displayMockPassword="displayMockPassword"
+          :showMockPassword="showMockPassword"
+          :showSamePasswordText="isOnlyEthereumAccountFlow || isReplaceAccountFlow"
           @updateWalletPassword="updateWalletPassword"
         />
 
@@ -138,7 +139,7 @@ import CircleButton from '@/components/CircleButton.vue';
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
 import { Components } from '@/router/routes';
-import { INVALID_MESSAGES, InvalidValueName } from '@/consts/invalidMessages';
+import { INVALID_MESSAGES, InvalidValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 
@@ -161,6 +162,8 @@ type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'sub
   },
 })
 export default class AddWallet extends Vue {
+  readonly countSteps = 5;
+
   step = 1;
   nickname = '';
   mnemonic = '';
@@ -171,7 +174,7 @@ export default class AddWallet extends Vue {
   substrateJson = '';
   ethereumRawSeed = '';
   substrateRawSeed = '';
-  displayMockPassword = false;
+  showMockPassword = false;
   showAdvancedForm = false;
   showAddEthereumAccountPopup = false;
   selectedMnemonicElements: MnemonicConfirmation[] = [];
@@ -186,8 +189,12 @@ export default class AddWallet extends Vue {
     return this.$route.params.network ?? '';
   }
 
-  get isReplaceAccount() {
+  get isReplaceAccountFlow() {
     return this.replacedNetwork !== '';
+  }
+
+  get isOnlyEthereumAccountFlow() {
+    return this.$route.params.onlyEthereumAccount !== undefined;
   }
 
   get replaceNetworkUpper() {
@@ -195,7 +202,7 @@ export default class AddWallet extends Vue {
   }
 
   get showReplacedNetwork() {
-    return this.replacedNetwork !== '' && this.step === 1;
+    return this.isReplaceAccountFlow && this.step === 1;
   }
 
   get showFullScreenIcon() {
@@ -211,8 +218,12 @@ export default class AddWallet extends Vue {
   }
 
   get passwordJson() {
-    if (this.isReplaceAccount) {
+    if (this.isReplaceAccountFlow) {
       return this.isEthereumReplacedNetwork ? this.passwordEthereumJson : this.passwordSubstrateJson;
+    }
+
+    if (this.isOnlyEthereumAccountFlow) {
+      return this.passwordEthereumJson;
     }
 
     return this.step === 1 ? this.passwordSubstrateJson : this.passwordEthereumJson;
@@ -227,11 +238,11 @@ export default class AddWallet extends Vue {
   }
 
   get showSubstrateDP() {
-    return !this.isReplaceAccount || !this.isEthereumReplacedNetwork;
+    return !this.isReplaceAccountFlow || !this.isEthereumReplacedNetwork;
   }
 
   get showEthereumDP() {
-    return !this.isReplaceAccount ? this.typeImport === 'mnemonic' : this.isEthereumReplacedNetwork;
+    return !this.isReplaceAccountFlow ? this.typeImport === 'mnemonic' : this.isEthereumReplacedNetwork;
   }
 
   get readonlyNickname() {
@@ -248,25 +259,6 @@ export default class AddWallet extends Vue {
 
   get showNicknameForm() {
     return (this.isImportWallet && this.step === 3) || (this.isCreateWallet && this.step === 1);
-  }
-
-  get countSteps() {
-    let countSteps = 4;
-
-    if (!this.isReplaceAccount) {
-      //  add mnemonic confirmation or import eth account
-      if (this.isCreateWallet || (this.isImportWallet && this.typeImport === 'rawSeed')) countSteps += 1;
-    } else {
-      // if we make a replace account via import, then you do not need to enter a nickname and not show FinishPage
-      if (this.isImportWallet) {
-        countSteps -= 2;
-
-        // no need to separately enter password for json
-        if (this.typeImport === 'json') countSteps -= 1;
-      }
-    }
-
-    return countSteps;
   }
 
   get isCreateWallet() {
@@ -300,20 +292,22 @@ export default class AddWallet extends Vue {
   get header() {
     if (this.isCreateWallet) {
       if (this.step === 1) return 'Create new wallet';
-      else if (this.step === 2) return 'Backup the passphrase for your new wallet';
-      else if (this.step === 3) return 'Confirm the passphrase';
-      else if (this.showPasswordForm) return 'Set up password';
+      if (this.step === 2) return 'Backup the passphrase for your new wallet';
+      if (this.step === 3) return 'Confirm the passphrase';
+      if (this.step === 4) return 'Set up password';
     }
 
     if (this.step === 1) {
-      if (this.isReplaceAccount) {
-        if (this.isEthereumReplacedNetwork) return 'Import ethereum accounts';
-        else return 'Import substrate accounts';
+      if (this.isReplaceAccountFlow) {
+        if (this.isEthereumReplacedNetwork) return 'Import ethereum account';
+        else return 'Import substrate account';
       }
 
+      if (this.isOnlyEthereumAccountFlow) return 'Add ethereum account';
+
       if (this.typeImport === 'mnemonic') return 'Import wallet';
-      else return 'Import substrate accounts';
-    } else if (this.step === 2) return 'Import ethereum accounts';
+      else return 'Import substrate account';
+    } else if (this.step === 2) return 'Import ethereum account';
     else if (this.step === 3) return 'Wallet nickname';
     else if (this.step === 4) return 'Enter password';
 
@@ -329,34 +323,28 @@ export default class AddWallet extends Vue {
 
   get disabledProceed() {
     // mutual logic step(password)
-    if (this.showPasswordForm) return !this.displayMockPassword && !this.walletPassword;
+    if (this.showPasswordForm) return !this.showMockPassword && !this.walletPassword;
 
     if (this.isImportWallet) {
       if (this.step === 1) {
         return (
           !this.mnemonic &&
           !this.substrateRawSeed &&
-          (this.isReplaceAccount && this.isEthereumReplacedNetwork
-            ? !this.ethereumRawSeed &&
-              !this.ethereumRawSeed &&
-              Object.keys(this.ethereumJson).length === 0 &&
-              this.passwordEthereumJson
+          (this.isReplaceAccountFlow && this.isEthereumReplacedNetwork
+            ? !this.ethereumRawSeed && Object.keys(this.ethereumJson).length === 0 && this.passwordEthereumJson
             : true) &&
           (Object.keys(this.substrateJson).length === 0 || !this.passwordSubstrateJson)
         );
       }
 
       if (this.step === 2)
-        return (
-          (!this.substrateRawSeed || !this.ethereumRawSeed) &&
-          (Object.keys(this.ethereumJson).length === 0 || !this.passwordEthereumJson)
-        );
+        return !this.ethereumRawSeed && (Object.keys(this.ethereumJson).length === 0 || !this.passwordEthereumJson);
 
       if (this.step === 3) return !this.nickname;
     }
 
     // isCreateWallet
-    if (this.step === 1 && !this.isReplaceAccount) return !this.nickname;
+    if (this.step === 1 && !this.isReplaceAccountFlow) return !this.nickname;
 
     if (this.step === 3) return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
 
@@ -381,14 +369,10 @@ export default class AddWallet extends Vue {
         ? ethereumDerivationPath[0] === '/'
           ? ethereumDerivationPath
           : `/${ethereumDerivationPath}`
-        : ''
+        : ETHEREUM_DEFAULT_DERIVATION_PATH
     ).trim();
 
-    return this.mnemonic
-      ? `${this.mnemonic}${ethereumDP || ETHEREUM_DEFAULT_DERIVATION_PATH}`
-      : this.ethereumRawSeed
-      ? this.ethereumRawSeed
-      : '';
+    return this.mnemonic ? `${this.mnemonic}${ethereumDP}` : this.ethereumRawSeed ? this.ethereumRawSeed : '';
   }
 
   @Watch('substrateJson')
@@ -404,20 +388,29 @@ export default class AddWallet extends Vue {
   }
 
   @Watch('step')
-  changedCurrentIndexPage(step: number) {
-    if (this.step === 4) {
+  changedCurrentStep(step: number) {
+    if (step === 0) this.$router.back();
+
+    if (step === 4) {
       const {
         substrate: { keypairType: substrateKeypairType },
         ethereum: { keypairType: ethereumKeypairType },
       } = this.derivationPaths;
-      const suri = this.isEthereumReplacedNetwork ? this.suriEthereum : this.suriSubstrate;
-      const type = this.isEthereumReplacedNetwork ? ethereumKeypairType : substrateKeypairType;
+      const suri =
+        this.isEthereumReplacedNetwork || this.isOnlyEthereumAccountFlow ? this.suriEthereum : this.suriSubstrate;
+      const type =
+        this.isEthereumReplacedNetwork || this.isOnlyEthereumAccountFlow ? ethereumKeypairType : substrateKeypairType;
+
       const { address } = BaseApi.createFromUri(suri, type);
 
-      if (BaseApi.isDuplicateReplacedKeypair(address)) this.displayMockPassword = true;
-      else this.displayMockPassword = false;
-    } else if (this.step === 5) {
-      if (this.isReplaceAccount) {
+      if (BaseApi.isDuplicateReplacedKeypair(address)) this.showMockPassword = true;
+      else this.showMockPassword = false;
+
+      return;
+    }
+
+    if (step === 5) {
+      if (this.isReplaceAccountFlow) {
         try {
           this.replaceAccount();
         } catch {
@@ -431,8 +424,18 @@ export default class AddWallet extends Vue {
 
       const address = this.saveKeypair();
 
-      this.setSelectedWallet({ selectedWalletAddress: address });
-    } else if (step === 6) this.$router.push({ name: Components.Wallet });
+      this.setSelectedWallet({ selectedWalletAddress: address || this.selectedWallet.address });
+
+      if (this.isOnlyEthereumAccountFlow) this.$router.push({ name: Components.Wallet });
+
+      return;
+    }
+
+    if (step === 6) this.$router.push({ name: Components.Wallet });
+  }
+
+  mounted() {
+    if (this.isOnlyEthereumAccountFlow && this.isCreateWallet) this.proceed();
   }
 
   updateWalletPassword(password: string) {
@@ -440,17 +443,33 @@ export default class AddWallet extends Vue {
   }
 
   getClassesStep(num: number) {
-    const isCircleFilled =
-      this.isCreateWallet || this.typeImport !== 'mnemonic'
-        ? num <= this.step
-        : num !== 1
-        ? num <= this.step - 1
-        : true;
+    let arrayWithHiddenSteps: number[] = [];
+
+    // steps import: 1 - type import, 2 - eth account, 3 - nickname, 4 - password, 5 - finish form
+    // steps create: 1 - nickname, 2 - view mnemonic, 3 - confirm mnemonic, 4 - password, 5 - finish form
+    if (this.isReplaceAccountFlow) {
+      if (this.isImportWallet) {
+        if (this.typeImport === 'mnemonic' || this.typeImport === 'rawSeed') arrayWithHiddenSteps = [2, 3, 5];
+        else if (this.typeImport === 'json') arrayWithHiddenSteps = [2, 3, 4, 5];
+      } else arrayWithHiddenSteps = [5];
+    } else if (this.isOnlyEthereumAccountFlow) {
+      if (this.isImportWallet) {
+        if (this.typeImport === 'mnemonic' || this.typeImport === 'rawSeed') arrayWithHiddenSteps = [2, 3, 5];
+        else if (this.typeImport === 'json') arrayWithHiddenSteps = [2, 3, 4, 5];
+      } else arrayWithHiddenSteps = [1, 5];
+    } else if (this.isImportWallet) {
+      if (this.typeImport === 'json') arrayWithHiddenSteps = [4];
+      else if (this.typeImport === 'mnemonic') arrayWithHiddenSteps = [2];
+    }
+
+    const isCircleHidden = arrayWithHiddenSteps.includes(num) || arrayWithHiddenSteps.length === this.countSteps - 1;
+    const isCircleFilled = !isCircleHidden && num <= this.step;
 
     return [
       'circle-step',
       {
         'circle-filled': isCircleFilled,
+        'circle-hidden': isCircleHidden,
       },
     ];
   }
@@ -471,6 +490,7 @@ export default class AddWallet extends Vue {
     this.ethereumJson = '';
     this.passwordSubstrateJson = '';
     this.passwordEthereumJson = '';
+    this.nickname = '';
     this.derivationPaths = INITIAL_DERIVATION_PATHS;
   }
 
@@ -483,9 +503,11 @@ export default class AddWallet extends Vue {
   }
 
   setPasswordJson(value: string) {
-    if (this.isReplaceAccount) {
+    if (this.isReplaceAccountFlow) {
       if (this.isEthereumReplacedNetwork) this.passwordEthereumJson = value;
       else this.passwordSubstrateJson = value;
+    } else if (this.isOnlyEthereumAccountFlow) {
+      this.passwordEthereumJson = value;
     } else {
       if (this.step === 1) this.passwordSubstrateJson = value;
       else this.passwordEthereumJson = value;
@@ -524,9 +546,16 @@ export default class AddWallet extends Vue {
     this.step += this.showNotificationPopup || this.showAddEthereumAccountPopup ? 0 : 1;
   }
 
+  checkPassword() {
+    const isSameWalletPassword = BaseApi.isSameWalletPassword(this.selectedWallet.address, this.walletPassword);
+
+    if (!isSameWalletPassword) this.invalidValueName = 'isNotSamePassword';
+  }
+
   createFlow() {
     if (this.step === 1 && !this.mnemonic.length) this.mnemonic = BaseApi.generateMnemonic();
     else if (this.step === 3) this.validateSuri();
+    else if (this.step === 4 && (this.isOnlyEthereumAccountFlow || this.isReplaceAccountFlow)) this.checkPassword();
   }
 
   importFlow() {
@@ -534,7 +563,7 @@ export default class AddWallet extends Vue {
       this.validateSuri();
 
       if (this.invalidValueName !== '') return;
-      else if (this.isReplaceAccount) {
+      else if (this.isReplaceAccountFlow || this.isOnlyEthereumAccountFlow) {
         this.step += 2;
 
         // no need to separately enter password for json
@@ -548,6 +577,7 @@ export default class AddWallet extends Vue {
       else this.showAddEthereumAccountPopup = true;
     } else if (this.step === 2) this.validateSuri();
     else if (this.step === 3 && this.typeImport === 'json') this.step += 1;
+    else if (this.step === 4 && (this.isOnlyEthereumAccountFlow || this.isReplaceAccountFlow)) this.checkPassword();
   }
 
   validateSuri() {
@@ -598,7 +628,7 @@ export default class AddWallet extends Vue {
   }
 
   saveKeypair() {
-    if (this.substrateJson) return this.saveKeypairFromJson();
+    if (this.substrateJson || this.ethereumJson) return this.saveKeypairFromJson();
     else return this.saveKeypairFromSeed();
   }
 
@@ -617,6 +647,12 @@ export default class AddWallet extends Vue {
         ethereumKeypairType
       );
 
+      if (this.isOnlyEthereumAccountFlow) {
+        BaseApi.saveEthereumAddress(this.selectedWallet.address, ethereumAddress);
+
+        return '';
+      }
+
       meta.ethereumAddress = ethereumAddress;
     }
 
@@ -629,9 +665,15 @@ export default class AddWallet extends Vue {
     const substrateJSON = { ...this.substrateJSON };
 
     if (this.ethereumJson) {
-      const { address } = BaseApi.addKeypairFromJson(this.ethereumJSON, this.passwordEthereumJson);
+      const { address: ethereumAddress } = BaseApi.addKeypairFromJson(this.ethereumJSON, this.passwordEthereumJson);
 
-      substrateJSON.meta.ethereumAddress = address;
+      if (this.isOnlyEthereumAccountFlow) {
+        BaseApi.saveEthereumAddress(this.selectedWallet.address, ethereumAddress);
+
+        return '';
+      }
+
+      substrateJSON.meta.ethereumAddress = ethereumAddress;
     }
 
     const { address } = BaseApi.addKeypairFromJson(substrateJSON, this.passwordSubstrateJson);
@@ -669,15 +711,16 @@ export default class AddWallet extends Vue {
   }
 
   back() {
-    if (this.step === 3 && this.ethereumRawSeed === '' && this.ethereumJson === '' && this.isImportWallet)
-      this.step -= 1;
-    else if (this.step === 4 && this.isReplaceAccount) this.step -= 2;
-    else if (this.step === 2) {
+    if (this.isOnlyEthereumAccountFlow) {
+      if (this.step === 2) this.step -= 1;
+      else if (this.step === 4) this.step -= 2;
+    } else if (this.isImportWallet) {
+      if ((this.isReplaceAccountFlow || this.isOnlyEthereumAccountFlow) && this.step === 4) this.step -= 2;
+      else if (this.step === 3 && this.ethereumRawSeed === '' && this.ethereumJson === '') this.step -= 1;
+    } else if (this.step === 2) {
       this.ethereumRawSeed = '';
       this.ethereumJson = '';
     }
-
-    if (this.step === 1) this.$router.go(-1);
 
     this.step -= 1;
   }
@@ -693,7 +736,7 @@ export default class AddWallet extends Vue {
 
   .header {
     width: 100%;
-    margin: 8px 0 24px;
+    margin-bottom: 24px;
     display: flex;
     justify-content: space-between;
 
@@ -707,14 +750,14 @@ export default class AddWallet extends Vue {
         height: 10px;
         background-color: $default-background-color;
         margin-right: 8px;
-
-        &:last-child {
-          margin-right: 0;
-        }
       }
 
       .circle-filled {
         background-color: $pink-color;
+      }
+
+      .circle-hidden {
+        display: none;
       }
     }
   }

@@ -14,6 +14,7 @@ import type { SetSelectedWalletProps, setAccountsProps, Accounts, setAddressesPr
 import type { TAction, TMutation } from '@/interfaces';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import { isExtension } from '@/helpers/common';
 import BaseApi from '@/util/BaseApi';
 import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
 import { ActionTypes as MetaActionTypes } from '@/store/metadata/actions';
@@ -49,7 +50,7 @@ export default class App extends Vue {
   async mounted() {
     const { subscribeToBalancesOfNetworks } = NetworksController;
 
-    Promise.all([this.authSubscribe(), this.metaSubscribe(), this.signSubscribe()]);
+    if (isExtension()) await Promise.all([this.authSubscribe(), this.metaSubscribe(), this.signSubscribe()]);
 
     this.subscribeAccounts = BaseApi.getAccountsSubject();
     this.subscribeAddresses = BaseApi.getAddressesSubject();
@@ -122,9 +123,11 @@ body {
   width: $extension-width;
   color: white;
   text-align: center;
+  margin: 0 auto;
   padding: 0 $default-padding $default-padding $default-padding;
   background-image: url(./assets/background.png);
-  margin: 0 auto;
+  background-position: center;
+  background-size: cover;
 
   .drag {
     height: 16px;

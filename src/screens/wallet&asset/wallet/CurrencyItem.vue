@@ -1,5 +1,5 @@
 <template>
-  <div v-if="showCurrencyItem" class="currency-item">
+  <div v-if="showCurrencyItem" class="currency-item" @click="openAssetPage">
     <div v-if="showAssetsManagementForm" class="drag-icon">
       <s-icon name="basic-menu-24" class="handle" />
     </div>
@@ -67,12 +67,7 @@
           @click="toggleVisibleActivityForm('showReceiveForm', true, currency)"
         />
 
-        <CircleButton
-          iconName="chevron-right"
-          backgroundColor="none"
-          backgroundColorHover="black"
-          @click="openAssetPage"
-        />
+        <CircleButton iconName="chevron-right" backgroundColor="none" backgroundColorHover="black" />
       </template>
 
       <Switcher v-else v-model="currencyVisible" />
@@ -196,7 +191,17 @@ export default class CurrencyItem extends Vue {
     this.currencyVisible = this.currency.getCurrencyVisible(this.selectedWallet.address);
   }
 
-  openAssetPage() {
+  openAssetPage(event: Event) {
+    const classList = (event.target as HTMLDivElement)?.classList;
+
+    if (
+      this.showAssetsManagementForm ||
+      classList.contains('button') ||
+      classList.contains('send-white') ||
+      classList.contains('receive-white')
+    )
+      return;
+
     const { mainNetwork, assetId } = this.currency;
     const availableInNetworks = this.currency.getAvailableInNetworks(this.selectedWallet);
     const availableNetwork = availableInNetworks[0]?.network ?? '';
@@ -228,6 +233,10 @@ export default class CurrencyItem extends Vue {
   margin-right: 16px;
   height: 78px;
   align-items: center;
+
+  &:hover {
+    cursor: pointer;
+  }
 
   &:last-child {
     border-bottom: none;

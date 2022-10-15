@@ -12,6 +12,7 @@
         :readonly="readonly"
         :show-password="showPassword"
         :style="inputStyle"
+        @blur="$emit('blur', $event)"
         @input="$emit('change', $event)"
       />
     </div>

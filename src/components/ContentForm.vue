@@ -33,5 +33,6 @@ export default class ContentForm extends Vue {
   clip-path: $big-clip-path-left-top;
   border-radius: 8px;
   z-index: 1;
+  width: calc(100% - 1px);
 }
 </style>

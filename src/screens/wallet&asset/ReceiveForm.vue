@@ -1,6 +1,6 @@
 <template>
   <ActivityForm header="Receive Funds" :closeForm="closeForm" :showButton="false" class="receive-form">
-    <Select v-model="network" :options="optionsNetwork" placeholder="Network" size="big" class="row" />
+    <Select v-model="network" :options="optionsNetwork" placeholder="NETWORK" size="big" class="row" />
 
     <div class="receive-content">
       <div class="address">{{ address }}</div>

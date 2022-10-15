@@ -18,12 +18,13 @@
       :handlerClose="toggleSelectNetworkPopupVisible"
     />
 
-    <ContentForm :height="394">
+    <ContentForm :height="397">
       <div class="content">
         <ContentSettings
           :activeTabName="activeTabName"
           :filterValue="filterValue"
           :showAssetsManagementForm="showAssetsManagementForm"
+          :currencies="filteredCurrencies"
           @update:filterValue="updateFilterValue"
           @update:activeTabName="updateActiveTabName"
           @update:showAssetsManagementForm="toggleAssetsManagementFormVisible"
@@ -140,10 +141,10 @@ export default class Wallet extends Vue {
     return this.sortedCurrencies.filter((currency) => {
       const isAllNetworks = this.selectedNetwork === 'All networks';
       const availableInNetworks = currency.getAvailableInNetworks(this.selectedWallet).map(({ network }) => network);
-      const availableInSelectedNetwork = availableInNetworks.includes(this.selectedNetwork);
+      const isAvailableInSelectedNetwork = availableInNetworks.includes(this.selectedNetwork);
 
       // if a network is selected and there is no currency in this network
-      if (!isAllNetworks && !availableInSelectedNetwork) return false;
+      if (!isAllNetworks && !isAvailableInSelectedNetwork) return false;
 
       const { displayName, mainNetwork } = currency;
 
@@ -175,8 +176,14 @@ export default class Wallet extends Vue {
     this.showAssetsManagementForm = value;
   }
 
-  toggleCurrenciesVisible() {
+  toggleCurrenciesVisible(allCurrenciesHidden: boolean) {
     this.currencies.forEach((currency) => {
+      if (allCurrenciesHidden) {
+        currency.setCurrencyVisible(this.selectedWallet.address, true);
+
+        return;
+      }
+
       const isZeroBalance = currency.getTotalCountAssets(this.selectedWallet) === '0';
 
       if (isZeroBalance) currency.setCurrencyVisible(this.selectedWallet.address, false);
@@ -235,7 +242,7 @@ export default class Wallet extends Vue {
   }
 
   .wallet-header {
-    height: 46px;
+    min-height: 46px;
     display: flex;
     justify-content: space-between;
     margin-bottom: 10px;

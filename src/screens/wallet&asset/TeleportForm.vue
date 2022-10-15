@@ -12,12 +12,12 @@
     >
       <div class="teleport-form-content">
         <template v-if="step === 1">
-          <Select v-model="selectedAssetId" :options="optionsCurrency" placeholder="Currency" size="big" class="row" />
+          <Select v-model="selectedAssetId" :options="optionsCurrency" placeholder="CURRENCY" size="big" class="row" />
 
           <Select
             v-model="originalNetwork"
             :options="optionsOriginalNetwork"
-            placeholder="Original network"
+            placeholder="ORIGINAL NETWORK"
             size="big"
             class="row"
           />
@@ -25,7 +25,7 @@
           <Select
             v-model="destinationNetwork"
             :options="optionsDestinationNetwork"
-            placeholder="Destination network"
+            placeholder="DESTINATION NETWORK"
             size="big"
             class="row"
           />

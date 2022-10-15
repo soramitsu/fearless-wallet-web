@@ -32,6 +32,7 @@ export default class CircleButton extends Vue {
 
     return [
       'image',
+      this.iconName,
       {
         'image-shift-left': shiftLeft,
         'image-shift-fight': shiftRight,

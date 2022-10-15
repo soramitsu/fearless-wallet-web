@@ -24,6 +24,7 @@
       />
 
       <Button
+        v-if="isExtension"
         class="import-button"
         width="100%"
         text="I already have a wallet"
@@ -65,6 +66,7 @@ import BaseApi from '@/util/BaseApi';
 import { TERMS_URL, PRIVACY_URL } from '@/consts/urls';
 import AboveForm from '@/components/AboveForm.vue';
 import BeaconConnect from '@/screens/beaconUI/BeaconConnect.vue';
+import { isExtension } from '@/helpers/common';
 
 @Component({
   components: {
@@ -80,6 +82,10 @@ export default class Welcome extends Vue {
 
   get showBackWalletIcon() {
     return BaseApi.getAccounts().length !== 0;
+  }
+
+  get isExtension() {
+    return isExtension();
   }
 
   openTermsAndConditions() {

@@ -60,10 +60,8 @@ const disconnectHandler = (
   }
 };
 
-const readyHandler = (context: Context, { url }: Node, network: Network, accounts: Accounts) => {
+const readyHandler = (context: Context, network: Network, accounts: Accounts) => {
   const { dispatch } = context;
-
-  // console.info(`%c API ready ${url}`, 'background:green;color:#fff');
 
   dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, loadHistory: false, networksProps: [network] });
 };
@@ -86,7 +84,7 @@ function connectToApi(context: Context, network: Network, apiOptions: ApiOptions
 
   api.on('connected', () => connectedHandler(context, apiOptions, node, network));
   api.on('disconnected', () => disconnectHandler(context, apiOptions, node, network, provider));
-  api.on('ready', () => readyHandler(context, node, network, getAccounts()));
+  api.on('ready', () => readyHandler(context, network, getAccounts()));
 }
 
 function subscribeUtilityAssetsBalances(context: Context, address: string, network: Network): void {

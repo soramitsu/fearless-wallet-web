@@ -39,7 +39,7 @@ const mutations: MutationTree<State> & Mutations = {
 
     state.selectedWallet = {
       address: selectedWalletAddress,
-      ethereumAddress,
+      ethereumAddress: ethereumAddress ?? '',
       name,
     };
   },

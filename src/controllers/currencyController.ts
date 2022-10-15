@@ -41,6 +41,7 @@ export default class CurrencyController {
   public price = 0;
   public hours24Change = 0;
   public displayName!: string;
+  public currenciesVisible!: Record<string, Record<string, boolean>>;
 
   constructor(
     public mainNetwork: string,
@@ -51,6 +52,7 @@ export default class CurrencyController {
     public relayChain: RelayChainName
   ) {
     this.displayName = displayName ?? asset;
+    this.currenciesVisible = this.lsCurrency.get(this.visibleStorageName).value ?? {};
   }
 
   public updatePrice() {
@@ -248,22 +250,18 @@ export default class CurrencyController {
   }
 
   public getCurrencyVisible(address: string): boolean {
-    const currenciesVisible = this.lsCurrency.get(this.visibleStorageName).value ?? {};
-
-    return currenciesVisible?.[address]?.[this.displayName] ?? true;
+    return this.currenciesVisible?.[address]?.[this.assetId] ?? true;
   }
 
   public setCurrencyVisible(address: string, value: boolean): void {
-    const currenciesVisible = this.lsCurrency.get(this.visibleStorageName).value ?? {};
-
-    if (currenciesVisible[address]) {
-      currenciesVisible[address][this.displayName] = value;
+    if (this.currenciesVisible[address]) {
+      this.currenciesVisible[address][this.assetId] = value;
     } else {
-      currenciesVisible[address] = {};
-      currenciesVisible[address][this.displayName] = value;
+      this.currenciesVisible[address] = {};
+      this.currenciesVisible[address][this.assetId] = value;
     }
 
-    this.lsCurrency.set(this.visibleStorageName, currenciesVisible);
+    this.lsCurrency.set(this.visibleStorageName, this.currenciesVisible);
   }
 
   public getPrecisionValue(amount: string, precision: number): string {

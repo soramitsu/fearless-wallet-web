@@ -65,7 +65,8 @@ export default class ImportWallet extends Vue {
   @Prop(String) substrateJson!: string;
   @Prop(String) ethereumJson!: string;
   @Prop(Number) step!: number;
-  @Prop(Boolean) isReplaceAccount!: boolean;
+  @Prop(Boolean) isOnlyEthereumAccountFlow!: boolean;
+  @Prop(Boolean) isReplaceAccountFlow!: boolean;
   @Prop(Boolean) isEthereumReplacedNetwork!: boolean;
   @PropSync('passwordJson', { type: String }) syncedPasswordJson!: string;
 
@@ -81,23 +82,27 @@ export default class ImportWallet extends Vue {
     if (this.typeImport === 'mnemonic') return 'mnemonic';
 
     if (this.typeImport === 'rawSeed') {
-      return this.isReplaceAccount
-        ? this.isEthereumReplacedNetwork
-          ? 'ethereumRawSeed'
-          : 'substrateRawSeed'
-        : this.step === 1
-        ? 'substrateRawSeed'
-        : 'ethereumRawSeed';
+      if (this.isReplaceAccountFlow) {
+        return this.isEthereumReplacedNetwork ? 'ethereumRawSeed' : 'substrateRawSeed';
+      }
+
+      if (this.isOnlyEthereumAccountFlow) {
+        return 'ethereumRawSeed';
+      }
+
+      return this.step === 1 ? 'substrateRawSeed' : 'ethereumRawSeed';
     }
 
     // typeImport === 'json'
-    return this.isReplaceAccount
-      ? this.isEthereumReplacedNetwork
-        ? 'ethereumJson'
-        : 'substrateJson'
-      : this.step === 1
-      ? 'substrateJson'
-      : 'ethereumJson';
+    if (this.isReplaceAccountFlow) {
+      return this.isEthereumReplacedNetwork ? 'ethereumJson' : 'substrateJson';
+    }
+
+    if (this.isOnlyEthereumAccountFlow) {
+      return 'ethereumJson';
+    }
+
+    return this.step === 1 ? 'substrateJson' : 'ethereumJson';
   }
 
   get disabledSelect() {
@@ -109,7 +114,7 @@ export default class ImportWallet extends Vue {
   }
 
   get showSlot() {
-    return this.isReplaceAccount ? this.typeImport === 'mnemonic' : this.notJsonImport && this.step === 1;
+    return this.isReplaceAccountFlow ? this.typeImport === 'mnemonic' : this.notJsonImport && this.step === 1;
   }
 
   get placeholderTypeImportValue() {
@@ -129,15 +134,6 @@ export default class ImportWallet extends Vue {
   @Watch('typeImport')
   onTypeImportChanged() {
     this.$emit('reset');
-  }
-
-  typeImportClasses(value: string) {
-    return [
-      'type-import',
-      {
-        'active-type-import': this.typeImport === value,
-      },
-    ];
   }
 }
 </script>
@@ -171,20 +167,6 @@ export default class ImportWallet extends Vue {
 
     &:first-child {
       margin-top: 0;
-    }
-  }
-
-  .type-import {
-    color: $default-white;
-    margin: 8px 0;
-    text-align: left;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-
-    &:hover {
-      cursor: pointer;
-      color: #ffffff;
     }
   }
 

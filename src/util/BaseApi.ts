@@ -361,8 +361,8 @@ export default class BaseApi {
     }
   }
 
-  public static unlockPair(from: string, password: string): boolean {
-    const pair = keyring.getPair(from);
+  public static unlockPair(address: string, password: string): boolean {
+    const pair = keyring.getPair(address);
 
     try {
       pair.unlock(password);
@@ -371,6 +371,20 @@ export default class BaseApi {
     } catch {
       return false;
     }
+  }
+
+  public static lockPair(address: string): void {
+    const pair = keyring.getPair(address);
+
+    pair.lock();
+  }
+
+  public static isSameWalletPassword(address: string, password: string): boolean {
+    const isUnlock = this.unlockPair(address, password);
+
+    this.lockPair(address);
+
+    return isUnlock;
   }
 
   public static deleteAccount(address: string): void {
@@ -415,7 +429,7 @@ export default class BaseApi {
   }
 
   public static useIsPopup(): boolean {
-    return window.innerWidth <= 560;
+    return window.innerWidth <= 561;
   }
 
   public static getFirstSubstrateWalletAddress(): string {
@@ -435,5 +449,23 @@ export default class BaseApi {
 
   public static getEquilibriumAssetName(symbol: string): number {
     return assetFromToken(symbol)[0];
+  }
+
+  static updateName(address: string, name: string): void {
+    const pair = BaseApi.getKeyringPair(address);
+    const meta = getMetaTyped(pair.meta);
+
+    meta.name = name;
+
+    keyring.saveAccountMeta(pair, meta as any);
+  }
+
+  static saveEthereumAddress(substrateAddress: string, ethereumAddress: string): void {
+    const pair = BaseApi.getKeyringPair(substrateAddress);
+    const meta = getMetaTyped(pair.meta);
+
+    meta.ethereumAddress = ethereumAddress;
+
+    keyring.saveAccountMeta(pair, meta as any);
   }
 }

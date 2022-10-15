@@ -105,7 +105,6 @@ const routes: Array<RouteConfig> = [
         name: Components.Wallet,
         component: Wallet,
         beforeEnter: (to, from, next) => {
-          console.log(haveAuthRequests(), haveSignRequests(), haveMetaRequests(), 'router');
           if (haveAuthRequests()) next({ name: Components.Authorize });
           else if (haveSignRequests()) next({ name: Components.Transaction });
           else if (haveMetaRequests()) next({ name: Components.MetaRequest });

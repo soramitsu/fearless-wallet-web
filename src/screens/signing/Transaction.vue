@@ -17,6 +17,7 @@
       sizeWidth="medium"
       @close="onClose"
       :address="payload.address"
+      :payload="payload"
       :transactionId="request.id"
     />
 
@@ -112,16 +113,18 @@ export default class Auth extends Vue {
     this.isSignPopupVisible = true;
   }
 
-  onSignMobile() {
-    beaconController.sendRequest(this.payload);
+  async onSignMobile() {
+    console.info('sign with mobile');
+
+    await beaconController.sendRequest(this.payload);
   }
 
   onClose() {
     this.isSignPopupVisible = false;
   }
 
-  onReject() {
-    this.onSignCancel(this.request.id);
+  async onReject() {
+    await this.onSignCancel(this.request.id);
   }
 }
 </script>

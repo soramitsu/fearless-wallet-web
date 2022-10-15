@@ -10,11 +10,7 @@ import {
   Serializer,
   AccountInfo,
 } from '@airgap/beacon-sdk';
-
-import type { SignerPayloadJSON } from '@polkadot/types/types';
-import { getTzip10Link } from '@/util/beacon';
-
-import {
+import type {
   PermissionErrorPayload,
   PermissionSuccess,
   RequestSentInfo,
@@ -22,12 +18,17 @@ import {
   SubstratePermissionRequest,
   SubstrateSignPayloadRequest,
   SubstrateSignPayloadResponse,
+  SubstrateTransferRequest,
   TCallback,
+  TransferPayload,
+  SignerPayloadJSON,
 } from '@/interfaces';
+
+import { getTzip10Link } from '@/util/beacon';
 
 class BeaconController {
   private readonly app: DAppClient;
-  private static serializer = new Serializer();
+  public serializer = new Serializer();
   private name = 'Fearless Wallet Extension';
   constructor() {
     this.app = getDAppClientInstance({
@@ -74,8 +75,11 @@ class BeaconController {
           senderId: 'sender',
           name: this.name,
         },
-        networks: [{ genesisHash: '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3' }], //Polkadot genesis hash
-        scopes: [SubstratePermissionScope.transfer],
+        networks: [
+          { genesisHash: '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3' },
+          // { genesisHash: '0x7e6b3bbed86828a558271c9c9f62354b1d8b5aa15ff85fd6f1e7cbe9af9dde7e' },
+        ],
+        scopes: [SubstratePermissionScope.transfer, SubstratePermissionScope.sign_payload_json],
       },
       blockchainIdentifier: 'substrate',
       type: BeaconMessageType.PermissionRequest,
@@ -86,7 +90,7 @@ class BeaconController {
 
   async onPairingRequest(callback: (payload: string) => void) {
     this.app.subscribeToEvent(BeaconEvent.PAIR_INIT, async (data) => {
-      const code = await BeaconController.serializer.serialize(await data.p2pPeerInfo());
+      const code = await this.serializer.serialize(await data.p2pPeerInfo());
       const uri = getTzip10Link('tezos://', code);
       if (callback) callback(uri);
     });
@@ -124,15 +128,34 @@ class BeaconController {
     this.app.clearActiveAccount();
   }
 
-  async sendRequest(payload: SignerPayloadJSON): Promise<SubstrateSignPayloadResponse['blockchainData']> {
+  async sendTransfer(payload: TransferPayload) {
     const activeAccount = await this.app.getActiveAccount();
 
     if (!activeAccount) throw new Error('Beacon not set up.');
 
+    const request: SubstrateTransferRequest = {
+      accountId: activeAccount.accountIdentifier,
+      blockchainData: {
+        ...payload,
+        mode: 'return',
+        type: SubstrateMessageType.transfer_request,
+        scope: SubstratePermissionScope.transfer,
+      },
+      blockchainIdentifier: 'substrate',
+      type: BeaconMessageType.BlockchainRequest,
+    };
+
+    return this.app.request(request);
+  }
+
+  async sendRequest(payload: SignerPayloadJSON) {
+    const activeAccount = await this.app.getActiveAccount();
+
+    if (!activeAccount) throw new Error('Beacon not set up.');
     const request: SubstrateSignPayloadRequest = {
       accountId: activeAccount.accountIdentifier,
       blockchainData: {
-        mode: 'return',
+        mode: 'submit-and-return',
         payload,
         type: SubstrateMessageType.sign_payload_request,
         scope: SubstratePermissionScope.sign_payload_json,
@@ -141,9 +164,9 @@ class BeaconController {
       type: BeaconMessageType.BlockchainRequest,
     };
 
-    const { blockchainData } = (await this.app.request(request)) as SubstrateSignPayloadResponse;
+    const response = (await this.app.request(request)) as SubstrateSignPayloadResponse;
 
-    return blockchainData;
+    return response;
   }
 }
 

@@ -13,7 +13,6 @@ import {
   ErrorResponse,
   BlockchainResponseV3,
 } from '@airgap/beacon-sdk';
-import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 
 export interface PermissionErrorPayload {
@@ -31,13 +30,16 @@ export interface SubstratePermissionRequest extends PermissionRequestV3<'substra
     }[]; // Array to "whitelist" certain networks? (optional)
   };
 }
+
 export interface ExtraInfo {
   resetCallback?(): Promise<void>;
 }
+
 export interface RequestSentInfo {
   extraInfo: ExtraInfo;
   walletInfo: WalletInfo;
 }
+
 export interface PermissionSuccess {
   account: AccountInfo;
   output: PermissionResponseOutput;
@@ -45,10 +47,26 @@ export interface PermissionSuccess {
   connectionContext: ConnectionContext;
   walletInfo: WalletInfo;
 }
+
 export interface SignResponse {
   output: SignPayloadResponse;
   connectionContext: ConnectionContext;
   walletInfo: WalletInfo;
+}
+
+export interface SignerPayloadJSON {
+  address?: string;
+  blockHash: string;
+  blockNumber: string;
+  era: string;
+  genesisHash: string;
+  method: string;
+  nonce: string;
+  specVersion?: string;
+  tip: string;
+  transactionVersion: string;
+  signedExtensions: string[];
+  version: number;
 }
 
 export interface SubstrateSignPayloadRequest extends BlockchainRequestV3<'substrate'> {
@@ -56,6 +74,29 @@ export interface SubstrateSignPayloadRequest extends BlockchainRequestV3<'substr
     type: SubstrateMessageType.sign_payload_request;
     scope: SubstratePermissionScope.sign_payload_json;
     payload: SignerPayloadJSON;
+    mode: 'submit' | 'submit-and-return' | 'return';
+  };
+}
+export interface TransferPayload {
+  amount: string;
+  network: {
+    genesisHash: string;
+  };
+  recipient: string;
+  sourceAddress: string;
+}
+
+export interface SubstrateTransferRequest extends BlockchainRequestV3<'substrate'> {
+  blockchainData: {
+    type: SubstrateMessageType.transfer_request;
+    scope: SubstratePermissionScope.transfer;
+    sourceAddress: string;
+    amount: string;
+    recipient: string;
+    network: {
+      genesisHash: string;
+      rpc?: string;
+    };
     mode: 'submit' | 'submit-and-return' | 'return';
   };
 }

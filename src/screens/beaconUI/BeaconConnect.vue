@@ -1,6 +1,6 @@
 <template>
   <AboveForm :header="header" :closeHandler="close">
-    <template v-if="!requestInfo && qrPayload">
+    <template v-if="isQRPrep">
       <h2 class="header">{{ qrCodeHeader }}</h2>
       <QR :payload="qrPayload" />
     </template>
@@ -9,11 +9,13 @@
       <Loader />
     </div>
 
-    <PermissionRequest v-if="requestInfo && !isPermissionsGranted" :requestInfo="requestInfo" />
+    <PermissionRequest v-if="isAwaitWalletResponse" :requestInfo="requestInfo" />
 
     <template v-if="isPermissionsGranted">
       <div class="permission__content">
-        <InfoList>
+        <Alert v-if="isWalletAlreadyExist" />
+
+        <InfoList v-else>
           <InfoItem name="address" :value="requestResponse.address" />
           <InfoItem name="permissions" :value="requestResponse.scopes[0]" />
         </InfoList>
@@ -26,7 +28,6 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator';
-import { keyring } from '@polkadot/ui-keyring';
 import { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import { Action } from 'vuex-class';
 import { encodeAddress } from '@polkadot/util-crypto';
@@ -45,6 +46,7 @@ import Loader from '@/components/Loader.vue';
 import PermissionRequest from '@/screens/beaconUI/PermissionRequest.vue';
 import InfoList from '@/layouts/InfoList.vue';
 import InfoItem from '@/screens/signing/InfoItem.vue';
+
 @Component({
   components: {
     Loader,
@@ -65,6 +67,7 @@ export default class BeaconConnect extends Vue {
   requestResponse: PermissionResponseOutput | null = null;
   qrCodeHeader = 'Scan the QR code using the Fearless mobile app';
   isPermissionsGranted = false;
+  isWalletAlreadyExist = false;
 
   async mounted() {
     beaconController.connect();
@@ -75,6 +78,14 @@ export default class BeaconConnect extends Vue {
     beaconController.onPairingRequest(this.onPairingRequest);
     beaconController.onPermissionRequest(this.onPermissionRequest);
     beaconController.onPermissionsResponse(this.onPermissionResponse);
+  }
+
+  get isAwaitWalletResponse() {
+    return this.requestInfo && !this.isPermissionsGranted;
+  }
+
+  get isQRPrep() {
+    return !this.requestInfo && this.qrPayload;
   }
 
   get isRequestSend() {
@@ -106,25 +117,24 @@ export default class BeaconConnect extends Vue {
 
   async onPermissionResponse(payload: PermissionSuccess) {
     this.isPermissionsGranted = true;
-    this.requestResponse = payload.output;
 
-    const { address } = payload.account;
-
-    const meta: KeyringJson$Meta = {
-      name: 'beacon_acc',
-    };
     const substrateAccount = encodeAddress(payload.account.address);
 
     if (BaseApi.getAddressType(substrateAccount)) {
-      beaconController.disconnect();
+      this.isWalletAlreadyExist = true;
 
       return;
     }
 
-    keyring.saveAddress(address, meta, 'address');
+    this.requestResponse = payload.output;
 
-    await createAddress(meta, address); //extenstion service worker
-    this.setSelectedWallet({ selectedWalletAddress: address });
+    const meta: KeyringJson$Meta = { name: 'mobile wallet' };
+
+    BaseApi.saveAddress(substrateAccount, meta);
+
+    await createAddress(meta, substrateAccount); //extenstion service worker
+
+    this.setSelectedWallet({ selectedWalletAddress: substrateAccount });
 
     this.$router.push({ name: Components.Wallet });
   }

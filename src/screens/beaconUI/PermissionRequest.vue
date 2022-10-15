@@ -34,6 +34,7 @@ import Button from '@/components/Button.vue';
 import Loader from '@/components/Loader.vue';
 import Corners from '@/components/Corners.vue';
 import Alert from '@/components/Alert.vue';
+import { Components } from '@/router/routes';
 
 @Component({
   components: {
@@ -64,10 +65,12 @@ export default class PermissionRequest extends Vue {
 
   onResetConnection() {
     beaconController.resetConnection();
+
+    this.$router.push({ name: Components.Wallet });
   }
 
   onCancelRequest() {
-    this.$router.back();
+    this.$router.push({ name: Components.Welcome });
   }
 }
 </script>

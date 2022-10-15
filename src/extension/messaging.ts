@@ -43,7 +43,7 @@ function setSavedMeta(genesisHash: string, def: Promise<MetadataDef | null>): Ma
   return metadataGets.set(genesisHash, def);
 }
 
-const allChains: MetadataDefBase[] = selectableNetworks
+export const allChains: MetadataDefBase[] = selectableNetworks
   .filter(({ genesisHash }) => !!genesisHash.length)
   .map((network) => ({
     chain: network.displayName,

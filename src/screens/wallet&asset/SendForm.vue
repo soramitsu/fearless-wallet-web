@@ -90,6 +90,7 @@
       :address="addressByNetwork"
       :firstNetwork="selectedNetwork"
       @close="confirmationPasswordPopupClose"
+      @transferMobile="transferMobile"
     />
   </div>
 </template>
@@ -101,7 +102,7 @@ import ActivityForm from './ActivityForm.vue';
 import AmountInputs from './AmountInputs.vue';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import MaxButton from './MaxButton.vue';
-import type { Currencies, Networks } from '@/interfaces';
+import type { Currencies, TransferPayload } from '@/interfaces';
 import type { GetAssetName } from '@/store/networks/types';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
@@ -115,6 +116,7 @@ import { SelectedWallet } from '@/store/accounts/types';
 import { firstCharToUp } from '@/helpers/common';
 import { formattedNumber, formattedPrice, addNumbers } from '@/helpers/numbers';
 import { getCurrencyOptions } from '@/helpers/currencies';
+import { beaconController } from '@/controllers/beaconController';
 
 @Component({
   components: {
@@ -143,7 +145,6 @@ export default class SendForm extends Vue {
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) _selectedNetwork!: string;
   @Prop(String) _selectedAssetId!: string;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
@@ -206,6 +207,20 @@ export default class SendForm extends Vue {
 
   get isValidRecipientAddress() {
     return BaseApi.validateAddress(this.recipient);
+  }
+
+  async transferMobile() {
+    const payload: TransferPayload = {
+      amount: this.amount,
+      network: {
+        genesisHash: this._selectedNetwork,
+      },
+      recipient: this.recipient,
+      sourceAddress: this.addressByNetwork,
+    };
+
+    const response = await beaconController.sendTransfer(payload);
+    console.info('TRANSFER RESPONSE', response);
   }
 
   get addressByNetwork() {

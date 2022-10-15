@@ -68,8 +68,10 @@ const actions: ActionTree<State, State> & Actions = {
     router.push({ name: Components.Wallet });
   },
 
-  async [ActionTypes.SIGN_CANCEL](context, id) {
-    cancelSignRequest(id);
+  async [ActionTypes.SIGN_CANCEL]({ commit }, id) {
+    await cancelSignRequest(id);
+    commit(MutationTypes.DELETE_SIGN_REQUEST);
+
     router.push({ name: Components.Wallet });
   },
 };

@@ -10,11 +10,11 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import { encodeAddress } from '@polkadot/util-crypto';
-import BaseApi from './util/BaseApi';
 import type { SetSelectedWalletProps, setAccountsProps, Accounts, setAddressesProps } from '@/store/accounts/types';
 import type { TAction, TMutation } from '@/interfaces';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import BaseApi from '@/util/BaseApi';
 import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
 import { ActionTypes as MetaActionTypes } from '@/store/metadata/actions';
 import { ActionTypes as SignActionTypes } from '@/store/sign/actions';
@@ -68,11 +68,9 @@ export default class App extends Vue {
 
     this.subscribeAddresses.subscribe(async (addresses) => {
       const newAddresses = this.getNewAccounts(addresses, 'addresses');
-
       console.info('addresses', newAddresses);
 
       this.setAddresses({ addresses });
-
       // subscribe only if the number of new addresses is not equal to the total number of accounts
       if (Object.keys(addresses).length !== Object.keys(newAddresses).length)
         await subscribeToBalancesOfNetworks(newAddresses);

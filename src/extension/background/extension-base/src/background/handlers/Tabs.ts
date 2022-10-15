@@ -61,7 +61,7 @@ export default class Tabs {
 
   static async accountsListAuthorized(url: string, { anyType }: RequestAccountList): Promise<InjectedAccount[]> {
     const transformedAccounts = transformAccounts(accountsObservable.subject.getValue(), anyType);
-    const transformedAddresses = transformAddresses(keyring.addresses.subject.value);
+    const transformedAddresses = transformAddresses(keyring.addresses.subject.getValue());
     const totalAccounts = [...transformedAccounts, ...transformedAddresses];
 
     return await Tabs.filterForAuthorizedAccounts(totalAccounts, url);
@@ -119,7 +119,7 @@ export default class Tabs {
     let meta;
 
     if (keyring.getAccount(address)) meta = Tabs.getSigningPair(address).meta;
-    else if (keyring.getAddress(address)) meta = keyring.getAddress(address)?.meta;
+    else if (keyring.getAddress(address, 'address')) meta = keyring.getAddress(address, 'address')?.meta;
 
     return State.sign(url, new RequestExtrinsicSign(request), { address, ...meta });
   }

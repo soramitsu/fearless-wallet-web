@@ -71,7 +71,6 @@ export default class AboveForm extends Vue {
     height: calc(100% - 80px);
     background-color: #111111;
     clip-path: $big-clip-path-left-top;
-    // animation: transform 0.3s forwards;
 
     @keyframes transform {
       0% {

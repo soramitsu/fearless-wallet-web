@@ -13,7 +13,12 @@
       <SettingMenuItem title="Currency" icon="dollar-circle" @onOpen="openPopup('openFiatsPopup')" />
       <SettingMenuItem title="Language" icon="language" />
       <SettingMenuItem title="About" icon="info" @onOpen="openPopup('openAboutPopup')" />
-      <SettingMenuItem title="Manage dApp access" icon="networks/polkadot" @onOpen="openPopup('openManageAuths')" />
+      <SettingMenuItem
+        v-if="isExtension"
+        title="Manage dApp access"
+        icon="networks/polkadot"
+        @onOpen="openPopup('openManageAuths')"
+      />
     </div>
   </Popup>
 </template>
@@ -22,6 +27,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import Popup from '@/components/Popup.vue';
 import { Components } from '@/router/routes';
+import { isExtension } from '@/helpers/common';
 import SettingMenuItem from '@/layouts/SettingMenuItem.vue';
 
 type SettingsItemType = 'Accounts';
@@ -34,6 +40,10 @@ export default class SettingsPopup extends Vue {
 
   get routeName() {
     return this.$route.name;
+  }
+
+  get isExtension() {
+    return isExtension();
   }
 
   openPopup(value: string) {

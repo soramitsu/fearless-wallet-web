@@ -32,6 +32,7 @@ export type Actions = {
   ): Promise<void>;
   [ActionTypes.REJECT_AUTH_REQUEST](context: AugmentedActionContext, props: AuthorizeRequest): Promise<void>;
   [ActionTypes.GET_AUTHLIST](context: AugmentedActionContext): Promise<void>;
+  [ActionTypes.DELETE_AUTH_CONNECTION](context: AugmentedActionContext, props: string): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
@@ -64,6 +65,7 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.GET_AUTHLIST]({ commit }) {
     const list = await getAuthList();
+
     commit(MutationTypes.SET_AUTHLIST, list);
   },
 

@@ -292,16 +292,18 @@ export default class AddWallet extends Vue {
   get header() {
     if (this.isCreateWallet) {
       if (this.step === 1) return 'Create new wallet';
-      else if (this.step === 2) return 'Backup the passphrase for your new wallet';
-      else if (this.step === 3) return 'Confirm the passphrase';
-      else if (this.showPasswordForm) return 'Set up password';
+      if (this.step === 2) return 'Backup the passphrase for your new wallet';
+      if (this.step === 3) return 'Confirm the passphrase';
+      if (this.step === 4) return 'Set up password';
     }
 
     if (this.step === 1) {
       if (this.isReplaceAccountFlow) {
         if (this.isEthereumReplacedNetwork) return 'Import ethereum account';
         else return 'Import substrate account';
-      } else if (this.isOnlyEthereumAccountFlow) return 'Add ethereum account';
+      }
+
+      if (this.isOnlyEthereumAccountFlow) return 'Add ethereum account';
 
       if (this.typeImport === 'mnemonic') return 'Import wallet';
       else return 'Import substrate account';
@@ -325,12 +327,6 @@ export default class AddWallet extends Vue {
 
     if (this.isImportWallet) {
       if (this.step === 1) {
-        if (this.isOnlyEthereumAccountFlow) {
-          if (this.ethereumRawSeed === '') return false;
-
-          return false;
-        }
-
         return (
           !this.mnemonic &&
           !this.substrateRawSeed &&
@@ -393,9 +389,7 @@ export default class AddWallet extends Vue {
 
   @Watch('step')
   changedCurrentStep(step: number) {
-    if (step === 0) {
-      this.$router.go(-1);
-    }
+    if (step === 0) this.$router.back();
 
     if (step === 4) {
       const {
@@ -455,14 +449,12 @@ export default class AddWallet extends Vue {
     // steps create: 1 - nickname, 2 - view mnemonic, 3 - confirm mnemonic, 4 - password, 5 - finish form
     if (this.isReplaceAccountFlow) {
       if (this.isImportWallet) {
-        if (this.typeImport === 'mnemonic') arrayWithHiddenSteps = [2, 3, 5];
-        else if (this.typeImport === 'rawSeed') arrayWithHiddenSteps = [2, 3, 5];
+        if (this.typeImport === 'mnemonic' || this.typeImport === 'rawSeed') arrayWithHiddenSteps = [2, 3, 5];
         else if (this.typeImport === 'json') arrayWithHiddenSteps = [2, 3, 4, 5];
       } else arrayWithHiddenSteps = [5];
     } else if (this.isOnlyEthereumAccountFlow) {
       if (this.isImportWallet) {
-        if (this.typeImport === 'mnemonic') arrayWithHiddenSteps = [2, 3, 5];
-        else if (this.typeImport === 'rawSeed') arrayWithHiddenSteps = [2, 3, 5];
+        if (this.typeImport === 'mnemonic' || this.typeImport === 'rawSeed') arrayWithHiddenSteps = [2, 3, 5];
         else if (this.typeImport === 'json') arrayWithHiddenSteps = [2, 3, 4, 5];
       } else arrayWithHiddenSteps = [1, 5];
     } else if (this.isImportWallet) {

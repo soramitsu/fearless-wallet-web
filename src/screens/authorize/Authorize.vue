@@ -33,8 +33,9 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+import { Getter, Action } from 'vuex-class';
 import { AuthorizeRequest } from '@extension-base/background/types';
+import { TAction } from '../../interfaces';
 import { Accounts, WalletInfo } from '@/store/accounts/types';
 import Button from '@/components/Button.vue';
 import Hint from '@/components/Hint.vue';
@@ -64,6 +65,9 @@ export default class Authorize extends Vue {
   @Getter(AuthGettersTypes.getAuthRequests) requests!: AuthorizeRequest[];
   @Getter(AccountsGettersTypes.getWallets) wallets!: WalletInfo[];
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
+  @Action(AuthActionTypes.APPROVE_AUTH_REQUEST)
+  onApproveAuthRequest!: TAction<{ request: AuthorizeRequest; accounts: string[] }>;
+  @Action(AuthActionTypes.REJECT_AUTH_REQUEST) onRejectAuthRequest!: TAction<AuthorizeRequest>;
 
   get isAccountsExists() {
     return BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
@@ -118,12 +122,12 @@ export default class Authorize extends Vue {
   }
 
   onApprove() {
-    this.$store.dispatch(AuthActionTypes.APPROVE_AUTH_REQUEST, { request: this.request, accounts: this.prepAccounts });
+    this.onApproveAuthRequest({ request: this.request, accounts: this.prepAccounts });
     this.$router.push({ name: Components.Wallet });
   }
 
   onReject() {
-    this.$store.dispatch(AuthActionTypes.REJECT_AUTH_REQUEST, this.request);
+    this.onRejectAuthRequest(this.request);
     this.$router.push({ name: Components.Wallet });
   }
 }

@@ -9,21 +9,22 @@
         :request="el"
         @onRemoveAuth="removeAuth"
         @updateAuths="updateAuthorizedAccount"
-        @onChange="onChange"
       />
     </AboveForm>
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Getter, Action } from 'vuex-class';
 import { AuthUrlInfo } from '@extension-base/background/types';
+import { TAction } from '../../interfaces';
 import AboveForm from '@/components/AboveForm.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import AuthItem from '@/screens/authorize/AuthItem.vue';
 import { Components } from '@/router/routes';
 import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
+import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
 
 @Component({
   components: {
@@ -33,21 +34,24 @@ import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
   },
 })
 export default class ManageAuths extends Vue {
+  @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
+  @Action(AuthActionTypes.GET_AUTHLIST)
+  getAuthList!: TAction<void>;
+  @Action(AuthActionTypes.DELETE_AUTH_CONNECTION)
+  deleteAuthConnection!: TAction<string>;
+
   filterValue = '';
   filteredList: Record<string, AuthUrlInfo> = {};
 
-  @Prop(Function) handlerClose!: VoidFunction;
-  @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
+  async beforeCreate() {
+    await this.getAuthList();
+
+    this.filteredList = this.authlist;
+  }
 
   @Watch('filterValue')
   filter(value: string) {
     this.filteredData(value);
-  }
-
-  async beforeCreate() {
-    await this.$store.dispatch('GET_AUTHLIST');
-
-    this.filteredList = this.authlist;
   }
 
   filteredData(value: string) {
@@ -67,12 +71,8 @@ export default class ManageAuths extends Vue {
     });
   }
 
-  onChange(id: string) {
-    this.$store.dispatch('UPDATE_AUTH_CONNECTION', id);
-  }
-
   async removeAuth(url: string) {
-    await this.$store.dispatch('DELETE_AUTH_CONNECTION', url);
+    await this.deleteAuthConnection(url);
   }
 }
 </script>

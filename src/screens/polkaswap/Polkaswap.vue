@@ -21,6 +21,5 @@ export default class Polkaswap extends Vue {
 
 <style lang="scss" scoped>
 .polkaswap {
-  height: 100%;
 }
 </style>

@@ -31,14 +31,13 @@ export default class App extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
   @Getter(AccountsGettersTypes.getAddresses) addresses!: Accounts;
   @Getter(AccountsGettersTypes.getWallets) wallets!: Record<string, Accounts>;
-
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
   @Mutation(AccountsMutationTypes.SET_ADDRESSES) setAddresses!: TMutation<setAddressesProps>;
-
   @Action(AuthActionTypes.SUBSCRIBE_AUTH_REQUESTS) authSubscribe!: TAction<unknown>;
   @Action(SignActionTypes.SUBSCRIBE_SIGN_REQUESTS) signSubscribe!: TAction<unknown>;
   @Action(MetaActionTypes.SUBSCRIBE_METADATA_REQUESTS) metaSubscribe!: TAction<unknown>;
+
   async beforeCreate() {
     const { loadJsons, connectToNodes } = NetworksController;
 
@@ -108,6 +107,8 @@ export default class App extends Vue {
 <style lang="scss">
 body {
   background-color: rgb(54, 49, 52);
+  height: 100vh;
+  width: 100%;
 }
 </style>
 
@@ -116,6 +117,8 @@ body {
   font-family: 'Sora';
   font-style: normal;
   font-feature-settings: 'tnum' on, 'lnum' on;
+  min-height: $extension-height;
+  min-width: $extension-width;
   height: $extension-height;
   width: $extension-width;
   color: white;

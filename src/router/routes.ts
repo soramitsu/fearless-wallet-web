@@ -9,7 +9,6 @@ import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import AddWallet from '@/screens/addWallet/AddWallet.vue';
-// import ManageAuths from '@/screens/authorize/ManageAuths.vue';
 import Accounts from '@/screens/accounts/Accounts.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import Main from '@/screens/main/Main.vue';
@@ -19,7 +18,6 @@ import Crowdloans from '@/screens/crowdloans/Crowdloans.vue';
 // import Transaction from '@/screens/signing/Transaction.vue';
 // import UpdateAuths from '@/screens/authorize/UpdateAuths.vue';
 
-const ManageAuths = () => import('@/screens/authorize/ManageAuths.vue');
 const Authorize = () => import('@/screens/authorize/Authorize.vue');
 const Transaction = () => import('@/screens/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/metadata/Metadata.vue');
@@ -41,7 +39,6 @@ export enum Components {
   Accounts = 'Accounts',
   Nodes = 'Nodes',
   Export = 'Export',
-  ManageAuths = 'ManageAuths',
   Authorize = 'Authorize',
   MetaRequest = 'MetaRequest',
   Transaction = 'Transaction',
@@ -88,11 +85,6 @@ const routes: Array<RouteConfig> = [
         beforeEnter: (to, from, next) => {
           next({ name: Components.Wallet });
         },
-      },
-      {
-        path: 'manageauths',
-        name: Components.ManageAuths,
-        component: ManageAuths,
       },
       {
         path: 'updateauths/:url',

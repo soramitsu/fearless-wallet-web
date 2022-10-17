@@ -6,7 +6,7 @@
           <img src="@/assets/chevron-left.svg" />
         </div>
         <div v-else class="icon">
-          <img src="@/assets/fw-logo.svg" />
+          <img src="@/assets/fw-logo.svg" class="logo" />
         </div>
         <div class="header">{{ header }}</div>
         <div class="activity">
@@ -68,10 +68,9 @@ export default class AboveForm extends Vue {
     position: relative;
     top: 80px;
     width: $extension-width;
-    height: $extension-height - $header-height -$default-padding - $default-padding;
+    height: calc(100% - 80px);
     background-color: #111111;
-    clip-path: polygon(100% 0, 100% 100%, 0 100%, 0 4%, 4% 0);
-    animation: transform 0.3s forwards;
+    clip-path: $big-clip-path-left-top;
 
     @keyframes transform {
       0% {
@@ -83,7 +82,7 @@ export default class AboveForm extends Vue {
     }
 
     .content {
-      height: 456px;
+      height: calc(100% - 80px);
       padding: $default-padding;
     }
 
@@ -155,6 +154,10 @@ export default class AboveForm extends Vue {
       &:last-child {
         margin-left: 15px;
       }
+    }
+
+    .logo {
+      width: 45px;
     }
   }
 }

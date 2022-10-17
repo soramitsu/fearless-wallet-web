@@ -3,7 +3,7 @@
     <ActivityForm
       header="Teleport"
       :buttonText="buttonText"
-      :handlerButton="handlerButton"
+      :handlerButton="handlerContinueButton"
       :showBackIcon="showBackIcon"
       :handlerBack="handlerBack"
       :closeForm="closeForm"
@@ -102,6 +102,12 @@
       :secondNetwork="destinationNetwork"
       @close="confirmationPasswordPopupClose"
     />
+
+    <ExistentialPopup
+      v-if="showExistentialPopup"
+      :handlerClose="handlerCloseExistentialPopup"
+      :handlerAcceptButton="handlerAcceptExistentialPopup"
+    />
   </div>
 </template>
 
@@ -112,6 +118,7 @@ import ActivityForm from './ActivityForm.vue';
 import MaxButton from './MaxButton.vue';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import AmountInputs from './AmountInputs.vue';
+import ExistentialPopup from './ExistentialPopup.vue';
 import type { Currencies, Networks } from '@/interfaces';
 import type { GetAssetName } from '@/store/networks/types';
 import Select from '@/components/Select.vue';
@@ -135,11 +142,13 @@ import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
     FloatInput,
     ActivityForm,
     AmountInputs,
+    ExistentialPopup,
     ConfirmationPasswordPopup,
   },
 })
 export default class TeleportForm extends Vue {
   isValidCountAssets = true;
+  showExistentialPopup = false;
   showConfirmationPasswordPopup = false;
   originalNetworkPartialFee = '';
   destinationNetworkPartialFee = '';
@@ -306,7 +315,7 @@ export default class TeleportForm extends Vue {
     const partialFee = await this.createExtrinsicAndGetFee();
 
     this.originalNetworkPartialFee = partialFee;
-    this.isValidCountAssets = this.currency!.isValidCountAssets(
+    this.isValidCountAssets = this.currency!.validateCountAssets(
       this.amount,
       partialFee,
       this.originalNetwork,
@@ -337,7 +346,6 @@ export default class TeleportForm extends Vue {
 
     this.currency!.createTeleportExtrinsic(
       this.selectedWallet,
-      this.originalNetwork,
       this.destinationNetwork,
       amount ?? this.amount,
       networkProps
@@ -380,7 +388,18 @@ export default class TeleportForm extends Vue {
     this.step = 1;
   }
 
-  handlerButton() {
+  handlerContinueButton(skipWarning = false) {
+    if (!skipWarning && this.step === 1) {
+      this.showExistentialPopup = !this.currency!.validateExistentialDeposit(
+        this.selectedWallet,
+        this.originalNetwork,
+        this.amount,
+        this.originalNetworkPartialFee
+      );
+
+      if (this.showExistentialPopup) return;
+    }
+
     if (this.step === 2) {
       this.showConfirmationPasswordPopup = true;
 
@@ -388,6 +407,16 @@ export default class TeleportForm extends Vue {
     }
 
     this.step += 1;
+  }
+
+  handlerCloseExistentialPopup() {
+    this.showExistentialPopup = false;
+  }
+
+  handlerAcceptExistentialPopup() {
+    this.handlerContinueButton(true);
+
+    this.handlerCloseExistentialPopup();
   }
 }
 </script>

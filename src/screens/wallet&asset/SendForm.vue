@@ -4,7 +4,7 @@
       class="send-form"
       header="Send Funds"
       :buttonText="buttonText"
-      :handlerButton="handlerButton"
+      :handlerButton="handlerContinueButton"
       :showBackIcon="showBackIcon"
       :handlerBack="handlerBack"
       :closeForm="closeForm"
@@ -14,7 +14,7 @@
         <template v-if="step === 1">
           <Select v-model="selectedAssetId" :options="optionsCurrency" placeholder="CURRENCY" size="big" class="row" />
 
-          <Select v-model="selectedNetwork" :options="optionsNetwork" placeholder="NETWORK" size="big" class="row" />
+          <Select v-model="selectedNetwork" :options="optionsNetworks" placeholder="NETWORK" size="big" class="row" />
 
           <Input v-model="recipient" placeholder="SEND TO" size="big" class="row" />
 
@@ -91,6 +91,12 @@
       :firstNetwork="selectedNetwork"
       @close="confirmationPasswordPopupClose"
     />
+
+    <ExistentialPopup
+      v-if="showExistentialPopup"
+      :handlerClose="handlerCloseExistentialPopup"
+      :handlerAcceptButton="handlerAcceptExistentialPopup"
+    />
   </div>
 </template>
 
@@ -101,6 +107,7 @@ import ActivityForm from './ActivityForm.vue';
 import AmountInputs from './AmountInputs.vue';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import MaxButton from './MaxButton.vue';
+import ExistentialPopup from './ExistentialPopup.vue';
 import type { Currencies, Networks } from '@/interfaces';
 import type { GetAssetName } from '@/store/networks/types';
 import BaseApi from '@/util/BaseApi';
@@ -126,11 +133,13 @@ import { getCurrencyOptions } from '@/helpers/currencies';
     NetworkLogo,
     AmountInputs,
     ActivityForm,
+    ExistentialPopup,
     ConfirmationPasswordPopup,
   },
 })
 export default class SendForm extends Vue {
   isValidCountAssets = true;
+  showExistentialPopup = false;
   showConfirmationPasswordPopup = false;
   partialFee = '';
   selectedNetwork = '';
@@ -220,7 +229,7 @@ export default class SendForm extends Vue {
     return this.currencies.find(({ assetId }) => assetId === this.selectedAssetId);
   }
 
-  get optionsNetwork() {
+  get optionsNetworks() {
     const availableInNetworks = this.currency?.getAvailableInNetworks(this.selectedWallet);
 
     return availableInNetworks?.map(({ network, precision, type }) => ({
@@ -257,7 +266,7 @@ export default class SendForm extends Vue {
 
   @Watch('selectedAssetId')
   updateSelectedNetwork() {
-    this.selectedNetwork = this.optionsNetwork?.[0]?.value ?? '';
+    this.selectedNetwork = this.optionsNetworks?.[0]?.value ?? '';
     this.amount = '';
   }
 
@@ -273,7 +282,7 @@ export default class SendForm extends Vue {
     const partialFee = await this.createTransferAndGetFee();
 
     this.partialFee = partialFee;
-    this.isValidCountAssets = this.currency!.isValidCountAssets(
+    this.isValidCountAssets = this.currency!.validateCountAssets(
       this.amount,
       partialFee,
       this.selectedNetwork,
@@ -285,16 +294,16 @@ export default class SendForm extends Vue {
     this.selectedAssetId = this._selectedAssetId;
 
     this.$nextTick(() => {
-      const index = this.optionsNetwork?.findIndex(({ value }) => value === this._selectedNetwork);
+      const index = this.optionsNetworks?.findIndex(({ value }) => value === this._selectedNetwork);
 
-      this.selectedNetwork = index !== -1 ? this._selectedNetwork : this.optionsNetwork?.[0]?.value ?? '';
+      this.selectedNetwork = index !== -1 ? this._selectedNetwork : this.optionsNetworks?.[0]?.value ?? '';
     });
   }
 
   createTransferAndGetFee(amount?: string) {
-    const networkProps = this.optionsNetwork!.find(({ value }) => value === this.selectedNetwork)!;
+    const networkProps = this.optionsNetworks!.find(({ value }) => value === this.selectedNetwork)!;
 
-    this.currency!.createTransferExtrinsic(this.recipient, this.selectedNetwork, amount ?? this.amount, networkProps);
+    this.currency!.createTransferExtrinsic(this.recipient, amount ?? this.amount, networkProps);
 
     return this.currency!.getPartialFee(this.addressByNetwork, networkProps);
   }
@@ -333,7 +342,18 @@ export default class SendForm extends Vue {
     this.value = this.currency.getCostOfAssets(transferableCountAssets).toString();
   }
 
-  handlerButton() {
+  handlerContinueButton(skipWarning = false) {
+    if (!skipWarning && this.step === 1) {
+      this.showExistentialPopup = !this.currency!.validateExistentialDeposit(
+        this.selectedWallet,
+        this.selectedNetwork,
+        this.amount,
+        this.partialFee
+      );
+
+      if (this.showExistentialPopup) return;
+    }
+
     if (this.step === 2) {
       this.showConfirmationPasswordPopup = true;
 
@@ -341,6 +361,16 @@ export default class SendForm extends Vue {
     }
 
     this.step += 1;
+  }
+
+  handlerCloseExistentialPopup() {
+    this.showExistentialPopup = false;
+  }
+
+  handlerAcceptExistentialPopup() {
+    this.handlerContinueButton(true);
+
+    this.handlerCloseExistentialPopup();
   }
 }
 </script>

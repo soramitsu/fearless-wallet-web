@@ -46,6 +46,9 @@ const MOCK_PASSWORD = 'The wallet is already being used to replace other network
 
 const ALL_ASSETS_HIDDEN = 'You have hidden all assets.';
 
+const EXISTENTIAL_DEPOSIT_WARNING =
+  'This transaction will result in the account going below the Existential Deposit, which will cause it to be reaped (the account will be wiped from the blockchain’s state to conserve space). If you choose to continue you will lose any funds that are below the existential deposit amount set by the network. For detailed information please refer to the official network documentation (e.g., the Polkadot Wiki). Fearless Wallet is a fully non-custodial application and has no control or knowledge of any of your actions on the network itself. ONLY CONTINUE IF YOU FULLY AGREE TO AND UNDERSTAND THE IMPLICATIONS';
+
 type InvalidValueName = keyof typeof INVALID_MESSAGES | '';
 
 export {
@@ -55,6 +58,7 @@ export {
   EXPORT_WARNING,
   INVALID_MESSAGES,
   ALL_ASSETS_HIDDEN,
+  EXISTENTIAL_DEPOSIT_WARNING,
   EXPORT_ETHEREUM_WALLET_ERROR,
   InvalidValueName,
 };

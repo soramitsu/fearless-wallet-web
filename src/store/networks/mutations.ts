@@ -62,7 +62,7 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.UPDATE_CURRENCY_BALANCE](state, { walletAddress, network, assetId, balance, parentId, type }) {
     const { currencies, assetsJson, networks } = state;
-    const { symbol, precision } = assetsJson.find(({ id }) => id === assetId)!;
+    const { symbol, precision, existentialDeposit } = assetsJson.find(({ id }) => id === assetId)!;
     const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name;
 
     const currentCurrency = currencies.find(({ assetId: _assetId, asset, relayChain: _relayChain }) => {
@@ -72,7 +72,7 @@ const mutations: MutationTree<State> & Mutations = {
       return isExistingAssetId || isExistingSymbol;
     })!;
 
-    currentCurrency.updateCurrencyBalance({ walletAddress, network, balance, type, precision });
+    currentCurrency.updateCurrencyBalance({ walletAddress, network, balance, type, precision, existentialDeposit });
   },
 
   [MutationTypes.SET_HISTORY](state, { history, networkName, walletAddress, isPreviously, assetId }) {

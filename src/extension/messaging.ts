@@ -4,8 +4,8 @@
 import { metadataExpand } from '@polkadot/extension-chains';
 import { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
 import { selectableNetworks } from '@polkadot/networks';
-import { getId } from '@extension-base/utils';
-import { PORT_EXTENSION } from '@extension-base/defaults';
+import { getId } from './background/extension-base/src/utils';
+import { PORT_EXTENSION } from './background/extension-base/src/defaults';
 import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types';
 
 import type {

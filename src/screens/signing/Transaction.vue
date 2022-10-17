@@ -20,9 +20,9 @@
         v-if="isSignPopupVisible"
         text="Password for this account"
         sizeWidth="medium"
-        @close="onClose"
         :address="payload.address"
         :transactionId="request.id"
+        @close="onClose"
       />
 
       <Button size="big" class="button" text="Sign the transaction" @click="onSign" />

@@ -7,6 +7,7 @@ type TypeAsset = NetworkAssetsType | 'native';
 interface AvailableInNetworks {
   network: string;
   precision: number;
+  existentialDeposit?: string;
   type: TypeAsset;
   balance: AccountBalance;
 }

@@ -124,10 +124,10 @@ export default class Wallet extends Vue {
     const sequence = accountController.getSequenceAssetsByAddress(address);
 
     return this.currencies.sort((currency1, currency2) => {
-      const { displayName: displayName1, relayChain: relayChain1 } = currency1;
-      const { displayName: displayName2, relayChain: relayChain2 } = currency2;
-      const index1 = sequence.indexOf(`${displayName1}-${relayChain1}`);
-      const index2 = sequence.indexOf(`${displayName2}-${relayChain2}`);
+      const { assetId: assetId1 } = currency1;
+      const { assetId: assetId2 } = currency2;
+      const index1 = sequence.indexOf(assetId1);
+      const index2 = sequence.indexOf(assetId2);
 
       return index1 - index2;
     });
@@ -157,7 +157,7 @@ export default class Wallet extends Vue {
   get totalBalance() {
     const arr = this.sortedCurrencies.map((currency) => currency.getTotalBalance(this.selectedWallet));
 
-    return formattedNumber(+addNumbers(arr));
+    return formattedNumber(+addNumbers(arr), 2, false);
   }
 
   get totalPercent() {

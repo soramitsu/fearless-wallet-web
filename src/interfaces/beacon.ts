@@ -68,12 +68,15 @@ export interface SignerPayloadJSON {
   signedExtensions: string[];
   version: number;
 }
-export type BeaconPayloadJSON = Omit<SignerPayloadJSON, 'address'>;
+export interface PayloadJSON extends SignerPayloadJSON {
+  type: 'json';
+}
+export type BeaconPayloadJSON = Omit<PayloadJSON, 'address'>;
 export interface SubstrateSignPayloadRequest extends BlockchainRequestV3<'substrate'> {
   blockchainData: {
     type: SubstrateMessageType.sign_payload_request;
     scope: SubstratePermissionScope.sign_payload_json;
-    payload: string;
+    payload: BeaconPayloadJSON;
     mode: 'submit' | 'submit-and-return' | 'return';
   };
 }

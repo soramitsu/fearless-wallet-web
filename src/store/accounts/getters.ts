@@ -48,13 +48,14 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getAccounts]({ accounts }): Accounts {
     return accounts;
   },
+
   [GettersTypes.getAddresses]({ addresses }): Accounts {
     return addresses;
   },
+
   [GettersTypes.getWallets]({ addresses, accounts }): WalletInfo[] {
     const wallets: WalletInfo[] = [];
     const prepAccounts = { ...addresses, ...accounts };
-
     (Object.values(prepAccounts) as any).forEach((wallet: IWallet) => {
       if (wallet.type !== 'ethereum')
         wallets.push({

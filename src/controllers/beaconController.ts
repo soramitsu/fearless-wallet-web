@@ -26,15 +26,15 @@ import type {
 } from '@/interfaces';
 
 import { getTzip10Link } from '@/util/beacon';
-import { WALLET_ICON } from '@/consts/walletInformation';
 class BeaconController {
   private readonly app: DAppClient;
+  private qr = '';
   private serializer = new Serializer();
   private name = 'Fearless Wallet Extension';
+  public isConnected = false;
   private appMetaData: AppMetadata = {
     senderId: 'fearless-wallet-extension',
     name: this.name,
-    icon: WALLET_ICON,
   };
 
   constructor() {
@@ -63,6 +63,10 @@ class BeaconController {
     return new BeaconController();
   }
 
+  public status() {
+    console.info(this.app.connectionStatus);
+  }
+
   public getAccounts() {
     return this.app.getAccounts();
   }
@@ -88,17 +92,29 @@ class BeaconController {
     };
 
     await this.app.permissionRequest(config);
+    this.isConnected = true;
   }
 
   public init() {
     this.app.init();
   }
 
+  get beaconQR() {
+    return this.qr;
+  }
+
+  set beaconQR(payload: string) {
+    this.qr = payload;
+  }
+
   public async onPairingRequest(callback: (payload: string) => void) {
+    this.status();
     this.app.subscribeToEvent(BeaconEvent.PAIR_INIT, async (data) => {
       const code = await this.serializer.serialize(await data.p2pPeerInfo());
       const uri = getTzip10Link('tezos://', code);
-      if (callback) callback(uri);
+      localStorage.setItem('beaconQR', uri);
+      this.beaconQR = uri;
+      callback(uri);
     });
   }
 
@@ -107,10 +123,12 @@ class BeaconController {
   }
 
   public async onBlockChainRequest(callback: TCallback<SignResponse>) {
+    this.status();
     this.app.subscribeToEvent(BeaconEvent.SIGN_REQUEST_SUCCESS, callback);
   }
 
   public async onPermissionRequest(callback: TCallback<RequestSentInfo>) {
+    this.status();
     this.app.subscribeToEvent(BeaconEvent.PERMISSION_REQUEST_SENT, callback);
   }
 
@@ -144,7 +162,7 @@ class BeaconController {
       accountId: activeAccount.accountIdentifier,
       blockchainData: {
         ...payload,
-        mode: 'return',
+        mode: 'submit-and-return',
         type: SubstrateMessageType.transfer_request,
         scope: SubstratePermissionScope.transfer,
       },
@@ -152,7 +170,7 @@ class BeaconController {
       type: BeaconMessageType.BlockchainRequest,
     };
 
-    return this.app.request(request);
+    const response = await this.app.request(request);
   }
 
   public async sendRequest(payload: BeaconPayloadJSON) {
@@ -163,7 +181,7 @@ class BeaconController {
       accountId: activeAccount.accountIdentifier,
       blockchainData: {
         mode: 'submit-and-return',
-        payload: JSON.stringify(payload),
+        payload: payload,
         type: SubstrateMessageType.sign_payload_request,
         scope: SubstratePermissionScope.sign_payload_json,
       },

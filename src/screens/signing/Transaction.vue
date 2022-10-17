@@ -29,7 +29,6 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { SigningRequest } from '@extension-base/background/types';
-import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { registry } from '@/extension/background/extension-base/src/background/handlers/State';
 import { beaconController } from '@/controllers/beaconController';
@@ -45,7 +44,7 @@ import AboveForm from '@/components/AboveForm.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { GettersTypes as SignGettersTypes } from '@/store/sign/getters';
 import { ActionTypes as SignActionsTypes } from '@/store/sign/actions';
-import { TAction } from '@/interfaces';
+import { TAction, SignerPayloadJSON, BeaconPayloadJSON } from '@/interfaces';
 
 @Component({
   components: {
@@ -75,7 +74,7 @@ export default class Auth extends Vue {
   }
 
   get isMobileSignRequired() {
-    const substrateAddress = BaseApi.encodeAddress(this.payload.address, 42);
+    const substrateAddress = BaseApi.encodeAddress(this.payload.address as string, 42);
 
     return BaseApi.getAddress(substrateAddress);
   }
@@ -114,8 +113,9 @@ export default class Auth extends Vue {
 
   async onSignMobile() {
     console.info('sign with mobile');
-
-    await beaconController.sendRequest(this.payload);
+    const payload = this.payload;
+    delete payload.address;
+    await beaconController.sendRequest(this.payload as unknown as BeaconPayloadJSON);
   }
 
   onClose() {

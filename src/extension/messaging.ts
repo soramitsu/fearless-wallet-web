@@ -197,7 +197,7 @@ export async function createAccountSuri(
   return sendMessage('pri(accounts.create.suri)', { genesisHash, name, password, suri, type });
 }
 
-export async function createAddress(meta: KeyringPair$Meta, address: string): Promise<boolean> {
+export async function createAddress(address: string, meta: KeyringPair$Meta): Promise<boolean> {
   return sendMessage('pri(addresses.create)', { meta, address });
 }
 

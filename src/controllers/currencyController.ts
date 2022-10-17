@@ -375,7 +375,7 @@ export default class CurrencyController {
     const pair = BaseApi.getPair(from);
 
     try {
-      const unsubscribe = await this.extrinsic!.signAndSend(pair, this.options, ({ status }) => {
+      const unsubscribe = await this.extrinsic!.signAndSend(pair, ({ status }) => {
         //eslint-disable-line
         if (status.isInBlock) {
           console.info(`Successful transfer of ${amount} with hash ${status.asInBlock.toHex()}`);

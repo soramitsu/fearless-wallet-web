@@ -56,7 +56,14 @@
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 
-import type { Currencies, Currency, RequestSentInfo, TAction, SignerPayloadJSON } from '@/interfaces';
+import type {
+  Currencies,
+  Currency,
+  RequestSentInfo,
+  TAction,
+  SignerPayloadJSON,
+  BeaconPayloadJSON,
+} from '@/interfaces';
 import { beaconController } from '@/controllers/beaconController';
 import { isSignLocked } from '@/extension/messaging';
 import { isExtension } from '@/helpers/common';
@@ -126,11 +133,11 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async signMobile() {
-    const payload = this.payload;
-    if (payload?.address) delete payload.address;
-
+    const payload: BeaconPayloadJSON = this.payload as any;
+    delete (payload as any).address;
+    if (payload) payload.type = 'json';
     if (!this.transactionId) this.$emit('transferMobile');
-    else if (payload) await beaconController.sendRequest(payload);
+    else if (payload) await beaconController.sendRequest(payload as unknown as BeaconPayloadJSON);
     // approveSignSignature(this.transactionId, res.signature);
   }
 
@@ -186,7 +193,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     this.loading = true;
     this.transactionState = 'pending';
 
-    if (this.transactionId && !this.isSignMobile) {
+    if (this.transactionId) {
       await this.onSignApprove({
         id: this.transactionId,
         isSavePass: this.isSavePass,

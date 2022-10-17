@@ -48,7 +48,6 @@ export default class App extends Vue {
 
   async mounted() {
     const { subscribeToBalancesOfNetworks } = NetworksController;
-
     if (isExtension()) await Promise.all([this.authSubscribe(), this.metaSubscribe(), this.signSubscribe()]);
 
     this.subscribeAccounts = BaseApi.getAccountsSubject();

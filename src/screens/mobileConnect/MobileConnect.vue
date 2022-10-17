@@ -75,7 +75,7 @@ export default class MobileConnect extends Vue {
 
   async mounted() {
     const activeAccount = await beaconController.getActiveAccount();
-    console.log(activeAccount, 'active');
+    beaconController.status();
 
     if (activeAccount) {
       this.isActiveAccountExists = true;
@@ -93,7 +93,7 @@ export default class MobileConnect extends Vue {
     beaconController.onPermissionRequest(this.onPermissionRequest);
     beaconController.onPermissionsResponse(this.onPermissionResponse);
     beaconController.onPermissionsError((payload) => {
-      console.log('PERMISSION ERROR', payload);
+      console.info('PERMISSION ERROR', payload);
     });
   }
 
@@ -123,6 +123,7 @@ export default class MobileConnect extends Vue {
 
   async onPairingRequest(payload: string) {
     this.qrPayload = payload;
+    localStorage.setItem('beaconQR', payload);
   }
 
   async onPermissionRequest(payload: RequestSentInfo) {
@@ -150,7 +151,7 @@ export default class MobileConnect extends Vue {
 
     BaseApi.saveAddress(substrateAccount, meta);
 
-    await createAddress(meta, substrateAccount); //extenstion service worker
+    await createAddress(substrateAccount, meta); //extenstion service worker
 
     this.setSelectedWallet({ selectedWalletAddress: substrateAccount });
 

@@ -38,7 +38,7 @@
       <Button
         class="import-button"
         width="100%"
-        text="Connect with Mobile Wallet"
+        text="Connect Mobile Wallet"
         size="big"
         fontSize="big"
         type="secondary"
@@ -65,7 +65,7 @@ import CircleButton from '@/components/CircleButton.vue';
 import BaseApi from '@/util/BaseApi';
 import { TERMS_URL, PRIVACY_URL } from '@/consts/urls';
 import AboveForm from '@/components/AboveForm.vue';
-import BeaconConnect from '@/screens/beaconUI/BeaconConnect.vue';
+import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
 import { isExtension } from '@/helpers/common';
 
 @Component({
@@ -73,12 +73,12 @@ import { isExtension } from '@/helpers/common';
     Logo,
     Button,
     CircleButton,
-    BeaconConnect,
+    MobileConnect,
     AboveForm,
   },
 })
 export default class Welcome extends Vue {
-  store: any;
+  store: unknown;
 
   get showBackWalletIcon() {
     return BaseApi.getAccounts().length !== 0;
@@ -106,7 +106,7 @@ export default class Welcome extends Vue {
 
   openAddWalletMobile() {
     this.$router.push({
-      name: Components.BeaconConnect,
+      name: Components.MobileConnect,
     });
   }
 }
@@ -148,5 +148,3 @@ export default class Welcome extends Vue {
   }
 }
 </style>
-
-function encodeAddress(address: PermissionSuccess, arg1: number) { throw new Error('Function not implemented.'); }

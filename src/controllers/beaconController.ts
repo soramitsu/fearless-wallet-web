@@ -9,6 +9,7 @@ import {
   defaultEventCallbacks,
   Serializer,
   AccountInfo,
+  AppMetadata,
 } from '@airgap/beacon-sdk';
 import type {
   PermissionErrorPayload,
@@ -21,23 +22,26 @@ import type {
   SubstrateTransferRequest,
   TCallback,
   TransferPayload,
-  SignerPayloadJSON,
+  BeaconPayloadJSON,
 } from '@/interfaces';
 
 import { getTzip10Link } from '@/util/beacon';
-
+import { WALLET_ICON } from '@/consts/walletInformation';
 class BeaconController {
   private readonly app: DAppClient;
-  public serializer = new Serializer();
+  private serializer = new Serializer();
   private name = 'Fearless Wallet Extension';
+  private appMetaData: AppMetadata = {
+    senderId: 'fearless-wallet-extension',
+    name: this.name,
+    icon: WALLET_ICON,
+  };
+
   constructor() {
     this.app = getDAppClientInstance({
       name: 'Fearless Wallet Extension',
       disableDefaultEvents: true,
       eventHandlers: {
-        [BeaconEvent.PERMISSION_REQUEST_ERROR]: {
-          handler: defaultEventCallbacks.PERMISSION_REQUEST_ERROR,
-        },
         [BeaconEvent.SIGN_REQUEST_SENT]: {
           handler: defaultEventCallbacks.SIGN_REQUEST_SENT,
         },
@@ -55,40 +59,42 @@ class BeaconController {
     this.app.addBlockchain(substrateBlockchain);
   }
 
-  static create() {
+  public static create() {
     return new BeaconController();
   }
 
-  getAccounts() {
+  public getAccounts() {
+    return this.app.getAccounts();
+  }
+
+  public getActiveAccount() {
     return this.app.getActiveAccount();
   }
 
-  async resetConnection() {
-    await this.app.setActiveAccount();
+  public async resetConnection() {
+    await this.app.removeAllAccounts();
     await this.app.disconnect();
   }
 
-  async connect() {
+  public async connect() {
     const config: SubstratePermissionRequest = {
-      blockchainData: {
-        appMetadata: {
-          senderId: 'sender',
-          name: this.name,
-        },
-        networks: [
-          { genesisHash: '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3' },
-          // { genesisHash: '0x7e6b3bbed86828a558271c9c9f62354b1d8b5aa15ff85fd6f1e7cbe9af9dde7e' },
-        ],
-        scopes: [SubstratePermissionScope.transfer, SubstratePermissionScope.sign_payload_json],
-      },
       blockchainIdentifier: 'substrate',
       type: BeaconMessageType.PermissionRequest,
+      blockchainData: {
+        appMetadata: this.appMetaData,
+        networks: [{ genesisHash: '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3' }],
+        scopes: [SubstratePermissionScope.transfer, SubstratePermissionScope.sign_payload_json],
+      },
     };
 
     await this.app.permissionRequest(config);
   }
 
-  async onPairingRequest(callback: (payload: string) => void) {
+  public init() {
+    this.app.init();
+  }
+
+  public async onPairingRequest(callback: (payload: string) => void) {
     this.app.subscribeToEvent(BeaconEvent.PAIR_INIT, async (data) => {
       const code = await this.serializer.serialize(await data.p2pPeerInfo());
       const uri = getTzip10Link('tezos://', code);
@@ -96,39 +102,40 @@ class BeaconController {
     });
   }
 
-  async onSignRequest(callback: TCallback<RequestSentInfo>) {
+  public async onSignRequest(callback: TCallback<RequestSentInfo>) {
     this.app.subscribeToEvent(BeaconEvent.SIGN_REQUEST_SENT, callback);
   }
 
-  async onBlockChainRequest(callback: TCallback<SignResponse>) {
+  public async onBlockChainRequest(callback: TCallback<SignResponse>) {
     this.app.subscribeToEvent(BeaconEvent.SIGN_REQUEST_SUCCESS, callback);
   }
 
-  async onPermissionRequest(callback: TCallback<RequestSentInfo>) {
+  public async onPermissionRequest(callback: TCallback<RequestSentInfo>) {
     this.app.subscribeToEvent(BeaconEvent.PERMISSION_REQUEST_SENT, callback);
   }
 
-  async onPermissionsResponse(callback: TCallback<PermissionSuccess>) {
+  public async onPermissionsResponse(callback: TCallback<PermissionSuccess>) {
     this.app.subscribeToEvent(BeaconEvent.PERMISSION_REQUEST_SUCCESS, callback);
   }
 
-  async onPermissionsError(callback: TCallback<PermissionErrorPayload>) {
+  public async onPermissionsError(callback: TCallback<PermissionErrorPayload>) {
     this.app.subscribeToEvent(BeaconEvent.PERMISSION_REQUEST_ERROR, callback);
   }
 
-  disconnect() {
+  public disconnect() {
     this.app.disconnect();
+    this.app.removeAllPeers();
   }
 
-  setActiveAccount(account: AccountInfo) {
+  public setActiveAccount(account: AccountInfo) {
     this.app.setActiveAccount(account);
   }
 
-  removeActiveAccount() {
+  public removeActiveAccount() {
     this.app.clearActiveAccount();
   }
 
-  async sendTransfer(payload: TransferPayload) {
+  public async sendTransfer(payload: TransferPayload) {
     const activeAccount = await this.app.getActiveAccount();
 
     if (!activeAccount) throw new Error('Beacon not set up.');
@@ -148,7 +155,7 @@ class BeaconController {
     return this.app.request(request);
   }
 
-  async sendRequest(payload: SignerPayloadJSON) {
+  public async sendRequest(payload: BeaconPayloadJSON) {
     const activeAccount = await this.app.getActiveAccount();
 
     if (!activeAccount) throw new Error('Beacon not set up.');
@@ -156,7 +163,7 @@ class BeaconController {
       accountId: activeAccount.accountIdentifier,
       blockchainData: {
         mode: 'submit-and-return',
-        payload,
+        payload: JSON.stringify(payload),
         type: SubstrateMessageType.sign_payload_request,
         scope: SubstratePermissionScope.sign_payload_json,
       },

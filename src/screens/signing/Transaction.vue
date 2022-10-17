@@ -29,7 +29,6 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { SigningRequest } from '@extension-base/background/types';
-import { encodeAddress } from '@polkadot/util-crypto';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { registry } from '@/extension/background/extension-base/src/background/handlers/State';
@@ -76,7 +75,7 @@ export default class Auth extends Vue {
   }
 
   get isMobileSignRequired() {
-    const substrateAddress = encodeAddress(this.payload.address, 42);
+    const substrateAddress = BaseApi.encodeAddress(this.payload.address, 42);
 
     return BaseApi.getAddress(substrateAddress);
   }

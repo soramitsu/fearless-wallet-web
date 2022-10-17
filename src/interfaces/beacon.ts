@@ -62,18 +62,18 @@ export interface SignerPayloadJSON {
   genesisHash: string;
   method: string;
   nonce: string;
-  specVersion?: string;
+  specVersion: string;
   tip: string;
   transactionVersion: string;
   signedExtensions: string[];
   version: number;
 }
-
+export type BeaconPayloadJSON = Omit<SignerPayloadJSON, 'address'>;
 export interface SubstrateSignPayloadRequest extends BlockchainRequestV3<'substrate'> {
   blockchainData: {
     type: SubstrateMessageType.sign_payload_request;
     scope: SubstratePermissionScope.sign_payload_json;
-    payload: SignerPayloadJSON;
+    payload: string;
     mode: 'submit' | 'submit-and-return' | 'return';
   };
 }

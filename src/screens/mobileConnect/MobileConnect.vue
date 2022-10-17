@@ -5,7 +5,9 @@
       <QR :payload="qrPayload" />
     </template>
 
-    <div v-if="!qrPayload" class="loader">
+    <Alert v-else-if="isActiveAccountExists" :message="activeAccountExistMessage" />
+
+    <div v-else-if="isLoading" class="loader">
       <Loader />
     </div>
 
@@ -13,7 +15,7 @@
 
     <template v-if="isPermissionsGranted">
       <div class="permission__content">
-        <Alert v-if="isWalletAlreadyExist" />
+        <Alert v-if="isWalletAlreadyExists" />
 
         <InfoList v-else>
           <InfoItem name="address" :value="requestResponse.address" />
@@ -30,7 +32,6 @@
 import { Vue, Component } from 'vue-property-decorator';
 import { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import { Action } from 'vuex-class';
-import { encodeAddress } from '@polkadot/util-crypto';
 import { PermissionResponseOutput } from '@airgap/beacon-sdk';
 import type { SetSelectedWallet } from '@/store/accounts/types';
 import { PermissionSuccess, TAction, RequestSentInfo } from '@/interfaces';
@@ -43,22 +44,23 @@ import Button from '@/components/Button.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import QR from '@/components/QR.vue';
 import Loader from '@/components/Loader.vue';
-import PermissionRequest from '@/screens/beaconUI/PermissionRequest.vue';
+import PermissionRequest from '@/screens/mobileConnect/PermissionRequest.vue';
 import InfoList from '@/layouts/InfoList.vue';
 import InfoItem from '@/screens/signing/InfoItem.vue';
-
+import Alert from '@/components/Alert.vue';
 @Component({
   components: {
     Loader,
     QR,
     InfoList,
     InfoItem,
+    Alert,
     Button,
     AboveForm,
     PermissionRequest,
   },
 })
-export default class BeaconConnect extends Vue {
+export default class MobileConnect extends Vue {
   @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
 
   qrPayload = '';
@@ -66,33 +68,49 @@ export default class BeaconConnect extends Vue {
   requestInfo: RequestSentInfo | null = null;
   requestResponse: PermissionResponseOutput | null = null;
   qrCodeHeader = 'Scan the QR code using the Fearless mobile app';
+  activeAccountExistMessage = 'There is an active connection, please delete mobile wallet and try again';
   isPermissionsGranted = false;
-  isWalletAlreadyExist = false;
+  isWalletAlreadyExists = false;
+  isActiveAccountExists = false;
 
   async mounted() {
-    beaconController.connect();
+    const activeAccount = await beaconController.getActiveAccount();
+    console.log(activeAccount, 'active');
+
+    if (activeAccount) {
+      this.isActiveAccountExists = true;
+
+      return;
+    }
+
     this.initBeaconEvents();
+
+    beaconController.connect();
   }
 
   initBeaconEvents() {
     beaconController.onPairingRequest(this.onPairingRequest);
     beaconController.onPermissionRequest(this.onPermissionRequest);
     beaconController.onPermissionsResponse(this.onPermissionResponse);
+    beaconController.onPermissionsError((payload) => {
+      console.log('PERMISSION ERROR', payload);
+    });
+  }
+
+  get isLoading() {
+    return !this.qrPayload && !this.isActiveAccountExists;
   }
 
   get isAwaitWalletResponse() {
-    return this.requestInfo && !this.isPermissionsGranted;
+    return this.requestInfo && !this.isPermissionsGranted && !this.isActiveAccountExists;
   }
 
   get isQRPrep() {
     return !this.requestInfo && this.qrPayload;
   }
 
-  get isRequestSend() {
-    return !this.requestInfo && this.qrPayload;
-  }
-
   close() {
+    beaconController.disconnect();
     this.$router.push({ name: Components.Wallet });
   }
 
@@ -118,10 +136,10 @@ export default class BeaconConnect extends Vue {
   async onPermissionResponse(payload: PermissionSuccess) {
     this.isPermissionsGranted = true;
 
-    const substrateAccount = encodeAddress(payload.account.address);
+    const substrateAccount = BaseApi.encodeAddress(payload.account.address);
 
     if (BaseApi.getAddressType(substrateAccount)) {
-      this.isWalletAlreadyExist = true;
+      this.isWalletAlreadyExists = true;
 
       return;
     }

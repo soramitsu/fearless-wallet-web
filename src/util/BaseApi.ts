@@ -85,7 +85,7 @@ export default class BaseApi {
   }
 
   public static getAddressType(address: string) {
-    const substrateAddress = encodeAddress(address, 42);
+    const substrateAddress = BaseApi.encodeAddress(address, 42);
 
     if (BaseApi.getAddress(substrateAddress)) return 'address';
     if (BaseApi.getAccount(substrateAddress)) return 'account';
@@ -355,10 +355,14 @@ export default class BaseApi {
       const network = networks.find(({ name }) => name === networkName);
       const prefix = network?.addressPrefix;
 
-      return encodeAddress(publicKey, prefix);
+      return BaseApi.encodeAddress(publicKey, prefix);
     } catch {
       return ethereumAddress;
     }
+  }
+
+  public static encodeAddress(publicKey: string | Uint8Array, prefix = 42) {
+    return encodeAddress(publicKey, prefix);
   }
 
   public static unlockPair(address: string, password: string): boolean {

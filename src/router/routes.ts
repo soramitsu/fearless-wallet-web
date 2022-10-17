@@ -14,7 +14,7 @@ import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import Main from '@/screens/main/Main.vue';
 import Crowdloans from '@/screens/crowdloans/Crowdloans.vue';
 
-const BeaconConnect = () => import('@/screens/beaconUI/BeaconConnect.vue');
+const MobileConnect = () => import('@/screens/mobileConnect/MobileConnect.vue');
 const ManageAuths = () => import('@/screens/authorize/ManageAuths.vue');
 const Authorize = () => import('@/screens/authorize/Authorize.vue');
 const Transaction = () => import('@/screens/signing/Transaction.vue');
@@ -26,7 +26,7 @@ import store from '@/store';
 export enum Components {
   Welcome = 'Welcome',
   AddWallet = 'AddWallet',
-  BeaconConnect = 'BeaconConnect',
+  MobileConnect = 'MobileConnect',
   Main = 'Main',
   Wallet = 'Wallet',
   Crowdloans = 'Crowdloans',
@@ -63,8 +63,8 @@ const routes: Array<RouteConfig> = [
   },
   {
     path: ' /add-mobile-wallet',
-    name: Components.BeaconConnect,
-    component: BeaconConnect,
+    name: Components.MobileConnect,
+    component: MobileConnect,
   },
   {
     path: '/authorize',

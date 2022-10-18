@@ -54,7 +54,7 @@ export default class AboveForm extends Vue {
 .above-form-background {
   @include opacity;
 
-  height: $extension-height;
+  height: 100%;
   width: $extension-width;
   position: absolute;
   top: 0;
@@ -83,7 +83,7 @@ export default class AboveForm extends Vue {
 
     .content {
       height: calc(100% - 80px);
-      padding: $default-padding;
+      padding: $default-padding $default-padding 0;
     }
 
     .s-icon-basic-close-24 {

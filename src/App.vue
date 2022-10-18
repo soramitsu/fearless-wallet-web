@@ -119,7 +119,7 @@ body {
   font-feature-settings: 'tnum' on, 'lnum' on;
   min-height: $extension-height;
   min-width: $extension-width;
-  height: $extension-height;
+  height: 100%;
   width: $extension-width;
   color: white;
   text-align: center;

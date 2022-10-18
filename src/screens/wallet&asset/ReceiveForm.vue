@@ -1,17 +1,29 @@
 <template>
-  <ActivityForm header="Receive Funds" :closeForm="closeForm" :showButton="false" class="receive-form">
+  <ActivityForm
+    class="receive-form"
+    header="Receive Funds"
+    iconName="share"
+    iconNameTwo="receive-white"
+    buttonText="Copy QR-code"
+    buttonTextTwo="Save QR-code image"
+    :closeForm="closeForm"
+    :handlerButton="shareQR"
+    :handlerButtonTwo="saveQR"
+  >
     <Select v-model="network" :options="optionsNetwork" placeholder="NETWORK" size="big" class="row" />
 
     <div class="receive-content">
-      <div class="address">{{ address }}</div>
+      <div class="address-wrapper">
+        <span>Wallet address</span>
 
-      <div class="button" @click="copyAddress">
-        <img src="@/assets/copy-lavender.svg" class="icon" />
+        <div class="address">
+          {{ cutAddress }}
 
-        Copy address
+          <img src="@/assets/copy.svg" class="copy-icon" @click="copyAddress" />
+        </div>
       </div>
 
-      <QR :payload="address" :width="200" foreground="#bb77ff" />
+      <QR class="qr" ref="qr" :width="200" :payload="address" />
     </div>
   </ActivityForm>
 </template>
@@ -19,6 +31,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import { saveAs } from 'file-saver';
 import ActivityForm from './ActivityForm.vue';
 import type { Networks } from '@/interfaces/networks';
 import BaseApi from '@/util/BaseApi';
@@ -29,13 +42,14 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { firstCharToUp } from '@/helpers/common';
 import QR from '@/components/QR.vue';
+import { cut } from '@/helpers/history';
 
 @Component({
   components: {
-    ActivityForm,
     QR,
     Select,
     Button,
+    ActivityForm,
   },
 })
 export default class ReceiveForm extends Vue {
@@ -56,12 +70,41 @@ export default class ReceiveForm extends Vue {
     return BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.network);
   }
 
+  get cutAddress() {
+    return cut(this.address, 5);
+  }
+
   mounted() {
     this.network = this.selectedNetwork;
   }
 
   copyAddress() {
     navigator.clipboard.writeText(this.address);
+  }
+
+  createBlob() {
+    const imgQR = (this.$refs.qr as Vue).$el;
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    canvas.width = imgQR.clientWidth;
+    canvas.height = imgQR.clientHeight;
+
+    context?.drawImage(imgQR as CanvasImageSource, 0, 0);
+
+    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  }
+
+  async shareQR() {
+    navigator.clipboard.write([
+      new ClipboardItem({
+        'image/png': this.createBlob() as Promise<Blob>,
+      }),
+    ]);
+  }
+
+  async saveQR() {
+    saveAs((await this.createBlob()) as Blob, `${this.address}.png`);
   }
 }
 </script>
@@ -76,10 +119,17 @@ export default class ReceiveForm extends Vue {
     height: 100%;
   }
 
-  .address {
+  .address-wrapper {
+    display: flex;
+    justify-content: space-between;
+    padding: 16px 16px;
+    width: 100%;
     color: rgba(255, 255, 255, 0.75);
-    font-size: 14px;
-    margin-top: 25px;
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+
+    .address {
+      display: flex;
+    }
   }
 
   .button {
@@ -93,15 +143,21 @@ export default class ReceiveForm extends Vue {
     opacity: 0.95;
     margin-top: 10px;
     user-select: none;
+  }
+
+  .copy-icon {
+    margin-left: 16px;
+    filter: invert(0.35);
 
     &:hover {
       cursor: pointer;
-      opacity: 1;
-    }
 
-    .icon {
-      margin-right: 5px;
+      filter: invert(0.25);
     }
+  }
+
+  .qr {
+    margin: 16px 0;
   }
 }
 </style>

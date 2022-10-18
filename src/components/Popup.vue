@@ -240,7 +240,7 @@ export default class Popup extends Vue {
 }
 
 .popup-background-show {
-  height: $extension-height;
+  height: 100%;
   width: $extension-width;
   padding: $default-padding;
 }

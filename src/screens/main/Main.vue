@@ -132,7 +132,7 @@ export default class Main extends Vue {
 
   .main-child {
     height: $default-height-page;
-    width: $extension-height;
+    width: 100%;
   }
 }
 </style>

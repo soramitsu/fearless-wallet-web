@@ -72,13 +72,11 @@ export interface PayloadJSON extends SignerPayloadJSON {
   type: 'json';
 }
 
-export type BeaconPayloadJSON = Omit<PayloadJSON, 'address'>;
-
 export interface SubstrateSignPayloadRequest extends BlockchainRequestV3<'substrate'> {
   blockchainData: {
     type: SubstrateMessageType.sign_payload_request;
     scope: SubstratePermissionScope.sign_payload_json;
-    payload: BeaconPayloadJSON;
+    payload: PayloadJSON;
     mode: 'return';
   };
 }

@@ -44,7 +44,7 @@ import AboveForm from '@/components/AboveForm.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { GettersTypes as SignGettersTypes } from '@/store/sign/getters';
 import { ActionTypes as SignActionsTypes } from '@/store/sign/actions';
-import { TAction, SignerPayloadJSON, BeaconPayloadJSON } from '@/interfaces';
+import { TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
 
 @Component({
   components: {
@@ -115,7 +115,7 @@ export default class Auth extends Vue {
     console.info('sign with mobile');
     const payload = this.payload;
     delete payload.address;
-    await beaconController.sendRequestJSON(this.payload as unknown as BeaconPayloadJSON);
+    await beaconController.sendRequestJSON(this.payload as unknown as PayloadJSON);
   }
 
   onClose() {

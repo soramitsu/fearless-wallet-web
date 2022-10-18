@@ -12,6 +12,7 @@ import {
   AppMetadata,
 } from '@airgap/beacon-sdk';
 import type {
+  PayloadJSON,
   PermissionErrorPayload,
   PermissionSuccess,
   RequestSentInfo,
@@ -20,7 +21,6 @@ import type {
   SubstrateSignPayloadRequest,
   SubstrateSignPayloadResponse,
   TCallback,
-  BeaconPayloadJSON,
 } from '@/interfaces';
 
 import { getTzip10Link } from '@/util/beacon';
@@ -151,7 +151,7 @@ class BeaconController {
     this.app.clearActiveAccount();
   }
 
-  public async sendRequestJSON(payload: BeaconPayloadJSON) {
+  public async sendRequestJSON(payload: PayloadJSON) {
     const activeAccount = await this.app.getActiveAccount();
 
     if (!activeAccount) throw new Error('Beacon not set up.');

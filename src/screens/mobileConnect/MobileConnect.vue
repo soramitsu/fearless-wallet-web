@@ -15,7 +15,7 @@
 
     <template v-if="isPermissionsGranted">
       <div class="permission__content">
-        <Alert v-if="isWalletAlreadyExists" />
+        <Alert v-if="isWalletAlreadyExists" :message="accountAlreadyExistMessage" />
 
         <InfoList v-else>
           <InfoItem name="address" :value="requestResponse.address" />
@@ -72,7 +72,8 @@ export default class MobileConnect extends Vue {
   requestInfo: RequestSentInfo | null = null;
   requestResponse: PermissionResponseOutput | null = null;
   qrCodeHeader = 'Scan the QR code using the Fearless mobile app';
-  activeAccountExistMessage = 'There is an active connection, please delete mobile wallet and try again';
+  activeMobileAccountExistMessage = 'There is an active connection, please delete mobile wallet and try again';
+  accountAlreadyExistMessage = 'You already have this wallet';
   isPermissionsGranted = false;
   isWalletAlreadyExists = false;
   isActiveAccountExists = false;
@@ -85,8 +86,6 @@ export default class MobileConnect extends Vue {
         genesisHash: `0x${el.chainId}`,
       };
     });
-    const uniqGenesisHashes = [...prepnetworks.reduce((map, obj) => map.set(obj.genesisHash, obj), new Map()).values()];
-    console.log(uniqGenesisHashes, 'uniq');
 
     if (activeAccount) {
       this.isActiveAccountExists = true;
@@ -152,6 +151,7 @@ export default class MobileConnect extends Vue {
 
     if (BaseApi.getAddressType(substrateAccount)) {
       this.isWalletAlreadyExists = true;
+      beaconController.resetConnection();
 
       return;
     }

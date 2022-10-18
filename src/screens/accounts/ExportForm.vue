@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="Export JSON" :closeHandler="closeForm">
+  <AboveForm header="Export JSON" :blur="true" :closeHandler="closeForm">
     <div class="export-form">
       <div class="export-content">
         <Input v-model="exportType" placeholder="Source type" size="big" class="export-type-input" :readonly="true" />

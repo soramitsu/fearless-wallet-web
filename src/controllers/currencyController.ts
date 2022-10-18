@@ -24,11 +24,12 @@ import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { FPNumber } from '@/util/fp';
 import { getReplacedMetaTyped } from '@/helpers/common';
 import { getOptions } from '@/util/assets';
-import { beaconSigner, BeaconSigner } from '@/extension/background/extension-base/src/background/BeaconSigner';
+import { BeaconSigner } from '@/extension/background/extension-base/src/background/BeaconSigner';
 
 type NetworkProps = {
   label: string;
   value: string;
+  existentialDeposit?: string;
   precision: number;
   type: TypeAsset;
 };
@@ -84,7 +85,7 @@ export default class CurrencyController {
     }, {} as Record<string, string>);
 
     return availableInNetworks.map((item) => {
-      const { network, type, precision } = item;
+      const { network, type, precision, existentialDeposit } = item;
       let { balance } = item;
 
       const replacedAddress = replacedNetworks[network];
@@ -98,7 +99,7 @@ export default class CurrencyController {
         balance = replacedBalance;
       }
 
-      return { network, balance, type, precision };
+      return { network, balance, type, precision, existentialDeposit };
     });
   }
 
@@ -141,7 +142,14 @@ export default class CurrencyController {
     return addressByNetwork;
   }
 
-  public updateCurrencyBalance({ walletAddress, network, balance, type, precision }: Record<string, any>): void {
+  public updateCurrencyBalance({
+    walletAddress,
+    network,
+    balance,
+    type,
+    precision,
+    existentialDeposit,
+  }: Record<string, any>): void {
     const { frozen, locked, reserved, total, transferable } = balance;
     const oldBalances = { ...this.balances };
     let balancesForAddress = oldBalances[walletAddress];
@@ -149,6 +157,7 @@ export default class CurrencyController {
     const newValue = {
       network,
       precision,
+      existentialDeposit,
       type: type ?? 'native',
       balance: {
         frozen: FPNumber.fromCodecValue(frozen, precision),
@@ -189,16 +198,19 @@ export default class CurrencyController {
     return balance.transferable.toString();
   }
 
-  public getTransferableCountAssetsMinusFee(fee: string, networkProp: string, wallet: Wallet): FPNumber {
-    const FPFee = new FPNumber(fee);
+  public getTransferableCountAssetsMinusFee(fee: string, _network: string, wallet: Wallet): FPNumber {
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
-    const { transferable } = availableInNetworks.find(({ network }) => network === networkProp)!.balance;
+    const {
+      precision,
+      balance: { transferable },
+    } = availableInNetworks.find(({ network }) => network === _network)!;
+    const FPFee = new FPNumber(fee, precision);
     const result = transferable.sub(FPFee);
 
     return FPNumber.lt(result, FPNumber.ZERO) ? FPNumber.ZERO : result;
   }
 
-  public isValidCountAssets(count: string, fee: string, network: string, wallet: Wallet): boolean {
+  public validateCountAssets(count: string, fee: string, network: string, wallet: Wallet): boolean {
     const transferableCountAssetsMinusFee = this.getTransferableCountAssetsMinusFee(fee, network, wallet);
 
     return FPNumber.lte(new FPNumber(count), transferableCountAssetsMinusFee);
@@ -207,13 +219,14 @@ export default class CurrencyController {
   public getAvailableInNetworks(wallet: Wallet): AvailableInNetworks[] {
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
 
-    return availableInNetworks.map(({ balance, network, type, precision }) => {
+    return availableInNetworks.map(({ balance, network, type, precision, existentialDeposit }) => {
       const { frozen, locked, reserved, total, transferable } = balance;
 
       return {
         network,
         type,
         precision,
+        existentialDeposit,
         balance: {
           frozen: frozen.toString(),
           locked: locked.toString(),
@@ -265,19 +278,41 @@ export default class CurrencyController {
     this.lsCurrency.set(this.visibleStorageName, this.currenciesVisible);
   }
 
-  public getPrecisionValue(amount: string, precision: number): string {
-    const value = amount === '' ? 0 : +amount;
+  public getPrecisionValue(_amount: string, precision: number, returnFPNumber = false): string | FPNumber {
+    const amount = _amount === '' ? '0' : _amount;
+    const amountFP = new FPNumber(amount, precision);
 
-    return new FPNumber(value, precision).toCodecString();
+    return returnFPNumber ? amountFP : amountFP.toCodecString();
+  }
+
+  public validateExistentialDeposit(wallet: Wallet, _network: string, amount: string, fee: string): boolean {
+    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
+    const {
+      existentialDeposit,
+      precision,
+      balance: { transferable },
+      type,
+    } = availableInNetworks.find(({ network }) => network === _network)!;
+    const { api } = NetworksController.getNetwork(_network);
+    const exDeposit =
+      existentialDeposit ??
+      (type === 'equilibrium' ? api?.consts.eqBalances : api?.consts.balances)?.existentialDeposit.toString();
+
+    if (exDeposit === undefined) return true;
+
+    const amountFP = this.getPrecisionValue(amount, precision, true) as FPNumber;
+    const feeFP = new FPNumber(fee, precision);
+    const residualBalance = transferable.sub(amountFP).sub(feeFP);
+
+    return FPNumber.gte(residualBalance, FPNumber.fromCodecValue(exDeposit, precision));
   }
 
   public createTransferExtrinsic(
     to: string,
-    networkName: string,
     amount: string,
-    { precision, type }: NetworkProps
+    { precision, type, value: networkName }: NetworkProps
   ): void {
-    const precisionAmount = this.getPrecisionValue(amount, precision);
+    const precisionAmount = this.getPrecisionValue(amount, precision) as string;
     const {
       api,
       settings: { DefaultTip },
@@ -307,13 +342,12 @@ export default class CurrencyController {
 
   public async createTeleportExtrinsic(
     wallet: Wallet,
-    originNet: string,
     destNet: string,
     amount: string,
-    { precision }: NetworkProps
+    { precision, value: originNet }: NetworkProps
   ): Promise<void> {
     const toAddress = this.getTransactionAddress(wallet, destNet);
-    const precisionAmount = this.getPrecisionValue(amount, precision);
+    const precisionAmount = this.getPrecisionValue(amount, precision) as string;
 
     if (isNativeNetwork(originNet)) {
       // Case RelayChain -> Nonnative ParaChain (polkadot -> acala, etc; kusama -> bifrost, etc) paraId = 2000-2999, pallet = xcmPallet, module = reserveTransferAssets

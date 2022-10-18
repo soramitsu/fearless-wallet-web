@@ -1,86 +1,99 @@
 <template>
   <div>
-    <ActivityForm
-      class="send-form"
+    <AboveForm
       header="Send Funds"
-      :buttonText="buttonText"
-      :handlerButton="handlerButton"
+      :blur="true"
       :showBackIcon="showBackIcon"
       :handlerBack="handlerBack"
-      :closeForm="closeForm"
-      :buttonDisabled="buttonDisabled"
+      :closeHandler="closeForm"
     >
-      <div class="send-form-content">
-        <template v-if="step === 1">
-          <Select v-model="selectedAssetId" :options="optionsCurrency" placeholder="CURRENCY" size="big" class="row" />
+      <div class="send-form">
+        <div>
+          <template v-if="step === 1">
+            <Select
+              v-model="selectedAssetId"
+              :options="optionsCurrency"
+              placeholder="CURRENCY"
+              size="big"
+              class="row"
+            />
 
-          <Select v-model="selectedNetwork" :options="optionsNetwork" placeholder="NETWORK" size="big" class="row" />
+            <Select v-model="selectedNetwork" :options="optionsNetworks" placeholder="NETWORK" size="big" class="row" />
 
-          <Input v-model="recipient" placeholder="SEND TO" size="big" class="row" />
+            <Input v-model="recipient" placeholder="SEND TO" size="big" class="row" />
 
-          <AmountInputs
-            class="row"
-            :amount="amount"
-            :value="value"
-            :currency="currency"
-            @setMaxValue="setMaxValue"
-            @update:amount="updateAmount"
-            @update:value="updateValue"
-          />
+            <AmountInputs
+              class="row"
+              :amount="amount"
+              :value="value"
+              :currency="currency"
+              @setMaxValue="setMaxValue"
+              @update:amount="updateAmount"
+              @update:value="updateValue"
+            />
 
-          <div class="transferrable row">
-            <div class="transferrable-part">
-              <div class="transferrable-label">Transferrable</div>
-              <div class="transferrable-descriptions">
-                <div class="transferrable-amount">{{ transferrableAmount }}</div>
-                <div class="transferrable-assets">{{ selectedAssetUpper }}</div>
-              </div>
-            </div>
-
-            <div class="transferrable-part">
-              <div class="transferrable-label">Transferrable</div>
-              <div class="transferrable-descriptions">
-                <div class="transferrable-amount">{{ fiatSymbol }}{{ transferrableValue }}</div>
-              </div>
-            </div>
-          </div>
-        </template>
-        <template v-else-if="step === 2">
-          <div class="row direction-column">
-            <Input v-model="selectedWallet.name" placeholder="From" size="big" :readonly="true" />
-
-            <s-icon name="arrows-arrow-right-24" />
-
-            <Input v-model="formattedAddressTo" placeholder="To" size="big" :readonly="true" />
-          </div>
-
-          <Corners size="big" class="row">
-            <div class="summary">
-              <div class="summary-label">Summary</div>
-              <div class="summary-row">
-                <div class="name">Coins</div>
-                <div class="column">
-                  <div>{{ amountString }}</div>
-                  <div v-if="showValue" class="value">{{ valueString }}</div>
+            <div class="transferrable row">
+              <div class="transferrable-part">
+                <div class="transferrable-label">Transferrable</div>
+                <div class="transferrable-descriptions">
+                  <div class="transferrable-amount">{{ transferrableAmount }}</div>
+                  <div class="transferrable-assets">{{ selectedAssetUpper }}</div>
                 </div>
               </div>
-              <div class="summary-row">
-                <div class="name">Fee</div>
-                <div class="column">
-                  <div>{{ partialFeeString }}</div>
-                </div>
-              </div>
-              <div class="summary-row">
-                <div class="name">Total</div>
-                <div class="column">
-                  <div>{{ totalString }}</div>
+
+              <div class="transferrable-part">
+                <div class="transferrable-label">Transferrable</div>
+                <div class="transferrable-descriptions">
+                  <div class="transferrable-amount">{{ fiatSymbol }}{{ transferrableValue }}</div>
                 </div>
               </div>
             </div>
-          </Corners>
-        </template>
+          </template>
+          <template v-else-if="step === 2">
+            <div class="row direction-column">
+              <Input v-model="selectedWallet.name" placeholder="From" size="big" :readonly="true" />
+
+              <s-icon name="arrows-arrow-right-24" />
+
+              <Input v-model="formattedAddressTo" placeholder="To" size="big" :readonly="true" />
+            </div>
+
+            <Corners size="big" class="row">
+              <div class="summary">
+                <div class="summary-label">Summary</div>
+                <div class="summary-row">
+                  <div class="name">Coins</div>
+                  <div class="column">
+                    <div>{{ amountString }}</div>
+                    <div v-if="showValue" class="value">{{ valueString }}</div>
+                  </div>
+                </div>
+                <div class="summary-row">
+                  <div class="name">Fee</div>
+                  <div class="column">
+                    <div>{{ partialFeeString }}</div>
+                  </div>
+                </div>
+                <div class="summary-row">
+                  <div class="name">Total</div>
+                  <div class="column">
+                    <div>{{ totalString }}</div>
+                  </div>
+                </div>
+              </div>
+            </Corners>
+          </template>
+        </div>
+
+        <Button
+          size="big"
+          class="button"
+          :text="buttonText"
+          :disabled="buttonDisabled"
+          @click="handlerContinueButton"
+        />
       </div>
-    </ActivityForm>
+    </AboveForm>
 
     <ConfirmationPasswordPopup
       v-if="showConfirmationPasswordPopup"
@@ -91,16 +104,22 @@
       :firstNetwork="selectedNetwork"
       @close="confirmationPasswordPopupClose"
     />
+
+    <ExistentialPopup
+      v-if="showExistentialPopup"
+      :handlerClose="handlerCloseExistentialPopup"
+      :handlerAcceptButton="handlerAcceptExistentialPopup"
+    />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import ActivityForm from './ActivityForm.vue';
 import AmountInputs from './AmountInputs.vue';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import MaxButton from './MaxButton.vue';
+import ExistentialPopup from './ExistentialPopup.vue';
 import type { Currencies } from '@/interfaces';
 import type { GetAssetName } from '@/store/networks/types';
 import BaseApi from '@/util/BaseApi';
@@ -115,22 +134,27 @@ import { SelectedWallet } from '@/store/accounts/types';
 import { firstCharToUp } from '@/helpers/common';
 import { formattedNumber, formattedPrice, addNumbers } from '@/helpers/numbers';
 import { getCurrencyOptions } from '@/helpers/currencies';
+import AboveForm from '@/components/AboveForm.vue';
+import Button from '@/components/Button.vue';
 
 @Component({
   components: {
     Input,
     Select,
+    Button,
     Corners,
     MaxButton,
+    AboveForm,
     FloatInput,
     NetworkLogo,
     AmountInputs,
-    ActivityForm,
+    ExistentialPopup,
     ConfirmationPasswordPopup,
   },
 })
 export default class SendForm extends Vue {
   isValidCountAssets = true;
+  showExistentialPopup = false;
   showConfirmationPasswordPopup = false;
   partialFee = '';
   selectedNetwork = '';
@@ -219,7 +243,7 @@ export default class SendForm extends Vue {
     return this.currencies.find(({ assetId }) => assetId === this.selectedAssetId);
   }
 
-  get optionsNetwork() {
+  get optionsNetworks() {
     const availableInNetworks = this.currency?.getAvailableInNetworks(this.selectedWallet);
 
     return availableInNetworks?.map(({ network, precision, type }) => ({
@@ -256,7 +280,7 @@ export default class SendForm extends Vue {
 
   @Watch('selectedAssetId')
   updateSelectedNetwork() {
-    this.selectedNetwork = this.optionsNetwork?.[0]?.value ?? '';
+    this.selectedNetwork = this.optionsNetworks?.[0]?.value ?? '';
     this.amount = '';
   }
 
@@ -272,7 +296,7 @@ export default class SendForm extends Vue {
     const partialFee = await this.createTransferAndGetFee();
 
     this.partialFee = partialFee;
-    this.isValidCountAssets = this.currency!.isValidCountAssets(
+    this.isValidCountAssets = this.currency!.validateCountAssets(
       this.amount,
       partialFee,
       this.selectedNetwork,
@@ -283,16 +307,16 @@ export default class SendForm extends Vue {
   mounted() {
     this.selectedAssetId = this._selectedAssetId;
     this.$nextTick(() => {
-      const index = this.optionsNetwork?.findIndex(({ value }) => value === this._selectedNetwork);
+      const index = this.optionsNetworks?.findIndex(({ value }) => value === this._selectedNetwork);
 
-      this.selectedNetwork = index !== -1 ? this._selectedNetwork : this.optionsNetwork?.[0]?.value ?? '';
+      this.selectedNetwork = index !== -1 ? this._selectedNetwork : this.optionsNetworks?.[0]?.value ?? '';
     });
   }
 
   createTransferAndGetFee(amount?: string) {
-    const networkProps = this.optionsNetwork!.find(({ value }) => value === this.selectedNetwork)!;
+    const networkProps = this.optionsNetworks!.find(({ value }) => value === this.selectedNetwork)!;
 
-    this.currency!.createTransferExtrinsic(this.recipient, this.selectedNetwork, amount ?? this.amount, networkProps);
+    this.currency!.createTransferExtrinsic(this.recipient, amount ?? this.amount, networkProps);
 
     return this.currency!.getPartialFee(this.addressByNetwork, networkProps);
   }
@@ -331,7 +355,18 @@ export default class SendForm extends Vue {
     this.value = this.currency.getCostOfAssets(transferableCountAssets).toString();
   }
 
-  handlerButton() {
+  handlerContinueButton(skipWarning = false) {
+    if (!skipWarning && this.step === 1) {
+      this.showExistentialPopup = !this.currency!.validateExistentialDeposit(
+        this.selectedWallet,
+        this.selectedNetwork,
+        this.amount,
+        this.partialFee
+      );
+
+      if (this.showExistentialPopup) return;
+    }
+
     if (this.step === 2) {
       this.showConfirmationPasswordPopup = true;
 
@@ -340,16 +375,25 @@ export default class SendForm extends Vue {
 
     this.step += 1;
   }
+
+  handlerCloseExistentialPopup() {
+    this.showExistentialPopup = false;
+  }
+
+  handlerAcceptExistentialPopup() {
+    this.handlerContinueButton(true);
+
+    this.handlerCloseExistentialPopup();
+  }
 }
 </script>
 
 <style lang="scss" scoped>
 .send-form {
-  .send-form-content {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 
   .row {
     margin-top: 10px;

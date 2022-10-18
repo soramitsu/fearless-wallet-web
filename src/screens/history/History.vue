@@ -21,6 +21,5 @@ export default class Crowdloans extends Vue {
 
 <style lang="scss" scoped>
 .history {
-  height: 100%;
 }
 </style>

@@ -17,7 +17,7 @@
         v-if="isExtension"
         title="Manage dApp access"
         icon="networks/polkadot"
-        @onOpen="open('ManageAuths')"
+        @onOpen="openPopup('openManageAuths')"
       />
     </div>
   </Popup>
@@ -30,7 +30,7 @@ import { Components } from '@/router/routes';
 import { isExtension } from '@/helpers/common';
 import SettingMenuItem from '@/layouts/SettingMenuItem.vue';
 
-type SettingsItemType = 'Accounts' | 'ManageAuths';
+type SettingsItemType = 'Accounts';
 
 @Component({
   components: { Popup, SettingMenuItem },
@@ -41,9 +41,11 @@ export default class SettingsPopup extends Vue {
   get routeName() {
     return this.$route.name;
   }
+
   get isExtension() {
     return isExtension();
   }
+
   openPopup(value: string) {
     this.$emit(value);
   }

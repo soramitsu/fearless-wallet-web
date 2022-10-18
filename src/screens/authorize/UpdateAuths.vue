@@ -105,7 +105,7 @@ export default class Authorize extends Vue {
   async updateAuths() {
     await updateAuthorization(this.prepAccounts, this.$route.params.url);
 
-    this.$router.push({ name: Components.ManageAuths });
+    this.$router.back();
   }
 }
 </script>

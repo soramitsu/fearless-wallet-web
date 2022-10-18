@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="Manage dApp access" :blur="true" :closeHandler="back">
+  <AboveForm header="Manage dApp access" :blur="true" :closeHandler="handlerClose">
     <SearchInput v-model="filterValue" placeholder="Search in networks" class="manage-auths__search" width="100%" />
 
     <AuthItem
@@ -13,7 +13,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { AuthUrlInfo } from '@extension-base/background/types';
 import { TAction } from '@/interfaces';
@@ -32,6 +32,7 @@ import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
   },
 })
 export default class ManageAuths extends Vue {
+  @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
   @Action(AuthActionTypes.GET_AUTHLIST) getAuthList!: TAction<void>;
   @Action(AuthActionTypes.DELETE_AUTH_CONNECTION) deleteAuthConnection!: TAction<string>;
@@ -41,6 +42,7 @@ export default class ManageAuths extends Vue {
 
   async mounted() {
     await this.getAuthList();
+
     this.filteredList = this.authlist;
   }
 
@@ -68,10 +70,6 @@ export default class ManageAuths extends Vue {
 
   async removeAuth(url: string) {
     await this.deleteAuthConnection(url);
-  }
-
-  back() {
-    this.$router.push({ name: Components.Wallet });
   }
 }
 </script>

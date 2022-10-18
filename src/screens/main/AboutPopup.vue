@@ -90,7 +90,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import Popup from '@/components/Popup.vue';
-import { MAIN_ITEMS, COMMUNITY_ITEMS, SOCIAL_MEDIA_ITEMS, SUPPORT_ITEMS } from '@/consts/walletInformation';
+import { MAIN_ITEMS, COMMUNITY_ITEMS, SOCIAL_MEDIA_ITEMS, SUPPORT_ITEMS } from '@/consts/extensionInformation';
 
 @Component({
   components: { Popup },

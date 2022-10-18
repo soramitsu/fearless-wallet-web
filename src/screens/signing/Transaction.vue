@@ -11,17 +11,22 @@
       <InfoItem name="lifetime" :value="morality" />
     </InfoList>
 
-    <ConfirmationPasswordPopup
-      v-if="isSignPopupVisible"
-      text="Password for this account"
-      sizeWidth="medium"
-      @close="onClose"
-      :address="payload.address"
-      :payload="payload"
-      :transactionId="request.id"
-    />
+    <template v-if="isMobileSignRequired">
+      <Button size="big" class="button" text="Sign the transaction" @click="onSignMobile" />
+    </template>
 
-    <Button size="big" class="button" text="Sign the transaction" @click="onSign" />
+    <template v-else>
+      <ConfirmationPasswordPopup
+        v-if="isSignPopupVisible"
+        text="Password for this account"
+        sizeWidth="medium"
+        :address="payload.address"
+        :transactionId="request.id"
+        @close="onClose"
+      />
+
+      <Button size="big" class="button" text="Sign the transaction" @click="onSign" />
+    </template>
   </AboveForm>
 </template>
 

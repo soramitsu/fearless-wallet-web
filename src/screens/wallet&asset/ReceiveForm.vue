@@ -1,38 +1,44 @@
 <template>
-  <ActivityForm
-    class="receive-form"
-    header="Receive Funds"
-    iconName="share"
-    iconNameTwo="receive-white"
-    buttonText="Copy QR-code"
-    buttonTextTwo="Save QR-code image"
-    :closeForm="closeForm"
-    :handlerButton="shareQR"
-    :handlerButtonTwo="saveQR"
-  >
-    <Select v-model="network" :options="optionsNetwork" placeholder="NETWORK" size="big" class="row" />
+  <AboveForm header="Receive Funds" :blur="true" :closeHandler="closeForm">
+    <div class="receive-form">
+      <div>
+        <Select v-model="network" :options="optionsNetwork" placeholder="NETWORK" size="big" class="row" />
 
-    <div class="receive-content">
-      <div class="address-wrapper">
-        <span>Wallet address</span>
+        <div class="receive-content">
+          <div class="address-wrapper">
+            <span>Wallet address</span>
 
-        <div class="address">
-          {{ cutAddress }}
+            <div class="address">
+              {{ cutAddress }}
 
-          <img src="@/assets/copy.svg" class="copy-icon" @click="copyAddress" />
+              <img src="@/assets/copy.svg" class="copy-icon" @click="copyAddress" />
+            </div>
+          </div>
+
+          <QR class="qr" ref="qr" :width="200" :payload="address" />
         </div>
       </div>
 
-      <QR class="qr" ref="qr" :width="200" :payload="address" />
+      <div class="activity-buttons">
+        <BorderButton
+          size="big"
+          class="button"
+          text="Save QR-code"
+          width="260px"
+          iconName="receive-white"
+          @click="saveQR"
+        />
+
+        <Button size="big" class="button" width="260px" text="Copy QR-code" iconName="share" @click="shareQR" />
+      </div>
     </div>
-  </ActivityForm>
+  </AboveForm>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
-import ActivityForm from './ActivityForm.vue';
 import type { Networks } from '@/interfaces/networks';
 import BaseApi from '@/util/BaseApi';
 import Select from '@/components/Select.vue';
@@ -43,13 +49,16 @@ import { SelectedWallet } from '@/store/accounts/types';
 import { firstCharToUp } from '@/helpers/common';
 import QR from '@/components/QR.vue';
 import { cut } from '@/helpers/history';
+import AboveForm from '@/components/AboveForm.vue';
+import BorderButton from '@/components/BorderButton.vue';
 
 @Component({
   components: {
     QR,
     Select,
     Button,
-    ActivityForm,
+    AboveForm,
+    BorderButton,
   },
 })
 export default class ReceiveForm extends Vue {
@@ -111,12 +120,16 @@ export default class ReceiveForm extends Vue {
 
 <style lang="scss" scoped>
 .receive-form {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
   .receive-content {
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
-    height: 100%;
   }
 
   .address-wrapper {
@@ -132,19 +145,6 @@ export default class ReceiveForm extends Vue {
     }
   }
 
-  .button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: 500;
-    margin-bottom: 20px;
-    color: $pink-lavender-color;
-    opacity: 0.95;
-    margin-top: 10px;
-    user-select: none;
-  }
-
   .copy-icon {
     margin-left: 16px;
     filter: invert(0.35);
@@ -158,6 +158,18 @@ export default class ReceiveForm extends Vue {
 
   .qr {
     margin: 16px 0;
+  }
+
+  .button {
+    margin-right: 10px;
+
+    &:last-child {
+      margin-right: 0;
+    }
+  }
+
+  .activity-buttons {
+    display: flex;
   }
 }
 </style>

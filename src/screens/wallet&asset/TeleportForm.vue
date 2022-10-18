@@ -1,96 +1,109 @@
 <template>
   <div>
-    <ActivityForm
+    <AboveForm
       header="Teleport"
-      :buttonText="buttonText"
-      :handlerButton="handlerContinueButton"
+      :blur="true"
       :showBackIcon="showBackIcon"
       :handlerBack="handlerBack"
-      :closeForm="closeForm"
-      :buttonDisabled="buttonDisabled"
-      class="teleport-form"
+      :closeHandler="closeForm"
     >
-      <div class="teleport-form-content">
-        <template v-if="step === 1">
-          <Select v-model="selectedAssetId" :options="optionsCurrency" placeholder="CURRENCY" size="big" class="row" />
+      <div class="teleport-form">
+        <div>
+          <template v-if="step === 1">
+            <Select
+              v-model="selectedAssetId"
+              :options="optionsCurrency"
+              placeholder="CURRENCY"
+              size="big"
+              class="row"
+            />
 
-          <Select
-            v-model="originalNetwork"
-            :options="optionsOriginalNetwork"
-            placeholder="ORIGINAL NETWORK"
-            size="big"
-            class="row"
-          />
+            <Select
+              v-model="originalNetwork"
+              :options="optionsOriginalNetwork"
+              placeholder="ORIGINAL NETWORK"
+              size="big"
+              class="row"
+            />
 
-          <Select
-            v-model="destinationNetwork"
-            :options="optionsDestinationNetwork"
-            placeholder="DESTINATION NETWORK"
-            size="big"
-            class="row"
-          />
+            <Select
+              v-model="destinationNetwork"
+              :options="optionsDestinationNetwork"
+              placeholder="DESTINATION NETWORK"
+              size="big"
+              class="row"
+            />
 
-          <AmountInputs
-            class="row"
-            :amount="amount"
-            :value="value"
-            :currency="currency"
-            @setMaxValue="setMaxValue"
-            @update:amount="updateAmount"
-            @update:value="updateValue"
-          />
+            <AmountInputs
+              class="row"
+              :amount="amount"
+              :value="value"
+              :currency="currency"
+              @setMaxValue="setMaxValue"
+              @update:amount="updateAmount"
+              @update:value="updateValue"
+            />
 
-          <div class="row transferrable">
-            <div class="transferrable-label">Transferrable</div>
-            <div class="transferrable-descriptions">
-              <div class="transferrable-amount">{{ transferrableAmount }}</div>
-              <div class="transferrable-assets">{{ selectedAssetUpper }}</div>
-            </div>
-          </div>
-        </template>
-        <template v-else-if="step === 2">
-          <Corners size="big" class="row">
-            <div class="summary">
-              <div class="summary-label">Summary</div>
-              <div class="summary-row">
-                <div class="column column-left">
-                  <div class="name">From</div>
-                  <div class="network-name">{{ originalNetworkString }}</div>
-                </div>
-
-                <img src="@/assets/bold-arrow-right.svg" />
-
-                <div class="column">
-                  <div class="name">To</div>
-                  <div class="network-name">{{ destinationNetworkString }}</div>
-                </div>
-              </div>
-              <div class="summary-row">
-                <div class="name">Assets Amount</div>
-                <div class="column">
-                  <div>{{ amountString }}</div>
-                  <div v-if="showValue" class="value">{{ valueString }}</div>
-                </div>
-              </div>
-              <div class="summary-row">
-                <div class="name">{{ originalNetworkString }} Fee</div>
-                <div>
-                  {{ originalNetworkPartialFeeString }}
-                </div>
-              </div>
-              <div class="summary-row">
-                <div class="name">{{ destinationNetworkString }} Fee</div>
-                <div>{{ destinationNetworkPartialFeeString }}</div>
-              </div>
-              <div class="summary-row">
-                <div class="name">Total</div>
-                <div>{{ totalString }}</div>
+            <div class="row transferrable">
+              <div class="transferrable-label">Transferrable</div>
+              <div class="transferrable-descriptions">
+                <div class="transferrable-amount">{{ transferrableAmount }}</div>
+                <div class="transferrable-assets">{{ selectedAssetUpper }}</div>
               </div>
             </div>
-          </Corners>
-        </template>
+          </template>
+          <template v-else-if="step === 2">
+            <Corners size="big" class="row">
+              <div class="summary">
+                <div class="summary-label">Summary</div>
+                <div class="summary-row">
+                  <div class="column column-left">
+                    <div class="name">From</div>
+                    <div class="network-name">{{ originalNetworkString }}</div>
+                  </div>
+
+                  <img src="@/assets/bold-arrow-right.svg" />
+
+                  <div class="column">
+                    <div class="name">To</div>
+                    <div class="network-name">{{ destinationNetworkString }}</div>
+                  </div>
+                </div>
+                <div class="summary-row">
+                  <div class="name">Assets Amount</div>
+                  <div class="column">
+                    <div>{{ amountString }}</div>
+                    <div v-if="showValue" class="value">{{ valueString }}</div>
+                  </div>
+                </div>
+                <div class="summary-row">
+                  <div class="name">{{ originalNetworkString }} Fee</div>
+                  <div>
+                    {{ originalNetworkPartialFeeString }}
+                  </div>
+                </div>
+                <div class="summary-row">
+                  <div class="name">{{ destinationNetworkString }} Fee</div>
+                  <div>{{ destinationNetworkPartialFeeString }}</div>
+                </div>
+                <div class="summary-row">
+                  <div class="name">Total</div>
+                  <div>{{ totalString }}</div>
+                </div>
+              </div>
+            </Corners>
+          </template>
+        </div>
+
+        <Button
+          size="big"
+          class="button"
+          :text="buttonText"
+          :disabled="buttonDisabled"
+          @click="handlerContinueButton"
+        />
       </div>
-    </ActivityForm>
+    </AboveForm>
 
     <ConfirmationPasswordPopup
       v-if="showConfirmationPasswordPopup"
@@ -114,13 +127,13 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import ActivityForm from './ActivityForm.vue';
 import MaxButton from './MaxButton.vue';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import AmountInputs from './AmountInputs.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import type { Currencies, Networks } from '@/interfaces';
 import type { GetAssetName } from '@/store/networks/types';
+import Button from '@/components/Button.vue';
 import Select from '@/components/Select.vue';
 import FloatInput from '@/components/FloatInput.vue';
 import Popup from '@/components/Popup.vue';
@@ -132,15 +145,17 @@ import { firstCharToUp } from '@/helpers/common';
 import { addNumbers, formattedNumber, formattedPrice } from '@/helpers/numbers';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
+import AboveForm from '@/components/AboveForm.vue';
 
 @Component({
   components: {
     Popup,
     Select,
+    Button,
     Corners,
     MaxButton,
+    AboveForm,
     FloatInput,
-    ActivityForm,
     AmountInputs,
     ExistentialPopup,
     ConfirmationPasswordPopup,
@@ -423,13 +438,16 @@ export default class TeleportForm extends Vue {
 
 <style lang="scss" scoped>
 .teleport-form {
-  .teleport-form-content {
-    .row {
-      margin-top: 16px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 
-      &:first-child {
-        margin-top: 0;
-      }
+  .row {
+    margin-top: 16px;
+
+    &:first-child {
+      margin-top: 0;
     }
   }
 

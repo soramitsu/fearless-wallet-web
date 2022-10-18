@@ -1,4 +1,5 @@
 import type { ApiPromise, WsProvider } from '@polkadot/api';
+import type { HexString } from '@polkadot/util/types';
 import type {
   Currencies,
   HistoryItem,
@@ -19,6 +20,7 @@ import type { State } from '@/store/networks/state';
 import type { Mutations } from '@/store/networks/mutations';
 // getters
 export type GetNetwork = (networkName: string) => Network;
+export type GetNetworkGenesisHash = (networkName: string) => HexString;
 
 export type GetAssetName = (assetId: string) => string;
 

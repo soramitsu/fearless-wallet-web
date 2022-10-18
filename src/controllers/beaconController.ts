@@ -12,6 +12,8 @@ import {
   AppMetadata,
 } from '@airgap/beacon-sdk';
 import type {
+  BeaconAccountInfo,
+  BeaconNetworks,
   PayloadJSON,
   PermissionErrorPayload,
   PermissionSuccess,
@@ -19,10 +21,9 @@ import type {
   SignResponse,
   SubstratePermissionRequest,
   SubstrateSignPayloadRequest,
-  SubstrateSignPayloadResponse,
   TCallback,
 } from '@/interfaces';
-
+import type { HexString } from '@polkadot/util/types';
 import { getTzip10Link } from '@/util/beacon';
 class BeaconController {
   private readonly app: DAppClient;
@@ -57,6 +58,18 @@ class BeaconController {
     this.app.addBlockchain(substrateBlockchain);
   }
 
+  async getAccountId(genesisHash: HexString) {
+    //WORKS WITH ACTIVE ACCOUNT
+    //TODO SHOULD WORK WITH MULTIPLE ACCOUNTS
+    const account = (await this.app.getActiveAccount()) as BeaconAccountInfo;
+
+    const [filtered] = account.chainData.accounts.filter((el) => {
+      if (el.network.genesisHash === genesisHash) return el;
+    });
+
+    return filtered.accountId;
+  }
+
   public static create() {
     return new BeaconController();
   }
@@ -75,16 +88,17 @@ class BeaconController {
 
   public async resetConnection() {
     await this.app.removeAllAccounts();
+    await this.app.removeAllPeers();
     await this.app.disconnect();
   }
 
-  public async connect() {
+  public async connect(networks: BeaconNetworks) {
     const config: SubstratePermissionRequest = {
       blockchainIdentifier: 'substrate',
       type: BeaconMessageType.PermissionRequest,
       blockchainData: {
         appMetadata: this.appMetaData,
-        networks: [{ genesisHash: '0xe143f23803ac50e8f6f8e62695d1ce9e4e1d68aa36c1cd2cfd15340213f3423e' }],
+        networks,
         scopes: [SubstratePermissionScope.sign_payload_raw, SubstratePermissionScope.sign_payload_json],
       },
     };
@@ -155,27 +169,26 @@ class BeaconController {
     const activeAccount = await this.app.getActiveAccount();
 
     if (!activeAccount) throw new Error('Beacon not set up.');
+
     const request: SubstrateSignPayloadRequest = {
+      type: BeaconMessageType.BlockchainRequest,
       accountId: activeAccount.accountIdentifier,
+      blockchainIdentifier: 'substrate',
       blockchainData: {
         mode: 'return',
         payload: payload,
         type: SubstrateMessageType.sign_payload_request,
         scope: SubstratePermissionScope.sign_payload_json,
       },
-      blockchainIdentifier: 'substrate',
-      type: BeaconMessageType.BlockchainRequest,
     };
 
-    const response = (await this.app.request(request)) as SubstrateSignPayloadResponse;
-
-    return response;
+    return this.app.request(request);
   }
 
   public async sendRequestRaw(payload: SubstrateSignPayloadRequest) {
     const response = await this.app.request(payload);
 
-    console.log(response, 'RESPONSE RAW');
+    console.info(response, 'RESPONSE RAW');
 
     return response;
   }

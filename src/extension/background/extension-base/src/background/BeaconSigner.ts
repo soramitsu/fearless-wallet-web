@@ -1,14 +1,14 @@
 // Copyright 2017-2022 @polkadot/app-accounts authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { BeaconMessageType } from '@airgap/beacon-sdk';
+import { BeaconMessageType, SubstrateMessageType, SubstratePermissionScope } from '@airgap/beacon-sdk';
 import { Signer } from '@polkadot/api/types';
 import { SignerPayloadRaw, SignerResult } from '@polkadot/types/types/extrinsic';
 import { beaconController } from '@/controllers/beaconController';
 
 export class BeaconSigner implements Signer {
   async signRaw(raw: SignerPayloadRaw): Promise<SignerResult> {
-    console.log('SIGN RAW INVOKED', raw);
+    console.info('SIGN RAW INVOKED', raw);
 
     const activeAccount = await beaconController.getActiveAccount();
 
@@ -27,15 +27,15 @@ export class BeaconSigner implements Signer {
             isMutable: false,
             type: 'raw',
           },
-          scope: 'sign_payload_raw',
-          type: 'sign_payload_request',
+          scope: SubstratePermissionScope.sign_payload_raw,
+          type: SubstrateMessageType.sign_payload_request,
         },
         blockchainIdentifier: 'substrate',
         type: BeaconMessageType.BlockchainRequest,
       } as any /* SubstrateSignPayloadRequest */
     );
 
-    console.log('RESPONSE', response);
+    console.info('RESPONSE', response);
 
     return {
       id: 0,

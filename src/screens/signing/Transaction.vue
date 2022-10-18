@@ -31,7 +31,6 @@ import { Getter, Action } from 'vuex-class';
 import { SigningRequest } from '@extension-base/background/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { registry } from '@/extension/background/extension-base/src/background/handlers/State';
-import { beaconController } from '@/controllers/beaconController';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
@@ -44,7 +43,7 @@ import AboveForm from '@/components/AboveForm.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { GettersTypes as SignGettersTypes } from '@/store/sign/getters';
 import { ActionTypes as SignActionsTypes } from '@/store/sign/actions';
-import { TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
+import { TAction, SignerPayloadJSON } from '@/interfaces';
 
 @Component({
   components: {
@@ -109,13 +108,6 @@ export default class Auth extends Vue {
 
   onSign() {
     this.isSignPopupVisible = true;
-  }
-
-  async onSignMobile() {
-    console.info('sign with mobile');
-    const payload = this.payload;
-    delete payload.address;
-    await beaconController.sendRequestJSON(this.payload as unknown as PayloadJSON);
   }
 
   onClose() {

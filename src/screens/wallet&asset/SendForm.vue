@@ -101,8 +101,8 @@ import ActivityForm from './ActivityForm.vue';
 import AmountInputs from './AmountInputs.vue';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import MaxButton from './MaxButton.vue';
-import type { Currencies, TransferPayload } from '@/interfaces';
-import type { GetAssetName, GetNetwork } from '@/store/networks/types';
+import type { Currencies } from '@/interfaces';
+import type { GetAssetName } from '@/store/networks/types';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
 import FloatInput from '@/components/FloatInput.vue';
@@ -115,7 +115,6 @@ import { SelectedWallet } from '@/store/accounts/types';
 import { firstCharToUp } from '@/helpers/common';
 import { formattedNumber, formattedPrice, addNumbers } from '@/helpers/numbers';
 import { getCurrencyOptions } from '@/helpers/currencies';
-import { beaconController } from '@/controllers/beaconController';
 
 @Component({
   components: {
@@ -145,7 +144,6 @@ export default class SendForm extends Vue {
   @Prop(String) _selectedNetwork!: string;
   @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;

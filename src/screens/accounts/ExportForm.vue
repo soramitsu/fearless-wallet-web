@@ -68,8 +68,7 @@ export default class ExportForm extends Vue {
   }
 
   export() {
-    const chainId = this.networks.find(({ name }) => name === this.network)!.chainId; //eslint-disable-line
-
+    const chainId = this.networks.find(({ name }) => name === this.network)!.chainId;
     const keyringPair = BaseApi.getPair(this.addressByNetwork);
     const keyringPair$Json = keyringPair.toJson(this.password);
     const meta = { ...keyringPair$Json.meta, genesisHash: `0x${chainId}` } as Record<string, string>;

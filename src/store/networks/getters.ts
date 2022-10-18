@@ -7,13 +7,14 @@ import type {
   Currencies,
   KeysAssetPricesJson,
 } from '@/interfaces';
-import type { GetNetwork, GetAssetName, GetAssetPrice } from './types';
+import type { GetNetwork, GetAssetName, GetAssetPrice, GetNetworkGenesisHash } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 
 export enum GettersTypes {
   getNetworks = 'getNetworks',
   getNetwork = 'getNetwork',
+  getNetworkGenesisHash = 'getNetworkGenesisHash',
   getAssetsJson = 'getAssetsJson',
   getAssetPrice = 'getAssetPrice',
   getAssetName = 'getAssetName',
@@ -26,6 +27,11 @@ export enum GettersTypes {
 export type Getters = {
   [GettersTypes.getNetworks](state: State, getters?: GetterTree<State, State> & Getters): Networks;
   [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
+  [GettersTypes.getNetworkGenesisHash](
+    state: State,
+    getters?: GetterTree<State, State> & Getters
+  ): GetNetworkGenesisHash;
+
   [GettersTypes.getAssetsJson](state: State, getters?: GetterTree<State, State> & Getters): AssetJson[];
   [GettersTypes.getAssetPrice](
     state: State,
@@ -48,6 +54,14 @@ const getters: GetterTree<State, State> & Getters = {
     ({ networks }) =>
     (networkName: string) => {
       return networks.find(({ name }) => name === networkName)!;
+    },
+  [GettersTypes.getNetworkGenesisHash]:
+    ({ networks }) =>
+    (networkName: string) => {
+      const network = networks.find(({ name }) => name === networkName)!;
+      console.log(network, networkName, 'network');
+
+      return `0x${network.chainId}`;
     },
   [GettersTypes.getAssetsJson]({ assetsJson }): AssetJson[] {
     return assetsJson;

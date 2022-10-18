@@ -31,15 +31,17 @@
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator';
 import { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
-import { Action } from 'vuex-class';
+import { Action, Getter } from 'vuex-class';
 import { PermissionResponseOutput } from '@airgap/beacon-sdk';
 import type { SetSelectedWallet } from '@/store/accounts/types';
-import { PermissionSuccess, TAction, RequestSentInfo } from '@/interfaces';
+import { PermissionSuccess, TAction, RequestSentInfo, Networks, BeaconNetworks } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { createAddress } from '@/extension/messaging';
 import { beaconController } from '@/controllers/beaconController';
 import { Components } from '@/router/routes';
-import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
+import { ActionTypes as AccountActionTypes } from '@/store/accounts/actions';
+import { GettersTypes as NetworkGettersTypes } from '@/store/networks/getters';
+
 import Button from '@/components/Button.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import QR from '@/components/QR.vue';
@@ -48,6 +50,7 @@ import PermissionRequest from '@/screens/mobileConnect/PermissionRequest.vue';
 import InfoList from '@/layouts/InfoList.vue';
 import InfoItem from '@/screens/signing/InfoItem.vue';
 import Alert from '@/components/Alert.vue';
+
 @Component({
   components: {
     Loader,
@@ -61,7 +64,8 @@ import Alert from '@/components/Alert.vue';
   },
 })
 export default class MobileConnect extends Vue {
-  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
+  @Action(AccountActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
+  @Getter(NetworkGettersTypes.getNetworks) getNetworks!: Networks;
 
   qrPayload = '';
   isRequest = false;
@@ -76,6 +80,13 @@ export default class MobileConnect extends Vue {
   async mounted() {
     const activeAccount = await beaconController.getActiveAccount();
     beaconController.status();
+    const prepnetworks: BeaconNetworks = this.getNetworks.map((el) => {
+      return {
+        genesisHash: `0x${el.chainId}`,
+      };
+    });
+    const uniqGenesisHashes = [...prepnetworks.reduce((map, obj) => map.set(obj.genesisHash, obj), new Map()).values()];
+    console.log(uniqGenesisHashes, 'uniq');
 
     if (activeAccount) {
       this.isActiveAccountExists = true;
@@ -85,7 +96,7 @@ export default class MobileConnect extends Vue {
 
     this.initBeaconEvents();
 
-    beaconController.connect();
+    beaconController.connect(prepnetworks);
   }
 
   initBeaconEvents() {

@@ -69,6 +69,7 @@ import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as SignActionsTypes, ApprovePayload } from '@/store/sign/actions';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
+import { GetNetworkGenesisHash } from '@/store/networks/types';
 
 @Component({
   components: {
@@ -102,6 +103,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Action(SignActionsTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: TAction<ApprovePayload>;
   @Action(SignActionsTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
+  @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
 
   get disabledButton() {
     return this.password === '' || this.isErrorPassword;
@@ -133,7 +135,7 @@ export default class ConfirmationPasswordPopup extends Vue {
       delete payload.address;
       payload.type = 'json';
       const response = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
-      console.log('JSON RESPONSE', response);
+      console.info('JSON RESPONSE', response);
 
       // approveSignSignature(this.transactionId, response.blockchainData.signature);
     }

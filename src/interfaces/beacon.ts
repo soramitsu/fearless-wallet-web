@@ -96,6 +96,7 @@ export interface SignerPayloadRaw {
   type: string;
   address: string;
 }
+
 export interface SubstrateSignPayloadRequestRaw extends BlockchainRequestV3<'substrate'> {
   blockchainData: {
     type: SubstrateMessageType.sign_payload_request;
@@ -104,29 +105,19 @@ export interface SubstrateSignPayloadRequestRaw extends BlockchainRequestV3<'sub
     mode: 'submit' | 'submit-and-return' | 'return';
   };
 }
+
+interface GenesisHash {
+  genesisHash: HexString;
+}
+
 export interface TransferPayload {
   amount: string;
-  network: {
-    genesisHash: string;
-  };
+  network: GenesisHash;
   recipient: string;
   sourceAddress: string;
 }
 
-export interface SubstrateTransferRequest extends BlockchainRequestV3<'substrate'> {
-  blockchainData: {
-    type: SubstrateMessageType.transfer_request;
-    scope: SubstratePermissionScope.transfer;
-    sourceAddress: string;
-    amount: string;
-    recipient: string;
-    network: {
-      genesisHash: string;
-      rpc?: string;
-    };
-    mode: 'submit' | 'submit-and-return' | 'return';
-  };
-}
+export type BeaconNetworks = GenesisHash[];
 
 export interface SubstrateSignPayloadResponse extends BlockchainResponseV3<'substrate'> {
   blockchainData: {
@@ -136,3 +127,16 @@ export interface SubstrateSignPayloadResponse extends BlockchainResponseV3<'subs
 }
 
 export type TCallback<T> = (payload: T) => void;
+
+interface BeaconAccount {
+  accountId: string;
+  address: string;
+  network: GenesisHash;
+  publicKey: string;
+}
+
+export interface BeaconAccountInfo extends AccountInfo {
+  chainData: {
+    accounts: BeaconAccount[];
+  };
+}

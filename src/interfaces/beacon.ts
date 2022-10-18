@@ -71,12 +71,38 @@ export interface SignerPayloadJSON {
 export interface PayloadJSON extends SignerPayloadJSON {
   type: 'json';
 }
+
 export type BeaconPayloadJSON = Omit<PayloadJSON, 'address'>;
+
 export interface SubstrateSignPayloadRequest extends BlockchainRequestV3<'substrate'> {
   blockchainData: {
     type: SubstrateMessageType.sign_payload_request;
     scope: SubstratePermissionScope.sign_payload_json;
     payload: BeaconPayloadJSON;
+    mode: 'return';
+  };
+}
+
+export interface BeaconPayloadRaw {
+  isMutable: boolean;
+  data: string;
+  dataType: string;
+  type: string;
+  address: string;
+}
+
+export interface SignerPayloadRaw {
+  isMutable: boolean;
+  data: string;
+  dataType: string;
+  type: string;
+  address: string;
+}
+export interface SubstrateSignPayloadRequestRaw extends BlockchainRequestV3<'substrate'> {
+  blockchainData: {
+    type: SubstrateMessageType.sign_payload_request;
+    scope: SubstratePermissionScope.sign_payload_raw;
+    payload: BeaconPayloadRaw;
     mode: 'submit' | 'submit-and-return' | 'return';
   };
 }

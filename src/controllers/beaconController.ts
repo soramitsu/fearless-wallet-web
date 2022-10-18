@@ -19,9 +19,7 @@ import type {
   SubstratePermissionRequest,
   SubstrateSignPayloadRequest,
   SubstrateSignPayloadResponse,
-  SubstrateTransferRequest,
   TCallback,
-  TransferPayload,
   BeaconPayloadJSON,
 } from '@/interfaces';
 
@@ -86,8 +84,8 @@ class BeaconController {
       type: BeaconMessageType.PermissionRequest,
       blockchainData: {
         appMetadata: this.appMetaData,
-        networks: [{ genesisHash: '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3' }],
-        scopes: [SubstratePermissionScope.transfer, SubstratePermissionScope.sign_payload_json],
+        networks: [{ genesisHash: '0xe143f23803ac50e8f6f8e62695d1ce9e4e1d68aa36c1cd2cfd15340213f3423e' }],
+        scopes: [SubstratePermissionScope.sign_payload_raw, SubstratePermissionScope.sign_payload_json],
       },
     };
 
@@ -153,34 +151,14 @@ class BeaconController {
     this.app.clearActiveAccount();
   }
 
-  public async sendTransfer(payload: TransferPayload) {
-    const activeAccount = await this.app.getActiveAccount();
-
-    if (!activeAccount) throw new Error('Beacon not set up.');
-
-    const request: SubstrateTransferRequest = {
-      accountId: activeAccount.accountIdentifier,
-      blockchainData: {
-        ...payload,
-        mode: 'submit-and-return',
-        type: SubstrateMessageType.transfer_request,
-        scope: SubstratePermissionScope.transfer,
-      },
-      blockchainIdentifier: 'substrate',
-      type: BeaconMessageType.BlockchainRequest,
-    };
-
-    const response = await this.app.request(request);
-  }
-
-  public async sendRequest(payload: BeaconPayloadJSON) {
+  public async sendRequestJSON(payload: BeaconPayloadJSON) {
     const activeAccount = await this.app.getActiveAccount();
 
     if (!activeAccount) throw new Error('Beacon not set up.');
     const request: SubstrateSignPayloadRequest = {
       accountId: activeAccount.accountIdentifier,
       blockchainData: {
-        mode: 'submit-and-return',
+        mode: 'return',
         payload: payload,
         type: SubstrateMessageType.sign_payload_request,
         scope: SubstratePermissionScope.sign_payload_json,
@@ -190,6 +168,14 @@ class BeaconController {
     };
 
     const response = (await this.app.request(request)) as SubstrateSignPayloadResponse;
+
+    return response;
+  }
+
+  public async sendRequestRaw(payload: SubstrateSignPayloadRequest) {
+    const response = await this.app.request(payload);
+
+    console.log(response, 'RESPONSE RAW');
 
     return response;
   }

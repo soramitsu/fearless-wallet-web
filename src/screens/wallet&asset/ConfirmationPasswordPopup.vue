@@ -55,7 +55,8 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-
+import { u8aWrapBytes } from '@polkadot/util';
+import { toHex } from '@airgap/beacon-sdk';
 import type {
   Currencies,
   Currency,
@@ -63,6 +64,7 @@ import type {
   TAction,
   SignerPayloadJSON,
   BeaconPayloadJSON,
+  BeaconPayloadRaw,
 } from '@/interfaces';
 import { beaconController } from '@/controllers/beaconController';
 import { isSignLocked } from '@/extension/messaging';
@@ -134,10 +136,19 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   async signMobile() {
     const payload: BeaconPayloadJSON = this.payload as any;
-    delete (payload as any).address;
-    if (payload) payload.type = 'json';
-    if (!this.transactionId) this.$emit('transferMobile');
-    else if (payload) await beaconController.sendRequest(payload as unknown as BeaconPayloadJSON);
+
+    if (!this.transactionId && this.currency.extrinsic) {
+      const rawPayload: BeaconPayloadRaw = {
+        address: this.address,
+        type: 'raw',
+        dataType: 'bytes',
+        isMutable: false,
+        data: this.currency.extrinsic.toHex(),
+      };
+
+      const isSuccessfulTransaction = await this.currency?.sendRaw(this.address, this.amount);
+      console.log(isSuccessfulTransaction);
+    } else if (payload) await beaconController.sendRequestJSON(payload as unknown as BeaconPayloadJSON);
     // approveSignSignature(this.transactionId, res.signature);
   }
 

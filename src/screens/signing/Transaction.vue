@@ -115,7 +115,7 @@ export default class Auth extends Vue {
     console.info('sign with mobile');
     const payload = this.payload;
     delete payload.address;
-    await beaconController.sendRequest(this.payload as unknown as BeaconPayloadJSON);
+    await beaconController.sendRequestJSON(this.payload as unknown as BeaconPayloadJSON);
   }
 
   onClose() {

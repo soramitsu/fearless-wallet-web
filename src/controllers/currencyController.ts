@@ -24,6 +24,7 @@ import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { FPNumber } from '@/util/fp';
 import { getReplacedMetaTyped } from '@/helpers/common';
 import { getOptions } from '@/util/assets';
+import { beaconSigner, BeaconSigner } from '@/extension/background/extension-base/src/background/BeaconSigner';
 
 type NetworkProps = {
   label: string;
@@ -369,6 +370,35 @@ export default class CurrencyController {
     } catch {
       return '0';
     }
+  }
+
+  public async sendRaw(from: string, amount: string): Promise<boolean> {
+    try {
+      const unsubscribe = await this.extrinsic!.signAndSend(
+        from,
+        {
+          signer: new BeaconSigner(),
+        },
+        ({ status }) => {
+          //eslint-disable-line
+          if (status.isInBlock) {
+            console.info(`Successful transfer of ${amount} with hash ${status.asInBlock.toHex()}`);
+          } else if (status.isFinalized) {
+            console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
+
+            unsubscribe();
+          } else {
+            console.info(`Status of transfer: ${status.type}`);
+          }
+        }
+      );
+    } catch (ex) {
+      console.info(`Transaction failed ${ex}`);
+
+      return false;
+    }
+
+    return true;
   }
 
   public async send(from: string, amount: string): Promise<boolean> {

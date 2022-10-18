@@ -90,7 +90,6 @@
       :address="addressByNetwork"
       :firstNetwork="selectedNetwork"
       @close="confirmationPasswordPopupClose"
-      @transferMobile="transferMobile"
     />
   </div>
 </template>
@@ -208,22 +207,6 @@ export default class SendForm extends Vue {
 
   get isValidRecipientAddress() {
     return BaseApi.validateAddress(this.recipient);
-  }
-
-  async transferMobile() {
-    const network = this.getNetwork(this._selectedNetwork);
-    const genesisHash = network.api?.genesisHash.toString();
-    const payload: TransferPayload = {
-      amount: this.amount,
-      network: {
-        genesisHash: genesisHash ? genesisHash : '',
-      },
-      recipient: this.recipient,
-      sourceAddress: this.addressByNetwork,
-    };
-
-    const response = await beaconController.sendTransfer(payload);
-    console.info('TRANSFER RESPONSE', response);
   }
 
   get addressByNetwork() {

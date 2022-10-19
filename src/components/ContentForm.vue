@@ -9,6 +9,7 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import Corners from '@/components/Corners.vue';
+import { EXTENSION_HEIGHT } from '@/consts/extensionInformation';
 
 @Component({ components: { Corners } })
 export default class ContentForm extends Vue {
@@ -16,8 +17,10 @@ export default class ContentForm extends Vue {
 
   get contentFormStyle() {
     const styles: Record<string, string> = {};
+    const subtractionNumber = EXTENSION_HEIGHT - this.height;
 
-    if (this.height) styles.height = `${this.height}px`;
+    styles.height = `calc(100vh - ${subtractionNumber}px)`;
+    styles.minHeight = `${this.height}px`;
 
     return styles;
   }

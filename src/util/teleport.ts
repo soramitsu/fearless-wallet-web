@@ -25,7 +25,7 @@ function getOrmlOptions(symbol: string, originNet: string) {
 function getNativeTeleportParams(destNet: string, toAddress: string, amount: string) {
   const isToRelayChainTeleport = isRelayChain(destNet);
   const { paraId: _paraId } = NetworksController.getNetwork(destNet);
-  const paraId = +(_paraId ?? isToRelayChainTeleport ? '-1' : '-2'); // '-2' fiction
+  const paraId = +(_paraId ?? (isToRelayChainTeleport ? '-1' : '-2')); // '-2' fiction
   const publicKey = BaseApi.decodeAddress(toAddress);
   const receiverLocation = { AccountId32: { network: 'Any', id: publicKey } };
   const value = new BN(amount);

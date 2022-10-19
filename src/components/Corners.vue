@@ -4,8 +4,8 @@
       <slot></slot>
     </div>
 
-    <div :class="topLeftCornerClasses"></div>
-    <div :class="bottomRightCornerClasses"></div>
+    <div v-if="topLeftCorner" :class="topLeftCornerClasses"></div>
+    <div v-if="bottomRightCorner" :class="bottomRightCornerClasses"></div>
   </div>
 </template>
 
@@ -31,14 +31,10 @@ export default class Corners extends Vue {
   }
 
   get topLeftCornerClasses() {
-    if (!this.topLeftCorner) return [];
-
     return [...this.cornerClasses, 'top-left'];
   }
 
   get bottomRightCornerClasses() {
-    if (!this.bottomRightCorner) return [];
-
     return [...this.cornerClasses, 'bottom-right'];
   }
 

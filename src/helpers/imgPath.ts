@@ -56,14 +56,6 @@ function getImgPathByNetworkOrAssetName(value = '', relayChain?: RelayChainName)
     case 'encointer on kusama':
       return 'encointer.svg';
 
-    case 'polkadot':
-    case 'dot':
-      return 'polkadot.svg';
-
-    case 'kusama':
-    case 'ksm':
-      return 'kusama.svg';
-
     case 'westend':
     case 'wnd':
       return 'westend.svg';
@@ -268,6 +260,28 @@ function getImgPathByNetworkOrAssetName(value = '', relayChain?: RelayChainName)
     case 'kylin network':
     case 'kyl':
       return 'kylin network.svg';
+
+    //////////////////////
+
+    case 'polkadot':
+    case 'polkadot (test)':
+    case 'dot':
+      return 'polkadot.svg';
+
+    case 'kusama':
+    case 'kusama (test)':
+    case 'ksm':
+      return 'kusama.svg';
+
+    case 'unit':
+      switch (relayChain?.toLowerCase()) {
+        case 'polkadot (test)':
+          return 'polkadot.svg';
+        case 'kusama (test)':
+          return 'kusama.svg';
+        default:
+          return '_default.svg';
+      }
 
     //////////////////////
 

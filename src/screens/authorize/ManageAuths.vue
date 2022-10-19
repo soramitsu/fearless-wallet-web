@@ -3,7 +3,7 @@
     <SearchInput v-model="filterValue" placeholder="Search in networks" class="manage-auths__search" width="100%" />
 
     <AuthItem
-      v-for="el in filteredList"
+      v-for="el in authlist"
       v-bind:key="el.id"
       :request="el"
       @onRemoveAuth="removeAuth"
@@ -34,8 +34,7 @@ import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
 export default class ManageAuths extends Vue {
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
-  @Action(AuthActionTypes.GET_AUTHLIST)
-  getAuthList!: TAction<void>;
+  @Action(AuthActionTypes.GET_AUTHLIST) getAuthList!: TAction<void>;
   @Action(AuthActionTypes.DELETE_AUTH_CONNECTION)
   deleteAuthConnection!: TAction<string>;
 

@@ -7,6 +7,6 @@ def pipeline = new org.js.AppPipeline(
     dockerImageName:    'fearless/wallet-web',
     buildDockerImage:   'docker.soramitsu.co.jp/build-tools/node:14-ubuntu',
     dockerRegistryCred: 'bot-fearless-rw'
-    buildCmds:           ["${-> packageManager} build:extension"]
+    buildCmds:           ["yarn build:extension"]
 )
 pipeline.runPipeline()

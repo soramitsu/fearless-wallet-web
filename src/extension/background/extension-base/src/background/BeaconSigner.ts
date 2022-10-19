@@ -3,7 +3,9 @@
 
 import { BeaconMessageType, SubstrateMessageType, SubstratePermissionScope } from '@airgap/beacon-sdk';
 import { Signer } from '@polkadot/api/types';
-import { SignerPayloadRaw, SignerResult } from '@polkadot/types/types/extrinsic';
+import { SignerPayloadJSON, SignerPayloadRaw, SignerResult } from '@polkadot/types/types/extrinsic';
+import State from './handlers/State';
+import type { HexString } from '@polkadot/util/types';
 import { beaconController } from '@/controllers/beaconController';
 
 export class BeaconSigner implements Signer {
@@ -43,5 +45,3 @@ export class BeaconSigner implements Signer {
     };
   }
 }
-
-export const beaconSigner = new BeaconSigner();

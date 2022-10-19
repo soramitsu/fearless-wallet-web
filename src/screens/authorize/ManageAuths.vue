@@ -34,8 +34,10 @@ import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
 export default class ManageAuths extends Vue {
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
-  @Action(AuthActionTypes.GET_AUTHLIST) getAuthList!: TAction<void>;
-  @Action(AuthActionTypes.DELETE_AUTH_CONNECTION) deleteAuthConnection!: TAction<string>;
+  @Action(AuthActionTypes.GET_AUTHLIST)
+  getAuthList!: TAction<void>;
+  @Action(AuthActionTypes.DELETE_AUTH_CONNECTION)
+  deleteAuthConnection!: TAction<string>;
 
   filterValue = '';
   filteredList: Record<string, AuthUrlInfo> = {};

@@ -57,7 +57,7 @@ import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { Currencies, Currency, RequestSentInfo, TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
 import { beaconController } from '@/controllers/beaconController';
-import { isSignLocked } from '@/extension/messaging';
+import { approveSignSignature, isSignLocked } from '@/extension/messaging';
 import { isExtension } from '@/helpers/common';
 import Loader from '@/components/Loader.vue';
 import Popup from '@/components/Popup.vue';
@@ -134,10 +134,10 @@ export default class ConfirmationPasswordPopup extends Vue {
       const payload: PayloadJSON = this.payload as any;
       delete payload.address;
       payload.type = 'json';
-      const response = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
-      console.info('JSON RESPONSE', response);
 
-      // approveSignSignature(this.transactionId, response.blockchainData.signature);
+      const { blockchainData } = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
+      console.info('JSON RESPONSE', blockchainData);
+      approveSignSignature(this.transactionId, blockchainData.signature);
     }
   }
 

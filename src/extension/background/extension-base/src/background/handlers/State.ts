@@ -35,6 +35,7 @@ import MetadataStore from '../../stores/Metadata';
 import { stripUrl, withErrorLog } from './helpers';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
+import type { HexString } from '@polkadot/util/types';
 
 function extractMetadata(store: MetadataStore): void {
   store.allMap((map): void => {
@@ -91,6 +92,7 @@ export async function initState() {
 
 export default class State {
   static authUrls: AuthUrls = {};
+  static signature: HexString | null = null;
   static defaultAuthAccountSelection: string[] = [];
   static authRequests: Record<string, AuthRequest> = {};
   static metaRequests: Record<string, MetaRequest> = {};
@@ -289,9 +291,11 @@ export default class State {
     resolve: (result: ResponseSigning) => void,
     reject: (error: Error) => void
   ): Resolver<ResponseSigning> => {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
+
     const complete = async (): Promise<void> => {
       delete State.signRequests[id];
-
       State.updateIconSign(true);
     };
 

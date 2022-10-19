@@ -417,7 +417,11 @@ export interface RequestSign {
 
   sign(registry: TypeRegistry, pair: KeyringPair): { signature: HexString };
 }
+export interface RequestSignJSON {
+  readonly payload: SignerPayloadJSON | SignerPayloadRaw | undefined;
 
+  sign(): { signature: HexString };
+}
 export interface RequestJsonRestore {
   file: KeyringPair$Json;
   password: string;

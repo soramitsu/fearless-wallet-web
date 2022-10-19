@@ -9,7 +9,6 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
-import { beaconController } from './controllers/beaconController';
 import type { SetSelectedWalletProps, setAccountsProps, Accounts, setAddressesProps } from '@/store/accounts/types';
 import type { TAction, TMutation } from '@/interfaces';
 import type { BehaviorSubject } from 'rxjs';

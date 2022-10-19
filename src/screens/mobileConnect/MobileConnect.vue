@@ -120,7 +120,6 @@ export default class MobileConnect extends Vue {
   }
 
   close() {
-    beaconController.disconnect();
     this.$router.push({ name: Components.Wallet });
   }
 

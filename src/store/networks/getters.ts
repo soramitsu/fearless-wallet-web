@@ -59,7 +59,6 @@ const getters: GetterTree<State, State> & Getters = {
     ({ networks }) =>
     (networkName: string) => {
       const network = networks.find(({ name }) => name === networkName)!;
-      console.log(network, networkName, 'network');
 
       return `0x${network.chainId}`;
     },

@@ -448,6 +448,7 @@ export default class Extension {
   }
 
   static async signingApproveSignature({ id, signature }: RequestSigningApproveSignature): Promise<boolean> {
+    State.signature = signature;
     const queued = await State.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
@@ -476,6 +477,13 @@ export default class Extension {
     assert(queued, 'Unable to find request');
 
     const address = queued.request.payload.address;
+    console.info('isAddress has signature', State.signature);
+    if (keyring.getAddress(address, 'address'))
+      return {
+        isLocked: !!State.signature,
+        remainingTime: 0,
+      };
+
     const pair = keyring.getPair(address);
 
     assert(pair, 'Unable to find pair');

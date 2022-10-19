@@ -6,11 +6,14 @@ import { checkIfDenied } from '@polkadot/phishing';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { assert, isNumber } from '@polkadot/util';
 
-import RequestBytesSign from '../RequestBytesSign';
-import RequestExtrinsicSign from '../RequestExtrinsicSign';
+import RequestBytesSign from '@extension-base/background/RequestBytesSign';
+import RequestExtrinsicSign from '@extension-base/background/RequestExtrinsicSign';
+
+import BeaconSignerJSON from '../BeaconSignerJSON';
 import { stripUrl, transformAccounts, transformAddresses, withErrorLog } from './helpers';
 import State from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
+import type { HexString } from '@polkadot/util/types';
 import type {
   AccountSub,
   AuthResponse,
@@ -38,7 +41,6 @@ import type {
   ProviderMeta,
 } from '@polkadot/extension-inject/types';
 import { keyring } from '@/controllers/keyringChrome';
-
 export default class Tabs {
   static accountSubs: Record<string, AccountSub> = {};
 
@@ -116,10 +118,13 @@ export default class Tabs {
 
   static extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
     const address = request.address;
+    const isAddress = !!keyring.getAddress(address, 'address');
     let meta;
-
+    console.info(State.signature, 'SIGNATURE');
     if (keyring.getAccount(address)) meta = Tabs.getSigningPair(address).meta;
-    else if (keyring.getAddress(address, 'address')) meta = keyring.getAddress(address, 'address')?.meta;
+    else if (isAddress) meta = keyring.getAddress(address, 'address')?.meta;
+
+    if (isAddress) return State.sign(url, new BeaconSignerJSON(request), { address, ...meta });
 
     return State.sign(url, new RequestExtrinsicSign(request), { address, ...meta });
   }

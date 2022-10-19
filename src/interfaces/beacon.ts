@@ -126,6 +126,13 @@ export interface SubstrateSignPayloadResponse extends BlockchainResponseV3<'subs
   };
 }
 
+export interface SubstrateSignPayloadJSONResponse extends BlockchainResponseV3<'substrate'> {
+  blockchainData: {
+    signature: HexString;
+    type: string;
+  };
+}
+
 export type TCallback<T> = (payload: T) => void;
 
 interface BeaconAccount {

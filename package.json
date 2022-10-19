@@ -18,7 +18,7 @@
   },
   "main": "index.js",
   "dependencies": {
-    "@airgap/beacon-sdk": "^3.2.0",
+    "@airgap/beacon-sdk": "^3.3.0",
     "@equilab/api": "^1.13.1",
     "@open-web3/orml-types": "^1.0.1",
     "@polkadot/api": "^9.2.3",

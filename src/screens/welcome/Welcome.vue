@@ -24,7 +24,6 @@
       />
 
       <Button
-        v-if="isExtension"
         class="import-button"
         width="100%"
         text="I already have a wallet"
@@ -35,7 +34,7 @@
         @click="openAddWalletComponent('import')"
       />
 
-      <BeaconConnect />
+      <BeaconConnect v-if="isExtension" />
 
       <div class="privacy-policy">
         By continuing you agree with

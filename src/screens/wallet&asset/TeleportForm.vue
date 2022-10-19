@@ -1,141 +1,80 @@
 <template>
-  <div>
-    <AboveForm
-      header="Teleport"
-      :blur="true"
-      :showBackIcon="showBackIcon"
-      :handlerBack="handlerBack"
-      :closeHandler="closeForm"
-    >
-      <div class="teleport-form">
-        <div>
-          <template v-if="step === 1">
-            <Select
-              v-model="selectedAssetId"
-              :options="optionsCurrency"
-              placeholder="CURRENCY"
-              size="big"
-              class="row"
-            />
+  <TransferForm
+    extrinsicType="teleport"
+    header="Teleport"
+    :selectedAssetId="selectedAssetId"
+    :selectedNetwork="originalNetwork"
+    :amount="amount"
+    :value="value"
+    :partialFee="originNetFee"
+    :destinationNetwork="destinationNetwork"
+    :closeForm="closeForm"
+    @update:selectedAssetId="updateSelectedAssetId"
+    @update:selectedNetwork="updateOriginalNetwork"
+    @update:amount="updateAmount"
+    @update:partialFee="updateOriginNetFee"
+    @update:destinationNetwork="updateDestinationNetwork"
+  >
+    <Select
+      v-model="destinationNetwork"
+      :options="optionsDestinationNetwork"
+      placeholder="DESTINATION NETWORK"
+      size="big"
+      class="row"
+    />
 
-            <Select
-              v-model="originalNetwork"
-              :options="optionsOriginalNetwork"
-              placeholder="ORIGINAL NETWORK"
-              size="big"
-              class="row"
-            />
-
-            <Select
-              v-model="destinationNetwork"
-              :options="optionsDestinationNetwork"
-              placeholder="DESTINATION NETWORK"
-              size="big"
-              class="row"
-            />
-
-            <AmountInputs
-              class="row"
-              :amount="amount"
-              :value="value"
-              :currency="currency"
-              @setMaxValue="setMaxValue"
-              @update:amount="updateAmount"
-              @update:value="updateValue"
-            />
-
-            <div class="row transferrable">
-              <div class="transferrable-label">Transferrable</div>
-              <div class="transferrable-descriptions">
-                <div class="transferrable-amount">{{ transferrableAmount }}</div>
-                <div class="transferrable-assets">{{ selectedAssetUpper }}</div>
-              </div>
+    <template v-slot:stepTwo>
+      <Corners size="big" class="row">
+        <div class="summary">
+          <div class="summary-label">Summary</div>
+          <div class="summary-row">
+            <div class="column column-left">
+              <div class="name">From</div>
+              <div class="network-name">{{ originalNetworkString }}</div>
             </div>
-          </template>
-          <template v-else-if="step === 2">
-            <Corners size="big" class="row">
-              <div class="summary">
-                <div class="summary-label">Summary</div>
-                <div class="summary-row">
-                  <div class="column column-left">
-                    <div class="name">From</div>
-                    <div class="network-name">{{ originalNetworkString }}</div>
-                  </div>
 
-                  <img src="@/assets/bold-arrow-right.svg" />
+            <img src="@/assets/bold-arrow-right.svg" />
 
-                  <div class="column">
-                    <div class="name">To</div>
-                    <div class="network-name">{{ destinationNetworkString }}</div>
-                  </div>
-                </div>
-                <div class="summary-row">
-                  <div class="name">Assets Amount</div>
-                  <div class="column">
-                    <div>{{ amountString }}</div>
-                    <div v-if="showValue" class="value">{{ valueString }}</div>
-                  </div>
-                </div>
-                <div class="summary-row">
-                  <div class="name">{{ originalNetworkString }} Fee</div>
-                  <div>
-                    {{ originalNetworkPartialFeeString }}
-                  </div>
-                </div>
-                <div class="summary-row">
-                  <div class="name">{{ destinationNetworkString }} Fee</div>
-                  <div>{{ destinationNetworkPartialFeeString }}</div>
-                </div>
-                <div class="summary-row">
-                  <div class="name">Total</div>
-                  <div>{{ totalString }}</div>
-                </div>
-              </div>
-            </Corners>
-          </template>
+            <div class="column">
+              <div class="name">To</div>
+              <div class="network-name">{{ destinationNetworkString }}</div>
+            </div>
+          </div>
+          <div class="summary-row">
+            <div class="name">Assets Amount</div>
+            <div class="column">
+              <div>{{ amountString }}</div>
+              <div v-if="showValue" class="value">{{ valueString }}</div>
+            </div>
+          </div>
+          <div class="summary-row">
+            <div class="name">{{ originalNetworkString }} Fee</div>
+            <div>
+              {{ originalNetworkPartialFeeString }}
+            </div>
+          </div>
+          <div class="summary-row">
+            <div class="name">{{ destinationNetworkString }} Fee</div>
+            <div>{{ destinationNetworkPartialFeeString }}</div>
+          </div>
+          <div class="summary-row">
+            <div class="name">Total</div>
+            <div>{{ totalString }}</div>
+          </div>
         </div>
-
-        <Button
-          size="big"
-          class="button"
-          :text="buttonText"
-          :disabled="buttonDisabled"
-          @click="handlerContinueButton"
-        />
-      </div>
-    </AboveForm>
-
-    <ConfirmationPasswordPopup
-      v-if="showConfirmationPasswordPopup"
-      :currency="currency"
-      :amount="amount"
-      :value="value"
-      :address="addressByNetwork"
-      :firstNetwork="originalNetwork"
-      :secondNetwork="destinationNetwork"
-      @close="confirmationPasswordPopupClose"
-    />
-
-    <ExistentialPopup
-      v-if="showExistentialPopup"
-      :handlerClose="handlerCloseExistentialPopup"
-      :handlerAcceptButton="handlerAcceptExistentialPopup"
-    />
-  </div>
+      </Corners>
+    </template>
+  </TransferForm>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import MaxButton from './MaxButton.vue';
-import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
-import AmountInputs from './AmountInputs.vue';
-import ExistentialPopup from './ExistentialPopup.vue';
+import TransferForm from './TransferForm.vue';
 import type { Currencies, Networks } from '@/interfaces';
 import type { GetAssetName } from '@/store/networks/types';
 import Button from '@/components/Button.vue';
 import Select from '@/components/Select.vue';
-import FloatInput from '@/components/FloatInput.vue';
 import Popup from '@/components/Popup.vue';
 import Corners from '@/components/Corners.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -144,8 +83,6 @@ import { SelectedWallet } from '@/store/accounts/types';
 import { firstCharToUp } from '@/helpers/common';
 import { addNumbers, formattedNumber, formattedPrice } from '@/helpers/numbers';
 import { getCurrencyOptions } from '@/helpers/currencies';
-import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
-import AboveForm from '@/components/AboveForm.vue';
 
 @Component({
   components: {
@@ -153,20 +90,12 @@ import AboveForm from '@/components/AboveForm.vue';
     Select,
     Button,
     Corners,
-    MaxButton,
-    AboveForm,
-    FloatInput,
-    AmountInputs,
-    ExistentialPopup,
-    ConfirmationPasswordPopup,
+    TransferForm,
   },
 })
 export default class TeleportForm extends Vue {
-  isValidCountAssets = true;
-  showExistentialPopup = false;
-  showConfirmationPasswordPopup = false;
-  originalNetworkPartialFee = '';
-  destinationNetworkPartialFee = '';
+  originNetFee = '';
+  destNetFee = '';
   selectedAssetId = '';
   originalNetwork = '';
   destinationNetwork = '';
@@ -183,16 +112,8 @@ export default class TeleportForm extends Vue {
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
 
-  get showFiatSymbol() {
-    return this.value !== '';
-  }
-
   get showValue() {
     return this.value !== '0';
-  }
-
-  get showValueInput() {
-    return this.currency?.price !== 0;
   }
 
   get originalNetworkString() {
@@ -212,23 +133,17 @@ export default class TeleportForm extends Vue {
   }
 
   get originalNetworkPartialFeeString() {
-    return `${formattedNumber(+this.originalNetworkPartialFee, 7)} ${this.selectedAssetUpper}`;
+    return `${formattedNumber(+this.originNetFee, 7)} ${this.selectedAssetUpper}`;
   }
 
   get destinationNetworkPartialFeeString() {
-    return `${formattedNumber(+this.destinationNetworkPartialFee)} ${this.selectedAssetUpper}`;
+    return `${formattedNumber(+this.destNetFee)} ${this.selectedAssetUpper}`;
   }
 
   get totalString() {
-    const total = +addNumbers([this.amount, this.originalNetworkPartialFee, this.destinationNetworkPartialFee]);
+    const total = +addNumbers([this.amount, this.originNetFee, this.destNetFee]);
 
     return `${formattedNumber(total, 7)} ${this.selectedAssetUpper}`;
-  }
-
-  get transferrableAmount() {
-    const count = +(this.currency?.getTransferableCountAssets(this.originalNetwork, this.selectedWallet) ?? 0);
-
-    return formattedNumber(count, 4, false, true);
   }
 
   get selectedAsset() {
@@ -239,299 +154,100 @@ export default class TeleportForm extends Vue {
     return this.selectedAsset.toUpperCase();
   }
 
-  get buttonText() {
-    if (this.step === 2) return 'Teleport';
-
-    if (!this.currency) return '';
-
-    if (this.destinationNetwork !== '' && !this.isValidDirection) return 'Impossible to teleport';
-    else if (!this.isValidCountAssets) return `Insufficient balance ${this.selectedAssetUpper}`;
-
-    return 'Next';
-  }
-
   get currency() {
     return this.currencies.find(({ assetId }) => assetId === this.selectedAssetId);
-  }
-
-  get showBackIcon() {
-    return this.step === 2;
-  }
-
-  get buttonDisabled() {
-    if (this.step === 2) return false;
-
-    return !this.isAllFieldsCorrect || +this.amount === 0 || this.originalNetworkPartialFee === '';
-  }
-
-  get isValidDirection() {
-    // TODO: fix; from native parachains only to the relay chain
-    if (NATIVE_PARACHAINS.includes(this.originalNetwork) && !RELAY_CHAINS.includes(this.destinationNetwork))
-      return false;
-
-    return !!this.currency && this.originalNetwork !== '' && this.destinationNetwork !== '';
-  }
-
-  get isAllFieldsCorrect() {
-    if (!this.currency) return false;
-
-    return (
-      !!this.selectedAssetId &&
-      !!this.originalNetwork &&
-      !!this.destinationNetwork &&
-      !!this.amount &&
-      this.isValidCountAssets
-    );
   }
 
   get optionsCurrency() {
     return getCurrencyOptions(this.currencies);
   }
 
-  get optionsNetworks() {
+  get optionsDestinationNetwork() {
     const availableInNetworks = this.currency?.getAvailableInNetworks(this.selectedWallet);
-
-    return availableInNetworks?.map(({ network, precision, type }) => ({
+    const optionsNetworks = availableInNetworks?.map(({ network }) => ({
       label: firstCharToUp(network),
       value: network,
-      precision,
-      type,
     }));
+
+    return optionsNetworks?.filter(({ value }) => value !== this.originalNetwork);
   }
 
-  get optionsOriginalNetwork() {
-    return this.optionsNetworks?.filter(({ value }) => value !== this.destinationNetwork);
-  }
-
-  get optionsDestinationNetwork() {
-    return this.optionsNetworks?.filter(({ value }) => value !== this.originalNetwork);
-  }
-
-  get addressByNetwork() {
-    return this.currency?.getTransactionAddress(this.selectedWallet, this.originalNetwork) ?? '';
-  }
-
-  @Watch('selectedAssetId')
-  updateSelectedNetwork() {
-    this.originalNetwork = this.optionsNetworks?.[0]?.value ?? '';
-    this.destinationNetwork = '';
-    this.amount = '';
-  }
-
-  @Watch('originalNetwork')
-  @Watch('destinationNetwork')
-  @Watch('selectedAssetId')
-  @Watch('amount')
-  async createTeleportExtrinsic() {
-    this.originalNetworkPartialFee = '';
-
-    if (!this.isValidDirection || this.originalNetwork === '') return;
-
-    const partialFee = await this.createExtrinsicAndGetFee();
-
-    this.originalNetworkPartialFee = partialFee;
-    this.isValidCountAssets = this.currency!.validateCountAssets(
-      this.amount,
-      partialFee,
-      this.originalNetwork,
-      this.selectedWallet
-    );
-  }
-
-  mounted() {
+  created() {
     this.selectedAssetId = this._selectedAssetId;
+    this.originalNetwork = this._originalNetwork;
+  }
 
-    this.$nextTick(() => {
-      const index = this.optionsNetworks?.findIndex(({ value }) => value === this._originalNetwork);
+  updateSelectedAssetId(value: string) {
+    this.selectedAssetId = value;
+  }
 
-      this.originalNetwork = index !== -1 ? this._originalNetwork : this.optionsNetworks?.[0]?.value ?? '';
-    });
+  updateOriginalNetwork(value: string) {
+    this.originalNetwork = value;
+  }
+
+  updateDestinationNetwork(value: string) {
+    this.destinationNetwork = value;
   }
 
   updateAmount(value: string) {
     this.amount = value;
   }
 
-  updateValue(value: string) {
-    this.value = value;
-  }
-
-  createExtrinsicAndGetFee(amount?: string) {
-    const networkProps = this.optionsNetworks!.find(({ value }) => value === this.originalNetwork)!;
-
-    this.currency!.createTeleportExtrinsic(
-      this.selectedWallet,
-      this.destinationNetwork,
-      amount ?? this.amount,
-      networkProps
-    );
-
-    return this.currency!.getPartialFee(this.addressByNetwork, networkProps);
-  }
-
-  async setMaxValue() {
-    if (!this.currency) return;
-
-    const maxTransferableCountAssets = this.currency?.getTransferableCountAssets(
-      this.originalNetwork,
-      this.selectedWallet
-    );
-    const partialFee = await this.createExtrinsicAndGetFee(maxTransferableCountAssets);
-    const transferableCountAssets = this.currency
-      .getTransferableCountAssetsMinusFee(partialFee, this.originalNetwork, this.selectedWallet)
-      .toString();
-
-    this.amount = transferableCountAssets;
-    this.value = this.currency.getCostOfAssets(transferableCountAssets).toString();
-  }
-
-  confirmationPasswordPopupClose(closeForm: boolean) {
-    this.showConfirmationPasswordPopup = false;
-
-    if (closeForm) this.closeForm();
-  }
-
-  changeAmount(amount: string) {
-    this.value = this.currency?.getCostOfAssets(amount).toString() ?? '';
-  }
-
-  changeValue(value: string) {
-    this.amount = this.currency?.getCountAssetsByPrice(value).toString() ?? '';
-  }
-
-  handlerBack() {
-    this.step = 1;
-  }
-
-  handlerContinueButton(skipWarning = false) {
-    if (!skipWarning && this.step === 1) {
-      this.showExistentialPopup = !this.currency!.validateExistentialDeposit(
-        this.selectedWallet,
-        this.originalNetwork,
-        this.amount,
-        this.originalNetworkPartialFee
-      );
-
-      if (this.showExistentialPopup) return;
-    }
-
-    if (this.step === 2) {
-      this.showConfirmationPasswordPopup = true;
-
-      return;
-    }
-
-    this.step += 1;
-  }
-
-  handlerCloseExistentialPopup() {
-    this.showExistentialPopup = false;
-  }
-
-  handlerAcceptExistentialPopup() {
-    this.handlerContinueButton(true);
-
-    this.handlerCloseExistentialPopup();
+  updateOriginNetFee(value: string) {
+    this.originNetFee = value;
   }
 }
 </script>
 
 <style lang="scss" scoped>
-.teleport-form {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+.summary {
+  padding: $default-padding;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  clip-path: $big-clip-path-left-top-and-right-bottom;
+  border-radius: $default-border-radius;
 
-  .row {
-    margin-top: 16px;
-
-    &:first-child {
-      margin-top: 0;
-    }
+  .summary-label {
+    text-align: left;
+    font-size: 18px;
+    font-weight: 600;
   }
 
-  .fee {
-    font-weight: 300;
-    font-size: 15px;
-  }
-
-  .transferrable {
+  .summary-row {
     display: flex;
-    align-items: center;
+    justify-content: space-between;
+    margin: 24px 0;
 
-    .transferrable-label {
-      font-size: 14px;
-      color: $default-white;
+    &:last-child {
+      margin-bottom: 5px;
+    }
+
+    .name {
+      color: rgba(255, 255, 255, 0.5);
       text-align: left;
     }
 
-    .transferrable-descriptions {
+    .column {
       display: flex;
-      margin-left: 5px;
-    }
+      flex-direction: column;
+      align-items: flex-end;
+      width: 240px;
 
-    .transferrable-amount {
-      font-weight: 600;
-      font-size: 16px;
-      color: $pink-lavender-color;
-    }
-
-    .transferrable-assets {
-      margin-left: 5px;
-      color: rgba(255, 255, 255, 0.9);
-    }
-  }
-
-  .summary {
-    padding: $default-padding;
-    background-color: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    clip-path: $big-clip-path-left-top-and-right-bottom;
-    border-radius: $default-border-radius;
-
-    .summary-label {
-      text-align: left;
-      font-size: 18px;
-      font-weight: 600;
-    }
-
-    .summary-row {
-      display: flex;
-      justify-content: space-between;
-      margin: 24px 0;
-
-      &:last-child {
-        margin-bottom: 5px;
+      .value {
+        color: rgba(255, 255, 255, 0.75);
+        font-weight: 300;
+        font-size: 12px;
+        margin-top: 3px;
       }
 
-      .name {
-        color: rgba(255, 255, 255, 0.5);
-        text-align: left;
+      .network-name {
+        margin-top: 10px;
+        color: $pink-lavender-color;
       }
+    }
 
-      .column {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        width: 240px;
-
-        .value {
-          color: rgba(255, 255, 255, 0.75);
-          font-weight: 300;
-          font-size: 12px;
-          margin-top: 3px;
-        }
-
-        .network-name {
-          margin-top: 10px;
-          color: $pink-lavender-color;
-        }
-      }
-
-      .column-left {
-        align-items: flex-start;
-      }
+    .column-left {
+      align-items: flex-start;
     }
   }
 }

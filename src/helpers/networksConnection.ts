@@ -18,7 +18,7 @@ const connectedHandler = (context: Context, apiOptions: ApiOptions, { url, name 
   const { commit } = context;
   const networkName = network.name;
 
-  console.info(`%c connected to ${url}`, 'background:#77dd77;color:#fff');
+  // console.info(`%c connected to ${url}`, 'background:#77dd77;color:#fff');
 
   apiOptions.apiRetry = 0;
 
@@ -56,7 +56,7 @@ const disconnectHandler = (
 
     connectToApi(context, network, apiOptions); // eslint-disable-line no-use-before-define
   } else {
-    console.info(`%cDisconnected from ${url} ${apiOptions.apiRetry} times`, 'background:orange;color:#fff');
+    // console.info(`%cDisconnected from ${url} ${apiOptions.apiRetry} times`, 'background:orange;color:#fff');
   }
 };
 

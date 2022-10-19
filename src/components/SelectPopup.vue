@@ -81,7 +81,7 @@ export default class SelectPopup extends Vue {
       {
         'row-active': this.VModel === value,
       },
-      `margin-${this.space}`,
+      `padding-${this.space}`,
     ];
   }
 
@@ -114,17 +114,17 @@ export default class SelectPopup extends Vue {
     }
   }
 
-  .margin-small {
+  .padding-small {
     padding-top: 12px;
     padding-bottom: 12px;
   }
 
-  .margin-medium {
+  .padding-medium {
     padding-top: 18px;
     padding-bottom: 18px;
   }
 
-  .margin-big {
+  .padding-big {
     padding-top: 24px;
     padding-bottom: 24px;
   }

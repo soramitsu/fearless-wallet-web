@@ -12,7 +12,6 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { Components } from '@/router/routes';
 import { getAuthList, updateAuthorization } from '@/extension/messaging';
 import SelectAuthAccount from '@/screens/authorize/SelectAuthAccount.vue';
 import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';

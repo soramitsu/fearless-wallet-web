@@ -13,7 +13,6 @@ import BeaconSignerJSON from '../BeaconSignerJSON';
 import { stripUrl, transformAccounts, transformAddresses, withErrorLog } from './helpers';
 import State from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
-import type { HexString } from '@polkadot/util/types';
 import type {
   AccountSub,
   AuthResponse,
@@ -120,7 +119,6 @@ export default class Tabs {
     const address = request.address;
     const isAddress = !!keyring.getAddress(address, 'address');
     let meta;
-    console.info(State.signature, 'SIGNATURE');
     if (keyring.getAccount(address)) meta = Tabs.getSigningPair(address).meta;
     else if (isAddress) meta = keyring.getAddress(address, 'address')?.meta;
 

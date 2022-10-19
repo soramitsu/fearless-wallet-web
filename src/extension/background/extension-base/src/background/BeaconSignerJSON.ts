@@ -16,9 +16,6 @@ export default class BeaconSignerJSON implements RequestSign {
   }
 
   sign(registry: TypeRegistry, pair: KeyringPair): { signature: HexString } {
-    console.info('SIGNATURE is sign', State.signature);
-    registry.createType('ExtrinsicPayload', this.payload, { version: this.payload.version }).sign(pair);
-
     return { signature: State.signature as HexString };
   }
 }

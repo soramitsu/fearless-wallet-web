@@ -291,9 +291,6 @@ export default class State {
     resolve: (result: ResponseSigning) => void,
     reject: (error: Error) => void
   ): Resolver<ResponseSigning> => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-
     const complete = async (): Promise<void> => {
       delete State.signRequests[id];
       State.updateIconSign(true);

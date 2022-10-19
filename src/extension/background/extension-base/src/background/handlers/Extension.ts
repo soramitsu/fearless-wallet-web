@@ -477,7 +477,7 @@ export default class Extension {
     assert(queued, 'Unable to find request');
 
     const address = queued.request.payload.address;
-    console.info('isAddress has signature', State.signature);
+
     if (keyring.getAddress(address, 'address'))
       return {
         isLocked: !!State.signature,

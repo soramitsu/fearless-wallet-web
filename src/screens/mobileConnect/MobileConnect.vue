@@ -132,7 +132,6 @@ export default class MobileConnect extends Vue {
 
   async onPairingRequest(payload: string) {
     this.qrPayload = payload;
-    localStorage.setItem('beaconQR', payload);
   }
 
   async onPermissionRequest(payload: RequestSentInfo) {
@@ -164,8 +163,6 @@ export default class MobileConnect extends Vue {
     await createAddress(substrateAccount, meta); //extenstion service worker
 
     this.setSelectedWallet({ selectedWalletAddress: substrateAccount });
-
-    this.$router.push({ name: Components.Wallet });
   }
 }
 </script>

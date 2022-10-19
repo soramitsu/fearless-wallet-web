@@ -3,7 +3,7 @@ import type { AssetJson, Networks, Network, AssetPrice } from '@/interfaces';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { ASSETS_URL, FIATS_URL, CHAINS_URL } from '@/consts/urls';
+import URLS from '@/consts/urls';
 
 export default class NetworksController {
   static getNetworks(): Networks {
@@ -28,9 +28,9 @@ export default class NetworksController {
 
   public static async loadJsons(): Promise<void> {
     await store.dispatch(NetworksActionTypes.LOAD_JSONS, {
-      chainsUrl: CHAINS_URL,
-      assetsUrl: ASSETS_URL,
-      fiatsUrl: FIATS_URL,
+      chainsUrl: URLS.CHAINS,
+      assetsUrl: URLS.ASSETS,
+      fiatsUrl: URLS.FIATS,
     });
 
     await store.dispatch(NetworksActionTypes.LOAD_ASSETS_PRICE);

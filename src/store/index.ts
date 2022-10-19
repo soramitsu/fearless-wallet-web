@@ -1,5 +1,5 @@
 import Vue from 'vue';
-import Vuex from 'vuex';
+import Vuex, { Store } from 'vuex';
 import networks from './networks';
 import account from './accounts';
 import auth from './auth';
@@ -27,7 +27,7 @@ files.keys().forEach((key) => {
 
 Vue.use(Vuex);
 
-const store = new Vuex.Store({
+const store = new Store({
   modules,
   strict: false, // to ignore design system extended store errors. it should be set to `true` periodically
 });

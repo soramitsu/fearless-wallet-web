@@ -7,30 +7,15 @@
         iconName="twitter-pink"
         class="follow-button"
         width="256px"
-        @click="openPage('https://twitter.com/Soramitsu_co')"
+        @click="openPage(URLS.TWITTER)"
       />
 
-      <BorderButton
-        text="Join on Telegram"
-        iconName="telegram-pink"
-        width="256px"
-        @click="openPage('https://t.me/fearlesswallet')"
-      />
+      <BorderButton text="Join on Telegram" iconName="telegram-pink" width="256px" @click="openPage(URLS.TELEGRAM)" />
     </div>
     <div class="row">
-      <BorderButton
-        text="Read on Medium"
-        iconName="medium-pink"
-        width="256px"
-        @click="openPage('https://medium.com/fearlesswallet')"
-      />
+      <BorderButton text="Read on Medium" iconName="medium-pink" width="256px" @click="openPage(URLS.MEDIUM)" />
 
-      <BorderButton
-        text="Learn on Wiki"
-        iconName="file-dock"
-        width="256px"
-        @click="openPage('https://wiki.sora.org/master')"
-      />
+      <BorderButton text="Learn on Wiki" iconName="file-dock" width="256px" @click="openPage(URLS.WIKI)" />
     </div>
   </div>
 </template>
@@ -39,6 +24,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import Logo from '@/components/Logo.vue';
 import BorderButton from '@/components/BorderButton.vue';
+import URLS from '@/consts/urls';
 
 @Component({
   components: {
@@ -47,6 +33,8 @@ import BorderButton from '@/components/BorderButton.vue';
   },
 })
 export default class FinishForm extends Vue {
+  readonly URLS = URLS;
+
   openPage(url: string) {
     window.open(url);
   }

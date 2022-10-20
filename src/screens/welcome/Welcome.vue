@@ -63,7 +63,7 @@ import Button from '@/components/Button.vue';
 import { Components } from '@/router/routes';
 import CircleButton from '@/components/CircleButton.vue';
 import BaseApi from '@/util/BaseApi';
-import { TERMS_URL, PRIVACY_URL } from '@/consts/urls';
+import URLS from '@/consts/urls';
 import AboveForm from '@/components/AboveForm.vue';
 import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
 import { isExtension } from '@/helpers/common';
@@ -78,8 +78,6 @@ import { isExtension } from '@/helpers/common';
   },
 })
 export default class Welcome extends Vue {
-  store: unknown;
-
   get showBackWalletIcon() {
     return BaseApi.getAccounts().length !== 0;
   }
@@ -89,11 +87,11 @@ export default class Welcome extends Vue {
   }
 
   openTermsAndConditions() {
-    window.open(TERMS_URL);
+    window.open(URLS.TERMS);
   }
 
   openPrivacyPolicy() {
-    window.open(PRIVACY_URL);
+    window.open(URLS.PRIVACY);
   }
 
   backWallet() {

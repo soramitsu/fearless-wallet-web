@@ -1,8 +1,8 @@
 <template>
   <AboveForm :header="header" :closeHandler="close">
-    <template v-if="isQRPrep">
+    <template v-if="getQR">
       <h2 class="header">{{ qrCodeHeader }}</h2>
-      <QR :payload="qrPayload" />
+      <QR :payload="getQR" />
     </template>
 
     <Alert v-else-if="isActiveAccountExists" :message="activeAccountExistMessage" />
@@ -31,17 +31,18 @@
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator';
 import { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
-import { Action, Getter } from 'vuex-class';
+import { Action, Getter, Mutation } from 'vuex-class';
 import { PermissionResponseOutput } from '@airgap/beacon-sdk';
 import type { SetSelectedWallet } from '@/store/accounts/types';
-import { PermissionSuccess, TAction, RequestSentInfo, Networks, BeaconNetworks } from '@/interfaces';
+import { PermissionSuccess, TAction, RequestSentInfo, Networks, BeaconNetworks, TMutation } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { createAddress } from '@/extension/messaging';
 import { beaconController } from '@/controllers/beaconController';
 import { Components } from '@/router/routes';
 import { ActionTypes as AccountActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as NetworkGettersTypes } from '@/store/networks/getters';
-
+import { GettersTypes as BeaconGettersTypes } from '@/store/beacon/getters';
+import { MutationTypes as BeaconMutationsTypes } from '@/store/beacon/mutations';
 import Button from '@/components/Button.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import QR from '@/components/QR.vue';
@@ -66,8 +67,9 @@ import Alert from '@/components/Alert.vue';
 export default class MobileConnect extends Vue {
   @Action(AccountActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
   @Getter(NetworkGettersTypes.getNetworks) getNetworks!: Networks;
+  @Getter(BeaconGettersTypes.GET_QR) getQR!: Nullable<string>;
+  @Mutation(BeaconMutationsTypes.SET_QR) setQR!: TMutation<string>;
 
-  qrPayload = '';
   isRequest = false;
   requestInfo: RequestSentInfo | null = null;
   requestResponse: PermissionResponseOutput | null = null;
@@ -108,7 +110,7 @@ export default class MobileConnect extends Vue {
   }
 
   get isLoading() {
-    return !this.qrPayload && !this.isActiveAccountExists;
+    return !this.getQR && !this.isActiveAccountExists;
   }
 
   get isAwaitWalletResponse() {
@@ -116,7 +118,7 @@ export default class MobileConnect extends Vue {
   }
 
   get isQRPrep() {
-    return !this.requestInfo && this.qrPayload;
+    return !this.requestInfo && this.getQR;
   }
 
   close() {
@@ -131,7 +133,7 @@ export default class MobileConnect extends Vue {
   }
 
   async onPairingRequest(payload: string) {
-    this.qrPayload = payload;
+    this.setQR(payload);
   }
 
   async onPermissionRequest(payload: RequestSentInfo) {

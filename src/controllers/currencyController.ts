@@ -407,24 +407,9 @@ export default class CurrencyController {
     }
   }
 
-  public async sendRaw(from: string): Promise<boolean> {
-    this.options.signer = new BeaconSigner();
-
-    try {
-      await this.extrinsic!.signAndSend(from, this.options, this.statusCallback);
-    } catch (ex) {
-      console.info(`Transaction failed ${ex}`);
-
-      return false;
-    }
-
-    return true;
-  }
-
   statusCallback(result: ISubmittableResult) {
     const { status } = result;
 
-    //eslint-disable-line
     if (status.isInBlock) {
       console.info(`Successful transfer with hash ${status.asInBlock.toHex()}`);
     } else if (status.isFinalized) {
@@ -434,11 +419,29 @@ export default class CurrencyController {
     }
   }
 
+  public async sendRaw(from: string): Promise<boolean> {
+    this.options.signer = new BeaconSigner();
+
+    try {
+      await this.extrinsic!.signAndSend(from, this.options, this.statusCallback).then(() => {
+        return;
+      });
+    } catch (ex) {
+      console.info(`Transaction failed ${ex}`);
+
+      return false;
+    }
+
+    return true;
+  }
+
   public async send(from: string): Promise<boolean> {
     const pair = BaseApi.getPair(from);
 
     try {
-      await this.extrinsic!.signAndSend(pair, this.options, this.statusCallback);
+      await this.extrinsic!.signAndSend(pair, this.options, this.statusCallback).then(() => {
+        return;
+      });
     } catch (ex) {
       console.info(`Transaction failed ${ex}`);
 

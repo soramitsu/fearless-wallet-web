@@ -85,7 +85,7 @@
     </AboveForm>
 
     <SelectPopup
-      v-if="showSelectedAssetPopup || showSelectNetworkPopup || showDestNetPopup"
+      v-if="showSelectPopup"
       v-model="vModelSelectPopup"
       placeholder="Search in networks"
       verticalPlacement="top"
@@ -188,6 +188,10 @@ export default class SendForm extends Vue {
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
 
+  get showSelectPopup() {
+    return this.showSelectedAssetPopup || this.showSelectNetworkPopup || this.showDestNetPopup;
+  }
+
   get top() {
     if (this.showSelectedAssetPopup) return 227;
 
@@ -223,11 +227,7 @@ export default class SendForm extends Vue {
   get buttonText() {
     if (!this.currency) return '';
 
-    if (this.step === 2) {
-      if (this.extrinsicType === 'transfer') return 'Send';
-
-      return 'Teleport';
-    }
+    if (this.step === 2) return this.extrinsicType === 'transfer' ? 'Send' : 'Teleport';
 
     if (this.extrinsicType === 'transfer' && this.syncedRecipient !== '' && !this.isValidRecipientAddress)
       return 'Incorrect address';
@@ -549,7 +549,7 @@ export default class SendForm extends Vue {
 
       .transferrable-label {
         font-size: 14px;
-        color: rgba(255, 255, 255, 0.75);
+        color: $default-white;
         text-align: left;
       }
 
@@ -584,8 +584,8 @@ export default class SendForm extends Vue {
 
   .summary {
     padding: 16px;
-    background-color: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background-color: $secondary-background-color !important;
+    border: 1px solid $default-background-color !important;
     clip-path: $big-clip-path-left-top-and-right-bottom;
     border-radius: $default-border-radius;
 
@@ -605,7 +605,7 @@ export default class SendForm extends Vue {
       }
 
       .name {
-        color: rgba(255, 255, 255, 0.5);
+        color: $gray-color;
       }
 
       .column {
@@ -614,7 +614,7 @@ export default class SendForm extends Vue {
         align-items: flex-end;
 
         .value {
-          color: rgba(255, 255, 255, 0.75);
+          color: $default-white;
           font-weight: 300;
           font-size: 12px;
           margin-top: 3px;

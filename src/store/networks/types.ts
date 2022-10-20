@@ -44,6 +44,7 @@ export type SetAssetsPriceProps = {
 
 export type SetCurrenciesProps = {
   currencies: Currencies;
+  address?: string;
 };
 
 export type SetHistoryProps = {

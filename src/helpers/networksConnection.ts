@@ -45,7 +45,7 @@ const disconnectHandler = (
   apiOptions.apiRetry += 1;
 
   if (apiOptions.apiRetry === MAX_CONTINUE_RETRY) {
-    console.info(`%cStopped using ${url} because max retries`, 'background:red;color:#fff');
+    // console.info(`%cStopped using ${url} because max retries`, 'background:red;color:#fff');
 
     provider.disconnect();
 

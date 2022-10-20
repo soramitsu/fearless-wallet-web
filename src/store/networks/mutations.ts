@@ -19,6 +19,7 @@ export enum MutationTypes {
   SET_FIATS_JSON = 'SET_FIATS_JSON',
   SET_ASSET_PRICE = 'SET_ASSET_PRICE',
   SET_CURRENCIES = 'SET_CURRENCIES',
+  SORT_CURRENCIES = 'SORT_CURRENCIES',
   SET_HISTORY = 'SET_HISTORY',
   UPDATE_CURRENCY_BALANCE = 'UPDATE_CURRENCY_BALANCE',
   SET_NETWORK_ACTIVE_NODE = 'SET_NETWORK_ACTIVE_NODE',
@@ -42,7 +43,13 @@ const mutations: MutationTree<State> & Mutations = {
     state.networks = networks;
   },
 
-  [MutationTypes.SET_CURRENCIES](state, { currencies }) {
+  [MutationTypes.SET_CURRENCIES](state, { currencies, address }) {
+    if (address) {
+      const sequence = currencies.map(({ assetId }) => assetId);
+
+      accountController.setSequenceAssets(sequence, address);
+    }
+
     state.currencies = currencies;
   },
 

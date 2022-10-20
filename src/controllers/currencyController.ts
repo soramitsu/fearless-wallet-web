@@ -267,9 +267,10 @@ export default class CurrencyController {
   }
 
   public setCurrencyVisible(address: string, value: boolean): void {
-    if (this.currenciesVisible[address]) {
-      this.currenciesVisible[address][this.assetId] = value;
-    } else {
+    this.currenciesVisible = this.lsCurrency.get(this.visibleStorageName).value ?? {};
+
+    if (this.currenciesVisible[address]) this.currenciesVisible[address][this.assetId] = value;
+    else {
       this.currenciesVisible[address] = {};
       this.currenciesVisible[address][this.assetId] = value;
     }

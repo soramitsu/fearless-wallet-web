@@ -40,7 +40,13 @@ function getAccounts(): Accounts {
     return result;
   }, {} as Accounts);
 
-  return accounts;
+  const mobileAccount = BaseApi.getAddresses().reduce((result, { address, meta }) => {
+    result[address] = { type: undefined, json: { address, meta } };
+
+    return result;
+  }, {} as Accounts);
+
+  return { ...accounts, ...mobileAccount };
 }
 
 export { getChainAccounts, getAccounts };

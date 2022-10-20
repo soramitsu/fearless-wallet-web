@@ -20,7 +20,7 @@
           <div v-if="account.isMobile" class="account__checkbox--mobile-icon">mobile</div>
         </div>
         <div class="account__address">
-          <span>{{ account.address }}</span>
+          <span>{{ cutAddress(account.address) }}</span>
           <img class="clipboard" src="@/assets/clipboard.svg" @click="toClipboard(address)" />
         </div>
       </li>
@@ -32,6 +32,7 @@
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import Checkbox from '@/components/Checkbox.vue';
 import { WalletInfo } from '@/store/accounts/types';
+import { cut } from '@/helpers/history';
 
 @Component({
   components: { Checkbox },
@@ -39,6 +40,10 @@ import { WalletInfo } from '@/store/accounts/types';
 export default class SelectAuthAccount extends Vue {
   @Prop(Object) accounts!: WalletInfo[];
   @PropSync('selectAll', { type: Boolean }) syncSelectAll!: boolean;
+
+  cutAddress(address: string) {
+    return cut(address);
+  }
 
   toClipBoard(address: string) {
     const clipboard = new Clipboard();
@@ -53,6 +58,7 @@ export default class SelectAuthAccount extends Vue {
   flex-flow: column;
   align-items: flex-start;
   overflow-y: hidden;
+  height: 100%;
 }
 
 .auth-account {
@@ -62,7 +68,7 @@ export default class SelectAuthAccount extends Vue {
   justify-content: space-between;
   align-items: center;
   border: 1px solid transparent;
-  border-bottom-color: rgba(255, 255, 255, 0.1);
+  border-bottom-color: $default-background-color;
 }
 
 .account__checkbox {
@@ -77,8 +83,8 @@ export default class SelectAuthAccount extends Vue {
 
 .account__checkbox--mobile-icon {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.05);
+  color: $gray-color;
+  background: $secondary-background-color;
   letter-spacing: 0.03em;
   line-height: 15px;
   text-transform: uppercase;
@@ -89,10 +95,11 @@ export default class SelectAuthAccount extends Vue {
 
 .account__address {
   position: relative;
-  width: 300px;
+  width: 230px;
   overflow-x: hidden;
   text-overflow: ellipsis;
-  padding-right: 30px;
+  margin-right: 10px;
+  height: 24px;
 }
 
 .clipboard {
@@ -106,6 +113,8 @@ export default class SelectAuthAccount extends Vue {
 .account__list {
   padding: 0;
   width: 100%;
+  height: max-content;
+  overflow: scroll;
 }
 
 .account__checkbox .el-checkbox__label {

@@ -269,11 +269,11 @@ export default class Asset extends Vue {
       }
 
       .balance-in-network {
-        color: rgba(255, 255, 255, 0.5);
+        color: $gray-color;
       }
 
       .price {
-        color: rgba(255, 255, 255, 0.5);
+        color: $gray-color;
         font-size: 12px;
         line-height: 15px;
       }

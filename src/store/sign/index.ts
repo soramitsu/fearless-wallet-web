@@ -1,7 +1,7 @@
-import mutations from './mutations';
-import getters from './getters';
-import state from './state';
-import actions from './actions';
+import mutations from '@/store/sign/mutations';
+import getters from '@/store/sign/getters';
+import state from '@/store/sign/state';
+import actions from '@/store/sign/actions';
 
 const account = {
   state,

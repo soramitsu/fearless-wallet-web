@@ -1,7 +1,7 @@
 <template>
   <Popup class="sending-popup" :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close">
     <div class="popup-content">
-      <template v-if="!isSendTransaction">
+      <template v-if="!transactionState && !isSignMobile">
         <img src="@/assets/lock-green.svg" />
 
         <div class="text row">Enter password to confirm the transaction</div>
@@ -33,9 +33,9 @@
         />
       </template>
 
-      <Loader v-else-if="loading" />
+      <SignMobile v-if="isSignMobile && !isSendTransaction" @onSign="signMobile" @onCancel="close" />
 
-      <template v-else>
+      <template v-if="isSendTransaction">
         <div class="descriptions">
           <NetworkLogo :name="firstNetwork" :width="30" />
 
@@ -55,18 +55,21 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import type { Currencies, Currency, TAction } from '@/interfaces';
-import { isSignLocked } from '@/extension/messaging';
+import type { Currencies, Currency, RequestSentInfo, TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
+import { beaconController } from '@/controllers/beaconController';
+import { approveSignSignature, isSignLocked } from '@/extension/messaging';
 import { isExtension } from '@/helpers/common';
 import Loader from '@/components/Loader.vue';
 import Popup from '@/components/Popup.vue';
 import Button from '@/components/Button.vue';
+import Checkbox from '@/components/Checkbox.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import NetworkLogo from '@/components/NetworkLogo.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import Checkbox from '@/components/Checkbox.vue';
 import { ActionTypes as SignActionsTypes, ApprovePayload } from '@/store/sign/actions';
+import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
+import { GetNetworkGenesisHash } from '@/store/networks/types';
 
 @Component({
   components: {
@@ -76,6 +79,7 @@ import { ActionTypes as SignActionsTypes, ApprovePayload } from '@/store/sign/ac
     Checkbox,
     NetworkLogo,
     ValidatedInput,
+    SignMobile,
   },
 })
 export default class ConfirmationPasswordPopup extends Vue {
@@ -84,21 +88,29 @@ export default class ConfirmationPasswordPopup extends Vue {
   isErrorPassword = false;
   isUnlock = false;
   isSavePass = false;
-  isSuccessfulTransaction = false;
-  isSendTransaction = false;
+  signedPayload: RequestSentInfo | null = null;
+  transactionState: 'pending' | 'success' | 'failed' | null = null;
 
   @Prop(String) amount!: string;
   @Prop(String) value!: string;
   @Prop(String) firstNetwork!: string;
   @Prop(String) secondNetwork!: string;
   @Prop(String) address!: string;
-  @Prop(String) transactionId!: string;
+  @Prop(String) transactionId?: string;
   @Prop(Object) currency!: Currency;
+  @Prop(Object) payload?: SignerPayloadJSON;
+
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Action(SignActionsTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: TAction<ApprovePayload>;
+  @Action(SignActionsTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
+  @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
 
   get disabledButton() {
     return this.password === '' || this.isErrorPassword;
+  }
+
+  get isSignMobile() {
+    return BaseApi.getAddressType(this.address) === 'address';
   }
 
   get prepLabel() {
@@ -108,13 +120,33 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get headerType() {
-    return this.isSuccessfulTransaction ? 'success' : 'failed';
+    if (this.transactionState === 'success') return 'success';
+    if (this.transactionState === 'failed') return 'failed';
+
+    return 'pending';
+  }
+
+  async signMobile() {
+    if (!this.transactionId && this.currency.extrinsic) {
+      const isSuccessfulTransaction = await this.currency?.sendRaw(this.address);
+      this.transactionState = isSuccessfulTransaction ? 'success' : 'failed';
+    } else if (this.payload && this.transactionId) {
+      const payload: PayloadJSON = this.payload as any;
+      delete payload.address;
+      payload.type = 'json';
+
+      const { blockchainData } = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
+
+      approveSignSignature(this.transactionId, blockchainData.signature);
+    }
   }
 
   get popupHeader() {
-    if (!this.isUnlock || this.loading) return '';
+    if (this.transactionState === 'success') return 'Transaction Done';
+    if (this.transactionState === 'failed') return 'Transaction Error';
+    if ((this.loading && this.isUnlock) || (this.isSignMobile && this.transactionState !== 'pending')) return '';
 
-    return this.isSuccessfulTransaction ? 'Transaction done' : 'Transaction failed';
+    return 'Transaction is pending';
   }
 
   get transferAmountString() {
@@ -130,6 +162,10 @@ export default class ConfirmationPasswordPopup extends Vue {
     this.isErrorPassword = false;
   }
 
+  get isSendTransaction() {
+    return !!this.transactionState;
+  }
+
   close() {
     if (this.loading) return;
 
@@ -137,7 +173,9 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async mounted() {
-    if (!isExtension()) return;
+    if (!isExtension() && !this.isSignMobile) return;
+
+    if (this.transactionId === undefined) return;
 
     const { isLocked } = await isSignLocked(this.transactionId);
 
@@ -153,7 +191,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     this.loading = true;
-    this.isSendTransaction = true;
+    this.transactionState = 'pending';
 
     if (this.transactionId) {
       await this.onSignApprove({
@@ -161,8 +199,13 @@ export default class ConfirmationPasswordPopup extends Vue {
         isSavePass: this.isSavePass,
         password: this.password,
       });
-    } else this.isSuccessfulTransaction = await this.currency?.send(this.address, this.amount);
+    } else {
+      const isSuccessfulTransaction = await this.currency?.send(this.address);
 
+      this.transactionState = isSuccessfulTransaction ? 'success' : 'failed';
+    }
+
+    this.transactionState = 'success';
     this.loading = false;
   }
 }
@@ -197,7 +240,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     .descriptions {
       display: flex;
       justify-content: space-between;
-      background: rgba(255, 255, 255, 0.05);
+      background: $secondary-background-color;
       border-radius: 50px;
       margin-bottom: 20px;
       padding: 12px;
@@ -217,7 +260,7 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     .transfer-value {
       font-size: 16px;
-      color: rgba(255, 255, 255, 0.5);
+      color: $gray-color;
     }
 
     .remember__checkbox {
@@ -228,6 +271,3 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 }
 </style>
-
-function Action(SignActionsTypes: any) { throw new Error('Function not implemented.'); } function
-SignActionsTypes(SignActionsTypes: any) { throw new Error('Function not implemented.'); }

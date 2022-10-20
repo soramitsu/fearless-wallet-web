@@ -120,7 +120,7 @@ import AmountInputs from './AmountInputs.vue';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import MaxButton from './MaxButton.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
-import type { Currencies, Networks } from '@/interfaces';
+import type { Currencies } from '@/interfaces';
 import type { GetAssetName } from '@/store/networks/types';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
@@ -167,7 +167,6 @@ export default class SendForm extends Vue {
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) _selectedNetwork!: string;
   @Prop(String) _selectedAssetId!: string;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
@@ -307,7 +306,6 @@ export default class SendForm extends Vue {
 
   mounted() {
     this.selectedAssetId = this._selectedAssetId;
-
     this.$nextTick(() => {
       const index = this.optionsNetworks?.findIndex(({ value }) => value === this._selectedNetwork);
 
@@ -414,7 +412,7 @@ export default class SendForm extends Vue {
 
       .transferrable-label {
         font-size: 14px;
-        color: rgba(255, 255, 255, 0.75);
+        color: $default-white;
         text-align: left;
       }
 
@@ -449,8 +447,8 @@ export default class SendForm extends Vue {
 
   .summary {
     padding: 16px;
-    background-color: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background-color: $secondary-background-color !important;
+    border: 1px solid $default-background-color !important;
     clip-path: $big-clip-path-left-top-and-right-bottom;
     border-radius: $default-border-radius;
 
@@ -470,7 +468,7 @@ export default class SendForm extends Vue {
       }
 
       .name {
-        color: rgba(255, 255, 255, 0.5);
+        color: $gray-color;
       }
 
       .column {
@@ -479,7 +477,7 @@ export default class SendForm extends Vue {
         align-items: flex-end;
 
         .value {
-          color: rgba(255, 255, 255, 0.75);
+          color: $default-white;
           font-weight: 300;
           font-size: 12px;
           margin-top: 3px;

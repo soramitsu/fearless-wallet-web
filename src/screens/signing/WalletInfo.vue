@@ -38,9 +38,9 @@ export default class WalletInfo extends Vue {
 <style lang="scss" scoped>
 .transaction__header {
   position: relative;
-  background: rgba(255, 255, 255, 0.05);
+  background: $secondary-background-color;
   padding: 9px;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid $default-background-color !important;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-radius: $default-border-radius;
   width: 100%;

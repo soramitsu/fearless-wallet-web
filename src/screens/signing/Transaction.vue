@@ -11,17 +11,13 @@
       <InfoItem name="lifetime" :value="morality" />
     </InfoList>
 
-    <template v-if="isMobileSignRequired">
-      <Button size="big" class="button" text="Sign the transaction" @click="onSignMobile" />
-    </template>
-
-    <template v-else>
+    <template>
       <ConfirmationPasswordPopup
         v-if="isSignPopupVisible"
-        text="Password for this account"
         sizeWidth="medium"
         :address="payload.address"
         :transactionId="request.id"
+        :payload="payload"
         @close="onClose"
       />
 
@@ -34,11 +30,8 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { SigningRequest } from '@extension-base/background/types';
-import { encodeAddress } from '@polkadot/util-crypto';
-import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { registry } from '@/extension/background/extension-base/src/background/handlers/State';
-import { fearlessConnector } from '@/controllers/beaconController';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
@@ -51,7 +44,7 @@ import AboveForm from '@/components/AboveForm.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { GettersTypes as SignGettersTypes } from '@/store/sign/getters';
 import { ActionTypes as SignActionsTypes } from '@/store/sign/actions';
-import { TAction } from '@/interfaces';
+import { TAction, SignerPayloadJSON } from '@/interfaces';
 
 @Component({
   components: {
@@ -81,7 +74,7 @@ export default class Auth extends Vue {
   }
 
   get isMobileSignRequired() {
-    const substrateAddress = encodeAddress(this.payload.address, 42);
+    const substrateAddress = BaseApi.encodeAddress(this.payload.address as string, 42);
 
     return BaseApi.getAddress(substrateAddress);
   }
@@ -118,16 +111,12 @@ export default class Auth extends Vue {
     this.isSignPopupVisible = true;
   }
 
-  onSignMobile() {
-    fearlessConnector.sendRequest(this.payload);
-  }
-
   onClose() {
     this.isSignPopupVisible = false;
   }
 
-  onReject() {
-    this.onSignCancel(this.request.id);
+  async onReject() {
+    await this.onSignCancel(this.request.id);
   }
 }
 </script>

@@ -114,7 +114,7 @@ export default class Logo extends Vue {
   }
 
   .circle-secondary {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: $secondary-background-color;
   }
 
   .circle-blur {
@@ -128,7 +128,7 @@ export default class Logo extends Vue {
 
   .circle-blur-primary {
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid $default-background-color;
   }
 
   .img {

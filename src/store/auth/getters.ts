@@ -13,11 +13,12 @@ export type Getters = {
 };
 
 const getters: GetterTree<State, State> & Getters = {
-  [GettersTypes.getAuthRequests](state): AuthorizeRequest[] {
-    return state.requests;
+  [GettersTypes.getAuthRequests]({ requests }): AuthorizeRequest[] {
+    return requests;
   },
-  [GettersTypes.getAuthList](state): Record<string, AuthUrlInfo> {
-    return state.authList;
+
+  [GettersTypes.getAuthList]({ authList }): Record<string, AuthUrlInfo> {
+    return authList;
   },
 };
 

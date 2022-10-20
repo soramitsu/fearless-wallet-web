@@ -3,8 +3,8 @@ import type { MutationTree } from 'vuex';
 import type { State } from './state';
 
 export enum MutationTypes {
-  SET_METADATA_REQUEST = 'SET_AUTH_REQUEST',
-  DELETE_METADATA_REQUEST = 'DELETE_AUTH_REQUEST',
+  SET_METADATA_REQUEST = 'SET_METADATA_REQUEST',
+  DELETE_METADATA_REQUEST = 'DELETE_METADATA_REQUEST',
 }
 export type Mutations = {
   [MutationTypes.SET_METADATA_REQUEST](state: State, props: MetadataRequest): void;

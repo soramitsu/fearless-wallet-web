@@ -30,7 +30,7 @@ export default class Container extends Vue {
 
 <style lang="scss" scoped>
 .alert-container {
-  background: rgba(255, 255, 255, 0.05);
+  background: $secondary-background-color;
   padding: $default-padding;
   border: 1px solid $error-color;
   clip-path: $big-clip-path-left-top-and-right-bottom;

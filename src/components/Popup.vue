@@ -34,7 +34,7 @@ import Corners from './Corners.vue';
 type HorizontalPlacement = 'left' | 'center' | 'right';
 type VerticalPlacement = 'top' | 'center' | 'bottom';
 type Size = 'mini' | 'small' | 'medium' | 'big';
-type HeaderType = 'default' | 'success' | 'failed';
+type HeaderType = 'default' | 'success' | 'failed' | 'pending';
 
 @Component({
   components: {
@@ -102,6 +102,7 @@ export default class Popup extends Vue {
       'header-text',
       {
         'header-text-success': this.headerType === 'success',
+        'header-text-pending': this.headerType === 'pending',
         'header-text-failed': this.headerType === 'failed',
       },
     ];
@@ -192,7 +193,7 @@ export default class Popup extends Vue {
   }
 
   .border {
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid $default-background-color;
   }
 
   .content {
@@ -219,13 +220,17 @@ export default class Popup extends Vue {
       color: $success-color;
     }
 
+    .header-text-pending {
+      color: $pending-color;
+    }
+
     .header-text-failed {
       color: $reject-color;
     }
   }
 
   .s-icon-basic-close-24 {
-    color: rgba(255, 255, 255, 0.65);
+    color: $grayish-white;
 
     &:hover {
       color: rgba(255, 255, 255, 0.8);

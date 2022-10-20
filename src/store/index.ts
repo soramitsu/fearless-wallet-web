@@ -5,6 +5,7 @@ import account from './accounts';
 import auth from './auth';
 import sign from './sign';
 import meta from './metadata';
+import beacon from './beacon';
 import type Modules from './types';
 
 const files = require.context('.', false, /\.ts$/);
@@ -14,6 +15,7 @@ const modules: Modules = {
   account,
   auth,
   meta,
+  beacon,
   sign,
 };
 

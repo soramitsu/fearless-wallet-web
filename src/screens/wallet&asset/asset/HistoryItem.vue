@@ -81,7 +81,7 @@ export default class HistoryItem extends Vue {
   display: flex;
   margin: 0 16px;
   padding: $default-padding 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid $default-background-color;
 
   &:hover {
     cursor: pointer;

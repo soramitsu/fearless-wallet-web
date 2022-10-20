@@ -14,7 +14,7 @@
     border-radius: 50%;
     width: 96px;
     height: 96px;
-    border: 8px solid rgba(255, 255, 255, 0.1);
+    border: 8px solid $default-background-color;
     display: inline-block;
   }
 

@@ -417,7 +417,11 @@ export interface RequestSign {
 
   sign(registry: TypeRegistry, pair: KeyringPair): { signature: HexString };
 }
+export interface RequestSignJSON {
+  readonly payload: SignerPayloadJSON | SignerPayloadRaw | undefined;
 
+  sign(): { signature: HexString };
+}
 export interface RequestJsonRestore {
   file: KeyringPair$Json;
   password: string;
@@ -501,7 +505,7 @@ export interface SignRequest extends Resolver<ResponseSigning> {
   url: string;
 }
 
-const NOTIFICATION_URL = chrome.runtime.getURL('notification.html');
+const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
 
 export const POPUP_WINDOW_OPTS: chrome.windows.CreateData = {
   focused: true,

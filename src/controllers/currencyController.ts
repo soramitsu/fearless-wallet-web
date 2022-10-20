@@ -1,4 +1,5 @@
 import { isFunction } from '@polkadot/util';
+import { ISubmittableResult } from '@polkadot/types/types';
 import type {
   AvailableInNetworks,
   Balances,
@@ -24,6 +25,7 @@ import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { FPNumber } from '@/util/fp';
 import { getReplacedMetaTyped } from '@/helpers/common';
 import { getOptions } from '@/util/assets';
+import { BeaconSigner } from '@/extension/background/extension-base/src/background/BeaconSigner';
 
 type NetworkProps = {
   label: string;
@@ -405,21 +407,40 @@ export default class CurrencyController {
     }
   }
 
-  public async send(from: string, amount: string): Promise<boolean> {
+  statusCallback(result: ISubmittableResult) {
+    const { status } = result;
+
+    if (status.isInBlock) {
+      console.info(`Successful transfer with hash ${status.asInBlock.toHex()}`);
+    } else if (status.isFinalized) {
+      console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
+    } else {
+      console.info(`Status of transfer: ${status.type}`);
+    }
+  }
+
+  public async sendRaw(from: string): Promise<boolean> {
+    this.options.signer = new BeaconSigner();
+
+    try {
+      await this.extrinsic!.signAndSend(from, this.options, this.statusCallback).then(() => {
+        return;
+      });
+    } catch (ex) {
+      console.info(`Transaction failed ${ex}`);
+
+      return false;
+    }
+
+    return true;
+  }
+
+  public async send(from: string): Promise<boolean> {
     const pair = BaseApi.getPair(from);
 
     try {
-      const unsubscribe = await this.extrinsic!.signAndSend(pair, this.options, ({ status }) => {
-        //eslint-disable-line
-        if (status.isInBlock) {
-          console.info(`Successful transfer of ${amount} with hash ${status.asInBlock.toHex()}`);
-        } else if (status.isFinalized) {
-          console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
-
-          unsubscribe();
-        } else {
-          console.info(`Status of transfer: ${status.type}`);
-        }
+      await this.extrinsic!.signAndSend(pair, this.options, this.statusCallback).then(() => {
+        return;
       });
     } catch (ex) {
       console.info(`Transaction failed ${ex}`);

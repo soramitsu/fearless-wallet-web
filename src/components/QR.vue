@@ -16,6 +16,10 @@ export default class QR extends Vue {
   @Prop({ default: '#111111' }) foreground!: string;
   @Prop({ default: '#FFFFFF' }) background!: string;
 
+  async mounted() {
+    this.createQR();
+  }
+
   @Watch('payload')
   async createQR() {
     this.qr = await QRCode.toDataURL(this.payload, {

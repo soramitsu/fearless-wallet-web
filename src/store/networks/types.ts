@@ -1,4 +1,5 @@
 import type { ApiPromise, WsProvider } from '@polkadot/api';
+import type { HexString } from '@polkadot/util/types';
 import type {
   Currencies,
   HistoryItem,
@@ -14,12 +15,12 @@ import type {
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { KeyringJson } from '@polkadot/ui-keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import type { Mutations } from './mutations';
 import type { ActionContext } from 'vuex';
-import type { State } from './state';
-
+import type { State } from '@/store/networks/state';
+import type { Mutations } from '@/store/networks/mutations';
 // getters
 export type GetNetwork = (networkName: string) => Network;
+export type GetNetworkGenesisHash = (networkName: string) => HexString;
 
 export type GetAssetName = (assetId: string) => string;
 

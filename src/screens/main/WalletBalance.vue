@@ -1,10 +1,12 @@
 <template>
   <Corners size="big">
     <div :class="contentClasses" @click="updateSelectedWallet">
-      <div>
-        <div v-if="name" class="name">{{ name }}</div>
-        <div v-if="isMobile" class="mobile">mobile</div>
-        <div class="balance">{{ fiatSymbol }}{{ balanceString }}</div>
+      <div class="content">
+        <div class="name__container">
+          <img v-if="isMobile" src="@/assets/mobile.svg" />
+          <div v-if="name" class="name">{{ name }}</div>
+        </div>
+        <span class="balance">{{ fiatSymbol }}{{ balanceString }}</span>
         <!-- <div :class="percentClasses">{{ percentString }}</div> -->
       </div>
 
@@ -81,16 +83,16 @@ export default class WalletBalance extends Vue {
 <style lang="scss" scoped>
 .wallet-balance {
   display: flex;
-  justify-content: space-between;
+  gap: 8px;
   align-items: center;
   text-align: left;
   opacity: 0.9;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid $default-background-color;
   padding: 10px $default-padding;
   clip-path: $big-clip-path-left-top-and-right-bottom;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid $default-background-color;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
+  background: $secondary-background-color;
   user-select: none;
 
   &:hover {
@@ -98,30 +100,34 @@ export default class WalletBalance extends Vue {
     opacity: 1;
   }
 
-  .name {
-    margin-bottom: 4px;
+  .content {
+    flex-grow: 1;
   }
 
-  .mobile {
-    position: absolute;
-    top: 12px;
-    right: 60px;
+  .name__container {
+    display: flex;
+    flex-flow: row;
+    height: 23px;
+    margin-bottom: 4px;
+    justify-content: flex-start;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .name {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.5);
-    background: rgba(255, 255, 255, 0.05);
-    letter-spacing: 0.03em;
-    line-height: 15px;
+    font-weight: 700;
     text-transform: uppercase;
-    border-radius: 30px;
-    text-align: center;
-    padding: 2px 6px;
+    color: $gray-color;
   }
 
   .balance {
     font-weight: 800;
-    font-size: 22px;
-    line-height: 28px;
-    max-width: 220px;
+    font-size: 18px;
+    line-height: 23px;
+    max-width: 170px;
+    text-overflow: ellipsis;
+    overflow-x: hidden;
   }
 
   .percent {
@@ -130,11 +136,11 @@ export default class WalletBalance extends Vue {
   }
 
   .up-percent {
-    color: #00ffcc;
+    color: $success-color;
   }
 
   .down-percent {
-    color: #d0021b;
+    color: $delete-color;
   }
 
   .s-icon-basic-check-mark-24 {
@@ -160,6 +166,6 @@ export default class WalletBalance extends Vue {
 }
 
 .is-selected {
-  background: rgba(119, 0, 238, 0.25);
+  background: $pink-purple-color;
 }
 </style>

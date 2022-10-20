@@ -25,7 +25,7 @@ export default class InfoList extends Vue {}
   position: relative;
   display: flex;
   flex-flow: column;
-  background: rgba(255, 255, 255, 0.05);
+  background: $secondary-background-color;
   padding: 16px;
   border: 1px solid $default-background-color !important;
   border-radius: $default-border-radius;

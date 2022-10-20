@@ -45,7 +45,7 @@ export default class NodeSettingsPopup extends Vue {
 
 <style lang="scss" scoped>
 .node-settings {
-  color: rgba(255, 255, 255, 0.75);
+  color: $default-white;
   font-weight: 500;
   height: 60px;
 

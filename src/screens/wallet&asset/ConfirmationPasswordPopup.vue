@@ -228,6 +228,3 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 }
 </style>
-
-function Action(SignActionsTypes: any) { throw new Error('Function not implemented.'); } function
-SignActionsTypes(SignActionsTypes: any) { throw new Error('Function not implemented.'); }

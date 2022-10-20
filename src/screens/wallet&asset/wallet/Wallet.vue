@@ -14,6 +14,7 @@
     <SelectNetworkPopup
       v-if="showSelectNetworkPopup"
       v-model="selectedNetwork"
+      :height="410"
       :toggleSelectedNetwork="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
     />
@@ -55,7 +56,7 @@
 
     <ReceiveForm
       v-if="showReceiveForm"
-      :selectedNetwork="selectedCurrency.mainNetwork"
+      :_selectedNetwork="selectedCurrency.mainNetwork"
       :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', false)"
     />
   </div>
@@ -214,7 +215,7 @@ export default class Wallet extends Vue {
 
     this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
 
-    targetElement.style.zIndex = this.showSelectNetworkPopup ? '200' : '0';
+    targetElement.style.zIndex = this.showSelectNetworkPopup ? '400' : '0';
   }
 
   updateFilterValue(value: string) {

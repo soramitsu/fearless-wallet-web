@@ -10,23 +10,38 @@
       <div class="transfer-form">
         <div>
           <template v-if="step === 1">
-            <Select
-              v-model="syncedSelectedAssetId"
+            <RotateInput
+              v-model="selectedAssetUpper"
               class="row"
               placeholder="CURRENCY"
-              size="big"
-              :options="optionsCurrency"
+              :isActiveRotate="showSelectedAssetPopup"
+              @click="toggleSelectPopupVisible(true, false, false)"
             />
 
-            <Select
+            <RotateInput
               v-model="syncedSelectedNetwork"
-              :options="optionsNetworks"
-              placeholder="NETWORK"
+              class="row"
+              placeholder="ORIGINAL NETWORK"
+              :isActiveRotate="showSelectNetworkPopup"
+              @click="toggleSelectPopupVisible(false, true, false)"
+            />
+
+            <Input
+              v-if="extrinsicType === 'transfer'"
+              v-model="syncedRecipient"
+              placeholder="SEND TO"
               size="big"
               class="row"
             />
 
-            <slot></slot>
+            <RotateInput
+              v-else
+              v-model="syncedDestNet"
+              class="row"
+              placeholder="DESTINATION NETWORK"
+              :isActiveRotate="showDestNetPopup"
+              @click="toggleSelectPopupVisible(false, false, true)"
+            />
 
             <AmountInputs
               class="row"
@@ -55,7 +70,8 @@
               </div>
             </div>
           </template>
-          <template v-else-if="step === 2"><slot name="stepTwo"></slot> </template>
+
+          <slot v-else-if="step === 2"></slot>
         </div>
 
         <Button
@@ -67,6 +83,22 @@
         />
       </div>
     </AboveForm>
+
+    <SelectPopup
+      v-if="showSelectedAssetPopup || showSelectNetworkPopup || showDestNetPopup"
+      v-model="vModelSelectPopup"
+      placeholder="Search in networks"
+      verticalPlacement="top"
+      :showBlur="false"
+      :showBackground="false"
+      :top="top"
+      :left="left"
+      :height="285"
+      :options="options"
+      :handlerFilter="handlerFilter"
+      :toggleValue="toggleSelectedNetwork"
+      :handlerClose="handlerCloseSelectPopup"
+    />
 
     <ConfirmationPasswordPopup
       v-if="showConfirmationPasswordPopup"
@@ -94,12 +126,12 @@ import AmountInputs from './AmountInputs.vue';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import MaxButton from './MaxButton.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
+import RotateInput from './RotateInput.vue';
 import type { Currencies, Networks } from '@/interfaces';
 import type { GetAssetName } from '@/store/networks/types';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
 import FloatInput from '@/components/FloatInput.vue';
-import Select from '@/components/Select.vue';
 import Corners from '@/components/Corners.vue';
 import NetworkLogo from '@/components/NetworkLogo.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -111,16 +143,19 @@ import { getCurrencyOptions } from '@/helpers/currencies';
 import AboveForm from '@/components/AboveForm.vue';
 import Button from '@/components/Button.vue';
 import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
+import SelectPopup from '@/components/SelectPopup.vue';
+import { getImgPath } from '@/helpers/imgPath';
 
 @Component({
   components: {
     Input,
-    Select,
     Button,
     Corners,
     MaxButton,
     AboveForm,
     FloatInput,
+    SelectPopup,
+    RotateInput,
     NetworkLogo,
     AmountInputs,
     ExistentialPopup,
@@ -128,15 +163,19 @@ import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
   },
 })
 export default class SendForm extends Vue {
+  showSelectedAssetPopup = false;
+  showSelectNetworkPopup = false;
+  showDestNetPopup = false;
   isValidCountAssets = true;
   showExistentialPopup = false;
   showConfirmationPasswordPopup = false;
+  filterValue = '';
   step = 1;
 
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) header!: string;
   @Prop(String) extrinsicType!: 'transfer' | 'teleport';
-  @Prop({ default: '' }) recipient!: string;
+  @PropSync('recipient', { type: String }) syncedRecipient!: string;
   @PropSync('selectedAssetId', { type: String }) syncedSelectedAssetId!: string;
   @PropSync('selectedNetwork', { type: String }) syncedSelectedNetwork!: string;
   @PropSync('destinationNetwork', { type: String, default: '' }) syncedDestNet!: string;
@@ -148,6 +187,26 @@ export default class SendForm extends Vue {
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
+
+  get top() {
+    if (this.showSelectedAssetPopup) return 227;
+
+    if (this.showSelectNetworkPopup) return 311;
+
+    return 37;
+  }
+
+  get left() {
+    return this.showSelectedAssetPopup || this.showSelectNetworkPopup ? -160 : 160;
+  }
+
+  get vModelSelectPopup() {
+    if (this.showSelectedAssetPopup) return this.syncedSelectedAssetId;
+
+    if (this.showSelectNetworkPopup) return this.syncedSelectedNetwork;
+
+    return this.syncedDestNet;
+  }
 
   get showBackIcon() {
     return this.step === 2;
@@ -170,7 +229,7 @@ export default class SendForm extends Vue {
       return 'Teleport';
     }
 
-    if (this.extrinsicType === 'transfer' && this.recipient !== '' && !this.isValidRecipientAddress)
+    if (this.extrinsicType === 'transfer' && this.syncedRecipient !== '' && !this.isValidRecipientAddress)
       return 'Incorrect address';
     else if (this.extrinsicType === 'teleport' && this.syncedDestNet !== '' && !this.isValidDirection)
       return 'Impossible to teleport';
@@ -196,7 +255,7 @@ export default class SendForm extends Vue {
   }
 
   get isValidRecipientAddress() {
-    return BaseApi.validateAddress(this.recipient);
+    return BaseApi.validateAddress(this.syncedRecipient);
   }
 
   get addressByNetwork() {
@@ -207,15 +266,34 @@ export default class SendForm extends Vue {
     return this.currencies.find(({ assetId }) => assetId === this.syncedSelectedAssetId);
   }
 
-  get optionsNetworks() {
-    const availableInNetworks = this.currency?.getAvailableInNetworks(this.selectedWallet);
+  get options() {
+    const filter = this.filterValue.trim().toLowerCase();
+    let options: any[] = [];
 
-    return availableInNetworks?.map(({ network, precision, type }) => ({
+    if (this.showSelectedAssetPopup) options = this.optionsCurrency;
+    else if (this.showSelectNetworkPopup) options = this.optionsNetworks;
+    else if (this.showDestNetPopup) options = this.optionsDestNet;
+
+    return options.filter(({ label }) => {
+      return label.toLowerCase().includes(filter);
+    });
+  }
+
+  get optionsNetworks() {
+    const availableInNetworks = this.currency?.getAvailableInNetworks(this.selectedWallet) ?? [];
+
+    return availableInNetworks.map(({ network, precision, type }) => ({
       label: firstCharToUp(network),
       value: `${network}`,
+      path: getImgPath(network),
+      relayChain: this.currency?.relayChain,
       precision,
       type,
     }));
+  }
+
+  get optionsDestNet() {
+    return this.optionsNetworks.filter(({ value }) => value !== this.syncedSelectedNetwork);
   }
 
   get transferrableAmount() {
@@ -230,16 +308,41 @@ export default class SendForm extends Vue {
     return formattedPrice(cost);
   }
 
-  get selectedAsset() {
-    return this.getAssetName(this.syncedSelectedAssetId);
-  }
-
   get selectedAssetUpper() {
-    return this.selectedAsset.toUpperCase();
+    const assetName = this.getAssetName(this.syncedSelectedAssetId);
+
+    return assetName.toUpperCase();
   }
 
   get optionsCurrency() {
     return getCurrencyOptions(this.currencies);
+  }
+
+  @Watch('showSelectedAssetPopup')
+  resetAssetPopupVisible(newValue: string) {
+    if (newValue) {
+      this.showSelectNetworkPopup = false;
+      this.showDestNetPopup = false;
+      this.filterValue = '';
+    }
+  }
+
+  @Watch('showSelectNetworkPopup')
+  resetOriginPopupVisible(newValue: string) {
+    if (newValue) {
+      this.showSelectedAssetPopup = false;
+      this.showDestNetPopup = false;
+      this.filterValue = '';
+    }
+  }
+
+  @Watch('showDestNetPopup')
+  resetDestPopupVisible(newValue: string) {
+    if (newValue) {
+      this.showSelectedAssetPopup = false;
+      this.showSelectNetworkPopup = false;
+      this.filterValue = '';
+    }
   }
 
   @Watch('syncedSelectedNetwork')
@@ -257,7 +360,7 @@ export default class SendForm extends Vue {
   @Watch('syncedSelectedAssetId')
   @Watch('syncedSelectedNetwork')
   @Watch('syncedDestNet')
-  @Watch('recipient')
+  @Watch('syncedRecipient')
   @Watch('syncedAmount')
   async createSendTransfer() {
     this.syncedPartialFee = '';
@@ -287,13 +390,49 @@ export default class SendForm extends Vue {
     });
   }
 
+  toggleSelectPopupVisible(isAsset: boolean, isOriginNet: boolean, isDestNet: boolean) {
+    if (isAsset) {
+      this.showSelectedAssetPopup = !this.showSelectedAssetPopup;
+    }
+
+    if (isOriginNet) {
+      this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
+    }
+
+    if (this.extrinsicType === 'teleport' && isDestNet) {
+      this.showDestNetPopup = !this.showDestNetPopup;
+    }
+  }
+
+  toggleSelectedNetwork(value: string) {
+    if (this.showSelectedAssetPopup) {
+      this.syncedSelectedAssetId = value;
+
+      this.toggleSelectPopupVisible(true, false, false);
+
+      return;
+    }
+
+    if (this.showSelectNetworkPopup) {
+      this.syncedSelectedNetwork = value;
+
+      this.toggleSelectPopupVisible(false, true, false);
+
+      return;
+    }
+
+    this.syncedDestNet = value;
+
+    this.toggleSelectPopupVisible(false, false, true);
+  }
+
   createTransferAndGetFee(amount?: string) {
     const networkProps = this.optionsNetworks!.find(({ value }) => value === this.syncedSelectedNetwork)!;
 
     if (this.extrinsicType === 'transfer') {
       if (!this.isValidRecipientAddress || this.syncedSelectedNetwork === '') return '0';
 
-      this.currency!.createTransferExtrinsic(this.recipient, amount ?? this.syncedAmount, networkProps);
+      this.currency!.createTransferExtrinsic(this.syncedRecipient, amount ?? this.syncedAmount, networkProps);
     } else {
       if (!this.isValidDirection || this.syncedSelectedNetwork === '') return '0';
 
@@ -314,6 +453,10 @@ export default class SendForm extends Vue {
 
   updateValue(value: string) {
     this.syncedValue = value;
+  }
+
+  handlerFilter(value: string) {
+    this.filterValue = value;
   }
 
   handlerBack() {
@@ -371,13 +514,17 @@ export default class SendForm extends Vue {
     this.handlerContinueButton(true);
     this.handlerCloseExistentialPopup();
   }
+
+  handlerCloseSelectPopup() {
+    this.toggleSelectPopupVisible(this.showSelectedAssetPopup, this.showSelectNetworkPopup, this.showDestNetPopup);
+  }
 }
 </script>
 
 <style lang="scss">
 .transfer-form {
   .row {
-    margin-top: 16px;
+    margin-top: 10px;
 
     &:first-child {
       margin-top: 0;

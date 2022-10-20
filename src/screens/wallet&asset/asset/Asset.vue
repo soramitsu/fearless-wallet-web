@@ -52,7 +52,7 @@
 
     <ReceiveForm
       v-if="showReceiveForm"
-      :selectedNetwork="selectedNetwork"
+      :_selectedNetwork="selectedNetwork"
       :closeForm="toggleVisible.bind(null, 'showReceiveForm', false)"
     />
 
@@ -74,6 +74,8 @@
     <SelectNetworkPopup
       v-if="showSelectNetworkPopup"
       v-model="selectedNetwork"
+      :height="410"
+      :allNetworksItem="false"
       :relayChain="relayChain"
       :toggleSelectedNetwork="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
@@ -220,7 +222,7 @@ export default class Asset extends Vue {
 
     this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
 
-    targetElement.style.zIndex = this.showSelectNetworkPopup ? '200' : '0';
+    targetElement.style.zIndex = this.showSelectNetworkPopup ? '400' : '0';
   }
 
   toggleVisible(field: ShowField, value: boolean) {

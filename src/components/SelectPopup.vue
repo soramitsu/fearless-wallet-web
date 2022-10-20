@@ -6,13 +6,15 @@
     :placeholder="placeholder"
     :showSearch="showSearch"
     :showBorder="showBorder"
-    :staticHeight="staticHeight"
+    :height="height"
+    :maxHeight="maxHeight"
     :handlerFilter="handlerFilter"
     :handlerClose="handlerClose"
     :horizontalPlacement="horizontalPlacement"
     :verticalPlacement="verticalPlacement"
     :showBlur="showBlur"
     :showAnimation="showAnimation"
+    :showBackground="showBackground"
     :top="top"
     :left="left"
   >
@@ -22,8 +24,11 @@
 
         {{ label }}
       </div>
+
       <s-icon name="basic-check-mark-24" v-show="VModel === value" />
     </div>
+
+    <div v-if="showWarning" class="warning">Nothing found</div>
   </Popup>
 </template>
 
@@ -49,19 +54,28 @@ export default class SelectPopup extends Vue {
   @Prop({ default: 'center' }) verticalPlacement!: string;
   @Prop({ default: 'big' }) space!: SpaceSize;
   @Prop({ default: '' }) placeholder!: string;
+  @Prop({ type: Number, required: false }) height!: number;
+  @Prop({ type: Number, required: false }) maxHeight!: number;
   @Prop({ default: true }) showIcon!: boolean;
-  @Prop({ default: true }) staticHeight!: boolean;
   @Prop({ default: true }) showSearch!: boolean;
   @Prop({ default: true }) showBorder!: boolean;
   @Prop({ default: true }) showBlur!: boolean;
   @Prop({ default: true }) showAnimation!: boolean;
+  @Prop({ default: true }) showBackground!: boolean;
   @Prop({ default: 'medium' }) sizeWidth!: boolean;
   @Prop(Function) toggleValue!: (value: string) => void;
   @Prop(Function) handlerClose!: VoidFunction;
   @Prop({ default: () => () => null }) handlerFilter!: (value: string) => void;
 
+  get showWarning() {
+    return this.options.length === 0;
+  }
+
   beforeMount() {
     const index = this.options.findIndex(({ value }) => value === this.VModel);
+
+    if (index === -1) return;
+
     const selectedElement = this.options[index];
     const indexInsertion = this.options[0]?.isAll && index !== 0 ? 1 : 0;
 
@@ -93,6 +107,8 @@ export default class SelectPopup extends Vue {
 
 <style lang="scss" scoped>
 .select-popup {
+  z-index: 299;
+
   .row {
     color: $default-white;
     text-align: left;
@@ -153,6 +169,11 @@ export default class SelectPopup extends Vue {
 
   .s-icon-basic-check-mark-24 {
     color: $pink-lavender-color;
+  }
+
+  .warning {
+    height: 48px;
+    line-height: 48px;
   }
 }
 </style>

@@ -15,55 +15,45 @@
     @update:partialFee="updateOriginNetFee"
     @update:destinationNetwork="updateDestinationNetwork"
   >
-    <Select
-      v-model="destinationNetwork"
-      :options="optionsDestinationNetwork"
-      placeholder="DESTINATION NETWORK"
-      size="big"
-      class="row"
-    />
+    <Corners size="big" class="row">
+      <div class="summary">
+        <div class="summary-label">Summary</div>
+        <div class="summary-row">
+          <div class="column column-left">
+            <div class="name">From</div>
+            <div class="network-name">{{ originalNetworkString }}</div>
+          </div>
 
-    <template v-slot:stepTwo>
-      <Corners size="big" class="row">
-        <div class="summary">
-          <div class="summary-label">Summary</div>
-          <div class="summary-row">
-            <div class="column column-left">
-              <div class="name">From</div>
-              <div class="network-name">{{ originalNetworkString }}</div>
-            </div>
+          <img src="@/assets/bold-arrow-right.svg" />
 
-            <img src="@/assets/bold-arrow-right.svg" />
-
-            <div class="column">
-              <div class="name">To</div>
-              <div class="network-name">{{ destinationNetworkString }}</div>
-            </div>
-          </div>
-          <div class="summary-row">
-            <div class="name">Assets Amount</div>
-            <div class="column">
-              <div>{{ amountString }}</div>
-              <div v-if="showValue" class="value">{{ valueString }}</div>
-            </div>
-          </div>
-          <div class="summary-row">
-            <div class="name">{{ originalNetworkString }} Fee</div>
-            <div>
-              {{ originalNetworkPartialFeeString }}
-            </div>
-          </div>
-          <div class="summary-row">
-            <div class="name">{{ destinationNetworkString }} Fee</div>
-            <div>{{ destinationNetworkPartialFeeString }}</div>
-          </div>
-          <div class="summary-row">
-            <div class="name">Total</div>
-            <div>{{ totalString }}</div>
+          <div class="column">
+            <div class="name">To</div>
+            <div class="network-name">{{ destinationNetworkString }}</div>
           </div>
         </div>
-      </Corners>
-    </template>
+        <div class="summary-row">
+          <div class="name">Assets Amount</div>
+          <div class="column">
+            <div>{{ amountString }}</div>
+            <div v-if="showValue" class="value">{{ valueString }}</div>
+          </div>
+        </div>
+        <div class="summary-row">
+          <div class="name">{{ originalNetworkString }} Fee</div>
+          <div>
+            {{ originalNetworkPartialFeeString }}
+          </div>
+        </div>
+        <div class="summary-row">
+          <div class="name">{{ destinationNetworkString }} Fee</div>
+          <div>{{ destinationNetworkPartialFeeString }}</div>
+        </div>
+        <div class="summary-row">
+          <div class="name">Total</div>
+          <div>{{ totalString }}</div>
+        </div>
+      </div>
+    </Corners>
   </TransferForm>
 </template>
 
@@ -82,7 +72,6 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { firstCharToUp } from '@/helpers/common';
 import { addNumbers, formattedNumber, formattedPrice } from '@/helpers/numbers';
-import { getCurrencyOptions } from '@/helpers/currencies';
 
 @Component({
   components: {
@@ -152,24 +141,6 @@ export default class TeleportForm extends Vue {
 
   get selectedAssetUpper() {
     return this.selectedAsset.toUpperCase();
-  }
-
-  get currency() {
-    return this.currencies.find(({ assetId }) => assetId === this.selectedAssetId);
-  }
-
-  get optionsCurrency() {
-    return getCurrencyOptions(this.currencies);
-  }
-
-  get optionsDestinationNetwork() {
-    const availableInNetworks = this.currency?.getAvailableInNetworks(this.selectedWallet);
-    const optionsNetworks = availableInNetworks?.map(({ network }) => ({
-      label: firstCharToUp(network),
-      value: network,
-    }));
-
-    return optionsNetworks?.filter(({ value }) => value !== this.originalNetwork);
   }
 
   created() {

@@ -13,43 +13,40 @@
     @update:selectedNetwork="updateSelectedNetwork"
     @update:amount="updateAmount"
     @update:partialFee="updatePartialFee"
+    @update:recipient="updateRecipient"
   >
-    <Input v-model="recipient" placeholder="SEND TO" size="big" class="row" />
+    <div class="row direction-column">
+      <Input v-model="selectedWallet.name" placeholder="From" size="big" :readonly="true" />
 
-    <template v-slot:stepTwo>
-      <div class="row direction-column">
-        <Input v-model="selectedWallet.name" placeholder="From" size="big" :readonly="true" />
+      <s-icon name="arrows-arrow-right-24" />
 
-        <s-icon name="arrows-arrow-right-24" />
+      <Input v-model="formattedAddressTo" placeholder="To" size="big" :readonly="true" />
+    </div>
 
-        <Input v-model="formattedAddressTo" placeholder="To" size="big" :readonly="true" />
-      </div>
-
-      <Corners size="big" class="row">
-        <div class="summary">
-          <div class="summary-label">Summary</div>
-          <div class="summary-row">
-            <div class="name">Coins</div>
-            <div class="column">
-              <div>{{ amountString }}</div>
-              <div v-if="showValue" class="value">{{ valueString }}</div>
-            </div>
-          </div>
-          <div class="summary-row">
-            <div class="name">Fee</div>
-            <div class="column">
-              <div>{{ partialFeeString }}</div>
-            </div>
-          </div>
-          <div class="summary-row">
-            <div class="name">Total</div>
-            <div class="column">
-              <div>{{ totalString }}</div>
-            </div>
+    <Corners size="big" class="row">
+      <div class="summary">
+        <div class="summary-label">Summary</div>
+        <div class="summary-row">
+          <div class="name">Coins</div>
+          <div class="column">
+            <div>{{ amountString }}</div>
+            <div v-if="showValue" class="value">{{ valueString }}</div>
           </div>
         </div>
-      </Corners>
-    </template>
+        <div class="summary-row">
+          <div class="name">Fee</div>
+          <div class="column">
+            <div>{{ partialFeeString }}</div>
+          </div>
+        </div>
+        <div class="summary-row">
+          <div class="name">Total</div>
+          <div class="column">
+            <div>{{ totalString }}</div>
+          </div>
+        </div>
+      </div>
+    </Corners>
   </TransferForm>
 </template>
 
@@ -139,6 +136,10 @@ export default class SendForm extends Vue {
 
   updateSelectedNetwork(value: string) {
     this.selectedNetwork = value;
+  }
+
+  updateRecipient(value: string) {
+    this.recipient = value;
   }
 
   updateAmount(value: string) {

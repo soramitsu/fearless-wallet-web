@@ -50,8 +50,8 @@ export default class Popup extends Vue {
   @Prop({ default: () => () => null }) handlerFilter!: (value: string) => void;
   @Prop(Number) top!: number;
   @Prop(Number) left!: number;
-  @Prop({ type: Number, required: false }) height!: number;
-  @Prop({ type: Number, required: false }) maxHeight!: number;
+  @Prop({ type: Number, required: false }) height?: number;
+  @Prop({ type: Number, required: false }) maxHeight?: number;
   @Prop({ default: '' }) headerText!: string;
   @Prop({ default: '' }) placeholder!: string;
   @Prop({ default: true }) showHeader!: boolean;

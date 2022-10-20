@@ -54,8 +54,8 @@ export default class SelectPopup extends Vue {
   @Prop({ default: 'center' }) verticalPlacement!: string;
   @Prop({ default: 'big' }) space!: SpaceSize;
   @Prop({ default: '' }) placeholder!: string;
-  @Prop({ type: Number, required: false }) height!: number;
-  @Prop({ type: Number, required: false }) maxHeight!: number;
+  @Prop({ type: Number, required: false }) height?: number;
+  @Prop({ type: Number, required: false }) maxHeight?: number;
   @Prop({ default: true }) showIcon!: boolean;
   @Prop({ default: true }) showSearch!: boolean;
   @Prop({ default: true }) showBorder!: boolean;

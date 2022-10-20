@@ -356,7 +356,7 @@ export default class AddWallet extends Vue {
       substrate: { value: substrateDerivationPath },
     } = this.derivationPaths;
 
-    return `${this.mnemonic || this.substrateRawSeed}${substrateDerivationPath.trim()}`;
+    return `${(this.mnemonic || this.substrateRawSeed).trim()}${substrateDerivationPath.trim()}`;
   }
 
   get suriEthereum() {
@@ -372,7 +372,11 @@ export default class AddWallet extends Vue {
         : ETHEREUM_DEFAULT_DERIVATION_PATH
     ).trim();
 
-    return this.mnemonic ? `${this.mnemonic}${ethereumDP}` : this.ethereumRawSeed ? this.ethereumRawSeed : '';
+    return this.mnemonic
+      ? `${this.mnemonic.trim()}${ethereumDP}`
+      : this.ethereumRawSeed
+      ? this.ethereumRawSeed.trim()
+      : '';
   }
 
   @Watch('substrateJson')
@@ -582,7 +586,7 @@ export default class AddWallet extends Vue {
 
   validateSuri() {
     const { ethereum, substrate } = this.derivationPaths;
-    const isValidMnemonic = this.mnemonic ? BaseApi.isValidPhrase(this.mnemonic) : true;
+    const isValidMnemonic = this.mnemonic ? BaseApi.isValidPhrase(this.mnemonic.trim()) : true;
     const isValidSubstratePhrase = substrate.value ? BaseApi.isValidSubstrateDerivationPath(substrate) : true;
     const isValidEthereumDP = ethereum.value ? BaseApi.isValidEthereumDerivationPath(ethereum.value) : true;
     const isValidSubstrateRawSeed = this.substrateRawSeed ? BaseApi.isHex(this.substrateRawSeed) : true;

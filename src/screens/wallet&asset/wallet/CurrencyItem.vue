@@ -76,7 +76,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Currency } from '@/interfaces/currencies';
 import type { SelectedWallet } from '@/store/accounts/types';
@@ -95,14 +95,20 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
   },
 })
 export default class CurrencyItem extends Vue {
-  currencyVisible = true;
-
   @Prop(Object) currency!: Currency;
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+
+  get currencyVisible() {
+    return this.currency.getCurrencyVisible(this.selectedWallet.address);
+  }
+
+  set currencyVisible(value: boolean) {
+    this.currency.setCurrencyVisible(this.selectedWallet.address, value);
+  }
 
   get showCurrencyItem() {
     return this.showAssetsManagementForm || this.currencyVisible;
@@ -171,24 +177,6 @@ export default class CurrencyItem extends Vue {
     return this.selectedNetwork !== 'All networks'
       ? [{ network: this.selectedNetwork }]
       : [...this.availableInNetworks].splice(0, this.isAdditional ? 4 : 5);
-  }
-
-  @Watch('currencyVisible')
-  toggleCurrencyVisible(value: boolean) {
-    this.currency.setCurrencyVisible(this.selectedWallet.address, value);
-  }
-
-  @Watch('selectedWallet')
-  updateCurrencyVisible() {
-    this.getCurrencyVisible();
-  }
-
-  mounted() {
-    this.getCurrencyVisible();
-  }
-
-  getCurrencyVisible() {
-    this.currencyVisible = this.currency.getCurrencyVisible(this.selectedWallet.address);
   }
 
   openAssetPage(event: Event) {

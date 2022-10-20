@@ -2,9 +2,9 @@
   <div>
     <Popup
       :showBorder="true"
-      :staticHeight="true"
       :showAnimation="false"
       :showHeader="false"
+      :width="410"
       :top="50"
       :handlerClose="handlerClose"
       sizeWidth="big"

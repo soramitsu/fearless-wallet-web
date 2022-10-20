@@ -24,7 +24,6 @@
       />
 
       <Button
-        v-if="isExtension"
         class="import-button"
         width="100%"
         text="I already have a wallet"
@@ -103,9 +102,7 @@ export default class Welcome extends Vue {
   }
 
   openAddWalletMobile() {
-    this.$router.push({
-      name: Components.MobileConnect,
-    });
+    this.$router.push({ name: Components.MobileConnect });
   }
 }
 </script>

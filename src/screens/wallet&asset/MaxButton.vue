@@ -10,7 +10,7 @@
   padding: 4px 7px;
   opacity: 0.9;
   color: $pink-lavender-color;
-  z-index: 1000;
+  z-index: 199;
 
   &:hover {
     cursor: pointer;

@@ -2,7 +2,13 @@
   <AboveForm header="Receive Funds" :blur="true" :closeHandler="closeForm">
     <div class="receive-form">
       <div>
-        <Select v-model="network" :options="optionsNetwork" placeholder="NETWORK" size="big" class="row" />
+        <RotateInput
+          v-model="selectedNetwork"
+          placeholder="NETWORK"
+          :ref="selectNetworkInputRef"
+          :isActiveRotate="showSelectNetworkPopup"
+          @click="toggleSelectNetworkPopupVisible"
+        />
 
         <div class="receive-content">
           <div class="address-wrapper">
@@ -32,6 +38,18 @@
         <Button size="big" class="button" width="260px" text="Copy QR-code" iconName="share" @click="shareQR" />
       </div>
     </div>
+
+    <SelectNetworkPopup
+      v-if="showSelectNetworkPopup"
+      v-model="selectedNetwork"
+      horizontalPlacement="left"
+      verticalPlacement="top"
+      :top="132"
+      :height="360"
+      :allNetworksItem="false"
+      :toggleSelectedNetwork="toggleSelectedNetwork"
+      :handlerClose="toggleSelectNetworkPopupVisible"
+    />
   </AboveForm>
 </template>
 
@@ -39,9 +57,10 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
+import RotateInput from './RotateInput.vue';
 import type { Networks } from '@/interfaces/networks';
 import BaseApi from '@/util/BaseApi';
-import Select from '@/components/Select.vue';
+import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -51,20 +70,25 @@ import QR from '@/components/QR.vue';
 import { cut } from '@/helpers/history';
 import AboveForm from '@/components/AboveForm.vue';
 import BorderButton from '@/components/BorderButton.vue';
+import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 
 @Component({
   components: {
     QR,
-    Select,
+    Input,
     Button,
     AboveForm,
+    RotateInput,
     BorderButton,
+    SelectNetworkPopup,
   },
 })
 export default class ReceiveForm extends Vue {
-  network = 'polkadot';
+  readonly selectNetworkInputRef = 'selectNetworkInput';
+  selectedNetwork = 'polkadot';
+  showSelectNetworkPopup = false;
 
-  @Prop(String) selectedNetwork!: string;
+  @Prop(String) _selectedNetwork!: string;
   @Prop(Function) closeForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
@@ -76,7 +100,7 @@ export default class ReceiveForm extends Vue {
   get address() {
     if (this.selectedWallet.address === '') return '';
 
-    return BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.network);
+    return BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.selectedNetwork);
   }
 
   get cutAddress() {
@@ -84,7 +108,25 @@ export default class ReceiveForm extends Vue {
   }
 
   mounted() {
-    this.network = this.selectedNetwork;
+    this.selectedNetwork = this._selectedNetwork;
+  }
+
+  toggleSelectNetworkPopupVisible() {
+    const childRefs = (this.$refs[this.selectNetworkInputRef] as Vue).$refs;
+
+    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
+
+    Object.values(childRefs).forEach((valueRef) => {
+      const targetElement = (valueRef as Vue).$el as HTMLElement;
+
+      targetElement.style.zIndex = this.showSelectNetworkPopup ? '400' : '0';
+    });
+  }
+
+  toggleSelectedNetwork(value: string) {
+    this.selectedNetwork = value;
+
+    this.toggleSelectNetworkPopupVisible();
   }
 
   copyAddress() {

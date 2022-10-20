@@ -46,7 +46,7 @@ export default class SearchInput extends Vue {
   user-select: none;
 
   .s-icon-basic-search-24 {
-    color: rgba(255, 255, 255, 0.5);
+    color: $gray-color;
     font-size: 20px !important;
     margin-left: -30px;
   }

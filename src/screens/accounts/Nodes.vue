@@ -188,7 +188,7 @@ export default class Nodes extends Vue {
   }
 
   .label {
-    color: rgba(255, 255, 255, 0.75);
+    color: $default-white;
     text-align: left;
     font-weight: 600;
     margin-left: 9px;
@@ -208,7 +208,7 @@ export default class Nodes extends Vue {
     .add-node {
       display: flex;
       font-weight: 600;
-      color: rgba(255, 255, 255, 0.75);
+      color: $default-white;
 
       &:hover {
         cursor: pointer;
@@ -258,7 +258,7 @@ export default class Nodes extends Vue {
         display: flex;
         align-items: center;
         width: 135px;
-        color: rgba(255, 255, 255, 0.5);
+        color: $gray-color;
 
         .address {
           font-size: 13px;

@@ -1,10 +1,16 @@
 import axios from 'axios';
-import { MutationTypes } from './mutations';
 import type { Settings } from '@/networks';
-import type { State } from './state';
+import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
-import type { LoadJsons, LoadHistory, SubscribeToBalances, ToggleActiveNode, AugmentedActionContext } from './types';
+import type {
+  LoadJsons,
+  LoadHistory,
+  SubscribeToBalances,
+  ToggleActiveNode,
+  AugmentedActionContext,
+} from '@/store/networks/types';
 import type { FiatJson, AssetJson, NetworkJson, Networks, ExternalApi, AssetsPrice, ApiOptions } from '@/interfaces';
+import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
 import { ETHEREUM_NETWORKS, NOT_SUPPORTED_SUBQUERY_NETWORKS } from '@/consts/networks';

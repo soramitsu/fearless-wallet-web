@@ -13,11 +13,8 @@ import Accounts from '@/screens/accounts/Accounts.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import Main from '@/screens/main/Main.vue';
 import Crowdloans from '@/screens/crowdloans/Crowdloans.vue';
-// import Authorize from '@/screens/authorize/Authorize.vue';
-// import MetaRequest from '@/screens/metadata/Metadata.vue';
-// import Transaction from '@/screens/signing/Transaction.vue';
-// import UpdateAuths from '@/screens/authorize/UpdateAuths.vue';
 
+const MobileConnect = () => import('@/screens/mobileConnect/MobileConnect.vue');
 const Authorize = () => import('@/screens/authorize/Authorize.vue');
 const Transaction = () => import('@/screens/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/metadata/Metadata.vue');
@@ -28,6 +25,7 @@ import store from '@/store';
 export enum Components {
   Welcome = 'Welcome',
   AddWallet = 'AddWallet',
+  MobileConnect = 'MobileConnect',
   Main = 'Main',
   Wallet = 'Wallet',
   Crowdloans = 'Crowdloans',
@@ -60,6 +58,11 @@ const routes: Array<RouteConfig> = [
     path: '/add-wallet/:type',
     name: Components.AddWallet,
     component: AddWallet,
+  },
+  {
+    path: ' /add-mobile-wallet',
+    name: Components.MobileConnect,
+    component: MobileConnect,
   },
   {
     path: '/authorize',

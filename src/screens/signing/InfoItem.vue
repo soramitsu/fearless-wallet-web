@@ -22,7 +22,7 @@ export default class InfoItem extends Vue {
 
 <style lang="scss" scoped>
 .name {
-  color: rgba(255, 255, 255, 0.5);
+  color: $gray-color;
   font-weight: 700;
   font-size: 12px;
   line-height: 20px;

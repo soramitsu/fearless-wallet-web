@@ -85,7 +85,6 @@ export default class SendForm extends Vue {
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) _selectedNetwork!: string;
   @Prop(String) _selectedAssetId!: string;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;

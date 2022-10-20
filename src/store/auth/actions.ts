@@ -1,7 +1,7 @@
 import { AuthorizeRequest } from '@extension-base/background/types';
-import { Mutations, MutationTypes } from './mutations';
 import type { ActionTree, ActionContext } from 'vuex';
-import type { State } from './state';
+import type { State } from '@/store/auth/state';
+import { Mutations, MutationTypes } from '@/store/auth/mutations';
 import {
   subscribeAuthorizeRequests,
   approveAuthRequest,

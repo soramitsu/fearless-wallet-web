@@ -11,13 +11,17 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import { getAuthList, updateAuthorization } from '@/extension/messaging';
+import { Getter, Action } from 'vuex-class';
+import { AuthUrlInfo } from '@extension-base/background/types';
+import { updateAuthorization } from '@/extension/messaging';
 import SelectAuthAccount from '@/screens/authorize/SelectAuthAccount.vue';
 import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import AboveForm from '@/components/AboveForm.vue';
 import Button from '@/components/Button.vue';
 import { WalletInfo } from '@/store/accounts/types';
+import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
+import { TAction } from '@/interfaces';
+import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
 
 @Component({
   components: {
@@ -28,14 +32,15 @@ import { WalletInfo } from '@/store/accounts/types';
 })
 export default class Authorize extends Vue {
   @Getter(AccountGettersTypes.getWallets) wallets!: WalletInfo[];
+  @Action(AuthActionTypes.GET_AUTHLIST) fetchAuthList!: TAction<void>;
+  @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
 
   selectAll = false;
   state: Record<string, WalletInfo> = {};
 
   async mounted() {
     const url = this.$route.params.url;
-    const { list } = await getAuthList();
-    const { authorizedAccounts } = list[url];
+    const { authorizedAccounts } = this.authlist[url];
 
     this.wallets.forEach((account) => {
       const isAuthorized = authorizedAccounts.some((el: string) => el === account.address);
@@ -91,6 +96,7 @@ export default class Authorize extends Vue {
 
     return `Connect ${count} accounts`;
   }
+
   get prepAccounts() {
     const result: string[] = [];
 
@@ -101,10 +107,11 @@ export default class Authorize extends Vue {
     return result;
   }
 
-  updateAuths() {
-    updateAuthorization(this.prepAccounts, this.$route.params.url).then(() => {
-      this.$router.back();
-    });
+  async updateAuths() {
+    await updateAuthorization(this.prepAccounts, this.$route.params.url);
+    await this.fetchAuthList();
+
+    this.$router.back();
   }
 }
 </script>

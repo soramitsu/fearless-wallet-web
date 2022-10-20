@@ -51,7 +51,7 @@ export default class SelectNetworkButton extends Vue {
   display: flex;
   justify-content: space-between;
   clip-path: $medium-clip-path-left-top-and-right-bottom;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid $default-background-color !important;
   border-radius: 5px;
   background-color: #201c1f;
   height: 36px;
@@ -76,12 +76,12 @@ export default class SelectNetworkButton extends Vue {
   }
 
   .s-icon-chevron-bottom-16 {
-    color: rgba(255, 255, 255, 0.5);
+    color: $gray-color;
     font-size: 10px !important;
   }
 }
 
 .active {
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid $default-background-color;
 }
 </style>

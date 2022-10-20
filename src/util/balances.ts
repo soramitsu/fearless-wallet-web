@@ -1,7 +1,7 @@
-import { FPNumber } from './fp';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
 import type { AccountBalance } from '@/interfaces/balances';
+import { FPNumber } from '@/util/fp';
 
 export function formatBalance(data: AccountData | OrmlAccountData, assetDecimals?: number): AccountBalance {
   const free = new FPNumber(data.free || 0, assetDecimals);

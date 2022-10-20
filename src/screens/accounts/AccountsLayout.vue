@@ -333,7 +333,7 @@ export default class AccountsLayout extends Vue {
     .navigation {
       display: flex;
       justify-content: space-between;
-      color: rgba(255, 255, 255, 0.75);
+      color: $default-white;
       font-weight: 700;
       margin: 0 10px 16px 10px;
       min-height: 32px;

@@ -9,12 +9,12 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
-import BaseApi from './util/BaseApi';
-import { isExtension } from './helpers/common';
 import type { SetSelectedWalletProps, setAccountsProps, Accounts, setAddressesProps } from '@/store/accounts/types';
 import type { TAction, TMutation } from '@/interfaces';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import { isExtension } from '@/helpers/common';
+import BaseApi from '@/util/BaseApi';
 import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
 import { ActionTypes as MetaActionTypes } from '@/store/metadata/actions';
 import { ActionTypes as SignActionTypes } from '@/store/sign/actions';
@@ -52,7 +52,6 @@ export default class App extends Vue {
 
     this.subscribeAccounts = BaseApi.getAccountsSubject();
     this.subscribeAddresses = BaseApi.getAddressesSubject();
-
     this.subscribeAccounts.subscribe(async (accounts) => {
       const newAccounts = this.getNewAccounts(accounts, 'accounts');
 
@@ -67,11 +66,9 @@ export default class App extends Vue {
 
     this.subscribeAddresses.subscribe(async (addresses) => {
       const newAddresses = this.getNewAccounts(addresses, 'addresses');
-
       console.info('addresses', newAddresses);
 
       this.setAddresses({ addresses });
-
       // subscribe only if the number of new addresses is not equal to the total number of accounts
       if (Object.keys(addresses).length !== Object.keys(newAddresses).length)
         await subscribeToBalancesOfNetworks(newAddresses);
@@ -94,7 +91,11 @@ export default class App extends Vue {
     const LSSelectedWalletAddress = accountController.getSelectedWalletAddress();
     const selectedWalletAddress = LSSelectedWalletAddress || BaseApi.getFirstSubstrateWalletAddress();
 
-    if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
+    if (selectedWalletAddress) {
+      const selectedSubstrateAddress = BaseApi.encodeAddress(selectedWalletAddress);
+
+      this.setSelectedWallet({ selectedWalletAddress: selectedSubstrateAddress });
+    }
   }
 
   beforeUnmount() {

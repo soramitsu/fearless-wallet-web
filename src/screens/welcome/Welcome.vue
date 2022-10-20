@@ -34,7 +34,16 @@
         @click="openAddWalletComponent('import')"
       />
 
-      <BeaconConnect v-if="isExtension" />
+      <Button
+        class="import-button"
+        width="100%"
+        text="Connect Mobile Wallet"
+        size="big"
+        fontSize="big"
+        type="secondary"
+        :border="false"
+        @click="openAddWalletMobile"
+      />
 
       <div class="privacy-policy">
         By continuing you agree with
@@ -53,9 +62,9 @@ import Button from '@/components/Button.vue';
 import { Components } from '@/router/routes';
 import CircleButton from '@/components/CircleButton.vue';
 import BaseApi from '@/util/BaseApi';
-import { TERMS_URL, PRIVACY_URL } from '@/consts/urls';
+import URLS from '@/consts/urls';
 import AboveForm from '@/components/AboveForm.vue';
-import BeaconConnect from '@/screens/beaconUI/BeaconConnect.vue';
+import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
 import { isExtension } from '@/helpers/common';
 
 @Component({
@@ -63,13 +72,11 @@ import { isExtension } from '@/helpers/common';
     Logo,
     Button,
     CircleButton,
-    BeaconConnect,
+    MobileConnect,
     AboveForm,
   },
 })
 export default class Welcome extends Vue {
-  store: any;
-
   get showBackWalletIcon() {
     return BaseApi.getAccounts().length !== 0;
   }
@@ -79,11 +86,11 @@ export default class Welcome extends Vue {
   }
 
   openTermsAndConditions() {
-    window.open(TERMS_URL);
+    window.open(URLS.TERMS);
   }
 
   openPrivacyPolicy() {
-    window.open(PRIVACY_URL);
+    window.open(URLS.PRIVACY);
   }
 
   backWallet() {
@@ -92,6 +99,10 @@ export default class Welcome extends Vue {
 
   openAddWalletComponent(type: string) {
     this.$router.push({ name: Components.AddWallet, params: { type } });
+  }
+
+  openAddWalletMobile() {
+    this.$router.push({ name: Components.MobileConnect });
   }
 }
 </script>
@@ -116,7 +127,7 @@ export default class Welcome extends Vue {
     font-size: 12px;
     font-weight: 400;
     line-height: 16px;
-    color: rgba(255, 255, 255, 0.65);
+    color: $grayish-white;
 
     .important-text {
       color: rgb(199, 31, 95);
@@ -132,5 +143,3 @@ export default class Welcome extends Vue {
   }
 }
 </style>
-
-function encodeAddress(address: PermissionSuccess, arg1: number) { throw new Error('Function not implemented.'); }

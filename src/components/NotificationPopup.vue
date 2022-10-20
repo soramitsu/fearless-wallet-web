@@ -100,7 +100,7 @@ export default class NotificationPopup extends Vue {
 }
 
 .subtext {
-  color: rgba(255, 255, 255, 0.5);
+  color: $gray-color;
   line-height: 150%;
 }
 

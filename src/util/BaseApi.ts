@@ -23,6 +23,7 @@ import { getReplacedMetaTyped, getMetaTyped, isExtension } from '@/helpers/commo
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
+import { beaconController } from '@/controllers/beaconController';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;
 
@@ -84,8 +85,10 @@ export default class BaseApi {
   }
 
   public static getAddressType(address: string) {
-    if (BaseApi.getAccount(address)) return 'account';
-    if (BaseApi.getAddress(address)) return 'address';
+    const substrateAddress = BaseApi.encodeAddress(address, 42);
+
+    if (BaseApi.getAddress(substrateAddress)) return 'address';
+    if (BaseApi.getAccount(substrateAddress)) return 'account';
 
     return null;
   }
@@ -261,7 +264,7 @@ export default class BaseApi {
   }
 
   public static getAddress(address: string): KeyringAddress | undefined {
-    return keyring.getAddress(address);
+    return keyring.getAddress(address, 'address');
   }
 
   public static getAddresses(): KeyringAddress[] {
@@ -352,10 +355,14 @@ export default class BaseApi {
       const network = networks.find(({ name }) => name === networkName);
       const prefix = network?.addressPrefix;
 
-      return encodeAddress(publicKey, prefix);
+      return BaseApi.encodeAddress(publicKey, prefix);
     } catch {
       return ethereumAddress;
     }
+  }
+
+  public static encodeAddress(publicKey: string | Uint8Array, prefix = 42) {
+    return encodeAddress(publicKey, prefix);
   }
 
   public static unlockPair(address: string, password: string): boolean {
@@ -408,7 +415,11 @@ export default class BaseApi {
         .forEach(({ address }) => BaseApi.deleteAccount(address));
     }
 
-    if (BaseApi.getAddress(address)) keyring.forgetAddress(address);
+    if (BaseApi.getAddress(address)) {
+      keyring.forgetAddress(address);
+
+      beaconController.resetConnection();
+    }
 
     return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
   }

@@ -31,8 +31,8 @@ export default class ContentForm extends Vue {
 .content-form {
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid $default-background-color;
+  background-color: $secondary-background-color;
   clip-path: $big-clip-path-left-top;
   border-radius: 8px;
   z-index: 1;

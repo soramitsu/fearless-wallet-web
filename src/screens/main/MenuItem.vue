@@ -34,7 +34,7 @@ export default class MenuItem extends Vue {
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: rgba(255, 255, 255, 0.5);
+  color: $gray-color;
   width: 85px;
 
   &:hover {

@@ -75,7 +75,7 @@ export default class WalletDetailsPopup extends Vue {
 
 <style lang="scss" scoped>
 .wallet-details {
-  color: rgba(255, 255, 255, 0.75);
+  color: $default-white;
   font-weight: 500;
   height: 60px;
   padding: 0 10px;
@@ -104,7 +104,7 @@ export default class WalletDetailsPopup extends Vue {
     }
 
     .delete {
-      color: $pink-color;
+      color: $delete-color;
       opacity: 0.8;
     }
   }

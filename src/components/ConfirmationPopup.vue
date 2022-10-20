@@ -45,7 +45,7 @@ export default class ConfirmationPopup extends Vue {
 <style lang="scss" scoped>
 .confirmation-popup {
   .text {
-    color: rgba(255, 255, 255, 0.5);
+    color: $gray-color;
     margin-bottom: 16px;
   }
 

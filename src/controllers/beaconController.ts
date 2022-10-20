@@ -33,7 +33,7 @@ class BeaconController {
 
   constructor() {
     this.app = getDAppClientInstance({
-      name: 'Fearless Wallet Extension',
+      name: this.name,
       disableDefaultEvents: true,
     });
 
@@ -46,19 +46,6 @@ class BeaconController {
 
   public static create() {
     return new BeaconController();
-  }
-
-  createApp() {
-    this.app = getDAppClientInstance({
-      name: 'Fearless Wallet Extension',
-      disableDefaultEvents: true,
-    });
-
-    this.addSubstrateBlockchain();
-  }
-
-  public status() {
-    console.info(this.app.connectionStatus);
   }
 
   public getAccounts() {
@@ -99,16 +86,11 @@ class BeaconController {
   }
 
   public async onPermissionRequest(callback: TCallback<RequestSentInfo>) {
-    this.status();
     this.app.subscribeToEvent(BeaconEvent.PERMISSION_REQUEST_SENT, callback);
   }
 
   public async onPermissionsResponse(callback: TCallback<PermissionSuccess>) {
     this.app.subscribeToEvent(BeaconEvent.PERMISSION_REQUEST_SUCCESS, callback);
-  }
-
-  public async onPermissionsError(callback: TCallback<PermissionErrorPayload>) {
-    this.app.subscribeToEvent(BeaconEvent.PERMISSION_REQUEST_ERROR, callback);
   }
 
   public setActiveAccount(account: AccountInfo) {
@@ -121,17 +103,14 @@ class BeaconController {
 
   public async sendRequestJSON(payload: PayloadJSON): Promise<SubstrateSignPayloadJSONResponse> {
     const activeAccount = (await this.app.getActiveAccount()) as AccountInfo;
-    // const accounts = (activeAccount as any).chainData.accounts as any[];
-    // const rightId = accounts.filter((el) => el.address === '5Fe7zknoeKQuMZbLhGYdhSa8n17dkhky13gKt6koHRE7iEzw') as any;
-    // if (!activeAccount) throw new Error('Beacon not set up.');
-    // console.log(rightId);
+
     const request: SubstrateSignPayloadRequest = {
       type: BeaconMessageType.BlockchainRequest,
       accountId: activeAccount.accountIdentifier,
       blockchainIdentifier: 'substrate',
       blockchainData: {
         mode: 'return',
-        payload: payload,
+        payload,
         type: SubstrateMessageType.sign_payload_request,
         scope: SubstratePermissionScope.sign_payload_json,
       },
@@ -141,11 +120,7 @@ class BeaconController {
   }
 
   public async sendRequestRaw(payload: SubstrateSignPayloadRequest) {
-    const response = await this.app.request(payload);
-
-    console.info(response, 'RESPONSE RAW');
-
-    return response;
+    return this.app.request(payload);
   }
 }
 

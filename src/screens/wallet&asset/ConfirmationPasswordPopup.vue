@@ -128,7 +128,7 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   async signMobile() {
     if (!this.transactionId && this.currency.extrinsic) {
-      const isSuccessfulTransaction = await this.currency?.sendRaw(this.address, this.amount);
+      const isSuccessfulTransaction = await this.currency?.sendRaw(this.address);
       this.transactionState = isSuccessfulTransaction ? 'success' : 'failed';
     } else if (this.payload && this.transactionId) {
       const payload: PayloadJSON = this.payload as any;
@@ -136,7 +136,7 @@ export default class ConfirmationPasswordPopup extends Vue {
       payload.type = 'json';
 
       const { blockchainData } = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
-      console.info('JSON RESPONSE', blockchainData);
+
       approveSignSignature(this.transactionId, blockchainData.signature);
     }
   }
@@ -200,7 +200,7 @@ export default class ConfirmationPasswordPopup extends Vue {
         password: this.password,
       });
     } else {
-      const isSuccessfulTransaction = await this.currency?.send(this.address, this.amount);
+      const isSuccessfulTransaction = await this.currency?.send(this.address);
 
       this.transactionState = isSuccessfulTransaction ? 'success' : 'failed';
     }

@@ -1,4 +1,5 @@
 import { isFunction } from '@polkadot/util';
+import { ISubmittableResult } from '@polkadot/types/types';
 import type {
   AvailableInNetworks,
   Balances,
@@ -406,26 +407,11 @@ export default class CurrencyController {
     }
   }
 
-  public async sendRaw(from: string, amount: string): Promise<boolean> {
-    try {
-      const unsubscribe = await this.extrinsic!.signAndSend(
-        from,
-        {
-          signer: new BeaconSigner(),
-        },
-        ({ status }) => {
-          //eslint-disable-line
-          if (status.isInBlock) {
-            console.info(`Successful transfer of ${amount} with hash ${status.asInBlock.toHex()}`);
-          } else if (status.isFinalized) {
-            console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
+  public async sendRaw(from: string): Promise<boolean> {
+    this.options.signer = new BeaconSigner();
 
-            unsubscribe();
-          } else {
-            console.info(`Status of transfer: ${status.type}`);
-          }
-        }
-      );
+    try {
+      await this.extrinsic!.signAndSend(from, this.options, this.statusCallback);
     } catch (ex) {
       console.info(`Transaction failed ${ex}`);
 
@@ -435,22 +421,24 @@ export default class CurrencyController {
     return true;
   }
 
-  public async send(from: string, amount: string): Promise<boolean> {
+  statusCallback(result: ISubmittableResult) {
+    const { status } = result;
+
+    //eslint-disable-line
+    if (status.isInBlock) {
+      console.info(`Successful transfer with hash ${status.asInBlock.toHex()}`);
+    } else if (status.isFinalized) {
+      console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
+    } else {
+      console.info(`Status of transfer: ${status.type}`);
+    }
+  }
+
+  public async send(from: string): Promise<boolean> {
     const pair = BaseApi.getPair(from);
 
     try {
-      const unsubscribe = await this.extrinsic!.signAndSend(pair, this.options, ({ status }) => {
-        //eslint-disable-line
-        if (status.isInBlock) {
-          console.info(`Successful transfer of ${amount} with hash ${status.asInBlock.toHex()}`);
-        } else if (status.isFinalized) {
-          console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
-
-          unsubscribe();
-        } else {
-          console.info(`Status of transfer: ${status.type}`);
-        }
-      });
+      await this.extrinsic!.signAndSend(pair, this.options, this.statusCallback);
     } catch (ex) {
       console.info(`Transaction failed ${ex}`);
 

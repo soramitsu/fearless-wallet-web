@@ -82,7 +82,6 @@ export default class MobileConnect extends Vue {
 
   async mounted() {
     const activeAccount = await beaconController.getActiveAccount();
-    beaconController.status();
     const prepnetworks: BeaconNetworks = this.getNetworks.map((el) => {
       return {
         genesisHash: `0x${el.chainId}`,
@@ -104,9 +103,6 @@ export default class MobileConnect extends Vue {
     beaconController.onPairingRequest(this.onPairingRequest);
     beaconController.onPermissionRequest(this.onPermissionRequest);
     beaconController.onPermissionsResponse(this.onPermissionResponse);
-    beaconController.onPermissionsError((payload) => {
-      console.info('PERMISSION ERROR', payload);
-    });
   }
 
   get isLoading() {

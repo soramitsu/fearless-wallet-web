@@ -47,13 +47,21 @@ export default class ExportForm extends Vue {
   }
 
   get substrateAddress() {
-    const address = BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.network);
+    const json = Object.entries(this.keyringPairJson)
+      .sort(([key]) => (key === 'address' ? -1 : 0))
+      .reduce((result, [key, value]) => ({ ...result, [key]: value }), {});
 
-    return JSON.stringify({ address });
+    return JSON.stringify(json);
   }
 
   get addressByNetwork() {
     return BaseApi.getDefaultAddressByNetworkIncludingReplacedAccount(this.selectedWallet, this.network);
+  }
+
+  get keyringPairJson() {
+    const keyringPair = BaseApi.getPair(this.addressByNetwork);
+
+    return keyringPair.toJson(this.password);
   }
 
   closeForm() {
@@ -69,18 +77,14 @@ export default class ExportForm extends Vue {
 
   export() {
     const chainId = this.networks.find(({ name }) => name === this.network)!.chainId;
-    const keyringPair = BaseApi.getPair(this.addressByNetwork);
-    const keyringPair$Json = keyringPair.toJson(this.password);
-    const meta = { ...keyringPair$Json.meta, genesisHash: `0x${chainId}` } as Record<string, string>;
+    const meta = { ...this.keyringPairJson.meta, genesisHash: `0x${chainId}` } as Record<string, string>;
 
     delete meta['ethereumAddress'];
     delete meta['isReplacedAccount'];
     delete meta['replacedSettings'];
 
-    const jsonSubstrate = JSON.stringify({ ...keyringPair$Json, meta });
+    const jsonSubstrate = JSON.stringify({ ...this.keyringPairJson, meta });
     const blobSubstrate = new Blob([jsonSubstrate], { type: 'application/json; charset=utf-8' });
-
-    keyringPair.lock();
 
     saveAs(blobSubstrate, `${this.addressByNetwork}.json`);
   }

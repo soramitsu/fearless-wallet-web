@@ -163,7 +163,6 @@ type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'sub
 })
 export default class AddWallet extends Vue {
   readonly countSteps = 5;
-
   step = 1;
   nickname = '';
   mnemonic = '';
@@ -394,6 +393,12 @@ export default class AddWallet extends Vue {
   @Watch('step')
   changedCurrentStep(step: number) {
     if (step === 0) this.$router.back();
+
+    if (step === 2) {
+      this.selectedMnemonicElements = [];
+
+      return;
+    }
 
     if (step === 4) {
       const {

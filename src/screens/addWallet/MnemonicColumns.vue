@@ -6,7 +6,7 @@
           {{ getNumberString(index + 1) }}
         </div>
         <div>
-          {{ getMnemonicElement(mnemonicElement, index) }}
+          {{ mnemonicElement }}
         </div>
       </div>
     </div>
@@ -17,7 +17,7 @@
           {{ getNumberString(midpoint + index + 1) }}
         </div>
         <div>
-          {{ getMnemonicElement(mnemonicElement, midpoint + index) }}
+          {{ mnemonicElement }}
         </div>
       </div>
     </div>
@@ -26,35 +26,30 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { MnemonicConfirmation } from '@/interfaces/common';
 
 @Component
 export default class MnemonicColumns extends Vue {
-  @Prop(String) mnemonic!: string;
-  @Prop(Array) selectedMnemonicElements!: MnemonicConfirmation[];
-
-  get mnemonicArray() {
-    return this.mnemonic.split(' ');
-  }
-
-  get mnemonicLength() {
-    return this.mnemonicArray.length;
-  }
+  @Prop(Array) mnemonicArray!: string[];
+  @Prop({ default: 12 }) mnemonicLength!: number;
 
   get midpoint() {
     return Math.ceil(this.mnemonicLength / 2);
   }
 
+  get mnemonicArrayValidLength() {
+    const array = [...this.mnemonicArray];
+
+    array.length = this.mnemonicLength;
+
+    return array.fill('', this.mnemonicArray.length, this.mnemonicLength);
+  }
+
   get mnemonicOne() {
-    return this.mnemonicArray.slice(0, this.midpoint);
+    return this.mnemonicArrayValidLength.slice(0, this.midpoint);
   }
 
   get mnemonicTwo() {
-    return this.mnemonicArray.slice(this.midpoint, this.mnemonicLength);
-  }
-
-  getMnemonicElement(mnemonicElement: string, index: number) {
-    return !this.selectedMnemonicElements ? mnemonicElement : this.selectedMnemonicElements[index]?.word ?? '';
+    return this.mnemonicArrayValidLength.slice(this.midpoint, this.mnemonicLength);
   }
 
   getNumberString(number: number) {

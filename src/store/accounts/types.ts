@@ -37,6 +37,10 @@ export type setAddressesProps = {
   addresses: Accounts;
 };
 
+export type setOnlineStatus = {
+  isOnline: boolean;
+};
+
 // actions
 export type SetSelectedFiat = {
   fiatName: string;

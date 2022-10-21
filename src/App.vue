@@ -7,9 +7,15 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Watch, Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
-import type { SetSelectedWalletProps, setAccountsProps, Accounts, setAddressesProps } from '@/store/accounts/types';
+import type {
+  SetSelectedWalletProps,
+  setAccountsProps,
+  Accounts,
+  setAddressesProps,
+  setOnlineStatus,
+} from '@/store/accounts/types';
 import type { TAction, TMutation } from '@/interfaces';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
@@ -31,21 +37,38 @@ export default class App extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
   @Getter(AccountsGettersTypes.getAddresses) addresses!: Accounts;
   @Getter(AccountsGettersTypes.getWallets) wallets!: Record<string, Accounts>;
+  @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
   @Mutation(AccountsMutationTypes.SET_ADDRESSES) setAddresses!: TMutation<setAddressesProps>;
+  @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<setOnlineStatus>;
   @Action(AuthActionTypes.SUBSCRIBE_AUTH_REQUESTS) authSubscribe!: TAction<unknown>;
   @Action(SignActionTypes.SUBSCRIBE_SIGN_REQUESTS) signSubscribe!: TAction<unknown>;
   @Action(MetaActionTypes.SUBSCRIBE_METADATA_REQUESTS) metaSubscribe!: TAction<unknown>;
 
-  async beforeCreate() {
+  async created() {
+    this.addEventOnline();
+    this.connectToNodes();
+  }
+
+  async mounted() {
+    this.subscribeToBalancesOfNetworks();
+  }
+
+  @Watch('isOnline')
+  async connectToNodes(value = this.isOnline) {
+    if (!value) return;
+
     const { loadJsons, connectToNodes } = NetworksController;
 
     await loadJsons();
     await connectToNodes();
   }
 
-  async mounted() {
+  @Watch('isOnline')
+  async subscribeToBalancesOfNetworks(value = this.isOnline) {
+    if (!value) return;
+
     const { subscribeToBalancesOfNetworks } = NetworksController;
 
     if (isExtension()) await Promise.all([this.authSubscribe(), this.metaSubscribe(), this.signSubscribe()]);
@@ -66,6 +89,7 @@ export default class App extends Vue {
 
     this.subscribeAddresses.subscribe(async (addresses) => {
       const newAddresses = this.getNewAccounts(addresses, 'addresses');
+
       console.info('addresses', newAddresses);
 
       this.setAddresses({ addresses });
@@ -75,6 +99,13 @@ export default class App extends Vue {
     });
 
     this.setWallet();
+  }
+
+  addEventOnline() {
+    const updateOnlineStatus = () => this.setOnlineStatus({ isOnline: navigator.onLine });
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
   }
 
   getNewAccounts(accounts: SubjectInfo, type: 'accounts' | 'addresses') {

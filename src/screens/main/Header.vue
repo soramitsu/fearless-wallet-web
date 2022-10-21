@@ -70,6 +70,7 @@ export default class Header extends Vue {
   @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
 
   get showFullScreenIcon() {
     return BaseApi.useIsPopup();
@@ -84,11 +85,11 @@ export default class Header extends Vue {
   }
 
   get statusConnectedClasses() {
-    return ['connected', 'success-connected'];
+    return ['connect', this.isOnline ? 'success-connect' : 'fail-connect'];
   }
 
   get statusConnectedText() {
-    return Date.now() ? 'Connected' : 'Not connected';
+    return this.isOnline ? 'Connected' : 'Not connected';
   }
 
   @Watch('syncedShowSelectWalletPopup')
@@ -195,18 +196,18 @@ export default class Header extends Vue {
     }
   }
 
-  .connected {
+  .connect {
     width: 16px;
     height: 16px;
     border-radius: 50%;
     margin-right: 8px;
   }
 
-  .success-connected {
+  .success-connect {
     background-color: #00ee77;
   }
 
-  .fail-connected {
+  .fail-connect {
     background-color: #ee7700;
   }
 }

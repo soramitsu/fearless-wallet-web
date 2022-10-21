@@ -11,6 +11,7 @@ export enum GettersTypes {
   getSelectedFiat = 'getSelectedFiat',
   getSelectedNetwork = 'getSelectedNetwork',
   getFiatSymbol = 'getFiatSymbol',
+  getOnlineStatus = 'getOnlineStatus',
   getFiatId = 'getFiatId',
   getAccounts = 'getAccounts',
   getAddresses = 'getAddresses',
@@ -22,6 +23,7 @@ export type Getters = {
   [GettersTypes.getSelectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getSelectedNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getFiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
+  [GettersTypes.getOnlineStatus](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getFiatId](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
   [GettersTypes.getAddresses](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
@@ -32,24 +34,33 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getSelectedWallet]({ selectedWallet }): SelectedWallet {
     return selectedWallet;
   },
+
   [GettersTypes.getSelectedFiat]({ selectedFiat }): string {
     return selectedFiat;
   },
+
   [GettersTypes.getSelectedNetwork]({ selectedNetworks, selectedWallet: { address } }): string {
     return selectedNetworks[address] ?? 'All networks';
   },
+
+  [GettersTypes.getOnlineStatus]({ isOnline }): boolean {
+    return isOnline;
+  },
+
   [GettersTypes.getFiatSymbol]({ selectedFiat }): string {
     const fiats: FiatJson[] = store.getters[NetworksGettersTypes.getFiats];
     const fiat = fiats.find(({ id }) => id === selectedFiat);
 
     return fiat?.symbol ?? '';
   },
+
   [GettersTypes.getFiatId]({ selectedFiat }): string {
     const fiats: FiatJson[] = store.getters[NetworksGettersTypes.getFiats];
     const fiat = fiats.find(({ id }) => id === selectedFiat);
 
     return fiat?.id ?? '';
   },
+
   [GettersTypes.getAccounts]({ accounts }): Accounts {
     return accounts;
   },

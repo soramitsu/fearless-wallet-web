@@ -69,6 +69,8 @@ const mutations: MutationTree<State> & Mutations = {
       selectedNetworks,
     } = state;
 
+    accountController.setSelectedNetwork(address, network);
+
     state.selectedNetworks = { ...selectedNetworks, [address]: network };
   },
 

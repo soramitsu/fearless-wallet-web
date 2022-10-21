@@ -14,7 +14,7 @@ const state = (): State => {
   return {
     selectedWallet: { address: '', ethereumAddress: '', name: '' },
     selectedFiat: accountController.getSelectedFiat(),
-    selectedNetworks: {},
+    selectedNetworks: accountController.getSelectedNetwork(),
     isOnline: navigator.onLine,
     accounts: {},
     addresses: {},

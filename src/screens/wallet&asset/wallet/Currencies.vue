@@ -23,7 +23,6 @@ import type { SetCurrenciesProps } from '@/store/networks/types';
 import type { TMutation } from '@/interfaces/common';
 import type { Currency } from '@/interfaces/currencies';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
-import { accountController } from '@/controllers/accountController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ALL_ASSETS_HIDDEN } from '@/consts/messages';
 
@@ -38,7 +37,6 @@ export default class Currencies extends Vue {
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
-
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
 
@@ -59,12 +57,7 @@ export default class Currencies extends Vue {
   }
 
   set filteredCurrencies(currencies) {
-    const { address } = this.selectedWallet;
-    const sequence = currencies.map(({ assetId }) => assetId);
-
-    this.setCurrencies({ currencies });
-
-    accountController.setSequenceAssets(sequence, address);
+    this.setCurrencies({ currencies, address: this.selectedWallet.address });
   }
 }
 </script>

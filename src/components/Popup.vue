@@ -1,7 +1,7 @@
 <template>
   <div :class="popupBackgroundClasses" :style="popupBackgroundStyles" @click="backgroundClick">
     <Corners size="big" :topLeftCorner="showBorder" :bottomRightCorner="showBorder" :style="popupContainerStyle">
-      <div :class="popupContainerClasses">
+      <div :class="popupContainerClasses" :style="popupContainerStyles">
         <div v-if="showHeader" class="header">
           <SearchInput v-if="showSearch" v-model="filterValue" :placeholder="placeholder" width="230px" />
 
@@ -50,6 +50,8 @@ export default class Popup extends Vue {
   @Prop({ default: () => () => null }) handlerFilter!: (value: string) => void;
   @Prop(Number) top!: number;
   @Prop(Number) left!: number;
+  @Prop({ type: Number, required: false }) height?: number;
+  @Prop({ type: Number, required: false }) maxHeight?: number;
   @Prop({ default: '' }) headerText!: string;
   @Prop({ default: '' }) placeholder!: string;
   @Prop({ default: true }) showHeader!: boolean;
@@ -58,7 +60,6 @@ export default class Popup extends Vue {
   @Prop({ default: true }) showBackground!: boolean;
   @Prop({ default: false }) showSearch!: boolean;
   @Prop({ default: false }) showBorder!: boolean;
-  @Prop({ default: false }) staticHeight!: boolean;
   @Prop({ default: 'medium' }) sizeWidth!: Size;
   @Prop({ default: 'center' }) horizontalPlacement!: HorizontalPlacement;
   @Prop({ default: 'center' }) verticalPlacement!: VerticalPlacement;
@@ -87,7 +88,6 @@ export default class Popup extends Vue {
     const classes = [
       'popup-container',
       {
-        'static-height': this.staticHeight,
         border: this.showBorder,
       },
     ];
@@ -95,6 +95,16 @@ export default class Popup extends Vue {
     if (this.sizeWidth) classes.push(`width-${this.sizeWidth}`);
 
     return classes;
+  }
+
+  get popupContainerStyles() {
+    const styles: Record<string, string> = {};
+
+    if (this.height) styles.height = `${this.height}px`;
+
+    if (this.maxHeight) styles.maxHeight = `${this.maxHeight}px`;
+
+    return styles;
   }
 
   get headerClasses() {
@@ -170,10 +180,6 @@ export default class Popup extends Vue {
     clip-path: $big-clip-path-left-top-and-right-bottom;
     border-radius: $default-border-radius;
     padding: 15px 0;
-  }
-
-  .static-height {
-    height: 410px;
   }
 
   .width-big {

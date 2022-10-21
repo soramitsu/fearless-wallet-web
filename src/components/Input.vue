@@ -1,5 +1,5 @@
 <template>
-  <Corners :isError="isError" :size="size">
+  <Corners :isError="isError" :size="size" :class="wrapperClasses">
     <div :class="containerInputClasses" spellcheck="false">
       <s-input
         v-model="vModel"
@@ -42,6 +42,15 @@ export default class Input extends Vue {
   @Prop({ default: false }) showPassword!: boolean;
   @Prop({ default: 'default' }) styleInput!: Style;
   @Prop({ default: false }) isError!: boolean;
+  @Prop({ default: false }) cursorPointer!: boolean;
+
+  get wrapperClasses() {
+    return [
+      {
+        'cursor-pointer': this.cursorPointer,
+      },
+    ];
+  }
 
   get containerInputClasses() {
     // for "small" and "mini" sizes also medium
@@ -67,6 +76,19 @@ export default class Input extends Vue {
   }
 }
 </script>
+<style lang="scss">
+.cursor-pointer {
+  .el-input__inner {
+    &:hover {
+      cursor: pointer;
+    }
+  }
+
+  &:hover {
+    cursor: pointer;
+  }
+}
+</style>
 
 <style lang="scss">
 .input {

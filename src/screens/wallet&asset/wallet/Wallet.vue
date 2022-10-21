@@ -14,6 +14,7 @@
     <SelectNetworkPopup
       v-if="showSelectNetworkPopup"
       v-model="selectedNetwork"
+      :height="410"
       :toggleSelectedNetwork="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
     />
@@ -55,7 +56,7 @@
 
     <ReceiveForm
       v-if="showReceiveForm"
-      :selectedNetwork="selectedCurrency.mainNetwork"
+      :_selectedNetwork="selectedCurrency.mainNetwork"
       :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', false)"
     />
   </div>
@@ -177,16 +178,41 @@ export default class Wallet extends Vue {
   }
 
   toggleCurrenciesVisible(allCurrenciesHidden: boolean) {
+    if (allCurrenciesHidden) {
+      this.currencies.forEach((currency) => currency.setCurrencyVisible(this.selectedWallet.address, true));
+
+      return;
+    }
+
     this.currencies.forEach((currency) => {
-      if (allCurrenciesHidden) {
-        currency.setCurrencyVisible(this.selectedWallet.address, true);
-
-        return;
-      }
-
       const isZeroBalance = currency.getTotalCountAssets(this.selectedWallet) === '0';
 
       if (isZeroBalance) currency.setCurrencyVisible(this.selectedWallet.address, false);
+    });
+
+    const currenciesVisibleWithBalance = this.currencies.filter(
+      (currency) =>
+        currency.getCurrencyVisible(this.selectedWallet.address) &&
+        currency.getTotalCountAssets(this.selectedWallet) !== '0'
+    );
+    const currenciesInvisibleWithBalance = this.currencies.filter(
+      (currency) =>
+        !currency.getCurrencyVisible(this.selectedWallet.address) &&
+        currency.getTotalCountAssets(this.selectedWallet) !== '0'
+    );
+    const currenciesInvisibleWithoutBalance = this.currencies.filter(
+      (currency) =>
+        !currency.getCurrencyVisible(this.selectedWallet.address) &&
+        currency.getTotalCountAssets(this.selectedWallet) === '0'
+    );
+
+    this.setCurrencies({
+      currencies: [
+        ...currenciesVisibleWithBalance,
+        ...currenciesInvisibleWithBalance,
+        ...currenciesInvisibleWithoutBalance,
+      ],
+      address: this.selectedWallet.address,
     });
 
     this.currenciesKey += 1;
@@ -214,7 +240,7 @@ export default class Wallet extends Vue {
 
     this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
 
-    targetElement.style.zIndex = this.showSelectNetworkPopup ? '200' : '0';
+    targetElement.style.zIndex = this.showSelectNetworkPopup ? '400' : '0';
   }
 
   updateFilterValue(value: string) {

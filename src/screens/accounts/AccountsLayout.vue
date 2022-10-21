@@ -38,7 +38,8 @@
       v-if="showAccountSettingsPopup"
       :selectedNetwork="selectedNetwork"
       :handlerClose="closeAccountSettings"
-      :showSwitchNode="isAccountsRoute"
+      :showSwitchNode="!isNodesRoute"
+      :showExport="!isExportRoute"
       :showReplaceAccount="showReplaceAccount"
       :buttonTopClick="buttonTopClick"
       @openReplacePopup="openReplacePopup"
@@ -85,6 +86,7 @@
 
 <script lang="ts">
 import { Vue, Component, Watch } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
 import ExportForm from './ExportForm.vue';
 import EditNodeForm from './EditNodeForm.vue';
 import NodeSettingsPopup from './NodeSettingsPopup.vue';
@@ -92,6 +94,7 @@ import ReplacePopup from './ReplacePopup.vue';
 import SourceTypePopup from './SourceTypePopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
 import Nodes from './Nodes.vue';
+import type { SelectedWallet } from '@/store/accounts/types';
 import ContentForm from '@/components/ContentForm.vue';
 import Input from '@/components/Input.vue';
 import CircleButton from '@/components/CircleButton.vue';
@@ -99,6 +102,8 @@ import Scroll from '@/components/Scroll.vue';
 import NotificationPopup from '@/components/NotificationPopup.vue';
 import { accountController } from '@/controllers/accountController';
 import { Components } from '@/router/routes';
+import BaseApi from '@/util/BaseApi';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 type NotificationType = 'delete' | 'export' | '';
 
@@ -134,6 +139,8 @@ export default class AccountsLayout extends Vue {
   showNodeSettingsPopup = false;
   notificationType: NotificationType = '';
 
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
   get headers() {
     return this.notificationType === 'delete'
       ? { text: 'Delete custom node?', subtext: this.selectedNodeName }
@@ -167,7 +174,7 @@ export default class AccountsLayout extends Vue {
     const networkPath = `${path} / ${this.network?.toUpperCase()}`;
     const exportPath = `${networkPath} / Export account`;
 
-    return this.isAccountsRoute ? path : this.isNetworkRoute ? networkPath : this.isExportRoute ? exportPath : '';
+    return this.isAccountsRoute ? path : this.isNodesRoute ? networkPath : this.isExportRoute ? exportPath : '';
   }
 
   get network() {
@@ -178,7 +185,7 @@ export default class AccountsLayout extends Vue {
     return this.routeName === Components.Accounts;
   }
 
-  get isNetworkRoute() {
+  get isNodesRoute() {
     return this.routeName === Components.Nodes;
   }
 
@@ -221,11 +228,13 @@ export default class AccountsLayout extends Vue {
     this.closeNotificationPopup();
   }
 
-  openAccountSettingsPopup(network = '', buttonTop: number, isReplaceAccount: boolean) {
+  openAccountSettingsPopup(network = '', buttonTop: number) {
+    const replacedAccount = BaseApi.getReplacedAccountByNetwork(this.selectedWallet, network);
+
     this.showAccountSettingsPopup = true;
     this.selectedNetwork = network;
     this.buttonTopClick = buttonTop;
-    this.showReplaceAccount = !isReplaceAccount;
+    this.showReplaceAccount = replacedAccount === undefined;
   }
 
   closeAccountSettings(isReset = true) {
@@ -314,8 +323,7 @@ export default class AccountsLayout extends Vue {
 
   back() {
     if (this.isAccountsRoute) this.$router.push({ name: Components.Wallet });
-    else if (this.isNetworkRoute) this.$router.push({ name: Components.Accounts });
-    else if (this.isExportRoute) this.$router.back();
+    else if (this.isNodesRoute || this.isExportRoute) this.$router.push({ name: Components.Accounts });
   }
 }
 </script>

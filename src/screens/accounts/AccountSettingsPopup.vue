@@ -10,7 +10,7 @@
     :handlerClose="handlerClose"
   >
     <div class="account-settings">
-      <div class="row" @click="openNotificationPopup">
+      <div v-if="showExport" class="row" @click="openNotificationPopup">
         <img src="@/assets/export.svg" class="icon" />
         <div class="label">Export account</div>
       </div>
@@ -49,6 +49,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 export default class AccountSettingsPopup extends Vue {
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showSwitchNode!: boolean;
+  @Prop(Boolean) showExport!: boolean;
   @Prop(Boolean) showReplaceAccount!: boolean;
   @Prop(Number) buttonTopClick!: number;
   @Prop(Function) handlerClose!: VoidFunction;

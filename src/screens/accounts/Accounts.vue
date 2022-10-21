@@ -11,7 +11,7 @@
         :network="network"
         :asset="asset"
         :address="address"
-        @openAccountSettingsPopup="openAccountSettingsPopup(...arguments, true)"
+        @openAccountSettingsPopup="openAccountSettingsPopup"
       />
     </template>
 
@@ -101,8 +101,8 @@ export default class Account extends Vue {
     this.$router.push({ name: Components.Wallet });
   }
 
-  openAccountSettingsPopup(network: string, event: Event, isReplaceAccount = false) {
-    this.$emit('openAccountSettingsPopup', network, event, isReplaceAccount);
+  openAccountSettingsPopup(network: string, event: Event) {
+    this.$emit('openAccountSettingsPopup', network, event);
   }
 
   blurInputName() {

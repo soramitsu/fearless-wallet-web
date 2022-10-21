@@ -1,4 +1,4 @@
-@Library('jenkins-library')
+@Library('jenkins-library@feature/fww-158/ci-for-PRs')
 
 def pipeline = new org.js.AppPipeline(
     steps:              this,
@@ -6,9 +6,6 @@ def pipeline = new org.js.AppPipeline(
     buildDockerImage:   'docker.soramitsu.co.jp/build-tools/node:14-ubuntu',
     dockerRegistryCred: 'bot-fearless-rw',
     buildCmds:           ['yarn build:extension && yarn electron:build'],
-    buildEnvironment: [
-          GH_USER: 'sorabot',
-          GH_TOKEN: credentials('sorabot-github-token')
-        ]
+    buildWithCred:      true
 )
 pipeline.runPipeline()

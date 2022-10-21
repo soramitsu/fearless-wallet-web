@@ -18,8 +18,6 @@ const connectedHandler = (context: Context, apiOptions: ApiOptions, { url, name 
   const { commit } = context;
   const networkName = network.name;
 
-  // console.info(`%c connected to ${url}`, 'background:#77dd77;color:#fff');
-
   apiOptions.apiRetry = 0;
 
   commit(MutationTypes.SET_NETWORK_ACTIVE_NODE, {
@@ -35,18 +33,10 @@ const connectedHandler = (context: Context, apiOptions: ApiOptions, { url, name 
   });
 };
 
-const disconnectHandler = (
-  context: Context,
-  apiOptions: ApiOptions,
-  { url }: Node,
-  network: Network,
-  provider: WsProvider
-) => {
+const disconnectHandler = (context: Context, apiOptions: ApiOptions, network: Network, provider: WsProvider) => {
   apiOptions.apiRetry += 1;
 
   if (apiOptions.apiRetry === MAX_CONTINUE_RETRY) {
-    // console.info(`%cStopped using ${url} because max retries`, 'background:red;color:#fff');
-
     provider.disconnect();
 
     apiOptions.apiRetry = 0;
@@ -54,16 +44,18 @@ const disconnectHandler = (
     apiOptions.api = undefined;
     apiOptions.provider = undefined;
 
-    connectToApi(context, network, apiOptions); // eslint-disable-line no-use-before-define
-  } else {
-    // console.info(`%cDisconnected from ${url} ${apiOptions.apiRetry} times`, 'background:orange;color:#fff');
+    if (navigator.onLine) connectToApi(context, network, apiOptions); // eslint-disable-line no-use-before-define
   }
 };
 
-const readyHandler = (context: Context, network: Network, accounts: Accounts) => {
+const readyHandler = (context: Context, network: Network) => {
   const { dispatch } = context;
 
-  dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, loadHistory: false, networksProps: [network] });
+  dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, {
+    accounts: getAccounts(),
+    loadHistory: false,
+    networksProps: [network],
+  });
 };
 
 function connectToApi(context: Context, network: Network, apiOptions: ApiOptions): void {
@@ -83,8 +75,8 @@ function connectToApi(context: Context, network: Network, apiOptions: ApiOptions
   apiOptions.provider = provider;
 
   api.on('connected', () => connectedHandler(context, apiOptions, node, network));
-  api.on('disconnected', () => disconnectHandler(context, apiOptions, node, network, provider));
-  api.on('ready', () => readyHandler(context, network, getAccounts()));
+  api.on('disconnected', () => disconnectHandler(context, apiOptions, network, provider));
+  api.on('ready', () => readyHandler(context, network));
 }
 
 function subscribeUtilityAssetsBalances(context: Context, address: string, network: Network): void {

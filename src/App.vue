@@ -47,6 +47,7 @@ export default class App extends Vue {
   @Action(MetaActionTypes.SUBSCRIBE_METADATA_REQUESTS) metaSubscribe!: TAction<unknown>;
 
   async created() {
+    this.setWallet();
     this.addEventOnline();
     this.connectToNodes();
   }
@@ -56,8 +57,13 @@ export default class App extends Vue {
   }
 
   @Watch('isOnline')
-  async connectToNodes(value = this.isOnline) {
-    if (!value) return;
+  connect() {
+    this.connectToNodes();
+    this.subscribeToBalancesOfNetworks();
+  }
+
+  async connectToNodes() {
+    if (!this.isOnline) return;
 
     const { loadJsons, connectToNodes } = NetworksController;
 
@@ -65,9 +71,8 @@ export default class App extends Vue {
     await connectToNodes();
   }
 
-  @Watch('isOnline')
-  async subscribeToBalancesOfNetworks(value = this.isOnline) {
-    if (!value) return;
+  async subscribeToBalancesOfNetworks() {
+    if (!this.isOnline) return;
 
     const { subscribeToBalancesOfNetworks } = NetworksController;
 
@@ -77,28 +82,25 @@ export default class App extends Vue {
     this.subscribeAddresses = BaseApi.getAddressesSubject();
     this.subscribeAccounts.subscribe(async (accounts) => {
       const newAccounts = this.getNewAccounts(accounts, 'accounts');
-
-      console.info('accounts', newAccounts);
+      const accountsCount = Object.keys(accounts).length;
+      const newAccountsCount = Object.keys(newAccounts).length;
 
       this.setAccounts({ accounts });
 
-      // subscribe only if the number of new accounts is not equal to the total number of accounts
-      if (Object.keys(accounts).length !== Object.keys(newAccounts).length)
+      if (accountsCount !== newAccountsCount && newAccountsCount !== 0)
         await subscribeToBalancesOfNetworks(newAccounts);
     });
 
     this.subscribeAddresses.subscribe(async (addresses) => {
       const newAddresses = this.getNewAccounts(addresses, 'addresses');
-
-      console.info('addresses', newAddresses);
+      const addressesCount = Object.keys(addresses).length;
+      const newAddressesCount = Object.keys(newAddresses).length;
 
       this.setAddresses({ addresses });
-      // subscribe only if the number of new addresses is not equal to the total number of accounts
-      if (Object.keys(addresses).length !== Object.keys(newAddresses).length)
+
+      if (addressesCount !== newAddressesCount && newAddressesCount !== 0)
         await subscribeToBalancesOfNetworks(newAddresses);
     });
-
-    this.setWallet();
   }
 
   addEventOnline() {
@@ -114,6 +116,8 @@ export default class App extends Vue {
     for (const address in accounts) {
       if (this[type][address] === undefined) result[address] = accounts[address];
     }
+
+    console.log(type, result);
 
     return result;
   }

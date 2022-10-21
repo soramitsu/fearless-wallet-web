@@ -73,7 +73,7 @@
 
     <SelectNetworkPopup
       v-if="showSelectNetworkPopup"
-      v-model="selectedNetwork"
+      :selectedNetwork="selectedNetwork"
       :height="410"
       :allNetworksItem="false"
       :relayChain="relayChain"

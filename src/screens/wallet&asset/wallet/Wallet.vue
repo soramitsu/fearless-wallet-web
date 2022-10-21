@@ -13,7 +13,7 @@
 
     <SelectNetworkPopup
       v-if="showSelectNetworkPopup"
-      v-model="selectedNetwork"
+      :selectedNetwork="selectedNetwork"
       :height="410"
       :toggleSelectedNetwork="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
@@ -74,6 +74,7 @@ import Currencies from './Currencies.vue';
 import NFTs from './NFTs.vue';
 import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
 import type { TMutation, TabWallet } from '@/interfaces/common';
+import type { SetSelectedNetworkProps } from '@/store/accounts/types';
 import Scroll from '@/components/Scroll.vue';
 import ContentForm from '@/components/ContentForm.vue';
 import { accountController } from '@/controllers/accountController';
@@ -82,6 +83,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { SetCurrenciesProps } from '@/store/networks/types';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { addNumbers, formattedNumber } from '@/helpers/numbers';
 
 @Component({
@@ -104,7 +106,6 @@ export default class Wallet extends Vue {
   showReceiveForm = false;
   showSelectNetworkPopup = false;
   currenciesKey = 0;
-  selectedNetwork = 'All networks';
   activeTabName: TabWallet = 'Currencies';
   filterValue = '';
   selectedCurrency!: {
@@ -115,7 +116,9 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
 
   get sortedCurrencies() {
     const { address } = this.selectedWallet;
@@ -231,7 +234,7 @@ export default class Wallet extends Vue {
   toggleSelectedNetwork(network: string) {
     if (this.selectedNetwork === network) return;
 
-    this.selectedNetwork = network;
+    this.setSelectedNetwork({ network });
     this.toggleSelectNetworkPopupVisible();
   }
 

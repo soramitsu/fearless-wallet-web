@@ -1,10 +1,10 @@
 <template>
   <div>
     <SelectPopup
-      v-model="selectedFiat"
       verticalPlacement="top"
       horizontalPlacement="right"
       placeholder="Search in currencies"
+      :value="selectedFiat"
       :top="50"
       :showAnimation="showAnimation"
       :options="filteredOptionsFiats"

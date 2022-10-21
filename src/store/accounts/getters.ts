@@ -9,6 +9,7 @@ import store from '@/store';
 export enum GettersTypes {
   getSelectedWallet = 'getSelectedWallet',
   getSelectedFiat = 'getSelectedFiat',
+  getSelectedNetwork = 'getSelectedNetwork',
   getFiatSymbol = 'getFiatSymbol',
   getFiatId = 'getFiatId',
   getAccounts = 'getAccounts',
@@ -19,6 +20,7 @@ export enum GettersTypes {
 export type Getters = {
   [GettersTypes.getSelectedWallet](state: State, getters?: GetterTree<State, State> & Getters): SelectedWallet;
   [GettersTypes.getSelectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
+  [GettersTypes.getSelectedNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getFiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getFiatId](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
@@ -32,6 +34,9 @@ const getters: GetterTree<State, State> & Getters = {
   },
   [GettersTypes.getSelectedFiat]({ selectedFiat }): string {
     return selectedFiat;
+  },
+  [GettersTypes.getSelectedNetwork]({ selectedNetworks, selectedWallet: { address } }): string {
+    return selectedNetworks[address] ?? 'All networks';
   },
   [GettersTypes.getFiatSymbol]({ selectedFiat }): string {
     const fiats: FiatJson[] = store.getters[NetworksGettersTypes.getFiats];

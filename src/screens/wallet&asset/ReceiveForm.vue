@@ -41,9 +41,9 @@
 
     <SelectNetworkPopup
       v-if="showSelectNetworkPopup"
-      v-model="selectedNetwork"
       horizontalPlacement="left"
       verticalPlacement="top"
+      :selectedNetwork="selectedNetwork"
       :top="132"
       :height="360"
       :allNetworksItem="false"

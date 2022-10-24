@@ -118,7 +118,7 @@ body {
   font-family: 'Sora';
   font-style: normal;
   font-feature-settings: 'tnum' on, 'lnum' on;
-  min-height: $extension-height;
+  max-height: $extension-height;
   min-width: $extension-width;
   height: 100%;
   width: $extension-width;

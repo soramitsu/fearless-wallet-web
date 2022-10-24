@@ -33,6 +33,7 @@ export default class InfoItem extends Vue {
   max-width: 370px;
   overflow: hidden;
   line-height: 20px;
+  white-space: nowrap;
   text-overflow: ellipsis;
 }
 </style>

@@ -11,9 +11,7 @@
     <div class="alert">
       <Alert :message="alertMessage" />
     </div>
-    <div class="authorize__control">
-      <Button width="100%" text="Yes, allow this application access" size="big" fontSize="big" @click="onApprove" />
-    </div>
+    <Button width="100%" text="Yes, allow this application access" size="big" fontSize="big" @click="onApprove" />
   </AboveForm>
 </template>
 
@@ -69,35 +67,6 @@ export default class MetaRequest extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.authorize {
-  display: flex;
-  flex-flow: column;
-  justify-content: space-between;
-  height: 90%;
-
-  .authorize__content {
-    font-size: 16px;
-    font-weight: 400px;
-    margin-bottom: 20px;
-  }
-
-  .authorize__content--name {
-    color: #bb77ff;
-  }
-
-  .authorize__content--link {
-    color: #bb77ff;
-    cursor: pointer;
-  }
-
-  .authorize__control {
-    display: flex;
-    flex-flow: column;
-    justify-content: space-between;
-    height: 110px;
-  }
-}
-
 .alert {
   margin-bottom: 10px;
 }

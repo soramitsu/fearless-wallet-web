@@ -51,7 +51,14 @@ const EXISTENTIAL_DEPOSIT_WARNING =
 
 type InvalidValueName = keyof typeof INVALID_MESSAGES | '';
 
+const MOBILE_CONNECTOR_MESSAGES = {
+  QR_HEADER: 'Scan the QR code using the Fearless mobile app',
+  ACTIVE_MOBILE_ACCOUNT_EXISTS: 'There is an active connection, please delete mobile wallet and try again',
+  WALLET_ALREADY_EXISTS: 'You already have this wallet',
+};
+
 export {
+  MOBILE_CONNECTOR_MESSAGES,
   MOCK_PASSWORD,
   PASSWORD_INFO,
   PASSWORD_SAME,

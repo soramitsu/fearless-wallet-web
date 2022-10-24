@@ -45,6 +45,8 @@ import PermissionRequest from '@/screens/mobileConnect/PermissionRequest.vue';
 import InfoList from '@/layouts/InfoList.vue';
 import InfoItem from '@/screens/signing/InfoItem.vue';
 import Alert from '@/components/Alert.vue';
+import { MOBILE_CONNECTOR_MESSAGES } from '@/consts/messages';
+
 @Component({
   components: {
     Loader,
@@ -63,11 +65,11 @@ export default class MobileConnect extends Vue {
   @Getter(BeaconGettersTypes.GET_QR) getQR!: Nullable<string>;
   @Mutation(BeaconMutationsTypes.SET_QR) setQR!: TMutation<string>;
 
+  readonly qrCodeHeader = MOBILE_CONNECTOR_MESSAGES.QR_HEADER;
+  readonly activeMobileAccountExistMessage = MOBILE_CONNECTOR_MESSAGES.ACTIVE_MOBILE_ACCOUNT_EXISTS;
+  readonly accountAlreadyExistMessage = MOBILE_CONNECTOR_MESSAGES.WALLET_ALREADY_EXISTS;
   requestInfo: RequestSentInfo | null = null;
   requestResponse: PermissionResponseOutput | null = null;
-  qrCodeHeader = 'Scan the QR code using the Fearless mobile app';
-  activeMobileAccountExistMessage = 'There is an active connection, please delete mobile wallet and try again';
-  accountAlreadyExistMessage = 'You already have this wallet';
   isLoading = false;
   isRequest = false;
   isPermissionsGranted = false;
@@ -85,11 +87,11 @@ export default class MobileConnect extends Vue {
       return;
     }
 
-    const prepnetworks: BeaconNetworks = this.getNetworks.map((el) => ({ genesisHash: `0x${el.chainId}` }));
+    const prepNetworks: BeaconNetworks = this.getNetworks.map(({ chainId }) => ({ genesisHash: `0x${chainId}` }));
 
     this.initBeaconEvents();
 
-    beaconController.connect(prepnetworks);
+    beaconController.connect(prepNetworks);
   }
 
   initBeaconEvents() {
@@ -145,13 +147,13 @@ export default class MobileConnect extends Vue {
     }, 30000);
   }
 
-  async onPermissionResponse(payload: PermissionSuccess) {
+  async onPermissionResponse({ output, account }: PermissionSuccess) {
     this.isPossibleConnectionProblem = false;
     this.isLoading = false;
 
-    this.requestResponse = payload.output;
+    this.requestResponse = output;
 
-    if (BaseApi.getAddressType(payload.account.address)) {
+    if (BaseApi.getAddressType(account.address)) {
       this.isWalletAlreadyExists = true;
 
       beaconController.resetConnection();
@@ -159,7 +161,7 @@ export default class MobileConnect extends Vue {
       return;
     }
 
-    const substrateAccount = BaseApi.encodeAddress(payload.account.address);
+    const substrateAccount = BaseApi.encodeAddress(account.address);
 
     this.isPermissionsGranted = true;
 

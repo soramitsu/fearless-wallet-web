@@ -1,30 +1,21 @@
 <template>
   <AboveForm :header="header" :closeHandler="close">
-    <template v-if="getQR">
+    <template v-if="isQRPrep">
       <h2 class="header">{{ qrCodeHeader }}</h2>
       <QR :payload="getQR" />
     </template>
 
-    <Alert v-else-if="isActiveAccountExists" :message="activeAccountExistMessage" />
+    <Alert v-else-if="isActiveAccountExists" :message="activeMobileAccountExistMessage" />
 
-    <div v-else-if="isLoading" class="loader">
+    <div v-if="isLoading" class="loader">
       <Loader />
     </div>
-
-    <PermissionRequest v-if="isAwaitWalletResponse" :requestInfo="requestInfo" />
-
-    <template v-if="isPermissionsGranted">
-      <div class="permission__content">
-        <Alert v-if="isWalletAlreadyExists" :message="accountAlreadyExistMessage" />
-
-        <InfoList v-else>
-          <InfoItem name="address" :value="requestResponse.address" />
-          <InfoItem name="permissions" :value="requestResponse.scopes[0]" />
-        </InfoList>
-
-        <Button size="big" text="Understood" @click="close" />
-      </div>
-    </template>
+    <PermissionRequest
+      v-if="connectionStatus"
+      :status="connectionStatus"
+      :requestResponse="requestResponse"
+      :requestInfo="requestInfo"
+    />
   </AboveForm>
 </template>
 
@@ -51,7 +42,6 @@ import PermissionRequest from '@/screens/mobileConnect/PermissionRequest.vue';
 import InfoList from '@/layouts/InfoList.vue';
 import InfoItem from '@/screens/signing/InfoItem.vue';
 import Alert from '@/components/Alert.vue';
-
 @Component({
   components: {
     Loader,
@@ -70,29 +60,29 @@ export default class MobileConnect extends Vue {
   @Getter(BeaconGettersTypes.GET_QR) getQR!: Nullable<string>;
   @Mutation(BeaconMutationsTypes.SET_QR) setQR!: TMutation<string>;
 
-  isRequest = false;
   requestInfo: RequestSentInfo | null = null;
   requestResponse: PermissionResponseOutput | null = null;
   qrCodeHeader = 'Scan the QR code using the Fearless mobile app';
   activeMobileAccountExistMessage = 'There is an active connection, please delete mobile wallet and try again';
   accountAlreadyExistMessage = 'You already have this wallet';
+  isLoading = false;
+  isRequest = false;
   isPermissionsGranted = false;
   isWalletAlreadyExists = false;
   isActiveAccountExists = false;
+  isPossibleConnectionProblem = false;
 
   async mounted() {
+    this.isLoading = !this.getQR;
     const activeAccount = await beaconController.getActiveAccount();
-    const prepnetworks: BeaconNetworks = this.getNetworks.map((el) => {
-      return {
-        genesisHash: `0x${el.chainId}`,
-      };
-    });
 
     if (activeAccount) {
       this.isActiveAccountExists = true;
 
       return;
     }
+
+    const prepnetworks: BeaconNetworks = this.getNetworks.map((el) => ({ genesisHash: `0x${el.chainId}` }));
 
     this.initBeaconEvents();
 
@@ -101,12 +91,17 @@ export default class MobileConnect extends Vue {
 
   initBeaconEvents() {
     beaconController.onPairingRequest(this.onPairingRequest);
+    beaconController.onPairingSuccess(this.onPairingSuccess);
     beaconController.onPermissionRequest(this.onPermissionRequest);
     beaconController.onPermissionsResponse(this.onPermissionResponse);
   }
 
-  get isLoading() {
-    return !this.getQR && !this.isActiveAccountExists;
+  get connectionStatus() {
+    if (this.isPossibleConnectionProblem && !this.isPermissionsGranted) return 'pendingWithResetForm';
+    if (this.isPermissionsGranted) return 'success';
+    if (this.isWalletAlreadyExists) return 'failed';
+
+    return false;
   }
 
   get isAwaitWalletResponse() {
@@ -114,7 +109,7 @@ export default class MobileConnect extends Vue {
   }
 
   get isQRPrep() {
-    return !this.requestInfo && this.getQR;
+    return !this.connectionStatus && this.getQR && !this.isLoading;
   }
 
   close() {
@@ -122,37 +117,47 @@ export default class MobileConnect extends Vue {
   }
 
   get header() {
-    if (this.isPermissionsGranted) return `Permissions granted by ${this.requestInfo?.walletInfo.name}`;
-    if (this.requestInfo) return `Requesting...`;
+    if (this.requestInfo && this.connectionStatus !== 'success' && this.connectionStatus !== 'failed')
+      return `Requesting...`;
+    if (this.connectionStatus === 'success' || this.connectionStatus === 'failed') return '';
 
     return 'Connect Mobile Wallet';
   }
 
   async onPairingRequest(payload: string) {
     this.setQR(payload);
+    this.isLoading = false;
+  }
+
+  async onPairingSuccess() {
+    this.isLoading = true;
   }
 
   async onPermissionRequest(payload: RequestSentInfo) {
     this.requestInfo = payload;
 
     setTimeout(() => {
-      this.isRequest = true;
-    }, 2000);
+      this.isLoading = false;
+      this.isPossibleConnectionProblem = true;
+    }, 15000);
   }
 
   async onPermissionResponse(payload: PermissionSuccess) {
-    this.isPermissionsGranted = true;
+    this.isPossibleConnectionProblem = false;
+    this.isLoading = false;
 
-    const substrateAccount = BaseApi.encodeAddress(payload.account.address);
+    this.requestResponse = payload.output;
 
-    if (BaseApi.getAddressType(substrateAccount)) {
+    if (BaseApi.getAddressType(payload.account.address)) {
       this.isWalletAlreadyExists = true;
       beaconController.resetConnection();
 
       return;
     }
 
-    this.requestResponse = payload.output;
+    const substrateAccount = BaseApi.encodeAddress(payload.account.address);
+
+    this.isPermissionsGranted = true;
 
     const meta: KeyringJson$Meta = { name: 'mobile wallet' };
 

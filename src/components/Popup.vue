@@ -7,7 +7,10 @@
 
           <template v-else>
             <div class="button"></div>
-            <div v-if="headerText" :class="headerClasses">{{ headerText }}</div>
+            <div class="header-with-icon">
+              <img v-if="isIcon" class="attention-icon" src="@/assets/info-triangle.svg" />
+              <div v-if="headerText" :class="headerClasses">{{ headerText }}</div>
+            </div>
           </template>
 
           <s-button type="link" class="button" @click="close">
@@ -54,6 +57,7 @@ export default class Popup extends Vue {
   @Prop({ type: Number, required: false }) maxHeight?: number;
   @Prop({ default: '' }) headerText!: string;
   @Prop({ default: '' }) placeholder!: string;
+  @Prop({ default: false }) isIcon!: boolean;
   @Prop({ default: true }) showHeader!: boolean;
   @Prop({ default: true }) showBlur!: boolean;
   @Prop({ default: true }) showAnimation!: boolean;
@@ -182,6 +186,16 @@ export default class Popup extends Vue {
     padding: 15px 0;
   }
 
+  .header-with-icon {
+    display: flex;
+    flex-flow: column;
+    gap: 12px;
+  }
+
+  .attention-icon {
+    height: 38px;
+  }
+
   .width-big {
     width: 370px;
   }
@@ -210,7 +224,7 @@ export default class Popup extends Vue {
   .header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     width: 100%;
     padding-left: $default-padding;
     padding-right: 22px;

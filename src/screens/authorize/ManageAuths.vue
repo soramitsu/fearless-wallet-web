@@ -3,7 +3,7 @@
     <SearchInput v-model="filterValue" placeholder="Search in networks" class="manage-auths__search" width="100%" />
 
     <AuthItem
-      v-for="el in authlist"
+      v-for="el in filteredList"
       v-bind:key="el.id"
       :request="el"
       @onRemoveAuth="removeAuth"
@@ -40,6 +40,7 @@ export default class ManageAuths extends Vue {
 
   filterValue = '';
   filteredList: Record<string, AuthUrlInfo> = {};
+  filteredValue: any;
 
   async mounted() {
     await this.getAuthList();
@@ -49,7 +50,7 @@ export default class ManageAuths extends Vue {
 
   @Watch('filterValue')
   filter(value: string) {
-    this.filteredData(value);
+    this.filteredList = this.filteredData(value);
   }
 
   filteredData(value: string) {
@@ -57,7 +58,7 @@ export default class ManageAuths extends Vue {
       return info.origin.includes(value);
     });
 
-    this.filteredList = Object.fromEntries(filtered);
+    return Object.fromEntries(filtered);
   }
 
   updateAuthorizedAccount(url: string) {

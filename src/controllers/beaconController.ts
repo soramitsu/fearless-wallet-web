@@ -13,7 +13,6 @@ import {
 import type {
   BeaconNetworks,
   PayloadJSON,
-  PermissionErrorPayload,
   PermissionSuccess,
   RequestSentInfo,
   SubstrateSignPayloadJSONResponse,
@@ -25,8 +24,8 @@ import { getTzip10Link } from '@/util/beacon';
 class BeaconController {
   private app: DAppClient;
   private serializer = new Serializer();
-  private name = 'Fearless Wallet Extension';
-  private appMetaData: AppMetadata = {
+  private readonly name = 'Fearless Wallet Extension';
+  private readonly appMetaData: AppMetadata = {
     senderId: 'fearless-wallet-extension',
     name: this.name,
   };
@@ -83,6 +82,10 @@ class BeaconController {
 
       callback(uri);
     });
+  }
+
+  public async onPairingSuccess(callback: () => void) {
+    this.app.subscribeToEvent(BeaconEvent.PAIR_SUCCESS, callback);
   }
 
   public async onPermissionRequest(callback: TCallback<RequestSentInfo>) {

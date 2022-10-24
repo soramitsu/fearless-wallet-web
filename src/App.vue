@@ -117,8 +117,6 @@ export default class App extends Vue {
       if (this[type][address] === undefined) result[address] = accounts[address];
     }
 
-    console.log(type, result);
-
     return result;
   }
 

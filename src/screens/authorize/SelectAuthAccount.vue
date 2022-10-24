@@ -117,6 +117,20 @@ export default class SelectAuthAccount extends Vue {
   overflow: scroll;
 }
 
+::-webkit-scrollbar {
+  width: 6px;
+  height: 0px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: $default-border-radius;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+  }
+}
+
 .account__checkbox .el-checkbox__label {
   font-size: 16px;
 }

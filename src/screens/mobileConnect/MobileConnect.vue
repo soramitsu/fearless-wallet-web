@@ -71,7 +71,6 @@ export default class MobileConnect extends Vue {
   requestInfo: RequestSentInfo | null = null;
   requestResponse: PermissionResponseOutput | null = null;
   isLoading = false;
-  isRequest = false;
   isPermissionsGranted = false;
   isWalletAlreadyExists = false;
   isActiveAccountExists = false;
@@ -171,7 +170,7 @@ export default class MobileConnect extends Vue {
 
     await createAddress(substrateAccount, meta); //extenstion service worker
 
-    this.setSelectedWallet({ selectedWalletAddress: substrateAccount });
+    await this.setSelectedWallet({ selectedWalletAddress: substrateAccount });
   }
 }
 </script>

@@ -18,7 +18,7 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
 import type { Wallet } from '@/store/accounts/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
-import { createAccountSuri, jsonRestore } from '@/extension/messaging';
+import { createAccountSuri, forgetAccount, jsonRestore } from '@/extension/messaging';
 import { getReplacedMetaTyped, getMetaTyped, isExtension } from '@/helpers/common';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';
@@ -251,8 +251,12 @@ export default class BaseApi {
 
   public static isDuplicateKeypair(address: string): boolean {
     const accounts = BaseApi.getAccounts();
+    const addresses = BaseApi.getAddresses();
 
-    return accounts.map(({ address }) => address).includes(address);
+    return (
+      accounts.map(({ address }) => address).includes(address) ||
+      addresses.map(({ address }) => address).includes(address)
+    );
   }
 
   public static getAccount(address: string): KeyringAddress | undefined {
@@ -285,9 +289,13 @@ export default class BaseApi {
 
   public static isDuplicateReplacedKeypair(addressProp: string): boolean {
     const accounts = BaseApi.getAccounts();
+    const addresses = BaseApi.getAddresses();
+    const addressIndex = addresses.findIndex(
+      ({ address, meta }) => address === addressProp && meta.isReplacedAccount === true
+    );
     const index = accounts.findIndex(({ address, meta }) => address === addressProp && meta.isReplacedAccount === true);
 
-    return index !== -1;
+    return index !== -1 || addressIndex !== -1;
   }
 
   public static getKeyringPair(address: string): KeyringPair {
@@ -424,6 +432,8 @@ export default class BaseApi {
 
       beaconController.resetConnection();
     }
+
+    forgetAccount(address); //delete from background script
 
     return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
   }

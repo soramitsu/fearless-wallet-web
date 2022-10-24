@@ -1,15 +1,18 @@
 <template>
   <AboveForm :header="header" :closeHandler="close">
-    <template v-if="isQRPrep">
+    <div class="error__container" v-if="isActiveAccountExists">
+      <Alert :message="activeMobileAccountExistMessage" />
+      <Button text="Close" width="100%" size="medium" fontSize="big" type="secondary" :border="false" @click="close" />
+    </div>
+    <template v-else-if="isQRPrep">
       <h2 class="header">{{ qrCodeHeader }}</h2>
       <QR :payload="getQR" />
     </template>
 
-    <Alert v-else-if="isActiveAccountExists" :message="activeMobileAccountExistMessage" />
-
-    <div v-if="isLoading" class="loader">
+    <div v-if="isLoading && !isActiveAccountExists" class="loader">
       <Loader />
     </div>
+
     <PermissionRequest
       v-if="connectionStatus"
       :status="connectionStatus"
@@ -113,7 +116,7 @@ export default class MobileConnect extends Vue {
   }
 
   close() {
-    this.$router.push({ name: Components.Main });
+    this.$router.push({ name: Components.Wallet });
   }
 
   get header() {
@@ -138,8 +141,8 @@ export default class MobileConnect extends Vue {
 
     setTimeout(() => {
       this.isLoading = false;
-      this.isPossibleConnectionProblem = true;
-    }, 15000);
+      if (!this.isPermissionsGranted) this.isPossibleConnectionProblem = true;
+    }, 30000);
   }
 
   async onPermissionResponse(payload: PermissionSuccess) {
@@ -150,6 +153,7 @@ export default class MobileConnect extends Vue {
 
     if (BaseApi.getAddressType(payload.account.address)) {
       this.isWalletAlreadyExists = true;
+
       beaconController.resetConnection();
 
       return;
@@ -174,7 +178,12 @@ export default class MobileConnect extends Vue {
 .import-button {
   margin-top: 10px;
 }
-
+.error__container {
+  display: flex;
+  flex-flow: column;
+  height: 100%;
+  justify-content: space-between;
+}
 .permission__content {
   height: 100%;
   display: flex;

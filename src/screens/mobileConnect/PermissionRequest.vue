@@ -55,11 +55,8 @@ import Popup from '@/components/Popup.vue';
 export default class PermissionRequest extends Vue {
   @Prop(Object) requestInfo!: RequestSentInfo | PermissionErrorPayload;
   @Prop({ type: Object || null, default: null }) requestResponse?: PermissionResponseOutput;
+  @Prop(String) status!: 'pendingWithResetForm' | 'success' | 'failed';
 
-  @Prop(String)
-  status!: 'pendingWithResetForm' | 'success' | 'failed';
-
-  isResetUIShown = true;
   noAnswerMessage = 'No answer from your wallet received yet. Please make sure the wallet is open';
 
   get isSuccess() {
@@ -73,16 +70,19 @@ export default class PermissionRequest extends Vue {
   get statucIcon() {
     return '';
   }
+
   get getHeight() {
     if (this.isSuccess || this.isFailed) return 300;
 
     return 400;
   }
+
   get maxHeight() {
     if (this.isSuccess || this.isFailed) return 350;
 
     return 480;
   }
+
   get isPendingWithResetForm() {
     return this.status === 'pendingWithResetForm';
   }
@@ -94,7 +94,9 @@ export default class PermissionRequest extends Vue {
   }
 
   close() {
-    this.$router.back();
+    if (this.isSuccess) {
+      this.$router.push({ name: Components.Wallet });
+    } else this.$router.back();
   }
 
   onResetConnection() {
@@ -104,7 +106,7 @@ export default class PermissionRequest extends Vue {
   }
 
   onCancelRequest() {
-    this.$router.push({ name: Components.Welcome });
+    this.$router.push({ name: Components.Wallet });
   }
 }
 </script>

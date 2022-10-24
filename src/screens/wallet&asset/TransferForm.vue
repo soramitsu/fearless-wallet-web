@@ -116,6 +116,12 @@
       :handlerClose="handlerCloseExistentialPopup"
       :handlerAcceptButton="handlerAcceptExistentialPopup"
     />
+
+    <WarningAddressPopup
+      v-if="showWarningAddressPopup"
+      :handlerClose="handlerCloseWarningAddressPopup"
+      :handlerAcceptButton="handlerAcceptWarningAddressButton"
+    />
   </div>
 </template>
 
@@ -126,6 +132,7 @@ import AmountInputs from './AmountInputs.vue';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import MaxButton from './MaxButton.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
+import WarningAddressPopup from './WarningAddressPopup.vue';
 import RotateInput from './RotateInput.vue';
 import type { Currencies, Networks } from '@/interfaces';
 import type { GetAssetName } from '@/store/networks/types';
@@ -159,6 +166,7 @@ import { getImgPath } from '@/helpers/imgPath';
     NetworkLogo,
     AmountInputs,
     ExistentialPopup,
+    WarningAddressPopup,
     ConfirmationPasswordPopup,
   },
 })
@@ -190,6 +198,12 @@ export default class SendForm extends Vue {
 
   get showSelectPopup() {
     return this.showSelectedAssetPopup || this.showSelectNetworkPopup || this.showDestNetPopup;
+  }
+
+  get showWarningAddressPopup() {
+    if (!this.isValidRecipientAddress) return false;
+
+    return !BaseApi.validateAddressByNetwork(this.syncedRecipient, this.syncedSelectedNetwork);
   }
 
   get top() {
@@ -517,6 +531,22 @@ export default class SendForm extends Vue {
 
   handlerCloseSelectPopup() {
     this.toggleSelectPopupVisible(this.showSelectedAssetPopup, this.showSelectNetworkPopup, this.showDestNetPopup);
+  }
+
+  handlerCloseWarningAddressPopup() {
+    const network = this.networks.find(({ name }) => BaseApi.validateAddressByNetwork(this.syncedRecipient, name));
+
+    this.syncedSelectedAssetId = network?.assets[0].assetId ?? ''; // [0] - is utility asset
+  }
+
+  handlerAcceptWarningAddressButton() {
+    this.syncedRecipient = BaseApi.formatAddress(
+      {
+        address: this.syncedRecipient,
+        ethereumAddress: this.syncedRecipient,
+      },
+      this.syncedSelectedNetwork
+    );
   }
 }
 </script>

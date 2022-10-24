@@ -1,6 +1,12 @@
 <template>
-  <Popup :handlerClose="handlerClose" :sizeWidth="sizeWidth" :showBorder="true">
-    <div class="notification-popup">
+  <Popup
+    class="notification-popup"
+    :showHeader="showHeader"
+    :handlerClose="handlerClose"
+    :sizeWidth="sizeWidth"
+    :showBorder="true"
+  >
+    <div class="notification-popup-content">
       <img v-if="showWarningIcon" src="@/assets/info-triangle.svg" class="img" />
 
       <div class="text">{{ text }}</div>
@@ -50,6 +56,7 @@ export default class NotificationPopup extends Vue {
   @Prop({ default: false }) showAcceptButton!: boolean;
   @Prop({ default: false }) showRejectButton!: boolean;
   @Prop({ default: true }) showWarningIcon!: boolean;
+  @Prop({ default: true }) showHeader!: boolean;
   @Prop({ default: 'medium' }) sizeWidth!: Size;
   @Prop({ default: 'Cancel' }) rejectButtonText!: string;
   @Prop(String) acceptButtonText!: string;
@@ -72,43 +79,47 @@ export default class NotificationPopup extends Vue {
 
 <style lang="scss" scoped>
 .notification-popup {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0 10px;
+  z-index: 299;
 
-  .img {
-    margin-bottom: 20px;
+  .notification-popup-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 10px;
+
+    .img {
+      margin-bottom: 20px;
+    }
+
+    .text {
+      font-weight: 700;
+      font-size: 18px;
+      line-height: 150%;
+      margin-bottom: 4px;
+    }
+
+    .button {
+      margin-top: 20px;
+      width: 150px;
+      width: 100%;
+    }
+
+    .reject-button {
+      margin-top: 10px;
+    }
   }
 
-  .text {
-    font-weight: 700;
-    font-size: 18px;
+  .subtext {
+    color: $gray-color;
     line-height: 150%;
-    margin-bottom: 4px;
   }
 
-  .button {
-    margin-top: 20px;
-    width: 150px;
-    width: 100%;
+  .subtext-medium {
+    width: 255px;
   }
 
-  .reject-button {
-    margin-top: 10px;
+  .subtext-big {
+    width: 300px;
   }
-}
-
-.subtext {
-  color: $gray-color;
-  line-height: 150%;
-}
-
-.subtext-medium {
-  width: 255px;
-}
-
-.subtext-big {
-  width: 300px;
 }
 </style>

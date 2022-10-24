@@ -1,4 +1,4 @@
-const INVALID_MESSAGES = {
+const WARNING_MESSAGES = {
   mnemonicSequence: {
     text: 'Invalid passphrase',
     subtext: 'Invalid passphrase sequence, please try again',
@@ -49,7 +49,10 @@ const ALL_ASSETS_HIDDEN = 'You have hidden all assets.';
 const EXISTENTIAL_DEPOSIT_WARNING =
   'This transaction will result in the account going below the Existential Deposit, which will cause it to be reaped (the account will be wiped from the blockchain’s state to conserve space). If you choose to continue you will lose any funds that are below the existential deposit amount set by the network. For detailed information please refer to the official network documentation (e.g., the Polkadot Wiki). Fearless Wallet is a fully non-custodial application and has no control or knowledge of any of your actions on the network itself. ONLY CONTINUE IF YOU FULLY AGREE TO AND UNDERSTAND THE IMPLICATIONS';
 
-type InvalidValueName = keyof typeof INVALID_MESSAGES | '';
+const IS_NOT_NETWORK_ADDRESS =
+  'According to the address provided you’re trying to make a transfer on the wrong network.';
+
+type WarningValueName = keyof typeof WARNING_MESSAGES | '';
 
 const MOBILE_CONNECTOR_MESSAGES = {
   QR_HEADER: 'Scan the QR code using the Fearless mobile app',
@@ -63,9 +66,10 @@ export {
   PASSWORD_INFO,
   PASSWORD_SAME,
   EXPORT_WARNING,
-  INVALID_MESSAGES,
+  WARNING_MESSAGES,
   ALL_ASSETS_HIDDEN,
+  IS_NOT_NETWORK_ADDRESS,
   EXISTENTIAL_DEPOSIT_WARNING,
   EXPORT_ETHEREUM_WALLET_ERROR,
-  InvalidValueName,
+  WarningValueName,
 };

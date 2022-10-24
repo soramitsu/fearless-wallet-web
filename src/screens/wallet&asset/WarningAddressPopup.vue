@@ -1,11 +1,12 @@
 <template>
   <NotificationPopup
+    acceptButtonText="Change address"
+    rejectButtonText="Switch to a correct network"
     sizeWidth="big"
-    rejectButtonText="Cancel"
-    acceptButtonText="Proceed"
-    :headers="headers"
+    :showHeader="false"
     :showAcceptButton="true"
     :showRejectButton="true"
+    :headers="headers"
     :handlerClose="handlerClose"
     :handlerAcceptButton="handlerAcceptButton"
   />
@@ -14,18 +15,24 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import NotificationPopup from '@/components/NotificationPopup.vue';
-import { EXISTENTIAL_DEPOSIT_WARNING } from '@/consts/messages';
+import { IS_NOT_NETWORK_ADDRESS } from '@/consts/messages';
 
 @Component({
   components: { NotificationPopup },
 })
-export default class ExistentialPopup extends Vue {
+export default class WarningAddressPopup extends Vue {
   readonly headers = {
-    text: 'Operation will remove account',
-    subtext: EXISTENTIAL_DEPOSIT_WARNING,
+    text: 'Is not network address',
+    subtext: IS_NOT_NETWORK_ADDRESS,
   };
 
   @Prop(Function) handlerClose!: VoidFunction;
   @Prop(Function) handlerAcceptButton!: VoidFunction;
 }
 </script>
+
+<style lang="scss" scoped>
+.existential-popup {
+  z-index: 399;
+}
+</style>

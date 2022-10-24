@@ -139,7 +139,7 @@ import CircleButton from '@/components/CircleButton.vue';
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
 import { Components } from '@/router/routes';
-import { INVALID_MESSAGES, InvalidValueName } from '@/consts/messages';
+import { WARNING_MESSAGES, WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 
@@ -177,7 +177,7 @@ export default class AddWallet extends Vue {
   showAdvancedForm = false;
   showAddEthereumAccountPopup = false;
   selectedMnemonicElements: MnemonicConfirmation[] = [];
-  invalidValueName: InvalidValueName = '';
+  warningValueName: WarningValueName = '';
   typeImport: ImportType = 'mnemonic';
   derivationPaths = INITIAL_DERIVATION_PATHS;
 
@@ -249,11 +249,11 @@ export default class AddWallet extends Vue {
   }
 
   get showNotificationPopup() {
-    return this.invalidValueName !== '';
+    return this.warningValueName !== '';
   }
 
   get invalidMessages() {
-    return this.invalidValueName ? INVALID_MESSAGES[this.invalidValueName] : {};
+    return this.warningValueName ? WARNING_MESSAGES[this.warningValueName] : {};
   }
 
   get showNicknameForm() {
@@ -382,12 +382,12 @@ export default class AddWallet extends Vue {
   substrateJsonChanged(value: string) {
     this.nickname = (this.substrateJSON?.meta?.name as string) || '';
 
-    if (Object.keys(this.substrateJSON).length === 0 && value !== '') this.invalidValueName = 'jsonInvalid';
+    if (Object.keys(this.substrateJSON).length === 0 && value !== '') this.warningValueName = 'jsonInvalid';
   }
 
   @Watch('ethereumJson')
   ethereumJsonChanged(value: string) {
-    if (Object.keys(this.ethereumJSON).length === 0 && value !== '') this.invalidValueName = 'jsonInvalid';
+    if (Object.keys(this.ethereumJSON).length === 0 && value !== '') this.warningValueName = 'jsonInvalid';
   }
 
   @Watch('step')
@@ -524,7 +524,7 @@ export default class AddWallet extends Vue {
   }
 
   handlerCloseNotificationPopup() {
-    if (this.invalidValueName === 'jsonInvalid') {
+    if (this.warningValueName === 'jsonInvalid') {
       if (this.step === 1) this.substrateJson = '';
       else if (this.step === 2) this.ethereumJson = '';
     }
@@ -532,7 +532,7 @@ export default class AddWallet extends Vue {
     if (this.step === 1) this.passwordSubstrateJson = '';
     else if (this.step === 2) this.passwordEthereumJson = '';
 
-    this.invalidValueName = '';
+    this.warningValueName = '';
     this.selectedMnemonicElements = [];
   }
 
@@ -558,7 +558,7 @@ export default class AddWallet extends Vue {
   checkPassword() {
     const isSameWalletPassword = BaseApi.isSameWalletPassword(this.selectedWallet.address, this.walletPassword);
 
-    if (!isSameWalletPassword) this.invalidValueName = 'isNotSamePassword';
+    if (!isSameWalletPassword) this.warningValueName = 'isNotSamePassword';
   }
 
   createFlow() {
@@ -571,7 +571,7 @@ export default class AddWallet extends Vue {
     if (this.step === 1) {
       this.validateSuri();
 
-      if (this.invalidValueName !== '') return;
+      if (this.warningValueName !== '') return;
       else if (this.isReplaceAccountFlow || this.isOnlyEthereumAccountFlow) {
         this.step += 2;
 
@@ -614,13 +614,13 @@ export default class AddWallet extends Vue {
         )
       : true;
 
-    if (!isValidSequenceMnemonic) this.invalidValueName = 'mnemonicSequence';
-    else if (!isValidMnemonic) this.invalidValueName = 'mnemonic';
-    else if (!isValidSubstratePhrase) this.invalidValueName = 'substrateDP';
-    else if (!isValidEthereumDP) this.invalidValueName = 'ethereumDP';
-    else if (!isValidSubstrateRawSeed || !isValidEthereumRawSeed) this.invalidValueName = 'rawSeed';
-    else if (!validatedSubstrateJson.value) this.invalidValueName = validatedSubstrateJson.errorType;
-    else if (!validatedEthereumJson.value) this.invalidValueName = validatedEthereumJson.errorType;
+    if (!isValidSequenceMnemonic) this.warningValueName = 'mnemonicSequence';
+    else if (!isValidMnemonic) this.warningValueName = 'mnemonic';
+    else if (!isValidSubstratePhrase) this.warningValueName = 'substrateDP';
+    else if (!isValidEthereumDP) this.warningValueName = 'ethereumDP';
+    else if (!isValidSubstrateRawSeed || !isValidEthereumRawSeed) this.warningValueName = 'rawSeed';
+    else if (!validatedSubstrateJson.value) this.warningValueName = validatedSubstrateJson.errorType;
+    else if (!validatedEthereumJson.value) this.warningValueName = validatedEthereumJson.errorType;
   }
 
   replaceAccount() {

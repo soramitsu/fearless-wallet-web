@@ -342,6 +342,10 @@ export default class BaseApi {
     }
   }
 
+  public static validateAddressByNetwork(address: string, network: string): boolean {
+    return address === this.formatAddress({ address, ethereumAddress: address }, network);
+  }
+
   public static formatAddress({ address, ethereumAddress }: Wallet, networkName: string): string {
     const isEthereumNetwork = BaseApi.isEthereumNetwork(networkName);
 

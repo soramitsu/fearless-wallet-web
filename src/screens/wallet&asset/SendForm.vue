@@ -54,7 +54,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import TransferForm from './TransferForm.vue';
-import type { Currencies, Networks } from '@/interfaces';
+import type { Currencies } from '@/interfaces';
 import type { GetAssetName } from '@/store/networks/types';
 import Input from '@/components/Input.vue';
 import Corners from '@/components/Corners.vue';

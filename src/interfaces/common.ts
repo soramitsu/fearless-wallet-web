@@ -1,4 +1,4 @@
-import type { InvalidValueName } from '@/consts/messages';
+import type { WarningValueName } from '@/consts/messages';
 import type { AssetName } from './assets';
 import { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 
@@ -32,7 +32,7 @@ interface ValidateJsonResultPositive {
 
 interface ValidateJsonResultNegative {
   value: false;
-  errorType: InvalidValueName;
+  errorType: WarningValueName;
 }
 
 type ValidateJsonResult = ValidateJsonResultPositive | ValidateJsonResultNegative;

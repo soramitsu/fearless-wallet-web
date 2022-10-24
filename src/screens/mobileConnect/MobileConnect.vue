@@ -113,7 +113,7 @@ export default class MobileConnect extends Vue {
   }
 
   close() {
-    this.$router.push({ name: Components.Wallet });
+    this.$router.push({ name: Components.Main });
   }
 
   get header() {

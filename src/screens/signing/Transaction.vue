@@ -1,27 +1,43 @@
 <template>
   <AboveForm :blur="true" header="Transaction" :closeHandler="onReject">
-    <WalletInfo class="wallet-info" :name="request.account.name" :address="request.account.address" />
+    <template v-if="isMobileSignRequired">
+      <div class="transaction__mobile">
+        <Loader />
+        <Button
+          text="Cancel"
+          width="100%"
+          size="medium"
+          fontSize="big"
+          type="secondary"
+          :border="false"
+          @click="onReject"
+        />
+      </div>
+    </template>
 
-    <InfoList>
-      <InfoItem name="from" :value="request.url" />
-      <InfoItem name="genesis" :value="genesisHash" />
-      <InfoItem name="version" :value="specVersion" />
-      <InfoItem name="nounce" :value="nonce" />
-      <InfoItem name="method Data" :value="method" />
-      <InfoItem name="lifetime" :value="morality" />
-    </InfoList>
+    <template v-else>
+      <WalletInfo class="wallet-info" :name="request.account.name" :address="request.account.address" />
 
-    <template>
-      <ConfirmationPasswordPopup
-        v-if="isSignPopupVisible"
-        sizeWidth="medium"
-        :address="payload.address"
-        :transactionId="request.id"
-        :payload="payload"
-        @close="onClose"
-      />
+      <InfoList>
+        <InfoItem name="from" :value="request.url" />
+        <InfoItem name="genesis" :value="genesisHash" />
+        <InfoItem name="version" :value="specVersion" />
+        <InfoItem name="nounce" :value="nonce" />
+        <InfoItem name="method Data" :value="method" />
+        <InfoItem name="lifetime" :value="morality" />
+      </InfoList>
 
-      <Button size="big" class="button" text="Sign the transaction" @click="onSign" />
+      <template>
+        <ConfirmationPasswordPopup
+          v-if="isSignPopupVisible"
+          sizeWidth="medium"
+          :address="payload.address"
+          :transactionId="request.id"
+          :payload="payload"
+          @close="onClose"
+        />
+        <Button size="big" class="button" text="Sign the transaction" @click="onSign" />
+      </template>
     </template>
   </AboveForm>
 </template>
@@ -44,7 +60,11 @@ import AboveForm from '@/components/AboveForm.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { GettersTypes as SignGettersTypes } from '@/store/sign/getters';
 import { ActionTypes as SignActionsTypes } from '@/store/sign/actions';
-import { TAction, SignerPayloadJSON } from '@/interfaces';
+import { TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
+import Loader from '@/components/Loader.vue';
+import { beaconController } from '@/controllers/beaconController';
+import { approveSignSignature } from '@/extension/messaging';
+import { Components } from '@/router/routes';
 
 @Component({
   components: {
@@ -56,6 +76,7 @@ import { TAction, SignerPayloadJSON } from '@/interfaces';
     Input,
     AboveForm,
     Button,
+    Loader,
     Checkbox,
   },
 })
@@ -66,7 +87,19 @@ export default class Auth extends Vue {
 
   isLocked = false;
   isSignPopupVisible = false;
+  async mounted() {
+    if (this.isMobileSignRequired) {
+      const payload: PayloadJSON = this.payload as any;
+      delete payload.address;
+      payload.type = 'json';
 
+      const { blockchainData } = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
+
+      approveSignSignature(this.request.id, blockchainData.signature);
+
+      this.$router.push(Components.Main);
+    }
+  }
   get typedPayload() {
     registry.setSignedExtensions(this.payload.signedExtensions);
 
@@ -128,6 +161,14 @@ export default class Auth extends Vue {
 
 .transaction__password {
   margin-bottom: 14px;
+}
+
+.transaction__mobile {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-flow: column;
 }
 
 .transaction__checkbox {

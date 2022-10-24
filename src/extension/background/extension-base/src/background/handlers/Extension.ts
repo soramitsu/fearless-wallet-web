@@ -175,7 +175,10 @@ export default class Extension {
 
     State.updateDefaultAuthAccounts(newDefaultAuthAccounts);
 
-    keyring.forgetAccount(address);
+    const isAddress = keyring.getAddress(address, 'address');
+
+    if (isAddress) keyring.forgetAddress(address);
+    else keyring.forgetAccount(address);
 
     return true;
   }
@@ -212,6 +215,14 @@ export default class Extension {
   }
 
   static accountsTie({ address, genesisHash }: RequestAccountTie): boolean {
+    const savedAddress = keyring.getAddress(address, 'address');
+
+    if (savedAddress) {
+      keyring.saveAddress(address, { ...savedAddress.meta, genesisHash });
+
+      return true;
+    }
+
     const pair = keyring.getPair(address);
 
     assert(pair, 'Unable to find pair');

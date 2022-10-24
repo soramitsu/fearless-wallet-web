@@ -55,9 +55,8 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import type { Currencies, Currency, RequestSentInfo, TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
-import { beaconController } from '@/controllers/beaconController';
-import { approveSignSignature, isSignLocked } from '@/extension/messaging';
+import type { Currencies, Currency, RequestSentInfo, TAction } from '@/interfaces';
+import { isSignLocked } from '@/extension/messaging';
 import { isExtension } from '@/helpers/common';
 import Loader from '@/components/Loader.vue';
 import Popup from '@/components/Popup.vue';
@@ -98,7 +97,6 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(String) address!: string;
   @Prop(String) transactionId?: string;
   @Prop(Object) currency!: Currency;
-  @Prop(Object) payload?: SignerPayloadJSON;
 
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Action(SignActionsTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: TAction<ApprovePayload>;
@@ -130,14 +128,6 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (!this.transactionId && this.currency.extrinsic) {
       const isSuccessfulTransaction = await this.currency?.sendRaw(this.address);
       this.transactionState = isSuccessfulTransaction ? 'success' : 'failed';
-    } else if (this.payload && this.transactionId) {
-      const payload: PayloadJSON = this.payload as any;
-      delete payload.address;
-      payload.type = 'json';
-
-      const { blockchainData } = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
-
-      approveSignSignature(this.transactionId, blockchainData.signature);
     }
   }
 

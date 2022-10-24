@@ -89,7 +89,7 @@ export default class Header extends Vue {
   }
 
   get statusConnectedText() {
-    return this.isOnline ? 'Connected' : 'Not connected';
+    return this.isOnline ? 'Connected' : 'Disconnected';
   }
 
   @Watch('syncedShowSelectWalletPopup')

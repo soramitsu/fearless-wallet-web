@@ -73,7 +73,7 @@
 
     <SelectNetworkPopup
       v-if="showSelectNetworkPopup"
-      v-model="selectedNetwork"
+      :selectedNetwork="selectedNetwork"
       :height="410"
       :allNetworksItem="false"
       :relayChain="relayChain"
@@ -186,10 +186,7 @@ export default class Asset extends Vue {
   get countAssetsString() {
     if (!this.currentCurrency) return `${this.selectedAsset.toUpperCase()} 0`;
 
-    const totalCountAssets = +this.currentCurrency.getTotalCountAssetsByNetwork(
-      this.selectedWallet,
-      this.selectedNetwork
-    );
+    const totalCountAssets = +this.currentCurrency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork);
     const total = formattedNumber(totalCountAssets, 4, false, true);
 
     return `${this.selectedAsset.toUpperCase()} ${total}`;
@@ -198,7 +195,7 @@ export default class Asset extends Vue {
   get balanceInNetworkString() {
     if (!this.currentCurrency) return `$ 0`;
 
-    const total = this.currentCurrency.getBalanceInNetwork(this.selectedWallet, this.selectedNetwork);
+    const total = this.currentCurrency.getTotalBalance(this.selectedWallet, this.selectedNetwork);
 
     return `${this.fiatSymbol} ${formattedNumber(+total)}`;
   }

@@ -1,9 +1,9 @@
 <template>
   <SelectPopup
-    v-model="selectedNetwork"
     class="select-network-popup"
     sizeWidth="big"
     placeholder="Search in networks"
+    :value="selectedNetwork"
     :height="height"
     :maxHeight="maxHeight"
     :horizontalPlacement="horizontalPlacement"
@@ -18,7 +18,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Networks as NetworksType, RelayChainName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
@@ -40,7 +40,7 @@ interface Options {
 export default class SelectNetworkButton extends Vue {
   filterValue = '';
 
-  @VModel({ type: String }) selectedNetwork!: string;
+  @Prop(String) selectedNetwork!: string;
   @Prop(String) relayChain!: string;
   @Prop({ default: 105 }) top!: number;
   @Prop({ default: 0 }) left!: number;

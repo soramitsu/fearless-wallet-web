@@ -127,6 +127,20 @@ export default class CurrencyController {
     );
   }
 
+  private getBalanceInNetwork(wallet: Wallet, _network: string): string {
+    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
+    const total = availableInNetworks.find(({ network }) => network === _network)?.balance.total ?? FPNumber.ZERO;
+
+    return this.calculateCost(total).toString();
+  }
+
+  private getTotalCountAssetsByNetwork(wallet: Wallet, _network: string): string {
+    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
+    const balance = availableInNetworks.find(({ network }) => network === _network)?.balance;
+
+    return balance?.total.toString() ?? '';
+  }
+
   public getTransactionAddress(wallet: Wallet, network: string): string {
     const { address, ethereumAddress } = wallet;
     const replacedAccount = BaseApi.getReplacedAccountByNetwork(wallet, network);
@@ -179,15 +193,12 @@ export default class CurrencyController {
     this.balances = { ...oldBalances, [walletAddress]: balancesForAddress };
   }
 
-  public getTotalCountAssets(wallet: Wallet): string {
+  public getTotalCountAssets(wallet: Wallet, network?: string): string {
+    if (network && network !== 'All networks') {
+      return this.getTotalCountAssetsByNetwork(wallet, network);
+    }
+
     return this.countAssets(wallet).total.toString();
-  }
-
-  public getTotalCountAssetsByNetwork(wallet: Wallet, _network: string): string {
-    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
-    const balance = availableInNetworks.find(({ network }) => network === _network)?.balance;
-
-    return balance?.total.toString() ?? '';
   }
 
   public getTransferableCountAssets(networkProp: string, wallet: Wallet): string {
@@ -239,7 +250,11 @@ export default class CurrencyController {
     });
   }
 
-  public getTotalBalance(wallet: Wallet): string {
+  public getTotalBalance(wallet: Wallet, network?: string): string {
+    if (network && network !== 'All networks') {
+      return this.getBalanceInNetwork(wallet, network);
+    }
+
     const countAssets = this.countAssets(wallet).total;
     const cost = this.calculateCost(countAssets);
 
@@ -248,13 +263,6 @@ export default class CurrencyController {
 
   public getCostOfAssets(count: string): string {
     return this.calculateCost(new FPNumber(count)).toString();
-  }
-
-  public getBalanceInNetwork(wallet: Wallet, _network: string): string {
-    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
-    const total = availableInNetworks.find(({ network }) => network === _network)?.balance.total ?? FPNumber.ZERO;
-
-    return this.calculateCost(total).toString();
   }
 
   public getCountAssetsByPrice(cost: string): string {

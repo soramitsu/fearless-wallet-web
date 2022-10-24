@@ -41,40 +41,50 @@ export type Actions = {
 const PAGE_SIZE = 100;
 
 const actions: ActionTree<State, State> & Actions = {
-  async [ActionTypes.LOAD_JSONS]({ commit }, { chainsUrl, assetsUrl, fiatsUrl }) {
-    const { data: chainsData } = await axios.get(chainsUrl);
-    const { data: assetsData } = await axios.get(assetsUrl);
-    const { data: fiatData } = await axios.get(fiatsUrl);
-    const networksJson: NetworkJson[] = chainsData;
+  async [ActionTypes.LOAD_JSONS]({ commit, state }, { chainsUrl, assetsUrl, fiatsUrl }) {
+    if (state.assetsJson.length === 0) {
+      const { data: assetsData } = await axios.get(assetsUrl);
 
-    const networks: Networks = networksJson.map(
-      ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi, chainId, parentId, paraId }) => {
-        const networkName = name.toLowerCase();
-        const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
-        const externalApi = originalExternalApi ?? ({} as ExternalApi);
-        const settings = settingsNetworks[networkName as Settings] ?? {};
+      commit(MutationTypes.SET_ASSETS_JSON, { assetsJson: assetsData as AssetJson[] });
+    }
 
-        return {
-          name: networkName,
-          nodes,
-          assets,
-          chainId,
-          parentId,
-          paraId,
-          addressPrefix,
-          isEthereumNetwork,
-          externalApi,
-          settings,
-          api: undefined,
-          provider: undefined,
-        };
-      }
-    );
+    if (state.fiats.length === 0) {
+      const { data: fiatData } = await axios.get(fiatsUrl);
 
-    commit(MutationTypes.SET_ASSETS_JSON, { assetsJson: assetsData as AssetJson[] });
-    commit(MutationTypes.SET_FIATS_JSON, { fiats: fiatData as FiatJson[] });
-    commit(MutationTypes.SET_NETWORKS, { networks });
-    commit(MutationTypes.SET_CURRENCIES, { currencies: getMockCurrencies(networks) });
+      commit(MutationTypes.SET_FIATS_JSON, { fiats: fiatData as FiatJson[] });
+    }
+
+    if (state.networks.length === 0) {
+      const { data: chainsData } = await axios.get(chainsUrl);
+      const networksJson: NetworkJson[] = chainsData;
+
+      const networks: Networks = networksJson.map(
+        ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi, chainId, parentId, paraId }) => {
+          const networkName = name.toLowerCase();
+          const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
+          const externalApi = originalExternalApi ?? ({} as ExternalApi);
+          const settings = settingsNetworks[networkName as Settings] ?? {};
+
+          return {
+            name: networkName,
+            nodes,
+            assets,
+            chainId,
+            parentId,
+            paraId,
+            addressPrefix,
+            isEthereumNetwork,
+            externalApi,
+            settings,
+            api: undefined,
+            provider: undefined,
+          };
+        }
+      );
+
+      commit(MutationTypes.SET_NETWORKS, { networks });
+      commit(MutationTypes.SET_CURRENCIES, { currencies: getMockCurrencies(networks) });
+    }
   },
 
   async [ActionTypes.CONNECT_TO_NODES](context) {

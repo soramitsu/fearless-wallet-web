@@ -19,7 +19,7 @@
           {{ upperNetworkName }}
         </div>
 
-        <div class="available-networks">
+        <div v-if="!isCurrentNetwork" class="available-networks">
           <NetworkLogo
             v-for="{ network } in availableInNetworksPart"
             class="minor-network-img"
@@ -102,6 +102,10 @@ export default class CurrencyItem extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
+  get isCurrentNetwork() {
+    return this.selectedNetwork !== 'All networks';
+  }
+
   get currencyVisible() {
     return this.currency.getCurrencyVisible(this.selectedWallet.address);
   }
@@ -136,19 +140,13 @@ export default class CurrencyItem extends Vue {
   }
 
   get countAssetsString() {
-    const totalCountAssets =
-      this.selectedNetwork !== 'All networks'
-        ? +this.currency.getTotalCountAssetsByNetwork(this.selectedWallet, this.selectedNetwork)
-        : +this.currency.getTotalCountAssets(this.selectedWallet);
+    const totalCountAssets = +this.currency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork);
 
     return formattedNumber(totalCountAssets, 4, false);
   }
 
   get totalBalanceString() {
-    const balance =
-      this.selectedNetwork !== 'All networks'
-        ? +this.currency.getBalanceInNetwork(this.selectedWallet, this.selectedNetwork)
-        : +this.currency.getTotalBalance(this.selectedWallet);
+    const balance = +this.currency.getTotalBalance(this.selectedWallet, this.selectedNetwork);
 
     return `${this.fiatSymbol}${formattedPrice(balance)}`;
   }
@@ -158,6 +156,8 @@ export default class CurrencyItem extends Vue {
   }
 
   get upperNetworkName() {
+    if (this.isCurrentNetwork) return this.selectedNetwork.toUpperCase();
+
     return this.currency.mainNetwork.toUpperCase() ?? '';
   }
 
@@ -174,7 +174,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get availableInNetworksPart() {
-    return this.selectedNetwork !== 'All networks'
+    return this.isCurrentNetwork
       ? [{ network: this.selectedNetwork }]
       : [...this.availableInNetworks].splice(0, this.isAdditional ? 4 : 5);
   }
@@ -193,14 +193,13 @@ export default class CurrencyItem extends Vue {
     const { mainNetwork, assetId } = this.currency;
     const availableInNetworks = this.currency.getAvailableInNetworks(this.selectedWallet);
     const availableNetwork = availableInNetworks[0]?.network ?? '';
-    const network =
-      this.selectedNetwork !== 'All networks'
-        ? this.selectedNetwork
-        : mainNetwork !== ''
-        ? mainNetwork
-        : availableNetwork !== ''
-        ? availableNetwork
-        : 'polkadot';
+    const network = this.isCurrentNetwork
+      ? this.selectedNetwork
+      : mainNetwork !== ''
+      ? mainNetwork
+      : availableNetwork !== ''
+      ? availableNetwork
+      : 'polkadot';
 
     this.$router.push({
       name: Components.Asset,

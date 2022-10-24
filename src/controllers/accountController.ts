@@ -9,6 +9,13 @@ class AccountController {
   private readonly customNodesStorageName = 'custom-nodes';
   private readonly selectedFiatStorageName = 'selected-fiat';
   private readonly selectedWalletStorageName = 'selected-wallet';
+  private readonly selectedNetworkStorageName = 'selected-network';
+
+  private getSequenceAssets(): Record<string, string> {
+    const sequencesAssets = this.lsAccount.get(this.sequenceAssetsStorageName);
+
+    return sequencesAssets.value ?? {};
+  }
 
   public getSelectedWalletAddress(): string {
     const lsFiat = this.lsAccount.get(this.selectedWalletStorageName);
@@ -30,11 +37,20 @@ class AccountController {
     this.lsAccount.set(this.selectedFiatStorageName, fiat);
   }
 
-  public getSequenceAssets(): Record<string, string> {
-    const sequencesAssets = this.lsAccount.get(this.sequenceAssetsStorageName);
-    const value = sequencesAssets.value;
+  public getSelectedNetwork(): Record<string, string> {
+    const lsNetwork = this.lsAccount.get(this.selectedNetworkStorageName);
 
-    return value ?? {};
+    return lsNetwork.value ?? {};
+  }
+
+  public setSelectedNetwork(address: string, network: string): void {
+    const prevValue = this.getSelectedNetwork();
+    const newValue = {
+      ...prevValue,
+      [address]: network,
+    };
+
+    this.lsAccount.set(this.selectedNetworkStorageName, newValue);
   }
 
   public getSequenceAssetsByAddress(address: string): string[] {

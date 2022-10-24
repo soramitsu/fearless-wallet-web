@@ -86,9 +86,9 @@
 
     <SelectPopup
       v-if="showSelectPopup"
-      v-model="vModelSelectPopup"
       placeholder="Search in networks"
       verticalPlacement="top"
+      :value="selectPopupValue"
       :showBlur="false"
       :showBackground="false"
       :top="top"
@@ -204,7 +204,7 @@ export default class SendForm extends Vue {
     return this.showSelectedAssetPopup || this.showSelectNetworkPopup ? -160 : 160;
   }
 
-  get vModelSelectPopup() {
+  get selectPopupValue() {
     if (this.showSelectedAssetPopup) return this.syncedSelectedAssetId;
 
     if (this.showSelectNetworkPopup) return this.syncedSelectedNetwork;

@@ -1,12 +1,12 @@
 <template>
   <div class="create-wallet">
-    <MnemonicBackupForm v-if="showMnemonicBackupForm" :mnemonic="mnemonic">
+    <MnemonicBackupForm v-if="showMnemonicBackupForm" :mnemonicArray="mnemonicArray">
       <slot></slot>
     </MnemonicBackupForm>
 
     <MnemonicConfirmationForm
       v-if="showMnemonicConfirmationForm"
-      :mnemonic="mnemonic"
+      :mnemonicMix="mnemonicMix"
       :selectedMnemonicElements="syncedSelectedMnemonicElements"
       @update:selectedMnemonicElements="updateSelectedMnemonicElements"
     />
@@ -29,6 +29,14 @@ export default class CreateWallet extends Vue {
   @Prop(Number) step!: number;
   @Prop(String) mnemonic!: string;
   @PropSync('selectedMnemonicElements', { type: Array }) syncedSelectedMnemonicElements!: MnemonicConfirmation[];
+
+  get mnemonicArray() {
+    return this.mnemonic.split(' ');
+  }
+
+  get mnemonicMix() {
+    return [...this.mnemonicArray].sort(() => Math.random() - 0.5);
+  }
 
   get showMnemonicBackupForm() {
     return this.step === 2;

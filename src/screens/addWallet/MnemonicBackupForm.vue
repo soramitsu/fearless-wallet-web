@@ -6,7 +6,7 @@
       text="Use a non-digital way to backup. Write it down on paper (or etch it into metal) and make sure not to loose it."
     />
 
-    <MnemonicColumns :mnemonic="mnemonic" />
+    <MnemonicColumns :mnemonicArray="mnemonicArray" />
 
     <slot></slot>
   </div>
@@ -21,11 +21,7 @@ import Hint from '@/components/Hint.vue';
   components: { Hint, MnemonicColumns },
 })
 export default class MnemonicBackupForm extends Vue {
-  @Prop(String) mnemonic!: string;
-
-  get mnemonicArray() {
-    return this.mnemonic.split(' ');
-  }
+  @Prop(Array) mnemonicArray!: string[];
 
   get mnemonicLength() {
     return this.mnemonicArray.length;

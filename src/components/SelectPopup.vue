@@ -25,7 +25,7 @@
         {{ label }}
       </div>
 
-      <s-icon name="basic-check-mark-24" v-show="VModel === value" />
+      <s-icon name="basic-check-mark-24" v-show="getIconVisible(value)" />
     </div>
 
     <div v-if="showWarning" class="warning">Nothing found</div>
@@ -33,7 +33,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 import Popup from './Popup.vue';
 
 type SpaceSize = 'small' | 'medium' | 'big';
@@ -45,7 +45,7 @@ export default class SelectPopup extends Vue {
   icons: string[] = [];
   formattedOptions: Record<string, string>[] = [];
 
-  @VModel({ type: String }) VModel!: string;
+  @Prop(String) value!: string;
   @Prop(Array) options!: Record<string, string>[];
   @Prop(String) header!: string;
   @Prop(Number) top!: number;
@@ -72,7 +72,7 @@ export default class SelectPopup extends Vue {
   }
 
   beforeMount() {
-    const index = this.options.findIndex(({ value }) => value === this.VModel);
+    const index = this.options.findIndex(({ value }) => value === this.value);
 
     if (index === -1) return;
 
@@ -85,6 +85,10 @@ export default class SelectPopup extends Vue {
     this.options.forEach(({ path }) => this.getImg(path));
   }
 
+  getIconVisible(value: string) {
+    return this.value === value;
+  }
+
   getImg(path: string) {
     return require(`@/assets/${path}`);
   }
@@ -93,7 +97,7 @@ export default class SelectPopup extends Vue {
     return [
       'row',
       {
-        'row-active': this.VModel === value,
+        'row-active': this.value === value,
       },
       `padding-${this.space}`,
     ];

@@ -2,7 +2,7 @@
   <div class="mnemonic-confirmation-form">
     <div class="warning">A security measure to make sure you have written it down</div>
 
-    <MnemonicColumns :mnemonic="mnemonic" :selectedMnemonicElements="selectedMnemonicElements" />
+    <MnemonicColumns :mnemonicArray="selectedMnemonicArray" />
 
     <div class="hint">Select words in the right order:</div>
 
@@ -34,11 +34,11 @@ import BorderButton from '@/components/BorderButton.vue';
   },
 })
 export default class MnemonicConfirmationForm extends Vue {
-  @Prop(String) mnemonic!: string;
+  @Prop(Array) mnemonicMix!: string[];
   @PropSync('selectedMnemonicElements', { type: Array }) syncedSelectedMnemonicElements!: MnemonicConfirmation[];
 
-  get mnemonicMix() {
-    return this.mnemonic.split(' ').sort(() => Math.random() - 0.5);
+  get selectedMnemonicArray() {
+    return this.syncedSelectedMnemonicElements.map(({ word }) => word);
   }
 
   addButtonClasses(word: string, index: number) {

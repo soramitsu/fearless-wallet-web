@@ -18,7 +18,6 @@ const MobileConnect = () => import('@/screens/mobileConnect/MobileConnect.vue');
 const Authorize = () => import('@/screens/authorize/Authorize.vue');
 const Transaction = () => import('@/screens/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/metadata/Metadata.vue');
-const UpdateAuths = () => import('@/screens/authorize/UpdateAuths.vue');
 
 import store from '@/store';
 
@@ -40,7 +39,6 @@ export enum Components {
   Authorize = 'Authorize',
   MetaRequest = 'MetaRequest',
   Transaction = 'Transaction',
-  UpdateAuths = 'UpdateAuths',
 }
 
 const haveAccounts = () => BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
@@ -88,11 +86,6 @@ const routes: Array<RouteConfig> = [
         beforeEnter: (to, from, next) => {
           next({ name: Components.Wallet });
         },
-      },
-      {
-        path: 'updateauths/:url',
-        name: Components.UpdateAuths,
-        component: UpdateAuths,
       },
       {
         path: 'wallet',

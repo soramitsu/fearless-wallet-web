@@ -7,11 +7,11 @@
 
       <SCol :span="3">
         <SRow flex justify="space-between">
-          <span class="authorized-account__count" @click="$emit('updateAuths', stripUrl)">
+          <span class="authorized-account__count" @click="$emit('openUpdateAuths', stripUrl)">
             {{ authorizedAccounts }}
           </span>
 
-          <img class="trash" src="@/assets/trash.svg" @click="$emit('onRemoveAuth', prepUrl)" />
+          <img class="trash" src="@/assets/trash.svg" @click="removeAuth" />
         </SRow>
       </SCol>
     </SRow>
@@ -23,24 +23,28 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { AuthUrlInfo } from '@extension-base/background/types';
+import { Action } from 'vuex-class';
 import { stripUrl } from '@/extension/background/extension-base/src/background/handlers/helpers';
+import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
+import { TAction } from '@/interfaces';
 
 @Component
 export default class AuthItem extends Vue {
   @Prop(Object) request!: AuthUrlInfo;
-
-  get prepUrl() {
-    return stripUrl(this.request.url);
-  }
+  @Action(AuthActionTypes.DELETE_AUTH_CONNECTION) deleteAuthConnection!: TAction<string>;
 
   get stripUrl() {
-    return this.request.url.split('/')[2];
+    return stripUrl(this.request.url);
   }
 
   get authorizedAccounts() {
     const authListLength = this.request.authorizedAccounts.length;
 
     return `${authListLength} account${authListLength !== 1 ? 's' : ''}`;
+  }
+
+  removeAuth() {
+    this.deleteAuthConnection(this.stripUrl);
   }
 }
 </script>

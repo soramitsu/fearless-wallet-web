@@ -1,17 +1,13 @@
 <template>
-  <div>
-    <AboveForm :blur="true" :closeHandler="back" :header="header">
-      <div class="update-accounts">
-        <SelectAuthAccount :selectAll="selectAll" :accounts="state" @onSelectAll="onSelectAll" @onSelect="onSelect" />
+  <div class="update-accounts">
+    <SelectAuthAccount :selectAll="selectAll" :accounts="state" @onSelectAll="onSelectAll" @onSelect="onSelect" />
 
-        <Button class="connect-button" width="100%" :text="prepName" size="big" fontSize="big" @click="updateAuths" />
-      </div>
-    </AboveForm>
+    <Button class="connect-button" width="100%" :text="prepName" size="big" fontSize="big" @click="updateAuths" />
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { AuthUrlInfo } from '@extension-base/background/types';
 import { updateAuthorization } from '@/extension/messaging';
@@ -35,12 +31,21 @@ export default class Authorize extends Vue {
   selectAll = false;
   state: Record<string, WalletInfo> = {};
 
+  @Prop(String) url!: string;
   @Getter(AccountGettersTypes.getWallets) wallets!: WalletInfo[];
   @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
   @Action(AuthActionTypes.GET_AUTHLIST) fetchAuthList!: TAction<void>;
 
-  get url() {
-    return this.$route.params.url;
+  get prepName() {
+    const count = Object.values(this.state).filter((el) => el.active).length;
+
+    return `Connect ${count} account${count !== 1 ? 's' : ''}`;
+  }
+
+  get prepAccounts() {
+    return Object.values(this.state)
+      .filter(({ active }) => active)
+      .map(({ address }) => address);
   }
 
   async mounted() {
@@ -80,31 +85,11 @@ export default class Authorize extends Vue {
     this.selectAll = value;
   }
 
-  back() {
-    this.$router.back();
-  }
-
-  get header() {
-    return `Accounts connected to ${this.url}`;
-  }
-
-  get prepName() {
-    const count = Object.values(this.state).filter((el) => el.active).length;
-
-    return `Connect ${count} account${count !== 1 ? 's' : ''}`;
-  }
-
-  get prepAccounts() {
-    return Object.values(this.state)
-      .filter(({ active }) => active)
-      .map(({ address }) => address);
-  }
-
   async updateAuths() {
     await updateAuthorization(this.prepAccounts, this.url);
     await this.fetchAuthList();
 
-    this.$router.back();
+    this.$emit('updateUrl');
   }
 }
 </script>

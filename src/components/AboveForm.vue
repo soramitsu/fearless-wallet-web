@@ -139,6 +139,7 @@ export default class AboveForm extends Vue {
 
     .icon-back {
       opacity: 0.8;
+      width: 18px;
 
       &:hover {
         cursor: pointer;

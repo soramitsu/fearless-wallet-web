@@ -1,14 +1,18 @@
 <template>
-  <AboveForm header="Manage dApp access" :blur="true" :closeHandler="handlerClose">
-    <SearchInput v-model="filterValue" placeholder="Search in networks" class="search-input" width="100%" />
+  <AboveForm
+    :header="header"
+    :showBackIcon="showUpdateAuths"
+    :blur="true"
+    :closeHandler="handlerClose"
+    :handlerBack="updateUrl.bind(null, '')"
+  >
+    <template v-if="!showUpdateAuths">
+      <SearchInput v-model="filterValue" placeholder="Search in networks" class="search-input" width="100%" />
 
-    <AuthItem
-      v-for="el in filteredList"
-      v-bind:key="el.id"
-      :request="el"
-      @onRemoveAuth="removeAuth"
-      @updateAuths="updateAuthorizedAccount"
-    />
+      <AuthItem v-for="el in filteredList" v-bind:key="el.id" :request="el" @openUpdateAuths="updateUrl" />
+    </template>
+
+    <UpdateAuths v-else :url="url" @updateUrl="updateUrl" />
   </AboveForm>
 </template>
 
@@ -16,11 +20,11 @@
 import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { AuthUrlInfo } from '@extension-base/background/types';
+import UpdateAuths from './UpdateAuths.vue';
 import { TAction } from '@/interfaces';
 import AboveForm from '@/components/AboveForm.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import AuthItem from '@/screens/authorize/AuthItem.vue';
-import { Components } from '@/router/routes';
 import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
 import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
 
@@ -29,16 +33,27 @@ import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
     AuthItem,
     AboveForm,
     SearchInput,
+    UpdateAuths,
   },
 })
 export default class ManageAuths extends Vue {
-  filterValue = '';
   filteredList: Record<string, AuthUrlInfo> = {};
+  filterValue = '';
+  url = '';
 
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
   @Action(AuthActionTypes.GET_AUTHLIST) getAuthList!: TAction<void>;
-  @Action(AuthActionTypes.DELETE_AUTH_CONNECTION) deleteAuthConnection!: TAction<string>;
+
+  get showUpdateAuths() {
+    return this.url !== '';
+  }
+
+  get header() {
+    if (this.showUpdateAuths) return `Accounts connected to ${this.url}`;
+
+    return 'Manage dApp access';
+  }
 
   async mounted() {
     await this.getAuthList();
@@ -59,15 +74,8 @@ export default class ManageAuths extends Vue {
     return Object.fromEntries(filtered);
   }
 
-  updateAuthorizedAccount(url: string) {
-    this.$router.push({
-      name: Components.UpdateAuths,
-      params: { url },
-    });
-  }
-
-  async removeAuth(url: string) {
-    await this.deleteAuthConnection(url);
+  updateUrl(url: string) {
+    this.url = url;
   }
 }
 </script>

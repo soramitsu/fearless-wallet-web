@@ -6,6 +6,8 @@ def pipeline = new org.js.App2Pipeline(
     buildCmds:           ['yarn build:extension && yarn electron:build'],
     buildWithCred:      true,
     pushToNexus:        true,
-    nexusCredentials:   'bot-soramitsu-rw'
+    nexusCredentials:   'bot-soramitsu-rw',
+    dockerRegistry:     "nexus.iroha.tech:19000",
+    dockerImageName:    "fearless/web-wallet"  
 )
 pipeline.runPipeline()

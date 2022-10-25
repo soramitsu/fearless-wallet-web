@@ -62,12 +62,11 @@ export function transformAddresses(addresses: SubjectInfo): InjectedAccount[] {
       ({
         json: {
           address,
-          meta: { genesisHash, name },
+          meta: { name },
         },
         type,
       }): InjectedAccount => ({
         address,
-        genesisHash,
         name,
         type,
       })

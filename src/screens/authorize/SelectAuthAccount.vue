@@ -1,15 +1,16 @@
 <template>
-  <div class="accounts">
+  <div class="auth-accounts">
     <Checkbox
+      v-if="showAllCheckbox"
+      v-model.lazy="syncSelectAll"
       size="big"
       label="Select all"
-      v-model.lazy="syncSelectAll"
       @change="(value) => $emit('onSelectAll', value)"
     />
 
     <Scroll>
       <ul class="account__list">
-        <li v-for="(account, index) in accounts" class="account__item" v-bind:key="index">
+        <li v-for="(account, index) in accountsValue" class="auth-account" v-bind:key="index">
           <div class="checkbox">
             <Checkbox
               class="account__checkbox"
@@ -19,10 +20,12 @@
               v-model.lazy="account.active"
               @change="(value) => $emit('onSelect', value, account.name)"
             />
+
             <div v-if="account.isMobile" class="account__checkbox--mobile-icon">mobile</div>
           </div>
           <div class="account__address">
             <span>{{ cutAddress(account.address) }}</span>
+
             <img class="clipboard" src="@/assets/clipboard.svg" @click="toClipboard(address)" />
           </div>
         </li>
@@ -39,33 +42,38 @@ import { cut } from '@/helpers/history';
 import Scroll from '@/components/Scroll.vue';
 
 @Component({
-  components: { Checkbox, Scroll },
+  components: {
+    Scroll,
+    Checkbox,
+  },
 })
 export default class SelectAuthAccount extends Vue {
-  @Prop(Object) accounts!: WalletInfo[];
   @PropSync('selectAll', { type: Boolean }) syncSelectAll!: boolean;
+  @Prop(Object) accounts!: WalletInfo[];
+
+  get accountsValue() {
+    return Object.values(this.accounts);
+  }
+
+  get showAllCheckbox() {
+    return this.accountsValue.length !== 0;
+  }
 
   cutAddress(address: string) {
     return cut(address);
-  }
-
-  toClipBoard(address: string) {
-    const clipboard = new Clipboard();
-    clipboard.writeText(address);
   }
 }
 </script>
 
 <style lang="scss">
-.accounts {
+.auth-accounts {
   display: flex;
   flex-flow: column;
   align-items: flex-start;
   overflow-y: hidden;
-  height: 100%;
 }
 
-.account__item {
+.auth-account {
   display: flex;
   flex-flow: row nowrap;
   align-items: center;
@@ -117,8 +125,7 @@ export default class SelectAuthAccount extends Vue {
 .account__list {
   padding: 0;
   width: 100%;
-  height: max-content;
-  overflow: scroll;
+  height: 100%;
 }
 
 .account__checkbox .el-checkbox__label {

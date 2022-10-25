@@ -3,7 +3,6 @@
     <template v-if="isMobileSignRequired">
       <div class="transaction__mobile">
         <Loader />
-
         <Button
           text="Cancel"
           width="100%"
@@ -34,6 +33,7 @@
           sizeWidth="medium"
           :address="payload.address"
           :transactionId="request.id"
+          :payload="payload"
           @close="onClose"
         />
         <Button size="big" class="button" text="Sign the transaction" @click="onSign" />
@@ -89,7 +89,7 @@ export default class Auth extends Vue {
   isSignPopupVisible = false;
   async mounted() {
     if (this.isMobileSignRequired) {
-      const payload: PayloadJSON = this.payload as unknown as PayloadJSON;
+      const payload: PayloadJSON = this.payload as any;
       delete payload.address;
       payload.type = 'json';
 

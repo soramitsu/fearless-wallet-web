@@ -52,6 +52,8 @@ const EXISTENTIAL_DEPOSIT_WARNING =
 const IS_NOT_NETWORK_ADDRESS =
   'According to the address provided you’re trying to make a transfer on the wrong network.';
 
+const NO_ACCOUNTS_MESSAGES = 'You don’t have any account. Please create an account and refresh the application’s page.';
+
 type WarningValueName = keyof typeof WARNING_MESSAGES | '';
 
 const MOBILE_CONNECTOR_MESSAGES = {
@@ -69,6 +71,7 @@ export {
   WARNING_MESSAGES,
   ALL_ASSETS_HIDDEN,
   IS_NOT_NETWORK_ADDRESS,
+  NO_ACCOUNTS_MESSAGES,
   EXISTENTIAL_DEPOSIT_WARNING,
   EXPORT_ETHEREUM_WALLET_ERROR,
   WarningValueName,

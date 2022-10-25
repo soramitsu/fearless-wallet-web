@@ -1,7 +1,5 @@
 import type { Node } from '@/interfaces/nodes';
-import NetworksController from '@/controllers/networksController';
 import LocalStorageController from '@/controllers/localStorageController';
-import { tieAccount } from '@/extension/messaging';
 
 class AccountController {
   private readonly lsAccount = new LocalStorageController('account');
@@ -51,12 +49,6 @@ class AccountController {
       ...prevValue,
       [address]: network,
     };
-    const filteredNetwork = NetworksController.getNetworks().find(({ name }) => {
-      return name === network;
-    });
-
-    if (filteredNetwork) tieAccount(address, `0x${filteredNetwork.chainId}`);
-    else tieAccount(address, null);
 
     this.lsAccount.set(this.selectedNetworkStorageName, newValue);
   }

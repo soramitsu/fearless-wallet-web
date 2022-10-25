@@ -1,11 +1,11 @@
 @Library('jenkins-library@feature/fww-158/ci-for-PRs')
 
-def pipeline = new org.js.AppPipeline(
+def pipeline = new org.js.App2Pipeline(
     steps:              this,
-    dockerImageName:    'fearless/wallet-web',
     buildDockerImage:   'docker.soramitsu.co.jp/build-tools/node:14-ubuntu',
-    dockerRegistryCred: 'bot-fearless-rw',
     buildCmds:           ['yarn build:extension && yarn electron:build'],
-    buildWithCred:      true
+    buildWithCred:      true,
+    pushToNexus:        true,
+    nexusCredentials:   'bot-soramitsu-rw'
 )
 pipeline.runPipeline()

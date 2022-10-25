@@ -26,7 +26,7 @@
       </Corners>
     </div>
 
-    <ConnectionStatus v-else-if="isTransactionFinished" :status="status" />
+    <ConnectionStatus v-else-if="isRequestFinished" :status="status" @close="close" />
   </Popup>
 </template>
 
@@ -42,6 +42,7 @@ import Corners from '@/components/Corners.vue';
 import Alert from '@/components/Alert.vue';
 import Popup from '@/components/Popup.vue';
 import { Components } from '@/router/routes';
+import { MOBILE_CONNECTOR_MESSAGES } from '@/consts/messages';
 
 @Component({
   components: {
@@ -56,9 +57,9 @@ import { Components } from '@/router/routes';
 export default class PermissionRequest extends Vue {
   @Prop(Object) requestInfo!: RequestSentInfo | PermissionErrorPayload;
   @Prop({ type: Object || null, default: null }) requestResponse?: PermissionResponseOutput;
-  @Prop(String) status!: 'pendingWithResetForm' | 'success' | 'failed';
+  @Prop(String) status!: 'reset_form' | 'success' | 'failed' | 'active_account_exists';
 
-  noAnswerMessage = 'No answer from your wallet received yet. Please make sure the wallet is open';
+  readonly noAnswerMessage = MOBILE_CONNECTOR_MESSAGES.NO_ANSWER;
 
   get isSuccess() {
     return this.status === 'success';
@@ -68,38 +69,38 @@ export default class PermissionRequest extends Vue {
     return this.status === 'failed';
   }
 
-  get statucIcon() {
-    return '';
+  get isActiveAccountExists() {
+    return this.status === 'active_account_exists';
   }
 
-  get isTransactionFinished() {
-    return this.isSuccess || this.isFailed;
+  get isRequestFinished() {
+    return this.isSuccess || this.isFailed || this.isActiveAccountExists;
   }
 
   get getHeight() {
-    if (this.isTransactionFinished) return 300;
+    if (this.isRequestFinished) return 300;
 
     return 400;
   }
 
   get maxHeight() {
-    if (this.isTransactionFinished) return 350;
+    if (this.isRequestFinished) return 350;
 
     return 480;
   }
 
   get isPendingWithResetForm() {
-    return this.status === 'pendingWithResetForm';
+    return this.status === 'reset_form';
   }
 
   get header() {
-    if (this.status === 'success' || this.status === 'failed') return '';
+    if (this.isRequestFinished) return '';
 
     return `Request send to Fearless Wallet`;
   }
 
   close() {
-    if (this.isSuccess) this.toWalletScreen();
+    if (this.isSuccess || this.isActiveAccountExists) this.toWalletScreen();
     else this.$router.back();
   }
 

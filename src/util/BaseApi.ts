@@ -424,13 +424,17 @@ export default class BaseApi {
         .forEach(({ address }) => BaseApi.deleteAccount(address));
     }
 
-    if (BaseApi.getAddress(address)) {
-      keyring.forgetAddress(address);
+    const substrateAddress = BaseApi.encodeAddress(address);
+
+    forgetAccount(substrateAddress); //delete from background script
+
+    if (BaseApi.getAddressType(address) === 'address') {
+      BaseApi.forgetAddress(substrateAddress);
 
       beaconController.resetConnection();
     }
 
-    forgetAccount(address); //delete from background script
+    console.log([...BaseApi.getAddresses(), ...BaseApi.getAccounts()], 'deleted');
 
     return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
   }

@@ -20,7 +20,7 @@ import type {
   SubstrateSignPayloadRequest,
   TCallback,
 } from '@/interfaces';
-import { getTzip10Link } from '@/util/beacon';
+
 class BeaconController {
   private app: DAppClient;
   private serializer = new Serializer();
@@ -56,8 +56,6 @@ class BeaconController {
   }
 
   public async resetConnection() {
-    await this.app.removeAllAccounts();
-    await this.app.removeAllPeers();
     await this.app.disconnect();
   }
 
@@ -75,10 +73,14 @@ class BeaconController {
     await this.app.permissionRequest(config);
   }
 
+  private getTzip10Link(url: string, payload: string) {
+    return `${url}?type=tzip10&data=${payload}`;
+  }
+
   public async onPairingRequest(callback: (payload: string) => void) {
     this.app.subscribeToEvent(BeaconEvent.PAIR_INIT, async (data) => {
       const code = await this.serializer.serialize(await data.p2pPeerInfo());
-      const uri = getTzip10Link('tezos://', code);
+      const uri = this.getTzip10Link('tezos://', code);
 
       callback(uri);
     });

@@ -1,10 +1,6 @@
 <template>
   <AboveForm :header="header" :closeHandler="close">
-    <div class="error__container" v-if="isActiveAccountExists">
-      <Alert :message="activeMobileAccountExistMessage" />
-      <Button text="Close" width="100%" size="medium" fontSize="big" type="secondary" :border="false" @click="close" />
-    </div>
-    <template v-else-if="isQRPrep">
+    <template v-if="isQRPrep">
       <h2 class="header">{{ qrCodeHeader }}</h2>
       <QR :payload="getQR" />
     </template>
@@ -66,8 +62,6 @@ export default class MobileConnect extends Vue {
   @Mutation(BeaconMutationsTypes.SET_QR) setQR!: TMutation<string>;
 
   readonly qrCodeHeader = MOBILE_CONNECTOR_MESSAGES.QR_HEADER;
-  readonly activeMobileAccountExistMessage = MOBILE_CONNECTOR_MESSAGES.ACTIVE_MOBILE_ACCOUNT_EXISTS;
-  readonly accountAlreadyExistMessage = MOBILE_CONNECTOR_MESSAGES.WALLET_ALREADY_EXISTS;
   requestInfo: RequestSentInfo | null = null;
   requestResponse: PermissionResponseOutput | null = null;
   isLoading = false;
@@ -101,7 +95,8 @@ export default class MobileConnect extends Vue {
   }
 
   get connectionStatus() {
-    if (this.isPossibleConnectionProblem && !this.isPermissionsGranted) return 'pendingWithResetForm';
+    if (this.isActiveAccountExists) return 'active_account_exists';
+    if (this.isPossibleConnectionProblem && !this.isPermissionsGranted) return 'reset_form';
     if (this.isPermissionsGranted) return 'success';
     if (this.isWalletAlreadyExists) return 'failed';
 
@@ -143,7 +138,7 @@ export default class MobileConnect extends Vue {
 
     setTimeout(() => {
       this.isLoading = false;
-      if (!this.isPermissionsGranted) this.isPossibleConnectionProblem = true;
+      if (!this.isPermissionsGranted || !this.isWalletAlreadyExists) this.isPossibleConnectionProblem = true;
     }, 30000);
   }
 

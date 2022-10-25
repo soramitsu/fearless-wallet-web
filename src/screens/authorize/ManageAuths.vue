@@ -1,14 +1,15 @@
 <template>
   <AboveForm header="Manage dApp access" :blur="true" :closeHandler="handlerClose">
     <SearchInput v-model="filterValue" placeholder="Search in networks" class="manage-auths__search" width="100%" />
-
-    <AuthItem
-      v-for="el in filteredList"
-      v-bind:key="el.id"
-      :request="el"
-      @onRemoveAuth="removeAuth"
-      @updateAuths="updateAuthorizedAccount"
-    />
+    <Scroll>
+      <AuthItem
+        v-for="el in filteredList"
+        v-bind:key="el.id"
+        :request="el"
+        @onRemoveAuth="removeAuth"
+        @updateAuths="updateAuthorizedAccount"
+      />
+    </Scroll>
   </AboveForm>
 </template>
 
@@ -23,10 +24,12 @@ import AuthItem from '@/screens/authorize/AuthItem.vue';
 import { Components } from '@/router/routes';
 import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
 import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
+import Scroll from '@/components/Scroll.vue';
 
 @Component({
   components: {
     AboveForm,
+    Scroll,
     AuthItem,
     SearchInput,
   },

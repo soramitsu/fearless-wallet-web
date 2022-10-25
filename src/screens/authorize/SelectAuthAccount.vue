@@ -6,25 +6,27 @@
       v-model.lazy="syncSelectAll"
       @change="(value) => $emit('onSelectAll', value)"
     />
-    <ul class="account__list">
-      <li v-for="(account, index) in accounts" class="auth-account" v-bind:key="index">
-        <div class="checkbox">
-          <Checkbox
-            class="account__checkbox"
-            size="big"
-            :name="account.address"
-            :label="account.name"
-            v-model.lazy="account.active"
-            @change="(value) => $emit('onSelect', value, account.name)"
-          />
-          <div v-if="account.isMobile" class="account__checkbox--mobile-icon">mobile</div>
-        </div>
-        <div class="account__address">
-          <span>{{ cutAddress(account.address) }}</span>
-          <img class="clipboard" src="@/assets/clipboard.svg" @click="toClipboard(address)" />
-        </div>
-      </li>
-    </ul>
+    <Scroll>
+      <ul class="account__list">
+        <li v-for="(account, index) in accounts" class="auth-account" v-bind:key="index">
+          <div class="checkbox">
+            <Checkbox
+              class="account__checkbox"
+              size="big"
+              :name="account.address"
+              :label="account.name"
+              v-model.lazy="account.active"
+              @change="(value) => $emit('onSelect', value, account.name)"
+            />
+            <div v-if="account.isMobile" class="account__checkbox--mobile-icon">mobile</div>
+          </div>
+          <div class="account__address">
+            <span>{{ cutAddress(account.address) }}</span>
+            <img class="clipboard" src="@/assets/clipboard.svg" @click="toClipboard(address)" />
+          </div>
+        </li>
+      </ul>
+    </Scroll>
   </div>
 </template>
 
@@ -33,9 +35,10 @@ import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import Checkbox from '@/components/Checkbox.vue';
 import { WalletInfo } from '@/store/accounts/types';
 import { cut } from '@/helpers/history';
+import Scroll from '@/components/Scroll.vue';
 
 @Component({
-  components: { Checkbox },
+  components: { Checkbox, Scroll },
 })
 export default class SelectAuthAccount extends Vue {
   @Prop(Object) accounts!: WalletInfo[];
@@ -115,20 +118,6 @@ export default class SelectAuthAccount extends Vue {
   width: 100%;
   height: max-content;
   overflow: scroll;
-}
-
-::-webkit-scrollbar {
-  width: 6px;
-  height: 0px;
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.25);
-  border-radius: $default-border-radius;
-
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-  }
 }
 
 .account__checkbox .el-checkbox__label {

@@ -4,15 +4,18 @@
       <SCol :span="9" class="s-flex s-justify-start">
         <span class="auth-item-name">{{ request.origin }}</span>
       </SCol>
+
       <SCol :span="3">
         <SRow flex justify="space-between">
-          <span class="authorized-account__count" @click="$emit('updateAuths', stripUrl)">{{
-            authorizedAccounts
-          }}</span>
+          <span class="authorized-account__count" @click="$emit('updateAuths', stripUrl)">
+            {{ authorizedAccounts }}
+          </span>
+
           <img class="trash" src="@/assets/trash.svg" @click="$emit('onRemoveAuth', prepUrl)" />
         </SRow>
       </SCol>
     </SRow>
+
     <SDivider class="divider" />
   </SCol>
 </template>
@@ -35,9 +38,9 @@ export default class AuthItem extends Vue {
   }
 
   get authorizedAccounts() {
-    const authListLenght = this.request.authorizedAccounts.length;
+    const authListLength = this.request.authorizedAccounts.length;
 
-    return authListLenght === 1 ? `1 account` : `${authListLenght} accounts`;
+    return `${authListLength} account${authListLength !== 1 ? 's' : ''}`;
   }
 }
 </script>
@@ -53,7 +56,7 @@ export default class AuthItem extends Vue {
 }
 
 .auth-content {
-  padding-top: 12px;
+  padding: 0 12px;
 }
 
 .img-button {

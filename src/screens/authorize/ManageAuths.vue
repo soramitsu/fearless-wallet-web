@@ -1,6 +1,6 @@
 <template>
   <AboveForm header="Manage dApp access" :blur="true" :closeHandler="handlerClose">
-    <SearchInput v-model="filterValue" placeholder="Search in networks" class="manage-auths__search" width="100%" />
+    <SearchInput v-model="filterValue" placeholder="Search in networks" class="search-input" width="100%" />
 
     <AuthItem
       v-for="el in filteredList"
@@ -26,21 +26,19 @@ import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
 
 @Component({
   components: {
-    AboveForm,
     AuthItem,
+    AboveForm,
     SearchInput,
   },
 })
 export default class ManageAuths extends Vue {
+  filterValue = '';
+  filteredList: Record<string, AuthUrlInfo> = {};
+
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
   @Action(AuthActionTypes.GET_AUTHLIST) getAuthList!: TAction<void>;
-  @Action(AuthActionTypes.DELETE_AUTH_CONNECTION)
-  deleteAuthConnection!: TAction<string>;
-
-  filterValue = '';
-  filteredList: Record<string, AuthUrlInfo> = {};
-  filteredValue: any;
+  @Action(AuthActionTypes.DELETE_AUTH_CONNECTION) deleteAuthConnection!: TAction<string>;
 
   async mounted() {
     await this.getAuthList();
@@ -54,8 +52,8 @@ export default class ManageAuths extends Vue {
   }
 
   filteredData(value: string) {
-    const filtered = Object.entries<AuthUrlInfo>(this.authlist).filter(([, info]) => {
-      return info.origin.includes(value);
+    const filtered = Object.entries<AuthUrlInfo>(this.authlist).filter(([, { origin }]) => {
+      return origin.includes(value);
     });
 
     return Object.fromEntries(filtered);
@@ -64,9 +62,7 @@ export default class ManageAuths extends Vue {
   updateAuthorizedAccount(url: string) {
     this.$router.push({
       name: Components.UpdateAuths,
-      params: {
-        url,
-      },
+      params: { url },
     });
   }
 
@@ -75,3 +71,9 @@ export default class ManageAuths extends Vue {
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.search-input {
+  margin-bottom: 16px;
+}
+</style>

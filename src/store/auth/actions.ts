@@ -1,4 +1,4 @@
-import { AuthorizeRequest } from '@extension-base/background/types';
+import { AuthorizeRequest, ApproveAuthRequest } from '@extension-base/background/types';
 import type { ActionTree, ActionContext } from 'vuex';
 import type { State } from '@/store/auth/state';
 import { Mutations, MutationTypes } from '@/store/auth/mutations';
@@ -26,10 +26,7 @@ type AugmentedActionContext = {
 
 export type Actions = {
   [ActionTypes.SUBSCRIBE_AUTH_REQUESTS](context: AugmentedActionContext): Promise<void>;
-  [ActionTypes.APPROVE_AUTH_REQUEST](
-    context: AugmentedActionContext,
-    props: { request: AuthorizeRequest; accounts: string[] }
-  ): Promise<void>;
+  [ActionTypes.APPROVE_AUTH_REQUEST](context: AugmentedActionContext, props: ApproveAuthRequest): Promise<void>;
   [ActionTypes.REJECT_AUTH_REQUEST](context: AugmentedActionContext, props: AuthorizeRequest): Promise<void>;
   [ActionTypes.GET_AUTHLIST](context: AugmentedActionContext): Promise<void>;
   [ActionTypes.DELETE_AUTH_CONNECTION](context: AugmentedActionContext, props: string): Promise<void>;
@@ -60,6 +57,7 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.REJECT_AUTH_REQUEST]({ commit }, payload) {
     await deleteAuthRequest(payload.id);
+
     commit(MutationTypes.DELETE_AUTH_REQUEST);
   },
 
@@ -71,6 +69,7 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.DELETE_AUTH_CONNECTION]({ commit }, id) {
     await removeAuthorization(id);
+
     commit(MutationTypes.DELETE_AUTHLIST_ITEM, id);
   },
 };

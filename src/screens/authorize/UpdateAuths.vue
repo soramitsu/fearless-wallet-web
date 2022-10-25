@@ -1,12 +1,13 @@
 <template>
-  <AboveForm :blur="true" :closeHandler="back" :header="header">
-    <div class="update-accounts">
-      <div class="update-accounts__content">
+  <div>
+    <AboveForm :blur="true" :closeHandler="back" :header="header">
+      <div class="update-accounts">
         <SelectAuthAccount :selectAll="selectAll" :accounts="state" @onSelectAll="onSelectAll" @onSelect="onSelect" />
+
+        <Button class="connect-button" width="100%" :text="prepName" size="big" fontSize="big" @click="updateAuths" />
       </div>
-      <Button width="100%" :text="prepName" size="big" fontSize="big" @click="updateAuths" />
-    </div>
-  </AboveForm>
+    </AboveForm>
+  </div>
 </template>
 
 <script lang="ts">
@@ -25,30 +26,33 @@ import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
 
 @Component({
   components: {
-    SelectAuthAccount,
-    AboveForm,
     Button,
+    AboveForm,
+    SelectAuthAccount,
   },
 })
 export default class Authorize extends Vue {
-  @Getter(AccountGettersTypes.getWallets) wallets!: WalletInfo[];
-  @Action(AuthActionTypes.GET_AUTHLIST) fetchAuthList!: TAction<void>;
-  @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
-
   selectAll = false;
   state: Record<string, WalletInfo> = {};
 
+  @Getter(AccountGettersTypes.getWallets) wallets!: WalletInfo[];
+  @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
+  @Action(AuthActionTypes.GET_AUTHLIST) fetchAuthList!: TAction<void>;
+
+  get url() {
+    return this.$route.params.url;
+  }
+
   async mounted() {
-    const url = this.$route.params.url;
-    const { authorizedAccounts } = this.authlist[url];
+    const { authorizedAccounts } = this.authlist[this.url];
 
-    this.wallets.forEach((account) => {
-      const isAuthorized = authorizedAccounts.some((el: string) => el === account.address);
+    this.wallets.forEach(({ name, address, isMobile }) => {
+      const isAuthorized = authorizedAccounts.some((el: string) => el === address);
 
-      Vue.set(this.state, account.name, {
-        name: account.name,
-        address: account.address,
-        isMobile: account.isMobile,
+      Vue.set(this.state, name, {
+        name: name,
+        address: address,
+        isMobile: isMobile,
         active: isAuthorized,
       });
     });
@@ -62,11 +66,7 @@ export default class Authorize extends Vue {
 
   onSelect(value: boolean, name: string) {
     this.state[name].active = value;
-
-    const isAllActive = this.isAllSelected();
-    this.selectAll = isAllActive;
-
-    return this.state[name].active;
+    this.selectAll = this.isAllSelected();
   }
 
   onSelectAll(value: boolean) {
@@ -76,9 +76,8 @@ export default class Authorize extends Vue {
         active: value,
       });
     });
-    this.selectAll = value;
 
-    return this.selectAll;
+    this.selectAll = value;
   }
 
   back() {
@@ -86,29 +85,23 @@ export default class Authorize extends Vue {
   }
 
   get header() {
-    return `Accounts connected to ${this.$route.params.url}`;
+    return `Accounts connected to ${this.url}`;
   }
 
   get prepName() {
     const count = Object.values(this.state).filter((el) => el.active).length;
 
-    if (count === 1) return 'Connect 1 account';
-
-    return `Connect ${count} accounts`;
+    return `Connect ${count} account${count !== 1 ? 's' : ''}`;
   }
 
   get prepAccounts() {
-    const result: string[] = [];
-
-    Object.values(this.state).map((el) => {
-      if (el.active) result.push(el.address);
-    });
-
-    return result;
+    return Object.values(this.state)
+      .filter(({ active }) => active)
+      .map(({ address }) => address);
   }
 
   async updateAuths() {
-    await updateAuthorization(this.prepAccounts, this.$route.params.url);
+    await updateAuthorization(this.prepAccounts, this.url);
     await this.fetchAuthList();
 
     this.$router.back();
@@ -124,8 +117,7 @@ export default class Authorize extends Vue {
   height: 100%;
 }
 
-.update-accounts__content {
-  height: 300px;
-  overflow-y: scroll;
+.connect-button {
+  margin-top: 16px;
 }
 </style>

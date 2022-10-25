@@ -1,6 +1,6 @@
 <template>
   <div :class="backgroundClasses">
-    <div class="above-form">
+    <div :class="aboveFormClasses">
       <div class="header-content">
         <div v-if="showBackIcon" class="icon icon-back" @click="handlerBack">
           <img src="@/assets/chevron-left.svg" />
@@ -34,6 +34,7 @@ export default class AboveForm extends Vue {
   @Prop({ default: false }) blur!: boolean;
   @Prop({ default: false }) showAcceptIcon!: boolean;
   @Prop({ default: false }) showBackIcon!: boolean;
+  @Prop({ default: false }) fullScreen!: boolean;
   @Prop({ default: true }) showCloseIcon!: boolean;
   @Prop({ default: () => () => null }) saveChanges!: VoidFunction;
   @Prop({ default: () => () => null }) handlerBack!: VoidFunction;
@@ -44,6 +45,15 @@ export default class AboveForm extends Vue {
       'above-form-background',
       {
         'above-form-background-blur': this.blur,
+      },
+    ];
+  }
+
+  get aboveFormClasses() {
+    return [
+      'above-form',
+      {
+        'above-form-full': this.fullScreen,
       },
     ];
   }
@@ -68,7 +78,7 @@ export default class AboveForm extends Vue {
     position: relative;
     top: 80px;
     width: $extension-width;
-    min-height: $extension-height;
+    min-height: $extension-height - 80px;
     height: calc(100% - 80px);
     background-color: #111111;
     clip-path: $big-clip-path-left-top;
@@ -124,6 +134,7 @@ export default class AboveForm extends Vue {
       flex-direction: column;
       justify-content: center;
       user-select: none;
+      width: 45px;
     }
 
     .icon-back {
@@ -144,6 +155,7 @@ export default class AboveForm extends Vue {
     .activity {
       display: flex;
       justify-content: right;
+      min-width: 45px;
     }
 
     .icon {
@@ -159,6 +171,12 @@ export default class AboveForm extends Vue {
     .logo {
       width: 45px;
     }
+  }
+
+  .above-form-full {
+    height: 100%;
+    top: 0;
+    clip-path: none;
   }
 }
 

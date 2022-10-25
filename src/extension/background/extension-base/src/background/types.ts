@@ -67,6 +67,11 @@ export interface AuthorizeRequest {
   url: string;
 }
 
+export interface ApproveAuthRequest {
+  request: AuthorizeRequest;
+  accounts: string[];
+}
+
 export interface MetadataRequest {
   id: string;
   request: MetadataDef;
@@ -509,12 +514,12 @@ const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
 
 export const POPUP_WINDOW_OPTS: chrome.windows.CreateData = {
   focused: true,
-  height: 621,
-  left: 150,
+  height: 640,
+  width: 575,
+  left: 700,
   top: 150,
   type: 'popup',
   url: NOTIFICATION_URL,
-  width: 561,
 };
 
 export const NORMAL_WINDOW_OPTS: chrome.windows.CreateData = {

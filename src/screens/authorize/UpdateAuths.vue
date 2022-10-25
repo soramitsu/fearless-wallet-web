@@ -90,18 +90,16 @@ export default class Authorize extends Vue {
   }
 
   get prepName() {
-    const count = Object.values(this.state).filter((el) => el.active).length;
+    const count = Object.values(this.state).filter(({ active }) => active).length;
 
-    if (count === 1) return 'Connect 1 account';
-
-    return `Connect ${count} accounts`;
+    return count === 1 ? 'Connect 1 account' : `Connect ${count} accounts`;
   }
 
   get prepAccounts() {
     const result: string[] = [];
 
-    Object.values(this.state).map((el) => {
-      if (el.active) result.push(el.address);
+    Object.values(this.state).map(({ active, address }) => {
+      if (active) result.push(address);
     });
 
     return result;
@@ -111,7 +109,7 @@ export default class Authorize extends Vue {
     await updateAuthorization(this.prepAccounts, this.$route.params.url);
     await this.fetchAuthList();
 
-    this.$router.back();
+    this.back();
   }
 }
 </script>

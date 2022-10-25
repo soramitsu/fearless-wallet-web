@@ -101,14 +101,14 @@ export default class AccountsItem extends Vue {
 
     .asset-name {
       font-weight: 700;
-      color: rgba(255, 255, 255, 1);
+      color: $plain-white;
       font-size: 20px;
       height: 30px;
       line-height: 30px;
     }
 
     .address {
-      color: rgba(255, 255, 255, 1);
+      color: $plain-white;
       font-size: 13px;
       width: 100%;
       text-align: left;

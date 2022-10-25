@@ -3,6 +3,7 @@
     <template v-if="isMobileSignRequired">
       <div class="transaction__mobile">
         <Loader />
+
         <Button
           text="Cancel"
           width="100%"

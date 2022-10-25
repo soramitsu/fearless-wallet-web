@@ -123,6 +123,7 @@ export default class MobileConnect extends Vue {
   get header() {
     if (this.requestInfo && this.connectionStatus !== 'success' && this.connectionStatus !== 'failed')
       return `Requesting...`;
+
     if (this.connectionStatus === 'success' || this.connectionStatus === 'failed') return '';
 
     return 'Connect Mobile Wallet';
@@ -160,10 +161,9 @@ export default class MobileConnect extends Vue {
       return;
     }
 
-    const substrateAccount = BaseApi.encodeAddress(account.address);
-
     this.isPermissionsGranted = true;
 
+    const substrateAccount = BaseApi.encodeAddress(account.address);
     const meta: KeyringJson$Meta = { name: 'mobile wallet' };
 
     BaseApi.saveAddress(substrateAccount, meta);
@@ -179,12 +179,14 @@ export default class MobileConnect extends Vue {
 .import-button {
   margin-top: 10px;
 }
+
 .error__container {
   display: flex;
   flex-flow: column;
   height: 100%;
   justify-content: space-between;
 }
+
 .permission__content {
   height: 100%;
   display: flex;

@@ -6,8 +6,8 @@
           <Alert>
             <p class="authorize__content">
               An application, self-identifying as
-              <span class="authorize__content--name">{{ request.request.origin }}</span> is requesting access from my
-              <span class="authorize__content--link">{{ request.url }}</span>
+              <span class="authorize__content-name">{{ request.request.origin }}</span> is requesting access from my
+              <span class="authorize__content-link">{{ request.url }}</span>
             </p>
           </Alert>
           <div class="authorize-account-list">
@@ -146,12 +146,12 @@ export default class Authorize extends Vue {
     font-weight: 400px;
   }
 
-  .authorize__content--name {
-    color: #bb77ff;
+  .authorize__content-name {
+    color: $pink-lavender-color;
   }
 
-  .authorize__content--link {
-    color: #bb77ff;
+  .authorize__content-link {
+    color: $pink-lavender-color;
     cursor: pointer;
   }
 

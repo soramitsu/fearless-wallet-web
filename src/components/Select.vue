@@ -87,7 +87,7 @@ export default class Select extends Vue {
 
 .selected {
   background-color: $default-background-color !important;
-  color: rgba(255, 255, 255, 1) !important;
+  color: $plain-white !important;
 }
 
 .select-size-big {

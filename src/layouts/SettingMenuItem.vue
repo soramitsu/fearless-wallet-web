@@ -40,6 +40,7 @@ export default class SettingsMenuItem extends Vue {
     .icon {
       filter: invert(0.1);
     }
+
     .chevron-right {
       filter: invert(0.25);
     }

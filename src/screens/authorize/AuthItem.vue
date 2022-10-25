@@ -1,19 +1,17 @@
 <template>
-  <SCol class="auth-content" width="100%" v-bind:key="request.id">
+  <SCol class="auth__item" width="100%" v-bind:key="request.id">
     <SRow>
       <SCol :span="9" class="s-flex s-justify-start">
-        <span class="auth-item-name">{{ request.origin }}</span>
+        <span class="auth__item-name">{{ request.origin }}</span>
       </SCol>
       <SCol :span="3">
         <SRow flex justify="space-between">
-          <span class="authorized-account__count" @click="$emit('updateAuths', stripUrl)">{{
-            authorizedAccounts
-          }}</span>
-          <img class="trash" src="@/assets/trash.svg" @click="$emit('onRemoveAuth', prepUrl)" />
+          <span class="auth__item-count" @click="$emit('updateAuths', stripUrl)">{{ authorizedAccounts }}</span>
+          <img class="auth__item-delete" src="@/assets/trash.svg" @click="$emit('onRemoveAuth', prepUrl)" />
         </SRow>
       </SCol>
     </SRow>
-    <SDivider class="divider" />
+    <SDivider class="auth__item-divider" />
   </SCol>
 </template>
 
@@ -43,33 +41,26 @@ export default class AuthItem extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.divider {
+.auth__item-divider {
   background-color: $default-background-color;
   margin: 17px 0;
 }
 
-.auth-item-name {
+.auth__item-name {
   font-size: 16px;
 }
 
-.auth-content {
+.auth__item {
   padding-top: 12px;
 }
 
-.img-button {
-  background-image: url('@/assets/trash.svg');
-  background-size: 16px 16px;
-  height: 16px;
-  width: 16px;
-}
-
-.authorized-account__count {
+.auth__item-count {
   cursor: pointer;
   white-space: nowrap;
   color: rgba(0, 238, 119, 1);
 }
 
-.trash {
+.auth__item-delete {
   cursor: pointer;
 }
 </style>

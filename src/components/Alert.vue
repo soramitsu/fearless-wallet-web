@@ -53,6 +53,6 @@ export default class Container extends Vue {
   font-weight: 400;
   line-height: 150%;
   color: $default-white;
-  text-align: flex-start;
+  text-align: left;
 }
 </style>

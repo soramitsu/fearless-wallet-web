@@ -249,7 +249,7 @@ export default class Nodes extends Vue {
       .network-name {
         font-size: 22px;
         font-weight: 800;
-        color: $plain-white;
+        color: rgba(255, 255, 255, 1);
         margin-bottom: 5px;
         text-align: left;
       }

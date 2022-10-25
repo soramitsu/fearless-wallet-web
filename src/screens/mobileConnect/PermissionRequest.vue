@@ -33,17 +33,16 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { PermissionResponseOutput } from '@airgap/beacon-sdk';
-import ConnectionStatus from '@/screens/mobileConnect/ConnectionStatus.vue';
+import ConnectionStatus from './ConnectionStatus.vue';
 import { beaconController } from '@/controllers/beaconController';
 import { PermissionErrorPayload, RequestSentInfo } from '@/interfaces';
 import Button from '@/components/Button.vue';
 import Loader from '@/components/Loader.vue';
 import Corners from '@/components/Corners.vue';
 import Alert from '@/components/Alert.vue';
-import Popup from '@/components/Popup.vue';
 import { Components } from '@/router/routes';
 import { MOBILE_CONNECTOR_MESSAGES } from '@/consts/messages';
-
+import Popup from '@/components/Popup.vue';
 @Component({
   components: {
     Button,
@@ -98,7 +97,9 @@ export default class PermissionRequest extends Vue {
 
     return `Request send to Fearless Wallet`;
   }
-
+  toWalletScreen() {
+    this.$router.push({ name: Components.Wallet });
+  }
   close() {
     if (this.isSuccess || this.isActiveAccountExists) this.toWalletScreen();
     else this.$router.back();
@@ -108,10 +109,6 @@ export default class PermissionRequest extends Vue {
     beaconController.resetConnection();
 
     this.toWalletScreen();
-  }
-
-  toWalletScreen() {
-    this.$router.push({ name: Components.Wallet });
   }
 
   onCancelRequest() {

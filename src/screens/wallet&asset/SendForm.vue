@@ -154,8 +154,8 @@ export default class SendForm extends Vue {
 <style lang="scss">
 .summary {
   padding: 16px;
-  background-color: $secondary-background-color !important;
-  border: 1px solid $default-background-color !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-radius: $default-border-radius;
 
@@ -175,7 +175,7 @@ export default class SendForm extends Vue {
     }
 
     .name {
-      color: $gray-color;
+      color: rgba(255, 255, 255, 0.5);
     }
 
     .column {
@@ -184,7 +184,7 @@ export default class SendForm extends Vue {
       align-items: flex-end;
 
       .value {
-        color: $default-white;
+        color: rgba(255, 255, 255, 0.75);
         font-weight: 300;
         font-size: 12px;
         margin-top: 3px;

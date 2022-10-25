@@ -75,7 +75,7 @@ export default class RotateInput extends Vue {
     }
 
     .s-icon-chevron-bottom-16 {
-      color: $gray-color;
+      color: rgba(255, 255, 255, 0.5);
     }
   }
 }

@@ -98,6 +98,7 @@ export default class WalletBalance extends Vue {
   }
 
   .content {
+    min-height: 45px; // TODO: delete after adding percent
     flex-grow: 1;
   }
 
@@ -106,6 +107,7 @@ export default class WalletBalance extends Vue {
     font-weight: 700;
     text-transform: uppercase;
     color: $gray-color;
+    margin-bottom: 4px;
   }
 
   .balance {

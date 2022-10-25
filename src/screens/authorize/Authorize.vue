@@ -1,15 +1,16 @@
 <template>
-  <AboveForm :blur="true" header="Authorize" :closeHandler="onReject">
+  <AboveForm header="Authorize" :fullScreen="true" :closeHandler="onReject">
     <div class="authorize">
       <template v-if="isAccountsExists">
         <div>
           <Alert>
             <p class="authorize__content">
               An application, self-identifying as
-              <span class="authorize__content-name">{{ request.request.origin }}</span> is requesting access from my
-              <span class="authorize__content-link">{{ request.url }}</span>
+              <span class="authorize__content--name">{{ request.request.origin }}</span> is requesting access from my
+              <span class="authorize__content--link">{{ request.url }}</span>
             </p>
           </Alert>
+
           <div class="authorize-account-list">
             <SelectAuthAccount
               :selectAll="selectAll"
@@ -19,12 +20,14 @@
             />
           </div>
         </div>
+
         <div class="authorize__control">
           <Button width="100%" text="Yes, allow this application access" size="big" fontSize="big" @click="onApprove" />
         </div>
       </template>
       <template v-else>
         <Alert :message="noAccountsMessage" />
+
         <Button width="100%" text="Understood" size="big" fontSize="big" @click="onReject" />
       </template>
     </div>
@@ -34,7 +37,7 @@
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { AuthorizeRequest } from '@extension-base/background/types';
+import { AuthorizeRequest, ApproveAuthRequest } from '@extension-base/background/types';
 import { TAction } from '@/interfaces';
 import Button from '@/components/Button.vue';
 import Hint from '@/components/Hint.vue';
@@ -47,26 +50,26 @@ import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import SelectAuthAccount from '@/screens/authorize/SelectAuthAccount.vue';
 import BaseApi from '@/util/BaseApi';
+import { NO_ACCOUNTS_MESSAGES } from '@/consts/messages';
 
 @Component({
   components: {
-    Button,
-    SelectAuthAccount,
-    AboveForm,
-    Alert,
     Hint,
+    Alert,
+    Button,
+    AboveForm,
+    SelectAuthAccount,
   },
 })
 export default class Authorize extends Vue {
-  noAccountsMessage = "You don't have any account. Please create an account and refresh the application's page.";
+  readonly noAccountsMessage = NO_ACCOUNTS_MESSAGES;
   state: Record<string, WalletInfo> = {};
   selectAll = true;
 
   @Getter(AuthGettersTypes.getAuthRequests) requests!: AuthorizeRequest[];
   @Getter(AccountsGettersTypes.getWallets) wallets!: WalletInfo[];
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
-  @Action(AuthActionTypes.APPROVE_AUTH_REQUEST)
-  onApproveAuthRequest!: TAction<{ request: AuthorizeRequest; accounts: string[] }>;
+  @Action(AuthActionTypes.APPROVE_AUTH_REQUEST) onApproveAuthRequest!: TAction<ApproveAuthRequest>;
   @Action(AuthActionTypes.REJECT_AUTH_REQUEST) onRejectAuthRequest!: TAction<AuthorizeRequest>;
 
   get isAccountsExists() {
@@ -74,29 +77,23 @@ export default class Authorize extends Vue {
   }
 
   get request() {
-    const [request] = this.requests;
-
-    return request;
+    return this.requests[0];
   }
 
   mounted() {
-    this.wallets.forEach((account) => {
-      Vue.set(this.state, account.name, {
-        name: account.name,
-        address: account.address,
-        isMobile: account.isMobile,
+    this.wallets.forEach(({ name, address, isMobile }) =>
+      Vue.set(this.state, name, {
+        name: name,
+        address: address,
+        isMobile: isMobile,
         active: true,
-      });
-    });
+      })
+    );
   }
 
   onSelect(value: boolean, name: string) {
     this.state[name].active = value;
-
-    const isAllActive = Object.values(this.state).every((el) => el.active === true);
-    this.selectAll = isAllActive;
-
-    return this.state[name].active;
+    this.selectAll = Object.values(this.state).every(({ active }) => active);
   }
 
   onSelectAll(value: boolean) {
@@ -106,29 +103,30 @@ export default class Authorize extends Vue {
         active: value,
       });
     });
-    this.selectAll = value;
 
-    return this.selectAll;
+    this.selectAll = value;
   }
 
   get prepAccounts() {
-    const result: string[] = [];
-
-    Object.values(this.state).map((el) => {
-      if (el.active) result.push(el.address);
-    });
-
-    return result;
+    return Object.values(this.state)
+      .filter(({ active }) => active)
+      .map(({ address }) => address);
   }
 
   onApprove() {
     this.onApproveAuthRequest({ request: this.request, accounts: this.prepAccounts });
-    this.$router.push({ name: Components.Wallet });
+
+    this.redirect();
   }
 
   onReject() {
     this.onRejectAuthRequest(this.request);
-    this.$router.push({ name: Components.Wallet });
+
+    this.redirect();
+  }
+
+  redirect() {
+    if (BaseApi.useIsPopup()) setTimeout(() => this.$router.push({ name: Components.Wallet }), 100); // don`t removed setTimeout
   }
 }
 </script>
@@ -146,12 +144,12 @@ export default class Authorize extends Vue {
     font-weight: 400px;
   }
 
-  .authorize__content-name {
-    color: $pink-lavender-color;
+  .authorize__content--name {
+    color: #bb77ff;
   }
 
-  .authorize__content-link {
-    color: $pink-lavender-color;
+  .authorize__content--link {
+    color: #bb77ff;
     cursor: pointer;
   }
 

@@ -21,7 +21,7 @@
             </div>
           </div>
 
-          <QR class="qr" ref="qr" :width="200" :payload="address" />
+          <QR class="qr" ref="qr" :showLogo="true" :width="200" :payload="address" />
         </div>
       </div>
 
@@ -179,8 +179,8 @@ export default class ReceiveForm extends Vue {
     justify-content: space-between;
     padding: 16px 16px;
     width: 100%;
-    color: $default-white;
-    border-bottom: 0.5px solid $default-background-color;
+    color: rgba(255, 255, 255, 0.75);
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
 
     .address {
       display: flex;

@@ -92,7 +92,7 @@ export default class ReplacePopup extends Vue {
         }
 
         cursor: pointer;
-        color: rgba(255, 255, 255, 1);
+        color: $plain-white;
       }
     }
   }

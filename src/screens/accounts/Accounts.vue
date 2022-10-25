@@ -132,7 +132,7 @@ export default class Account extends Vue {
   }
 
   .label {
-    color: rgba(255, 255, 255, 1);
+    color: $plain-white;
     text-align: left;
     font-weight: 600;
   }

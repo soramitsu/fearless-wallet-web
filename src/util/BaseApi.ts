@@ -18,7 +18,7 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
 import type { Wallet } from '@/store/accounts/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
-import { createAccountSuri, forgetAccount, jsonRestore } from '@/extension/messaging';
+import { createAccountSuri, createAddress, forgetAccount, jsonRestore } from '@/extension/messaging';
 import { getReplacedMetaTyped, getMetaTyped, isExtension } from '@/helpers/common';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';

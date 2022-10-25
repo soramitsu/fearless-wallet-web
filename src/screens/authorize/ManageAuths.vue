@@ -1,6 +1,7 @@
 <template>
   <AboveForm header="Manage dApp access" :blur="true" :closeHandler="handlerClose">
     <SearchInput v-model="filterValue" placeholder="Search in networks" class="manage-auths__search" width="100%" />
+
     <Scroll>
       <AuthItem
         v-for="el in filteredList"
@@ -43,7 +44,6 @@ export default class ManageAuths extends Vue {
 
   filterValue = '';
   filteredList: Record<string, AuthUrlInfo> = {};
-  filteredValue: any;
 
   async mounted() {
     await this.getAuthList();

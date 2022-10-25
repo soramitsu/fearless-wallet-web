@@ -26,22 +26,23 @@
       </Corners>
     </div>
 
-    <ConnectionStatus v-else-if="isSuccess | isFailed" :status="status" />
+    <ConnectionStatus v-else-if="isTransactionFinished" :status="status" />
   </Popup>
 </template>
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { PermissionResponseOutput } from '@airgap/beacon-sdk';
-import ConnectionStatus from './ConnectionStatus.vue';
+import ConnectionStatus from '@/screens/mobileConnect/ConnectionStatus.vue';
 import { beaconController } from '@/controllers/beaconController';
 import { PermissionErrorPayload, RequestSentInfo } from '@/interfaces';
 import Button from '@/components/Button.vue';
 import Loader from '@/components/Loader.vue';
 import Corners from '@/components/Corners.vue';
 import Alert from '@/components/Alert.vue';
-import { Components } from '@/router/routes';
 import Popup from '@/components/Popup.vue';
+import { Components } from '@/router/routes';
+
 @Component({
   components: {
     Button,
@@ -71,14 +72,18 @@ export default class PermissionRequest extends Vue {
     return '';
   }
 
+  get isTransactionFinished() {
+    return this.isSuccess || this.isFailed;
+  }
+
   get getHeight() {
-    if (this.isSuccess || this.isFailed) return 300;
+    if (this.isTransactionFinished) return 300;
 
     return 400;
   }
 
   get maxHeight() {
-    if (this.isSuccess || this.isFailed) return 350;
+    if (this.isTransactionFinished) return 350;
 
     return 480;
   }
@@ -94,19 +99,22 @@ export default class PermissionRequest extends Vue {
   }
 
   close() {
-    if (this.isSuccess) {
-      this.$router.push({ name: Components.Wallet });
-    } else this.$router.back();
+    if (this.isSuccess) this.toWalletScreen();
+    else this.$router.back();
   }
 
   onResetConnection() {
     beaconController.resetConnection();
 
+    this.toWalletScreen();
+  }
+
+  toWalletScreen() {
     this.$router.push({ name: Components.Wallet });
   }
 
   onCancelRequest() {
-    this.$router.push({ name: Components.Wallet });
+    this.toWalletScreen();
   }
 }
 </script>

@@ -1,14 +1,15 @@
 <template>
-  <div class="auth-accounts">
+  <div class="accounts">
     <Checkbox
       size="big"
       label="Select all"
       v-model.lazy="syncSelectAll"
       @change="(value) => $emit('onSelectAll', value)"
     />
+
     <Scroll>
       <ul class="account__list">
-        <li v-for="(account, index) in accounts" class="auth-account" v-bind:key="index">
+        <li v-for="(account, index) in accounts" class="account__item" v-bind:key="index">
           <div class="checkbox">
             <Checkbox
               class="account__checkbox"
@@ -56,7 +57,7 @@ export default class SelectAuthAccount extends Vue {
 </script>
 
 <style lang="scss">
-.auth-accounts {
+.accounts {
   display: flex;
   flex-flow: column;
   align-items: flex-start;
@@ -64,7 +65,7 @@ export default class SelectAuthAccount extends Vue {
   height: 100%;
 }
 
-.auth-account {
+.account__item {
   display: flex;
   flex-flow: row nowrap;
   align-items: center;

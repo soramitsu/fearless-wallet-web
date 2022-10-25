@@ -241,7 +241,7 @@ export default class Popup extends Vue {
     }
 
     .header-text-pending {
-      color: $pending-color;
+      color: $error-color;
     }
 
     .header-text-failed {

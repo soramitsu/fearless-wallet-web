@@ -289,13 +289,10 @@ export default class BaseApi {
 
   public static isDuplicateReplacedKeypair(addressProp: string): boolean {
     const accounts = BaseApi.getAccounts();
-    const addresses = BaseApi.getAddresses();
-    const addressIndex = addresses.findIndex(
-      ({ address, meta }) => address === addressProp && meta.isReplacedAccount === true
-    );
+
     const index = accounts.findIndex(({ address, meta }) => address === addressProp && meta.isReplacedAccount === true);
 
-    return index !== -1 || addressIndex !== -1;
+    return index !== -1;
   }
 
   public static getKeyringPair(address: string): KeyringPair {

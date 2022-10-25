@@ -21,7 +21,7 @@
             </div>
           </div>
 
-          <QR class="qr" ref="qr" :width="200" :payload="address" />
+          <QR class="qr" ref="qr" :showLogo="true" :width="200" :payload="address" />
         </div>
       </div>
 

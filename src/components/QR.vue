@@ -1,5 +1,9 @@
 <template>
-  <img :src="qr" class="qr-code" />
+  <div class="qr-wrapper">
+    <img :src="qr" :class="QRClasses" />
+
+    <img v-if="showLogo" src="@/assets/logo-qr.svg" class="logo-qr" />
+  </div>
 </template>
 
 <script lang="ts">
@@ -15,6 +19,16 @@ export default class QR extends Vue {
   @Prop({ default: 300 }) width!: number;
   @Prop({ default: '#111111' }) foreground!: string;
   @Prop({ default: '#FFFFFF' }) background!: string;
+  @Prop({ default: false }) showLogo!: string;
+
+  get QRClasses() {
+    return [
+      'qr-code',
+      {
+        'qr-code-margin': this.showLogo,
+      },
+    ];
+  }
 
   async mounted() {
     this.createQR();
@@ -25,6 +39,8 @@ export default class QR extends Vue {
     this.qr = await QRCode.toDataURL(this.payload, {
       margin: this.margin,
       width: this.width,
+      maskPattern: 5,
+      errorCorrectionLevel: 'M',
       color: {
         dark: this.foreground,
         light: this.background,
@@ -35,7 +51,25 @@ export default class QR extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.qr-code {
-  border-radius: 24px;
+.qr-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .qr-code {
+    border-radius: 24px;
+  }
+
+  .qr-code-margin {
+    margin-left: 75px;
+    border-radius: 24px;
+  }
+
+  .logo-qr {
+    position: relative;
+    width: 75px;
+    left: calc(-50% + 37.5px);
+  }
 }
 </style>

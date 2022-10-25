@@ -68,6 +68,7 @@ export default class AboveForm extends Vue {
     position: relative;
     top: 80px;
     width: $extension-width;
+    min-height: $extension-height;
     height: calc(100% - 80px);
     background-color: #111111;
     clip-path: $big-clip-path-left-top;

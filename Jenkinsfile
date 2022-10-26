@@ -73,10 +73,10 @@ pipeline {
         VUE_APP_FIREBASE_ENV = 'test'
       }
       steps {
-        echo "Start test build (linux, mac)..."
-        sh "yarn electron:build --publish=never --linux --mac zip"
-        echo "Start test build (windows 32 and 64bit)..."
-        sh "yarn electron:build --publish=never --win portable --x64 --ia32"
+        echo "Start test build extension..."
+        sh "yarn build:extension"
+        echo "Start test build electron..."
+        sh "yarn electron:build --publish=never"
       }
     }
 
@@ -119,7 +119,7 @@ pipeline {
               uploadPath = env.TAG_NAME ? "fearless/desktop/tags/${env.TAG_NAME}/${folder}" : "fearless/desktop/${env.GIT_BRANCH}/${new Date().format("yyyy-MM-dd")}-${env.GIT_COMMIT.substring(0,6)}/${folder}"
               artifactServers.each { server ->
                 url = "https://${server}/repository/artifacts/${uploadPath}/"
-                sh(script: "find ./dist_electron/ -maxdepth 1 -regex '.*\\.\\(${extensions.join('\\|')}\\)\$' | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
+                sh(script: "find ./dist_electron/ -maxdepth 1 | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
                 echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
               }
             }

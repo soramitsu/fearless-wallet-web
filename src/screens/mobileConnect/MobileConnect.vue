@@ -49,6 +49,7 @@ import InfoList from '@/layouts/InfoList.vue';
 import InfoItem from '@/screens/signing/InfoItem.vue';
 import Alert from '@/components/Alert.vue';
 import { MOBILE_CONNECTOR_MESSAGES } from '@/consts/messages';
+import { MOONBEAM_GENESISHASH } from '@/consts/networks';
 
 @Component({
   components: {
@@ -124,6 +125,7 @@ export default class MobileConnect extends Vue {
   get header() {
     if (this.requestInfo && this.connectionStatus !== 'success' && this.connectionStatus !== 'failed')
       return `Requesting...`;
+
     if (this.connectionStatus === 'success' || this.connectionStatus === 'failed') return '';
 
     return 'Connect Mobile Wallet';
@@ -148,12 +150,13 @@ export default class MobileConnect extends Vue {
   }
 
   async onPermissionResponse({ output, account }: PermissionSuccess) {
+    console.log('RESPONSE', account, BaseApi.getWalletType(account.address));
     this.isPossibleConnectionProblem = false;
     this.isLoading = false;
 
     this.requestResponse = output;
 
-    if (BaseApi.getAddressType(account.address)) {
+    if (BaseApi.getWalletType(account.address)) {
       this.isWalletAlreadyExists = true;
 
       beaconController.resetConnection();
@@ -165,20 +168,18 @@ export default class MobileConnect extends Vue {
 
     const substrateAccount = BaseApi.encodeAddress(account.address);
     const ethereumAddress = this.getEthereumAccount(account);
-    const meta: KeyringJson$Meta = { name: 'mobile wallet', ethereumAddress };
-
-    BaseApi.saveAddress(substrateAccount, meta);
+    const meta: KeyringJson$Meta = { name: 'mobile wallet', isMobile: true, ethereumAddress };
 
     await createAddress(substrateAccount, meta); //extenstion service worker
 
-    this.setSelectedWallet({ selectedWalletAddress: substrateAccount });
+    BaseApi.saveAddress(substrateAccount, meta);
+
+    await this.setSelectedWallet({ selectedWalletAddress: substrateAccount });
   }
 
   getEthereumAccount(account: PermissionResponsePayload): string {
-    const moonbeanGenesisHash = '0xfe58ea77779b7abda7da4ec526d14db9b1e9cd40a217c34892af80a9b332b76d';
-
     const filteredAccount = account.chainData.accounts.find((el) => {
-      if (el.network.genesisHash === moonbeanGenesisHash) return el;
+      if (el.network.genesisHash === MOONBEAM_GENESISHASH) return el;
     });
 
     return filteredAccount?.address ?? '';

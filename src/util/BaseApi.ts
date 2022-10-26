@@ -26,7 +26,7 @@ import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { beaconController } from '@/controllers/beaconController';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;
-
+type WalletTypes = 'mobile' | 'native' | null;
 export default class BaseApi {
   private static createFromJson(json: KeyringPair$Json): KeyringPair {
     const pair = keyring.createFromJson(json);
@@ -84,11 +84,11 @@ export default class BaseApi {
     keyring.forgetAddress(address);
   }
 
-  public static getAddressType(address: string) {
-    const substrateAddress = BaseApi.encodeAddress(address, 42);
+  public static getWalletType(address: string): WalletTypes {
+    const substrateAddress = BaseApi.encodeAddress(address);
 
-    if (BaseApi.getAddress(substrateAddress)) return 'address';
-    if (BaseApi.getAccount(substrateAddress)) return 'account';
+    if (BaseApi.getAddress(substrateAddress)?.meta.isMobile) return 'mobile';
+    if (BaseApi.getAccount(substrateAddress)) return 'native';
 
     return null;
   }
@@ -400,7 +400,7 @@ export default class BaseApi {
   }
 
   public static async deleteWallet(address: string): Promise<number> {
-    if (BaseApi.getAddressType(address) === 'account') {
+    if (BaseApi.getWalletType(address) === 'native') {
       const { meta } = BaseApi.getPair(address);
       const { ethereumAddress } = getMetaTyped(meta);
 
@@ -421,7 +421,7 @@ export default class BaseApi {
 
     const substrateAddress = BaseApi.encodeAddress(address);
 
-    if (BaseApi.getAddressType(address) === 'address') {
+    if (BaseApi.getWalletType(address) === 'mobile') {
       BaseApi.forgetAddress(substrateAddress);
 
       await beaconController.resetConnection();

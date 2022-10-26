@@ -479,7 +479,7 @@ export default class Extension {
 
     const address = queued.request.payload.address;
 
-    if (keyring.getAddress(address, 'address'))
+    if (keyring.getAddress(address)?.meta.isMobile)
       return {
         isLocked: !!State.signature,
         remainingTime: 0,

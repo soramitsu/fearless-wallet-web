@@ -28,15 +28,7 @@ pipeline {
   }
 
   stages {
-    stage('Secret scanner') {
-        steps {
-            script {
-                docker.withRegistry("https://docker.soramitsu.co.jp", "bot-build-tools-ro") {
-                    secretScanner(disableSecretScanner, secretScannerExclusion)
-                }
-            }
-        }
-    }
+
     stage ('Init') {
       steps {
         sh "yarn install"

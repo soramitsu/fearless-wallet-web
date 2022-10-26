@@ -31,7 +31,6 @@ pipeline {
     stage('Secret scanner') {
         steps {
             script {
-                gitNotify('main-CI', 'PENDING', 'This commit is being built')
                 docker.withRegistry("https://docker.soramitsu.co.jp", "bot-build-tools-ro") {
                     secretScanner(disableSecretScanner, secretScannerExclusion)
                 }

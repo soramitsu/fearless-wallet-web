@@ -85,6 +85,7 @@ export default class Extension {
       };
     });
   }
+
   static accountsCreateExternal({ address, genesisHash, name }: RequestAccountCreateExternal): boolean {
     keyring.addExternal(address, { genesisHash, name });
 

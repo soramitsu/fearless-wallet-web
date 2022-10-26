@@ -74,7 +74,7 @@ export default class ManageAuths extends Vue {
     return Object.fromEntries(filtered);
   }
 
-  updateUrl(url: string) {
+  updateUrl(url = '') {
     this.url = url;
   }
 }

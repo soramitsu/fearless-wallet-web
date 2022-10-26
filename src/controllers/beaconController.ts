@@ -11,7 +11,6 @@ import {
   AppMetadata,
 } from '@airgap/beacon-sdk';
 import type {
-  BeaconNetworks,
   PayloadJSON,
   PermissionSuccess,
   RequestSentInfo,
@@ -59,17 +58,23 @@ class BeaconController {
     await this.app.disconnect();
   }
 
-  public async connect(networks: BeaconNetworks) {
+  public async connect() {
     const config: SubstratePermissionRequest = {
       blockchainIdentifier: 'substrate',
       type: BeaconMessageType.PermissionRequest,
       blockchainData: {
         appMetadata: this.appMetaData,
-        networks,
+        networks: [
+          {
+            genesisHash: '0x91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3',
+          },
+          {
+            genesisHash: '0xfe58ea77779b7abda7da4ec526d14db9b1e9cd40a217c34892af80a9b332b76d',
+          },
+        ],
         scopes: [SubstratePermissionScope.sign_payload_raw, SubstratePermissionScope.sign_payload_json],
       },
     };
-
     await this.app.permissionRequest(config);
   }
 
@@ -95,7 +100,7 @@ class BeaconController {
   }
 
   public async onPermissionsResponse(callback: TCallback<PermissionSuccess>) {
-    this.app.subscribeToEvent(BeaconEvent.PERMISSION_REQUEST_SUCCESS, callback);
+    this.app.subscribeToEvent(BeaconEvent.PERMISSION_REQUEST_SUCCESS, callback as any);
   }
 
   public setActiveAccount(account: AccountInfo) {

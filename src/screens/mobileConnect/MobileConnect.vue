@@ -24,7 +24,14 @@ import { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import { Action, Getter, Mutation } from 'vuex-class';
 import { PermissionResponseOutput } from '@airgap/beacon-sdk';
 import type { SetSelectedWallet } from '@/store/accounts/types';
-import { PermissionSuccess, TAction, RequestSentInfo, Networks, BeaconNetworks, TMutation } from '@/interfaces';
+import {
+  PermissionSuccess,
+  TAction,
+  RequestSentInfo,
+  Networks,
+  TMutation,
+  PermissionResponsePayload,
+} from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { createAddress } from '@/extension/messaging';
 import { beaconController } from '@/controllers/beaconController';
@@ -81,11 +88,9 @@ export default class MobileConnect extends Vue {
       return;
     }
 
-    const prepNetworks: BeaconNetworks = this.getNetworks.map(({ chainId }) => ({ genesisHash: `0x${chainId}` }));
-
     this.initBeaconEvents();
 
-    beaconController.connect(prepNetworks);
+    beaconController.connect();
   }
 
   initBeaconEvents() {
@@ -156,17 +161,27 @@ export default class MobileConnect extends Vue {
       return;
     }
 
-    const substrateAccount = BaseApi.encodeAddress(account.address);
-
     this.isPermissionsGranted = true;
 
-    const meta: KeyringJson$Meta = { name: 'mobile wallet' };
+    const substrateAccount = BaseApi.encodeAddress(account.address);
+    const ethereumAddress = this.getEthereumAccount(account);
+    const meta: KeyringJson$Meta = { name: 'mobile wallet', ethereumAddress };
 
     BaseApi.saveAddress(substrateAccount, meta);
 
     await createAddress(substrateAccount, meta); //extenstion service worker
 
     this.setSelectedWallet({ selectedWalletAddress: substrateAccount });
+  }
+
+  getEthereumAccount(account: PermissionResponsePayload): string {
+    const moonbeanGenesisHash = '0xfe58ea77779b7abda7da4ec526d14db9b1e9cd40a217c34892af80a9b332b76d';
+
+    const [filteredAccount] = account.chainData.accounts.filter((el) => {
+      if (el.network.genesisHash === moonbeanGenesisHash) return el;
+    });
+
+    return filteredAccount.address ?? '';
   }
 }
 </script>

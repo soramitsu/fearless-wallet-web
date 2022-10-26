@@ -24,6 +24,7 @@
         :network="network"
         :asset="asset"
         :address="address"
+        :isMobile="isMobileWallet"
         @openSourceTypePopup="$emit('openSourceTypePopup')"
         @openAccountSettingsPopup="openAccountSettingsPopup"
       />
@@ -66,6 +67,10 @@ export default class Account extends Vue {
 
   get showReplacedAccounts() {
     return this.replacedAccountsItems.length > 0;
+  }
+
+  get isMobileWallet() {
+    return BaseApi.getAddressType(this.selectedWallet.address) === 'address';
   }
 
   get showSharedSecretAccounts() {

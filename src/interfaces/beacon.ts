@@ -3,15 +3,17 @@ import {
   SubstratePermissionScope,
   AppMetadata,
   WalletInfo,
-  AccountInfo,
   PermissionResponseOutput,
   BlockExplorer,
+  AccountInfo,
   ConnectionContext,
   SignPayloadResponse,
   BlockchainRequestV3,
   SubstrateMessageType,
   ErrorResponse,
   BlockchainResponseV3,
+  PermissionEntity,
+  PermissionScope,
 } from '@airgap/beacon-sdk';
 import type { HexString } from '@polkadot/util/types';
 
@@ -37,14 +39,6 @@ export interface ExtraInfo {
 
 export interface RequestSentInfo {
   extraInfo: ExtraInfo;
-  walletInfo: WalletInfo;
-}
-
-export interface PermissionSuccess {
-  account: AccountInfo;
-  output: PermissionResponseOutput;
-  blockExplorer: BlockExplorer;
-  connectionContext: ConnectionContext;
   walletInfo: WalletInfo;
 }
 
@@ -146,4 +140,30 @@ export interface BeaconAccountInfo extends AccountInfo {
   chainData: {
     accounts: BeaconAccount[];
   };
+}
+
+export interface PermissionResponsePayload extends PermissionEntity {
+  accountIdentifier: string;
+  address: string;
+  chainData: {
+    accounts: BeaconAccount[];
+    appMetadata: AppMetadata;
+    scopes: PermissionScope[];
+  };
+  connectedAt: number;
+  origin: {
+    type: string;
+    id: string;
+  };
+  publicKey: string;
+  scopes: PermissionScope[];
+  senderId: string;
+}
+
+export interface PermissionSuccess {
+  account: PermissionResponsePayload;
+  output: PermissionResponseOutput;
+  blockExplorer: BlockExplorer;
+  connectionContext: ConnectionContext;
+  walletInfo: WalletInfo;
 }

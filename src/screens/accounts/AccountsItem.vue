@@ -19,7 +19,12 @@
       @click="openAccountSettingsPopup(network)"
     />
 
-    <img v-else src="@/assets/circle-plus-pink.svg" class="plus-icon" @click="$emit('openSourceTypePopup')" />
+    <img
+      v-else-if="!isMobile"
+      src="@/assets/circle-plus-pink.svg"
+      class="plus-icon"
+      @click="$emit('openSourceTypePopup')"
+    />
   </div>
 </template>
 
@@ -35,6 +40,7 @@ export default class AccountsItem extends Vue {
   readonly circleButtonRef = 'circleButton';
 
   @Prop(String) network!: string;
+  @Prop(Boolean) isMobile!: boolean;
   @Prop(String) asset!: string;
   @Prop(String) address!: string;
 

@@ -2,22 +2,19 @@
   <div class="connection__status">
     <img class="connection__status-icon" :src="icon" />
     <span class="connection__status-name" :class="nameColorClass">{{ statusHeader }}</span>
-    <span v-if="isSuccess" class="connection__status-message">{{ successMessage }}</span>
-    <span v-if="isFailed" class="connection__status-message">{{ failedMessage }}</span>
+    <span class="connection__status-message">{{ message }}</span>
   </div>
 </template>
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import { PermissionResponseOutput } from '@airgap/beacon-sdk';
-import { beaconController } from '@/controllers/beaconController';
-import { PermissionErrorPayload, RequestSentInfo } from '@/interfaces';
 import Button from '@/components/Button.vue';
 import Loader from '@/components/Loader.vue';
 import Corners from '@/components/Corners.vue';
 import Alert from '@/components/Alert.vue';
-import { Components } from '@/router/routes';
 import Popup from '@/components/Popup.vue';
+import { MOBILE_CONNECTOR_MESSAGES } from '@/consts/messages';
+
 @Component({
   components: {
     Button,
@@ -28,11 +25,12 @@ import Popup from '@/components/Popup.vue';
   },
 })
 export default class PermissionRequest extends Vue {
-  readonly successMessage = 'Mobile wallet connected to Fearless Wallet Extension';
-  readonly failedMessage = 'This Wallet already exists';
+  readonly successMessage = MOBILE_CONNECTOR_MESSAGES.CONNECTED;
+  readonly failedMessage = MOBILE_CONNECTOR_MESSAGES.WALLET_ALREADY_EXISTS;
+  readonly activeMobileAccountExistMessage = MOBILE_CONNECTOR_MESSAGES.ACTIVE_MOBILE_ACCOUNT_EXISTS;
 
   @Prop(String)
-  status!: 'success' | 'failed';
+  status!: 'success' | 'failed' | 'active_account_exists';
 
   get nameColorClass() {
     return `connection__status-name--${this.isSuccess ? 'success' : 'failed'}`;
@@ -46,14 +44,26 @@ export default class PermissionRequest extends Vue {
     return this.status === 'failed';
   }
 
+  get isActiveAccountExists() {
+    return this.status === 'active_account_exists';
+  }
+
   get statusHeader() {
     if (this.isSuccess) return 'Connection is set';
 
     return 'Connection failed';
   }
 
+  get message() {
+    if (this.isSuccess) return this.successMessage;
+    if (this.isFailed) return this.failedMessage;
+    if (this.isActiveAccountExists) return this.activeMobileAccountExistMessage;
+
+    return '';
+  }
+
   get icon() {
-    return require(`@/assets/status__${this.isFailed ? 'failed' : 'success'}.svg`);
+    return require(`@/assets/status__${this.isFailed || this.isActiveAccountExists ? 'failed' : 'success'}.svg`);
   }
 }
 </script>

@@ -48,7 +48,7 @@ module.exports = defineConfig({
   },
   configureWebpack: (config) => {
     config.plugins.push(new NodePolyfillPlugin());
-    config.devtool = process.env.NODE_ENV === 'development' ? 'inline-source-map' : false;
+    config.devtool = process.env.NODE_ENV === 'development' ? 'inline-source-map' : 'source-map';
     config.module.rules
       .filter((rule) => {
         return rule.test.toString().indexOf('scss') !== -1;

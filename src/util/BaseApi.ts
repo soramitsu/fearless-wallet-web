@@ -18,7 +18,7 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
 import type { Wallet } from '@/store/accounts/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
-import { createAccountSuri, jsonRestore } from '@/extension/messaging';
+import { createAccountSuri, forgetAccount, jsonRestore } from '@/extension/messaging';
 import { getReplacedMetaTyped, getMetaTyped, isExtension } from '@/helpers/common';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';
@@ -399,7 +399,7 @@ export default class BaseApi {
     keyring.forgetAccount(address);
   }
 
-  public static deleteWallet(address: string): number {
+  public static async deleteWallet(address: string): Promise<number> {
     if (BaseApi.getAddressType(address) === 'account') {
       const { meta } = BaseApi.getPair(address);
       const { ethereumAddress } = getMetaTyped(meta);
@@ -419,11 +419,15 @@ export default class BaseApi {
         .forEach(({ address }) => BaseApi.deleteAccount(address));
     }
 
-    if (BaseApi.getAddress(address)) {
-      keyring.forgetAddress(address);
+    const substrateAddress = BaseApi.encodeAddress(address);
 
-      beaconController.resetConnection();
+    if (BaseApi.getAddressType(address) === 'address') {
+      BaseApi.forgetAddress(substrateAddress);
+
+      await beaconController.resetConnection();
     }
+
+    await forgetAccount(substrateAddress); //delete from background script
 
     return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
   }

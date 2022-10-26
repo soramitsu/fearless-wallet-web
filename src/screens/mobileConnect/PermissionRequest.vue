@@ -26,7 +26,7 @@
       </Corners>
     </div>
 
-    <ConnectionStatus v-else-if="isSuccess | isFailed" :status="status" />
+    <ConnectionStatus v-else-if="isRequestFinished" :status="status" @close="close" />
   </Popup>
 </template>
 
@@ -41,6 +41,7 @@ import Loader from '@/components/Loader.vue';
 import Corners from '@/components/Corners.vue';
 import Alert from '@/components/Alert.vue';
 import { Components } from '@/router/routes';
+import { MOBILE_CONNECTOR_MESSAGES } from '@/consts/messages';
 import Popup from '@/components/Popup.vue';
 @Component({
   components: {
@@ -55,9 +56,9 @@ import Popup from '@/components/Popup.vue';
 export default class PermissionRequest extends Vue {
   @Prop(Object) requestInfo!: RequestSentInfo | PermissionErrorPayload;
   @Prop({ type: Object || null, default: null }) requestResponse?: PermissionResponseOutput;
-  @Prop(String) status!: 'pendingWithResetForm' | 'success' | 'failed';
+  @Prop(String) status!: 'reset_form' | 'success' | 'failed' | 'active_account_exists';
 
-  noAnswerMessage = 'No answer from your wallet received yet. Please make sure the wallet is open';
+  readonly noAnswerMessage = MOBILE_CONNECTOR_MESSAGES.NO_ANSWER;
 
   get isSuccess() {
     return this.status === 'success';
@@ -67,42 +68,47 @@ export default class PermissionRequest extends Vue {
     return this.status === 'failed';
   }
 
-  get statucIcon() {
-    return '';
+  get isActiveAccountExists() {
+    return this.status === 'active_account_exists';
+  }
+
+  get isRequestFinished() {
+    return this.isSuccess || this.isFailed || this.isActiveAccountExists;
   }
 
   get getHeight() {
-    if (this.isSuccess || this.isFailed) return 300;
+    if (this.isRequestFinished) return 300;
 
     return 400;
   }
 
   get maxHeight() {
-    if (this.isSuccess || this.isFailed) return 350;
+    if (this.isRequestFinished) return 350;
 
     return 480;
   }
 
   get isPendingWithResetForm() {
-    return this.status === 'pendingWithResetForm';
+    return this.status === 'reset_form';
   }
 
   get header() {
-    if (this.status === 'success' || this.status === 'failed') return '';
+    if (this.isRequestFinished) return '';
 
     return `Request send to Fearless Wallet`;
   }
-
+  toWalletScreen() {
+    this.$router.push({ name: Components.Wallet });
+  }
   close() {
-    if (this.isSuccess) {
-      this.$router.push({ name: Components.Wallet });
-    } else this.$router.back();
+    if (this.isSuccess || this.isActiveAccountExists) this.toWalletScreen();
+    else this.$router.back();
   }
 
   onResetConnection() {
     beaconController.resetConnection();
 
-    this.$router.push({ name: Components.Wallet });
+    this.toWalletScreen();
   }
 
   onCancelRequest() {

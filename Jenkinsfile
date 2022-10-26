@@ -7,7 +7,7 @@ def pipeline = new org.js.App2Pipeline(
     buildWithCred:      true,
     pushToNexus:        true,
     nexusCredentials:   'bot-soramitsu-rw',
-    dockerRegistry:     "nexus.iroha.tech:19000",
+    dockerRegistry:     "nexus.iroha.tech:19004",
     dockerImageName:    "fearless/web-wallet",
     dockerImageTags:    ['master': 'latest', 'develop': 'dev', 'feature/FWW-158/ci-for-PRs':'test']
 )

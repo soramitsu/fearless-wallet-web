@@ -1,5 +1,6 @@
-@Library('jenkins-library')
+@Library('jenkins-library') _
 Boolean disableSecretScanner  = false
+String secretScannerExclusion = ''
 String registry               = 'docker.soramitsu.co.jp'
 String dockerBuildToolsUserId = 'bot-build-tools-ro'
 
@@ -31,7 +32,7 @@ pipeline {
         steps {
             script {
                 gitNotify('main-CI', 'PENDING', 'This commit is being built')
-                docker.withRegistry('https://' + registry, dockerBuildToolsUserId) {
+                docker.withRegistry("https://docker.soramitsu.co.jp", "bot-build-tools-ro") {
                     secretScanner(disableSecretScanner, secretScannerExclusion)
                 }
             }

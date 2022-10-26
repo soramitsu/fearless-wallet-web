@@ -1,3 +1,8 @@
+@Library('jenkins-library')
+Boolean disableSecretScanner  = false
+String registry               = 'docker.soramitsu.co.jp'
+String dockerBuildToolsUserId = 'bot-build-tools-ro'
+
 properties([parameters([
   booleanParam(defaultValue: true, description: '', name: 'tests'),
   booleanParam(defaultValue: false, description: '', name: 'upload_to_jenkins'),
@@ -22,6 +27,16 @@ pipeline {
   }
 
   stages {
+    stage('Secret scanner') {
+        steps {
+            script {
+                gitNotify('main-CI', 'PENDING', 'This commit is being built')
+                docker.withRegistry('https://' + registry, dockerBuildToolsUserId) {
+                    secretScanner(disableSecretScanner, secretScannerExclusion)
+                }
+            }
+        }
+    }
     stage ('Init') {
       steps {
         sh "yarn install"
@@ -98,7 +113,7 @@ pipeline {
         if (params.should_run_dev_build  || env.GIT_BRANCH == 'develop') {
           dist_folders.push('development')
         }
-        if (params.should_run_test_build || env.GIT_BRANCH == 'feature/FWW-158/ci-for-PRs') {
+        if (params.should_run_test_build || env.GIT_BRANCH == 'test') {
           dist_folders.push('test')
         }
         if (params.should_run_prod_build || env.GIT_BRANCH == 'master') {

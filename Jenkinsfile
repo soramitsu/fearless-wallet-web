@@ -91,13 +91,6 @@ pipeline {
   }
 
   post {
-    always {
-      script {
-        if (params.tests){
-          junit 'report/*.xml'
-        }
-      }
-    }
     success {
       script {
         extensions = [ 'zip', 'AppImage' , 'exe' ]

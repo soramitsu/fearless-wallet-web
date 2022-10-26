@@ -112,7 +112,7 @@ pipeline {
               uploadPath = env.TAG_NAME ? "fearless/desktop/tags/${env.TAG_NAME}/${folder}" : "fearless/desktop/${env.GIT_BRANCH}/${new Date().format("yyyy-MM-dd")}-${env.GIT_COMMIT.substring(0,6)}/${folder}"
               artifactServers.each { server ->
                 url = "https://${server}/repository/artifacts/${uploadPath}/"
-                sh(script: "find ./dist_electron/${folder}/ -maxdepth 1 -regex '.*\\.\\(${extensions.join('\\|')}\\)\$' | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
+                sh(script: "find ./dist_electron/ -maxdepth 1 -regex '.*\\.\\(${extensions.join('\\|')}\\)\$' | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
                 echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
               }
             }

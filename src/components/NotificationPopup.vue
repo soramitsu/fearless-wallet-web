@@ -12,13 +12,7 @@
       <div class="text">{{ text }}</div>
       <div :class="classesSubtext">{{ subtext }}</div>
 
-      <Button
-        v-if="showAcceptButton"
-        class="button"
-        size="medium"
-        :text="acceptButtonText"
-        @click="handlerAcceptButton"
-      />
+      <Button v-if="showAcceptButton" class="button" size="medium" :text="acceptButtonText" @click="handlerAccept" />
 
       <BorderButton
         v-if="showRejectButton"
@@ -61,14 +55,14 @@ export default class NotificationPopup extends Vue {
   @Prop({ default: 'Cancel' }) rejectButtonText!: string;
   @Prop(String) acceptButtonText!: string;
   @Prop(Function) handlerClose!: VoidFunction;
-  @Prop(Function) handlerAcceptButton!: VoidFunction;
+  @Prop(Function) handlerAccept!: VoidFunction;
 
   get text() {
-    return this.headers?.text ?? '';
+    return this.headers.text;
   }
 
   get subtext() {
-    return this.headers?.subtext ?? '';
+    return this.headers.subtext;
   }
 
   get classesSubtext() {

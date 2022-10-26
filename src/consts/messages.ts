@@ -31,6 +31,11 @@ const WARNING_MESSAGES = {
     text: 'Is not same password',
     subtext: 'Please make sure the password you entered is the password for your current wallet.',
   },
+  duplicateMobileWallet: {
+    text: 'Current wallet already exists',
+    subtext:
+      'By continuing you understand that mobile wallet would be replaced with current wallet and will be deleted',
+  },
 };
 
 const EXPORT_WARNING =

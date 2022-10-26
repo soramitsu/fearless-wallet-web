@@ -27,6 +27,7 @@ import { beaconController } from '@/controllers/beaconController';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;
 type WalletTypes = 'mobile' | 'native' | null;
+
 export default class BaseApi {
   private static createFromJson(json: KeyringPair$Json): KeyringPair {
     const pair = keyring.createFromJson(json);
@@ -399,33 +400,37 @@ export default class BaseApi {
     keyring.forgetAccount(address);
   }
 
+  private static async deleteNativeWallet(address: string) {
+    //DELETE WALLET IN FRONTEND KEYRING ONLY
+    const { meta } = BaseApi.getPair(address);
+    const { ethereumAddress } = getMetaTyped(meta);
+
+    BaseApi.deleteAccount(address);
+
+    if (ethereumAddress !== '') BaseApi.deleteAccount(ethereumAddress);
+
+    // delete replaced accounts
+    BaseApi.getReplacedAccounts({ address, ethereumAddress })
+      .filter(({ meta }) => {
+        const { replacedSettings } = getReplacedMetaTyped(meta);
+
+        // if replaced account are used only for this main wallet
+        return Object.keys(replacedSettings).length === 1;
+      })
+      .forEach(({ address }) => BaseApi.deleteAccount(address));
+  }
+
+  private static async deleteMobileWallet(address: string) {
+    BaseApi.forgetAddress(address);
+
+    await beaconController.resetConnection();
+  }
+
   public static async deleteWallet(address: string): Promise<number> {
-    if (BaseApi.getWalletType(address) === 'native') {
-      const { meta } = BaseApi.getPair(address);
-      const { ethereumAddress } = getMetaTyped(meta);
-
-      BaseApi.deleteAccount(address);
-
-      if (ethereumAddress !== '') BaseApi.deleteAccount(ethereumAddress);
-
-      // delete replaced accounts
-      BaseApi.getReplacedAccounts({ address, ethereumAddress })
-        .filter(({ meta }) => {
-          const { replacedSettings } = getReplacedMetaTyped(meta);
-
-          // if replaced account are used only for this main wallet
-          return Object.keys(replacedSettings).length === 1;
-        })
-        .forEach(({ address }) => BaseApi.deleteAccount(address));
-    }
-
     const substrateAddress = BaseApi.encodeAddress(address);
 
-    if (BaseApi.getWalletType(address) === 'mobile') {
-      BaseApi.forgetAddress(substrateAddress);
-
-      await beaconController.resetConnection();
-    }
+    if (BaseApi.getWalletType(address) === 'native') BaseApi.deleteNativeWallet(address);
+    else if (BaseApi.getWalletType(address) === 'mobile') BaseApi.deleteMobileWallet(address);
 
     await forgetAccount(substrateAddress); //delete from background script
 

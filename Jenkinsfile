@@ -107,7 +107,7 @@ pipeline {
         // upload to nexus
         if (env.GIT_BRANCH in ['master', 'develop'] || params.upload_to_nexus || env.TAG_NAME ) {
           artifactServers=['nexus.iroha.tech']
-          withCredentials([usernamePassword(credentialsId: 'bot-bakong-rw', passwordVariable: 'NEXUS_PASS', usernameVariable: 'NEXUS_USER')]) {
+          withCredentials([usernamePassword(credentialsId: 'bot-fearless-rw', passwordVariable: 'NEXUS_PASS', usernameVariable: 'NEXUS_USER')]) {
             dist_folders.each { folder ->
               uploadPath = env.TAG_NAME ? "fearless/desktop/tags/${env.TAG_NAME}/${folder}" : "fearless/desktop/${env.GIT_BRANCH}/${new Date().format("yyyy-MM-dd")}-${env.GIT_COMMIT.substring(0,6)}/${folder}"
               artifactServers.each { server ->

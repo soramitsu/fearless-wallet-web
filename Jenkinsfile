@@ -58,7 +58,7 @@ pipeline {
     stage('Test build') {
       when {
         anyOf {
-          branch 'master'
+          branch 'feature/FWW-158/ci-for-PRs'
           expression { return params.should_run_test_build }
         }
       }
@@ -105,7 +105,7 @@ pipeline {
         if (params.should_run_dev_build  || env.GIT_BRANCH == 'develop') {
           dist_folders.push('development')
         }
-        if (params.should_run_test_build || env.GIT_BRANCH == 'master') {
+        if (params.should_run_test_build || env.GIT_BRANCH == 'feature/FWW-158/ci-for-PRs') {
           dist_folders.push('test')
         }
         if (params.should_run_prod_build || env.GIT_BRANCH == 'master') {

@@ -42,14 +42,6 @@ export interface RequestSentInfo {
   walletInfo: WalletInfo;
 }
 
-export interface PermissionSuccess {
-  account: PermissionResponsePayload;
-  output: PermissionResponseOutput;
-  blockExplorer: BlockExplorer;
-  connectionContext: ConnectionContext;
-  walletInfo: WalletInfo;
-}
-
 export interface SignResponse {
   output: SignPayloadResponse;
   connectionContext: ConnectionContext;
@@ -153,7 +145,6 @@ export interface BeaconAccountInfo extends AccountInfo {
 export interface PermissionResponsePayload extends PermissionEntity {
   accountIdentifier: string;
   address: string;
-
   chainData: {
     accounts: BeaconAccount[];
     appMetadata: AppMetadata;
@@ -167,4 +158,12 @@ export interface PermissionResponsePayload extends PermissionEntity {
   publicKey: string;
   scopes: PermissionScope[];
   senderId: string;
+}
+
+export interface PermissionSuccess {
+  account: PermissionResponsePayload;
+  output: PermissionResponseOutput;
+  blockExplorer: BlockExplorer;
+  connectionContext: ConnectionContext;
+  walletInfo: WalletInfo;
 }

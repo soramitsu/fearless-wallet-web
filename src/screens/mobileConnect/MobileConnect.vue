@@ -177,11 +177,11 @@ export default class MobileConnect extends Vue {
   getEthereumAccount(account: PermissionResponsePayload): string {
     const moonbeanGenesisHash = '0xfe58ea77779b7abda7da4ec526d14db9b1e9cd40a217c34892af80a9b332b76d';
 
-    const [filteredAccount] = account.chainData.accounts.filter((el) => {
+    const filteredAccount = account.chainData.accounts.find((el) => {
       if (el.network.genesisHash === moonbeanGenesisHash) return el;
     });
 
-    return filteredAccount.address ?? '';
+    return filteredAccount?.address ?? '';
   }
 }
 </script>

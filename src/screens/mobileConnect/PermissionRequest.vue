@@ -112,7 +112,7 @@ export default class PermissionRequest extends Vue {
   }
 
   onCancelRequest() {
-    this.toWalletScreen();
+    this.$router.push({ name: Components.Wallet });
   }
 }
 </script>

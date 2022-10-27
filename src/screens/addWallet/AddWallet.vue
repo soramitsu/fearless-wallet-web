@@ -554,7 +554,7 @@ export default class AddWallet extends Vue {
 
     this.warningValueName = '';
 
-    this.proceed();
+    this.step += 1;
   }
 
   closeAddEthereumAccountPopup() {

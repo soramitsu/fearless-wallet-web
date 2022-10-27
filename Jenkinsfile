@@ -23,8 +23,10 @@ pipeline {
   agent {
     docker {
       label 'docker-build-agent'
-      image 'docker.soramitsu.co.jp/build-tools/node:14-ubuntu'
-      args  '-v /var/run/docker.sock:/var/run/docker.sock'      
+      image "${registry}/build-tools/node:14-ubuntu"
+      args  '-v /var/run/docker.sock:/var/run/docker.sock'
+      registryCredentialsId 'bot-build-tools-ro'
+      registryUrl "https://${registry}"      
     }
   }
 

@@ -134,7 +134,9 @@ export default class ReceiveForm extends Vue {
   }
 
   createBlob() {
-    const imgQR = (this.$refs.qr as Vue).$el;
+    const el = (this.$refs.qr as Vue).$el;
+    const imgQR = el.firstChild as Element;
+    const imgLogo = el.lastChild as Element;
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
 
@@ -142,6 +144,7 @@ export default class ReceiveForm extends Vue {
     canvas.height = imgQR.clientHeight;
 
     context?.drawImage(imgQR as CanvasImageSource, 0, 0);
+    context?.drawImage(imgLogo as CanvasImageSource, 67.5, 85, 65, 30);
 
     return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   }

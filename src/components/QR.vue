@@ -62,14 +62,15 @@ export default class QR extends Vue {
   }
 
   .qr-code-margin {
-    margin-left: 75px;
+    margin-left: 65px;
     border-radius: 24px;
   }
 
   .logo-qr {
     position: relative;
-    width: 75px;
-    left: calc(-50% + 37.5px);
+    width: 65px;
+    height: 30px;
+    left: calc(-50% + 32.5px);
   }
 }
 </style>

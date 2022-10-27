@@ -541,12 +541,8 @@ export default class AddWallet extends Vue {
     else if (this.step === 2) this.passwordEthereumJson = '';
 
     if (this.warningValueName === 'duplicateMobileWallet') {
-      if (this.typeImport === 'json') {
-        this.substrateJson = '';
-      } else {
-        if (this.address) BaseApi.deleteNativeWallet(this.address);
-        this.reset();
-      }
+      if (this.typeImport === 'json') this.substrateJson = '';
+      else this.reset();
     }
 
     this.warningValueName = '';
@@ -665,7 +661,8 @@ export default class AddWallet extends Vue {
         )
       : true;
 
-    if (isValidMnemonic || isValidSubstrateRawSeed || validatedSubstrateJson.value) this.validateMobileDubs();
+    if ((isValidMnemonic || isValidSubstrateRawSeed || validatedSubstrateJson.value) && this.step === 1)
+      this.validateMobileDubs();
 
     if (!isValidSequenceMnemonic) this.warningValueName = 'mnemonicSequence';
     else if (!isValidMnemonic) this.warningValueName = 'mnemonic';

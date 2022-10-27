@@ -1,18 +1,16 @@
 <template>
-  <div>
-    <SelectPopup
-      verticalPlacement="top"
-      horizontalPlacement="right"
-      placeholder="Search in currencies"
-      :value="selectedFiat"
-      :top="50"
-      :showAnimation="showAnimation"
-      :options="filteredOptionsFiats"
-      :toggleValue="toggleSelectedFiat"
-      :handlerClose="handlerClose"
-      :handlerFilter="handlerFilter"
-    />
-  </div>
+  <SelectPopup
+    verticalPlacement="top"
+    horizontalPlacement="right"
+    placeholder="Search in currencies"
+    :value="selectedFiat"
+    :top="50"
+    :showAnimation="showAnimation"
+    :options="filteredOptionsFiats"
+    :toggleValue="toggleSelectedFiat"
+    :handlerClose="handlerClose"
+    :handlerFilter="handlerFilter"
+  />
 </template>
 
 <script lang="ts">

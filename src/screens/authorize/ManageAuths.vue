@@ -9,7 +9,11 @@
     <template v-if="!showUpdateAuths">
       <SearchInput v-model="filterValue" placeholder="Search in networks" class="search-input" width="100%" />
 
-      <AuthItem v-for="el in filteredList" v-bind:key="el.id" :request="el" @openUpdateAuths="updateUrl" />
+      <div class="auth-items">
+        <Scroll>
+          <AuthItem v-for="el in filteredList" v-bind:key="el.id" :request="el" @openUpdateAuths="updateUrl" />
+        </Scroll>
+      </div>
     </template>
 
     <UpdateAuths v-else :url="url" @updateUrl="updateUrl" />
@@ -27,9 +31,11 @@ import SearchInput from '@/components/SearchInput.vue';
 import AuthItem from '@/screens/authorize/AuthItem.vue';
 import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
 import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
+import Scroll from '@/components/Scroll.vue';
 
 @Component({
   components: {
+    Scroll,
     AuthItem,
     AboveForm,
     SearchInput,
@@ -83,5 +89,9 @@ export default class ManageAuths extends Vue {
 <style lang="scss" scoped>
 .search-input {
   margin-bottom: 16px;
+}
+
+.auth-items {
+  height: calc(100% - 60px);
 }
 </style>

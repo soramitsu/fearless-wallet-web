@@ -103,7 +103,7 @@ export default class Header extends Vue {
   updateZIndexShowSettings(value: boolean) {
     const targetElement = (this.$refs[this.settingsNameRef] as Vue).$el as HTMLElement;
 
-    targetElement.style.zIndex = value ? '200' : '0';
+    targetElement.style.zIndex = value ? '300' : '0';
   }
 
   backToWallet() {

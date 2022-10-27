@@ -52,7 +52,6 @@ export default class WalletDetailsPopup extends Vue {
     if (walletsCount === 0) this.$router.push({ name: Components.Welcome });
     else {
       this.setWallet();
-
       this.close();
     }
   }

@@ -642,7 +642,7 @@ export default class AddWallet extends Vue {
   }
 
   saveKeypairFromSeed() {
-    const meta: Record<string, unknown> = { name: this.nickname.trim() };
+    const meta: Record<string, unknown> = { name: this.nickname.trim(), ethereumAddress: '' };
     const {
       substrate: { keypairType: substrateKeypairType },
       ethereum: { keypairType: ethereumKeypairType },

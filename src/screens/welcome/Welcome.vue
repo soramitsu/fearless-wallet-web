@@ -78,7 +78,7 @@ import { isExtension } from '@/helpers/common';
 })
 export default class Welcome extends Vue {
   get showBackWalletIcon() {
-    return BaseApi.getAccounts().length !== 0 || BaseApi.getAddresses.length !== 0;
+    return BaseApi.getAccounts().length !== 0 || BaseApi.getAddresses().length !== 0;
   }
 
   get isExtension() {

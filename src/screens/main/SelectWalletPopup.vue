@@ -11,12 +11,12 @@
   >
     <div class="wallet-content">
       <WalletBalance
-        v-for="({ meta: { name }, address }, index) in wallets"
+        v-for="({ meta: { name, ethereumAddress }, address }, index) in wallets"
         :key="name + index"
         :name="name"
         :isSelected="selectedWallet.address === address"
         :isMobile="isMobile(address)"
-        :balance="getBalance(address)"
+        :balance="getBalance(address, ethereumAddress)"
         :percent="getPercent()"
         class="total"
         @setShowWalletDetailsPopupVisible="toggleWalletDetailsPopupVisible(...arguments, address)"
@@ -79,10 +79,10 @@ export default class SelectWalletPopup extends Vue {
     return BaseApi.getWalletType(address) === 'mobile';
   }
 
-  getBalance(address: string) {
-    const arr = this.currencies.map((currency) => currency.getTotalBalance({ address, ethereumAddress: address }));
+  getBalance(address: string, ethereumAddress: string) {
+    const arr = this.currencies.map((currency) => currency.getTotalBalance({ address, ethereumAddress }));
 
-    return addNumbers(arr);
+    return +addNumbers(arr);
   }
 
   walletPopupClick(event: HTMLDivElementEvent) {

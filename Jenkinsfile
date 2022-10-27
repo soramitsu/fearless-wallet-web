@@ -56,9 +56,9 @@ pipeline {
       }
       steps {
         echo "Start production build (linux, mac)..."
-        sh "yarn build:electron --publish=never --linux --mac zip"
+        sh "yarn electron:build --publish=never --linux --mac zip"
         echo "Start production build (windows 32 and 64bit)..."
-        sh "yarn build:electron --publish=never --win portable --x64 --ia32"
+        sh "yarn electron:build --publish=never --win portable --x64 --ia32"
       }
     }
 
@@ -76,9 +76,9 @@ pipeline {
         echo "Start test build extension..."
         sh "yarn build:extension"
         echo "Start production build (linux, mac)..."
-        sh "yarn build:electron --publish=never --linux --mac --directories test zip"
+        sh "yarn electron:build --publish=never --linux --mac --directories test zip"
         echo "Start production build (windows 32 and 64bit)..."
-        sh "yarn build:electron --publish=never --win portable --x64 --ia32"
+        sh "yarn electron:build --publish=never --win portable --x64 --ia32"
       }
     }
 

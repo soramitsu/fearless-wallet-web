@@ -121,7 +121,7 @@ pipeline {
                 url = "https://${server}/repository/artifacts/${uploadPath}/dist_electron/"
                 sh(script: "find -type f ./dist_electron/ | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
                 echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
-                url = "https://${server}/repository/artifacts/${uploadPath}/dist_electron/"
+                url = "https://${server}/repository/artifacts/${uploadPath}/dist_extension/"
                 sh(script: "find -type f ./dist/extension/ | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
                 echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
               }

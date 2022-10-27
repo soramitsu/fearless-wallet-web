@@ -74,9 +74,11 @@ pipeline {
       }
       steps {
         echo "Start test build extension..."
-        sh "yarn build:extension zip"
-        echo "Start test build electron..."
-        sh "yarn electron:build --publish=never zip"
+        sh "yarn build:extension"
+        echo "Start production build (linux, mac)..."
+        sh "yarn build:electron --publish=never --linux --mac --directories test zip"
+        echo "Start production build (windows 32 and 64bit)..."
+        sh "yarn build:electron --publish=never --win portable --x64 --ia32"
       }
     }
 
@@ -119,7 +121,7 @@ pipeline {
               uploadPath = env.TAG_NAME ? "fearless/desktop/tags/${env.TAG_NAME}/${folder}" : "fearless/desktop/${env.GIT_BRANCH}/${new Date().format("yyyy-MM-dd")}-${env.GIT_COMMIT.substring(0,6)}/${folder}"
               artifactServers.each { server ->
                 url = "https://${server}/repository/artifacts/${uploadPath}/dist_electron/"
-                sh(script: "find ./dist_electron/ -type f | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
+                sh(script: "find ./dist_electron/test/ -type f | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
                 echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
                 url = "https://${server}/repository/artifacts/${uploadPath}/dist_extension/"
                 sh(script: "find ./dist/extension/ -type f | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")

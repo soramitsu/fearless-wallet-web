@@ -31,6 +31,11 @@ const WARNING_MESSAGES = {
     text: 'Is not same password',
     subtext: 'Please make sure the password you entered is the password for your current wallet.',
   },
+  duplicateMobileWallet: {
+    text: 'Current wallet already exists',
+    subtext:
+      'By continuing you understand that mobile wallet would be replaced with current wallet and will be deleted',
+  },
 };
 
 const EXPORT_WARNING =
@@ -59,7 +64,8 @@ type WarningValueName = keyof typeof WARNING_MESSAGES | '';
 const MOBILE_CONNECTOR_MESSAGES = {
   QR_HEADER: 'Scan the QR code using the Fearless mobile app',
   ACTIVE_MOBILE_ACCOUNT_EXISTS: 'There is an active connection, please delete mobile wallet and try again',
-  WALLET_ALREADY_EXISTS: 'You already have this wallet',
+  WALLET_ALREADY_EXISTS:
+    'You already have this wallet. Please, use existing wallet or delete it and try connect mobile wallet again.',
   CONNECTED: 'Mobile wallet connected to Fearless Wallet Extension',
   NO_ANSWER: 'No answer from your wallet received yet. Please make sure the wallet is open',
 };

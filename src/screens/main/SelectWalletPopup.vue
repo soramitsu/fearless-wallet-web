@@ -76,7 +76,7 @@ export default class SelectWalletPopup extends Vue {
   }
 
   isMobile(address: string) {
-    return BaseApi.getAddressType(address) === 'address';
+    return BaseApi.getWalletType(address) === 'mobile';
   }
 
   getBalance(address: string) {

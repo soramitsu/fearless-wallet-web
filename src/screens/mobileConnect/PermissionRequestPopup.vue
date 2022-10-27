@@ -43,6 +43,7 @@ import Alert from '@/components/Alert.vue';
 import { Components } from '@/router/routes';
 import { MOBILE_CONNECTOR_MESSAGES } from '@/consts/messages';
 import Popup from '@/components/Popup.vue';
+
 @Component({
   components: {
     Button,
@@ -53,7 +54,7 @@ import Popup from '@/components/Popup.vue';
     ConnectionStatus,
   },
 })
-export default class PermissionRequest extends Vue {
+export default class PermissionRequestPopup extends Vue {
   @Prop(Object) requestInfo!: RequestSentInfo | PermissionErrorPayload;
   @Prop({ type: Object || null, default: null }) requestResponse?: PermissionResponseOutput;
   @Prop(String) status!: 'reset_form' | 'success' | 'failed' | 'active_account_exists';

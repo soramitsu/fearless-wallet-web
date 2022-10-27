@@ -117,12 +117,12 @@ export default class Tabs {
 
   static extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
     const address = request.address;
-    const isAddress = !!keyring.getAddress(address, 'address');
+    const isMobile = !!keyring.getAddress(address, 'address')?.meta.isMobile;
     let meta;
     if (keyring.getAccount(address)) meta = Tabs.getSigningPair(address).meta;
-    else if (isAddress) meta = keyring.getAddress(address, 'address')?.meta;
+    else if (isMobile) meta = keyring.getAddress(address, 'address')?.meta;
 
-    if (isAddress) return State.sign(url, new BeaconSignerJSON(request), { address, ...meta });
+    if (isMobile) return State.sign(url, new BeaconSignerJSON(request), { address, ...meta });
 
     return State.sign(url, new RequestExtrinsicSign(request), { address, ...meta });
   }

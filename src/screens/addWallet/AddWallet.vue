@@ -140,7 +140,6 @@ import { Components } from '@/router/routes';
 import { WARNING_MESSAGES, WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
-import { beaconController } from '@/controllers/beaconController';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
 
@@ -419,12 +418,6 @@ export default class AddWallet extends Vue {
         this.isEthereumReplacedNetwork || this.isOnlyEthereumAccountFlow ? ethereumKeypairType : substrateKeypairType;
 
       const { address } = BaseApi.createFromUri(suri, type);
-      const substrate = BaseApi.encodeAddress(address);
-
-      if (BaseApi.getAddress(substrate)?.meta.isMobile) {
-        this.warningValueName = 'duplicateMobileWallet';
-        this.address = substrate;
-      }
 
       if (BaseApi.isDuplicateReplacedKeypair(address)) this.showMockPassword = true;
       else this.showMockPassword = false;
@@ -548,9 +541,12 @@ export default class AddWallet extends Vue {
     else if (this.step === 2) this.passwordEthereumJson = '';
 
     if (this.warningValueName === 'duplicateMobileWallet') {
-      if (this.address) BaseApi.deleteNativeWallet(this.address);
-      this.reset();
-      this.step -= 3;
+      if (this.typeImport === 'json') {
+        this.substrateJson = '';
+      } else {
+        if (this.address) BaseApi.deleteNativeWallet(this.address);
+        this.reset();
+      }
     }
 
     this.warningValueName = '';
@@ -618,6 +614,32 @@ export default class AddWallet extends Vue {
     else if (this.step === 4 && (this.isOnlyEthereumAccountFlow || this.isReplaceAccountFlow)) this.checkPassword();
   }
 
+  validateAddressForDubMobileWallet(address: string) {
+    const substrate = BaseApi.encodeAddress(address);
+
+    if (BaseApi.getAddress(substrate)?.meta.isMobile) {
+      this.warningValueName = 'duplicateMobileWallet';
+      this.address = substrate;
+    }
+  }
+
+  validateMobileDubs() {
+    if (this.typeImport === 'json') {
+      this.validateAddressForDubMobileWallet(this.substrateJSON.address);
+
+      return;
+    }
+
+    //raw seed & mnemonic validation
+    const {
+      substrate: { keypairType },
+    } = this.derivationPaths;
+
+    const { address } = BaseApi.createFromUri(this.suriSubstrate, keypairType);
+
+    this.validateAddressForDubMobileWallet(address);
+  }
+
   validateSuri() {
     const { ethereum, substrate } = this.derivationPaths;
     const isValidMnemonic = this.mnemonic ? BaseApi.isValidPhrase(this.mnemonic.trim()) : true;
@@ -642,6 +664,8 @@ export default class AddWallet extends Vue {
           this.selectedMnemonicElements.map(({ word }) => word)
         )
       : true;
+
+    if (isValidMnemonic || isValidSubstrateRawSeed || validatedSubstrateJson) this.validateMobileDubs();
 
     if (!isValidSequenceMnemonic) this.warningValueName = 'mnemonicSequence';
     else if (!isValidMnemonic) this.warningValueName = 'mnemonic';

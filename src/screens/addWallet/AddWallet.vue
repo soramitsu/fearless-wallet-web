@@ -665,7 +665,7 @@ export default class AddWallet extends Vue {
         )
       : true;
 
-    if (isValidMnemonic || isValidSubstrateRawSeed || validatedSubstrateJson) this.validateMobileDubs();
+    if (isValidMnemonic || isValidSubstrateRawSeed || validatedSubstrateJson.value) this.validateMobileDubs();
 
     if (!isValidSequenceMnemonic) this.warningValueName = 'mnemonicSequence';
     else if (!isValidMnemonic) this.warningValueName = 'mnemonic';

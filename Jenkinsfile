@@ -74,9 +74,9 @@ pipeline {
       }
       steps {
         echo "Start test build extension..."
-        sh "yarn build:extension"
+        sh "yarn build:extension zip"
         echo "Start test build electron..."
-        sh "yarn electron:build --publish=never"
+        sh "yarn electron:build --publish=never zip"
       }
     }
 

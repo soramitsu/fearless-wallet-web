@@ -540,10 +540,7 @@ export default class AddWallet extends Vue {
     if (this.step === 1) this.passwordSubstrateJson = '';
     else if (this.step === 2) this.passwordEthereumJson = '';
 
-    if (this.warningValueName === 'duplicateMobileWallet') {
-      if (this.typeImport === 'json') this.substrateJson = '';
-      else this.reset();
-    }
+    if (this.warningValueName === 'duplicateMobileWallet') this.reset();
 
     this.warningValueName = '';
     this.selectedMnemonicElements = [];

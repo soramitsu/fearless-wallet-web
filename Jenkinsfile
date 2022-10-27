@@ -76,7 +76,7 @@ pipeline {
         echo "Start test build extension..."
         sh "yarn build:extension"
         echo "Start production build (linux, mac)..."
-        sh "yarn electron:build --publish=never --linux --mac --directories test zip"
+        sh "yarn electron:build --publish=never --linux --mac zip --directories test"
         echo "Start production build (windows 32 and 64bit)..."
         sh "yarn electron:build --publish=never --win portable --x64 --ia32"
       }

@@ -31,7 +31,16 @@ pipeline {
   }
 
   stages {
-
+    stage('Secret scanner') {
+        steps {
+            script {
+                gitNotify('main-CI', 'PENDING', 'This commit is being built')
+                docker.withRegistry('https://' + registry, dockerBuildToolsUserId) {
+                    secretScanner(disableSecretScanner, secretScannerExclusion)
+                }
+            }
+        }
+    }
     stage ('Init') {
       steps {
         sh "yarn install"

@@ -242,6 +242,7 @@ export interface RequestAccountEdit {
 
 export interface RequestAccountForget {
   address: string;
+  type: 'native' | 'mobile';
 }
 
 export interface RequestAccountShow {

@@ -103,8 +103,8 @@
       acceptButtonText="Accept"
       :showAcceptButton="isMobileWalletExists"
       :showRejectButton="isMobileWalletExists"
-      :handlerClose="handlerCancelAddWallet"
-      :handlerAccept="handleReplaceMobileWallet"
+      :handlerClose="handlerCloseNotificationPopup"
+      :handlerAccept="handlerAcceptAddWallet"
     />
 
     <AddEthereumAccountPopup
@@ -250,20 +250,6 @@ export default class AddWallet extends Vue {
 
   get showNotificationPopup() {
     return this.warningValueName !== '';
-  }
-
-  async handlerCancelAddWallet() {
-    if (this.address) await BaseApi.deleteWallet(this.address);
-    this.reset();
-  }
-
-  async handlerAcceptAddWallet() {
-    const mobileWallet = BaseApi.getAddresses().find(({ meta }) => meta.isMobile);
-
-    await BaseApi.deleteWallet(mobileWallet!.address);
-    await beaconController.resetConnection();
-
-    this.step += 1;
   }
 
   get isMobileWalletExists() {
@@ -434,13 +420,10 @@ export default class AddWallet extends Vue {
 
       const { address } = BaseApi.createFromUri(suri, type);
       const substrate = BaseApi.encodeAddress(address);
-      console.log(address, BaseApi.getAddress(substrate)?.meta.isMobile, 'CHECK STEP4');
 
       if (BaseApi.getAddress(substrate)?.meta.isMobile) {
         this.warningValueName = 'duplicateMobileWallet';
         this.address = substrate;
-
-        return;
       }
 
       if (BaseApi.isDuplicateReplacedKeypair(address)) this.showMockPassword = true;
@@ -555,7 +538,7 @@ export default class AddWallet extends Vue {
     }
   }
 
-  handlerCloseNotificationPopup() {
+  async handlerCloseNotificationPopup() {
     if (this.warningValueName === 'jsonInvalid') {
       if (this.step === 1) this.substrateJson = '';
       else if (this.step === 2) this.ethereumJson = '';
@@ -564,8 +547,22 @@ export default class AddWallet extends Vue {
     if (this.step === 1) this.passwordSubstrateJson = '';
     else if (this.step === 2) this.passwordEthereumJson = '';
 
+    if (this.warningValueName === 'duplicateMobileWallet') {
+      if (this.address) BaseApi.deleteNativeWallet(this.address);
+      this.reset();
+      this.step -= 3;
+    }
+
     this.warningValueName = '';
     this.selectedMnemonicElements = [];
+  }
+
+  async handlerAcceptAddWallet() {
+    if (this.address) await BaseApi.deleteMobileWallet(this.address);
+
+    this.warningValueName = '';
+
+    this.proceed();
   }
 
   closeAddEthereumAccountPopup() {

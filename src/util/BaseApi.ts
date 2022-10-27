@@ -87,9 +87,8 @@ export default class BaseApi {
 
   public static getWalletType(address: string): WalletTypes {
     const substrateAddress = BaseApi.encodeAddress(address);
-
-    if (BaseApi.getAddress(substrateAddress)?.meta.isMobile) return 'mobile';
     if (BaseApi.getAccount(substrateAddress)) return 'native';
+    if (BaseApi.getAddress(substrateAddress)?.meta.isMobile) return 'mobile';
 
     return null;
   }
@@ -400,7 +399,7 @@ export default class BaseApi {
     keyring.forgetAccount(address);
   }
 
-  private static async deleteNativeWallet(address: string) {
+  static async deleteNativeWallet(address: string) {
     //DELETE WALLET IN FRONTEND KEYRING ONLY
     const { meta } = BaseApi.getPair(address);
     const { ethereumAddress } = getMetaTyped(meta);
@@ -418,21 +417,16 @@ export default class BaseApi {
         return Object.keys(replacedSettings).length === 1;
       })
       .forEach(({ address }) => BaseApi.deleteAccount(address));
+
+    await forgetAccount(address, 'native');
+
+    return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
   }
 
-  private static async deleteMobileWallet(address: string) {
+  static async deleteMobileWallet(address: string) {
     BaseApi.forgetAddress(address);
-
+    await forgetAccount(address, 'mobile');
     await beaconController.resetConnection();
-  }
-
-  public static async deleteWallet(address: string): Promise<number> {
-    const substrateAddress = BaseApi.encodeAddress(address);
-
-    if (BaseApi.getWalletType(address) === 'native') BaseApi.deleteNativeWallet(address);
-    else if (BaseApi.getWalletType(address) === 'mobile') BaseApi.deleteMobileWallet(address);
-
-    await forgetAccount(substrateAddress); //delete from background script
 
     return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
   }

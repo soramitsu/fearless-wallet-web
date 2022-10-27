@@ -152,7 +152,7 @@ export default class Extension {
     };
   }
 
-  static async accountsForget({ address }: RequestAccountForget): Promise<boolean> {
+  static async accountsForget({ address, type }: RequestAccountForget): Promise<boolean> {
     const authorizedAccountsDiff: AuthorizedAccountsDiff = [];
 
     // cycle through authUrls and prepare the array of diff
@@ -176,7 +176,7 @@ export default class Extension {
 
     State.updateDefaultAuthAccounts(newDefaultAuthAccounts);
 
-    keyring.forgetAccount(address);
+    type === 'native' ? keyring.forgetAccount(address) : keyring.forgetAddress(address);
 
     return true;
   }

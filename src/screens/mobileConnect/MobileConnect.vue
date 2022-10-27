@@ -9,7 +9,7 @@
       <Loader />
     </div>
 
-    <PermissionRequest
+    <PermissionRequestPopup
       v-if="connectionStatus"
       :status="connectionStatus"
       :requestResponse="requestResponse"
@@ -44,7 +44,7 @@ import Button from '@/components/Button.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import QR from '@/components/QR.vue';
 import Loader from '@/components/Loader.vue';
-import PermissionRequest from '@/screens/mobileConnect/PermissionRequest.vue';
+import PermissionRequestPopup from '@/screens/mobileConnect/PermissionRequestPopup.vue';
 import InfoList from '@/layouts/InfoList.vue';
 import InfoItem from '@/screens/signing/InfoItem.vue';
 import Alert from '@/components/Alert.vue';
@@ -60,7 +60,7 @@ import { MOONBEAM_GENESISHASH } from '@/consts/networks';
     Alert,
     Button,
     AboveForm,
-    PermissionRequest,
+    PermissionRequestPopup,
   },
 })
 export default class MobileConnect extends Vue {
@@ -150,7 +150,6 @@ export default class MobileConnect extends Vue {
   }
 
   async onPermissionResponse({ output, account }: PermissionSuccess) {
-    console.log('RESPONSE', account, BaseApi.getWalletType(account.address));
     this.isPossibleConnectionProblem = false;
     this.isLoading = false;
 

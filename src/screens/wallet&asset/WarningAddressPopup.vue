@@ -8,7 +8,7 @@
     :showRejectButton="true"
     :headers="headers"
     :handlerClose="handlerClose"
-    :handlerAcceptButton="handlerAcceptButton"
+    :handlerAccept="handlerAcceptButton"
   />
 </template>
 

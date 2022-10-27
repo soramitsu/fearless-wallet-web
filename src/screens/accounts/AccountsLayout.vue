@@ -73,7 +73,7 @@
       :showWarningIcon="showWarningIcon"
       :headers="headers"
       :handlerClose="closeNotificationPopup"
-      :handlerAcceptButton="handlerAcceptButton"
+      :handlerAccept="handlerAcceptButton"
     />
 
     <ReplacePopup v-if="showReplacePopup" :selectedNetwork="selectedNetwork" :handlerClose="closeReplacePopup" />

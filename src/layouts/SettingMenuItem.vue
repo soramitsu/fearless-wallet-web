@@ -1,12 +1,12 @@
 <template>
   <div class="row" @click="$emit('onOpen')">
     <div class="description">
-      <img :src="getIconPath" class="icon icon--width" />
+      <SvgIcon :icon="icon" className="icon icon--width" />
 
       <div class="label">{{ title }}</div>
     </div>
 
-    <img src="@/assets/chevron-right.svg" class="chevron-right" />
+    <SvgIcon icon="chevron-right" className="chevron-right" />
   </div>
 </template>
 

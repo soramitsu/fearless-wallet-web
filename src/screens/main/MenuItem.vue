@@ -1,6 +1,6 @@
 <template>
   <div :class="menuItemClasses">
-    <img :src="img" class="menu-icon" />
+    <SvgIcon :icon="img" className="menu-icon" />
 
     <div class="name">
       {{ name }}
@@ -24,7 +24,7 @@ export default class MenuItem extends Vue {
   }
 
   get img() {
-    return require(`@/assets/${this.name.toLowerCase()}.svg`);
+    return this.name.toLowerCase();
   }
 }
 </script>

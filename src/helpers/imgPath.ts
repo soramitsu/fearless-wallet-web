@@ -6,37 +6,37 @@ const ORML_PATH = 'orml';
 function getOrmlFileName(value: string) {
   switch (value.toLowerCase()) {
     case 'ausd':
-      return 'aUSD.svg';
+      return 'aUSD';
     case 'lcdot':
-      return 'lcDOT.svg';
+      return 'lcDOT';
     case 'tdot':
-      return 'tDOT.svg';
+      return 'tDOT';
     case 'tai':
-      return 'TAI.svg';
+      return 'TAI';
     case 'ldot':
-      return 'lDOT.svg';
+      return 'lDOT';
     case 'vsksm':
-      return 'vsKSM.svg';
+      return 'vsKSM';
     case 'taiksm':
-      return 'taiKSM.svg';
+      return 'taiKSM';
     case 'aris':
-      return 'ARIS.svg';
+      return 'ARIS';
     case 'lksm':
-      return 'LKSM.svg';
+      return 'LKSM';
     case 'kusd':
-      return 'KUSD.svg';
+      return 'KUSD';
     case 'rmrk':
-      return 'RMRK.svg';
+      return 'RMRK';
     case 'kbtc':
-      return 'KBTC.svg';
+      return 'KBTC';
     case 'usdt':
-      return 'USDT.svg';
+      return 'USDT';
     case 'zlk':
-      return 'ZLK.svg';
+      return 'ZLK';
     case 'eqd':
-      return 'EQD.svg';
+      return 'EQD';
     case 'vksm':
-      return 'vKSM.svg';
+      return 'vKSM';
     default:
       return '';
   }
@@ -45,284 +45,284 @@ function getOrmlFileName(value: string) {
 function getImgPathByNetworkOrAssetName(value = '', relayChain?: RelayChainName) {
   switch (value.toLowerCase()) {
     case 'statemine':
-      return 'statemine.svg';
+      return 'statemine';
 
     case 'statemint':
-      return 'statemine.svg';
+      return 'statemine';
 
     case 'kico':
-      return 'kico.svg';
+      return 'kico';
 
     case 'encointer on kusama':
-      return 'encointer.svg';
+      return 'encointer';
 
     case 'westend':
     case 'wnd':
-      return 'westend.svg';
+      return 'westend';
 
     case 'acala':
     case 'aca':
-      return 'acala.svg';
+      return 'acala';
 
     case 'karura':
     case 'kar':
-      return 'karura.svg';
+      return 'karura';
 
     case 'moonriver':
     case 'movr':
-      return 'moonriver.svg';
+      return 'moonriver';
 
     case 'shiden':
     case 'sdn':
-      return 'shiden.svg';
+      return 'shiden';
 
     case 'bifrost':
     case 'bifrost polkadot':
     case 'bnc':
-      return 'bifrost.svg';
+      return 'bifrost';
 
     case 'kilt spiritnet':
     case 'kilt':
-      return 'kilt_spiritnet.svg';
+      return 'kilt_spiritnet';
 
     case 'calamari':
     case 'kma':
-      return 'calamari.svg';
+      return 'calamari';
 
     case 'quartz':
     case 'qtz':
-      return 'quartz.svg';
+      return 'quartz';
 
     case 'parallel heiko':
     case 'hko':
-      return 'parallelfinance.svg';
+      return 'parallelfinance';
 
     case 'picasso':
     case 'pica':
-      return 'picasso.svg';
+      return 'picasso';
 
     case 'altair':
     case 'air':
-      return 'altair.svg';
+      return 'altair';
 
     case 'bit.country pioneer':
     case 'neer':
-      return 'bitcountry.svg';
+      return 'bitcountry';
 
     case 'clover':
     case 'clv':
-      return 'clover.svg';
+      return 'clover';
 
     case 'astar':
     case 'astr':
-      return 'astar.svg';
+      return 'astar';
 
     case 'parallel':
     case 'para':
-      return 'parallelfinance.svg';
+      return 'parallelfinance';
 
     case 'basilisk':
     case 'bsx':
-      return 'basilisk.svg';
+      return 'basilisk';
 
     case 'moonbeam':
     case 'glmr':
-      return 'moonbeam.svg';
+      return 'moonbeam';
 
     case 'moonbase alpha':
     case 'dev':
-      return 'moonbase_alpha.svg';
+      return 'moonbase_alpha';
 
     case 'genshiro':
     case 'gens':
-      return 'genshiro.svg';
+      return 'genshiro';
 
     case 'robonomics':
     case 'xrt':
-      return 'robonomics.svg';
+      return 'robonomics';
 
     case 'kintsugi':
     case 'kint':
-      return 'kintsugi.svg';
+      return 'kintsugi';
 
     case 'subsocial':
     case 'sub':
-      return 'subsocial.svg';
+      return 'subsocial';
 
     case 'zeitgeist':
     case 'ztg':
-      return 'zeitgeist.svg';
+      return 'zeitgeist';
 
     case 'integritee shell':
     case 'teer':
-      return 'integritee.svg';
+      return 'integritee';
 
     case 'hydradx':
     case 'hdx':
-      return 'hydradx.svg';
+      return 'hydradx';
 
     case 'centrifuge':
     case 'cfg':
-      return 'centrifuge.svg';
+      return 'centrifuge';
 
     case 'efinity':
     case 'efi':
-      return 'efinity.svg';
+      return 'efinity';
 
     case 'polkadex main network':
     case 'pdex':
-      return 'polkadex.svg';
+      return 'polkadex';
 
     case 'turing network':
     case 'tur':
-      return 'turing.svg';
+      return 'turing';
 
     case 'crust shadow parachain':
     case 'csm':
-      return 'crustshadow.svg';
+      return 'crustshadow';
 
     case 'interlay':
     case 'intr':
-      return 'interlay.svg';
+      return 'interlay';
 
     case 'dorafactory network':
     case 'dora':
-      return 'dora_factory.svg';
+      return 'dora_factory';
 
     case 'unique':
     case 'unq':
-      return 'unique.svg';
+      return 'unique';
 
     case 'origintrail parachain':
     case 'otp':
-      return 'origintrail.svg';
+      return 'origintrail';
 
     case 'nodle parachain':
     case 'nodl':
-      return 'nodle.svg';
+      return 'nodle';
 
     case 'sora kusama':
     case 'xor':
-      return 'sora.svg';
+      return 'sora';
 
     case 'composable finance':
     case 'layr':
-      return 'composable.svg';
+      return 'composable';
 
     case 'crab parachain':
     case 'crab':
-      return 'crab.svg';
+      return 'crab';
 
     case 'kabocha':
     case 'kab':
-      return 'kabocha.svg';
+      return 'kabocha';
 
     case 'pichiu network':
     case 'pchu':
-      return 'pichiu.svg';
+      return 'pichiu';
 
     case 'equilibrium':
     case 'eq':
-      return 'equilibrium.svg';
+      return 'equilibrium';
 
     case 'datahighway tanganika':
     case 'dhx':
-      return 'datahighway.svg';
+      return 'datahighway';
 
     case 'gm parachain':
     case 'fren':
-      return 'gm_parachain.svg';
+      return 'gm_parachain';
 
     case 'bajun kusama':
     case 'baju':
-      return 'bajun.svg';
+      return 'bajun';
 
     case 'imbue kusama':
     case 'imbu':
-      return 'imbue.svg';
+      return 'imbue';
 
     case 'invarch tinker network':
     case 'tnkr':
-      return 'tinker.svg';
+      return 'tinker';
 
     case 'mangata kusama mainnet':
     case 'mgx':
-      return 'mangata.svg';
+      return 'mangata';
 
     case 'amplitude':
     case 'ampe':
-      return 'amplitude.svg';
+      return 'amplitude';
 
     case 'darwinia parachain':
     case 'ring':
-      return 'darwinia.svg';
+      return 'darwinia';
 
     case 'kylin network':
     case 'kyl':
-      return 'kylin network.svg';
+      return 'kylin network';
 
     //////////////////////
 
     case 'polkadot':
     case 'polkadot (test)':
     case 'dot':
-      return 'polkadot.svg';
+      return 'polkadot';
 
     case 'kusama':
     case 'kusama (test)':
     case 'ksm':
-      return 'kusama.svg';
+      return 'kusama';
 
     case 'unit':
       switch (relayChain?.toLowerCase()) {
         case 'polkadot (test)':
-          return 'polkadot.svg';
+          return 'polkadot';
         case 'kusama (test)':
-          return 'kusama.svg';
+          return 'kusama';
         default:
-          return '_default.svg';
+          return '_default';
       }
 
     //////////////////////
 
     case 'litentry':
-      return 'litentry.svg';
+      return 'litentry';
 
     case 'litmus':
-      return 'litmus.svg';
+      return 'litmus';
 
     case 'lit':
       switch (relayChain?.toLowerCase()) {
         case 'polkadot':
-          return 'litentry.svg';
+          return 'litentry';
         case 'kusama':
-          return 'litmus.svg';
+          return 'litmus';
         default:
-          return '_default.svg';
+          return '_default';
       }
 
     //////////////////////
 
     case 'phala':
-      return 'phala.svg';
+      return 'phala';
 
     case 'khala':
-      return 'khala.svg';
+      return 'khala';
 
     case 'pha':
       switch (relayChain?.toLowerCase()) {
         case 'polkadot':
-          return 'phala.svg';
+          return 'phala';
         case 'kusama':
-          return 'khala.svg';
+          return 'khala';
         default:
-          return '_default.svg';
+          return '_default';
       }
 
     //////////////////////
 
     default:
-      return '_default.svg';
+      return '_default';
   }
 }
 
@@ -334,4 +334,12 @@ function getImgPath(value: string, relayChain?: RelayChainName) {
   return `${NETWORKS_PATH}/${getImgPathByNetworkOrAssetName(value, relayChain)}`;
 }
 
-export { getImgPath };
+function getIconName(value: string, relayChain?: RelayChainName) {
+  const ormlFileName = getOrmlFileName(value);
+
+  if (ormlFileName !== '') return ormlFileName;
+
+  return getImgPathByNetworkOrAssetName(value, relayChain).toLocaleLowerCase();
+}
+
+export { getImgPath, getIconName };

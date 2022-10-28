@@ -2,7 +2,8 @@
   <div class="logo">
     <div :class="circleClasses" :style="styleCircle">
       <div :class="circleBlurClasses">
-        <img src="@/assets/fw-logo.svg" class="img" :style="styleIconLogo" />
+        <SvgIcon icon="fw-logo" className="img" :style="styleIconLogo" />
+        <!-- <img src="@/assets/fw-logo.svg" class="img" :style="styleIconLogo" /> -->
       </div>
     </div>
 

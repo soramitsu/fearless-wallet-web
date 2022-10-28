@@ -1,14 +1,14 @@
+import path from 'path';
 import { keyring } from '@polkadot/ui-keyring';
 import Vue from 'vue';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { Plugin } from 'vue-fragment';
 import router from '@/router';
 import store from '@/store';
-
 import App from '@/App.vue';
-
 import '@/styles';
 import '@/plugins';
+import '@/assets';
 
 Vue.use(Plugin);
 

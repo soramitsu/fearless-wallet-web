@@ -62,6 +62,7 @@ export default class Popup extends Vue {
   @Prop({ default: true }) showBlur!: boolean;
   @Prop({ default: true }) showAnimation!: boolean;
   @Prop({ default: true }) showBackground!: boolean;
+  @Prop({ default: true }) closeBuBackground!: boolean;
   @Prop({ default: false }) showSearch!: boolean;
   @Prop({ default: false }) showBorder!: boolean;
   @Prop({ default: 'medium' }) sizeWidth!: Size;
@@ -148,7 +149,8 @@ export default class Popup extends Vue {
   }
 
   backgroundClick(event: Event) {
-    if ((event.target as HTMLDivElement)?.classList.contains('popup-background')) this.close();
+    if (this.closeBuBackground && (event.target as HTMLDivElement)?.classList.contains('popup-background'))
+      this.close();
   }
 
   close() {

@@ -12,6 +12,7 @@
     @update:selectedAssetId="updateSelectedAssetId"
     @update:selectedNetwork="updateOriginalNetwork"
     @update:amount="updateAmount"
+    @update:value="updateValue"
     @update:partialFee="updateOriginNetFee"
     @update:destinationNetwork="updateDestinationNetwork"
   >
@@ -162,6 +163,10 @@ export default class TeleportForm extends Vue {
 
   updateAmount(value: string) {
     this.amount = value;
+  }
+
+  updateValue(value: string) {
+    this.value = value;
   }
 
   updateOriginNetFee(value: string) {

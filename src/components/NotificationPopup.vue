@@ -5,6 +5,7 @@
     :handlerClose="handlerClose"
     :sizeWidth="sizeWidth"
     :showBorder="true"
+    :closeBuBackground="closeBuBackground"
   >
     <div class="notification-popup-content">
       <img v-if="showWarningIcon" src="@/assets/info-triangle.svg" class="img" />
@@ -51,6 +52,7 @@ export default class NotificationPopup extends Vue {
   @Prop({ default: false }) showRejectButton!: boolean;
   @Prop({ default: true }) showWarningIcon!: boolean;
   @Prop({ default: true }) showHeader!: boolean;
+  @Prop({ default: true }) closeBuBackground!: boolean;
   @Prop({ default: 'medium' }) sizeWidth!: Size;
   @Prop({ default: 'Cancel' }) rejectButtonText!: string;
   @Prop(String) acceptButtonText!: string;

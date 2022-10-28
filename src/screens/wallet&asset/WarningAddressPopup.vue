@@ -6,6 +6,7 @@
     :showHeader="false"
     :showAcceptButton="true"
     :showRejectButton="true"
+    :closeBuBackground="false"
     :headers="headers"
     :handlerClose="handlerClose"
     :handlerAccept="handlerAccept"

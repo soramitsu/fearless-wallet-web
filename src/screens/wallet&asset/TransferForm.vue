@@ -209,9 +209,9 @@ export default class SendForm extends Vue {
   get top() {
     if (this.showSelectedAssetPopup) return 227;
 
-    if (this.showSelectNetworkPopup) return 311;
+    if (this.showSelectNetworkPopup) return 305;
 
-    return 37;
+    return 24;
   }
 
   get left() {

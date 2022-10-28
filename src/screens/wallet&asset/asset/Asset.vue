@@ -87,6 +87,8 @@
       :historyNode="historyNode"
       :assetId="selectedAssetId"
     />
+
+    <Tooltip text="Network management" target=".select-network-button" placement="bottom" />
   </div>
 </template>
 
@@ -111,12 +113,14 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/helpers/numbers';
+import Tooltip from '@/components/Tooltip.vue';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
 
 @Component({
   components: {
     History,
+    Tooltip,
     SendForm,
     BuyPopup,
     ReceiveForm,

@@ -1,19 +1,34 @@
 <template>
-  <div class="circle-button" :class="backgroundClass" @click="$emit('click', $event)">
-    <img :src="img" :class="imageClasses" />
+  <div :class="iconName">
+    <div class="circle-button" :class="backgroundClass" @click="$emit('click', $event)">
+      <img :src="img" :class="imageClasses" />
+    </div>
+
+    <Tooltip v-show="showTooltip" :text="tooltipText" :target="target" :placement="placement" />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import type { Placement } from '@/interfaces';
+import Tooltip from '@/components/Tooltip.vue';
 
 type BackgroundType = 'none' | 'black' | 'light-black';
 
-@Component
+@Component({
+  components: { Tooltip },
+})
 export default class CircleButton extends Vue {
   @Prop(String) iconName!: string;
   @Prop(String) backgroundColor!: BackgroundType;
   @Prop(String) backgroundColorHover!: BackgroundType;
+  @Prop({ default: '' }) tooltipText!: string;
+  @Prop(String) target!: string;
+  @Prop({ default: 'top' }) placement!: Placement;
+
+  get showTooltip() {
+    return this.tooltipText !== '';
+  }
 
   get backgroundClass() {
     const _class = `background-${this.backgroundColor}`;

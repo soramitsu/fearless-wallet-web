@@ -56,18 +56,29 @@
         <CircleButton
           iconName="send-white"
           backgroundColor="black"
-          class="button"
+          class="button send"
+          tooltipText="Send"
+          target=".send"
           @click="toggleVisibleActivityForm('showSendForm', true, currency)"
         />
 
         <CircleButton
           iconName="receive-white"
           backgroundColor="black"
-          class="button"
+          class="button receive"
+          tooltipText="Receive"
+          target=".receive"
           @click="toggleVisibleActivityForm('showReceiveForm', true, currency)"
         />
 
-        <CircleButton iconName="chevron-right" backgroundColor="none" backgroundColorHover="black" />
+        <CircleButton
+          iconName="chevron-right"
+          backgroundColor="none"
+          backgroundColorHover="black"
+          class="details"
+          tooltipText="Asset details"
+          target=".details"
+        />
       </template>
 
       <Switcher v-else v-model="currencyVisible" />

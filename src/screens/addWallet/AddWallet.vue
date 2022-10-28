@@ -12,6 +12,9 @@
           v-if="showFullScreenIcon"
           iconName="expand"
           backgroundColor="light-black"
+          tooltipText="Full screen mode"
+          target=".expand"
+          placement="left"
           @click="openFullScreen"
         />
       </div>

@@ -12,6 +12,7 @@
     @update:selectedAssetId="updateSelectedAssetId"
     @update:selectedNetwork="updateSelectedNetwork"
     @update:amount="updateAmount"
+    @update:value="updateValue"
     @update:partialFee="updatePartialFee"
     @update:recipient="updateRecipient"
   >
@@ -143,6 +144,10 @@ export default class SendForm extends Vue {
 
   updateAmount(value: string) {
     this.amount = value;
+  }
+
+  updateValue(value: string) {
+    this.value = value;
   }
 
   updatePartialFee(value: string) {

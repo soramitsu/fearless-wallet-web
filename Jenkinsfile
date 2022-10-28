@@ -124,49 +124,50 @@ pipeline {
             }
         }
     }
-        post {
-            success {
-                script {
-                    extensions = [ 'zip', 'AppImage' , 'exe' ]
-                    dist_folders = [ ];
-                    if (params.should_run_dev_build  || env.GIT_BRANCH == 'develop') {
-                        dist_folders.push('development')
-                    }
-                    if (params.should_run_test_build || env.GIT_BRANCH == 'test') {
-                        dist_folders.push('test')
-                    }
-                    if (params.should_run_prod_build || env.GIT_BRANCH == 'master') {
-                        dist_folders.push('production')
-                    }
-                    // upload to nexus
-                    if (env.GIT_BRANCH in ['master', 'develop'] || params.upload_to_nexus || env.TAG_NAME ) {
-                        artifactServers=['nexus.iroha.tech']
-                        withCredentials([usernamePassword(credentialsId: 'bot-fearless-rw', passwordVariable: 'NEXUS_PASS', usernameVariable: 'NEXUS_USER')]) {
-                            dist_folders.each { folder ->
-                            uploadPath = env.TAG_NAME ? "fearless/desktop/tags/${env.TAG_NAME}/${folder}" : "fearless/desktop/${env.GIT_BRANCH}/${new Date().format("yyyy-MM-dd")}-${env.GIT_COMMIT.substring(0,6)}/${folder}"
-                            artifactServers.each { server ->
-                                url = "https://${server}/repository/artifacts/${uploadPath}/dist_electron/"
-                                sh(script: "find ./dist_electron/ -type f | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
-                                echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
-                                url = "https://${server}/repository/artifacts/${uploadPath}/dist_extension/"
-                                sh(script: "find ./dist/extension/ -type f | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
-                                echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
-                            }
-                            }
+  }
+    post {
+        success {
+            script {
+                extensions = [ 'zip', 'AppImage' , 'exe' ]
+                dist_folders = [ ];
+                if (params.should_run_dev_build  || env.GIT_BRANCH == 'develop') {
+                    dist_folders.push('development')
+                }
+                if (params.should_run_test_build || env.GIT_BRANCH == 'test') {
+                    dist_folders.push('test')
+                }
+                if (params.should_run_prod_build || env.GIT_BRANCH == 'master') {
+                    dist_folders.push('production')
+                }
+                // upload to nexus
+                if (env.GIT_BRANCH in ['master', 'develop'] || params.upload_to_nexus || env.TAG_NAME ) {
+                    artifactServers=['nexus.iroha.tech']
+                    withCredentials([usernamePassword(credentialsId: 'bot-fearless-rw', passwordVariable: 'NEXUS_PASS', usernameVariable: 'NEXUS_USER')]) {
+                        dist_folders.each { folder ->
+                        uploadPath = env.TAG_NAME ? "fearless/desktop/tags/${env.TAG_NAME}/${folder}" : "fearless/desktop/${env.GIT_BRANCH}/${new Date().format("yyyy-MM-dd")}-${env.GIT_COMMIT.substring(0,6)}/${folder}"
+                        artifactServers.each { server ->
+                            url = "https://${server}/repository/artifacts/${uploadPath}/dist_electron/"
+                            sh(script: "find ./dist_electron/ -type f | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
+                            echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
+                            url = "https://${server}/repository/artifacts/${uploadPath}/dist_extension/"
+                            sh(script: "find ./dist/extension/ -type f | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
+                            echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
+                        }
                         }
                     }
-                    if (params.upload_to_jenkins) {
-                        extensions.each {
-                            // upload to jenkins
-                            archiveArtifacts artifacts: "dist_electron/*.${it}", allowEmptyArchive: true
-                        }   
-                    }
+                }
+                if (params.upload_to_jenkins) {
+                    extensions.each {
+                        // upload to jenkins
+                        archiveArtifacts artifacts: "dist_electron/*.${it}", allowEmptyArchive: true
+                    }   
                 }
             }
-            cleanup {
-                cleanWs()
-            }
         }
-    }    
+        cleanup {
+            cleanWs()
+        }
+    }
+        
   
 }

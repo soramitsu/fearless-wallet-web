@@ -1,5 +1,5 @@
 <template>
-  <div :class="iconName">
+  <div>
     <div class="circle-button" :class="backgroundClass" @click="$emit('click', $event)">
       <img :src="img" :class="imageClasses" />
     </div>
@@ -35,6 +35,7 @@ export default class CircleButton extends Vue {
 
     return [
       _class,
+      this.iconName,
       {
         [`${_class}-hover-${this.backgroundColorHover}`]: this.backgroundColor === 'none',
       },

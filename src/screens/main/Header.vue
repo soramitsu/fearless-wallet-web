@@ -17,7 +17,7 @@
           <div class="name">{{ name }}</div>
 
           <Rotate :isActive="syncedShowSelectWalletPopup">
-            <s-icon name="chevron-bottom-16" />
+            <SIcon name="chevron-bottom-16" />
           </Rotate>
         </div>
 

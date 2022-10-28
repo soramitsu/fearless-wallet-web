@@ -38,7 +38,7 @@
         backgroundColor="none"
         tooltipText="Asset management"
         placement="left"
-        :target="`.${iconName}`"
+        :target="target"
         :iconName="iconName"
         @click="toggleAssetsManagementVisible"
       />
@@ -94,6 +94,10 @@ export default class ContentSettings extends Vue {
   @PropSync('showAssetsManagementForm', { type: Boolean }) syncedShowAssetsManagementForm!: boolean;
   @Prop(Array) currencies!: Currency[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get target() {
+    return `.${this.iconName}`;
+  }
 
   get allCurrenciesHidden() {
     const visibleCurrencies = this.currencies.filter((currency) =>

@@ -7,6 +7,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import tippy from 'tippy.js';
 import 'tippy.js/dist/tippy.css';
 import type { Placement } from '@/interfaces';
+import type { Props } from 'tippy.js';
 
 @Component
 export default class Tooltip extends Vue {
@@ -18,7 +19,7 @@ export default class Tooltip extends Vue {
   mounted() {
     if (!this.target) return;
 
-    const options: Record<string, any> = {
+    const options: Partial<Props> = {
       content: this.text,
       placement: this.placement,
       arrow: false,

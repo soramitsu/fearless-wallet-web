@@ -1,8 +1,6 @@
 <template>
   <Popup
     :isIcon="isPendingWithResetForm"
-    :height="getHeight"
-    :maxHeight="maxHeight"
     :sizeWidth="320"
     :headerType="status"
     :headerText="header"
@@ -11,19 +9,10 @@
   >
     <div v-if="isPendingWithResetForm" class="reset__form">
       <span class="message">{{ noAnswerMessage }}</span>
-      <Corners size="big">
-        <div class="corners__container">
-          <span>Did you make a mistake?</span>
-          <Button size="small" text="Reset Connection" @click="onResetConnection" />
-        </div>
-      </Corners>
 
-      <Corners size="big">
-        <div class="corners__container">
-          <span>Wallet not receiving request?</span>
-          <Button size="small" width="180" text="Cancel Request" @click="onCancelRequest" />
-        </div>
-      </Corners>
+      <Button size="big" type="primary" :border="false" width="180" text="Cancel Request" @click="onCancelRequest" />
+
+      <Button size="big" type="secondary" :border="false" text="Reset Connection" @click="onResetConnection" />
     </div>
 
     <ConnectionStatus v-else-if="isRequestFinished" :status="status" @close="close" />
@@ -75,18 +64,6 @@ export default class PermissionRequestPopup extends Vue {
 
   get isRequestFinished() {
     return this.isSuccess || this.isFailed || this.isActiveAccountExists;
-  }
-
-  get getHeight() {
-    if (this.isRequestFinished) return 300;
-
-    return 400;
-  }
-
-  get maxHeight() {
-    if (this.isRequestFinished) return 350;
-
-    return 480;
   }
 
   get isPendingWithResetForm() {

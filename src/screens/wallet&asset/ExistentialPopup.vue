@@ -7,7 +7,7 @@
     :showAcceptButton="true"
     :showRejectButton="true"
     :handlerClose="handlerClose"
-    :handlerAccept="handlerAcceptButton"
+    :handlerAccept="handlerAccept"
   />
 </template>
 
@@ -26,6 +26,6 @@ export default class ExistentialPopup extends Vue {
   };
 
   @Prop(Function) handlerClose!: VoidFunction;
-  @Prop(Function) handlerAcceptButton!: VoidFunction;
+  @Prop(Function) handlerAccept!: VoidFunction;
 }
 </script>

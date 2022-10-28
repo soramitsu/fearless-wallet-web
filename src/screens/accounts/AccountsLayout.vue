@@ -73,7 +73,7 @@
       :showWarningIcon="showWarningIcon"
       :headers="headers"
       :handlerClose="closeNotificationPopup"
-      :handlerAccept="handlerAcceptButton"
+      :handlerAccept="handlerAccept"
     />
 
     <ReplacePopup v-if="showReplacePopup" :selectedNetwork="selectedNetwork" :handlerClose="closeReplacePopup" />
@@ -212,7 +212,7 @@ export default class AccountsLayout extends Vue {
     this.password = password;
   }
 
-  handlerAcceptButton() {
+  handlerAccept() {
     if (this.notificationType === 'delete') this.deleteNode();
     else if (this.notificationType === 'export') this.openExportAccountScreen();
   }

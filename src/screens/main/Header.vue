@@ -1,48 +1,60 @@
 <template>
-  <header class="header">
-    <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
-      <div class="logo-container">
+  <div>
+    <header class="header">
+      <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
+        <div class="logo-container">
+          <CircleButton
+            v-if="showBackIcon"
+            backgroundColor="light-black"
+            iconName="chevron-left"
+            @click.stop="backToWallet"
+          />
+
+          <Logo v-else size="small" />
+        </div>
+
+        <div class="wallet-name">
+          <div class="name">{{ name }}</div>
+
+          <Rotate :isActive="syncedShowSelectWalletPopup">
+            <SIcon name="chevron-bottom-16" />
+          </Rotate>
+        </div>
+
+        <Tooltip text="Wallet management" target=".header-part-left" placement="right" />
+      </div>
+      <div class="header-part">
         <CircleButton
-          v-if="showBackIcon"
+          v-if="showFullScreenIcon"
+          iconName="expand"
           backgroundColor="light-black"
-          iconName="chevron-left"
-          @click.stop="backToWallet"
+          class="button-margin"
+          tooltipText="Full screen mode"
+          target=".expand"
+          placement="bottom"
+          @click="openFullScreen"
         />
 
-        <Logo v-else size="small" />
+        <div class="background-ellipse button-margin">
+          <div :class="statusConnectedClasses"></div>
+          {{ statusConnectedText }}
+        </div>
+
+        <Tooltip text="Connection status" target=".background-ellipse" placement="top" />
+
+        <CircleButton
+          :ref="settingsNameRef"
+          iconName="settings"
+          class="button-margin"
+          backgroundColor="none"
+          placement="left"
+          target=".settings"
+          tooltipText="Settings and account management"
+          @click="toggleSettingsVisible"
+        />
       </div>
-
-      <div class="wallet-name">
-        <div class="name">{{ name }}</div>
-
-        <Rotate :isActive="syncedShowSelectWalletPopup">
-          <s-icon name="chevron-bottom-16" />
-        </Rotate>
-      </div>
-    </div>
-    <div class="header-part">
-      <CircleButton
-        v-if="showFullScreenIcon"
-        iconName="expand"
-        backgroundColor="light-black"
-        class="button-margin"
-        @click="openFullScreen"
-      />
-
-      <div class="background-ellipse button-margin">
-        <div :class="statusConnectedClasses"></div>
-        {{ statusConnectedText }}
-      </div>
-
-      <CircleButton
-        :ref="settingsNameRef"
-        iconName="settings"
-        class="button-margin"
-        backgroundColor="none"
-        @click="toggleSettingsVisible"
-      />
-    </div>
-  </header>
+    </header>
+  </div>
 </template>
 
 <script lang="ts">
@@ -55,11 +67,13 @@ import Rotate from '@/components/Rotate.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
+import Tooltip from '@/components/Tooltip.vue';
 
 @Component({
   components: {
     Logo,
     Rotate,
+    Tooltip,
     CircleButton,
   },
 })

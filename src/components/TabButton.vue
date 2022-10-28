@@ -1,21 +1,32 @@
 <template>
-  <Corners>
-    <div :class="tabButtonClasses" @click="$emit('click')" :title="title">
-      {{ text }}
-    </div>
-  </Corners>
+  <div>
+    <Corners>
+      <div :class="tabButtonClasses" @click="$emit('click')" :title="title">
+        {{ text }}
+      </div>
+    </Corners>
+
+    <Tooltip v-if="tooltipText" :text="tooltipText" :target="target" :placement="placementTooltip" />
+  </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import Corners from '@/components/Corners.vue';
+import Tooltip from '@/components/Tooltip.vue';
 
 @Component({
-  components: { Corners },
+  components: {
+    Tooltip,
+    Corners,
+  },
 })
 export default class TabButton extends Vue {
   @Prop({ default: '' }) text!: string;
   @Prop({ default: '' }) title!: string;
+  @Prop({ default: 'top' }) placementTooltip!: string;
+  @Prop(String) tooltipText!: string;
+  @Prop(String) target!: string;
   @Prop({ default: false }) isActive!: boolean;
 
   get tabButtonClasses() {

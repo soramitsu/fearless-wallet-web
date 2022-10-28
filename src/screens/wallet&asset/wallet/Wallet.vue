@@ -59,6 +59,9 @@
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', false)"
     />
+
+    <Tooltip text="Wallet balance" target=".wallet-balance" placement="right" />
+    <Tooltip text="Network management" target=".select-network-button" placement="bottom" />
   </div>
 </template>
 
@@ -85,11 +88,13 @@ import { SetCurrenciesProps } from '@/store/networks/types';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { addNumbers, formattedNumber } from '@/helpers/numbers';
+import Tooltip from '@/components/Tooltip.vue';
 
 @Component({
   components: {
     NFTs,
     Scroll,
+    Tooltip,
     SendForm,
     Currencies,
     ContentForm,

@@ -130,7 +130,7 @@ export default class Input extends Vue {
 .input-style-pink {
   textarea,
   input {
-    color: #ffffff !important;
+    color: $plain-white !important;
   }
 
   .s-input {

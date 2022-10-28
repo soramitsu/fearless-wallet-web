@@ -231,7 +231,7 @@ export default class Nodes extends Vue {
       align-items: center;
 
       .auto-select-nodes {
-        color: #ffffff;
+        color: $plain-white;
         font-weight: 500;
         margin-right: 7px;
         font-size: 14px;

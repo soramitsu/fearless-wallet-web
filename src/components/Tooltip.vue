@@ -13,16 +13,24 @@ export default class Tooltip extends Vue {
   @Prop(String) text!: string;
   @Prop(String) target!: string;
   @Prop({ default: 'top' }) placement!: Placement;
+  @Prop(String) trigger!: string;
 
   mounted() {
-    const options = {
+    if (!this.target) return;
+
+    const options: Record<string, any> = {
       content: this.text,
       placement: this.placement,
       arrow: false,
       animation: 'shift-toward-extreme',
-      delay: [1500, 0] as any,
+      delay: [1500, 0],
       duration: 0,
     };
+
+    if (this.trigger) {
+      options.trigger = this.trigger;
+      options.delay = 0;
+    }
 
     tippy(this.target, options);
   }

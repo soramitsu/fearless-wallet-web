@@ -399,7 +399,7 @@ export default class BaseApi {
     keyring.forgetAccount(address);
   }
 
-  static async deleteNativeWallet(address: string) {
+  static async deleteNativeWallet(address: string): Promise<number> {
     //DELETE WALLET IN FRONTEND KEYRING ONLY
     const { meta } = BaseApi.getPair(address);
     const { ethereumAddress } = getMetaTyped(meta);
@@ -423,8 +423,9 @@ export default class BaseApi {
     return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
   }
 
-  static async deleteMobileWallet(address: string) {
+  static async deleteMobileWallet(address: string): Promise<number> {
     BaseApi.forgetAddress(address);
+
     await forgetAccount(address, 'mobile');
     await beaconController.resetConnection();
 

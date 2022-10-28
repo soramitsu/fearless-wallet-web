@@ -96,6 +96,8 @@
 
       <Button size="big" text="View in Subscan" @click="openSubscan" />
     </div>
+
+    <Tooltip text="Сopied" target=".copy" placement="bottom" trigger="click" />
   </AboveForm>
 </template>
 
@@ -117,10 +119,12 @@ import {
 } from '@/helpers/history';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
+import Tooltip from '@/components/Tooltip.vue';
 
 @Component({
   components: {
     Button,
+    Tooltip,
     AboveForm,
     Identicon,
   },

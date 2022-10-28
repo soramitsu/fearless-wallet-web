@@ -271,6 +271,10 @@ export default class BaseApi {
     return keyring.getAddresses();
   }
 
+  public static getMobileAddresses(): KeyringAddress[] {
+    return this.getAddresses().filter(({ meta }) => meta.isMobile);
+  }
+
   public static getAccountsSubject(): BehaviorSubject<SubjectInfo> {
     return keyring.accounts.subject;
   }
@@ -399,7 +403,7 @@ export default class BaseApi {
     keyring.forgetAccount(address);
   }
 
-  static async deleteNativeWallet(address: string) {
+  static deleteNativeWallet(address: string) {
     //DELETE WALLET IN FRONTEND KEYRING ONLY
     const { meta } = BaseApi.getPair(address);
     const { ethereumAddress } = getMetaTyped(meta);
@@ -418,7 +422,7 @@ export default class BaseApi {
       })
       .forEach(({ address }) => BaseApi.deleteAccount(address));
 
-    await forgetAccount(address, 'native');
+    forgetAccount(address, 'native');
 
     return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
   }

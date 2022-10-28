@@ -27,9 +27,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Popup from './Popup.vue';
-import Button from './Button.vue';
-import BorderButton from './BorderButton.vue';
+import Popup from '@/components/Popup.vue';
+import Button from '@/components/Button.vue';
+import BorderButton from '@/components/BorderButton.vue';
 
 interface Headers {
   text: string;

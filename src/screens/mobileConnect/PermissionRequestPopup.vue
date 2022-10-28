@@ -73,7 +73,7 @@ export default class PermissionRequestPopup extends Vue {
   get header() {
     if (this.isRequestFinished) return '';
 
-    return `Request send to Fearless Wallet`;
+    return `No answer from wallet`;
   }
   toWalletScreen() {
     this.$router.push({ name: Components.Wallet });
@@ -105,6 +105,9 @@ export default class PermissionRequestPopup extends Vue {
 }
 .message {
   color: $gray-color;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 147.5%;
 }
 .icon {
   width: 40px;

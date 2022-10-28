@@ -30,9 +30,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import Scroll from './Scroll.vue';
-import SearchInput from './SearchInput.vue';
-import Corners from './Corners.vue';
+import Scroll from '@/components/Scroll.vue';
+import SearchInput from '@/components/SearchInput.vue';
+import Corners from '@/components/Corners.vue';
 
 type HorizontalPlacement = 'left' | 'center' | 'right';
 type VerticalPlacement = 'top' | 'center' | 'bottom';
@@ -233,7 +233,7 @@ export default class Popup extends Vue {
     .header-text {
       font-weight: 700;
       font-size: 18px;
-      color: $default-white;
+      color: $plain-white;
     }
 
     .header-text-success {

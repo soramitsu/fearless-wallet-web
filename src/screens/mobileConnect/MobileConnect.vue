@@ -146,7 +146,7 @@ export default class MobileConnect extends Vue {
     setTimeout(() => {
       this.isLoading = false;
       if (!this.isPermissionsGranted || !this.isWalletAlreadyExists) this.isPossibleConnectionProblem = true;
-    }, 1000);
+    }, 30000);
   }
 
   async onPermissionResponse({ output, account }: PermissionSuccess) {

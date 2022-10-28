@@ -101,7 +101,7 @@ export default class FloatInput extends Vue {
 .float-input-style-pink {
   textarea,
   input {
-    color: #ffffff !important;
+    color: $plain-white !important;
   }
 
   .s-input {

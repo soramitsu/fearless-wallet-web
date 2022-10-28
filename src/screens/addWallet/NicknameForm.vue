@@ -38,7 +38,7 @@ export default class NicknameForm extends Vue {
 <style lang="scss" scoped>
 .nickname {
   i {
-    color: #ffffff;
+    color: $plain-white;
   }
 
   .input {

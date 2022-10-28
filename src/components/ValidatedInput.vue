@@ -39,7 +39,7 @@ export default class ValidatedInput extends Vue {
 <style lang="scss" scoped>
 .validate-input {
   i {
-    color: #ffffff;
+    color: $plain-white;
   }
 
   .error-descriptions {

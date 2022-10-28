@@ -26,9 +26,6 @@ import ConnectionStatus from './ConnectionStatus.vue';
 import { beaconController } from '@/controllers/beaconController';
 import { PermissionErrorPayload, RequestSentInfo } from '@/interfaces';
 import Button from '@/components/Button.vue';
-import Loader from '@/components/Loader.vue';
-import Corners from '@/components/Corners.vue';
-import Alert from '@/components/Alert.vue';
 import { Components } from '@/router/routes';
 import { MOBILE_CONNECTOR_MESSAGES } from '@/consts/messages';
 import Popup from '@/components/Popup.vue';
@@ -36,10 +33,7 @@ import Popup from '@/components/Popup.vue';
 @Component({
   components: {
     Button,
-    Loader,
-    Corners,
     Popup,
-    Alert,
     ConnectionStatus,
   },
 })

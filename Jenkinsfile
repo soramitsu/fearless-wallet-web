@@ -141,7 +141,7 @@ pipeline {
                 when {
                     anyOf {
                         branch 'develop'
-                        expression { return params.should_run_dev_build }electronuserland/builder:wine
+                        expression { return params.should_run_dev_build }
                     }
                 }
                 environment {

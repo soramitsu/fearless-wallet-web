@@ -15,10 +15,7 @@ ArrayList uploadToNexusFor    = ['master', 'develop']
 
 properties([parameters([
   booleanParam(defaultValue: true, description: '', name: 'tests'),
-  booleanParam(defaultValue: false, description: 'Run build with development firebase config (develop branch builds always)', name: 'should_run_dev_build'),
-  booleanParam(defaultValue: false, description: 'Run build with test firebase config (master branch builds always)', name: 'should_run_test_build'),
-  booleanParam(defaultValue: false, description: 'Run build with production firebase config (master branch builds always)', name: 'should_run_prod_build'),
-  booleanParam(defaultValue: false, description: 'Upload builds to nexus (master and develop branches upload always)', name: 'upload_to_nexus'),
+  booleanParam(defaultValue: true, description: 'Upload builds to nexus (master and develop branches upload always)', name: 'upload_to_nexus'),
 ])])
 
 pipeline {
@@ -100,21 +97,10 @@ pipeline {
             success {
                 script {
                     extensions = [ 'zip', 'AppImage' , 'exe' ]
-                    dist_folders = [ ];
-                    if (params.should_run_dev_build  || env.GIT_BRANCH == 'develop') {
-                        dist_folders.push('development')
-                    }
-                    if (params.should_run_test_build || env.GIT_BRANCH == 'test') {
-                        dist_folders.push('test')
-                    }
-                    if (params.should_run_prod_build || env.GIT_BRANCH == 'master') {
-                        dist_folders.push('production')
-                    }
                     // upload to nexus
                     if (env.GIT_BRANCH in uploadToNexusFor || params.upload_to_nexus || env.TAG_NAME ) {
                         withCredentials([usernamePassword(credentialsId: nexusCredentials, passwordVariable: 'NEXUS_PASS', usernameVariable: 'NEXUS_USER')]) {
-                            dist_folders.each { folder ->
-                            uploadPath = env.TAG_NAME ? "fearless/desktop/tags/${env.TAG_NAME}/${folder}" : "fearless/desktop/${env.GIT_BRANCH}/${new Date().format("yyyy-MM-dd")}-${env.GIT_COMMIT.substring(0,6)}/${folder}"
+                            uploadPath = env.TAG_NAME ? "fearless/desktop/tags/${env.TAG_NAME}" : "fearless/desktop/${env.GIT_BRANCH}/${new Date().format("yyyy-MM-dd")}-${env.GIT_COMMIT.substring(0,6)}"
                             artifactServers.each { server ->
                                 url = "https://${server}/repository/artifacts/${uploadPath}/dist_electron/"
                                 sh(script: "find ./dist_electron/ -maxdepth 1 -regex '.*\\.\\(${extensions.join('\\|')}\\)\$' | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
@@ -122,7 +108,6 @@ pipeline {
                                 url = "https://${server}/repository/artifacts/${uploadPath}/dist_extension/"
                                 sh(script: "find ./dist/extension -type f | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
                                 echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
-                            }
                             }
                         }
                     }

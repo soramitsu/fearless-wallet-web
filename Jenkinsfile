@@ -52,7 +52,7 @@ pipeline {
                 environment { SONAR_TOKEN = credentials('sonar_fearless_token') }
                 steps {
                     script {
-                            sonar(sonarHost, "${SONAR_TOKEN}", env.BRANCH_NAME, sonarProjectKey, sonarProjectName)
+                            sonar(sonarHost, env.SONAR_TOKEN, env.BRANCH_NAME, sonarProjectKey, sonarProjectName)
                     }
                     
                 }    
@@ -114,6 +114,8 @@ pipeline {
                 steps {
                     echo "Start test build extension..."
                     sh "yarn build:extension"
+                    echo "Start archive files to extension.zip..."
+                    sh "zip -r extension.zip ./dist/extension"
                     echo "Start test build (linux, mac)..."
                     sh "yarn electron:build --publish=never --linux --mac zip"
                     echo "Start test build (windows 32 and 64bit)..."
@@ -162,7 +164,7 @@ pipeline {
                                 sh(script: "find ./dist_electron/ -maxdepth 1 -regex '.*\\.\\(${extensions.join('\\|')}\\)\$' | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
                                 echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
                                 url = "https://${server}/repository/artifacts/${uploadPath}/dist_extension/"
-                                sh(script: "find ./dist/extension/ -type f | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
+                                sh(script: "find . -type f -name 'extension.zip' | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
                                 echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
                             }
                             }

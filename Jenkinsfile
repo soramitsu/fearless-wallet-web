@@ -2,6 +2,8 @@
 Boolean disableSecretScanner  = false
 String secretScannerExclusion = ''
 String registry               = 'docker.soramitsu.co.jp'
+String agentLabel             = 'docker-build-agent'  
+String agentImage             = 'node:14-ubuntu'
 String dockerBuildToolsUserId = 'bot-build-tools-ro'
 String sonarCredentialsId     = 'SONAR_TOKEN'
 String nexusCredentials       = "empty"
@@ -29,10 +31,10 @@ pipeline {
     stage ('check code'){  
         agent {
             docker {
-            label 'docker-build-agent'
-            image "${registry}/build-tools/openjdk-11"
+            label "${agentLabel}"
+            image "${registry}/build-tools/${agentImage}"
             args  '-v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp'
-            registryCredentialsId 'bot-build-tools-ro'
+            registryCredentialsId "${dockerBuildToolsUserId}"
             registryUrl "https://${registry}"      
             }
         }
@@ -62,7 +64,7 @@ pipeline {
     stage ('test and build'){
         agent {
             docker {
-            label 'docker-build-agent'
+            label "${agentLabel}"
             image 'electronuserland/builder:wine'
             args  '-v /var/cache/yarn:/usr/local/share/.cache/yarn -v /var/cache/electron:/root/.cache/electron -v /var/cache/electron-builder:/root/.cache/electron-builder'
             }
@@ -115,7 +117,7 @@ pipeline {
                     echo "Start test build extension..."
                     sh "yarn build:extension"
                     echo "Start archive files to extension.zip..."
-                    sh "zip -r extension.zip ./dist/extension"
+                    sh "apt-get install -y zip && zip -r extension.zip ./dist/extension"
                     echo "Start test build (linux, mac)..."
                     sh "yarn electron:build --publish=never --linux --mac zip"
                     echo "Start test build (windows 32 and 64bit)..."

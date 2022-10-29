@@ -30,7 +30,7 @@ pipeline {
         agent {
             docker {
             label 'docker-build-agent'
-            image "${registry}/build-tools/node:14-ubuntu"
+            image "${registry}/build-tools/openjdk-11"
             args  '-v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp'
             registryCredentialsId 'bot-build-tools-ro'
             registryUrl "https://${registry}"      

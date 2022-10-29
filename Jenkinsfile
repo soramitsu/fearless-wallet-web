@@ -15,7 +15,6 @@ ArrayList uploadToNexusFor    = ['master', 'develop']
 
 properties([parameters([
   booleanParam(defaultValue: true, description: '', name: 'tests'),
-  booleanParam(defaultValue: false, description: '', name: 'upload_to_jenkins'),
   booleanParam(defaultValue: false, description: 'Run build with development firebase config (develop branch builds always)', name: 'should_run_dev_build'),
   booleanParam(defaultValue: false, description: 'Run build with test firebase config (master branch builds always)', name: 'should_run_test_build'),
   booleanParam(defaultValue: false, description: 'Run build with production firebase config (master branch builds always)', name: 'should_run_prod_build'),
@@ -86,61 +85,16 @@ pipeline {
                     sh "yarn test:all"
                 }
             }
-
-            stage('Production build') {
-                when {
-                    anyOf {
-                    branch 'master'
-                    expression { return params.should_run_prod_build }
-                    }
-                }
-                environment {
-                    VUE_APP_FIREBASE_ENV = 'production'
-                }
+            stage('Build') {
                 steps {
-                    echo "Start production build (linux, mac)..."
-                    sh "yarn electron:build --publish=never --linux --mac zip"
-                    echo "Start production build (windows 32 and 64bit)..."
-                    sh "yarn electron:build --publish=never --win portable --x64 --ia32"
-                }
-            }
-
-            stage('Test build') {
-                when {
-                    anyOf {
-                        branch 'feature/FWW-158/ci-for-PRs'
-                        expression { return params.should_run_test_build }
-                    }
-                }
-                environment {
-                    VUE_APP_FIREBASE_ENV = 'test'
-                }
-                steps {
-                    echo "Start test build extension..."
+                    echo "Start build extension..."
                     sh "yarn build:extension"
-                    echo "Start test build (linux, mac)..."
+                    echo "Start build (linux, mac)..."
                     sh "yarn electron:build --publish=never --linux --mac zip"
-                    echo "Start test build (windows 32 and 64bit)..."
+                    echo "Start build (windows 32 and 64bit)..."
                     sh "yarn electron:build --publish=never --win portable --x64 --ia32"
                 }
             }
-
-            stage('Development build') {
-                when {
-                    anyOf {
-                        branch 'develop'
-                        expression { return params.should_run_dev_build }
-                    }
-                }
-                environment {
-                    VUE_APP_FIREBASE_ENV = 'development'
-                }
-                steps {
-                    echo "Start development build (linux, mac, windows 64bit)..."
-                    sh "yarn electron:build --publish=never --linux --win portable --mac zip"
-                }
-            }
-        }
         post {
             success {
                 script {
@@ -170,12 +124,6 @@ pipeline {
                             }
                             }
                         }
-                    }
-                    if (params.upload_to_jenkins) {
-                        extensions.each {
-                            // upload to jenkins
-                            archiveArtifacts artifacts: "dist_electron/*.${it}", allowEmptyArchive: true
-                        }   
                     }
                 }
             }

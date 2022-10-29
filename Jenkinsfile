@@ -49,7 +49,7 @@ pipeline {
                 }
             }
             stage("Sonar"){
-                environment { SONAR_TOKEN = credentials('SONAR_TOKEN') }
+                environment { SONAR_TOKEN = credentials('sonar_fearless_token') }
                 steps {
                     script {
                             sonar(sonarHost, "${SONAR_TOKEN}", env.BRANCH_NAME, sonarProjectKey, sonarProjectName)

@@ -6,8 +6,8 @@ String dockerBuildToolsUserId = 'bot-build-tools-ro'
 String sonarCredentialsId     = 'SONAR_TOKEN'
 String nexusCredentials       = "empty"
 String sonarHost              = 'sonar.soramitsu.co.jp'
-String sonarProjectKey        = 'fearless-wallet-web'
-String sonarProjectName       = 'FEARLESS-wallet-web'
+String sonarProjectKey        = 'fearless:fearless-wallet-web'
+String sonarProjectName       = 'fearless-wallet-web'
 
 properties([parameters([
   booleanParam(defaultValue: true, description: '', name: 'tests'),

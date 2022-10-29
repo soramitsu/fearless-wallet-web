@@ -5,11 +5,12 @@ String registry               = 'docker.soramitsu.co.jp'
 String agentLabel             = 'docker-build-agent'  
 String agentImage             = 'node:14-ubuntu'
 String dockerBuildToolsUserId = 'bot-build-tools-ro'
-String sonarCredentialsId     = 'SONAR_TOKEN'
-String nexusCredentials       = "empty"
+String sonarCredential        = 'sonar_fearless_token'
 String sonarHost              = 'sonar.soramitsu.co.jp'
 String sonarProjectKey        = 'fearless:fearless-wallet-web'
 String sonarProjectName       = 'fearless-wallet-web'
+String nexusCredentials       = 'bot-fearless-rw'
+ArrayList artifactServers     = ["nexus.iroha.tech"] 
 
 properties([parameters([
   booleanParam(defaultValue: true, description: '', name: 'tests'),
@@ -51,7 +52,7 @@ pipeline {
                 }
             }
             stage("Sonar"){
-                environment { SONAR_TOKEN = credentials('sonar_fearless_token') }
+                environment { SONAR_TOKEN = credentials("${sonarCredential}") }
                 steps {
                     script {
                             sonar(sonarHost, env.SONAR_TOKEN, env.BRANCH_NAME, sonarProjectKey, sonarProjectName)
@@ -157,8 +158,7 @@ pipeline {
                     }
                     // upload to nexus
                     if (env.GIT_BRANCH in ['master', 'develop'] || params.upload_to_nexus || env.TAG_NAME ) {
-                        artifactServers=['nexus.iroha.tech']
-                        withCredentials([usernamePassword(credentialsId: 'bot-fearless-rw', passwordVariable: 'NEXUS_PASS', usernameVariable: 'NEXUS_USER')]) {
+                        withCredentials([usernamePassword(credentialsId: nexusCredentials, passwordVariable: 'NEXUS_PASS', usernameVariable: 'NEXUS_USER')]) {
                             dist_folders.each { folder ->
                             uploadPath = env.TAG_NAME ? "fearless/desktop/tags/${env.TAG_NAME}/${folder}" : "fearless/desktop/${env.GIT_BRANCH}/${new Date().format("yyyy-MM-dd")}-${env.GIT_COMMIT.substring(0,6)}/${folder}"
                             artifactServers.each { server ->
@@ -166,7 +166,7 @@ pipeline {
                                 sh(script: "find ./dist_electron/ -maxdepth 1 -regex '.*\\.\\(${extensions.join('\\|')}\\)\$' | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
                                 echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
                                 url = "https://${server}/repository/artifacts/${uploadPath}/dist_extension/"
-                                sh(script: "find . -type f -name 'extension.zip' | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
+                                sh(script: "find ./dist/extension -type f | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
                                 echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
                             }
                             }

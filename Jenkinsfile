@@ -10,7 +10,8 @@ String sonarHost              = 'sonar.soramitsu.co.jp'
 String sonarProjectKey        = 'fearless:fearless-wallet-web'
 String sonarProjectName       = 'fearless-wallet-web'
 String nexusCredentials       = 'bot-fearless-rw'
-ArrayList artifactServers     = ["nexus.iroha.tech"] 
+ArrayList artifactServers     = ["nexus.iroha.tech"]
+ArrayList uploadToNexusFor    = ['master', 'develop']
 
 properties([parameters([
   booleanParam(defaultValue: true, description: '', name: 'tests'),
@@ -117,8 +118,6 @@ pipeline {
                 steps {
                     echo "Start test build extension..."
                     sh "yarn build:extension"
-                    echo "Start archive files to extension.zip..."
-                    sh "apt-get install -y zip && zip -r extension.zip ./dist/extension"
                     echo "Start test build (linux, mac)..."
                     sh "yarn electron:build --publish=never --linux --mac zip"
                     echo "Start test build (windows 32 and 64bit)..."
@@ -157,7 +156,7 @@ pipeline {
                         dist_folders.push('production')
                     }
                     // upload to nexus
-                    if (env.GIT_BRANCH in ['master', 'develop'] || params.upload_to_nexus || env.TAG_NAME ) {
+                    if (env.GIT_BRANCH in uploadToNexusFor || params.upload_to_nexus || env.TAG_NAME ) {
                         withCredentials([usernamePassword(credentialsId: nexusCredentials, passwordVariable: 'NEXUS_PASS', usernameVariable: 'NEXUS_USER')]) {
                             dist_folders.each { folder ->
                             uploadPath = env.TAG_NAME ? "fearless/desktop/tags/${env.TAG_NAME}/${folder}" : "fearless/desktop/${env.GIT_BRANCH}/${new Date().format("yyyy-MM-dd")}-${env.GIT_COMMIT.substring(0,6)}/${folder}"

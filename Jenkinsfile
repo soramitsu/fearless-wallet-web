@@ -6,7 +6,9 @@ String dockerBuildToolsUserId = 'bot-build-tools-ro'
 String sonarCredentialsId     = 'SONAR_TOKEN'
 String nexusCredentials       = "empty"
 String sonarHost              = 'sonar.soramitsu.co.jp'
-String sonarCommand           = "./gradlew sonarqube -x test"
+Srting sonarProjectName       = 'fearless-wallet-web'
+String sonarProjectKey        = 'jp.co.soramitsu:fearless-wallet-web'
+
 
 
 properties([parameters([
@@ -48,17 +50,11 @@ pipeline {
                     }
                 }
             }
-        
-            stage('Sonar') {
-                environment { SONAR_TOKEN = credentials("SONAR_TOKEN") }
-                steps {
-                    script {
-                        sh "./gradlew sonarqube -x test \
-                            -Dsonar.host.url=https://sonar.soramitsu.co.jp \
-                            -Dsonar.login=${SONAR_TOKEN}"
-                    }
+            steps.stage("Sonar"){
+                withCredentials([[$class: 'StringBinding', credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN']]){
+                    sonar(sonarHost, steps.env.SONAR_TOKEN, steps.env.BRANCH_NAME, sonarProjectKey, sonarProjectName)
                 }
-            }
+            }         
         }    
     }
     stage ('test and build'){

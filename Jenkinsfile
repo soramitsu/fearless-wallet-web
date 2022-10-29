@@ -48,32 +48,33 @@ pipeline {
                     }
                 }
             }
-        }
-        stage('Sonar') {
-            environment {
-                SONAR_TOKEN = credentials("${sonarCredentialsId}")
-                NEXUS = credentials("${nexusCredentials}")
-            }
-            steps {
-                script {
-                    def sonarErrFile = 'stderr.out'
-                    try {
-                        sonarCheck = sh(
-                            script: "${sonarCommand} -Dsonar.host.url=https://${sonarHost} -Dsonar.login=${SONAR_TOKEN} -Dsonar.branch.name=${env.GIT_BRANCH} 2>${sonarErrFile}", 
-                            returnStdout: true
-                        )
-                    } catch (Exception ex) {
-                        def errmsg = readFile(sonarErrFile).trim()
-                        if (errmsg =~ /No branches|Could not find ref: master/){
-                            sh "${sonarCommand} -Dsonar.host.url=https://${sonarHost} -Dsonar.login=${SONAR_TOKEN}"
-                        } else {
-                            echo errmsg
-                            throw ex
+        
+            stage('Sonar') {
+                environment {
+                    SONAR_TOKEN = credentials("${sonarCredentialsId}")
+                    NEXUS = credentials("${nexusCredentials}")
+                }
+                steps {
+                    script {
+                        def sonarErrFile = 'stderr.out'
+                        try {
+                            sonarCheck = sh(
+                                script: "${sonarCommand} -Dsonar.host.url=https://${sonarHost} -Dsonar.login=${SONAR_TOKEN} -Dsonar.branch.name=${env.GIT_BRANCH} 2>${sonarErrFile}", 
+                                returnStdout: true
+                            )
+                        } catch (Exception ex) {
+                            def errmsg = readFile(sonarErrFile).trim()
+                            if (errmsg =~ /No branches|Could not find ref: master/){
+                                sh "${sonarCommand} -Dsonar.host.url=https://${sonarHost} -Dsonar.login=${SONAR_TOKEN}"
+                            } else {
+                                echo errmsg
+                                throw ex
+                            }
                         }
                     }
                 }
             }
-        }
+        }    
     }
     stage ('test and build'){
         agent {

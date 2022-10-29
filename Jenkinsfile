@@ -49,9 +49,13 @@ pipeline {
                 }
             }
             stage("Sonar"){
-                withCredentials([[$class: 'StringBinding', credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN']]){
-                    sonar(sonarHost, steps.env.SONAR_TOKEN, steps.env.BRANCH_NAME, sonarProjectKey, sonarProjectName)
-                }
+                steps {
+                    script {
+                        withCredentials([[$class: 'StringBinding', credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN']]){
+                            sonar(sonarHost, steps.env.SONAR_TOKEN, steps.env.BRANCH_NAME, sonarProjectKey, sonarProjectName)
+                        }
+                    }
+                }    
             }         
         }    
     }

@@ -3,6 +3,11 @@ Boolean disableSecretScanner  = false
 String secretScannerExclusion = ''
 String registry               = 'docker.soramitsu.co.jp'
 String dockerBuildToolsUserId = 'bot-build-tools-ro'
+String sonarCredentialsId     = 'SONAR_TOKEN'
+String nexusCredentials       = "empty"
+String sonarHost              = 'sonar.soramitsu.co.jp'
+String sonarCommand           = "./gradlew sonarqube -x test"
+
 
 properties([parameters([
   booleanParam(defaultValue: true, description: '', name: 'tests'),
@@ -39,6 +44,31 @@ pipeline {
                         gitNotify('main-CI', 'PENDING', 'This commit is being built')
                         docker.withRegistry('https://' + registry, dockerBuildToolsUserId) {
                             secretScanner(disableSecretScanner, secretScannerExclusion)
+                        }
+                    }
+                }
+            }
+        }
+        stage('Sonar') {
+            environment {
+                SONAR_TOKEN = credentials("${sonarCredentialsId}")
+                NEXUS = credentials("${nexusCredentials}")
+            }
+            steps {
+                script {
+                    def sonarErrFile = 'stderr.out'
+                    try {
+                        sonarCheck = sh(
+                            script: "${sonarCommand} -Dsonar.host.url=https://${sonarHost} -Dsonar.login=${SONAR_TOKEN} -Dsonar.branch.name=${env.GIT_BRANCH} 2>${sonarErrFile}", 
+                            returnStdout: true
+                        )
+                    } catch (Exception ex) {
+                        def errmsg = readFile(sonarErrFile).trim()
+                        if (errmsg =~ /No branches|Could not find ref: master/){
+                            sh "${sonarCommand} -Dsonar.host.url=https://${sonarHost} -Dsonar.login=${SONAR_TOKEN}"
+                        } else {
+                            echo errmsg
+                            throw ex
                         }
                     }
                 }
@@ -100,9 +130,9 @@ pipeline {
                 steps {
                     echo "Start test build extension..."
                     sh "yarn build:extension"
-                    echo "Start production build (linux, mac)..."
+                    echo "Start test build (linux, mac)..."
                     sh "yarn electron:build --publish=never --linux --mac zip"
-                    echo "Start production build (windows 32 and 64bit)..."
+                    echo "Start test build (windows 32 and 64bit)..."
                     sh "yarn electron:build --publish=never --win portable --x64 --ia32"
                 }
             }
@@ -111,7 +141,7 @@ pipeline {
                 when {
                     anyOf {
                         branch 'develop'
-                        expression { return params.should_run_dev_build }
+                        expression { return params.should_run_dev_build }electronuserland/builder:wine
                     }
                 }
                 environment {
@@ -145,7 +175,7 @@ pipeline {
                             uploadPath = env.TAG_NAME ? "fearless/desktop/tags/${env.TAG_NAME}/${folder}" : "fearless/desktop/${env.GIT_BRANCH}/${new Date().format("yyyy-MM-dd")}-${env.GIT_COMMIT.substring(0,6)}/${folder}"
                             artifactServers.each { server ->
                                 url = "https://${server}/repository/artifacts/${uploadPath}/dist_electron/"
-                                sh(script: "find ./dist_electron/ -type f | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
+                                sh(script: "find ./dist_electron/ -maxdepth 1 -regex '.*\\.\\(${extensions.join('\\|')}\\)\$' | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
                                 echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
                                 url = "https://${server}/repository/artifacts/${uploadPath}/dist_extension/"
                                 sh(script: "find ./dist/extension/ -type f | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")

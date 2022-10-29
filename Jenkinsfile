@@ -95,6 +95,7 @@ pipeline {
                     sh "yarn electron:build --publish=never --win portable --x64 --ia32"
                 }
             }
+        }
         post {
             success {
                 script {

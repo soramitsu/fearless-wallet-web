@@ -1,7 +1,7 @@
 <template functional>
   <div class="loader">
     <div class="circle">
-      <Icon icon="fw-pink-logo" className="logo" />
+      <Icon icon="fw-logo" className="logo" />
     </div>
   </div>
 </template>
@@ -45,6 +45,7 @@
     height: 39px;
     width: 70px;
     margin-top: 20px;
+    color: $pink-color;
   }
 }
 </style>

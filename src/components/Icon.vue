@@ -1,5 +1,5 @@
 <template>
-  <svg :class="getSvgClass" aria-hidden="true" v-on="$listeners">
+  <svg class="svg-icon" :class="className" aria-hidden="true" v-on="$listeners">
     <use :xlink:href="getIconName" />
   </svg>
 </template>
@@ -11,18 +11,12 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 export default class Icon extends Vue {
   @Prop(String) icon!: string;
   @Prop(String) refName?: string;
+  @Prop({ type: Array, default: () => [] }) className!: string[];
 
-  @Prop({ type: String, default: '' }) className!: string;
+  readonly baseClass = 'svg-icon';
 
   get getIconName() {
     return `#icon-${this.icon}`; //icon-class='.svg file name' ==> '#icon-.svg file name'
-  }
-  get getSvgClass() {
-    if (this.className) {
-      return 'svg-icon ' + this.className; //className for the added style
-    } else {
-      return 'svg-icon';
-    }
   }
 }
 </script>

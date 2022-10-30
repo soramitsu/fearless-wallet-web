@@ -1,23 +1,29 @@
 <template>
   <div class="hint">
-    <Icon :icon="iconName" className="notifications-icon" />
+    <Icon :icon="iconName" :className="getClasses" />
 
-    <span class="info-text" :class="getSize">
-      {{ text }}
-    </span>
+    <span class="info-text" :class="getSize">{{ text }}</span>
   </div>
 </template>
 
 <script lang="ts">
 import { Vue, Prop, Component } from 'vue-property-decorator';
 
-type IconNameType = 'notification' | 'warning' | 'warning-orange';
+type IconNameType = 'notification' | 'warning';
+
 type Size = 'big' | 'medium';
 @Component
 export default class Hint extends Vue {
   @Prop(String) iconName!: IconNameType;
   @Prop(String) text!: string;
   @Prop({ default: 'medium' }) size!: Size;
+  baseClass = 'notifications-icon';
+
+  get getClasses() {
+    if (this.iconName === 'warning') return `${this.baseClass} warning--orange`;
+
+    return this.baseClass;
+  }
 
   get getSize() {
     return this.size === 'big' ? 'info-text--big' : 'info-text';
@@ -35,7 +41,12 @@ export default class Hint extends Vue {
 
   display: flex;
   font-size: 12px;
+  align-items: center;
   text-align: left;
+
+  .warning--orange {
+    color: $error-color;
+  }
 
   .notifications-icon {
     display: flex;

@@ -1,6 +1,6 @@
 <template>
   <div class="circle-button" :class="backgroundClass" @click="$emit('click', $event)">
-    <Icon :icon="iconName" className="imageClasses" />
+    <Icon :icon="iconName" :className="imageClasses" />
   </div>
 </template>
 

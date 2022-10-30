@@ -26,6 +26,7 @@ export default class SettingsMenuItem extends Vue {
 <style lang="scss" scoped>
 .row {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   margin: 0 20px 28px 20px;
 
@@ -51,6 +52,7 @@ export default class SettingsMenuItem extends Vue {
 
   .icon--width {
     width: 25px;
+    height: 25px;
   }
 
   .chevron-right {

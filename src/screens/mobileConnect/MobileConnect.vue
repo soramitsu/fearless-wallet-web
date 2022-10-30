@@ -5,7 +5,7 @@
       <QR :payload="getQR" />
     </template>
 
-    <div v-if="isLoading && !isActiveAccountExists" class="loader">
+    <div v-show="isLoading && !isActiveAccountExists" class="loader">
       <Loader />
     </div>
 

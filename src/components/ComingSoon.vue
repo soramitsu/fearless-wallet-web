@@ -23,6 +23,7 @@ export default class ComingSoon extends Vue {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
   height: 100%;
 
   .name {
@@ -32,6 +33,7 @@ export default class ComingSoon extends Vue {
 
   .img {
     height: 100px;
+    width: 100px;
     filter: invert(0.65);
   }
 }

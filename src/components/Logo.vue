@@ -2,7 +2,7 @@
   <div class="logo">
     <div :class="circleClasses" :style="styleCircle">
       <div :class="circleBlurClasses">
-        <Icon icon="fw-logo" className="img" :style="styleIconLogo" />
+        <Icon icon="fw-logo" :className="iconClass" :style="sizeIconLogo" />
       </div>
     </div>
 
@@ -23,6 +23,31 @@ export default class Logo extends Vue {
   @Prop(String) subtext!: string;
   @Prop({ default: 'medium' }) size!: SizeLogo;
   @Prop({ default: 'primary' }) typeLogo!: TypeLogo;
+  iconClass = ['img'];
+  readonly circleSizes = {
+    mini: '38px',
+    small: '48px',
+    medium: '72px',
+    big: '96px',
+  };
+  readonly iconSizes = {
+    mini: {
+      height: '18px',
+      width: '32px',
+    },
+    small: {
+      height: '21px',
+      width: '42px',
+    },
+    medium: {
+      height: '32px',
+      width: '64px',
+    },
+    big: {
+      height: '42px',
+      width: '85px',
+    },
+  };
 
   get circleClasses() {
     return ['circle', `circle-${this.typeLogo}`];
@@ -38,62 +63,15 @@ export default class Logo extends Vue {
   }
 
   get styleCircle() {
-    return { height: this.toPx(this.sizeCircle), width: this.toPx(this.sizeCircle) };
-  }
-
-  get styleIconLogo() {
-    const { height, width } = this.sizeIconLogo;
-
-    return { height: this.toPx(height), width: this.toPx(width) };
+    return { height: this.sizeCircle, width: this.sizeCircle };
   }
 
   get sizeCircle() {
-    switch (this.size) {
-      case 'mini':
-        return 38;
-      case 'small':
-        return 48;
-      case 'medium':
-        return 72;
-      case 'big':
-        return 96;
-      default:
-        return 72;
-    }
+    return this.circleSizes[this.size] ? this.circleSizes[this.size] : this.circleSizes.medium;
   }
 
   get sizeIconLogo() {
-    switch (this.size) {
-      case 'mini':
-        return {
-          height: 18,
-          width: 32,
-        };
-      case 'small':
-        return {
-          height: 21,
-          width: 42,
-        };
-      case 'medium':
-        return {
-          height: 32,
-          width: 64,
-        };
-      case 'big':
-        return {
-          height: 42,
-          width: 85,
-        };
-      default:
-        return {
-          height: 32,
-          width: 64,
-        };
-    }
-  }
-
-  toPx(value: number) {
-    return `${value}px`;
+    return this.iconSizes[this.size] ? this.iconSizes[this.size] : this.iconSizes.medium;
   }
 }
 </script>

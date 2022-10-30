@@ -1,6 +1,6 @@
 <template>
   <div :class="containerButtonClasses" :style="containerButtonStyle">
-    <s-button
+    <SButton
       :type="type"
       :border-radius="borderRadius"
       :size="size"
@@ -8,10 +8,10 @@
       :class="buttonClasses"
       @click="$emit('click')"
     >
-      <Icon v-if="iconName" :icon="iconName" className="icon" />
+      <Icon v-if="iconName" :icon="iconName" :className="iconClass" />
 
       {{ text }}
-    </s-button>
+    </SButton>
   </div>
 </template>
 
@@ -34,6 +34,7 @@ export default class Button extends Vue {
   @Prop({ default: false }) disabled!: boolean;
   @Prop({ default: true }) hover!: boolean;
   @Prop({ default: true }) border!: boolean;
+  iconClass = ['icon'];
 
   get containerButtonClasses() {
     // for "small" and "mini" sizes also medium
@@ -126,7 +127,6 @@ export default class Button extends Vue {
 .icon {
   color: $pink-color;
   margin-right: 8px;
-  color: #ee0077;
 }
 
 .secondary {

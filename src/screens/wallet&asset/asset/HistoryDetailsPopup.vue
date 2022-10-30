@@ -40,10 +40,12 @@
         <div v-if="isReward" class="item">
           Validator
 
-          <div class="item-value">
+          <div class="item-value item-icon">
             <Identicon class="identicon" :size="24" theme="polkadot" :value="validator" />
 
-            {{ validator }}
+            {{ displayValidator }}
+
+            <img src="@/assets/copy.svg" class="copy" @click="copy(validator)" />
           </div>
         </div>
 
@@ -52,6 +54,7 @@
 
           <div :class="statusClasses">{{ statusText }}</div>
         </div>
+
         <div class="item">
           Date
 
@@ -93,6 +96,8 @@
 
       <Button size="big" text="View in Subscan" @click="openSubscan" />
     </div>
+
+    <Tooltip text="Сopied" target=".copy" placement="bottom" trigger="click" />
   </AboveForm>
 </template>
 
@@ -114,10 +119,12 @@ import {
 } from '@/helpers/history';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
+import Tooltip from '@/components/Tooltip.vue';
 
 @Component({
   components: {
     Button,
+    Tooltip,
     AboveForm,
     Identicon,
   },
@@ -164,6 +171,10 @@ export default class SelectNetworkButton extends Vue {
     return this.historyNode.reward.validator;
   }
 
+  get displayValidator() {
+    return cut(this.validator, 10);
+  }
+
   get era() {
     return this.historyNode.reward.era;
   }
@@ -185,7 +196,8 @@ export default class SelectNetworkButton extends Vue {
       return success ? 'Completed' : 'Reject';
     }
 
-    return '';
+    //reward
+    return 'Completed';
   }
 
   get fromAddress() {

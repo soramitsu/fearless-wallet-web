@@ -110,7 +110,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get isSignMobile() {
-    return BaseApi.getAddressType(this.address) === 'address';
+    return BaseApi.getWalletType(this.address) === 'mobile';
   }
 
   get prepLabel() {

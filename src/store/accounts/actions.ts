@@ -5,7 +5,7 @@ import type { SetSelectedFiat, SetSelectedWallet } from './types';
 import type { Currencies } from '@/interfaces/currencies';
 import { MutationTypes } from '@/store/accounts/mutations';
 import { defaultSortingCurrencies } from '@/helpers/currencies';
-import { accountController } from '@/controllers/accountController';
+import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 
 export enum ActionTypes {
   SET_SELECTED_FIAT = 'SET_SELECTED_FIAT',
@@ -36,12 +36,17 @@ const actions: ActionTree<State, State> & Actions = {
       selectedWalletAddress,
     });
 
-    // TODO: try to get rid of setTimeout
     setTimeout(() => {
       const currencies: Currencies = defaultSortingCurrencies(rootState.networks.currencies, state.selectedWallet);
-      const sequence = currencies.map(({ assetId }) => assetId);
 
-      accountController.setSequenceAssets(sequence, selectedWalletAddress);
+      (commit as any)(
+        NetworksMutationTypes.SET_CURRENCIES,
+        {
+          currencies: currencies,
+          address: selectedWalletAddress,
+        },
+        { root: true }
+      );
     }, 1000);
   },
 };

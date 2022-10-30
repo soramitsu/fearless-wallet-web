@@ -51,7 +51,7 @@ export default class Dropdown extends Vue {
 }
 
 .el-dropdown-menu__item {
-  color: #ffffff !important;
+  color: $plain-white !important;
 
   &:hover {
     background-color: $default-background-color !important;

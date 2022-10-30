@@ -120,12 +120,12 @@ export default class ImportWallet extends Vue {
   get placeholderTypeImportValue() {
     if (this.typeImport === 'rawSeed') {
       if (this.step === 1) return 'Substrate accounts raw seed';
-      else if (this.step === 2) return 'ETH accounts raw seed';
+      if (this.step === 2) return 'ETH accounts raw seed';
     }
 
     if (this.typeImport === 'json') {
       if (this.step === 1) return 'Restore JSON for Substrate accounts';
-      else if (this.step === 2) return 'Restore JSON for Ethereum accounts';
+      if (this.step === 2) return 'Restore JSON for Ethereum accounts';
     }
 
     return 'Enter Passphrase';

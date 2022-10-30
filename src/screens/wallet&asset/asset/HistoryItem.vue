@@ -63,7 +63,7 @@ export default class HistoryItem extends Vue {
     }
 
     if (this.type === TransactionType.reward) {
-      return reward.validator;
+      return cut(reward.validator);
     }
 
     // extrinsic

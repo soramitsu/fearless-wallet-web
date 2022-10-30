@@ -36,7 +36,7 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_SELECTED_WALLET](state, { selectedWalletAddress }) {
     let meta: KeyringPair$Meta | KeyringJson$Meta;
 
-    if (BaseApi.getAddressType(selectedWalletAddress) === 'account') meta = BaseApi.getPair(selectedWalletAddress).meta;
+    if (BaseApi.getWalletType(selectedWalletAddress) === 'native') meta = BaseApi.getPair(selectedWalletAddress).meta;
     else {
       const address = BaseApi.getAddress(selectedWalletAddress);
 

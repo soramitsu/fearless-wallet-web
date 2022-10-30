@@ -114,13 +114,13 @@
     <ExistentialPopup
       v-if="showExistentialPopup"
       :handlerClose="handlerCloseExistentialPopup"
-      :handlerAcceptButton="handlerAcceptExistentialPopup"
+      :handlerAccept="handlerAcceptExistentialPopup"
     />
 
     <WarningAddressPopup
       v-if="showWarningAddressPopup"
       :handlerClose="handlerCloseWarningAddressPopup"
-      :handlerAcceptButton="handlerAcceptWarningAddressButton"
+      :handlerAccept="handlerAcceptWarningAddress"
     />
   </div>
 </template>
@@ -209,9 +209,9 @@ export default class SendForm extends Vue {
   get top() {
     if (this.showSelectedAssetPopup) return 227;
 
-    if (this.showSelectNetworkPopup) return 311;
+    if (this.showSelectNetworkPopup) return 305;
 
-    return 37;
+    return 24;
   }
 
   get left() {
@@ -539,7 +539,7 @@ export default class SendForm extends Vue {
     this.syncedSelectedAssetId = network?.assets[0].assetId ?? ''; // [0] - is utility asset
   }
 
-  handlerAcceptWarningAddressButton() {
+  handlerAcceptWarningAddress() {
     this.syncedRecipient = BaseApi.formatAddress(
       {
         address: this.syncedRecipient,

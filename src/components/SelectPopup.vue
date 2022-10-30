@@ -163,7 +163,7 @@ export default class SelectPopup extends Vue {
   }
 
   .row-active {
-    color: #ffffff;
+    color: $plain-white;
     font-weight: 700;
 
     .img {

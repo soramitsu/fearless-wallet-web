@@ -6,9 +6,10 @@
     :showHeader="false"
     :showAcceptButton="true"
     :showRejectButton="true"
+    :closeBuBackground="false"
     :headers="headers"
     :handlerClose="handlerClose"
-    :handlerAcceptButton="handlerAcceptButton"
+    :handlerAccept="handlerAccept"
   />
 </template>
 
@@ -27,7 +28,7 @@ export default class WarningAddressPopup extends Vue {
   };
 
   @Prop(Function) handlerClose!: VoidFunction;
-  @Prop(Function) handlerAcceptButton!: VoidFunction;
+  @Prop(Function) handlerAccept!: VoidFunction;
 }
 </script>
 

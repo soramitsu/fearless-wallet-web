@@ -135,7 +135,7 @@ const routes: Array<RouteConfig> = [
         component: Staking,
       },
       {
-        path: 'Polkaswap',
+        path: 'polkaswap',
         name: Components.Polkaswap,
         component: Polkaswap,
       },
@@ -145,7 +145,6 @@ const routes: Array<RouteConfig> = [
         component: History,
       },
     ],
-
     beforeEnter: (to, from, next) => {
       if (!haveAccounts()) next({ name: Components.Welcome });
       else next();
@@ -153,7 +152,6 @@ const routes: Array<RouteConfig> = [
   },
   {
     path: '/*',
-
     redirect: () => {
       return { name: haveAccounts() ? Components.Wallet : Components.Welcome };
     },

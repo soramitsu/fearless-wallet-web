@@ -25,7 +25,7 @@ function getMockCurrencies(networks: Networks): Currencies {
       networkAssets.forEach(({ assetId, purchaseProviders, isUtility, isNative }) => {
         const { symbol, displayName: _displayName } = assetsJson.find(({ id }) => id === assetId)!;
         const displayName = _displayName ?? symbol;
-        const mainNetwork = MAIN_NETWORKS[symbol] ?? mainNet;
+        const mainNetwork = MAIN_NETWORKS[displayName] ?? mainNet;
         const currencyIndex = result.findIndex(
           ({ assetId: _assetId, relayChain: _relayChain, displayName: _displayName }) => {
             const isExistingAssetId = _assetId === assetId;

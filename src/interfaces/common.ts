@@ -66,10 +66,25 @@ type ChainAccount = {
   isReplaced: boolean;
 };
 
+type Placement =
+  | 'top'
+  | 'right'
+  | 'bottom'
+  | 'left'
+  | 'top-start'
+  | 'right-start'
+  | 'bottom-start'
+  | 'left-start'
+  | 'top-end'
+  | 'right-end'
+  | 'bottom-end'
+  | 'left-end';
+
 export {
   DerivationPath,
   DerivationPaths,
   FiatJson,
+  Placement,
   FilterHistory,
   ImportType,
   MenuItem,

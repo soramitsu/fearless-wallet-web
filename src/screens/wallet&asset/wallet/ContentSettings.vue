@@ -1,11 +1,14 @@
 <template>
-  <div class="settings">
+  <div class="content-settings">
     <div class="settings-part">
       <template v-if="!syncedShowAssetsManagementForm">
         <TabButton
-          v-for="tabName in tabsOptions"
+          v-for="{ tabName, tooltipText, target, classes } in tabsOptions"
           class="tab"
           :key="tabName"
+          :tooltipText="tooltipText"
+          :target="target"
+          :class="classes"
           :text="tabName"
           :isActive="activeTabName === tabName"
           @click="openTab(tabName)"
@@ -14,8 +17,11 @@
 
       <TabButton
         v-else
+        tooltipText="Turn off the visibility of assets with zero balances"
+        class="hide-zero"
+        target=".hide-zero"
+        placementTooltip="right"
         :text="toggleButtonText"
-        title="turn off the visibility of assets with zero balances"
         @click="$emit('toggleCurrenciesVisible', allCurrenciesHidden)"
       />
     </div>
@@ -28,7 +34,14 @@
         class="search"
       />
 
-      <CircleButton :iconName="iconName" backgroundColor="none" @click="toggleAssetsManagementVisible" />
+      <CircleButton
+        backgroundColor="none"
+        tooltipText="Asset management"
+        placement="left"
+        :target="target"
+        :iconName="iconName"
+        @click="toggleAssetsManagementVisible"
+      />
     </div>
   </div>
 </template>
@@ -45,6 +58,13 @@ import SearchInput from '@/components/SearchInput.vue';
 import Switcher from '@/components/Switcher.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
+interface TabsOptions {
+  tabName: TabWallet;
+  tooltipText: string;
+  classes: string;
+  target: string;
+}
+
 @Component({
   components: {
     TabButton,
@@ -54,13 +74,30 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
   },
 })
 export default class ContentSettings extends Vue {
-  readonly tabsOptions: TabWallet[] = ['Currencies']; // ['Currencies', 'NFTs']
+  readonly tabsOptions: TabsOptions[] = [
+    {
+      tabName: 'Currencies',
+      tooltipText: 'Fungible tokens',
+      classes: 'currencies-tab',
+      target: '.currencies-tab',
+    },
+    // {
+    //   tabName: 'NFTs',
+    //   tooltipText: 'Non fungible tokens',
+    //   classes: 'nft-tab',
+    //   target: '.nft-tab',
+    // },
+  ];
 
   @PropSync('activeTabName', { type: String }) syncedActiveTabName!: TabWallet;
   @PropSync('filterValue', { type: String }) syncedFilterValue!: TabWallet;
   @PropSync('showAssetsManagementForm', { type: Boolean }) syncedShowAssetsManagementForm!: boolean;
   @Prop(Array) currencies!: Currency[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get target() {
+    return `.${this.iconName}`;
+  }
 
   get allCurrenciesHidden() {
     const visibleCurrencies = this.currencies.filter((currency) =>
@@ -93,7 +130,7 @@ export default class ContentSettings extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.settings {
+.content-settings {
   display: flex;
   justify-content: space-between;
   margin-bottom: 10px;

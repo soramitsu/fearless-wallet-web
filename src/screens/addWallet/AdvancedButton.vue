@@ -12,7 +12,7 @@
 
 <style lang="scss" scoped>
 .advanced-button {
-  color: #ffffff;
+  color: $plain-white;
   margin-top: 5px;
   user-select: none;
 

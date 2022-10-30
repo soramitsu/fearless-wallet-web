@@ -5,6 +5,7 @@
     :handlerClose="handlerClose"
     :sizeWidth="sizeWidth"
     :showBorder="true"
+    :closeBuBackground="closeBuBackground"
   >
     <div class="notification-popup-content">
       <Icon v-if="showWarningIcon" icon="info-triangle" className="img" />
@@ -12,13 +13,7 @@
       <div class="text">{{ text }}</div>
       <div :class="classesSubtext">{{ subtext }}</div>
 
-      <Button
-        v-if="showAcceptButton"
-        class="button"
-        size="medium"
-        :text="acceptButtonText"
-        @click="handlerAcceptButton"
-      />
+      <Button v-if="showAcceptButton" class="button" size="medium" :text="acceptButtonText" @click="handlerAccept" />
 
       <BorderButton
         v-if="showRejectButton"
@@ -33,9 +28,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Popup from './Popup.vue';
-import Button from './Button.vue';
-import BorderButton from './BorderButton.vue';
+import Popup from '@/components/Popup.vue';
+import Button from '@/components/Button.vue';
+import BorderButton from '@/components/BorderButton.vue';
 
 interface Headers {
   text: string;
@@ -57,18 +52,19 @@ export default class NotificationPopup extends Vue {
   @Prop({ default: false }) showRejectButton!: boolean;
   @Prop({ default: true }) showWarningIcon!: boolean;
   @Prop({ default: true }) showHeader!: boolean;
+  @Prop({ default: true }) closeBuBackground!: boolean;
   @Prop({ default: 'medium' }) sizeWidth!: Size;
   @Prop({ default: 'Cancel' }) rejectButtonText!: string;
   @Prop(String) acceptButtonText!: string;
   @Prop(Function) handlerClose!: VoidFunction;
-  @Prop(Function) handlerAcceptButton!: VoidFunction;
+  @Prop(Function) handlerAccept!: VoidFunction;
 
   get text() {
-    return this.headers?.text ?? '';
+    return this.headers.text;
   }
 
   get subtext() {
-    return this.headers?.subtext ?? '';
+    return this.headers.subtext;
   }
 
   get classesSubtext() {

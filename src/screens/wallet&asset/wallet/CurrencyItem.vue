@@ -56,18 +56,29 @@
         <CircleButton
           iconName="send-white"
           backgroundColor="black"
-          class="button"
+          class="button send"
+          tooltipText="Send"
+          target=".send"
           @click="toggleVisibleActivityForm('showSendForm', true, currency)"
         />
 
         <CircleButton
           iconName="receive-white"
           backgroundColor="black"
-          class="button"
+          class="button receive"
+          tooltipText="Receive"
+          target=".receive"
           @click="toggleVisibleActivityForm('showReceiveForm', true, currency)"
         />
 
-        <CircleButton iconName="chevron-right" backgroundColor="none" backgroundColorHover="black" />
+        <CircleButton
+          iconName="chevron-right"
+          backgroundColor="none"
+          backgroundColorHover="black"
+          class="details"
+          tooltipText="Asset details"
+          target=".details"
+        />
       </template>
 
       <Switcher v-else v-model="currencyVisible" />
@@ -95,6 +106,8 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
   },
 })
 export default class CurrencyItem extends Vue {
+  readonly countDisplayedNetworks = 5;
+
   @Prop(Object) currency!: Currency;
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
@@ -162,21 +175,25 @@ export default class CurrencyItem extends Vue {
   }
 
   get availableInNetworks() {
-    return this.currency.getAvailableInNetworks(this.selectedWallet);
+    // return this.currency.getAvailableInNetworks(this.selectedWallet); // Please don't delete. Needed for development.
+
+    return this.currency.getAvailableInNetworks(this.selectedWallet).filter(({ balance: { total } }) => total !== '0');
   }
 
   get isAdditional() {
-    return this.availableInNetworks.length > 5;
+    return this.availableInNetworks.length > this.countDisplayedNetworks;
   }
 
   get additionalCount() {
-    return this.availableInNetworks.length - 4;
+    return this.availableInNetworks.length - (this.countDisplayedNetworks - 1);
   }
 
   get availableInNetworksPart() {
-    return this.isCurrentNetwork
-      ? [{ network: this.selectedNetwork }]
-      : [...this.availableInNetworks].splice(0, this.isAdditional ? 4 : 5);
+    if (this.isCurrentNetwork) return [{ network: this.selectedNetwork }];
+
+    if (this.isAdditional) return [...this.availableInNetworks].splice(0, this.countDisplayedNetworks - 1);
+
+    return this.availableInNetworks;
   }
 
   openAssetPage(event: Event) {

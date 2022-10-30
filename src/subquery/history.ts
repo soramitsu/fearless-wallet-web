@@ -1,7 +1,27 @@
 import axios from 'axios';
+// import { gql } from '@urql/core';
 import type { HistoryItem } from '@/interfaces/history';
 
-export async function loadHistory(
+// const historyElementsQuery = gql`
+//   query HistoryElements($address: Str = "", $first: Int = pageSize, $after: Cursor = cursor) {
+//     historyElements(after: $after, first: $first, orderBy: TIMESTAMP_DESC, filter: { address: { equalTo: $address } }) {
+//       pageInfo {
+//         startCursor
+//         endCursor
+//       }
+//       nodes {
+//         id
+//         timestamp
+//         address
+//         reward
+//         extrinsic
+//         transfer
+//       }
+//     }
+//   }
+// `;
+
+async function loadHistory(
   url: string,
   address: string,
   pageSize: number,
@@ -37,3 +57,5 @@ export async function loadHistory(
 
   return data?.historyElements;
 }
+
+export { loadHistory };

@@ -31,9 +31,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import Scroll from './Scroll.vue';
-import SearchInput from './SearchInput.vue';
-import Corners from './Corners.vue';
+import Scroll from '@/components/Scroll.vue';
+import SearchInput from '@/components/SearchInput.vue';
+import Corners from '@/components/Corners.vue';
 
 type HorizontalPlacement = 'left' | 'center' | 'right';
 type VerticalPlacement = 'top' | 'center' | 'bottom';
@@ -63,6 +63,7 @@ export default class Popup extends Vue {
   @Prop({ default: true }) showBlur!: boolean;
   @Prop({ default: true }) showAnimation!: boolean;
   @Prop({ default: true }) showBackground!: boolean;
+  @Prop({ default: true }) closeBuBackground!: boolean;
   @Prop({ default: false }) showSearch!: boolean;
   @Prop({ default: false }) showBorder!: boolean;
   @Prop({ default: 'medium' }) sizeWidth!: Size;
@@ -149,7 +150,8 @@ export default class Popup extends Vue {
   }
 
   backgroundClick(event: Event) {
-    if ((event.target as HTMLDivElement)?.classList.contains('popup-background')) this.close();
+    if (this.closeBuBackground && (event.target as HTMLDivElement)?.classList.contains('popup-background'))
+      this.close();
   }
 
   close() {
@@ -234,7 +236,7 @@ export default class Popup extends Vue {
     .header-text {
       font-weight: 700;
       font-size: 18px;
-      color: $default-white;
+      color: $plain-white;
     }
 
     .header-text-success {

@@ -23,6 +23,8 @@
 
           <QR class="qr" ref="qr" :showLogo="true" :width="200" :payload="address" />
         </div>
+
+        <Tooltip text="Сopied" target=".copy-icon" placement="bottom" trigger="click" />
       </div>
 
       <div class="activity-buttons">
@@ -35,7 +37,9 @@
           @click="saveQR"
         />
 
-        <Button size="big" class="button" width="260px" text="Copy QR-code" iconName="share" @click="shareQR" />
+        <Button size="big" class="button copy-qr" width="260px" text="Copy QR-code" iconName="share" @click="shareQR" />
+
+        <Tooltip text="Сopied QR" target=".copy-qr" placement="bottom" trigger="click" />
       </div>
     </div>
 
@@ -71,12 +75,14 @@ import { cut } from '@/helpers/history';
 import AboveForm from '@/components/AboveForm.vue';
 import BorderButton from '@/components/BorderButton.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
+import Tooltip from '@/components/Tooltip.vue';
 
 @Component({
   components: {
     QR,
     Input,
     Button,
+    Tooltip,
     AboveForm,
     RotateInput,
     BorderButton,
@@ -134,7 +140,9 @@ export default class ReceiveForm extends Vue {
   }
 
   createBlob() {
-    const imgQR = (this.$refs.qr as Vue).$el;
+    const el = (this.$refs.qr as Vue).$el;
+    const imgQR = el.firstChild as Element;
+    const imgLogo = el.lastChild as Element;
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
 
@@ -142,6 +150,7 @@ export default class ReceiveForm extends Vue {
     canvas.height = imgQR.clientHeight;
 
     context?.drawImage(imgQR as CanvasImageSource, 0, 0);
+    context?.drawImage(imgLogo as CanvasImageSource, 67.5, 85, 65, 30);
 
     return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   }

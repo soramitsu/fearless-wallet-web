@@ -1,8 +1,6 @@
 <template>
   <Popup
     :isIcon="isPendingWithResetForm"
-    :height="getHeight"
-    :maxHeight="maxHeight"
     :sizeWidth="320"
     :headerType="status"
     :headerText="header"
@@ -11,19 +9,10 @@
   >
     <div v-if="isPendingWithResetForm" class="reset__form">
       <span class="message">{{ noAnswerMessage }}</span>
-      <Corners size="big">
-        <div class="corners__container">
-          <span>Did you make a mistake?</span>
-          <Button size="small" text="Reset Connection" @click="onResetConnection" />
-        </div>
-      </Corners>
 
-      <Corners size="big">
-        <div class="corners__container">
-          <span>Wallet not receiving request?</span>
-          <Button size="small" width="180" text="Cancel Request" @click="onCancelRequest" />
-        </div>
-      </Corners>
+      <Button size="big" type="primary" :border="false" width="180" text="Cancel Request" @click="onCancelRequest" />
+
+      <Button size="big" type="secondary" :border="false" text="Reset Connection" @click="onResetConnection" />
     </div>
 
     <ConnectionStatus v-else-if="isRequestFinished" :status="status" @close="close" />
@@ -37,23 +26,18 @@ import ConnectionStatus from './ConnectionStatus.vue';
 import { beaconController } from '@/controllers/beaconController';
 import { PermissionErrorPayload, RequestSentInfo } from '@/interfaces';
 import Button from '@/components/Button.vue';
-import Loader from '@/components/Loader.vue';
-import Corners from '@/components/Corners.vue';
-import Alert from '@/components/Alert.vue';
 import { Components } from '@/router/routes';
 import { MOBILE_CONNECTOR_MESSAGES } from '@/consts/messages';
 import Popup from '@/components/Popup.vue';
+
 @Component({
   components: {
     Button,
-    Loader,
-    Corners,
     Popup,
-    Alert,
     ConnectionStatus,
   },
 })
-export default class PermissionRequest extends Vue {
+export default class PermissionRequestPopup extends Vue {
   @Prop(Object) requestInfo!: RequestSentInfo | PermissionErrorPayload;
   @Prop({ type: Object || null, default: null }) requestResponse?: PermissionResponseOutput;
   @Prop(String) status!: 'reset_form' | 'success' | 'failed' | 'active_account_exists';
@@ -76,18 +60,6 @@ export default class PermissionRequest extends Vue {
     return this.isSuccess || this.isFailed || this.isActiveAccountExists;
   }
 
-  get getHeight() {
-    if (this.isRequestFinished) return 300;
-
-    return 400;
-  }
-
-  get maxHeight() {
-    if (this.isRequestFinished) return 350;
-
-    return 480;
-  }
-
   get isPendingWithResetForm() {
     return this.status === 'reset_form';
   }
@@ -95,7 +67,7 @@ export default class PermissionRequest extends Vue {
   get header() {
     if (this.isRequestFinished) return '';
 
-    return `Request send to Fearless Wallet`;
+    return `No answer from wallet`;
   }
   toWalletScreen() {
     this.$router.push({ name: Components.Wallet });
@@ -127,6 +99,9 @@ export default class PermissionRequest extends Vue {
 }
 .message {
   color: $gray-color;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 147.5%;
 }
 .icon {
   width: 40px;

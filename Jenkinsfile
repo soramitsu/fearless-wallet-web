@@ -26,7 +26,7 @@ pipeline {
   }
   agent none
   stages {
-    stage ('check code'){  
+    stage ('Check code'){  
         agent {
             docker {
             label "${agentLabel}"
@@ -59,7 +59,7 @@ pipeline {
             }         
         }    
     }
-    stage ('test and build'){
+    stage ('Test and build'){
         agent {
             docker {
             label "${agentLabel}"
@@ -114,16 +114,16 @@ pipeline {
                 }
             }    
         }
-        post {
-            always {
-                script{
-                    gitNotify('main-CI', currentBuild.result, currentBuild.result)
-                }
-            }
-            cleanup {
-                cleanWs()
-            }
+    }
+  }
+  post {
+    always {
+        script{
+            gitNotify('main-CI', currentBuild.result, currentBuild.result)
         }
+    }
+    cleanup {
+        cleanWs()
     }
   }
 }

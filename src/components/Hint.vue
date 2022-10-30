@@ -1,6 +1,7 @@
 <template>
   <div class="hint">
-    <img :src="img" class="notifications-icon" />
+    <Icon :icon="iconName" className="notifications-icon" />
+
     <span class="info-text" :class="getSize">
       {{ text }}
     </span>
@@ -17,10 +18,6 @@ export default class Hint extends Vue {
   @Prop(String) iconName!: IconNameType;
   @Prop(String) text!: string;
   @Prop({ default: 'medium' }) size!: Size;
-
-  get img() {
-    return require(`@/assets/${this.iconName}.svg`);
-  }
 
   get getSize() {
     return this.size === 'big' ? 'info-text--big' : 'info-text';

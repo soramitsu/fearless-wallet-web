@@ -2,7 +2,7 @@
   <Popup class="sending-popup" :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close">
     <div class="popup-content">
       <template v-if="!transactionState && !isSignMobile">
-        <img src="@/assets/lock-green.svg" />
+        <Icon icon="lock-green" />
 
         <div class="text row">Enter password to confirm the transaction</div>
 

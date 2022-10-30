@@ -1,5 +1,5 @@
 <template>
-  <SvgIcon :icon="iconName" :style="style" :alt="name" />
+  <Icon :icon="iconName" :style="style" :alt="name" />
 </template>
 
 <script lang="ts">
@@ -16,7 +16,10 @@ export default class NetworkLogo extends Vue {
   get style() {
     const styles: Record<string, string> = {};
 
-    if (this.width) styles.width = `${this.width}px`;
+    if (this.width) {
+      styles.width = `${this.width}px`;
+      styles.height = `${this.width}px`;
+    }
 
     return styles;
   }

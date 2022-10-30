@@ -11,11 +11,13 @@
   >
     <div class="node-settings">
       <div class="row" @click="$emit('openEditNodeForm')">
-        <img src="@/assets/edit.svg" class="edit-icon" />
+        <Icon icon="edit" className="edit-icon" />
+
         <div class="label">Edit node</div>
       </div>
       <div class="row" @click="$emit('openNotificationPopup', 'delete')">
-        <img src="@/assets/basket.svg" class="basket-icon" />
+        <Icon icon="backet" className="backet-icon" />
+
         <div class="label delete">Delete node</div>
       </div>
     </div>

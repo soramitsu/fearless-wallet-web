@@ -8,7 +8,7 @@
           <div class="item-value item-icon">
             {{ displayHash }}
 
-            <img src="@/assets/copy.svg" class="copy" @click="copy(hash)" />
+            <Icon icon="copy" className="copy" @click="copy(hash)" />
           </div>
         </div>
 
@@ -21,7 +21,7 @@
 
               {{ displayFromAddress }}
 
-              <img src="@/assets/copy.svg" class="copy" @click="copy(fromAddress)" />
+              <Icon icon="copy" className="copy" @click="copy(fromAddress)" />
             </div>
           </div>
           <div class="item">
@@ -32,7 +32,7 @@
 
               {{ displayToAddress }}
 
-              <img src="@/assets/copy.svg" class="copy" @click="copy(toAddress)" />
+              <Icon icon="copy" className="copy" @click="copy(toAddress)" />
             </div>
           </div>
         </template>

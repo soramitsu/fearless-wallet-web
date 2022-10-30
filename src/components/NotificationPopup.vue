@@ -7,7 +7,7 @@
     :showBorder="true"
   >
     <div class="notification-popup-content">
-      <img v-if="showWarningIcon" src="@/assets/info-triangle.svg" class="img" />
+      <Icon v-if="showWarningIcon" icon="info-triangle" className="img" />
 
       <div class="text">{{ text }}</div>
       <div :class="classesSubtext">{{ subtext }}</div>

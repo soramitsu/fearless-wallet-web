@@ -11,7 +11,7 @@
             {{ authorizedAccounts }}
           </span>
 
-          <img class="trash" src="@/assets/trash.svg" @click="removeAuth" />
+          <Icon icon="trash" className="trash" @click="removeAuth" />
         </SRow>
       </SCol>
     </SRow>

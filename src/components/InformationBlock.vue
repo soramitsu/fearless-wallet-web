@@ -1,6 +1,6 @@
 <template>
   <div class="information-block">
-    <img src="@/assets/info-triangle.svg" class="img" />
+    <Icon icon="info-triangle" className="img" />
 
     <div class="info-text">
       {{ text }}

@@ -11,7 +11,7 @@
           <div class="address-wrapper" @click="copyAddress">
             <div class="address">{{ address }}</div>
 
-            <img src="@/assets/copy.svg" class="copy" />
+            <Icon icon="copy" className="copy" />
           </div>
         </div>
       </div>
@@ -40,7 +40,7 @@
       <div class="label">Custom nodes</div>
 
       <div class="add-node" @click="$emit('openEditNodeForm', selectedNetwork)">
-        <img src="@/assets/plus.svg" class="plus" />
+        <Icon icon="plus" className="plus" />
 
         <div>Add node</div>
       </div>

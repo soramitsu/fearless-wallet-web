@@ -8,7 +8,7 @@
       :class="buttonClasses"
       @click="$emit('click')"
     >
-      <img :src="img" class="icon" v-if="iconName" />
+      <Icon v-if="iconName" :icon="iconName" className="icon" />
 
       {{ text }}
     </s-button>
@@ -34,10 +34,6 @@ export default class Button extends Vue {
   @Prop({ default: false }) disabled!: boolean;
   @Prop({ default: true }) hover!: boolean;
   @Prop({ default: true }) border!: boolean;
-
-  get img() {
-    return require(`@/assets/${this.iconName}.svg`);
-  }
 
   get containerButtonClasses() {
     // for "small" and "mini" sizes also medium

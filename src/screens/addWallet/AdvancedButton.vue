@@ -3,7 +3,7 @@
     <div class="button" @click="$emit('click')">
       Advanced backup settings
 
-      <img src="@/assets/circle-plus.svg" class="plus-icon" />
+      <Icon icon="circle-plus" className="plus-icon" />
     </div>
   </div>
 </template>

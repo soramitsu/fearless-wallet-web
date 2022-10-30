@@ -2,30 +2,30 @@ import URLS from '@/consts/urls';
 
 const MAIN_ITEMS = [
   {
-    icon: 'info.svg',
+    icon: 'info',
     label: 'Official Website',
     subLabel: 'fearlesswallet.io',
     url: URLS.FEARLESS_WALLET,
   },
   {
-    icon: 'wiki.svg',
+    icon: 'wiki',
     label: 'Learn on Wiki',
     subLabel: 'wiki.fearlesswallet.io',
     url: URLS.WIKI,
   },
   {
-    icon: 'github.svg',
+    icon: 'github',
     label: 'Github Source Code',
     subLabel: 'App version 1.1.0',
     url: URLS.GITHUB,
   },
   {
-    icon: 'terms_conditions.svg',
+    icon: 'terms_conditions',
     label: 'Terms and Conditions',
     url: URLS.TERMS,
   },
   {
-    icon: 'terms_conditions.svg',
+    icon: 'terms_conditions',
     label: ' Privacy Policy',
     url: URLS.PRIVACY,
   },
@@ -33,13 +33,13 @@ const MAIN_ITEMS = [
 
 const COMMUNITY_ITEMS = [
   {
-    icon: 'telegram.svg',
+    icon: 'telegram',
     label: 'Join on Telegram',
     subLabel: 't.me/fearlesswallet',
     url: URLS.TELEGRAM,
   },
   {
-    icon: 'medium.svg',
+    icon: 'medium',
     label: 'Read on Medium',
     subLabel: 'medium.com/fearlesswallet',
     url: URLS.MEDIUM,
@@ -48,25 +48,25 @@ const COMMUNITY_ITEMS = [
 
 const SOCIAL_MEDIA_ITEMS = [
   {
-    icon: 'instagram.svg',
+    icon: 'instagram',
     label: 'Like on Instagram',
     subLabel: 'instagram.com/fearless_wallet',
     url: URLS.INSTAGRAM,
   },
   {
-    icon: 'twitter.svg',
+    icon: 'twitter',
     label: 'Read on Twitter',
     subLabel: 'twitter.com/Soramitsu_co',
     url: URLS.TWITTER,
   },
   {
-    icon: 'youtube.svg',
+    icon: 'youtube',
     label: 'Subscribe on YouTube',
     subLabel: 'youtube.com/fearlesswallet',
     url: URLS.YOUTUBE,
   },
   {
-    icon: 'announcements.svg',
+    icon: 'announcements',
     label: 'Receive Announcements',
     subLabel: 't.me/fearless_announcements',
     url: URLS.ANNOUNCEMENTS,
@@ -75,13 +75,13 @@ const SOCIAL_MEDIA_ITEMS = [
 
 const SUPPORT_ITEMS = [
   {
-    icon: 'support.svg',
+    icon: 'support',
     label: 'Ask for Support',
     subLabel: 't.me/fearlesshappiness',
     url: URLS.FEARLESS_HAPPINESS,
   },
   {
-    icon: 'more.svg',
+    icon: 'more',
     label: 'Contact Email',
     subLabel: 'fearless@soramitsu.co.jp',
     url: URLS.EMAIL,

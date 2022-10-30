@@ -8,7 +8,8 @@
           <template v-else>
             <div class="button"></div>
             <div class="header-with-icon">
-              <img v-if="isIcon" class="attention-icon" src="@/assets/info-triangle.svg" />
+              <Icon v-if="isIcon" className="attention-icon" icon="info-triangle" />
+
               <div v-if="headerText" :class="headerClasses">{{ headerText }}</div>
             </div>
           </template>

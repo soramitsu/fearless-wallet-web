@@ -18,13 +18,7 @@
       backgroundColor="light-black"
       @click="openAccountSettingsPopup(network)"
     />
-
-    <img
-      v-else-if="!isMobile"
-      src="@/assets/circle-plus-pink.svg"
-      class="plus-icon"
-      @click="$emit('openSourceTypePopup')"
-    />
+    <Icon v-else-if="!isMobile" icon="circle-plus-pink" className="plus-icon" @click="$emit('openSourceTypePopup')" />
   </div>
 </template>
 

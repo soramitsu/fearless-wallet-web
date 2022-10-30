@@ -1,6 +1,6 @@
 <template>
   <div :class="menuItemClasses">
-    <SvgIcon :icon="img" className="menu-icon" />
+    <Icon :icon="img" className="menu-icon" />
 
     <div class="name">
       {{ name }}

@@ -1,6 +1,7 @@
 <template>
   <div class="connection__status">
-    <img class="connection__status-icon" :src="icon" />
+    <Icon :icon="icon" className="connection__status-icon" />
+
     <span class="connection__status-name" :class="nameColorClass">{{ statusHeader }}</span>
     <span class="connection__status-message">{{ message }}</span>
   </div>

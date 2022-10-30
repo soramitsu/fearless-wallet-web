@@ -17,7 +17,7 @@
 
         <div v-for="{ icon, label, subLabel, url } in mainItems" class="about-item" :key="label" @click="open(url)">
           <div class="about-left-part">
-            <img :src="getImg(icon)" class="icon" />
+            <Icon :icon="icon" class="icon" />
 
             <div class="item-descriptions">
               <div class="label">{{ label }}</div>
@@ -25,7 +25,7 @@
             </div>
           </div>
 
-          <img src="@/assets/chevron-right.svg" :href="url" class="chevron-right" />
+          <Icon icon="chevron-right" :href="url" className="chevron-right" />
         </div>
 
         <div class="title">Community wallet</div>
@@ -37,7 +37,7 @@
           @click="open(url)"
         >
           <div class="about-left-part">
-            <img :src="getImg(icon)" class="icon" />
+            <Icon :icon="icon" class="icon" />
 
             <div class="item-descriptions">
               <div class="label">{{ label }}</div>
@@ -45,7 +45,7 @@
             </div>
           </div>
 
-          <img src="@/assets/chevron-right.svg" class="chevron-right" />
+          <Icon icon="chevron-right" className="chevron-right" />
         </div>
 
         <div class="title">Social Media</div>
@@ -57,7 +57,7 @@
           @click="open(url)"
         >
           <div class="about-left-part">
-            <img :src="getImg(icon)" class="icon" />
+            <Icon :icon="icon" class="icon" />
 
             <div class="item-descriptions">
               <div class="label">{{ label }}</div>
@@ -65,14 +65,14 @@
             </div>
           </div>
 
-          <img src="@/assets/chevron-right.svg" class="chevron-right" />
+          <Icon icon="chevron-right" className="chevron-right" />
         </div>
 
         <div class="title">Support & Feedback</div>
 
         <div v-for="{ icon, label, subLabel, url } in supportItems" class="about-item" :key="label" @click="open(url)">
           <div class="about-left-part">
-            <img :src="getImg(icon)" class="icon" />
+            <Icon :icon="icon" class="icon" />
 
             <div class="item-descriptions">
               <div class="label">{{ label }}</div>
@@ -80,7 +80,7 @@
             </div>
           </div>
 
-          <img src="@/assets/chevron-right.svg" class="chevron-right" />
+          <Icon icon="chevron-right" className="chevron-right" />
         </div>
       </div>
     </Popup>

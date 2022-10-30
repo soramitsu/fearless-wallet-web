@@ -17,7 +17,7 @@
             <div class="address">
               {{ cutAddress }}
 
-              <img src="@/assets/copy.svg" class="copy-icon" @click="copyAddress" />
+              <Icon icon="copy" className="copy-icon" @click="copyAddress" />
             </div>
           </div>
 

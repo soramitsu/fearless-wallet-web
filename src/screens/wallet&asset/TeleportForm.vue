@@ -24,7 +24,7 @@
             <div class="network-name">{{ originalNetworkString }}</div>
           </div>
 
-          <img src="@/assets/bold-arrow-right.svg" />
+          <Icon icon="bold-arrow-right" />
 
           <div class="column">
             <div class="name">To</div>

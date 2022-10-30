@@ -1,7 +1,7 @@
 import Vue from 'vue';
-import SvgIcon from '@/components/SvgIcon.vue'; // svg component
+import Icon from '@/components/Icon.vue'; // svg component
 
-Vue.component('SvgIcon', SvgIcon);
+Vue.component('Icon', Icon);
 
 const requireAll = (requireContext: __WebpackModuleApi.RequireContext) => requireContext.keys().map(requireContext);
 

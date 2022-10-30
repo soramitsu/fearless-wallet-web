@@ -8,8 +8,10 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component
-export default class SvgIcon extends Vue {
+export default class Icon extends Vue {
   @Prop(String) icon!: string;
+  @Prop(String) refName?: string;
+
   @Prop({ type: String, default: '' }) className!: string;
 
   get getIconName() {

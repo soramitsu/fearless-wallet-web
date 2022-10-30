@@ -15,7 +15,7 @@ ArrayList uploadToNexusFor    = ['master', 'develop']
 
 properties([parameters([
   booleanParam(defaultValue: true, description: '', name: 'tests'),
-  booleanParam(defaultValue: true, description: 'Upload builds to nexus (master and develop branches upload always)', name: 'upload_to_nexus'),
+  booleanParam(defaultValue: false, description: 'Upload builds to nexus (master and develop branches upload always)', name: 'upload_to_nexus'),
 ])])
 
 pipeline {
@@ -92,25 +92,32 @@ pipeline {
                     sh "yarn electron:build --publish=never --win portable --x64 --ia32"
                 }
             }
-        }
-        post {
-            success {
-                script {
-                    extensions = [ 'zip', 'AppImage' , 'exe' ]
-                    // upload to nexus
-                    if (env.GIT_BRANCH in uploadToNexusFor || params.upload_to_nexus || env.TAG_NAME ) {
-                        withCredentials([usernamePassword(credentialsId: nexusCredentials, passwordVariable: 'NEXUS_PASS', usernameVariable: 'NEXUS_USER')]) {
-                            uploadPath = env.TAG_NAME ? "fearless/desktop/tags/${env.TAG_NAME}" : "fearless/desktop/${env.GIT_BRANCH}/${new Date().format("yyyy-MM-dd")}-${env.GIT_COMMIT.substring(0,6)}"
-                            artifactServers.each { server ->
-                                url = "https://${server}/repository/artifacts/${uploadPath}/dist_electron/"
-                                sh(script: "find ./dist_electron/ -maxdepth 1 -regex '.*\\.\\(${extensions.join('\\|')}\\)\$' | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
-                                echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
-                                url = "https://${server}/repository/artifacts/${uploadPath}/dist_extension/"
-                                sh(script: "find ./dist/extension -type f | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
-                                echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
+            stage ('Push artifacts') {
+                steps {
+                    script {
+                        extensions = [ 'zip', 'AppImage' , 'exe' ]
+                        // upload to nexus
+                        if (env.GIT_BRANCH in uploadToNexusFor || params.upload_to_nexus || env.TAG_NAME ) {
+                            withCredentials([usernamePassword(credentialsId: nexusCredentials, passwordVariable: 'NEXUS_PASS', usernameVariable: 'NEXUS_USER')]) {
+                                uploadPath = env.TAG_NAME ? "fearless/desktop/tags/${env.TAG_NAME}" : "fearless/desktop/${env.GIT_BRANCH}/${new Date().format("yyyy-MM-dd")}-${env.GIT_COMMIT.substring(0,6)}"
+                                artifactServers.each { server ->
+                                    url = "https://${server}/repository/artifacts/${uploadPath}/dist_electron/"
+                                    sh(script: "find ./dist_electron/ -maxdepth 1 -regex '.*\\.\\(${extensions.join('\\|')}\\)\$' | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
+                                    echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
+                                    url = "https://${server}/repository/artifacts/${uploadPath}/dist_extension/"
+                                    sh(script: "find ./dist/extension -type f | while read line; do curl --http1.1 -u ${NEXUS_USER}:${NEXUS_PASS} --upload-file \"\$line\" ${url}; echo ${url}\$(basename \"\$line\"); done")
+                                    echo "Browse url: https://${server}/#browse/browse:artifacts:${uploadPath}"
+                                }
                             }
                         }
                     }
+                }
+            }    
+        }
+        post {
+            always {
+                script{
+                    gitNotify('main-CI', currentBuild.result, currentBuild.result)
                 }
             }
             cleanup {

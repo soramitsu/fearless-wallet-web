@@ -45,7 +45,7 @@
 
             {{ displayValidator }}
 
-            <img src="@/assets/copy.svg" class="copy" @click="copy(validator)" />
+            <Icon icon="copy" className="copy" @click="copy(validator)" />
           </div>
         </div>
 

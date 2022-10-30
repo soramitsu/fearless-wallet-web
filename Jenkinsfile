@@ -114,16 +114,16 @@ pipeline {
                 }
             }    
         }
-    }
-  }
-  post {
-    always {
-        script{
-            gitNotify('main-CI', currentBuild.result, currentBuild.result)
+        post {
+            always {
+                script{
+                    gitNotify('main-CI', currentBuild.result, currentBuild.result)
+                }
+            }
+            cleanup {
+                cleanWs()
+            }
         }
-    }
-    cleanup {
-        cleanWs()
     }
   }
 }

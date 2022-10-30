@@ -3,12 +3,10 @@
     <div class="button" @click="$emit('click')">
       Advanced backup settings
 
-      <Icon icon="circle-plus" className="plus-icon" />
+      <Icon icon="circle-plus" :className="['plus-icon']" />
     </div>
   </div>
 </template>
-
-<style lang="scss"></style>
 
 <style lang="scss" scoped>
 .advanced-button {

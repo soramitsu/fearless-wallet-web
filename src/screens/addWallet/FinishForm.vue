@@ -4,16 +4,29 @@
     <div class="row">
       <BorderButton
         text="Follow on Twitter"
-        iconName="twitter-pink"
+        iconName="twitter"
+        iconColor="pink"
         class="follow-button"
         width="256px"
         @click="openPage(URLS.TWITTER)"
       />
 
-      <BorderButton text="Join on Telegram" iconName="telegram-pink" width="256px" @click="openPage(URLS.TELEGRAM)" />
+      <BorderButton
+        text="Join on Telegram"
+        iconName="telegram"
+        iconColor="pink"
+        width="256px"
+        @click="openPage(URLS.TELEGRAM)"
+      />
     </div>
     <div class="row">
-      <BorderButton text="Read on Medium" iconName="medium-pink" width="256px" @click="openPage(URLS.MEDIUM)" />
+      <BorderButton
+        text="Read on Medium"
+        iconName="medium"
+        iconColor="pink"
+        width="256px"
+        @click="openPage(URLS.MEDIUM)"
+      />
 
       <BorderButton text="Learn on Wiki" iconName="file-dock" width="256px" @click="openPage(URLS.WIKI)" />
     </div>

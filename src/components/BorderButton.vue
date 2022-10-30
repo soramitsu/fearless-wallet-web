@@ -7,6 +7,7 @@
       :disabled="disabled"
       :hover="hover"
       :iconName="iconName"
+      :iconColor="iconColor"
       :size="size"
       :fontSize="fontSize"
       :text="text"
@@ -34,6 +35,7 @@ export default class BorderButton extends Vue {
   @Prop(String) text!: string;
   @Prop(String) width!: string;
   @Prop(String) iconName!: string;
+  @Prop(String) iconColor!: string;
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'medium' }) fontSize!: FontSize;
   @Prop({ default: 'medium' }) borderRadius!: Size;

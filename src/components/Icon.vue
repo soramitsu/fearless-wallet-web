@@ -1,5 +1,5 @@
 <template>
-  <svg class="svg-icon" :class="className" aria-hidden="true" v-on="$listeners">
+  <svg class="svg-icon" :class="getClasses" aria-hidden="true" v-on="$listeners">
     <use :xlink:href="getIconName" />
   </svg>
 </template>
@@ -10,10 +10,21 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 @Component
 export default class Icon extends Vue {
   @Prop(String) icon!: string;
+  @Prop(String) iconColor?: string;
   @Prop(String) refName?: string;
   @Prop({ type: Array, default: () => [] }) className!: string[];
 
   readonly baseClass = 'svg-icon';
+
+  get getIconColor() {
+    return `icon--${this.iconColor}`;
+  }
+  get getClasses() {
+    const classes = [...this.className];
+    if (this.iconColor) classes.push(this.getIconColor);
+
+    return classes;
+  }
 
   get getIconName() {
     return `#icon-${this.icon}`; //icon-class='.svg file name' ==> '#icon-.svg file name'
@@ -28,5 +39,9 @@ export default class Icon extends Vue {
   vertical-align: -0.15em;
   fill: currentColor;
   overflow: hidden;
+}
+.settings {
+  width: 18px;
+  height: 18px;
 }
 </style>

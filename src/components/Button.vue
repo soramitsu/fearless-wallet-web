@@ -8,7 +8,7 @@
       :class="buttonClasses"
       @click="$emit('click')"
     >
-      <Icon v-if="iconName" :icon="iconName" :className="iconClass" />
+      <Icon v-if="iconName" :icon="iconName" :className="iconClass" icon-color="pink" />
 
       {{ text }}
     </SButton>
@@ -27,6 +27,9 @@ export default class Button extends Vue {
   @Prop(String) text!: string;
   @Prop(String) width!: string;
   @Prop(String) iconName!: string;
+  @Prop(String) iconColor!: string;
+  @Prop({ type: String, default: '' }) iconClasses?: string;
+
   @Prop({ default: 'primary' }) type!: Type;
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'medium' }) fontSize!: FontSize;
@@ -125,8 +128,11 @@ export default class Button extends Vue {
 }
 
 .icon {
-  color: $pink-color;
   margin-right: 8px;
+}
+
+.icon--pink {
+  color: $pink-color;
 }
 
 .secondary {

@@ -1,7 +1,7 @@
 <template functional>
   <div class="loader">
     <div class="circle">
-      <Icon icon="fw-logo" className="logo" />
+      <Icon icon="fw-logo" :className="['logo']" />
     </div>
   </div>
 </template>

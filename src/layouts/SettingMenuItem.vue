@@ -1,12 +1,12 @@
 <template>
   <div class="row" @click="$emit('onOpen')">
     <div class="description">
-      <Icon :icon="icon" className="icon icon--width" />
+      <Icon :icon="icon" :className="iconClass" />
 
       <div class="label">{{ title }}</div>
     </div>
 
-    <Icon icon="chevron-right" className="chevron-right" />
+    <Icon icon="chevron-right" :className="['chevron-right']" />
   </div>
 </template>
 
@@ -16,7 +16,7 @@ import { Vue, Prop, Component } from 'vue-property-decorator';
 export default class SettingsMenuItem extends Vue {
   @Prop(String) icon!: string;
   @Prop(String) title!: string;
-
+  readonly iconClass = ['icon', 'icon--width'];
   get getIconPath() {
     return require(`@/assets/${this.icon}.svg`);
   }

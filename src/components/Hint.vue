@@ -20,9 +20,9 @@ export default class Hint extends Vue {
   baseClass = 'notifications-icon';
 
   get getClasses() {
-    if (this.iconName === 'warning') return `${this.baseClass} warning--orange`;
+    if (this.iconName === 'warning') return [`${this.baseClass} warning--orange`];
 
-    return this.baseClass;
+    return [this.baseClass];
   }
 
   get getSize() {

@@ -1,4 +1,3 @@
-import path from 'path';
 import { keyring } from '@polkadot/ui-keyring';
 import Vue from 'vue';
 import { cryptoWaitReady } from '@polkadot/util-crypto';

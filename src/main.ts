@@ -7,6 +7,7 @@ import store from '@/store';
 import App from '@/App.vue';
 import '@/styles';
 import '@/plugins';
+import '@/assets';
 
 Vue.use(Plugin);
 

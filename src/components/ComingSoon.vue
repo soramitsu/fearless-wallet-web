@@ -1,6 +1,6 @@
 <template>
   <div class="coming-soon">
-    <Icon :icon="getImg" :className="['img']" />
+    <Icon :icon="getImg" className="img" />
     <div class="name">{{ name }} in developing</div>
   </div>
 </template>

@@ -3,6 +3,10 @@ const { defineConfig } = require('@vue/cli-service');
 const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
 const baseConfig = require('./vue.config.base');
 
+function resolve(dir) {
+  return path.join(__dirname, dir);
+}
+
 module.exports = defineConfig({
   ...baseConfig,
   chainWebpack: (config) => {
@@ -23,6 +27,18 @@ module.exports = defineConfig({
         },
       },
     });
+    config.module.rule('svg').exclude.add(resolve('src/assets')).end();
+    config.module
+      .rule('icons')
+      .test(/\.svg$/)
+      .include.add(resolve('src/assets'))
+      .end()
+      .use('svg-sprite-loader')
+      .loader('svg-sprite-loader')
+      .options({
+        symbolId: 'icon-[name]',
+      })
+      .end();
   },
   configureWebpack: (config) => {
     config.plugins.push(new NodePolyfillPlugin());

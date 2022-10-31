@@ -12,7 +12,7 @@ export default class Icon extends Vue {
   @Prop(String) icon!: string;
   @Prop(String) iconColor?: string;
   @Prop(String) refName?: string;
-  @Prop({ type: String || Array, default: '' }) className!: string[] | string;
+  @Prop({ default: '' }) className!: string[] | string;
 
   readonly baseClass = 'svg-icon';
 

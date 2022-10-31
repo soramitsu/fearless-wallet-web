@@ -1,15 +1,15 @@
 <template>
   <div class="mobile-sign__popup">
     <span>To sign with your mobile device, check if your mobile client is open and click "Sign"</span>
-
     <Button
       text="Sign"
       width="100%"
       size="medium"
       fontSize="big"
+      :disabled="isTransactionStarted"
       type="primary"
       :border="false"
-      @click="$emit('onSign')"
+      @click="handleSign"
     />
 
     <Button
@@ -19,7 +19,7 @@
       fontSize="big"
       type="secondary"
       :border="false"
-      @click="$emit('onCancel')"
+      @click="handleCancel"
     />
   </div>
 </template>
@@ -35,7 +35,16 @@ import Popup from '@/components/Popup.vue';
     Popup,
   },
 })
-export default class SignMobile extends Vue {}
+export default class SignMobile extends Vue {
+  isTransactionStarted = false;
+  handleSign() {
+    this.isTransactionStarted = true;
+    this.$emit('onSign');
+  }
+  handleCancel() {
+    this.$emit('onCancel');
+  }
+}
 </script>
 
 <style lang="scss" scoped>

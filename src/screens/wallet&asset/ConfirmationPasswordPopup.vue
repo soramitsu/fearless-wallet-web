@@ -32,8 +32,9 @@
           @click="send"
         />
       </template>
+      <Loader v-if="isLoading" />
 
-      <SignMobile v-if="isSignMobile && !isSendTransaction" @onSign="signMobile" @onCancel="close" />
+      <SignMobile v-if="isSignMobile && !isSendTransaction && !isLoading" @onSign="signMobile" @onCancel="close" />
 
       <template v-if="isSendTransaction">
         <div class="descriptions">
@@ -90,6 +91,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   isSavePass = false;
   signedPayload: RequestSentInfo | null = null;
   transactionState: 'pending' | 'success' | 'failed' | null = null;
+  isLoading = false;
 
   @Prop(String) amount!: string;
   @Prop(String) value!: string;
@@ -126,19 +128,26 @@ export default class ConfirmationPasswordPopup extends Vue {
     return 'pending';
   }
 
+  async signTransactionRaw() {
+    const isSuccessfulTransaction = await this.currency?.sendRaw(this.address);
+    this.transactionState = isSuccessfulTransaction ? 'success' : 'failed';
+  }
+
+  async signTransactionJSON() {
+    const payload: PayloadJSON = this.payload as any;
+    delete payload.address;
+    payload.type = 'json';
+
+    const { blockchainData } = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
+
+    approveSignSignature(this.transactionId as string, blockchainData.signature);
+  }
+
   async signMobile() {
-    if (!this.transactionId && this.currency.extrinsic) {
-      const isSuccessfulTransaction = await this.currency?.sendRaw(this.address);
-      this.transactionState = isSuccessfulTransaction ? 'success' : 'failed';
-    } else if (this.payload && this.transactionId) {
-      const payload: PayloadJSON = this.payload as any;
-      delete payload.address;
-      payload.type = 'json';
-
-      const { blockchainData } = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
-
-      approveSignSignature(this.transactionId, blockchainData.signature);
-    }
+    this.isLoading = true;
+    if (!this.transactionId && this.currency.extrinsic) await this.signTransactionRaw();
+    else if (this.payload && this.transactionId) await this.signTransactionJSON();
+    this.isLoading = false;
   }
 
   get popupHeader() {
@@ -174,11 +183,10 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   async mounted() {
     if (!isExtension() && !this.isSignMobile) return;
-
+    console.log(this.isLoading);
     if (this.transactionId === undefined) return;
 
     const { isLocked } = await isSignLocked(this.transactionId);
-
     this.isUnlock = !isLocked;
     this.isSavePass = this.isUnlock;
   }

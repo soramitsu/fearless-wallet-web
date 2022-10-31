@@ -12,14 +12,19 @@ export default class Icon extends Vue {
   @Prop(String) icon!: string;
   @Prop(String) iconColor?: string;
   @Prop(String) refName?: string;
-  @Prop({ type: Array, default: () => [] }) className!: string[];
+  @Prop({ type: String || Array, default: '' }) className!: string[] | string;
 
   readonly baseClass = 'svg-icon';
 
   get getIconColor() {
     return `icon--${this.iconColor}`;
   }
+
   get getClasses() {
+    if (!Array.isArray(this.className)) {
+      return [this.className];
+    }
+
     const classes = [...this.className];
     if (this.iconColor) classes.push(this.getIconColor);
 

@@ -6,7 +6,7 @@
       <div class="label">{{ title }}</div>
     </div>
 
-    <Icon icon="chevron-right" :className="['chevron-right']" />
+    <Icon icon="chevron-right" className="chevron-right" />
   </div>
 </template>
 
@@ -17,6 +17,7 @@ export default class SettingsMenuItem extends Vue {
   @Prop(String) icon!: string;
   @Prop(String) title!: string;
   readonly iconClass = ['icon', 'icon--width'];
+
   get getIconPath() {
     return require(`@/assets/${this.icon}.svg`);
   }

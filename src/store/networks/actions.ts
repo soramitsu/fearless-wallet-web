@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Settings } from '@/networks';
+import type { KeySettings } from '@/networks';
 import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
 import type {
@@ -63,7 +63,7 @@ const actions: ActionTree<State, State> & Actions = {
           const networkName = name.toLowerCase();
           const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
           const externalApi = originalExternalApi ?? ({} as ExternalApi);
-          const settings = settingsNetworks[networkName as Settings] ?? {};
+          const settings = settingsNetworks[networkName as KeySettings] ?? {};
 
           return {
             name: networkName,

@@ -69,7 +69,7 @@ export default class AccountSettingsPopup extends Vue {
   }
 
   get addressByNetwork() {
-    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
+    return BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.selectedNetwork);
   }
 
   copyAddress() {

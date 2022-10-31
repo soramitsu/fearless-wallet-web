@@ -14,13 +14,10 @@
 import { Vue, Prop, Component } from 'vue-property-decorator';
 @Component
 export default class SettingsMenuItem extends Vue {
-  @Prop(String) icon!: string;
-  @Prop(String) title!: string;
   readonly iconClass = ['icon', 'icon--width'];
 
-  get getIconPath() {
-    return require(`@/assets/${this.icon}.svg`);
-  }
+  @Prop(String) icon!: string;
+  @Prop(String) title!: string;
 }
 </script>
 

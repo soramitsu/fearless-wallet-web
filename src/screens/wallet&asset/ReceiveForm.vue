@@ -48,9 +48,12 @@
       horizontalPlacement="left"
       verticalPlacement="top"
       :selectedNetwork="selectedNetwork"
-      :top="132"
+      :top="148"
+      :left="-160"
       :height="360"
       :allNetworksItem="false"
+      :showBlur="false"
+      :showBackground="false"
       :toggleSelectedNetwork="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
     />
@@ -118,15 +121,7 @@ export default class ReceiveForm extends Vue {
   }
 
   toggleSelectNetworkPopupVisible() {
-    const childRefs = (this.$refs[this.selectNetworkInputRef] as Vue).$refs;
-
     this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
-
-    Object.values(childRefs).forEach((valueRef) => {
-      const targetElement = (valueRef as Vue).$el as HTMLElement;
-
-      targetElement.style.zIndex = this.showSelectNetworkPopup ? '400' : '0';
-    });
   }
 
   toggleSelectedNetwork(value: string) {

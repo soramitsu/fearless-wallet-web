@@ -81,16 +81,10 @@ export default class SelectPopup extends Vue {
 
     this.options.splice(index, 1);
     this.options.splice(indexInsertion, 0, selectedElement);
-
-    this.options.forEach(({ path }) => this.getImg(path));
   }
 
   getIconVisible(value: string) {
     return this.value === value;
-  }
-
-  getImg(path: string) {
-    return require(`@/assets/${path}`);
   }
 
   rowClasses(value: string) {
@@ -111,8 +105,6 @@ export default class SelectPopup extends Vue {
 
 <style lang="scss" scoped>
 .select-popup {
-  z-index: 299;
-
   .row {
     color: $default-white;
     text-align: left;

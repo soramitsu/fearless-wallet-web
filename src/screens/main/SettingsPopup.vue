@@ -10,9 +10,13 @@
   >
     <div class="settings">
       <SettingMenuItem title="Accounts" icon="account" @onOpen="open('Accounts')" />
+
       <SettingMenuItem title="Currency" icon="dollar-circle" @onOpen="openPopup('openFiatsPopup')" />
-      <SettingMenuItem title="Language" icon="language" />
+
+      <SettingMenuItem title="Language" icon="language" @onOpen="openPopup('openLanguagePopup')" />
+
       <SettingMenuItem title="About" icon="info" @onOpen="openPopup('openAboutPopup')" />
+
       <SettingMenuItem
         v-if="isExtension"
         title="Manage dApp access"

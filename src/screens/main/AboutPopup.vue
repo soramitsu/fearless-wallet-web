@@ -103,10 +103,6 @@ export default class AboutPopup extends Vue {
 
   @Prop(Function) handlerClose!: VoidFunction;
 
-  getImg(path: string) {
-    return require(`@/assets/${path}`);
-  }
-
   open(url: string) {
     window.open(url);
 

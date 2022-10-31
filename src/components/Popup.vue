@@ -6,7 +6,7 @@
           <SearchInput v-if="showSearch" v-model="filterValue" :placeholder="placeholder" width="230px" />
 
           <template v-else>
-            <div class="button"></div>
+            <div class="button-close"></div>
             <div class="header-with-icon">
               <Icon v-if="isIcon" className="attention-icon" icon="info-triangle" />
 
@@ -14,7 +14,7 @@
             </div>
           </template>
 
-          <s-button type="link" class="button" @click="close">
+          <s-button type="link" class="button-close" @click="close">
             <s-icon name="basic-close-24" />
           </s-button>
         </div>
@@ -260,10 +260,11 @@ export default class Popup extends Vue {
     }
   }
 
-  .button {
+  .button-close {
     padding: 0;
     width: 20px;
     height: 20px;
+    margin: auto 0;
   }
 }
 

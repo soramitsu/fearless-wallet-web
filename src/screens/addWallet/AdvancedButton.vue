@@ -3,12 +3,10 @@
     <div class="button" @click="$emit('click')">
       Advanced backup settings
 
-      <img src="@/assets/circle-plus.svg" class="plus-icon" />
+      <Icon icon="circle-plus" className="plus-icon" />
     </div>
   </div>
 </template>
-
-<style lang="scss"></style>
 
 <style lang="scss" scoped>
 .advanced-button {
@@ -33,7 +31,6 @@
       margin-left: 5px;
       width: 20px;
       height: 20px;
-      color: yellow;
     }
   }
 

@@ -12,7 +12,7 @@
     <MaxButton class="max-button-two" @click="$emit('setMaxValue')" />
 
     <template v-if="showValueInput">
-      <img src="@/assets/equals.svg" class="img-equals" />
+      <Icon icon="equals" className="img-equals" />
 
       <div v-show="showFiatSymbol" class="fiat-symbol">{{ fiatSymbol }}</div>
 

@@ -1,6 +1,6 @@
 <template>
   <div :class="containerButtonClasses" :style="containerButtonStyle">
-    <s-button
+    <SButton
       :type="type"
       :border-radius="borderRadius"
       :size="size"
@@ -8,10 +8,10 @@
       :class="buttonClasses"
       @click="$emit('click')"
     >
-      <img :src="img" class="icon" v-if="iconName" />
+      <Icon v-if="iconName" :icon="iconName" :className="iconClass" icon-color="pink" />
 
       {{ text }}
-    </s-button>
+    </SButton>
   </div>
 </template>
 
@@ -27,6 +27,9 @@ export default class Button extends Vue {
   @Prop(String) text!: string;
   @Prop(String) width!: string;
   @Prop(String) iconName!: string;
+  @Prop(String) iconColor!: string;
+  @Prop({ type: String, default: '' }) iconClasses?: string;
+
   @Prop({ default: 'primary' }) type!: Type;
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'medium' }) fontSize!: FontSize;
@@ -34,10 +37,7 @@ export default class Button extends Vue {
   @Prop({ default: false }) disabled!: boolean;
   @Prop({ default: true }) hover!: boolean;
   @Prop({ default: true }) border!: boolean;
-
-  get img() {
-    return require(`@/assets/${this.iconName}.svg`);
-  }
+  iconClass = ['icon'];
 
   get containerButtonClasses() {
     // for "small" and "mini" sizes also medium
@@ -128,9 +128,11 @@ export default class Button extends Vue {
 }
 
 .icon {
-  color: $pink-color;
   margin-right: 8px;
-  color: #ee0077;
+}
+
+.icon--pink {
+  color: $pink-color;
 }
 
 .secondary {

@@ -11,23 +11,27 @@
   >
     <div class="account-settings">
       <div v-if="showExport" class="row" @click="openNotificationPopup">
-        <img src="@/assets/export.svg" class="icon" />
+        <Icon icon="export" className="icon" />
         <div class="label">Export account</div>
       </div>
       <div v-if="showReplaceAccount" class="row" @click="openReplacePopup">
-        <img src="@/assets/account-switch.svg" class="icon" />
+        <Icon icon="account-switch" className="icon" />
+
         <div class="label">Replace account</div>
       </div>
       <div v-if="showSwitchNode" class="row" @click="openNetwork">
-        <img src="@/assets/currency-switch.svg" class="icon" />
+        <Icon icon="currency-switch" className="icon" />
+
         <div class="label">Switch node</div>
       </div>
       <div class="row" @click="copyAddress">
-        <img src="@/assets/copy-2.svg" class="icon" />
+        <Icon icon="copy-2" className="icon" />
+
         <div class="label">Copy address</div>
       </div>
       <div class="row" @click="openSubscan">
-        <img src="@/assets/globus.svg" class="icon" />
+        <Icon icon="globus" className="icon" />
+
         <div class="label">View in Subscan</div>
       </div>
     </div>

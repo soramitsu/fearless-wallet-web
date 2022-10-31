@@ -3,10 +3,10 @@
     <div :class="aboveFormClasses">
       <div class="header-content">
         <div v-if="showBackIcon" class="icon icon-back" @click="handlerBack">
-          <img src="@/assets/chevron-left.svg" />
+          <Icon icon="chevron-left" />
         </div>
         <div v-else class="icon">
-          <img src="@/assets/fw-logo.svg" class="logo" />
+          <Icon icon="fw-logo" className="logo" />
         </div>
         <div class="header">{{ header }}</div>
         <div class="activity">

@@ -5,7 +5,7 @@
     :handlerAgree="handlerAgree"
   >
     <div class="ethereum-account-popup">
-      <img src="@/assets/moonbeam-moonriver.svg" />
+      <Icon icon="moonbeam-moonriver" />
 
       <div class="header">ETH accounts</div>
     </div>

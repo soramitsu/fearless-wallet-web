@@ -11,7 +11,7 @@
             {{ authorizedAccounts }}
           </span>
 
-          <img class="trash" src="@/assets/trash.svg" @click="removeAuth" />
+          <Icon icon="trash" className="trash" @click="removeAuth" />
         </SRow>
       </SCol>
     </SRow>
@@ -63,13 +63,6 @@ export default class AuthItem extends Vue {
   padding: 0 12px;
 }
 
-.img-button {
-  background-image: url('@/assets/trash.svg');
-  background-size: 16px 16px;
-  height: 16px;
-  width: 16px;
-}
-
 .authorized-account__count {
   cursor: pointer;
   white-space: nowrap;
@@ -78,5 +71,7 @@ export default class AuthItem extends Vue {
 
 .trash {
   cursor: pointer;
+  height: 16px;
+  width: 16px;
 }
 </style>

@@ -16,7 +16,7 @@
       <SettingMenuItem
         v-if="isExtension"
         title="Manage dApp access"
-        icon="networks/polkadot"
+        icon="polkadot"
         @onOpen="openPopup('openManageAuths')"
       />
     </div>

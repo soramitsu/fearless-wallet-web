@@ -1,11 +1,11 @@
 <template>
-  <img :src="imgPath" :style="style" :alt="name" />
+  <Icon :icon="iconName" :style="style" :alt="name" />
 </template>
 
 <script lang="ts">
 import { Vue, Prop, Component } from 'vue-property-decorator';
 import type { RelayChainName } from '@/interfaces';
-import { getImgPath } from '@/helpers/imgPath';
+import { getIconName } from '@/helpers/imgPath';
 
 @Component
 export default class NetworkLogo extends Vue {
@@ -16,17 +16,18 @@ export default class NetworkLogo extends Vue {
   get style() {
     const styles: Record<string, string> = {};
 
-    if (this.width) styles.width = `${this.width}px`;
+    if (this.width) {
+      styles.width = `${this.width}px`;
+      styles.height = `${this.width}px`;
+    }
 
     return styles;
   }
 
-  get imgPath() {
+  get iconName() {
     if (this.name === '') return '';
 
-    return require(`@/assets/${getImgPath(this.name, this.relayChain)}`);
+    return getIconName(this.name, this.relayChain);
   }
 }
 </script>
-
-<style></style>

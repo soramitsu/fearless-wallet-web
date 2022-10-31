@@ -4,7 +4,7 @@
       <div class="accounts-layout">
         <div class="navigation">
           <div class="left-part">
-            <img src="@/assets/arrow-left-circle.svg" class="chevron" @click="back" />
+            <Icon icon="arrow-left-circle" className="chevron" @click="back" />
 
             <div>{{ path }}</div>
           </div>

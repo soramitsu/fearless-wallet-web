@@ -58,6 +58,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import Logo from '@/components/Logo.vue';
+import Icon from '@/components/Icon.vue';
 import Button from '@/components/Button.vue';
 import { Components } from '@/router/routes';
 import CircleButton from '@/components/CircleButton.vue';
@@ -70,6 +71,7 @@ import { isExtension } from '@/helpers/common';
 @Component({
   components: {
     Logo,
+    Icon,
     Button,
     CircleButton,
     MobileConnect,

@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="circle-button" :class="backgroundClass" @click="$emit('click', $event)">
-      <img :src="img" :class="imageClasses" />
+      <Icon :icon="iconName" :className="imageClasses" />
     </div>
 
     <Tooltip v-show="showTooltip" :text="tooltipText" :target="target" :placement="placement" />
@@ -54,10 +54,6 @@ export default class CircleButton extends Vue {
         'image-shift-fight': shiftRight,
       },
     ];
-  }
-
-  get img() {
-    return require(`@/assets/${this.iconName}.svg`);
   }
 }
 </script>

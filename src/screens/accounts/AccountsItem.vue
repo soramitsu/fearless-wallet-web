@@ -18,13 +18,7 @@
       backgroundColor="light-black"
       @click="openAccountSettingsPopup(network)"
     />
-
-    <img
-      v-else-if="!isMobile"
-      src="@/assets/circle-plus-pink.svg"
-      class="plus-icon"
-      @click="$emit('openSourceTypePopup')"
-    />
+    <Icon v-else-if="!isMobile" icon="circle-plus" :className="['plus-icon']" @click="$emit('openSourceTypePopup')" />
   </div>
 </template>
 
@@ -75,11 +69,13 @@ export default class AccountsItem extends Vue {
 
   .plus-icon {
     height: 32px;
-    filter: invert(0.05);
+    width: 32px;
+    opacity: 1;
+    color: $pink-color;
 
     &:hover {
       cursor: pointer;
-      filter: invert(0);
+      opacity: 0.95;
     }
   }
 

@@ -2,7 +2,7 @@
   <div class="qr-wrapper">
     <img :src="qr" :class="QRClasses" />
 
-    <img v-if="showLogo" src="@/assets/logo-qr.svg" class="logo-qr" />
+    <Icon v-if="showLogo" className="logo-qr" icon="logo-qr" />
   </div>
 </template>
 

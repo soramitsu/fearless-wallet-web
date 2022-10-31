@@ -1,10 +1,8 @@
 <template>
   <div :class="menuItemClasses">
-    <img :src="img" class="menu-icon" />
+    <Icon :icon="img" :className="iconClass" />
 
-    <div class="name">
-      {{ name }}
-    </div>
+    <div class="name">{{ name }}</div>
   </div>
 </template>
 
@@ -18,13 +16,14 @@ import type { MenuItem as TMenuItem } from '@/interfaces/common';
 export default class MenuItem extends Vue {
   @Prop(String) name!: TMenuItem;
   @Prop({ default: false }) isActive!: boolean;
+  iconClass = ['menu-icon'];
 
   get menuItemClasses() {
     return ['menu-item', { active: this.isActive }];
   }
 
   get img() {
-    return require(`@/assets/${this.name.toLowerCase()}.svg`);
+    return this.name.toLowerCase();
   }
 }
 </script>

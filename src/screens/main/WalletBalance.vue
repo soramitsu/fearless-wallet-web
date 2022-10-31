@@ -6,9 +6,12 @@
         <span class="balance">{{ fiatSymbol }}{{ balanceString }}</span>
         <!-- <div :class="percentClasses">{{ percentString }}</div> -->
       </div>
-      <img v-if="isMobile" src="@/assets/mobile.svg" />
-      <div class="dots-container">
-        <img src="@/assets/dots-horizontal.svg" class="dots" :ref="dotsHorizontalRef" />
+      <Icon v-if="isMobile" icon="mobile" />
+
+      <div class="dots-container" :ref="dotsHorizontalRef">
+        <!-- <div :ref="dotsHorizontalRef"> -->
+        <Icon icon="dots-horizontal" className="dots" />
+        <!-- </div> -->
       </div>
     </div>
   </Corners>
@@ -66,6 +69,7 @@ export default class WalletBalance extends Vue {
 
   updateSelectedWallet(event: Event) {
     const classList = (event.target as HTMLDivElement)?.classList;
+    console.log(classList);
 
     if (!(classList.contains('dots-container') || classList.contains('dots'))) this.$emit('updateSelectedWallet');
     else {

@@ -5,12 +5,12 @@
 
       <div class="activity">
         <div class="button" @click="openAddWalletComponent('create')">
-          <img src="@/assets/create.svg" class="img" />
+          <Icon icon="create" className="img" />
 
           <div>Create Account</div>
         </div>
         <div class="button" @click="openAddWalletComponent('import')">
-          <img src="@/assets/import.svg" class="img" />
+          <Icon icon="import" className="img" />
 
           <div>Import Account</div>
         </div>

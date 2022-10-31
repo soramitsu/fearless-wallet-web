@@ -1,7 +1,8 @@
 <template>
   <div class="container">
     <div class="header">
-      <img class="header__logo" src="@/assets/wallet-logo.svg" />
+      <Icon className="header__logo" icon="wallet-logo" />
+
       <span>Transaction</span>
     </div>
     <div class="content">

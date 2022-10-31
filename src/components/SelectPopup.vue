@@ -20,7 +20,7 @@
   >
     <div v-for="{ label, value, path } in options" :key="label" :class="rowClasses(value)" @click="toggle(value)">
       <div class="description">
-        <img v-if="showIcon" :src="getImg(path)" class="img" />
+        <Icon v-if="showIcon" :icon="path" :className="['img']" />
 
         {{ label }}
       </div>

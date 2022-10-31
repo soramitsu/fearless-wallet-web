@@ -2,7 +2,7 @@
   <Corners :isError="true" size="big">
     <div class="alert-container">
       <div class="alert__content">
-        <Hint class="alert__header" size="big" iconName="warning-orange" text="Attention" />
+        <Hint class="alert__header" size="big" iconName="warning" text="Attention" />
 
         <p class="alert__message">
           <slot>{{ message }}</slot>

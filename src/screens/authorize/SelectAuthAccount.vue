@@ -26,7 +26,7 @@
           <div class="account__address">
             <span>{{ cutAddress(account.address) }}</span>
 
-            <img class="clipboard" src="@/assets/clipboard.svg" @click="toClipboard(address)" />
+            <Icon className="clipboard" icon="clipboard" @click="toClipboard(address)" />
           </div>
         </li>
       </ul>

@@ -30,8 +30,7 @@ export default class PermissionRequest extends Vue {
   readonly failedMessage = MOBILE_CONNECTOR_MESSAGES.WALLET_ALREADY_EXISTS;
   readonly activeMobileAccountExistMessage = MOBILE_CONNECTOR_MESSAGES.ACTIVE_MOBILE_ACCOUNT_EXISTS;
 
-  @Prop(String)
-  status!: 'success' | 'failed' | 'active_account_exists';
+  @Prop(String) status!: 'success' | 'failed' | 'active_account_exists';
 
   get nameColorClass() {
     return `connection__status-name--${this.isSuccess ? 'success' : 'failed'}`;
@@ -64,7 +63,7 @@ export default class PermissionRequest extends Vue {
   }
 
   get icon() {
-    return require(`@/assets/status__${this.isFailed || this.isActiveAccountExists ? 'failed' : 'success'}.svg`);
+    return this.isFailed || this.isActiveAccountExists ? 'status__failed' : 'status__success';
   }
 }
 </script>
@@ -98,6 +97,7 @@ export default class PermissionRequest extends Vue {
 
   .connection__status-icon {
     width: 60px;
+    height: 60px;
   }
 }
 </style>

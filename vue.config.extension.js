@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
+const WebpackCopyPlugin = require('copy-webpack-plugin');
 const { defineConfig } = require('@vue/cli-service');
 const baseConfig = require('./vue.config.base');
 const outputFolder = path.resolve('dist/extension');
@@ -15,10 +16,6 @@ function getEntryFile(entryPath) {
 }
 
 const entries = getEntryFile(path.join(__dirname, `src/extension/entry`));
-
-function resolve(dir) {
-  return path.join(__dirname, dir);
-}
 
 entries.forEach((name) => {
   const fileExtension = getFileExtension(name);
@@ -35,16 +32,21 @@ module.exports = defineConfig({
   pages,
   outputDir: 'dist/extension',
   filenameHashing: false,
-  chainWebpack: (config) => {
-    config.plugin('define').tap((definitions) => {
-      definitions[0]['process.env'].EXTENSION_PREFIX = JSON.stringify(process.env.EXTENSION_PREFIX);
-      definitions[0]['process.env'].PORT_PREFIX = JSON.stringify(process.env.PORT_PREFIX);
+  configureWebpack: (config) => {
+    config.plugins.push(new NodePolyfillPlugin());
+    config.devtool = process.env.NODE_ENV === 'development' ? 'inline-source-map' : 'source-map';
+    config.module.rules
+      .filter((rule) => rule.test.toString().indexOf('scss') !== -1)
+      .forEach((rule) => {
+        rule.oneOf.forEach((oneOfRule) => {
+          oneOfRule.use.splice(oneOfRule.use.indexOf(require.resolve('sass-loader')), 0, {
+            loader: require.resolve('css-unicode-loader'),
+          });
+        });
+      });
 
-      return definitions;
-    });
-    config.resolve.alias.set('@extension-base', path.resolve(__dirname, 'src/extension/background/extension-base/src'));
-    config.plugin('copy').use(require('copy-webpack-plugin'), [
-      {
+    config.plugins.push(
+      new WebpackCopyPlugin({
         patterns: [
           {
             from: path.resolve(`src/extension/manifest.${process.env.NODE_ENV}.json`),
@@ -55,36 +57,9 @@ module.exports = defineConfig({
             to: `${outputFolder}/`,
           },
         ],
-      },
-    ]);
+      })
+    );
 
-    config.module.rule('svg').exclude.add(resolve('src/assets')).end();
-    config.module
-      .rule('icons')
-      .test(/\.svg$/)
-      .include.add(resolve('src/assets'))
-      .end()
-      .use('svg-sprite-loader')
-      .loader('svg-sprite-loader')
-      .options({
-        symbolId: 'icon-[name]',
-      })
-      .end();
-  },
-  configureWebpack: (config) => {
-    config.plugins.push(new NodePolyfillPlugin());
-    config.devtool = process.env.NODE_ENV === 'development' ? 'inline-source-map' : 'source-map';
-    config.module.rules
-      .filter((rule) => {
-        return rule.test.toString().indexOf('scss') !== -1;
-      })
-      .forEach((rule) => {
-        rule.oneOf.forEach((oneOfRule) => {
-          oneOfRule.use.splice(oneOfRule.use.indexOf(require.resolve('sass-loader')), 0, {
-            loader: require.resolve('css-unicode-loader'),
-          });
-        });
-      });
     config.output.filename = `[name].js`;
     config.output.chunkFilename = `[name].js`;
   },

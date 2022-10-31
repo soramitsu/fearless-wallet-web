@@ -51,6 +51,8 @@ export default class Hint extends Vue {
   .notifications-icon {
     display: flex;
     align-items: center;
+    width: 20px;
+    height: 20px;
     margin-right: 15px;
   }
 

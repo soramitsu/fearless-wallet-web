@@ -201,7 +201,7 @@ export default class SendForm extends Vue {
   }
 
   get showWarningAddressPopup() {
-    if (!this.isValidRecipientAddress) return false;
+    if (!this.isValidRecipientAddress || this.syncedSelectedNetwork === '') return false;
 
     return !BaseApi.validateAddressByNetwork(this.syncedRecipient, this.syncedSelectedNetwork);
   }
@@ -269,7 +269,7 @@ export default class SendForm extends Vue {
   }
 
   get isValidRecipientAddress() {
-    return BaseApi.validateAddress(this.syncedRecipient);
+    return BaseApi.validateAddress(this.syncedRecipient, this.syncedSelectedNetwork);
   }
 
   get addressByNetwork() {
@@ -537,6 +537,11 @@ export default class SendForm extends Vue {
     const network = this.networks.find(({ name }) => BaseApi.validateAddressByNetwork(this.syncedRecipient, name));
 
     this.syncedSelectedAssetId = network?.assets[0].assetId ?? ''; // [0] - is utility asset
+
+    // nextTick needed to work after @Watch
+    this.$nextTick(() => {
+      this.syncedSelectedNetwork = network?.name ?? '';
+    });
   }
 
   handlerAcceptWarningAddress() {

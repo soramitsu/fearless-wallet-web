@@ -326,14 +326,6 @@ function getImgPathByNetworkOrAssetName(value = '', relayChain?: RelayChainName)
   }
 }
 
-function getImgPath(value: string, relayChain?: RelayChainName) {
-  const ormlFileName = getOrmlFileName(value);
-
-  if (ormlFileName !== '') return `${ORML_PATH}/${ormlFileName}`;
-
-  return `${NETWORKS_PATH}/${getImgPathByNetworkOrAssetName(value, relayChain)}`;
-}
-
 function getIconName(value: string, relayChain?: RelayChainName) {
   const ormlFileName = getOrmlFileName(value);
 
@@ -342,4 +334,4 @@ function getIconName(value: string, relayChain?: RelayChainName) {
   return getImgPathByNetworkOrAssetName(value, relayChain).toLocaleLowerCase();
 }
 
-export { getImgPath, getIconName };
+export { getIconName };

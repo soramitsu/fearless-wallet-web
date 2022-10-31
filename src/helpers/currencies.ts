@@ -3,7 +3,7 @@ import type { Wallet } from '@/store/accounts/types';
 import CurrencyController from '@/controllers/currencyController';
 import NetworksController from '@/controllers/networksController';
 import { MAIN_NETWORKS } from '@/consts/networks';
-import { getImgPath } from '@/helpers/imgPath';
+import { getIconName } from '@/helpers/imgPath';
 
 type CurrencyMock = {
   mainNetwork: string;
@@ -115,7 +115,7 @@ function getCurrencyOptions(currencies: Currencies) {
     return {
       label,
       value: assetId,
-      path: getImgPath(displayName),
+      path: getIconName(displayName),
     };
   });
 }

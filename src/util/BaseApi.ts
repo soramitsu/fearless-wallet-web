@@ -20,7 +20,7 @@ import type { Wallet } from '@/store/accounts/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { createAccountSuri, forgetAccount, jsonRestore } from '@/extension/messaging';
 import { getReplacedMetaTyped, getMetaTyped, isExtension } from '@/helpers/common';
-import { ETHEREUM_NETWORKS } from '@/consts/networks';
+import { ETHEREUM_NETWORKS, ETHEREUM_ADDRESS_LENGTH, ETHEREUM_ADDRESS_PREFIX } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { beaconController } from '@/controllers/beaconController';
@@ -272,7 +272,7 @@ export default class BaseApi {
   }
 
   public static getMobileAddresses(): KeyringAddress[] {
-    return this.getAddresses().filter(({ meta }) => meta.isMobile);
+    return BaseApi.getAddresses().filter(({ meta }) => meta.isMobile);
   }
 
   public static getAccountsSubject(): BehaviorSubject<SubjectInfo> {
@@ -328,7 +328,7 @@ export default class BaseApi {
     return decodeAddress(address, false);
   }
 
-  public static evmToAddress(address: string, networkName: string) {
+  public static evmToAddress(address: string, networkName: string): string {
     const networks = NetworksController.getNetworks();
     const network = networks.find(({ name }) => name === networkName);
     const prefix = network?.addressPrefix;
@@ -336,9 +336,23 @@ export default class BaseApi {
     return evmToAddress(address, prefix);
   }
 
-  public static validateAddress(address: string): boolean {
+  public static validateEthereumAddress(address: string): boolean {
+    if (!address.toLowerCase().startsWith(ETHEREUM_ADDRESS_PREFIX)) return false;
+
+    if (address.length !== ETHEREUM_ADDRESS_LENGTH) return false;
+
+    return true;
+  }
+
+  public static validateAddress(address: string, network: string): boolean {
+    const isEthereumNetwork = BaseApi.isEthereumNetwork(network);
+
+    if (isEthereumNetwork && !BaseApi.validateEthereumAddress(address)) return false;
+
     try {
-      this.decodeAddress(address);
+      const publicKey = BaseApi.decodeAddress(address);
+
+      if (!isEthereumNetwork) BaseApi.encodeAddress(publicKey);
 
       return true;
     } catch {
@@ -347,7 +361,11 @@ export default class BaseApi {
   }
 
   public static validateAddressByNetwork(address: string, network: string): boolean {
-    return address === this.formatAddress({ address, ethereumAddress: address }, network);
+    if (BaseApi.isEthereumNetwork(network)) {
+      return BaseApi.validateEthereumAddress(address);
+    }
+
+    return address === BaseApi.formatAddress({ address, ethereumAddress: address }, network);
   }
 
   public static formatAddress({ address, ethereumAddress }: Wallet, networkName: string): string {
@@ -355,15 +373,14 @@ export default class BaseApi {
 
     if (isEthereumNetwork) return ethereumAddress;
 
+    const networks = NetworksController.getNetworks();
+    const network = networks.find(({ name }) => name === networkName);
+    const prefix = network?.addressPrefix;
+
     // the only case for try/catch
     // if the user used  ethereum account instead of a substratum account(via json or private key)
     try {
-      const publicKey = this.decodeAddress(address);
-      const networks = NetworksController.getNetworks();
-      const network = networks.find(({ name }) => name === networkName);
-      const prefix = network?.addressPrefix;
-
-      return BaseApi.encodeAddress(publicKey, prefix);
+      return BaseApi.encodeAddress(address, prefix);
     } catch {
       return ethereumAddress;
     }
@@ -392,9 +409,9 @@ export default class BaseApi {
   }
 
   public static isSameWalletPassword(address: string, password: string): boolean {
-    const isUnlock = this.unlockPair(address, password);
+    const isUnlock = BaseApi.unlockPair(address, password);
 
-    this.lockPair(address);
+    BaseApi.lockPair(address);
 
     return isUnlock;
   }

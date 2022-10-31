@@ -20,8 +20,7 @@
   >
     <div v-for="{ label, value, path } in options" :key="label" :class="rowClasses(value)" @click="toggle(value)">
       <div class="description">
-        <Icon v-if="showIcon" :icon="path" :className="['img']" />
-
+        <Icon v-if="showIcon" :icon="path" className="img" />
         {{ label }}
       </div>
 
@@ -81,16 +80,10 @@ export default class SelectPopup extends Vue {
 
     this.options.splice(index, 1);
     this.options.splice(indexInsertion, 0, selectedElement);
-
-    this.options.forEach(({ path }) => this.getImg(path));
   }
 
   getIconVisible(value: string) {
     return this.value === value;
-  }
-
-  getImg(path: string) {
-    return require(`@/assets/${path}`);
   }
 
   rowClasses(value: string) {

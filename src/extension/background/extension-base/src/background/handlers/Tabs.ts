@@ -73,8 +73,12 @@ export default class Tabs {
     Tabs.accountSubs[id] = {
       subscription: accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
         const transformedAccounts = transformAccounts(accounts);
-        chrome.storage.local.set({ transformAccounts });
-        const auths = await Tabs.filterForAuthorizedAccounts(transformedAccounts, url);
+        const transformedMobileAccount = transformAddresses(keyring.addresses.subject.value);
+        const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
+        await chrome.storage.local.set({ transformAccounts: allAccounts });
+        console.log(allAccounts, 'allAccs');
+        const auths = await Tabs.filterForAuthorizedAccounts(allAccounts, url);
+
         cb(auths);
       }),
       url,

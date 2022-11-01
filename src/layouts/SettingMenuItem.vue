@@ -57,6 +57,8 @@ export default class SettingsMenuItem extends Vue {
   }
 
   .chevron-right {
+    width: 20px;
+    height: 20px;
     filter: invert(0.5);
   }
 

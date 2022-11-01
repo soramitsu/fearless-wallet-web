@@ -45,6 +45,7 @@ export default class CurrencyController {
   public hours24Change = 0;
   public displayName!: string;
   public currenciesVisible!: Record<string, Record<string, boolean>>;
+  private transactionStatus: 'success' | 'failed' | 'pending' | undefined;
 
   constructor(
     public mainNetwork: string,
@@ -55,6 +56,7 @@ export default class CurrencyController {
     public relayChain: RelayChainName
   ) {
     this.displayName = displayName ?? asset;
+    this.transactionStatus = undefined;
     this.currenciesVisible = this.lsCurrency.get(this.visibleStorageName).value ?? {};
   }
 
@@ -416,27 +418,32 @@ export default class CurrencyController {
     }
   }
 
-  statusCallback(result: ISubmittableResult) {
-    const { status } = result;
+  statusCallback() {
+    return (result: ISubmittableResult) => {
+      const { status } = result;
 
-    if (status.isInBlock) {
-      console.info(`Successful transfer with hash ${status.asInBlock.toHex()}`);
-    } else if (status.isFinalized) {
-      console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
-    } else {
-      console.info(`Status of transfer: ${status.type}`);
-    }
+      if (status.isInBlock) {
+        console.info(`Successful transfer with hash ${status.asInBlock.toHex()}`);
+        this.transactionStatus = 'success';
+      } else if (status.isFinalized) {
+        console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
+      } else {
+        console.info(`Status of transfer: ${status.type}`);
+      }
+    };
   }
 
-  public async sendRaw(from: string): Promise<boolean> {
-    this.options.signer = new BeaconSigner();
+  public async send(from: string, isMobile = false): Promise<boolean> {
+    this.transactionStatus = 'pending';
+    if (isMobile) this.options.signer = new BeaconSigner();
+    const wallet = isMobile ? from : BaseApi.getPair(from);
 
     try {
-      await this.extrinsic!.signAndSend(from, this.options, this.statusCallback).then(() => {
-        return;
-      });
+      await this.extrinsic!.signAndSend(wallet, this.options, this.statusCallback());
+      if (typeof wallet !== 'string') wallet.lock();
     } catch (ex) {
       console.info(`Transaction failed ${ex}`);
+      this.transactionStatus = 'failed';
 
       return false;
     }
@@ -444,21 +451,11 @@ export default class CurrencyController {
     return true;
   }
 
-  public async send(from: string): Promise<boolean> {
-    const pair = BaseApi.getPair(from);
+  clearSendStatus() {
+    this.transactionStatus = undefined;
+  }
 
-    try {
-      await this.extrinsic!.signAndSend(pair, this.options, this.statusCallback).then(() => {
-        return;
-      });
-    } catch (ex) {
-      console.info(`Transaction failed ${ex}`);
-
-      return false;
-    }
-
-    pair.lock();
-
-    return true;
+  get sendStatus() {
+    return this.transactionStatus;
   }
 }

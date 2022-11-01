@@ -153,7 +153,7 @@ import AboveForm from '@/components/AboveForm.vue';
 import Button from '@/components/Button.vue';
 import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
 import SelectPopup from '@/components/SelectPopup.vue';
-import { getImgPath } from '@/helpers/imgPath';
+import { getIconName } from '@/helpers/imgPath';
 
 @Component({
   components: {
@@ -301,7 +301,7 @@ export default class SendForm extends Vue {
     return availableInNetworks.map(({ network, precision, type }) => ({
       label: firstCharToUp(network),
       value: `${network}`,
-      path: getImgPath(network),
+      path: getIconName(network),
       relayChain: this.currency?.relayChain,
       precision,
       type,

@@ -142,6 +142,8 @@ export default class AccountSettingsPopup extends Vue {
     }
 
     .icon {
+      width: 20px;
+      height: 20px;
       filter: invert(0.25);
     }
 

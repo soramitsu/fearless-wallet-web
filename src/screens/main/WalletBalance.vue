@@ -6,12 +6,10 @@
         <span class="balance">{{ fiatSymbol }}{{ balanceString }}</span>
         <!-- <div :class="percentClasses">{{ percentString }}</div> -->
       </div>
-      <Icon v-if="isMobile" icon="mobile" />
+      <Icon v-if="isMobile" icon="mobile" className="mobile" />
 
       <div class="dots-container" :ref="dotsHorizontalRef">
-        <!-- <div :ref="dotsHorizontalRef"> -->
         <Icon icon="dots-horizontal" className="dots" />
-        <!-- </div> -->
       </div>
     </div>
   </Corners>
@@ -111,6 +109,11 @@ export default class WalletBalance extends Vue {
     text-transform: uppercase;
     color: $gray-color;
     margin-bottom: 4px;
+  }
+
+  .mobile {
+    width: 18px;
+    height: 18px;
   }
 
   .balance {

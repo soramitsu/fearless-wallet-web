@@ -114,6 +114,7 @@ export default class Button extends Vue {
 
   .button {
     width: 100%;
+    padding: 10px 10px;
   }
 }
 
@@ -141,6 +142,8 @@ export default class Button extends Vue {
 
 .icon {
   margin-right: 8px;
+  width: 20px;
+  height: 20px;
 }
 
 .icon--pink {

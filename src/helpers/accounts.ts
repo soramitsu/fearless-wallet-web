@@ -40,7 +40,7 @@ function getAccounts(): Accounts {
     return result;
   }, {} as Accounts);
 
-  const mobileAccount = BaseApi.getAddresses().reduce((result, { address, meta }) => {
+  const mobileAccount = BaseApi.getMobileAddresses().reduce((result, { address, meta }) => {
     result[address] = { type: undefined, json: { address, meta } };
 
     return result;

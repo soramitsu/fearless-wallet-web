@@ -23,10 +23,11 @@
 
             <div v-if="account.isMobile" class="account__checkbox--mobile-icon">{{ $t('mobile') }}</div>
           </div>
-          <div class="account__address">
+          <div :ref="index" class="account__address">
             <span>{{ cutAddress(account.address) }}</span>
 
-            <Icon className="clipboard" icon="clipboard" @click="toClipboard(address)" />
+            <Icon className="clipboard" icon="clipboard" @click="saveToClipboard(account.address)" />
+            <Tooltip text="Сopied" target=".clipboard" placement="bottom" trigger="click" />
           </div>
         </li>
       </ul>
@@ -37,6 +38,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import Checkbox from '@/components/Checkbox.vue';
+import Tooltip from '@/components/Tooltip.vue';
 import { WalletInfo } from '@/store/accounts/types';
 import { cut } from '@/helpers/history';
 import Scroll from '@/components/Scroll.vue';
@@ -44,6 +46,7 @@ import Scroll from '@/components/Scroll.vue';
 @Component({
   components: {
     Scroll,
+    Tooltip,
     Checkbox,
   },
 })
@@ -61,6 +64,9 @@ export default class SelectAuthAccount extends Vue {
 
   cutAddress(address: string) {
     return cut(address);
+  }
+  saveToClipboard(value: string) {
+    navigator.clipboard.writeText(value);
   }
 }
 </script>
@@ -116,10 +122,15 @@ export default class SelectAuthAccount extends Vue {
 
 .clipboard {
   width: 18px;
+  height: 18px;
   cursor: pointer;
   position: absolute;
   right: 0;
   top: 0;
+
+  &:hover {
+    opacity: 0.85;
+  }
 }
 
 .account__list {

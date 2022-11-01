@@ -105,6 +105,8 @@ export default class TeleportForm extends Vue {
   }
 
   .img-equals {
+    width: 22px;
+    height: 22px;
     margin: 0 15px;
   }
 

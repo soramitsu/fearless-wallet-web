@@ -194,6 +194,8 @@ export default class AboutPopup extends Vue {
 
     .chevron-right {
       opacity: 0.5;
+      width: 24px;
+      height: 24px;
     }
 
     .icon {

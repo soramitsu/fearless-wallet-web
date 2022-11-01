@@ -71,10 +71,15 @@ export default class CircleButton extends Vue {
 
   .image {
     filter: invert(0.35);
+    width: 16px;
+    height: 16px;
+    outline: none;
   }
 
   .image-shift-left {
     margin-left: -3px;
+    width: 16px;
+    height: 16px;
   }
 
   .image-shift-fight {

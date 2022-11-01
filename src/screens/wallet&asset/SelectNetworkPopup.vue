@@ -26,7 +26,7 @@ import type { Networks as NetworksType, RelayChainName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
 import SelectPopup from '@/components/SelectPopup.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { getImgPath } from '@/helpers/imgPath';
+import { getIconName } from '@/helpers/imgPath';
 
 interface Options {
   label: string;
@@ -68,7 +68,7 @@ export default class SelectNetworkButton extends Vue {
         return {
           label: firstCharToUp(name),
           value: name,
-          path: getImgPath(name),
+          path: getIconName(name),
           relayChain: relayChain as RelayChainName,
         };
       }),
@@ -77,7 +77,7 @@ export default class SelectNetworkButton extends Vue {
     if (this.relayChain) options = options.filter(({ relayChain }) => relayChain === this.relayChain);
 
     if (this.allNetworksItem)
-      options.unshift({ label: 'All networks', value: 'All networks', path: 'globus.svg', isAll: true });
+      options.unshift({ label: 'All networks', value: 'All networks', path: 'globus', isAll: true });
 
     return options;
   }

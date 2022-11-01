@@ -114,8 +114,8 @@ export default class ConfirmationPasswordPopup extends Vue {
     return BaseApi.getWalletType(this.address) === 'mobile';
   }
 
-  get nativeTransactionStatus() {
-    return this.currency?.sendStatus;
+  get transactionStatus() {
+    return this.currency?.sendStatus ?? this.transactionState;
   }
 
   get prepLabel() {
@@ -125,8 +125,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get headerType() {
-    if (this.transactionState === 'success' || this.nativeTransactionStatus === 'success') return 'success';
-    if (this.transactionState === 'failed' || this.nativeTransactionStatus === 'failed') return 'failed';
+    if (this.transactionStatus === 'success') return 'success';
+    if (this.transactionStatus === 'failed') return 'failed';
 
     return 'pending';
   }
@@ -151,8 +151,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get popupHeader() {
-    if (this.transactionState === 'success' || this.nativeTransactionStatus === 'success') return 'Transaction Done';
-    if (this.transactionState === 'failed' || this.nativeTransactionStatus === 'failed') return 'Transaction Error';
+    if (this.transactionStatus === 'success') return 'Transaction Done';
+    if (this.transactionStatus === 'failed') return 'Transaction Error';
     if (this.isTransactionPending) return 'Transaction is pending';
 
     return '';
@@ -172,19 +172,19 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get isTransactionInit() {
-    return !!this.transactionState || !!this.nativeTransactionStatus;
+    return !!this.transactionStatus;
   }
 
   get isTransactionPending() {
     if (!this.isTransactionInit) return false;
 
-    return this.transactionState === 'pending' || this.nativeTransactionStatus === 'pending';
+    return this.transactionStatus === 'pending';
   }
 
   get isTransactionFinished() {
     if (!this.isTransactionInit) return false;
 
-    return this.transactionState !== 'pending' || this.nativeTransactionStatus !== 'pending';
+    return this.transactionStatus !== 'pending';
   }
 
   close() {

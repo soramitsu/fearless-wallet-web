@@ -85,6 +85,8 @@ export default class NotificationPopup extends Vue {
 
     .img {
       margin-bottom: 20px;
+      width: 42px;
+      height: 42px;
     }
 
     .text {

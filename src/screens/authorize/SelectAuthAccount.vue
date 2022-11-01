@@ -122,6 +122,7 @@ export default class SelectAuthAccount extends Vue {
 
 .clipboard {
   width: 18px;
+  height: 18px;
   cursor: pointer;
   position: absolute;
   right: 0;

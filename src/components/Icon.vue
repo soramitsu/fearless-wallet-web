@@ -1,5 +1,5 @@
 <template>
-  <svg class="svg-icon" :class="getClasses" aria-hidden="true" v-on="$listeners">
+  <svg :class="getClasses" aria-hidden="true" v-on="$listeners">
     <use :xlink:href="getIconName" />
   </svg>
 </template>
@@ -21,30 +21,27 @@ export default class Icon extends Vue {
   }
 
   get getClasses() {
-    if (!Array.isArray(this.className)) {
-      return [this.className];
-    }
+    if (!Array.isArray(this.className)) return [this.className, this.baseClass];
+    const classes = [...this.className, this.baseClass];
 
-    const classes = [...this.className];
     if (this.iconColor) classes.push(this.getIconColor);
 
     return classes;
   }
 
   get getIconName() {
-    return `#icon-${this.icon}`; //icon-class='.svg file name' ==> '#icon-.svg file name'
+    return `#icon-${this.icon}`;
   }
 }
 </script>
 
 <style lang="scss" scoped>
 .svg-icon {
-  width: 1em;
-  height: 1em;
   vertical-align: -0.15em;
   fill: currentColor;
   overflow: hidden;
 }
+
 .settings {
   width: 18px;
   height: 18px;

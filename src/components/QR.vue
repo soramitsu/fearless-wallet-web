@@ -68,6 +68,7 @@ export default class QR extends Vue {
 
   .logo-qr {
     position: relative;
+    color: $pink-color;
     width: 65px;
     height: 30px;
     left: calc(-50% + 32.5px);

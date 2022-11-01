@@ -171,6 +171,7 @@ export default class AboveForm extends Vue {
 
     .logo {
       width: 45px;
+      height: 45px;
     }
   }
 

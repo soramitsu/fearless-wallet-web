@@ -1,8 +1,8 @@
 <template>
   <Popup class="sending-popup" :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close">
     <div class="popup-content">
-      <template v-if="!transactionState && !isSignMobile">
-        <Icon icon="lock-green" />
+      <template v-if="!isTransactionInit && !isSignMobile">
+        <Icon icon="lock-green" className="icon__lock-green" />
 
         <div class="text row">Enter password to confirm the transaction</div>
 
@@ -32,11 +32,12 @@
           @click="send"
         />
       </template>
-      <Loader v-if="isLoading" />
 
-      <SignMobile v-if="isSignMobile && !isSendTransaction && !isLoading" @onSign="signMobile" @onCancel="close" />
+      <SignMobile v-else-if="!isTransactionInit" @onSign="signMobile" @onCancel="close" />
 
-      <template v-if="isSendTransaction">
+      <Loader v-if="isTransactionPending" />
+
+      <template v-else-if="isTransactionFinished">
         <div class="descriptions">
           <NetworkLogo :name="firstNetwork" :width="30" />
 
@@ -85,13 +86,11 @@ import { GetNetworkGenesisHash } from '@/store/networks/types';
 })
 export default class ConfirmationPasswordPopup extends Vue {
   password = '';
-  loading = false;
   isErrorPassword = false;
   isUnlock = false;
   isSavePass = false;
   signedPayload: RequestSentInfo | null = null;
-  transactionState: 'pending' | 'success' | 'failed' | null = null;
-  isLoading = false;
+  transactionState: 'pending' | 'success' | 'failed' | undefined = undefined;
 
   @Prop(String) amount!: string;
   @Prop(String) value!: string;
@@ -115,6 +114,10 @@ export default class ConfirmationPasswordPopup extends Vue {
     return BaseApi.getWalletType(this.address) === 'mobile';
   }
 
+  get nativeTransactionStatus() {
+    return this.currency.sendStatus;
+  }
+
   get prepLabel() {
     return !this.isUnlock
       ? 'Do not ask for a password for 15 min.'
@@ -122,15 +125,14 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get headerType() {
-    if (this.transactionState === 'success') return 'success';
-    if (this.transactionState === 'failed') return 'failed';
+    if (this.transactionState === 'success' || this.nativeTransactionStatus === 'success') return 'success';
+    if (this.transactionState === 'failed' || this.nativeTransactionStatus === 'failed') return 'failed';
 
     return 'pending';
   }
 
-  async signTransactionRaw() {
-    const isSuccessfulTransaction = await this.currency?.sendRaw(this.address);
-    this.transactionState = isSuccessfulTransaction ? 'success' : 'failed';
+  signTransactionRaw() {
+    return this.currency?.send(this.address, true);
   }
 
   async signTransactionJSON() {
@@ -144,16 +146,14 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async signMobile() {
-    this.isLoading = true;
     if (!this.transactionId && this.currency.extrinsic) await this.signTransactionRaw();
     else if (this.payload && this.transactionId) await this.signTransactionJSON();
-    this.isLoading = false;
   }
 
   get popupHeader() {
-    if (this.transactionState === 'success') return 'Transaction Done';
-    if (this.transactionState === 'failed') return 'Transaction Error';
-    if ((this.loading && this.isUnlock) || (this.isSignMobile && this.transactionState !== 'pending')) return '';
+    if (this.transactionState === 'success' || this.nativeTransactionStatus === 'success') return 'Transaction Done';
+    if (this.transactionState === 'failed' || this.nativeTransactionStatus === 'failed') return 'Transaction Error';
+    if ((this.isUnlock || this.isSignMobile) && this.isTransactionInit) return '';
 
     return 'Transaction is pending';
   }
@@ -171,19 +171,32 @@ export default class ConfirmationPasswordPopup extends Vue {
     this.isErrorPassword = false;
   }
 
-  get isSendTransaction() {
-    return !!this.transactionState;
+  get isTransactionInit() {
+    return !!this.transactionState || !!this.nativeTransactionStatus;
+  }
+
+  get isTransactionPending() {
+    if (!this.isTransactionInit) return false;
+
+    return this.transactionState === 'pending' || this.nativeTransactionStatus === 'pending';
+  }
+
+  get isTransactionFinished() {
+    if (!this.isTransactionInit) return false;
+
+    return this.transactionState !== 'pending' || this.nativeTransactionStatus !== 'pending';
   }
 
   close() {
-    if (this.loading) return;
+    if (this.isTransactionPending) return;
+    this.currency.clearSendStatus();
 
-    this.$emit('close', this.isSendTransaction);
+    this.$emit('close', this.isTransactionFinished);
   }
 
   async mounted() {
     if (!isExtension() && !this.isSignMobile) return;
-    console.log(this.isLoading);
+
     if (this.transactionId === undefined) return;
 
     const { isLocked } = await isSignLocked(this.transactionId);
@@ -198,23 +211,13 @@ export default class ConfirmationPasswordPopup extends Vue {
       if (this.isErrorPassword) return;
     }
 
-    this.loading = true;
-    this.transactionState = 'pending';
-
-    if (this.transactionId) {
+    if (this.transactionId)
       await this.onSignApprove({
         id: this.transactionId,
         isSavePass: this.isSavePass,
         password: this.password,
       });
-    } else {
-      const isSuccessfulTransaction = await this.currency?.send(this.address);
-
-      this.transactionState = isSuccessfulTransaction ? 'success' : 'failed';
-    }
-
-    this.transactionState = 'success';
-    this.loading = false;
+    else await this.currency?.send(this.address);
   }
 }
 </script>
@@ -233,6 +236,11 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     .input {
       width: 100%;
+    }
+
+    .icon__lock-green {
+      width: 20px;
+      height: 20px;
     }
 
     .text {

@@ -2,7 +2,7 @@
   <SelectPopup
     verticalPlacement="top"
     horizontalPlacement="right"
-    placeholder="Search in currencies"
+    placeholder="common.searchCurrency"
     :value="selectedFiat"
     :top="50"
     :showAnimation="showAnimation"

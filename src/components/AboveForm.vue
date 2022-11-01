@@ -8,7 +8,9 @@
         <div v-else class="icon">
           <Icon icon="fw-logo" className="logo" />
         </div>
-        <div class="header">{{ header }}</div>
+
+        <div class="header">{{ $t(header, headerLocaleProps) }}</div>
+
         <div class="activity">
           <div v-if="showCloseIcon" class="icon" @click="closeHandler">
             <s-icon name="basic-close-24" />
@@ -18,6 +20,7 @@
           </div>
         </div>
       </div>
+
       <div class="content">
         <slot></slot>
       </div>
@@ -31,6 +34,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 @Component
 export default class AboveForm extends Vue {
   @Prop({ default: '' }) header!: string;
+  @Prop({ default: () => ({}) }) headerLocaleProps!: Record<string, string>;
   @Prop({ default: false }) blur!: boolean;
   @Prop({ default: false }) showAcceptIcon!: boolean;
   @Prop({ default: false }) showBackIcon!: boolean;

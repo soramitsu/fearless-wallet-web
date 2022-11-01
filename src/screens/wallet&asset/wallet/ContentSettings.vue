@@ -3,13 +3,13 @@
     <div class="settings-part">
       <template v-if="!syncedShowAssetsManagementForm">
         <TabButton
-          v-for="{ tabName, tooltipText, target, classes } in tabsOptions"
+          v-for="{ label, tabName, tooltipText, target, classes } in tabsOptions"
           class="tab"
           :key="tabName"
           :tooltipText="tooltipText"
           :target="target"
           :class="classes"
-          :text="tabName"
+          :text="label"
           :isActive="activeTabName === tabName"
           @click="openTab(tabName)"
         />
@@ -17,7 +17,7 @@
 
       <TabButton
         v-else
-        tooltipText="Turn off the visibility of assets with zero balances"
+        tooltipText="wallet.turnVisibilityAssets"
         class="hide-zero"
         target=".hide-zero"
         placementTooltip="right"
@@ -25,18 +25,19 @@
         @click="$emit('toggleCurrenciesVisible', allCurrenciesHidden)"
       />
     </div>
+
     <div v-if="isCurrenciesTab" class="settings-part">
       <SearchInput
         v-if="!showAssetsManagementForm"
         v-model="syncedFilterValue"
-        placeholder="Search"
+        placeholder="common.search"
         width="185px"
         class="search"
       />
 
       <CircleButton
         backgroundColor="none"
-        tooltipText="Asset management"
+        tooltipText="wallet.assetManagement"
         placement="left"
         :target="target"
         :iconName="iconName"
@@ -59,6 +60,7 @@ import Switcher from '@/components/Switcher.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 interface TabsOptions {
+  label: string;
   tabName: TabWallet;
   tooltipText: string;
   classes: string;
@@ -76,14 +78,15 @@ interface TabsOptions {
 export default class ContentSettings extends Vue {
   readonly tabsOptions: TabsOptions[] = [
     {
+      label: 'wallet.currencies',
       tabName: 'Currencies',
-      tooltipText: 'Fungible tokens',
+      tooltipText: 'wallet.fungibleTokens',
       classes: 'currencies-tab',
       target: '.currencies-tab',
     },
     // {
-    //   tabName: 'NFTs',
-    //   tooltipText: 'Non fungible tokens',
+    //   tabName: 'wallet.nfts',
+    //   tooltipText: 'wallet.nonFungibleTokens',
     //   classes: 'nft-tab',
     //   target: '.nft-tab',
     // },
@@ -108,7 +111,7 @@ export default class ContentSettings extends Vue {
   }
 
   get toggleButtonText() {
-    return this.allCurrenciesHidden ? 'Show all balances' : 'Hide zero balances';
+    return this.allCurrenciesHidden ? 'wallet.showAllBalances' : 'wallet.hideZero';
   }
 
   get iconName() {

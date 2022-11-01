@@ -32,7 +32,7 @@ export default class BuyPopup extends Vue {
   @Prop(Function) closePopup!: VoidFunction;
 
   get headerText() {
-    return `Buy ${this.asset.toUpperCase()} with`;
+    return this.$t('asset.buy', { asset: this.asset.toUpperCase() });
   }
 
   openProvider(providerName: string) {

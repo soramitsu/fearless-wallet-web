@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="Receive Funds" :blur="true" :closeHandler="closeForm">
+  <AboveForm header="asset.receive.receiveFunds" :blur="true" :closeHandler="closeForm">
     <div class="receive-form">
       <div>
         <RotateInput
@@ -12,7 +12,7 @@
 
         <div class="receive-content">
           <div class="address-wrapper">
-            <span>Wallet address</span>
+            <span>{{ $t('asset.receive.walletAddress') }}</span>
 
             <div class="address">
               {{ cutAddress }}
@@ -24,7 +24,7 @@
           <QR class="qr" ref="qr" :showLogo="true" :width="200" :payload="address" />
         </div>
 
-        <Tooltip text="Сopied" target=".copy-icon" placement="bottom" trigger="click" />
+        <Tooltip text="common.copied" target=".copy-icon" placement="bottom" trigger="click" />
       </div>
 
       <div class="activity-buttons">
@@ -37,9 +37,15 @@
           @click="saveQR"
         />
 
-        <Button size="big" class="button copy-qr" width="260px" text="Copy QR-code" iconName="share" @click="shareQR" />
+        <Button size="big" class="button copy-qr" width="260px" text="Copy QR-code" iconName="share" @click="copyQR" />
 
-        <Tooltip text="Сopied QR" target=".copy-qr" placement="bottom" trigger="click" />
+        <Tooltip
+          text="common.copied"
+          :textLocaleProps="{ value: 'QR' }"
+          target=".copy-qr"
+          placement="bottom"
+          trigger="click"
+        />
       </div>
     </div>
 
@@ -137,7 +143,7 @@ export default class ReceiveForm extends Vue {
   createBlob() {
     const el = (this.$refs.qr as Vue).$el;
     const imgQR = el.firstChild as Element;
-    const imgLogo = el.lastChild as Element;
+    // const imgLogo = el.lastChild as Element;
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
 
@@ -145,12 +151,12 @@ export default class ReceiveForm extends Vue {
     canvas.height = imgQR.clientHeight;
 
     context?.drawImage(imgQR as CanvasImageSource, 0, 0);
-    context?.drawImage(imgLogo as CanvasImageSource, 67.5, 85, 65, 30);
+    // context?.drawImage(imgLogo as CanvasImageSource, 67.5, 85, 65, 30);
 
     return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   }
 
-  async shareQR() {
+  copyQR() {
     navigator.clipboard.write([
       new ClipboardItem({
         'image/png': this.createBlob() as Promise<Blob>,

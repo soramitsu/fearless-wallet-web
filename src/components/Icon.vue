@@ -1,6 +1,6 @@
 <template>
-  <svg class="svg-icon" :class="getClasses" aria-hidden="true" v-on="$listeners">
-    <use :xlink:href="getIconName" />
+  <svg :class="getClasses" aria-hidden="true" v-on="$listeners">
+    <use :xlink:href="getIconName" :class="icon" />
   </svg>
 </template>
 
@@ -14,18 +14,13 @@ export default class Icon extends Vue {
   @Prop(String) refName?: string;
   @Prop({ default: '' }) className!: string[] | string;
 
-  readonly baseClass = 'svg-icon';
-
   get getIconColor() {
     return `icon--${this.iconColor}`;
   }
 
   get getClasses() {
-    if (!Array.isArray(this.className)) {
-      return [this.className];
-    }
+    const classes = ['svg-icon', ...[this.className].flat()];
 
-    const classes = [...this.className];
     if (this.iconColor) classes.push(this.getIconColor);
 
     return classes;
@@ -45,6 +40,7 @@ export default class Icon extends Vue {
   fill: currentColor;
   overflow: hidden;
 }
+
 .settings {
   width: 18px;
   height: 18px;

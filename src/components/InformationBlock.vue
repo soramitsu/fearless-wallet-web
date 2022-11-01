@@ -3,7 +3,7 @@
     <Icon icon="info-triangle" className="img" />
 
     <div class="info-text">
-      {{ text }}
+      {{ $t(text) }}
     </div>
   </div>
 </template>

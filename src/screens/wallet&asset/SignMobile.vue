@@ -1,6 +1,6 @@
 <template>
   <div class="mobile-sign__popup">
-    <span>To sign with your mobile device, check if your mobile client is open and click "Sign"</span>
+    <span>{{ $t('mobileConnector.signMobile') }}</span>
 
     <Button
       text="Sign"

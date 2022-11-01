@@ -3,7 +3,7 @@
     <div class="description">
       <Icon :icon="icon" :className="iconClass" />
 
-      <div class="label">{{ title }}</div>
+      <div class="label">{{ $t(title) }}</div>
     </div>
 
     <Icon icon="chevron-right" className="chevron-right" />

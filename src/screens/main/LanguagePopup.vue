@@ -2,7 +2,7 @@
   <SelectPopup
     verticalPlacement="top"
     horizontalPlacement="right"
-    header="Translated by the  team"
+    headerText="header.settings.language.translated"
     :value="language"
     :top="50"
     :showAnimation="false"

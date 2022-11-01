@@ -2,8 +2,8 @@
   <div class="connection__status">
     <Icon :icon="icon" className="connection__status-icon" />
 
-    <span class="connection__status-name" :class="nameColorClass">{{ statusHeader }}</span>
-    <span class="connection__status-message">{{ message }}</span>
+    <span class="connection__status-name" :class="nameColorClass">{{ $t(statusHeader) }}</span>
+    <span class="connection__status-message">{{ $t(message) }}</span>
   </div>
 </template>
 
@@ -14,7 +14,6 @@ import Loader from '@/components/Loader.vue';
 import Corners from '@/components/Corners.vue';
 import Alert from '@/components/Alert.vue';
 import Popup from '@/components/Popup.vue';
-import { MOBILE_CONNECTOR_MESSAGES } from '@/consts/messages';
 
 @Component({
   components: {
@@ -26,10 +25,6 @@ import { MOBILE_CONNECTOR_MESSAGES } from '@/consts/messages';
   },
 })
 export default class PermissionRequest extends Vue {
-  readonly successMessage = MOBILE_CONNECTOR_MESSAGES.CONNECTED;
-  readonly failedMessage = MOBILE_CONNECTOR_MESSAGES.WALLET_ALREADY_EXISTS;
-  readonly activeMobileAccountExistMessage = MOBILE_CONNECTOR_MESSAGES.ACTIVE_MOBILE_ACCOUNT_EXISTS;
-
   @Prop(String) status!: 'success' | 'failed' | 'active_account_exists';
 
   get nameColorClass() {
@@ -49,21 +44,25 @@ export default class PermissionRequest extends Vue {
   }
 
   get statusHeader() {
-    if (this.isSuccess) return 'Connection is set';
+    if (this.isSuccess) return this.t('connectionSet');
 
-    return 'Connection failed';
+    return this.t('connectionFailed');
   }
 
   get message() {
-    if (this.isSuccess) return this.successMessage;
-    if (this.isFailed) return this.failedMessage;
-    if (this.isActiveAccountExists) return this.activeMobileAccountExistMessage;
+    if (this.isSuccess) return this.t('connected');
+
+    if (this.isFailed) if (this.isActiveAccountExists) return this.t('activeMobileAccountExists');
 
     return '';
   }
 
   get icon() {
     return this.isFailed || this.isActiveAccountExists ? 'status__failed' : 'status__success';
+  }
+
+  t(value: string) {
+    return this.$t(`mobileConnector.${value}`);
   }
 }
 </script>

@@ -4,15 +4,15 @@
       <template v-if="!transactionState && !isSignMobile">
         <Icon icon="lock-green" />
 
-        <div class="text row">Enter password to confirm the transaction</div>
+        <div class="text row">{{ $t('asset.passwordTransaction') }}</div>
 
         <ValidatedInput
           v-if="!isUnlock"
           v-model="password"
-          placeholder="Password"
+          placeholder="common.password"
           size="big"
           class="input row"
-          errorDescriptions="Incorrect password"
+          errorDescriptions="common.invalidPassword"
           :isError="isErrorPassword"
           :showPassword="true"
         />
@@ -22,7 +22,7 @@
         </div>
 
         <Button
-          text="Continue"
+          text="common.continue"
           width="100%"
           size="medium"
           fontSize="big"
@@ -46,6 +46,7 @@
           </template>
         </div>
         <div class="transfer-amount">{{ transferAmountString }}</div>
+
         <div class="transfer-value">{{ transferValueString }}</div>
       </template>
     </div>

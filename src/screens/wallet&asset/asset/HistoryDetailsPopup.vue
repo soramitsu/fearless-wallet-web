@@ -97,7 +97,7 @@
       <Button size="big" text="View in Subscan" @click="openSubscan" />
     </div>
 
-    <Tooltip text="Сopied" target=".copy" placement="bottom" trigger="click" />
+    <Tooltip text="common.copied" target=".copy" placement="bottom" trigger="click" />
   </AboveForm>
 </template>
 

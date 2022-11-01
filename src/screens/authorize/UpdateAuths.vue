@@ -2,7 +2,15 @@
   <div class="update-accounts">
     <SelectAuthAccount :selectAll="selectAll" :accounts="state" @onSelectAll="onSelectAll" @onSelect="onSelect" />
 
-    <Button class="connect-button" width="100%" :text="prepName" size="big" fontSize="big" @click="updateAuths" />
+    <Button
+      class="connect-button"
+      width="100%"
+      size="big"
+      fontSize="big"
+      :text="prepName"
+      :textLocaleProps="textLocaleProps"
+      @click="updateAuths"
+    />
   </div>
 </template>
 
@@ -37,9 +45,14 @@ export default class Authorize extends Vue {
   @Action(AuthActionTypes.GET_AUTHLIST) fetchAuthList!: TAction<void>;
 
   get prepName() {
-    const count = Object.values(this.state).filter((el) => el.active).length;
+    return 'authorize.connectCountAccounts';
+  }
 
-    return `Connect ${count} account${count !== 1 ? 's' : ''}`;
+  get textLocaleProps() {
+    const count = Object.values(this.state).filter((el) => el.active).length;
+    const tc = count === 1 ? 1 : 2;
+
+    return { count, tc };
   }
 
   get prepAccounts() {

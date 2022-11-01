@@ -21,7 +21,7 @@
               @change="(value) => $emit('onSelect', value, account.name)"
             />
 
-            <div v-if="account.isMobile" class="account__checkbox--mobile-icon">mobile</div>
+            <div v-if="account.isMobile" class="account__checkbox--mobile-icon">{{ $t('mobile') }}</div>
           </div>
           <div class="account__address">
             <span>{{ cutAddress(account.address) }}</span>

@@ -5,6 +5,7 @@
 
       <div class="wallet-info__content">
         <span class="wallet__name">{{ name }}</span>
+
         <div class="wallet-info__address-container">
           <span ref="address" class="wallet__address" @click="saveToClipboard">{{ address }}</span>
 

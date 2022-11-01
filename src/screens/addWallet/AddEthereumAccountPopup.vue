@@ -7,7 +7,7 @@
     <div class="ethereum-account-popup">
       <Icon icon="moonbeam-moonriver" />
 
-      <div class="header">ETH accounts</div>
+      <div class="header">ETH {{ $t('accounts') }}</div>
     </div>
   </ConfirmationPopup>
 </template>

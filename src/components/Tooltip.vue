@@ -12,6 +12,7 @@ import type { Props } from 'tippy.js';
 @Component
 export default class Tooltip extends Vue {
   @Prop(String) text!: string;
+  @Prop({ default: () => ({}) }) textLocaleProps!: Record<string, string>;
   @Prop(String) target!: string;
   @Prop({ default: 'top' }) placement!: Placement;
   @Prop(String) trigger!: string;
@@ -20,7 +21,7 @@ export default class Tooltip extends Vue {
     if (!this.target) return;
 
     const options: Partial<Props> = {
-      content: this.text,
+      content: this.$t(this.text, this.textLocaleProps) as string,
       placement: this.placement,
       arrow: false,
       animation: 'shift-toward-extreme',

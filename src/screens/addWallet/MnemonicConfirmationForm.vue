@@ -1,10 +1,12 @@
 <template>
   <div class="mnemonic-confirmation-form">
-    <div class="warning">A security measure to make sure you have written it down</div>
+    <div class="warning">
+      {{ $t('addWallet.securityWritten') }}
+    </div>
 
     <MnemonicColumns :mnemonicArray="selectedMnemonicArray" />
 
-    <div class="hint">Select words in the right order:</div>
+    <div class="hint">{{ $t('addWallet.selectPassphraseWords') }}</div>
 
     <div class="words">
       <BorderButton

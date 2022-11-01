@@ -7,12 +7,12 @@
         <div class="button" @click="openAddWalletComponent('create')">
           <Icon icon="create" className="img" />
 
-          <div>Create Account</div>
+          <div>{{ $t('accounts.createAccount') }}</div>
         </div>
         <div class="button" @click="openAddWalletComponent('import')">
           <Icon icon="import" className="img" />
 
-          <div>Import Account</div>
+          <div>{{ $t('accounts.importAccount') }}</div>
         </div>
       </div>
     </div>

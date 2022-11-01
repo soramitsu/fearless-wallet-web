@@ -12,7 +12,7 @@
       horizontalPlacement="right"
     >
       <div class="about-popup">
-        <div class="header">About</div>
+        <div class="header">{{ t('text') }}</div>
         <div class="title">Fearless wallet</div>
 
         <div v-for="{ icon, label, subLabel, url } in mainItems" class="about-item" :key="label" @click="open(url)">
@@ -20,7 +20,8 @@
             <Icon :icon="icon" class="icon" />
 
             <div class="item-descriptions">
-              <div class="label">{{ label }}</div>
+              <div class="label">{{ t(label) }}</div>
+
               <div v-if="subLabel" class="sub-label">{{ subLabel }}</div>
             </div>
           </div>
@@ -28,7 +29,7 @@
           <Icon icon="chevron-right" :href="url" className="chevron-right" />
         </div>
 
-        <div class="title">Community wallet</div>
+        <div class="title">{{ t('communityWallet') }}</div>
 
         <div
           v-for="{ icon, label, subLabel, url } in communityItems"
@@ -40,7 +41,8 @@
             <Icon :icon="icon" class="icon" />
 
             <div class="item-descriptions">
-              <div class="label">{{ label }}</div>
+              <div class="label">{{ t(label) }}</div>
+
               <div v-if="subLabel" class="sub-label">{{ subLabel }}</div>
             </div>
           </div>
@@ -48,7 +50,7 @@
           <Icon icon="chevron-right" className="chevron-right" />
         </div>
 
-        <div class="title">Social Media</div>
+        <div class="title">{{ t('socialMedia') }}</div>
 
         <div
           v-for="{ icon, label, subLabel, url } in socialMediaItems"
@@ -60,7 +62,8 @@
             <Icon :icon="icon" class="icon" />
 
             <div class="item-descriptions">
-              <div class="label">{{ label }}</div>
+              <div class="label">{{ t(label) }}</div>
+
               <div v-if="subLabel" class="sub-label">{{ subLabel }}</div>
             </div>
           </div>
@@ -68,14 +71,15 @@
           <Icon icon="chevron-right" className="chevron-right" />
         </div>
 
-        <div class="title">Support & Feedback</div>
+        <div class="title">{{ t('supportFeedback') }}</div>
 
         <div v-for="{ icon, label, subLabel, url } in supportItems" class="about-item" :key="label" @click="open(url)">
           <div class="about-left-part">
             <Icon :icon="icon" class="icon" />
 
             <div class="item-descriptions">
-              <div class="label">{{ label }}</div>
+              <div class="label">{{ t(label) }}</div>
+
               <div v-if="subLabel" class="sub-label">{{ subLabel }}</div>
             </div>
           </div>
@@ -107,6 +111,10 @@ export default class AboutPopup extends Vue {
     window.open(url);
 
     this.handlerClose();
+  }
+
+  t(value: string) {
+    return this.$t(`header.settings.about.${value}`);
   }
 }
 </script>

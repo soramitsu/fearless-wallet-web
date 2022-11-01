@@ -17,13 +17,13 @@
       </div>
 
       <div class="switch-nodes">
-        <div class="auto-select-nodes">Auto select nodes</div>
+        <div class="auto-select-nodes">{{ $t('accounts.autoNodes') }}</div>
 
         <Switcher v-model="autoSelectNodes" />
       </div>
     </div>
 
-    <div class="row label">Default nodes</div>
+    <div class="row label">{{ $t('accounts.defaultNodes') }}</div>
 
     <div class="row">
       <NodeItem
@@ -37,12 +37,12 @@
       />
     </div>
     <div class="custom-nodes">
-      <div class="label">Custom nodes</div>
+      <div class="label">{{ $t('accounts.customNodes') }}</div>
 
       <div class="add-node" @click="$emit('openEditNodeForm', selectedNetwork)">
         <Icon icon="plus" className="plus" />
 
-        <div>Add node</div>
+        <div>{{ $t('accounts.addNode') }}</div>
       </div>
     </div>
 

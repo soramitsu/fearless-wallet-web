@@ -1,7 +1,7 @@
 <template>
   <TransferForm
     extrinsicType="teleport"
-    header="Teleport"
+    header="asset.teleport.teleportFunds"
     :selectedAssetId="selectedAssetId"
     :selectedNetwork="originalNetwork"
     :amount="amount"
@@ -18,39 +18,51 @@
   >
     <Corners size="big" class="row">
       <div class="summary">
-        <div class="summary-label">Summary</div>
+        <div class="summary-label">{{ $t('asset.summary') }}</div>
+
         <div class="summary-row">
           <div class="column column-left">
-            <div class="name">From</div>
+            <div class="name">{{ $t('asset.teleport.from') }}</div>
+
             <div class="network-name">{{ originalNetworkString }}</div>
           </div>
 
           <Icon icon="bold-arrow-right" />
 
           <div class="column">
-            <div class="name">To</div>
+            <div class="name">{{ $t('asset.teleport.to') }}</div>
+
             <div class="network-name">{{ destinationNetworkString }}</div>
           </div>
         </div>
+
         <div class="summary-row">
-          <div class="name">Assets Amount</div>
+          <div class="name">{{ $t('asset.assetsAmount') }}</div>
+
           <div class="column">
             <div>{{ amountString }}</div>
+
             <div v-if="showValue" class="value">{{ valueString }}</div>
           </div>
         </div>
+
         <div class="summary-row">
-          <div class="name">{{ originalNetworkString }} Fee</div>
+          <div class="name">{{ originalNetworkString }} {{ $t('asset.fee') }}</div>
+
           <div>
             {{ originalNetworkPartialFeeString }}
           </div>
         </div>
+
         <div class="summary-row">
-          <div class="name">{{ destinationNetworkString }} Fee</div>
+          <div class="name">{{ destinationNetworkString }} {{ $t('asset.fee') }}</div>
+
           <div>{{ destinationNetworkPartialFeeString }}</div>
         </div>
+
         <div class="summary-row">
-          <div class="name">Total</div>
+          <div class="name">{{ $t('asset.total') }}</div>
+
           <div>{{ totalString }}</div>
         </div>
       </div>

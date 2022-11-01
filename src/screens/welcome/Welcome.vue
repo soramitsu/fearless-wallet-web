@@ -10,26 +10,26 @@
         />
       </div>
 
-      <Logo class="description" size="big" text="Fearless Wallet" subtext="The DeFi Wallet From The Future" />
+      <Logo class="description" size="big" text="Fearless Wallet" :subtext="$t('welcome.deFiWallet')" />
     </div>
 
     <div>
       <Button
         width="100%"
-        text="Create a new wallet"
         class="create-button"
         size="big"
         fontSize="big"
+        :text="$t('welcome.createWallet')"
         @click="openAddWalletComponent('create')"
       />
 
       <Button
         class="import-button"
         width="100%"
-        text="I already have a wallet"
         size="big"
         fontSize="big"
         type="secondary"
+        :text="$t('welcome.importWallet')"
         :border="false"
         @click="openAddWalletComponent('import')"
       />
@@ -37,19 +37,24 @@
       <Button
         class="import-button"
         width="100%"
-        text="Connect Mobile Wallet"
         size="big"
         fontSize="big"
         type="secondary"
+        :text="$t('welcome.connectMobile')"
         :border="false"
         @click="openAddWalletMobile"
       />
 
       <div class="privacy-policy">
-        By continuing you agree with
-        <span class="important-text" @click="openTermsAndConditions">Terms and Conditions </span>
-        and
-        <span class="important-text" @click="openPrivacyPolicy"> Privacy Policy</span>
+        {{ $t('welcome.agreeWith') }}
+
+        <span class="important-text" @click="openTermsAndConditions">
+          {{ $t('header.settings.about.termsConditions') }}
+        </span>
+
+        {{ $t('welcome.and') }}
+
+        <span class="important-text" @click="openPrivacyPolicy"> {{ $t('header.settings.about.privacyPolicy') }}</span>
       </div>
     </div>
   </div>

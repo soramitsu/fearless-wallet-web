@@ -2,7 +2,7 @@
   <SelectPopup
     class="select-network-popup"
     sizeWidth="big"
-    placeholder="Search in networks"
+    placeholder="common.searchNetwork"
     :value="selectedNetwork"
     :height="height"
     :maxHeight="maxHeight"

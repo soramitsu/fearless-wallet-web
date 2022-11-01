@@ -1,16 +1,16 @@
 <template>
-  <AboveForm header="New Node" :closeHandler="closeForm">
+  <AboveForm header="accounts.newNode" :closeHandler="closeForm">
     <div class="add-node-form">
       <div>
-        <Input v-model="networkCharUp" placeholder="Network" size="big" class="row" :readonly="true" />
+        <Input v-model="networkCharUp" :placeholder="getPath('network')" size="big" class="row" :readonly="true" />
 
-        <Input v-model="name" placeholder="NAME" size="big" class="row" :maxlength="45" />
+        <Input v-model="name" :placeholder="getPath('nodeName')" size="big" class="row" :maxlength="45" />
 
         <ValidatedInput
           v-model="url"
-          placeholder="URL ADDRESS"
+          :placeholder="getPath('urlAddress')"
           class="row"
-          errorDescriptions="Invalid node address format"
+          errorDescriptions="accounts.invalidNodeAddress"
           :isError="isErrorUrlNode"
         />
       </div>
@@ -49,7 +49,7 @@ export default class EditNodeForm extends Vue {
   @Prop(Boolean) isActive!: boolean;
 
   get buttonText() {
-    return this.isEdit ? 'Save' : 'Add node';
+    return this.isEdit ? 'common.save' : this.getPath('addNode');
   }
 
   get isEdit() {
@@ -90,6 +90,10 @@ export default class EditNodeForm extends Vue {
     if (this.isActive) NetworksController.toggleActiveNode(this.network, this.name, this.url, this._url);
 
     this.closeForm(true);
+  }
+
+  getPath(value: string) {
+    return `accounts.${value}`;
   }
 }
 </script>

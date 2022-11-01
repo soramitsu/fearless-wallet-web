@@ -13,7 +13,7 @@
             <RotateInput
               v-model="selectedAssetUpper"
               class="row"
-              placeholder="CURRENCY"
+              placeholder="asset.currency"
               :isActiveRotate="showSelectedAssetPopup"
               @click="toggleSelectPopupVisible(true, false, false)"
             />
@@ -21,7 +21,7 @@
             <RotateInput
               v-model="syncedSelectedNetwork"
               class="row"
-              placeholder="ORIGINAL NETWORK"
+              placeholder="asset.teleport.originNet"
               :isActiveRotate="showSelectNetworkPopup"
               @click="toggleSelectPopupVisible(false, true, false)"
             />
@@ -29,7 +29,7 @@
             <Input
               v-if="extrinsicType === 'transfer'"
               v-model="syncedRecipient"
-              placeholder="SEND TO"
+              placeholder="asset.send.sendTo"
               size="big"
               class="row"
             />
@@ -38,7 +38,7 @@
               v-else
               v-model="syncedDestNet"
               class="row"
-              placeholder="DESTINATION NETWORK"
+              placeholder="asset.teleport.destNet"
               :isActiveRotate="showDestNetPopup"
               @click="toggleSelectPopupVisible(false, false, true)"
             />
@@ -55,7 +55,8 @@
 
             <div class="transferrable row">
               <div class="transferrable-part">
-                <div class="transferrable-label">Transferrable</div>
+                <div class="transferrable-label">{{ $t('asset.transferrable') }}</div>
+
                 <div class="transferrable-descriptions">
                   <div class="transferrable-amount">{{ transferrableAmount }}</div>
                   <div class="transferrable-assets">{{ selectedAssetUpper }}</div>
@@ -63,7 +64,8 @@
               </div>
 
               <div class="transferrable-part">
-                <div class="transferrable-label">Transferrable</div>
+                <div class="transferrable-label">{{ $t('asset.transferrable') }}</div>
+
                 <div class="transferrable-descriptions">
                   <div class="transferrable-amount">{{ fiatSymbol }}{{ transferrableValue }}</div>
                 </div>
@@ -86,7 +88,7 @@
 
     <SelectPopup
       v-if="showSelectPopup"
-      placeholder="Search in networks"
+      placeholder="common.searchNetwork"
       verticalPlacement="top"
       :value="selectPopupValue"
       :showBlur="false"
@@ -250,7 +252,7 @@ export default class SendForm extends Vue {
 
     if (!this.isValidCountAssets) return `Insufficient balance ${this.selectedAssetUpper}`;
 
-    return 'Continue';
+    return 'common.continue';
   }
 
   get buttonDisabled() {

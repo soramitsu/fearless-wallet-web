@@ -1,1 +1,261 @@
-{}
+{
+  "welcome": {
+    "createWallet": "Create a new wallet",
+    "importWallet": "I already have a wallet",
+    "connectMobile": "Connect Mobile Wallet",
+    "deFiWallet": "The DeFi Wallet From The Future",
+    "agreeWith": "By continuing you agree with",
+    "and": "and"
+  },
+  "addWallet": {
+    "createWallet": "Create a new wallet",
+    "exampleNameWallet": "Example: Savings, Investments, Crowdloans, Staking. This nickname will be displayed only for you and stored locally.",
+    "backupNonDigital": "Use a non-digital way to backup. Write it down on paper (or etch it into metal) and make sure not to loose it.",
+    "backupPassphrase": "Backup the passphrase for your new wallet",
+    "confirmPassphrase": "Confirm the passphrase",
+    "selectPassphraseWords": "Select words in the right order:",
+    "advancedSettings": "Advanced backup settings",
+    "advanced": "Advanced",
+    "example": "Example: {example} ",
+    "securityWritten": "A security measure to make sure you have written it down",
+    "importAccount": "Import {type} account",
+    "importWallet": "Import wallet",
+    "enterPassphrase": "Enter Passphrase",
+    "walletNickname": "Wallet nickname",
+    "enterPassword": "Enter password",
+    "addEthereumAccount": "Add ethereum account",
+    "haveWrittenPassphrase": "I have written down passphrase",
+    "usingFearless": "Start using Fearless",
+    "rawSeed": "{type} accounts raw seed",
+    "restoreJson": "Restore JSON for {type} accounts",
+    "passwordInfo": "This password protects your wallet. Make sure you remember it and do not share it with anybody.",
+    "mockPassword": "The wallet is already being used to replace other networks. The old password will be used.",
+    "samePassword": "Please make sure the password you entered is the password for your current wallet.",
+    "shortPassword": "Password is too short",
+    "notMatchPassword": "Passwords do not match",
+    "reEnterPassword": "Re-Enter password",
+    "allDone": "All done!",
+    "stayFearless": "Stay Fearless!",
+    "substrateDP": "Substrate secret derivation path",
+    "substrateCryptoType": "SUBSTRATE KEYPAIR CRYPTO TYPE",
+    "ethereumDP": "Ethereum secret derivation path",
+    "ethereumCryptoType": "ETHEREUM KEYPAIR CRYPTO TYPE",
+    "warningMessages": {
+      "mnemonicSequence": {
+        "text": "Invalid passphrase",
+        "subtext": "Invalid passphrase sequence, please try again"
+      },
+      "mnemonic": {
+        "text": "Mnemonic is invalid",
+        "subtext": "Please, make sure your input contains 12 words"
+      },
+      "substrateDP": {
+        "text": "Substrate Derivation Path is invalid",
+        "subtext": "Please, substrate derivation path correctness and try again."
+      },
+      "ethereumDP": {
+        "text": "Ethereum Derivation Path is invalid",
+        "subtext": "Please, ethereum derivation path correctness and try again."
+      },
+      "rawSeed": {
+        "text": "Keystore decryption failed",
+        "subtext": "Please, make sure that your input contains 64 hex symbols."
+      },
+      "jsonPassword": {
+        "text": "Keystore decryption failed",
+        "subtext": "Please, check password correctness and try again."
+      },
+      "jsonInvalid": {
+        "text": "Recovery JSON is invalid",
+        "subtext": "Please, make sure that your input contains valid json."
+      },
+      "isNotSamePassword": {
+        "text": "Is not same password",
+        "subtext": "Please make sure the password you entered is the password for your current wallet."
+      },
+      "duplicateMobileWallet": {
+        "text": "Current wallet already exists",
+        "subtext": "By continuing you understand that mobile wallet would be replaced with current wallet and will be deleted"
+      }
+    }
+  },
+  "mobileConnector": {
+    "connectionSet": "Connection is set",
+    "connectionFailed": "Connection failed",
+    "cancelRequest": "Cancel Request",
+    "resetConnection": "Reset Request",
+    "qrHeader": "Scan the QR code using the Fearless mobile app",
+    "activeMobileAccountExists": "There is an active connection, please delete mobile wallet and try again",
+    "walletAlreadyExists": "You already have this wallet. Please, use existing wallet or delete it and try connect mobile wallet again.",
+    "connected": "Mobile wallet connected to Fearless Wallet Extension",
+    "noAnswer": "No answer from your wallet received yet. Please make sure the wallet is open",
+    "signMobile": "To sign with your mobile device, check if your mobile client is open and click 'Sign'"
+  },
+  "metadata": {
+    "text": "Metadata",
+    "appAccess": "Yes, allow this application access",
+    "alertMessage": "This approval will add the metadata to your extension instance, allowing future requests to be decoded using this metadata"
+  },
+  "authorize": {
+    "selfIdentifyOne": "An application, self-identifying as",
+    "selfIdentifyTwo": "is requesting access from my",
+    "accountsConnected": "Accounts connected to {url}",
+    "mobile": "mobile",
+    "connectCountAccounts": "Connect 1 account | Connect {count} accounts"
+  },
+  "header": {
+    "connected": "Connected",
+    "disconnect": "Disconnect",
+    "connectionStatus": "Connection status",
+    "walletManagement": "Wallet management",
+    "settings": {
+      "accounts" : "Accounts",
+      "currency" : "Currency",
+      "language" : {
+        "text": "Language",
+        "translated" : "Translated by the team"
+      },
+      "about" : {
+        "text": "About",
+        "supportFeedback" : "Support & Feedback",
+        "socialMedia" : "Social Media",
+        "communityWallet" : "Community wallet",
+        "officialWebsite" : "Official Website",
+        "followTwitter": "Follow on Twitter",
+        "joinTelegram": "Join on Telegram",
+        "readMedium": "Read on Medium",
+        "learnWiki": "Learn on Wiki",
+        "githubCode": "Github Source Code",
+        "termsConditions ": "Terms and Conditions",
+        "privacyPolicy": "Privacy Policy",
+        "contactEmail": "Contact Email",
+        "askSupport": "Ask for Support",
+        "likeInstagram": "Like on Instagram",
+        "subscribeYouTube": "Subscribe on YouTube",
+        "receiveAnnouncements": "Receive Announcements"
+      }
+    }
+  },
+  "menu": {
+    "wallet": "Wallet",
+    "crowdloans": "Crowdloans",
+    "staking": "Staking",
+    "polkaswap": "Polkaswap",
+    "history": "History"
+  },
+  "wallet": {
+    "currencies": "Currencies",
+    "nfts": "NFTs",
+    "allAssetsHidden": "You have hidden all assets.",
+    "walletBalance": "Wallet balance",
+    "fungibleTokens": "Fungible tokens",
+    "nonFungibleTokens": "Non fungible tokens",
+    "showAllBalances": "Show all balances",
+    "hideZero": "Hide zero balances",
+    "turnVisibilityAssets": "Turn off the visibility of assets with zero balances",
+    "assetManagement": "Asset management",
+    "assetDetails": "Asset details"
+  },
+  "asset": {
+    "history": {
+      "noHistory": "Will appear here history",
+      "all": "All",
+      "transfer": "Transfer",
+      "reward": "Reward",
+      "extrinsic": "Extrinsic"
+    },
+    "buy": "Buy {asset} with",
+    "send": {
+      "buttonText": "Send",
+      "sendFunds": "Send Funds",
+      "coins": "Coins"
+    },
+    "teleport": {
+      "buttonText": "Teleport",
+      "teleportFunds": "Teleport Funds",
+      "from": "from",
+      "to": "To",
+      "sendTo": "SEND TO",
+      "assetsAmount": "Assets Amount",
+      "originNet": "ORIGINAL NETWORK",
+      "destNet": "DESTINATION NETWORK"
+    },
+    "receive": {
+      "buttonText": "Receive",
+      "receiveFunds": "Receive Funds",
+      "walletAddress": "Wallet address"
+    },
+    "summary": "Summary",
+    "currency": "CURRENCY",
+    "transferrable": "Transferrable",
+    "fee": "Fee",
+    "total": "Total",
+    "signTransaction": "Sign the transaction",
+    "passwordTransaction": "Enter password to confirm the transaction",
+    "switchNetwork": "Switch to a correct network",
+    "changeAddress": "Change address",
+    "invalidNetworkText": "Is not network address",
+    "invalidNetworkSubtext": "According to the address provided you’re trying to make a transfer on the wrong network.",
+    "existentialDepositText": "Operation will remove account",
+    "existentialDepositSubtext": "This transaction will result in the account going below the Existential Deposit, which will cause it to be reaped (the account will be wiped from the blockchain’s state to conserve space). If you choose to continue you will lose any funds that are below the existential deposit amount set by the network. For detailed information please refer to the official network documentation (e.g., the Polkadot Wiki). Fearless Wallet is a fully non-custodial application and has no control or knowledge of any of your actions on the network itself. ONLY CONTINUE IF YOU FULLY AGREE TO AND UNDERSTAND THE IMPLICATIONS;"
+  },
+  "accounts": {
+    "walletName": "Wallet name",
+    "createNewAccount": "Create a new account",
+    "dontNeedAccount": "I don’t need an account",
+    "exportWarning": "Sharing or copying your secret is a high risk operation, don’t send it to anyone. Would you like to proceed with sharing/copying process?",
+    "notEthereumAccount": "You didn’t add an ethereum account.",
+    "accountsUniquesSecrets": "Accounts with unique secrets",
+    "accountsDefaultSecrets": "Default accounts with a shared secret",
+    "export": "Export account",
+    "exportJson": "Export JSON",
+    "wantExportJson": "I want to export JSON",
+    "passwordWallet": "Password for this wallet",
+    "replace": "Replace account",
+    "switchNode": "Switch node",
+    "copyAddress": "Copy address",
+    "subscan": "View in Subscan",
+    "deleteCustomNode": "Delete custom node?",
+    "careful": "Be careful",
+    "sharingSecret": "Sharing or copying your secret is a high risk operation, don’t send it to anyone. Would you like to proceed with sharing/copying process?",
+    "invalidNodeAddress": "Invalid node address format",
+    "addNode": "Add node",
+    "urlAddress": "URL ADDRESS",
+    "nodeName": "NAME",
+    "network": "Network",
+    "autoNodes": "Auto select nodes",
+    "defaultNodes": "Default nodes",
+    "customNodes": "Custom nodes",
+    "editNode": "Edit node",
+    "deleteNode": "Delete node",
+    "createAccount": "Create Account",
+    "importAccount": "Import Account",
+    "newNode": "New Node"
+  },
+  "auth": {
+    "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
+  },
+  "common": {
+    "developing": "in developing",
+    "attention": "Attention",
+    "delete": "Delete",
+    "accept": "Accept",
+    "proceed": "Proceed",
+    "continue": "Continue",
+    "copied": "Сopied {value}",
+    "understood": "Understood",
+    "cancel": "Cancel",
+    "save": "Save",
+    "search": "Search",
+    "searchNetwork": "Search in networks",
+    "searchCurrency": "Search in currencies",
+    "invalidPassword": "Incorrect password",
+    "password": "Password",
+    "max": "MAX",
+    "networkManagement": "Network management",
+    "fullScreen": "Full screen mode",
+    "manageDApp": "Manage dApp access",
+    "alreadyHaveAccount": "I already have an account",
+    "sourceType": "Source Type"
+  }
+}

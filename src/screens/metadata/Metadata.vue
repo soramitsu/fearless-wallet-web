@@ -1,17 +1,24 @@
 <template>
-  <AboveForm :blur="true" header="Metadata" :closeHandler="onReject">
+  <AboveForm :blur="true" header="metadata.text" :closeHandler="onReject">
     <InfoList>
       <InfoItem name="from" :value="request.url" />
+
       <InfoItem name="chain" :value="request.request.chain" />
+
       <InfoItem name="icon" :value="request.request.specVersion" />
+
       <InfoItem name="decimals" :value="request.request.tokenDecimals" />
+
       <InfoItem name="symbol" :value="request.request.tokenSymbol" />
+
       <InfoItem name="upgrade" :value="request.request.metaCalls" />
     </InfoList>
+
     <div class="alert">
-      <Alert :message="alertMessage" />
+      <Alert message="metadata.alertMessage" />
     </div>
-    <Button width="100%" text="Yes, allow this application access" size="big" fontSize="big" @click="onApprove" />
+
+    <Button width="100%" text="metadata.appAccess" size="big" fontSize="big" @click="onApprove" />
   </AboveForm>
 </template>
 
@@ -45,22 +52,19 @@ import { GettersTypes as MetaGettersTypes } from '@/store/metadata/getters';
 export default class MetaRequest extends Vue {
   @Getter(MetaGettersTypes.getMetaRequests) requests!: MetadataRequest[];
 
-  alertMessage =
-    'This approval will add the metadata to your extension instance, allowing future requests to be decoded using this metadata';
-
   get request() {
-    const [request] = this.requests;
-
-    return request;
+    return this.requests[0];
   }
 
   onApprove() {
-    store.dispatch(ActionTypes.APPROVE_METADATA_REQUEST, this.request);
+    store.dispatch(ActionTypes.APPROVE_METADATA_REQUEST, this.request); // TODO: @Action
+
     this.$router.push({ name: Components.Wallet });
   }
 
   onReject() {
-    store.dispatch(ActionTypes.REJECT_METADATA_REQUEST, this.request);
+    store.dispatch(ActionTypes.REJECT_METADATA_REQUEST, this.request); // TODO: @Action
+
     this.$router.push({ name: Components.Wallet });
   }
 }

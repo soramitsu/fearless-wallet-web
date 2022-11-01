@@ -2,7 +2,7 @@
   <Popup
     sizeWidth="big"
     class="select-popup"
-    :headerText="header"
+    :headerText="headerText"
     :placeholder="placeholder"
     :showSearch="showSearch"
     :showBorder="showBorder"
@@ -47,7 +47,7 @@ export default class SelectPopup extends Vue {
 
   @Prop(String) value!: string;
   @Prop(Array) options!: Record<string, string>[];
-  @Prop(String) header!: string;
+  @Prop(String) headerText!: string;
   @Prop(Number) top!: number;
   @Prop(Number) left!: number;
   @Prop({ default: 'center' }) horizontalPlacement!: string;

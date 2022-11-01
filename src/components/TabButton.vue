@@ -2,7 +2,7 @@
   <div>
     <Corners>
       <div :class="tabButtonClasses" @click="$emit('click')" :title="title">
-        {{ text }}
+        {{ $t(text) }}
       </div>
     </Corners>
 

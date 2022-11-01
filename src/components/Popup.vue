@@ -10,7 +10,7 @@
             <div class="header-with-icon">
               <Icon v-if="isIcon" className="attention-icon" icon="info-triangle" />
 
-              <div v-if="headerText" :class="headerClasses">{{ headerText }}</div>
+              <div v-if="headerText" :class="headerClasses">{{ $t(headerText) }}</div>
             </div>
           </template>
 

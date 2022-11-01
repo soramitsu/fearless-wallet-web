@@ -10,8 +10,8 @@
     <div class="notification-popup-content">
       <Icon v-if="showWarningIcon" icon="info-triangle" className="img" />
 
-      <div class="text">{{ text }}</div>
-      <div :class="classesSubtext">{{ subtext }}</div>
+      <div class="text">{{ $t(text) }}</div>
+      <div :class="classesSubtext">{{ $t(subtext) }}</div>
 
       <Button v-if="showAcceptButton" class="button" size="medium" :text="acceptButtonText" @click="handlerAccept" />
 
@@ -54,8 +54,8 @@ export default class NotificationPopup extends Vue {
   @Prop({ default: true }) showHeader!: boolean;
   @Prop({ default: true }) closeBuBackground!: boolean;
   @Prop({ default: 'medium' }) sizeWidth!: Size;
-  @Prop({ default: 'Cancel' }) rejectButtonText!: string;
-  @Prop(String) acceptButtonText!: string;
+  @Prop({ default: 'common.cancel' }) rejectButtonText!: string;
+  @Prop({ default: 'common.proceed' }) acceptButtonText!: string;
   @Prop(Function) handlerClose!: VoidFunction;
   @Prop(Function) handlerAccept!: VoidFunction;
 
@@ -85,6 +85,8 @@ export default class NotificationPopup extends Vue {
 
     .img {
       margin-bottom: 20px;
+      width: 40px;
+      height: 40px;
     }
 
     .text {

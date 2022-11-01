@@ -3,6 +3,7 @@
     <template v-if="isMobileSignRequired">
       <div class="transaction__mobile">
         <Loader />
+
         <Button
           text="Cancel"
           width="100%"
@@ -36,7 +37,8 @@
           :payload="payload"
           @close="onClose"
         />
-        <Button size="big" class="button" text="Sign the transaction" @click="onSign" />
+
+        <Button size="big" class="button" text="asset.signTransaction" @click="onSign" />
       </template>
     </template>
   </AboveForm>

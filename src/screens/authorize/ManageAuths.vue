@@ -1,13 +1,14 @@
 <template>
   <AboveForm
     :header="header"
+    :headerLocaleProps="headerLocaleProps"
     :showBackIcon="showUpdateAuths"
     :blur="true"
     :closeHandler="handlerClose"
     :handlerBack="updateUrl.bind(null, '')"
   >
     <template v-if="!showUpdateAuths">
-      <SearchInput v-model="filterValue" placeholder="Search in networks" class="search-input" width="100%" />
+      <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
 
       <div class="auth-items">
         <Scroll>
@@ -56,9 +57,13 @@ export default class ManageAuths extends Vue {
   }
 
   get header() {
-    if (this.showUpdateAuths) return `Accounts connected to ${this.url}`;
+    if (this.showUpdateAuths) return 'authorize.accountsConnected';
 
-    return 'Manage dApp access';
+    return 'common.manageDApp';
+  }
+
+  get headerLocaleProps() {
+    return { url: this.url };
   }
 
   async mounted() {

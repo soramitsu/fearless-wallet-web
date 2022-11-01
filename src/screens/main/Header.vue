@@ -21,15 +21,16 @@
           </Rotate>
         </div>
 
-        <Tooltip text="Wallet management" target=".header-part-left" placement="right" />
+        <Tooltip text="header.walletManagement" target=".header-part-left" placement="right" />
       </div>
+
       <div class="header-part">
         <CircleButton
           v-if="showFullScreenIcon"
           iconName="expand"
           backgroundColor="light-black"
           class="button-margin"
-          tooltipText="Full screen mode"
+          tooltipText="common.fullScreen"
           target=".expand"
           placement="bottom"
           @click="openFullScreen"
@@ -37,10 +38,10 @@
 
         <div class="background-ellipse button-margin">
           <div :class="statusConnectedClasses"></div>
-          {{ statusConnectedText }}
+          {{ $t(statusConnectedText) }}
         </div>
 
-        <Tooltip text="Connection status" target=".background-ellipse" placement="top" />
+        <Tooltip text="header.connectionStatus" target=".background-ellipse" placement="top" />
 
         <CircleButton
           :ref="settingsNameRef"
@@ -103,7 +104,7 @@ export default class Header extends Vue {
   }
 
   get statusConnectedText() {
-    return this.isOnline ? 'Connected' : 'Disconnected';
+    return this.isOnline ? 'header.connected' : 'header.disconnect';
   }
 
   @Watch('syncedShowSelectWalletPopup')

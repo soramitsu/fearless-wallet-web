@@ -10,7 +10,7 @@
     >
       <Icon v-if="iconName" :icon="iconName" :className="iconClass" icon-color="pink" />
 
-      {{ text }}
+      {{ t }}
     </SButton>
   </div>
 </template>
@@ -21,15 +21,20 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type FontSize = 'small' | 'medium' | 'big';
 type Type = 'primary' | 'secondary' | 'link';
+type TextLocaleProps = Record<string, string> & {
+  tc?: number;
+};
 
 @Component
 export default class Button extends Vue {
+  iconClass = ['icon'];
+
   @Prop(String) text!: string;
+  @Prop({ default: () => ({}) }) textLocaleProps!: TextLocaleProps;
   @Prop(String) width!: string;
   @Prop(String) iconName!: string;
   @Prop(String) iconColor!: string;
   @Prop({ type: String, default: '' }) iconClasses?: string;
-
   @Prop({ default: 'primary' }) type!: Type;
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'medium' }) fontSize!: FontSize;
@@ -37,7 +42,14 @@ export default class Button extends Vue {
   @Prop({ default: false }) disabled!: boolean;
   @Prop({ default: true }) hover!: boolean;
   @Prop({ default: true }) border!: boolean;
-  iconClass = ['icon'];
+
+  get t() {
+    const { tc } = this.textLocaleProps;
+
+    if (tc) return this.$tc(this.text, this.textLocaleProps.tc, this.textLocaleProps);
+
+    return this.$t(this.text, this.textLocaleProps);
+  }
 
   get containerButtonClasses() {
     // for "small" and "mini" sizes also medium

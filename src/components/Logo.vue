@@ -6,8 +6,8 @@
       </div>
     </div>
 
-    <div v-show="text" class="text">{{ text }}</div>
-    <div v-show="subtext" class="subtext">{{ subtext }}</div>
+    <div v-show="text" class="text">{{ $t(text) }}</div>
+    <div v-show="subtext" class="subtext">{{ $t(subtext) }}</div>
   </div>
 </template>
 

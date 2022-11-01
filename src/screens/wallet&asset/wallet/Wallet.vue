@@ -60,8 +60,8 @@
       :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', false)"
     />
 
-    <Tooltip text="Wallet balance" target=".wallet-balance" placement="right" />
-    <Tooltip text="Network management" target=".select-network-button" placement="bottom" />
+    <Tooltip text="wallet.walletBalance" target=".wallet-balance" placement="right" />
+    <Tooltip text="common.networkManagement" target=".select-network-button" placement="bottom" />
   </div>
 </template>
 

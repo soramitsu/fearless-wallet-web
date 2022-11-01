@@ -69,7 +69,6 @@ export default class WalletBalance extends Vue {
 
   updateSelectedWallet(event: Event) {
     const classList = (event.target as HTMLDivElement)?.classList;
-    console.log(classList);
 
     if (!(classList.contains('dots-container') || classList.contains('dots'))) this.$emit('updateSelectedWallet');
     else {

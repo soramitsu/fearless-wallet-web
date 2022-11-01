@@ -57,7 +57,7 @@
           iconName="send-white"
           backgroundColor="black"
           class="button send"
-          tooltipText="Send"
+          tooltipText="asset.send.buttonText"
           target=".send"
           @click="toggleVisibleActivityForm('showSendForm', true, currency)"
         />
@@ -66,7 +66,7 @@
           iconName="receive-white"
           backgroundColor="black"
           class="button receive"
-          tooltipText="Receive"
+          tooltipText="asset.receive.buttonText"
           target=".receive"
           @click="toggleVisibleActivityForm('showReceiveForm', true, currency)"
         />
@@ -76,7 +76,7 @@
           backgroundColor="none"
           backgroundColorHover="black"
           class="details"
-          tooltipText="Asset details"
+          tooltipText="wallet.assetDetails"
           target=".details"
         />
       </template>
@@ -143,7 +143,7 @@ export default class CurrencyItem extends Vue {
 
   get usd24HoursChangeString() {
     const { hours24Change } = this.currency;
-    const change = +formattedNumber(hours24Change);
+    const change = +formattedNumber(hours24Change, 2, false);
 
     return change > 0 ? `+${change}%` : change < 0 ? `${change}%` : '';
   }

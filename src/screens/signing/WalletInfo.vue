@@ -5,12 +5,11 @@
 
       <div class="wallet-info__content">
         <span class="wallet__name">{{ name }}</span>
-        <div class="wallet-info__address-container">
-          <span ref="address" class="wallet__address" @click="saveToClipboard">{{ address }}</span>
-
-          <Icon icon="clipboard" className="wallet-info__clipboard" @click="saveToClipboard" />
-        </div>
+        <span ref="address" class="wallet__address" @click="saveToClipboard">
+          {{ cutAddress }}
+        </span>
       </div>
+      <Icon icon="clipboard" className="wallet-info__clipboard" @click="saveToClipboard" />
     </div>
   </Corners>
 </template>
@@ -18,6 +17,7 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import Corners from '@/components/Corners.vue';
+import { cut } from '@/helpers/history';
 @Component({
   components: {
     Corners,
@@ -33,6 +33,10 @@ export default class WalletInfo extends Vue {
 
   saveToClipboard() {
     navigator.clipboard.writeText(this.$refs.address.innerText);
+  }
+
+  get cutAddress() {
+    return cut(this.address, 14);
   }
 }
 </script>
@@ -70,6 +74,7 @@ export default class WalletInfo extends Vue {
   display: flex;
   flex-flow: column nowrap;
   align-items: flex-start;
+  flex-grow: 1;
 }
 
 .wallet-info__address-container {
@@ -80,7 +85,8 @@ export default class WalletInfo extends Vue {
 }
 
 .wallet-info__clipboard {
-  width: 24px;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
 }
 
@@ -99,12 +105,13 @@ export default class WalletInfo extends Vue {
   max-width: 400px;
   overflow: hidden;
   cursor: pointer;
+  color: $gray-color;
   text-overflow: ellipsis;
   margin-right: 14px;
 }
 
 .wallet__logo {
-  width: 32px;
-  height: 100%;
+  width: 24px;
+  height: 24px;
 }
 </style>

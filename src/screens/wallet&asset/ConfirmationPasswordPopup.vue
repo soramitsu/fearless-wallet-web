@@ -115,7 +115,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get nativeTransactionStatus() {
-    return this.currency.sendStatus;
+    return this.currency?.sendStatus;
   }
 
   get prepLabel() {

@@ -153,9 +153,9 @@ export default class ConfirmationPasswordPopup extends Vue {
   get popupHeader() {
     if (this.transactionState === 'success' || this.nativeTransactionStatus === 'success') return 'Transaction Done';
     if (this.transactionState === 'failed' || this.nativeTransactionStatus === 'failed') return 'Transaction Error';
-    if ((this.isUnlock || this.isSignMobile) && this.isTransactionInit) return '';
+    if (this.isTransactionPending) return 'Transaction is pending';
 
-    return 'Transaction is pending';
+    return '';
   }
 
   get transferAmountString() {

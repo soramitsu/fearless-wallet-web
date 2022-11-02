@@ -43,20 +43,19 @@ const PAGE_SIZE = 100;
 const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.LOAD_JSONS]({ commit, state }, { chainsUrl, assetsUrl, fiatsUrl }) {
     if (state.assetsJson.length === 0) {
-      const { data: assetsData } = await axios.get<AssetJson[]>(assetsUrl);
+      const { data: assetsJson } = await axios.get<AssetJson[]>(assetsUrl);
 
-      commit(MutationTypes.SET_ASSETS_JSON, { assetsJson: assetsData });
+      commit(MutationTypes.SET_ASSETS_JSON, { assetsJson });
     }
 
     if (state.fiats.length === 0) {
-      const { data: fiatData } = await axios.get<FiatJson[]>(fiatsUrl);
+      const { data: fiats } = await axios.get<FiatJson[]>(fiatsUrl);
 
-      commit(MutationTypes.SET_FIATS_JSON, { fiats: fiatData });
+      commit(MutationTypes.SET_FIATS_JSON, { fiats });
     }
 
     if (state.networks.length === 0) {
-      const { data: chainsData } = await axios.get(chainsUrl);
-      const networksJson: NetworkJson[] = chainsData;
+      const { data: networksJson } = await axios.get<NetworkJson[]>(chainsUrl);
 
       const networks: Networks = networksJson.map(
         ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi, chainId, parentId, paraId }) => {
@@ -106,10 +105,9 @@ const actions: ActionTree<State, State> & Actions = {
 
     try {
       const { data } = await axios.get<AssetsPrice>(url);
-      const typedData = data;
       const assetsPrice: AssetsPrice = {};
 
-      for (const priceId in typedData) {
+      for (const priceId in data) {
         assetsJson
           .filter(({ priceId: _priceId }) => _priceId === priceId)
           .forEach(({ id }) => {

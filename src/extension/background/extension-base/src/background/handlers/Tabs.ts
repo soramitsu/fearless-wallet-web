@@ -76,7 +76,7 @@ export default class Tabs {
         const transformedMobileAccount = transformAddresses(keyring.addresses.subject.value);
         const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
         await chrome.storage.local.set({ transformAccounts: allAccounts });
-        console.log(allAccounts, 'allAccs');
+
         const auths = await Tabs.filterForAuthorizedAccounts(allAccounts, url);
 
         cb(auths);

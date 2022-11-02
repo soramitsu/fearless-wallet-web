@@ -72,6 +72,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as SignActionsTypes, ApprovePayload } from '@/store/sign/actions';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { GetNetworkGenesisHash } from '@/store/networks/types';
+import SignController from '@/controllers/signController';
 
 @Component({
   components: {
@@ -135,19 +136,27 @@ export default class ConfirmationPasswordPopup extends Vue {
     return this.currency?.send(this.address, true);
   }
 
-  async signTransactionJSON() {
+  async signTransactionJSON(id: string) {
     const payload: PayloadJSON = this.payload as any;
     delete payload.address;
     payload.type = 'json';
 
     const { blockchainData } = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
 
-    approveSignSignature(this.transactionId as string, blockchainData.signature);
+    if (blockchainData.signature.length === 0) {
+      this.transactionState = 'failed';
+
+      SignController.cancelSign(id);
+
+      return;
+    }
+
+    approveSignSignature(id, blockchainData.signature);
   }
 
   async signMobile() {
     if (!this.transactionId && this.currency.extrinsic) await this.signTransactionRaw();
-    else if (this.payload && this.transactionId) await this.signTransactionJSON();
+    else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
   }
 
   get popupHeader() {
@@ -188,10 +197,18 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   close() {
-    if (this.isTransactionPending) return;
-    this.currency.clearSendStatus();
+    if (this.transactionId && this.isTransactionPending) {
+      SignController.cancelSign(this.transactionId);
 
-    this.$emit('close', this.isTransactionFinished);
+      this.$emit('close', true);
+    }
+
+    if (this.transactionStatus) {
+      this.currency.clearSendStatus();
+      this.transactionState = undefined;
+    }
+
+    if (this.isTransactionFinished) this.$emit('close', this.isTransactionFinished);
   }
 
   async mounted() {

@@ -28,5 +28,10 @@ export default class ExportForm extends Vue {
     width: 420px;
     line-height: 170%;
   }
+
+  .img {
+    width: 50px;
+    height: 50px;
+  }
 }
 </style>

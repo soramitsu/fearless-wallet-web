@@ -9,7 +9,7 @@
           <Icon icon="fw-logo" className="logo" />
         </div>
 
-        <div class="header">{{ $t(header, headerLocaleProps) }}</div>
+        <div class="header">{{ header }}</div>
 
         <div class="activity">
           <div v-if="showCloseIcon" class="icon" @click="closeHandler">
@@ -30,11 +30,11 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import type { ComponentText } from '@/interfaces';
 
 @Component
 export default class AboveForm extends Vue {
-  @Prop({ default: '' }) header!: string;
-  @Prop({ default: () => ({}) }) headerLocaleProps!: Record<string, string>;
+  @Prop({ default: '' }) header!: ComponentText;
   @Prop({ default: false }) blur!: boolean;
   @Prop({ default: false }) showAcceptIcon!: boolean;
   @Prop({ default: false }) showBackIcon!: boolean;
@@ -43,6 +43,12 @@ export default class AboveForm extends Vue {
   @Prop({ default: () => () => null }) saveChanges!: VoidFunction;
   @Prop({ default: () => () => null }) handlerBack!: VoidFunction;
   @Prop(Function) closeHandler!: VoidFunction;
+
+  get tHeader() {
+    if (typeof this.header === 'string') return this.$t(this.header);
+
+    return this.$t(this.header.text, this.header.localeProps);
+  }
 
   get backgroundClasses() {
     return [

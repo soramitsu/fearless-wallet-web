@@ -66,6 +66,17 @@ type ChainAccount = {
   isReplaced: boolean;
 };
 
+type TextLocaleProps = Record<string, string> & {
+  tc?: number;
+};
+
+type ComponentText =
+  | string
+  | {
+      text: string;
+      localeProps: TextLocaleProps;
+    };
+
 type Placement =
   | 'top'
   | 'right'
@@ -100,4 +111,5 @@ export {
   MnemonicConfirmation,
   ChainAccount,
   AssetName,
+  ComponentText,
 };

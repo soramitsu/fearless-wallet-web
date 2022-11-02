@@ -1,7 +1,6 @@
 <template>
   <AboveForm
     :header="header"
-    :headerLocaleProps="headerLocaleProps"
     :showBackIcon="showUpdateAuths"
     :blur="true"
     :closeHandler="handlerClose"
@@ -57,13 +56,9 @@ export default class ManageAuths extends Vue {
   }
 
   get header() {
-    if (this.showUpdateAuths) return 'authorize.accountsConnected';
+    if (this.showUpdateAuths) return { text: 'authorize.accountsConnected', url: this.url };
 
     return 'common.manageDApp';
-  }
-
-  get headerLocaleProps() {
-    return { url: this.url };
   }
 
   async mounted() {

@@ -9,7 +9,7 @@ import type {
   ToggleActiveNode,
   AugmentedActionContext,
 } from '@/store/networks/types';
-import type { FiatJson, AssetJson, NetworkJson, Networks, ExternalApi, AssetsPrice, ApiOptions } from '@/interfaces';
+import type { FiatJson, AssetJson, NetworkJson, Networks, AssetsPrice, ApiOptions } from '@/interfaces';
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
@@ -60,7 +60,7 @@ const actions: ActionTree<State, State> & Actions = {
 
       const networks: Networks = networksJson.map(
         ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi, chainId, parentId, paraId }) => {
-          const networkName: string = name.toLowerCase();
+          const networkName = name.toLowerCase();
           const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
           const externalApi = originalExternalApi ?? {};
           const settings = settingsNetworks[networkName as KeySettings] ?? {};

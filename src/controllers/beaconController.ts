@@ -25,7 +25,7 @@ class BeaconController {
   private app: DAppClient;
   private serializer = new Serializer();
   private readonly name = 'Fearless Wallet Extension';
-  private readonly appMetaData: AppMetadata = {
+  readonly appMetaData: AppMetadata = {
     senderId: 'fearless-wallet-extension',
     name: this.name,
   };
@@ -34,6 +34,18 @@ class BeaconController {
     this.app = getDAppClientInstance({
       name: this.name,
       disableDefaultEvents: true,
+      eventHandlers: {
+        PERMISSION_REQUEST_ERROR: {
+          handler: (value) => {
+            console.log('PERMISSION ERROR', value);
+          },
+        },
+        INTERNAL_ERROR: {
+          handler: (value) => {
+            console.log('INTERNAL ERROR', value);
+          },
+        },
+      },
     });
 
     this.addSubstrateBlockchain();
@@ -54,7 +66,6 @@ class BeaconController {
   public getActiveAccount() {
     return this.app.getActiveAccount();
   }
-
   public async resetConnection() {
     await this.app.disconnect();
   }
@@ -131,7 +142,7 @@ class BeaconController {
     return this.app.request(request) as Promise<SubstrateSignPayloadJSONResponse>;
   }
 
-  public async sendRequestRaw(payload: SubstrateSignPayloadRequest) {
+  public sendRequestRaw(payload: SubstrateSignPayloadRequest) {
     return this.app.request(payload);
   }
 }

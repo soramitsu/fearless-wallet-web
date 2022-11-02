@@ -113,7 +113,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get isSignMobile() {
-    return BaseApi.getWalletType(this.address) === 'mobile';
+    return BaseApi.isMobileWallet(this.address);
   }
 
   get transactionStatus() {
@@ -151,7 +151,7 @@ export default class ConfirmationPasswordPopup extends Vue {
       return;
     }
 
-    approveSignSignature(id, blockchainData.signature);
+    SignController.approveSignSignature(id, blockchainData.signature);
   }
 
   async signMobile() {
@@ -197,20 +197,26 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   close() {
+    if (!this.isTransactionInit) {
+      this.$emit('close');
+
+      return;
+    }
+
     if (this.transactionId && this.isTransactionPending) {
       SignController.cancelSign(this.transactionId);
+      this.transactionState = undefined;
 
       this.$emit('close', true);
+
+      return;
     }
 
-    if (this.transactionStatus) {
+    if (this.isTransactionFinished) {
       this.currency.clearSendStatus();
       this.transactionState = undefined;
+      this.$emit('close', this.isTransactionFinished);
     }
-
-    if (this.isTransactionFinished) this.$emit('close', this.isTransactionFinished);
-
-    this.currency.clearSendStatus();
   }
 
   async mounted() {

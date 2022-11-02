@@ -65,8 +65,8 @@ import { ActionTypes as SignActionsTypes } from '@/store/sign/actions';
 import { TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
 import Loader from '@/components/Loader.vue';
 import { beaconController } from '@/controllers/beaconController';
-import { approveSignSignature } from '@/extension/messaging';
 import { Components } from '@/router/routes';
+import SignController from '@/controllers/signController';
 
 @Component({
   components: {
@@ -95,9 +95,11 @@ export default class Auth extends Vue {
       delete payload.address;
       payload.type = 'json';
 
-      const { blockchainData } = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
+      const response = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
 
-      approveSignSignature(this.request.id, blockchainData.signature);
+      if (!response || !response.blockchainData.signature) SignController.cancelSign(this.request.id);
+
+      SignController.approveSignSignature(this.request.id, response.blockchainData.signature);
 
       this.$router.push(Components.Main);
     }

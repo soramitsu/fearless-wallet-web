@@ -5,10 +5,12 @@
 
       <div class="wallet-info__content">
         <span class="wallet__name">{{ name }}</span>
+
         <span ref="address" class="wallet__address" @click="saveToClipboard">
           {{ cutAddress }}
         </span>
       </div>
+
       <Icon icon="clipboard" className="wallet-info__clipboard" @click="saveToClipboard" />
     </div>
   </Corners>

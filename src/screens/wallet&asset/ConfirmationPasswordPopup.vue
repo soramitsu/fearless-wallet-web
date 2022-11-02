@@ -7,7 +7,7 @@
         <div class="text row">{{ $t('asset.passwordTransaction') }}</div>
 
         <ValidatedInput
-          v-if="!isUnlock"
+          v-if="isLocked"
           v-model="password"
           placeholder="common.password"
           size="big"
@@ -18,7 +18,7 @@
         />
 
         <div class="remember__checkbox">
-          <Checkbox v-model="isSavePass" size="medium" :label="prepLabel" />
+          <Checkbox v-model="isSavePass" size="medium" :label="min15Label" />
         </div>
 
         <Button
@@ -42,11 +42,12 @@
           <NetworkLogo :name="firstNetwork" :width="30" />
 
           <template v-if="secondNetwork">
-            <s-icon name="arrows-arrow-right-24" />
+            <SIcon name="arrows-arrow-right-24" />
 
             <NetworkLogo :name="secondNetwork" :width="30" />
           </template>
         </div>
+
         <div class="transfer-amount">{{ transferAmountString }}</div>
 
         <div class="transfer-value">{{ transferValueString }}</div>
@@ -89,7 +90,7 @@ import SignController from '@/controllers/signController';
 export default class ConfirmationPasswordPopup extends Vue {
   password = '';
   isErrorPassword = false;
-  isUnlock = false;
+  isLocked = true;
   isSavePass = false;
   signedPayload: RequestSentInfo | null = null;
   transactionState: 'pending' | 'success' | 'failed' | undefined = undefined;
@@ -120,8 +121,8 @@ export default class ConfirmationPasswordPopup extends Vue {
     return this.currency?.sendStatus ?? this.transactionState;
   }
 
-  get prepLabel() {
-    return !this.isUnlock ? 'asset.15min' : 'asset.15minExtend';
+  get min15Label() {
+    return this.isLocked ? 'asset.15min' : 'asset.15minExtend';
   }
 
   get headerType() {
@@ -132,36 +133,11 @@ export default class ConfirmationPasswordPopup extends Vue {
     return 'pending';
   }
 
-  signTransactionRaw() {
-    return this.currency?.send(this.address, true);
-  }
-
-  async signTransactionJSON(id: string) {
-    const payload: PayloadJSON = this.payload as any;
-    delete payload.address;
-    payload.type = 'json';
-
-    const { blockchainData } = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
-
-    if (blockchainData.signature.length === 0) {
-      this.transactionState = 'failed';
-
-      SignController.cancelSign(id);
-
-      return;
-    }
-
-    SignController.approveSignSignature(id, blockchainData.signature);
-  }
-
-  async signMobile() {
-    if (!this.transactionId && this.currency.extrinsic) await this.signTransactionRaw();
-    else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
-  }
-
   get popupHeader() {
     if (this.transactionStatus === 'success') return 'asset.transactionDone';
+
     if (this.transactionStatus === 'failed') return 'asset.transactionError';
+
     if (this.isTransactionPending) return 'asset.transactionPending';
 
     return '';
@@ -173,11 +149,6 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   get transferValueString() {
     return `$${this.value}`;
-  }
-
-  @Watch('password')
-  resetStatusError() {
-    this.isErrorPassword = false;
   }
 
   get isTransactionInit() {
@@ -194,6 +165,15 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (!this.isTransactionInit) return false;
 
     return this.transactionStatus !== 'pending';
+  }
+
+  @Watch('password')
+  resetStatusError() {
+    this.isErrorPassword = false;
+  }
+
+  signTransactionRaw() {
+    return this.currency?.send(this.address, true);
   }
 
   close() {
@@ -219,6 +199,29 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
   }
 
+  async signMobile() {
+    if (!this.transactionId && this.currency.extrinsic) await this.signTransactionRaw();
+    else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
+  }
+
+  async signTransactionJSON(id: string) {
+    const payload: PayloadJSON = this.payload as any;
+    delete payload.address;
+    payload.type = 'json';
+
+    const { blockchainData } = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
+
+    if (blockchainData.signature.length === 0) {
+      this.transactionState = 'failed';
+
+      SignController.cancelSign(id);
+
+      return;
+    }
+
+    SignController.approveSignSignature(id, blockchainData.signature);
+  }
+
   async mounted() {
     if (!isExtension() && !this.isSignMobile) return;
 
@@ -226,12 +229,12 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     const { isLocked } = await isSignLocked(this.transactionId);
 
-    this.isUnlock = !isLocked;
-    this.isSavePass = this.isUnlock;
+    this.isLocked = isLocked;
+    this.isSavePass = !this.isLocked;
   }
 
   async send() {
-    if (!this.isUnlock) {
+    if (this.isLocked) {
       this.isErrorPassword = !BaseApi.unlockPair(this.address, this.password);
 
       if (this.isErrorPassword) return;
@@ -265,8 +268,8 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     .icon__lock-green {
-      width: 20px;
-      height: 20px;
+      width: 30px;
+      height: 30px;
     }
 
     .text {

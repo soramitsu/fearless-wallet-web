@@ -28,7 +28,7 @@ import UpdateAuths from './UpdateAuths.vue';
 import { TAction } from '@/interfaces';
 import AboveForm from '@/components/AboveForm.vue';
 import SearchInput from '@/components/SearchInput.vue';
-import AuthItem from '@/screens/authorize/AuthItem.vue';
+import AuthItem from '@/screens/extension-ui/authorize/AuthItem.vue';
 import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
 import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
 import Scroll from '@/components/Scroll.vue';

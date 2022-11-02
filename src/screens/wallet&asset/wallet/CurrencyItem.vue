@@ -1,7 +1,7 @@
 <template>
   <div v-if="showCurrencyItem" class="currency-item" @click="openAssetPage">
     <div v-if="showAssetsManagementForm" class="drag-icon">
-      <s-icon name="basic-menu-24" class="handle" />
+      <SIcon name="basic-menu-24" class="handle" />
     </div>
 
     <div class="img-container">
@@ -143,7 +143,7 @@ export default class CurrencyItem extends Vue {
 
   get usd24HoursChangeString() {
     const { hours24Change } = this.currency;
-    const change = +formattedNumber(hours24Change, 2, false);
+    const change = +formattedNumber(hours24Change, { returnOriginNumber: false });
 
     return change > 0 ? `+${change}%` : change < 0 ? `${change}%` : '';
   }
@@ -155,7 +155,10 @@ export default class CurrencyItem extends Vue {
   get countAssetsString() {
     const totalCountAssets = +this.currency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork);
 
-    return formattedNumber(totalCountAssets, 4, false);
+    return formattedNumber(totalCountAssets, {
+      decimalsValue: 4,
+      returnOriginNumber: false,
+    });
   }
 
   get totalBalanceString() {

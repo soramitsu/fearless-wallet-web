@@ -54,7 +54,7 @@ import SettingsPopup from './SettingsPopup.vue';
 import FiatsPopup from './FiatsPopup.vue';
 import AboutPopup from './AboutPopup.vue';
 import LanguagePopup from './LanguagePopup.vue';
-import ManageAuths from '@/screens/authorize/ManageAuths.vue';
+import ManageAuths from '@/screens/extension-ui/authorize/ManageAuths.vue';
 
 @Component({
   components: {

@@ -1,34 +1,32 @@
 <template>
-  <AboveForm :blur="true" header="Transaction" :closeHandler="onReject">
-    <template v-if="isMobileSignRequired">
-      <div class="transaction__mobile">
-        <Loader />
+  <AboveForm :fullScreen="true" header="asset.transaction" :closeHandler="onReject">
+    <div v-if="isMobileSignRequired" class="transaction-mobile">
+      <Loader />
 
-        <Button
-          text="Cancel"
-          width="100%"
-          size="medium"
-          fontSize="big"
-          type="secondary"
-          :border="false"
-          @click="onReject"
-        />
-      </div>
-    </template>
+      <Button
+        text="common.cancel"
+        width="100%"
+        size="medium"
+        fontSize="big"
+        type="secondary"
+        :border="false"
+        @click="onReject"
+      />
+    </div>
 
-    <template v-else>
-      <WalletInfo class="wallet-info" :name="request.account.name" :address="request.account.address" />
+    <div v-else class="transaction-content">
+      <div>
+        <WalletInfo class="wallet-info" :name="request.account.name" :address="request.account.address" />
 
-      <InfoList>
-        <InfoItem name="from" :value="request.url" />
-        <InfoItem name="genesis" :value="genesisHash" />
-        <InfoItem name="version" :value="specVersion" />
-        <InfoItem name="nounce" :value="nonce" />
-        <InfoItem name="method Data" :value="method" />
-        <InfoItem name="lifetime" :value="morality" />
-      </InfoList>
+        <InfoList>
+          <InfoItem name="from" :value="request.url" />
+          <InfoItem name="genesis" :value="genesisHash" />
+          <InfoItem name="version" :value="specVersion" />
+          <InfoItem name="nounce" :value="nonce" />
+          <InfoItem name="method Data" :value="method" />
+          <InfoItem name="lifetime" :value="morality" />
+        </InfoList>
 
-      <template>
         <ConfirmationPasswordPopup
           v-if="isSignPopupVisible"
           sizeWidth="medium"
@@ -37,10 +35,10 @@
           :payload="payload"
           @close="onClose"
         />
+      </div>
 
-        <Button size="big" class="button" text="asset.signTransaction" @click="onSign" />
-      </template>
-    </template>
+      <Button size="big" class="button" text="asset.signTransaction" @click="onSign" />
+    </div>
   </AboveForm>
 </template>
 
@@ -54,10 +52,9 @@ import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
 import Checkbox from '@/components/Checkbox.vue';
-import WalletInfo from '@/screens/signing/WalletInfo.vue';
-import TransactionContent from '@/layouts/TransactionContent.vue';
-import InfoList from '@/layouts/InfoList.vue';
-import InfoItem from '@/screens/signing/InfoItem.vue';
+import WalletInfo from '@/screens/extension-ui/signing/WalletInfo.vue';
+import InfoList from '@/screens/extension-ui/InfoList.vue';
+import InfoItem from '@/screens/extension-ui/InfoItem.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { GettersTypes as SignGettersTypes } from '@/store/sign/getters';
@@ -71,7 +68,6 @@ import SignController from '@/controllers/signController';
 @Component({
   components: {
     WalletInfo,
-    TransactionContent,
     ConfirmationPasswordPopup,
     InfoItem,
     InfoList,
@@ -159,25 +155,22 @@ export default class Auth extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.wallet-info {
-  margin-bottom: 14px;
+.transaction-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  .wallet-info {
+    margin-bottom: 14px;
+  }
 }
 
-.transaction__password {
-  margin-bottom: 14px;
-}
-
-.transaction__mobile {
+.transaction-mobile {
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-flow: column;
-}
-
-.transaction__checkbox {
-  width: 100%;
-  display: flex;
-  align-items: flex-start;
 }
 </style>

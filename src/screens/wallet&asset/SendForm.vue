@@ -19,7 +19,7 @@
     <div class="row direction-column">
       <Input v-model="selectedWallet.name" placeholder="asset.from" size="big" :readonly="true" />
 
-      <s-icon name="arrows-arrow-right-24" />
+      <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
 
       <Input v-model="formattedAddressTo" placeholder="asset.to" size="big" :readonly="true" />
     </div>
@@ -99,7 +99,7 @@ export default class SendForm extends Vue {
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
 
   get partialFeeString() {
-    return `${formattedNumber(+this.partialFee, 7)} ${this.selectedAssetUpper}`;
+    return `${formattedNumber(+this.partialFee, { decimalsValue: 7 })} ${this.selectedAssetUpper}`;
   }
 
   get showValue() {
@@ -129,7 +129,7 @@ export default class SendForm extends Vue {
   get totalString() {
     const total = addNumbers([this.amount, this.partialFee]);
 
-    return `${formattedNumber(+total, 7)} ${this.selectedAssetUpper}`;
+    return `${formattedNumber(+total, { decimalsValue: 7 })} ${this.selectedAssetUpper}`;
   }
 
   created() {
@@ -164,6 +164,16 @@ export default class SendForm extends Vue {
 </script>
 
 <style lang="scss">
+.direction-column {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .arrow-icon {
+    color: $default-white;
+  }
+}
+
 .summary {
   padding: 16px;
   background-color: rgba(255, 255, 255, 0.05) !important;

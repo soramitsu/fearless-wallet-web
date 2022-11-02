@@ -196,7 +196,11 @@ export default class Asset extends Vue {
     if (!this.currentCurrency) return `${this.selectedAsset.toUpperCase()} 0`;
 
     const totalCountAssets = +this.currentCurrency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork);
-    const total = formattedNumber(totalCountAssets, 4, false, true);
+    const total = formattedNumber(totalCountAssets, {
+      decimalsValue: 4,
+      returnOriginNumber: false,
+      removeTrailingZeros: true,
+    });
 
     return `${this.selectedAsset.toUpperCase()} ${total}`;
   }

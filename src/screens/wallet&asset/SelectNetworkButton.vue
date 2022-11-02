@@ -4,7 +4,7 @@
       {{ textFormatted }}
 
       <Rotate :isActive="isActive" class="icon-chevron">
-        <s-icon name="chevron-bottom-16" />
+        <SIcon name="chevron-bottom-16" />
       </Rotate>
     </div>
   </Corners>

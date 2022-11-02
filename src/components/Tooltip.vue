@@ -11,7 +11,7 @@ import type { Props } from 'tippy.js';
 
 @Component
 export default class Tooltip extends Vue {
-  @Prop(String) text!: ComponentText;
+  @Prop({ default: '' }) text!: ComponentText;
   @Prop(String) target!: string;
   @Prop({ default: 'top' }) placement!: Placement;
   @Prop(String) trigger!: string;

@@ -31,7 +31,7 @@
           :readonly="true"
         />
 
-        <Input v-model="syncedPasswordJson" size="big" placeholder="Password" class="row" :showPassword="true" />
+        <Input v-model="syncedPasswordJson" size="big" placeholder="common.password" class="row" :showPassword="true" />
       </div>
     </template>
 

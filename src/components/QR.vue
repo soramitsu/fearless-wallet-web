@@ -56,6 +56,7 @@ export default class QR extends Vue {
   display: flex;
   align-items: center;
   justify-content: center;
+  user-select: none;
 
   .qr-code {
     border-radius: 24px;

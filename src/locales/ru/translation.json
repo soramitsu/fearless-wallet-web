@@ -36,6 +36,7 @@
     "reEnterPassword": "Повторно введите пароль",
     "allDone": "Все готово!",
     "stayFearless": "Stay Fearless!",
+    "accounts": "аккаунты",
     "substrateDP": "Substrate секретный путь деривации",
     "substrateCryptoType": "SUBSTRATE тип шифрования",
     "ethereumDP": "Ethereum секретный путь деривации",
@@ -154,7 +155,8 @@
     "hideZero": "Скрыть нулевые балансы",
     "turnVisibilityAssets": "Отключить видимость активов с нулевыми остатками",
     "assetManagement": "Управление активами",
-    "assetDetails": "Детали актива"
+    "assetDetails": "Детали актива",
+    "addWallet": "Добавить кошелек"
   },
   "asset": {
     "history": {
@@ -236,7 +238,8 @@
     "deleteNode": "Удалить ноду",
     "createAccount": "Создать аккаунт",
     "importAccount": "Импротировать аккаунт",
-    "newNode": "Новая нода"
+    "newNode": "Новая нода",
+    "addEthereumAccounts": "Добавить аккаунты Moonbeam и Moonriver?"
   },
   "auth": {
     "noAccounts": "У вас нет аккаунта. Пожалуйста, создайте учетную запись и обновите страницу приложения."
@@ -248,10 +251,13 @@
     "accept": "Принять",
     "proceed": "Продолжить",
     "continue": "Продолжить",
-    "copied": "Скопировано {value}",
+    "copied": "Скопировано",
+    "copiedValue": "Скопировано {value}",
     "understood": "Понятно",
     "cancel": "Отмена",
     "save": "Сохранить",
+    "yes": "Да",
+    "no": "Нет",
     "search": "Поиск",
     "searchNetwork": "Поиск по сетям",
     "searchCurrency": "Поиск по валютам",

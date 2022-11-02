@@ -1,45 +1,45 @@
 <template>
-  <AboveForm :blur="true" header="Transaction" :closeHandler="onReject">
-    <template v-if="isMobileSignRequired">
-      <div class="transaction__mobile">
-        <Loader />
+  <AboveForm :fullScreen="true" header="asset.transaction" :closeHandler="onReject">
+    <div v-if="isMobileSignRequired" class="transaction__mobile">
+      <Loader />
 
-        <Button
-          text="Cancel"
-          width="100%"
-          size="medium"
-          fontSize="big"
-          type="secondary"
-          :border="false"
-          @click="onReject"
-        />
-      </div>
-    </template>
+      <Button
+        text="common.cancel"
+        width="100%"
+        size="medium"
+        fontSize="big"
+        type="secondary"
+        :border="false"
+        @click="onReject"
+      />
+    </div>
 
     <template v-else>
-      <WalletInfo class="wallet-info" :name="request.account.name" :address="request.account.address" />
+      <div class="transaction-content">
+        <div>
+          <WalletInfo class="wallet-info" :name="request.account.name" :address="request.account.address" />
 
-      <InfoList>
-        <InfoItem name="from" :value="request.url" />
-        <InfoItem name="genesis" :value="genesisHash" />
-        <InfoItem name="version" :value="specVersion" />
-        <InfoItem name="nounce" :value="nonce" />
-        <InfoItem name="method Data" :value="method" />
-        <InfoItem name="lifetime" :value="morality" />
-      </InfoList>
+          <InfoList>
+            <InfoItem name="from" :value="request.url" />
+            <InfoItem name="genesis" :value="genesisHash" />
+            <InfoItem name="version" :value="specVersion" />
+            <InfoItem name="nounce" :value="nonce" />
+            <InfoItem name="method Data" :value="method" />
+            <InfoItem name="lifetime" :value="morality" />
+          </InfoList>
 
-      <template>
-        <ConfirmationPasswordPopup
-          v-if="isSignPopupVisible"
-          sizeWidth="medium"
-          :address="payload.address"
-          :transactionId="request.id"
-          :payload="payload"
-          @close="onClose"
-        />
+          <ConfirmationPasswordPopup
+            v-if="isSignPopupVisible"
+            sizeWidth="medium"
+            :address="payload.address"
+            :transactionId="request.id"
+            :payload="payload"
+            @close="onClose"
+          />
+        </div>
 
         <Button size="big" class="button" text="asset.signTransaction" @click="onSign" />
-      </template>
+      </div>
     </template>
   </AboveForm>
 </template>
@@ -157,12 +157,15 @@ export default class Auth extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.wallet-info {
-  margin-bottom: 14px;
-}
+.transaction-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 
-.transaction__password {
-  margin-bottom: 14px;
+  .wallet-info {
+    margin-bottom: 14px;
+  }
 }
 
 .transaction__mobile {
@@ -171,11 +174,5 @@ export default class Auth extends Vue {
   align-items: center;
   justify-content: space-between;
   flex-flow: column;
-}
-
-.transaction__checkbox {
-  width: 100%;
-  display: flex;
-  align-items: flex-start;
 }
 </style>

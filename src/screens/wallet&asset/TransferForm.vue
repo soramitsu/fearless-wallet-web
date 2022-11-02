@@ -617,12 +617,6 @@ export default class SendForm extends Vue {
     }
   }
 
-  .direction-column {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
   .s-icon-arrows-arrow-right-24 {
     color: $default-white;
     font-size: 30px !important;

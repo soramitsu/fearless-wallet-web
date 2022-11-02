@@ -13,10 +13,11 @@
 
         <div class="activity">
           <div v-if="showCloseIcon" class="icon" @click="closeHandler">
-            <s-icon name="basic-close-24" />
+            <SIcon name="basic-close-24" />
           </div>
+
           <div v-show="showAcceptIcon" class="icon" @click="saveChanges">
-            <s-icon name="basic-check-mark-24" />
+            <SIcon name="basic-check-mark-24" />
           </div>
         </div>
       </div>

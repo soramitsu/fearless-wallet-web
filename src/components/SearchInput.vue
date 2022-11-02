@@ -2,7 +2,7 @@
   <div class="search-input-wrapper">
     <Input v-model="vModel" :placeholder="placeholder" size="small" :style="inputStyle" />
 
-    <s-icon name="basic-search-24" />
+    <SIcon name="basic-search-24" />
   </div>
 </template>
 

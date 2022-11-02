@@ -15,7 +15,7 @@
           </template>
 
           <s-button type="link" class="button-close" @click="close">
-            <s-icon name="basic-close-24" />
+            <SIcon name="basic-close-24" />
           </s-button>
         </div>
 

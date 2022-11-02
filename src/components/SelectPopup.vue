@@ -24,7 +24,7 @@
         {{ label }}
       </div>
 
-      <s-icon name="basic-check-mark-24" v-show="getIconVisible(value)" />
+      <SIcon name="basic-check-mark-24" v-show="getIconVisible(value)" />
     </div>
 
     <div v-if="showWarning" class="warning">Nothing found</div>

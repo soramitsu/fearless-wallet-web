@@ -1,7 +1,7 @@
 <template>
   <div v-if="showCurrencyItem" class="currency-item" @click="openAssetPage">
     <div v-if="showAssetsManagementForm" class="drag-icon">
-      <s-icon name="basic-menu-24" class="handle" />
+      <SIcon name="basic-menu-24" class="handle" />
     </div>
 
     <div class="img-container">

@@ -85,21 +85,21 @@ export function getHistoryValue(historyNode: HistoryNode, assetId: string) {
     const { amount } = transfer;
     const value = getHumanValue(amount, assetId);
 
-    return `${signTransfer}${formattedNumber(value, 4)}`;
+    return `${signTransfer}${formattedNumber(value, 4, true, true)}`;
   }
 
   if (type === TransactionType.reward) {
     const { amount } = reward;
     const value = getHumanValue(amount, assetId);
 
-    return `+${formattedNumber(value, 4)}`;
+    return `+${formattedNumber(value, 4, true, true)}`;
   }
 
   // extrinsic
   const { fee } = extrinsic;
   const value = getHumanValue(fee, assetId);
 
-  return `-${formattedNumber(value, 4)}`;
+  return `-${formattedNumber(value, 4, true, true)}`;
 }
 
 export function getHumanTransferFee(historyNode: HistoryNode, assetId: string) {

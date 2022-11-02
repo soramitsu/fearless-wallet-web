@@ -11,7 +11,7 @@
     />
 
     <Rotate :ref="rotateRef" :isActive="isActiveRotate" class="rotate-icon">
-      <s-icon name="chevron-bottom-16" />
+      <SIcon name="chevron-bottom-16" />
     </Rotate>
   </div>
 </template>

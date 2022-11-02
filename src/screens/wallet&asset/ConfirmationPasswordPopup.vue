@@ -7,7 +7,7 @@
         <div class="text row">{{ $t('asset.passwordTransaction') }}</div>
 
         <ValidatedInput
-          v-if="!isUnlock"
+          v-if="isLocked"
           v-model="password"
           placeholder="common.password"
           size="big"
@@ -18,7 +18,7 @@
         />
 
         <div class="remember__checkbox">
-          <Checkbox v-model="isSavePass" size="medium" :label="prepLabel" />
+          <Checkbox v-model="isSavePass" size="medium" :label="min15Label" />
         </div>
 
         <Button
@@ -42,11 +42,12 @@
           <NetworkLogo :name="firstNetwork" :width="30" />
 
           <template v-if="secondNetwork">
-            <s-icon name="arrows-arrow-right-24" />
+            <SIcon name="arrows-arrow-right-24" />
 
             <NetworkLogo :name="secondNetwork" :width="30" />
           </template>
         </div>
+
         <div class="transfer-amount">{{ transferAmountString }}</div>
 
         <div class="transfer-value">{{ transferValueString }}</div>
@@ -88,7 +89,7 @@ import { GetNetworkGenesisHash } from '@/store/networks/types';
 export default class ConfirmationPasswordPopup extends Vue {
   password = '';
   isErrorPassword = false;
-  isUnlock = false;
+  isLocked = true;
   isSavePass = false;
   signedPayload: RequestSentInfo | null = null;
   transactionState: 'pending' | 'success' | 'failed' | undefined = undefined;
@@ -119,8 +120,8 @@ export default class ConfirmationPasswordPopup extends Vue {
     return this.currency?.sendStatus ?? this.transactionState;
   }
 
-  get prepLabel() {
-    return !this.isUnlock ? 'asset.15min' : 'asset.15minExtend';
+  get min15Label() {
+    return this.isLocked ? 'asset.15min' : 'asset.15minExtend';
   }
 
   get headerType() {
@@ -129,6 +130,29 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.transactionStatus === 'failed') return 'failed';
 
     return 'pending';
+  }
+
+  get popupHeader() {
+    if (this.transactionStatus === 'success') return 'asset.transactionDone';
+
+    if (this.transactionStatus === 'failed') return 'asset.transactionError';
+
+    if (this.isTransactionPending) return 'asset.transactionPending';
+
+    return '';
+  }
+
+  get transferAmountString() {
+    return `-${this.amount} ${this.currency.displayName.toUpperCase()}`;
+  }
+
+  get transferValueString() {
+    return `$${this.value}`;
+  }
+
+  @Watch('password')
+  resetStatusError() {
+    this.isErrorPassword = false;
   }
 
   signTransactionRaw() {
@@ -148,27 +172,6 @@ export default class ConfirmationPasswordPopup extends Vue {
   async signMobile() {
     if (!this.transactionId && this.currency.extrinsic) await this.signTransactionRaw();
     else if (this.payload && this.transactionId) await this.signTransactionJSON();
-  }
-
-  get popupHeader() {
-    if (this.transactionStatus === 'success') return 'asset.transactionDone';
-    if (this.transactionStatus === 'failed') return 'asset.transactionError';
-    if (this.isTransactionPending) return 'asset.transactionPending';
-
-    return '';
-  }
-
-  get transferAmountString() {
-    return `-${this.amount} ${this.currency.displayName.toUpperCase()}`;
-  }
-
-  get transferValueString() {
-    return `$${this.value}`;
-  }
-
-  @Watch('password')
-  resetStatusError() {
-    this.isErrorPassword = false;
   }
 
   get isTransactionInit() {
@@ -202,12 +205,12 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     const { isLocked } = await isSignLocked(this.transactionId);
 
-    this.isUnlock = !isLocked;
-    this.isSavePass = this.isUnlock;
+    this.isLocked = isLocked;
+    this.isSavePass = !this.isLocked;
   }
 
   async send() {
-    if (!this.isUnlock) {
+    if (this.isLocked) {
       this.isErrorPassword = !BaseApi.unlockPair(this.address, this.password);
 
       if (this.isErrorPassword) return;
@@ -241,8 +244,8 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     .icon__lock-green {
-      width: 20px;
-      height: 20px;
+      width: 30px;
+      height: 30px;
     }
 
     .text {

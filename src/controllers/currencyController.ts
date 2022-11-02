@@ -435,7 +435,9 @@ export default class CurrencyController {
 
   public async send(from: string, isMobile = false): Promise<boolean> {
     this.transactionStatus = 'pending';
+
     if (isMobile) this.options.signer = new BeaconSigner();
+
     const wallet = isMobile ? from : BaseApi.getPair(from);
 
     try {

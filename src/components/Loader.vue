@@ -42,7 +42,7 @@
   }
 
   .logo {
-    height: 41px;
+    height: 44px;
     width: 70px;
     margin-top: 20px;
     color: $pink-color;

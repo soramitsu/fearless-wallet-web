@@ -177,14 +177,17 @@ const actions: ActionTree<State, State> & Actions = {
 
         // ethereum accounts only subscribe to the ethereum networks and
         // substrate accounts only subscribe to the substrate networks
-        if (!meta.isMobile)
-          if (
-            (!isEthereumNetwork && accountType === 'ethereum') ||
-            !meta.isMobile ||
-            (isEthereumNetwork && accountType !== 'ethereum') ||
-            !meta.isMobile
-          )
+        if (!meta.isMobile) {
+          if ((!isEthereumNetwork && accountType === 'ethereum') || (isEthereumNetwork && accountType !== 'ethereum'))
             return;
+        }
+
+        //subscribe only if mobile wallet have eth address and it's eth network
+        if (meta.isMobile && meta.ethereumAddress && isEthereumNetwork) {
+          subscribeAssetsBalances(context, meta.ethereumAddress as string, network);
+
+          return;
+        }
 
         subscribeAssetsBalances(context, walletAddress, network);
       });

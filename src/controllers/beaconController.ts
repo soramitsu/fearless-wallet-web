@@ -35,14 +35,14 @@ class BeaconController {
       name: this.name,
       disableDefaultEvents: true,
       eventHandlers: {
-        PERMISSION_REQUEST_ERROR: {
-          handler: (value) => {
-            console.log('PERMISSION ERROR', value);
+        INTERNAL_ERROR: {
+          handler: (error) => {
+            console.error('INTERNAL ERROR', error);
           },
         },
-        INTERNAL_ERROR: {
-          handler: (value) => {
-            console.log('INTERNAL ERROR', value);
+        UNKNOWN: {
+          handler: (error) => {
+            console.error('UNKNOWN ERROR', error);
           },
         },
       },

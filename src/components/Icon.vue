@@ -1,6 +1,6 @@
 <template>
   <svg :class="getClasses" aria-hidden="true" v-on="$listeners">
-    <use :xlink:href="getIconName" :class="icon" />
+    <use :xlink:href="getIconName" class="icon__inner" :class="icon" />
   </svg>
 </template>
 
@@ -37,6 +37,11 @@ export default class Icon extends Vue {
   vertical-align: -0.15em;
   fill: currentColor;
   overflow: hidden;
+  outline: none;
+}
+
+.icon__inner {
+  outline: none;
 }
 
 .settings {

@@ -35,7 +35,9 @@
 
       <SignMobile v-else-if="!isTransactionInit" @onSign="signMobile" @onCancel="close" />
 
-      <Loader v-if="isTransactionPending" />
+      <div v-if="isTransactionPending">
+        <Loader />
+      </div>
 
       <template v-else-if="isTransactionFinished">
         <div class="descriptions">
@@ -60,7 +62,7 @@ import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { Currencies, Currency, RequestSentInfo, TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
 import { beaconController } from '@/controllers/beaconController';
-import { approveSignSignature, isSignLocked } from '@/extension/messaging';
+import { isSignLocked } from '@/extension/messaging';
 import { isExtension } from '@/helpers/common';
 import Loader from '@/components/Loader.vue';
 import Popup from '@/components/Popup.vue';

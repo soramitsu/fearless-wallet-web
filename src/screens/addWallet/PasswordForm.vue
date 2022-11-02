@@ -2,8 +2,8 @@
   <div class="password-form">
     <ValidatedInput
       v-model="pass1"
-      errorDescriptions="Password is too short"
-      placeholder="Enter password"
+      :errorDescriptions="t('shortPassword')"
+      :placeholder="t('enterPassword')"
       :isError="isShortPassword"
       :showPassword="true"
       :readonly="showMockPassword"
@@ -14,8 +14,8 @@
     <ValidatedInput
       v-show="showPasswordConfirmation"
       v-model="pass2"
-      errorDescriptions="Passwords do not match"
-      placeholder="Re-Enter password"
+      :errorDescriptions="t('notMatchPassword')"
+      :placeholder="t('reEnterPassword')"
       :isError="isWrongPassword"
       :showPassword="true"
       :maxlength="25"
@@ -30,7 +30,6 @@
 import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
 import Hint from '@/components/Hint.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
-import { MOCK_PASSWORD, PASSWORD_INFO, PASSWORD_SAME } from '@/consts/messages';
 
 @Component({
   components: { Hint, ValidatedInput },
@@ -55,11 +54,11 @@ export default class PasswordForm extends Vue {
   }
 
   get hintText() {
-    if (this.showMockPassword) return MOCK_PASSWORD;
+    if (this.showMockPassword) return this.t('mockPassword');
 
-    if (this.showSamePasswordText) return PASSWORD_SAME;
+    if (this.showSamePasswordText) return this.t('samePassword');
 
-    return PASSWORD_INFO;
+    return this.t('passwordInfo');
   }
 
   mounted() {
@@ -85,6 +84,10 @@ export default class PasswordForm extends Vue {
 
   setPassword(password: string) {
     this.$emit('updateWalletPassword', password);
+  }
+
+  t(value: string, obj: Record<string, string> = {}) {
+    return this.$t(`addWallet.${value}`, obj);
   }
 }
 </script>

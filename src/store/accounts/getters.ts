@@ -40,7 +40,7 @@ const getters: GetterTree<State, State> & Getters = {
   },
 
   [GettersTypes.getSelectedNetwork]({ selectedNetworks, selectedWallet: { address } }): string {
-    return selectedNetworks[address] ?? 'All networks';
+    return selectedNetworks[address] ?? 'all';
   },
 
   [GettersTypes.getOnlineStatus]({ isOnline }): boolean {

@@ -2,7 +2,7 @@
   <SelectPopup
     class="select-network-popup"
     sizeWidth="big"
-    placeholder="Search in networks"
+    placeholder="common.searchNetwork"
     :value="selectedNetwork"
     :height="height"
     :maxHeight="maxHeight"
@@ -10,6 +10,8 @@
     :verticalPlacement="verticalPlacement"
     :top="top"
     :left="left"
+    :showBlur="showBlur"
+    :showBackground="showBackground"
     :options="filteredOptionsNetworks"
     :toggleValue="toggleSelectedNetwork"
     :handlerClose="handlerClose"
@@ -47,6 +49,8 @@ export default class SelectNetworkButton extends Vue {
   @Prop({ default: 'right' }) horizontalPlacement!: string;
   @Prop({ default: 'top' }) verticalPlacement!: string;
   @Prop({ default: true }) allNetworksItem!: boolean;
+  @Prop({ default: true }) showBlur!: boolean;
+  @Prop({ default: true }) showBackground!: boolean;
   @Prop(Number) height!: number;
   @Prop(Number) maxHeight!: number;
   @Prop(Array) _optionsNetworks!: Options[];
@@ -73,7 +77,12 @@ export default class SelectNetworkButton extends Vue {
     if (this.relayChain) options = options.filter(({ relayChain }) => relayChain === this.relayChain);
 
     if (this.allNetworksItem)
-      options.unshift({ label: 'All networks', value: 'All networks', path: 'globus', isAll: true });
+      options.unshift({
+        label: this.$t('common.allNetworks') as string,
+        value: 'all',
+        path: 'globus',
+        isAll: true,
+      });
 
     return options;
   }

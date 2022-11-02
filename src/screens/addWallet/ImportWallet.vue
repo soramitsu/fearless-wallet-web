@@ -2,7 +2,7 @@
   <div class="import-wallet">
     <Select
       v-model="typeImport"
-      placeholder="Source type"
+      placeholder="common.sourceType"
       size="big"
       class="row"
       :options="optionsImport"
@@ -119,21 +119,25 @@ export default class ImportWallet extends Vue {
 
   get placeholderTypeImportValue() {
     if (this.typeImport === 'rawSeed') {
-      if (this.step === 1) return 'Substrate accounts raw seed';
-      if (this.step === 2) return 'ETH accounts raw seed';
+      if (this.step === 1) return this.t('rawSeed', { type: 'Substrate' });
+      if (this.step === 2) return this.t('rawSeed', { type: 'ETH' });
     }
 
     if (this.typeImport === 'json') {
-      if (this.step === 1) return 'Restore JSON for Substrate accounts';
-      if (this.step === 2) return 'Restore JSON for Ethereum accounts';
+      if (this.step === 1) return this.t('restoreJson', { type: 'Substrate' });
+      if (this.step === 2) return this.t('restoreJson', { type: 'Ethereum' });
     }
 
-    return 'Enter Passphrase';
+    return this.t('enterPassphrase');
   }
 
   @Watch('typeImport')
   onTypeImportChanged() {
     this.$emit('reset');
+  }
+
+  t(value: string, obj: Record<string, string> = {}) {
+    return this.$t(`addWallet.${value}`, obj);
   }
 }
 </script>

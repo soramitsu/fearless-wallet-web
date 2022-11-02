@@ -1,10 +1,6 @@
 <template>
   <div class="mnemonic-backup-form">
-    <Hint
-      class="seed-hint"
-      iconName="warning"
-      text="Use a non-digital way to backup. Write it down on paper (or etch it into metal) and make sure not to loose it."
-    />
+    <Hint class="seed-hint" iconName="warning" text="addWallet.backupNonDigital" />
 
     <MnemonicColumns :mnemonicArray="mnemonicArray" />
 

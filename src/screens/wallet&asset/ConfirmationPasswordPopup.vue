@@ -4,15 +4,15 @@
       <template v-if="!isTransactionInit && !isSignMobile">
         <Icon icon="lock-green" className="icon__lock-green" />
 
-        <div class="text row">Enter password to confirm the transaction</div>
+        <div class="text row">{{ $t('asset.passwordTransaction') }}</div>
 
         <ValidatedInput
           v-if="!isUnlock"
           v-model="password"
-          placeholder="Password"
+          placeholder="common.password"
           size="big"
           class="input row"
-          errorDescriptions="Incorrect password"
+          errorDescriptions="common.invalidPassword"
           :isError="isErrorPassword"
           :showPassword="true"
         />
@@ -22,7 +22,7 @@
         </div>
 
         <Button
-          text="Continue"
+          text="common.continue"
           width="100%"
           size="medium"
           fontSize="big"
@@ -48,6 +48,7 @@
           </template>
         </div>
         <div class="transfer-amount">{{ transferAmountString }}</div>
+
         <div class="transfer-value">{{ transferValueString }}</div>
       </template>
     </div>
@@ -120,13 +121,12 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get prepLabel() {
-    return !this.isUnlock
-      ? 'Do not ask for a password for 15 min.'
-      : 'Extend the period without password by 15 minutes';
+    return !this.isUnlock ? 'asset.15min' : 'asset.15minExtend';
   }
 
   get headerType() {
     if (this.transactionStatus === 'success') return 'success';
+
     if (this.transactionStatus === 'failed') return 'failed';
 
     return 'pending';
@@ -160,9 +160,9 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get popupHeader() {
-    if (this.transactionStatus === 'success') return 'Transaction Done';
-    if (this.transactionStatus === 'failed') return 'Transaction Error';
-    if (this.isTransactionPending) return 'Transaction is pending';
+    if (this.transactionStatus === 'success') return 'asset.transactionDone';
+    if (this.transactionStatus === 'failed') return 'asset.transactionError';
+    if (this.isTransactionPending) return 'asset.transactionPending';
 
     return '';
   }
@@ -209,6 +209,8 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     if (this.isTransactionFinished) this.$emit('close', this.isTransactionFinished);
+
+    this.currency.clearSendStatus();
   }
 
   async mounted() {
@@ -217,6 +219,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.transactionId === undefined) return;
 
     const { isLocked } = await isSignLocked(this.transactionId);
+
     this.isUnlock = !isLocked;
     this.isSavePass = this.isUnlock;
   }

@@ -1,8 +1,10 @@
 import type { Node } from '@/interfaces/nodes';
+import type { Lang } from '@/locales';
 import LocalStorageController from '@/controllers/localStorageController';
 
 class AccountController {
   private readonly lsAccount = new LocalStorageController('account');
+  private readonly langStorageName = 'lang';
   private readonly sequenceAssetsStorageName = 'sequence-assets';
   private readonly autoSelectNodesStorageName = 'auto-select-nodes';
   private readonly activeNodeStorageName = 'active-node';
@@ -15,6 +17,16 @@ class AccountController {
     const sequencesAssets = this.lsAccount.get(this.sequenceAssetsStorageName);
 
     return sequencesAssets.value ?? {};
+  }
+
+  public getLang(): Lang {
+    const lang = this.lsAccount.get(this.langStorageName);
+
+    return lang.value ?? 'en';
+  }
+
+  public setLang(lang: Lang): void {
+    this.lsAccount.set(this.langStorageName, lang);
   }
 
   public getSelectedWalletAddress(): string {

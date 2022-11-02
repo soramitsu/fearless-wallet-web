@@ -8,11 +8,24 @@
     :handlerClose="close"
   >
     <div v-if="isPendingWithResetForm" class="reset__form">
-      <span class="message">{{ noAnswerMessage }}</span>
+      <span class="message">{{ $t('mobileConnector.noAnswer') }}</span>
 
-      <Button size="big" type="primary" :border="false" width="180" text="Cancel Request" @click="onCancelRequest" />
+      <Button
+        size="big"
+        type="primary"
+        :border="false"
+        width="180"
+        text="mobileConnector.cancelRequest"
+        @click="onCancelRequest"
+      />
 
-      <Button size="big" type="secondary" :border="false" text="Reset Connection" @click="onResetConnection" />
+      <Button
+        size="big"
+        type="secondary"
+        :border="false"
+        text="mobileConnector.resetConnection"
+        @click="onResetConnection"
+      />
     </div>
 
     <ConnectionStatus v-else-if="isRequestFinished" :status="status" @close="close" />
@@ -27,7 +40,6 @@ import { beaconController } from '@/controllers/beaconController';
 import { PermissionErrorPayload, RequestSentInfo } from '@/interfaces';
 import Button from '@/components/Button.vue';
 import { Components } from '@/router/routes';
-import { MOBILE_CONNECTOR_MESSAGES } from '@/consts/messages';
 import Popup from '@/components/Popup.vue';
 
 @Component({
@@ -41,8 +53,6 @@ export default class PermissionRequestPopup extends Vue {
   @Prop(Object) requestInfo!: RequestSentInfo | PermissionErrorPayload;
   @Prop({ type: Object || null, default: null }) requestResponse?: PermissionResponseOutput;
   @Prop(String) status!: 'reset_form' | 'success' | 'failed' | 'active_account_exists';
-
-  readonly noAnswerMessage = MOBILE_CONNECTOR_MESSAGES.NO_ANSWER;
 
   get isSuccess() {
     return this.status === 'success';

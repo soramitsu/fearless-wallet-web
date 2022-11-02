@@ -1,8 +1,6 @@
 <template>
   <NotificationPopup
     sizeWidth="big"
-    rejectButtonText="Cancel"
-    acceptButtonText="Proceed"
     :headers="headers"
     :showAcceptButton="true"
     :showRejectButton="true"
@@ -14,15 +12,14 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import NotificationPopup from '@/components/NotificationPopup.vue';
-import { EXISTENTIAL_DEPOSIT_WARNING } from '@/consts/messages';
 
 @Component({
   components: { NotificationPopup },
 })
 export default class ExistentialPopup extends Vue {
   readonly headers = {
-    text: 'Operation will remove account',
-    subtext: EXISTENTIAL_DEPOSIT_WARNING,
+    text: 'asset.existentialDepositText',
+    subtext: 'asset.existentialDepositSubtext',
   };
 
   @Prop(Function) handlerClose!: VoidFunction;

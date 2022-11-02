@@ -6,7 +6,7 @@
         :class="inputClasses"
         :type="type"
         :accept="accept"
-        :placeholder="placeholder"
+        :placeholder="$t(placeholder)"
         :size="size"
         :maxlength="maxlength"
         :readonly="readonly"

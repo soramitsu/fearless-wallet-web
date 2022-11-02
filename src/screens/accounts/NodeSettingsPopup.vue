@@ -13,12 +13,12 @@
       <div class="row" @click="$emit('openEditNodeForm')">
         <Icon icon="edit" className="edit-icon" />
 
-        <div class="label">Edit node</div>
+        <div class="label">{{ $t('accounts.editNode') }}</div>
       </div>
       <div class="row" @click="$emit('openNotificationPopup', 'delete')">
         <Icon icon="backet" className="backet-icon" />
 
-        <div class="label delete">Delete node</div>
+        <div class="label delete">{{ $t('accounts.deleteNode') }}</div>
       </div>
     </div>
   </Popup>

@@ -1,43 +1,36 @@
 <template>
   <AboveForm
-    header="Advanced"
+    header="addWallet.advanced"
     :showAcceptIcon="showAcceptIcon"
     :closeHandler="closeAdvancedForm"
     :saveChanges="saveChanges"
-    class="advanced"
   >
     <template v-if="showSubstrateDP">
       <Select
         v-model="substrateKeypairType"
         :options="optionsSubstrateKeyPair"
-        placeholder="SUBSTRATE KEYPAIR CRYPTO TYPE"
+        placeholder="addWallet.substrateCryptoType"
         size="big"
         class="row"
       />
 
-      <Input v-model="substrateDP" class="row" placeholder="Substrate secret derivation path" size="big" />
+      <Input v-model="substrateDP" class="row" placeholder="addWallet.substrateDP" size="big" />
 
-      <div class="example-prompt">Example: {{ example }}</div>
+      <div class="example-prompt">{{ $t('addWallet.example', { example }) }}</div>
     </template>
 
     <template v-if="showEthereumDP">
       <Input
         v-model="ethereumKeypairType"
         class="row"
-        placeholder="ETHEREUM KEYPAIR CRYPTO TYPE"
+        placeholder="addWallet.ethereumCryptoType"
         :readonly="true"
         size="big"
       />
 
-      <Input
-        v-model="ethereumDP"
-        class="row"
-        placeholder="Ethereum secret derivation path"
-        :maxlength="25"
-        size="big"
-      />
+      <Input v-model="ethereumDP" class="row" placeholder="addWallet.ethereumDP" :maxlength="25" size="big" />
 
-      <div class="example-prompt">Example: m/44'/60'/0'/0/0</div>
+      <div class="example-prompt">{{ $t('addWallet.example', { example: ethereumDefaultDerivationPath }) }}</div>
     </template>
   </AboveForm>
 </template>
@@ -49,6 +42,7 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import AboveForm from '@/components/AboveForm.vue';
 import Input from '@/components/Input.vue';
 import Select from '@/components/Select.vue';
+import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 
 @Component({
   components: {
@@ -58,6 +52,7 @@ import Select from '@/components/Select.vue';
   },
 })
 export default class AdvancedForm extends Vue {
+  readonly ethereumDefaultDerivationPath = ETHEREUM_DEFAULT_DERIVATION_PATH;
   readonly optionsSubstrateKeyPair = [
     { label: 'Schnorrkel sr25519 (recommended)', value: 'sr25519', example: '//hard/soft///password' },
     { label: 'Edwards ed25519 (alternative)', value: 'ed25519', example: '//hard///password' },
@@ -110,21 +105,19 @@ export default class AdvancedForm extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.advanced {
-  .row {
-    margin-top: 16px;
+.row {
+  margin-top: 16px;
 
-    &:first-child {
-      margin-top: 0;
-    }
+  &:first-child {
+    margin-top: 0;
   }
+}
 
-  .example-prompt {
-    color: $grayish-white;
-    font-size: 14px;
-    text-align: left;
-    line-height: 180%;
-    margin: 16px 0;
-  }
+.example-prompt {
+  color: $grayish-white;
+  font-size: 14px;
+  text-align: left;
+  line-height: 180%;
+  margin: 16px 0;
 }
 </style>

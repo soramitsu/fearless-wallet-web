@@ -12,27 +12,32 @@
     <div class="account-settings">
       <div v-if="showExport" class="row" @click="openNotificationPopup">
         <Icon icon="export" className="icon" />
-        <div class="label">Export account</div>
+
+        <div class="label">{{ $t('accounts.export') }}</div>
       </div>
+
       <div v-if="showReplaceAccount" class="row" @click="openReplacePopup">
         <Icon icon="account-switch" className="icon" />
 
-        <div class="label">Replace account</div>
+        <div class="label">{{ $t('accounts.replace') }}</div>
       </div>
+
       <div v-if="showSwitchNode" class="row" @click="openNetwork">
         <Icon icon="currency-switch" className="icon" />
 
-        <div class="label">Switch node</div>
+        <div class="label">{{ $t('accounts.switchNode') }}</div>
       </div>
+
       <div class="row" @click="copyAddress">
         <Icon icon="copy-2" className="icon" />
 
-        <div class="label">Copy address</div>
+        <div class="label">{{ $t('accounts.copyAddress') }}</div>
       </div>
+
       <div class="row" @click="openSubscan">
         <Icon icon="globus" className="icon" />
 
-        <div class="label">View in Subscan</div>
+        <div class="label">{{ $t('accounts.subscan') }}</div>
       </div>
     </div>
   </Popup>
@@ -117,6 +122,7 @@ export default class AccountSettingsPopup extends Vue {
 .account-settings {
   color: $default-white;
   font-weight: 500;
+  height: fit-content;
 
   .row {
     display: flex;

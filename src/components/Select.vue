@@ -1,7 +1,7 @@
 <template>
   <Corners :size="size">
     <div :class="containerSelectClasses">
-      <s-select v-model="vModel" :placeholder="placeholder" :size="size" :disabled="disabled">
+      <s-select v-model="vModel" :placeholder="$t(placeholder)" :size="size" :disabled="disabled">
         <s-option v-for="{ value, label } in options" :key="label" :value="value" :label="label" />
       </s-select>
     </div>

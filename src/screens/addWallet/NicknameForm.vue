@@ -2,19 +2,14 @@
   <div class="nickname">
     <Input
       v-model="syncedNickname"
-      placeholder="Wallet nickname"
+      placeholder="addWallet.walletNickname"
       size="big"
       :maxlength="15"
       :readonly="readonly"
       class="input"
     />
 
-    <Hint
-      class="hint"
-      iconName="notification"
-      text="Example: Savings, Investments, Crowdloans, Staking. This nickname will be displayed only for you and stored
-        locally."
-    />
+    <Hint class="hint" iconName="notification" text="addWallet.exampleNameWallet" />
   </div>
 </template>
 

@@ -4,15 +4,17 @@
       <div class="icon-container">
         <CircleButton v-if="showBackIcon" backgroundColor="light-black" iconName="chevron-left" @click="back" />
       </div>
+
       <div class="steps">
         <div v-for="num in countSteps" :key="num" :class="getClassesStep(num)"></div>
       </div>
+
       <div class="icon-background">
         <CircleButton
           v-if="showFullScreenIcon"
           iconName="expand"
           backgroundColor="light-black"
-          tooltipText="Full screen mode"
+          tooltipText="common.fullScreen"
           target=".expand"
           placement="left"
           @click="openFullScreen"
@@ -103,7 +105,7 @@
     <NotificationPopup
       v-if="showNotificationPopup"
       :headers="invalidMessages"
-      acceptButtonText="Accept"
+      acceptButtonText="common.accept"
       :showAcceptButton="isMobileWalletExists"
       :showRejectButton="isMobileWalletExists"
       :handlerClose="handlerCloseNotificationPopup"
@@ -140,7 +142,7 @@ import CircleButton from '@/components/CircleButton.vue';
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
 import { Components } from '@/router/routes';
-import { WARNING_MESSAGES, WarningValueName } from '@/consts/messages';
+import { WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 
@@ -259,7 +261,14 @@ export default class AddWallet extends Vue {
   }
 
   get invalidMessages() {
-    return this.warningValueName ? WARNING_MESSAGES[this.warningValueName] : {};
+    if (!this.warningValueName) return {};
+
+    const mainPath = `addWallet.warningMessages.${this.warningValueName}`;
+
+    return {
+      text: `${mainPath}.text`,
+      subtext: `${mainPath}.subtext`,
+    };
   }
 
   get showNicknameForm() {
@@ -296,34 +305,38 @@ export default class AddWallet extends Vue {
 
   get header() {
     if (this.isCreateWallet) {
-      if (this.step === 1) return 'Create new wallet';
-      if (this.step === 2) return 'Backup the passphrase for your new wallet';
-      if (this.step === 3) return 'Confirm the passphrase';
+      if (this.step === 1) return this.t('createWallet');
+      if (this.step === 2) return this.t('backupPassphrase');
+      if (this.step === 3) return this.t('confirmPassphrase');
       if (this.step === 4) return 'Set up password';
     }
 
     if (this.step === 1) {
       if (this.isReplaceAccountFlow) {
-        return this.isEthereumReplacedNetwork ? 'Import ethereum account' : 'Import substrate account';
+        return this.isEthereumReplacedNetwork
+          ? this.t('importAccount', { type: 'ethereum' })
+          : this.t('importAccount', { type: 'substrate' });
       }
 
-      if (this.isOnlyEthereumAccountFlow) return 'Add ethereum account';
+      if (this.isOnlyEthereumAccountFlow) return this.t('addEthereumAccount');
 
-      return this.typeImport === 'mnemonic' ? 'Import wallet' : 'Import substrate account';
+      return this.typeImport === 'mnemonic' ? this.t('importWallet') : this.t('importAccount', { type: 'substrate' });
     }
 
-    if (this.step === 2) return 'Import ethereum account';
-    if (this.step === 3) return 'Wallet nickname';
-    if (this.step === 4) return 'Enter password';
+    if (this.step === 2) return this.t('importAccount', { type: 'substrate' });
+
+    if (this.step === 3) return this.t('walletNickname');
+
+    if (this.step === 4) return this.t('enterPassword');
 
     return '';
   }
 
   get buttonText() {
-    if (this.isCreateWallet && this.step === 2) return 'I have written down passphrase';
-    if (this.showFinishForm) return 'Start using Fearless';
+    if (this.isCreateWallet && this.step === 2) return this.t('haveWrittenPassphrase');
+    if (this.showFinishForm) return this.t('usingFearless');
 
-    return 'Continue';
+    return this.$t('common.continue');
   }
 
   get disabledProceed() {
@@ -455,6 +468,10 @@ export default class AddWallet extends Vue {
 
   mounted() {
     if (this.isOnlyEthereumAccountFlow && this.isCreateWallet) this.proceed();
+  }
+
+  t(value: string, obj: Record<string, string> = {}) {
+    return this.$t(`addWallet.${value}`, obj);
   }
 
   updateWalletPassword(password: string) {

@@ -196,7 +196,7 @@ export default class CurrencyController {
   }
 
   public getTotalCountAssets(wallet: Wallet, network?: string): string {
-    if (network && network !== 'All networks') {
+    if (network && network !== 'all') {
       return this.getTotalCountAssetsByNetwork(wallet, network);
     }
 
@@ -253,7 +253,7 @@ export default class CurrencyController {
   }
 
   public getTotalBalance(wallet: Wallet, network?: string): string {
-    if (network && network !== 'All networks') {
+    if (network && network !== 'all') {
       return this.getBalanceInNetwork(wallet, network);
     }
 

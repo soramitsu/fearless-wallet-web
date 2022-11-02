@@ -5,8 +5,9 @@
         <div>
           <Alert>
             <p class="authorize__content">
-              An application, self-identifying as
-              <span class="authorize__content--name">{{ request.request.origin }}</span> is requesting access from my
+              {{ $t('authorize.selfIdentifyOne') }}
+              <span class="authorize__content--name">{{ request.request.origin }}</span>
+              {{ $t('authorize.selfIdentifyTwo') }}
               <span class="authorize__content--link">{{ request.url }}</span>
             </p>
           </Alert>
@@ -22,13 +23,14 @@
         </div>
 
         <div class="authorize__control">
-          <Button width="100%" text="Yes, allow this application access" size="big" fontSize="big" @click="onApprove" />
+          <Button width="100%" text="metadata.appAccess" size="big" fontSize="big" @click="onApprove" />
         </div>
       </template>
+
       <template v-else>
         <Alert :message="noAccountsMessage" />
 
-        <Button width="100%" text="Understood" size="big" fontSize="big" @click="onReject" />
+        <Button width="100%" text="common.understood" size="big" fontSize="big" @click="onReject" />
       </template>
     </div>
   </AboveForm>
@@ -50,7 +52,6 @@ import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import SelectAuthAccount from '@/screens/authorize/SelectAuthAccount.vue';
 import BaseApi from '@/util/BaseApi';
-import { NO_ACCOUNTS_MESSAGES } from '@/consts/messages';
 
 @Component({
   components: {
@@ -62,7 +63,7 @@ import { NO_ACCOUNTS_MESSAGES } from '@/consts/messages';
   },
 })
 export default class Authorize extends Vue {
-  readonly noAccountsMessage = NO_ACCOUNTS_MESSAGES;
+  readonly noAccountsMessage = 'auth.noAccounts';
   state: Record<string, WalletInfo> = {};
   selectAll = true;
 

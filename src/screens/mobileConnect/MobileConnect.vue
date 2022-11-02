@@ -1,7 +1,8 @@
 <template>
   <AboveForm :header="header" :closeHandler="close">
     <template v-if="isQRPrep">
-      <h2 class="header">{{ qrCodeHeader }}</h2>
+      <h2 class="header">{{ $t('mobileConnector.qrHeader') }}</h2>
+
       <QR :payload="getQR" />
     </template>
 
@@ -48,7 +49,6 @@ import PermissionRequestPopup from '@/screens/mobileConnect/PermissionRequestPop
 import InfoList from '@/layouts/InfoList.vue';
 import InfoItem from '@/screens/signing/InfoItem.vue';
 import Alert from '@/components/Alert.vue';
-import { MOBILE_CONNECTOR_MESSAGES } from '@/consts/messages';
 import { MOONBEAM_GENESISHASH } from '@/consts/networks';
 
 @Component({
@@ -64,12 +64,6 @@ import { MOONBEAM_GENESISHASH } from '@/consts/networks';
   },
 })
 export default class MobileConnect extends Vue {
-  @Action(AccountActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
-  @Getter(NetworkGettersTypes.getNetworks) getNetworks!: Networks;
-  @Getter(BeaconGettersTypes.GET_QR) getQR!: Nullable<string>;
-  @Mutation(BeaconMutationsTypes.SET_QR) setQR!: TMutation<string>;
-
-  readonly qrCodeHeader = MOBILE_CONNECTOR_MESSAGES.QR_HEADER;
   requestInfo: RequestSentInfo | null = null;
   requestResponse: PermissionResponseOutput | null = null;
   isLoading = false;
@@ -78,6 +72,11 @@ export default class MobileConnect extends Vue {
   isWalletAlreadyExists = false;
   isActiveAccountExists = false;
   isPossibleConnectionProblem = false;
+
+  @Action(AccountActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
+  @Getter(NetworkGettersTypes.getNetworks) getNetworks!: Networks;
+  @Getter(BeaconGettersTypes.GET_QR) getQR!: Nullable<string>;
+  @Mutation(BeaconMutationsTypes.SET_QR) setQR!: TMutation<string>;
 
   async mounted() {
     this.isLoading = !this.getQR;

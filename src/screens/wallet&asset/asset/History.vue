@@ -2,7 +2,7 @@
   <ContentForm :height="306">
     <div class="history">
       <div class="history-settings">
-        <div class="history-label">History</div>
+        <div class="history-label">{{ $t('asset.history.text') }}</div>
 
         <Dropdown :value="filterHistoryValue" :options="historyDropdownOption" :handler="filterHistoryValueUpdate" />
       </div>
@@ -20,7 +20,7 @@
             />
           </template>
 
-          <div v-if="isEmptyHistory">Will appear here history</div>
+          <div v-if="isEmptyHistory">{{ $t('asset.history.noHistory') }}</div>
         </div>
       </Scroll>
     </div>
@@ -51,10 +51,10 @@ import BaseApi from '@/util/BaseApi';
 })
 export default class History extends Vue {
   readonly historyDropdownOption = [
-    { label: 'All', value: 'all' },
-    { label: 'Transfer', value: 'transfer' },
-    { label: 'Reward', value: 'reward' },
-    { label: 'Extrinsic', value: 'extrinsic' },
+    { label: 'asset.history.all', value: 'all' },
+    { label: 'asset.history.transfer', value: 'transfer' },
+    { label: 'asset.history.reward', value: 'reward' },
+    { label: 'asset.history.extrinsic', value: 'extrinsic' },
   ];
   filterHistoryValue: FilterHistory = 'all';
 

@@ -143,12 +143,11 @@ export default class AccountsLayout extends Vue {
 
   get headers() {
     return this.notificationType === 'delete'
-      ? { text: 'Delete custom node?', subtext: this.selectedNodeName }
+      ? { text: 'accounts.deleteCustomNode', subtext: this.selectedNodeName }
       : this.notificationType === 'export'
       ? {
-          text: 'Be careful',
-          subtext:
-            'Sharing or copying your secret is a high risk operation, don’t send it to anyone. Would you like to proceed with sharing/copying process?',
+          text: 'accounts.careful',
+          subtext: 'accounts.exportWarning',
         }
       : '';
   }
@@ -166,7 +165,11 @@ export default class AccountsLayout extends Vue {
   }
 
   get acceptButtonText() {
-    return this.notificationType === 'delete' ? 'Delete' : this.notificationType === 'export' ? 'Export JSON ' : '';
+    return this.notificationType === 'delete'
+      ? 'common.delete'
+      : this.notificationType === 'export'
+      ? 'accounts.exportJson '
+      : '';
   }
 
   get path() {

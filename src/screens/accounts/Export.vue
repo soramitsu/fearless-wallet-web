@@ -1,7 +1,7 @@
 <template>
   <div class="export">
     <div class="description">
-      <div class="header">Export JSON</div>
+      <div class="header">{{ $t('accounts.exportJson') }}</div>
 
       <InformationBlock class="information" :text="warningText" />
     </div>
@@ -9,8 +9,8 @@
     <div>
       <ValidatedInput
         v-model="password"
-        errorDescriptions="Incorrect password"
-        placeholder="Password for this wallet"
+        errorDescriptions="common.invalidPassword"
+        placeholder="accounts.passwordWallet"
         :isError="isWrongPassword"
         :showPassword="true"
         :maxlength="25"
@@ -22,7 +22,7 @@
         size="big"
         fontSize="big"
         width="100%"
-        text="I want to export JSON"
+        text="accounts.wantExportJson"
         :disabled="noEthereumAccount"
         @click="checkPassword"
       />
@@ -39,7 +39,6 @@ import ValidatedInput from '@/components/ValidatedInput.vue';
 import InformationBlock from '@/components/InformationBlock.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { EXPORT_WARNING, EXPORT_ETHEREUM_WALLET_ERROR } from '@/consts/messages';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 
 @Component({
@@ -64,7 +63,7 @@ export default class Export extends Vue {
   }
 
   get warningText() {
-    return this.noEthereumAccount ? EXPORT_ETHEREUM_WALLET_ERROR : EXPORT_WARNING;
+    return this.noEthereumAccount ? 'accounts.notEthereumAccount' : 'accounts.exportWarning';
   }
 
   @Watch('password')

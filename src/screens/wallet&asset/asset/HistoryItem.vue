@@ -5,10 +5,13 @@
     <div class="column">
       <div class="first-row">
         <div>{{ hash }}</div>
+
         <div>{{ value }} {{ assetToUpperCase }}</div>
       </div>
+
       <div class="second-row">
         <div>{{ typeFormatted }}</div>
+
         <div>{{ date }}</div>
       </div>
     </div>

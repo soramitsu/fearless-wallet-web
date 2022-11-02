@@ -1,6 +1,6 @@
 <template>
   <Popup
-    headerText="Source Type"
+    headerText="common.sourceType"
     sizeWidth="big"
     :showBorder="true"
     :showAnimation="false"
@@ -9,19 +9,19 @@
     <div class="source-type-popup">
       <BorderButton
         borderRadius="mini"
-        text="Create a new account"
+        text="accounts.createNewAccount"
         class="button"
         @click="openAddWalletPage('create')"
       />
 
       <BorderButton
         borderRadius="mini"
-        text="I already have an account"
+        text="common.alreadyHaveAccount"
         class="button"
         @click="openAddWalletPage('import')"
       />
 
-      <BorderButton borderRadius="mini" text="I don’t need an account" class="button" @click="handlerClose" />
+      <BorderButton borderRadius="mini" text="accounts.dontNeedAccount" class="button" @click="handlerClose" />
     </div>
   </Popup>
 </template>

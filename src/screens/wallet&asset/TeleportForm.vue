@@ -1,7 +1,7 @@
 <template>
   <TransferForm
     extrinsicType="teleport"
-    header="Teleport"
+    header="asset.teleportFunds"
     :selectedAssetId="selectedAssetId"
     :selectedNetwork="originalNetwork"
     :amount="amount"
@@ -18,39 +18,51 @@
   >
     <Corners size="big" class="row">
       <div class="summary">
-        <div class="summary-label">Summary</div>
+        <div class="summary-label">{{ $t('asset.summary') }}</div>
+
         <div class="summary-row">
           <div class="column column-left">
-            <div class="name">From</div>
+            <div class="name">{{ $t('asset.from') }}</div>
+
             <div class="network-name">{{ originalNetworkString }}</div>
           </div>
 
-          <Icon icon="bold-arrow-right" />
+          <Icon icon="bold-arrow-right" class="arrow-right" />
 
           <div class="column">
-            <div class="name">To</div>
+            <div class="name">{{ $t('asset.to') }}</div>
+
             <div class="network-name">{{ destinationNetworkString }}</div>
           </div>
         </div>
+
         <div class="summary-row">
-          <div class="name">Assets Amount</div>
+          <div class="name">{{ $t('asset.assetsAmount') }}</div>
+
           <div class="column">
             <div>{{ amountString }}</div>
+
             <div v-if="showValue" class="value">{{ valueString }}</div>
           </div>
         </div>
+
         <div class="summary-row">
-          <div class="name">{{ originalNetworkString }} Fee</div>
+          <div class="name">{{ originalNetworkString }} {{ $t('asset.fee') }}</div>
+
           <div>
             {{ originalNetworkPartialFeeString }}
           </div>
         </div>
+
         <div class="summary-row">
-          <div class="name">{{ destinationNetworkString }} Fee</div>
+          <div class="name">{{ destinationNetworkString }} {{ $t('asset.fee') }}</div>
+
           <div>{{ destinationNetworkPartialFeeString }}</div>
         </div>
+
         <div class="summary-row">
-          <div class="name">Total</div>
+          <div class="name">{{ $t('asset.total') }}</div>
+
           <div>{{ totalString }}</div>
         </div>
       </div>
@@ -182,6 +194,11 @@ export default class TeleportForm extends Vue {
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-radius: $default-border-radius;
+
+  .arrow-right {
+    width: 25px;
+    height: 25px;
+  }
 
   .summary-label {
     text-align: left;

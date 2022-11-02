@@ -1,8 +1,14 @@
 <template>
-  <AboveForm header="Export JSON" :blur="true" :closeHandler="closeForm">
+  <AboveForm header="accounts.exportJson" :blur="true" :closeHandler="closeForm">
     <div class="export-form">
       <div class="export-content">
-        <Input v-model="exportType" placeholder="Source type" size="big" class="export-type-input" :readonly="true" />
+        <Input
+          v-model="exportType"
+          placeholder="common.sourceType"
+          size="big"
+          class="export-type-input"
+          :readonly="true"
+        />
 
         <Input v-model="substrateAddress" class="row" size="big" placeholder="Substrate" :readonly="true" />
       </div>

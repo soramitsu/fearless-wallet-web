@@ -2,7 +2,7 @@
   <div class="hint">
     <Icon :icon="iconName" :className="getClasses" />
 
-    <span class="info-text" :class="getSize">{{ text }}</span>
+    <span class="info-text" :class="getSize">{{ $t(text) }}</span>
   </div>
 </template>
 

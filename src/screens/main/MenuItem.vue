@@ -2,7 +2,7 @@
   <div :class="menuItemClasses">
     <Icon :icon="img" :className="iconClass" />
 
-    <div class="name">{{ name }}</div>
+    <div class="name">{{ $t(localeName) }}</div>
   </div>
 </template>
 
@@ -14,9 +14,14 @@ import type { MenuItem as TMenuItem } from '@/interfaces/common';
   components: {},
 })
 export default class MenuItem extends Vue {
+  iconClass = ['menu-icon'];
+
   @Prop(String) name!: TMenuItem;
   @Prop({ default: false }) isActive!: boolean;
-  iconClass = ['menu-icon'];
+
+  get localeName() {
+    return `menu.${this.name}`;
+  }
 
   get menuItemClasses() {
     return ['menu-item', { active: this.isActive }];

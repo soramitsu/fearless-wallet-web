@@ -1,5 +1,5 @@
 <template>
-  <div class="max-button" @click="$emit('click')">MAX</div>
+  <div class="max-button" @click="$emit('click')">{{ $t('common.max') }}</div>
 </template>
 
 <style lang="scss" scoped>

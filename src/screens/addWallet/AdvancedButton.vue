@@ -1,7 +1,7 @@
 <template>
   <div class="advanced-button">
     <div class="button" @click="$emit('click')">
-      Advanced backup settings
+      {{ $t('addWallet.advancedSettings') }}
 
       <Icon icon="circle-plus" className="plus-icon" />
     </div>

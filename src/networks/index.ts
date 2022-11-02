@@ -4,6 +4,6 @@ const settings = {
   astar,
 };
 
-export type Settings = keyof typeof settings;
+export type KeySettings = keyof typeof settings;
 
 export default settings;

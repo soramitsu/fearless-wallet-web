@@ -16,18 +16,23 @@
     </div>
 
     <div class="activity">
-      <BorderButton class="activity-button" text="Send" iconName="send" @click="toggleVisible('showSendForm', true)" />
+      <BorderButton
+        class="activity-button"
+        text="asset.sendButtonText"
+        iconName="send"
+        @click="toggleVisible('showSendForm', true)"
+      />
 
       <BorderButton
         class="activity-button"
-        text="Receive"
+        text="asset.receiveButtonText"
         iconName="receive"
         @click="toggleVisible('showReceiveForm', true)"
       />
 
       <BorderButton
         class="activity-button"
-        text="Teleport"
+        text="asset.teleportButtonText"
         iconName="teleport"
         @click="toggleVisible('showTeleportForm', true)"
       />
@@ -35,7 +40,7 @@
       <BorderButton
         v-if="showBuyButton"
         class="activity-button"
-        text="Buy"
+        text="asset.buy"
         iconName="plus-pink"
         @click="toggleVisible('showBuyPopup', true)"
       />
@@ -88,7 +93,7 @@
       :assetId="selectedAssetId"
     />
 
-    <Tooltip text="Network management" target=".select-network-button" placement="bottom" />
+    <Tooltip text="common.networkManagement" target=".select-network-button" placement="bottom" />
   </div>
 </template>
 

@@ -6,12 +6,12 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import tippy from 'tippy.js';
 import 'tippy.js/dist/tippy.css';
-import type { Placement } from '@/interfaces';
+import type { Placement, ComponentText } from '@/interfaces';
 import type { Props } from 'tippy.js';
 
 @Component
 export default class Tooltip extends Vue {
-  @Prop(String) text!: string;
+  @Prop(String) text!: ComponentText;
   @Prop(String) target!: string;
   @Prop({ default: 'top' }) placement!: Placement;
   @Prop(String) trigger!: string;
@@ -19,8 +19,10 @@ export default class Tooltip extends Vue {
   mounted() {
     if (!this.target) return;
 
+    const content = typeof this.text === 'string' ? this.$t(this.text) : this.$t(this.text.text, this.text.localeProps);
+
     const options: Partial<Props> = {
-      content: this.text,
+      content: content as string,
       placement: this.placement,
       arrow: false,
       animation: 'shift-toward-extreme',

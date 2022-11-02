@@ -1,9 +1,12 @@
 <template>
   <Corners>
     <s-dropdown type="button" buttonType="secondary" trigger="click" class="dropdown" size="mini" @select="handler">
-      {{ label }}
+      {{ $t(label) }}
+
       <template slot="menu">
-        <s-dropdown-item v-for="{ label, value } in options" :key="label" :value="value">{{ label }}</s-dropdown-item>
+        <s-dropdown-item v-for="{ label, value } in options" :key="label" :value="value">
+          {{ $t(label) }}
+        </s-dropdown-item>
       </template>
     </s-dropdown>
   </Corners>

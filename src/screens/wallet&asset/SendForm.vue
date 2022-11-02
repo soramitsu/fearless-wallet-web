@@ -1,7 +1,7 @@
 <template>
   <TransferForm
     extrinsicType="transfer"
-    header="Send Funds"
+    header="asset.sendFunds"
     :selectedAssetId="selectedAssetId"
     :selectedNetwork="selectedNetwork"
     :amount="amount"
@@ -17,31 +17,38 @@
     @update:recipient="updateRecipient"
   >
     <div class="row direction-column">
-      <Input v-model="selectedWallet.name" placeholder="From" size="big" :readonly="true" />
+      <Input v-model="selectedWallet.name" placeholder="asset.from" size="big" :readonly="true" />
 
       <s-icon name="arrows-arrow-right-24" />
 
-      <Input v-model="formattedAddressTo" placeholder="To" size="big" :readonly="true" />
+      <Input v-model="formattedAddressTo" placeholder="asset.to" size="big" :readonly="true" />
     </div>
 
     <Corners size="big" class="row">
       <div class="summary">
-        <div class="summary-label">Summary</div>
+        <div class="summary-label">{{ $t('asset.summary') }}</div>
+
         <div class="summary-row">
-          <div class="name">Coins</div>
+          <div class="name">{{ $t('asset.assetsAmount') }}</div>
+
           <div class="column">
             <div>{{ amountString }}</div>
+
             <div v-if="showValue" class="value">{{ valueString }}</div>
           </div>
         </div>
+
         <div class="summary-row">
-          <div class="name">Fee</div>
+          <div class="name">{{ $t('asset.fee') }}</div>
+
           <div class="column">
             <div>{{ partialFeeString }}</div>
           </div>
         </div>
+
         <div class="summary-row">
-          <div class="name">Total</div>
+          <div class="name">{{ $t('asset.total') }}</div>
+
           <div class="column">
             <div>{{ totalString }}</div>
           </div>

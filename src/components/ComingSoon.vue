@@ -1,7 +1,8 @@
 <template>
   <div class="coming-soon">
     <Icon :icon="getImg" className="img" />
-    <div class="name">{{ name }} in developing</div>
+
+    <div class="name">{{ $t(`menu.${name.toLowerCase()}`) }} {{ $t('common.developing') }}</div>
   </div>
 </template>
 

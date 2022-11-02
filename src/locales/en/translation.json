@@ -158,6 +158,7 @@
   },
   "asset": {
     "history": {
+      "text": "History",
       "noHistory": "Will appear here history",
       "all": "All",
       "transfer": "Transfer",
@@ -165,26 +166,24 @@
       "extrinsic": "Extrinsic"
     },
     "buy": "Buy {asset} with",
-    "send": {
-      "buttonText": "Send",
-      "sendFunds": "Send Funds",
-      "coins": "Coins"
-    },
-    "teleport": {
-      "buttonText": "Teleport",
-      "teleportFunds": "Teleport Funds",
-      "from": "from",
-      "to": "To",
-      "sendTo": "SEND TO",
-      "assetsAmount": "Assets Amount",
-      "originNet": "ORIGINAL NETWORK",
-      "destNet": "DESTINATION NETWORK"
-    },
-    "receive": {
-      "buttonText": "Receive",
-      "receiveFunds": "Receive Funds",
-      "walletAddress": "Wallet address"
-    },
+    "teleportButtonText": "Teleport",
+    "from": "From",
+    "to": "To",
+    "assetsAmount": "Assets Amount",
+    "sendTo": "SEND TO",
+    "destNet": "DESTINATION NETWORK",
+    "teleportFunds": "Teleport Funds",
+    "sendButtonText": "Send",
+    "receiveButtonText": "Receive",
+    "sendFunds": "Send Funds",
+    "walletAddress": "Wallet address",
+    "receiveFunds": "Receive Funds",
+    "originNet": "ORIGINAL NETWORK",
+    "network": "NETWORK",
+    "amount": "AMOUNT",
+    "amountIn": "AMOUNT IN {asset}",
+    "value": "VALUE",
+    "valueIn": "VALUE IN {asset}",
     "summary": "Summary",
     "currency": "CURRENCY",
     "transferrable": "Transferrable",
@@ -197,6 +196,13 @@
     "invalidNetworkText": "Is not network address",
     "invalidNetworkSubtext": "According to the address provided you’re trying to make a transfer on the wrong network.",
     "existentialDepositText": "Operation will remove account",
+    "15min": "Do not ask for a password for 15 min.",
+    "15minExtend": "Extend the period without password by 15 minutes",
+    "transactionDone": "Transaction Done",
+    "transactionError": "Transaction Error",
+    "transactionPending": "Transaction is pending",
+    "saveQR": "Save QR-code",
+    "copyQR": "Copy QR-code",
     "existentialDepositSubtext": "This transaction will result in the account going below the Existential Deposit, which will cause it to be reaped (the account will be wiped from the blockchain’s state to conserve space). If you choose to continue you will lose any funds that are below the existential deposit amount set by the network. For detailed information please refer to the official network documentation (e.g., the Polkadot Wiki). Fearless Wallet is a fully non-custodial application and has no control or knowledge of any of your actions on the network itself. ONLY CONTINUE IF YOU FULLY AGREE TO AND UNDERSTAND THE IMPLICATIONS;"
   },
   "accounts": {
@@ -256,6 +262,7 @@
     "fullScreen": "Full screen mode",
     "manageDApp": "Manage dApp access",
     "alreadyHaveAccount": "I already have an account",
-    "sourceType": "Source Type"
+    "sourceType": "Source Type",
+    "allNetworks": "All networks"
   }
 }

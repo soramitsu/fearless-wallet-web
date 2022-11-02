@@ -158,31 +158,32 @@
   },
   "asset": {
     "history": {
+      "text": "История",
       "noHistory": "Здесь появится история",
       "all": "Все",
       "transfer": "Переводы",
       "reward": "Награды",
       "extrinsic": "Экстринсики"
     },
-    "buy": "Купить {asset} через",
-    "send": {
-      "buttonText": "Отправить",
-      "sendFunds": "Отправить средства",
-      "sendTo": "ОТПРАВИТЬ"
-    },
-    "teleport": {
-      "buttonText": "Телепорт",
-      "teleportFunds": "Телепортировать средства",
-      "from": "от",
-      "to": "кому",
-      "originNet": "Основная сеть",
-      "destNet": "Сеть получения"
-    },
-    "receive": {
-      "buttonText": "Получить",
-      "receiveFunds": "Получить средства",
-      "walletAddress": "Адрес кошелька"
-    },
+    "buyHeader": "Купить {asset} через",
+    "buy": "Купить",
+    "teleportButtonText": "Телепорт",
+    "from": "От",
+    "to": "Кому",
+    "destNet": "Сеть получения",
+    "teleportFunds": "Телепортировать средства",
+    "sendButtonText": "Отправить",
+    "receiveButtonText": "Получить",
+    "sendFunds": "Отправить средства",
+    "sendTo": "КОМУ",
+    "walletAddress": "Адрес кошелька",
+    "receiveFunds": "Получить средства",
+    "originNet": "Основная сеть",
+    "network": "СЕТЬ",
+    "amount": "КОЛИЧЕСТВО",
+    "amountIn": "КОЛИЧЕСТВО В {asset}",
+    "value": "ЗНАЧЕНИЕ",
+    "valueIn": "ЗНАЧЕНИЕ В {asset}",
     "assetsAmount": "Сумма активов",
     "summary": "Итог",
     "currency": "ВАЛЮТА",
@@ -196,6 +197,13 @@
     "invalidNetworkText": "Это не адрес выбранной сети",
     "invalidNetworkSubtext": "Судя по указанному адресу, вы пытаетесь совершить перевод не в той сети.",
     "existentialDepositText": "Операция удалит аккаунт",
+    "15min": "Не запрашивать пароль в течение 15 мин.",
+    "15minExtend": "Продлить период без пароля на 15 минут",
+    "transactionDone": "Транзакция завершена",
+    "transactionError": "Ошибка транзакции",
+    "transactionPending": "Ожидание транзакции",
+    "saveQR": "Сохранить QR-код",
+    "copyQR": "Скопировать QR-код",
     "existentialDepositSubtext": "This transaction will result in the account going below the Existential Deposit, which will cause it to be reaped (the account will be wiped from the blockchain’s state to conserve space). If you choose to continue you will lose any funds that are below the existential deposit amount set by the network. For detailed information please refer to the official network documentation (e.g., the Polkadot Wiki). Fearless Wallet is a fully non-custodial application and has no control or knowledge of any of your actions on the network itself. ONLY CONTINUE IF YOU FULLY AGREE TO AND UNDERSTAND THE IMPLICATIONS;"
   },
   "accounts": {
@@ -254,6 +262,7 @@
     "fullScreen": "Полноэкранный режим",
     "manageDApp": "Управление доступом к dApp",
     "alreadyHaveAccount": "У меня уже есть аккаунт",
-    "sourceType": "Тип источника"
+    "sourceType": "Тип источника",
+    "allNetworks": "Все сети"
   }
 }

@@ -1,10 +1,10 @@
 <template>
-  <AboveForm header="asset.receive.receiveFunds" :blur="true" :closeHandler="closeForm">
+  <AboveForm header="asset.receiveFunds" :blur="true" :closeHandler="closeForm">
     <div class="receive-form">
       <div>
         <RotateInput
           v-model="selectedNetwork"
-          placeholder="NETWORK"
+          placeholder="asset.network"
           :ref="selectNetworkInputRef"
           :isActiveRotate="showSelectNetworkPopup"
           @click="toggleSelectNetworkPopupVisible"
@@ -12,7 +12,7 @@
 
         <div class="receive-content">
           <div class="address-wrapper">
-            <span>{{ $t('asset.receive.walletAddress') }}</span>
+            <span>{{ $t('asset.walletAddress') }}</span>
 
             <div class="address">
               {{ cutAddress }}
@@ -31,13 +31,13 @@
         <BorderButton
           size="big"
           class="button"
-          text="Save QR-code"
+          text="asset.saveQR"
           width="260px"
           iconName="receive-white"
           @click="saveQR"
         />
 
-        <Button size="big" class="button copy-qr" width="260px" text="Copy QR-code" iconName="share" @click="copyQR" />
+        <Button size="big" class="button copy-qr" width="260px" text="asset.copyQR" iconName="share" @click="copyQR" />
 
         <Tooltip
           text="common.copied"

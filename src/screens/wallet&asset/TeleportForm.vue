@@ -1,7 +1,7 @@
 <template>
   <TransferForm
     extrinsicType="teleport"
-    header="asset.teleport.teleportFunds"
+    header="asset.teleportFunds"
     :selectedAssetId="selectedAssetId"
     :selectedNetwork="originalNetwork"
     :amount="amount"
@@ -22,15 +22,15 @@
 
         <div class="summary-row">
           <div class="column column-left">
-            <div class="name">{{ $t('asset.teleport.from') }}</div>
+            <div class="name">{{ $t('asset.from') }}</div>
 
             <div class="network-name">{{ originalNetworkString }}</div>
           </div>
 
-          <Icon icon="bold-arrow-right" />
+          <Icon icon="bold-arrow-right" class="arrow-right" />
 
           <div class="column">
-            <div class="name">{{ $t('asset.teleport.to') }}</div>
+            <div class="name">{{ $t('asset.to') }}</div>
 
             <div class="network-name">{{ destinationNetworkString }}</div>
           </div>
@@ -194,6 +194,11 @@ export default class TeleportForm extends Vue {
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-radius: $default-border-radius;
+
+  .arrow-right {
+    width: 25px;
+    height: 25px;
+  }
 
   .summary-label {
     text-align: left;

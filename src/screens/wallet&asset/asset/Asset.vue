@@ -18,21 +18,21 @@
     <div class="activity">
       <BorderButton
         class="activity-button"
-        text="asset.send.buttonText"
+        text="asset.sendButtonText"
         iconName="send"
         @click="toggleVisible('showSendForm', true)"
       />
 
       <BorderButton
         class="activity-button"
-        text="asset.receive.buttonText"
+        text="asset.receiveButtonText"
         iconName="receive"
         @click="toggleVisible('showReceiveForm', true)"
       />
 
       <BorderButton
         class="activity-button"
-        text="asset.teleport.buttonText"
+        text="asset.teleportButtonText"
         iconName="teleport"
         @click="toggleVisible('showTeleportForm', true)"
       />
@@ -40,7 +40,7 @@
       <BorderButton
         v-if="showBuyButton"
         class="activity-button"
-        text="Buy"
+        text="asset.buy"
         iconName="plus-pink"
         @click="toggleVisible('showBuyPopup', true)"
       />

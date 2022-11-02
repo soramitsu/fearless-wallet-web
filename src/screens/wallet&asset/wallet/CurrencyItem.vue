@@ -57,7 +57,7 @@
           iconName="send-white"
           backgroundColor="black"
           class="button send"
-          tooltipText="asset.send.buttonText"
+          tooltipText="asset.sendButtonText"
           target=".send"
           @click="toggleVisibleActivityForm('showSendForm', true, currency)"
         />
@@ -66,7 +66,7 @@
           iconName="receive-white"
           backgroundColor="black"
           class="button receive"
-          tooltipText="asset.receive.buttonText"
+          tooltipText="asset.receiveButtonText"
           target=".receive"
           @click="toggleVisibleActivityForm('showReceiveForm', true, currency)"
         />
@@ -116,7 +116,7 @@ export default class CurrencyItem extends Vue {
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
   get isCurrentNetwork() {
-    return this.selectedNetwork !== 'All networks';
+    return this.selectedNetwork !== 'all';
   }
 
   get currencyVisible() {

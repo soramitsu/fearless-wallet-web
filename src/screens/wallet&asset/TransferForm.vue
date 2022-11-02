@@ -21,7 +21,7 @@
             <RotateInput
               v-model="syncedSelectedNetwork"
               class="row"
-              placeholder="asset.teleport.originNet"
+              :placeholder="placeholderNetwork"
               :isActiveRotate="showSelectNetworkPopup"
               @click="toggleSelectPopupVisible(false, true, false)"
             />
@@ -29,7 +29,7 @@
             <Input
               v-if="extrinsicType === 'transfer'"
               v-model="syncedRecipient"
-              placeholder="asset.send.sendTo"
+              placeholder="asset.sendTo"
               size="big"
               class="row"
             />
@@ -38,7 +38,7 @@
               v-else
               v-model="syncedDestNet"
               class="row"
-              placeholder="asset.teleport.destNet"
+              placeholder="asset.destNet"
               :isActiveRotate="showDestNetPopup"
               @click="toggleSelectPopupVisible(false, false, true)"
             />
@@ -90,6 +90,7 @@
       v-if="showSelectPopup"
       placeholder="common.searchNetwork"
       verticalPlacement="top"
+      class="transfer-select-popup"
       :value="selectPopupValue"
       :showBlur="false"
       :showBackground="false"
@@ -197,6 +198,10 @@ export default class SendForm extends Vue {
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
+
+  get placeholderNetwork() {
+    return this.extrinsicType === 'transfer' ? 'asset.network' : 'asset.originNet';
+  }
 
   get showSelectPopup() {
     return this.showSelectedAssetPopup || this.showSelectNetworkPopup || this.showDestNetPopup;
@@ -571,6 +576,10 @@ export default class SendForm extends Vue {
 </style>
 
 <style lang="scss" scoped>
+.transfer-select-popup {
+  z-index: 300;
+}
+
 .transfer-form {
   height: 100%;
   display: flex;

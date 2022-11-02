@@ -142,6 +142,7 @@ export default class Button extends Vue {
 
 .icon {
   margin-right: 8px;
+  min-width: 20px;
   width: 20px;
   height: 20px;
 }

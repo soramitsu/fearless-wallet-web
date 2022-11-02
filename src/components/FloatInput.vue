@@ -1,37 +1,33 @@
 <template>
-  <Corners v-if="!readonly" :isError="isError" :size="size">
+  <Corners :isError="isError" :size="size">
     <div :class="containerInputClasses">
       <s-float-input
         v-model="vModel"
         :class="inputClasses"
-        :placeholder="placeholder"
+        :placeholder="$t(placeholder, placeholderLocaleProps)"
         :size="size"
         :style="inputStyle"
         @input="$emit('change', $event)"
       />
     </div>
   </Corners>
-
-  <!-- float input cannot be made readonly, so here is such a crutch -->
-  <Input v-else v-model="vModel" :placeholder="placeholder" :size="size" :styleInput="styleInput" :readonly="true" />
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
 import Corners from '@/components/Corners.vue';
-import Input from '@/components/Input.vue';
 
 type Size = 'small' | 'medium' | 'big';
 type Style = 'default' | 'pink';
 
 @Component({
-  components: { Corners, Input },
+  components: { Corners },
 })
 export default class FloatInput extends Vue {
   @VModel({ type: String || Number }) vModel!: string | number;
   @Prop(String) placeholder!: string;
+  @Prop({ default: () => ({}) }) placeholderLocaleProps!: Record<string, string>;
   @Prop(Number) height!: number;
-  @Prop({ default: false }) readonly!: boolean;
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'default' }) styleInput!: Style;
   @Prop({ default: false }) isError!: boolean;

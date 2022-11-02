@@ -2,7 +2,7 @@
   <ContentForm :height="306">
     <div class="history">
       <div class="history-settings">
-        <div class="history-label">History</div>
+        <div class="history-label">{{ $t('asset.history.text') }}</div>
 
         <Dropdown :value="filterHistoryValue" :options="historyDropdownOption" :handler="filterHistoryValueUpdate" />
       </div>

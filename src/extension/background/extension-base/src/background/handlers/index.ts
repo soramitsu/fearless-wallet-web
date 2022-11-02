@@ -5,6 +5,7 @@ import { assert } from '@polkadot/util';
 import { PORT_EXTENSION } from '@extension-base/defaults';
 import Extension from './Extension';
 import Tabs from './Tabs';
+import State from './State';
 import type { MessageTypes, TransportRequestMessage } from '../types';
 
 export default function handler<TMessageType extends MessageTypes>(
@@ -32,6 +33,9 @@ export default function handler<TMessageType extends MessageTypes>(
       assert(port, 'Port has been disconnected');
 
       port.postMessage({ id, response });
+    })
+    .then(() => {
+      State.signature = null;
     })
     .catch((error: Error): void => {
       console.info(`[err] ${source}:: ${error.message}`);

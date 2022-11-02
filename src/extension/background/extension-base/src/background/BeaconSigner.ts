@@ -16,26 +16,27 @@ export class BeaconSigner implements Signer {
       throw new Error('Beacon not set up.');
     }
 
-    const response = await beaconController.sendRequestRaw(
-      {
-        accountId: activeAccount.accountIdentifier,
-        blockchainData: {
-          mode: 'return',
-          payload: {
-            data: raw.data,
-            dataType: raw.type,
-            isMutable: false,
-            type: 'raw',
-          },
-          scope: SubstratePermissionScope.sign_payload_raw,
-          type: SubstrateMessageType.sign_payload_request,
+    const prepPayload = {
+      accountId: activeAccount.accountIdentifier,
+      appMetaData: beaconController.appMetaData,
+      blockchainData: {
+        mode: 'return',
+        payload: {
+          data: raw.data,
+          dataType: raw.type,
+          isMutable: false,
+          type: 'raw',
         },
-        blockchainIdentifier: 'substrate',
-        type: BeaconMessageType.BlockchainRequest,
-      } as any /* SubstrateSignPayloadRequest */
-    );
+        scope: SubstratePermissionScope.sign_payload_raw,
+        type: SubstrateMessageType.sign_payload_request,
+      },
+      blockchainIdentifier: 'substrate',
+      type: BeaconMessageType.BlockchainRequest,
+    } as any; /* SubstrateSignPayloadRequest */
 
-    console.info('RESPONSE', response);
+    const response = await beaconController.sendRequestRaw(prepPayload);
+
+    if (!response || (response.blockchainData as any).signature === '') throw new Error('Bad Signature');
 
     return {
       id: 0,

@@ -40,6 +40,7 @@ export interface AccountJson extends KeyringPair$Meta {
   genesisHash?: string | null;
   isExternal?: boolean;
   isHardware?: boolean;
+  isMobile?: boolean;
   isHidden?: boolean;
   isDefaultAuthSelected?: boolean;
   name?: string;

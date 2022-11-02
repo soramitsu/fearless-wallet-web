@@ -41,24 +41,16 @@ import { ActionTypes as AccountActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as NetworkGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as BeaconGettersTypes } from '@/store/beacon/getters';
 import { MutationTypes as BeaconMutationsTypes } from '@/store/beacon/mutations';
-import Button from '@/components/Button.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import QR from '@/components/QR.vue';
 import Loader from '@/components/Loader.vue';
 import PermissionRequestPopup from '@/screens/mobileConnect/PermissionRequestPopup.vue';
-import InfoList from '@/layouts/InfoList.vue';
-import InfoItem from '@/screens/signing/InfoItem.vue';
-import Alert from '@/components/Alert.vue';
 import { MOONBEAM_GENESISHASH } from '@/consts/networks';
 
 @Component({
   components: {
     Loader,
     QR,
-    InfoList,
-    InfoItem,
-    Alert,
-    Button,
     AboveForm,
     PermissionRequestPopup,
   },
@@ -68,6 +60,7 @@ export default class MobileConnect extends Vue {
   requestResponse: PermissionResponseOutput | null = null;
   isLoading = false;
   isRequest = false;
+  isPaired = false;
   isPermissionsGranted = false;
   isWalletAlreadyExists = false;
   isActiveAccountExists = false;
@@ -121,13 +114,16 @@ export default class MobileConnect extends Vue {
     this.$router.push({ name: Components.Wallet });
   }
 
+  get isPermissionRequestResolved() {
+    return this.connectionStatus === 'success' || this.connectionStatus === 'failed';
+  }
+
   get header() {
-    if (this.requestInfo && this.connectionStatus !== 'success' && this.connectionStatus !== 'failed')
-      return `Requesting...`;
+    if (this.isPaired && !this.isPermissionRequestResolved) return 'mobileConnector.requesting';
 
-    if (this.connectionStatus === 'success' || this.connectionStatus === 'failed') return '';
+    if (this.isPermissionRequestResolved) return '';
 
-    return 'Connect Mobile Wallet';
+    return 'mobileConnector.connectWallet';
   }
 
   async onPairingRequest(payload: string) {
@@ -136,6 +132,7 @@ export default class MobileConnect extends Vue {
   }
 
   async onPairingSuccess() {
+    this.isPaired = true;
     this.isLoading = true;
   }
 
@@ -171,7 +168,6 @@ export default class MobileConnect extends Vue {
     await createAddress(substrateAccount, meta); //extenstion service worker
 
     BaseApi.saveAddress(substrateAccount, meta);
-    console.log(BaseApi.getAddresses());
     await this.setSelectedWallet({ selectedWalletAddress: substrateAccount });
   }
 

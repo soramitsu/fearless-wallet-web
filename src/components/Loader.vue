@@ -23,7 +23,7 @@
     top: 0;
     left: 0;
     display: block;
-    margin: -71px -8px 0;
+    margin: -74px -8px 0;
     width: 96px;
     height: 96px;
     border-radius: 50%;
@@ -42,7 +42,7 @@
   }
 
   .logo {
-    height: 41px;
+    height: 44px;
     width: 70px;
     margin-top: 20px;
     color: $pink-color;

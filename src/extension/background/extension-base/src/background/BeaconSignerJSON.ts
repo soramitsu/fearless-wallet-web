@@ -1,9 +1,7 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { TypeRegistry } from '@polkadot/types';
 import State from './handlers/State';
-import type { KeyringPair } from '@polkadot/keyring/types';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type { RequestSign } from './types';
@@ -15,7 +13,7 @@ export default class BeaconSignerJSON implements RequestSign {
     this.payload = payload;
   }
 
-  sign(registry: TypeRegistry, pair: KeyringPair): { signature: HexString } {
+  sign(): { signature: HexString } {
     return { signature: State.signature as HexString };
   }
 }

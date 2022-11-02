@@ -85,9 +85,11 @@
     "connectionFailed": "Connection failed",
     "cancelRequest": "Cancel Request",
     "resetConnection": "Reset Request",
+    "connectWallet": "Connect mobile wallet",
     "qrHeader": "Scan the QR code using the Fearless mobile app",
     "activeMobileAccountExists": "There is an active connection, please delete mobile wallet and try again",
     "walletAlreadyExists": "You already have this wallet. Please, use existing wallet or delete it and try connect mobile wallet again.",
+    "requesting": "Requesting permissions...",
     "connected": "Mobile wallet connected to Fearless Wallet Extension",
     "noAnswer": "No answer from your wallet received yet. Please make sure the wallet is open",
     "signMobile": "To sign with your mobile device, check if your mobile client is open and click 'Sign'"
@@ -110,18 +112,18 @@
     "connectionStatus": "Connection status",
     "walletManagement": "Wallet management",
     "settings": {
-      "accounts" : "Accounts",
-      "currency" : "Currency",
-      "language" : {
+      "accounts": "Accounts",
+      "currency": "Currency",
+      "language": {
         "text": "Language",
-        "translated" : "Translated by the team"
+        "translated": "Translated by the team"
       },
-      "about" : {
+      "about": {
         "text": "About",
-        "supportFeedback" : "Support & Feedback",
-        "socialMedia" : "Social Media",
-        "communityWallet" : "Community wallet",
-        "officialWebsite" : "Official Website",
+        "supportFeedback": "Support & Feedback",
+        "socialMedia": "Social Media",
+        "communityWallet": "Community wallet",
+        "officialWebsite": "Official Website",
         "followTwitter": "Follow on Twitter",
         "joinTelegram": "Join on Telegram",
         "readMedium": "Read on Medium",

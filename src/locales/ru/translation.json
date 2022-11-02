@@ -85,9 +85,11 @@
     "connectionFailed": "Соединение установлено",
     "cancelRequest": "Отменить запрос",
     "resetConnection": "Сбросить запрос",
+    "connectWallet": "Подключить мобильный кошелек",
     "qrHeader": "Отсканируйте QR-код с помощью мобильного приложения Fearless.",
     "activeMobileAccountExists": "Есть активное соединение, пожалуйста, удалите мобильный кошелек и повторите попытку.",
     "walletAlreadyExists": "У вас уже есть этот кошелек. Пожалуйста, используйте существующий кошелек или удалите его и попробуйте снова подключить мобильный кошелек.",
+    "requesting": "Запрашиваем разрешения...",
     "connected": "Мобильный кошелек, подключенн к Fearless Wallet Extension",
     "noAnswer": "Ответ от вашего кошелька еще не получен. Пожалуйста, убедитесь, что кошелек открыт",
     "signMobile": "Чтобы подписать с помощью мобильного устройства, проверьте, открыт ли ваш мобильный клиент, и нажмите «Подписать»."
@@ -110,18 +112,18 @@
     "connectionStatus": "Статус подключения",
     "walletManagement": "Управление кошельком",
     "settings": {
-      "accounts" : "Аккаунты",
-      "currency" : "Валюты",
-      "language" : {
+      "accounts": "Аккаунты",
+      "currency": "Валюты",
+      "language": {
         "text": "Язык",
-        "translated" : "Переведено командой"
+        "translated": "Переведено командой"
       },
-      "about" : {
+      "about": {
         "text": "О приложении",
-        "supportFeedback" : "Поддержка & Фидбек",
-        "socialMedia" : "Социальные медиа",
-        "communityWallet" : "Сообщество кошелька",
-        "officialWebsite" : "Оффициальный сайт",
+        "supportFeedback": "Поддержка & Фидбек",
+        "socialMedia": "Социальные медиа",
+        "communityWallet": "Сообщество кошелька",
+        "officialWebsite": "Оффициальный сайт",
         "followTwitter": "Плдписаться на Twitter",
         "joinTelegram": "Вступить в Telegram",
         "readMedium": "Читать на Medium",

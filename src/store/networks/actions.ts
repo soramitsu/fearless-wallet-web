@@ -9,7 +9,7 @@ import type {
   ToggleActiveNode,
   AugmentedActionContext,
 } from '@/store/networks/types';
-import type { FiatJson, AssetJson, NetworkJson, Networks, ExternalApi, AssetsPrice, ApiOptions } from '@/interfaces';
+import type { FiatJson, AssetJson, NetworkJson, Networks, AssetsPrice, ApiOptions } from '@/interfaces';
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
@@ -43,26 +43,25 @@ const PAGE_SIZE = 100;
 const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.LOAD_JSONS]({ commit, state }, { chainsUrl, assetsUrl, fiatsUrl }) {
     if (state.assetsJson.length === 0) {
-      const { data: assetsData } = await axios.get(assetsUrl);
+      const { data: assetsJson } = await axios.get<AssetJson[]>(assetsUrl);
 
-      commit(MutationTypes.SET_ASSETS_JSON, { assetsJson: assetsData as AssetJson[] });
+      commit(MutationTypes.SET_ASSETS_JSON, { assetsJson });
     }
 
     if (state.fiats.length === 0) {
-      const { data: fiatData } = await axios.get(fiatsUrl);
+      const { data: fiats } = await axios.get<FiatJson[]>(fiatsUrl);
 
-      commit(MutationTypes.SET_FIATS_JSON, { fiats: fiatData as FiatJson[] });
+      commit(MutationTypes.SET_FIATS_JSON, { fiats });
     }
 
     if (state.networks.length === 0) {
-      const { data: chainsData } = await axios.get(chainsUrl);
-      const networksJson: NetworkJson[] = chainsData;
+      const { data: networksJson } = await axios.get<NetworkJson[]>(chainsUrl);
 
       const networks: Networks = networksJson.map(
         ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi, chainId, parentId, paraId }) => {
           const networkName = name.toLowerCase();
           const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
-          const externalApi = originalExternalApi ?? ({} as ExternalApi);
+          const externalApi = originalExternalApi ?? {};
           const settings = settingsNetworks[networkName as KeySettings] ?? {};
 
           return {
@@ -105,16 +104,15 @@ const actions: ActionTree<State, State> & Actions = {
     const url = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${urlFiatsPart}&include_24hr_change=true&ids=${urlAssetsPart}`;
 
     try {
-      const { data } = await axios.get(url);
-      const typedData = data as AssetsPrice;
-      const assetsPrice = {} as AssetsPrice;
+      const { data } = await axios.get<AssetsPrice>(url);
+      const assetsPrice: AssetsPrice = {};
 
-      for (const priceId in typedData) {
-        const assetIdS = assetsJson.filter(({ priceId: _priceId }) => _priceId === priceId);
-
-        assetIdS.forEach(({ id }) => {
-          assetsPrice[id] = data[priceId];
-        });
+      for (const priceId in data) {
+        assetsJson
+          .filter(({ priceId: _priceId }) => _priceId === priceId)
+          .forEach(({ id }) => {
+            assetsPrice[id] = data[priceId];
+          });
       }
 
       commit(MutationTypes.SET_ASSET_PRICE, { assetsPrice });
@@ -170,15 +168,24 @@ const actions: ActionTree<State, State> & Actions = {
 
       Object.entries(accounts).forEach(async ([walletAddress, { type: accountType, json }]) => {
         const { isReplacedAccount, replacedSettings } = getReplacedMetaTyped(json.meta);
+        const { meta } = json;
         const replacedNetworksList = Object.values(replacedSettings ?? []).flat();
-
         // if it is a replaced account and the iterated network is not in the networksList
         if (isReplacedAccount && !replacedNetworksList.includes(networkName)) return;
 
         // ethereum accounts only subscribe to the ethereum networks and
         // substrate accounts only subscribe to the substrate networks
-        if ((!isEthereumNetwork && accountType === 'ethereum') || (isEthereumNetwork && accountType !== 'ethereum'))
+        if (!meta.isMobile) {
+          if ((!isEthereumNetwork && accountType === 'ethereum') || (isEthereumNetwork && accountType !== 'ethereum'))
+            return;
+        }
+
+        //subscribe only if mobile wallet have eth address and it's eth network
+        if (meta.isMobile && meta.ethereumAddress && isEthereumNetwork) {
+          subscribeAssetsBalances(context, meta.ethereumAddress as string, network);
+
           return;
+        }
 
         subscribeAssetsBalances(context, walletAddress, network);
       });

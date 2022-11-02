@@ -70,7 +70,7 @@ export default class Account extends Vue {
   }
 
   get isMobileWallet() {
-    return BaseApi.getWalletType(this.selectedWallet.address) === 'mobile';
+    return BaseApi.isMobileWallet(this.selectedWallet.address);
   }
 
   get showSharedSecretAccounts() {

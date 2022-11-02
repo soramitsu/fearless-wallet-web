@@ -61,7 +61,7 @@ import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { Currencies, Currency, RequestSentInfo, TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
 import { beaconController } from '@/controllers/beaconController';
-import { approveSignSignature, isSignLocked } from '@/extension/messaging';
+import { isSignLocked } from '@/extension/messaging';
 import { isExtension } from '@/helpers/common';
 import Loader from '@/components/Loader.vue';
 import Popup from '@/components/Popup.vue';
@@ -74,6 +74,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as SignActionsTypes, ApprovePayload } from '@/store/sign/actions';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { GetNetworkGenesisHash } from '@/store/networks/types';
+import SignController from '@/controllers/signController';
 
 @Component({
   components: {
@@ -113,7 +114,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get isSignMobile() {
-    return BaseApi.getWalletType(this.address) === 'mobile';
+    return BaseApi.isMobileWallet(this.address);
   }
 
   get transactionStatus() {
@@ -150,30 +151,6 @@ export default class ConfirmationPasswordPopup extends Vue {
     return `$${this.value}`;
   }
 
-  @Watch('password')
-  resetStatusError() {
-    this.isErrorPassword = false;
-  }
-
-  signTransactionRaw() {
-    return this.currency?.send(this.address, true);
-  }
-
-  async signTransactionJSON() {
-    const payload: PayloadJSON = this.payload as any;
-    delete payload.address;
-    payload.type = 'json';
-
-    const { blockchainData } = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
-
-    approveSignSignature(this.transactionId as string, blockchainData.signature);
-  }
-
-  async signMobile() {
-    if (!this.transactionId && this.currency.extrinsic) await this.signTransactionRaw();
-    else if (this.payload && this.transactionId) await this.signTransactionJSON();
-  }
-
   get isTransactionInit() {
     return !!this.transactionStatus;
   }
@@ -190,12 +167,59 @@ export default class ConfirmationPasswordPopup extends Vue {
     return this.transactionStatus !== 'pending';
   }
 
+  @Watch('password')
+  resetStatusError() {
+    this.isErrorPassword = false;
+  }
+
+  signTransactionRaw() {
+    return this.currency?.send(this.address, true);
+  }
+
   close() {
-    if (this.isTransactionPending) return;
+    if (!this.isTransactionInit) {
+      this.$emit('close');
 
-    this.$emit('close', this.isTransactionFinished);
+      return;
+    }
 
-    this.currency.clearSendStatus();
+    if (this.transactionId && this.isTransactionPending) {
+      SignController.cancelSign(this.transactionId);
+      this.transactionState = undefined;
+
+      this.$emit('close', true);
+
+      return;
+    }
+
+    if (this.isTransactionFinished) {
+      this.currency.clearSendStatus();
+      this.transactionState = undefined;
+      this.$emit('close', this.isTransactionFinished);
+    }
+  }
+
+  async signMobile() {
+    if (!this.transactionId && this.currency.extrinsic) await this.signTransactionRaw();
+    else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
+  }
+
+  async signTransactionJSON(id: string) {
+    const payload: PayloadJSON = this.payload as any;
+    delete payload.address;
+    payload.type = 'json';
+
+    const { blockchainData } = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
+
+    if (blockchainData.signature.length === 0) {
+      this.transactionState = 'failed';
+
+      SignController.cancelSign(id);
+
+      return;
+    }
+
+    SignController.approveSignSignature(id, blockchainData.signature);
   }
 
   async mounted() {

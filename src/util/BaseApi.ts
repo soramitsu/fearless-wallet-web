@@ -26,7 +26,7 @@ import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { beaconController } from '@/controllers/beaconController';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;
-type WalletTypes = 'mobile' | 'native' | null;
+type WalletTypes = 'mobile' | 'native';
 
 export default class BaseApi {
   private static createFromJson(json: KeyringPair$Json): KeyringPair {
@@ -84,8 +84,13 @@ export default class BaseApi {
   public static forgetAddress(address: string) {
     keyring.forgetAddress(address);
   }
+  public static isMobileWallet(address: string): boolean {
+    const substrateAddress = BaseApi.encodeAddress(address);
 
-  public static getWalletType(address: string): WalletTypes {
+    return !!BaseApi.getAddress(substrateAddress)?.meta.isMobile;
+  }
+
+  public static getWalletType(address: string): WalletTypes | null {
     const substrateAddress = BaseApi.encodeAddress(address);
     if (BaseApi.getAccount(substrateAddress)) return 'native';
     if (BaseApi.getAddress(substrateAddress)?.meta.isMobile) return 'mobile';

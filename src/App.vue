@@ -47,6 +47,7 @@ export default class App extends Vue {
   @Action(MetaActionTypes.SUBSCRIBE_METADATA_REQUESTS) metaSubscribe!: TAction<unknown>;
 
   async created() {
+    await this.subscribeToExtensionEvents();
     this.setWallet();
     this.addEventOnline();
     this.connectToNodes();
@@ -71,12 +72,14 @@ export default class App extends Vue {
     await connectToNodes();
   }
 
+  subscribeToExtensionEvents() {
+    if (isExtension()) return Promise.all([this.signSubscribe(), this.authSubscribe(), this.metaSubscribe()]);
+  }
+
   async subscribeToBalancesOfNetworks() {
     if (!this.isOnline) return;
 
     const { subscribeToBalancesOfNetworks } = NetworksController;
-
-    if (isExtension()) await Promise.all([this.authSubscribe(), this.metaSubscribe(), this.signSubscribe()]);
 
     this.subscribeAccounts = BaseApi.getAccountsSubject();
     this.subscribeAddresses = BaseApi.getAddressesSubject();

@@ -135,7 +135,7 @@ export default class TeleportForm extends Vue {
   }
 
   get originalNetworkPartialFeeString() {
-    return `${formattedNumber(+this.originNetFee, 7)} ${this.selectedAssetUpper}`;
+    return `${formattedNumber(+this.originNetFee, { decimalsValue: 7 })} ${this.selectedAssetUpper}`;
   }
 
   get destinationNetworkPartialFeeString() {
@@ -145,7 +145,7 @@ export default class TeleportForm extends Vue {
   get totalString() {
     const total = +addNumbers([this.amount, this.originNetFee, this.destNetFee]);
 
-    return `${formattedNumber(total, 7)} ${this.selectedAssetUpper}`;
+    return `${formattedNumber(total, { decimalsValue: 7 })} ${this.selectedAssetUpper}`;
   }
 
   get selectedAsset() {

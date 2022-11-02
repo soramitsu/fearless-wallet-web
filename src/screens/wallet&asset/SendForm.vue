@@ -99,7 +99,7 @@ export default class SendForm extends Vue {
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
 
   get partialFeeString() {
-    return `${formattedNumber(+this.partialFee, 7)} ${this.selectedAssetUpper}`;
+    return `${formattedNumber(+this.partialFee, { decimalsValue: 7 })} ${this.selectedAssetUpper}`;
   }
 
   get showValue() {
@@ -129,7 +129,7 @@ export default class SendForm extends Vue {
   get totalString() {
     const total = addNumbers([this.amount, this.partialFee]);
 
-    return `${formattedNumber(+total, 7)} ${this.selectedAssetUpper}`;
+    return `${formattedNumber(+total, { decimalsValue: 7 })} ${this.selectedAssetUpper}`;
   }
 
   created() {

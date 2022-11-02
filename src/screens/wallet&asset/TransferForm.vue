@@ -320,7 +320,11 @@ export default class SendForm extends Vue {
   get transferrableAmount() {
     const count = +(this.currency?.getTransferableCountAssets(this.syncedSelectedNetwork, this.selectedWallet) ?? 0);
 
-    return formattedNumber(count, 4, false, true);
+    return formattedNumber(count, {
+      decimalsValue: 4,
+      returnOriginNumber: false,
+      removeTrailingZeros: true,
+    });
   }
 
   get transferrableValue() {

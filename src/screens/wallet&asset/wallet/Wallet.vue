@@ -166,7 +166,7 @@ export default class Wallet extends Vue {
   get totalBalance() {
     const arr = this.sortedCurrencies.map((currency) => currency.getTotalBalance(this.selectedWallet));
 
-    return formattedNumber(+addNumbers(arr), 2, false);
+    return formattedNumber(+addNumbers(arr), { returnOriginNumber: false });
   }
 
   get totalPercent() {

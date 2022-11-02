@@ -111,7 +111,7 @@ export default class MobileConnect extends Vue {
   }
 
   close() {
-    this.$router.push({ name: Components.Wallet });
+    this.$router.back();
   }
 
   get isPermissionRequestResolved() {
@@ -123,11 +123,12 @@ export default class MobileConnect extends Vue {
 
     if (this.isPermissionRequestResolved) return '';
 
-    return 'mobileConnector.connectWallet';
+    return 'welcome.connectMobile';
   }
 
   async onPairingRequest(payload: string) {
     this.setQR(payload);
+
     this.isLoading = false;
   }
 
@@ -141,6 +142,7 @@ export default class MobileConnect extends Vue {
 
     setTimeout(() => {
       this.isLoading = false;
+
       if (!this.isPermissionsGranted || !this.isWalletAlreadyExists) this.isPossibleConnectionProblem = true;
     }, 30000);
   }

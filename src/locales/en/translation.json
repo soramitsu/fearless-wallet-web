@@ -85,7 +85,6 @@
     "connectionFailed": "Connection failed",
     "cancelRequest": "Cancel Request",
     "resetConnection": "Reset Request",
-    "connectWallet": "Connect mobile wallet",
     "qrHeader": "Scan the QR code using the Fearless mobile app",
     "activeMobileAccountExists": "There is an active connection, please delete mobile wallet and try again",
     "walletAlreadyExists": "You already have this wallet. Please, use existing wallet or delete it and try connect mobile wallet again.",

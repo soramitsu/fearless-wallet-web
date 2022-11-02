@@ -58,7 +58,7 @@ const routes: Array<RouteConfig> = [
     component: AddWallet,
   },
   {
-    path: ' /add-mobile-wallet',
+    path: '/add-mobile-wallet',
     name: Components.MobileConnect,
     component: MobileConnect,
   },

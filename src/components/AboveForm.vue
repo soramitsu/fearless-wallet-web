@@ -9,7 +9,7 @@
           <Icon icon="fw-logo" className="logo" />
         </div>
 
-        <div class="header">{{ header }}</div>
+        <div class="header">{{ tHeader }}</div>
 
         <div class="activity">
           <div v-if="showCloseIcon" class="icon" @click="closeHandler">

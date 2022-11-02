@@ -11,7 +11,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { AuthUrlInfo } from '@extension-base/background/types';
 import { updateAuthorization } from '@/extension/messaging';
-import SelectAuthAccount from '@/screens/authorize/SelectAuthAccount.vue';
+import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import AboveForm from '@/components/AboveForm.vue';
 import Button from '@/components/Button.vue';

@@ -46,19 +46,15 @@ import AboveForm from '@/components/AboveForm.vue';
 import QR from '@/components/QR.vue';
 import Loader from '@/components/Loader.vue';
 import PermissionRequestPopup from '@/screens/mobileConnect/PermissionRequestPopup.vue';
-import InfoList from '@/layouts/InfoList.vue';
-import InfoItem from '@/screens/signing/InfoItem.vue';
 import Alert from '@/components/Alert.vue';
 import { MOONBEAM_GENESISHASH } from '@/consts/networks';
 
 @Component({
   components: {
-    Loader,
     QR,
-    InfoList,
-    InfoItem,
     Alert,
     Button,
+    Loader,
     AboveForm,
     PermissionRequestPopup,
   },

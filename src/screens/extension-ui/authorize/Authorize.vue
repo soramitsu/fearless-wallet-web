@@ -50,7 +50,7 @@ import { Accounts, WalletInfo } from '@/store/accounts/types';
 import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
 import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import SelectAuthAccount from '@/screens/authorize/SelectAuthAccount.vue';
+import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import BaseApi from '@/util/BaseApi';
 
 @Component({

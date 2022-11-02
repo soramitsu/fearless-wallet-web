@@ -32,7 +32,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import Popup from '@/components/Popup.vue';
 import { Components } from '@/router/routes';
 import { isExtension } from '@/helpers/common';
-import SettingMenuItem from '@/layouts/SettingMenuItem.vue';
+import SettingMenuItem from '@/screens/main/SettingMenuItem.vue';
 
 type SettingsItemType = 'Accounts';
 

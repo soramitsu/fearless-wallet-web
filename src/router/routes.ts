@@ -15,9 +15,9 @@ import Main from '@/screens/main/Main.vue';
 import Crowdloans from '@/screens/crowdloans/Crowdloans.vue';
 
 const MobileConnect = () => import('@/screens/mobileConnect/MobileConnect.vue');
-const Authorize = () => import('@/screens/authorize/Authorize.vue');
-const Transaction = () => import('@/screens/signing/Transaction.vue');
-const MetaRequest = () => import('@/screens/metadata/Metadata.vue');
+const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue');
+const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
+const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
 
 import store from '@/store';
 

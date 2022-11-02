@@ -13,9 +13,7 @@ import { Vue, Component } from 'vue-property-decorator';
 import Corners from '@/components/Corners.vue';
 
 @Component({
-  components: {
-    Corners,
-  },
+  components: { Corners },
 })
 export default class InfoList extends Vue {}
 </script>

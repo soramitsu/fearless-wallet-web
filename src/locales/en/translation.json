@@ -36,6 +36,7 @@
     "reEnterPassword": "Re-Enter password",
     "allDone": "All done!",
     "stayFearless": "Stay Fearless!",
+    "accounts": "accounts",
     "substrateDP": "Substrate secret derivation path",
     "substrateCryptoType": "SUBSTRATE KEYPAIR CRYPTO TYPE",
     "ethereumDP": "Ethereum secret derivation path",
@@ -154,7 +155,8 @@
     "hideZero": "Hide zero balances",
     "turnVisibilityAssets": "Turn off the visibility of assets with zero balances",
     "assetManagement": "Asset management",
-    "assetDetails": "Asset details"
+    "assetDetails": "Asset details",
+    "addWallet": "Add wallet"
   },
   "asset": {
     "history": {
@@ -236,7 +238,8 @@
     "deleteNode": "Delete node",
     "createAccount": "Create Account",
     "importAccount": "Import Account",
-    "newNode": "New Node"
+    "newNode": "New Node",
+    "addEthereumAccounts": "Add Moonbeam and Moonriver accounts?"
   },
   "auth": {
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
@@ -248,10 +251,13 @@
     "accept": "Accept",
     "proceed": "Proceed",
     "continue": "Continue",
-    "copied": "Сopied {value}",
+    "copied": "Сopied",
+    "copiedValue": "Сopied {value}",
     "understood": "Understood",
     "cancel": "Cancel",
     "save": "Save",
+    "yes": "Yes",
+    "no": "No",
     "search": "Search",
     "searchNetwork": "Search in networks",
     "searchCurrency": "Search in currencies",

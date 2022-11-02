@@ -39,7 +39,7 @@
 
         <Button size="big" class="button copy-qr" width="260px" text="asset.copyQR" iconName="share" @click="copyQR" />
 
-        <Tooltip :text="tooltipText" target=".copy-qr" placement="bottom" trigger="click" />
+        <Tooltip :text="copyQRTooltip" target=".copy-qr" placement="bottom" trigger="click" />
       </div>
     </div>
 
@@ -94,6 +94,8 @@ import Tooltip from '@/components/Tooltip.vue';
 })
 export default class ReceiveForm extends Vue {
   readonly selectNetworkInputRef = 'selectNetworkInput';
+  readonly copyQRTooltip = { text: 'common.copiedValue', localeProps: { value: 'QR' } };
+
   selectedNetwork = 'polkadot';
   showSelectNetworkPopup = false;
 
@@ -101,10 +103,6 @@ export default class ReceiveForm extends Vue {
   @Prop(Function) closeForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
-
-  get tooltipText() {
-    return { text: 'common.copied', localeProps: { value: 'QR' } };
-  }
 
   get optionsNetwork() {
     return this.networks.map(({ name }) => ({ label: firstCharToUp(name), value: name }));

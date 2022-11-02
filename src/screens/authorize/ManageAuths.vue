@@ -56,7 +56,7 @@ export default class ManageAuths extends Vue {
   }
 
   get header() {
-    if (this.showUpdateAuths) return { text: 'authorize.accountsConnected', url: this.url };
+    if (this.showUpdateAuths) return { text: 'authorize.accountsConnected', localeProps: { url: this.url } };
 
     return 'common.manageDApp';
   }

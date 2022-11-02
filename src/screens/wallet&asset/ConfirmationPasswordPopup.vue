@@ -35,9 +35,7 @@
 
       <SignMobile v-else-if="!isTransactionInit" @onSign="signMobile" @onCancel="close" />
 
-      <div v-if="isTransactionPending">
-        <Loader />
-      </div>
+      <Loader v-if="isTransactionPending" />
 
       <template v-else-if="isTransactionFinished">
         <div class="descriptions">

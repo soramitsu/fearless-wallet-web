@@ -1,5 +1,11 @@
 @Library('jenkins-library@feature/fww-158/ci-for-PRs')
 
+// Job properties
+def jobParams = [
+  booleanParam(defaultValue: true, description: '', name: 'tests'),
+  booleanParam(defaultValue: true, description: 'Upload builds to nexus (master and develop branches upload always)', name: 'upload_to_nexus'),
+]
+
 def pipeline = new org.js.App2Pipeline(
     steps:                  this,
     buildDockerImage:       'electronuserland/builder:wine',
@@ -7,7 +13,9 @@ def pipeline = new org.js.App2Pipeline(
     dockerBuildRegistryCred: 'docker-hub-credentials',
     buildCmds:              ['yarn build:extension && yarn electron:build --publish=never --linux --mac zip && yarn electron:build --publish=never --win portable --x64 --ia32'],
     buildWithCred:          true,
-    disableSecretScanner:   true
+    jobParams:              jobParams,
+    disableSecretScanner:   true,
+    nexusCredentials:       'bot-fearless-rw'
 )
 pipeline.runPipeline()  
 

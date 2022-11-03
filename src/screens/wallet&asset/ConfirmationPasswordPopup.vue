@@ -184,10 +184,6 @@ export default class ConfirmationPasswordPopup extends Vue {
     this.isErrorPassword = false;
   }
 
-  signTransactionRaw() {
-    return this.currency?.send(this.address, true);
-  }
-
   close() {
     if (!this.isTransactionInit) {
       this.$emit('close');
@@ -205,14 +201,15 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     if (this.isTransactionFinished) {
-      this.$emit('close', this.isTransactionFinished);
       this.currency.clearSendStatus();
       this.transactionState = undefined;
+
+      this.$emit('close', true);
     }
   }
 
   async signMobile() {
-    if (!this.transactionId && this.currency.extrinsic) await this.signTransactionRaw();
+    if (!this.transactionId && this.currency.extrinsic) await this.currency?.send(this.address, true);
     else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
   }
 

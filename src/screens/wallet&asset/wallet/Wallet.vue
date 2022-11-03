@@ -56,7 +56,7 @@
 
     <ReceiveForm
       v-if="showReceiveForm"
-      :_selectedNetwork="selectedCurrency.mainNetwork"
+      :_selectedNetwork="receiveSelectedNetwork"
       :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', false)"
     />
 
@@ -124,6 +124,10 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
+
+  get receiveSelectedNetwork() {
+    return this.selectedNetwork === 'all' ? this.selectedCurrency.mainNetwork : this.selectedNetwork;
+  }
 
   get sortedCurrencies() {
     const { address } = this.selectedWallet;

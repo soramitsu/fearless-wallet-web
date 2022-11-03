@@ -2,7 +2,7 @@
 
 def pipeline = new org.js.App2Pipeline(
     steps:                  this,
-    dockerBuildRegistry:   'electronuserland/builder:wine',
+    buildDockerImage:       'electronuserland/builder:wine',
     buildCmds:              ['yarn build:extension && yarn electron:build --publish=never --linux --mac zip && yarn electron:build --publish=never --win portable --x64 --ia32'],
     buildWithCred:          true,
     disableSecretScanner:   true

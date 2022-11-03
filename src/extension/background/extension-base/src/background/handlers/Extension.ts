@@ -399,7 +399,7 @@ export default class Extension {
 
   static async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
     const queued = await State.getSignRequest(id);
-    const { cachedUnlocks } = await chrome.storage.local.get(['cachedUnlocks']);
+    const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
 
     assert(queued, 'Unable to find request');
 

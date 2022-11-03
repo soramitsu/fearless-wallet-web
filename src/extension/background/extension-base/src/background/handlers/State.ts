@@ -165,7 +165,7 @@ export default class State {
   }
 
   static async injectFromStorage() {
-    const { authUrls, defaultAuthAccountSelection } = await chrome.storage.local.get([
+    const { authUrls, defaultAuthAccountSelection } = await State.getFromStorage([
       'authUrls',
       'defaultAuthAccountSelection',
     ]);

@@ -21,11 +21,11 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator';
-import { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import { Action, Getter, Mutation } from 'vuex-class';
-import { PermissionResponseOutput } from '@airgap/beacon-sdk';
+import type { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
+import type { PermissionResponseOutput } from '@airgap/beacon-sdk';
 import type { SetSelectedWallet } from '@/store/accounts/types';
-import {
+import type {
   PermissionSuccess,
   TAction,
   RequestSentInfo,
@@ -36,7 +36,6 @@ import {
 import BaseApi from '@/util/BaseApi';
 import { createAddress } from '@/extension/messaging';
 import { beaconController } from '@/controllers/beaconController';
-import { Components } from '@/router/routes';
 import { ActionTypes as AccountActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as NetworkGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as BeaconGettersTypes } from '@/store/beacon/getters';

@@ -98,7 +98,7 @@ class BeaconController {
   public async onPairingRequest(callback: (payload: string) => void) {
     this.app.subscribeToEvent(BeaconEvent.PAIR_INIT, async (data) => {
       const code = await this.serializer.serialize(await data.p2pPeerInfo());
-      const uri = this.getTzip10Link('tezos://', code);
+      const uri = this.getTzip10Link('substrate://', code);
 
       callback(uri);
     });

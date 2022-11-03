@@ -184,7 +184,6 @@ export default class Extension {
   static async refreshAccountPasswordCache(pair: KeyringPair): Promise<number> {
     const { address } = pair;
     const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
-
     const savedExpiry = cachedUnlocks[address] || 0;
     const remainingTime = savedExpiry - Date.now();
 
@@ -192,6 +191,7 @@ export default class Extension {
       cachedUnlocks[address] = 0;
 
       await chrome.storage.local.set({ cachedUnlocks });
+
       pair.lock();
 
       return 0;
@@ -399,7 +399,8 @@ export default class Extension {
 
   static async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
     const queued = await State.getSignRequest(id);
-    const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
+    const { cachedUnlocks } = await chrome.storage.local.get(['cachedUnlocks']);
+
     assert(queued, 'Unable to find request');
 
     const { reject, request, resolve } = queued;
@@ -413,7 +414,7 @@ export default class Extension {
 
     const { address } = pair;
 
-    Extension.refreshAccountPasswordCache(pair);
+    await Extension.refreshAccountPasswordCache(pair);
 
     // if the keyring pair is locked, the password is needed
     if (pair.isLocked && !password) reject(new Error('Password needed to unlock the account'));
@@ -437,7 +438,7 @@ export default class Extension {
     const result = request.sign(registry, pair);
     cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
 
-    if (savePass) chrome.storage.local.set({ cachedUnlocks });
+    if (savePass) await chrome.storage.local.set({ cachedUnlocks });
     else pair.lock();
 
     resolve({
@@ -476,14 +477,7 @@ export default class Extension {
   static async signingIsLocked({ id }: RequestSigningIsLocked): Promise<ResponseSigningIsLocked> {
     const queued = await State.getSignRequest(id);
     assert(queued, 'Unable to find request');
-
     const address = queued.request.payload.address;
-
-    if (keyring.getAddress(address)?.meta.isMobile)
-      return {
-        isLocked: !!State.signature,
-        remainingTime: 0,
-      };
 
     const pair = keyring.getPair(address);
 

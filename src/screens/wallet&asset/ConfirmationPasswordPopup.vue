@@ -172,8 +172,15 @@ export default class ConfirmationPasswordPopup extends Vue {
     this.isErrorPassword = false;
   }
 
-  signTransactionRaw() {
-    return this.currency?.send(this.address, true);
+  async mounted() {
+    if (!isExtension() && !this.isSignMobile) return;
+
+    if (this.transactionId === undefined) return;
+
+    const { isLocked } = await isSignLocked(this.transactionId);
+
+    this.isLocked = isLocked;
+    this.isSavePass = !this.isLocked;
   }
 
   close() {
@@ -195,12 +202,13 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.isTransactionFinished) {
       this.currency.clearSendStatus();
       this.transactionState = undefined;
-      this.$emit('close', this.isTransactionFinished);
+
+      this.$emit('close', true);
     }
   }
 
   async signMobile() {
-    if (!this.transactionId && this.currency.extrinsic) await this.signTransactionRaw();
+    if (!this.transactionId && this.currency.extrinsic) await this.currency?.send(this.address, true);
     else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
   }
 
@@ -220,17 +228,6 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     SignController.approveSignSignature(id, blockchainData.signature);
-  }
-
-  async mounted() {
-    if (!isExtension() && !this.isSignMobile) return;
-
-    if (this.transactionId === undefined) return;
-
-    const { isLocked } = await isSignLocked(this.transactionId);
-
-    this.isLocked = isLocked;
-    this.isSavePass = !this.isLocked;
   }
 
   async send() {

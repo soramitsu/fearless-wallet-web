@@ -168,7 +168,7 @@ export default class AccountsLayout extends Vue {
     return this.notificationType === 'delete'
       ? 'common.delete'
       : this.notificationType === 'export'
-      ? 'accounts.exportJson '
+      ? 'accounts.exportJson'
       : '';
   }
 

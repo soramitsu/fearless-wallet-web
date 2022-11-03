@@ -79,12 +79,13 @@ import SignController from '@/controllers/signController';
   },
 })
 export default class Auth extends Vue {
+  isLocked = false;
+  isSignPopupVisible = false;
+
   @Getter(SignGettersTypes.getSignRequestPayload) payload!: SignerPayloadJSON;
   @Getter(SignGettersTypes.getSignRequest) request!: SigningRequest;
   @Action(SignActionsTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
 
-  isLocked = false;
-  isSignPopupVisible = false;
   async mounted() {
     if (this.isMobileSignRequired) {
       const payload: PayloadJSON = this.payload as any;

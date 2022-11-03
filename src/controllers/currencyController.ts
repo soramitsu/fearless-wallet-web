@@ -10,6 +10,7 @@ import type {
 } from '@/interfaces';
 import type { SubmittableExtrinsic, SignerOptions } from '@polkadot/api/submittable/types';
 import type { Wallet } from '@/store/accounts/types';
+import type { ApiPromise } from '@polkadot/api';
 import BaseApi from '@/util/BaseApi';
 import LocalStorageController from '@/controllers/localStorageController';
 import NetworksController from '@/controllers/networksController';
@@ -35,11 +36,13 @@ type NetworkProps = {
   type: TypeAsset;
 };
 
+type Options = Partial<SignerOptions> & { api?: ApiPromise };
+
 export default class CurrencyController {
   private readonly lsCurrency = new LocalStorageController('currency');
   private readonly visibleStorageName = 'visible';
   public extrinsic!: SubmittableExtrinsic<'promise'> | undefined;
-  public options: Partial<SignerOptions> = {};
+  public options: Options = {};
   public balances: Balances = {};
   public price = 0;
   public hours24Change = 0;
@@ -324,13 +327,14 @@ export default class CurrencyController {
     amount: string,
     { precision, type, value: networkName }: NetworkProps
   ): void {
+    const ormlOptions = getOptions(this.asset, type, this.assetId);
     const precisionAmount = this.getPrecisionValue(amount, precision) as string;
     const {
       api,
       settings: { DefaultTip },
     } = NetworksController.getNetwork(networkName);
-    const transferOptions = { tip: DefaultTip };
-    const ormlOptions = getOptions(this.asset, type, this.assetId);
+
+    this.options = { tip: DefaultTip, api };
 
     try {
       if (type === 'native') {
@@ -344,8 +348,6 @@ export default class CurrencyController {
       } else {
         this.extrinsic = api!.tx.currencies.transfer(to, ormlOptions, precisionAmount);
       }
-
-      this.options = transferOptions;
     } catch {
       this.extrinsic = undefined;
       this.options = {};
@@ -389,6 +391,7 @@ export default class CurrencyController {
     const tx = api!.tx[pallet][module];
     const params = getNativeTeleportParams(destNet, toAddress, precisionAmount);
 
+    this.options = { api };
     this.extrinsic = tx(...params);
   }
 
@@ -402,6 +405,7 @@ export default class CurrencyController {
     const ormlOptions = getOrmlOptions(this.asset, originNet);
     const params = getOrmlTeleportParams(originNet, destNet, toAddress);
 
+    this.options = { api };
     this.extrinsic = api!.tx.xTokens.transfer(ormlOptions, precisionAmount, params, FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT);
   }
 
@@ -418,12 +422,40 @@ export default class CurrencyController {
     }
   }
 
+  public async send(from: string, isMobile = false): Promise<boolean> {
+    const account = isMobile ? from : BaseApi.getPair(from);
+
+    this.options.signer = isMobile ? new BeaconSigner() : undefined;
+    this.options.nonce = await this.options.api?.rpc.system.accountNextIndex(from);
+
+    delete this.options.api;
+
+    this.transactionStatus = 'pending';
+
+    try {
+      await this.extrinsic!.signAndSend(account, this.options, this.statusCallback());
+
+      if (typeof account !== 'string') account.lock();
+    } catch (ex) {
+      this.transactionStatus = 'failed';
+
+      console.info(`Transaction failed ${ex}`);
+
+      return false;
+    }
+
+    this.options = {};
+
+    return true;
+  }
+
   statusCallback() {
     return (result: ISubmittableResult) => {
       const { status } = result;
 
       if (status.isInBlock) {
         console.info(`Successful transfer with hash ${status.asInBlock.toHex()}`);
+
         this.transactionStatus = 'success';
       } else if (status.isFinalized) {
         console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
@@ -431,26 +463,6 @@ export default class CurrencyController {
         console.info(`Status of transfer: ${status.type}`);
       }
     };
-  }
-
-  public async send(from: string, isMobile = false): Promise<boolean> {
-    this.transactionStatus = 'pending';
-
-    if (isMobile) this.options.signer = new BeaconSigner();
-
-    const wallet = isMobile ? from : BaseApi.getPair(from);
-
-    try {
-      await this.extrinsic!.signAndSend(wallet, this.options, this.statusCallback());
-      if (typeof wallet !== 'string') wallet.lock();
-    } catch (ex) {
-      console.info(`Transaction failed ${ex}`);
-      this.transactionStatus = 'failed';
-
-      return false;
-    }
-
-    return true;
   }
 
   clearSendStatus() {

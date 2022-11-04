@@ -15,7 +15,7 @@ def pipeline = new org.js.App2Pipeline(
     buildWithCred:              true,
     jobParams:                  jobParams,
     disableSecretScanner:       true,
-    disableSecretScanner2:      false,
+    dSecretScan2:               false,
     secretScannerExclusion:     '',
     nexusCredentials:           'bot-fearless-rw',
     sonarProjectKey:            'fearless:fearless-wallet-web',

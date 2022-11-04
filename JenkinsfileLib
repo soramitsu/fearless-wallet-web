@@ -12,7 +12,7 @@ def pipeline = new org.js.App2Pipeline(
     dockerBuildRegistryDH:      'https://index.docker.io/v1/',
     dockerBuildRegistryCredDH:  'docker-hub-credentials',
     buildDockerImage:           'https://docker.soramitsu.co.jp',
-    dockerBuildRegistryCred:    'bot-build-tools-ro' 
+    dockerBuildRegistryCred:    'bot-build-tools-ro', 
     buildCmds:                  ['yarn build:extension && yarn electron:build --publish=never --linux --mac zip && yarn electron:build --publish=never --win portable --x64 --ia32'],
     buildWithCred:              true,
     jobParams:                  jobParams,

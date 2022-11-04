@@ -8,6 +8,9 @@ def jobParams = [
 
 def pipeline = new org.js.App2Pipeline(
     steps:                      this,
+    buildDockerImageDH:         'electronuserland/builder:wine',
+    dockerBuildRegistryDH:      'https://index.docker.io/v1/',
+    dockerBuildRegistryCredDH:  'docker-hub-credentials',
     buildDockerImage:           'docker.soramitsu.co.jp/build-tools/node:14-ubuntu',
     dockerBuildRegistry:        'https://docker.soramitsu.co.jp',
     dockerBuildRegistryCred:    'bot-build-tools-ro', 
@@ -15,7 +18,7 @@ def pipeline = new org.js.App2Pipeline(
     buildWithCred:              true,
     jobParams:                  jobParams,
     disableSecretScanner:       true,
-    dSecretScan2:               false,
+    disableSecretScanner2:      false,
     secretScannerExclusion:     '',
     nexusCredentials:           'bot-fearless-rw',
     sonarProjectKey:            'fearless:fearless-wallet-web',

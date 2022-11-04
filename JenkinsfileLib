@@ -8,8 +8,6 @@ def jobParams = [
 
 def pipeline = new org.js.App2Pipeline(
     steps:                      this,
-    dockerBuildRegistryDH:      'https://index.docker.io/v1/',
-    dockerBuildRegistryCredDH:  'docker-hub-credentials',
     buildDockerImage:           'docker.soramitsu.co.jp/build-tools/node:14-ubuntu',
     dockerBuildRegistry:        'https://docker.soramitsu.co.jp',
     dockerBuildRegistryCred:    'bot-build-tools-ro', 

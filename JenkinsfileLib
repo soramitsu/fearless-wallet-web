@@ -17,13 +17,14 @@ def pipeline = new org.js.App2Pipeline(
     buildCmds:                  ['yarn build:extension && yarn electron:build --publish=never --linux --mac zip && yarn electron:build --publish=never --win portable --x64 --ia32'],
     buildWithCred:              true,
     jobParams:                  jobParams,
-    disableSecretScanner:       true,
-    disableSecretScanner2:      false,
+    disableSecretScanner:       true, // for skipping in commonBuild()
+    disableSecretScanner2:      false, 
     secretScannerExclusion:     '',
     nexusCredentials:           'bot-fearless-rw',
     sonarProjectKey:            'fearless:fearless-wallet-web',
     sonarProjectName:           'fearless-wallet-web',
-    sonarCredential:            'sonar_fearless_token'
+    sonarCredential:            'sonar_fearless_token',
+    disableSonar:               true // for skipping in commonBuild()
 )
 pipeline.runPipeline()  
 

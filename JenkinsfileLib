@@ -1,10 +1,10 @@
 @Library('jenkins-library@feature/fww-158/ci-for-PRs')
 
 // Job properties
-// def jobParams = [
-//   booleanParam(defaultValue: true, description: '', name: 'tests'),
-//   booleanParam(defaultValue: true, description: 'Upload builds to nexus (master and develop branches upload always)', name: 'upload_to_nexus'),
-// ]
+def jobParams = [
+  booleanParam(defaultValue: true, description: '', name: 'tests'),
+  booleanParam(defaultValue: true, description: 'Upload builds to nexus (master and develop branches upload always)', name: 'upload_to_nexus'),
+]
 
 def pipeline = new org.js.App2Pipeline(
     steps:                      this,
@@ -16,7 +16,7 @@ def pipeline = new org.js.App2Pipeline(
     dockerBuildRegistryCred:    'bot-build-tools-ro', 
     buildCmds:                  ['yarn build:extension && yarn electron:build --publish=never --linux --mac zip && yarn electron:build --publish=never --win portable --x64 --ia32'],
     buildWithCred:              true,
-    //jobParams:                  jobParams,
+    jobParams:                  jobParams,
     disableSecretScanner:       true, // for skipping in commonBuild() 
     secretScannerExclusion:     '',
     nexusCredentials:           'bot-fearless-rw',

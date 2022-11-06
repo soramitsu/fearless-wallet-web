@@ -15,7 +15,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     buildDockerImage:           'docker.soramitsu.co.jp/build-tools/node:14-ubuntu', //for scanner and sonar
     dockerBuildRegistry:        'https://docker.soramitsu.co.jp',
     dockerBuildRegistryCred:    'bot-build-tools-ro',
-    buildDockerVolume:          '-v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp'
+    buildDockerVolume:          '-v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp',
     buildCmds:                  ['yarn build:extension && yarn electron:build --publish=never --linux --mac zip && yarn electron:build --publish=never --win portable --x64 --ia32'],
     buildWithCred:              true,
     jobParams:                  jobParams,

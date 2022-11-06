@@ -1,4 +1,4 @@
-@Library('jenkins-library@feature/fww-158/ci-for-PRs')
+@Library('jenkins-library')
 
 // Job properties
 def jobParams = [

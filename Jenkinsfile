@@ -1,4 +1,4 @@
-@Library('jenkins-library')
+@Library('jenkins-library@feature/fww-158/ci-for-PRs')
 
 // Job properties
 def jobParams = [
@@ -8,25 +8,12 @@ def jobParams = [
 
 def pipeline = new org.js.AppArtifactsPipeline(
     steps:                      this,
-    buildDockerImageDH:         'electronuserland/builder:wine', // for testing and building 
-    dockerBuildRegistryDH:      'https://index.docker.io/v1/',
-    dockerBuildRegistryCredDH:  'docker-hub-credentials',
-    buildDockerVolumeDH:        '-v /var/cache/yarn:/usr/local/share/.cache/yarn -v /var/cache/electron:/root/.cache/electron -v /var/cache/electron-builder:/root/.cache/electron-builder',
-    buildDockerImage:           'docker.soramitsu.co.jp/build-tools/node:14-ubuntu', //for scanner and sonar
-    dockerBuildRegistry:        'https://docker.soramitsu.co.jp',
-    dockerBuildRegistryCred:    'bot-build-tools-ro',
-    buildDockerVolume:          '-v /var/run/docker.sock:/var/run/docker.sock -v /tmp:/tmp',
     buildCmds:                  ['yarn build:extension && yarn electron:build --publish=never --linux --mac zip && yarn electron:build --publish=never --win portable --x64 --ia32'],
     jobParams:                  jobParams,
-    disableSecretScanner:       true, // for skipping in commonBuild() 
-    secretScannerExclusion:     '',
     nexusCredential:            'bot-fearless-rw',
     nexusProjectPath:           'fearless/desktop',
-    nexuseExtensions:           [ 'zip', 'AppImage' , 'exe' ],
     sonarProjectKey:            'fearless:fearless-wallet-web',
     sonarProjectName:           'fearless-wallet-web',
-    sonarCredential:            'sonar_fearless_token',
-    disableSonar:               true // for skipping in commonBuild()
+    sonarCredential:            'sonar_fearless_token'
 )
-pipeline.runPipeline()  
-
+pipeline.runPipeline()

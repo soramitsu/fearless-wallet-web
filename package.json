@@ -54,7 +54,7 @@
   "devDependencies": {
     "@doyensec/electronegativity": "^1.9.1",
     "@rushstack/eslint-patch": "^1.1.4",
-    "@types/chrome": "^0.0.179",
+    "@types/chrome": "^0.0.200",
     "@types/electron-devtools-installer": "^2.2.2",
     "@types/jest": "^26.0.19",
     "@types/lodash": "^4.14.174",

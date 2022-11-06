@@ -272,6 +272,7 @@
     "manageDApp": "Управление доступом к dApp",
     "alreadyHaveAccount": "У меня уже есть аккаунт",
     "sourceType": "Тип источника",
-    "allNetworks": "Все сети"
+    "allNetworks": "Все сети",
+    "offlineStatus": "Отсутствует интернет"
   }
 }

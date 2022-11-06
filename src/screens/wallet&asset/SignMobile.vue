@@ -2,16 +2,7 @@
   <div class="mobile-sign__popup">
     <span>{{ $t('mobileConnector.signMobile') }}</span>
 
-    <Button
-      text="Sign"
-      width="100%"
-      size="medium"
-      fontSize="big"
-      :disabled="isTransactionStarted"
-      type="primary"
-      :border="false"
-      @click="handleSign"
-    />
+    <Button text="Sign" width="100%" size="medium" fontSize="big" type="primary" :border="false" @click="handleSign" />
 
     <Button
       text="Cancel"
@@ -37,9 +28,7 @@ import Popup from '@/components/Popup.vue';
   },
 })
 export default class SignMobile extends Vue {
-  isTransactionStarted = false;
   handleSign() {
-    this.isTransactionStarted = true;
     this.$emit('onSign');
   }
   handleCancel() {

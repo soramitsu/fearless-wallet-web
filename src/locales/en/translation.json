@@ -272,6 +272,7 @@
     "manageDApp": "Manage dApp access",
     "alreadyHaveAccount": "I already have an account",
     "sourceType": "Source Type",
-    "allNetworks": "All networks"
+    "allNetworks": "All networks",
+    "offlineStatus": "No Internet nonnection"
   }
 }

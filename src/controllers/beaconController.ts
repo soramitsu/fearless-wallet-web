@@ -45,6 +45,11 @@ class BeaconController {
             console.error('UNKNOWN ERROR', error);
           },
         },
+        NO_PERMISSIONS: {
+          handler: (error) => {
+            console.error('NO PERMISSIONS ERROR', error);
+          },
+        },
       },
     });
 

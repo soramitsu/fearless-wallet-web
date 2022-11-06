@@ -20,7 +20,9 @@ def pipeline = new org.js.AppArtifactsPipeline(
     jobParams:                  jobParams,
     disableSecretScanner:       true, // for skipping in commonBuild() 
     secretScannerExclusion:     '',
-    nexusCredentials:           'bot-fearless-rw',
+    nexusCredential:            'bot-fearless-rw',
+    nexusProjectPath:           'fearless/desktop',
+    nexuseExtensions:           [ 'zip', 'AppImage' , 'exe' ],
     sonarProjectKey:            'fearless:fearless-wallet-web',
     sonarProjectName:           'fearless-wallet-web',
     sonarCredential:            'sonar_fearless_token',

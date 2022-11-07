@@ -36,7 +36,6 @@ import {
 import BaseApi from '@/util/BaseApi';
 import { createAddress } from '@/extension/messaging';
 import { beaconController } from '@/controllers/beaconController';
-import { Components } from '@/router/routes';
 import { ActionTypes as AccountActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as NetworkGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as BeaconGettersTypes } from '@/store/beacon/getters';
@@ -66,6 +65,7 @@ export default class MobileConnect extends Vue {
   isWalletAlreadyExists = false;
   isActiveAccountExists = false;
   isPossibleConnectionProblem = false;
+  permissionRequestDenied = false;
 
   @Action(AccountActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
   @Getter(NetworkGettersTypes.getNetworks) getNetworks!: Networks;
@@ -100,7 +100,7 @@ export default class MobileConnect extends Vue {
     if (this.isActiveAccountExists) return 'active_account_exists';
     if (this.isPossibleConnectionProblem && !this.isPermissionsGranted) return 'reset_form';
     if (this.isPermissionsGranted) return 'success';
-    if (this.isWalletAlreadyExists) return 'failed';
+    if (this.isWalletAlreadyExists || this.permissionRequestDenied) return 'failed';
 
     return false;
   }
@@ -155,6 +155,13 @@ export default class MobileConnect extends Vue {
     this.isLoading = false;
 
     this.requestResponse = output;
+
+    if (account.scopes.length === 0) {
+      this.permissionRequestDenied = true;
+      beaconController.resetConnection();
+
+      return;
+    }
 
     if (BaseApi.getWalletType(account.address)) {
       this.isWalletAlreadyExists = true;

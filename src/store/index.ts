@@ -2,9 +2,7 @@ import Vue from 'vue';
 import Vuex, { Store } from 'vuex';
 import networks from './networks';
 import account from './accounts';
-import auth from './auth';
-import sign from './sign';
-import meta from './metadata';
+import extension from './extension';
 import beacon from './beacon';
 import type Modules from './types';
 
@@ -13,10 +11,8 @@ const files = require.context('.', false, /\.ts$/);
 const modules: Modules = {
   networks,
   account,
-  auth,
-  meta,
+  extension,
   beacon,
-  sign,
 };
 
 files.keys().forEach((key) => {

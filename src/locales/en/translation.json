@@ -88,6 +88,7 @@
     "qrHeader": "Scan the QR code using the Fearless mobile app",
     "activeMobileAccountExists": "There is an active connection, please delete mobile wallet and try again",
     "walletAlreadyExists": "You already have this wallet. Please, use existing wallet or delete it and try connect mobile wallet again.",
+    "requestDenied": "Permission request has been denied by mobile app",
     "requesting": "Requesting permissions...",
     "connected": "Mobile wallet connected to Fearless Wallet Extension",
     "noAnswer": "No answer from your wallet received yet. Please make sure the wallet is open",
@@ -168,7 +169,8 @@
       "reward": "Reward",
       "extrinsic": "Extrinsic"
     },
-    "buy": "Buy {asset} with",
+    "buyHeader": "Buy {asset} with",
+    "buy": "Buy",
     "teleportButtonText": "Teleport",
     "from": "From",
     "to": "To",

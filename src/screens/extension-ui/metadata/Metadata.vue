@@ -34,9 +34,9 @@ import Alert from '@/components/Alert.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import store from '@/store';
 import { Components } from '@/router/routes';
-import { ActionTypes } from '@/store/metadata/actions';
+import { ActionTypes } from '@/store/extension/actions';
 import InfoList from '@/screens/extension-ui/InfoList.vue';
-import { GettersTypes as MetaGettersTypes } from '@/store/metadata/getters';
+import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
 @Component({
   components: {
@@ -50,7 +50,7 @@ import { GettersTypes as MetaGettersTypes } from '@/store/metadata/getters';
   },
 })
 export default class MetaRequest extends Vue {
-  @Getter(MetaGettersTypes.getMetaRequests) requests!: MetadataRequest[];
+  @Getter(ExtensionGettersTypes.getMetaRequests) requests!: MetadataRequest[];
 
   get request() {
     return this.requests[0];

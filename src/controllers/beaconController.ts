@@ -20,7 +20,8 @@ import type {
   TCallback,
 } from '@/interfaces';
 import { MOONBEAM_GENESISHASH, WESTEND_GENESISHASH } from '@/consts/networks';
-
+import store from '@/store';
+import { MutationTypes as BeaconMutationTypes } from '@/store/beacon/mutations';
 class BeaconController {
   private app: DAppClient;
   private serializer = new Serializer();
@@ -72,7 +73,9 @@ class BeaconController {
     return this.app.getActiveAccount();
   }
   public async resetConnection() {
-    await this.app.disconnect();
+    await this.app.disconnect().then(() => {
+      store.dispatch(BeaconMutationTypes.DELETE_QR);
+    });
   }
 
   public async connect() {

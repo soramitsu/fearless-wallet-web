@@ -152,9 +152,8 @@ export default class MobileConnect extends Vue {
     this.isLoading = false;
 
     this.requestResponse = output;
-    const scopes = !!account.scopes.length;
 
-    if (!scopes) {
+    if (account.scopes.length === 0) {
       this.permissionRequestDenied = true;
       beaconController.resetConnection();
 

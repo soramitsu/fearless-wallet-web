@@ -52,7 +52,8 @@ export default class PermissionRequest extends Vue {
   get message() {
     if (this.isSuccess) return this.t('connected');
 
-    if (this.isFailed) if (this.isActiveAccountExists) return this.t('activeMobileAccountExists');
+    if (this.isFailed) return this.t('requestDenied');
+    if (this.isActiveAccountExists) return this.t('activeMobileAccountExists');
 
     return '';
   }

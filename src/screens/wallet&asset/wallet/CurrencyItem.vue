@@ -211,8 +211,8 @@ export default class CurrencyItem extends Vue {
       return;
 
     const { mainNetwork, assetId } = this.currency;
-    const availableInNetworks = this.currency.getAvailableInNetworks(this.selectedWallet);
-    const availableNetwork = availableInNetworks[0]?.network ?? '';
+    const [availableInNetworks] = this.currency.getAvailableInNetworks(this.selectedWallet);
+    const availableNetwork = availableInNetworks?.network ?? '';
     const network = this.isCurrentNetwork
       ? this.selectedNetwork
       : mainNetwork !== ''

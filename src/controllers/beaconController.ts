@@ -20,7 +20,8 @@ import type {
   TCallback,
 } from '@/interfaces';
 import { MOONBEAM_GENESISHASH, WESTEND_GENESISHASH } from '@/consts/networks';
-
+import store from '@/store';
+import { MutationTypes as BeaconMutationTypes } from '@/store/beacon/mutations';
 class BeaconController {
   private app: DAppClient;
   private serializer = new Serializer();
@@ -45,6 +46,11 @@ class BeaconController {
             console.error('UNKNOWN ERROR', error);
           },
         },
+        NO_PERMISSIONS: {
+          handler: (error) => {
+            console.error('NO PERMISSIONS ERROR', error);
+          },
+        },
       },
     });
 
@@ -67,7 +73,9 @@ class BeaconController {
     return this.app.getActiveAccount();
   }
   public async resetConnection() {
-    await this.app.disconnect();
+    await this.app.disconnect().then(() => {
+      store.dispatch(BeaconMutationTypes.DELETE_QR);
+    });
   }
 
   public async connect() {
@@ -98,7 +106,7 @@ class BeaconController {
   public async onPairingRequest(callback: (payload: string) => void) {
     this.app.subscribeToEvent(BeaconEvent.PAIR_INIT, async (data) => {
       const code = await this.serializer.serialize(await data.p2pPeerInfo());
-      const uri = this.getTzip10Link('tezos://', code);
+      const uri = this.getTzip10Link('substrate://', code);
 
       callback(uri);
     });

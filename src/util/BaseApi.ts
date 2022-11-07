@@ -84,6 +84,7 @@ export default class BaseApi {
   public static forgetAddress(address: string) {
     keyring.forgetAddress(address);
   }
+
   public static isMobileWallet(address: string): boolean {
     const substrateAddress = BaseApi.encodeAddress(address);
 

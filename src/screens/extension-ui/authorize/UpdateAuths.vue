@@ -16,7 +16,7 @@ import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import AboveForm from '@/components/AboveForm.vue';
 import Button from '@/components/Button.vue';
 import { WalletInfo } from '@/store/accounts/types';
-import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
+import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { TAction } from '@/interfaces';
 import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
 
@@ -34,7 +34,7 @@ export default class Authorize extends Vue {
   @Prop(String) url!: string;
   @Getter(AccountGettersTypes.getWallets) wallets!: WalletInfo[];
   @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
-  @Action(AuthActionTypes.GET_AUTHLIST) fetchAuthList!: TAction<void>;
+  @Action(ExtensionActionTypes.GET_AUTHLIST) fetchAuthList!: TAction<void>;
 
   get buttonText() {
     const count = Object.values(this.state).filter((el) => el.active).length;

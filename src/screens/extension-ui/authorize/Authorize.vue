@@ -47,7 +47,7 @@ import Alert from '@/components/Alert.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import { Components } from '@/router/routes';
 import { Accounts, WalletInfo } from '@/store/accounts/types';
-import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
+import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
@@ -70,8 +70,8 @@ export default class Authorize extends Vue {
   @Getter(AuthGettersTypes.getAuthRequests) requests!: AuthorizeRequest[];
   @Getter(AccountsGettersTypes.getWallets) wallets!: WalletInfo[];
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
-  @Action(AuthActionTypes.APPROVE_AUTH_REQUEST) onApproveAuthRequest!: TAction<ApproveAuthRequest>;
-  @Action(AuthActionTypes.REJECT_AUTH_REQUEST) onRejectAuthRequest!: TAction<AuthorizeRequest>;
+  @Action(ExtensionActionTypes.APPROVE_AUTH_REQUEST) onApproveAuthRequest!: TAction<ApproveAuthRequest>;
+  @Action(ExtensionActionTypes.REJECT_AUTH_REQUEST) onRejectAuthRequest!: TAction<AuthorizeRequest>;
 
   get isAccountsExists() {
     return BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;

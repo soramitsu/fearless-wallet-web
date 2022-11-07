@@ -25,13 +25,13 @@ import { Vue, Component, Prop } from 'vue-property-decorator';
 import { AuthUrlInfo } from '@extension-base/background/types';
 import { Action } from 'vuex-class';
 import { stripUrl } from '@/extension/background/extension-base/src/background/handlers/helpers';
-import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
+import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { TAction } from '@/interfaces';
 
 @Component
 export default class AuthItem extends Vue {
   @Prop(Object) request!: AuthUrlInfo;
-  @Action(AuthActionTypes.DELETE_AUTH_CONNECTION) deleteAuthConnection!: TAction<string>;
+  @Action(ExtensionActionTypes.DELETE_AUTH_CONNECTION) deleteAuthConnection!: TAction<string>;
 
   get stripUrl() {
     return stripUrl(this.request.url);

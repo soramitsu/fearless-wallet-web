@@ -30,7 +30,7 @@ import AboveForm from '@/components/AboveForm.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import AuthItem from '@/screens/extension-ui/authorize/AuthItem.vue';
 import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
-import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
+import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import Scroll from '@/components/Scroll.vue';
 
 @Component({
@@ -49,7 +49,7 @@ export default class ManageAuths extends Vue {
 
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
-  @Action(AuthActionTypes.GET_AUTHLIST) getAuthList!: TAction<void>;
+  @Action(ExtensionActionTypes.GET_AUTHLIST) getAuthList!: TAction<void>;
 
   get showUpdateAuths() {
     return this.url !== '';

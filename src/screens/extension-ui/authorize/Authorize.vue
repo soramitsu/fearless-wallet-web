@@ -48,7 +48,7 @@ import AboveForm from '@/components/AboveForm.vue';
 import { Components } from '@/router/routes';
 import { Accounts, WalletInfo } from '@/store/accounts/types';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
-import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
+import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import BaseApi from '@/util/BaseApi';
@@ -67,7 +67,7 @@ export default class Authorize extends Vue {
   state: Record<string, WalletInfo> = {};
   selectAll = true;
 
-  @Getter(AuthGettersTypes.getAuthRequests) requests!: AuthorizeRequest[];
+  @Getter(ExtensionGettersTypes.getAuthRequests) requests!: AuthorizeRequest[];
   @Getter(AccountsGettersTypes.getWallets) wallets!: WalletInfo[];
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
   @Action(ExtensionActionTypes.APPROVE_AUTH_REQUEST) onApproveAuthRequest!: TAction<ApproveAuthRequest>;

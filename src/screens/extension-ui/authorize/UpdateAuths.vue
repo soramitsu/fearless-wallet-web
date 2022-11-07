@@ -18,7 +18,7 @@ import Button from '@/components/Button.vue';
 import { WalletInfo } from '@/store/accounts/types';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { TAction } from '@/interfaces';
-import { GettersTypes as AuthGettersTypes } from '@/store/auth/getters';
+import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
 @Component({
   components: {
@@ -33,7 +33,7 @@ export default class Authorize extends Vue {
 
   @Prop(String) url!: string;
   @Getter(AccountGettersTypes.getWallets) wallets!: WalletInfo[];
-  @Getter(AuthGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
+  @Getter(ExtensionGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
   @Action(ExtensionActionTypes.GET_AUTHLIST) fetchAuthList!: TAction<void>;
 
   get buttonText() {

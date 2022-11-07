@@ -168,7 +168,8 @@
       "reward": "Reward",
       "extrinsic": "Extrinsic"
     },
-    "buy": "Buy {asset} with",
+    "buyHeader": "Buy {asset} with",
+    "buy": "Buy",
     "teleportButtonText": "Teleport",
     "from": "From",
     "to": "To",

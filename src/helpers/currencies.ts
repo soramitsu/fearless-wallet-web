@@ -98,9 +98,9 @@ function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet) {
 function getProviderUrl(providerName: string, asset: string, address: string) {
   switch (providerName) {
     case 'moonpay':
-      return `https://buy.moonpay.com/?currencyCode=${asset}&walletAddress=${address}&showWalletAddressForm=true`;
+      return `https://buy.moonpay.com/?currencyCode=${asset.toLowerCase()}&walletAddress=${address}&showWalletAddressForm=true`;
     case 'ramp':
-      return `https://buy.ramp.network/?swapAsset=${asset.toUpperCase()}&userAddress=${address}`;
+      return `https://buy.ramp.network/?swapAsset=${asset}&userAddress=${address}`;
     default:
       return '';
   }

@@ -70,7 +70,7 @@
 
     <BuyPopup
       v-if="showBuyPopup"
-      :asset="selectedAsset"
+      :asset="selectedAssetUpper"
       :address="displayAddressByNetwork"
       :providers="providers"
       :closePopup="toggleVisible.bind(null, 'showBuyPopup', false)"
@@ -173,7 +173,7 @@ export default class Asset extends Vue {
   }
 
   get assetPriceString() {
-    return `1 ${this.selectedAsset.toUpperCase()} = ${this.fiatSymbol}${formattedPrice(this.price ?? 0)}`;
+    return `1 ${this.selectedAssetUpper} = ${this.fiatSymbol}${formattedPrice(this.price ?? 0)}`;
   }
 
   get selectedNetwork() {
@@ -184,8 +184,8 @@ export default class Asset extends Vue {
     return this.$route.params.assetId;
   }
 
-  get selectedAsset() {
-    return this.getAssetName(this.selectedAssetId);
+  get selectedAssetUpper() {
+    return this.getAssetName(this.selectedAssetId).toUpperCase();
   }
 
   get price() {
@@ -193,7 +193,7 @@ export default class Asset extends Vue {
   }
 
   get countAssetsString() {
-    if (!this.currentCurrency) return `${this.selectedAsset.toUpperCase()} 0`;
+    if (!this.currentCurrency) return `${this.selectedAssetUpper} 0`;
 
     const totalCountAssets = +this.currentCurrency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork);
     const total = formattedNumber(totalCountAssets, {
@@ -202,7 +202,7 @@ export default class Asset extends Vue {
       removeTrailingZeros: true,
     });
 
-    return `${this.selectedAsset.toUpperCase()} ${total}`;
+    return `${this.selectedAssetUpper} ${total}`;
   }
 
   get balanceInNetworkString() {

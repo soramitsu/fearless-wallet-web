@@ -1,6 +1,5 @@
 <template>
   <SelectPopup
-    class="select-network-popup"
     sizeWidth="big"
     placeholder="common.searchNetwork"
     :value="selectedNetwork"
@@ -100,9 +99,3 @@ export default class SelectNetworkButton extends Vue {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-.select-network-popup {
-  z-index: 299;
-}
-</style>

@@ -21,6 +21,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import Corners from './Corners.vue';
 import Button from './Button.vue';
+import type { ComponentText } from '@/interfaces';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type FontSize = 'small' | 'medium' | 'big';
@@ -32,7 +33,7 @@ type FontSize = 'small' | 'medium' | 'big';
   },
 })
 export default class BorderButton extends Vue {
-  @Prop(String) text!: string;
+  @Prop({ default: '' }) text!: ComponentText;
   @Prop(String) width!: string;
   @Prop(String) iconName!: string;
   @Prop(String) iconColor!: string;

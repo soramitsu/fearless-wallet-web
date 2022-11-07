@@ -21,9 +21,7 @@ import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { isExtension } from '@/helpers/common';
 import BaseApi from '@/util/BaseApi';
-import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
-import { ActionTypes as MetaActionTypes } from '@/store/metadata/actions';
-import { ActionTypes as SignActionTypes } from '@/store/sign/actions';
+import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import NetworksController from '@/controllers/networksController';
@@ -42,9 +40,9 @@ export default class App extends Vue {
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
   @Mutation(AccountsMutationTypes.SET_ADDRESSES) setAddresses!: TMutation<setAddressesProps>;
   @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<setOnlineStatus>;
-  @Action(AuthActionTypes.SUBSCRIBE_AUTH_REQUESTS) authSubscribe!: TAction<unknown>;
-  @Action(SignActionTypes.SUBSCRIBE_SIGN_REQUESTS) signSubscribe!: TAction<unknown>;
-  @Action(MetaActionTypes.SUBSCRIBE_METADATA_REQUESTS) metaSubscribe!: TAction<unknown>;
+  @Action(ExtensionActionTypes.SUBSCRIBE_AUTH_REQUESTS) authSubscribe!: TAction<unknown>;
+  @Action(ExtensionActionTypes.SUBSCRIBE_SIGN_REQUESTS) signSubscribe!: TAction<unknown>;
+  @Action(ExtensionActionTypes.SUBSCRIBE_METADATA_REQUESTS) metaSubscribe!: TAction<unknown>;
 
   async created() {
     await this.subscribeToExtensionEvents();

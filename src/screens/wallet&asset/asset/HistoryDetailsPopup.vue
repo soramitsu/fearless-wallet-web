@@ -302,6 +302,8 @@ export default class SelectNetworkButton extends Vue {
         .copy {
           margin-left: 10px;
           filter: invert(0.35);
+          width: 20px;
+          height: 20px;
 
           &:hover {
             cursor: pointer;

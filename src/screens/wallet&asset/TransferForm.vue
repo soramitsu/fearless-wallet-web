@@ -196,6 +196,8 @@ export default class SendForm extends Vue {
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.getOnlineStatus) onlineStatus!: string;
+
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
 
@@ -246,6 +248,8 @@ export default class SendForm extends Vue {
   }
 
   get buttonText() {
+    if (!this.onlineStatus) return 'No Internet Connection';
+
     if (!this.currency) return '';
 
     if (this.step === 2) return this.extrinsicType === 'transfer' ? 'Send' : 'Teleport';
@@ -261,6 +265,7 @@ export default class SendForm extends Vue {
   }
 
   get buttonDisabled() {
+    if (!this.onlineStatus) return true;
     if (this.step === 2) return false;
 
     return !this.isAllFieldsCorrect || +this.syncedAmount === 0 || this.syncedPartialFee === '';

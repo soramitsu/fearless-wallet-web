@@ -546,6 +546,8 @@ export type Subscriptions = Record<string, chrome.runtime.Port>;
 export interface IState {
   registry: TypeRegistry;
   metaStore: MetadataStore;
+  authUrls: AuthUrls;
+  defaultAuthAccountSelection: string[];
   injectedProviders: Map<chrome.runtime.Port, ProviderInterface>;
   notification: string;
   subscriptions: Subscriptions;

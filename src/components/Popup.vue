@@ -200,7 +200,8 @@ export default class Popup extends Vue {
   }
 
   .width-big {
-    width: 370px;
+    min-width: 370px;
+    max-width: 450px;
   }
 
   .width-medium {

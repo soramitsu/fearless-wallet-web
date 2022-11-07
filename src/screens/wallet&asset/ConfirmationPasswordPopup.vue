@@ -109,7 +109,19 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Action(SignActionsTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
 
+  async mounted() {
+    if (!isExtension() && this.isSignMobile) return;
+
+    if (this.transactionId !== undefined) {
+      const { isLocked } = await isSignLocked(this.transactionId);
+      this.isLocked = isLocked;
+      this.isSavePass = !this.isLocked;
+    }
+  }
+
   get disabledButton() {
+    if (!this.isLocked) return false;
+
     return this.password === '' || this.isErrorPassword;
   }
 
@@ -172,17 +184,6 @@ export default class ConfirmationPasswordPopup extends Vue {
     this.isErrorPassword = false;
   }
 
-  async mounted() {
-    if (!isExtension() && !this.isSignMobile) return;
-
-    if (this.transactionId === undefined) return;
-
-    const { isLocked } = await isSignLocked(this.transactionId);
-
-    this.isLocked = isLocked;
-    this.isSavePass = !this.isLocked;
-  }
-
   close() {
     if (!this.isTransactionInit) {
       this.$emit('close');
@@ -237,13 +238,13 @@ export default class ConfirmationPasswordPopup extends Vue {
       if (this.isErrorPassword) return;
     }
 
-    if (this.transactionId)
+    if (this.transactionId) {
       await this.onSignApprove({
         id: this.transactionId,
         isSavePass: this.isSavePass,
         password: this.password,
       });
-    else await this.currency?.send(this.address);
+    } else await this.currency?.send(this.address);
   }
 }
 </script>

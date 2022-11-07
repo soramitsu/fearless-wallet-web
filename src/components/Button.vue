@@ -27,7 +27,7 @@ type Type = 'primary' | 'secondary' | 'link';
 export default class Button extends Vue {
   iconClass = ['icon'];
 
-  @Prop(String) text!: ComponentText;
+  @Prop({ default: '' }) text!: ComponentText;
   @Prop(String) width!: string;
   @Prop(String) iconName!: string;
   @Prop(String) iconColor!: string;

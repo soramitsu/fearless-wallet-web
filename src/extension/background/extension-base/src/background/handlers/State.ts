@@ -106,9 +106,7 @@ export default class State {
   }
 
   static async getFromStorage(key: (keyof IState)[]): Promise<Pick<IState, typeof key[number]>> {
-    const values = (await chrome.storage.local.get(key).then((value) => value)) as Pick<IState, typeof key[number]>;
-
-    return values;
+    return chrome.storage.local.get(key) as Promise<Pick<IState, typeof key[number]>>;
   }
 
   private static async numAuthRequests() {
@@ -167,7 +165,7 @@ export default class State {
   }
 
   static async injectFromStorage() {
-    const { authUrls, defaultAuthAccountSelection } = await chrome.storage.local.get([
+    const { authUrls, defaultAuthAccountSelection } = await State.getFromStorage([
       'authUrls',
       'defaultAuthAccountSelection',
     ]);

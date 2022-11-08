@@ -342,7 +342,7 @@ export default class CurrencyController {
 
     this.options = {
       transactionsOptions: { tip: DefaultTip },
-      historyOptions: this.getMockHistory(networkName, precisionAmount, to),
+      historyOptions: { networkName, amount: precisionAmount, to },
       api,
     };
 
@@ -404,7 +404,7 @@ export default class CurrencyController {
     const params = getNativeTeleportParams(destNet, toAddress, precisionAmount);
 
     this.extrinsic = tx(...params);
-    this.options = { historyOptions: this.getMockHistory(originNet, precisionAmount, toAddress), api };
+    this.options = { historyOptions: { networkName: originNet, amount: precisionAmount, to: toAddress }, api };
   }
 
   public async createOrmlTeleportExtrinsic(
@@ -418,7 +418,7 @@ export default class CurrencyController {
     const params = getOrmlTeleportParams(originNet, destNet, toAddress);
 
     this.extrinsic = api!.tx.xTokens.transfer(ormlOptions, precisionAmount, params, FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT);
-    this.options = { historyOptions: this.getMockHistory(originNet, precisionAmount, toAddress), api };
+    this.options = { historyOptions: { networkName: originNet, amount: precisionAmount, to: toAddress }, api };
   }
 
   public async getPartialFee(wallet: Wallet, _network: string): Promise<string> {
@@ -485,14 +485,6 @@ export default class CurrencyController {
 
   public clearSendStatus() {
     this.transactionStatus = undefined;
-  }
-
-  private getMockHistory(networkName: string, amount: string, to: string) {
-    return {
-      networkName,
-      amount,
-      to,
-    };
   }
 
   private async setMockHistory(from: string, success: boolean): Promise<void> {

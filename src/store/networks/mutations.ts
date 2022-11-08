@@ -117,8 +117,6 @@ const mutations: MutationTree<State> & Mutations = {
       const oldHistoryNodesWithoutMock = oldHistory?.nodes.filter(({ isMock }) => !isMock) ?? [];
 
       const filteredNodes = nodes.filter(({ timestamp }) => {
-        const [oldNodes] = oldHistory.nodes;
-        const oldFirstTimespan = +oldNodes.timestamp ?? 0;
         const oldFirstTimespan = +oldHistoryNodesWithoutMock[0].timestamp ?? 0;
 
         return +timestamp > oldFirstTimespan;

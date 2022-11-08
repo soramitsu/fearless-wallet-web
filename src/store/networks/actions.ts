@@ -41,20 +41,23 @@ export type Actions = {
 const PAGE_SIZE = 100;
 
 const actions: ActionTree<State, State> & Actions = {
-  async [ActionTypes.LOAD_JSONS]({ commit, state }, { chainsUrl, assetsUrl, fiatsUrl }) {
-    if (state.assetsJson.length === 0) {
+  async [ActionTypes.LOAD_JSONS](
+    { commit, state: { assetsJson, fiats, networks } },
+    { chainsUrl, assetsUrl, fiatsUrl }
+  ) {
+    if (assetsJson.length === 0) {
       const { data: assetsJson } = await axios.get<AssetJson[]>(assetsUrl);
 
       commit(MutationTypes.SET_ASSETS_JSON, { assetsJson });
     }
 
-    if (state.fiats.length === 0) {
+    if (fiats.length === 0) {
       const { data: fiats } = await axios.get<FiatJson[]>(fiatsUrl);
 
       commit(MutationTypes.SET_FIATS_JSON, { fiats });
     }
 
-    if (state.networks.length === 0) {
+    if (networks.length === 0) {
       const { data: networksJson } = await axios.get<NetworkJson[]>(chainsUrl);
 
       const networks: Networks = networksJson.map(
@@ -161,7 +164,6 @@ const actions: ActionTree<State, State> & Actions = {
     // if the list of networks is not transferred, then we subscribe to all
 
     const networks = networksProps ?? state.networks;
-    console.log(networks, networksProps, 'networks');
     const promises = networks.map(async (network) => {
       const { isEthereumNetwork, name: networkName } = network;
 
@@ -218,7 +220,6 @@ const actions: ActionTree<State, State> & Actions = {
     };
 
     connectToApi(networkApi, apiOptions);
-    console.log(getAccounts(), 'accounts to sub balances');
     await dispatch(ActionTypes.SUBSCRIBE_TO_BALANCES, {
       accounts: getAccounts(),
       loadHistory: false,

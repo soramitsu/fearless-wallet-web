@@ -197,12 +197,14 @@ export default class MobileConnect extends Vue {
 .import-button {
   margin-top: 10px;
 }
+
 .error__container {
   display: flex;
   flex-flow: column;
   height: 100%;
   justify-content: space-between;
 }
+
 .permission__content {
   height: 100%;
   display: flex;

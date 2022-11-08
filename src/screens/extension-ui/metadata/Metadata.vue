@@ -34,7 +34,7 @@ import Alert from '@/components/Alert.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import store from '@/store';
 import { Components } from '@/router/routes';
-import { ActionTypes } from '@/store/extension/actions';
+import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import InfoList from '@/screens/extension-ui/InfoList.vue';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
@@ -57,13 +57,13 @@ export default class MetaRequest extends Vue {
   }
 
   onApprove() {
-    store.dispatch(ActionTypes.APPROVE_METADATA_REQUEST, this.request); // TODO: @Action
+    store.dispatch(ExtensionActionTypes.APPROVE_META_REQUEST, this.request); // TODO: @Action
 
     this.$router.push({ name: Components.Wallet });
   }
 
   onReject() {
-    store.dispatch(ActionTypes.REJECT_METADATA_REQUEST, this.request); // TODO: @Action
+    store.dispatch(ExtensionActionTypes.REJECT_META_REQUEST, this.request); // TODO: @Action
 
     this.$router.push({ name: Components.Wallet });
   }

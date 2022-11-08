@@ -58,7 +58,7 @@ import InfoItem from '@/screens/extension-ui/InfoItem.vue';
 import AboveForm from '@/components/AboveForm.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
-import { ActionTypes as ExtensionActionsTypes } from '@/store/extension/actions';
+import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
 import Loader from '@/components/Loader.vue';
 import { beaconController } from '@/controllers/beaconController';
@@ -84,7 +84,7 @@ export default class Auth extends Vue {
 
   @Getter(ExtensionGettersTypes.getSignRequestPayload) payload!: SignerPayloadJSON;
   @Getter(ExtensionGettersTypes.getSignRequest) request!: SigningRequest;
-  @Action(ExtensionActionsTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
+  @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
 
   async mounted() {
     if (this.isMobileSignRequired) {

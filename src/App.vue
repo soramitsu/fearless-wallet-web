@@ -40,18 +40,16 @@ export default class App extends Vue {
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
   @Mutation(AccountsMutationTypes.SET_ADDRESSES) setAddresses!: TMutation<setAddressesProps>;
   @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<setOnlineStatus>;
-  @Action(ExtensionActionTypes.SUBSCRIBE_AUTH_REQUESTS) authSubscribe!: TAction<unknown>;
-  @Action(ExtensionActionTypes.SUBSCRIBE_SIGN_REQUESTS) signSubscribe!: TAction<unknown>;
-  @Action(ExtensionActionTypes.SUBSCRIBE_METADATA_REQUESTS) metaSubscribe!: TAction<unknown>;
+  @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
 
-  async created() {
-    await this.subscribeToExtensionEvents();
+  created() {
+    if (isExtension()) this.extensionSubscribe();
     this.setWallet();
     this.addEventOnline();
     this.connectToNodes();
   }
 
-  async mounted() {
+  mounted() {
     this.subscribeToBalancesOfNetworks();
   }
 
@@ -68,10 +66,6 @@ export default class App extends Vue {
 
     await loadJsons();
     await connectToNodes();
-  }
-
-  subscribeToExtensionEvents() {
-    if (isExtension()) return Promise.all([this.signSubscribe(), this.authSubscribe(), this.metaSubscribe()]);
   }
 
   async subscribeToBalancesOfNetworks() {
@@ -115,7 +109,7 @@ export default class App extends Vue {
   }
 
   getNewAccounts(accounts: SubjectInfo, type: 'accounts' | 'addresses') {
-    const result = {} as SubjectInfo;
+    const result: SubjectInfo = {};
 
     for (const address in accounts) {
       if (this[type][address] === undefined) result[address] = accounts[address];

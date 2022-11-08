@@ -71,7 +71,6 @@ import BaseApi from '@/util/BaseApi';
 import URLS from '@/consts/urls';
 import AboveForm from '@/components/AboveForm.vue';
 import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
-import { isExtension } from '@/helpers/common';
 
 @Component({
   components: {
@@ -86,10 +85,6 @@ import { isExtension } from '@/helpers/common';
 export default class Welcome extends Vue {
   get showBackWalletIcon() {
     return BaseApi.getAccounts().length !== 0 || BaseApi.getAddresses().length !== 0;
-  }
-
-  get isExtension() {
-    return isExtension();
   }
 
   openTermsAndConditions() {

@@ -71,7 +71,7 @@ import ValidatedInput from '@/components/ValidatedInput.vue';
 import NetworkLogo from '@/components/NetworkLogo.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { ActionTypes as SignActionsTypes, ApprovePayload } from '@/store/extension/actions';
+import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/extension/actions';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { GetNetworkGenesisHash } from '@/store/networks/types';
 import SignController from '@/controllers/signController';
@@ -106,8 +106,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(Object) payload?: SignerPayloadJSON;
 
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
-  @Action(SignActionsTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: TAction<ApprovePayload>;
-  @Action(SignActionsTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
+  @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: TAction<ApprovePayload>;
+  @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 

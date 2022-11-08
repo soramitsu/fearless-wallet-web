@@ -1,39 +1,42 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
-import type { AugmentedActionContext as Context, Accounts } from '@/store/networks/types';
-import type { Network, Node, ApiOptions } from '@/interfaces';
+import type { Network, Node, ApiOptions, AssetJson } from '@/interfaces';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
 import { formatBalance } from '@/util/balances';
 import { MutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { accountController } from '@/controllers/accountController';
 import NetworksController from '@/controllers/networksController';
 import BaseApi from '@/util/BaseApi';
 import { ORML_PALLETS_TYPES, getOptions } from '@/util/assets';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
-import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { getAccounts } from '@/helpers/accounts';
+import store from '@/store';
 
-const connectedHandler = (context: Context, apiOptions: ApiOptions, { url, name }: Node, network: Network) => {
-  const { commit } = context;
+interface ISubscribeData {
+  data: AccountData;
+}
+
+const connectedHandler = (apiOptions: ApiOptions, { url, name }: Node, network: Network) => {
   const networkName = network.name;
 
   apiOptions.apiRetry = 0;
 
-  commit(MutationTypes.SET_NETWORK_ACTIVE_NODE, {
+  store.commit(MutationTypes.SET_NETWORK_ACTIVE_NODE, {
     network: networkName,
     name,
     url,
   });
 
-  commit(MutationTypes.SET_NETWORK_API, {
+  store.commit(MutationTypes.SET_NETWORK_API, {
     network: networkName,
     api: apiOptions.api!,
     provider: apiOptions.provider!,
   });
 };
 
-const disconnectHandler = (context: Context, apiOptions: ApiOptions, network: Network, provider: WsProvider) => {
+const disconnectHandler = (apiOptions: ApiOptions, network: Network, provider: WsProvider) => {
   apiOptions.apiRetry += 1;
 
   if (apiOptions.apiRetry === MAX_CONTINUE_RETRY) {
@@ -44,21 +47,19 @@ const disconnectHandler = (context: Context, apiOptions: ApiOptions, network: Ne
     apiOptions.api = undefined;
     apiOptions.provider = undefined;
 
-    if (navigator.onLine) connectToApi(context, network, apiOptions); // eslint-disable-line no-use-before-define
+    if (navigator.onLine) connectToApi(network, apiOptions); // eslint-disable-line no-use-before-define
   }
 };
 
-const readyHandler = (context: Context, network: Network) => {
-  const { dispatch } = context;
-
-  dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, {
+const readyHandler = (network: Network) => {
+  store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, {
     accounts: getAccounts(),
     loadHistory: false,
     networksProps: [network],
   });
 };
 
-function connectToApi(context: Context, network: Network, apiOptions: ApiOptions): void {
+function connectToApi(network: Network, apiOptions: ApiOptions): void {
   const autoSelectNodes = accountController.getAutoSelectNodesValue();
   const activeNodes = accountController.getActiveNodes();
   const { name: networkName, nodes } = network;
@@ -74,35 +75,31 @@ function connectToApi(context: Context, network: Network, apiOptions: ApiOptions
   apiOptions.api = api;
   apiOptions.provider = provider;
 
-  api.on('connected', () => connectedHandler(context, apiOptions, node, network));
-  api.on('disconnected', () => disconnectHandler(context, apiOptions, network, provider));
-  api.on('ready', () => readyHandler(context, network));
+  api.on('connected', () => connectedHandler(apiOptions, node, network));
+  api.on('disconnected', () => disconnectHandler(apiOptions, network, provider));
+  api.on('ready', () => readyHandler(network));
 }
 
-function subscribeUtilityAssetsBalances(context: Context, address: string, network: Network): void {
-  const { name: networkName, parentId, api, assets: networkAssets } = network;
-  const networkUtilityAsset = networkAssets.find(
+function subscribeUtilityAssetsBalances(address: string, { name: networkName, parentId, api, assets }: Network): void {
+  const networkUtilityAsset = assets.find(
     ({ isUtility, type }) => isUtility && !ORML_PALLETS_TYPES.includes(type as string)
   )!;
 
   if (!networkUtilityAsset) return;
 
-  const { getters, commit, state } = context;
-  const { assetsJson } = state;
   const { assetId, type } = networkUtilityAsset;
-  const { precision } = assetsJson.find((asset) => asset.id === assetId)!;
-
-  api!.rx.query.system.account(address).subscribe(async (result) => {
-    const data = (result as any).data;
-    const balance = formatBalance(data as AccountData, precision);
-    const historyForNetwork = getters[NetworksGettersTypes.getHistory](assetId, address, networkName);
+  const { precision } = (store.getters[NetworksGettersTypes.getAssetsJson] as AssetJson[]).find(
+    ({ id }) => id === assetId
+  )!;
+  api!.rx.query.system.account<ISubscribeData>(address).subscribe(async ({ data }) => {
+    const historyForNetwork = store.getters[NetworksGettersTypes.getHistory](assetId, address, networkName);
     const delay = historyForNetwork ? 45 : 0;
 
-    commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
+    store.commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
       walletAddress: address,
       network: networkName,
       assetId,
-      balance,
+      balance: formatBalance(data, precision),
       parentId,
       type,
     });
@@ -111,35 +108,32 @@ function subscribeUtilityAssetsBalances(context: Context, address: string, netwo
   });
 }
 
-function subscribeOrmlAssetsBalances(context: Context, address: string, network: Network): void {
-  const { commit, state } = context;
-  const { assetsJson } = state;
+function subscribeOrmlAssetsBalances(address: string, network: Network): void {
   const { name: networkName, api, assets: networkAssets, parentId } = network;
 
   networkAssets.forEach(({ assetId, type }) => {
     if (type === undefined) return;
 
-    const { precision } = assetsJson.find((asset) => asset.id === assetId)!;
-    const { symbol } = assetsJson.find(({ id }) => id === assetId)!;
-    const options = getOptions(symbol, type, assetId);
+    const { symbol, precision } = (store.getters[NetworksGettersTypes.getAssetsJson] as AssetJson[]).find(
+      ({ id }) => id === assetId
+    )!;
 
     if (symbol === 'csm') return; // TODO: fix
 
-    const isEquilibrium = type === 'equilibrium';
+    const options = getOptions(symbol, type, assetId);
     const equilibriumAsset = BaseApi.getEquilibriumAssetName(symbol);
     const query = api!.rx.query;
-    const pallet = isEquilibrium
-      ? query.eqBalances.account(address, equilibriumAsset)
-      : query.tokens?.accounts(address, options);
+    const pallet =
+      type === 'equilibrium'
+        ? query.eqBalances.account<OrmlAccountData>(address, equilibriumAsset)
+        : query.tokens?.accounts<OrmlAccountData>(address, options);
 
     pallet.subscribe(async (data) => {
-      const balance = formatBalance(data as unknown as OrmlAccountData, precision);
-
-      commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
+      store.commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
         walletAddress: address,
         network: networkName,
         assetId,
-        balance,
+        balance: formatBalance(data, precision),
         parentId,
         type,
       });
@@ -147,15 +141,13 @@ function subscribeOrmlAssetsBalances(context: Context, address: string, network:
   });
 }
 
-async function subscribeAssetsBalances(context: Context, address: string, network: Network): Promise<void> {
+async function subscribeAssetsBalances(address: string, network: Network): Promise<void> {
   const { api } = network;
 
   if (api === undefined) return;
 
-  await api.isReadyOrError; // NOTE: now this is not necessary, since this function is called when the api is ready
-
-  subscribeUtilityAssetsBalances(context, address, network);
-  subscribeOrmlAssetsBalances(context, address, network);
+  subscribeUtilityAssetsBalances(address, network);
+  subscribeOrmlAssetsBalances(address, network);
 }
 
 export { connectToApi, subscribeAssetsBalances };

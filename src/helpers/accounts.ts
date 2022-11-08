@@ -20,12 +20,10 @@ function getChainAccounts(networks: Networks, wallet: Wallet): ChainAccount[] {
         }
       : wallet;
 
-    const address = BaseApi.formatAddress(finalWallet, name);
-
     return {
       network: name,
       asset,
-      address,
+      address: BaseApi.formatAddress(finalWallet, name),
       isReplaced: !!replacedAddress,
     };
   });

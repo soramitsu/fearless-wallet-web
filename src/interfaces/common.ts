@@ -8,6 +8,7 @@ type TAction<T> = (props?: T) => Promise<void>;
 interface Meta {
   name: string;
   ethereumAddress: string;
+  isMobile: boolean;
 }
 
 type ParentAddress = string;

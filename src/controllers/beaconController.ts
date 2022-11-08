@@ -74,7 +74,7 @@ class BeaconController {
   }
   public async resetConnection() {
     await this.app.disconnect().then(() => {
-      store.dispatch(BeaconMutationTypes.DELETE_QR);
+      store.commit(BeaconMutationTypes.DELETE_QR);
     });
   }
 

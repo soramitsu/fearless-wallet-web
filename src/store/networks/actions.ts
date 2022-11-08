@@ -15,7 +15,7 @@ import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
 import { ETHEREUM_NETWORKS, NOT_SUPPORTED_SUBQUERY_NETWORKS } from '@/consts/networks';
 import { loadHistory } from '@/subquery/history';
-import { getReplacedMetaTyped } from '@/helpers/common';
+import { getMetaTyped, getReplacedMetaTyped } from '@/helpers/common';
 import { getMockCurrencies } from '@/helpers/currencies';
 import { connectToApi, subscribeAssetsBalances } from '@/helpers/networksConnection';
 import { getAccounts } from '@/helpers/accounts';
@@ -41,20 +41,23 @@ export type Actions = {
 const PAGE_SIZE = 100;
 
 const actions: ActionTree<State, State> & Actions = {
-  async [ActionTypes.LOAD_JSONS]({ commit, state }, { chainsUrl, assetsUrl, fiatsUrl }) {
-    if (state.assetsJson.length === 0) {
+  async [ActionTypes.LOAD_JSONS](
+    { commit, state: { assetsJson, fiats, networks } },
+    { chainsUrl, assetsUrl, fiatsUrl }
+  ) {
+    if (assetsJson.length === 0) {
       const { data: assetsJson } = await axios.get<AssetJson[]>(assetsUrl);
 
       commit(MutationTypes.SET_ASSETS_JSON, { assetsJson });
     }
 
-    if (state.fiats.length === 0) {
+    if (fiats.length === 0) {
       const { data: fiats } = await axios.get<FiatJson[]>(fiatsUrl);
 
       commit(MutationTypes.SET_FIATS_JSON, { fiats });
     }
 
-    if (state.networks.length === 0) {
+    if (networks.length === 0) {
       const { data: networksJson } = await axios.get<NetworkJson[]>(chainsUrl);
 
       const networks: Networks = networksJson.map(
@@ -93,7 +96,7 @@ const actions: ActionTree<State, State> & Actions = {
         nodeIndex: 0,
       };
 
-      connectToApi(context, network, apiOptions);
+      connectToApi(network, apiOptions);
     });
   },
 
@@ -157,46 +160,47 @@ const actions: ActionTree<State, State> & Actions = {
     }
   },
 
-  async [ActionTypes.SUBSCRIBE_TO_BALANCES](context, { accounts, networksProps }) {
-    const { networks: networksStore } = context.state;
-
+  async [ActionTypes.SUBSCRIBE_TO_BALANCES]({ state }, { accounts, networksProps }) {
     // if the list of networks is not transferred, then we subscribe to all
-    const networks = networksProps ?? networksStore;
 
+    const networks = networksProps ?? state.networks;
     const promises = networks.map(async (network) => {
       const { isEthereumNetwork, name: networkName } = network;
 
-      Object.entries(accounts).forEach(async ([walletAddress, { type: accountType, json }]) => {
+      Object.entries(accounts).forEach(([walletAddress, { type: accountType, json }]) => {
         const { isReplacedAccount, replacedSettings } = getReplacedMetaTyped(json.meta);
-        const { meta } = json;
         const replacedNetworksList = Object.values(replacedSettings ?? []).flat();
         // if it is a replaced account and the iterated network is not in the networksList
         if (isReplacedAccount && !replacedNetworksList.includes(networkName)) return;
 
-        // ethereum accounts only subscribe to the ethereum networks and
-        // substrate accounts only subscribe to the substrate networks
-        if (!meta.isMobile) {
-          if ((!isEthereumNetwork && accountType === 'ethereum') || (isEthereumNetwork && accountType !== 'ethereum'))
-            return;
+        const { isMobile, ethereumAddress } = getMetaTyped(json.meta);
+
+        if (!isMobile) {
+          const isEthAccountType = accountType === 'ethereum';
+
+          // ethereum accounts only subscribe to the ethereum networks and
+          // substrate accounts only subscribe to the substrate network
+          if ((!isEthereumNetwork && isEthAccountType) || (isEthereumNetwork && !isEthAccountType)) return;
         }
 
         //subscribe only if mobile wallet have eth address and it's eth network
-        if (meta.isMobile && meta.ethereumAddress && isEthereumNetwork) {
-          subscribeAssetsBalances(context, meta.ethereumAddress as string, network);
+        if (isMobile && ethereumAddress && isEthereumNetwork) {
+          subscribeAssetsBalances(ethereumAddress, network);
 
           return;
         }
 
-        subscribeAssetsBalances(context, walletAddress, network);
+        subscribeAssetsBalances(walletAddress, network);
       });
     });
 
     await Promise.allSettled(promises);
   },
 
-  async [ActionTypes.TOGGLE_ACTIVE_NODE](context, { network, nodeName, nodeUrl: nodeUrlProp, oldNodeUrl }) {
-    const { state, commit, dispatch } = context;
-    const networks = state.networks;
+  async [ActionTypes.TOGGLE_ACTIVE_NODE](
+    { state: { networks }, commit, dispatch },
+    { network, nodeName, nodeUrl: nodeUrlProp, oldNodeUrl }
+  ) {
     const networkApi = networks.find(({ name }) => name === network)!;
     const nodeUrl = nodeUrlProp === '' ? networkApi.nodes[0].url : nodeUrlProp;
 
@@ -215,8 +219,7 @@ const actions: ActionTree<State, State> & Actions = {
       nodeIndex: 0,
     };
 
-    connectToApi(context, networkApi, apiOptions);
-
+    connectToApi(networkApi, apiOptions);
     await dispatch(ActionTypes.SUBSCRIBE_TO_BALANCES, {
       accounts: getAccounts(),
       loadHistory: false,

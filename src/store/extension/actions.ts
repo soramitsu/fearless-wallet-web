@@ -36,9 +36,10 @@ export enum ActionTypes {
   APPROVE_SIGN_PASSWORD = 'APPROVE_SIGN_PASSWORD',
   SIGN_SIGNATURE = 'SIGN_SIGNATURE',
 
-  SUBSCRIBE_METADATA_REQUESTS = 'SUBSCRIBE_METADATA_REQUESTS',
-  APPROVE_METADATA_REQUEST = 'APPROVE_METADATA_REQUEST',
-  REJECT_METADATA_REQUEST = 'REJECT_METADATA_REQUEST',
+  SUBSCRIBE_META_REQUESTS = 'SUBSCRIBE_META_REQUESTS',
+  APPROVE_META_REQUEST = 'APPROVE_META_REQUEST',
+  REJECT_META_REQUEST = 'REJECT_META_REQUEST',
+  SUBSCRIBE_EXTENSION_REQUESTS = 'SUBSCRIBE_EXTENSION_REQUESTS',
 }
 
 export type ApprovePayload = {
@@ -57,20 +58,21 @@ type AugmentedActionContext = {
 } & Omit<ActionContext<State, any>, 'commit'>;
 
 export type Actions = {
-  [ActionTypes.SUBSCRIBE_AUTH_REQUESTS](context: AugmentedActionContext): Promise<void>;
+  [ActionTypes.SUBSCRIBE_AUTH_REQUESTS](context: AugmentedActionContext): Promise<boolean>;
   [ActionTypes.APPROVE_AUTH_REQUEST](context: AugmentedActionContext, props: ApproveAuthRequest): Promise<void>;
   [ActionTypes.REJECT_AUTH_REQUEST](context: AugmentedActionContext, props: AuthorizeRequest): Promise<void>;
   [ActionTypes.GET_AUTHLIST](context: AugmentedActionContext): Promise<void>;
   [ActionTypes.DELETE_AUTH_CONNECTION](context: AugmentedActionContext, props: string): Promise<void>;
 
-  [ActionTypes.SUBSCRIBE_METADATA_REQUESTS](context: AugmentedActionContext): Promise<void>;
-  [ActionTypes.APPROVE_METADATA_REQUEST](context: AugmentedActionContext, props: MetadataRequest): Promise<void>;
-  [ActionTypes.REJECT_METADATA_REQUEST](context: AugmentedActionContext, props: MetadataRequest): Promise<void>;
+  [ActionTypes.SUBSCRIBE_META_REQUESTS](context: AugmentedActionContext): Promise<boolean>;
+  [ActionTypes.APPROVE_META_REQUEST](context: AugmentedActionContext, props: MetadataRequest): Promise<void>;
+  [ActionTypes.REJECT_META_REQUEST](context: AugmentedActionContext, props: MetadataRequest): Promise<void>;
 
-  [ActionTypes.SUBSCRIBE_SIGN_REQUESTS](context: AugmentedActionContext): Promise<void>;
+  [ActionTypes.SUBSCRIBE_SIGN_REQUESTS](context: AugmentedActionContext): Promise<boolean>;
   [ActionTypes.SIGN_CANCEL](context: AugmentedActionContext, id: string): Promise<void>;
   [ActionTypes.APPROVE_SIGN_PASSWORD](context: AugmentedActionContext, payload: ApprovePayload): Promise<void>;
   [ActionTypes.SIGN_SIGNATURE](context: AugmentedActionContext, payload: SignPayload): Promise<void>;
+  [ActionTypes.SUBSCRIBE_EXTENSION_REQUESTS](context: AugmentedActionContext): Promise<void[]>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
@@ -87,7 +89,7 @@ const actions: ActionTree<State, State> & Actions = {
       }
     };
 
-    subscribeAuthorizeRequests(callback);
+    return subscribeAuthorizeRequests(callback);
   },
 
   async [ActionTypes.APPROVE_AUTH_REQUEST]({ commit }, { request, accounts }) {
@@ -114,7 +116,7 @@ const actions: ActionTree<State, State> & Actions = {
     commit(MutationTypes.DELETE_AUTHLIST_ITEM, id);
   },
 
-  async [ActionTypes.SUBSCRIBE_METADATA_REQUESTS]({ commit }) {
+  async [ActionTypes.SUBSCRIBE_META_REQUESTS]({ commit }) {
     const callback = (requests: MetadataRequest[]) => {
       const [request] = requests;
 
@@ -127,16 +129,16 @@ const actions: ActionTree<State, State> & Actions = {
       }
     };
 
-    subscribeMetadataRequests(callback);
+    return subscribeMetadataRequests(callback);
   },
 
-  async [ActionTypes.APPROVE_METADATA_REQUEST]({ commit }, payload) {
+  async [ActionTypes.APPROVE_META_REQUEST]({ commit }, payload) {
     await approveMetaRequest(payload.id);
 
     commit(MutationTypes.DELETE_REQUEST, 'meta');
   },
 
-  async [ActionTypes.REJECT_METADATA_REQUEST]({ commit }, payload) {
+  async [ActionTypes.REJECT_META_REQUEST]({ commit }, payload) {
     await rejectMetaRequest(payload.id);
     commit(MutationTypes.DELETE_REQUEST, 'meta');
   },
@@ -154,7 +156,7 @@ const actions: ActionTree<State, State> & Actions = {
       }
     };
 
-    subscribeSigningRequests(callback);
+    return subscribeSigningRequests(callback);
   },
 
   async [ActionTypes.APPROVE_SIGN_PASSWORD]({ commit }, { id, isSavePass, password }) {
@@ -178,6 +180,13 @@ const actions: ActionTree<State, State> & Actions = {
     commit(MutationTypes.DELETE_REQUEST, 'sign');
 
     router.push({ name: Components.Wallet });
+  },
+  [ActionTypes.SUBSCRIBE_EXTENSION_REQUESTS]({ dispatch }) {
+    const auth = dispatch(ActionTypes.SUBSCRIBE_AUTH_REQUESTS);
+    const sign = dispatch(ActionTypes.SUBSCRIBE_SIGN_REQUESTS);
+    const meta = dispatch(ActionTypes.SUBSCRIBE_META_REQUESTS);
+
+    return Promise.all([auth, sign, meta]);
   },
 };
 

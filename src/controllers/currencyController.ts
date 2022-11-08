@@ -11,6 +11,7 @@ import type {
 import type { SubmittableExtrinsic, SignerOptions } from '@polkadot/api/submittable/types';
 import type { Wallet } from '@/store/accounts/types';
 import type { ApiPromise } from '@polkadot/api';
+import type { SetHistoryProps } from '@/store/networks/types';
 import BaseApi from '@/util/BaseApi';
 import LocalStorageController from '@/controllers/localStorageController';
 import NetworksController from '@/controllers/networksController';
@@ -27,6 +28,10 @@ import { FPNumber } from '@/util/fp';
 import { getReplacedMetaTyped } from '@/helpers/common';
 import { getOptions } from '@/util/assets';
 import { BeaconSigner } from '@/extension/background/extension-base/src/background/BeaconSigner';
+import store from '@/store';
+import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
+
+type TransactionStatus = 'success' | 'failed' | 'pending';
 
 type NetworkProps = {
   label: string;
@@ -36,7 +41,11 @@ type NetworkProps = {
   type: TypeAsset;
 };
 
-type Options = Partial<SignerOptions> & { api?: ApiPromise };
+type Options = {
+  transactionsOptions?: Partial<SignerOptions>;
+  historyOptions?: { networkName: string; amount: string; to: string };
+  api?: ApiPromise;
+};
 
 export default class CurrencyController {
   private readonly lsCurrency = new LocalStorageController('currency');
@@ -48,7 +57,7 @@ export default class CurrencyController {
   public hours24Change = 0;
   public displayName!: string;
   public currenciesVisible!: Record<string, Record<string, boolean>>;
-  private transactionStatus: 'success' | 'failed' | 'pending' | undefined;
+  public transactionStatus?: TransactionStatus;
 
   constructor(
     public mainNetwork: string,
@@ -59,7 +68,6 @@ export default class CurrencyController {
     public relayChain: RelayChainName
   ) {
     this.displayName = displayName ?? asset;
-    this.transactionStatus = undefined;
     this.currenciesVisible = this.lsCurrency.get(this.visibleStorageName).value ?? {};
   }
 
@@ -322,11 +330,9 @@ export default class CurrencyController {
     return FPNumber.gte(residualBalance, FPNumber.fromCodecValue(exDeposit, precision));
   }
 
-  public createTransferExtrinsic(
-    to: string,
-    amount: string,
-    { precision, type, value: networkName }: NetworkProps
-  ): void {
+  public createTransferExtrinsic(wallet: Wallet, to: string, amount: string, networkName: string): void {
+    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet) ?? [];
+    const { precision, type } = availableInNetworks.find(({ network }) => network === networkName)!;
     const ormlOptions = getOptions(this.asset, type, this.assetId);
     const precisionAmount = this.getPrecisionValue(amount, precision) as string;
     const {
@@ -334,7 +340,11 @@ export default class CurrencyController {
       settings: { DefaultTip },
     } = NetworksController.getNetwork(networkName);
 
-    this.options = { tip: DefaultTip, api };
+    this.options = {
+      transactionsOptions: { tip: DefaultTip },
+      historyOptions: this.getMockHistory(networkName, precisionAmount, to),
+      api,
+    };
 
     try {
       if (type === 'native') {
@@ -356,10 +366,12 @@ export default class CurrencyController {
 
   public async createTeleportExtrinsic(
     wallet: Wallet,
+    originNet: string,
     destNet: string,
-    amount: string,
-    { precision, value: originNet }: NetworkProps
+    amount: string
   ): Promise<void> {
+    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet) ?? [];
+    const { precision } = availableInNetworks.find(({ network }) => network === originNet)!;
     const toAddress = this.getTransactionAddress(wallet, destNet);
     const precisionAmount = this.getPrecisionValue(amount, precision) as string;
 
@@ -391,8 +403,8 @@ export default class CurrencyController {
     const tx = api!.tx[pallet][module];
     const params = getNativeTeleportParams(destNet, toAddress, precisionAmount);
 
-    this.options = { api };
     this.extrinsic = tx(...params);
+    this.options = { historyOptions: this.getMockHistory(originNet, precisionAmount, toAddress), api };
   }
 
   public async createOrmlTeleportExtrinsic(
@@ -405,15 +417,19 @@ export default class CurrencyController {
     const ormlOptions = getOrmlOptions(this.asset, originNet);
     const params = getOrmlTeleportParams(originNet, destNet, toAddress);
 
-    this.options = { api };
     this.extrinsic = api!.tx.xTokens.transfer(ormlOptions, precisionAmount, params, FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT);
+    this.options = { historyOptions: this.getMockHistory(originNet, precisionAmount, toAddress), api };
   }
 
-  public async getPartialFee(from: string, { precision }: NetworkProps): Promise<string> {
+  public async getPartialFee(wallet: Wallet, _network: string): Promise<string> {
     if (!this.extrinsic) return '0';
 
+    const transactionAddress = this.getTransactionAddress(wallet, _network);
+    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet) ?? [];
+    const { precision } = availableInNetworks.find(({ network }) => network === _network)!;
+
     try {
-      const { partialFee } = await this.extrinsic.paymentInfo(from);
+      const { partialFee } = await this.extrinsic.paymentInfo(transactionAddress);
       const result = new FPNumber(partialFee, precision);
 
       return result.toString();
@@ -424,32 +440,32 @@ export default class CurrencyController {
 
   public async send(from: string, isMobile = false): Promise<boolean> {
     const account = isMobile ? from : BaseApi.getPair(from);
-
-    this.options.signer = isMobile ? new BeaconSigner() : undefined;
-    this.options.nonce = await this.options.api?.rpc.system.accountNextIndex(from);
-
-    delete this.options.api;
+    const options = {
+      ...(this.options.transactionsOptions ?? {}),
+      signer: isMobile ? new BeaconSigner() : undefined,
+      nonce: await this.options.api?.rpc.system.accountNextIndex(from),
+    };
 
     this.transactionStatus = 'pending';
 
     try {
-      await this.extrinsic!.signAndSend(account, this.options, this.statusCallback());
+      await this.extrinsic!.signAndSend(account, options, this.statusCallback(from));
 
       if (typeof account !== 'string') account.lock();
     } catch (ex) {
       this.transactionStatus = 'failed';
+
+      this.setMockHistory(from, false);
 
       console.info(`Transaction failed ${ex}`);
 
       return false;
     }
 
-    this.options = {};
-
     return true;
   }
 
-  statusCallback() {
+  private statusCallback(from: string) {
     return (result: ISubmittableResult) => {
       const { status } = result;
 
@@ -457,6 +473,8 @@ export default class CurrencyController {
         console.info(`Successful transfer with hash ${status.asInBlock.toHex()}`);
 
         this.transactionStatus = 'success';
+
+        this.setMockHistory(from, true);
       } else if (status.isFinalized) {
         console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
       } else {
@@ -465,11 +483,55 @@ export default class CurrencyController {
     };
   }
 
-  clearSendStatus() {
+  public clearSendStatus() {
     this.transactionStatus = undefined;
   }
 
-  get sendStatus() {
-    return this.transactionStatus;
+  private getMockHistory(networkName: string, amount: string, to: string) {
+    return {
+      networkName,
+      amount,
+      to,
+    };
+  }
+
+  private async setMockHistory(from: string, success: boolean): Promise<void> {
+    const { networkName, amount, to } = this.options.historyOptions!;
+
+    const paymentInfo = await this.extrinsic!.paymentInfo(from);
+    const fee = JSON.parse(paymentInfo.toString()).partialFee;
+
+    const historyOptions: SetHistoryProps = {
+      assetId: this.assetId,
+      networkName,
+      isPreviously: true,
+      walletAddress: from,
+      history: {
+        nodes: [
+          {
+            address: '',
+            id: '',
+            timestamp: `${Date.now() / 1000}`,
+            transfer: {
+              from: BaseApi.getDisplayAddressByNetwork({ address: from, ethereumAddress: from }, networkName),
+              success,
+              amount,
+              eventIdx: 0,
+              fee,
+              to,
+            },
+            isMock: true,
+          },
+        ],
+        pageInfo: {
+          startCursor: '',
+          endCursor: '',
+        },
+      },
+    };
+
+    store.commit(NetworksMutationTypes.SET_HISTORY, historyOptions);
+
+    this.options = {};
   }
 }

@@ -67,8 +67,10 @@ const mutations: MutationTree<State> & Mutations = {
     state.currencies.forEach((currency) => currency.updatePrice());
   },
 
-  [MutationTypes.UPDATE_CURRENCY_BALANCE](state, { walletAddress, network, assetId, balance, parentId, type }) {
-    const { currencies, assetsJson, networks } = state;
+  [MutationTypes.UPDATE_CURRENCY_BALANCE](
+    { currencies, assetsJson, networks },
+    { walletAddress, network, assetId, balance, parentId, type }
+  ) {
     const { symbol, precision, existentialDeposit } = assetsJson.find(({ id }) => id === assetId)!;
     const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name;
 
@@ -93,8 +95,8 @@ const mutations: MutationTree<State> & Mutations = {
     // loading history after sending assets or teleporting assets
     if (isPreviously && !!oldEndCursor) {
       const filteredNodes = nodes.filter(({ timestamp }) => {
-        const oldNodes = oldHistory.nodes;
-        const oldFirstTimespan = +oldNodes[0].timestamp ?? 0;
+        const [oldNodes] = oldHistory.nodes;
+        const oldFirstTimespan = +oldNodes.timestamp ?? 0;
 
         return +timestamp > oldFirstTimespan;
       });
@@ -102,7 +104,7 @@ const mutations: MutationTree<State> & Mutations = {
       if (filteredNodes.length === 0) return;
 
       const newHistoryForNetwork = {
-        nodes: [...(filteredNodes ?? []), ...(oldHistory?.nodes ?? [])],
+        nodes: [...filteredNodes, ...(oldHistory?.nodes ?? [])],
         pageInfo: {
           startCursor: startCursorProp,
           endCursor: oldEndCursor,
@@ -124,12 +126,11 @@ const mutations: MutationTree<State> & Mutations = {
       return;
     }
 
-    // if this is first load or following one already saved
-    const startCursor = oldStartCursor ?? startCursorProp;
     const newHistoryForNetwork = {
       nodes: [...(oldHistory?.nodes ?? []), ...(nodes ?? [])],
       pageInfo: {
-        startCursor,
+        // if this is first load or following one already saved
+        startCursor: oldStartCursor ?? startCursorProp,
         endCursor: endCursorProp,
       },
     };
@@ -156,13 +157,10 @@ const mutations: MutationTree<State> & Mutations = {
   },
 
   [MutationTypes.SET_NETWORK_API](state, { network, provider, api }) {
-    const networks = state.networks;
-    const networkIndex = networks.findIndex(({ name }) => name === network)!;
+    const networkIndex = state.networks.findIndex(({ name }) => name === network)!;
 
-    networks[networkIndex].provider = provider;
-    networks[networkIndex].api = api;
-
-    state.networks = networks;
+    state.networks[networkIndex].provider = provider;
+    state.networks[networkIndex].api = api;
   },
 };
 

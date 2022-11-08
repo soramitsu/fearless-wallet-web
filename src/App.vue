@@ -77,7 +77,7 @@ export default class App extends Vue {
     this.subscribeAddresses = BaseApi.getAddressesSubject();
     this.subscribeAccounts.subscribe(async (accounts) => {
       const newAccounts = this.getNewAccounts(accounts, 'accounts');
-      const accountsCount = Object.keys(accounts).length;
+      const accountsCount = Object.keys(this.accounts).length;
       const newAccountsCount = Object.keys(newAccounts).length;
 
       this.setAccounts({ accounts });
@@ -88,7 +88,7 @@ export default class App extends Vue {
 
     this.subscribeAddresses.subscribe(async (addresses) => {
       const newAddresses = this.getNewAccounts(addresses, 'addresses');
-      const addressesCount = Object.keys(addresses).length;
+      const addressesCount = Object.keys(this.addresses).length;
       const newAddressesCount = Object.keys(newAddresses).length;
 
       this.setAddresses({ addresses });

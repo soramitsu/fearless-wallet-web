@@ -30,9 +30,10 @@ type HistoryNode = {
   id: string;
   address: string;
   timestamp: string;
-  extrinsic: Extrinsic;
-  reward: Reward;
-  transfer: Transfer;
+  extrinsic?: Extrinsic;
+  reward?: Reward;
+  transfer?: Transfer;
+  isMock?: true;
 };
 
 interface HistoryItem {

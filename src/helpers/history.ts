@@ -50,7 +50,7 @@ export function getTypeFormatted(historyNode: HistoryNode) {
   }
 
   if (type === TransactionType.extrinsic) {
-    const { call } = historyNode[type];
+    const { call } = historyNode.extrinsic!;
 
     return `${firstCharToUp(call)}${call === 'transfer' ? ' fee' : ''}`;
   }
@@ -87,21 +87,21 @@ export function getHistoryValue(historyNode: HistoryNode, assetId: string) {
   const signTransfer = getSignTransfer(historyNode);
 
   if (type === TransactionType.transfer) {
-    const { amount } = transfer;
+    const { amount } = transfer!;
     const value = getHumanValue(amount, assetId);
 
     return `${signTransfer}${formattedNumber(value, HISTORY_VALUE_OPTIONS)}`;
   }
 
   if (type === TransactionType.reward) {
-    const { amount } = reward;
+    const { amount } = reward!;
     const value = getHumanValue(amount, assetId);
 
     return `+${formattedNumber(value, HISTORY_VALUE_OPTIONS)}`;
   }
 
   // extrinsic
-  const { fee } = extrinsic;
+  const { fee } = extrinsic!;
   const value = getHumanValue(fee, assetId);
 
   return `-${formattedNumber(value, HISTORY_VALUE_OPTIONS)}`;
@@ -112,14 +112,14 @@ export function getHumanTransferFee(historyNode: HistoryNode, assetId: string) {
   const type = getType(historyNode);
 
   if (type === TransactionType.transfer) {
-    const { fee } = transfer;
+    const { fee } = transfer!;
     const value = getHumanValue(fee, assetId);
 
     return `-${formattedNumber(value, { decimalsValue: 4 })}`;
   }
 
   if (type === TransactionType.extrinsic) {
-    const { fee } = extrinsic;
+    const { fee } = extrinsic!;
     const value = getHumanValue(fee, assetId);
 
     return `-${formattedNumber(value, { decimalsValue: 4 })}`;

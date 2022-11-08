@@ -24,7 +24,7 @@ import { Getter } from 'vuex-class';
 import type { GetAssetName } from '@/store/networks/types';
 import type { HistoryNode, Networks, RelayChainName } from '@/interfaces';
 import NetworkLogo from '@/components/NetworkLogo.vue';
-import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, cut } from '@/helpers/history';
+import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, getSignTransfer, cut } from '@/helpers/history';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { TransactionType } from '@/interfaces/history';
 
@@ -37,6 +37,10 @@ export default class HistoryItem extends Vue {
   @Prop(String) relayChain!: RelayChainName;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
+
+  get signTransfer() {
+    return getSignTransfer(this.historyNode);
+  }
 
   get asset() {
     return this.getAssetName(this.assetId);
@@ -62,15 +66,17 @@ export default class HistoryItem extends Vue {
     const { transfer, reward, extrinsic } = this.historyNode;
 
     if (this.type === TransactionType.transfer) {
-      return cut(transfer.to);
+      const value = this.typeFormatted === 'Incoming' ? transfer!.from : transfer!.to;
+
+      return cut(value);
     }
 
     if (this.type === TransactionType.reward) {
-      return cut(reward.validator);
+      return cut(reward!.validator);
     }
 
     // extrinsic
-    return cut(extrinsic.hash);
+    return cut(extrinsic!.hash);
   }
 
   get typeFormatted() {

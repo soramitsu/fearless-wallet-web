@@ -82,8 +82,9 @@ export default class App extends Vue {
 
       this.setAccounts({ accounts });
 
-      if (accountsCount !== newAccountsCount && newAccountsCount !== 0)
-        await subscribeToBalancesOfNetworks(newAccounts);
+      if (newAccountsCount === 0) return;
+
+      if (accountsCount === 1 || accountsCount !== newAccountsCount) await subscribeToBalancesOfNetworks(newAccounts);
     });
 
     this.subscribeAddresses.subscribe(async (addresses) => {
@@ -93,7 +94,9 @@ export default class App extends Vue {
 
       this.setAddresses({ addresses });
 
-      if (addressesCount !== newAddressesCount && newAddressesCount !== 0)
+      if (newAddressesCount === 0) return;
+
+      if (addressesCount === 1 || addressesCount !== newAddressesCount)
         await subscribeToBalancesOfNetworks(newAddresses);
     });
   }

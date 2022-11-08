@@ -84,7 +84,7 @@ const mutations: MutationTree<State> & Mutations = {
     currentCurrency.updateCurrencyBalance({ walletAddress, network, balance, type, precision, existentialDeposit });
   },
 
-  [MutationTypes.SET_HISTORY](state, { history, networkName, walletAddress, isPreviously, assetId }) {
+  [MutationTypes.SET_HISTORY](state, { history, networkName, walletAddress, isPreviously, assetId, isMock }) {
     const { nodes, pageInfo } = history;
     const { startCursor: startCursorProp, endCursor: endCursorProp } = pageInfo;
     const oldHistory = state.history[assetId]?.[walletAddress]?.[networkName];
@@ -92,11 +92,34 @@ const mutations: MutationTree<State> & Mutations = {
     const oldStartCursor = oldPageInfo?.startCursor;
     const oldEndCursor = oldPageInfo?.endCursor;
 
+    if (isMock) {
+      const historyForAssetId = {
+        ...(state.history[assetId] ?? []),
+        [walletAddress]: {
+          ...state.history[assetId]?.[walletAddress],
+          [networkName]: {
+            nodes: [...nodes, ...(oldHistory?.nodes ?? [])],
+            pageInfo: {
+              startCursor: oldStartCursor,
+              endCursor: oldEndCursor,
+            },
+          },
+        },
+      };
+
+      state.history = { ...state.history, [assetId]: historyForAssetId };
+
+      return;
+    }
+
     // loading history after sending assets or teleporting assets
     if (isPreviously && !!oldEndCursor) {
+      const oldHistoryNodesWithoutMock = oldHistory?.nodes.filter(({ isMock }) => !isMock) ?? [];
+
       const filteredNodes = nodes.filter(({ timestamp }) => {
         const [oldNodes] = oldHistory.nodes;
         const oldFirstTimespan = +oldNodes.timestamp ?? 0;
+        const oldFirstTimespan = +oldHistoryNodesWithoutMock[0].timestamp ?? 0;
 
         return +timestamp > oldFirstTimespan;
       });
@@ -104,7 +127,7 @@ const mutations: MutationTree<State> & Mutations = {
       if (filteredNodes.length === 0) return;
 
       const newHistoryForNetwork = {
-        nodes: [...filteredNodes, ...(oldHistory?.nodes ?? [])],
+        nodes: [...(filteredNodes ?? []), ...oldHistoryNodesWithoutMock],
         pageInfo: {
           startCursor: startCursorProp,
           endCursor: oldEndCursor,

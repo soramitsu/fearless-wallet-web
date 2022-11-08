@@ -108,7 +108,6 @@
       :currency="currency"
       :amount="syncedAmount"
       :value="syncedValue"
-      :address="addressByNetwork"
       :firstNetwork="syncedSelectedNetwork"
       :secondNetwork="syncedDestNet"
       @close="confirmationPasswordPopupClose"
@@ -197,7 +196,6 @@ export default class SendForm extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) onlineStatus!: string;
-
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
 
@@ -284,10 +282,6 @@ export default class SendForm extends Vue {
     return BaseApi.validateAddress(this.syncedRecipient, this.syncedSelectedNetwork);
   }
 
-  get addressByNetwork() {
-    return this.currency?.getTransactionAddress(this.selectedWallet, this.syncedSelectedNetwork) ?? '';
-  }
-
   get currency() {
     return this.currencies.find(({ assetId }) => assetId === this.syncedSelectedAssetId);
   }
@@ -308,13 +302,11 @@ export default class SendForm extends Vue {
   get optionsNetworks() {
     const availableInNetworks = this.currency?.getAvailableInNetworks(this.selectedWallet) ?? [];
 
-    return availableInNetworks.map(({ network, precision, type }) => ({
+    return availableInNetworks.map(({ network }) => ({
       label: firstCharToUp(network),
       value: `${network}`,
       path: getIconName(network),
       relayChain: this.currency?.relayChain,
-      precision,
-      type,
     }));
   }
 
@@ -457,24 +449,27 @@ export default class SendForm extends Vue {
   }
 
   createTransferAndGetFee(amount?: string) {
-    const networkProps = this.optionsNetworks!.find(({ value }) => value === this.syncedSelectedNetwork)!;
-
     if (this.extrinsicType === 'transfer') {
       if (!this.isValidRecipientAddress || this.syncedSelectedNetwork === '') return '0';
 
-      this.currency!.createTransferExtrinsic(this.syncedRecipient, amount ?? this.syncedAmount, networkProps);
+      this.currency!.createTransferExtrinsic(
+        this.selectedWallet,
+        this.syncedRecipient,
+        amount ?? this.syncedAmount,
+        this.syncedSelectedNetwork
+      );
     } else {
       if (!this.isValidDirection || this.syncedSelectedNetwork === '') return '0';
 
       this.currency!.createTeleportExtrinsic(
         this.selectedWallet,
+        this.syncedSelectedNetwork,
         this.syncedDestNet,
-        amount ?? this.syncedAmount,
-        networkProps
+        amount ?? this.syncedAmount
       );
     }
 
-    return this.currency!.getPartialFee(this.addressByNetwork, networkProps);
+    return this.currency!.getPartialFee(this.selectedWallet, this.syncedSelectedNetwork);
   }
 
   updateAmount(value: string) {

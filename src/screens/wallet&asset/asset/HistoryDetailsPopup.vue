@@ -153,13 +153,13 @@ export default class SelectNetworkButton extends Vue {
 
   get statusIsSuccess() {
     if (this.isTransfer) {
-      const { success } = this.historyNode.transfer;
+      const { success } = this.historyNode.transfer!;
 
       return success;
     }
 
     if (this.isExtrinsic) {
-      const { success } = this.historyNode.extrinsic;
+      const { success } = this.historyNode.extrinsic!;
 
       return success;
     }
@@ -168,7 +168,7 @@ export default class SelectNetworkButton extends Vue {
   }
 
   get validator() {
-    return this.historyNode.reward.validator;
+    return this.historyNode.reward!.validator;
   }
 
   get displayValidator() {
@@ -176,7 +176,7 @@ export default class SelectNetworkButton extends Vue {
   }
 
   get era() {
-    return this.historyNode.reward.era;
+    return this.historyNode.reward!.era;
   }
 
   get statusClasses() {
@@ -185,13 +185,13 @@ export default class SelectNetworkButton extends Vue {
 
   get statusText() {
     if (this.isTransfer) {
-      const { success } = this.historyNode.transfer;
+      const { success } = this.historyNode.transfer!;
 
       return success ? 'Completed' : 'Reject';
     }
 
     if (this.isExtrinsic) {
-      const { success } = this.historyNode.extrinsic;
+      const { success } = this.historyNode.extrinsic!;
 
       return success ? 'Completed' : 'Reject';
     }
@@ -201,7 +201,7 @@ export default class SelectNetworkButton extends Vue {
   }
 
   get fromAddress() {
-    return this.historyNode.transfer.from;
+    return this.historyNode.transfer!.from;
   }
 
   get displayFromAddress() {
@@ -209,7 +209,7 @@ export default class SelectNetworkButton extends Vue {
   }
 
   get toAddress() {
-    return this.historyNode.transfer.to;
+    return this.historyNode.transfer!.to;
   }
 
   get displayToAddress() {
@@ -217,11 +217,11 @@ export default class SelectNetworkButton extends Vue {
   }
 
   get moduleType() {
-    return this.historyNode.extrinsic.module;
+    return this.historyNode.extrinsic!.module;
   }
 
   get call() {
-    return this.historyNode.extrinsic.call;
+    return this.historyNode.extrinsic!.call;
   }
 
   get transferFee() {
@@ -245,7 +245,7 @@ export default class SelectNetworkButton extends Vue {
   }
 
   get hash() {
-    return this.historyNode.extrinsic.hash;
+    return this.historyNode.extrinsic!.hash;
   }
 
   get displayHash() {

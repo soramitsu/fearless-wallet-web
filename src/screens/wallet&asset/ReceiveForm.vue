@@ -194,8 +194,8 @@ export default class ReceiveForm extends Vue {
   }
 
   .copy-icon {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     margin-left: 16px;
     filter: invert(0.35);
 

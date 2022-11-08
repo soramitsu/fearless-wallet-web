@@ -56,6 +56,7 @@ export type SetHistoryProps = {
   networkName: string;
   isPreviously: boolean;
   assetId: string;
+  isMock?: true;
 };
 
 export type UpdateCurrencyBalanceProps = {

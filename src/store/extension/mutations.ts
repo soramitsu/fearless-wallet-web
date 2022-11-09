@@ -9,30 +9,38 @@ import type { MutationTree } from 'vuex';
 import type { State } from './state';
 
 export enum MutationTypes {
-  SET_AUTH_REQUEST = 'SET_AUTH_REQUEST',
   SET_AUTHLIST = 'SET_AUTHLIST',
   DELETE_AUTHLIST_ITEM = 'DELETE_AUTHLIST_ITEM',
   DELETE_REQUEST = 'DELETE_REQUEST',
-  SET_METADATA_REQUEST = 'SET_METADATA_REQUEST',
-  SET_SIGN_REQUEST = 'SET_SIGN_REQUEST',
+  SET_REQUEST = 'SET_REQUEST',
+}
+
+interface SetPayload {
+  type: keyof State['requests'];
+  data: AuthorizeRequest | SigningRequest | MetadataRequest;
 }
 
 export type Mutations = {
-  [MutationTypes.SET_AUTH_REQUEST](state: State, props: AuthorizeRequest): void;
   [MutationTypes.SET_AUTHLIST](state: State, payload: ResponseAuthorizeList): void;
   [MutationTypes.DELETE_AUTHLIST_ITEM](state: State, payload: string): void;
   [MutationTypes.DELETE_REQUEST](state: State, payload: keyof State['requests']): void;
-  [MutationTypes.SET_METADATA_REQUEST](state: State, props: MetadataRequest): void;
-  [MutationTypes.SET_SIGN_REQUEST](state: State, props: SigningRequest): void;
+  [MutationTypes.SET_REQUEST](state: State, payload: SetPayload): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
-  [MutationTypes.SET_AUTH_REQUEST](state, payload) {
-    state.requests.auth.push(payload);
-  },
-
   [MutationTypes.DELETE_REQUEST](state, type) {
     state.requests[type].shift();
+  },
+  [MutationTypes.SET_REQUEST](state, { type, data }) {
+    if (type === 'auth') {
+      state.requests.auth.push(data as AuthorizeRequest);
+
+      return;
+    }
+
+    type === 'meta'
+      ? state.requests.meta.push(data as MetadataRequest)
+      : state.requests.sign.push(data as SigningRequest);
   },
 
   [MutationTypes.SET_AUTHLIST](state, { list }) {
@@ -43,14 +51,6 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.DELETE_AUTHLIST_ITEM](state, id) {
     Vue.delete(state.authList, id);
-  },
-
-  [MutationTypes.SET_METADATA_REQUEST](state, payload) {
-    state.requests.meta.push(payload);
-  },
-
-  [MutationTypes.SET_SIGN_REQUEST](state, payload) {
-    state.requests.sign.push(payload);
   },
 };
 

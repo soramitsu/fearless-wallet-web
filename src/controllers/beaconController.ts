@@ -9,6 +9,7 @@ import {
   Serializer,
   AccountInfo,
   AppMetadata,
+  Regions,
 } from '@airgap/beacon-sdk';
 import type {
   PayloadJSON,
@@ -21,7 +22,7 @@ import type {
 } from '@/interfaces';
 import { MOONBEAM_GENESISHASH, WESTEND_GENESISHASH } from '@/consts/networks';
 import store from '@/store';
-import { MutationTypes as BeaconMutationTypes } from '@/store/beacon/mutations';
+import { MutationTypes as AccountMutationTypes } from '@/store/accounts/mutations';
 class BeaconController {
   private app: DAppClient;
   private serializer = new Serializer();
@@ -34,6 +35,10 @@ class BeaconController {
   constructor() {
     this.app = getDAppClientInstance({
       name: this.name,
+      matrixNodes: {
+        [Regions.EUROPE_EAST]: ['beacon-node-1.diamond.papers.tech'],
+        [Regions.EUROPE_WEST]: ['beacon-node-1.diamond.papers.tech'],
+      },
       disableDefaultEvents: true,
       eventHandlers: {
         INTERNAL_ERROR: {
@@ -51,6 +56,11 @@ class BeaconController {
             console.error('NO PERMISSIONS ERROR', error);
           },
         },
+        CHANNEL_CLOSED: {
+          handler: (error) => {
+            console.info(error);
+          },
+        },
       },
     });
 
@@ -58,6 +68,7 @@ class BeaconController {
   }
 
   addSubstrateBlockchain() {
+    this.app.connectionStatus;
     this.app.addBlockchain(new SubstrateBlockchain());
   }
 
@@ -74,7 +85,7 @@ class BeaconController {
   }
   public async resetConnection() {
     await this.app.disconnect().then(() => {
-      store.commit(BeaconMutationTypes.DELETE_QR);
+      store.commit(AccountMutationTypes.DELETE_QR);
     });
   }
 

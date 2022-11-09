@@ -8,6 +8,7 @@ export type State = {
   isOnline: boolean;
   accounts: Accounts;
   addresses: Accounts;
+  qr: string | null;
 };
 
 const state = (): State => {
@@ -18,6 +19,7 @@ const state = (): State => {
     isOnline: navigator.onLine,
     accounts: {},
     addresses: {},
+    qr: null,
   };
 };
 

@@ -16,6 +16,7 @@ export enum GettersTypes {
   getAccounts = 'getAccounts',
   getAddresses = 'getAddresses',
   getWallets = 'getWallets',
+  GET_QR = 'getQR',
 }
 
 export type Getters = {
@@ -28,6 +29,7 @@ export type Getters = {
   [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
   [GettersTypes.getAddresses](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
   [GettersTypes.getWallets](state: State, getters?: GetterTree<State, State> & Getters): WalletInfo[];
+  [GettersTypes.GET_QR](state: State, getters?: GetterTree<State, State> & Getters): Nullable<string>;
 };
 
 const getters: GetterTree<State, State> & Getters = {
@@ -83,6 +85,9 @@ const getters: GetterTree<State, State> & Getters = {
     });
 
     return wallets;
+  },
+  [GettersTypes.GET_QR]({ qr }): Nullable<string> {
+    return qr;
   },
 };
 

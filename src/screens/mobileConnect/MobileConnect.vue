@@ -38,8 +38,8 @@ import { createAddress } from '@/extension/messaging';
 import { beaconController } from '@/controllers/beaconController';
 import { ActionTypes as AccountActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as NetworkGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as BeaconGettersTypes } from '@/store/beacon/getters';
-import { MutationTypes as BeaconMutationsTypes } from '@/store/beacon/mutations';
+import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
+import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutations';
 import AboveForm from '@/components/AboveForm.vue';
 import QR from '@/components/QR.vue';
 import Loader from '@/components/Loader.vue';
@@ -69,8 +69,8 @@ export default class MobileConnect extends Vue {
 
   @Action(AccountActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
   @Getter(NetworkGettersTypes.getNetworks) getNetworks!: Networks;
-  @Getter(BeaconGettersTypes.GET_QR) getQR!: Nullable<string>;
-  @Mutation(BeaconMutationsTypes.SET_QR) setQR!: TMutation<string>;
+  @Getter(AccountGettersTypes.GET_QR) getQR!: Nullable<string>;
+  @Mutation(AccountMutationsTypes.SET_QR) setQR!: TMutation<string>;
 
   async mounted() {
     this.isLoading = !this.getQR;

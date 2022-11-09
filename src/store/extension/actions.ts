@@ -81,7 +81,7 @@ const actions: ActionTree<State, State> & Actions = {
       const [request] = requests;
 
       if (request) {
-        commit(MutationTypes.SET_AUTH_REQUEST, request);
+        commit(MutationTypes.SET_REQUEST, { type: 'auth', data: request });
 
         router.push({
           name: Components.Authorize,
@@ -121,7 +121,7 @@ const actions: ActionTree<State, State> & Actions = {
       const [request] = requests;
 
       if (request && request.id) {
-        commit(MutationTypes.SET_METADATA_REQUEST, request);
+        commit(MutationTypes.SET_REQUEST, { type: 'meta', data: request });
 
         router.push({
           name: Components.MetaRequest,
@@ -148,7 +148,7 @@ const actions: ActionTree<State, State> & Actions = {
       const [request] = requests;
 
       if (request) {
-        commit(MutationTypes.SET_SIGN_REQUEST, request);
+        commit(MutationTypes.SET_REQUEST, { type: 'sign', data: request });
 
         router.push({
           name: Components.Transaction,

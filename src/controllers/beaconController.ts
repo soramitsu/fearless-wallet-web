@@ -9,7 +9,6 @@ import {
   Serializer,
   AccountInfo,
   AppMetadata,
-  Regions,
 } from '@airgap/beacon-sdk';
 import type {
   PayloadJSON,
@@ -50,11 +49,6 @@ class BeaconController {
         NO_PERMISSIONS: {
           handler: (error) => {
             console.error('NO PERMISSIONS ERROR', error);
-          },
-        },
-        CHANNEL_CLOSED: {
-          handler: (error) => {
-            console.info(error);
           },
         },
       },

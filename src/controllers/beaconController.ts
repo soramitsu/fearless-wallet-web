@@ -35,10 +35,6 @@ class BeaconController {
   constructor() {
     this.app = getDAppClientInstance({
       name: this.name,
-      matrixNodes: {
-        [Regions.EUROPE_EAST]: ['beacon-node-1.diamond.papers.tech'],
-        [Regions.EUROPE_WEST]: ['beacon-node-1.diamond.papers.tech'],
-      },
       disableDefaultEvents: true,
       eventHandlers: {
         INTERNAL_ERROR: {
@@ -68,7 +64,6 @@ class BeaconController {
   }
 
   addSubstrateBlockchain() {
-    this.app.connectionStatus;
     this.app.addBlockchain(new SubstrateBlockchain());
   }
 

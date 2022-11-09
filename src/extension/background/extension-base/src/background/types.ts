@@ -62,15 +62,15 @@ export type AccountsContext = {
   setSelectedAccounts?: (address: AccountJson['address'][]) => void;
 };
 
+export interface ApproveAuthRequest {
+  request: AuthorizeRequest;
+  accounts: string[];
+}
+
 export interface AuthorizeRequest {
   id: string;
   request: RequestAuthorizeTab;
   url: string;
-}
-
-export interface ApproveAuthRequest {
-  request: AuthorizeRequest;
-  accounts: string[];
 }
 
 export interface MetadataRequest {

@@ -21,6 +21,8 @@ export enum MutationTypes {
   SET_ACCOUNTS = 'SET_ACCOUNTS',
   SET_ONLINE_STATUS = 'SET_ONLINE_STATUS',
   SET_ADDRESSES = 'SET_ADDRESSES',
+  SET_QR = 'SET_QR',
+  DELETE_QR = 'DELETE_QR',
 }
 
 export type Mutations = {
@@ -30,6 +32,8 @@ export type Mutations = {
   [MutationTypes.SET_ACCOUNTS](state: State, props: setAccountsProps): void;
   [MutationTypes.SET_ONLINE_STATUS](state: State, props: setOnlineStatus): void;
   [MutationTypes.SET_ADDRESSES](state: State, props: setAddressesProps): void;
+  [MutationTypes.SET_QR](state: State, props: string): void;
+  [MutationTypes.DELETE_QR](state: State): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -84,6 +88,13 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.SET_ADDRESSES](state, { addresses }) {
     state.addresses = addresses;
+  },
+  [MutationTypes.SET_QR](state, payload) {
+    state.qr = payload;
+  },
+
+  [MutationTypes.DELETE_QR](state) {
+    state.qr = null;
   },
 };
 

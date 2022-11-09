@@ -33,14 +33,6 @@ import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutatio
 
 type TransactionStatus = 'success' | 'failed' | 'pending';
 
-type NetworkProps = {
-  label: string;
-  value: string;
-  existentialDeposit?: string;
-  precision: number;
-  type: TypeAsset;
-};
-
 type Options = {
   transactionsOptions?: Partial<SignerOptions>;
   historyOptions?: { networkName: string; amount: string; to: string };

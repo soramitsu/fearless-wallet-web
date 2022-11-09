@@ -1,8 +1,5 @@
 import type { RelayChainName } from '@/interfaces/teleport';
 
-const NETWORKS_PATH = 'networks';
-const ORML_PATH = 'orml';
-
 function getOrmlFileName(value: string) {
   switch (value.toLowerCase()) {
     case 'ausd':
@@ -37,6 +34,14 @@ function getOrmlFileName(value: string) {
       return 'EQD';
     case 'vksm':
       return 'vKSM';
+    case 'xstusd':
+      return 'XSTUSD';
+    case 'val':
+      return 'VAL';
+    case 'pswap':
+      return 'PSWAP';
+    case 'xst':
+      return 'XST';
     default:
       return '';
   }
@@ -202,6 +207,7 @@ function getImgPathByNetworkOrAssetName(value = '', relayChain?: RelayChainName)
       return 'nodle';
 
     case 'sora kusama':
+    case 'sora test':
     case 'xor':
       return 'sora';
 
@@ -260,6 +266,10 @@ function getImgPathByNetworkOrAssetName(value = '', relayChain?: RelayChainName)
     case 'kylin network':
     case 'kyl':
       return 'kylin network';
+
+    case 'snow kusama':
+    case 'icz':
+      return 'snow';
 
     //////////////////////
 

@@ -8,6 +8,9 @@ type TAction<T> = (props?: T) => Promise<void>;
 interface Meta {
   name: string;
   ethereumAddress: string;
+}
+
+interface AddressMeta extends Meta {
   isMobile: boolean;
 }
 
@@ -113,4 +116,5 @@ export {
   ChainAccount,
   AssetName,
   ComponentText,
+  AddressMeta,
 };

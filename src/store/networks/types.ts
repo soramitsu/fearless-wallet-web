@@ -11,6 +11,7 @@ import type {
   AssetsPrice,
   AssetPrice,
   FiatJson,
+  NetworkStatus,
 } from '@/interfaces';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { KeyringJson } from '@polkadot/ui-keyring/types';
@@ -27,6 +28,8 @@ export type GetNetworkGenesisHash = (networkName: string) => HexString;
 export type GetAssetName = (assetId: string) => string;
 
 export type GetAssetPrice = (assetId: string) => AssetPrice;
+
+export type GetNetworkStatus = (networkName: string) => NetworkStatus;
 
 // Mutations
 export type SetNetworksStatusProps = {
@@ -65,7 +68,6 @@ export type UpdateCurrencyBalanceProps = {
   assetId: string;
   balance: AccountBalance;
   parentId: string | undefined;
-  type: NetworkAssetsType | undefined;
 };
 
 export type SetNetworkActiveNodeProps = {
@@ -76,8 +78,13 @@ export type SetNetworkActiveNodeProps = {
 
 export type SetNetworkApi = {
   network: string;
-  provider: WsProvider;
-  api: ApiPromise;
+  provider?: WsProvider;
+  api?: ApiPromise;
+};
+
+export type SetNetworkStatus = {
+  network: string;
+  status: NetworkStatus;
 };
 
 // Actions

@@ -7,7 +7,7 @@ import type {
   Currencies,
   KeysAssetPricesJson,
 } from '@/interfaces';
-import type { GetNetwork, GetAssetName, GetAssetPrice, GetNetworkGenesisHash } from './types';
+import type { GetNetwork, GetAssetName, GetAssetPrice, GetNetworkGenesisHash, GetNetworkStatus } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 
@@ -22,27 +22,31 @@ export enum GettersTypes {
   getHistory = 'getHistory',
   getCurrencies = 'getCurrencies',
   getActiveNodes = 'getActiveNodes',
+  getAllNetworksIsLoaded = 'getAllNetworksIsLoaded',
+  getNetworkStatus = 'getNetworkStatus',
 }
 
 export type Getters = {
   [GettersTypes.getNetworks](state: State, getters?: GetterTree<State, State> & Getters): Networks;
   [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
-  [GettersTypes.getNetworkGenesisHash](
-    state: State,
-    getters?: GetterTree<State, State> & Getters
-  ): GetNetworkGenesisHash;
-
   [GettersTypes.getAssetsJson](state: State, getters?: GetterTree<State, State> & Getters): AssetJson[];
-  [GettersTypes.getAssetPrice](
-    state: State,
-    getters?: GetterTree<State, State> & Getters,
-    rootState?: any
-  ): GetAssetPrice;
   [GettersTypes.getAssetName](state: State, getters?: GetterTree<State, State> & Getters): GetAssetName;
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
   [GettersTypes.getCurrencies](state: State, getters?: GetterTree<State, State> & Getters): Currencies;
   [GettersTypes.getActiveNodes](state: State, getters?: GetterTree<State, State> & Getters): ActiveNodes;
+  [GettersTypes.getAllNetworksIsLoaded](state: State, getters?: GetterTree<State, State> & Getters): boolean;
+  [GettersTypes.getNetworkStatus](state: State, getters?: GetterTree<State, State> & Getters): GetNetworkStatus;
+  [GettersTypes.getNetworkGenesisHash](
+    state: State,
+    getters?: GetterTree<State, State> & Getters
+  ): GetNetworkGenesisHash;
+
+  [GettersTypes.getAssetPrice](
+    state: State,
+    getters?: GetterTree<State, State> & Getters,
+    rootState?: any
+  ): GetAssetPrice;
 };
 
 const getters: GetterTree<State, State> & Getters = {
@@ -55,6 +59,7 @@ const getters: GetterTree<State, State> & Getters = {
     (networkName: string) => {
       return networks.find(({ name }) => name === networkName)!;
     },
+
   [GettersTypes.getNetworkGenesisHash]:
     ({ networks }) =>
     (networkName: string) => {
@@ -62,6 +67,7 @@ const getters: GetterTree<State, State> & Getters = {
 
       return `0x${network.chainId}`;
     },
+
   [GettersTypes.getAssetsJson]({ assetsJson }): AssetJson[] {
     return assetsJson;
   },
@@ -103,9 +109,21 @@ const getters: GetterTree<State, State> & Getters = {
     return currencies;
   },
 
-  [GettersTypes.getActiveNodes](state): ActiveNodes {
-    return state.activeNodes;
+  [GettersTypes.getActiveNodes]({ activeNodes }): ActiveNodes {
+    return activeNodes;
   },
+
+  [GettersTypes.getAllNetworksIsLoaded]({ networks }): boolean {
+    return !networks.some(({ status }) => status === 'pending');
+  },
+
+  [GettersTypes.getNetworkStatus]:
+    ({ networks }) =>
+    (networkName: string) => {
+      const network = networks.find(({ name }) => name === networkName);
+
+      return network?.status ?? 'pending';
+    },
 };
 
 export default getters;

@@ -1,13 +1,6 @@
 import { isFunction } from '@polkadot/util';
 import { ISubmittableResult } from '@polkadot/types/types';
-import type {
-  AvailableInNetworks,
-  Balances,
-  BalanceFP,
-  AvailableInNetworksFP,
-  TypeAsset,
-  RelayChainName,
-} from '@/interfaces';
+import type { AvailableInNetworks, Balances, BalanceFP, AvailableInNetworksFP, RelayChainName } from '@/interfaces';
 import type { SubmittableExtrinsic, SignerOptions } from '@polkadot/api/submittable/types';
 import type { Wallet } from '@/store/accounts/types';
 import type { ApiPromise } from '@polkadot/api';
@@ -44,10 +37,8 @@ export default class CurrencyController {
   private readonly visibleStorageName = 'visible';
   public extrinsic!: SubmittableExtrinsic<'promise'> | undefined;
   public options: Options = {};
-  public balances: Balances = {};
   public price = 0;
   public hours24Change = 0;
-  public displayName!: string;
   public currenciesVisible!: Record<string, Record<string, boolean>>;
   public transactionStatus?: TransactionStatus;
 
@@ -55,11 +46,11 @@ export default class CurrencyController {
     public mainNetwork: string,
     public assetId: string,
     public asset: string,
-    displayName: string | undefined,
     public providers: string[],
-    public relayChain: RelayChainName
+    public relayChain: RelayChainName,
+    public balances: Balances,
+    public displayName: string
   ) {
-    this.displayName = displayName ?? asset;
     this.currenciesVisible = this.lsCurrency.get(this.visibleStorageName).value ?? {};
   }
 
@@ -162,38 +153,21 @@ export default class CurrencyController {
     return addressByNetwork;
   }
 
-  public updateCurrencyBalance({
-    walletAddress,
-    network,
-    balance,
-    type,
-    precision,
-    existentialDeposit,
-  }: Record<string, any>): void {
+  public updateCurrencyBalance({ walletAddress, network, balance }: Record<string, any>): void {
     const { frozen, locked, reserved, total, transferable } = balance;
     const oldBalances = { ...this.balances };
-    let balancesForAddress = oldBalances[walletAddress];
+    const balancesForAddress = oldBalances[walletAddress];
+    const index = balancesForAddress.findIndex(({ network: _network }) => _network === network);
 
-    const newValue = {
-      network,
-      precision,
-      existentialDeposit,
-      type: type ?? 'native',
-      balance: {
-        frozen: FPNumber.fromCodecValue(frozen, precision),
-        locked: FPNumber.fromCodecValue(locked, precision),
-        reserved: FPNumber.fromCodecValue(reserved, precision),
-        total: FPNumber.fromCodecValue(total, precision),
-        transferable: FPNumber.fromCodecValue(transferable, precision),
-      },
+    const newBalance = {
+      frozen: FPNumber.fromCodecValue(frozen, balancesForAddress[index].precision),
+      locked: FPNumber.fromCodecValue(locked, balancesForAddress[index].precision),
+      reserved: FPNumber.fromCodecValue(reserved, balancesForAddress[index].precision),
+      total: FPNumber.fromCodecValue(total, balancesForAddress[index].precision),
+      transferable: FPNumber.fromCodecValue(transferable, balancesForAddress[index].precision),
     };
 
-    if (balancesForAddress) {
-      const index = balancesForAddress.findIndex(({ network: _network }) => _network === network);
-
-      if (index === -1) balancesForAddress.push(newValue);
-      else balancesForAddress.splice(index, 1, newValue);
-    } else balancesForAddress = [newValue];
+    balancesForAddress[index].balance = newBalance;
 
     this.balances = { ...oldBalances, [walletAddress]: balancesForAddress };
   }

@@ -2,7 +2,10 @@
   <div class="asset">
     <div class="asset-header">
       <div class="descriptions">
-        <div class="count-assets">{{ countAssetsString }}</div>
+        <Shimmer v-if="showShimmers" height="32px" width="140px" />
+
+        <div v-else class="count-assets">{{ countAssetsString }}</div>
+
         <div class="balance-in-network">{{ balanceInNetworkString }}</div>
         <div class="price">{{ assetPriceString }}</div>
       </div>
@@ -58,6 +61,7 @@
     <ReceiveForm
       v-if="showReceiveForm"
       :_selectedNetwork="selectedNetwork"
+      :selectedAssetId="selectedAssetId"
       :closeForm="toggleVisible.bind(null, 'showReceiveForm', false)"
     />
 
@@ -119,6 +123,8 @@ import { SelectedWallet } from '@/store/accounts/types';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/helpers/numbers';
 import Tooltip from '@/components/Tooltip.vue';
+import Shimmer from '@/components/Shimmer.vue';
+import { GetNetworkStatus } from '@/store/networks/types';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
 
@@ -126,6 +132,7 @@ type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'show
   components: {
     History,
     Tooltip,
+    Shimmer,
     SendForm,
     BuyPopup,
     ReceiveForm,
@@ -151,6 +158,12 @@ export default class Asset extends Vue {
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
+  @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
+
+  get showShimmers() {
+    return !this.isOnline || this.getNetworkStatus(this.selectedNetwork) === 'pending';
+  }
 
   get providers() {
     return this.currentCurrency?.providers ?? [];
@@ -278,6 +291,7 @@ export default class Asset extends Vue {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        height: 32px;
       }
 
       .balance-in-network {

@@ -19,23 +19,30 @@
           {{ upperNetworkName }}
         </div>
 
-        <div v-if="!isCurrentNetwork" class="available-networks">
-          <NetworkLogo
-            v-for="{ network } in availableInNetworksPart"
-            class="minor-network-img"
-            :key="network"
-            :name="network"
-            :width="12"
-          />
+        <template v-if="!isCurrentNetwork">
+          <Shimmer v-if="showShimmers" height="14px" width="60px" />
 
-          <div v-if="isAdditional" class="additional">+{{ additionalCount }}</div>
-        </div>
+          <div v-else class="available-networks">
+            <NetworkLogo
+              v-for="{ network } in availableInNetworksPart"
+              class="minor-network-img"
+              :key="network"
+              :name="network"
+              :width="12"
+            />
+
+            <div v-if="isAdditional" class="additional">+{{ additionalCount }}</div>
+          </div>
+        </template>
       </div>
       <div class="row second-row">
         <div class="currency-name overflow">
           {{ assetString }}
         </div>
-        <div class="count-assets overflow">
+
+        <Shimmer v-if="showShimmers" height="23px" width="60px" />
+
+        <div v-else class="count-assets overflow">
           {{ countAssetsString }}
         </div>
       </div>
@@ -46,7 +53,9 @@
           <div :class="changePriceClasses">{{ usd24HoursChangeString }}</div>
         </div>
 
-        <div>
+        <Shimmer v-if="showShimmers" height="14px" width="70px" />
+
+        <div v-else>
           {{ totalBalanceString }}
         </div>
       </div>
@@ -94,15 +103,19 @@ import type { SelectedWallet } from '@/store/accounts/types';
 import CircleButton from '@/components/CircleButton.vue';
 import NetworkLogo from '@/components/NetworkLogo.vue';
 import Switcher from '@/components/Switcher.vue';
+import Shimmer from '@/components/Shimmer.vue';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/helpers/numbers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GetNetworkStatus } from '@/store/networks/types';
 
 @Component({
   components: {
-    CircleButton,
+    Shimmer,
     Switcher,
     NetworkLogo,
+    CircleButton,
   },
 })
 export default class CurrencyItem extends Vue {
@@ -114,6 +127,17 @@ export default class CurrencyItem extends Vue {
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
+  @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
+
+  get showShimmers() {
+    const havePendingNetwork = this.currency
+      .getAvailableInNetworks(this.selectedWallet)
+      .map(({ network }) => this.getNetworkStatus(network))
+      .includes('pending');
+
+    return !this.isOnline || havePendingNetwork;
+  }
 
   get isCurrentNetwork() {
     return this.selectedNetwork !== 'all';
@@ -238,8 +262,8 @@ export default class CurrencyItem extends Vue {
   padding: 8px 0 8px 14px;
   border-bottom: 1px solid $default-background-color;
   margin-right: 16px;
-  height: 78px;
   align-items: center;
+  height: 80px;
 
   &:hover {
     cursor: pointer;
@@ -273,6 +297,7 @@ export default class CurrencyItem extends Vue {
       font-size: 12px;
       color: $gray-color;
       margin-bottom: 5px;
+      height: 14px;
 
       .available-networks {
         display: flex;
@@ -297,6 +322,7 @@ export default class CurrencyItem extends Vue {
 
       .count-assets {
         font-size: 18px;
+        margin: auto 0;
       }
     }
 
@@ -304,6 +330,7 @@ export default class CurrencyItem extends Vue {
       display: flex;
       font-size: 12px;
       color: $default-white;
+      height: 14px;
 
       .price-change {
         margin-left: 2px;

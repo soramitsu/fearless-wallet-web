@@ -15,7 +15,7 @@ import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
 import { ETHEREUM_NETWORKS, NOT_SUPPORTED_SUBQUERY_NETWORKS } from '@/consts/networks';
 import { loadHistory } from '@/subquery/history';
-import { getMetaTyped, getReplacedMetaTyped } from '@/helpers/common';
+import { getAddressMetaTyped, getReplacedMetaTyped } from '@/helpers/common';
 import { getMockCurrencies } from '@/helpers/currencies';
 import { connectToApi, subscribeAssetsBalances } from '@/helpers/networksConnection';
 import { getAccounts } from '@/helpers/accounts';
@@ -80,6 +80,7 @@ const actions: ActionTree<State, State> & Actions = {
             settings,
             api: undefined,
             provider: undefined,
+            status: 'pending',
           };
         }
       );
@@ -173,14 +174,14 @@ const actions: ActionTree<State, State> & Actions = {
         // if it is a replaced account and the iterated network is not in the networksList
         if (isReplacedAccount && !replacedNetworksList.includes(networkName)) return;
 
-        const { isMobile, ethereumAddress } = getMetaTyped(json.meta);
+        const { isMobile, ethereumAddress } = getAddressMetaTyped(json.meta);
 
         if (!isMobile) {
-          const isEthAccountType = accountType === 'ethereum';
+          const isEthereumAccountType = accountType === 'ethereum';
 
           // ethereum accounts only subscribe to the ethereum networks and
           // substrate accounts only subscribe to the substrate network
-          if ((!isEthereumNetwork && isEthAccountType) || (isEthereumNetwork && !isEthAccountType)) return;
+          if ((!isEthereumNetwork && isEthereumAccountType) || (isEthereumNetwork && !isEthereumAccountType)) return;
         }
 
         //subscribe only if mobile wallet have eth address and it's eth network

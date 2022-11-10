@@ -10,6 +10,7 @@ import type {
   SetHistoryProps,
   SetNetworkActiveNodeProps,
   SetNetworkApi,
+  SetNetworkStatus,
 } from './types';
 import { accountController } from '@/controllers/accountController';
 
@@ -24,6 +25,7 @@ export enum MutationTypes {
   UPDATE_CURRENCY_BALANCE = 'UPDATE_CURRENCY_BALANCE',
   SET_NETWORK_ACTIVE_NODE = 'SET_NETWORK_ACTIVE_NODE',
   SET_NETWORK_API = 'SET_NETWORK_API',
+  SET_NETWORK_STATUS = 'SET_NETWORK_STATUS',
 }
 
 export type Mutations = {
@@ -36,6 +38,7 @@ export type Mutations = {
   [MutationTypes.UPDATE_CURRENCY_BALANCE](state: State, props: UpdateCurrencyBalanceProps): void;
   [MutationTypes.SET_NETWORK_ACTIVE_NODE](state: State, props: SetNetworkActiveNodeProps): void;
   [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApi): void;
+  [MutationTypes.SET_NETWORK_STATUS](state: State, props: SetNetworkStatus): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -69,9 +72,9 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.UPDATE_CURRENCY_BALANCE](
     { currencies, assetsJson, networks },
-    { walletAddress, network, assetId, balance, parentId, type }
+    { walletAddress, network, assetId, balance, parentId }
   ) {
-    const { symbol, precision, existentialDeposit } = assetsJson.find(({ id }) => id === assetId)!;
+    const { symbol } = assetsJson.find(({ id }) => id === assetId)!;
     const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name;
 
     const currentCurrency = currencies.find(({ assetId: _assetId, asset, relayChain: _relayChain }) => {
@@ -81,7 +84,7 @@ const mutations: MutationTree<State> & Mutations = {
       return isExistingAssetId || isExistingSymbol;
     })!;
 
-    currentCurrency.updateCurrencyBalance({ walletAddress, network, balance, type, precision, existentialDeposit });
+    currentCurrency.updateCurrencyBalance({ walletAddress, network, balance });
   },
 
   [MutationTypes.SET_HISTORY](state, { history, networkName, walletAddress, isPreviously, assetId, isMock }) {
@@ -182,6 +185,12 @@ const mutations: MutationTree<State> & Mutations = {
 
     state.networks[networkIndex].provider = provider;
     state.networks[networkIndex].api = api;
+  },
+
+  [MutationTypes.SET_NETWORK_STATUS](state, { network, status }) {
+    const networkIndex = state.networks.findIndex(({ name }) => name === network)!;
+
+    state.networks[networkIndex].status = status;
   },
 };
 

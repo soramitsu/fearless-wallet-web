@@ -44,9 +44,7 @@ export default class PermissionRequest extends Vue {
   }
 
   get statusHeader() {
-    if (this.isSuccess) return this.t('connectionSet');
-
-    return this.t('connectionFailed');
+    return this.isSuccess ? this.t('connectionSet') : this.t('connectionFailed');
   }
 
   get message() {

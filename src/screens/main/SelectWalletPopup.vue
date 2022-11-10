@@ -33,7 +33,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import WalletBalance from './WalletBalance.vue';
 import type { SelectedWallet, SetSelectedWalletProps, Accounts } from '@/store/accounts/types';
-import type { Currencies, TMutation } from '@/interfaces';
+import type { Currencies, TMutation, CustomEvent } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import Popup from '@/components/Popup.vue';
 import BorderButton from '@/components/BorderButton.vue';
@@ -42,10 +42,6 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
 import { addNumbers } from '@/helpers/numbers';
-
-interface HTMLDivElementEvent extends Event {
-  target: HTMLDivElement;
-}
 
 @Component({
   components: {
@@ -85,9 +81,7 @@ export default class SelectWalletPopup extends Vue {
     return addNumbers(arr);
   }
 
-  walletPopupClick(event: HTMLDivElementEvent) {
-    const classList = event.target?.classList;
-
+  walletPopupClick({ target: { classList } }: CustomEvent) {
     if (!(classList.contains('dots-container') || classList.contains('dots')))
       this.$emit('toggleWalletDetailsPopupVisible', false);
   }

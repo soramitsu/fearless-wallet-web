@@ -1,7 +1,7 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import State from './handlers/State';
+import State from '@extension-base/background/handlers/State';
 import type { SignerPayloadJSON } from '@polkadot/types/types';
 import type { HexString } from '@polkadot/util/types';
 import type { RequestSign } from './types';

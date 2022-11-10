@@ -21,7 +21,7 @@ import {
 } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';
-import SignController from '@/controllers/signController';
+import ExtensionController from '@/controllers/extensionController';
 import { SubstrateSignPayloadResponse } from '@/interfaces';
 
 export enum ActionTypes {
@@ -160,7 +160,7 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.APPROVE_SIGN_PASSWORD]({ commit }, { id, isSavePass, password }) {
-    SignController.approveSignPassword(id, isSavePass, password);
+    ExtensionController.approveSignPassword(id, isSavePass, password);
 
     commit(MutationTypes.DELETE_REQUEST, 'sign');
 
@@ -168,7 +168,7 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.SIGN_SIGNATURE]({ commit }, { payload, id }) {
-    SignController.approveSignSignature(id, payload.signature);
+    ExtensionController.approveSignSignature(id, payload.signature);
 
     commit(MutationTypes.DELETE_REQUEST, 'sign');
 

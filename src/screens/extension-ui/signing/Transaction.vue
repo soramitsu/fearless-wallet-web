@@ -63,7 +63,7 @@ import { TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
 import Loader from '@/components/Loader.vue';
 import { beaconController } from '@/controllers/beaconController';
 import { Components } from '@/router/routes';
-import SignController from '@/controllers/signController';
+import ExtensionController from '@/controllers/extensionController';
 
 @Component({
   components: {
@@ -94,9 +94,9 @@ export default class Auth extends Vue {
 
       const response = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
 
-      if (!response || !response.blockchainData.signature) SignController.cancelSign(this.request.id);
+      if (!response || !response.blockchainData.signature) ExtensionController.cancelSign(this.request.id);
 
-      SignController.approveSignSignature(this.request.id, response.blockchainData.signature);
+      ExtensionController.approveSignSignature(this.request.id, response.blockchainData.signature);
 
       this.$router.push(Components.Main);
     }

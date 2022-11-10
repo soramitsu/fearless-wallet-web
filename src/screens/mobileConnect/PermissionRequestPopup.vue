@@ -79,9 +79,11 @@ export default class PermissionRequestPopup extends Vue {
 
     return `No answer from wallet`;
   }
+
   toWalletScreen() {
     this.$router.push({ name: Components.Wallet });
   }
+
   close() {
     if (this.isSuccess || this.isActiveAccountExists) this.toWalletScreen();
     else this.$router.back();

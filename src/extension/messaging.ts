@@ -7,7 +7,6 @@ import { selectableNetworks } from '@polkadot/networks';
 import { getId } from './background/extension-base/src/utils';
 import { PORT_EXTENSION } from './background/extension-base/src/defaults';
 import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types';
-
 import type {
   AccountJson,
   AllowedPath,

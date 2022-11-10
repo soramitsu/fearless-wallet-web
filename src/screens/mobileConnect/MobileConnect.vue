@@ -83,9 +83,7 @@ export default class MobileConnect extends Vue {
     }
 
     this.initBeaconEvents();
-    // const networks = this.getNetworks.map((el) => {
-    //   return { genesisHash: `0x${el.chainId}` };
-    // });
+
     beaconController.connect();
   }
 
@@ -100,7 +98,8 @@ export default class MobileConnect extends Vue {
     if (this.isActiveAccountExists) return 'active_account_exists';
     if (this.isPossibleConnectionProblem && !this.isPermissionsGranted) return 'reset_form';
     if (this.isPermissionsGranted) return 'success';
-    if (this.isWalletAlreadyExists || this.permissionRequestDenied) return 'failed';
+    if (this.isWalletAlreadyExists) return 'wallet_exists';
+    if (this.permissionRequestDenied) return 'failed';
 
     return false;
   }

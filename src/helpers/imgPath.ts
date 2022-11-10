@@ -1,5 +1,5 @@
 import type { RelayChainName } from '@/interfaces/teleport';
-import { LIT, NETWORK_OR_ASSET, PHA, UNIT } from '@/consts/networks';
+import { LIT, NETWORK_AND_ASSET, PHA, UNIT } from '@/consts/networks';
 
 function getOrmlFileName(value: string) {
   const prepValue = value.toLocaleLowerCase();
@@ -28,7 +28,7 @@ function getOrmlFileName(value: string) {
 function getImgPathByNetworkOrAssetName(value = '', relayChain?: RelayChainName) {
   const prepValue = value.toLowerCase();
 
-  if (NETWORK_OR_ASSET[prepValue]) return NETWORK_OR_ASSET[prepValue];
+  if (NETWORK_AND_ASSET[prepValue]) return NETWORK_AND_ASSET[prepValue];
 
   const prepRelayChain = relayChain?.toLowerCase();
 

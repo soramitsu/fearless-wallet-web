@@ -44,12 +44,10 @@ export default class App extends Vue {
 
   created() {
     if (isExtension()) this.extensionSubscribe();
+
     this.setWallet();
     this.addEventOnline();
     this.connectToNodes();
-  }
-
-  mounted() {
     this.subscribeToBalancesOfNetworks();
   }
 

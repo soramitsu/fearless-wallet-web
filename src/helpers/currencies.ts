@@ -76,7 +76,7 @@ function getMockCurrencies(networks: Networks): Currencies {
         Object.keys(balances).forEach((address) => {
           const isEthereumAccountType = BaseApi.getPair(address).type === 'ethereum';
 
-          if ((isEthereumNetwork && isEthereumAccountType) || (!isEthereumNetwork && !isEthereumAccountType)) {
+          if ((isEthereumNetwork && isEthereumAccountType) || (!isEthereumNetwork && !isEthereumAccountType))
             balances[address].push({
               network: mainNet,
               existentialDeposit,
@@ -90,7 +90,6 @@ function getMockCurrencies(networks: Networks): Currencies {
                 transferable: FPNumber.ZERO,
               },
             });
-          }
         });
 
         result[index].balances = balances;

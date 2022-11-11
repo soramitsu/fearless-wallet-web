@@ -92,6 +92,8 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.CONNECT_TO_NODES](context) {
     context.state.networks.forEach((network) => {
+      if (network.api?.isConnected) return;
+
       const apiOptions: ApiOptions = {
         apiRetry: 0,
         nodeIndex: 0,

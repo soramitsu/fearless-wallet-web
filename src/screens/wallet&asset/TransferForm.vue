@@ -246,18 +246,19 @@ export default class SendForm extends Vue {
   }
 
   get buttonText() {
-    if (!this.onlineStatus) return 'No Internet Connection';
+    if (!this.onlineStatus) return 'common.offlineStatus';
 
     if (!this.currency) return '';
 
     if (this.step === 2) return this.extrinsicType === 'transfer' ? 'Send' : 'Teleport';
 
     if (this.extrinsicType === 'transfer' && this.syncedRecipient !== '' && !this.isValidRecipientAddress)
-      return 'Incorrect address';
+      return 'asset.incorrectAddress';
     else if (this.extrinsicType === 'teleport' && this.syncedDestNet !== '' && !this.isValidDirection)
-      return 'Impossible to teleport';
+      return 'asset.impossibleTeleport';
 
-    if (!this.isValidCountAssets) return `Insufficient balance ${this.selectedAssetUpper}`;
+    if (!this.isValidCountAssets)
+      return { text: 'asset.insufficientBalance', localeProps: { asset: this.selectedAssetUpper } };
 
     return 'common.continue';
   }

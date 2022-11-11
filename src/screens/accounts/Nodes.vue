@@ -197,12 +197,15 @@ export default class Nodes extends Vue {
   .custom-nodes {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     margin-right: 9px;
     padding-bottom: $default-padding;
 
     .plus {
       filter: invert(0.5);
       margin-right: 14px;
+      width: 20px;
+      height: 20px;
     }
 
     .add-node {
@@ -270,6 +273,8 @@ export default class Nodes extends Vue {
 
         .copy {
           filter: invert(0.5);
+          width: 20px;
+          height: 20px;
         }
 
         &:hover {

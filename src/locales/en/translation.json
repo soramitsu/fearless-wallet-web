@@ -87,7 +87,7 @@
     "resetConnection": "Reset Request",
     "qrHeader": "Scan the QR code using the Fearless mobile app",
     "activeMobileAccountExists": "There is an active connection, please delete mobile wallet and try again",
-    "walletAlreadyExists": "You already have this wallet. Please, use existing wallet or delete it and try connect mobile wallet again.",
+    "walletAlreadyExists": "You're trying to add the wallet which already exists on the App. Please remove it at first and then try to add Mobile wallet.",
     "requestDenied": "Permission request has been denied by mobile app",
     "requesting": "Requesting permissions...",
     "connected": "Mobile wallet connected to Fearless Wallet Extension",

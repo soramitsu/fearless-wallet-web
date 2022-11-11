@@ -3,7 +3,6 @@ import Vuex, { Store } from 'vuex';
 import networks from './networks';
 import account from './accounts';
 import extension from './extension';
-import beacon from './beacon';
 import type Modules from './types';
 
 const files = require.context('.', false, /\.ts$/);
@@ -12,7 +11,6 @@ const modules: Modules = {
   networks,
   account,
   extension,
-  beacon,
 };
 
 files.keys().forEach((key) => {

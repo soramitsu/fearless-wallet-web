@@ -21,7 +21,7 @@ import type {
 } from '@/interfaces';
 import { MOONBEAM_GENESISHASH, WESTEND_GENESISHASH } from '@/consts/networks';
 import store from '@/store';
-import { MutationTypes as BeaconMutationTypes } from '@/store/beacon/mutations';
+import { MutationTypes as AccountMutationTypes } from '@/store/accounts/mutations';
 class BeaconController {
   private app: DAppClient;
   private serializer = new Serializer();
@@ -74,7 +74,7 @@ class BeaconController {
   }
   public async resetConnection() {
     await this.app.disconnect().then(() => {
-      store.commit(BeaconMutationTypes.DELETE_QR);
+      store.commit(AccountMutationTypes.DELETE_QR);
     });
   }
 

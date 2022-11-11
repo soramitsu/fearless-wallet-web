@@ -52,7 +52,7 @@ import Popup from '@/components/Popup.vue';
 export default class PermissionRequestPopup extends Vue {
   @Prop(Object) requestInfo!: RequestSentInfo | PermissionErrorPayload;
   @Prop({ type: Object || null, default: null }) requestResponse?: PermissionResponseOutput;
-  @Prop(String) status!: 'reset_form' | 'success' | 'failed' | 'active_account_exists';
+  @Prop(String) status!: 'reset_form' | 'success' | 'failed' | 'wallet_exists' | 'active_account_exists';
 
   get isSuccess() {
     return this.status === 'success';
@@ -66,8 +66,12 @@ export default class PermissionRequestPopup extends Vue {
     return this.status === 'active_account_exists';
   }
 
+  get isWalletExists() {
+    return this.status === 'wallet_exists';
+  }
+
   get isRequestFinished() {
-    return this.isSuccess || this.isFailed || this.isActiveAccountExists;
+    return this.isSuccess || this.isFailed || this.isWalletExists || this.isActiveAccountExists;
   }
 
   get isPendingWithResetForm() {
@@ -79,9 +83,11 @@ export default class PermissionRequestPopup extends Vue {
 
     return `No answer from wallet`;
   }
+
   toWalletScreen() {
     this.$router.push({ name: Components.Wallet });
   }
+
   close() {
     if (this.isSuccess || this.isActiveAccountExists) this.toWalletScreen();
     else this.$router.back();

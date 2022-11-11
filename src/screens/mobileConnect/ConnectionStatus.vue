@@ -25,7 +25,7 @@ import Popup from '@/components/Popup.vue';
   },
 })
 export default class PermissionRequest extends Vue {
-  @Prop(String) status!: 'success' | 'failed' | 'active_account_exists';
+  @Prop(String) status!: 'success' | 'failed' | 'wallet_exists' | 'active_account_exists';
 
   get nameColorClass() {
     return `connection__status-name--${this.isSuccess ? 'success' : 'failed'}`;
@@ -43,23 +43,25 @@ export default class PermissionRequest extends Vue {
     return this.status === 'active_account_exists';
   }
 
-  get statusHeader() {
-    if (this.isSuccess) return this.t('connectionSet');
+  get isWalletExists() {
+    return this.status === 'wallet_exists';
+  }
 
-    return this.t('connectionFailed');
+  get statusHeader() {
+    return this.isSuccess ? this.t('connectionSet') : this.t('connectionFailed');
   }
 
   get message() {
     if (this.isSuccess) return this.t('connected');
-
     if (this.isFailed) return this.t('requestDenied');
+    if (this.isWalletExists) return this.t('walletAlreadyExists');
     if (this.isActiveAccountExists) return this.t('activeMobileAccountExists');
 
     return '';
   }
 
   get icon() {
-    return this.isFailed || this.isActiveAccountExists ? 'status__failed' : 'status__success';
+    return this.isFailed || this.isWalletExists || this.isActiveAccountExists ? 'status__failed' : 'status__success';
   }
 
   t(value: string) {

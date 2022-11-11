@@ -21,13 +21,16 @@ import { Getter } from 'vuex-class';
 import Corners from '@/components/Corners.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { formattedNumber } from '@/helpers/numbers';
-
+import { CustomEvent } from '@/interfaces';
 @Component({
   components: { Corners },
 })
 export default class WalletBalance extends Vue {
   readonly dotsHorizontalRef = 'dotsHorizontal';
   showWalletMenu = false;
+  $refs!: {
+    dotsHorizontal: HTMLDivElement;
+  };
 
   @Prop({ default: '' }) name!: string;
   @Prop(String) balance!: string;
@@ -65,12 +68,12 @@ export default class WalletBalance extends Vue {
     ];
   }
 
-  updateSelectedWallet(event: Event) {
-    const classList = (event.target as HTMLDivElement)?.classList;
+  updateSelectedWallet({ target: { classList } }: CustomEvent) {
+    const shouldUpdateSelectedWallet = !(classList.contains('dots-container') || classList.contains('dots'));
 
-    if (!(classList.contains('dots-container') || classList.contains('dots'))) this.$emit('updateSelectedWallet');
+    if (shouldUpdateSelectedWallet) this.$emit('updateSelectedWallet');
     else {
-      const buttonTop = (this.$refs[this.dotsHorizontalRef] as Element).getBoundingClientRect().top;
+      const buttonTop = this.$refs[this.dotsHorizontalRef].getBoundingClientRect().top;
 
       this.$emit('setShowWalletDetailsPopupVisible', buttonTop);
     }

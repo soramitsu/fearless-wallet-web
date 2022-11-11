@@ -74,7 +74,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/extension/actions';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { GetNetworkGenesisHash } from '@/store/networks/types';
-import SignController from '@/controllers/signController';
+import ExtensionController from '@/controllers/extensionController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 
@@ -102,7 +102,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(String) firstNetwork!: string;
   @Prop(String) secondNetwork!: string;
   @Prop(String) transactionId?: string;
-  @Prop(Object) currency!: Currency;
+  @Prop(Object) currency?: Currency;
   @Prop(Object) payload?: SignerPayloadJSON;
 
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
@@ -152,7 +152,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transferAmountString() {
-    return `-${this.amount} ${this.currency.displayName.toUpperCase()}`;
+    return `-${this.amount} ${this.currency?.displayName.toUpperCase()}`;
   }
 
   get transferValueString() {
@@ -198,7 +198,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     if (this.transactionId && this.isTransactionPending) {
-      SignController.cancelSign(this.transactionId);
+      ExtensionController.cancelSign(this.transactionId);
       this.transactionState = undefined;
 
       this.$emit('close', true);
@@ -207,7 +207,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     if (this.isTransactionFinished) {
-      this.currency.clearSendStatus();
+      this.currency?.clearSendStatus();
       this.transactionState = undefined;
 
       this.$emit('close', true);
@@ -215,7 +215,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async signMobile() {
-    if (!this.transactionId && this.currency.extrinsic) await this.currency?.send(this.transactionAddress, true);
+    if (!this.transactionId && this.currency?.extrinsic) await this.currency?.send(this.transactionAddress, true);
     else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
   }
 
@@ -229,12 +229,12 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (blockchainData.signature.length === 0) {
       this.transactionState = 'failed';
 
-      SignController.cancelSign(id);
+      ExtensionController.cancelSign(id);
 
       return;
     }
 
-    SignController.approveSignSignature(id, blockchainData.signature);
+    ExtensionController.approveSignSignature(id, blockchainData.signature);
   }
 
   async send() {

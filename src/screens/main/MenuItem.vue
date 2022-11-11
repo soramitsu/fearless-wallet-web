@@ -10,9 +10,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { MenuItem as TMenuItem } from '@/interfaces/common';
 
-@Component({
-  components: {},
-})
+@Component
 export default class MenuItem extends Vue {
   iconClass = ['menu-icon'];
 

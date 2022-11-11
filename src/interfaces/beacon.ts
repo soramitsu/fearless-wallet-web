@@ -22,14 +22,20 @@ export interface PermissionErrorPayload {
   walletInfo: WalletInfo;
 }
 
+interface GenesisHash {
+  genesisHash: HexString;
+}
+
+type BeaconNetworksWhiteList = {
+  genesisHash: HexString; // Wallet shows only those accounts
+  rpc?: string; // For development nodes?
+}[];
+
 export interface SubstratePermissionRequest extends PermissionRequestV3<'substrate'> {
   blockchainData: {
     scopes: SubstratePermissionScope[]; // enum
     appMetadata: AppMetadata;
-    networks?: {
-      genesisHash: string; // Wallet shows only those accounts
-      rpc?: string; // For development nodes?
-    }[]; // Array to "whitelist" certain networks? (optional)
+    networks?: BeaconNetworksWhiteList; // Array to "whitelist" certain networks? (optional)
   };
 }
 
@@ -75,14 +81,6 @@ export interface SubstrateSignPayloadRequest extends BlockchainRequestV3<'substr
   };
 }
 
-export interface BeaconPayloadRaw {
-  isMutable: boolean;
-  data: string;
-  dataType: string;
-  type: string;
-  address: string;
-}
-
 export interface SignerPayloadRaw {
   isMutable: boolean;
   data: string;
@@ -95,13 +93,9 @@ export interface SubstrateSignPayloadRequestRaw extends BlockchainRequestV3<'sub
   blockchainData: {
     type: SubstrateMessageType.sign_payload_request;
     scope: SubstratePermissionScope.sign_payload_raw;
-    payload: BeaconPayloadRaw;
+    payload: SignerPayloadRaw;
     mode: 'submit' | 'submit-and-return' | 'return';
   };
-}
-
-interface GenesisHash {
-  genesisHash: HexString;
 }
 
 export interface TransferPayload {
@@ -110,8 +104,6 @@ export interface TransferPayload {
   recipient: string;
   sourceAddress: string;
 }
-
-export type BeaconNetworks = GenesisHash[];
 
 export interface SubstrateSignPayloadResponse extends BlockchainResponseV3<'substrate'> {
   blockchainData: {
@@ -126,8 +118,6 @@ export interface SubstrateSignPayloadJSONResponse extends BlockchainResponseV3<'
     type: string;
   };
 }
-
-export type TCallback<T> = (payload: T) => void;
 
 interface BeaconAccount {
   accountId: string;

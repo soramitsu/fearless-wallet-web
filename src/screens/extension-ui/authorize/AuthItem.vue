@@ -15,8 +15,6 @@
         </SRow>
       </SCol>
     </SRow>
-
-    <SDivider class="divider" />
   </SCol>
 </template>
 
@@ -24,9 +22,9 @@
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { AuthUrlInfo } from '@extension-base/background/types';
 import { Action } from 'vuex-class';
+import type { TAction } from '@/interfaces';
 import { stripUrl } from '@/extension/background/extension-base/src/background/handlers/helpers';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
-import { TAction } from '@/interfaces';
 
 @Component
 export default class AuthItem extends Vue {
@@ -60,7 +58,8 @@ export default class AuthItem extends Vue {
 }
 
 .auth-content {
-  padding: 0 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid $default-background-color;
 }
 
 .authorized-account__count {

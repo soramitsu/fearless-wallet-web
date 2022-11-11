@@ -23,6 +23,8 @@ export enum MutationTypes {
   SET_ONLINE_STATUS = 'SET_ONLINE_STATUS',
   SET_ADDRESSES = 'SET_ADDRESSES',
   SET_AUTO_SELECT_NODE = 'SET_AUTO_SELECT_NODE',
+  SET_QR = 'SET_QR',
+  DELETE_QR = 'DELETE_QR',
 }
 
 export type Mutations = {
@@ -33,6 +35,8 @@ export type Mutations = {
   [MutationTypes.SET_ONLINE_STATUS](state: State, props: setOnlineStatus): void;
   [MutationTypes.SET_ADDRESSES](state: State, props: setAddressesProps): void;
   [MutationTypes.SET_AUTO_SELECT_NODE](state: State, props: setAutoSelectNode): void;
+  [MutationTypes.SET_QR](state: State, props: string): void;
+  [MutationTypes.DELETE_QR](state: State): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -93,6 +97,14 @@ const mutations: MutationTree<State> & Mutations = {
     accountController.setAutoSelectNodes(value, network);
 
     state.autoSelectNode[network] = value;
+  },
+
+  [MutationTypes.SET_QR](state, payload) {
+    state.qr = payload;
+  },
+
+  [MutationTypes.DELETE_QR](state) {
+    state.qr = null;
   },
 };
 

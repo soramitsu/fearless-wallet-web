@@ -17,6 +17,7 @@ export enum GettersTypes {
   getAddresses = 'getAddresses',
   getWallets = 'getWallets',
   getAutoSelectNodesValueByNetwork = 'getAutoSelectNodesValueByNetwork',
+  GET_QR = 'getQR',
 }
 
 export type Getters = {
@@ -33,6 +34,7 @@ export type Getters = {
     state: State,
     getters?: GetterTree<State, State> & Getters
   ): GetAutoSelectNodesValueByNetwork;
+  [GettersTypes.GET_QR](state: State, getters?: GetterTree<State, State> & Getters): Nullable<string>;
 };
 
 const getters: GetterTree<State, State> & Getters = {
@@ -94,6 +96,9 @@ const getters: GetterTree<State, State> & Getters = {
     });
 
     return wallets;
+  },
+  [GettersTypes.GET_QR]({ qr }): Nullable<string> {
+    return qr;
   },
 };
 

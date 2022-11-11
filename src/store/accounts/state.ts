@@ -9,6 +9,7 @@ export type State = {
   accounts: Accounts;
   addresses: Accounts;
   autoSelectNode: AutoSelectNode;
+  qr: string | null;
 };
 
 const state = (): State => {
@@ -20,6 +21,7 @@ const state = (): State => {
     accounts: {},
     addresses: {},
     autoSelectNode: accountController.getAutoSelectNodesValue(),
+    qr: null,
   };
 };
 

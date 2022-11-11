@@ -21,7 +21,7 @@ import {
 } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';
-import SignController from '@/controllers/signController';
+import ExtensionController from '@/controllers/extensionController';
 import { SubstrateSignPayloadResponse } from '@/interfaces';
 
 export enum ActionTypes {
@@ -81,7 +81,7 @@ const actions: ActionTree<State, State> & Actions = {
       const [request] = requests;
 
       if (request) {
-        commit(MutationTypes.SET_AUTH_REQUEST, request);
+        commit(MutationTypes.SET_REQUEST, { type: 'auth', data: request });
 
         router.push({
           name: Components.Authorize,
@@ -121,7 +121,7 @@ const actions: ActionTree<State, State> & Actions = {
       const [request] = requests;
 
       if (request && request.id) {
-        commit(MutationTypes.SET_METADATA_REQUEST, request);
+        commit(MutationTypes.SET_REQUEST, { type: 'meta', data: request });
 
         router.push({
           name: Components.MetaRequest,
@@ -148,7 +148,7 @@ const actions: ActionTree<State, State> & Actions = {
       const [request] = requests;
 
       if (request) {
-        commit(MutationTypes.SET_SIGN_REQUEST, request);
+        commit(MutationTypes.SET_REQUEST, { type: 'sign', data: request });
 
         router.push({
           name: Components.Transaction,
@@ -160,7 +160,7 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.APPROVE_SIGN_PASSWORD]({ commit }, { id, isSavePass, password }) {
-    SignController.approveSignPassword(id, isSavePass, password);
+    ExtensionController.approveSignPassword(id, isSavePass, password);
 
     commit(MutationTypes.DELETE_REQUEST, 'sign');
 
@@ -168,7 +168,7 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.SIGN_SIGNATURE]({ commit }, { payload, id }) {
-    SignController.approveSignSignature(id, payload.signature);
+    ExtensionController.approveSignSignature(id, payload.signature);
 
     commit(MutationTypes.DELETE_REQUEST, 'sign');
 

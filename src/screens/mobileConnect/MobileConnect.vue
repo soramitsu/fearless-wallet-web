@@ -21,11 +21,11 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator';
-import { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import { Action, Getter, Mutation } from 'vuex-class';
-import { PermissionResponseOutput } from '@airgap/beacon-sdk';
+import type { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
+import type { PermissionResponseOutput } from '@airgap/beacon-sdk';
 import type { SetSelectedWallet } from '@/store/accounts/types';
-import {
+import type {
   PermissionSuccess,
   TAction,
   RequestSentInfo,
@@ -38,8 +38,8 @@ import { createAddress } from '@/extension/messaging';
 import { beaconController } from '@/controllers/beaconController';
 import { ActionTypes as AccountActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as NetworkGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as BeaconGettersTypes } from '@/store/beacon/getters';
-import { MutationTypes as BeaconMutationsTypes } from '@/store/beacon/mutations';
+import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
+import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutations';
 import AboveForm from '@/components/AboveForm.vue';
 import QR from '@/components/QR.vue';
 import Loader from '@/components/Loader.vue';
@@ -69,8 +69,8 @@ export default class MobileConnect extends Vue {
 
   @Action(AccountActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
   @Getter(NetworkGettersTypes.getNetworks) getNetworks!: Networks;
-  @Getter(BeaconGettersTypes.GET_QR) getQR!: Nullable<string>;
-  @Mutation(BeaconMutationsTypes.SET_QR) setQR!: TMutation<string>;
+  @Getter(AccountGettersTypes.GET_QR) getQR!: Nullable<string>;
+  @Mutation(AccountMutationsTypes.SET_QR) setQR!: TMutation<string>;
 
   async mounted() {
     this.isLoading = !this.getQR;
@@ -83,9 +83,7 @@ export default class MobileConnect extends Vue {
     }
 
     this.initBeaconEvents();
-    // const networks = this.getNetworks.map((el) => {
-    //   return { genesisHash: `0x${el.chainId}` };
-    // });
+
     beaconController.connect();
   }
 
@@ -100,7 +98,8 @@ export default class MobileConnect extends Vue {
     if (this.isActiveAccountExists) return 'active_account_exists';
     if (this.isPossibleConnectionProblem && !this.isPermissionsGranted) return 'reset_form';
     if (this.isPermissionsGranted) return 'success';
-    if (this.isWalletAlreadyExists || this.permissionRequestDenied) return 'failed';
+    if (this.isWalletAlreadyExists) return 'wallet_exists';
+    if (this.permissionRequestDenied) return 'failed';
 
     return false;
   }

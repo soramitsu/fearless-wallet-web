@@ -137,15 +137,13 @@ function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet) {
   return [...currenciesWithAssets, ...relayChains, ...currenciesWithoutAssets];
 }
 
-function getProviderUrl(providerName: string, asset: string, address: string) {
-  switch (providerName) {
-    case 'moonpay':
-      return `https://buy.moonpay.com/?currencyCode=${asset.toLowerCase()}&walletAddress=${address}&showWalletAddressForm=true`;
-    case 'ramp':
-      return `https://buy.ramp.network/?swapAsset=${asset}&userAddress=${address}`;
-    default:
-      return '';
-  }
+function getProviderUrl(name: 'moonPay' | 'ramp', asset: string, address: string) {
+  const provider = {
+    moonPay: `https://buy.moonpay.com/?currencyCode=${asset.toLowerCase()}&walletAddress=${address}&showWalletAddressForm=true`,
+    ramp: `https://buy.ramp.network/?swapAsset=${asset}&userAddress=${address}`,
+  };
+
+  return provider[name];
 }
 
 function getCurrencyOptions(currencies: Currencies) {

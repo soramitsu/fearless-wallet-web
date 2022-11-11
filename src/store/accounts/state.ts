@@ -1,4 +1,4 @@
-import type { SelectedWallet, Accounts, SelectedNetworks } from './types';
+import type { SelectedWallet, Accounts, SelectedNetworks, AutoSelectNode } from './types';
 import { accountController } from '@/controllers/accountController';
 
 export type State = {
@@ -8,6 +8,7 @@ export type State = {
   isOnline: boolean;
   accounts: Accounts;
   addresses: Accounts;
+  autoSelectNode: AutoSelectNode;
 };
 
 const state = (): State => {
@@ -18,6 +19,7 @@ const state = (): State => {
     isOnline: navigator.onLine,
     accounts: {},
     addresses: {},
+    autoSelectNode: accountController.getAutoSelectNodesValue(),
   };
 };
 

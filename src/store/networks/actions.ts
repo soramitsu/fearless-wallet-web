@@ -18,7 +18,6 @@ import { loadHistory } from '@/subquery/history';
 import { getAddressMetaTyped, getReplacedMetaTyped } from '@/helpers/common';
 import { getMockCurrencies } from '@/helpers/currencies';
 import { connectToApi, subscribeAssetsBalances } from '@/helpers/networksConnection';
-import { getAccounts } from '@/helpers/accounts';
 
 export enum ActionTypes {
   LOAD_JSONS = 'LOAD_JSONS',
@@ -200,34 +199,20 @@ const actions: ActionTree<State, State> & Actions = {
     await Promise.allSettled(promises);
   },
 
-  async [ActionTypes.TOGGLE_ACTIVE_NODE](
-    { state: { networks }, commit, dispatch },
-    { network, nodeName, nodeUrl: nodeUrlProp, oldNodeUrl }
-  ) {
-    const networkApi = networks.find(({ name }) => name === network)!;
-    const nodeUrl = nodeUrlProp === '' ? networkApi.nodes[0].url : nodeUrlProp;
+  async [ActionTypes.TOGGLE_ACTIVE_NODE]({ state }, { network, nodeUrl, nodeName, oldNodeUrl }) {
+    const networkApi = state.networks.find(({ name }) => name === network)!;
 
-    commit(MutationTypes.SET_NETWORK_ACTIVE_NODE, {
-      network,
-      name: nodeName,
-      url: nodeUrlProp,
-    });
-
-    if (nodeUrl === oldNodeUrl || (oldNodeUrl === '' && nodeUrl === networkApi.nodes[0].url)) return;
+    if ((networkApi.status !== 'disconnect' && nodeUrl === undefined) || nodeUrl === oldNodeUrl) return;
 
     await networkApi.provider?.disconnect();
 
+    const nodeOptions = nodeName && nodeUrl ? { name: nodeName, url: nodeUrl } : undefined;
     const apiOptions: ApiOptions = {
       apiRetry: 0,
       nodeIndex: 0,
     };
 
-    connectToApi(networkApi, apiOptions);
-    await dispatch(ActionTypes.SUBSCRIBE_TO_BALANCES, {
-      accounts: getAccounts(),
-      loadHistory: false,
-      networksProps: [networkApi],
-    });
+    connectToApi(networkApi, apiOptions, nodeOptions);
   },
 };
 

@@ -131,12 +131,13 @@ export default class CurrencyItem extends Vue {
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
 
   get showShimmers() {
-    const havePendingNetwork = this.currency
-      .getAvailableInNetworks(this.selectedWallet)
-      .map(({ network }) => this.getNetworkStatus(network))
-      .includes('pending');
+    const index = this.currency.getAvailableInNetworks(this.selectedWallet).findIndex(({ network }) => {
+      const status = this.getNetworkStatus(network);
 
-    return !this.isOnline || havePendingNetwork;
+      return status === 'pending' || status === 'connected';
+    });
+
+    return !this.isOnline || index !== -1;
   }
 
   get isCurrentNetwork() {

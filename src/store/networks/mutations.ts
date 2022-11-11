@@ -8,9 +8,9 @@ import type {
   SetAssetsPriceProps,
   SetCurrenciesProps,
   SetHistoryProps,
-  SetNetworkActiveNodeProps,
-  SetNetworkApi,
-  SetNetworkStatus,
+  SetActiveNodeProps,
+  SetNetworkApiProps,
+  SetNetworkStatusProps,
 } from './types';
 import { accountController } from '@/controllers/accountController';
 
@@ -23,7 +23,7 @@ export enum MutationTypes {
   SORT_CURRENCIES = 'SORT_CURRENCIES',
   SET_HISTORY = 'SET_HISTORY',
   UPDATE_CURRENCY_BALANCE = 'UPDATE_CURRENCY_BALANCE',
-  SET_NETWORK_ACTIVE_NODE = 'SET_NETWORK_ACTIVE_NODE',
+  SET_ACTIVE_NODE = 'SET_ACTIVE_NODE',
   SET_NETWORK_API = 'SET_NETWORK_API',
   SET_NETWORK_STATUS = 'SET_NETWORK_STATUS',
 }
@@ -36,9 +36,9 @@ export type Mutations = {
   [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
   [MutationTypes.UPDATE_CURRENCY_BALANCE](state: State, props: UpdateCurrencyBalanceProps): void;
-  [MutationTypes.SET_NETWORK_ACTIVE_NODE](state: State, props: SetNetworkActiveNodeProps): void;
-  [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApi): void;
-  [MutationTypes.SET_NETWORK_STATUS](state: State, props: SetNetworkStatus): void;
+  [MutationTypes.SET_ACTIVE_NODE](state: State, props: SetActiveNodeProps): void;
+  [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApiProps): void;
+  [MutationTypes.SET_NETWORK_STATUS](state: State, props: SetNetworkStatusProps): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -172,10 +172,10 @@ const mutations: MutationTree<State> & Mutations = {
     state.history = { ...state.history, [assetId]: historyForAssetId };
   },
 
-  [MutationTypes.SET_NETWORK_ACTIVE_NODE](state, { network, name, url }) {
+  [MutationTypes.SET_ACTIVE_NODE](state, { network, name, url, saveNode }) {
     const oldActiveNodes = state.activeNodes;
 
-    accountController.setActiveNode({ name, url }, network);
+    if (saveNode) accountController.setActiveNode({ name, url }, network);
 
     state.activeNodes = { ...oldActiveNodes, [network]: { name, url } };
   },

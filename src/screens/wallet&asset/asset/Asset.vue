@@ -162,7 +162,9 @@ export default class Asset extends Vue {
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
 
   get showShimmers() {
-    return !this.isOnline || this.getNetworkStatus(this.selectedNetwork) === 'pending';
+    const status = this.getNetworkStatus(this.selectedNetwork);
+
+    return !this.isOnline || status === 'pending' || status === 'connected';
   }
 
   get providers() {

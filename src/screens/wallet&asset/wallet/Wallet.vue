@@ -129,7 +129,7 @@ export default class Wallet extends Vue {
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
-  @Getter(NetworksGettersTypes.getAllNetworksIsLoaded) allNetworksIsLoaded!: boolean;
+  @Getter(NetworksGettersTypes.getAllNetworksIsReady) allNetworksIsReady!: boolean;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
@@ -138,7 +138,7 @@ export default class Wallet extends Vue {
     // TODO: подумать над тем, чтобы добавить лоадер на весь экстеншен, пока не загружены JSON файлы
     if (this.currencies.length === 0) return true; // удалить если добавим лоадер
 
-    return !this.isOnline || !this.allNetworksIsLoaded;
+    return !this.isOnline || !this.allNetworksIsReady;
   }
 
   get sortedCurrencies() {
@@ -195,6 +195,11 @@ export default class Wallet extends Vue {
 
   get showNfts() {
     return this.activeTabName === 'NFTs';
+  }
+
+  deactivated() {
+    this.showAssetsManagementForm = false;
+    this.filterValue = '';
   }
 
   toggleAssetsManagementFormVisible(value = true) {

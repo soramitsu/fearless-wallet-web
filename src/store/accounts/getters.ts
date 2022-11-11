@@ -1,6 +1,6 @@
 import { IWallet } from './types';
 import type { GetterTree } from 'vuex';
-import type { SelectedWallet, Accounts, WalletInfo } from './types';
+import type { SelectedWallet, Accounts, WalletInfo, GetAutoSelectNodesValueByNetwork } from './types';
 import type { State } from './state';
 import type { FiatJson } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -16,6 +16,7 @@ export enum GettersTypes {
   getAccounts = 'getAccounts',
   getAddresses = 'getAddresses',
   getWallets = 'getWallets',
+  getAutoSelectNodesValueByNetwork = 'getAutoSelectNodesValueByNetwork',
 }
 
 export type Getters = {
@@ -28,6 +29,10 @@ export type Getters = {
   [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
   [GettersTypes.getAddresses](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
   [GettersTypes.getWallets](state: State, getters?: GetterTree<State, State> & Getters): WalletInfo[];
+  [GettersTypes.getAutoSelectNodesValueByNetwork](
+    state: State,
+    getters?: GetterTree<State, State> & Getters
+  ): GetAutoSelectNodesValueByNetwork;
 };
 
 const getters: GetterTree<State, State> & Getters = {
@@ -68,6 +73,12 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getAddresses]({ addresses }): Accounts {
     return addresses;
   },
+
+  [GettersTypes.getAutoSelectNodesValueByNetwork]:
+    ({ autoSelectNode }) =>
+    (networkName: string) => {
+      return autoSelectNode[networkName] ?? true;
+    },
 
   [GettersTypes.getWallets]({ addresses, accounts }): WalletInfo[] {
     const wallets: WalletInfo[] = [];

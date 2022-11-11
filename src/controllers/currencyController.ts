@@ -297,14 +297,17 @@ export default class CurrencyController {
   }
 
   public createTransferExtrinsic(wallet: Wallet, to: string, amount: string, networkName: string): void {
-    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet) ?? [];
-    const { precision, type } = availableInNetworks.find(({ network }) => network === networkName)!;
-    const ormlOptions = getOptions(this.asset, type, this.assetId);
-    const precisionAmount = this.getPrecisionValue(amount, precision) as string;
     const {
       api,
       settings: { DefaultTip },
     } = NetworksController.getNetwork(networkName);
+
+    if (api === undefined) return;
+
+    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet) ?? [];
+    const { precision, type } = availableInNetworks.find(({ network }) => network === networkName)!;
+    const ormlOptions = getOptions(this.asset, type, this.assetId);
+    const precisionAmount = this.getPrecisionValue(amount, precision) as string;
 
     this.options = {
       transactionsOptions: { tip: DefaultTip },
@@ -364,6 +367,9 @@ export default class CurrencyController {
     precisionAmount: string
   ): Promise<void> {
     const { api } = NetworksController.getNetwork(originNet);
+
+    if (api === undefined) return;
+
     const module = isNativeNetwork(destNet) ? 'limitedTeleportAssets' : 'reserveTransferAssets';
     const pallet = XCM_NATIVE_PALLETS.find((pallet) => api!.tx[pallet] && isFunction(api!.tx[pallet][module]))!;
     const tx = api!.tx[pallet][module];
@@ -380,6 +386,9 @@ export default class CurrencyController {
     precisionAmount: string
   ): Promise<void> {
     const { api } = NetworksController.getNetwork(originNet);
+
+    if (api === undefined) return;
+
     const ormlOptions = getOrmlOptions(this.asset, originNet);
     const params = getOrmlTeleportParams(originNet, destNet, toAddress);
 

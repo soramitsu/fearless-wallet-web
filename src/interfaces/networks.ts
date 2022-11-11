@@ -44,7 +44,7 @@ type NetworkAssets = {
   type?: NetworkAssetsType;
 };
 
-type NetworkStatus = 'pending' | 'disconnect' | 'ready';
+type NetworkStatus = 'pending' | 'disconnect' | 'connected' | 'ready';
 
 type NetworkJson = {
   chainId: string;

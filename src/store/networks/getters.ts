@@ -1,13 +1,12 @@
+import type { AssetJson, FiatJson, Networks, GetHistory, Currencies, KeysAssetPricesJson } from '@/interfaces';
 import type {
-  AssetJson,
-  ActiveNodes,
-  FiatJson,
-  Networks,
-  GetHistory,
-  Currencies,
-  KeysAssetPricesJson,
-} from '@/interfaces';
-import type { GetNetwork, GetAssetName, GetAssetPrice, GetNetworkGenesisHash, GetNetworkStatus } from './types';
+  GetNetwork,
+  GetAssetName,
+  GetAssetPrice,
+  GetNetworkGenesisHash,
+  GetNetworkStatus,
+  GetActiveNodesByNetwork,
+} from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 
@@ -21,8 +20,8 @@ export enum GettersTypes {
   getFiats = 'getFiats',
   getHistory = 'getHistory',
   getCurrencies = 'getCurrencies',
-  getActiveNodes = 'getActiveNodes',
-  getAllNetworksIsLoaded = 'getAllNetworksIsLoaded',
+  getActiveNodesByNetwork = 'getActiveNodesByNetwork',
+  getAllNetworksIsReady = 'getAllNetworksIsReady',
   getNetworkStatus = 'getNetworkStatus',
 }
 
@@ -34,8 +33,11 @@ export type Getters = {
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
   [GettersTypes.getCurrencies](state: State, getters?: GetterTree<State, State> & Getters): Currencies;
-  [GettersTypes.getActiveNodes](state: State, getters?: GetterTree<State, State> & Getters): ActiveNodes;
-  [GettersTypes.getAllNetworksIsLoaded](state: State, getters?: GetterTree<State, State> & Getters): boolean;
+  [GettersTypes.getActiveNodesByNetwork](
+    state: State,
+    getters?: GetterTree<State, State> & Getters
+  ): GetActiveNodesByNetwork;
+  [GettersTypes.getAllNetworksIsReady](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getNetworkStatus](state: State, getters?: GetterTree<State, State> & Getters): GetNetworkStatus;
   [GettersTypes.getNetworkGenesisHash](
     state: State,
@@ -109,11 +111,13 @@ const getters: GetterTree<State, State> & Getters = {
     return currencies;
   },
 
-  [GettersTypes.getActiveNodes]({ activeNodes }): ActiveNodes {
-    return activeNodes;
-  },
+  [GettersTypes.getActiveNodesByNetwork]:
+    ({ activeNodes }) =>
+    (networkName: string) => {
+      return activeNodes[networkName] ?? { name: '', url: '' };
+    },
 
-  [GettersTypes.getAllNetworksIsLoaded]({ networks }): boolean {
+  [GettersTypes.getAllNetworksIsReady]({ networks }): boolean {
     return !networks.some(({ status }) => status === 'pending');
   },
 

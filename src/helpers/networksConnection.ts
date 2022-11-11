@@ -1,40 +1,40 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
-import type { Network, Node, ApiOptions, AssetJson } from '@/interfaces';
+import type { Network, ApiOptions, AssetJson } from '@/interfaces';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
+import type { Node } from '@/interfaces/nodes';
 import { formatBalance } from '@/util/balances';
 import { MutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
-import { accountController } from '@/controllers/accountController';
 import NetworksController from '@/controllers/networksController';
 import BaseApi from '@/util/BaseApi';
 import { ORML_PALLETS_TYPES, getOptions } from '@/util/assets';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 import { getAccounts } from '@/helpers/accounts';
 import store from '@/store';
+import { accountController } from '@/controllers/accountController';
 
 interface ISubscribeData {
   data: AccountData;
 }
 
-const connectedHandler = (apiOptions: ApiOptions, { url, name }: Node, network: Network) => {
+const connectedHandler = (apiOptions: ApiOptions, network: Network) => {
   apiOptions.apiRetry = 0;
-
-  store.commit(MutationTypes.SET_NETWORK_ACTIVE_NODE, {
-    network: network.name,
-    name,
-    url,
-  });
 
   store.commit(MutationTypes.SET_NETWORK_API, {
     network: network.name,
     api: apiOptions.api,
     provider: apiOptions.provider,
   });
+
+  store.commit(MutationTypes.SET_NETWORK_STATUS, {
+    network: network.name,
+    status: 'connected',
+  });
 };
 
-const disconnectHandler = (apiOptions: ApiOptions, network: Network, provider: WsProvider) => {
+const disconnectHandler = (apiOptions: ApiOptions, network: Network, provider: WsProvider, tryAnotherNode: boolean) => {
   apiOptions.apiRetry += 1;
 
   store.commit(MutationTypes.SET_NETWORK_API, {
@@ -45,10 +45,10 @@ const disconnectHandler = (apiOptions: ApiOptions, network: Network, provider: W
 
   store.commit(MutationTypes.SET_NETWORK_STATUS, {
     network: network.name,
-    isReady: false,
+    status: 'disconnected',
   });
 
-  if (apiOptions.apiRetry === MAX_CONTINUE_RETRY) {
+  if (tryAnotherNode && apiOptions.apiRetry === MAX_CONTINUE_RETRY) {
     provider.disconnect();
 
     apiOptions.apiRetry = 0;
@@ -73,13 +73,12 @@ const readyHandler = (network: Network) => {
   });
 };
 
-function connectToApi(network: Network, apiOptions: ApiOptions): void {
-  const autoSelectNodes = accountController.getAutoSelectNodesValue();
-  const activeNodes = accountController.getActiveNodes();
+function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): void {
   const { name: networkName, nodes } = network;
-  const autoSelectNode = autoSelectNodes[networkName] ?? true;
+  const activeNodes = accountController.getActiveNodes();
+  const autoSelectNode = store.getters.getAutoSelectNodesValueByNetwork(networkName);
   const nodesList = autoSelectNode ? nodes : [activeNodes[networkName]];
-  const node = nodesList[apiOptions.nodeIndex];
+  const node = _node ?? nodesList[apiOptions.nodeIndex];
 
   store.commit(MutationTypes.SET_NETWORK_STATUS, {
     network: networkName,
@@ -88,14 +87,21 @@ function connectToApi(network: Network, apiOptions: ApiOptions): void {
 
   if (node === undefined) return;
 
+  store.commit(MutationTypes.SET_ACTIVE_NODE, {
+    network: network.name,
+    name: node.name,
+    url: node.url,
+    saveNode: _node !== undefined,
+  });
+
   const provider = new WsProvider(node.url, AUTO_CONNECT_MS);
   const api = new ApiPromise({ provider });
 
   apiOptions.api = api;
   apiOptions.provider = provider;
 
-  api.on('connected', () => connectedHandler(apiOptions, node, network));
-  api.on('disconnected', () => disconnectHandler(apiOptions, network, provider));
+  api.on('connected', () => connectedHandler(apiOptions, network));
+  api.on('disconnected', () => disconnectHandler(apiOptions, network, provider, _node === undefined));
   api.on('ready', () => readyHandler(network));
 }
 

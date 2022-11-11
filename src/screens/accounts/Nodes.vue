@@ -19,7 +19,7 @@
       <div class="switch-nodes">
         <div class="auto-select-nodes">{{ $t('accounts.autoNodes') }}</div>
 
-        <Switcher v-model="autoSelectNodes" />
+        <Switcher v-model="autoSelectNode" />
       </div>
     </div>
 
@@ -62,10 +62,10 @@
 
 <script lang="ts">
 import { Vue, Component, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+import { Getter, Mutation } from 'vuex-class';
 import NodeItem from './NodeItem.vue';
-import type { SelectedWallet } from '@/store/accounts/types';
-import type { Node, ActiveNodes, Networks } from '@/interfaces';
+import type { SelectedWallet, setAutoSelectNode, GetAutoSelectNodesValueByNetwork } from '@/store/accounts/types';
+import type { Node, Networks, TMutation } from '@/interfaces';
 import NetworksController from '@/controllers/networksController';
 import BaseApi from '@/util/BaseApi';
 import Switcher from '@/components/Switcher.vue';
@@ -73,6 +73,8 @@ import { accountController } from '@/controllers/accountController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import NetworkLogo from '@/components/NetworkLogo.vue';
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { GetActiveNodesByNetwork } from '@/store/networks/types';
 
 @Component({
   components: {
@@ -82,15 +84,18 @@ import NetworkLogo from '@/components/NetworkLogo.vue';
   },
 })
 export default class Nodes extends Vue {
-  autoSelectNodes = true;
+  autoSelectNode = true;
   customNodes: Node[] = [];
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getAutoSelectNodesValueByNetwork)
+  getAutoSelectNodesValueByNetwork!: GetAutoSelectNodesValueByNetwork;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
-  @Getter(NetworksGettersTypes.getActiveNodes) activeNodes!: ActiveNodes;
+  @Getter(NetworksGettersTypes.getActiveNodesByNetwork) getActiveNodesByNetwork!: GetActiveNodesByNetwork;
+  @Mutation(AccountsMutationTypes.SET_AUTO_SELECT_NODE) setAutoSelectNode!: TMutation<setAutoSelectNode>;
 
   get activeNode() {
-    return this.activeNodes[this.selectedNetwork] ?? { url: '', name: '' };
+    return this.getActiveNodesByNetwork(this.selectedNetwork);
   }
 
   get address() {
@@ -116,25 +121,16 @@ export default class Nodes extends Vue {
   }
 
   mounted() {
-    this.autoSelectNodes = accountController.getAutoSelectNodesValueByNetwork(this.selectedNetwork);
+    this.autoSelectNode = this.getAutoSelectNodesValueByNetwork(this.selectedNetwork);
 
     this.updatedCustomNodes();
   }
 
-  @Watch('autoSelectNodes')
+  @Watch('autoSelectNode')
   toggleAutoSelectNodesValue(value: boolean) {
-    accountController.setAutoSelectNodes(value, this.selectedNetwork);
+    this.setAutoSelectNode({ value, network: this.selectedNetwork });
 
     if (value) this.changeNode();
-    else if (this.activeNode.name === '') {
-      const defaultNodes = this.defaultNodes?.[0];
-
-      if (defaultNodes !== undefined) {
-        const { name, url } = defaultNodes;
-
-        this.changeNode(name, url);
-      }
-    }
   }
 
   openNodeSettingsPopup(name: string, url: string, buttonTop: number, isActive: boolean) {
@@ -145,12 +141,10 @@ export default class Nodes extends Vue {
     this.customNodes = accountController.getCustomNodesByNetwork(this.selectedNetwork);
   }
 
-  changeNode(name = '', url = '') {
-    const { url: oldUrl } = this.activeNode;
+  changeNode(name?: string, url?: string) {
+    if (url) this.autoSelectNode = false;
 
-    NetworksController.toggleActiveNode(this.selectedNetwork, name, url, oldUrl);
-
-    if (name !== '' && url !== '') this.autoSelectNodes = false;
+    NetworksController.toggleActiveNode(this.selectedNetwork, name, url, this.activeNode.url);
   }
 
   copyAddress() {
@@ -158,14 +152,16 @@ export default class Nodes extends Vue {
   }
 
   getActiveStatus(nodeName: string, url: string) {
-    return nodeName === this.activeNode.name && this.activeNode.url === url && !this.autoSelectNodes;
+    if (this.autoSelectNode) return false;
+
+    return nodeName === this.activeNode.name && this.activeNode.url === url;
   }
 
   getRemoveBorderBottomValue(index: number, isCustomNode = false) {
     const nodes = isCustomNode ? this.customNodes : this.defaultNodes;
     const { name: activeNodeName, url: activeNodeUrl } = this.activeNode;
 
-    if (this.autoSelectNodes) return;
+    if (this.autoSelectNode) return;
 
     const activeNodeIndex = nodes.findIndex(({ name, url }) => name === activeNodeName && activeNodeUrl === url);
 

@@ -20,6 +20,10 @@ function getOrmlFileName(value: string) {
     zlk: 'ZLK',
     eqd: 'EQD',
     vksm: 'vKSM',
+    xstusd: 'XSTUSD',
+    val: 'VAL',
+    pswap: 'PSWAP',
+    xst: 'XST',
   };
 
   return ormlNetworks[prepValue] ?? '';

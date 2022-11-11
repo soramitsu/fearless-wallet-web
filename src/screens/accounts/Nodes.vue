@@ -84,7 +84,6 @@ import { GetActiveNodesByNetwork } from '@/store/networks/types';
   },
 })
 export default class Nodes extends Vue {
-  autoSelectNode = true;
   customNodes: Node[] = [];
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -93,6 +92,14 @@ export default class Nodes extends Vue {
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getActiveNodesByNetwork) getActiveNodesByNetwork!: GetActiveNodesByNetwork;
   @Mutation(AccountsMutationTypes.SET_AUTO_SELECT_NODE) setAutoSelectNode!: TMutation<setAutoSelectNode>;
+
+  get autoSelectNode() {
+    return this.getAutoSelectNodesValueByNetwork(this.selectedNetwork);
+  }
+
+  set autoSelectNode(value: boolean) {
+    this.setAutoSelectNode({ value, network: this.selectedNetwork });
+  }
 
   get activeNode() {
     return this.getActiveNodesByNetwork(this.selectedNetwork);
@@ -121,16 +128,17 @@ export default class Nodes extends Vue {
   }
 
   mounted() {
-    this.autoSelectNode = this.getAutoSelectNodesValueByNetwork(this.selectedNetwork);
-
     this.updatedCustomNodes();
   }
 
   @Watch('autoSelectNode')
   toggleAutoSelectNodesValue(value: boolean) {
-    this.setAutoSelectNode({ value, network: this.selectedNetwork });
-
     if (value) this.changeNode();
+    else {
+      const [{ name, url }] = this.defaultNodes;
+
+      this.changeNode(name, url);
+    }
   }
 
   openNodeSettingsPopup(name: string, url: string, buttonTop: number, isActive: boolean) {
@@ -234,6 +242,7 @@ export default class Nodes extends Vue {
         font-weight: 500;
         margin-right: 7px;
         font-size: 14px;
+        width: 130px;
       }
     }
 

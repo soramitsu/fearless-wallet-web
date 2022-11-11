@@ -134,7 +134,7 @@ export default class CurrencyItem extends Vue {
     const index = this.currency.getAvailableInNetworks(this.selectedWallet).findIndex(({ network }) => {
       const status = this.getNetworkStatus(network);
 
-      return status === 'pending' || status === 'connected';
+      return status === 'pending';
     });
 
     return !this.isOnline || index !== -1;

@@ -22,22 +22,22 @@ export default class Shimmer extends Vue {
   }
 
   get shimmerClasses() {
-    return ['shimmer-animate', `shimmer-${this.type}`];
+    return ['shimmer', 'shimmer-animate', `shimmer-${this.type}`];
   }
 }
 </script>
 
 <style lang="scss">
-.shimmer-line {
+.shimmer {
   background: #777;
+}
+
+.shimmer-line {
   border-radius: 25px;
 }
 
 .shimmer-circle {
-  background: #777;
   border-radius: 50%;
-  height: 65px;
-  width: 65px;
 }
 
 .shimmer-animate {

@@ -18,6 +18,7 @@ import { loadHistory } from '@/subquery/history';
 import { getAddressMetaTyped, getReplacedMetaTyped } from '@/helpers/common';
 import { getMockCurrencies } from '@/helpers/currencies';
 import { connectToApi, subscribeAssetsBalances } from '@/helpers/networksConnection';
+import { accountController } from '@/controllers/accountController';
 
 export enum ActionTypes {
   LOAD_JSONS = 'LOAD_JSONS',
@@ -202,7 +203,12 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.TOGGLE_ACTIVE_NODE]({ state }, { network, nodeUrl, nodeName, oldNodeUrl }) {
     const networkApi = state.networks.find(({ name }) => name === network)!;
 
-    if ((networkApi.status !== 'disconnect' && nodeUrl === undefined) || nodeUrl === oldNodeUrl) return;
+    if (networkApi.status !== 'disconnected' && nodeUrl === undefined) return;
+    else if (nodeUrl === oldNodeUrl) {
+      accountController.setActiveNode({ name: nodeName!, url: nodeUrl! }, network);
+
+      return;
+    }
 
     await networkApi.provider?.disconnect();
 

@@ -89,7 +89,7 @@ import { accountController } from '@/controllers/accountController';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import { SetCurrenciesProps } from '@/store/networks/types';
+import { SetCurrenciesProps, GetNetworkStatus } from '@/store/networks/types';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { addNumbers, formattedNumber } from '@/helpers/numbers';
@@ -129,8 +129,8 @@ export default class Wallet extends Vue {
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
-  @Getter(NetworksGettersTypes.getAllNetworksIsReady) allNetworksIsReady!: boolean;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
+  @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
 
@@ -138,7 +138,17 @@ export default class Wallet extends Vue {
     // TODO: подумать над тем, чтобы добавить лоадер на весь экстеншен, пока не загружены JSON файлы
     if (this.currencies.length === 0) return true; // удалить если добавим лоадер
 
-    return !this.isOnline || !this.allNetworksIsReady;
+    const index = this.currencies
+      .filter((currency) => currency.getCurrencyVisible(this.selectedWallet.address))
+      .map((currency) => currency.getAvailableInNetworks(this.selectedWallet))
+      .flat()
+      .findIndex(({ network }) => {
+        const status = this.getNetworkStatus(network);
+
+        return status === 'pending';
+      });
+
+    return !this.isOnline || index !== -1;
   }
 
   get sortedCurrencies() {

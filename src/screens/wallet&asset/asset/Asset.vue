@@ -164,7 +164,7 @@ export default class Asset extends Vue {
   get showShimmers() {
     const status = this.getNetworkStatus(this.selectedNetwork);
 
-    return !this.isOnline || status === 'pending' || status === 'connected';
+    return !this.isOnline || status === 'pending';
   }
 
   get providers() {

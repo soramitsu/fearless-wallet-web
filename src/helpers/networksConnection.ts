@@ -43,20 +43,22 @@ const disconnectHandler = (apiOptions: ApiOptions, network: Network, provider: W
     provider: undefined,
   });
 
-  store.commit(MutationTypes.SET_NETWORK_STATUS, {
-    network: network.name,
-    status: 'disconnected',
-  });
+  if (tryAnotherNode) {
+    if (apiOptions.apiRetry === MAX_CONTINUE_RETRY) {
+      provider.disconnect();
 
-  if (tryAnotherNode && apiOptions.apiRetry === MAX_CONTINUE_RETRY) {
-    provider.disconnect();
+      apiOptions.apiRetry = 0;
+      apiOptions.nodeIndex += 1;
+      apiOptions.api = undefined;
+      apiOptions.provider = undefined;
 
-    apiOptions.apiRetry = 0;
-    apiOptions.nodeIndex += 1;
-    apiOptions.api = undefined;
-    apiOptions.provider = undefined;
-
-    if (navigator.onLine) connectToApi(network, apiOptions); // eslint-disable-line no-use-before-define
+      if (navigator.onLine) connectToApi(network, apiOptions); // eslint-disable-line no-use-before-define
+    } else {
+      store.commit(MutationTypes.SET_NETWORK_STATUS, {
+        network: network.name,
+        status: 'disconnected',
+      });
+    }
   }
 };
 

@@ -96,7 +96,7 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_AUTO_SELECT_NODE](state, { network, value }) {
     accountController.setAutoSelectNodes(value, network);
 
-    state.autoSelectNode[network] = value;
+    state.autoSelectNode = { ...state.autoSelectNode, [network]: value };
   },
 
   [MutationTypes.SET_QR](state, payload) {

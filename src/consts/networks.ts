@@ -154,6 +154,9 @@ const NETWORK_AND_ASSET: Record<string, string> = {
   litmus: 'litmus',
   phala: 'phala',
   khala: 'khala',
+  'sora test': 'sora',
+  'snow kusama': 'snow',
+  icz: 'snow',
 };
 const PHA: Record<string, string> = {
   polkadot: 'phala',

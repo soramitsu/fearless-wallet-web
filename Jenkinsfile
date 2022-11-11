@@ -1,4 +1,4 @@
-@Library('jenkins-library')
+@Library('jenkins-library@feature/fww-158/ci-for-PRs')
 
 
 def pipeline = new org.js.AppArtifactsPipeline(

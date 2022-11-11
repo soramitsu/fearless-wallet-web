@@ -21,11 +21,11 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator';
-import { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import { Action, Getter, Mutation } from 'vuex-class';
-import { PermissionResponseOutput } from '@airgap/beacon-sdk';
+import type { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
+import type { PermissionResponseOutput } from '@airgap/beacon-sdk';
 import type { SetSelectedWallet } from '@/store/accounts/types';
-import {
+import type {
   PermissionSuccess,
   TAction,
   RequestSentInfo,

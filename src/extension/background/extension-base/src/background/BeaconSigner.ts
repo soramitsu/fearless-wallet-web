@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { BeaconMessageType, SubstrateMessageType, SubstratePermissionScope } from '@airgap/beacon-sdk';
-import { Signer } from '@polkadot/api/types';
-import { SignerPayloadRaw, SignerResult } from '@polkadot/types/types/extrinsic';
+import type { Signer } from '@polkadot/api/types';
+import type { SignerPayloadRaw, SignerResult } from '@polkadot/types/types/extrinsic';
 import { beaconController } from '@/controllers/beaconController';
 
 export class BeaconSigner implements Signer {

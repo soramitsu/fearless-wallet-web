@@ -8,12 +8,11 @@ import {
   evmToAddress,
 } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
-import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import { assetFromToken } from '@equilab/api';
-import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-import { BehaviorSubject } from 'rxjs';
+import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
+import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import type { BehaviorSubject } from 'rxjs';
 import type { KeyringPair$Json, KeyringPair$Meta, KeyringPair } from '@polkadot/keyring/types';
-import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
 import type { Wallet } from '@/store/accounts/types';

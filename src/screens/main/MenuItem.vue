@@ -1,10 +1,8 @@
 <template>
   <div :class="menuItemClasses">
-    <img :src="img" class="menu-icon" />
+    <Icon :icon="img" :className="iconClass" />
 
-    <div class="name">
-      {{ name }}
-    </div>
+    <div class="name">{{ $t(localeName) }}</div>
   </div>
 </template>
 
@@ -12,19 +10,23 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { MenuItem as TMenuItem } from '@/interfaces/common';
 
-@Component({
-  components: {},
-})
+@Component
 export default class MenuItem extends Vue {
+  iconClass = ['menu-icon'];
+
   @Prop(String) name!: TMenuItem;
   @Prop({ default: false }) isActive!: boolean;
+
+  get localeName() {
+    return `menu.${this.name}`;
+  }
 
   get menuItemClasses() {
     return ['menu-item', { active: this.isActive }];
   }
 
   get img() {
-    return require(`@/assets/${this.name.toLowerCase()}.svg`);
+    return this.name.toLowerCase();
   }
 }
 </script>
@@ -34,7 +36,7 @@ export default class MenuItem extends Vue {
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: rgba(255, 255, 255, 0.5);
+  color: $gray-color;
   width: 85px;
 
   &:hover {

@@ -1,21 +1,32 @@
 <template>
-  <Corners>
-    <div :class="tabButtonClasses" @click="$emit('click')" :title="title">
-      {{ text }}
-    </div>
-  </Corners>
+  <div>
+    <Corners>
+      <div :class="tabButtonClasses" @click="$emit('click')" :title="title">
+        {{ $t(text) }}
+      </div>
+    </Corners>
+
+    <Tooltip v-if="tooltipText" :text="tooltipText" :target="target" :placement="placementTooltip" />
+  </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import Corners from '@/components/Corners.vue';
+import Tooltip from '@/components/Tooltip.vue';
 
 @Component({
-  components: { Corners },
+  components: {
+    Tooltip,
+    Corners,
+  },
 })
 export default class TabButton extends Vue {
   @Prop({ default: '' }) text!: string;
   @Prop({ default: '' }) title!: string;
+  @Prop({ default: 'top' }) placementTooltip!: string;
+  @Prop(String) tooltipText!: string;
+  @Prop(String) target!: string;
   @Prop({ default: false }) isActive!: boolean;
 
   get tabButtonClasses() {
@@ -31,13 +42,13 @@ export default class TabButton extends Vue {
 
 <style lang="scss" scoped>
 .tab-button {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: $secondary-background-color;
   padding: 0 15px;
   border-radius: 4px;
   font-size: 13px;
   line-height: 36px;
   clip-path: $medium-clip-path-left-top-and-right-bottom;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid $default-background-color;
   height: 36px;
   user-select: none;
 
@@ -47,6 +58,6 @@ export default class TabButton extends Vue {
 }
 
 .active-background {
-  background-color: rgba(119, 0, 238, 0.25);
+  background-color: $pink-purple-color;
 }
 </style>

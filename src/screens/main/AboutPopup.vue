@@ -2,9 +2,9 @@
   <div>
     <Popup
       :showBorder="true"
-      :staticHeight="true"
       :showAnimation="false"
       :showHeader="false"
+      :width="410"
       :top="50"
       :handlerClose="handlerClose"
       sizeWidth="big"
@@ -12,23 +12,24 @@
       horizontalPlacement="right"
     >
       <div class="about-popup">
-        <div class="header">About</div>
+        <div class="header">{{ t('text') }}</div>
         <div class="title">Fearless wallet</div>
 
         <div v-for="{ icon, label, subLabel, url } in mainItems" class="about-item" :key="label" @click="open(url)">
           <div class="about-left-part">
-            <img :src="getImg(icon)" class="icon" />
+            <Icon :icon="icon" class="icon" />
 
             <div class="item-descriptions">
-              <div class="label">{{ label }}</div>
+              <div class="label">{{ t(label) }}</div>
+
               <div v-if="subLabel" class="sub-label">{{ subLabel }}</div>
             </div>
           </div>
 
-          <img src="@/assets/chevron-right.svg" :href="url" class="chevron-right" />
+          <Icon icon="chevron-right" :href="url" className="chevron-right" />
         </div>
 
-        <div class="title">Community wallet</div>
+        <div class="title">{{ t('communityWallet') }}</div>
 
         <div
           v-for="{ icon, label, subLabel, url } in communityItems"
@@ -37,18 +38,19 @@
           @click="open(url)"
         >
           <div class="about-left-part">
-            <img :src="getImg(icon)" class="icon" />
+            <Icon :icon="icon" class="icon" />
 
             <div class="item-descriptions">
-              <div class="label">{{ label }}</div>
+              <div class="label">{{ t(label) }}</div>
+
               <div v-if="subLabel" class="sub-label">{{ subLabel }}</div>
             </div>
           </div>
 
-          <img src="@/assets/chevron-right.svg" class="chevron-right" />
+          <Icon icon="chevron-right" className="chevron-right" />
         </div>
 
-        <div class="title">Social Media</div>
+        <div class="title">{{ t('socialMedia') }}</div>
 
         <div
           v-for="{ icon, label, subLabel, url } in socialMediaItems"
@@ -57,30 +59,32 @@
           @click="open(url)"
         >
           <div class="about-left-part">
-            <img :src="getImg(icon)" class="icon" />
+            <Icon :icon="icon" class="icon" />
 
             <div class="item-descriptions">
-              <div class="label">{{ label }}</div>
+              <div class="label">{{ t(label) }}</div>
+
               <div v-if="subLabel" class="sub-label">{{ subLabel }}</div>
             </div>
           </div>
 
-          <img src="@/assets/chevron-right.svg" class="chevron-right" />
+          <Icon icon="chevron-right" className="chevron-right" />
         </div>
 
-        <div class="title">Support & Feedback</div>
+        <div class="title">{{ t('supportFeedback') }}</div>
 
         <div v-for="{ icon, label, subLabel, url } in supportItems" class="about-item" :key="label" @click="open(url)">
           <div class="about-left-part">
-            <img :src="getImg(icon)" class="icon" />
+            <Icon :icon="icon" class="icon" />
 
             <div class="item-descriptions">
-              <div class="label">{{ label }}</div>
+              <div class="label">{{ t(label) }}</div>
+
               <div v-if="subLabel" class="sub-label">{{ subLabel }}</div>
             </div>
           </div>
 
-          <img src="@/assets/chevron-right.svg" class="chevron-right" />
+          <Icon icon="chevron-right" className="chevron-right" />
         </div>
       </div>
     </Popup>
@@ -103,14 +107,14 @@ export default class AboutPopup extends Vue {
 
   @Prop(Function) handlerClose!: VoidFunction;
 
-  getImg(path: string) {
-    return require(`@/assets/${path}`);
-  }
-
   open(url: string) {
     window.open(url);
 
     this.handlerClose();
+  }
+
+  t(value: string) {
+    return this.$t(`header.settings.about.${value}`);
   }
 }
 </script>
@@ -124,12 +128,12 @@ export default class AboutPopup extends Vue {
 
   .header {
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.75);
+    color: $default-white;
   }
 
   .title {
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.5);
+    color: $gray-color;
     padding: 12px 0;
   }
 
@@ -159,7 +163,7 @@ export default class AboutPopup extends Vue {
         }
 
         .sub-label {
-          color: rgba(255, 255, 255, 0.75);
+          color: $default-white;
         }
       }
     }
@@ -178,18 +182,20 @@ export default class AboutPopup extends Vue {
       .label {
         font-weight: 700;
         font-size: 14px;
-        color: rgba(255, 255, 255, 0.75);
+        color: $default-white;
       }
 
       .sub-label {
         margin-top: 2px;
         font-size: 12px;
-        color: rgba(255, 255, 255, 0.65);
+        color: $grayish-white;
       }
     }
 
     .chevron-right {
       opacity: 0.5;
+      width: 24px;
+      height: 24px;
     }
 
     .icon {

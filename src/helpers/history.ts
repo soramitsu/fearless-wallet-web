@@ -6,6 +6,11 @@ import { formattedNumber } from '@/helpers/numbers';
 import { FPNumber } from '@/util/fp';
 import NetworksController from '@/controllers/networksController';
 
+const HISTORY_VALUE_OPTIONS = {
+  decimalsValue: 4,
+  removeTrailingZeros: true,
+};
+
 export function cut(value: string, length = 7) {
   const endNumber = length + 1;
 
@@ -45,7 +50,7 @@ export function getTypeFormatted(historyNode: HistoryNode) {
   }
 
   if (type === TransactionType.extrinsic) {
-    const { call } = historyNode[type];
+    const { call } = historyNode.extrinsic!;
 
     return `${firstCharToUp(call)}${call === 'transfer' ? ' fee' : ''}`;
   }
@@ -82,24 +87,24 @@ export function getHistoryValue(historyNode: HistoryNode, assetId: string) {
   const signTransfer = getSignTransfer(historyNode);
 
   if (type === TransactionType.transfer) {
-    const { amount } = transfer;
+    const { amount } = transfer!;
     const value = getHumanValue(amount, assetId);
 
-    return `${signTransfer}${formattedNumber(value, 4)}`;
+    return `${signTransfer}${formattedNumber(value, HISTORY_VALUE_OPTIONS)}`;
   }
 
   if (type === TransactionType.reward) {
-    const { amount } = reward;
+    const { amount } = reward!;
     const value = getHumanValue(amount, assetId);
 
-    return `+${formattedNumber(value, 4)}`;
+    return `+${formattedNumber(value, HISTORY_VALUE_OPTIONS)}`;
   }
 
   // extrinsic
-  const { fee } = extrinsic;
+  const { fee } = extrinsic!;
   const value = getHumanValue(fee, assetId);
 
-  return `-${formattedNumber(value, 4)}`;
+  return `-${formattedNumber(value, HISTORY_VALUE_OPTIONS)}`;
 }
 
 export function getHumanTransferFee(historyNode: HistoryNode, assetId: string) {
@@ -107,17 +112,17 @@ export function getHumanTransferFee(historyNode: HistoryNode, assetId: string) {
   const type = getType(historyNode);
 
   if (type === TransactionType.transfer) {
-    const { fee } = transfer;
+    const { fee } = transfer!;
     const value = getHumanValue(fee, assetId);
 
-    return `-${formattedNumber(value, 4)}`;
+    return `-${formattedNumber(value, { decimalsValue: 4 })}`;
   }
 
   if (type === TransactionType.extrinsic) {
-    const { fee } = extrinsic;
+    const { fee } = extrinsic!;
     const value = getHumanValue(fee, assetId);
 
-    return `-${formattedNumber(value, 4)}`;
+    return `-${formattedNumber(value, { decimalsValue: 4 })}`;
   }
 
   return '';

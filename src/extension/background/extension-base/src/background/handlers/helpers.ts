@@ -1,9 +1,9 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-import { InjectedAccount } from '@polkadot/extension-inject/types';
-import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import { assert } from '@polkadot/util';
 import { canDerive } from '../../utils';
+import type { InjectedAccount } from '@polkadot/extension-inject/types';
+import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
 export function withErrorLog(fn: () => unknown): void {
   try {

@@ -13,21 +13,18 @@ import Accounts from '@/screens/accounts/Accounts.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import Main from '@/screens/main/Main.vue';
 import Crowdloans from '@/screens/crowdloans/Crowdloans.vue';
-// import Authorize from '@/screens/authorize/Authorize.vue';
-// import MetaRequest from '@/screens/metadata/Metadata.vue';
-// import Transaction from '@/screens/signing/Transaction.vue';
-// import UpdateAuths from '@/screens/authorize/UpdateAuths.vue';
 
-const Authorize = () => import('@/screens/authorize/Authorize.vue');
-const Transaction = () => import('@/screens/signing/Transaction.vue');
-const MetaRequest = () => import('@/screens/metadata/Metadata.vue');
-const UpdateAuths = () => import('@/screens/authorize/UpdateAuths.vue');
+const MobileConnect = () => import('@/screens/mobileConnect/MobileConnect.vue');
+const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue');
+const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
+const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
 
 import store from '@/store';
 
 export enum Components {
   Welcome = 'Welcome',
   AddWallet = 'AddWallet',
+  MobileConnect = 'MobileConnect',
   Main = 'Main',
   Wallet = 'Wallet',
   Crowdloans = 'Crowdloans',
@@ -42,7 +39,6 @@ export enum Components {
   Authorize = 'Authorize',
   MetaRequest = 'MetaRequest',
   Transaction = 'Transaction',
-  UpdateAuths = 'UpdateAuths',
 }
 
 const haveAccounts = () => BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
@@ -60,6 +56,11 @@ const routes: Array<RouteConfig> = [
     path: '/add-wallet/:type',
     name: Components.AddWallet,
     component: AddWallet,
+  },
+  {
+    path: '/add-mobile-wallet',
+    name: Components.MobileConnect,
+    component: MobileConnect,
   },
   {
     path: '/authorize',
@@ -85,11 +86,6 @@ const routes: Array<RouteConfig> = [
         beforeEnter: (to, from, next) => {
           next({ name: Components.Wallet });
         },
-      },
-      {
-        path: 'updateauths/:url',
-        name: Components.UpdateAuths,
-        component: UpdateAuths,
       },
       {
         path: 'wallet',
@@ -139,7 +135,7 @@ const routes: Array<RouteConfig> = [
         component: Staking,
       },
       {
-        path: 'Polkaswap',
+        path: 'polkaswap',
         name: Components.Polkaswap,
         component: Polkaswap,
       },
@@ -149,7 +145,6 @@ const routes: Array<RouteConfig> = [
         component: History,
       },
     ],
-
     beforeEnter: (to, from, next) => {
       if (!haveAccounts()) next({ name: Components.Welcome });
       else next();
@@ -157,7 +152,6 @@ const routes: Array<RouteConfig> = [
   },
   {
     path: '/*',
-
     redirect: () => {
       return { name: haveAccounts() ? Components.Wallet : Components.Welcome };
     },

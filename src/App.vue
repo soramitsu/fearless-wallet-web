@@ -7,17 +7,21 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Watch, Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
-import BaseApi from './util/BaseApi';
-import { isExtension } from './helpers/common';
-import type { SetSelectedWalletProps, setAccountsProps, Accounts, setAddressesProps } from '@/store/accounts/types';
+import type {
+  SetSelectedWalletProps,
+  setAccountsProps,
+  Accounts,
+  setAddressesProps,
+  setOnlineStatus,
+} from '@/store/accounts/types';
 import type { TAction, TMutation } from '@/interfaces';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-import { ActionTypes as AuthActionTypes } from '@/store/auth/actions';
-import { ActionTypes as MetaActionTypes } from '@/store/metadata/actions';
-import { ActionTypes as SignActionTypes } from '@/store/sign/actions';
+import { isExtension } from '@/helpers/common';
+import BaseApi from '@/util/BaseApi';
+import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import NetworksController from '@/controllers/networksController';
@@ -31,61 +35,87 @@ export default class App extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
   @Getter(AccountsGettersTypes.getAddresses) addresses!: Accounts;
   @Getter(AccountsGettersTypes.getWallets) wallets!: Record<string, Accounts>;
+  @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
   @Mutation(AccountsMutationTypes.SET_ADDRESSES) setAddresses!: TMutation<setAddressesProps>;
-  @Action(AuthActionTypes.SUBSCRIBE_AUTH_REQUESTS) authSubscribe!: TAction<unknown>;
-  @Action(SignActionTypes.SUBSCRIBE_SIGN_REQUESTS) signSubscribe!: TAction<unknown>;
-  @Action(MetaActionTypes.SUBSCRIBE_METADATA_REQUESTS) metaSubscribe!: TAction<unknown>;
+  @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<setOnlineStatus>;
+  @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
 
-  async beforeCreate() {
+  created() {
+    if (isExtension()) this.extensionSubscribe();
+    this.setWallet();
+    this.addEventOnline();
+    this.connectToNodes();
+  }
+
+  mounted() {
+    this.subscribeToBalancesOfNetworks();
+  }
+
+  @Watch('isOnline')
+  connect() {
+    this.connectToNodes();
+    this.subscribeToBalancesOfNetworks();
+  }
+
+  async connectToNodes() {
+    if (!this.isOnline) return;
+
     const { loadJsons, connectToNodes } = NetworksController;
 
     await loadJsons();
     await connectToNodes();
   }
 
-  async mounted() {
-    const { subscribeToBalancesOfNetworks } = NetworksController;
+  async subscribeToBalancesOfNetworks() {
+    if (!this.isOnline) return;
 
-    if (isExtension()) await Promise.all([this.authSubscribe(), this.metaSubscribe(), this.signSubscribe()]);
+    const { subscribeToBalancesOfNetworks } = NetworksController;
 
     this.subscribeAccounts = BaseApi.getAccountsSubject();
     this.subscribeAddresses = BaseApi.getAddressesSubject();
-
     this.subscribeAccounts.subscribe(async (accounts) => {
       const newAccounts = this.getNewAccounts(accounts, 'accounts');
-
-      console.info('accounts', newAccounts);
+      const accountsCount = Object.keys(accounts).length;
+      const newAccountsCount = Object.keys(newAccounts).length;
 
       this.setAccounts({ accounts });
 
-      // subscribe only if the number of new accounts is not equal to the total number of accounts
-      if (Object.keys(accounts).length !== Object.keys(newAccounts).length)
-        await subscribeToBalancesOfNetworks(newAccounts);
+      if (newAccountsCount === 0) return;
+
+      if (accountsCount === 1 || accountsCount !== newAccountsCount) await subscribeToBalancesOfNetworks(newAccounts);
     });
 
     this.subscribeAddresses.subscribe(async (addresses) => {
       const newAddresses = this.getNewAccounts(addresses, 'addresses');
-
-      console.info('addresses', newAddresses);
+      const addressesCount = Object.keys(addresses).length;
+      const newAddressesCount = Object.keys(newAddresses).length;
 
       this.setAddresses({ addresses });
 
-      // subscribe only if the number of new addresses is not equal to the total number of accounts
-      if (Object.keys(addresses).length !== Object.keys(newAddresses).length)
+      if (newAddressesCount === 0) return;
+
+      if (addressesCount === 1 || addressesCount !== newAddressesCount)
         await subscribeToBalancesOfNetworks(newAddresses);
     });
+  }
 
-    this.setWallet();
+  addEventOnline() {
+    const updateOnlineStatus = () => this.setOnlineStatus({ isOnline: navigator.onLine });
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
   }
 
   getNewAccounts(accounts: SubjectInfo, type: 'accounts' | 'addresses') {
-    const result = {} as SubjectInfo;
+    const result: SubjectInfo = {};
 
     for (const address in accounts) {
       if (this[type][address] === undefined) result[address] = accounts[address];
     }
+
+    console.info(type, result);
 
     return result;
   }
@@ -94,7 +124,11 @@ export default class App extends Vue {
     const LSSelectedWalletAddress = accountController.getSelectedWalletAddress();
     const selectedWalletAddress = LSSelectedWalletAddress || BaseApi.getFirstSubstrateWalletAddress();
 
-    if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
+    if (selectedWalletAddress) {
+      const selectedSubstrateAddress = BaseApi.encodeAddress(selectedWalletAddress);
+
+      this.setSelectedWallet({ selectedWalletAddress: selectedSubstrateAddress });
+    }
   }
 
   beforeUnmount() {
@@ -125,7 +159,7 @@ body {
   text-align: center;
   margin: 0 auto;
   padding: 0 $default-padding $default-padding $default-padding;
-  background-image: url(./assets/background.png);
+  background-image: url('./assets/background.png');
   background-position: center;
   background-size: cover;
 

@@ -1,18 +1,16 @@
 <template>
-  <div>
-    <SelectPopup
-      v-model="selectedFiat"
-      verticalPlacement="top"
-      horizontalPlacement="right"
-      placeholder="Search in currencies"
-      :top="50"
-      :showAnimation="showAnimation"
-      :options="filteredOptionsFiats"
-      :toggleValue="toggleSelectedFiat"
-      :handlerClose="handlerClose"
-      :handlerFilter="handlerFilter"
-    />
-  </div>
+  <SelectPopup
+    verticalPlacement="top"
+    horizontalPlacement="right"
+    placeholder="common.searchCurrency"
+    :value="selectedFiat"
+    :top="50"
+    :showAnimation="showAnimation"
+    :options="filteredOptionsFiats"
+    :toggleValue="toggleSelectedFiat"
+    :handlerClose="handlerClose"
+    :handlerFilter="handlerFilter"
+  />
 </template>
 
 <script lang="ts">
@@ -41,10 +39,8 @@ export default class FiatsPopup extends Vue {
 
     return this.fiats
       .filter(({ name }) => name.toLowerCase().includes(filter))
-      .map(({ name, id, icon }) => {
-        const path = icon.slice(-12);
-
-        return { label: name, value: id, path };
+      .map(({ name, id }) => {
+        return { label: name, value: id, path: id };
       });
   }
 

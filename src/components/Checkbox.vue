@@ -1,5 +1,5 @@
 <template>
-  <s-checkbox class="fw-checkbox" v-model.lazy="vModel" :size="size" :label="label" @change="onChange" />
+  <s-checkbox class="fw-checkbox" v-model.lazy="vModel" :size="size" :label="$t(label)" @change="onChange" />
 </template>
 
 <script lang="ts">
@@ -31,12 +31,12 @@ export default class Checkbox extends Vue {
   }
 
   .el-checkbox__inner:hover {
-    border-color: rgba(119, 0, 238, 1);
+    border-color: $purple-color;
   }
 
   .el-checkbox__input.is-checked > .el-checkbox__inner {
-    background-color: rgba(119, 0, 238, 1);
-    border-color: rgba(119, 0, 238, 1);
+    background-color: $purple-color;
+    border-color: $purple-color;
   }
 
   .el-checkbox__inner {

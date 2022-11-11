@@ -1,18 +1,16 @@
 <template>
   <div class="advanced-button">
     <div class="button" @click="$emit('click')">
-      Advanced backup settings
+      {{ $t('addWallet.advancedSettings') }}
 
-      <img src="@/assets/circle-plus.svg" class="plus-icon" />
+      <Icon icon="circle-plus" className="plus-icon" />
     </div>
   </div>
 </template>
 
-<style lang="scss"></style>
-
 <style lang="scss" scoped>
 .advanced-button {
-  color: #ffffff;
+  color: $plain-white;
   margin-top: 5px;
   user-select: none;
 
@@ -33,7 +31,6 @@
       margin-left: 5px;
       width: 20px;
       height: 20px;
-      color: yellow;
     }
   }
 

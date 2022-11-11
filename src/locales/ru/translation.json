@@ -1,0 +1,280 @@
+{
+  "welcome": {
+    "createWallet": "Создать новый кошелек",
+    "importWallet": "У меня уже есть кошелек",
+    "connectMobile": "Подключить мобильный кошелек",
+    "deFiWallet": "Децентрализованный кошелек из будущего",
+    "agreeWith": "Продолжая, вы принимаете",
+    "and": "и"
+  },
+  "addWallet": {
+    "createWallet": "Создать новый кошелек",
+    "exampleNameWallet": "Пример: сбережения, инвестиции, краудлоны, стейкинг. Этот никнейм будет отображаться только для вас и храниться локально.",
+    "backupNonDigital": "Используйте нецифровой способ резервного копирования. Запишите его на бумаге (или выгравируйте на металле) и следите за тем, чтобы не потерять.",
+    "backupPassphrase": "Сделайте резервную копию парольной фразы для вашего нового кошелька",
+    "confirmPassphrase": "Подтвердите парольную фразу",
+    "selectPassphraseWords": "Выберите слова в правильном порядке:",
+    "advancedSettings": "Расширенные настройки",
+    "advanced": "Дополнительно",
+    "example": "Пример: {example} ",
+    "securityWritten": "Мера безопасности, чтобы убедиться, что вы записали это",
+    "importAccount": "Импорт {type} аккаунт",
+    "importWallet": "Импорт кошелька",
+    "enterPassphrase": "Введите мнемонику",
+    "walletNickname": "Имя кошелька",
+    "enterPassword": "Введите пароль",
+    "addEthereumAccount": "Добавить ETH аккаунт",
+    "haveWrittenPassphrase": "Я записал парольную фразу",
+    "usingFearless": "Начните использовать Fearless",
+    "rawSeed": "{type} приватный ключ",
+    "restoreJson": "Восстановить JSON для аккаунтов {type}",
+    "passwordInfo": "Этот пароль защищает ваш кошелек. Обязательно запомните его и никому не делитесь.",
+    "mockPassword": "Кошелек уже используется для замены других сетей. Будет использован старый пароль.",
+    "samePassword": "Пожалуйста, убедитесь, что введенный вами пароль является паролем для вашего текущего кошелька.",
+    "shortPassword": "Пароль слишком короткий",
+    "notMatchPassword": "Пароли не совпадают",
+    "reEnterPassword": "Повторно введите пароль",
+    "allDone": "Все готово!",
+    "stayFearless": "Stay Fearless!",
+    "accounts": "аккаунты",
+    "substrateDP": "Substrate секретный путь деривации",
+    "substrateCryptoType": "SUBSTRATE тип шифрования",
+    "ethereumDP": "Ethereum секретный путь деривации",
+    "ethereumCryptoType": "ETHEREUM тип шифрования",
+    "warningMessages": {
+      "mnemonicSequence": {
+        "text": "Неверная последовательность",
+        "subtext": "Неверная последовательность парольной фразы, попробуйте еще раз"
+      },
+      "mnemonic": {
+        "text": "Мнемоника недействительна",
+        "subtext": "Пожалуйста, убедитесь, что ваш ввод содержит 12 слов"
+      },
+      "substrateDP": {
+        "text": "Путь деривации Substrate недействителен",
+        "subtext": "Пожалуйста, подтвердите правильность пути деривации и повторите попытку."
+      },
+      "ethereumDP": {
+        "text": "Путь деривации Ethereum недействителен",
+        "subtext": "Пожалуйста, подтвердите правильность пути деривации Ethereum и повторите попытку."
+      },
+      "rawSeed": {
+        "text": "Не удалось расшифровать хранилище ключей",
+        "subtext": "Пожалуйста, убедитесь, что ваш ввод содержит 64 шестнадцатеричных символа."
+      },
+      "jsonPassword": {
+        "text": "Не удалось расшифровать хранилище ключей",
+        "subtext": "Пожалуйста, проверьте правильность пароля и повторите попытку."
+      },
+      "jsonInvalid": {
+        "text": "JSON для восстановления недействителен",
+        "subtext": "Пожалуйста, убедитесь, что ваш ввод содержит допустимый json."
+      },
+      "isNotSamePassword": {
+        "text": "Пароль неверный",
+        "subtext": "Пожалуйста, убедитесь, что введенный вами пароль является паролем для вашего текущего кошелька."
+      },
+      "duplicateMobileWallet": {
+        "text": "Такой кошелек уже существует",
+        "subtext": "Продолжая, вы понимаете, что мобильный кошелек будет заменен текущим кошельком и будет удален."
+      }
+    }
+  },
+  "mobileConnector": {
+    "connectionSet": "Соединение установлено",
+    "connectionFailed": "Соединение установлено",
+    "cancelRequest": "Отменить запрос",
+    "resetConnection": "Сбросить запрос",
+    "qrHeader": "Отсканируйте QR-код с помощью мобильного приложения Fearless.",
+    "activeMobileAccountExists": "Есть активное соединение, пожалуйста, удалите мобильный кошелек и повторите попытку.",
+    "walletAlreadyExists": "Вы пытаетесь добавить кошелек, который уже есть в приложении. Пожалуйста, удалите его и снова попробуйте подключить мобильный кошелек.",
+    "requestDenied": "В разрешении на подписание транзакций было отказано",
+    "requesting": "Запрашиваем разрешения...",
+    "connected": "Мобильный кошелек, подключенн к Fearless Wallet Extension",
+    "noAnswer": "Ответ от вашего кошелька еще не получен. Пожалуйста, убедитесь, что кошелек открыт",
+    "signMobile": "Чтобы подписать с помощью мобильного устройства, проверьте, открыт ли ваш мобильный клиент, и нажмите «Подписать»."
+  },
+  "metadata": {
+    "text": "Метадата",
+    "appAccess": "Да, разрешить этому приложению доступ",
+    "alertMessage": "Это разрешение добавит метаданные в ваш экземпляр расширения, что позволит декодировать будущие запросы с использованием этих метаданных."
+  },
+  "authorize": {
+    "selfIdentifyOne": "Приложение, идентифицирующее себя как",
+    "selfIdentifyTwo": "запрашивает доступ с",
+    "accountsConnected": "Аккаунты, подключенны к {url}",
+    "mobile": "мобильный",
+    "connectCountAccounts": "Подключить 1 аккаунт | Подключить {count} аккаунтов"
+  },
+  "header": {
+    "connected": "Подключено",
+    "disconnect": "Отключено",
+    "connectionStatus": "Статус подключения",
+    "walletManagement": "Управление кошельком",
+    "settings": {
+      "accounts": "Аккаунты",
+      "currency": "Валюты",
+      "language": {
+        "text": "Язык",
+        "translated": "Переведено командой"
+      },
+      "about": {
+        "text": "О приложении",
+        "supportFeedback": "Поддержка & Фидбек",
+        "socialMedia": "Социальные медиа",
+        "communityWallet": "Сообщество кошелька",
+        "officialWebsite": "Оффициальный сайт",
+        "followTwitter": "Плдписаться на Twitter",
+        "joinTelegram": "Вступить в Telegram",
+        "readMedium": "Читать на Medium",
+        "learnWiki": "Узнать больше в Wiki",
+        "githubCode": "Github исходный код",
+        "termsConditions": "Условия и положения",
+        "privacyPolicy": "Политика Конфиденциальности",
+        "contactEmail": "Контактный Email",
+        "askSupport": "Написать в поддержку",
+        "likeInstagram": "Перейти в Instagram",
+        "subscribeYouTube": "Подписатсья на YouTube",
+        "receiveAnnouncements": "Получать новости"
+      }
+    }
+  },
+  "menu": {
+    "wallet": "Кошелек",
+    "crowdloans": "Краудлоны",
+    "staking": "Стэйкинг",
+    "polkaswap": "Полькасвоп",
+    "history": "История"
+  },
+  "wallet": {
+    "currencies": "Криптовалюты",
+    "nfts": "NFTs",
+    "allAssetsHidden": "Вы скрыли все активы",
+    "walletBalance": "Баланс кошелька",
+    "fungibleTokens": "Взаимозаменяемые токены",
+    "nonFungibleTokens": "Не взаимозаменяемые токены",
+    "showAllBalances": "Показать все балансы",
+    "hideZero": "Скрыть нулевые балансы",
+    "turnVisibilityAssets": "Отключить видимость активов с нулевыми остатками",
+    "assetManagement": "Управление активами",
+    "assetDetails": "Детали актива",
+    "addWallet": "Добавить кошелек"
+  },
+  "asset": {
+    "history": {
+      "text": "История",
+      "noHistory": "Здесь появится история",
+      "all": "Все",
+      "transfer": "Переводы",
+      "reward": "Награды",
+      "extrinsic": "Экстринсики"
+    },
+    "buyHeader": "Купить {asset} через",
+    "buy": "Купить",
+    "teleportButtonText": "Телепорт",
+    "from": "От",
+    "to": "Кому",
+    "destNet": "Сеть получения",
+    "teleportFunds": "Телепортировать средства",
+    "sendButtonText": "Отправить",
+    "receiveButtonText": "Получить",
+    "sendFunds": "Отправить средства",
+    "sendTo": "КОМУ",
+    "walletAddress": "Адрес кошелька",
+    "receiveFunds": "Получить средства",
+    "originNet": "Основная сеть",
+    "network": "СЕТЬ",
+    "amount": "КОЛИЧЕСТВО",
+    "amountIn": "КОЛИЧЕСТВО В {asset}",
+    "value": "ЗНАЧЕНИЕ",
+    "valueIn": "ЗНАЧЕНИЕ В {asset}",
+    "assetsAmount": "Сумма активов",
+    "summary": "Итог",
+    "currency": "ВАЛЮТА",
+    "transferrable": "Передаваемые",
+    "fee": "Комиссия",
+    "total": "Суммарно",
+    "signTransaction": "Подпишите транзакцию",
+    "passwordTransaction": "Введите пароль для подтверждения транзакции",
+    "switchNetwork": "Переключитесь на правильную сеть",
+    "changeAddress": "Конвертировать адрес",
+    "invalidNetworkText": "Это не адрес выбранной сети",
+    "invalidNetworkSubtext": "Судя по указанному адресу, вы пытаетесь совершить перевод не в той сети.",
+    "existentialDepositText": "Операция удалит аккаунт",
+    "15min": "Не запрашивать пароль в течение 15 мин.",
+    "15minExtend": "Продлить период без пароля на 15 минут",
+    "version": "Версия",
+    "transaction": "Транзакция",
+    "transactionDone": "Транзакция завершена",
+    "transactionError": "Ошибка транзакции",
+    "transactionPending": "Ожидание транзакции",
+    "saveQR": "Сохранить QR-код",
+    "copyQR": "Скопировать QR-код",
+    "existentialDepositSubtext": "This transaction will result in the account going below the Existential Deposit, which will cause it to be reaped (the account will be wiped from the blockchain’s state to conserve space). If you choose to continue you will lose any funds that are below the existential deposit amount set by the network. For detailed information please refer to the official network documentation (e.g., the Polkadot Wiki). Fearless Wallet is a fully non-custodial application and has no control or knowledge of any of your actions on the network itself. ONLY CONTINUE IF YOU FULLY AGREE TO AND UNDERSTAND THE IMPLICATIONS;"
+  },
+  "accounts": {
+    "walletName": "Имя кошелька",
+    "createNewAccount": "Создать новый аккаунт",
+    "dontNeedAccount": "Мне не нужен аккаунт",
+    "exportWarning": "Передача или копирование вашего секрета — операция с высоким риском, никому не отправляйте его. Хотите продолжить процесс обмена/копирования?",
+    "notEthereumAccount": "Вы не добавили учетную запись ethereum.",
+    "accountsUniquesSecrets": "Аккаунты с уникальным секретом",
+    "accountsDefaultSecrets": "Аккаунты с общим секретом",
+    "export": "Экспорт аккаунта",
+    "exportJson": "Экспорт JSON",
+    "wantExportJson": "Я хочу экспортировать JSON",
+    "passwordWallet": "Пароль для текущего кошелька",
+    "replace": "Заменить аккаунт",
+    "switchNode": "Сменить ноду",
+    "copyAddress": "Копировать адрес",
+    "subscan": "Смотреть в Subscan",
+    "deleteCustomNode": "Удалить пользовательскую ноду?",
+    "careful": "Будьте осторожны",
+    "sharingSecret": "Копирование или передача вашего секретного ключа очень рисковано, не отправляй его никому. Вы хотите продолжить?",
+    "invalidNodeAddress": "Неверный формат адреса ноды",
+    "addNode": "Добавить ноду",
+    "urlAddress": "URL АДРЕСС",
+    "nodeName": "ИМЯ",
+    "network": "Сеть",
+    "autoNodes": "Автовыбор ноды",
+    "defaultNodes": "Стандартные ноды",
+    "customNodes": "Пользовательские ноды",
+    "editNode": "Редактировать ноду",
+    "deleteNode": "Удалить ноду",
+    "createAccount": "Создать аккаунт",
+    "importAccount": "Импротировать аккаунт",
+    "newNode": "Новая нода",
+    "addEthereumAccounts": "Добавить аккаунты Moonbeam и Moonriver?"
+  },
+  "auth": {
+    "noAccounts": "У вас нет аккаунта. Пожалуйста, создайте учетную запись и обновите страницу приложения."
+  },
+  "common": {
+    "developing": "в разработке",
+    "attention": "Внимание",
+    "delete": "Удалить",
+    "accept": "Принять",
+    "proceed": "Продолжить",
+    "continue": "Продолжить",
+    "copied": "Скопировано",
+    "copiedValue": "Скопировано {value}",
+    "understood": "Понятно",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "yes": "Да",
+    "no": "Нет",
+    "search": "Поиск",
+    "searchNetwork": "Поиск по сетям",
+    "searchCurrency": "Поиск по валютам",
+    "invalidPassword": "Неверный пароль",
+    "password": "Пароль",
+    "max": "МАКС",
+    "networkManagement": "Управление сетями",
+    "fullScreen": "Полноэкранный режим",
+    "manageDApp": "Управление доступом к dApp",
+    "alreadyHaveAccount": "У меня уже есть аккаунт",
+    "sourceType": "Тип источника",
+    "allNetworks": "Все сети",
+    "offlineStatus": "Отсутствует интернет"
+  }
+}

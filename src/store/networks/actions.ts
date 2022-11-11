@@ -1,15 +1,21 @@
 import axios from 'axios';
-import { MutationTypes } from './mutations';
-import type { Settings } from '@/networks';
-import type { State } from './state';
+import type { KeySettings } from '@/networks';
+import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
-import type { LoadJsons, LoadHistory, SubscribeToBalances, ToggleActiveNode, AugmentedActionContext } from './types';
-import type { FiatJson, AssetJson, NetworkJson, Networks, ExternalApi, AssetsPrice, ApiOptions } from '@/interfaces';
+import type {
+  LoadJsons,
+  LoadHistory,
+  SubscribeToBalances,
+  ToggleActiveNode,
+  AugmentedActionContext,
+} from '@/store/networks/types';
+import type { FiatJson, AssetJson, NetworkJson, Networks, AssetsPrice, ApiOptions } from '@/interfaces';
+import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
 import { ETHEREUM_NETWORKS, NOT_SUPPORTED_SUBQUERY_NETWORKS } from '@/consts/networks';
 import { loadHistory } from '@/subquery/history';
-import { getReplacedMetaTyped } from '@/helpers/common';
+import { getMetaTyped, getReplacedMetaTyped } from '@/helpers/common';
 import { getMockCurrencies } from '@/helpers/currencies';
 import { connectToApi, subscribeAssetsBalances } from '@/helpers/networksConnection';
 import { getAccounts } from '@/helpers/accounts';
@@ -35,40 +41,52 @@ export type Actions = {
 const PAGE_SIZE = 100;
 
 const actions: ActionTree<State, State> & Actions = {
-  async [ActionTypes.LOAD_JSONS]({ commit }, { chainsUrl, assetsUrl, fiatsUrl }) {
-    const { data: chainsData } = await axios.get(chainsUrl);
-    const { data: assetsData } = await axios.get(assetsUrl);
-    const { data: fiatData } = await axios.get(fiatsUrl);
-    const networksJson: NetworkJson[] = chainsData;
+  async [ActionTypes.LOAD_JSONS](
+    { commit, state: { assetsJson, fiats, networks } },
+    { chainsUrl, assetsUrl, fiatsUrl }
+  ) {
+    if (assetsJson.length === 0) {
+      const { data: assetsJson } = await axios.get<AssetJson[]>(assetsUrl);
 
-    const networks: Networks = networksJson.map(
-      ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi, chainId, parentId, paraId }) => {
-        const networkName = name.toLowerCase();
-        const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
-        const externalApi = originalExternalApi ?? ({} as ExternalApi);
-        const settings = settingsNetworks[networkName as Settings] ?? {};
+      commit(MutationTypes.SET_ASSETS_JSON, { assetsJson });
+    }
 
-        return {
-          name: networkName,
-          nodes,
-          assets,
-          chainId,
-          parentId,
-          paraId,
-          addressPrefix,
-          isEthereumNetwork,
-          externalApi,
-          settings,
-          api: undefined,
-          provider: undefined,
-        };
-      }
-    );
+    if (fiats.length === 0) {
+      const { data: fiats } = await axios.get<FiatJson[]>(fiatsUrl);
 
-    commit(MutationTypes.SET_ASSETS_JSON, { assetsJson: assetsData as AssetJson[] });
-    commit(MutationTypes.SET_FIATS_JSON, { fiats: fiatData as FiatJson[] });
-    commit(MutationTypes.SET_NETWORKS, { networks });
-    commit(MutationTypes.SET_CURRENCIES, { currencies: getMockCurrencies(networks) });
+      commit(MutationTypes.SET_FIATS_JSON, { fiats });
+    }
+
+    if (networks.length === 0) {
+      const { data: networksJson } = await axios.get<NetworkJson[]>(chainsUrl);
+
+      const networks: Networks = networksJson.map(
+        ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi, chainId, parentId, paraId }) => {
+          const networkName = name.toLowerCase();
+          const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
+          const externalApi = originalExternalApi ?? {};
+          const settings = settingsNetworks[networkName as KeySettings] ?? {};
+
+          return {
+            name: networkName,
+            nodes,
+            assets,
+            chainId,
+            parentId,
+            paraId,
+            addressPrefix,
+            isEthereumNetwork,
+            externalApi,
+            settings,
+            api: undefined,
+            provider: undefined,
+          };
+        }
+      );
+
+      commit(MutationTypes.SET_NETWORKS, { networks });
+      commit(MutationTypes.SET_CURRENCIES, { currencies: getMockCurrencies(networks) });
+    }
   },
 
   async [ActionTypes.CONNECT_TO_NODES](context) {
@@ -78,7 +96,7 @@ const actions: ActionTree<State, State> & Actions = {
         nodeIndex: 0,
       };
 
-      connectToApi(context, network, apiOptions);
+      connectToApi(network, apiOptions);
     });
   },
 
@@ -89,16 +107,15 @@ const actions: ActionTree<State, State> & Actions = {
     const url = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${urlFiatsPart}&include_24hr_change=true&ids=${urlAssetsPart}`;
 
     try {
-      const { data } = await axios.get(url);
-      const typedData = data as AssetsPrice;
-      const assetsPrice = {} as AssetsPrice;
+      const { data } = await axios.get<AssetsPrice>(url);
+      const assetsPrice: AssetsPrice = {};
 
-      for (const priceId in typedData) {
-        const assetIdS = assetsJson.filter(({ priceId: _priceId }) => _priceId === priceId);
-
-        assetIdS.forEach(({ id }) => {
-          assetsPrice[id] = data[priceId];
-        });
+      for (const priceId in data) {
+        assetsJson
+          .filter(({ priceId: _priceId }) => _priceId === priceId)
+          .forEach(({ id }) => {
+            assetsPrice[id] = data[priceId];
+          });
       }
 
       commit(MutationTypes.SET_ASSET_PRICE, { assetsPrice });
@@ -143,37 +160,47 @@ const actions: ActionTree<State, State> & Actions = {
     }
   },
 
-  async [ActionTypes.SUBSCRIBE_TO_BALANCES](context, { accounts, networksProps }) {
-    const { networks: networksStore } = context.state;
-
+  async [ActionTypes.SUBSCRIBE_TO_BALANCES]({ state }, { accounts, networksProps }) {
     // if the list of networks is not transferred, then we subscribe to all
-    const networks = networksProps ?? networksStore;
 
+    const networks = networksProps ?? state.networks;
     const promises = networks.map(async (network) => {
       const { isEthereumNetwork, name: networkName } = network;
 
-      Object.entries(accounts).forEach(async ([walletAddress, { type: accountType, json }]) => {
+      Object.entries(accounts).forEach(([walletAddress, { type: accountType, json }]) => {
         const { isReplacedAccount, replacedSettings } = getReplacedMetaTyped(json.meta);
         const replacedNetworksList = Object.values(replacedSettings ?? []).flat();
-
         // if it is a replaced account and the iterated network is not in the networksList
         if (isReplacedAccount && !replacedNetworksList.includes(networkName)) return;
 
-        // ethereum accounts only subscribe to the ethereum networks and
-        // substrate accounts only subscribe to the substrate networks
-        if ((!isEthereumNetwork && accountType === 'ethereum') || (isEthereumNetwork && accountType !== 'ethereum'))
-          return;
+        const { isMobile, ethereumAddress } = getMetaTyped(json.meta);
 
-        subscribeAssetsBalances(context, walletAddress, network);
+        if (!isMobile) {
+          const isEthAccountType = accountType === 'ethereum';
+
+          // ethereum accounts only subscribe to the ethereum networks and
+          // substrate accounts only subscribe to the substrate network
+          if ((!isEthereumNetwork && isEthAccountType) || (isEthereumNetwork && !isEthAccountType)) return;
+        }
+
+        //subscribe only if mobile wallet have eth address and it's eth network
+        if (isMobile && ethereumAddress && isEthereumNetwork) {
+          subscribeAssetsBalances(ethereumAddress, network);
+
+          return;
+        }
+
+        subscribeAssetsBalances(walletAddress, network);
       });
     });
 
     await Promise.allSettled(promises);
   },
 
-  async [ActionTypes.TOGGLE_ACTIVE_NODE](context, { network, nodeName, nodeUrl: nodeUrlProp, oldNodeUrl }) {
-    const { state, commit, dispatch } = context;
-    const networks = state.networks;
+  async [ActionTypes.TOGGLE_ACTIVE_NODE](
+    { state: { networks }, commit, dispatch },
+    { network, nodeName, nodeUrl: nodeUrlProp, oldNodeUrl }
+  ) {
     const networkApi = networks.find(({ name }) => name === network)!;
     const nodeUrl = nodeUrlProp === '' ? networkApi.nodes[0].url : nodeUrlProp;
 
@@ -192,8 +219,7 @@ const actions: ActionTree<State, State> & Actions = {
       nodeIndex: 0,
     };
 
-    connectToApi(context, networkApi, apiOptions);
-
+    connectToApi(networkApi, apiOptions);
     await dispatch(ActionTypes.SUBSCRIBE_TO_BALANCES, {
       accounts: getAccounts(),
       loadHistory: false,

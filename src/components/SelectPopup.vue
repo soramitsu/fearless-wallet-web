@@ -2,33 +2,37 @@
   <Popup
     sizeWidth="big"
     class="select-popup"
-    :headerText="header"
+    :headerText="headerText"
     :placeholder="placeholder"
     :showSearch="showSearch"
     :showBorder="showBorder"
-    :staticHeight="staticHeight"
+    :height="height"
+    :maxHeight="maxHeight"
     :handlerFilter="handlerFilter"
     :handlerClose="handlerClose"
     :horizontalPlacement="horizontalPlacement"
     :verticalPlacement="verticalPlacement"
     :showBlur="showBlur"
     :showAnimation="showAnimation"
+    :showBackground="showBackground"
     :top="top"
     :left="left"
   >
     <div v-for="{ label, value, path } in options" :key="label" :class="rowClasses(value)" @click="toggle(value)">
       <div class="description">
-        <img v-if="showIcon" :src="getImg(path)" class="img" />
-
+        <Icon v-if="showIcon" :icon="path" className="img" />
         {{ label }}
       </div>
-      <s-icon name="basic-check-mark-24" v-show="VModel === value" />
+
+      <SIcon name="basic-check-mark-24" v-show="getIconVisible(value)" />
     </div>
+
+    <div v-if="showWarning" class="warning">Nothing found</div>
   </Popup>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 import Popup from './Popup.vue';
 
 type SpaceSize = 'small' | 'medium' | 'big';
@@ -40,48 +44,55 @@ export default class SelectPopup extends Vue {
   icons: string[] = [];
   formattedOptions: Record<string, string>[] = [];
 
-  @VModel({ type: String }) VModel!: string;
+  @Prop(String) value!: string;
   @Prop(Array) options!: Record<string, string>[];
-  @Prop(String) header!: string;
+  @Prop(String) headerText!: string;
   @Prop(Number) top!: number;
   @Prop(Number) left!: number;
   @Prop({ default: 'center' }) horizontalPlacement!: string;
   @Prop({ default: 'center' }) verticalPlacement!: string;
   @Prop({ default: 'big' }) space!: SpaceSize;
   @Prop({ default: '' }) placeholder!: string;
+  @Prop({ type: Number, required: false }) height?: number;
+  @Prop({ type: Number, required: false }) maxHeight?: number;
   @Prop({ default: true }) showIcon!: boolean;
-  @Prop({ default: true }) staticHeight!: boolean;
   @Prop({ default: true }) showSearch!: boolean;
   @Prop({ default: true }) showBorder!: boolean;
   @Prop({ default: true }) showBlur!: boolean;
   @Prop({ default: true }) showAnimation!: boolean;
+  @Prop({ default: true }) showBackground!: boolean;
   @Prop({ default: 'medium' }) sizeWidth!: boolean;
   @Prop(Function) toggleValue!: (value: string) => void;
   @Prop(Function) handlerClose!: VoidFunction;
   @Prop({ default: () => () => null }) handlerFilter!: (value: string) => void;
 
+  get showWarning() {
+    return this.options.length === 0;
+  }
+
   beforeMount() {
-    const index = this.options.findIndex(({ value }) => value === this.VModel);
+    const index = this.options.findIndex(({ value }) => value === this.value);
+
+    if (index === -1) return;
+
     const selectedElement = this.options[index];
     const indexInsertion = this.options[0]?.isAll && index !== 0 ? 1 : 0;
 
     this.options.splice(index, 1);
     this.options.splice(indexInsertion, 0, selectedElement);
-
-    this.options.forEach(({ path }) => this.getImg(path));
   }
 
-  getImg(path: string) {
-    return require(`@/assets/${path}`);
+  getIconVisible(value: string) {
+    return this.value === value;
   }
 
   rowClasses(value: string) {
     return [
       'row',
       {
-        'row-active': this.VModel === value,
+        'row-active': this.value === value,
       },
-      `margin-${this.space}`,
+      `padding-${this.space}`,
     ];
   }
 
@@ -106,7 +117,7 @@ export default class SelectPopup extends Vue {
 
     &:hover {
       cursor: pointer;
-      background-color: rgba(255, 255, 255, 0.05);
+      background-color: $secondary-background-color;
     }
 
     &:first-child {
@@ -114,17 +125,17 @@ export default class SelectPopup extends Vue {
     }
   }
 
-  .margin-small {
+  .padding-small {
     padding-top: 12px;
     padding-bottom: 12px;
   }
 
-  .margin-medium {
+  .padding-medium {
     padding-top: 18px;
     padding-bottom: 18px;
   }
 
-  .margin-big {
+  .padding-big {
     padding-top: 24px;
     padding-bottom: 24px;
   }
@@ -143,7 +154,7 @@ export default class SelectPopup extends Vue {
   }
 
   .row-active {
-    color: #ffffff;
+    color: $plain-white;
     font-weight: 700;
 
     .img {
@@ -153,6 +164,11 @@ export default class SelectPopup extends Vue {
 
   .s-icon-basic-check-mark-24 {
     color: $pink-lavender-color;
+  }
+
+  .warning {
+    height: 48px;
+    line-height: 48px;
   }
 }
 </style>

@@ -1,25 +1,41 @@
 <template>
-  <div class="circle-button" :class="backgroundClass" @click="$emit('click', $event)">
-    <img :src="img" :class="imageClasses" />
+  <div>
+    <div class="circle-button" :class="backgroundClass" @click="$emit('click', $event)">
+      <Icon :icon="iconName" :className="imageClasses" />
+    </div>
+
+    <Tooltip v-show="showTooltip" :text="tooltipText" :target="target" :placement="placement" />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import type { Placement } from '@/interfaces';
+import Tooltip from '@/components/Tooltip.vue';
 
 type BackgroundType = 'none' | 'black' | 'light-black';
 
-@Component
+@Component({
+  components: { Tooltip },
+})
 export default class CircleButton extends Vue {
   @Prop(String) iconName!: string;
   @Prop(String) backgroundColor!: BackgroundType;
   @Prop(String) backgroundColorHover!: BackgroundType;
+  @Prop({ default: '' }) tooltipText!: string;
+  @Prop(String) target!: string;
+  @Prop({ default: 'top' }) placement!: Placement;
+
+  get showTooltip() {
+    return this.tooltipText !== '';
+  }
 
   get backgroundClass() {
     const _class = `background-${this.backgroundColor}`;
 
     return [
       _class,
+      this.iconName,
       {
         [`${_class}-hover-${this.backgroundColorHover}`]: this.backgroundColor === 'none',
       },
@@ -39,10 +55,6 @@ export default class CircleButton extends Vue {
       },
     ];
   }
-
-  get img() {
-    return require(`@/assets/${this.iconName}.svg`);
-  }
 }
 </script>
 
@@ -59,10 +71,15 @@ export default class CircleButton extends Vue {
 
   .image {
     filter: invert(0.35);
+    width: 16px;
+    height: 16px;
+    outline: none;
   }
 
   .image-shift-left {
     margin-left: -3px;
+    width: 16px;
+    height: 16px;
   }
 
   .image-shift-fight {
@@ -90,7 +107,7 @@ export default class CircleButton extends Vue {
 
 .background-none-hover-light-black {
   &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: $default-background-color;
   }
 }
 
@@ -99,6 +116,6 @@ export default class CircleButton extends Vue {
 }
 
 .background-light-black {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: $default-background-color;
 }
 </style>

@@ -1,12 +1,12 @@
 <template>
-  <Corners :isError="isError" :size="size">
+  <Corners :isError="isError" :size="size" :class="wrapperClasses">
     <div :class="containerInputClasses" spellcheck="false">
       <s-input
         v-model="vModel"
         :class="inputClasses"
         :type="type"
         :accept="accept"
-        :placeholder="placeholder"
+        :placeholder="$t(placeholder)"
         :size="size"
         :maxlength="maxlength"
         :readonly="readonly"
@@ -42,6 +42,15 @@ export default class Input extends Vue {
   @Prop({ default: false }) showPassword!: boolean;
   @Prop({ default: 'default' }) styleInput!: Style;
   @Prop({ default: false }) isError!: boolean;
+  @Prop({ default: false }) cursorPointer!: boolean;
+
+  get wrapperClasses() {
+    return [
+      {
+        'cursor-pointer': this.cursorPointer,
+      },
+    ];
+  }
 
   get containerInputClasses() {
     // for "small" and "mini" sizes also medium
@@ -67,13 +76,26 @@ export default class Input extends Vue {
   }
 }
 </script>
+<style lang="scss">
+.cursor-pointer {
+  .el-input__inner {
+    &:hover {
+      cursor: pointer;
+    }
+  }
+
+  &:hover {
+    cursor: pointer;
+  }
+}
+</style>
 
 <style lang="scss">
 .input {
   position: relative;
 
   .s-input {
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid $default-background-color !important;
     padding-left: 25px !important;
   }
 
@@ -101,14 +123,14 @@ export default class Input extends Vue {
   }
 
   .s-input {
-    background-color: rgba(255, 255, 255, 0.05) !important;
+    background-color: $secondary-background-color !important;
   }
 }
 
 .input-style-pink {
   textarea,
   input {
-    color: #ffffff !important;
+    color: $plain-white !important;
   }
 
   .s-input {

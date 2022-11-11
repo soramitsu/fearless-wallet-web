@@ -1,11 +1,9 @@
 import type { ModuleTree } from 'vuex';
-import type { State as NetworksState } from './networks/state';
-import type { State as AccountState } from './accounts/state';
-import type { State as AuthState } from './auth/state';
-import type { State as SignState } from './sign/state';
-import type { State as MetaState } from './metadata/state';
+import type { State as NetworksState } from '@/store/networks/state';
+import type { State as AccountState } from '@/store/accounts/state';
+import type { State as ExtensionState } from '@/store/extension/state';
 
-type ModulesTypes = NetworksState & AccountState & AuthState & SignState & MetaState;
+type ModulesTypes = NetworksState & AccountState & ExtensionState;
 type Modules = ModuleTree<ModulesTypes>;
 
 export default Modules;

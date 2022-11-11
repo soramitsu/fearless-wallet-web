@@ -1,48 +1,61 @@
 <template>
-  <header class="header">
-    <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
-      <div class="logo-container">
+  <div>
+    <header class="header">
+      <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
+        <div class="logo-container">
+          <CircleButton
+            v-if="showBackIcon"
+            backgroundColor="light-black"
+            iconName="chevron-left"
+            @click.stop="backToWallet"
+          />
+
+          <Logo v-else size="small" />
+        </div>
+
+        <div class="wallet-name">
+          <div class="name">{{ name }}</div>
+
+          <Rotate :isActive="syncedShowSelectWalletPopup">
+            <SIcon name="chevron-bottom-16" />
+          </Rotate>
+        </div>
+
+        <Tooltip text="header.walletManagement" target=".header-part-left" placement="right" />
+      </div>
+
+      <div class="header-part">
         <CircleButton
-          v-if="showBackIcon"
+          v-if="showFullScreenIcon"
+          iconName="expand"
           backgroundColor="light-black"
-          iconName="chevron-left"
-          @click.stop="backToWallet"
+          class="button-margin"
+          tooltipText="common.fullScreen"
+          target=".expand"
+          placement="bottom"
+          @click="openFullScreen"
         />
 
-        <Logo v-else size="small" />
+        <div class="background-ellipse button-margin">
+          <div :class="statusConnectedClasses"></div>
+          {{ $t(statusConnectedText) }}
+        </div>
+
+        <Tooltip text="header.connectionStatus" target=".background-ellipse" placement="top" />
+
+        <CircleButton
+          :ref="settingsNameRef"
+          iconName="settings"
+          class="button-margin"
+          backgroundColor="none"
+          placement="left"
+          target=".settings"
+          tooltipText="Settings and account management"
+          @click="toggleSettingsVisible"
+        />
       </div>
-
-      <div class="wallet-name">
-        <div class="name">{{ name }}</div>
-
-        <Rotate :isActive="syncedShowSelectWalletPopup">
-          <s-icon name="chevron-bottom-16" />
-        </Rotate>
-      </div>
-    </div>
-    <div class="header-part">
-      <CircleButton
-        v-if="showFullScreenIcon"
-        iconName="expand"
-        backgroundColor="light-black"
-        class="button-margin"
-        @click="openFullScreen"
-      />
-
-      <div class="background-ellipse button-margin">
-        <div :class="statusConnectedClasses"></div>
-        {{ statusConnectedText }}
-      </div>
-
-      <CircleButton
-        :ref="settingsNameRef"
-        iconName="settings"
-        class="button-margin"
-        backgroundColor="none"
-        @click="toggleSettingsVisible"
-      />
-    </div>
-  </header>
+    </header>
+  </div>
 </template>
 
 <script lang="ts">
@@ -55,11 +68,13 @@ import Rotate from '@/components/Rotate.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
+import Tooltip from '@/components/Tooltip.vue';
 
 @Component({
   components: {
     Logo,
     Rotate,
+    Tooltip,
     CircleButton,
   },
 })
@@ -70,6 +85,7 @@ export default class Header extends Vue {
   @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
 
   get showFullScreenIcon() {
     return BaseApi.useIsPopup();
@@ -84,11 +100,11 @@ export default class Header extends Vue {
   }
 
   get statusConnectedClasses() {
-    return ['connected', 'success-connected'];
+    return ['connect', this.isOnline ? 'success-connect' : 'fail-connect'];
   }
 
   get statusConnectedText() {
-    return Date.now() ? 'Connected' : 'Not connected';
+    return this.isOnline ? 'header.connected' : 'header.disconnect';
   }
 
   @Watch('syncedShowSelectWalletPopup')
@@ -102,7 +118,7 @@ export default class Header extends Vue {
   updateZIndexShowSettings(value: boolean) {
     const targetElement = (this.$refs[this.settingsNameRef] as Vue).$el as HTMLElement;
 
-    targetElement.style.zIndex = value ? '200' : '0';
+    targetElement.style.zIndex = value ? '300' : '0';
   }
 
   backToWallet() {
@@ -135,7 +151,7 @@ export default class Header extends Vue {
   }
 
   i {
-    color: rgba(255, 255, 255, 0.65);
+    color: $grayish-white;
   }
 
   .s-icon-arrows-arrows-diagonals-bltr-24 {
@@ -190,23 +206,23 @@ export default class Header extends Vue {
       padding: 0 12px;
       font-size: 12px;
       border-radius: 20px;
-      background-color: rgba(255, 255, 255, 0.1);
+      background-color: $default-background-color;
       user-select: none;
     }
   }
 
-  .connected {
+  .connect {
     width: 16px;
     height: 16px;
     border-radius: 50%;
     margin-right: 8px;
   }
 
-  .success-connected {
+  .success-connect {
     background-color: #00ee77;
   }
 
-  .fail-connected {
+  .fail-connect {
     background-color: #ee7700;
   }
 }

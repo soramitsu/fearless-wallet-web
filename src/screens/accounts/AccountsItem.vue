@@ -18,8 +18,7 @@
       backgroundColor="light-black"
       @click="openAccountSettingsPopup(network)"
     />
-
-    <img v-else src="@/assets/circle-plus-pink.svg" class="plus-icon" @click="$emit('openSourceTypePopup')" />
+    <Icon v-else-if="!isMobile" icon="circle-plus" :className="['plus-icon']" @click="$emit('openSourceTypePopup')" />
   </div>
 </template>
 
@@ -35,6 +34,7 @@ export default class AccountsItem extends Vue {
   readonly circleButtonRef = 'circleButton';
 
   @Prop(String) network!: string;
+  @Prop(Boolean) isMobile!: boolean;
   @Prop(String) asset!: string;
   @Prop(String) address!: string;
 
@@ -58,7 +58,7 @@ export default class AccountsItem extends Vue {
 .accounts-item {
   display: flex;
   padding: 8px 0 8px 0px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid $default-background-color;
   justify-content: space-between;
   align-items: center;
   height: 78px;
@@ -69,11 +69,13 @@ export default class AccountsItem extends Vue {
 
   .plus-icon {
     height: 32px;
-    filter: invert(0.05);
+    width: 32px;
+    opacity: 1;
+    color: $pink-color;
 
     &:hover {
       cursor: pointer;
-      filter: invert(0);
+      opacity: 0.95;
     }
   }
 
@@ -95,7 +97,7 @@ export default class AccountsItem extends Vue {
     .network-name {
       font-size: 12px;
       font-weight: 700;
-      color: rgba(255, 255, 255, 0.5);
+      color: $gray-color;
       height: 16px;
     }
 

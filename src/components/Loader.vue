@@ -1,7 +1,7 @@
 <template functional>
   <div class="loader">
     <div class="circle">
-      <img src="@/assets/fw-pink-logo.svg" class="logo" />
+      <Icon icon="fw-logo" :className="['logo']" />
     </div>
   </div>
 </template>
@@ -14,7 +14,7 @@
     border-radius: 50%;
     width: 96px;
     height: 96px;
-    border: 8px solid rgba(255, 255, 255, 0.1);
+    border: 8px solid $default-background-color;
     display: inline-block;
   }
 
@@ -23,7 +23,7 @@
     top: 0;
     left: 0;
     display: block;
-    margin: -71px -8px 0;
+    margin: -74px -8px 0;
     width: 96px;
     height: 96px;
     border-radius: 50%;
@@ -42,9 +42,10 @@
   }
 
   .logo {
-    height: 39px;
+    height: 44px;
     width: 70px;
     margin-top: 20px;
+    color: $pink-color;
   }
 }
 </style>

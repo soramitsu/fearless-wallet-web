@@ -6,126 +6,153 @@ import {
   SubstratePermissionScope,
   getDAppClientInstance,
   BeaconEvent,
-  defaultEventCallbacks,
   Serializer,
+  AccountInfo,
+  AppMetadata,
 } from '@airgap/beacon-sdk';
-import type { SignerPayloadJSON } from '@polkadot/types/types';
-import { getTzip10Link } from '@/util/beacon';
-
-import {
+import type {
+  PayloadJSON,
   PermissionSuccess,
   RequestSentInfo,
-  SignResponse,
+  SubstrateSignPayloadJSONResponse,
   SubstratePermissionRequest,
   SubstrateSignPayloadRequest,
-} from '@/interfaces/beacon';
-
+  TCallback,
+} from '@/interfaces';
+import { MOONBEAM_GENESISHASH, WESTEND_GENESISHASH } from '@/consts/networks';
+import store from '@/store';
+import { MutationTypes as AccountMutationTypes } from '@/store/accounts/mutations';
 class BeaconController {
-  private readonly app: DAppClient;
-  private static serializer = new Serializer();
-  private name = 'Fearless Wallet Extension';
+  private app: DAppClient;
+  private serializer = new Serializer();
+  private readonly name = 'Fearless Wallet Extension';
+  readonly appMetaData: AppMetadata = {
+    senderId: 'fearless-wallet-extension',
+    name: this.name,
+  };
+
   constructor() {
     this.app = getDAppClientInstance({
-      name: 'Fearless Wallet Extension',
+      name: this.name,
       disableDefaultEvents: true,
       eventHandlers: {
-        [BeaconEvent.PAIR_SUCCESS]: {
-          handler: defaultEventCallbacks.PAIR_SUCCESS,
+        INTERNAL_ERROR: {
+          handler: (error) => {
+            console.error('INTERNAL ERROR', error);
+          },
         },
-        [BeaconEvent.PERMISSION_REQUEST_SENT]: {
-          handler: defaultEventCallbacks.PERMISSION_REQUEST_SENT,
+        UNKNOWN: {
+          handler: (error) => {
+            console.error('UNKNOWN ERROR', error);
+          },
         },
-        [BeaconEvent.PERMISSION_REQUEST_SUCCESS]: {
-          handler: defaultEventCallbacks.PERMISSION_REQUEST_SUCCESS,
-        },
-        [BeaconEvent.PERMISSION_REQUEST_ERROR]: {
-          handler: defaultEventCallbacks.PERMISSION_REQUEST_ERROR,
-        },
-        [BeaconEvent.SIGN_REQUEST_SENT]: {
-          handler: defaultEventCallbacks.SIGN_REQUEST_SENT,
-        },
-        [BeaconEvent.SIGN_REQUEST_SUCCESS]: {
-          handler: defaultEventCallbacks.SIGN_REQUEST_SUCCESS,
-        },
-        [BeaconEvent.SIGN_REQUEST_ERROR]: {
-          handler: defaultEventCallbacks.SIGN_REQUEST_ERROR,
+        NO_PERMISSIONS: {
+          handler: (error) => {
+            console.error('NO PERMISSIONS ERROR', error);
+          },
         },
       },
     });
 
-    const substrateBlockchain = new SubstrateBlockchain();
-
-    this.app.addBlockchain(substrateBlockchain);
+    this.addSubstrateBlockchain();
   }
 
-  static create() {
+  addSubstrateBlockchain() {
+    this.app.addBlockchain(new SubstrateBlockchain());
+  }
+
+  public static create() {
     return new BeaconController();
   }
 
-  getAccounts() {
-    return this.app.getActiveAccount();
+  public getAccounts() {
+    return this.app.getAccounts();
   }
 
-  async connect() {
+  public getActiveAccount() {
+    return this.app.getActiveAccount();
+  }
+  public async resetConnection() {
+    await this.app.disconnect().then(() => {
+      store.commit(AccountMutationTypes.DELETE_QR);
+    });
+  }
+
+  public async connect() {
     const config: SubstratePermissionRequest = {
-      blockchainData: {
-        appMetadata: {
-          senderId: 'sender',
-          name: this.name,
-        },
-        networks: [{ genesisHash: '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3' }], //Polkadot genesis hash
-        scopes: [SubstratePermissionScope.transfer],
-      },
       blockchainIdentifier: 'substrate',
       type: BeaconMessageType.PermissionRequest,
+      blockchainData: {
+        appMetadata: this.appMetaData,
+        networks: [
+          {
+            genesisHash: WESTEND_GENESISHASH,
+          },
+          {
+            genesisHash: MOONBEAM_GENESISHASH,
+          },
+        ],
+        scopes: [SubstratePermissionScope.sign_payload_raw, SubstratePermissionScope.sign_payload_json],
+      },
     };
 
     await this.app.permissionRequest(config);
   }
 
-  async onPairingRequest(callback: (payload: string) => void) {
+  private getTzip10Link(url: string, payload: string) {
+    return `${url}?type=tzip10&data=${payload}`;
+  }
+
+  public async onPairingRequest(callback: (payload: string) => void) {
     this.app.subscribeToEvent(BeaconEvent.PAIR_INIT, async (data) => {
-      const code = await BeaconController.serializer.serialize(await data.p2pPeerInfo());
-      const uri = getTzip10Link('tezos://', code);
-      if (callback) callback(uri);
+      const code = await this.serializer.serialize(await data.p2pPeerInfo());
+      const uri = this.getTzip10Link('substrate://', code);
+
+      callback(uri);
     });
   }
 
-  async onSignRequest(callback: (payload: RequestSentInfo) => void) {
-    this.app.subscribeToEvent(BeaconEvent.SIGN_REQUEST_SENT, callback);
+  public async onPairingSuccess(callback: () => void) {
+    this.app.subscribeToEvent(BeaconEvent.PAIR_SUCCESS, callback);
   }
 
-  async onBlockChainRequest(callback: (payload: SignResponse) => void) {
-    this.app.subscribeToEvent(BeaconEvent.SIGN_REQUEST_SUCCESS, callback);
+  public async onPermissionRequest(callback: TCallback<RequestSentInfo>) {
+    this.app.subscribeToEvent(BeaconEvent.PERMISSION_REQUEST_SENT, callback);
   }
 
-  async onPermissionsResponse(callback: (payload: PermissionSuccess) => void) {
-    this.app.subscribeToEvent(BeaconEvent.PERMISSION_REQUEST_SUCCESS, callback);
+  public async onPermissionsResponse(callback: TCallback<PermissionSuccess>) {
+    this.app.subscribeToEvent(BeaconEvent.PERMISSION_REQUEST_SUCCESS, callback as any);
   }
 
-  disconnect() {
-    this.app.disconnect();
+  public setActiveAccount(account: AccountInfo) {
+    this.app.setActiveAccount(account);
   }
 
-  async sendRequest(payload: SignerPayloadJSON): Promise<void> {
-    const activeAccount = await this.app.getActiveAccount();
+  public removeActiveAccount() {
+    this.app.clearActiveAccount();
+  }
 
-    if (!activeAccount) throw new Error('Beacon not set up.');
+  public async sendRequestJSON(payload: PayloadJSON): Promise<SubstrateSignPayloadJSONResponse> {
+    const activeAccount = (await this.app.getActiveAccount()) as AccountInfo;
 
     const request: SubstrateSignPayloadRequest = {
+      type: BeaconMessageType.BlockchainRequest,
       accountId: activeAccount.accountIdentifier,
+      blockchainIdentifier: 'substrate',
       blockchainData: {
         mode: 'return',
         payload,
         type: SubstrateMessageType.sign_payload_request,
         scope: SubstratePermissionScope.sign_payload_json,
       },
-      blockchainIdentifier: 'substrate',
-      type: BeaconMessageType.BlockchainRequest,
     };
 
-    await this.app.request(request);
+    return this.app.request(request) as Promise<SubstrateSignPayloadJSONResponse>;
+  }
+
+  public sendRequestRaw(payload: SubstrateSignPayloadRequest) {
+    return this.app.request(payload);
   }
 }
 
-export const fearlessConnector = BeaconController.create();
+export const beaconController = BeaconController.create();

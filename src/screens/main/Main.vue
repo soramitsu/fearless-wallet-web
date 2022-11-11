@@ -25,11 +25,14 @@
       v-if="showSettings"
       :handlerClose="toggleSettingsVisible"
       @openFiatsPopup="toggleFiatsPopupVisible"
+      @openLanguagePopup="toggleLanguagePopupVisible"
       @openAboutPopup="toggleAboutPopupVisible"
       @openManageAuths="toggleManageAuthsVisible"
     />
 
     <FiatsPopup v-if="showFiatsPopup" :showAnimation="showFiatPopupAnimation" :handlerClose="toggleFiatsPopupVisible" />
+
+    <LanguagePopup v-if="showLanguagePopup" :handlerClose="toggleLanguagePopupVisible" />
 
     <AboutPopup v-if="showAboutPopup" :handlerClose="toggleAboutPopupVisible" />
 
@@ -50,7 +53,8 @@ import WalletDetailsPopup from './WalletDetailsPopup.vue';
 import SettingsPopup from './SettingsPopup.vue';
 import FiatsPopup from './FiatsPopup.vue';
 import AboutPopup from './AboutPopup.vue';
-import ManageAuths from '@/screens/authorize/ManageAuths.vue';
+import LanguagePopup from './LanguagePopup.vue';
+import ManageAuths from '@/screens/extension-ui/authorize/ManageAuths.vue';
 
 @Component({
   components: {
@@ -60,6 +64,7 @@ import ManageAuths from '@/screens/authorize/ManageAuths.vue';
     AboutPopup,
     ManageAuths,
     SettingsPopup,
+    LanguagePopup,
     SelectWalletPopup,
     WalletDetailsPopup,
   },
@@ -68,6 +73,7 @@ export default class Main extends Vue {
   buttonTopClick = 0;
   selectedWalletAddress = '';
   showSettings = false;
+  showLanguagePopup = false;
   showFiatsPopup = false;
   showAboutPopup = false;
   showSelectWalletPopup = false;
@@ -76,13 +82,19 @@ export default class Main extends Vue {
   showManageAuthsVisible = false;
 
   get highlightSettingsIcon() {
-    return this.showSettings || this.showAboutPopup || this.showFiatsPopup;
+    return this.showSettings || this.showAboutPopup || this.showLanguagePopup || this.showFiatsPopup;
   }
 
   toggleManageAuthsVisible() {
     this.showManageAuthsVisible = !this.showManageAuthsVisible;
 
     if (this.showManageAuthsVisible) this.toggleSettingsVisible();
+  }
+
+  toggleLanguagePopupVisible() {
+    this.showLanguagePopup = !this.showLanguagePopup;
+
+    if (this.showLanguagePopup) this.toggleSettingsVisible();
   }
 
   toggleAboutPopupVisible() {
@@ -99,9 +111,10 @@ export default class Main extends Vue {
   }
 
   toggleSettingsVisible() {
-    if (!this.showSettings && (this.showFiatsPopup || this.showAboutPopup)) {
+    if (!this.showSettings && (this.showFiatsPopup || this.showLanguagePopup || this.showAboutPopup)) {
       this.showFiatsPopup = false;
       this.showAboutPopup = false;
+      this.showLanguagePopup = false;
 
       return;
     }

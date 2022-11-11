@@ -2,12 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { metadataExpand } from '@polkadot/extension-chains';
-import { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
 import { selectableNetworks } from '@polkadot/networks';
 import { getId } from './background/extension-base/src/utils';
 import { PORT_EXTENSION } from './background/extension-base/src/defaults';
+import type { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
 import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types';
-
 import type {
   AccountJson,
   AllowedPath,
@@ -43,7 +42,7 @@ function setSavedMeta(genesisHash: string, def: Promise<MetadataDef | null>): Ma
   return metadataGets.set(genesisHash, def);
 }
 
-const allChains: MetadataDefBase[] = selectableNetworks
+export const allChains: MetadataDefBase[] = selectableNetworks
   .filter(({ genesisHash }) => !!genesisHash.length)
   .map((network) => ({
     chain: network.displayName,
@@ -137,8 +136,8 @@ export async function validateAccount(address: string, password: string): Promis
   return sendMessage('pri(accounts.validate)', { address, password });
 }
 
-export async function forgetAccount(address: string): Promise<boolean> {
-  return sendMessage('pri(accounts.forget)', { address });
+export async function forgetAccount(address: string, type: 'native' | 'mobile'): Promise<boolean> {
+  return sendMessage('pri(accounts.forget)', { address, type });
 }
 
 export async function approveAuthRequest(id: string, authorizedAccounts: string[]) {
@@ -197,7 +196,7 @@ export async function createAccountSuri(
   return sendMessage('pri(accounts.create.suri)', { genesisHash, name, password, suri, type });
 }
 
-export async function createAddress(meta: KeyringPair$Meta, address: string): Promise<boolean> {
+export async function createAddress(address: string, meta: KeyringPair$Meta): Promise<boolean> {
   return sendMessage('pri(addresses.create)', { meta, address });
 }
 

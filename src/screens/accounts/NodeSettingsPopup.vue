@@ -11,12 +11,14 @@
   >
     <div class="node-settings">
       <div class="row" @click="$emit('openEditNodeForm')">
-        <img src="@/assets/edit.svg" class="edit-icon" />
-        <div class="label">Edit node</div>
+        <Icon icon="edit" className="edit-icon" />
+
+        <div class="label">{{ $t('accounts.editNode') }}</div>
       </div>
       <div class="row" @click="$emit('openNotificationPopup', 'delete')">
-        <img src="@/assets/basket.svg" class="basket-icon" />
-        <div class="label delete">Delete node</div>
+        <Icon icon="backet" className="backet-icon" />
+
+        <div class="label delete">{{ $t('accounts.deleteNode') }}</div>
       </div>
     </div>
   </Popup>
@@ -45,7 +47,7 @@ export default class NodeSettingsPopup extends Vue {
 
 <style lang="scss" scoped>
 .node-settings {
-  color: rgba(255, 255, 255, 0.75);
+  color: $default-white;
   font-weight: 500;
   height: 60px;
 

@@ -2,7 +2,7 @@
   <div class="import-wallet">
     <Select
       v-model="typeImport"
-      placeholder="Source type"
+      placeholder="common.sourceType"
       size="big"
       class="row"
       :options="optionsImport"
@@ -31,7 +31,7 @@
           :readonly="true"
         />
 
-        <Input v-model="syncedPasswordJson" size="big" placeholder="Password" class="row" :showPassword="true" />
+        <Input v-model="syncedPasswordJson" size="big" placeholder="common.password" class="row" :showPassword="true" />
       </div>
     </template>
 
@@ -119,28 +119,32 @@ export default class ImportWallet extends Vue {
 
   get placeholderTypeImportValue() {
     if (this.typeImport === 'rawSeed') {
-      if (this.step === 1) return 'Substrate accounts raw seed';
-      else if (this.step === 2) return 'ETH accounts raw seed';
+      if (this.step === 1) return this.t('rawSeed', { type: 'Substrate' });
+      if (this.step === 2) return this.t('rawSeed', { type: 'ETH' });
     }
 
     if (this.typeImport === 'json') {
-      if (this.step === 1) return 'Restore JSON for Substrate accounts';
-      else if (this.step === 2) return 'Restore JSON for Ethereum accounts';
+      if (this.step === 1) return this.t('restoreJson', { type: 'Substrate' });
+      if (this.step === 2) return this.t('restoreJson', { type: 'Ethereum' });
     }
 
-    return 'Enter Passphrase';
+    return this.t('enterPassphrase');
   }
 
   @Watch('typeImport')
   onTypeImportChanged() {
     this.$emit('reset');
   }
+
+  t(value: string, obj: Record<string, string> = {}) {
+    return this.$t(`addWallet.${value}`, obj);
+  }
 }
 </script>
 
 <style lang="scss">
 .s-icon-file-file-upload-24::before {
-  color: rgba(255, 255, 255, 0.5);
+  color: $gray-color;
 }
 
 .s-textarea {

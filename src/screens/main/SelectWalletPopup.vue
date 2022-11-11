@@ -11,19 +11,19 @@
   >
     <div class="wallet-content">
       <WalletBalance
-        v-for="({ meta: { name }, address }, index) in wallets"
+        v-for="({ meta: { name, ethereumAddress }, address }, index) in wallets"
         :key="name + index"
         :name="name"
         :isSelected="selectedWallet.address === address"
         :isMobile="isMobile(address)"
-        :balance="getBalance(address)"
+        :balance="getBalance(address, ethereumAddress)"
         :percent="getPercent()"
         class="total"
         @setShowWalletDetailsPopupVisible="toggleWalletDetailsPopupVisible(...arguments, address)"
         @updateSelectedWallet="updateSelectedWallet(address)"
       />
 
-      <BorderButton text="Add wallet" iconName="plus-pink" @click="addWallet" />
+      <BorderButton text="wallet.addWallet" iconName="plus-pink" @click="addWallet" />
     </div>
   </Popup>
 </template>
@@ -33,7 +33,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import WalletBalance from './WalletBalance.vue';
 import type { SelectedWallet, SetSelectedWalletProps, Accounts } from '@/store/accounts/types';
-import type { Currencies, TMutation } from '@/interfaces';
+import type { Currencies, TMutation, CustomEvent } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import Popup from '@/components/Popup.vue';
 import BorderButton from '@/components/BorderButton.vue';
@@ -42,10 +42,6 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
 import { addNumbers } from '@/helpers/numbers';
-
-interface HTMLDivElementEvent extends Event {
-  target: HTMLDivElement;
-}
 
 @Component({
   components: {
@@ -76,18 +72,16 @@ export default class SelectWalletPopup extends Vue {
   }
 
   isMobile(address: string) {
-    return BaseApi.getAddressType(address) === 'address';
+    return BaseApi.getWalletType(address) === 'mobile';
   }
 
-  getBalance(address: string) {
-    const arr = this.currencies.map((currency) => currency.getTotalBalance({ address, ethereumAddress: address }));
+  getBalance(address: string, ethereumAddress: string) {
+    const arr = this.currencies.map((currency) => currency.getTotalBalance({ address, ethereumAddress }));
 
     return addNumbers(arr);
   }
 
-  walletPopupClick(event: HTMLDivElementEvent) {
-    const classList = event.target?.classList;
-
+  walletPopupClick({ target: { classList } }: CustomEvent) {
     if (!(classList.contains('dots-container') || classList.contains('dots')))
       this.$emit('toggleWalletDetailsPopupVisible', false);
   }

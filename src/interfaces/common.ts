@@ -1,13 +1,18 @@
-import type { InvalidValueName } from '@/consts/messages';
+import type { WarningValueName } from '@/consts/messages';
 import type { AssetName } from './assets';
 import { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 
 type TMutation<T> = (props?: T) => void;
 type TAction<T> = (props?: T) => Promise<void>;
+export type TCallback<T> = (payload: T) => void;
 
+export interface CustomEvent extends Event {
+  target: HTMLDivElement;
+}
 interface Meta {
   name: string;
   ethereumAddress: string;
+  isMobile: boolean;
 }
 
 type ParentAddress = string;
@@ -32,7 +37,7 @@ interface ValidateJsonResultPositive {
 
 interface ValidateJsonResultNegative {
   value: false;
-  errorType: InvalidValueName;
+  errorType: WarningValueName;
 }
 
 type ValidateJsonResult = ValidateJsonResultPositive | ValidateJsonResultNegative;
@@ -66,10 +71,36 @@ type ChainAccount = {
   isReplaced: boolean;
 };
 
+type TextLocaleProps = Record<string, string> & {
+  tc?: number;
+};
+
+type ComponentText =
+  | string
+  | {
+      text: string;
+      localeProps: TextLocaleProps;
+    };
+
+type Placement =
+  | 'top'
+  | 'right'
+  | 'bottom'
+  | 'left'
+  | 'top-start'
+  | 'right-start'
+  | 'bottom-start'
+  | 'left-start'
+  | 'top-end'
+  | 'right-end'
+  | 'bottom-end'
+  | 'left-end';
+
 export {
   DerivationPath,
   DerivationPaths,
   FiatJson,
+  Placement,
   FilterHistory,
   ImportType,
   MenuItem,
@@ -85,4 +116,5 @@ export {
   MnemonicConfirmation,
   ChainAccount,
   AssetName,
+  ComponentText,
 };

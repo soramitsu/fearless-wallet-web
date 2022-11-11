@@ -1,15 +1,15 @@
 <template>
   <Corners size="big">
     <div :class="contentClasses" @click="updateSelectedWallet">
-      <div>
+      <div class="content">
         <div v-if="name" class="name">{{ name }}</div>
-        <div v-if="isMobile" class="mobile">mobile</div>
-        <div class="balance">{{ fiatSymbol }}{{ balanceString }}</div>
+        <span class="balance">{{ fiatSymbol }}{{ balanceString }}</span>
         <!-- <div :class="percentClasses">{{ percentString }}</div> -->
       </div>
+      <Icon v-if="isMobile" icon="mobile" className="mobile" />
 
-      <div class="dots-container">
-        <img src="@/assets/dots-horizontal.svg" class="dots" :ref="dotsHorizontalRef" />
+      <div class="dots-container" :ref="dotsHorizontalRef">
+        <Icon icon="dots-horizontal" className="dots" />
       </div>
     </div>
   </Corners>
@@ -21,13 +21,16 @@ import { Getter } from 'vuex-class';
 import Corners from '@/components/Corners.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { formattedNumber } from '@/helpers/numbers';
-
+import { CustomEvent } from '@/interfaces';
 @Component({
   components: { Corners },
 })
 export default class WalletBalance extends Vue {
   readonly dotsHorizontalRef = 'dotsHorizontal';
   showWalletMenu = false;
+  $refs!: {
+    dotsHorizontal: HTMLDivElement;
+  };
 
   @Prop({ default: '' }) name!: string;
   @Prop(String) balance!: string;
@@ -65,12 +68,12 @@ export default class WalletBalance extends Vue {
     ];
   }
 
-  updateSelectedWallet(event: Event) {
-    const classList = (event.target as HTMLDivElement)?.classList;
+  updateSelectedWallet({ target: { classList } }: CustomEvent) {
+    const shouldUpdateSelectedWallet = !(classList.contains('dots-container') || classList.contains('dots'));
 
-    if (!(classList.contains('dots-container') || classList.contains('dots'))) this.$emit('updateSelectedWallet');
+    if (shouldUpdateSelectedWallet) this.$emit('updateSelectedWallet');
     else {
-      const buttonTop = (this.$refs[this.dotsHorizontalRef] as Element).getBoundingClientRect().top;
+      const buttonTop = this.$refs[this.dotsHorizontalRef].getBoundingClientRect().top;
 
       this.$emit('setShowWalletDetailsPopupVisible', buttonTop);
     }
@@ -81,16 +84,16 @@ export default class WalletBalance extends Vue {
 <style lang="scss" scoped>
 .wallet-balance {
   display: flex;
-  justify-content: space-between;
+  gap: 8px;
   align-items: center;
   text-align: left;
   opacity: 0.9;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid $default-background-color;
   padding: 10px $default-padding;
   clip-path: $big-clip-path-left-top-and-right-bottom;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid $default-background-color;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
+  background: $secondary-background-color;
   user-select: none;
 
   &:hover {
@@ -98,30 +101,31 @@ export default class WalletBalance extends Vue {
     opacity: 1;
   }
 
+  .content {
+    min-height: 45px; // TODO: delete after adding percent
+    flex-grow: 1;
+  }
+
   .name {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: $gray-color;
     margin-bottom: 4px;
   }
 
   .mobile {
-    position: absolute;
-    top: 12px;
-    right: 60px;
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.5);
-    background: rgba(255, 255, 255, 0.05);
-    letter-spacing: 0.03em;
-    line-height: 15px;
-    text-transform: uppercase;
-    border-radius: 30px;
-    text-align: center;
-    padding: 2px 6px;
+    width: 18px;
+    height: 18px;
   }
 
   .balance {
     font-weight: 800;
-    font-size: 22px;
-    line-height: 28px;
-    max-width: 220px;
+    font-size: 18px;
+    line-height: 23px;
+    max-width: 170px;
+    text-overflow: ellipsis;
+    overflow-x: hidden;
   }
 
   .percent {
@@ -130,11 +134,11 @@ export default class WalletBalance extends Vue {
   }
 
   .up-percent {
-    color: #00ffcc;
+    color: $success-color;
   }
 
   .down-percent {
-    color: #d0021b;
+    color: $delete-color;
   }
 
   .s-icon-basic-check-mark-24 {
@@ -160,6 +164,6 @@ export default class WalletBalance extends Vue {
 }
 
 .is-selected {
-  background: rgba(119, 0, 238, 0.25);
+  background: $pink-purple-color;
 }
 </style>

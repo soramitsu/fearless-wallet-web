@@ -1,6 +1,6 @@
 <template>
   <div :class="containerButtonClasses" :style="containerButtonStyle">
-    <s-button
+    <SButton
       :type="type"
       :border-radius="borderRadius"
       :size="size"
@@ -8,15 +8,16 @@
       :class="buttonClasses"
       @click="$emit('click')"
     >
-      <img :src="img" class="icon" v-if="iconName" />
+      <Icon v-if="iconName" :icon="iconName" :className="iconClass" icon-color="pink" />
 
-      {{ text }}
-    </s-button>
+      {{ tText }}
+    </SButton>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import type { ComponentText } from '@/interfaces';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type FontSize = 'small' | 'medium' | 'big';
@@ -24,9 +25,13 @@ type Type = 'primary' | 'secondary' | 'link';
 
 @Component
 export default class Button extends Vue {
-  @Prop(String) text!: string;
+  iconClass = ['icon'];
+
+  @Prop({ default: '' }) text!: ComponentText;
   @Prop(String) width!: string;
   @Prop(String) iconName!: string;
+  @Prop(String) iconColor!: string;
+  @Prop({ type: String, default: '' }) iconClasses?: string;
   @Prop({ default: 'primary' }) type!: Type;
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'medium' }) fontSize!: FontSize;
@@ -35,8 +40,14 @@ export default class Button extends Vue {
   @Prop({ default: true }) hover!: boolean;
   @Prop({ default: true }) border!: boolean;
 
-  get img() {
-    return require(`@/assets/${this.iconName}.svg`);
+  get tText() {
+    if (typeof this.text === 'string') return this.$t(this.text);
+
+    const { tc } = this.text.localeProps;
+
+    if (tc) return this.$tc(this.text.text, this.text.localeProps.tc, this.text.localeProps);
+
+    return this.$t(this.text.text, this.text.localeProps);
   }
 
   get containerButtonClasses() {
@@ -102,6 +113,7 @@ export default class Button extends Vue {
 
   .button {
     width: 100%;
+    padding: 10px 10px;
   }
 }
 
@@ -128,26 +140,31 @@ export default class Button extends Vue {
 }
 
 .icon {
-  color: $pink-color;
   margin-right: 8px;
-  color: #ee0077;
+  min-width: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.icon--pink {
+  color: $pink-color;
 }
 
 .secondary {
-  background-color: rgba(255, 255, 255, 0.05) !important;
+  background-color: $secondary-background-color !important;
   color: #fff !important;
 }
 
 .secondary-hover:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
+  background-color: $default-background-color !important;
 }
 
 .secondary-border {
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid $default-background-color !important;
 }
 
 .secondary-border-none {
-  border: rgba(255, 255, 255, 0.05) !important;
+  border: $secondary-background-color !important;
 }
 
 .secondary-border-hover:hover {

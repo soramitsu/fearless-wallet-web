@@ -5,14 +5,14 @@
 
       <div class="activity">
         <div class="button" @click="openAddWalletComponent('create')">
-          <img src="@/assets/create.svg" class="img" />
+          <Icon icon="create" className="img" />
 
-          <div>Create Account</div>
+          <div>{{ $t('accounts.createAccount') }}</div>
         </div>
         <div class="button" @click="openAddWalletComponent('import')">
-          <img src="@/assets/import.svg" class="img" />
+          <Icon icon="import" className="img" />
 
-          <div>Import Account</div>
+          <div>{{ $t('accounts.importAccount') }}</div>
         </div>
       </div>
     </div>
@@ -74,8 +74,8 @@ export default class ReplacePopup extends Vue {
       align-items: center;
       width: 110px;
       height: 135px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      color: rgba(255, 255, 255, 0.75);
+      border: 1px solid $secondary-background-color;
+      color: $default-white;
       border-radius: 8px;
       font-weight: 500;
       font-size: 14px;

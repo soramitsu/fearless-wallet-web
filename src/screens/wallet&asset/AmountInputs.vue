@@ -6,13 +6,14 @@
       size="big"
       styleInput="pink"
       :placeholder="amountPlaceholder"
+      :placeholderLocaleProps="amountPlaceholderProps"
       @change="changeAmount"
     />
 
     <MaxButton class="max-button-two" @click="$emit('setMaxValue')" />
 
     <template v-if="showValueInput">
-      <img src="@/assets/equals.svg" class="img-equals" />
+      <Icon icon="equals" className="img-equals" />
 
       <div v-show="showFiatSymbol" class="fiat-symbol">{{ fiatSymbol }}</div>
 
@@ -22,6 +23,7 @@
         size="big"
         styleInput="pink"
         :placeholder="valuePlaceholder"
+        :placeholderLocaleProps="valuePlaceholderProps"
         @change="changeValue"
       />
 
@@ -52,15 +54,23 @@ export default class TeleportForm extends Vue {
   @Getter(AccountsGettersTypes.getFiatId) fiatId!: string;
 
   get amountPlaceholder() {
-    if (this.syncedAmount === '') return 'AMOUNT';
+    if (this.syncedAmount === '') return 'asset.amount';
 
-    return `AMOUNT IN ${this.currency?.displayName.toUpperCase()}`;
+    return 'asset.amountIn';
+  }
+
+  get amountPlaceholderProps() {
+    return { asset: this.currency?.displayName.toUpperCase() };
   }
 
   get valuePlaceholder() {
-    if (this.syncedValue === '') return 'VALUE';
+    if (this.syncedValue === '') return 'asset.value';
 
-    return `VALUE IN ${this.fiatId.toUpperCase()}`;
+    return 'asset.valueIn';
+  }
+
+  get valuePlaceholderProps() {
+    return { asset: this.fiatId.toUpperCase() };
   }
 
   get showFiatSymbol() {
@@ -105,6 +115,8 @@ export default class TeleportForm extends Vue {
   }
 
   .img-equals {
+    width: 22px;
+    height: 22px;
     margin: 0 15px;
   }
 

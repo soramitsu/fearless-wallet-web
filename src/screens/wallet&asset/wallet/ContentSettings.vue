@@ -1,12 +1,15 @@
 <template>
-  <div class="settings">
+  <div class="content-settings">
     <div class="settings-part">
       <template v-if="!syncedShowAssetsManagementForm">
         <TabButton
-          v-for="tabName in tabsOptions"
+          v-for="{ label, tabName, tooltipText, target, classes } in tabsOptions"
           class="tab"
           :key="tabName"
-          :text="tabName"
+          :tooltipText="tooltipText"
+          :target="target"
+          :class="classes"
+          :text="label"
           :isActive="activeTabName === tabName"
           @click="openTab(tabName)"
         />
@@ -14,21 +17,32 @@
 
       <TabButton
         v-else
+        tooltipText="wallet.turnVisibilityAssets"
+        class="hide-zero"
+        target=".hide-zero"
+        placementTooltip="right"
         :text="toggleButtonText"
-        title="turn off the visibility of assets with zero balances"
         @click="$emit('toggleCurrenciesVisible', allCurrenciesHidden)"
       />
     </div>
+
     <div v-if="isCurrenciesTab" class="settings-part">
       <SearchInput
         v-if="!showAssetsManagementForm"
         v-model="syncedFilterValue"
-        placeholder="Search"
+        placeholder="common.search"
         width="185px"
         class="search"
       />
 
-      <CircleButton :iconName="iconName" backgroundColor="none" @click="toggleAssetsManagementVisible" />
+      <CircleButton
+        backgroundColor="none"
+        tooltipText="wallet.assetManagement"
+        placement="left"
+        :target="target"
+        :iconName="iconName"
+        @click="toggleAssetsManagementVisible"
+      />
     </div>
   </div>
 </template>
@@ -45,6 +59,14 @@ import SearchInput from '@/components/SearchInput.vue';
 import Switcher from '@/components/Switcher.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
+interface TabsOptions {
+  label: string;
+  tabName: TabWallet;
+  tooltipText: string;
+  classes: string;
+  target: string;
+}
+
 @Component({
   components: {
     TabButton,
@@ -54,13 +76,31 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
   },
 })
 export default class ContentSettings extends Vue {
-  readonly tabsOptions: TabWallet[] = ['Currencies']; // ['Currencies', 'NFTs']
+  readonly tabsOptions: TabsOptions[] = [
+    {
+      label: 'wallet.currencies',
+      tabName: 'Currencies',
+      tooltipText: 'wallet.fungibleTokens',
+      classes: 'currencies-tab',
+      target: '.currencies-tab',
+    },
+    // {
+    //   tabName: 'wallet.nfts',
+    //   tooltipText: 'wallet.nonFungibleTokens',
+    //   classes: 'nft-tab',
+    //   target: '.nft-tab',
+    // },
+  ];
 
   @PropSync('activeTabName', { type: String }) syncedActiveTabName!: TabWallet;
   @PropSync('filterValue', { type: String }) syncedFilterValue!: TabWallet;
   @PropSync('showAssetsManagementForm', { type: Boolean }) syncedShowAssetsManagementForm!: boolean;
   @Prop(Array) currencies!: Currency[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get target() {
+    return `.${this.iconName}`;
+  }
 
   get allCurrenciesHidden() {
     const visibleCurrencies = this.currencies.filter((currency) =>
@@ -71,7 +111,7 @@ export default class ContentSettings extends Vue {
   }
 
   get toggleButtonText() {
-    return this.allCurrenciesHidden ? 'Show all balances' : 'Hide zero balances';
+    return this.allCurrenciesHidden ? 'wallet.showAllBalances' : 'wallet.hideZero';
   }
 
   get iconName() {
@@ -93,7 +133,7 @@ export default class ContentSettings extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.settings {
+.content-settings {
   display: flex;
   justify-content: space-between;
   margin-bottom: 10px;
@@ -110,7 +150,7 @@ export default class ContentSettings extends Vue {
   }
 
   i {
-    color: rgba(255, 255, 255, 0.65);
+    color: $grayish-white;
     margin-left: 24px;
 
     &:hover {

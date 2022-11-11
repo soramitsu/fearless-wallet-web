@@ -10,7 +10,7 @@
       :readonly="readonly"
     />
 
-    <div v-show="showErrorText" class="error-descriptions">{{ errorDescriptions }}</div>
+    <div v-show="showErrorText" class="error-descriptions">{{ $t(errorDescriptions) }}</div>
   </div>
 </template>
 
@@ -39,7 +39,7 @@ export default class ValidatedInput extends Vue {
 <style lang="scss" scoped>
 .validate-input {
   i {
-    color: #ffffff;
+    color: $plain-white;
   }
 
   .error-descriptions {

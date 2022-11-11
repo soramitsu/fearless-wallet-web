@@ -1,5 +1,6 @@
 import type { Currencies } from '@/interfaces/currencies';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import type { WalletAddress } from '@/interfaces';
 
 export interface Wallet {
   address: string;
@@ -9,6 +10,8 @@ export interface Wallet {
 export interface SelectedWallet extends Wallet {
   name: string;
 }
+
+export type SelectedNetworks = Record<WalletAddress, string>;
 
 export type Accounts = SubjectInfo;
 
@@ -22,12 +25,20 @@ export type SetSelectedFiatProps = {
   currencies: Currencies;
 };
 
+export type SetSelectedNetworkProps = {
+  network: string;
+};
+
 export type setAccountsProps = {
   accounts: Accounts;
 };
 
 export type setAddressesProps = {
   addresses: Accounts;
+};
+
+export type setOnlineStatus = {
+  isOnline: boolean;
 };
 
 // actions

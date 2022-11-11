@@ -8,23 +8,24 @@ import {
   evmToAddress,
 } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
-import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import { assetFromToken } from '@equilab/api';
-import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-import { BehaviorSubject } from 'rxjs';
+import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
+import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import type { BehaviorSubject } from 'rxjs';
 import type { KeyringPair$Json, KeyringPair$Meta, KeyringPair } from '@polkadot/keyring/types';
-import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
 import type { Wallet } from '@/store/accounts/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
-import { createAccountSuri, jsonRestore } from '@/extension/messaging';
+import { createAccountSuri, forgetAccount, jsonRestore } from '@/extension/messaging';
 import { getReplacedMetaTyped, getMetaTyped, isExtension } from '@/helpers/common';
-import { ETHEREUM_NETWORKS } from '@/consts/networks';
+import { ETHEREUM_NETWORKS, ETHEREUM_ADDRESS_LENGTH, ETHEREUM_ADDRESS_PREFIX } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
+import { beaconController } from '@/controllers/beaconController';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;
+type WalletTypes = 'mobile' | 'native';
 
 export default class BaseApi {
   private static createFromJson(json: KeyringPair$Json): KeyringPair {
@@ -83,9 +84,16 @@ export default class BaseApi {
     keyring.forgetAddress(address);
   }
 
-  public static getAddressType(address: string) {
-    if (BaseApi.getAccount(address)) return 'account';
-    if (BaseApi.getAddress(address)) return 'address';
+  public static isMobileWallet(address: string): boolean {
+    const substrateAddress = BaseApi.encodeAddress(address);
+
+    return !!BaseApi.getAddress(substrateAddress)?.meta.isMobile;
+  }
+
+  public static getWalletType(address: string): WalletTypes | null {
+    const substrateAddress = BaseApi.encodeAddress(address);
+    if (BaseApi.getAccount(substrateAddress)) return 'native';
+    if (BaseApi.getAddress(substrateAddress)?.meta.isMobile) return 'mobile';
 
     return null;
   }
@@ -261,11 +269,15 @@ export default class BaseApi {
   }
 
   public static getAddress(address: string): KeyringAddress | undefined {
-    return keyring.getAddress(address);
+    return keyring.getAddress(address, 'address');
   }
 
   public static getAddresses(): KeyringAddress[] {
     return keyring.getAddresses();
+  }
+
+  public static getMobileAddresses(): KeyringAddress[] {
+    return BaseApi.getAddresses().filter(({ meta }) => meta.isMobile);
   }
 
   public static getAccountsSubject(): BehaviorSubject<SubjectInfo> {
@@ -321,7 +333,7 @@ export default class BaseApi {
     return decodeAddress(address, false);
   }
 
-  public static evmToAddress(address: string, networkName: string) {
+  public static evmToAddress(address: string, networkName: string): string {
     const networks = NetworksController.getNetworks();
     const network = networks.find(({ name }) => name === networkName);
     const prefix = network?.addressPrefix;
@@ -329,9 +341,23 @@ export default class BaseApi {
     return evmToAddress(address, prefix);
   }
 
-  public static validateAddress(address: string): boolean {
+  public static validateEthereumAddress(address: string): boolean {
+    if (!address.toLowerCase().startsWith(ETHEREUM_ADDRESS_PREFIX)) return false;
+
+    if (address.length !== ETHEREUM_ADDRESS_LENGTH) return false;
+
+    return true;
+  }
+
+  public static validateAddress(address: string, network: string): boolean {
+    const isEthereumNetwork = BaseApi.isEthereumNetwork(network);
+
+    if (isEthereumNetwork && !BaseApi.validateEthereumAddress(address)) return false;
+
     try {
-      this.decodeAddress(address);
+      const publicKey = BaseApi.decodeAddress(address);
+
+      if (!isEthereumNetwork) BaseApi.encodeAddress(publicKey);
 
       return true;
     } catch {
@@ -339,23 +365,34 @@ export default class BaseApi {
     }
   }
 
+  public static validateAddressByNetwork(address: string, network: string): boolean {
+    if (BaseApi.isEthereumNetwork(network)) {
+      return BaseApi.validateEthereumAddress(address);
+    }
+
+    return address === BaseApi.formatAddress({ address, ethereumAddress: address }, network);
+  }
+
   public static formatAddress({ address, ethereumAddress }: Wallet, networkName: string): string {
     const isEthereumNetwork = BaseApi.isEthereumNetwork(networkName);
 
     if (isEthereumNetwork) return ethereumAddress;
 
+    const networks = NetworksController.getNetworks();
+    const network = networks.find(({ name }) => name === networkName);
+    const prefix = network?.addressPrefix;
+
     // the only case for try/catch
     // if the user used  ethereum account instead of a substratum account(via json or private key)
     try {
-      const publicKey = this.decodeAddress(address);
-      const networks = NetworksController.getNetworks();
-      const network = networks.find(({ name }) => name === networkName);
-      const prefix = network?.addressPrefix;
-
-      return encodeAddress(publicKey, prefix);
+      return BaseApi.encodeAddress(address, prefix);
     } catch {
       return ethereumAddress;
     }
+  }
+
+  public static encodeAddress(publicKey: string | Uint8Array, prefix = 42) {
+    return encodeAddress(publicKey, prefix);
   }
 
   public static unlockPair(address: string, password: string): boolean {
@@ -377,9 +414,9 @@ export default class BaseApi {
   }
 
   public static isSameWalletPassword(address: string, password: string): boolean {
-    const isUnlock = this.unlockPair(address, password);
+    const isUnlock = BaseApi.unlockPair(address, password);
 
-    this.lockPair(address);
+    BaseApi.lockPair(address);
 
     return isUnlock;
   }
@@ -388,27 +425,35 @@ export default class BaseApi {
     keyring.forgetAccount(address);
   }
 
-  public static deleteWallet(address: string): number {
-    if (BaseApi.getAddressType(address) === 'account') {
-      const { meta } = BaseApi.getPair(address);
-      const { ethereumAddress } = getMetaTyped(meta);
+  static deleteNativeWallet(address: string) {
+    //DELETE WALLET IN FRONTEND KEYRING ONLY
+    const { meta } = BaseApi.getPair(address);
+    const { ethereumAddress } = getMetaTyped(meta);
 
-      BaseApi.deleteAccount(address);
+    BaseApi.deleteAccount(address);
 
-      if (ethereumAddress !== '') BaseApi.deleteAccount(ethereumAddress);
+    if (ethereumAddress !== '') BaseApi.deleteAccount(ethereumAddress);
 
-      // delete replaced accounts
-      BaseApi.getReplacedAccounts({ address, ethereumAddress })
-        .filter(({ meta }) => {
-          const { replacedSettings } = getReplacedMetaTyped(meta);
+    // delete replaced accounts
+    BaseApi.getReplacedAccounts({ address, ethereumAddress })
+      .filter(({ meta }) => {
+        const { replacedSettings } = getReplacedMetaTyped(meta);
 
-          // if replaced account are used only for this main wallet
-          return Object.keys(replacedSettings).length === 1;
-        })
-        .forEach(({ address }) => BaseApi.deleteAccount(address));
-    }
+        // if replaced account are used only for this main wallet
+        return Object.keys(replacedSettings).length === 1;
+      })
+      .forEach(({ address }) => BaseApi.deleteAccount(address));
 
-    if (BaseApi.getAddress(address)) keyring.forgetAddress(address);
+    forgetAccount(address, 'native');
+
+    return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
+  }
+
+  static async deleteMobileWallet(address: string): Promise<number> {
+    BaseApi.forgetAddress(address);
+
+    await forgetAccount(address, 'mobile');
+    await beaconController.resetConnection();
 
     return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
   }

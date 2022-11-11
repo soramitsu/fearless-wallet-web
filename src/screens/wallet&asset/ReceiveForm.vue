@@ -1,37 +1,62 @@
 <template>
-  <AboveForm header="Receive Funds" :blur="true" :closeHandler="closeForm">
+  <AboveForm header="asset.receiveFunds" :blur="true" :closeHandler="closeForm">
     <div class="receive-form">
       <div>
-        <Select v-model="network" :options="optionsNetwork" placeholder="NETWORK" size="big" class="row" />
+        <RotateInput
+          v-model="selectedNetwork"
+          placeholder="asset.network"
+          :ref="selectNetworkInputRef"
+          :isActiveRotate="showSelectNetworkPopup"
+          @click="toggleSelectNetworkPopupVisible"
+        />
 
         <div class="receive-content">
           <div class="address-wrapper">
-            <span>Wallet address</span>
+            <span>{{ $t('asset.walletAddress') }}</span>
 
             <div class="address">
               {{ cutAddress }}
 
-              <img src="@/assets/copy.svg" class="copy-icon" @click="copyAddress" />
+              <Icon icon="copy" className="copy-icon" @click="copyAddress" />
             </div>
           </div>
 
-          <QR class="qr" ref="qr" :width="200" :payload="address" />
+          <QR class="qr" ref="qr" :showLogo="true" :width="200" :payload="address" />
         </div>
+
+        <Tooltip text="common.copied" target=".copy-icon" placement="bottom" trigger="click" />
       </div>
 
       <div class="activity-buttons">
         <BorderButton
           size="big"
           class="button"
-          text="Save QR-code"
+          text="asset.saveQR"
           width="260px"
           iconName="receive-white"
           @click="saveQR"
         />
 
-        <Button size="big" class="button" width="260px" text="Copy QR-code" iconName="share" @click="shareQR" />
+        <Button size="big" class="button copy-qr" width="260px" text="asset.copyQR" iconName="share" @click="copyQR" />
+
+        <Tooltip :text="copyQRTooltip" target=".copy-qr" placement="bottom" trigger="click" />
       </div>
     </div>
+
+    <SelectNetworkPopup
+      v-if="showSelectNetworkPopup"
+      horizontalPlacement="left"
+      verticalPlacement="top"
+      :selectedNetwork="selectedNetwork"
+      :top="148"
+      :left="-160"
+      :height="360"
+      :allNetworksItem="false"
+      :showBlur="false"
+      :showBackground="false"
+      :toggleSelectedNetwork="toggleSelectedNetwork"
+      :handlerClose="toggleSelectNetworkPopupVisible"
+    />
   </AboveForm>
 </template>
 
@@ -39,9 +64,10 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
+import RotateInput from './RotateInput.vue';
 import type { Networks } from '@/interfaces/networks';
 import BaseApi from '@/util/BaseApi';
-import Select from '@/components/Select.vue';
+import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -51,20 +77,29 @@ import QR from '@/components/QR.vue';
 import { cut } from '@/helpers/history';
 import AboveForm from '@/components/AboveForm.vue';
 import BorderButton from '@/components/BorderButton.vue';
+import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
+import Tooltip from '@/components/Tooltip.vue';
 
 @Component({
   components: {
     QR,
-    Select,
+    Input,
     Button,
+    Tooltip,
     AboveForm,
+    RotateInput,
     BorderButton,
+    SelectNetworkPopup,
   },
 })
 export default class ReceiveForm extends Vue {
-  network = 'polkadot';
+  readonly selectNetworkInputRef = 'selectNetworkInput';
+  readonly copyQRTooltip = { text: 'common.copiedValue', localeProps: { value: 'QR' } };
 
-  @Prop(String) selectedNetwork!: string;
+  selectedNetwork = 'polkadot';
+  showSelectNetworkPopup = false;
+
+  @Prop(String) _selectedNetwork!: string;
   @Prop(Function) closeForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
@@ -76,7 +111,7 @@ export default class ReceiveForm extends Vue {
   get address() {
     if (this.selectedWallet.address === '') return '';
 
-    return BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.network);
+    return BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.selectedNetwork);
   }
 
   get cutAddress() {
@@ -84,7 +119,17 @@ export default class ReceiveForm extends Vue {
   }
 
   mounted() {
-    this.network = this.selectedNetwork;
+    this.selectedNetwork = this._selectedNetwork;
+  }
+
+  toggleSelectNetworkPopupVisible() {
+    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
+  }
+
+  toggleSelectedNetwork(value: string) {
+    this.selectedNetwork = value;
+
+    this.toggleSelectNetworkPopupVisible();
   }
 
   copyAddress() {
@@ -92,7 +137,9 @@ export default class ReceiveForm extends Vue {
   }
 
   createBlob() {
-    const imgQR = (this.$refs.qr as Vue).$el;
+    const el = (this.$refs.qr as Vue).$el;
+    const imgQR = el.firstChild as Element;
+    // const imgLogo = el.lastChild as Element;
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
 
@@ -100,11 +147,12 @@ export default class ReceiveForm extends Vue {
     canvas.height = imgQR.clientHeight;
 
     context?.drawImage(imgQR as CanvasImageSource, 0, 0);
+    // context?.drawImage(imgLogo as CanvasImageSource, 67.5, 85, 65, 30);
 
     return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   }
 
-  async shareQR() {
+  copyQR() {
     navigator.clipboard.write([
       new ClipboardItem({
         'image/png': this.createBlob() as Promise<Blob>,
@@ -138,7 +186,7 @@ export default class ReceiveForm extends Vue {
     padding: 16px 16px;
     width: 100%;
     color: rgba(255, 255, 255, 0.75);
-    border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 0.5px solid $default-background-color;
 
     .address {
       display: flex;
@@ -146,6 +194,8 @@ export default class ReceiveForm extends Vue {
   }
 
   .copy-icon {
+    width: 20px;
+    height: 20px;
     margin-left: 16px;
     filter: invert(0.35);
 

@@ -3,6 +3,7 @@ import type { Wallet } from '@/store/accounts/types';
 import CurrencyController from '@/controllers/currencyController';
 import NetworksController from '@/controllers/networksController';
 import { MAIN_NETWORKS } from '@/consts/networks';
+import { getIconName } from '@/helpers/imgPath';
 
 type CurrencyMock = {
   mainNetwork: string;
@@ -17,14 +18,14 @@ function getMockCurrencies(networks: Networks): Currencies {
   const assetsJson = NetworksController.getAssetsJson();
 
   const currencies = networks
-    .reduce((result, network) => {
+    .reduce<CurrencyMock[]>((result, network) => {
       const { assets: networkAssets, name: mainNet, parentId } = network;
       const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNet) as RelayChainName;
 
       networkAssets.forEach(({ assetId, purchaseProviders, isUtility, isNative }) => {
         const { symbol, displayName: _displayName } = assetsJson.find(({ id }) => id === assetId)!;
         const displayName = _displayName ?? symbol;
-        const mainNetwork = MAIN_NETWORKS[symbol] ?? mainNet;
+        const mainNetwork = MAIN_NETWORKS[displayName] ?? mainNet;
         const currencyIndex = result.findIndex(
           ({ assetId: _assetId, relayChain: _relayChain, displayName: _displayName }) => {
             const isExistingAssetId = _assetId === assetId;
@@ -53,7 +54,7 @@ function getMockCurrencies(networks: Networks): Currencies {
       });
 
       return result;
-    }, [] as CurrencyMock[])
+    }, [])
     .map(
       ({ mainNetwork, assetId, symbol, relayChain, providers, displayName }) =>
         new CurrencyController(mainNetwork, assetId, symbol, displayName, providers, relayChain)
@@ -94,15 +95,13 @@ function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet) {
   return [...currenciesWithAssets, ...relayChains, ...currenciesWithoutAssets];
 }
 
-function getProviderUrl(providerName: string, asset: string, address: string) {
-  switch (providerName) {
-    case 'moonpay':
-      return `https://buy.moonpay.com/?currencyCode=${asset}&walletAddress=${address}&showWalletAddressForm=true`;
-    case 'ramp':
-      return `https://buy.ramp.network/?swapAsset=${asset.toUpperCase()}&userAddress=${address}`;
-    default:
-      return '';
-  }
+function getProviderUrl(name: 'moonPay' | 'ramp', asset: string, address: string) {
+  const provider = {
+    moonPay: `https://buy.moonpay.com/?currencyCode=${asset.toLowerCase()}&walletAddress=${address}&showWalletAddressForm=true`,
+    ramp: `https://buy.ramp.network/?swapAsset=${asset}&userAddress=${address}`,
+  };
+
+  return provider[name];
 }
 
 function getCurrencyOptions(currencies: Currencies) {
@@ -114,6 +113,7 @@ function getCurrencyOptions(currencies: Currencies) {
     return {
       label,
       value: assetId,
+      path: getIconName(displayName),
     };
   });
 }

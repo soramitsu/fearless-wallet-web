@@ -1,25 +1,28 @@
 <template>
   <div class="hint">
-    <img :src="img" class="notifications-icon" />
-    <span class="info-text" :class="getSize">
-      {{ text }}
-    </span>
+    <Icon :icon="iconName" :className="getClasses" />
+
+    <span class="info-text" :class="getSize">{{ $t(text) }}</span>
   </div>
 </template>
 
 <script lang="ts">
 import { Vue, Prop, Component } from 'vue-property-decorator';
 
-type IconNameType = 'notification' | 'warning' | 'warning-orange';
+type IconNameType = 'notification' | 'warning';
+
 type Size = 'big' | 'medium';
 @Component
 export default class Hint extends Vue {
   @Prop(String) iconName!: IconNameType;
   @Prop(String) text!: string;
   @Prop({ default: 'medium' }) size!: Size;
+  baseClass = 'notifications-icon';
 
-  get img() {
-    return require(`@/assets/${this.iconName}.svg`);
+  get getClasses() {
+    if (this.iconName === 'warning') return [`${this.baseClass} warning--orange`];
+
+    return [this.baseClass];
   }
 
   get getSize() {
@@ -30,19 +33,26 @@ export default class Hint extends Vue {
 
 <style lang="scss" scoped>
 .hint {
-  color: rgba(255, 255, 255, 0.65);
+  color: $grayish-white;
 
   i {
-    color: rgba(255, 255, 255, 0.65);
+    color: $grayish-white;
   }
 
   display: flex;
   font-size: 12px;
+  align-items: center;
   text-align: left;
+
+  .warning--orange {
+    color: $error-color;
+  }
 
   .notifications-icon {
     display: flex;
     align-items: center;
+    width: 20px;
+    height: 20px;
     margin-right: 15px;
   }
 

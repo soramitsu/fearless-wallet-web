@@ -6,8 +6,10 @@ import { checkIfDenied } from '@polkadot/phishing';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { assert, isNumber } from '@polkadot/util';
 
-import RequestBytesSign from '../RequestBytesSign';
-import RequestExtrinsicSign from '../RequestExtrinsicSign';
+import RequestBytesSign from '@extension-base/background/RequestBytesSign';
+import RequestExtrinsicSign from '@extension-base/background/RequestExtrinsicSign';
+
+import BeaconSignerJSON from '../BeaconSignerJSON';
 import { stripUrl, transformAccounts, transformAddresses, withErrorLog } from './helpers';
 import State from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
@@ -38,7 +40,6 @@ import type {
   ProviderMeta,
 } from '@polkadot/extension-inject/types';
 import { keyring } from '@/controllers/keyringChrome';
-
 export default class Tabs {
   static accountSubs: Record<string, AccountSub> = {};
 
@@ -61,7 +62,7 @@ export default class Tabs {
 
   static async accountsListAuthorized(url: string, { anyType }: RequestAccountList): Promise<InjectedAccount[]> {
     const transformedAccounts = transformAccounts(accountsObservable.subject.getValue(), anyType);
-    const transformedAddresses = transformAddresses(keyring.addresses.subject.value);
+    const transformedAddresses = transformAddresses(keyring.addresses.subject.getValue());
     const totalAccounts = [...transformedAccounts, ...transformedAddresses];
 
     return await Tabs.filterForAuthorizedAccounts(totalAccounts, url);
@@ -72,8 +73,12 @@ export default class Tabs {
     Tabs.accountSubs[id] = {
       subscription: accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
         const transformedAccounts = transformAccounts(accounts);
-        chrome.storage.local.set({ transformAccounts });
-        const auths = await Tabs.filterForAuthorizedAccounts(transformedAccounts, url);
+        const transformedMobileAccount = transformAddresses(keyring.addresses.subject.value);
+        const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
+        await chrome.storage.local.set({ transformAccounts: allAccounts });
+
+        const auths = await Tabs.filterForAuthorizedAccounts(allAccounts, url);
+
         cb(auths);
       }),
       url,
@@ -116,10 +121,12 @@ export default class Tabs {
 
   static extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
     const address = request.address;
+    const isMobile = !!keyring.getAddress(address, 'address')?.meta.isMobile;
     let meta;
-
     if (keyring.getAccount(address)) meta = Tabs.getSigningPair(address).meta;
-    else if (keyring.getAddress(address)) meta = keyring.getAddress(address)?.meta;
+    else if (isMobile) meta = keyring.getAddress(address, 'address')?.meta;
+
+    if (isMobile) return State.sign(url, new BeaconSignerJSON(request), { address, ...meta });
 
     return State.sign(url, new RequestExtrinsicSign(request), { address, ...meta });
   }

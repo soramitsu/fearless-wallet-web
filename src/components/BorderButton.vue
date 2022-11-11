@@ -7,6 +7,7 @@
       :disabled="disabled"
       :hover="hover"
       :iconName="iconName"
+      :iconColor="iconColor"
       :size="size"
       :fontSize="fontSize"
       :text="text"
@@ -20,6 +21,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import Corners from './Corners.vue';
 import Button from './Button.vue';
+import type { ComponentText } from '@/interfaces';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type FontSize = 'small' | 'medium' | 'big';
@@ -31,9 +33,10 @@ type FontSize = 'small' | 'medium' | 'big';
   },
 })
 export default class BorderButton extends Vue {
-  @Prop(String) text!: string;
+  @Prop({ default: '' }) text!: ComponentText;
   @Prop(String) width!: string;
   @Prop(String) iconName!: string;
+  @Prop(String) iconColor!: string;
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'medium' }) fontSize!: FontSize;
   @Prop({ default: 'medium' }) borderRadius!: Size;

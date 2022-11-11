@@ -1,17 +1,21 @@
 <template>
   <div :class="popupBackgroundClasses" :style="popupBackgroundStyles" @click="backgroundClick">
     <Corners size="big" :topLeftCorner="showBorder" :bottomRightCorner="showBorder" :style="popupContainerStyle">
-      <div :class="popupContainerClasses">
+      <div :class="popupContainerClasses" :style="popupContainerStyles">
         <div v-if="showHeader" class="header">
           <SearchInput v-if="showSearch" v-model="filterValue" :placeholder="placeholder" width="230px" />
 
           <template v-else>
-            <div class="button"></div>
-            <div v-if="headerText" :class="headerClasses">{{ headerText }}</div>
+            <div class="button-close"></div>
+            <div class="header-with-icon">
+              <Icon v-if="isIcon" className="attention-icon" icon="info-triangle" />
+
+              <div v-if="headerText" :class="headerClasses">{{ $t(headerText) }}</div>
+            </div>
           </template>
 
-          <s-button type="link" class="button" @click="close">
-            <s-icon name="basic-close-24" />
+          <s-button type="link" class="button-close" @click="close">
+            <SIcon name="basic-close-24" />
           </s-button>
         </div>
 
@@ -27,14 +31,14 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import Scroll from './Scroll.vue';
-import SearchInput from './SearchInput.vue';
-import Corners from './Corners.vue';
+import Scroll from '@/components/Scroll.vue';
+import SearchInput from '@/components/SearchInput.vue';
+import Corners from '@/components/Corners.vue';
 
 type HorizontalPlacement = 'left' | 'center' | 'right';
 type VerticalPlacement = 'top' | 'center' | 'bottom';
 type Size = 'mini' | 'small' | 'medium' | 'big';
-type HeaderType = 'default' | 'success' | 'failed';
+type HeaderType = 'default' | 'success' | 'failed' | 'pending';
 
 @Component({
   components: {
@@ -50,15 +54,18 @@ export default class Popup extends Vue {
   @Prop({ default: () => () => null }) handlerFilter!: (value: string) => void;
   @Prop(Number) top!: number;
   @Prop(Number) left!: number;
+  @Prop({ type: Number, required: false }) height?: number;
+  @Prop({ type: Number, required: false }) maxHeight?: number;
   @Prop({ default: '' }) headerText!: string;
   @Prop({ default: '' }) placeholder!: string;
+  @Prop({ default: false }) isIcon!: boolean;
   @Prop({ default: true }) showHeader!: boolean;
   @Prop({ default: true }) showBlur!: boolean;
   @Prop({ default: true }) showAnimation!: boolean;
   @Prop({ default: true }) showBackground!: boolean;
+  @Prop({ default: true }) closeBuBackground!: boolean;
   @Prop({ default: false }) showSearch!: boolean;
   @Prop({ default: false }) showBorder!: boolean;
-  @Prop({ default: false }) staticHeight!: boolean;
   @Prop({ default: 'medium' }) sizeWidth!: Size;
   @Prop({ default: 'center' }) horizontalPlacement!: HorizontalPlacement;
   @Prop({ default: 'center' }) verticalPlacement!: VerticalPlacement;
@@ -87,7 +94,6 @@ export default class Popup extends Vue {
     const classes = [
       'popup-container',
       {
-        'static-height': this.staticHeight,
         border: this.showBorder,
       },
     ];
@@ -97,11 +103,22 @@ export default class Popup extends Vue {
     return classes;
   }
 
+  get popupContainerStyles() {
+    const styles: Record<string, string> = {};
+
+    if (this.height) styles.height = `${this.height}px`;
+
+    if (this.maxHeight) styles.maxHeight = `${this.maxHeight}px`;
+
+    return styles;
+  }
+
   get headerClasses() {
     const classes = [
       'header-text',
       {
         'header-text-success': this.headerType === 'success',
+        'header-text-pending': this.headerType === 'pending',
         'header-text-failed': this.headerType === 'failed',
       },
     ];
@@ -133,7 +150,8 @@ export default class Popup extends Vue {
   }
 
   backgroundClick(event: Event) {
-    if ((event.target as HTMLDivElement)?.classList.contains('popup-background')) this.close();
+    if (this.closeBuBackground && (event.target as HTMLDivElement)?.classList.contains('popup-background'))
+      this.close();
   }
 
   close() {
@@ -171,12 +189,19 @@ export default class Popup extends Vue {
     padding: 15px 0;
   }
 
-  .static-height {
-    height: 410px;
+  .header-with-icon {
+    display: flex;
+    flex-flow: column;
+    gap: 12px;
+  }
+
+  .attention-icon {
+    height: 38px;
   }
 
   .width-big {
-    width: 370px;
+    min-width: 370px;
+    max-width: 450px;
   }
 
   .width-medium {
@@ -192,7 +217,7 @@ export default class Popup extends Vue {
   }
 
   .border {
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid $default-background-color;
   }
 
   .content {
@@ -203,7 +228,7 @@ export default class Popup extends Vue {
   .header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     width: 100%;
     padding-left: $default-padding;
     padding-right: 22px;
@@ -212,11 +237,15 @@ export default class Popup extends Vue {
     .header-text {
       font-weight: 700;
       font-size: 18px;
-      color: $default-white;
+      color: $plain-white;
     }
 
     .header-text-success {
       color: $success-color;
+    }
+
+    .header-text-pending {
+      color: $pending-color;
     }
 
     .header-text-failed {
@@ -225,17 +254,18 @@ export default class Popup extends Vue {
   }
 
   .s-icon-basic-close-24 {
-    color: rgba(255, 255, 255, 0.65);
+    color: $grayish-white;
 
     &:hover {
       color: rgba(255, 255, 255, 0.8);
     }
   }
 
-  .button {
+  .button-close {
     padding: 0;
     width: 20px;
     height: 20px;
+    margin: auto 0;
   }
 }
 

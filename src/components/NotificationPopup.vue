@@ -1,18 +1,19 @@
 <template>
-  <Popup :handlerClose="handlerClose" :sizeWidth="sizeWidth" :showBorder="true">
-    <div class="notification-popup">
-      <img v-if="showWarningIcon" src="@/assets/info-triangle.svg" class="img" />
+  <Popup
+    class="notification-popup"
+    :showHeader="showHeader"
+    :handlerClose="handlerClose"
+    :sizeWidth="sizeWidth"
+    :showBorder="true"
+    :closeBuBackground="closeBuBackground"
+  >
+    <div class="notification-popup-content">
+      <Icon v-if="showWarningIcon" icon="info-triangle" className="img" />
 
-      <div class="text">{{ text }}</div>
-      <div :class="classesSubtext">{{ subtext }}</div>
+      <div class="text">{{ $t(text) }}</div>
+      <div :class="classesSubtext">{{ $t(subtext) }}</div>
 
-      <Button
-        v-if="showAcceptButton"
-        class="button"
-        size="medium"
-        :text="acceptButtonText"
-        @click="handlerAcceptButton"
-      />
+      <Button v-if="showAcceptButton" class="button" size="medium" :text="acceptButtonText" @click="handlerAccept" />
 
       <BorderButton
         v-if="showRejectButton"
@@ -27,9 +28,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Popup from './Popup.vue';
-import Button from './Button.vue';
-import BorderButton from './BorderButton.vue';
+import Popup from '@/components/Popup.vue';
+import Button from '@/components/Button.vue';
+import BorderButton from '@/components/BorderButton.vue';
 
 interface Headers {
   text: string;
@@ -50,18 +51,20 @@ export default class NotificationPopup extends Vue {
   @Prop({ default: false }) showAcceptButton!: boolean;
   @Prop({ default: false }) showRejectButton!: boolean;
   @Prop({ default: true }) showWarningIcon!: boolean;
+  @Prop({ default: true }) showHeader!: boolean;
+  @Prop({ default: true }) closeBuBackground!: boolean;
   @Prop({ default: 'medium' }) sizeWidth!: Size;
-  @Prop({ default: 'Cancel' }) rejectButtonText!: string;
-  @Prop(String) acceptButtonText!: string;
+  @Prop({ default: 'common.cancel' }) rejectButtonText!: string;
+  @Prop({ default: 'common.proceed' }) acceptButtonText!: string;
   @Prop(Function) handlerClose!: VoidFunction;
-  @Prop(Function) handlerAcceptButton!: VoidFunction;
+  @Prop(Function) handlerAccept!: VoidFunction;
 
   get text() {
-    return this.headers?.text ?? '';
+    return this.headers.text;
   }
 
   get subtext() {
-    return this.headers?.subtext ?? '';
+    return this.headers.subtext;
   }
 
   get classesSubtext() {
@@ -72,43 +75,49 @@ export default class NotificationPopup extends Vue {
 
 <style lang="scss" scoped>
 .notification-popup {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0 10px;
+  z-index: 299;
 
-  .img {
-    margin-bottom: 20px;
+  .notification-popup-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 10px;
+
+    .img {
+      margin-bottom: 20px;
+      width: 42px;
+      height: 42px;
+    }
+
+    .text {
+      font-weight: 700;
+      font-size: 18px;
+      line-height: 150%;
+      margin-bottom: 4px;
+    }
+
+    .button {
+      margin-top: 20px;
+      width: 150px;
+      width: 100%;
+    }
+
+    .reject-button {
+      margin-top: 10px;
+    }
   }
 
-  .text {
-    font-weight: 700;
-    font-size: 18px;
+  .subtext {
+    color: $gray-color;
     line-height: 150%;
-    margin-bottom: 4px;
   }
 
-  .button {
-    margin-top: 20px;
-    width: 150px;
-    width: 100%;
+  .subtext-medium {
+    width: 255px;
   }
 
-  .reject-button {
-    margin-top: 10px;
+  .subtext-big {
+    width: 300px;
   }
-}
-
-.subtext {
-  color: rgba(255, 255, 255, 0.5);
-  line-height: 150%;
-}
-
-.subtext-medium {
-  width: 255px;
-}
-
-.subtext-big {
-  width: 300px;
 }
 </style>

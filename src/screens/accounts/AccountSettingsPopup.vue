@@ -10,25 +10,34 @@
     :handlerClose="handlerClose"
   >
     <div class="account-settings">
-      <div class="row" @click="openNotificationPopup">
-        <img src="@/assets/export.svg" class="icon" />
-        <div class="label">Export account</div>
+      <div v-if="showExport" class="row" @click="openNotificationPopup">
+        <Icon icon="export" className="icon" />
+
+        <div class="label">{{ $t('accounts.export') }}</div>
       </div>
+
       <div v-if="showReplaceAccount" class="row" @click="openReplacePopup">
-        <img src="@/assets/account-switch.svg" class="icon" />
-        <div class="label">Replace account</div>
+        <Icon icon="account-switch" className="icon" />
+
+        <div class="label">{{ $t('accounts.replace') }}</div>
       </div>
+
       <div v-if="showSwitchNode" class="row" @click="openNetwork">
-        <img src="@/assets/currency-switch.svg" class="icon" />
-        <div class="label">Switch node</div>
+        <Icon icon="currency-switch" className="icon" />
+
+        <div class="label">{{ $t('accounts.switchNode') }}</div>
       </div>
+
       <div class="row" @click="copyAddress">
-        <img src="@/assets/copy-2.svg" class="icon" />
-        <div class="label">Copy address</div>
+        <Icon icon="copy-2" className="icon" />
+
+        <div class="label">{{ $t('accounts.copyAddress') }}</div>
       </div>
+
       <div class="row" @click="openSubscan">
-        <img src="@/assets/globus.svg" class="icon" />
-        <div class="label">View in Subscan</div>
+        <Icon icon="globus" className="icon" />
+
+        <div class="label">{{ $t('accounts.subscan') }}</div>
       </div>
     </div>
   </Popup>
@@ -49,6 +58,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 export default class AccountSettingsPopup extends Vue {
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showSwitchNode!: boolean;
+  @Prop(Boolean) showExport!: boolean;
   @Prop(Boolean) showReplaceAccount!: boolean;
   @Prop(Number) buttonTopClick!: number;
   @Prop(Function) handlerClose!: VoidFunction;
@@ -68,7 +78,7 @@ export default class AccountSettingsPopup extends Vue {
   }
 
   get addressByNetwork() {
-    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
+    return BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.selectedNetwork);
   }
 
   copyAddress() {
@@ -110,8 +120,9 @@ export default class AccountSettingsPopup extends Vue {
 
 <style lang="scss" scoped>
 .account-settings {
-  color: rgba(255, 255, 255, 0.75);
+  color: $default-white;
   font-weight: 500;
+  height: fit-content;
 
   .row {
     display: flex;
@@ -131,6 +142,8 @@ export default class AccountSettingsPopup extends Vue {
     }
 
     .icon {
+      width: 20px;
+      height: 20px;
       filter: invert(0.25);
     }
 

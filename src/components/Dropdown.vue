@@ -1,9 +1,12 @@
 <template>
   <Corners>
     <s-dropdown type="button" buttonType="secondary" trigger="click" class="dropdown" size="mini" @select="handler">
-      {{ label }}
+      {{ $t(label) }}
+
       <template slot="menu">
-        <s-dropdown-item v-for="{ label, value } in options" :key="label" :value="value">{{ label }}</s-dropdown-item>
+        <s-dropdown-item v-for="{ label, value } in options" :key="label" :value="value">
+          {{ $t(label) }}
+        </s-dropdown-item>
       </template>
     </s-dropdown>
   </Corners>
@@ -32,7 +35,7 @@ export default class Dropdown extends Vue {
   .el-button {
     clip-path: $medium-clip-path-left-top-and-right-bottom !important;
     background: none !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid $default-background-color !important;
     color: white !important;
   }
 
@@ -51,10 +54,10 @@ export default class Dropdown extends Vue {
 }
 
 .el-dropdown-menu__item {
-  color: #ffffff !important;
+  color: $plain-white !important;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.1) !important;
+    background-color: $default-background-color !important;
   }
 }
 

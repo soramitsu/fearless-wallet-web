@@ -2,10 +2,10 @@
   <Corners :isError="true" size="big">
     <div class="alert-container">
       <div class="alert__content">
-        <Hint class="alert__header" size="big" iconName="warning-orange" text="Attention" />
+        <Hint class="alert__header" size="big" iconName="warning" :text="$t('common.attention')" />
 
         <p class="alert__message">
-          <slot>{{ message }}</slot>
+          <slot>{{ $t(message) }}</slot>
         </p>
       </div>
     </div>
@@ -30,7 +30,7 @@ export default class Container extends Vue {
 
 <style lang="scss" scoped>
 .alert-container {
-  background: rgba(255, 255, 255, 0.05);
+  background: $secondary-background-color;
   padding: $default-padding;
   border: 1px solid $error-color;
   clip-path: $big-clip-path-left-top-and-right-bottom;
@@ -53,6 +53,6 @@ export default class Container extends Vue {
   font-weight: 400;
   line-height: 150%;
   color: $default-white;
-  text-align: flex-start;
+  text-align: left;
 }
 </style>

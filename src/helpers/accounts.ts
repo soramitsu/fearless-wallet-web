@@ -20,12 +20,10 @@ function getChainAccounts(networks: Networks, wallet: Wallet): ChainAccount[] {
         }
       : wallet;
 
-    const address = BaseApi.formatAddress(finalWallet, name);
-
     return {
       network: name,
       asset,
-      address,
+      address: BaseApi.formatAddress(finalWallet, name),
       isReplaced: !!replacedAddress,
     };
   });
@@ -40,7 +38,13 @@ function getAccounts(): Accounts {
     return result;
   }, {} as Accounts);
 
-  return accounts;
+  const mobileAccount = BaseApi.getMobileAddresses().reduce((result, { address, meta }) => {
+    result[address] = { type: undefined, json: { address, meta } };
+
+    return result;
+  }, {} as Accounts);
+
+  return { ...accounts, ...mobileAccount };
 }
 
 export { getChainAccounts, getAccounts };

@@ -1,28 +1,28 @@
 <template>
   <Popup class="sending-popup" :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close">
     <div class="popup-content">
-      <template v-if="!isSendTransaction">
-        <img src="@/assets/lock-green.svg" />
+      <template v-if="!isTransactionInit && !isSignMobile">
+        <Icon icon="lock-green" className="icon__lock-green" />
 
-        <div class="text row">Enter password to confirm the transaction</div>
+        <div class="text row">{{ $t('asset.passwordTransaction') }}</div>
 
         <ValidatedInput
-          v-if="!isUnlock"
+          v-if="isLocked"
           v-model="password"
-          placeholder="Password"
+          placeholder="common.password"
           size="big"
           class="input row"
-          errorDescriptions="Incorrect password"
+          errorDescriptions="common.invalidPassword"
           :isError="isErrorPassword"
           :showPassword="true"
         />
 
         <div class="remember__checkbox">
-          <Checkbox v-model="isSavePass" size="medium" :label="prepLabel" />
+          <Checkbox v-model="isSavePass" size="medium" :label="min15Label" />
         </div>
 
         <Button
-          text="Continue"
+          text="common.continue"
           width="100%"
           size="medium"
           fontSize="big"
@@ -33,19 +33,23 @@
         />
       </template>
 
-      <Loader v-else-if="loading" />
+      <SignMobile v-else-if="!isTransactionInit" @onSign="signMobile" @onCancel="close" />
 
-      <template v-else>
+      <Loader v-if="isTransactionPending" />
+
+      <template v-else-if="isTransactionFinished">
         <div class="descriptions">
           <NetworkLogo :name="firstNetwork" :width="30" />
 
           <template v-if="secondNetwork">
-            <s-icon name="arrows-arrow-right-24" />
+            <SIcon name="arrows-arrow-right-24" />
 
             <NetworkLogo :name="secondNetwork" :width="30" />
           </template>
         </div>
+
         <div class="transfer-amount">{{ transferAmountString }}</div>
+
         <div class="transfer-value">{{ transferValueString }}</div>
       </template>
     </div>
@@ -55,18 +59,24 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import type { Currencies, Currency, TAction } from '@/interfaces';
+import type { Currencies, Currency, RequestSentInfo, TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
+import { beaconController } from '@/controllers/beaconController';
 import { isSignLocked } from '@/extension/messaging';
 import { isExtension } from '@/helpers/common';
 import Loader from '@/components/Loader.vue';
 import Popup from '@/components/Popup.vue';
 import Button from '@/components/Button.vue';
+import Checkbox from '@/components/Checkbox.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import NetworkLogo from '@/components/NetworkLogo.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import Checkbox from '@/components/Checkbox.vue';
-import { ActionTypes as SignActionsTypes, ApprovePayload } from '@/store/sign/actions';
+import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/extension/actions';
+import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
+import { GetNetworkGenesisHash } from '@/store/networks/types';
+import ExtensionController from '@/controllers/extensionController';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { SelectedWallet } from '@/store/accounts/types';
 
 @Component({
   components: {
@@ -76,53 +86,93 @@ import { ActionTypes as SignActionsTypes, ApprovePayload } from '@/store/sign/ac
     Checkbox,
     NetworkLogo,
     ValidatedInput,
+    SignMobile,
   },
 })
 export default class ConfirmationPasswordPopup extends Vue {
   password = '';
-  loading = false;
   isErrorPassword = false;
-  isUnlock = false;
+  isLocked = true;
   isSavePass = false;
-  isSuccessfulTransaction = false;
-  isSendTransaction = false;
+  signedPayload: RequestSentInfo | null = null;
+  transactionState: 'pending' | 'success' | 'failed' | undefined = undefined;
 
   @Prop(String) amount!: string;
   @Prop(String) value!: string;
   @Prop(String) firstNetwork!: string;
   @Prop(String) secondNetwork!: string;
-  @Prop(String) address!: string;
-  @Prop(String) transactionId!: string;
-  @Prop(Object) currency!: Currency;
+  @Prop(String) transactionId?: string;
+  @Prop(Object) currency?: Currency;
+  @Prop(Object) payload?: SignerPayloadJSON;
+
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
-  @Action(SignActionsTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: TAction<ApprovePayload>;
+  @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: TAction<ApprovePayload>;
+  @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
+  @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get transactionAddress() {
+    return this.currency?.getTransactionAddress(this.selectedWallet, this.firstNetwork) ?? '';
+  }
 
   get disabledButton() {
+    if (!this.isLocked) return false;
+
     return this.password === '' || this.isErrorPassword;
   }
 
-  get prepLabel() {
-    return !this.isUnlock
-      ? 'Do not ask for a password for 15 min.'
-      : 'Extend the period without password by 15 minutes';
+  get isSignMobile() {
+    return BaseApi.isMobileWallet(this.transactionAddress);
+  }
+
+  get transactionStatus() {
+    return this.currency?.transactionStatus ?? this.transactionState;
+  }
+
+  get min15Label() {
+    return this.isLocked ? 'asset.15min' : 'asset.15minExtend';
   }
 
   get headerType() {
-    return this.isSuccessfulTransaction ? 'success' : 'failed';
+    if (this.transactionStatus === 'success') return 'success';
+
+    if (this.transactionStatus === 'failed') return 'failed';
+
+    return 'pending';
   }
 
   get popupHeader() {
-    if (!this.isUnlock || this.loading) return '';
+    if (this.transactionStatus === 'success') return 'asset.transactionDone';
 
-    return this.isSuccessfulTransaction ? 'Transaction done' : 'Transaction failed';
+    if (this.transactionStatus === 'failed') return 'asset.transactionError';
+
+    if (this.isTransactionPending) return 'asset.transactionPending';
+
+    return '';
   }
 
   get transferAmountString() {
-    return `-${this.amount} ${this.currency.displayName.toUpperCase()}`;
+    return `-${this.amount} ${this.currency?.displayName.toUpperCase()}`;
   }
 
   get transferValueString() {
     return `$${this.value}`;
+  }
+
+  get isTransactionInit() {
+    return !!this.transactionStatus;
+  }
+
+  get isTransactionPending() {
+    if (!this.isTransactionInit) return false;
+
+    return this.transactionStatus === 'pending';
+  }
+
+  get isTransactionFinished() {
+    if (!this.isTransactionInit) return false;
+
+    return this.transactionStatus !== 'pending';
   }
 
   @Watch('password')
@@ -130,30 +180,69 @@ export default class ConfirmationPasswordPopup extends Vue {
     this.isErrorPassword = false;
   }
 
-  close() {
-    if (this.loading) return;
+  async mounted() {
+    if (!isExtension() && this.isSignMobile) return;
 
-    this.$emit('close', this.isSendTransaction);
+    if (this.transactionId !== undefined) {
+      const { isLocked } = await isSignLocked(this.transactionId);
+      this.isLocked = isLocked;
+      this.isSavePass = !this.isLocked;
+    }
   }
 
-  async mounted() {
-    if (!isExtension()) return;
+  close() {
+    if (!this.isTransactionInit) {
+      this.$emit('close');
 
-    const { isLocked } = await isSignLocked(this.transactionId);
+      return;
+    }
 
-    this.isUnlock = !isLocked;
-    this.isSavePass = this.isUnlock;
+    if (this.transactionId && this.isTransactionPending) {
+      ExtensionController.cancelSign(this.transactionId);
+      this.transactionState = undefined;
+
+      this.$emit('close', true);
+
+      return;
+    }
+
+    if (this.isTransactionFinished) {
+      this.currency?.clearSendStatus();
+      this.transactionState = undefined;
+
+      this.$emit('close', true);
+    }
+  }
+
+  async signMobile() {
+    if (!this.transactionId && this.currency?.extrinsic) await this.currency?.send(this.transactionAddress, true);
+    else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
+  }
+
+  async signTransactionJSON(id: string) {
+    const payload: PayloadJSON = this.payload as any;
+    delete payload.address;
+    payload.type = 'json';
+
+    const { blockchainData } = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
+
+    if (blockchainData.signature.length === 0) {
+      this.transactionState = 'failed';
+
+      ExtensionController.cancelSign(id);
+
+      return;
+    }
+
+    ExtensionController.approveSignSignature(id, blockchainData.signature);
   }
 
   async send() {
-    if (!this.isUnlock) {
-      this.isErrorPassword = !BaseApi.unlockPair(this.address, this.password);
+    if (this.isLocked) {
+      this.isErrorPassword = !BaseApi.unlockPair(this.transactionAddress, this.password);
 
       if (this.isErrorPassword) return;
     }
-
-    this.loading = true;
-    this.isSendTransaction = true;
 
     if (this.transactionId) {
       await this.onSignApprove({
@@ -161,9 +250,7 @@ export default class ConfirmationPasswordPopup extends Vue {
         isSavePass: this.isSavePass,
         password: this.password,
       });
-    } else this.isSuccessfulTransaction = await this.currency?.send(this.address, this.amount);
-
-    this.loading = false;
+    } else await this.currency?.send(this.transactionAddress);
   }
 }
 </script>
@@ -184,6 +271,11 @@ export default class ConfirmationPasswordPopup extends Vue {
       width: 100%;
     }
 
+    .icon__lock-green {
+      width: 30px;
+      height: 30px;
+    }
+
     .text {
       font-weight: 700;
       font-size: 18px;
@@ -197,7 +289,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     .descriptions {
       display: flex;
       justify-content: space-between;
-      background: rgba(255, 255, 255, 0.05);
+      background: $secondary-background-color;
       border-radius: 50px;
       margin-bottom: 20px;
       padding: 12px;
@@ -217,7 +309,7 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     .transfer-value {
       font-size: 16px;
-      color: rgba(255, 255, 255, 0.5);
+      color: $gray-color;
     }
 
     .remember__checkbox {
@@ -228,6 +320,3 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 }
 </style>
-
-function Action(SignActionsTypes: any) { throw new Error('Function not implemented.'); } function
-SignActionsTypes(SignActionsTypes: any) { throw new Error('Function not implemented.'); }

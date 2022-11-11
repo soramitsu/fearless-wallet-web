@@ -14,16 +14,16 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Components } from '@/router/routes';
 import MenuItem from '@/screens/main/MenuItem.vue';
+import { firstCharToUp } from '@/helpers/common';
 
-type MenuItemType = 'Wallet' | 'Crowdloans' | 'Staking' | 'Polkaswap' | 'History';
+type MenuItemType = 'wallet' | 'crowdloans' | 'staking' | 'polkaswap' | 'history';
 
 @Component({
   components: { MenuItem },
 })
 export default class Menu extends Vue {
   walletItems = [Components.Accounts, Components.Export, Components.Nodes];
-  menuItems: MenuItemType[] = ['Wallet', 'Crowdloans', 'Staking', 'Polkaswap', 'History'];
-  selectedItem = 'Wallet';
+  menuItems: MenuItemType[] = ['wallet', 'crowdloans', 'staking', 'polkaswap', 'history'];
 
   get currentRouteName() {
     const route = this.$route.path.split('/')[2];
@@ -36,14 +36,16 @@ export default class Menu extends Vue {
 
     return (
       menuItem.toLowerCase() === this.currentRouteName ||
-      (menuItem === 'Wallet' && (this.$route.params.assetId !== undefined || isHighlightWalletItem))
+      (menuItem === 'wallet' && (this.$route.params.assetId !== undefined || isHighlightWalletItem))
     );
   }
 
   clickMenuItem(menuItem: MenuItemType) {
     if (this.currentRouteName === menuItem.toLowerCase()) return;
 
-    this.$router.push({ name: Components[menuItem] });
+    const route = firstCharToUp(menuItem) as keyof typeof Components;
+
+    this.$router.push({ name: Components[route] });
   }
 }
 </script>
@@ -51,7 +53,7 @@ export default class Menu extends Vue {
 <style lang="scss" scoped>
 .menu {
   display: flex;
-  flex: 0 0 60px;
+  min-height: 60px;
   justify-content: space-around;
   align-items: center;
   user-select: none;

@@ -1,7 +1,7 @@
 <template>
   <Corners :size="size">
     <div :class="containerSelectClasses">
-      <s-select v-model="vModel" :placeholder="placeholder" :size="size" :disabled="disabled">
+      <s-select v-model="vModel" :placeholder="$t(placeholder)" :size="size" :disabled="disabled">
         <s-option v-for="{ value, label } in options" :key="label" :value="value" :label="label" />
       </s-select>
     </div>
@@ -45,8 +45,8 @@ export default class Select extends Vue {
   }
 
   .s-select .el-input__inner {
-    background-color: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background-color: $secondary-background-color !important;
+    border: 1px solid $default-background-color !important;
     padding-top: 25px !important;
   }
 
@@ -61,13 +61,13 @@ export default class Select extends Vue {
   }
 
   .s-select .el-select i.el-icon-arrow-up:before {
-    color: rgba(255, 255, 255, 0.5) !important;
+    color: $gray-color !important;
   }
 }
 
 .el-select-dropdown {
   background-color: #111111 !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid $default-background-color !important;
   margin-top: 5px !important;
   min-width: 370px !important;
   max-width: 370px !important;
@@ -77,16 +77,16 @@ export default class Select extends Vue {
   color: $default-white !important;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.1) !important;
+    background-color: $default-background-color !important;
   }
 }
 
 .popper__arrow {
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid $default-background-color !important;
 }
 
 .selected {
-  background-color: rgba(255, 255, 255, 0.1) !important;
+  background-color: $default-background-color !important;
   color: rgba(255, 255, 255, 1) !important;
 }
 

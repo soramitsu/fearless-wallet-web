@@ -16,18 +16,23 @@
     </div>
 
     <div class="activity">
-      <BorderButton class="activity-button" text="Send" iconName="send" @click="toggleVisible('showSendForm', true)" />
+      <BorderButton
+        class="activity-button"
+        text="asset.sendButtonText"
+        iconName="send"
+        @click="toggleVisible('showSendForm', true)"
+      />
 
       <BorderButton
         class="activity-button"
-        text="Receive"
+        text="asset.receiveButtonText"
         iconName="receive"
         @click="toggleVisible('showReceiveForm', true)"
       />
 
       <BorderButton
         class="activity-button"
-        text="Teleport"
+        text="asset.teleportButtonText"
         iconName="teleport"
         @click="toggleVisible('showTeleportForm', true)"
       />
@@ -35,7 +40,7 @@
       <BorderButton
         v-if="showBuyButton"
         class="activity-button"
-        text="Buy"
+        text="asset.buy"
         iconName="plus-pink"
         @click="toggleVisible('showBuyPopup', true)"
       />
@@ -52,7 +57,7 @@
 
     <ReceiveForm
       v-if="showReceiveForm"
-      :selectedNetwork="selectedNetwork"
+      :_selectedNetwork="selectedNetwork"
       :closeForm="toggleVisible.bind(null, 'showReceiveForm', false)"
     />
 
@@ -65,7 +70,7 @@
 
     <BuyPopup
       v-if="showBuyPopup"
-      :asset="selectedAsset"
+      :asset="selectedAssetUpper"
       :address="displayAddressByNetwork"
       :providers="providers"
       :closePopup="toggleVisible.bind(null, 'showBuyPopup', false)"
@@ -73,7 +78,9 @@
 
     <SelectNetworkPopup
       v-if="showSelectNetworkPopup"
-      v-model="selectedNetwork"
+      :selectedNetwork="selectedNetwork"
+      :height="410"
+      :allNetworksItem="false"
       :relayChain="relayChain"
       :toggleSelectedNetwork="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
@@ -85,6 +92,8 @@
       :historyNode="historyNode"
       :assetId="selectedAssetId"
     />
+
+    <Tooltip text="common.networkManagement" target=".select-network-button" placement="bottom" />
   </div>
 </template>
 
@@ -109,12 +118,14 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/helpers/numbers';
+import Tooltip from '@/components/Tooltip.vue';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
 
 @Component({
   components: {
     History,
+    Tooltip,
     SendForm,
     BuyPopup,
     ReceiveForm,
@@ -162,7 +173,7 @@ export default class Asset extends Vue {
   }
 
   get assetPriceString() {
-    return `1 ${this.selectedAsset.toUpperCase()} = ${this.fiatSymbol}${formattedPrice(this.price ?? 0)}`;
+    return `1 ${this.selectedAssetUpper} = ${this.fiatSymbol}${formattedPrice(this.price ?? 0)}`;
   }
 
   get selectedNetwork() {
@@ -173,8 +184,8 @@ export default class Asset extends Vue {
     return this.$route.params.assetId;
   }
 
-  get selectedAsset() {
-    return this.getAssetName(this.selectedAssetId);
+  get selectedAssetUpper() {
+    return this.getAssetName(this.selectedAssetId).toUpperCase();
   }
 
   get price() {
@@ -182,21 +193,22 @@ export default class Asset extends Vue {
   }
 
   get countAssetsString() {
-    if (!this.currentCurrency) return `${this.selectedAsset.toUpperCase()} 0`;
+    if (!this.currentCurrency) return `${this.selectedAssetUpper} 0`;
 
-    const totalCountAssets = +this.currentCurrency.getTotalCountAssetsByNetwork(
-      this.selectedWallet,
-      this.selectedNetwork
-    );
-    const total = formattedNumber(totalCountAssets, 4, false, true);
+    const totalCountAssets = +this.currentCurrency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork);
+    const total = formattedNumber(totalCountAssets, {
+      decimalsValue: 4,
+      returnOriginNumber: false,
+      removeTrailingZeros: true,
+    });
 
-    return `${this.selectedAsset.toUpperCase()} ${total}`;
+    return `${this.selectedAssetUpper} ${total}`;
   }
 
   get balanceInNetworkString() {
     if (!this.currentCurrency) return `$ 0`;
 
-    const total = this.currentCurrency.getBalanceInNetwork(this.selectedWallet, this.selectedNetwork);
+    const total = this.currentCurrency.getTotalBalance(this.selectedWallet, this.selectedNetwork);
 
     return `${this.fiatSymbol} ${formattedNumber(+total)}`;
   }
@@ -220,7 +232,7 @@ export default class Asset extends Vue {
 
     this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
 
-    targetElement.style.zIndex = this.showSelectNetworkPopup ? '200' : '0';
+    targetElement.style.zIndex = this.showSelectNetworkPopup ? '400' : '0';
   }
 
   toggleVisible(field: ShowField, value: boolean) {
@@ -269,11 +281,11 @@ export default class Asset extends Vue {
       }
 
       .balance-in-network {
-        color: rgba(255, 255, 255, 0.5);
+        color: $gray-color;
       }
 
       .price {
-        color: rgba(255, 255, 255, 0.5);
+        color: $gray-color;
         font-size: 12px;
         line-height: 15px;
       }

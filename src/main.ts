@@ -2,11 +2,13 @@ import { keyring } from '@polkadot/ui-keyring';
 import Vue from 'vue';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { Plugin } from 'vue-fragment';
-import App from './App.vue';
-import router from './router';
-import store from './store';
-import './styles';
-import './plugins';
+import router from '@/router';
+import i18n from '@/locales';
+import store from '@/store';
+import App from '@/App.vue';
+import '@/styles';
+import '@/plugins';
+import '@/assets';
 
 Vue.use(Plugin);
 
@@ -19,6 +21,7 @@ cryptoWaitReady().then((): void => {
   new Vue({
     store,
     router,
+    i18n,
     render: (h) => h(App),
   }).$mount('#app');
 });

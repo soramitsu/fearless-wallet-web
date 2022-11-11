@@ -40,6 +40,7 @@ export interface AccountJson extends KeyringPair$Meta {
   genesisHash?: string | null;
   isExternal?: boolean;
   isHardware?: boolean;
+  isMobile?: boolean;
   isHidden?: boolean;
   isDefaultAuthSelected?: boolean;
   name?: string;
@@ -60,6 +61,11 @@ export type AccountsContext = {
   selectedAccounts?: AccountJson['address'][];
   setSelectedAccounts?: (address: AccountJson['address'][]) => void;
 };
+
+export interface ApproveAuthRequest {
+  request: AuthorizeRequest;
+  accounts: string[];
+}
 
 export interface AuthorizeRequest {
   id: string;
@@ -237,6 +243,7 @@ export interface RequestAccountEdit {
 
 export interface RequestAccountForget {
   address: string;
+  type: 'native' | 'mobile';
 }
 
 export interface RequestAccountShow {
@@ -417,7 +424,11 @@ export interface RequestSign {
 
   sign(registry: TypeRegistry, pair: KeyringPair): { signature: HexString };
 }
+export interface RequestSignJSON {
+  readonly payload: SignerPayloadJSON | SignerPayloadRaw | undefined;
 
+  sign(): { signature: HexString };
+}
 export interface RequestJsonRestore {
   file: KeyringPair$Json;
   password: string;
@@ -501,16 +512,16 @@ export interface SignRequest extends Resolver<ResponseSigning> {
   url: string;
 }
 
-const NOTIFICATION_URL = chrome.runtime.getURL('notification.html');
+const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
 
 export const POPUP_WINDOW_OPTS: chrome.windows.CreateData = {
   focused: true,
-  height: 621,
-  left: 150,
+  height: 640,
+  width: 575,
+  left: 700,
   top: 150,
   type: 'popup',
   url: NOTIFICATION_URL,
-  width: 561,
 };
 
 export const NORMAL_WINDOW_OPTS: chrome.windows.CreateData = {
@@ -535,6 +546,8 @@ export type Subscriptions = Record<string, chrome.runtime.Port>;
 export interface IState {
   registry: TypeRegistry;
   metaStore: MetadataStore;
+  authUrls: AuthUrls;
+  defaultAuthAccountSelection: string[];
   injectedProviders: Map<chrome.runtime.Port, ProviderInterface>;
   notification: string;
   subscriptions: Subscriptions;

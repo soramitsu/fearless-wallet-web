@@ -10,38 +10,51 @@
         />
       </div>
 
-      <Logo class="description" size="big" text="Fearless Wallet" subtext="The DeFi Wallet From The Future" />
+      <Logo class="description" size="big" text="Fearless Wallet" :subtext="$t('welcome.deFiWallet')" />
     </div>
 
     <div>
       <Button
         width="100%"
-        text="Create a new wallet"
         class="create-button"
         size="big"
         fontSize="big"
+        :text="$t('welcome.createWallet')"
         @click="openAddWalletComponent('create')"
       />
 
       <Button
-        v-if="isExtension"
         class="import-button"
         width="100%"
-        text="I already have a wallet"
         size="big"
         fontSize="big"
         type="secondary"
+        :text="$t('welcome.importWallet')"
         :border="false"
         @click="openAddWalletComponent('import')"
       />
 
-      <BeaconConnect />
+      <Button
+        class="import-button"
+        width="100%"
+        size="big"
+        fontSize="big"
+        type="secondary"
+        :text="$t('welcome.connectMobile')"
+        :border="false"
+        @click="openAddWalletMobile"
+      />
 
       <div class="privacy-policy">
-        By continuing you agree with
-        <span class="important-text" @click="openTermsAndConditions">Terms and Conditions </span>
-        and
-        <span class="important-text" @click="openPrivacyPolicy"> Privacy Policy</span>
+        {{ $t('welcome.agreeWith') }}
+
+        <span class="important-text" @click="openTermsAndConditions">
+          {{ $t('header.settings.about.termsConditions') }}
+        </span>
+
+        {{ $t('welcome.and') }}
+
+        <span class="important-text" @click="openPrivacyPolicy"> {{ $t('header.settings.about.privacyPolicy') }}</span>
       </div>
     </div>
   </div>
@@ -50,31 +63,28 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import Logo from '@/components/Logo.vue';
+import Icon from '@/components/Icon.vue';
 import Button from '@/components/Button.vue';
 import { Components } from '@/router/routes';
 import CircleButton from '@/components/CircleButton.vue';
 import BaseApi from '@/util/BaseApi';
 import URLS from '@/consts/urls';
 import AboveForm from '@/components/AboveForm.vue';
-import BeaconConnect from '@/screens/beaconUI/BeaconConnect.vue';
-import { isExtension } from '@/helpers/common';
+import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
 
 @Component({
   components: {
     Logo,
+    Icon,
     Button,
     CircleButton,
-    BeaconConnect,
+    MobileConnect,
     AboveForm,
   },
 })
 export default class Welcome extends Vue {
   get showBackWalletIcon() {
-    return BaseApi.getAccounts().length !== 0;
-  }
-
-  get isExtension() {
-    return isExtension();
+    return BaseApi.getAccounts().length !== 0 || BaseApi.getAddresses().length !== 0;
   }
 
   openTermsAndConditions() {
@@ -91,6 +101,10 @@ export default class Welcome extends Vue {
 
   openAddWalletComponent(type: string) {
     this.$router.push({ name: Components.AddWallet, params: { type } });
+  }
+
+  openAddWalletMobile() {
+    this.$router.push({ name: Components.MobileConnect });
   }
 }
 </script>
@@ -115,7 +129,7 @@ export default class Welcome extends Vue {
     font-size: 12px;
     font-weight: 400;
     line-height: 16px;
-    color: rgba(255, 255, 255, 0.65);
+    color: $grayish-white;
 
     .important-text {
       color: rgb(199, 31, 95);
@@ -131,5 +145,3 @@ export default class Welcome extends Vue {
   }
 }
 </style>
-
-function encodeAddress(address: PermissionSuccess, arg1: number) { throw new Error('Function not implemented.'); }

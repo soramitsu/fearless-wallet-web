@@ -85,6 +85,7 @@ export default class Extension {
       };
     });
   }
+
   static accountsCreateExternal({ address, genesisHash, name }: RequestAccountCreateExternal): boolean {
     keyring.addExternal(address, { genesisHash, name });
 
@@ -151,7 +152,7 @@ export default class Extension {
     };
   }
 
-  static async accountsForget({ address }: RequestAccountForget): Promise<boolean> {
+  static async accountsForget({ address, type }: RequestAccountForget): Promise<boolean> {
     const authorizedAccountsDiff: AuthorizedAccountsDiff = [];
 
     // cycle through authUrls and prepare the array of diff
@@ -175,7 +176,7 @@ export default class Extension {
 
     State.updateDefaultAuthAccounts(newDefaultAuthAccounts);
 
-    keyring.forgetAccount(address);
+    type === 'native' ? keyring.forgetAccount(address) : keyring.forgetAddress(address);
 
     return true;
   }
@@ -183,7 +184,6 @@ export default class Extension {
   static async refreshAccountPasswordCache(pair: KeyringPair): Promise<number> {
     const { address } = pair;
     const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
-
     const savedExpiry = cachedUnlocks[address] || 0;
     const remainingTime = savedExpiry - Date.now();
 
@@ -191,6 +191,7 @@ export default class Extension {
       cachedUnlocks[address] = 0;
 
       await chrome.storage.local.set({ cachedUnlocks });
+
       pair.lock();
 
       return 0;
@@ -399,6 +400,7 @@ export default class Extension {
   static async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
     const queued = await State.getSignRequest(id);
     const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
+
     assert(queued, 'Unable to find request');
 
     const { reject, request, resolve } = queued;
@@ -412,7 +414,7 @@ export default class Extension {
 
     const { address } = pair;
 
-    Extension.refreshAccountPasswordCache(pair);
+    await Extension.refreshAccountPasswordCache(pair);
 
     // if the keyring pair is locked, the password is needed
     if (pair.isLocked && !password) reject(new Error('Password needed to unlock the account'));
@@ -436,7 +438,7 @@ export default class Extension {
     const result = request.sign(registry, pair);
     cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
 
-    if (savePass) chrome.storage.local.set({ cachedUnlocks });
+    if (savePass) await chrome.storage.local.set({ cachedUnlocks });
     else pair.lock();
 
     resolve({
@@ -448,6 +450,7 @@ export default class Extension {
   }
 
   static async signingApproveSignature({ id, signature }: RequestSigningApproveSignature): Promise<boolean> {
+    State.signature = signature;
     const queued = await State.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
@@ -474,8 +477,8 @@ export default class Extension {
   static async signingIsLocked({ id }: RequestSigningIsLocked): Promise<ResponseSigningIsLocked> {
     const queued = await State.getSignRequest(id);
     assert(queued, 'Unable to find request');
-
     const address = queued.request.payload.address;
+
     const pair = keyring.getPair(address);
 
     assert(pair, 'Unable to find pair');

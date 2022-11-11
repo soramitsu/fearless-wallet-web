@@ -1,9 +1,9 @@
 <template>
   <div class="accounts">
-    <Input v-model="newName" placeholder="Wallet name" size="big" :maxlength="15" @blur="blurInputName" />
+    <Input v-model="newName" placeholder="accounts.walletName" size="big" :maxlength="15" @blur="blurInputName" />
 
     <template v-if="showReplacedAccounts">
-      <div class="row label">Accounts with unique secrets</div>
+      <div class="row label">{{ $t('accounts.accountsUniquesSecrets') }}</div>
 
       <AccountsItem
         v-for="{ network, asset, address } in replacedAccountsItems"
@@ -11,12 +11,12 @@
         :network="network"
         :asset="asset"
         :address="address"
-        @openAccountSettingsPopup="openAccountSettingsPopup(...arguments, true)"
+        @openAccountSettingsPopup="openAccountSettingsPopup"
       />
     </template>
 
     <template v-if="showSharedSecretAccounts">
-      <div class="row label">Default accounts with a shared secret</div>
+      <div class="row label">{{ $t('accounts.accountsDefaultSecrets') }}</div>
 
       <AccountsItem
         v-for="{ network, asset, address } in sharedAccountsItems"
@@ -24,6 +24,7 @@
         :network="network"
         :asset="asset"
         :address="address"
+        :isMobile="isMobileWallet"
         @openSourceTypePopup="$emit('openSourceTypePopup')"
         @openAccountSettingsPopup="openAccountSettingsPopup"
       />
@@ -68,6 +69,10 @@ export default class Account extends Vue {
     return this.replacedAccountsItems.length > 0;
   }
 
+  get isMobileWallet() {
+    return BaseApi.isMobileWallet(this.selectedWallet.address);
+  }
+
   get showSharedSecretAccounts() {
     return this.sharedAccountsItems.length > 0;
   }
@@ -101,8 +106,8 @@ export default class Account extends Vue {
     this.$router.push({ name: Components.Wallet });
   }
 
-  openAccountSettingsPopup(network: string, event: Event, isReplaceAccount = false) {
-    this.$emit('openAccountSettingsPopup', network, event, isReplaceAccount);
+  openAccountSettingsPopup(network: string, event: Event) {
+    this.$emit('openAccountSettingsPopup', network, event);
   }
 
   blurInputName() {

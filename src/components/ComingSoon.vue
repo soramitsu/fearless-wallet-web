@@ -1,8 +1,8 @@
 <template>
   <div class="coming-soon">
-    <img :src="getImg()" class="img" />
+    <Icon :icon="getImg" className="img" />
 
-    <div class="name">{{ name }} in developing</div>
+    <div class="name">{{ $t(`menu.${name.toLowerCase()}`) }} {{ $t('common.developing') }}</div>
   </div>
 </template>
 
@@ -13,8 +13,8 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 export default class ComingSoon extends Vue {
   @Prop(String) name!: string;
 
-  getImg() {
-    return require(`@/assets/${this.name.toLowerCase()}.svg`);
+  get getImg() {
+    return this.name.toLowerCase();
   }
 }
 </script>
@@ -24,6 +24,7 @@ export default class ComingSoon extends Vue {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
   height: 100%;
 
   .name {
@@ -33,6 +34,7 @@ export default class ComingSoon extends Vue {
 
   .img {
     height: 100px;
+    width: 100px;
     filter: invert(0.65);
   }
 }

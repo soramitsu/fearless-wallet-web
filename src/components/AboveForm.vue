@@ -1,23 +1,27 @@
 <template>
   <div :class="backgroundClasses">
-    <div class="above-form">
+    <div :class="aboveFormClasses">
       <div class="header-content">
         <div v-if="showBackIcon" class="icon icon-back" @click="handlerBack">
-          <img src="@/assets/chevron-left.svg" />
+          <Icon icon="chevron-left" />
         </div>
         <div v-else class="icon">
-          <img src="@/assets/fw-logo.svg" class="logo" />
+          <Icon icon="fw-logo" className="logo" />
         </div>
-        <div class="header">{{ header }}</div>
+
+        <div class="header">{{ tHeader }}</div>
+
         <div class="activity">
           <div v-if="showCloseIcon" class="icon" @click="closeHandler">
-            <s-icon name="basic-close-24" />
+            <SIcon name="basic-close-24" />
           </div>
+
           <div v-show="showAcceptIcon" class="icon" @click="saveChanges">
-            <s-icon name="basic-check-mark-24" />
+            <SIcon name="basic-check-mark-24" />
           </div>
         </div>
       </div>
+
       <div class="content">
         <slot></slot>
       </div>
@@ -27,23 +31,40 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import type { ComponentText } from '@/interfaces';
 
 @Component
 export default class AboveForm extends Vue {
-  @Prop({ default: '' }) header!: string;
+  @Prop({ default: '' }) header!: ComponentText;
   @Prop({ default: false }) blur!: boolean;
   @Prop({ default: false }) showAcceptIcon!: boolean;
   @Prop({ default: false }) showBackIcon!: boolean;
+  @Prop({ default: false }) fullScreen!: boolean;
   @Prop({ default: true }) showCloseIcon!: boolean;
   @Prop({ default: () => () => null }) saveChanges!: VoidFunction;
   @Prop({ default: () => () => null }) handlerBack!: VoidFunction;
   @Prop(Function) closeHandler!: VoidFunction;
+
+  get tHeader() {
+    if (typeof this.header === 'string') return this.$t(this.header);
+
+    return this.$t(this.header.text, this.header.localeProps);
+  }
 
   get backgroundClasses() {
     return [
       'above-form-background',
       {
         'above-form-background-blur': this.blur,
+      },
+    ];
+  }
+
+  get aboveFormClasses() {
+    return [
+      'above-form',
+      {
+        'above-form-full': this.fullScreen,
       },
     ];
   }
@@ -68,6 +89,7 @@ export default class AboveForm extends Vue {
     position: relative;
     top: 80px;
     width: $extension-width;
+    min-height: $extension-height - 80px;
     height: calc(100% - 80px);
     background-color: #111111;
     clip-path: $big-clip-path-left-top;
@@ -89,7 +111,7 @@ export default class AboveForm extends Vue {
     .s-icon-basic-close-24 {
       font-weight: 400;
       opacity: 0.8;
-      color: rgba(255, 255, 255, 0.65);
+      color: $grayish-white;
 
       &:hover {
         cursor: pointer;
@@ -98,7 +120,6 @@ export default class AboveForm extends Vue {
     }
 
     .s-icon-basic-check-mark-24 {
-      color: rgba(255, 255, 255, 0.5);
       font-weight: 400;
       color: $pink-lavender-color;
       opacity: 0.8;
@@ -115,7 +136,7 @@ export default class AboveForm extends Vue {
       display: flex;
       justify-content: space-between;
       padding: $default-padding;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid $default-background-color;
     }
 
     .icon {
@@ -124,10 +145,12 @@ export default class AboveForm extends Vue {
       flex-direction: column;
       justify-content: center;
       user-select: none;
+      width: 45px;
     }
 
     .icon-back {
       opacity: 0.8;
+      width: 18px;
 
       &:hover {
         cursor: pointer;
@@ -144,6 +167,7 @@ export default class AboveForm extends Vue {
     .activity {
       display: flex;
       justify-content: right;
+      min-width: 45px;
     }
 
     .icon {
@@ -158,7 +182,14 @@ export default class AboveForm extends Vue {
 
     .logo {
       width: 45px;
+      height: 45px;
     }
+  }
+
+  .above-form-full {
+    height: 100%;
+    top: 0;
+    clip-path: none;
   }
 }
 

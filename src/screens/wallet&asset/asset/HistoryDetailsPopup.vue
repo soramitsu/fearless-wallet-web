@@ -8,7 +8,7 @@
           <div class="item-value item-icon">
             {{ displayHash }}
 
-            <img src="@/assets/copy.svg" class="copy" @click="copy(hash)" />
+            <Icon icon="copy" className="copy" @click="copy(hash)" />
           </div>
         </div>
 
@@ -21,7 +21,7 @@
 
               {{ displayFromAddress }}
 
-              <img src="@/assets/copy.svg" class="copy" @click="copy(fromAddress)" />
+              <Icon icon="copy" className="copy" @click="copy(fromAddress)" />
             </div>
           </div>
           <div class="item">
@@ -32,7 +32,7 @@
 
               {{ displayToAddress }}
 
-              <img src="@/assets/copy.svg" class="copy" @click="copy(toAddress)" />
+              <Icon icon="copy" className="copy" @click="copy(toAddress)" />
             </div>
           </div>
         </template>
@@ -40,10 +40,12 @@
         <div v-if="isReward" class="item">
           Validator
 
-          <div class="item-value">
+          <div class="item-value item-icon">
             <Identicon class="identicon" :size="24" theme="polkadot" :value="validator" />
 
-            {{ validator }}
+            {{ displayValidator }}
+
+            <Icon icon="copy" className="copy" @click="copy(validator)" />
           </div>
         </div>
 
@@ -52,6 +54,7 @@
 
           <div :class="statusClasses">{{ statusText }}</div>
         </div>
+
         <div class="item">
           Date
 
@@ -93,6 +96,8 @@
 
       <Button size="big" text="View in Subscan" @click="openSubscan" />
     </div>
+
+    <Tooltip text="common.copied" target=".copy" placement="bottom" trigger="click" />
   </AboveForm>
 </template>
 
@@ -114,10 +119,12 @@ import {
 } from '@/helpers/history';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
+import Tooltip from '@/components/Tooltip.vue';
 
 @Component({
   components: {
     Button,
+    Tooltip,
     AboveForm,
     Identicon,
   },
@@ -146,13 +153,13 @@ export default class SelectNetworkButton extends Vue {
 
   get statusIsSuccess() {
     if (this.isTransfer) {
-      const { success } = this.historyNode.transfer;
+      const { success } = this.historyNode.transfer!;
 
       return success;
     }
 
     if (this.isExtrinsic) {
-      const { success } = this.historyNode.extrinsic;
+      const { success } = this.historyNode.extrinsic!;
 
       return success;
     }
@@ -161,11 +168,15 @@ export default class SelectNetworkButton extends Vue {
   }
 
   get validator() {
-    return this.historyNode.reward.validator;
+    return this.historyNode.reward!.validator;
+  }
+
+  get displayValidator() {
+    return cut(this.validator, 10);
   }
 
   get era() {
-    return this.historyNode.reward.era;
+    return this.historyNode.reward!.era;
   }
 
   get statusClasses() {
@@ -174,22 +185,23 @@ export default class SelectNetworkButton extends Vue {
 
   get statusText() {
     if (this.isTransfer) {
-      const { success } = this.historyNode.transfer;
+      const { success } = this.historyNode.transfer!;
 
       return success ? 'Completed' : 'Reject';
     }
 
     if (this.isExtrinsic) {
-      const { success } = this.historyNode.extrinsic;
+      const { success } = this.historyNode.extrinsic!;
 
       return success ? 'Completed' : 'Reject';
     }
 
-    return '';
+    //reward
+    return 'Completed';
   }
 
   get fromAddress() {
-    return this.historyNode.transfer.from;
+    return this.historyNode.transfer!.from;
   }
 
   get displayFromAddress() {
@@ -197,7 +209,7 @@ export default class SelectNetworkButton extends Vue {
   }
 
   get toAddress() {
-    return this.historyNode.transfer.to;
+    return this.historyNode.transfer!.to;
   }
 
   get displayToAddress() {
@@ -205,11 +217,11 @@ export default class SelectNetworkButton extends Vue {
   }
 
   get moduleType() {
-    return this.historyNode.extrinsic.module;
+    return this.historyNode.extrinsic!.module;
   }
 
   get call() {
-    return this.historyNode.extrinsic.call;
+    return this.historyNode.extrinsic!.call;
   }
 
   get transferFee() {
@@ -233,7 +245,7 @@ export default class SelectNetworkButton extends Vue {
   }
 
   get hash() {
-    return this.historyNode.extrinsic.hash;
+    return this.historyNode.extrinsic!.hash;
   }
 
   get displayHash() {
@@ -244,18 +256,15 @@ export default class SelectNetworkButton extends Vue {
     return this.$route.params.network;
   }
 
-  get addressByNetwork() {
-    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
-  }
-
   copy(value: string) {
     navigator.clipboard.writeText(value);
   }
 
   openSubscan() {
+    const addressByNetwork = BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.selectedNetwork);
     const url = this.isExtrinsic
       ? `https://${this.selectedNetwork}.subscan.io/extrinsic/${this.hash}`
-      : `https://${this.selectedNetwork}.subscan.io/account/${this.addressByNetwork}`;
+      : `https://${this.selectedNetwork}.subscan.io/account/${addressByNetwork}`;
 
     window.open(url);
   }
@@ -273,7 +282,7 @@ export default class SelectNetworkButton extends Vue {
     padding: 0 $default-padding;
 
     .item {
-      color: rgba(255, 255, 255, 0.75);
+      color: $default-white;
       border-bottom: 1px solid $default-background-color;
       padding: $default-padding 0;
       display: flex;
@@ -293,6 +302,8 @@ export default class SelectNetworkButton extends Vue {
         .copy {
           margin-left: 10px;
           filter: invert(0.35);
+          width: 20px;
+          height: 20px;
 
           &:hover {
             cursor: pointer;

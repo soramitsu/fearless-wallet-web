@@ -11,19 +11,19 @@
           <div class="address-wrapper" @click="copyAddress">
             <div class="address">{{ address }}</div>
 
-            <img src="@/assets/copy.svg" class="copy" />
+            <Icon icon="copy" className="copy" />
           </div>
         </div>
       </div>
 
       <div class="switch-nodes">
-        <div class="auto-select-nodes">Auto select nodes</div>
+        <div class="auto-select-nodes">{{ $t('accounts.autoNodes') }}</div>
 
         <Switcher v-model="autoSelectNodes" />
       </div>
     </div>
 
-    <div class="row label">Default nodes</div>
+    <div class="row label">{{ $t('accounts.defaultNodes') }}</div>
 
     <div class="row">
       <NodeItem
@@ -37,12 +37,12 @@
       />
     </div>
     <div class="custom-nodes">
-      <div class="label">Custom nodes</div>
+      <div class="label">{{ $t('accounts.customNodes') }}</div>
 
       <div class="add-node" @click="$emit('openEditNodeForm', selectedNetwork)">
-        <img src="@/assets/plus.svg" class="plus" />
+        <Icon icon="plus" className="plus" />
 
-        <div>Add node</div>
+        <div>{{ $t('accounts.addNode') }}</div>
       </div>
     </div>
 
@@ -188,7 +188,7 @@ export default class Nodes extends Vue {
   }
 
   .label {
-    color: rgba(255, 255, 255, 0.75);
+    color: $default-white;
     text-align: left;
     font-weight: 600;
     margin-left: 9px;
@@ -208,7 +208,7 @@ export default class Nodes extends Vue {
     .add-node {
       display: flex;
       font-weight: 600;
-      color: rgba(255, 255, 255, 0.75);
+      color: $default-white;
 
       &:hover {
         cursor: pointer;
@@ -231,7 +231,7 @@ export default class Nodes extends Vue {
       align-items: center;
 
       .auto-select-nodes {
-        color: #ffffff;
+        color: $plain-white;
         font-weight: 500;
         margin-right: 7px;
         font-size: 14px;
@@ -258,7 +258,7 @@ export default class Nodes extends Vue {
         display: flex;
         align-items: center;
         width: 135px;
-        color: rgba(255, 255, 255, 0.5);
+        color: $gray-color;
 
         .address {
           font-size: 13px;

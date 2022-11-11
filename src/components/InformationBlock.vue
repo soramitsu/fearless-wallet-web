@@ -1,9 +1,9 @@
 <template>
   <div class="information-block">
-    <img src="@/assets/info-triangle.svg" class="img" />
+    <Icon icon="info-triangle" className="img" />
 
     <div class="info-text">
-      {{ text }}
+      {{ $t(text) }}
     </div>
   </div>
 </template>
@@ -27,6 +27,11 @@ export default class ExportForm extends Vue {
     margin: auto 0 auto 20px;
     width: 420px;
     line-height: 170%;
+  }
+
+  .img {
+    width: 50px;
+    height: 50px;
   }
 }
 </style>

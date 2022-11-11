@@ -1,13 +1,9 @@
 <template>
-  <ConfirmationPopup
-    text="Add Moonbeam and Moonriver accounts?"
-    :handlerClose="handlerClose"
-    :handlerAgree="handlerAgree"
-  >
+  <ConfirmationPopup text="accounts.addEthereumAccounts" :handlerClose="handlerClose" :handlerAgree="handlerAgree">
     <div class="ethereum-account-popup">
-      <img src="@/assets/moonbeam-moonriver.svg" />
+      <Icon icon="moonbeam-moonriver" class="moonbeam-moonriver" />
 
-      <div class="header">ETH accounts</div>
+      <div class="header">ETH {{ $t('addWallet.accounts') }}</div>
     </div>
   </ConfirmationPopup>
 </template>
@@ -31,6 +27,10 @@ export default class AddEthereumAccountPopup extends Vue {
     font-weight: 700;
     font-size: 18px;
     margin: 10px 0;
+  }
+
+  .moonbeam-moonriver {
+    height: 70px;
   }
 }
 </style>

@@ -13,7 +13,8 @@
 
     <SelectNetworkPopup
       v-if="showSelectNetworkPopup"
-      v-model="selectedNetwork"
+      :selectedNetwork="selectedNetwork"
+      :height="410"
       :toggleSelectedNetwork="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
     />
@@ -55,9 +56,12 @@
 
     <ReceiveForm
       v-if="showReceiveForm"
-      :selectedNetwork="selectedCurrency.mainNetwork"
+      :_selectedNetwork="receiveSelectedNetwork"
       :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', false)"
     />
+
+    <Tooltip text="wallet.walletBalance" target=".wallet-balance" placement="right" />
+    <Tooltip text="common.networkManagement" target=".select-network-button" placement="bottom" />
   </div>
 </template>
 
@@ -73,6 +77,7 @@ import Currencies from './Currencies.vue';
 import NFTs from './NFTs.vue';
 import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
 import type { TMutation, TabWallet } from '@/interfaces/common';
+import type { SetSelectedNetworkProps } from '@/store/accounts/types';
 import Scroll from '@/components/Scroll.vue';
 import ContentForm from '@/components/ContentForm.vue';
 import { accountController } from '@/controllers/accountController';
@@ -81,12 +86,15 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import { SetCurrenciesProps } from '@/store/networks/types';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { addNumbers, formattedNumber } from '@/helpers/numbers';
+import Tooltip from '@/components/Tooltip.vue';
 
 @Component({
   components: {
     NFTs,
     Scroll,
+    Tooltip,
     SendForm,
     Currencies,
     ContentForm,
@@ -103,7 +111,6 @@ export default class Wallet extends Vue {
   showReceiveForm = false;
   showSelectNetworkPopup = false;
   currenciesKey = 0;
-  selectedNetwork = 'All networks';
   activeTabName: TabWallet = 'Currencies';
   filterValue = '';
   selectedCurrency!: {
@@ -114,7 +121,13 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
+
+  get receiveSelectedNetwork() {
+    return this.selectedNetwork === 'all' ? this.selectedCurrency.mainNetwork : this.selectedNetwork;
+  }
 
   get sortedCurrencies() {
     const { address } = this.selectedWallet;
@@ -139,7 +152,7 @@ export default class Wallet extends Vue {
     const filter = this.filterValue.trim().toLowerCase();
 
     return this.sortedCurrencies.filter((currency) => {
-      const isAllNetworks = this.selectedNetwork === 'All networks';
+      const isAllNetworks = this.selectedNetwork === 'all';
       const availableInNetworks = currency.getAvailableInNetworks(this.selectedWallet).map(({ network }) => network);
       const isAvailableInSelectedNetwork = availableInNetworks.includes(this.selectedNetwork);
 
@@ -157,7 +170,7 @@ export default class Wallet extends Vue {
   get totalBalance() {
     const arr = this.sortedCurrencies.map((currency) => currency.getTotalBalance(this.selectedWallet));
 
-    return formattedNumber(+addNumbers(arr), 2, false);
+    return formattedNumber(+addNumbers(arr), { returnOriginNumber: false });
   }
 
   get totalPercent() {
@@ -177,16 +190,41 @@ export default class Wallet extends Vue {
   }
 
   toggleCurrenciesVisible(allCurrenciesHidden: boolean) {
+    if (allCurrenciesHidden) {
+      this.currencies.forEach((currency) => currency.setCurrencyVisible(this.selectedWallet.address, true));
+
+      return;
+    }
+
     this.currencies.forEach((currency) => {
-      if (allCurrenciesHidden) {
-        currency.setCurrencyVisible(this.selectedWallet.address, true);
-
-        return;
-      }
-
       const isZeroBalance = currency.getTotalCountAssets(this.selectedWallet) === '0';
 
       if (isZeroBalance) currency.setCurrencyVisible(this.selectedWallet.address, false);
+    });
+
+    const currenciesVisibleWithBalance = this.currencies.filter(
+      (currency) =>
+        currency.getCurrencyVisible(this.selectedWallet.address) &&
+        currency.getTotalCountAssets(this.selectedWallet) !== '0'
+    );
+    const currenciesInvisibleWithBalance = this.currencies.filter(
+      (currency) =>
+        !currency.getCurrencyVisible(this.selectedWallet.address) &&
+        currency.getTotalCountAssets(this.selectedWallet) !== '0'
+    );
+    const currenciesInvisibleWithoutBalance = this.currencies.filter(
+      (currency) =>
+        !currency.getCurrencyVisible(this.selectedWallet.address) &&
+        currency.getTotalCountAssets(this.selectedWallet) === '0'
+    );
+
+    this.setCurrencies({
+      currencies: [
+        ...currenciesVisibleWithBalance,
+        ...currenciesInvisibleWithBalance,
+        ...currenciesInvisibleWithoutBalance,
+      ],
+      address: this.selectedWallet.address,
     });
 
     this.currenciesKey += 1;
@@ -205,7 +243,7 @@ export default class Wallet extends Vue {
   toggleSelectedNetwork(network: string) {
     if (this.selectedNetwork === network) return;
 
-    this.selectedNetwork = network;
+    this.setSelectedNetwork({ network });
     this.toggleSelectNetworkPopupVisible();
   }
 
@@ -214,7 +252,7 @@ export default class Wallet extends Vue {
 
     this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
 
-    targetElement.style.zIndex = this.showSelectNetworkPopup ? '200' : '0';
+    targetElement.style.zIndex = this.showSelectNetworkPopup ? '400' : '0';
   }
 
   updateFilterValue(value: string) {

@@ -4,12 +4,12 @@
       <slot></slot>
 
       <div class="text">
-        {{ text }}
+        {{ $t(text) }}
       </div>
 
       <div class="activity-bock">
         <Button
-          text="No"
+          text="common.no"
           width="48%"
           size="big"
           fontSize="big"
@@ -18,7 +18,7 @@
           @click="handlerClose"
         />
 
-        <Button width="48%" size="big" fontSize="big" text="Yes" @click="handlerAgree" />
+        <Button width="48%" size="big" fontSize="big" text="common.yes" @click="handlerAgree" />
       </div>
     </div>
   </Popup>
@@ -45,7 +45,7 @@ export default class ConfirmationPopup extends Vue {
 <style lang="scss" scoped>
 .confirmation-popup {
   .text {
-    color: rgba(255, 255, 255, 0.5);
+    color: $gray-color;
     margin-bottom: 16px;
   }
 

@@ -46,13 +46,16 @@ export default class WalletDetailsPopup extends Vue {
     this.$emit('close');
   }
 
-  deleteWallet() {
-    const walletsCount = BaseApi.deleteWallet(this.selectedWalletAddress);
+  async deleteWallet() {
+    const walletType = BaseApi.getWalletType(this.selectedWalletAddress);
+    const walletsCount =
+      walletType === 'native'
+        ? BaseApi.deleteNativeWallet(this.selectedWalletAddress)
+        : await BaseApi.deleteMobileWallet(this.selectedWalletAddress);
 
     if (walletsCount === 0) this.$router.push({ name: Components.Welcome });
     else {
       this.setWallet();
-
       this.close();
     }
   }
@@ -75,7 +78,7 @@ export default class WalletDetailsPopup extends Vue {
 
 <style lang="scss" scoped>
 .wallet-details {
-  color: rgba(255, 255, 255, 0.75);
+  color: $default-white;
   font-weight: 500;
   height: 60px;
   padding: 0 10px;
@@ -104,7 +107,7 @@ export default class WalletDetailsPopup extends Vue {
     }
 
     .delete {
-      color: $pink-color;
+      color: $delete-color;
       opacity: 0.8;
     }
   }

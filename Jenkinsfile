@@ -8,13 +8,14 @@ def jobParams = [
 
 def pipeline = new org.js.AppArtifactsPipeline(
     steps:                      this,
-    buildCmds:                  ['build:extension:zip && electron:build-all'],
+    buildCmds:                  ['yarn build:extension:zip && yarn electron:build-all'],
     jobParams:                  jobParams,
     nexusCredential:            'bot-fearless-rw',
     nexusProjectPath:           'fearless/desktop',
     sonarProjectKey:            'fearless:fearless-wallet-web',
     sonarProjectName:           'fearless-wallet-web',
     sonarCredential:            'sonar_fearless_token',
-    distFolders:                ['dist_electron', 'dist']
+    distFolders:                ['dist_electron', 'dist'],
+    preBuildCmds:               ['yarn cache clean && yarn install']
 )
 pipeline.runPipeline()

@@ -6,6 +6,7 @@
     "serve": "env-cmd -f .env.desktop vue-cli-service serve",
     "build": "env-cmd -f .env.desktop vue-cli-service build",
     "build:extension": "env-cmd -f .env.extension vue-cli-service build --progress",
+    "build:extension:zip": "yarn run build:extension && cd dist && zip -r fearless-extension.zip extension/ && cd -",
     "build-watch:extension": "env-cmd -f .env.extension vue-cli-service  --env.NODE_ENV=development build-watch --mode development",
     "test:unit": "vue-cli-service test:unit",
     "test:e2e": "vue-cli-service test:e2e",

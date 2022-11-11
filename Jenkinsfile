@@ -16,6 +16,6 @@ def pipeline = new org.js.AppArtifactsPipeline(
     sonarProjectName:           'fearless-wallet-web',
     sonarCredential:            'sonar_fearless_token',
     distFolders:                ['dist_electron', 'dist'],
-    preBuildCmds:               ['yarn cache clean && yarn install']
+    preBuildCmds:               ['yarn install --ignore-scripts']
 )
 pipeline.runPipeline()

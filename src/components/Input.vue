@@ -26,6 +26,7 @@ import Corners from '@/components/Corners.vue';
 type Size = 'small' | 'medium' | 'big';
 type Type = 'text' | 'textarea' | 'text-file' | 'number';
 type Style = 'default' | 'pink';
+type TypeText = 'none' | 'uppercase';
 
 @Component({
   components: { Corners },
@@ -37,6 +38,7 @@ export default class Input extends Vue {
   @Prop(Number) height!: number;
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'text' }) type!: Type;
+  @Prop({ default: 'none' }) typeText!: TypeText;
   @Prop({ default: 100 }) maxlength!: number;
   @Prop({ default: false }) readonly!: boolean;
   @Prop({ default: false }) showPassword!: boolean;
@@ -60,7 +62,9 @@ export default class Input extends Vue {
   }
 
   get inputStyle() {
-    const styles: Record<string, string> = {};
+    const styles: Record<string, string> = {
+      'text-transform': this.typeText,
+    };
 
     if (this.height) styles.height = `${this.height}px`;
 

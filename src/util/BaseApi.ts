@@ -142,7 +142,7 @@ export default class BaseApi {
   public static getDefaultAddressByNetworkIncludingReplacedAccount(_wallet: Wallet, network: string): string {
     const wallet = BaseApi.getWalletIncludingReplacedAccount(_wallet, network);
     const { address, ethereumAddress } = wallet;
-    const isEthereumNetwork = ETHEREUM_NETWORKS.includes(network);
+    const isEthereumNetwork = BaseApi.isEthereumNetwork(network);
     const addressByNetwork = isEthereumNetwork ? ethereumAddress : address;
 
     return addressByNetwork;

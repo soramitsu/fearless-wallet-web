@@ -87,12 +87,6 @@ class AccountController {
     return autoSelectNodes.value ?? {};
   }
 
-  public getAutoSelectNodesValueByNetwork(network: string): boolean {
-    const autoSelectNodes = this.getAutoSelectNodesValue();
-
-    return autoSelectNodes[network] ?? true;
-  }
-
   public setAutoSelectNodes(value: boolean, network: string): void {
     const autoSelectNodes = this.getAutoSelectNodesValue();
 

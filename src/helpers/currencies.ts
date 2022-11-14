@@ -1,17 +1,20 @@
-import type { Currencies, Currency, Networks, RelayChainName } from '@/interfaces';
+import type { Currencies, Currency, Networks, RelayChainName, Balances } from '@/interfaces';
 import type { Wallet } from '@/store/accounts/types';
+import BaseApi from '@/util/BaseApi';
 import CurrencyController from '@/controllers/currencyController';
 import NetworksController from '@/controllers/networksController';
 import { MAIN_NETWORKS } from '@/consts/networks';
 import { getIconName } from '@/helpers/imgPath';
+import { mockBalance } from '@/consts/currencies';
 
 type CurrencyMock = {
   mainNetwork: string;
   assetId: string;
   symbol: string;
-  displayName?: string;
+  displayName: string;
   relayChain: RelayChainName;
   providers: string[];
+  balances: Balances;
 };
 
 function getMockCurrencies(networks: Networks): Currencies {
@@ -19,11 +22,16 @@ function getMockCurrencies(networks: Networks): Currencies {
 
   const currencies = networks
     .reduce<CurrencyMock[]>((result, network) => {
-      const { assets: networkAssets, name: mainNet, parentId } = network;
+      const { assets: networkAssets, name: mainNet, parentId, isEthereumNetwork } = network;
       const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNet) as RelayChainName;
 
-      networkAssets.forEach(({ assetId, purchaseProviders, isUtility, isNative }) => {
-        const { symbol, displayName: _displayName } = assetsJson.find(({ id }) => id === assetId)!;
+      networkAssets.forEach(({ assetId, purchaseProviders, isUtility, isNative, type }) => {
+        const {
+          symbol,
+          displayName: _displayName,
+          precision,
+          existentialDeposit,
+        } = assetsJson.find(({ id }) => id === assetId)!;
         const displayName = _displayName ?? symbol;
         const mainNetwork = MAIN_NETWORKS[displayName] ?? mainNet;
         const currencyIndex = result.findIndex(
@@ -41,9 +49,10 @@ function getMockCurrencies(networks: Networks): Currencies {
             mainNetwork,
             assetId,
             symbol,
-            displayName: displayName ?? symbol,
+            displayName,
             relayChain,
             providers: purchaseProviders ?? [],
+            balances: [],
           };
 
           result.push(newCurrency);
@@ -51,13 +60,34 @@ function getMockCurrencies(networks: Networks): Currencies {
           result[currencyIndex].mainNetwork = mainNetwork;
           result[currencyIndex].assetId = assetId;
         }
+
+        // Add mock balances
+        const index = currencyIndex === -1 ? result.length - 1 : currencyIndex;
+        const balances = [...result[index].balances];
+
+        BaseApi.getAccounts().forEach(({ address }) => {
+          const isEthereumAccountType = BaseApi.getPair(address).type === 'ethereum';
+
+          if ((isEthereumNetwork && isEthereumAccountType) || (!isEthereumNetwork && !isEthereumAccountType))
+            balances.push({
+              network: mainNet,
+              existentialDeposit,
+              type: type ?? 'native',
+              precision,
+              balance: {
+                [address]: mockBalance,
+              },
+            });
+        });
+
+        result[index].balances = balances;
       });
 
       return result;
     }, [])
     .map(
-      ({ mainNetwork, assetId, symbol, relayChain, providers, displayName }) =>
-        new CurrencyController(mainNetwork, assetId, symbol, displayName, providers, relayChain)
+      ({ mainNetwork, assetId, symbol, relayChain, providers, displayName, balances }) =>
+        new CurrencyController(mainNetwork, assetId, symbol, providers, relayChain, balances, displayName)
     );
 
   return currencies;

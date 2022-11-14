@@ -43,18 +43,20 @@
       </div>
     </div>
 
-    <SelectNetworkPopup
+    <SelectPopup
       v-if="showSelectNetworkPopup"
-      horizontalPlacement="left"
+      placeholder="common.searchNetwork"
       verticalPlacement="top"
-      :selectedNetwork="selectedNetwork"
+      horizontalPlacement="left"
+      :value="selectedNetwork"
+      :showBlur="false"
+      :showBackground="false"
       :top="148"
       :left="-160"
       :height="360"
-      :allNetworksItem="false"
-      :showBlur="false"
-      :showBackground="false"
-      :toggleSelectedNetwork="toggleSelectedNetwork"
+      :options="optionsNetworks"
+      :handlerFilter="handlerFilter"
+      :toggleValue="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
     />
   </AboveForm>
@@ -66,6 +68,7 @@ import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
 import RotateInput from './RotateInput.vue';
 import type { Networks } from '@/interfaces/networks';
+import type { Currencies } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import Input from '@/components/Input.vue';
 import Button from '@/components/Button.vue';
@@ -77,8 +80,8 @@ import QR from '@/components/QR.vue';
 import { cut } from '@/helpers/history';
 import AboveForm from '@/components/AboveForm.vue';
 import BorderButton from '@/components/BorderButton.vue';
-import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import Tooltip from '@/components/Tooltip.vue';
+import SelectPopup from '@/components/SelectPopup.vue';
 
 @Component({
   components: {
@@ -87,25 +90,27 @@ import Tooltip from '@/components/Tooltip.vue';
     Button,
     Tooltip,
     AboveForm,
+    SelectPopup,
     RotateInput,
     BorderButton,
-    SelectNetworkPopup,
   },
 })
 export default class ReceiveForm extends Vue {
   readonly selectNetworkInputRef = 'selectNetworkInput';
   readonly copyQRTooltip = { text: 'common.copiedValue', localeProps: { value: 'QR' } };
-
+  filterValue = '';
   selectedNetwork = 'polkadot';
   showSelectNetworkPopup = false;
 
   @Prop(String) _selectedNetwork!: string;
   @Prop(Function) closeForm!: VoidFunction;
+  @Prop(String) selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
+  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
 
-  get optionsNetwork() {
-    return this.networks.map(({ name }) => ({ label: firstCharToUp(name), value: name }));
+  get currency() {
+    return this.currencies.find(({ assetId }) => assetId === this.selectedAssetId);
   }
 
   get address() {
@@ -118,8 +123,23 @@ export default class ReceiveForm extends Vue {
     return cut(this.address, 5);
   }
 
+  get optionsNetworks() {
+    const availableInNetworks = this.currency?.getAvailableInNetworks(this.selectedWallet) ?? [];
+    const filter = this.filterValue.trim().toLowerCase();
+
+    return availableInNetworks
+      .map(({ network }) => ({
+        label: firstCharToUp(network),
+        value: `${network}`,
+        relayChain: this.currency?.relayChain,
+      }))
+      .filter(({ value }) => {
+        return value.includes(filter);
+      });
+  }
+
   mounted() {
-    this.selectedNetwork = this._selectedNetwork;
+    this.selectedNetwork = this._selectedNetwork !== 'all' ? this._selectedNetwork : this.optionsNetworks[0].value;
   }
 
   toggleSelectNetworkPopupVisible() {
@@ -130,6 +150,10 @@ export default class ReceiveForm extends Vue {
     this.selectedNetwork = value;
 
     this.toggleSelectNetworkPopupVisible();
+  }
+
+  handlerFilter(value: string) {
+    this.filterValue = value;
   }
 
   copyAddress() {

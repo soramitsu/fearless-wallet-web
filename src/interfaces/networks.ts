@@ -44,6 +44,8 @@ type NetworkAssets = {
   type?: NetworkAssetsType;
 };
 
+type NetworkStatus = 'pending' | 'disconnected' | 'connected' | 'ready';
+
 type NetworkJson = {
   chainId: string;
   parentId?: string;
@@ -71,6 +73,7 @@ type Network = {
   isEthereumNetwork: boolean;
   settings: Record<string, any>;
   externalApi: ExternalApi;
+  status: NetworkStatus;
 };
 
 type Networks = Network[];
@@ -82,4 +85,14 @@ interface ApiOptions {
   provider?: WsProvider;
 }
 
-export { Networks, Network, NetworkJson, NetworkAssetsType, NetworkAssets, NetworkName, ExternalApi, ApiOptions };
+export {
+  Networks,
+  Network,
+  NetworkJson,
+  NetworkAssetsType,
+  NetworkAssets,
+  NetworkName,
+  ExternalApi,
+  ApiOptions,
+  NetworkStatus,
+};

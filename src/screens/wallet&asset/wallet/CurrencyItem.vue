@@ -131,7 +131,7 @@ export default class CurrencyItem extends Vue {
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
 
   get showShimmers() {
-    const index = this.currency.getAvailableInNetworks(this.selectedWallet).findIndex(({ network }) => {
+    const index = this.currency.getNetworkList().findIndex(({ network }) => {
       const status = this.getNetworkStatus(network);
 
       return status === 'pending';
@@ -202,26 +202,26 @@ export default class CurrencyItem extends Vue {
     return this.currency.mainNetwork.toUpperCase() ?? '';
   }
 
-  get availableInNetworks() {
-    // return this.currency.getAvailableInNetworks(this.selectedWallet); // Please don't delete. Needed for development.
+  get walletBalance() {
+    // return this.currency.getNetworkWithBalanceList(this.selectedWallet); // Please don't delete. Needed for development.
 
-    return this.currency.getAvailableInNetworks(this.selectedWallet).filter(({ balance: { total } }) => total !== '0');
+    return this.currency.getNetworkWithBalanceList(this.selectedWallet);
   }
 
   get isAdditional() {
-    return this.availableInNetworks.length > this.countDisplayedNetworks;
+    return this.walletBalance.length > this.countDisplayedNetworks;
   }
 
   get additionalCount() {
-    return this.availableInNetworks.length - (this.countDisplayedNetworks - 1);
+    return this.walletBalance.length - (this.countDisplayedNetworks - 1);
   }
 
   get availableInNetworksPart() {
     if (this.isCurrentNetwork) return [{ network: this.selectedNetwork }];
 
-    if (this.isAdditional) return [...this.availableInNetworks].splice(0, this.countDisplayedNetworks - 1);
+    if (this.isAdditional) return [...this.walletBalance].splice(0, this.countDisplayedNetworks - 1);
 
-    return this.availableInNetworks;
+    return this.walletBalance;
   }
 
   openAssetPage(event: Event) {
@@ -236,15 +236,8 @@ export default class CurrencyItem extends Vue {
       return;
 
     const { mainNetwork, assetId } = this.currency;
-    const [availableInNetworks] = this.currency.getAvailableInNetworks(this.selectedWallet);
-    const availableNetwork = availableInNetworks?.network ?? '';
-    const network = this.isCurrentNetwork
-      ? this.selectedNetwork
-      : mainNetwork !== ''
-      ? mainNetwork
-      : availableNetwork !== ''
-      ? availableNetwork
-      : 'polkadot';
+    const [{ network: firstNetwork }] = this.currency.getNetworkList();
+    const network = this.isCurrentNetwork ? this.selectedNetwork : mainNetwork !== '' ? mainNetwork : firstNetwork;
 
     this.$router.push({
       name: Components.Asset,

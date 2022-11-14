@@ -4,7 +4,7 @@ import type { FPNumber } from '@/util/fp';
 
 type TypeAsset = NetworkAssetsType | 'native';
 
-interface AvailableInNetworks {
+interface AssetBalance {
   network: string;
   precision: number;
   existentialDeposit?: string;
@@ -19,31 +19,18 @@ interface BalanceFP {
   transferable: FPNumber;
 }
 
-type AvailableInNetworksFP = AvailableInNetworks & {
-  balance: Record<WalletAddress, BalanceFP>;
-};
-
-type AvailableInNetworksForWalletFP = AvailableInNetworks & {
+type WalletBalance = AssetBalance & {
   balance: BalanceFP;
 };
 
-type AvailableInNetworksString = AvailableInNetworks & {
-  balance: AccountBalance;
+type AssetsBalances = AssetBalance & {
+  balance: Record<WalletAddress, BalanceFP>;
 };
 
-type Balances = AvailableInNetworksFP[];
+type Balances = AssetsBalances[];
 
 type Currency = CurrencyController;
 
 type Currencies = Currency[];
 
-export {
-  AvailableInNetworksFP,
-  AvailableInNetworksForWalletFP,
-  AvailableInNetworksString,
-  Balances,
-  Currencies,
-  BalanceFP,
-  Currency,
-  TypeAsset,
-};
+export { WalletBalance, Balances, Currencies, BalanceFP, Currency, TypeAsset };

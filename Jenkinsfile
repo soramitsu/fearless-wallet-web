@@ -1,9 +1,9 @@
-@Library('jenkins-library@feature/fww-158/ci-for-PRs')
+@Library('jenkins-library')
 
 // Job properties
 def jobParams = [
   booleanParam(defaultValue: true, description: '', name: 'tests'),
-  booleanParam(defaultValue: true, description: 'Upload builds to nexus (master and develop branches upload always)', name: 'upload_to_nexus'),
+  booleanParam(defaultValue: false, description: 'Upload builds to nexus (master and develop branches upload always)', name: 'upload_to_nexus'),
 ]
 
 def pipeline = new org.js.AppArtifactsPipeline(

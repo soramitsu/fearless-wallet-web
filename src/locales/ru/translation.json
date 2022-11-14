@@ -213,7 +213,7 @@
     "incorrectAddress": "Некорректный адрес",
     "impossibleTeleport": "Невозможно телепортировать",
     "insufficientBalance": "Недостаточный баланс {asset}",
-    "isSameAddress": "Это ваш адресс",
+    "isSameAddress": "Это ваш адрес",
     "existentialDepositSubtext": "This transaction will result in the account going below the Existential Deposit, which will cause it to be reaped (the account will be wiped from the blockchain’s state to conserve space). If you choose to continue you will lose any funds that are below the existential deposit amount set by the network. For detailed information please refer to the official network documentation (e.g., the Polkadot Wiki). Fearless Wallet is a fully non-custodial application and has no control or knowledge of any of your actions on the network itself. ONLY CONTINUE IF YOU FULLY AGREE TO AND UNDERSTAND THE IMPLICATIONS;"
   },
   "accounts": {
@@ -237,7 +237,7 @@
     "sharingSecret": "Копирование или передача вашего секретного ключа очень рисковано, не отправляй его никому. Вы хотите продолжить?",
     "invalidNodeAddress": "Неверный формат адреса ноды",
     "addNode": "Добавить ноду",
-    "urlAddress": "URL АДРЕСС",
+    "urlAddress": "URL АДРЕС",
     "nodeName": "ИМЯ",
     "network": "Сеть",
     "autoNodes": "Автовыбор ноды",

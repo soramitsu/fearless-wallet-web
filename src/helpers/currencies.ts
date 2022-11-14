@@ -5,7 +5,7 @@ import CurrencyController from '@/controllers/currencyController';
 import NetworksController from '@/controllers/networksController';
 import { MAIN_NETWORKS } from '@/consts/networks';
 import { getIconName } from '@/helpers/imgPath';
-import { FPNumber } from '@/util/fp';
+import { mockBalance } from '@/consts/currencies';
 
 type CurrencyMock = {
   mainNetwork: string;
@@ -16,14 +16,6 @@ type CurrencyMock = {
   providers: string[];
   balances: Balances;
 };
-
-function getMockBalances(): Balances {
-  return BaseApi.getAccounts().reduce((result, { address }) => {
-    result[address] = [];
-
-    return result;
-  }, {} as Balances);
-}
 
 function getMockCurrencies(networks: Networks): Currencies {
   const assetsJson = NetworksController.getAssetsJson();
@@ -60,7 +52,7 @@ function getMockCurrencies(networks: Networks): Currencies {
             displayName,
             relayChain,
             providers: purchaseProviders ?? [],
-            balances: getMockBalances(),
+            balances: [],
           };
 
           result.push(newCurrency);
@@ -71,23 +63,19 @@ function getMockCurrencies(networks: Networks): Currencies {
 
         // Add mock balances
         const index = currencyIndex === -1 ? result.length - 1 : currencyIndex;
-        const balances = { ...result[index].balances };
+        const balances = [...result[index].balances];
 
-        Object.keys(balances).forEach((address) => {
+        BaseApi.getAccounts().forEach(({ address }) => {
           const isEthereumAccountType = BaseApi.getPair(address).type === 'ethereum';
 
           if ((isEthereumNetwork && isEthereumAccountType) || (!isEthereumNetwork && !isEthereumAccountType))
-            balances[address].push({
+            balances.push({
               network: mainNet,
               existentialDeposit,
               type: type ?? 'native',
               precision,
               balance: {
-                frozen: FPNumber.ZERO,
-                locked: FPNumber.ZERO,
-                reserved: FPNumber.ZERO,
-                total: FPNumber.ZERO,
-                transferable: FPNumber.ZERO,
+                [address]: mockBalance,
               },
             });
         });

@@ -1,6 +1,14 @@
 import { isFunction } from '@polkadot/util';
 import { ISubmittableResult } from '@polkadot/types/types';
-import type { AvailableInNetworks, Balances, BalanceFP, AvailableInNetworksFP, RelayChainName } from '@/interfaces';
+import type {
+  AvailableInNetworksString,
+  Balances,
+  BalanceFP,
+  AvailableInNetworksForWalletFP,
+  RelayChainName,
+  WalletAddress,
+  AccountBalance,
+} from '@/interfaces';
 import type { SubmittableExtrinsic, SignerOptions } from '@polkadot/api/submittable/types';
 import type { Wallet } from '@/store/accounts/types';
 import type { ApiPromise } from '@polkadot/api';
@@ -16,13 +24,13 @@ import {
   isNativeNetwork,
   getOrmlOptions,
 } from '@/util/teleport';
-import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { FPNumber } from '@/util/fp';
 import { getReplacedMetaTyped } from '@/helpers/common';
 import { getOptions } from '@/util/assets';
 import { BeaconSigner } from '@/extension/background/extension-base/src/background/BeaconSigner';
 import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
+import { mockBalance } from '@/consts/currencies';
 
 type TransactionStatus = 'success' | 'failed' | 'pending';
 
@@ -30,6 +38,12 @@ type Options = {
   transactionsOptions?: Partial<SignerOptions>;
   historyOptions?: { networkName: string; amount: string; to: string };
   api?: ApiPromise;
+};
+
+type UpdateBalance = {
+  walletAddress: WalletAddress;
+  network: string;
+  balance: AccountBalance;
 };
 
 export default class CurrencyController {
@@ -67,9 +81,8 @@ export default class CurrencyController {
     return count.mul(FPPrice);
   }
 
-  private getAvailableInNetworksIncludingReplacedAccounts(wallet: Wallet): AvailableInNetworksFP[] {
+  private getAvailableInNetworksIncludingReplacedAccounts(wallet: Wallet): AvailableInNetworksForWalletFP[] {
     const { address, ethereumAddress } = wallet;
-    const availableInNetworks = [...(this.balances[address] ?? []), ...(this.balances[ethereumAddress] ?? [])];
 
     const replacedAccounts = BaseApi.getReplacedAccounts(wallet);
     const replacedNetworks = replacedAccounts.reduce((result, { address: _address, meta }) => {
@@ -81,46 +94,32 @@ export default class CurrencyController {
       return result;
     }, {} as Record<string, string>);
 
-    return availableInNetworks.map((item) => {
-      const { network, type, precision, existentialDeposit } = item;
-      let { balance } = item;
-
+    return this.balances.map((item) => {
+      const { network, type, precision, existentialDeposit, balance } = item;
+      const isEthereumNetwork = BaseApi.isEthereumNetwork(network);
       const replacedAddress = replacedNetworks[network];
-      const replacedAvailableInNetworks = this.balances[replacedAddress];
+      const walletBalance = replacedAddress
+        ? balance[replacedAddress]
+        : isEthereumNetwork
+        ? balance[ethereumAddress]
+        : balance[address];
 
-      if (replacedAvailableInNetworks) {
-        const { balance: replacedBalance } = replacedAvailableInNetworks.find(
-          ({ network: _network }) => _network === network
-        )!;
-
-        balance = replacedBalance;
-      }
-
-      return { network, balance, type, precision, existentialDeposit };
+      return { network, type, precision, existentialDeposit, balance: walletBalance ?? mockBalance };
     });
   }
 
   private countAssets(wallet: Wallet): BalanceFP {
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
 
-    return availableInNetworks.reduce(
-      (obj, { balance: { total, frozen, locked, reserved, transferable } }) => {
-        return {
-          total: obj.total.add(total),
-          frozen: obj.frozen.add(frozen),
-          locked: obj.locked.add(locked),
-          reserved: obj.reserved.add(reserved),
-          transferable: obj.transferable.add(transferable),
-        };
-      },
-      {
-        total: FPNumber.ZERO,
-        frozen: FPNumber.ZERO,
-        locked: FPNumber.ZERO,
-        reserved: FPNumber.ZERO,
-        transferable: FPNumber.ZERO,
-      }
-    );
+    return availableInNetworks.reduce((obj, { balance: { total, frozen, locked, reserved, transferable } }) => {
+      return {
+        total: obj.total.add(total),
+        frozen: obj.frozen.add(frozen),
+        locked: obj.locked.add(locked),
+        reserved: obj.reserved.add(reserved),
+        transferable: obj.transferable.add(transferable),
+      };
+    }, mockBalance);
   }
 
   private getBalanceInNetwork(wallet: Wallet, _network: string): string {
@@ -147,29 +146,26 @@ export default class CurrencyController {
       return address;
     }
 
-    const isEthereumNetwork = ETHEREUM_NETWORKS.includes(network);
-    const addressByNetwork = isEthereumNetwork ? ethereumAddress : address;
-
-    return addressByNetwork;
+    return BaseApi.isEthereumNetwork(network) ? ethereumAddress : address;
   }
 
-  public updateCurrencyBalance({ walletAddress, network, balance }: Record<string, any>): void {
+  public updateCurrencyBalance({ walletAddress, network, balance }: UpdateBalance): void {
     const { frozen, locked, reserved, total, transferable } = balance;
-    const oldBalances = { ...this.balances };
-    const balancesForAddress = oldBalances[walletAddress];
-    const index = balancesForAddress.findIndex(({ network: _network }) => _network === network);
+    const oldBalances = [...this.balances];
+    const indexNetwork = oldBalances.findIndex(({ network: _network }) => _network === network);
+    const balancesForNetwork = oldBalances[indexNetwork];
 
     const newBalance = {
-      frozen: FPNumber.fromCodecValue(frozen, balancesForAddress[index].precision),
-      locked: FPNumber.fromCodecValue(locked, balancesForAddress[index].precision),
-      reserved: FPNumber.fromCodecValue(reserved, balancesForAddress[index].precision),
-      total: FPNumber.fromCodecValue(total, balancesForAddress[index].precision),
-      transferable: FPNumber.fromCodecValue(transferable, balancesForAddress[index].precision),
+      frozen: FPNumber.fromCodecValue(frozen, balancesForNetwork.precision),
+      locked: FPNumber.fromCodecValue(locked, balancesForNetwork.precision),
+      reserved: FPNumber.fromCodecValue(reserved, balancesForNetwork.precision),
+      total: FPNumber.fromCodecValue(total, balancesForNetwork.precision),
+      transferable: FPNumber.fromCodecValue(transferable, balancesForNetwork.precision),
     };
 
-    balancesForAddress[index].balance = newBalance;
+    balancesForNetwork.balance[walletAddress] = newBalance;
 
-    this.balances = { ...oldBalances, [walletAddress]: balancesForAddress };
+    this.balances.splice(indexNetwork, 1, balancesForNetwork);
   }
 
   public getTotalCountAssets(wallet: Wallet, network?: string): string {
@@ -207,7 +203,7 @@ export default class CurrencyController {
     return FPNumber.lte(new FPNumber(count), transferableCountAssetsMinusFee);
   }
 
-  public getAvailableInNetworks(wallet: Wallet): AvailableInNetworks[] {
+  public getAvailableInNetworks(wallet: Wallet): AvailableInNetworksString[] {
     const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
 
     return availableInNetworks.map(({ balance, network, type, precision, existentialDeposit }) => {

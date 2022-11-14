@@ -4,11 +4,13 @@ import { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 
 type TMutation<T> = (props?: T) => void;
 type TAction<T> = (props?: T) => Promise<void>;
-export type TCallback<T> = (payload: T) => void;
 
-export interface CustomEvent extends Event {
+type TCallback<T> = (payload: T) => void;
+
+interface CustomEvent extends Event {
   target: HTMLDivElement;
 }
+
 interface Meta {
   name: string;
   ethereumAddress: string;
@@ -121,4 +123,6 @@ export {
   AssetName,
   ComponentText,
   AddressMeta,
+  CustomEvent,
+  TCallback,
 };

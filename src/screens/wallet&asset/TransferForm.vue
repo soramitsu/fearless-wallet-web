@@ -252,9 +252,11 @@ export default class SendForm extends Vue {
 
     if (this.step === 2) return this.extrinsicType === 'transfer' ? 'Send' : 'Teleport';
 
-    if (this.extrinsicType === 'transfer' && this.syncedRecipient !== '' && !this.isValidRecipientAddress)
+    if (this.extrinsicType === 'transfer' && this.syncedRecipient !== '' && !this.isValidRecipientAddress) {
+      if (this.isSameAddress) return 'asset.isSameAddress';
+
       return 'asset.incorrectAddress';
-    else if (this.extrinsicType === 'teleport' && this.syncedDestNet !== '' && !this.isValidDirection)
+    } else if (this.extrinsicType === 'teleport' && this.syncedDestNet !== '' && !this.isValidDirection)
       return 'asset.impossibleTeleport';
 
     if (!this.isValidCountAssets)
@@ -279,8 +281,12 @@ export default class SendForm extends Vue {
     return isValidMainFields && (this.isValidRecipientAddress || !!this.syncedDestNet);
   }
 
+  get isSameAddress() {
+    return BaseApi.isSameAddress(this.selectedWallet, this.syncedRecipient, this.syncedSelectedNetwork);
+  }
+
   get isValidRecipientAddress() {
-    return BaseApi.validateAddress(this.syncedRecipient, this.syncedSelectedNetwork);
+    return !this.isSameAddress && BaseApi.validateAddress(this.syncedRecipient, this.syncedSelectedNetwork);
   }
 
   get currency() {

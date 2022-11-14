@@ -2,7 +2,9 @@
   <div id="app">
     <div class="drag"></div>
 
-    <router-view />
+    <keep-alive include="Main">
+      <router-view />
+    </keep-alive>
   </div>
 </template>
 

@@ -275,13 +275,16 @@ export default class AccountsLayout extends Vue {
   deleteNode() {
     accountController.deleteNode({ name: this.selectedNodeName, url: this.selectedNodeUrl }, this.selectedNetwork);
 
-    this.childUpdatedNode();
-
+    this.childUpdatedNode(true);
     this.closeNotificationPopup();
   }
 
-  childUpdatedNode() {
-    (this.$refs[this.routerViewRef] as Nodes).updatedCustomNodes();
+  childUpdatedNode(setAuto = false) {
+    const nodesComponent = this.$refs[this.routerViewRef] as Nodes;
+
+    nodesComponent.updatedCustomNodes();
+
+    if (setAuto && this.selectedNodeIsActive) nodesComponent.autoSelectNode = true;
   }
 
   openNotificationPopup(type: NotificationType) {

@@ -190,7 +190,13 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_NETWORK_STATUS](state, { network, status }) {
     const networkIndex = state.networks.findIndex(({ name }) => name === network)!;
 
-    state.networks[networkIndex].status = status;
+    if (status === 'connected' || status === 'ready') {
+      setTimeout(() => {
+        state.networks[networkIndex].status = status;
+      }, 3000);
+    } else {
+      state.networks[networkIndex].status = status;
+    }
   },
 };
 

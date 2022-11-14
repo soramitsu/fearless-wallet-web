@@ -63,21 +63,24 @@ function getMockCurrencies(networks: Networks): Currencies {
 
         // Add mock balances
         const index = currencyIndex === -1 ? result.length - 1 : currencyIndex;
-        const balances = [...result[index].balances];
+        const balances: Balances = [
+          ...result[index].balances,
+          {
+            network: mainNet,
+            existentialDeposit,
+            type: type ?? 'native',
+            precision,
+            balance: {},
+          },
+        ];
 
-        BaseApi.getAccounts().forEach(({ address }) => {
-          const isEthereumAccountType = BaseApi.getPair(address).type === 'ethereum';
+        balances.forEach(({ balance }) => {
+          BaseApi.getAccounts().forEach(({ address }) => {
+            const isEthereumAccountType = BaseApi.getPair(address).type === 'ethereum';
 
-          if ((isEthereumNetwork && isEthereumAccountType) || (!isEthereumNetwork && !isEthereumAccountType))
-            balances.push({
-              network: mainNet,
-              existentialDeposit,
-              type: type ?? 'native',
-              precision,
-              balance: {
-                [address]: mockBalance,
-              },
-            });
+            if ((isEthereumNetwork && isEthereumAccountType) || (!isEthereumNetwork && !isEthereumAccountType))
+              balance[address] = mockBalance;
+          });
         });
 
         result[index].balances = balances;

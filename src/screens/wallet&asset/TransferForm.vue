@@ -301,9 +301,9 @@ export default class SendForm extends Vue {
   }
 
   get optionsNetworks() {
-    const availableInNetworks = this.currency?.getAvailableInNetworks(this.selectedWallet) ?? [];
+    const walletBalance = this.currency?.getNetworkList() ?? [];
 
-    return availableInNetworks.map(({ network }) => ({
+    return walletBalance.map(({ network }) => ({
       label: firstCharToUp(network),
       value: `${network}`,
       path: getIconName(network),

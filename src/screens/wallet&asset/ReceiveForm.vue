@@ -124,10 +124,10 @@ export default class ReceiveForm extends Vue {
   }
 
   get optionsNetworks() {
-    const availableInNetworks = this.currency?.getAvailableInNetworks(this.selectedWallet) ?? [];
+    const walletBalance = this.currency?.getNetworkList() ?? [];
     const filter = this.filterValue.trim().toLowerCase();
 
-    return availableInNetworks
+    return walletBalance
       .map(({ network }) => ({
         label: firstCharToUp(network),
         value: `${network}`,

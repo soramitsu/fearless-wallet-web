@@ -1,53 +1,64 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
-import type { Network, Node, ApiOptions, AssetJson } from '@/interfaces';
+import type { Network, ApiOptions, AssetJson } from '@/interfaces';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
+import type { Node } from '@/interfaces/nodes';
 import { formatBalance } from '@/util/balances';
 import { MutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
-import { accountController } from '@/controllers/accountController';
 import NetworksController from '@/controllers/networksController';
 import BaseApi from '@/util/BaseApi';
 import { ORML_PALLETS_TYPES, getOptions } from '@/util/assets';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 import { getAccounts } from '@/helpers/accounts';
 import store from '@/store';
+import { accountController } from '@/controllers/accountController';
 
 interface ISubscribeData {
   data: AccountData;
 }
 
-const connectedHandler = (apiOptions: ApiOptions, { url, name }: Node, network: Network) => {
-  const networkName = network.name;
-
+const connectedHandler = (apiOptions: ApiOptions, network: Network) => {
   apiOptions.apiRetry = 0;
 
-  store.commit(MutationTypes.SET_NETWORK_ACTIVE_NODE, {
-    network: networkName,
-    name,
-    url,
+  store.commit(MutationTypes.SET_NETWORK_API, {
+    network: network.name,
+    api: apiOptions.api,
+    provider: apiOptions.provider,
   });
 
-  store.commit(MutationTypes.SET_NETWORK_API, {
-    network: networkName,
-    api: apiOptions.api!,
-    provider: apiOptions.provider!,
+  store.commit(MutationTypes.SET_NETWORK_STATUS, {
+    network: network.name,
+    status: 'connected',
   });
 };
 
-const disconnectHandler = (apiOptions: ApiOptions, network: Network, provider: WsProvider) => {
+const disconnectHandler = (apiOptions: ApiOptions, network: Network, provider: WsProvider, tryAnotherNode: boolean) => {
   apiOptions.apiRetry += 1;
 
-  if (apiOptions.apiRetry === MAX_CONTINUE_RETRY) {
-    provider.disconnect();
+  store.commit(MutationTypes.SET_NETWORK_API, {
+    network: network.name,
+    api: undefined,
+    provider: undefined,
+  });
 
-    apiOptions.apiRetry = 0;
-    apiOptions.nodeIndex += 1;
-    apiOptions.api = undefined;
-    apiOptions.provider = undefined;
+  if (tryAnotherNode) {
+    if (apiOptions.apiRetry === MAX_CONTINUE_RETRY) {
+      provider.disconnect();
 
-    if (navigator.onLine) connectToApi(network, apiOptions); // eslint-disable-line no-use-before-define
+      apiOptions.apiRetry = 0;
+      apiOptions.nodeIndex += 1;
+      apiOptions.api = undefined;
+      apiOptions.provider = undefined;
+
+      if (navigator.onLine) connectToApi(network, apiOptions); // eslint-disable-line no-use-before-define
+    } else {
+      store.commit(MutationTypes.SET_NETWORK_STATUS, {
+        network: network.name,
+        status: 'disconnected',
+      });
+    }
   }
 };
 
@@ -57,17 +68,33 @@ const readyHandler = (network: Network) => {
     loadHistory: false,
     networksProps: [network],
   });
+
+  store.commit(MutationTypes.SET_NETWORK_STATUS, {
+    network: network.name,
+    status: 'ready',
+  });
 };
 
-function connectToApi(network: Network, apiOptions: ApiOptions): void {
-  const autoSelectNodes = accountController.getAutoSelectNodesValue();
-  const activeNodes = accountController.getActiveNodes();
+function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): void {
   const { name: networkName, nodes } = network;
-  const autoSelectNode = autoSelectNodes[networkName] ?? true;
+  const activeNodes = accountController.getActiveNodes();
+  const autoSelectNode = store.getters.getAutoSelectNodesValueByNetwork(networkName);
   const nodesList = autoSelectNode ? nodes : [activeNodes[networkName]];
-  const node = nodesList[apiOptions.nodeIndex];
+  const node = _node ?? nodesList[apiOptions.nodeIndex];
+
+  store.commit(MutationTypes.SET_NETWORK_STATUS, {
+    network: networkName,
+    status: node === undefined ? 'disconnect' : 'pending',
+  });
 
   if (node === undefined) return;
+
+  store.commit(MutationTypes.SET_ACTIVE_NODE, {
+    network: network.name,
+    name: node.name,
+    url: node.url,
+    saveNode: _node !== undefined,
+  });
 
   const provider = new WsProvider(node.url, AUTO_CONNECT_MS);
   const api = new ApiPromise({ provider });
@@ -75,8 +102,8 @@ function connectToApi(network: Network, apiOptions: ApiOptions): void {
   apiOptions.api = api;
   apiOptions.provider = provider;
 
-  api.on('connected', () => connectedHandler(apiOptions, node, network));
-  api.on('disconnected', () => disconnectHandler(apiOptions, network, provider));
+  api.on('connected', () => connectedHandler(apiOptions, network));
+  api.on('disconnected', () => disconnectHandler(apiOptions, network, provider, _node === undefined));
   api.on('ready', () => readyHandler(network));
 }
 
@@ -87,10 +114,11 @@ function subscribeUtilityAssetsBalances(address: string, { name: networkName, pa
 
   if (!networkUtilityAsset) return;
 
-  const { assetId, type } = networkUtilityAsset;
+  const { assetId } = networkUtilityAsset;
   const { precision } = (store.getters[NetworksGettersTypes.getAssetsJson] as AssetJson[]).find(
     ({ id }) => id === assetId
   )!;
+
   api!.rx.query.system.account<ISubscribeData>(address).subscribe(async ({ data }) => {
     const historyForNetwork = store.getters[NetworksGettersTypes.getHistory](assetId, address, networkName);
     const delay = historyForNetwork ? 45 : 0;
@@ -101,7 +129,6 @@ function subscribeUtilityAssetsBalances(address: string, { name: networkName, pa
       assetId,
       balance: formatBalance(data, precision),
       parentId,
-      type,
     });
 
     NetworksController.loadHistory(networkName, address, assetId, delay);
@@ -109,10 +136,10 @@ function subscribeUtilityAssetsBalances(address: string, { name: networkName, pa
 }
 
 function subscribeOrmlAssetsBalances(address: string, network: Network): void {
-  const { name: networkName, api, assets: networkAssets, parentId } = network;
+  const { name: networkName, api, assets, parentId } = network;
 
-  networkAssets.forEach(({ assetId, type }) => {
-    if (type === undefined) return;
+  assets.forEach(({ assetId, type }) => {
+    if (type === undefined) return; // is utility Asset
 
     const { symbol, precision } = (store.getters[NetworksGettersTypes.getAssetsJson] as AssetJson[]).find(
       ({ id }) => id === assetId
@@ -135,7 +162,6 @@ function subscribeOrmlAssetsBalances(address: string, network: Network): void {
         assetId,
         balance: formatBalance(data, precision),
         parentId,
-        type,
       });
     });
   });

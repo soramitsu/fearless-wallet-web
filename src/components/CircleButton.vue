@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="circle-button" :class="backgroundClass" @click="$emit('click', $event)">
+    <div class="circle-button" :class="backgroundClass" @click="click($event)">
       <Icon :icon="iconName" :className="imageClasses" />
     </div>
 
@@ -22,9 +22,10 @@ export default class CircleButton extends Vue {
   @Prop(String) iconName!: string;
   @Prop(String) backgroundColor!: BackgroundType;
   @Prop(String) backgroundColorHover!: BackgroundType;
-  @Prop({ default: '' }) tooltipText!: string;
   @Prop(String) target!: string;
+  @Prop({ default: '' }) tooltipText!: string;
   @Prop({ default: 'top' }) placement!: Placement;
+  @Prop({ default: false }) disabled!: boolean;
 
   get showTooltip() {
     return this.tooltipText !== '';
@@ -48,12 +49,17 @@ export default class CircleButton extends Vue {
 
     return [
       'image',
+      this.disabled ? 'image-disabled' : 'image-enabled',
       this.iconName,
       {
         'image-shift-left': shiftLeft,
         'image-shift-fight': shiftRight,
       },
     ];
+  }
+
+  click(event: Event) {
+    if (!this.disabled) this.$emit('click', event);
   }
 }
 </script>
@@ -70,10 +76,17 @@ export default class CircleButton extends Vue {
   user-select: none;
 
   .image {
-    filter: invert(0.35);
     width: 16px;
     height: 16px;
     outline: none;
+  }
+
+  .image-enabled {
+    filter: invert(0.35);
+  }
+
+  .image-disabled {
+    filter: invert(0.8);
   }
 
   .image-shift-left {
@@ -89,7 +102,7 @@ export default class CircleButton extends Vue {
   &:hover {
     cursor: pointer;
 
-    .image {
+    .image-enabled {
       filter: invert(0.2);
     }
   }

@@ -8,8 +8,9 @@ import type {
   SetAssetsPriceProps,
   SetCurrenciesProps,
   SetHistoryProps,
-  SetNetworkActiveNodeProps,
-  SetNetworkApi,
+  SetActiveNodeProps,
+  SetNetworkApiProps,
+  SetNetworkStatusProps,
 } from './types';
 import { accountController } from '@/controllers/accountController';
 
@@ -22,8 +23,9 @@ export enum MutationTypes {
   SORT_CURRENCIES = 'SORT_CURRENCIES',
   SET_HISTORY = 'SET_HISTORY',
   UPDATE_CURRENCY_BALANCE = 'UPDATE_CURRENCY_BALANCE',
-  SET_NETWORK_ACTIVE_NODE = 'SET_NETWORK_ACTIVE_NODE',
+  SET_ACTIVE_NODE = 'SET_ACTIVE_NODE',
   SET_NETWORK_API = 'SET_NETWORK_API',
+  SET_NETWORK_STATUS = 'SET_NETWORK_STATUS',
 }
 
 export type Mutations = {
@@ -34,8 +36,9 @@ export type Mutations = {
   [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
   [MutationTypes.UPDATE_CURRENCY_BALANCE](state: State, props: UpdateCurrencyBalanceProps): void;
-  [MutationTypes.SET_NETWORK_ACTIVE_NODE](state: State, props: SetNetworkActiveNodeProps): void;
-  [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApi): void;
+  [MutationTypes.SET_ACTIVE_NODE](state: State, props: SetActiveNodeProps): void;
+  [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApiProps): void;
+  [MutationTypes.SET_NETWORK_STATUS](state: State, props: SetNetworkStatusProps): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -69,9 +72,9 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.UPDATE_CURRENCY_BALANCE](
     { currencies, assetsJson, networks },
-    { walletAddress, network, assetId, balance, parentId, type }
+    { walletAddress, network, assetId, balance, parentId }
   ) {
-    const { symbol, precision, existentialDeposit } = assetsJson.find(({ id }) => id === assetId)!;
+    const { symbol } = assetsJson.find(({ id }) => id === assetId)!;
     const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name;
 
     const currentCurrency = currencies.find(({ assetId: _assetId, asset, relayChain: _relayChain }) => {
@@ -81,7 +84,7 @@ const mutations: MutationTree<State> & Mutations = {
       return isExistingAssetId || isExistingSymbol;
     })!;
 
-    currentCurrency.updateCurrencyBalance({ walletAddress, network, balance, type, precision, existentialDeposit });
+    currentCurrency.updateCurrencyBalance({ walletAddress, network, balance });
   },
 
   [MutationTypes.SET_HISTORY](state, { history, networkName, walletAddress, isPreviously, assetId, isMock }) {
@@ -169,10 +172,10 @@ const mutations: MutationTree<State> & Mutations = {
     state.history = { ...state.history, [assetId]: historyForAssetId };
   },
 
-  [MutationTypes.SET_NETWORK_ACTIVE_NODE](state, { network, name, url }) {
+  [MutationTypes.SET_ACTIVE_NODE](state, { network, name, url, saveNode }) {
     const oldActiveNodes = state.activeNodes;
 
-    accountController.setActiveNode({ name, url }, network);
+    if (saveNode) accountController.setActiveNode({ name, url }, network);
 
     state.activeNodes = { ...oldActiveNodes, [network]: { name, url } };
   },
@@ -182,6 +185,12 @@ const mutations: MutationTree<State> & Mutations = {
 
     state.networks[networkIndex].provider = provider;
     state.networks[networkIndex].api = api;
+  },
+
+  [MutationTypes.SET_NETWORK_STATUS](state, { network, status }) {
+    const networkIndex = state.networks.findIndex(({ name }) => name === network)!;
+
+    state.networks[networkIndex].status = status;
   },
 };
 

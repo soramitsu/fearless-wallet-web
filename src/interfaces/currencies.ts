@@ -9,7 +9,6 @@ interface AvailableInNetworks {
   precision: number;
   existentialDeposit?: string;
   type: TypeAsset;
-  balance: AccountBalance;
 }
 
 interface BalanceFP {
@@ -20,14 +19,31 @@ interface BalanceFP {
   transferable: FPNumber;
 }
 
-type AvailableInNetworksFP = Omit<AvailableInNetworks, 'balance'> & {
+type AvailableInNetworksFP = AvailableInNetworks & {
+  balance: Record<WalletAddress, BalanceFP>;
+};
+
+type AvailableInNetworksForWalletFP = AvailableInNetworks & {
   balance: BalanceFP;
 };
 
-type Balances = Record<WalletAddress, AvailableInNetworksFP[]>;
+type AvailableInNetworksString = AvailableInNetworks & {
+  balance: AccountBalance;
+};
+
+type Balances = AvailableInNetworksFP[];
 
 type Currency = CurrencyController;
 
 type Currencies = Currency[];
 
-export { AvailableInNetworksFP, Balances, Currencies, AvailableInNetworks, BalanceFP, Currency, TypeAsset };
+export {
+  AvailableInNetworksFP,
+  AvailableInNetworksForWalletFP,
+  AvailableInNetworksString,
+  Balances,
+  Currencies,
+  BalanceFP,
+  Currency,
+  TypeAsset,
+};

@@ -1,25 +1,24 @@
 import { RouteConfig } from 'vue-router';
+import store from '@/store';
 import BaseApi from '@/util/BaseApi';
-import Polkaswap from '@/screens/polkaswap/Polkaswap.vue';
-import Export from '@/screens/accounts/Export.vue';
-import History from '@/screens/history/History.vue';
-import Nodes from '@/screens/accounts/Nodes.vue';
-import Staking from '@/screens/staking/Staking.vue';
+import Welcome from '@/screens/welcome/Welcome.vue';
+import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
-import Welcome from '@/screens/welcome/Welcome.vue';
-import AddWallet from '@/screens/addWallet/AddWallet.vue';
-import Accounts from '@/screens/accounts/Accounts.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
-import Main from '@/screens/main/Main.vue';
-import Crowdloans from '@/screens/crowdloans/Crowdloans.vue';
 
+const AddWallet = () => import('@/screens/addWallet/AddWallet.vue');
+const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
+const Staking = () => import('@/screens/staking/Staking.vue');
+const History = () => import('@/screens/history/History.vue');
+const Polkaswap = () => import('@/screens/polkaswap/Polkaswap.vue');
+const Accounts = () => import('@/screens/accounts/Accounts.vue');
+const Export = () => import('@/screens/accounts/Export.vue');
+const Nodes = () => import('@/screens/accounts/Nodes.vue');
 const MobileConnect = () => import('@/screens/mobileConnect/MobileConnect.vue');
 const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue');
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
-
-import store from '@/store';
 
 export enum Components {
   Welcome = 'Welcome',

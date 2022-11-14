@@ -1,5 +1,5 @@
 <template>
-  <div v-if="showAllAssetsHiddenText" class="info-text">{{ $t('wallet.allAssetsHidden') }}</div>
+  <div v-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText) }}</div>
 
   <Draggable v-else v-model="filteredCurrencies" handle=".handle">
     <CurrencyItem
@@ -37,7 +37,12 @@ export default class Currencies extends Vue {
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
+
+  get mainText() {
+    return this.isOnline ? 'wallet.allAssetsHidden' : 'common.offlineStatus';
+  }
 
   get showAllAssetsHiddenText() {
     const visibleCurrencies = this.currencies.filter((currency) =>

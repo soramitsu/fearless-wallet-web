@@ -15,10 +15,10 @@ import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
 import { ETHEREUM_NETWORKS, NOT_SUPPORTED_SUBQUERY_NETWORKS } from '@/consts/networks';
 import { loadHistory } from '@/subquery/history';
-import { getMetaTyped, getReplacedMetaTyped } from '@/helpers/common';
+import { getAddressMetaTyped, getReplacedMetaTyped } from '@/helpers/common';
 import { getMockCurrencies } from '@/helpers/currencies';
 import { connectToApi, subscribeAssetsBalances } from '@/helpers/networksConnection';
-import { getAccounts } from '@/helpers/accounts';
+import { accountController } from '@/controllers/accountController';
 
 export enum ActionTypes {
   LOAD_JSONS = 'LOAD_JSONS',
@@ -80,6 +80,7 @@ const actions: ActionTree<State, State> & Actions = {
             settings,
             api: undefined,
             provider: undefined,
+            status: 'pending',
           };
         }
       );
@@ -91,6 +92,8 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.CONNECT_TO_NODES](context) {
     context.state.networks.forEach((network) => {
+      if (network.api?.isConnected) return;
+
       const apiOptions: ApiOptions = {
         apiRetry: 0,
         nodeIndex: 0,
@@ -173,14 +176,14 @@ const actions: ActionTree<State, State> & Actions = {
         // if it is a replaced account and the iterated network is not in the networksList
         if (isReplacedAccount && !replacedNetworksList.includes(networkName)) return;
 
-        const { isMobile, ethereumAddress } = getMetaTyped(json.meta);
+        const { isMobile, ethereumAddress } = getAddressMetaTyped(json.meta);
 
         if (!isMobile) {
-          const isEthAccountType = accountType === 'ethereum';
+          const isEthereumAccountType = accountType === 'ethereum';
 
           // ethereum accounts only subscribe to the ethereum networks and
           // substrate accounts only subscribe to the substrate network
-          if ((!isEthereumNetwork && isEthAccountType) || (isEthereumNetwork && !isEthAccountType)) return;
+          if ((!isEthereumNetwork && isEthereumAccountType) || (isEthereumNetwork && !isEthereumAccountType)) return;
         }
 
         //subscribe only if mobile wallet have eth address and it's eth network
@@ -197,34 +200,25 @@ const actions: ActionTree<State, State> & Actions = {
     await Promise.allSettled(promises);
   },
 
-  async [ActionTypes.TOGGLE_ACTIVE_NODE](
-    { state: { networks }, commit, dispatch },
-    { network, nodeName, nodeUrl: nodeUrlProp, oldNodeUrl }
-  ) {
-    const networkApi = networks.find(({ name }) => name === network)!;
-    const nodeUrl = nodeUrlProp === '' ? networkApi.nodes[0].url : nodeUrlProp;
+  async [ActionTypes.TOGGLE_ACTIVE_NODE]({ state }, { network, nodeUrl, nodeName, oldNodeUrl }) {
+    const networkApi = state.networks.find(({ name }) => name === network)!;
 
-    commit(MutationTypes.SET_NETWORK_ACTIVE_NODE, {
-      network,
-      name: nodeName,
-      url: nodeUrlProp,
-    });
+    if (networkApi.status !== 'disconnected' && nodeUrl === undefined) return;
+    else if (nodeUrl === oldNodeUrl) {
+      accountController.setActiveNode({ name: nodeName!, url: nodeUrl! }, network);
 
-    if (nodeUrl === oldNodeUrl || (oldNodeUrl === '' && nodeUrl === networkApi.nodes[0].url)) return;
+      return;
+    }
 
     await networkApi.provider?.disconnect();
 
+    const nodeOptions = nodeName && nodeUrl ? { name: nodeName, url: nodeUrl } : undefined;
     const apiOptions: ApiOptions = {
       apiRetry: 0,
       nodeIndex: 0,
     };
 
-    connectToApi(networkApi, apiOptions);
-    await dispatch(ActionTypes.SUBSCRIBE_TO_BALANCES, {
-      accounts: getAccounts(),
-      loadHistory: false,
-      networksProps: [networkApi],
-    });
+    connectToApi(networkApi, apiOptions, nodeOptions);
   },
 };
 

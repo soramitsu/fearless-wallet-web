@@ -25,7 +25,7 @@ import { CustomEvent } from '@/interfaces';
 @Component({
   components: { Corners },
 })
-export default class WalletBalance extends Vue {
+export default class WalletInfo extends Vue {
   readonly dotsHorizontalRef = 'dotsHorizontal';
   showWalletMenu = false;
   $refs!: {

@@ -10,7 +10,7 @@
     @click.native="walletPopupClick"
   >
     <div class="wallet-content">
-      <WalletBalance
+      <WalletInfo
         v-for="({ meta: { name, ethereumAddress }, address }, index) in wallets"
         :key="name + index"
         :name="name"
@@ -31,7 +31,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
-import WalletBalance from './WalletBalance.vue';
+import WalletInfo from './WalletInfo.vue';
 import type { SelectedWallet, SetSelectedWalletProps, Accounts } from '@/store/accounts/types';
 import type { Currencies, TMutation, CustomEvent } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
@@ -46,8 +46,8 @@ import { addNumbers } from '@/helpers/numbers';
 @Component({
   components: {
     Popup,
+    WalletInfo,
     BorderButton,
-    WalletBalance,
   },
 })
 export default class SelectWalletPopup extends Vue {

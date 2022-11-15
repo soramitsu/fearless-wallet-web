@@ -1,3 +1,4 @@
+import type { Currencies, ChangeWalletBalance } from '@/interfaces';
 import { FPNumber } from '@/util/fp';
 
 interface Options {
@@ -14,7 +15,7 @@ function getOptions(options: Options) {
   };
 }
 
-export function formattedNumber(number: number, options: Options = {}): string {
+function formattedNumber(number: number, options: Options = {}): string {
   const { decimalsValue, returnOriginNumber, removeTrailingZeros } = getOptions(options);
 
   const decimals = 10 ** decimalsValue;
@@ -28,12 +29,35 @@ export function formattedNumber(number: number, options: Options = {}): string {
   return roundValue.toFixed(decimalsValue);
 }
 
-export function formattedPrice(price: number): string {
+function formattedPrice(price: number): string {
   const decimalsValue = price < 0.00001 ? 6 : price < 0.0001 ? 5 : price < 0.001 ? 4 : price < 0.01 ? 3 : 2;
 
   return formattedNumber(price, { decimalsValue });
 }
 
-export function addNumbers(values: string[]): string {
+function addNumbers(values: (string | number)[]): string {
   return values.reduce((sum, number) => sum.add(new FPNumber(number)), FPNumber.ZERO).toString();
 }
+
+function getChangeWalletBalance(currencies: Currencies, address: string, ethereumAddress: string): ChangeWalletBalance {
+  const changeAssets = currencies.map((currency) => {
+    const { hours24Change } = currency;
+    const totalBalance = +currency.getTotalBalance({ address, ethereumAddress });
+    const currentPercent = 100 + (hours24Change ?? 0);
+    const oldBalance = (totalBalance / currentPercent) * 100;
+    const changeAmount = totalBalance - oldBalance;
+
+    return { totalBalance, changeAmount };
+  });
+
+  const totalChange = +addNumbers(changeAssets.map(({ changeAmount }) => changeAmount));
+  const totalBalance = +addNumbers(changeAssets.map(({ totalBalance }) => totalBalance));
+  const totalPercentChange = (totalChange / totalBalance) * 100;
+
+  return {
+    percent: totalPercentChange,
+    amount: totalChange,
+  };
+}
+
+export { formattedNumber, addNumbers, formattedPrice, getChangeWalletBalance };

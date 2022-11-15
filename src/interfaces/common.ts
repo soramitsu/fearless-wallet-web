@@ -87,6 +87,11 @@ type ComponentText =
       localeProps: TextLocaleProps;
     };
 
+interface ChangeWalletBalance {
+  percent: number;
+  amount: number;
+}
+
 type Placement =
   | 'top'
   | 'right'
@@ -125,4 +130,5 @@ export {
   AddressMeta,
   CustomEvent,
   TCallback,
+  ChangeWalletBalance,
 };

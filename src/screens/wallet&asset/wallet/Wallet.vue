@@ -3,9 +3,13 @@
     <header class="wallet-header">
       <Shimmer v-if="showShimmers" height="46px" width="150px" />
 
-      <div v-else class="wallet-balance" @click="$emit('openFiatsPopup', true)">
-        {{ fiatSymbol }} {{ totalBalance }}
-      </div>
+      <WalletBalance
+        v-else
+        class="balance"
+        :balance="totalBalance"
+        :changeWalletBalance="changeWalletBalance"
+        @click.native="$emit('openFiatsPopup', true)"
+      />
 
       <SelectNetworkButton
         :ref="selectNetworkButtonRef"
@@ -92,9 +96,10 @@ import { SelectedWallet } from '@/store/accounts/types';
 import { SetCurrenciesProps, GetNetworkStatus } from '@/store/networks/types';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { addNumbers, formattedNumber } from '@/helpers/numbers';
+import { addNumbers, formattedNumber, getChangeWalletBalance } from '@/helpers/numbers';
 import Tooltip from '@/components/Tooltip.vue';
 import Shimmer from '@/components/Shimmer.vue';
+import WalletBalance from '@/screens/main/WalletBalance.vue';
 
 @Component({
   components: {
@@ -106,6 +111,7 @@ import Shimmer from '@/components/Shimmer.vue';
     Currencies,
     ContentForm,
     ReceiveForm,
+    WalletBalance,
     ContentSettings,
     SelectNetworkPopup,
     SelectNetworkButton,
@@ -133,6 +139,12 @@ export default class Wallet extends Vue {
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
+
+  get changeWalletBalance() {
+    const { address, ethereumAddress } = this.selectedWallet;
+
+    return getChangeWalletBalance(this.currencies, address, ethereumAddress);
+  }
 
   get showShimmers() {
     // TODO: подумать над тем, чтобы добавить лоадер на весь экстеншен, пока не загружены JSON файлы
@@ -193,10 +205,6 @@ export default class Wallet extends Vue {
     return formattedNumber(+addNumbers(arr), { returnOriginNumber: false });
   }
 
-  get totalPercent() {
-    return 5.3;
-  }
-
   get showCurrencies() {
     return this.activeTabName === 'Currencies';
   }
@@ -232,11 +240,13 @@ export default class Wallet extends Vue {
         currency.getCurrencyVisible(this.selectedWallet.address) &&
         currency.getTotalCountAssets(this.selectedWallet) !== '0'
     );
+
     const currenciesInvisibleWithBalance = this.currencies.filter(
       (currency) =>
         !currency.getCurrencyVisible(this.selectedWallet.address) &&
         currency.getTotalCountAssets(this.selectedWallet) !== '0'
     );
+
     const currenciesInvisibleWithoutBalance = this.currencies.filter(
       (currency) =>
         !currency.getCurrencyVisible(this.selectedWallet.address) &&
@@ -310,20 +320,23 @@ export default class Wallet extends Vue {
     margin-bottom: 10px;
   }
 
-  .wallet-balance {
-    margin: auto 0;
-    font-weight: 800;
+  .balance {
     font-size: 22px;
     line-height: 28px;
-    min-width: 75px;
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-
-    &:hover {
-      cursor: pointer;
-    }
   }
+
+  // .wallet-balance {
+  //   margin: auto 0;
+  //   font-weight: 800;
+  //   min-width: 75px;
+  //   text-align: left;
+  //   white-space: nowrap;
+  //   overflow: hidden;
+  //   text-overflow: ellipsis;
+
+  //   &:hover {
+  //     cursor: pointer;
+  //   }
+  // }
 }
 </style>

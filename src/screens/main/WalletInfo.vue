@@ -2,10 +2,11 @@
   <Corners size="big">
     <div :class="contentClasses" @click="updateSelectedWallet">
       <div class="content">
-        <div v-if="name" class="name">{{ name }}</div>
-        <span class="balance">{{ fiatSymbol }}{{ balanceString }}</span>
-        <!-- <div :class="percentClasses">{{ percentString }}</div> -->
+        <div class="name">{{ name }}</div>
+
+        <WalletBalance class="balance" :balance="balance" :changeWalletBalance="changeWalletBalance" />
       </div>
+
       <Icon v-if="isMobile" icon="mobile" className="mobile" />
 
       <div class="dots-container" :ref="dotsHorizontalRef">
@@ -18,12 +19,14 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import type { ChangeWalletBalance } from '@/interfaces';
 import Corners from '@/components/Corners.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { formattedNumber } from '@/helpers/numbers';
 import { CustomEvent } from '@/interfaces';
+import WalletBalance from '@/screens/main/WalletBalance.vue';
+
 @Component({
-  components: { Corners },
+  components: { Corners, WalletBalance },
 })
 export default class WalletInfo extends Vue {
   readonly dotsHorizontalRef = 'dotsHorizontal';
@@ -35,41 +38,24 @@ export default class WalletInfo extends Vue {
   @Prop({ default: '' }) name!: string;
   @Prop(String) balance!: string;
   @Prop(Boolean) isMobile!: boolean;
-  @Prop(Number) percent!: number;
+  @Prop(Object) changeWalletBalance!: ChangeWalletBalance;
   @Prop({ default: false }) isSelected!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
-  get balanceString() {
-    return formattedNumber(+this.balance);
-  }
-
-  get percentString() {
-    const sign = this.percent > 0 ? '+' : '';
-    const signPercent = this.percent !== 0 ? '%' : '';
-
-    return `${sign}${formattedNumber(this.percent)}${signPercent}`;
-  }
-
-  get percentClasses() {
-    const classes = ['percent'];
-
-    if (this.percent > 0) classes.push('up-percent');
-    else if (this.percent < 0) classes.push('down-percent');
-
-    return classes;
-  }
-
   get contentClasses() {
     return [
-      'wallet-balance',
+      'wallet-info',
       {
         'is-selected': this.isSelected,
       },
     ];
   }
-
   updateSelectedWallet({ target: { classList } }: CustomEvent) {
-    const shouldUpdateSelectedWallet = !(classList.contains('dots-container') || classList.contains('dots'));
+    const shouldUpdateSelectedWallet = !(
+      classList.contains('dots-container') ||
+      classList.contains('dots') ||
+      classList.contains('dots-horizontal')
+    );
 
     if (shouldUpdateSelectedWallet) this.$emit('updateSelectedWallet');
     else {
@@ -82,7 +68,7 @@ export default class WalletInfo extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.wallet-balance {
+.wallet-info {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -119,28 +105,6 @@ export default class WalletInfo extends Vue {
     height: 18px;
   }
 
-  .balance {
-    font-weight: 800;
-    font-size: 18px;
-    line-height: 23px;
-    max-width: 170px;
-    text-overflow: ellipsis;
-    overflow-x: hidden;
-  }
-
-  .percent {
-    font-size: 12px;
-    line-height: 18px;
-  }
-
-  .up-percent {
-    color: $success-color;
-  }
-
-  .down-percent {
-    color: $delete-color;
-  }
-
   .s-icon-basic-check-mark-24 {
     color: $pink-lavender-color;
   }
@@ -160,6 +124,11 @@ export default class WalletInfo extends Vue {
       height: 20px;
       width: 20px;
     }
+  }
+
+  .balance {
+    font-size: 18px;
+    line-height: 22px;
   }
 }
 

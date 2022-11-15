@@ -140,7 +140,7 @@ export default class Wallet extends Vue {
 
     const index = this.currencies
       .filter((currency) => currency.getCurrencyVisible(this.selectedWallet.address))
-      .map((currency) => currency.getAvailableInNetworks(this.selectedWallet))
+      .map((currency) => currency.getNetworkList())
       .flat()
       .findIndex(({ network }) => {
         const status = this.getNetworkStatus(network);
@@ -175,17 +175,15 @@ export default class Wallet extends Vue {
 
     return this.sortedCurrencies.filter((currency) => {
       const isAllNetworks = this.selectedNetwork === 'all';
-      const availableInNetworks = currency.getAvailableInNetworks(this.selectedWallet).map(({ network }) => network);
-      const isAvailableInSelectedNetwork = availableInNetworks.includes(this.selectedNetwork);
+      const walletBalance = currency.getNetworkList().map(({ network }) => network);
+      const isAvailableInSelectedNetwork = walletBalance.includes(this.selectedNetwork);
 
       // if a network is selected and there is no currency in this network
       if (!isAllNetworks && !isAvailableInSelectedNetwork) return false;
 
       const { displayName, mainNetwork } = currency;
 
-      return (
-        availableInNetworks.join(' ').includes(filter) || displayName.includes(filter) || mainNetwork.includes(filter)
-      );
+      return walletBalance.join(' ').includes(filter) || displayName.includes(filter) || mainNetwork.includes(filter);
     });
   }
 

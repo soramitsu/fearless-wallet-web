@@ -1,14 +1,6 @@
 import { isFunction } from '@polkadot/util';
 import { ISubmittableResult } from '@polkadot/types/types';
-import type {
-  AvailableInNetworksString,
-  Balances,
-  BalanceFP,
-  AvailableInNetworksForWalletFP,
-  RelayChainName,
-  WalletAddress,
-  AccountBalance,
-} from '@/interfaces';
+import type { Balances, BalanceFP, WalletBalance, RelayChainName, WalletAddress, AccountBalance } from '@/interfaces';
 import type { SubmittableExtrinsic, SignerOptions } from '@polkadot/api/submittable/types';
 import type { Wallet } from '@/store/accounts/types';
 import type { ApiPromise } from '@polkadot/api';
@@ -81,7 +73,7 @@ export default class CurrencyController {
     return count.mul(FPPrice);
   }
 
-  private getAvailableInNetworksIncludingReplacedAccounts(wallet: Wallet): AvailableInNetworksForWalletFP[] {
+  private getWalletBalance(wallet: Wallet): WalletBalance[] {
     const { address, ethereumAddress } = wallet;
 
     const replacedAccounts = BaseApi.getReplacedAccounts(wallet);
@@ -109,9 +101,9 @@ export default class CurrencyController {
   }
 
   private countAssets(wallet: Wallet): BalanceFP {
-    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
+    const walletBalance = this.getWalletBalance(wallet);
 
-    return availableInNetworks.reduce((obj, { balance: { total, frozen, locked, reserved, transferable } }) => {
+    return walletBalance.reduce((obj, { balance: { total, frozen, locked, reserved, transferable } }) => {
       return {
         total: obj.total.add(total),
         frozen: obj.frozen.add(frozen),
@@ -123,15 +115,15 @@ export default class CurrencyController {
   }
 
   private getBalanceInNetwork(wallet: Wallet, _network: string): string {
-    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
-    const total = availableInNetworks.find(({ network }) => network === _network)?.balance.total ?? FPNumber.ZERO;
+    const walletBalance = this.getWalletBalance(wallet);
+    const total = walletBalance.find(({ network }) => network === _network)?.balance.total ?? FPNumber.ZERO;
 
     return this.calculateCost(total).toString();
   }
 
   private getTotalCountAssetsByNetwork(wallet: Wallet, _network: string): string {
-    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
-    const balance = availableInNetworks.find(({ network }) => network === _network)?.balance;
+    const walletBalance = this.getWalletBalance(wallet);
+    const balance = walletBalance.find(({ network }) => network === _network)?.balance;
 
     return balance?.total.toString() ?? '';
   }
@@ -177,8 +169,8 @@ export default class CurrencyController {
   }
 
   public getTransferableCountAssets(networkProp: string, wallet: Wallet): string {
-    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
-    const balance = availableInNetworks.find(({ network }) => network === networkProp)?.balance;
+    const walletBalance = this.getWalletBalance(wallet);
+    const balance = walletBalance.find(({ network }) => network === networkProp)?.balance;
 
     if (!balance) return '';
 
@@ -186,11 +178,11 @@ export default class CurrencyController {
   }
 
   public getTransferableCountAssetsMinusFee(fee: string, _network: string, wallet: Wallet): FPNumber {
-    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
+    const walletBalance = this.getWalletBalance(wallet);
     const {
       precision,
       balance: { transferable },
-    } = availableInNetworks.find(({ network }) => network === _network)!;
+    } = walletBalance.find(({ network }) => network === _network)!;
     const FPFee = new FPNumber(fee, precision);
     const result = transferable.sub(FPFee);
 
@@ -203,26 +195,12 @@ export default class CurrencyController {
     return FPNumber.lte(new FPNumber(count), transferableCountAssetsMinusFee);
   }
 
-  public getAvailableInNetworks(wallet: Wallet): AvailableInNetworksString[] {
-    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
+  public getNetworkList(): Balances {
+    return this.balances;
+  }
 
-    return availableInNetworks.map(({ balance, network, type, precision, existentialDeposit }) => {
-      const { frozen, locked, reserved, total, transferable } = balance;
-
-      return {
-        network,
-        type,
-        precision,
-        existentialDeposit,
-        balance: {
-          frozen: frozen.toString(),
-          locked: locked.toString(),
-          reserved: reserved.toString(),
-          total: total.toString(),
-          transferable: transferable.toString(),
-        },
-      };
-    });
+  public getNetworkWithBalanceList(wallet: Wallet): WalletBalance[] {
+    return this.getWalletBalance(wallet).filter(({ balance }) => balance.total !== FPNumber.ZERO);
   }
 
   public getTotalBalance(wallet: Wallet, network?: string): string {
@@ -271,13 +249,13 @@ export default class CurrencyController {
   }
 
   public validateExistentialDeposit(wallet: Wallet, _network: string, amount: string, fee: string): boolean {
-    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet);
+    const walletBalance = this.getWalletBalance(wallet);
     const {
       existentialDeposit,
       precision,
       balance: { transferable },
       type,
-    } = availableInNetworks.find(({ network }) => network === _network)!;
+    } = walletBalance.find(({ network }) => network === _network)!;
     const { api } = NetworksController.getNetwork(_network);
     const exDeposit =
       existentialDeposit ??
@@ -300,8 +278,8 @@ export default class CurrencyController {
 
     if (api === undefined) return;
 
-    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet) ?? [];
-    const { precision, type } = availableInNetworks.find(({ network }) => network === networkName)!;
+    const walletBalance = this.getWalletBalance(wallet) ?? [];
+    const { precision, type } = walletBalance.find(({ network }) => network === networkName)!;
     const ormlOptions = getOptions(this.asset, type, this.assetId);
     const precisionAmount = this.getPrecisionValue(amount, precision) as string;
 
@@ -335,8 +313,8 @@ export default class CurrencyController {
     destNet: string,
     amount: string
   ): Promise<void> {
-    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet) ?? [];
-    const { precision } = availableInNetworks.find(({ network }) => network === originNet)!;
+    const walletBalance = this.getWalletBalance(wallet) ?? [];
+    const { precision } = walletBalance.find(({ network }) => network === originNet)!;
     const toAddress = this.getTransactionAddress(wallet, destNet);
     const precisionAmount = this.getPrecisionValue(amount, precision) as string;
 
@@ -396,8 +374,8 @@ export default class CurrencyController {
     if (!this.extrinsic) return '0';
 
     const transactionAddress = this.getTransactionAddress(wallet, _network);
-    const availableInNetworks = this.getAvailableInNetworksIncludingReplacedAccounts(wallet) ?? [];
-    const { precision } = availableInNetworks.find(({ network }) => network === _network)!;
+    const walletBalance = this.getWalletBalance(wallet) ?? [];
+    const { precision } = walletBalance.find(({ network }) => network === _network)!;
 
     try {
       const { partialFee } = await this.extrinsic.paymentInfo(transactionAddress);

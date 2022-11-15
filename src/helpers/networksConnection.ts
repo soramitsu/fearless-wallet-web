@@ -53,12 +53,12 @@ const disconnectHandler = (apiOptions: ApiOptions, network: Network, provider: W
       apiOptions.provider = undefined;
 
       if (navigator.onLine) connectToApi(network, apiOptions); // eslint-disable-line no-use-before-define
-    } else {
-      store.commit(MutationTypes.SET_NETWORK_STATUS, {
-        network: network.name,
-        status: 'disconnected',
-      });
     }
+  } else {
+    store.commit(MutationTypes.SET_NETWORK_STATUS, {
+      network: network.name,
+      status: 'disconnected',
+    });
   }
 };
 

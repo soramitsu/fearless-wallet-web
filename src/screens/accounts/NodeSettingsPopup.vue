@@ -16,7 +16,7 @@
         <div class="label">{{ $t('accounts.editNode') }}</div>
       </div>
       <div class="row" @click="$emit('openNotificationPopup', 'delete')">
-        <Icon icon="backet" className="backet-icon" />
+        <Icon icon="basket" className="basket-icon" />
 
         <div class="label delete">{{ $t('accounts.deleteNode') }}</div>
       </div>
@@ -78,10 +78,14 @@ export default class NodeSettingsPopup extends Vue {
 
     .edit-icon {
       filter: invert(0.25);
+      width: 20px;
+      height: 20px;
     }
 
     .basket-icon {
       filter: invert(0.1);
+      width: 20px;
+      height: 20px;
     }
 
     .label {

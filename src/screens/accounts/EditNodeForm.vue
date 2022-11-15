@@ -4,11 +4,19 @@
       <div>
         <Input v-model="networkCharUp" :placeholder="getPath('network')" size="big" class="row" :readonly="true" />
 
-        <Input v-model="name" :placeholder="getPath('nodeName')" size="big" class="row" :maxlength="45" />
+        <Input
+          v-model="name"
+          :placeholder="getPath('nodeName')"
+          typeText="uppercase"
+          size="big"
+          class="row"
+          :maxlength="45"
+        />
 
         <ValidatedInput
           v-model="url"
           :placeholder="getPath('urlAddress')"
+          typeText="uppercase"
           class="row"
           errorDescriptions="accounts.invalidNodeAddress"
           :isError="isErrorUrlNode"
@@ -57,7 +65,7 @@ export default class EditNodeForm extends Vue {
   }
 
   get isErrorUrlNode() {
-    return this.url !== '' && !this.url.includes('wss://');
+    return this.url.length < 7 || !this.url.startsWith('wss://');
   }
 
   get networkCharUp() {

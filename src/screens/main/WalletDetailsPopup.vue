@@ -39,7 +39,7 @@ export default class WalletDetailsPopup extends Vue {
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
 
   get top() {
-    return this.buttonTopClick - 46;
+    return this.buttonTopClick - 30;
   }
 
   close() {

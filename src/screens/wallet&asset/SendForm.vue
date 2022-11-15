@@ -46,7 +46,7 @@
           </div>
         </div>
 
-        <div class="summary-row">
+        <div v-if="isUtilityAsset" class="summary-row">
           <div class="name">{{ $t('asset.total') }}</div>
 
           <div class="column">
@@ -72,6 +72,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 import AboveForm from '@/components/AboveForm.vue';
 import { formattedNumber, formattedPrice, addNumbers } from '@/helpers/numbers';
+import { getUtilityAsset } from '@/helpers/currencies';
 
 @Component({
   components: {
@@ -98,8 +99,18 @@ export default class SendForm extends Vue {
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
 
+  get currency() {
+    return this.currencies.find(({ assetId }) => assetId === this.selectedAssetId);
+  }
+
+  get isUtilityAsset() {
+    return this.currency?.isUtility(this.selectedNetwork);
+  }
+
   get partialFeeString() {
-    return `${formattedNumber(+this.partialFee, { decimalsValue: 7 })} ${this.selectedAssetUpper}`;
+    const utilityAsset = getUtilityAsset(this.currencies, this.selectedNetwork);
+
+    return `${formattedNumber(+this.partialFee, { decimalsValue: 7 })} ${utilityAsset.toUpperCase()}`;
   }
 
   get showValue() {

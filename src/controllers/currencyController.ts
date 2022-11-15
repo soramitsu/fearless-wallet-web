@@ -182,9 +182,10 @@ export default class CurrencyController {
     const {
       precision,
       balance: { transferable },
+      type,
     } = walletBalance.find(({ network }) => network === _network)!;
     const FPFee = new FPNumber(fee, precision);
-    const result = transferable.sub(FPFee);
+    const result = type === 'native' ? transferable.sub(FPFee) : transferable; // for ORML assets fee sub from utility asset
 
     return FPNumber.lt(result, FPNumber.ZERO) ? FPNumber.ZERO : result;
   }
@@ -197,6 +198,10 @@ export default class CurrencyController {
 
   public getNetworkList(): Balances {
     return this.balances;
+  }
+
+  public isUtility(_network: string): boolean {
+    return this.balances.find(({ network }) => network === _network)!.type === 'native';
   }
 
   public getNetworkWithBalanceList(wallet: Wallet): WalletBalance[] {
@@ -446,6 +451,7 @@ export default class CurrencyController {
       assetId: this.assetId,
       networkName,
       isPreviously: true,
+      isMock: true,
       walletAddress: from,
       history: {
         nodes: [

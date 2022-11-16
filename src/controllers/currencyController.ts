@@ -1,6 +1,6 @@
 import { isFunction } from '@polkadot/util';
 import { ISubmittableResult } from '@polkadot/types/types';
-import { FPNumber, api } from '@sora-substrate/util';
+import { FPNumber } from '@sora-substrate/util';
 import type { Balances, BalanceFP, WalletBalance, RelayChainName, WalletAddress, AccountBalance } from '@/interfaces';
 import type { SubmittableExtrinsic, SignerOptions } from '@polkadot/api/submittable/types';
 import type { Wallet } from '@/store/accounts/types';

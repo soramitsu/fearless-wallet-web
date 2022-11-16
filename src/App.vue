@@ -148,7 +148,7 @@ body {
 
 <style lang="scss" scoped>
 #app {
-  font-family: 'Sora';
+  font-family: 'Sora', sans-serif;
   font-style: normal;
   font-feature-settings: 'tnum' on, 'lnum' on;
   min-height: $extension-height;

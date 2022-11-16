@@ -382,7 +382,7 @@ export default class CurrencyController {
 
     try {
       const { partialFee } = await this.extrinsic.paymentInfo(transactionAddress);
-      const result = new FPNumber(partialFee, precision);
+      const result = new FPNumber(partialFee as any, precision);
 
       return result.toString();
     } catch {

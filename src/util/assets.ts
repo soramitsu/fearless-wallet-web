@@ -1,9 +1,10 @@
 import type { AssetJson, TypeAsset } from '@/interfaces';
 import NetworksController from '@/controllers/networksController';
+import BaseApi from '@/util/BaseApi';
 
 const ORML_PALLETS_TYPES = ['ormlChain', 'equilibrium'];
 
-function getOptions(symbol: string, type: TypeAsset, assetId: string) {
+function getAssetOptions(symbol: string, type: TypeAsset, assetId: string) {
   const assetsJson: AssetJson[] = NetworksController.getAssetsJson();
   const { currencyId } = assetsJson.find(({ id }) => id === assetId)!;
 
@@ -13,8 +14,10 @@ function getOptions(symbol: string, type: TypeAsset, assetId: string) {
   if (type === 'foreignAsset') return { ForeignAsset: currencyId };
   if (type === 'liquidCrowdloan') return { LiquidCrowdloan: currencyId };
   if (type === 'stableAssetPoolToken') return { StableAssetPoolToken: currencyId };
+  if (type === 'soraAsset') return {}; // TODO
+  if (type === 'equilibrium') return BaseApi.getEquilibriumAssetName(symbol);
 
   return { Token: symbol.toUpperCase() };
 }
 
-export { ORML_PALLETS_TYPES, getOptions };
+export { ORML_PALLETS_TYPES, getAssetOptions };

@@ -38,6 +38,7 @@
 
         <div class="background-ellipse button-margin">
           <div :class="statusConnectedClasses"></div>
+
           {{ $t(statusConnectedText) }}
         </div>
 

@@ -8,8 +8,7 @@ import { MutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import NetworksController from '@/controllers/networksController';
-import BaseApi from '@/util/BaseApi';
-import { ORML_PALLETS_TYPES, getOptions } from '@/util/assets';
+import { ORML_PALLETS_TYPES, getAssetOptions } from '@/util/assets';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 import { getAccounts } from '@/helpers/accounts';
 import store from '@/store';
@@ -147,12 +146,11 @@ function subscribeOrmlAssetsBalances(address: string, network: Network): void {
 
     if (symbol === 'csm') return; // TODO: fix
 
-    const options = getOptions(symbol, type, assetId);
-    const equilibriumAsset = BaseApi.getEquilibriumAssetName(symbol);
+    const options = getAssetOptions(symbol, type, assetId);
     const query = api!.rx.query;
     const pallet =
       type === 'equilibrium'
-        ? query.eqBalances.account<OrmlAccountData>(address, equilibriumAsset)
+        ? query.eqBalances.account<OrmlAccountData>(address, options)
         : query.tokens?.accounts<OrmlAccountData>(address, options);
 
     pallet.subscribe(async (data) => {

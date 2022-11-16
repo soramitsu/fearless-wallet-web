@@ -18,7 +18,7 @@ import {
 } from '@/util/teleport';
 import { FPNumber } from '@/util/fp';
 import { getReplacedMetaTyped } from '@/helpers/common';
-import { getOptions } from '@/util/assets';
+import { getAssetOptions } from '@/util/assets';
 import { BeaconSigner } from '@/extension/background/extension-base/src/background/BeaconSigner';
 import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
@@ -205,7 +205,7 @@ export default class CurrencyController {
   }
 
   public getNetworkWithBalanceList(wallet: Wallet): WalletBalance[] {
-    return this.getWalletBalance(wallet).filter(({ balance }) => balance.total !== FPNumber.ZERO);
+    return this.getWalletBalance(wallet).filter(({ balance: { total } }) => !FPNumber.isEqualTo(total, FPNumber.ZERO));
   }
 
   public getTotalBalance(wallet: Wallet, network?: string): string {
@@ -285,7 +285,7 @@ export default class CurrencyController {
 
     const walletBalance = this.getWalletBalance(wallet) ?? [];
     const { precision, type } = walletBalance.find(({ network }) => network === networkName)!;
-    const ormlOptions = getOptions(this.asset, type, this.assetId);
+    const ormlOptions = getAssetOptions(this.asset, type, this.assetId);
     const precisionAmount = this.getPrecisionValue(amount, precision) as string;
 
     this.options = {
@@ -298,9 +298,7 @@ export default class CurrencyController {
       if (type === 'native') {
         this.extrinsic = api!.tx.balances.transfer(to, precisionAmount);
       } else if (type === 'equilibrium') {
-        const equilibriumAsset = BaseApi.getEquilibriumAssetName(this.asset);
-
-        this.extrinsic = api!.tx.eqBalances.transfer(equilibriumAsset, to, precisionAmount);
+        this.extrinsic = api!.tx.eqBalances.transfer(ormlOptions, to, precisionAmount);
       } else if (type === 'ormlChain') {
         this.extrinsic = api!.tx.tokens.transfer(to, ormlOptions, precisionAmount);
       } else {

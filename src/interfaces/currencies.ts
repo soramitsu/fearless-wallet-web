@@ -1,4 +1,4 @@
-import type { WalletAddress, AccountBalance, NetworkAssetsType } from '@/interfaces';
+import type { WalletAddress, NetworkAssetsType } from '@/interfaces';
 import type CurrencyController from '@/controllers/currencyController';
 import type { FPNumber } from '@/util/fp';
 

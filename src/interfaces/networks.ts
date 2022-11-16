@@ -33,7 +33,8 @@ type NetworkAssetsType =
   | 'liquidCrowdloan'
   | 'stableAssetPoolToken'
   | 'equilibrium'
-  | 'ormlChain';
+  | 'ormlChain'
+  | 'soraAsset';
 
 type NetworkAssets = {
   assetId: string;

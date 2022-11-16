@@ -1,6 +1,6 @@
-import type { WalletAddress, AccountBalance, NetworkAssetsType } from '@/interfaces';
+import { FPNumber } from '@sora-substrate/math';
+import type { WalletAddress, NetworkAssetsType } from '@/interfaces';
 import type CurrencyController from '@/controllers/currencyController';
-import type { FPNumber } from '@/util/fp';
 
 type TypeAsset = NetworkAssetsType | 'native';
 

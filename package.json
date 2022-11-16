@@ -30,6 +30,7 @@
     "@polkadot/phishing": "^0.18.9",
     "@polkadot/ui-keyring": "^2.9.6",
     "@polkadot/vue-identicon": "^2.9.8",
+    "@sora-substrate/math": "^1.11.0",
     "@soramitsu/soramitsu-js-ui": "^1.0.26",
     "axios": "^0.27.2",
     "bignumber.js": "^9.0.2",

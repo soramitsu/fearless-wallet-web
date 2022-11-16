@@ -66,7 +66,6 @@ export default class MnemonicColumns extends Vue {
 
   .mnemonic-element {
     display: flex;
-    font-family: Roboto Mono;
     line-height: 21px;
     margin: 9px 0;
     width: 110px;

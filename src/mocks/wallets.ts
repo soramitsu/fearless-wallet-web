@@ -6,4 +6,10 @@
 
 // test mnemonic 3: wrong napkin author fabric what detail limb empty room ceiling horror pond
 
+// sora assets 1: street firm worth record skin taste legend lobster magnet stove drive side
+
+// sora assets 2: steel attract behind volume rack romance yellow review arrange board glow east
+
+// sora assets 3: cheap symptom sibling pioneer traffic creek inner nice vivid pink grain reveal
+
 // test private key 1: 0xab427ec0f8b00001393e5b9e1de1da960ee1c2eaef27fdb5b708927b218fae9b

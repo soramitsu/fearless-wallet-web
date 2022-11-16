@@ -47,7 +47,7 @@
         </div>
       </div>
       <div class="row third-row">
-        <div class="overflow row">
+        <div class="price row">
           {{ priceString }}
 
           <div :class="changePriceClasses">{{ usd24HoursChangeString }}</div>
@@ -55,7 +55,7 @@
 
         <Shimmer v-if="showShimmers" height="14px" width="70px" />
 
-        <div v-else>
+        <div v-else class="total-balance overflow">
           {{ totalBalanceString }}
         </div>
       </div>
@@ -205,7 +205,7 @@ export default class CurrencyItem extends Vue {
   get walletBalance() {
     // return this.currency.getNetworkWithBalanceList(this.selectedWallet); // Please don't delete. Needed for development.
 
-    return this.currency.getNetworkWithBalanceList(this.selectedWallet);
+    return this.currency.getNetworksWithBalance(this.selectedWallet);
   }
 
   get isAdditional() {
@@ -312,9 +312,11 @@ export default class CurrencyItem extends Vue {
 
       .currency-name {
         font-size: 20px;
+        max-width: 100px;
       }
 
       .count-assets {
+        max-width: 200px;
         font-size: 18px;
         margin: auto 0;
       }
@@ -325,6 +327,10 @@ export default class CurrencyItem extends Vue {
       font-size: 12px;
       color: $default-white;
       height: 14px;
+
+      .price {
+        max-width: 100px;
+      }
 
       .price-change {
         margin-left: 2px;
@@ -337,11 +343,14 @@ export default class CurrencyItem extends Vue {
       .down-price {
         color: #d0021b;
       }
+
+      .total-balance {
+        max-width: 200px;
+      }
     }
   }
 
   .overflow {
-    max-width: 150px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

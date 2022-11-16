@@ -204,7 +204,7 @@ export default class CurrencyController {
     return this.balances.find(({ network }) => network === _network)!.type === 'native';
   }
 
-  public getNetworkWithBalanceList(wallet: Wallet): WalletBalance[] {
+  public getNetworksWithBalance(wallet: Wallet): WalletBalance[] {
     return this.getWalletBalance(wallet).filter(({ balance: { total } }) => !FPNumber.isEqualTo(total, FPNumber.ZERO));
   }
 

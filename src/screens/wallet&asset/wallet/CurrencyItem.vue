@@ -205,7 +205,7 @@ export default class CurrencyItem extends Vue {
   get walletBalance() {
     // return this.currency.getNetworkWithBalanceList(this.selectedWallet); // Please don't delete. Needed for development.
 
-    return this.currency.getNetworkWithBalanceList(this.selectedWallet);
+    return this.currency.getNetworksWithBalance(this.selectedWallet);
   }
 
   get isAdditional() {

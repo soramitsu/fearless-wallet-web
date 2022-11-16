@@ -51,6 +51,9 @@ export default class WalletBalance extends Vue {
 
 <style lang="scss" scoped>
 .wallet-balance {
+  max-width: 170px;
+  text-align: left;
+
   &:hover {
     cursor: pointer;
   }
@@ -75,10 +78,8 @@ export default class WalletBalance extends Vue {
 
   .fiat-balance {
     font-weight: 800;
-    max-width: 170px;
     text-overflow: ellipsis;
     overflow-x: hidden;
-    text-align: left;
   }
 }
 </style>

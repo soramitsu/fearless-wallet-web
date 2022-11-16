@@ -1,7 +1,7 @@
+import { FPNumber } from '@sora-substrate/util';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
 import type { AccountBalance } from '@/interfaces/balances';
-import { FPNumber } from '@/util/fp';
 
 export function formatBalance(data: AccountData | OrmlAccountData, assetDecimals?: number): AccountBalance {
   const free = new FPNumber(data.free || 0, assetDecimals);
@@ -9,7 +9,7 @@ export function formatBalance(data: AccountData | OrmlAccountData, assetDecimals
   const miscFrozen = new FPNumber((data as AccountData).miscFrozen || 0, assetDecimals);
   const feeFrozen = new FPNumber((data as AccountData).feeFrozen || 0, assetDecimals);
   const frozen = new FPNumber((data as OrmlAccountData).frozen || 0, assetDecimals);
-  const locked = FPNumber.max(miscFrozen, feeFrozen);
+  const locked = FPNumber.max(miscFrozen, feeFrozen)!;
   const freeAndReserved = free.add(reserved);
 
   return {

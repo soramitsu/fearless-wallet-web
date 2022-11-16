@@ -14,8 +14,8 @@ function getAssetOptions(symbol: string, type: TypeAsset, assetId: string) {
   if (type === 'foreignAsset') return { ForeignAsset: currencyId };
   if (type === 'liquidCrowdloan') return { LiquidCrowdloan: currencyId };
   if (type === 'stableAssetPoolToken') return { StableAssetPoolToken: currencyId };
-  if (type === 'soraAsset') return {}; // TODO
-  if (type === 'equilibrium') return BaseApi.getEquilibriumAssetName(symbol);
+  if (type === 'soraAsset') return currencyId;
+  if (type === 'equilibrium') return BaseApi.getEquilibriumAssetId(symbol);
 
   return { Token: symbol.toUpperCase() };
 }

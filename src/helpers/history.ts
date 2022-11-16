@@ -1,9 +1,9 @@
 import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
+import { FPNumber } from '@sora-substrate/util';
 import type { HistoryNode, AssetJson } from '@/interfaces';
 import { TransactionType, TransferType } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
 import { formattedNumber } from '@/helpers/numbers';
-import { FPNumber } from '@/util/fp';
 import NetworksController from '@/controllers/networksController';
 
 const HISTORY_VALUE_OPTIONS = {

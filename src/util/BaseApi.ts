@@ -489,7 +489,7 @@ export default class BaseApi {
     return '';
   }
 
-  public static getEquilibriumAssetName(symbol: string): number {
+  public static getEquilibriumAssetId(symbol: string): number {
     return assetFromToken(symbol)[0];
   }
 

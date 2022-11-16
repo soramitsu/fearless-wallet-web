@@ -1,5 +1,5 @@
+import { FPNumber } from '@sora-substrate/util';
 import type { Currencies, ChangeWalletBalance } from '@/interfaces';
-import { FPNumber } from '@/util/fp';
 
 interface Options {
   decimalsValue?: number;

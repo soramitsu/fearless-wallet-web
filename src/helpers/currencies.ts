@@ -151,4 +151,12 @@ function getCurrencyOptions(currencies: Currencies) {
   });
 }
 
-export { getCurrencyOptions, getProviderUrl, defaultSortingCurrencies, getMockCurrencies };
+function getUtilityAsset(currencies: Currencies, _network: string): string {
+  const currency = currencies.find(({ balances }) =>
+    balances.some(({ network, type }) => network === _network && type === 'native')
+  )!;
+
+  return currency.displayName;
+}
+
+export { getCurrencyOptions, getProviderUrl, defaultSortingCurrencies, getMockCurrencies, getUtilityAsset };

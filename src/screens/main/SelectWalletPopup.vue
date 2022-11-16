@@ -7,17 +7,18 @@
     :showBorder="true"
     :handlerClose="close"
     :top="55"
+    :maxHeight="391"
     @click.native="walletPopupClick"
   >
     <div class="wallet-content">
-      <WalletBalance
+      <WalletInfo
         v-for="({ meta: { name, ethereumAddress }, address }, index) in wallets"
         :key="name + index"
         :name="name"
         :isSelected="selectedWallet.address === address"
         :isMobile="isMobile(address)"
         :balance="getBalance(address, ethereumAddress)"
-        :percent="getPercent()"
+        :changeWalletBalance="getChangeWalletBalance(address, ethereumAddress)"
         class="total"
         @setShowWalletDetailsPopupVisible="toggleWalletDetailsPopupVisible(...arguments, address)"
         @updateSelectedWallet="updateSelectedWallet(address)"
@@ -31,7 +32,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
-import WalletBalance from './WalletBalance.vue';
+import WalletInfo from './WalletInfo.vue';
 import type { SelectedWallet, SetSelectedWalletProps, Accounts } from '@/store/accounts/types';
 import type { Currencies, TMutation, CustomEvent } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
@@ -41,13 +42,13 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
-import { addNumbers } from '@/helpers/numbers';
+import { addNumbers, getChangeWalletBalance } from '@/helpers/numbers';
 
 @Component({
   components: {
     Popup,
+    WalletInfo,
     BorderButton,
-    WalletBalance,
   },
 })
 export default class SelectWalletPopup extends Vue {
@@ -81,8 +82,12 @@ export default class SelectWalletPopup extends Vue {
     return addNumbers(arr);
   }
 
+  getChangeWalletBalance(address: string, ethereumAddress: string) {
+    return getChangeWalletBalance(this.currencies, address, ethereumAddress);
+  }
+
   walletPopupClick({ target: { classList } }: CustomEvent) {
-    if (!(classList.contains('dots-container') || classList.contains('dots')))
+    if (!(classList.contains('dots-container') || classList.contains('dots') || classList.contains('dots-horizontal')))
       this.$emit('toggleWalletDetailsPopupVisible', false);
   }
 
@@ -94,10 +99,6 @@ export default class SelectWalletPopup extends Vue {
 
   close() {
     this.$emit('close');
-  }
-
-  getPercent() {
-    return 5.3;
   }
 
   toggleWalletDetailsPopupVisible(buttonTop: number, address: string) {

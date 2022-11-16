@@ -21,7 +21,7 @@ import type { ComponentText } from '@/interfaces';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type FontSize = 'small' | 'medium' | 'big';
-type Type = 'primary' | 'secondary' | 'link';
+type Type = 'primary' | 'secondary' | 'link' | 'google';
 
 @Component
 export default class Button extends Vue {
@@ -86,6 +86,18 @@ export default class Button extends Vue {
         'link',
         {
           'link-hover': this.hover,
+        },
+      ];
+    }
+
+    if (this.type === 'google') {
+      return [
+        `button-font-size-${this.fontSize}`,
+        'google',
+        this.border ? 'google-border' : 'google-border-none',
+        {
+          'google-hover': this.hover,
+          'google-border-hover': this.border && this.hover,
         },
       ];
     }
@@ -177,5 +189,24 @@ export default class Button extends Vue {
 
 .link-hover:hover {
   color: $default-white !important;
+}
+
+.google {
+  color: rgba(45, 41, 38, 1);
+  background-color: #c4c4c4 !important;
+}
+
+.google-hover:hover {
+  color: rgba(45, 41, 38, 1);
+  background-color: rgba(255, 255, 255, 0.5) !important;
+  border-color: transparent;
+}
+
+.google-border {
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+}
+
+.google-border-hover:hover {
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 </style>

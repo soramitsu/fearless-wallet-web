@@ -1,42 +1,88 @@
+import path from 'path';
 import { app, protocol, BrowserWindow, shell } from 'electron';
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
 import { isSafeForExternalOpen } from '@/consts/urls';
+import { APP_WIDTH, APP_HEIGHT, APP_NAME } from '@/consts/global';
+import { buildMenu } from '@/desktop/menu';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 // Scheme must be registered before the app is ready
-protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { secure: true, standard: true } }]);
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'app',
+    privileges: { secure: true, standard: true },
+  },
+]);
+// About page details
+app.setAboutPanelOptions({
+  applicationName: APP_NAME,
+  applicationVersion: '1.0.0',
+  version: '1.0.0',
+  copyright: 'Copyright 2021-2023',
+  authors: ['Soramitsu'],
+  website: 'https://soramitsu.co.jp',
+});
 
-async function createWindow() {
+async function createWindow(): Promise<void> {
   // Create the browser window.
+  console.info('ELECTRON_NODE_INTEGRATION', process.env.ELECTRON_NODE_INTEGRATION);
   const win = new BrowserWindow({
-    width: isDevelopment ? 1500 : 561,
-    height: 600,
-    minWidth: 561,
-    minHeight: 600,
-    maxHeight: 600,
-    resizable: isDevelopment,
-    frame: false,
+    width: APP_WIDTH,
+    height: APP_HEIGHT,
+    minWidth: APP_WIDTH,
+    minHeight: APP_HEIGHT,
+    maxWidth: APP_WIDTH,
+    maxHeight: APP_HEIGHT,
+    resizable: true, // To have an ability to make full screen mode
+    useContentSize: true, // To set app size = APP_HEIGHT (it includes frame height)
+    frame: true,
+    acceptFirstMouse: true,
+    center: true,
+    title: 'Loading...',
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
-      // To prevent all potential attacks
-      nodeIntegration: false,
-      contextIsolation: true,
-      sandbox: true,
+      nodeIntegration: !!process.env.ELECTRON_NODE_INTEGRATION,
+      contextIsolation: !process.env.ELECTRON_NODE_INTEGRATION,
       disableBlinkFeatures: 'Auxclick',
+      preload: path.join(__dirname, 'preload.js'),
     },
   });
 
-  if (process.env.WEBPACK_DEV_SERVER_URL) {
+  buildMenu(APP_NAME);
+
+  if (isDevelopment && process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
-    await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL as string);
-    if (!process.env.IS_TEST) win.webContents.openDevTools();
+    win.loadURL(process.env.WEBPACK_DEV_SERVER_URL as string);
+    if (!process.env.IS_TEST) win.webContents.openDevTools({ mode: 'undocked' });
   } else {
     createProtocol('app');
     // Load the index.html when not in development
     win.loadURL('app://./index.html');
+  }
+
+  win.webContents.on('did-finish-load', () => {
+    win.setTitle(APP_NAME);
+  });
+
+  win.webContents.on('did-fail-load', (_, errorCode, errorDescription, validatedURL) => {
+    console.error(errorCode, errorDescription, validatedURL);
+  });
+
+  // Only do these things when in development
+  if (isDevelopment) {
+    // Errors are thrown if the dev tools are opened
+    // before the DOM is ready
+    win.webContents.once('dom-ready', async () => {
+      await installExtension(VUEJS_DEVTOOLS)
+        .then((name) => console.info(`Added Extension: ${name}`))
+        .catch((err) => console.warn('An error occurred: ', err))
+        .finally(() => {
+          require('electron-debug')(); // https://github.com/sindresorhus/electron-debug
+        });
+    });
   }
 }
 
@@ -96,18 +142,7 @@ app.on('activate', () => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', async () => {
-  if (isDevelopment && !process.env.IS_TEST) {
-    // Install Vue Devtools
-    try {
-      await installExtension(VUEJS_DEVTOOLS);
-    } catch (e) {
-      console.error('Vue Devtools failed to install:', (e as Error).toString());
-    }
-  }
-
-  createWindow();
-});
+app.on('ready', createWindow);
 
 // Exit cleanly on request from parent process in development mode.
 if (isDevelopment) {

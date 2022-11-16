@@ -27,4 +27,24 @@ module.exports = defineConfig({
       config.output.chunkFilename = `js/[name].[contenthash:8].${buildDateTime}.js`;
     }
   },
+  pluginOptions: {
+    electronBuilder: {
+      preload: 'src/desktop/preload.js',
+      builderOptions: {
+        productName: 'Fearless Wallet',
+        appId: 'com.soramitsu|electron.fearless-wallet',
+        // directories: {
+        //   buildResources: 'dist_electron/bundled',
+        // },
+        // files: ['dist_electron/bundled/**/*'],
+        win: {
+          target: ['nsis', 'msi'],
+        },
+        linux: {
+          target: ['deb', 'snap', 'AppImage'],
+          // 'rpm' - to build rpm, executable rpmbuild is required, please install: brew install rpm
+        },
+      },
+    },
+  },
 });

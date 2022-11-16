@@ -1,4 +1,4 @@
-import { FPNumber } from '@sora-substrate/util';
+import { FPNumber } from '@sora-substrate/math';
 import type { WalletAddress, NetworkAssetsType } from '@/interfaces';
 import type CurrencyController from '@/controllers/currencyController';
 

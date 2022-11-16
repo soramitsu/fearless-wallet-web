@@ -1,5 +1,5 @@
 import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
-import { FPNumber } from '@sora-substrate/util';
+import { FPNumber } from '@sora-substrate/math';
 import type { HistoryNode, AssetJson } from '@/interfaces';
 import { TransactionType, TransferType } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';

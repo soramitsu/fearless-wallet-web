@@ -27,4 +27,35 @@ module.exports = defineConfig({
       config.output.chunkFilename = `js/[name].[contenthash:8].${buildDateTime}.js`;
     }
   },
+  pluginOptions: {
+    electronBuilder: {
+      nodeIntegration: true,
+      mainProcessFile: 'src/desktop/background.ts',
+      builderOptions: {
+        productName: 'Fearless Wallet',
+        appId: 'com.soramitsu.fearless-wallet',
+        copyright: 'Copyright © 2022 Soramitsu',
+        directories: {
+          buildResources: 'public',
+        },
+        // files: [
+        //   './node_modules/@soramitsu/soramitsu-js-ui/lib/assets/fonts/*',
+        //   './node_modules/@soramitsu/soramitsu-js-ui/lib/assets/styles/index.scss',
+        // ],
+        mac: {
+          icon: './public/icons/logo.icns',
+          category: 'public.app-category.finance',
+        },
+        win: {
+          target: ['nsis', 'msi'],
+          icon: './public/icons/logo-256.png',
+        },
+        linux: {
+          category: 'Finance',
+          target: ['deb', 'snap', 'AppImage'],
+          // 'rpm' - to build rpm, executable rpmbuild is required, please install: brew install rpm
+        },
+      },
+    },
+  },
 });

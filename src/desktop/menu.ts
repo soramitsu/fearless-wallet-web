@@ -5,48 +5,44 @@ const isMac = process.platform === 'darwin';
 
 const defaultTemplate = (appName: string) =>
   [
-    ...(isMac
-      ? [
-          {
-            label: appName,
-            submenu: [
-              {
-                role: 'about',
-                label: 'About',
-              },
-              {
-                type: 'separator',
-              },
-              {
-                role: 'services',
-                label: 'Services',
-              },
-              {
-                type: 'separator',
-              },
-              {
-                role: 'hide',
-                label: `Hide ${appName}`,
-              },
-              {
-                role: 'hideothers',
-                label: 'Hide Others',
-              },
-              {
-                role: 'unhide',
-                label: 'Show All',
-              },
-              {
-                type: 'separator',
-              },
-              {
-                role: 'quit',
-                label: `Quit ${appName}`,
-              },
-            ],
-          },
-        ]
-      : []),
+    {
+      label: appName,
+      submenu: [
+        {
+          role: 'about',
+          label: 'About',
+        },
+        {
+          type: 'separator',
+        },
+        {
+          role: 'services',
+          label: 'Services',
+        },
+        {
+          type: 'separator',
+        },
+        {
+          role: 'hide',
+          label: `Hide ${appName}`,
+        },
+        {
+          role: 'hideothers',
+          label: 'Hide Others',
+        },
+        {
+          role: 'unhide',
+          label: 'Show All',
+        },
+        {
+          type: 'separator',
+        },
+        {
+          role: 'quit',
+          label: `Quit ${appName}`,
+        },
+      ],
+    },
     {
       role: 'help',
       label: 'Help',
@@ -62,7 +58,7 @@ const defaultTemplate = (appName: string) =>
   ] as unknown as Array<MenuItem>;
 
 export function buildMenu(appName: string) {
-  const menu = Menu.buildFromTemplate(defaultTemplate(appName));
+  const menu = Menu.buildFromTemplate(isMac ? defaultTemplate(appName) : []);
   Menu.setApplicationMenu(menu);
 
   return menu;

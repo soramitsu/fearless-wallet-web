@@ -1,4 +1,3 @@
-import path from 'path';
 import { app, protocol, BrowserWindow, shell } from 'electron';
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
@@ -27,7 +26,7 @@ app.setAboutPanelOptions({
 
 async function createWindow(): Promise<void> {
   // Create the browser window.
-  console.info('ELECTRON_NODE_INTEGRATION', process.env.ELECTRON_NODE_INTEGRATION);
+  const nodeIntegration = !!process.env.ELECTRON_NODE_INTEGRATION;
   const win = new BrowserWindow({
     width: APP_WIDTH,
     height: APP_HEIGHT,
@@ -44,10 +43,10 @@ async function createWindow(): Promise<void> {
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
-      nodeIntegration: !!process.env.ELECTRON_NODE_INTEGRATION,
-      contextIsolation: !process.env.ELECTRON_NODE_INTEGRATION,
+      nodeIntegration,
+      contextIsolation: !nodeIntegration,
+      sandbox: !nodeIntegration,
       disableBlinkFeatures: 'Auxclick',
-      preload: path.join(__dirname, 'preload.js'),
     },
   });
 

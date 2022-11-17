@@ -17,13 +17,11 @@ export default class Currencies extends Vue {
   @Prop({ default: '0px' }) rootMargin!: string;
 
   get options() {
-    const options: IntersectionObserverInit = {
+    return {
       root: this.root,
       threshold: this.threshold,
       rootMargin: this.rootMargin,
-    };
-
-    return options;
+    } as IntersectionObserverInit;
   }
 
   mounted() {

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="showCurrencyItem" class="currency-item" @click="openAssetPage">
+  <Lazy v-if="showCurrencyItem" class="currency-item" @click="openAssetPage">
     <div v-if="showAssetsManagementForm" class="drag-icon">
       <SIcon name="basic-menu-24" class="handle" />
     </div>
@@ -92,7 +92,7 @@
 
       <Switcher v-else v-model="currencyVisible" />
     </div>
-  </div>
+  </Lazy>
 </template>
 
 <script lang="ts">
@@ -109,9 +109,11 @@ import { formattedNumber, formattedPrice } from '@/helpers/numbers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GetNetworkStatus } from '@/store/networks/types';
+import Lazy from '@/components/Lazy.vue';
 
 @Component({
   components: {
+    Lazy,
     Shimmer,
     Switcher,
     NetworkLogo,

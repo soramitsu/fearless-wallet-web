@@ -1,12 +1,12 @@
 <template>
   <Corners class="corners">
-    <div :class="classes" @click="$emit('click')">
+    <button :class="classes" @click="$emit('click')">
       {{ textFormatted }}
 
       <Rotate :isActive="isActive" class="icon-chevron">
         <SIcon name="chevron-bottom-16" />
       </Rotate>
-    </div>
+    </button>
   </Corners>
 </template>
 
@@ -63,6 +63,7 @@ export default class SelectNetworkButton extends Vue {
   align-items: center;
   border: 1px solid #201c1f;
   user-select: none;
+  color: $plain-white;
 
   &:hover {
     cursor: pointer;

@@ -27,8 +27,8 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({
   components: {
-    CurrencyItem,
     Draggable,
+    CurrencyItem,
   },
 })
 export default class Currencies extends Vue {

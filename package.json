@@ -2,6 +2,8 @@
   "name": "fearless-wallet-web",
   "version": "0.1.0",
   "private": true,
+  "author": { "email": "fearless.web@soramitsu.co.jp", "name": "Soramitsu", "url": "https://soramitsu.co.jp" },
+  "description": "Fearless Wallet DESCRIPTION",
   "scripts": {
     "serve": "env-cmd -f .env.desktop vue-cli-service serve",
     "build": "env-cmd -f .env.desktop vue-cli-service build",
@@ -14,8 +16,6 @@
     "electron:build": "env-cmd -f .env.desktop vue-cli-service electron:build",
     "electron:build-all": "env-cmd -f .env.desktop vue-cli-service electron:build --publish=never --linux --mac dmg --win portable --x64",
     "electron:serve": "env-cmd -f .env.desktop vue-cli-service electron:serve",
-    "postinstall": "electron-builder install-app-deps",
-    "postuninstall": "electron-builder install-app-deps",
     "test:all": "yarn test:unit",
     "audit:desktop": "npx electronegativity -i ./ -x LimitNavigationGlobalCheck,PermissionRequestHandlerGlobalCheck"
   },
@@ -30,6 +30,7 @@
     "@polkadot/phishing": "^0.18.9",
     "@polkadot/ui-keyring": "^2.9.6",
     "@polkadot/vue-identicon": "^2.9.8",
+    "@sora-substrate/math": "^1.11.0",
     "@soramitsu/soramitsu-js-ui": "^1.0.26",
     "@vespaiach/axios-fetch-adapter": "^0.3.1",
     "axios": "^0.27.2",
@@ -82,6 +83,7 @@
     "cypress": "^9.7.0",
     "electron": "^19.0.10",
     "electron-builder": "23.0.2",
+    "electron-debug": "^3.2.0",
     "electron-devtools-installer": "^3.2.0",
     "env-cmd": "^10.1.0",
     "eslint": "^7.29.0",

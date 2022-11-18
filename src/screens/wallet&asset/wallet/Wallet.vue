@@ -323,20 +323,7 @@ export default class Wallet extends Vue {
   .balance {
     font-size: 22px;
     line-height: 28px;
+    max-width: 270px;
   }
-
-  // .wallet-balance {
-  //   margin: auto 0;
-  //   font-weight: 800;
-  //   min-width: 75px;
-  //   text-align: left;
-  //   white-space: nowrap;
-  //   overflow: hidden;
-  //   text-overflow: ellipsis;
-
-  //   &:hover {
-  //     cursor: pointer;
-  //   }
-  // }
 }
 </style>

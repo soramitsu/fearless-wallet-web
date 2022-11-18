@@ -13,7 +13,7 @@
     >
       <div class="about-popup">
         <div class="header">{{ t('text') }}</div>
-        <div class="title">Fearless wallet</div>
+        <div class="title">Fearless Wallet</div>
 
         <div v-for="{ icon, label, subLabel, url } in mainItems" class="about-item" :key="label" @click="open(url)">
           <div class="about-left-part">

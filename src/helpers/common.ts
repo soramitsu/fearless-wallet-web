@@ -17,6 +17,6 @@ export function getReplacedMetaTyped(meta: KeyringPair$Meta) {
   return meta as unknown as ReplacedMeta;
 }
 
-export function isExtension() {
+export function isExtension(): boolean {
   return chrome.extension !== undefined;
 }

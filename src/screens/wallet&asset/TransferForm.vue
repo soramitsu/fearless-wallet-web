@@ -63,7 +63,7 @@
                 </div>
               </div>
 
-              <div class="transferrable-part">
+              <div v-if="showTransferableValue" class="transferrable-part">
                 <div class="transferrable-label">{{ $t('asset.transferrable') }}</div>
 
                 <div class="transferrable-descriptions">
@@ -185,7 +185,7 @@ export default class SendForm extends Vue {
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) header!: string;
   @Prop(String) extrinsicType!: 'transfer' | 'teleport';
-  @PropSync('recipient', { type: String }) syncedRecipient!: string;
+  @PropSync('recipient', { default: '' }) syncedRecipient!: string;
   @PropSync('selectedAssetId', { type: String }) syncedSelectedAssetId!: string;
   @PropSync('selectedNetwork', { type: String }) syncedSelectedNetwork!: string;
   @PropSync('destinationNetwork', { type: String, default: '' }) syncedDestNet!: string;
@@ -198,6 +198,10 @@ export default class SendForm extends Vue {
   @Getter(AccountsGettersTypes.getOnlineStatus) onlineStatus!: string;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
+
+  get showTransferableValue() {
+    return this.currency?.price !== 0;
+  }
 
   get placeholderNetwork() {
     return this.extrinsicType === 'transfer' ? 'asset.network' : 'asset.originNet';
@@ -286,6 +290,8 @@ export default class SendForm extends Vue {
   }
 
   get isValidRecipientAddress() {
+    if (this.syncedRecipient === '') return false;
+
     return !this.isSameAddress && BaseApi.validateAddress(this.syncedRecipient, this.syncedSelectedNetwork);
   }
 

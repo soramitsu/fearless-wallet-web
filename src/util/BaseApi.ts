@@ -471,7 +471,7 @@ export default class BaseApi {
   }
 
   public static useIsPopup(): boolean {
-    return window.innerWidth <= 561;
+    return window.innerWidth <= 561 && isExtension();
   }
 
   public static getFirstSubstrateWalletAddress(): string {
@@ -489,7 +489,7 @@ export default class BaseApi {
     return '';
   }
 
-  public static getEquilibriumAssetName(symbol: string): number {
+  public static getEquilibriumAssetId(symbol: string): number {
     return assetFromToken(symbol)[0];
   }
 

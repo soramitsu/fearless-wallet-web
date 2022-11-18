@@ -1,13 +1,16 @@
 <template>
   <div :ref="targetRef">
     <slot v-if="shouldRender" />
+
+    <Shimmer v-else-if="isTimeout" height="100%" width="100%" />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import Shimmer from '@/components/Shimmer.vue';
 
-@Component
+@Component({ components: { Shimmer } })
 export default class Currencies extends Vue {
   readonly targetRef = 'target';
   shouldRender = false;
@@ -15,6 +18,7 @@ export default class Currencies extends Vue {
   @Prop({ default: 0 }) threshold!: number;
   @Prop({ default: null }) root!: Element | Document | null;
   @Prop({ default: '0px' }) rootMargin!: string;
+  @Prop({ required: false }) timeoutCallback!: (fn: () => void) => VoidFunction;
 
   get options() {
     return {
@@ -24,19 +28,28 @@ export default class Currencies extends Vue {
     } as IntersectionObserverInit;
   }
 
+  get isTimeout() {
+    return this.timeoutCallback !== undefined;
+  }
+
   mounted() {
     const el = this.$refs[this.targetRef] as Element;
     const observer = new IntersectionObserver((entries, observer) => {
       entries.forEach(({ isIntersecting }) => {
-        if (isIntersecting) {
-          this.shouldRender = true;
+        if (!isIntersecting) return;
 
-          observer.unobserve(el);
-        }
+        if (this.isTimeout) this.timeoutCallback(this.setShouldRender);
+        else this.setShouldRender();
+
+        observer.unobserve(el);
       });
     }, this.options);
 
     observer.observe(el);
+  }
+
+  setShouldRender() {
+    this.shouldRender = true;
   }
 }
 </script>

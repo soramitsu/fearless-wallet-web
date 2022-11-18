@@ -55,8 +55,8 @@ export default class NetworksController {
     await store.dispatch(NetworksActionTypes.LOAD_HISTORY, { networkName, walletAddress, assetId });
   }
 
-  public static async subscribeToBalancesOfNetworks(accounts: SubjectInfo): Promise<void> {
-    await store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts });
+  public static subscribeToBalancesOfNetworks(accounts: SubjectInfo): void {
+    store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts });
   }
 
   public static async toggleActiveNode(

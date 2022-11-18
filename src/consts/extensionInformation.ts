@@ -16,7 +16,7 @@ const MAIN_ITEMS = [
   {
     icon: 'github',
     label: 'githubCode',
-    subLabel: 'App version 1.1.0',
+    subLabel: 'App version 0.0.1',
     url: URLS.GITHUB,
   },
   {

@@ -68,7 +68,7 @@ export default class App extends Vue {
     await connectToNodes();
   }
 
-  async subscribeToBalancesOfNetworks() {
+  subscribeToBalancesOfNetworks() {
     if (!this.isOnline) return;
 
     const { subscribeToBalancesOfNetworks } = NetworksController;
@@ -84,7 +84,7 @@ export default class App extends Vue {
 
       if (newAccountsCount === 0) return;
 
-      if (accountsCount === 1 || accountsCount !== newAccountsCount) await subscribeToBalancesOfNetworks(newAccounts);
+      if (accountsCount === 1 || accountsCount !== newAccountsCount) subscribeToBalancesOfNetworks(newAccounts);
     });
 
     this.subscribeAddresses.subscribe(async (addresses) => {
@@ -96,8 +96,7 @@ export default class App extends Vue {
 
       if (newAddressesCount === 0) return;
 
-      if (addressesCount === 1 || addressesCount !== newAddressesCount)
-        await subscribeToBalancesOfNetworks(newAddresses);
+      if (addressesCount === 1 || addressesCount !== newAddressesCount) subscribeToBalancesOfNetworks(newAddresses);
     });
   }
 

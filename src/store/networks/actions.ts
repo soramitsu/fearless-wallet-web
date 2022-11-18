@@ -91,15 +91,16 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.CONNECT_TO_NODES](context) {
-    context.state.networks.forEach((network) => {
+    context.state.networks.forEach((network, index) => {
       if (network.api?.isConnected) return;
 
+      const timeout = (index / 5) * 750;
       const apiOptions: ApiOptions = {
         apiRetry: 0,
         nodeIndex: 0,
       };
 
-      connectToApi(network, apiOptions);
+      setTimeout(() => connectToApi(network, apiOptions), timeout);
     });
   },
 

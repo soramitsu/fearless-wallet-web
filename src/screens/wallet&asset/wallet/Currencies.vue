@@ -1,7 +1,7 @@
 <template>
   <div v-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText) }}</div>
 
-  <Draggable v-else v-model="filteredCurrencies" handle=".handle">
+  <Draggable v-else v-model="filteredCurrencies" handle=".handle" :key="selectedWallet.address">
     <CurrencyItem
       v-for="currency in filteredCurrencies"
       :key="currency.assetId"
@@ -9,6 +9,7 @@
       :selectedNetwork="selectedNetwork"
       :showAssetsManagementForm="showAssetsManagementForm"
       :toggleVisibleActivityForm="toggleVisibleActivityForm"
+      :timeoutCallback="timeoutCallback"
     />
   </Draggable>
 </template>
@@ -25,6 +26,11 @@ import type { Currency } from '@/interfaces/currencies';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
+type TimeoutSubscription = {
+  subscription: NodeJS.Timeout;
+  fn: () => void;
+};
+
 @Component({
   components: {
     Draggable,
@@ -32,6 +38,8 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
   },
 })
 export default class Currencies extends Vue {
+  timeoutSubscriptions: TimeoutSubscription[] = [];
+
   @Prop(Array) currencies!: Currency[];
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
@@ -58,6 +66,18 @@ export default class Currencies extends Vue {
 
   set filteredCurrencies(currencies) {
     this.setCurrencies({ currencies, address: this.selectedWallet.address });
+  }
+
+  timeoutCallback(fn: () => void) {
+    this.timeoutSubscriptions.forEach(({ subscription }) => {
+      clearTimeout(subscription);
+    });
+
+    this.timeoutSubscriptions = [...this.timeoutSubscriptions, { fn }].map(({ fn }) => {
+      const subscription = setTimeout(() => fn(), 300);
+
+      return { subscription, fn };
+    });
   }
 }
 </script>

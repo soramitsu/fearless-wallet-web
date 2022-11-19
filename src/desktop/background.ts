@@ -3,7 +3,8 @@ import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
 import { isSafeForExternalOpen } from '@/consts/urls';
 import { APP_WIDTH, APP_HEIGHT, APP_NAME } from '@/consts/global';
-import { buildMenu } from '@/desktop/menu';
+import buildMenu from '@/desktop/menu';
+import buildAboutPage from '@/desktop/about';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -15,14 +16,7 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 // About page details
-app.setAboutPanelOptions({
-  applicationName: APP_NAME,
-  applicationVersion: '1.0.0',
-  version: '1.0.0',
-  copyright: 'Copyright 2021-2023',
-  authors: ['Soramitsu'],
-  website: 'https://soramitsu.co.jp',
-});
+buildAboutPage(app);
 
 async function createWindow(): Promise<void> {
   // Create the browser window.

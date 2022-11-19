@@ -95,7 +95,7 @@ const defaultTemplate = (appName: string) =>
     },
   ] as unknown as Array<MenuItem>;
 
-export function buildMenu(appName: string) {
+export default function buildMenu(appName: string) {
   const menu = Menu.buildFromTemplate(isMac ? defaultTemplate(appName) : []);
   Menu.setApplicationMenu(menu);
 

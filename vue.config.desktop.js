@@ -3,18 +3,21 @@ const path = require('path');
 const { defineConfig } = require('@vue/cli-service');
 const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
 const baseConfig = require('./vue.config.base');
+const BUNDLED_CSS_DIR = 'dist_electron/bundled/css';
 
 /** This is required cuz vue-cli-plugin-electron-builder has its own assets rules which cannot be modified */
-const DirtyHackForAssetsPathInCssElectronPlugin = function (cb) {
-  this.apply = function (compiler) {
-    if (compiler.hooks && compiler.hooks.done) {
-      compiler.hooks.done.tap('webpack-arbitrary-code', cb);
-    }
-  };
-};
+class DirtyHackForAssetsPathInCssElectronPlugin {
+  constructor(cb) {
+    this.apply = function (compiler) {
+      if (compiler.hooks && compiler.hooks.done) {
+        compiler.hooks.done.tap('webpack-electron-assets-path-in-css', cb);
+      }
+    };
+  }
+}
 
-const replaceAllProtocolIssuesInCss = function () {
-  const fullPath = path.join(__dirname, 'dist_electron/bundled/css');
+const replaceAllProtocolIssuesInCss = () => {
+  const fullPath = path.join(__dirname, BUNDLED_CSS_DIR);
   const entries = fs.readdirSync(fullPath);
   entries.forEach((name) => {
     const fileName = `${fullPath}/${name}`;

@@ -1,11 +1,41 @@
+const fs = require('fs');
+const path = require('path');
 const { defineConfig } = require('@vue/cli-service');
 const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
 const baseConfig = require('./vue.config.base');
+const BUNDLED_CSS_DIR = 'dist_electron/bundled/css';
+
+/** This is required cuz vue-cli-plugin-electron-builder has its own assets rules which cannot be modified */
+class DirtyHackForAssetsPathInCssElectronPlugin {
+  constructor(cb) {
+    this.apply = function (compiler) {
+      if (compiler.hooks && compiler.hooks.done) {
+        compiler.hooks.done.tap('webpack-electron-assets-path-in-css', cb);
+      }
+    };
+  }
+}
+
+const replaceAllProtocolIssuesInCss = () => {
+  const fullPath = path.join(__dirname, BUNDLED_CSS_DIR);
+  const entries = fs.readdirSync(fullPath);
+  entries.forEach((name) => {
+    const fileName = `${fullPath}/${name}`;
+    fs.readFile(fileName, 'utf-8', function (err, data) {
+      if (err) throw err;
+      const content = data.replace(/app:\/\/\//g, 'app://./');
+      fs.writeFileSync(fileName, content);
+    });
+  });
+};
 
 module.exports = defineConfig({
   ...baseConfig,
   configureWebpack: (config) => {
-    config.plugins.push(new NodePolyfillPlugin());
+    config.plugins.push(
+      new NodePolyfillPlugin(),
+      new DirtyHackForAssetsPathInCssElectronPlugin(replaceAllProtocolIssuesInCss)
+    );
     // bundle all dependencies from node_modules to vendors
     // config.optimization.splitChunks.cacheGroups.defaultVendors.chunks = 'all';
     // config.optimization.splitChunks.cacheGroups.common.chunks = 'all';
@@ -38,10 +68,6 @@ module.exports = defineConfig({
         directories: {
           buildResources: 'public',
         },
-        // files: [
-        //   './node_modules/@soramitsu/soramitsu-js-ui/lib/assets/fonts/*',
-        //   './node_modules/@soramitsu/soramitsu-js-ui/lib/assets/styles/index.scss',
-        // ],
         mac: {
           icon: './public/icons/logo.icns',
           category: 'public.app-category.finance',

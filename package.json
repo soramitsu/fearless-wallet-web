@@ -1,8 +1,12 @@
 {
-  "name": "fearless-wallet-web",
+  "name": "fearless-wallet",
   "version": "0.1.0",
   "private": true,
-  "author": { "email": "fearless.web@soramitsu.co.jp", "name": "Soramitsu", "url": "https://soramitsu.co.jp" },
+  "author": {
+    "email": "fearless.web@soramitsu.co.jp",
+    "name": "Soramitsu",
+    "url": "https://soramitsu.co.jp"
+  },
   "description": "Fearless Wallet DESCRIPTION",
   "scripts": {
     "serve": "env-cmd -f .env.desktop vue-cli-service serve",

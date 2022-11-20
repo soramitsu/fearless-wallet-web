@@ -12,8 +12,8 @@ def pipeline = new org.js.AppArtifactsPipeline(
     preBuildCmds:               ['apt-get update && apt-get install zip && yarn install'],
     nexusFiles:                 [ '.zip', '.AppImage', '.exe', '.dmg', '.dmg.blockmap', 'latest-linux.yml','latest-mac.yml' ],
     buildWithCred: [
-      string(credentialsId: 'OAUTH_CLIENT_ID', variable: 'OAUTH_CLIENT_ID'),
-      string(credentialsId: 'OAUTH_CLIENT_SECRET', variable: 'OAUTH_CLIENT_SECRET')
+      string(credentialsId: OAUTH_CLIENT_ID, variable: 'OAUTH_CLIENT_ID'),
+      string(credentialsId: OAUTH_CLIENT_SECRET, variable: 'OAUTH_CLIENT_SECRET')
     ]
 )
 pipeline.runPipeline()

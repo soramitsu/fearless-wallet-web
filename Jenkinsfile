@@ -17,6 +17,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     sonarCredential:            'sonar_fearless_token',
     distFolders:                ['dist_electron', 'dist/extension'],
     preBuildCmds:               ['apt-get update && apt-get install zip && yarn install'],
-    nexusFiles:                 [ '.zip', '.AppImage', '.exe', '.dmg', '.dmg.blockmap', 'latest-linux.yml','latest-mac.yml' ]
+    nexusFiles:                 [ '.zip', '.AppImage', '.exe', '.dmg', '.dmg.blockmap', 'latest-linux.yml','latest-mac.yml' ],
+    buildEnvironment:           [OAUTH_CLIENT_ID: '123450']
 )
 pipeline.runPipeline()

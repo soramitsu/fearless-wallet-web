@@ -1,20 +1,24 @@
 {
-  "name": "fearless-wallet-web",
+  "name": "fearless-wallet",
   "version": "0.1.0",
   "private": true,
-  "author": { "email": "fearless.web@soramitsu.co.jp", "name": "Soramitsu", "url": "https://soramitsu.co.jp" },
-  "description": "Fearless Wallet DESCRIPTION",
+  "author": {
+    "email": "fearless.web@soramitsu.co.jp",
+    "name": "Soramitsu",
+    "url": "https://soramitsu.co.jp"
+  },
+  "description": "Non-Custodial, Decentralized and Open-Source wallet for the Polkadot and Kusama ecosystems with the best UX, performance, and, most importantly, security",
   "scripts": {
     "serve": "env-cmd -f .env.desktop vue-cli-service serve",
     "build": "env-cmd -f .env.desktop vue-cli-service build",
     "build:extension": "env-cmd -f .env.extension vue-cli-service build --progress",
-    "build:extension:zip": "yarn run build:extension && cd dist && zip -r fearless-extension.zip extension/ && cd -",
+    "build:extension:zip": "yarn run build:extension && cd dist/extension && zip -r fearless-wallet-extension.zip . && cd -",
     "build-watch:extension": "env-cmd -f .env.extension vue-cli-service  --env.NODE_ENV=development build-watch --mode development",
     "test:unit": "vue-cli-service test:unit",
     "test:e2e": "vue-cli-service test:e2e",
     "lint": "vue-cli-service lint --fix",
     "electron:build": "env-cmd -f .env.desktop vue-cli-service electron:build",
-    "electron:build-all": "env-cmd -f .env.desktop vue-cli-service electron:build --publish=never --linux --mac dmg --win portable --x64",
+    "electron:build-all": "env-cmd -f .env.desktop vue-cli-service electron:build --publish=never --linux --mac zip --win portable --x64",
     "electron:serve": "env-cmd -f .env.desktop vue-cli-service electron:serve",
     "test:all": "yarn test:unit",
     "audit:desktop": "npx electronegativity -i ./ -x LimitNavigationGlobalCheck,PermissionRequestHandlerGlobalCheck"

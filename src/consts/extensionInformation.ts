@@ -1,3 +1,4 @@
+import pkg from '../../package.json';
 import URLS from '@/consts/urls';
 
 const MAIN_ITEMS = [
@@ -16,7 +17,7 @@ const MAIN_ITEMS = [
   {
     icon: 'github',
     label: 'githubCode',
-    subLabel: 'App version 1.1.0',
+    subLabel: `App version ${pkg.version}`,
     url: URLS.GITHUB,
   },
   {

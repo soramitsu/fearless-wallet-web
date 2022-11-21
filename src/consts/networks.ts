@@ -162,6 +162,7 @@ const NETWORK_AND_ASSET: Record<string, string> = {
   phala: 'phala',
   khala: 'khala',
   'sora test': 'sora',
+  'sora mainnet': 'sora',
   'snow kusama': 'snow',
   icz: 'snow',
 };

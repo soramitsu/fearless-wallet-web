@@ -7,7 +7,6 @@
       :isError="isShortPassword"
       :showPassword="true"
       :readonly="showMockPassword"
-      :maxlength="25"
       class="row"
     />
 
@@ -18,7 +17,6 @@
       :placeholder="t('reEnterPassword')"
       :isError="isWrongPassword"
       :showPassword="true"
-      :maxlength="25"
       class="row"
     />
 

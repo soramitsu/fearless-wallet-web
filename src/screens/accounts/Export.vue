@@ -13,7 +13,6 @@
         placeholder="accounts.passwordWallet"
         :isError="isWrongPassword"
         :showPassword="true"
-        :maxlength="25"
         :readonly="noEthereumAccount"
       />
 

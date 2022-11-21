@@ -32,10 +32,7 @@ const replaceAllProtocolIssuesInCss = () => {
 module.exports = defineConfig({
   ...baseConfig,
   configureWebpack: (config) => {
-    config.plugins.push(
-      new NodePolyfillPlugin(),
-      new DirtyHackForAssetsPathInCssElectronPlugin(replaceAllProtocolIssuesInCss)
-    );
+    config.plugins.push(new NodePolyfillPlugin());
     // bundle all dependencies from node_modules to vendors
     // config.optimization.splitChunks.cacheGroups.defaultVendors.chunks = 'all';
     // config.optimization.splitChunks.cacheGroups.common.chunks = 'all';
@@ -51,8 +48,9 @@ module.exports = defineConfig({
       });
 
     if (process.env.NODE_ENV === 'production') {
-      const buildDateTime = Date.now();
+      config.plugins.push(new DirtyHackForAssetsPathInCssElectronPlugin(replaceAllProtocolIssuesInCss));
 
+      const buildDateTime = Date.now();
       config.output.filename = `js/[name].[contenthash:8].${buildDateTime}.js`;
       config.output.chunkFilename = `js/[name].[contenthash:8].${buildDateTime}.js`;
     }

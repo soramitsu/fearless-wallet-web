@@ -7,18 +7,25 @@ const NATIVE_NETWORKS = [...RELAY_CHAINS, ...NATIVE_PARACHAINS];
 
 const NOT_SUPPORTED_SUBQUERY_NETWORKS = [
   'kico',
+  'phala',
+  'khala',
+  'unique',
   'quartz',
   'kabocha',
   'efinity',
   'litentry',
+  'basilisk',
   'parallel',
+  'moonriver',
   'centrifuge',
+  'imbue kusama',
   'parallel heiko',
   'pichiu network',
   'integritee shell',
   'composable finance',
   'dorafactory network',
   'datahighway tanganika',
+  'invArch tinker network',
 ];
 
 const MAIN_NETWORKS: Record<string, string> = {

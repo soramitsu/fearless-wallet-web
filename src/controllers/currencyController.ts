@@ -201,7 +201,7 @@ export default class CurrencyController {
   }
 
   public isUtility(_network: string): boolean {
-    return this.balances.find(({ network }) => network === _network)!.type === 'native';
+    return this.balances.find(({ network }) => network === _network)?.type === 'native';
   }
 
   public getNetworksWithBalance(wallet: Wallet): WalletBalance[] {

@@ -94,7 +94,7 @@ const actions: ActionTree<State, State> & Actions = {
     context.state.networks.forEach((network, index) => {
       if (network.api?.isConnected) return;
 
-      const timeout = (index / 5) * 750;
+      const timeout = (index / 5) * 1000;
       const apiOptions: ApiOptions = {
         apiRetry: 0,
         nodeIndex: 0,

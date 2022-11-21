@@ -50,7 +50,7 @@ module.exports = defineConfig({
           base: './src/extension/manifest.base.json',
           extend: {
             oauth2: {
-              client_id: env.GOOGLE_CLIENT_ID,
+              client_id: env.OAUTH_CLIENT_ID,
             },
           },
         },

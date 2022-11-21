@@ -92,6 +92,7 @@ export default class Button extends Vue {
 
     if (this.type === 'google') {
       return [
+        ...classes,
         `button-font-size-${this.fontSize}`,
         'google',
         this.border ? 'google-border' : 'google-border-none',
@@ -192,12 +193,14 @@ export default class Button extends Vue {
 }
 
 .google {
-  color: rgba(45, 41, 38, 1);
+  color: rgba(45, 41, 38, 1) !important;
   background-color: #c4c4c4 !important;
 }
-
-.google-hover:hover {
-  color: rgba(45, 41, 38, 1);
+.google:disabled {
+  color: rgba(45, 41, 38, 1) !important;
+  background-color: #c4c4c4 !important;
+}
+.google-hover:not(:disabled):hover {
   background-color: rgba(255, 255, 255, 0.5) !important;
   border-color: transparent;
 }

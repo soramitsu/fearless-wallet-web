@@ -5644,6 +5644,11 @@ core-js@^2.4.0:
   resolved "https://registry.yarnpkg.com/core-js/-/core-js-2.6.12.tgz#d9333dfa7b065e347cc5682219d6f690859cc2ec"
   integrity sha512-Kb2wC0fvsWfQrgk8HU5lW6U/Lcs8+9aaYcy4ZFc6DDlo4nZ7n70dEgE5rtR0oG6ufKDUnrwfWL1mXR5ljDatrQ==
 
+core-js@^3.1.4:
+  version "3.26.1"
+  resolved "https://registry.yarnpkg.com/core-js/-/core-js-3.26.1.tgz#7a9816dabd9ee846c1c0fe0e8fcad68f3709134e"
+  integrity sha512-21491RRQVzUn0GGM9Z1Jrpr6PNPxPi+Za8OM9q4tksTSnlbXXGKK1nXNg/QvwFYettXvSX6zWKCtHHfjN4puyA==
+
 core-js@^3.6.4, core-js@^3.6.5, core-js@^3.8.3:
   version "3.21.0"
   resolved "https://registry.yarnpkg.com/core-js/-/core-js-3.21.0.tgz#f479dbfc3dffb035a0827602dd056839a774aa71"
@@ -6165,7 +6170,7 @@ deepmerge@^1.2.0, deepmerge@^1.5.2:
   resolved "https://registry.yarnpkg.com/deepmerge/-/deepmerge-1.5.2.tgz#10499d868844cdad4fee0842df8c7f6f0c95a753"
   integrity sha512-95k0GDqvBjZavkuvzx/YqVLv/6YYa17fz6ILMSf7neqQITCPbnfEnQvEgMPNjH4kgobe7+WIL0yJEHku+H3qtQ==
 
-deepmerge@^4.2.2:
+deepmerge@^4.0.0, deepmerge@^4.2.2:
   version "4.2.2"
   resolved "https://registry.yarnpkg.com/deepmerge/-/deepmerge-4.2.2.tgz#44d2ea3679b8f4d4ffba33f03d865fc1e7bf4955"
   integrity sha512-FJ3UgI4gIl+PHZm53knsuSFpE+nESMr7M4v9QcgB7S63Kj/6WqMiFQJpBBYz1Pt+66bZpP3Q7Lye0Oo9MPKEdg==
@@ -14797,6 +14802,15 @@ webpack-dev-server@^4.7.3:
     strip-ansi "^7.0.0"
     webpack-dev-middleware "^5.3.1"
     ws "^8.4.2"
+
+webpack-extension-manifest-plugin@^0.8.0:
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/webpack-extension-manifest-plugin/-/webpack-extension-manifest-plugin-0.8.0.tgz#bbed906a70da9ef0558d41c95dca5591e8496717"
+  integrity sha512-1zLgzpzhDo3lQRXtkH0FrrwuH9F+MKfGKiH7gOO3ecTGfcATcmm5dU/7d+E2Nwwoaifh8BWbiQLapabi3Y7djg==
+  dependencies:
+    core-js "^3.1.4"
+    deepmerge "^4.0.0"
+    schema-utils "^3.1.1"
 
 webpack-merge@^5.7.3, webpack-merge@^5.8.0:
   version "5.8.0"

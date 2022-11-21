@@ -1,9 +1,6 @@
 {
-  "author": "Soramitsu",
-  "description": "Fearless Wallet Extension",
   "homepage_url": "https://github.com/soramitsu",
   "name": "Fearless Wallet",
-  "version": "0.0.1",
   "short_name": "FW",
   "manifest_version": 3,
   "permissions": ["storage", "tabs", "scripting", "identity"],
@@ -22,6 +19,10 @@
     "default_title": "Fearless Wallet",
     "default_popup": "popup.html"
   },
+  "oauth2": {
+    "scopes": ["https://www.googleapis.com/auth/drive.appdata"]
+  },
+  "minimum_chrome_version": "92",
   "content_scripts": [
     {
       "js": ["content.js"],

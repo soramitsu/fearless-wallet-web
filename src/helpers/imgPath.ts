@@ -27,7 +27,7 @@ function getOrmlFileName(value: string) {
     busd: 'BUSD',
     usdc: 'USDC',
     deo: 'DEO',
-    noir: 'NOIR',
+    noir: 'NOIRE',
     umi: 'UMI',
     ceres: 'CERES',
   };

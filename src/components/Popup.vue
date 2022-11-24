@@ -14,9 +14,9 @@
             </div>
           </template>
 
-          <s-button type="link" class="button-close" @click="close">
+          <SButton type="link" class="button-close" @click="close">
             <SIcon name="basic-close-24" />
-          </s-button>
+          </SButton>
         </div>
 
         <Scroll>

@@ -1,11 +1,5 @@
 <template>
-  <s-switch
-    v-model="vModel"
-    class="switch"
-    :activeText="activeText"
-    :inactiveText="inactiveText"
-    :disabled="disabled"
-  />
+  <SSwitch v-model="vModel" class="switch" :activeText="activeText" :inactiveText="inactiveText" :disabled="disabled" />
 </template>
 
 <script lang="ts">

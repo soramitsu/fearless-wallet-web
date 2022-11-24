@@ -34,6 +34,7 @@ async function createWindow(): Promise<void> {
     acceptFirstMouse: true,
     center: true,
     title: 'Loading...',
+    show: false, // Small trick to show a window ONLY after the page is ready
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
@@ -42,6 +43,11 @@ async function createWindow(): Promise<void> {
       sandbox: !nodeIntegration,
       disableBlinkFeatures: 'Auxclick',
     },
+  });
+
+  win.once('ready-to-show', () => {
+    // Small trick to show a window ONLY after the page is ready
+    win.show();
   });
 
   buildMenu(APP_NAME);

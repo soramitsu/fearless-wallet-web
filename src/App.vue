@@ -21,7 +21,6 @@ import type {
 import type { TAction, TMutation } from '@/interfaces';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-import { isExtension } from '@/helpers/common';
 import BaseApi from '@/util/BaseApi';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
@@ -45,7 +44,7 @@ export default class App extends Vue {
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
 
   created() {
-    if (isExtension()) this.extensionSubscribe();
+    if (BaseApi.isExtension()) this.extensionSubscribe();
 
     this.setWallet();
     this.addEventOnline();

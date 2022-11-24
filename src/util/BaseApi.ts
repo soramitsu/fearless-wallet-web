@@ -18,7 +18,7 @@ import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
 import type { Wallet } from '@/store/accounts/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { createAccountSuri, forgetAccount, jsonRestore } from '@/extension/messaging';
-import { getReplacedMetaTyped, getMetaTyped, isExtension } from '@/helpers/common';
+import { getReplacedMetaTyped, getMetaTyped } from '@/helpers/common';
 import { ETHEREUM_NETWORKS, ETHEREUM_ADDRESS_LENGTH, ETHEREUM_ADDRESS_PREFIX } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
@@ -462,8 +462,12 @@ export default class BaseApi {
     return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
   }
 
+  public static isExtension(): boolean {
+    return chrome.extension !== undefined;
+  }
+
   public static windowOpen(path: string): void {
-    if (!isExtension()) return;
+    if (!BaseApi.isExtension()) return;
 
     const url = `${chrome.runtime.getURL('popup.html')}#${path}`;
 
@@ -471,7 +475,7 @@ export default class BaseApi {
   }
 
   public static useIsPopup(): boolean {
-    return window.innerWidth <= 561 && isExtension();
+    return window.innerWidth <= 561 && BaseApi.isExtension();
   }
 
   public static getFirstSubstrateWalletAddress(): string {

@@ -23,6 +23,7 @@ import { BeaconSigner } from '@/extension/background/extension-base/src/backgrou
 import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { mockBalance } from '@/consts/currencies';
+import { saveTimeoutCache } from '@/extension/messaging';
 
 type TransactionStatus = 'success' | 'failed' | 'pending';
 
@@ -390,8 +391,11 @@ export default class CurrencyController {
     }
   }
 
-  public async send(from: string, isMobile = false): Promise<boolean> {
+  public async send(from: string, isMobile = false, isSavePass = false): Promise<boolean> {
+    if (isSavePass) await saveTimeoutCache(from);
+
     const account = isMobile ? from : BaseApi.getPair(from);
+
     const options = {
       ...(this.options.transactionsOptions ?? {}),
       signer: isMobile ? new BeaconSigner() : undefined,
@@ -403,7 +407,7 @@ export default class CurrencyController {
     try {
       await this.extrinsic!.signAndSend(account, options, this.statusCallback(from));
 
-      if (typeof account !== 'string') account.lock();
+      if (typeof account !== 'string' && !isSavePass) account.lock();
     } catch (ex) {
       this.transactionStatus = 'failed';
 

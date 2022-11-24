@@ -27,6 +27,7 @@ import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutatio
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import NetworksController from '@/controllers/networksController';
 import { accountController } from '@/controllers/accountController';
+import { resetTimeouts } from '@/extension/messaging';
 
 @Component
 export default class App extends Vue {
@@ -44,7 +45,10 @@ export default class App extends Vue {
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
 
   created() {
-    if (BaseApi.isExtension()) this.extensionSubscribe();
+    if (BaseApi.isExtension()) {
+      this.extensionSubscribe();
+      resetTimeouts();
+    }
 
     this.setWallet();
     this.addEventOnline();

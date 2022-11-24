@@ -1,3 +1,4 @@
+import path from 'path';
 import { app, protocol, BrowserWindow, shell } from 'electron';
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
@@ -44,6 +45,14 @@ async function createWindow(): Promise<void> {
     },
   });
 
+  if (process.defaultApp) {
+    if (process.argv.length >= 2) {
+      app.setAsDefaultProtocolClient('fearless-wallet', process.execPath, [path.resolve(process.argv[1])]);
+    }
+  } else {
+    app.setAsDefaultProtocolClient('fearless-wallet');
+  }
+
   buildMenu(APP_NAME);
 
   if (isDevelopment && process.env.WEBPACK_DEV_SERVER_URL) {
@@ -51,9 +60,8 @@ async function createWindow(): Promise<void> {
     win.loadURL(process.env.WEBPACK_DEV_SERVER_URL as string);
     if (!process.env.IS_TEST) win.webContents.openDevTools({ mode: 'undocked' });
   } else {
-    createProtocol('app');
     // Load the index.html when not in development
-    win.loadURL('app://./index.html');
+    win.loadFile('index.html');
   }
 
   win.webContents.on('did-finish-load', () => {
@@ -136,6 +144,9 @@ app.on('activate', () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', createWindow);
+app.on('open-url', (event, url) => {
+  console.log('Welcome Back', `You arrived from: ${url}`);
+});
 
 // Exit cleanly on request from parent process in development mode.
 if (isDevelopment) {

@@ -47,7 +47,7 @@ const haveMetaRequests = () => store.getters.getMetaRequests.length;
 
 const routes: Array<RouteConfig> = [
   {
-    path: '/welcome',
+    path: '/welcome/:access_token',
     name: Components.Welcome,
     component: Welcome,
   },

@@ -14,6 +14,7 @@ import type {
   AllowedPath,
   AuthorizedAccountsDiff,
   AuthorizeRequest,
+  GoogleFileId,
   MessageTypes,
   MetadataRequest,
   RequestAccountBatchExport,
@@ -33,6 +34,7 @@ import type {
   RequestBatchRestore,
   RequestDeriveCreate,
   RequestDeriveValidate,
+  RequestGoogleCreateFile,
   RequestJsonRestore,
   RequestMetadataApprove,
   RequestMetadataReject,
@@ -61,6 +63,9 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { keyring } from '@/controllers/keyringChrome';
+import { googleAuth } from '@/controllers/googleAuthController';
+import { IGDriveFile, IGetFilesResponse } from '@/interfaces/google';
+import { isExtension } from '@/helpers/common';
 
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
@@ -75,6 +80,7 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
 }
 
 export default class Extension {
+  private static token = '';
   static async transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
     return Object.values(accounts).map(({ json: { address, meta }, type }): AccountJson => {
       return {
@@ -583,8 +589,8 @@ export default class Extension {
     return State.getConnectedTabsUrl();
   }
 
-  static createAddress(request: RequestAddressCreate) {
-    keyring.saveAddress(request.address, request.meta, 'address');
+  static createAddress({ address, meta }: RequestAddressCreate) {
+    keyring.saveAddress(address, meta, 'address');
   }
 
   static removeAddress(address: string) {
@@ -595,8 +601,44 @@ export default class Extension {
     return keyring.getAddresses();
   }
 
-  // Weird thought, the eslint override is not needed in Tabs
-  // eslint-disable-next-line @typescript-eslint/require-await
+  static initAuth(): void {
+    googleAuth.authExtension();
+  }
+
+  static async verifyToken({ tokenId }: { tokenId: string }): Promise<string> {
+    return googleAuth.verifyToken(tokenId);
+  }
+
+  static getToken(): void {
+    chrome.identity.getAuthToken({}, function (token) {
+      Extension.token = token;
+    });
+  }
+
+  static async getFiles(): Promise<IGetFilesResponse> {
+    if (!Extension.token) Extension.getToken();
+
+    return googleAuth.getFiles(Extension.token);
+  }
+
+  static async getFile({ id }: GoogleFileId): Promise<IGDriveFile> {
+    if (!Extension.token) await Extension.getToken();
+
+    return googleAuth.getFile(id, Extension.token);
+  }
+
+  static createFile({ json, name }: Record<string, string>): void {
+    if (!Extension.token) Extension.getToken();
+
+    googleAuth.createFile({ json, name }, Extension.token);
+  }
+
+  static deleteFile({ id }: GoogleFileId): void {
+    if (!Extension.token) Extension.getToken();
+
+    googleAuth.deleteFile(id, Extension.token);
+  }
+
   static async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -729,6 +771,24 @@ export default class Extension {
 
       case 'pri(window.open)':
         return Extension.windowOpen(request as AllowedPath);
+
+      case 'pri(google.get.files)':
+        return Extension.getFiles();
+
+      case 'pri(google.auth)':
+        return Extension.initAuth();
+
+      case 'pri(google.verify.token)':
+        return Extension.verifyToken(request as { tokenId: string });
+
+      case 'pri(google.get.file)':
+        return Extension.getFile(request as GoogleFileId);
+
+      case 'pri(google.create.file)':
+        return Extension.createFile(request as Record<string, string>);
+
+      case 'pri(google.delete.file)':
+        return Extension.deleteFile(request as GoogleFileId);
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

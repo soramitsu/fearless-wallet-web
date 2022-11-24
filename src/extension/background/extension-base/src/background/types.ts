@@ -3,6 +3,7 @@
 
 /* eslint-disable no-use-before-define */
 
+import { Url } from 'url';
 import { TypeRegistry } from '@polkadot/types';
 import { Subscription } from 'rxjs';
 import { ALLOWED_PATH } from '../defaults';
@@ -20,6 +21,7 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
+import { IGDriveFile, IGetFilesResponse } from '@/interfaces/google';
 
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;
@@ -145,6 +147,13 @@ export interface RequestSignatures {
   'pri(signing.isLocked)': [RequestSigningIsLocked, ResponseSigningIsLocked];
   'pri(signing.requests)': [RequestSigningSubscribe, boolean, SigningRequest[]];
   'pri(window.open)': [AllowedPath, boolean];
+  'pri(google.auth)': [null, void];
+  'pri(google.verify.token)': [{ tokenId: string }, string];
+  'pri(google.get.files)': [null, IGetFilesResponse];
+  'pri(google.get.file)': [GoogleFileId, IGDriveFile];
+  'pri(google.create.file)': [{ json: string; name: string }, void];
+  'pri(google.delete.file)': [GoogleFileId, void];
+
   // public/external requests, i.e. from a page
   'pub(accounts.list)': [RequestAccountList, InjectedAccount[]];
   'pub(accounts.subscribe)': [RequestAccountSubscribe, string, InjectedAccount[]];
@@ -556,4 +565,12 @@ export interface IState {
   windows: number[];
   cachedUnlocks: CachedUnlocks;
   connectedTabsUrl: string[];
+}
+
+export interface GoogleFileId {
+  id: string;
+}
+
+export interface RequestGoogleCreateFile {
+  data: Record<string, string>;
 }

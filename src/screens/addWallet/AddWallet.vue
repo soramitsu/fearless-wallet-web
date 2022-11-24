@@ -145,6 +145,8 @@ import { Components } from '@/router/routes';
 import { WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
+import { createGoogleFile } from '@/extension/messaging';
+import { isExtension } from '@/helpers/common';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
 
@@ -414,7 +416,7 @@ export default class AddWallet extends Vue {
   }
 
   @Watch('step')
-  changedCurrentStep(step: number) {
+  async changedCurrentStep(step: number) {
     if (step === 0) this.$router.back();
 
     if (step === 2) {
@@ -455,6 +457,10 @@ export default class AddWallet extends Vue {
       }
 
       const address = this.saveKeypair();
+      const pair = BaseApi.getPair(address);
+      const json = JSON.stringify(pair.toJson(this.walletPassword));
+
+      if (isExtension()) createGoogleFile(json, this.nickname);
 
       this.setSelectedWallet({ selectedWalletAddress: address || this.selectedWallet.address });
 

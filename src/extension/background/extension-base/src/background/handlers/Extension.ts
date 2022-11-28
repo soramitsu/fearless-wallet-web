@@ -5,6 +5,7 @@ import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { assert, isHex } from '@polkadot/util';
 import { keyExtractSuri, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
+import { CachedUnlocks } from '../types';
 
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
@@ -186,7 +187,8 @@ export default class Extension {
     return true;
   }
 
-  static async refreshAccountPasswordCache(pair: KeyringPair): Promise<number> {
+  static async refreshAccountPasswordCache(_pair: KeyringPair | string): Promise<number> {
+    const pair = typeof _pair === 'string' ? keyring.getPair(_pair) : _pair;
     const { address } = pair;
     const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
     const savedExpiry = cachedUnlocks[address] || 0;
@@ -205,6 +207,17 @@ export default class Extension {
     await chrome.storage.local.set({ cachedUnlocks });
 
     return remainingTime;
+  }
+
+  static async resetTimeouts(): Promise<boolean> {
+    const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
+    const newCachedUnlocks: CachedUnlocks = {};
+
+    Object.keys(cachedUnlocks).map((address) => (newCachedUnlocks[address] = 0));
+
+    await chrome.storage.local.set({ cachedUnlocks: newCachedUnlocks });
+
+    return true;
   }
 
   static accountsShow({ address, isShowing }: RequestAccountShow): boolean {
@@ -450,6 +463,16 @@ export default class Extension {
       id,
       ...result,
     });
+
+    return true;
+  }
+
+  static async saveTimeoutCache(address: string): Promise<boolean> {
+    const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
+
+    cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
+
+    await chrome.storage.local.set({ cachedUnlocks });
 
     return true;
   }
@@ -770,6 +793,15 @@ export default class Extension {
 
       case 'pri(window.open)':
         return Extension.windowOpen(request as AllowedPath);
+
+      case 'pri(signing.refreshPasswordTimeout)':
+        return await Extension.refreshAccountPasswordCache(request as string);
+
+      case 'pri(signing.resetTimeouts)':
+        return await Extension.resetTimeouts();
+
+      case 'pri(signing.saveTimeoutCache)':
+        return await Extension.saveTimeoutCache(request as string);
 
       case 'pri(google.get.files)':
         return Extension.getFiles();

@@ -1,7 +1,13 @@
 <template>
   <div class="wallet">
     <header class="wallet-header">
-      <Shimmer v-if="showShimmers" height="46px" width="150px" />
+      <template v-if="showShimmers">
+        <div class="balance-shimmers">
+          <Shimmer height="25px" width="150px" class="balance-shimmer" />
+
+          <Shimmer height="15px" width="100px" />
+        </div>
+      </template>
 
       <WalletBalance
         v-else
@@ -324,6 +330,15 @@ export default class Wallet extends Vue {
     font-size: 22px;
     line-height: 28px;
     max-width: 270px;
+  }
+
+  .balance-shimmers {
+    display: flex;
+    flex-direction: column;
+
+    .balance-shimmer {
+      margin-bottom: 5px;
+    }
   }
 }
 </style>

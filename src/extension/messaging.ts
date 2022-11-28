@@ -7,6 +7,7 @@ import { getId } from './background/extension-base/src/utils';
 import { PORT_EXTENSION } from './background/extension-base/src/defaults';
 import type { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
 import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types';
+
 import type {
   AccountJson,
   AllowedPath,
@@ -168,6 +169,18 @@ export async function approveSignSignature(id: string, signature: HexString): Pr
 
 export async function createAccountExternal(name: string, address: string, genesisHash: string): Promise<boolean> {
   return sendMessage('pri(accounts.create.external)', { address, genesisHash, name });
+}
+
+export async function refreshPasswordTimeout(address: string): Promise<number> {
+  return sendMessage('pri(signing.refreshPasswordTimeout)', address);
+}
+
+export async function resetTimeouts(): Promise<boolean> {
+  return sendMessage('pri(signing.resetTimeouts)');
+}
+
+export async function saveTimeoutCache(address: string): Promise<boolean> {
+  return sendMessage('pri(signing.saveTimeoutCache)', address);
 }
 
 export async function createAccountHardware(

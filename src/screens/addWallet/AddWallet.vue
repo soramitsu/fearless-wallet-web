@@ -660,10 +660,14 @@ export default class AddWallet extends Vue {
   }
 
   validateSuri() {
-    const { ethereum, substrate } = this.derivationPaths;
+    const {
+      ethereum: { value: ethereumDerivationPath },
+      substrate,
+    } = this.derivationPaths;
+    const ETHDP = (ethereumDerivationPath[0] === '/' ? ethereumDerivationPath.slice(1) : ethereumDerivationPath).trim();
     const isValidMnemonic = this.mnemonic ? BaseApi.isValidPhrase(this.mnemonic.trim()) : true;
     const isValidSubstratePhrase = substrate.value ? BaseApi.isValidSubstrateDerivationPath(substrate) : true;
-    const isValidEthereumDP = ethereum.value ? BaseApi.isValidEthereumDerivationPath(ethereum.value) : true;
+    const isValidEthereumDP = ethereumDerivationPath ? BaseApi.isValidEthereumDerivationPath(ETHDP) : true;
     const isValidSubstrateRawSeed = this.substrateRawSeed ? BaseApi.isHex(this.substrateRawSeed) : true;
     const isValidEthereumRawSeed = this.ethereumRawSeed ? BaseApi.isHex(this.ethereumRawSeed) : true;
 
@@ -684,15 +688,15 @@ export default class AddWallet extends Vue {
         )
       : true;
 
-    if (isValidMnemonic && isValidSubstrateRawSeed && validatedSubstrateJson.value && this.step === 1)
-      this.validateMobileDubs();
-    else if (!isValidSequenceMnemonic) this.warningValueName = 'mnemonicSequence';
+    if (!isValidSequenceMnemonic) this.warningValueName = 'mnemonicSequence';
     else if (!isValidMnemonic) this.warningValueName = 'mnemonic';
     else if (!isValidSubstratePhrase) this.warningValueName = 'substrateDP';
     else if (!isValidEthereumDP) this.warningValueName = 'ethereumDP';
     else if (!isValidSubstrateRawSeed || !isValidEthereumRawSeed) this.warningValueName = 'rawSeed';
     else if (!validatedSubstrateJson.value) this.warningValueName = validatedSubstrateJson.errorType;
     else if (!validatedEthereumJson.value) this.warningValueName = validatedEthereumJson.errorType;
+    else if (isValidMnemonic && isValidSubstrateRawSeed && validatedSubstrateJson.value && this.step === 1)
+      this.validateMobileDubs();
   }
 
   replaceAccount() {

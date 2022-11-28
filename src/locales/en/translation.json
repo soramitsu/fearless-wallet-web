@@ -277,6 +277,7 @@
     "no": "No",
     "search": "Search",
     "searchNetwork": "Search in networks",
+    "searchAmongAssets": "Search among assets",
     "searchCurrency": "Search in currencies",
     "invalidPassword": "Incorrect password",
     "password": "Password",
@@ -287,6 +288,7 @@
     "alreadyHaveAccount": "I already have an account",
     "sourceType": "Source Type",
     "allNetworks": "All networks",
-    "offlineStatus": "No Internet connection"
+    "offlineStatus": "No Internet connection",
+    "networkDisconnected": "Network disconnected"
   }
 }

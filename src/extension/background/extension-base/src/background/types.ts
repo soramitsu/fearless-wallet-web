@@ -146,6 +146,9 @@ export interface RequestSignatures {
   'pri(signing.isLocked)': [RequestSigningIsLocked, ResponseSigningIsLocked];
   'pri(signing.requests)': [RequestSigningSubscribe, boolean, SigningRequest[]];
   'pri(window.open)': [AllowedPath, boolean];
+  'pri(signing.refreshPasswordTimeout)': [string, number];
+  'pri(signing.resetTimeouts)': [null, boolean];
+  'pri(signing.saveTimeoutCache)': [string, boolean];
   'pri(google.auth)': [null, void];
   'pri(google.verify.token)': [{ tokenId: string }, string];
   'pri(google.get.files)': [null, IGetFilesResponse];

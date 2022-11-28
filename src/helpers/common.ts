@@ -16,7 +16,3 @@ export function getAddressMetaTyped(meta: KeyringPair$Meta) {
 export function getReplacedMetaTyped(meta: KeyringPair$Meta) {
   return meta as unknown as ReplacedMeta;
 }
-
-export function isExtension(): boolean {
-  return chrome.extension !== undefined;
-}

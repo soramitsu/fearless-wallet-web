@@ -35,6 +35,7 @@ async function createWindow(): Promise<void> {
     acceptFirstMouse: true,
     center: true,
     title: 'Loading...',
+    show: false, // Small trick to show a window ONLY after the page is ready
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
@@ -45,13 +46,10 @@ async function createWindow(): Promise<void> {
     },
   });
 
-  if (process.defaultApp) {
-    if (process.argv.length >= 2) {
-      app.setAsDefaultProtocolClient('fearless-wallet', process.execPath, [path.resolve(process.argv[1])]);
-    }
-  } else {
-    app.setAsDefaultProtocolClient('fearless-wallet');
-  }
+  win.once('ready-to-show', () => {
+    // Small trick to show a window ONLY after the page is ready
+    win.show();
+  });
 
   buildMenu(APP_NAME);
 

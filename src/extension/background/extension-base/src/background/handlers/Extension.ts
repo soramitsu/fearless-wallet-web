@@ -34,7 +34,6 @@ import type {
   RequestBatchRestore,
   RequestDeriveCreate,
   RequestDeriveValidate,
-  RequestGoogleCreateFile,
   RequestJsonRestore,
   RequestMetadataApprove,
   RequestMetadataReject,

@@ -33,7 +33,7 @@
         type="google"
         :text="$t('welcome.manageGoogle')"
         :border="false"
-        @click="signGoogle"
+        @click="manageGoogle"
       />
       <div class="additional-options">
         <Button
@@ -114,7 +114,7 @@ export default class Welcome extends Vue {
     return this.$route.params.access_token;
   }
 
-  signGoogle() {
+  manageGoogle() {
     if (isExtension()) initGoogleAuth();
     else googleAuth.authDesktop();
   }

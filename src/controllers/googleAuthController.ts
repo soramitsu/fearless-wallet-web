@@ -4,9 +4,9 @@ class GoogleAuth {
   http = Http.create();
   private readonly baseURL = 'https://www.googleapis.com/drive/v3';
   private readonly baseUploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-  private readonly extensionRedirectURL = 'https://mkikoojmkahfncdffoledbigmfhmllao.chromiumapp.org/welcome';
+  private readonly extensionRedirectURL = 'https://nhinehondigmgckngjomepcefcdplmgc.chromiumapp.org/welcome';
   private readonly baseAuthParams = {
-    client_id: '589053005136-cs5d7r49m1siruulv58nq4ihnkvi6ug1.apps.googleusercontent.com',
+    client_id: chrome.runtime.getManifest().oauth2!.client_id,
     response_type: 'token',
     state: 'pass-through value',
     access_type: 'online',

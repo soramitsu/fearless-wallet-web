@@ -3,7 +3,6 @@
 
 /* eslint-disable no-use-before-define */
 
-import { Url } from 'url';
 import { TypeRegistry } from '@polkadot/types';
 import { Subscription } from 'rxjs';
 import { ALLOWED_PATH } from '../defaults';

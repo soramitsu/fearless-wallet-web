@@ -84,7 +84,6 @@ import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
 import { initGoogleAuth } from '@/extension/messaging';
 import { Components } from '@/router/routes';
 import GoogleAuthPopup from '@/screens/google-auth/GoogleAuthPopup.vue';
-import { isExtension } from '@/helpers/common';
 import { googleAuth } from '@/controllers/googleAuthController';
 
 //TODO check if token valid
@@ -115,7 +114,7 @@ export default class Welcome extends Vue {
   }
 
   manageGoogle() {
-    if (isExtension()) initGoogleAuth();
+    if (BaseApi.isExtension()) initGoogleAuth();
     else googleAuth.authDesktop();
   }
 

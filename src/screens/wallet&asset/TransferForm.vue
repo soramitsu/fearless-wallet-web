@@ -88,7 +88,7 @@
 
     <SelectPopup
       v-if="showSelectPopup"
-      placeholder="common.searchNetwork"
+      :placeholder="placeholderSelectPopup"
       verticalPlacement="top"
       class="transfer-select-popup"
       :value="selectPopupValue"
@@ -198,6 +198,10 @@ export default class SendForm extends Vue {
   @Getter(AccountsGettersTypes.getOnlineStatus) onlineStatus!: string;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
+
+  get placeholderSelectPopup() {
+    return this.showSelectedAssetPopup ? 'common.searchAmongAssets' : 'common.searchNetwork';
+  }
 
   get showTransferableValue() {
     return this.currency?.price !== 0;
@@ -595,6 +599,7 @@ export default class SendForm extends Vue {
 <style lang="scss" scoped>
 .transfer-select-popup {
   z-index: 300;
+  text-transform: capitalize;
 }
 
 .transfer-form {

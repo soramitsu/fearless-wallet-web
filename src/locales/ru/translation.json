@@ -269,6 +269,7 @@
     "no": "Нет",
     "search": "Поиск",
     "searchNetwork": "Поиск по сетям",
+    "searchAmongAssets": "Поиск по ассетам",
     "searchCurrency": "Поиск по валютам",
     "invalidPassword": "Неверный пароль",
     "password": "Пароль",
@@ -279,6 +280,7 @@
     "alreadyHaveAccount": "У меня уже есть аккаунт",
     "sourceType": "Тип источника",
     "allNetworks": "Все сети",
-    "offlineStatus": "Отсутствует интернет"
+    "offlineStatus": "Отсутствует интернет",
+    "networkDisconnected": "Сеть отключена"
   }
 }

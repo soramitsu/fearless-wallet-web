@@ -45,6 +45,7 @@
 
     <SelectPopup
       v-if="showSelectNetworkPopup"
+      class="select-network-popup"
       placeholder="common.searchNetwork"
       verticalPlacement="top"
       horizontalPlacement="left"
@@ -191,6 +192,10 @@ export default class ReceiveForm extends Vue {
 </script>
 
 <style lang="scss" scoped>
+.select-network-popup {
+  text-transform: capitalize;
+}
+
 .receive-form {
   height: 100%;
   display: flex;

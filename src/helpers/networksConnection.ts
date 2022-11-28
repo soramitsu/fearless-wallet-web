@@ -1,4 +1,5 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
+import { TypeRegistry } from '@polkadot/types/create';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { Network, ApiOptions, AssetJson } from '@/interfaces';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
@@ -42,22 +43,21 @@ const disconnectHandler = (apiOptions: ApiOptions, network: Network, provider: W
     provider: undefined,
   });
 
-  if (tryAnotherNode) {
-    if (apiOptions.apiRetry === MAX_CONTINUE_RETRY) {
-      provider.disconnect();
+  if (apiOptions.apiRetry >= MAX_CONTINUE_RETRY) {
+    provider.disconnect();
 
+    if (tryAnotherNode) {
       apiOptions.apiRetry = 0;
       apiOptions.nodeIndex += 1;
       apiOptions.api = undefined;
       apiOptions.provider = undefined;
 
       if (navigator.onLine) connectToApi(network, apiOptions); // eslint-disable-line no-use-before-define
-    }
-  } else {
-    store.commit(MutationTypes.SET_NETWORK_STATUS, {
-      network: network.name,
-      status: 'disconnected',
-    });
+    } else
+      store.commit(MutationTypes.SET_NETWORK_STATUS, {
+        network: network.name,
+        status: 'disconnected',
+      });
   }
 };
 
@@ -80,10 +80,11 @@ function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): v
   const autoSelectNode = store.getters.getAutoSelectNodesValueByNetwork(networkName);
   const nodesList = autoSelectNode ? nodes : [activeNodes[networkName]];
   const node = _node ?? nodesList[apiOptions.nodeIndex];
+  const registry = new TypeRegistry();
 
   store.commit(MutationTypes.SET_NETWORK_STATUS, {
     network: networkName,
-    status: node === undefined ? 'disconnect' : 'pending',
+    status: node === undefined ? 'disconnected' : 'pending',
   });
 
   if (node === undefined) return;
@@ -96,7 +97,7 @@ function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): v
   });
 
   const provider = new WsProvider(node.url, AUTO_CONNECT_MS);
-  const api = new ApiPromise({ provider });
+  const api = new ApiPromise({ provider, registry });
 
   apiOptions.api = api;
   apiOptions.provider = provider;

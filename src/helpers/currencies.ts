@@ -153,7 +153,7 @@ function getCurrencyOptions(currencies: Currencies) {
 
 function getUtilityAsset(currencies: Currencies, _network: string): string {
   const currency = currencies.find(({ balances }) =>
-    balances.some(({ network, type }) => network === _network && type === 'native')
+    balances.some(({ network, type }) => (network === _network && type === 'native') || 'equilibrium')
   )!;
 
   return currency.displayName;

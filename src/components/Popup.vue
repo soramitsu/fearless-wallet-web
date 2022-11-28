@@ -3,7 +3,7 @@
     <Corners size="big" :topLeftCorner="showBorder" :bottomRightCorner="showBorder" :style="popupContainerStyle">
       <div :class="popupContainerClasses" :style="popupContainerStyles">
         <div v-if="showHeader" class="header">
-          <SearchInput v-if="showSearch" v-model="filterValue" :placeholder="placeholder" width="230px" />
+          <SearchInput v-if="showSearch" v-model="filterValue" :placeholder="placeholder" width="235px" />
 
           <template v-else>
             <div class="button-close"></div>
@@ -14,9 +14,9 @@
             </div>
           </template>
 
-          <s-button type="link" class="button-close" @click="close">
+          <SButton type="link" class="button-close" @click="close">
             <SIcon name="basic-close-24" />
-          </s-button>
+          </SButton>
         </div>
 
         <Scroll>

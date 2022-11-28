@@ -1,7 +1,7 @@
 <template>
   <Corners :isError="isError" :size="size" :class="wrapperClasses">
     <div :class="containerInputClasses" spellcheck="false">
-      <s-input
+      <SInput
         v-model="vModel"
         :class="inputClasses"
         :type="type"

@@ -7,17 +7,17 @@
         <div class="text row">{{ $t('asset.passwordTransaction') }}</div>
 
         <ValidatedInput
-          v-if="isLocked"
           v-model="password"
           placeholder="common.password"
           size="big"
-          class="input row"
+          class="password-input row"
           errorDescriptions="common.invalidPassword"
+          :readonly="!isLocked"
           :isError="isErrorPassword"
           :showPassword="true"
         />
 
-        <div class="remember__checkbox">
+        <div v-if="show15MinCheckbox" class="remember__checkbox">
           <Checkbox v-model="isSavePass" size="medium" :label="min15Label" />
         </div>
 
@@ -61,8 +61,7 @@ import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { Currencies, Currency, RequestSentInfo, TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
 import { beaconController } from '@/controllers/beaconController';
-import { isSignLocked } from '@/extension/messaging';
-import { isExtension } from '@/helpers/common';
+import { isSignLocked, refreshPasswordTimeout } from '@/extension/messaging';
 import Loader from '@/components/Loader.vue';
 import Popup from '@/components/Popup.vue';
 import Button from '@/components/Button.vue';
@@ -110,6 +109,10 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get show15MinCheckbox() {
+    return BaseApi.isExtension();
+  }
 
   get transactionAddress() {
     return this.currency?.getTransactionAddress(this.selectedWallet, this.firstNetwork) ?? '';
@@ -181,12 +184,22 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async mounted() {
-    if (!isExtension() && this.isSignMobile) return;
+    if (!BaseApi.isExtension() && this.isSignMobile) return;
 
     if (this.transactionId !== undefined) {
       const { isLocked } = await isSignLocked(this.transactionId);
       this.isLocked = isLocked;
       this.isSavePass = !this.isLocked;
+    } else {
+      const remainingTime = await refreshPasswordTimeout(this.transactionAddress);
+
+      this.isLocked = remainingTime <= 0;
+
+      if (this.isLocked) BaseApi.lockPair(this.transactionAddress);
+      else {
+        this.password = '00000';
+        this.isSavePass = true;
+      }
     }
   }
 
@@ -250,7 +263,7 @@ export default class ConfirmationPasswordPopup extends Vue {
         isSavePass: this.isSavePass,
         password: this.password,
       });
-    } else await this.currency?.send(this.transactionAddress);
+    } else await this.currency?.send(this.transactionAddress, false, this.isSavePass);
   }
 }
 </script>
@@ -267,8 +280,9 @@ export default class ConfirmationPasswordPopup extends Vue {
     padding: 0 25px;
     min-height: 175px;
 
-    .input {
+    .password-input {
       width: 100%;
+      margin-bottom: 15px;
     }
 
     .icon__lock-green {
@@ -313,6 +327,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     .remember__checkbox {
+      margin-top: -15px;
       width: 100%;
       display: flex;
       align-items: flex-start;

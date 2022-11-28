@@ -1,7 +1,7 @@
 <template>
   <Corners :isError="isError" :size="size">
     <div :class="containerInputClasses">
-      <s-float-input
+      <SFloatInput
         v-model="vModel"
         :class="inputClasses"
         :placeholder="$t(placeholder, placeholderLocaleProps)"

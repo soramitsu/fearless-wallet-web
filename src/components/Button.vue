@@ -8,7 +8,7 @@
       :class="buttonClasses"
       @click="$emit('click')"
     >
-      <Icon v-if="iconName" :icon="iconName" :className="iconClass" icon-color="pink" />
+      <Icon v-if="shouldBeWithIcon" :icon="prepIconName" :className="prepIconClass" icon-color="pink" />
 
       {{ tText }}
     </SButton>
@@ -31,7 +31,6 @@ export default class Button extends Vue {
   @Prop(String) width!: string;
   @Prop(String) iconName!: string;
   @Prop(String) iconColor!: string;
-  @Prop({ type: String, default: '' }) iconClasses?: string;
   @Prop({ default: 'primary' }) type!: Type;
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'medium' }) fontSize!: FontSize;
@@ -48,6 +47,23 @@ export default class Button extends Vue {
     if (tc) return this.$tc(this.text.text, this.text.localeProps.tc, this.text.localeProps);
 
     return this.$t(this.text.text, this.text.localeProps);
+  }
+
+  get shouldBeWithIcon() {
+    return this.iconName || this.type === 'google';
+  }
+
+  get prepIconClass() {
+    const result = this.iconClass;
+    if (this.type === 'google') result.push('icon--google');
+
+    return result;
+  }
+
+  get prepIconName() {
+    if (this.type === 'google') return 'google';
+
+    return this.iconName;
   }
 
   get containerButtonClasses() {
@@ -161,6 +177,11 @@ export default class Button extends Vue {
 
 .icon--pink {
   color: $pink-color;
+}
+
+.icon--google {
+  width: 37px;
+  height: 37px;
 }
 
 .secondary {

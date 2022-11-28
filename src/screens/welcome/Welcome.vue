@@ -30,34 +30,32 @@
         width="100%"
         size="big"
         fontSize="big"
-        type="secondary"
-        :text="$t('welcome.importWallet')"
-        :border="false"
-        @click="openAddWalletComponent('import')"
-      />
-
-      <Button
-        class="import-button"
-        width="100%"
-        size="big"
-        fontSize="big"
-        type="secondary"
-        :text="$t('welcome.connectMobile')"
-        :border="false"
-        @click="openAddWalletMobile"
-      />
-
-      <Button
-        class="import-button"
-        width="100%"
-        size="big"
-        fontSize="big"
         type="google"
-        :text="$t('welcome.signGoogle')"
+        :text="$t('welcome.manageGoogle')"
         :border="false"
         @click="signGoogle"
       />
+      <div class="additional-options">
+        <Button
+          class="import-button"
+          size="big"
+          fontSize="big"
+          type="secondary"
+          :text="$t('welcome.connectMobile')"
+          :border="false"
+          @click="openAddWalletMobile"
+        />
 
+        <Button
+          class="import-button"
+          size="big"
+          fontSize="big"
+          type="secondary"
+          :text="$t('welcome.importWallet')"
+          :border="false"
+          @click="openAddWalletComponent('import')"
+        />
+      </div>
       <div class="privacy-policy">
         {{ $t('welcome.agreeWith') }}
 
@@ -180,6 +178,11 @@ export default class Welcome extends Vue {
 
   .import-button {
     margin-top: 10px;
+  }
+
+  .additional-options {
+    display: flex;
+    gap: 10px;
   }
 }
 </style>

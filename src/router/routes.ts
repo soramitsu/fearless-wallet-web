@@ -19,6 +19,7 @@ const MobileConnect = () => import('@/screens/mobileConnect/MobileConnect.vue');
 const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue');
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
+const ManageGoogle = () => import('@/screens/addWallet/google/ManageGoogle.vue');
 
 export enum Components {
   Welcome = 'Welcome',
@@ -38,6 +39,7 @@ export enum Components {
   Authorize = 'Authorize',
   MetaRequest = 'MetaRequest',
   Transaction = 'Transaction',
+  ManageGoogle = 'ManageGoogle',
 }
 
 const haveAccounts = () => BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
@@ -47,9 +49,14 @@ const haveMetaRequests = () => store.getters.getMetaRequests.length;
 
 const routes: Array<RouteConfig> = [
   {
-    path: '/welcome/:access_token',
+    path: '/welcome',
     name: Components.Welcome,
     component: Welcome,
+  },
+  {
+    path: '/google/:access_token',
+    name: Components.ManageGoogle,
+    component: ManageGoogle,
   },
   {
     path: '/add-wallet/:type',

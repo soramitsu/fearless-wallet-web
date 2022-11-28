@@ -1,10 +1,11 @@
 import { Http } from './fetchController';
 import { CreateFileProp, IGDriveFile, IGetFilesResponse } from '@/interfaces/google';
+
 class GoogleAuth {
   http = Http.create();
   private readonly baseURL = 'https://www.googleapis.com/drive/v3';
   private readonly baseUploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-  private readonly extensionRedirectURL = 'https://nhinehondigmgckngjomepcefcdplmgc.chromiumapp.org/welcome';
+  private readonly extensionRedirectURL = 'https://mkikoojmkahfncdffoledbigmfhmllao.chromiumapp.org/welcome';
   private readonly baseAuthParams = {
     client_id: chrome.runtime.getManifest().oauth2!.client_id,
     response_type: 'token',
@@ -61,7 +62,7 @@ class GoogleAuth {
       const params: any = new Proxy(new URLSearchParams(url), {
         get: (searchParams, prop) => searchParams.get(prop as string),
       });
-      const urlToOpen = `${chrome.runtime.getURL('popup.html')}#/welcome/${params.access_token}`;
+      const urlToOpen = `${chrome.runtime.getURL('popup.html')}#/google/${params.access_token}`;
 
       chrome.tabs.create({ url: urlToOpen });
     });
@@ -93,12 +94,10 @@ class GoogleAuth {
     });
   }
 
-  public async verifyToken(tokenID: string) {
-    return this.http.get<string>(`https://oauth2.googleapis.com/tokeninfo`, {
-      params: {
-        id_token: tokenID,
-      },
-    });
+  public async verifyToken(token: string) {
+    console.log(token);
+
+    return this.http.get<string>(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`);
   }
 
   async createFile({ json, name }: CreateFileProp, token?: string) {

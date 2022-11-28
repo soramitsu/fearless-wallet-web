@@ -65,7 +65,6 @@ import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { keyring } from '@/controllers/keyringChrome';
 import { googleAuth } from '@/controllers/googleAuthController';
 import { IGDriveFile, IGetFilesResponse } from '@/interfaces/google';
-import { isExtension } from '@/helpers/common';
 
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
@@ -535,7 +534,7 @@ export default class Extension {
   }
 
   static windowOpen(path: AllowedPath): boolean {
-    const url = `${chrome.runtime.getURL('index.html')}#${path}`;
+    const url = `${chrome.runtime.getURL('popup.html')}#${path}`;
 
     if (!ALLOWED_PATH.includes(path)) {
       console.error('Not allowed to open the url:', url);
@@ -627,8 +626,8 @@ export default class Extension {
     googleAuth.authExtension();
   }
 
-  static async verifyToken({ tokenId }: { tokenId: string }): Promise<string> {
-    return googleAuth.verifyToken(tokenId);
+  static async verifyToken({ token }: { token: string }): Promise<string> {
+    return googleAuth.verifyToken(token);
   }
 
   static getToken(): void {
@@ -637,10 +636,8 @@ export default class Extension {
     });
   }
 
-  static async getFiles(): Promise<IGetFilesResponse> {
-    if (!Extension.token) Extension.getToken();
-
-    return googleAuth.getFiles(Extension.token);
+  static async getFiles({ token }: { token: string }): Promise<IGetFilesResponse> {
+    return googleAuth.getFiles(token);
   }
 
   static async getFile({ id }: GoogleFileId): Promise<IGDriveFile> {
@@ -804,13 +801,13 @@ export default class Extension {
         return await Extension.saveTimeoutCache(request as string);
 
       case 'pri(google.get.files)':
-        return Extension.getFiles();
+        return Extension.getFiles(request as { token: string });
 
       case 'pri(google.auth)':
         return Extension.initAuth();
 
       case 'pri(google.verify.token)':
-        return Extension.verifyToken(request as { tokenId: string });
+        return Extension.verifyToken(request as { token: string });
 
       case 'pri(google.get.file)':
         return Extension.getFile(request as GoogleFileId);

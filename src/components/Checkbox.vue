@@ -27,7 +27,12 @@ export default class Checkbox extends Vue {
   border-radius: 3px !important;
 
   .el-checkbox__input > .el-checkbox__inner {
+    border-color: transparent;
     border-radius: 5px;
+  }
+
+  .el-checkbox__input.is-focus > .el-checkbox__inner {
+    border-color: $purple-color;
   }
 
   .el-checkbox__inner:hover {
@@ -40,7 +45,7 @@ export default class Checkbox extends Vue {
   }
 
   .el-checkbox__inner {
-    background-color: transparent;
+    background-color: $default-background-color;
   }
 
   .el-checkbox__label {

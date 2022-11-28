@@ -15,4 +15,13 @@ interface CreateFileProp {
   json: string;
   name: string;
 }
-export { IGetFilesResponse, IGDriveFile, CreateFileProp };
+
+interface VerifyTokenResponse {
+  issued_to: string;
+  audience: string;
+  scope: string;
+  expires_in: number;
+  access_type: 'online' | 'offline';
+}
+
+export { IGetFilesResponse, VerifyTokenResponse, IGDriveFile, CreateFileProp };

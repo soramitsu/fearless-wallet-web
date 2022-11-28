@@ -3,7 +3,7 @@
     "createWallet": "Create a new wallet",
     "importWallet": "I already have a wallet",
     "connectMobile": "Connect Mobile Wallet",
-    "manageGoogle": "Google Drive manage",
+    "manageGoogle": "Manage your Wallets by Google",
     "deFiWallet": "The DeFi Wallet From The Future",
     "agreeWith": "By continuing you agree with",
     "and": "and"
@@ -254,12 +254,8 @@
   "auth": {
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
   },
-  "googleAuth": {
-    "import": "Import",
-    "create": "Create",
-    "walletCount": "Wallets: {count}",
-    "accessGranted": "Access to Google Drive is granted",
-    "accessDenied": "Access to Google Drive is denied"
+  "google": {
+    "selectToImport": "Select the wallet you want to import"
   },
   "common": {
     "developing": "Under Development",
@@ -268,6 +264,7 @@
     "accept": "Accept",
     "proceed": "Proceed",
     "continue": "Continue",
+    "confirm": "Confirm",
     "copied": "Сopied",
     "copiedValue": "Сopied {value}",
     "understood": "Understood",

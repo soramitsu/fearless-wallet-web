@@ -43,22 +43,21 @@ const disconnectHandler = (apiOptions: ApiOptions, network: Network, provider: W
     provider: undefined,
   });
 
-  if (tryAnotherNode) {
-    if (apiOptions.apiRetry === MAX_CONTINUE_RETRY) {
-      provider.disconnect();
+  if (apiOptions.apiRetry >= MAX_CONTINUE_RETRY) {
+    provider.disconnect();
 
+    if (tryAnotherNode) {
       apiOptions.apiRetry = 0;
       apiOptions.nodeIndex += 1;
       apiOptions.api = undefined;
       apiOptions.provider = undefined;
 
       if (navigator.onLine) connectToApi(network, apiOptions); // eslint-disable-line no-use-before-define
-    }
-  } else {
-    store.commit(MutationTypes.SET_NETWORK_STATUS, {
-      network: network.name,
-      status: 'disconnected',
-    });
+    } else
+      store.commit(MutationTypes.SET_NETWORK_STATUS, {
+        network: network.name,
+        status: 'disconnected',
+      });
   }
 };
 
@@ -85,7 +84,7 @@ function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): v
 
   store.commit(MutationTypes.SET_NETWORK_STATUS, {
     network: networkName,
-    status: node === undefined ? 'disconnect' : 'pending',
+    status: node === undefined ? 'disconnected' : 'pending',
   });
 
   if (node === undefined) return;

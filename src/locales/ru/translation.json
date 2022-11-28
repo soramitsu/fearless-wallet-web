@@ -280,6 +280,7 @@
     "alreadyHaveAccount": "У меня уже есть аккаунт",
     "sourceType": "Тип источника",
     "allNetworks": "Все сети",
-    "offlineStatus": "Отсутствует интернет"
+    "offlineStatus": "Отсутствует интернет",
+    "networkDisconnected": "Сеть отключена"
   }
 }

@@ -65,7 +65,7 @@ export default class EditNodeForm extends Vue {
   }
 
   get isErrorUrlNode() {
-    return this.url.length < 7 || !this.url.startsWith('wss://');
+    return this.url.length !== 0 && (this.url.length < 7 || !this.url.startsWith('wss://'));
   }
 
   get networkCharUp() {

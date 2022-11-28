@@ -200,7 +200,7 @@ export default class BaseApi {
     const { pair } = keyring.addUri(suri, password, meta, type);
     const name = meta.name as string;
 
-    createAccountSuri(name, password, suri, type); //for proper work of extension
+    createAccountSuri(name, password, suri, type); // for proper work of extension
 
     return pair;
   }
@@ -208,7 +208,7 @@ export default class BaseApi {
   public static addKeypairFromJson(json: KeyringPair$Json, password: string): KeyringPair {
     const pair = keyring.restoreAccount(json, password);
 
-    jsonRestore(json, password); //for proper work of extension
+    jsonRestore(json, password); // for proper work of extension
 
     return pair;
   }

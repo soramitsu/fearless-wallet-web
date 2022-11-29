@@ -1,7 +1,5 @@
 <template>
   <div class="welcome-page">
-    <GoogleAuthPopup v-if="showGoogleAuthPopup" :token="accessToken" @closePopup="closeGooglePopup" />
-
     <div>
       <div class="back-wallet-container">
         <CircleButton
@@ -83,17 +81,14 @@ import AboveForm from '@/components/AboveForm.vue';
 import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
 import { initGoogleAuth } from '@/extension/messaging';
 import { Components } from '@/router/routes';
-import GoogleAuthPopup from '@/screens/google-auth/GoogleAuthPopup.vue';
 import { googleAuth } from '@/controllers/googleAuthController';
 
-//TODO check if token valid
 @Component({
   components: {
     Logo,
     Icon,
     Button,
     CircleButton,
-    GoogleAuthPopup,
     MobileConnect,
     AboveForm,
   },

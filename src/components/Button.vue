@@ -42,11 +42,12 @@ export default class Button extends Vue {
   get tText() {
     if (typeof this.text === 'string') return this.$t(this.text);
 
-    const { tc } = this.text.localeProps;
+    const { text, localeProps } = this.text;
+    const { tc } = localeProps;
 
-    if (tc) return this.$tc(this.text.text, this.text.localeProps.tc, this.text.localeProps);
+    if (tc) return this.$tc(text, tc, localeProps);
 
-    return this.$t(this.text.text, this.text.localeProps);
+    return this.$t(text, localeProps);
   }
 
   get shouldBeWithIcon() {

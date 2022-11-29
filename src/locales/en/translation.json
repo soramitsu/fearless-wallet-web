@@ -79,6 +79,13 @@
         "text": "Current wallet already exists",
         "subtext": "By continuing you understand that mobile wallet would be replaced with current wallet and will be deleted"
       }
+    },
+    "google": {
+      "selectToImport": "Select the wallet you want to import",
+      "backupWallet": "Google Drive backup",
+      "showPassPhrase": "Show my passphrase",
+      "backupPassPhrase": "Backup the passphrase for your new wallet",
+      "noWallets": "No saved wallets were found on the Google Drive"
     }
   },
   "mobileConnector": {
@@ -253,9 +260,6 @@
   },
   "auth": {
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
-  },
-  "google": {
-    "selectToImport": "Select the wallet you want to import"
   },
   "common": {
     "developing": "Under Development",

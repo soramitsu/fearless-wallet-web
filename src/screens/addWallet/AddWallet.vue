@@ -45,6 +45,7 @@
         <CreateWallet
           v-if="showCreateForm"
           :step="step"
+          :shouldShowAtSteps="[2, 3]"
           :mnemonic="mnemonic"
           :selectedMnemonicElements="selectedMnemonicElements"
           @update:selectedMnemonicElements="updateSelectedMnemonicElements"

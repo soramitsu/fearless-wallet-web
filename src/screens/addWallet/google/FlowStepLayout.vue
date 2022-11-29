@@ -2,7 +2,7 @@
   <div class="add-wallet">
     <div class="header">
       <div class="icon-container">
-        <CircleButton v-if="true" backgroundColor="light-black" iconName="chevron-left" @click="back" />
+        <CircleButton v-if="notFinish" backgroundColor="light-black" iconName="chevron-left" @click="back" />
       </div>
 
       <div class="steps">
@@ -27,6 +27,7 @@
         <div class="content-header">{{ $t(header) }}</div>
       </div>
       <slot v-if="notFinish"></slot>
+
       <FinishForm v-else />
 
       <slot name="control"></slot>
@@ -39,7 +40,6 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import Checkbox from '@/components/Checkbox.vue';
 import Input from '@/components/Input.vue';
 import Scroll from '@/components/Scroll.vue';
-import SelectWalletItem from '@/screens/addWallet/google/SelectWalletItem.vue';
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
 import CircleButton from '@/components/CircleButton.vue';
 
@@ -49,13 +49,11 @@ import CircleButton from '@/components/CircleButton.vue';
     Input,
     FinishForm,
     CircleButton,
-    SelectWalletItem,
     Checkbox,
   },
 })
 export default class FlowStepLayout extends Vue {
   @Prop(Number) countSteps!: number;
-  @Prop(Array) flowSteps!: number[];
   @Prop(Number) step!: number;
   @Prop(String) header!: string;
   @Prop({ default: false }) showFullScreenIcon!: boolean;

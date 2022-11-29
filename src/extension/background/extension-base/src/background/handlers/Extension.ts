@@ -64,7 +64,7 @@ import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { keyring } from '@/controllers/keyringChrome';
 import { googleAuth } from '@/controllers/googleAuthController';
-import { IGDriveFile, IGetFilesResponse } from '@/interfaces/google';
+import { IGDriveFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
 
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
@@ -626,7 +626,7 @@ export default class Extension {
     googleAuth.authExtension();
   }
 
-  static async verifyToken({ token }: { token: string }): Promise<string> {
+  static async verifyToken({ token }: { token: string }): Promise<VerifyTokenResponse> {
     return googleAuth.verifyToken(token);
   }
 

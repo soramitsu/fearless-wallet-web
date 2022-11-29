@@ -1,5 +1,5 @@
 import { Http } from './fetchController';
-import { CreateFileProp, IGDriveFile, IGetFilesResponse } from '@/interfaces/google';
+import { CreateFileProp, IGDriveFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
 
 class GoogleAuth {
   http = Http.create();
@@ -97,7 +97,7 @@ class GoogleAuth {
   public async verifyToken(token: string) {
     console.log(token);
 
-    return this.http.get<string>(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`);
+    return this.http.get<VerifyTokenResponse>(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`);
   }
 
   async createFile({ json, name }: CreateFileProp, token?: string) {

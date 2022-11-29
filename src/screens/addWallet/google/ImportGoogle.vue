@@ -10,7 +10,7 @@
   >
     <div class="authorize-account-list">
       <transition name="fade">
-        <SelectWalletItem v-if="!isLoading && isFilesExists" :items="files" />
+        <GoogleWalletsList v-if="!isLoading && isFilesExists" :items="files" />
       </transition>
     </div>
 
@@ -25,7 +25,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import Checkbox from '@/components/Checkbox.vue';
 import Input from '@/components/Input.vue';
 import Scroll from '@/components/Scroll.vue';
-import SelectWalletItem from '@/screens/addWallet/google/SelectWalletItem.vue';
+import GoogleWalletsList from '@/screens/addWallet/google/GoogleWalletsList.vue';
 import { getGoogleFiles, verifyToken } from '@/extension/messaging';
 import { IGDriveFile } from '@/interfaces';
 import { Components } from '@/router/routes';
@@ -46,13 +46,13 @@ interface FilesState extends IGDriveFile {
     Input,
     Button,
     CircleButton,
-    SelectWalletItem,
+    GoogleWalletsList,
     Checkbox,
   },
 })
 export default class ManageGoogle extends Vue {
   files: FilesState[] = [];
-  isLoading = false;
+  isLoading = true;
   readonly countSteps = 2;
   step = 1;
 
@@ -98,26 +98,34 @@ export default class ManageGoogle extends Vue {
     BaseApi.windowOpen('/');
   }
 
-  async created() {
+  async mounted() {
     this.isLoading = true;
 
-    const { expires_in } = await verifyToken(this.getToken);
+    const data = await verifyToken(this.getToken).catch((error) => {
+      console.log(error);
+    });
+    console.log(data, 'data');
 
-    if (+expires_in <= 0) {
-      this.$router.push(Components.Welcome);
+    if (!data || +data.expires_in <= 0) {
+      this.$router.push({ name: Components.Welcome });
 
       return;
     }
 
     this.isTokenValid();
     const { files } = await getGoogleFiles(this.getToken);
-
-    this.files = [...files];
-    this.files.forEach((el) => {
-      el.active = false;
-      el.password = '';
+    this.$router.push({
+      name: Components.CreateGoogle,
+      params: {
+        access_token: this.$route.params.access_token,
+      },
     });
-    console.log(this.files);
+    // this.files = [...files];
+    // this.files.forEach((el) => {
+    //   el.active = false;
+    //   el.password = '';
+    // });
+
     this.isLoading = false;
   }
 }

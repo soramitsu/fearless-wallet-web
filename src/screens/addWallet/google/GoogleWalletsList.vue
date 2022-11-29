@@ -64,7 +64,7 @@ interface FilesState extends IGDriveFile {
     Checkbox,
   },
 })
-export default class SelectWalletItem extends Vue {
+export default class GoogleWalletsList extends Vue {
   @Prop(Array) items!: FilesState[];
 
   onConfirm() {
@@ -72,7 +72,6 @@ export default class SelectWalletItem extends Vue {
   }
 
   onSelect(value: boolean, index: number) {
-    console.log(value, index);
     this.items.splice(index, 1, { ...this.items[index], active: value });
   }
 

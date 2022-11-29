@@ -18,7 +18,8 @@ export class Http {
   }
 
   public async get<T>(url: string, config: AxiosRequestConfig = {}): Promise<T> {
-    const { data } = await this.http.get<T>(url, config);
+    const { data, status, statusText } = await this.http.get<T>(url, config);
+    console.log(status, statusText);
 
     return data;
   }

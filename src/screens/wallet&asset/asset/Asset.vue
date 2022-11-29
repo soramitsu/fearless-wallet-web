@@ -14,7 +14,7 @@
         :ref="selectNetworkButtonRef"
         :text="selectedNetwork"
         :isActive="showSelectNetworkPopup"
-        @click="toggleSelectNetworkPopupVisible"
+        @openNetworkPopup="toggleSelectNetworkPopupVisible"
       />
     </div>
 

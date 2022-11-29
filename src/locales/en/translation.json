@@ -183,6 +183,7 @@
     "sendFunds": "Send Funds",
     "walletAddress": "Wallet address",
     "receiveFunds": "Receive Funds",
+    "networkIssues": "Network Issues",
     "originNet": "ORIGINAL NETWORK",
     "network": "NETWORK",
     "amount": "AMOUNT",

@@ -182,6 +182,7 @@
     "sendTo": "КОМУ",
     "walletAddress": "Адрес кошелька",
     "receiveFunds": "Получить средства",
+    "networkIssues": "Проблемы с сетями",
     "originNet": "Основная сеть",
     "network": "СЕТЬ",
     "amount": "КОЛИЧЕСТВО",

@@ -21,7 +21,9 @@
         :ref="selectNetworkButtonRef"
         :text="selectedNetwork"
         :isActive="showSelectNetworkPopup"
-        @click="toggleSelectNetworkPopupVisible"
+        :showWarningIcon="showWarningIcon"
+        @openNetworkPopup="toggleSelectNetworkPopupVisible"
+        @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
       />
     </header>
 
@@ -75,6 +77,12 @@
       :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', false)"
     />
 
+    <NetworkManagement
+      v-if="showNetworkManagement"
+      :disconnectedNetworks="disconnectedNetworks"
+      :closeForm="toggleNetworkManagementVisible"
+    />
+
     <Tooltip text="wallet.walletBalance" target=".wallet-balance" placement="right" />
     <Tooltip text="common.networkManagement" target=".select-network-button" placement="bottom" />
   </div>
@@ -93,6 +101,7 @@ import NFTs from './NFTs.vue';
 import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
 import type { TMutation, TabWallet } from '@/interfaces/common';
 import type { SetSelectedNetworkProps } from '@/store/accounts/types';
+import type { Networks } from '@/interfaces';
 import Scroll from '@/components/Scroll.vue';
 import ContentForm from '@/components/ContentForm.vue';
 import { accountController } from '@/controllers/accountController';
@@ -106,6 +115,7 @@ import { addNumbers, formattedNumber, getChangeWalletBalance } from '@/helpers/n
 import Tooltip from '@/components/Tooltip.vue';
 import Shimmer from '@/components/Shimmer.vue';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
+import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 
 @Component({
   components: {
@@ -119,12 +129,14 @@ import WalletBalance from '@/screens/main/WalletBalance.vue';
     ReceiveForm,
     WalletBalance,
     ContentSettings,
+    NetworkManagement,
     SelectNetworkPopup,
     SelectNetworkButton,
   },
 })
 export default class Wallet extends Vue {
   readonly selectNetworkButtonRef = 'selectNetworkButton';
+  showNetworkManagement = false;
   showAssetsManagementForm = false;
   showSendForm = false;
   showReceiveForm = false;
@@ -138,13 +150,24 @@ export default class Wallet extends Vue {
   };
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
+  @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
+  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
+
+  get showWarningIcon() {
+    if (this.selectedNetwork !== 'all') return this.getNetworkStatus(this.selectedNetwork) === 'disconnected';
+
+    return this.disconnectedNetworks.length !== 0;
+  }
+
+  get disconnectedNetworks() {
+    return this.networks.filter(({ status }) => status === 'disconnected');
+  }
 
   get changeWalletBalance() {
     const { address, ethereumAddress } = this.selectedWallet;
@@ -221,7 +244,13 @@ export default class Wallet extends Vue {
 
   deactivated() {
     this.showAssetsManagementForm = false;
+    this.showNetworkManagement = false;
     this.filterValue = '';
+  }
+
+  toggleNetworkManagementVisible() {
+    this.showNetworkManagement = !this.showNetworkManagement;
+    this.showSelectNetworkPopup = false;
   }
 
   toggleAssetsManagementFormVisible(value = true) {

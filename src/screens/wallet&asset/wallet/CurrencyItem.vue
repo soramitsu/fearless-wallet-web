@@ -410,6 +410,11 @@ export default class CurrencyItem extends Vue {
   .warning-img {
     width: 28px;
     height: 28px;
+    opacity: 0.9;
+
+    &:hover {
+      opacity: 1;
+    }
   }
 
   .img-container {

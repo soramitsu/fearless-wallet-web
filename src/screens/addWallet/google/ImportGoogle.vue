@@ -3,7 +3,7 @@
     :countSteps="countSteps"
     :step="step"
     :flowSteps="[1, 2]"
-    :header="header"
+    :header="$t('google.selectToImport')"
     @back="back"
     :showFullScreenIcon="false"
     @openFullScreen="openFullScreen"
@@ -64,10 +64,6 @@ export default class ManageGoogle extends Vue {
     return this.files.length;
   }
 
-  get header() {
-    return 'google.selectToImport';
-  }
-
   back() {
     if (this.step === 1) {
       this.$router.push({ name: Components.Welcome });
@@ -101,10 +97,7 @@ export default class ManageGoogle extends Vue {
   async mounted() {
     this.isLoading = true;
 
-    const data = await verifyToken(this.getToken).catch((error) => {
-      console.log(error);
-    });
-    console.log(data, 'data');
+    const data = await verifyToken(this.getToken);
 
     if (!data || +data.expires_in <= 0) {
       this.$router.push({ name: Components.Welcome });
@@ -114,6 +107,7 @@ export default class ManageGoogle extends Vue {
 
     this.isTokenValid();
     const { files } = await getGoogleFiles(this.getToken);
+
     this.$router.push({
       name: Components.CreateGoogle,
       params: {

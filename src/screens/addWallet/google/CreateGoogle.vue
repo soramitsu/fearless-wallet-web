@@ -1,6 +1,5 @@
 <template>
   <FlowStepLayout :countSteps="countSteps" :step="step" :header="header" @back="back" :showFullScreenIcon="false">
-    <!-- <Transition> -->
     <div class="step__content">
       <NoWallets v-if="step === 1" />
 
@@ -29,38 +28,34 @@
       />
 
       <!-- <NotificationPopup /> -->
-      <!-- </Transition> -->
     </div>
     <template v-slot:control>
-      <div class="controls">
-        <Button
-          size="big"
-          fontSize="big"
-          width="100%"
-          :border="false"
-          :text="buttonText"
-          :type="buttonType"
-          @click="proceed"
-        />
+      <Button
+        size="big"
+        fontSize="big"
+        width="100%"
+        :border="false"
+        :text="buttonText"
+        :type="buttonType"
+        @click="proceed"
+      />
 
-        <div v-if="step === 4" class="divider__container">
-          <SDivider class="divider" />
-          <span>or</span>
-          <SDivider class="divider" />
-        </div>
-
-        <Button
-          v-if="step === 3 || step === 4"
-          class="button"
-          size="big"
-          fontSize="big"
-          width="100%"
-          :border="false"
-          text="Show my passphrase"
-          :type="subButtonType"
-          @click="subButtonProceed"
-        />
+      <div v-if="step === 4" class="divider__container">
+        <SDivider class="divider" />
+        <span>{{ $t('common.or') }}</span>
+        <SDivider class="divider" />
       </div>
+
+      <Button
+        v-if="step === 3 || step === 4"
+        size="big"
+        fontSize="big"
+        width="100%"
+        :border="false"
+        :text="subButtonText"
+        :type="subButtonType"
+        @click="subButtonProceed"
+      />
     </template>
   </FlowStepLayout>
 </template>
@@ -76,7 +71,6 @@ import Button from '@/components/Button.vue';
 import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
 import NotificationPopup from '@/components/NotificationPopup.vue';
-import Transition from '@/components/Transition.vue';
 import { Components } from '@/router/routes';
 import { MnemonicConfirmation } from '@/interfaces';
 
@@ -85,7 +79,6 @@ import { MnemonicConfirmation } from '@/interfaces';
     NoWallets,
     AdvancedButton,
     Icon,
-    Transition,
     NickNameForm,
     CreateWallet,
     PasswordForm,
@@ -125,10 +118,11 @@ export default class CreateGoogleWallet extends Vue {
   subButtonProceed() {
     //
   }
-  get subButtonText() {
-    if (this.step === 4) return 'Google Drive backup';
 
-    return 'Show my passphrase';
+  get subButtonText() {
+    if (this.step === 4) return this.$t('addWallet.google.backupWallet');
+
+    return this.$t('addWallet.google.showPassPhrase');
   }
   get subButtonType() {
     if (this.step === 4) return 'google';
@@ -138,6 +132,10 @@ export default class CreateGoogleWallet extends Vue {
 
   updateWalletPassword(password: string) {
     this.walletPassword = password;
+  }
+
+  setNickname(name: string) {
+    this.nickname = name;
   }
 
   updateSelectedMnemonicElements(value: MnemonicConfirmation[]) {
@@ -170,7 +168,7 @@ export default class CreateGoogleWallet extends Vue {
   get buttonText() {
     if (this.step === 4) return this.$t('addWallet.haveWrittenPassphrase');
 
-    if (this.step === 3) return 'Google Drive backup';
+    if (this.step === 3) return this.$t('addWallet.google.backupWallet');
 
     if (this.step === 2) return this.$t('common.confirm');
 
@@ -180,11 +178,6 @@ export default class CreateGoogleWallet extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.controls {
-  width: 100%;
-  margin-bottom: 15px;
-}
-
 .step__content {
   height: 100%;
   width: 100%;

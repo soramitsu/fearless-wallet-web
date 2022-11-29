@@ -24,13 +24,14 @@
 
     <div class="content-wrapper">
       <div class="content">
-        <div class="content-header">{{ $t(header) }}</div>
+        <div class="content-header">{{ header }}</div>
       </div>
       <slot v-if="notFinish"></slot>
 
       <FinishForm v-else />
-
-      <slot name="control"></slot>
+      <div class="controls">
+        <slot name="control"></slot>
+      </div>
     </div>
   </div>
 </template>
@@ -154,6 +155,11 @@ export default class FlowStepLayout extends Vue {
   .icon-container {
     width: 32px;
     height: 32px;
+  }
+
+  .controls {
+    width: 100%;
+    margin-bottom: 15px;
   }
 }
 </style>

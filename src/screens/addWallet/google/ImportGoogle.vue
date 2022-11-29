@@ -3,15 +3,19 @@
     :countSteps="countSteps"
     :step="step"
     :flowSteps="[1, 2]"
-    :header="$t('google.selectToImport')"
+    :header="header"
     @back="back"
     :showFullScreenIcon="false"
     @openFullScreen="openFullScreen"
   >
-    <div class="authorize-account-list">
-      <transition name="fade">
-        <GoogleWalletsList v-if="!isLoading && isFilesExists" :items="files" />
-      </transition>
+    <div class="step__content">
+      <NegativeMessage v-if="getToken === 'null'" :message="$t('addWallet.google.somethingWrong')" />
+
+      <GoogleWalletsList v-else-if="!isLoading && isFilesExists" :items="files" />
+
+      <div v-else-if="isLoading" class="loader__container">
+        <Loader />
+      </div>
     </div>
 
     <template v-slot:control>
@@ -33,6 +37,8 @@ import CircleButton from '@/components/CircleButton.vue';
 import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
 import Button from '@/components/Button.vue';
 import BaseApi from '@/util/BaseApi';
+import Loader from '@/components/Loader.vue';
+import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
 
 interface FilesState extends IGDriveFile {
   active?: boolean;
@@ -44,6 +50,8 @@ interface FilesState extends IGDriveFile {
     FlowStepLayout,
     Scroll,
     Input,
+    Loader,
+    NegativeMessage,
     Button,
     CircleButton,
     GoogleWalletsList,
@@ -64,6 +72,12 @@ export default class ManageGoogle extends Vue {
     return this.files.length;
   }
 
+  get header() {
+    if (this.getToken === 'null') return this.$t('addWallet.google.accessDenied');
+
+    return this.isLoading ? this.$t('addWallet.google.fetchInfo') : this.$t('addWallet.google.selectToImport');
+  }
+
   back() {
     if (this.step === 1) {
       this.$router.push({ name: Components.Welcome });
@@ -75,6 +89,12 @@ export default class ManageGoogle extends Vue {
   }
 
   proceed() {
+    if (this.getToken === 'null') {
+      this.$router.push({ name: Components.Welcome });
+
+      return;
+    }
+
     if (this.step === this.countSteps) {
       this.$router.push({ name: Components.Wallet });
 
@@ -95,7 +115,7 @@ export default class ManageGoogle extends Vue {
   }
 
   async mounted() {
-    this.isLoading = true;
+    if (this.getToken === 'null') return;
 
     const data = await verifyToken(this.getToken);
 
@@ -106,19 +126,24 @@ export default class ManageGoogle extends Vue {
     }
 
     this.isTokenValid();
-    const { files } = await getGoogleFiles(this.getToken);
+    const fileResponse = await getGoogleFiles(this.getToken);
 
-    this.$router.push({
-      name: Components.CreateGoogle,
-      params: {
-        access_token: this.$route.params.access_token,
-      },
+    if (fileResponse && fileResponse.files.length === 0) {
+      this.$router.push({
+        name: Components.CreateGoogle,
+        params: {
+          access_token: this.$route.params.access_token,
+        },
+      });
+
+      return;
+    }
+
+    this.files = [...fileResponse.files];
+    this.files.forEach((el) => {
+      el.active = false;
+      el.password = '';
     });
-    // this.files = [...files];
-    // this.files.forEach((el) => {
-    //   el.active = false;
-    //   el.password = '';
-    // });
 
     this.isLoading = false;
   }
@@ -126,15 +151,17 @@ export default class ManageGoogle extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.authorize-account-list {
+.step__content {
   height: 100%;
   width: 100%;
+  display: flex;
+  justify-content: center;
 }
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.5s;
-}
-.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
-  opacity: 0;
+
+.loader__container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
 }
 </style>

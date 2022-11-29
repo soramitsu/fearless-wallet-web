@@ -1,38 +1,40 @@
 <template>
-  <div class="auth-accounts">
+  <div class="wallets-container">
     <Scroll>
-      <ul class="account__list">
+      <ul class="wallets__list">
         <Corners v-for="(file, index) in items" size="big" v-bind:key="file.id">
-          <li class="auth-account">
+          <li class="wallets__item">
             <div class="json__info" @click.self="onSelect(!file.active, index)">
               <Checkbox
-                class="account__checkbox"
+                class="wallet__checkbox"
                 size="big"
                 :name="file.name"
                 :label="file.name"
                 v-model.lazy="file.active"
+                @change.self="(value) => onSelect(!file.active, index)"
               />
               <span @click.self="onSelect(!file.active, index)">{{ cutAddress(file.id) }}</span>
             </div>
+            <transition name="fade">
+              <div v-show="file.active" class="json__controls">
+                <ValidatedInput
+                  v-model="file.password"
+                  :placeholder="$t('addWallet.enterPassword')"
+                  typeText="uppercase"
+                  class="input__validate-pass"
+                  :errorDescriptions="$t('addWallet.warningMessages.jsonPassword.text')"
+                />
 
-            <div v-show="file.active" class="json__controls">
-              <ValidatedInput
-                v-model="file.password"
-                :placeholder="$t('addWallet.enterPassword')"
-                typeText="uppercase"
-                class="input__validate-pass"
-                errorDescriptions="addWallet.warningMessages.jsonPassword.text"
-              />
-
-              <BorderButton
-                class="button__confirm"
-                type="primary"
-                size="big"
-                :disabled="!file.password.length"
-                :text="$t('common.confirm')"
-                @click="onConfirm"
-              />
-            </div>
+                <BorderButton
+                  class="button__confirm"
+                  type="primary"
+                  size="big"
+                  :disabled="!file.password.length"
+                  :text="$t('common.confirm')"
+                  @click="onConfirm"
+                />
+              </div>
+            </transition>
           </li>
         </Corners>
       </ul>
@@ -43,12 +45,12 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import Checkbox from '@/components/Checkbox.vue';
+import Corners from '@/components/Corners.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 import BorderButton from '@/components/BorderButton.vue';
 import Scroll from '@/components/Scroll.vue';
 import { cut } from '@/helpers/history';
 import { IGDriveFile } from '@/interfaces';
-import Corners from '@/components/Corners.vue';
 
 interface FilesState extends IGDriveFile {
   active?: boolean;
@@ -81,68 +83,77 @@ export default class GoogleWalletsList extends Vue {
 }
 </script>
 
-<style lang="scss">
-.auth-accounts {
+<style lang="scss" scoped>
+.wallets-container {
   display: flex;
   flex-flow: column;
+  width: 100%;
   align-items: flex-start;
   overflow-y: hidden;
   min-height: 300px;
   max-height: 450px;
 }
 
-.auth-account {
-  display: flex;
-  flex-flow: column nowrap;
-  justify-content: space-between;
-  align-items: center;
-  border: 1px solid $default-background-color;
-  background-color: $default-background-color;
-  clip-path: $big-clip-path-left-top-and-right-bottom;
-  padding: 10px;
-  border-radius: 8px;
-  z-index: 1;
-}
-
-.account__checkbox {
-  flex-shrink: 1;
-}
-
-.checkbox {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.account__checkbox .el-checkbox__label {
-  font-size: 16px;
-}
-
-.account__list {
+.wallets__list {
   padding: 5px;
   width: 100%;
   height: 100%;
   display: flex;
   flex-flow: column nowrap;
   gap: 10px;
+
+  .wallets__item {
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid $default-background-color;
+    background-color: $default-background-color;
+    clip-path: $big-clip-path-left-top-and-right-bottom;
+    padding: 10px;
+    border-radius: 8px;
+    z-index: 1;
+
+    .json__info {
+      display: flex;
+      cursor: pointer;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+  }
 }
 
-.json__info {
-  display: flex;
-  cursor: pointer;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
+.wallet__checkbox {
+  flex-shrink: 1;
+
+  .account__checkbox .el-checkbox__label {
+    font-size: 16px;
+  }
+
+  .checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
 }
 
 .json__controls {
   width: 100%;
   display: flex;
   gap: 10px;
+
+  .button__confirm,
+  .input__validate-pass {
+    flex-grow: 1;
+  }
 }
 
-.button__confirm,
-.input__validate-pass {
-  flex-grow: 1;
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
+  opacity: 0;
 }
 </style>

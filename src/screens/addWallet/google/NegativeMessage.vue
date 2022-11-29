@@ -1,18 +1,18 @@
 <template>
   <div class="container">
     <Icon icon="sad-face" className="img" />
-    <span class="subtext">No saved wallets were found on the Google Drive</span>
+    <span class="subtext">{{ message }}</span>
   </div>
 </template>
 
 <script lang="ts">
-import { Vue, Component } from 'vue-property-decorator';
+import { Vue, Component, Prop } from 'vue-property-decorator';
 import Icon from '@/components/Icon.vue';
 
-@Component({
-  components: { Icon },
-})
-export default class NoWallets extends Vue {}
+@Component({ components: { Icon } })
+export default class NoWallets extends Vue {
+  @Prop(String) message!: string;
+}
 </script>
 
 <style lang="scss" scoped>

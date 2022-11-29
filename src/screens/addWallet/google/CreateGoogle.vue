@@ -1,7 +1,7 @@
 <template>
   <FlowStepLayout :countSteps="countSteps" :step="step" :header="header" @back="back" :showFullScreenIcon="false">
     <div class="step__content">
-      <NoWallets v-if="step === 1" />
+      <NegativeMessage v-if="step === 1" :message="$t('addWallet.google.noWallets')" />
 
       <NickNameForm v-if="step === 2" :nickname="nickname" @update:nickname="setNickname" />
 
@@ -62,7 +62,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import NoWallets from '@/screens/addWallet/google/NoWallets.vue';
+import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
 import Icon from '@/components/Icon.vue';
 import PasswordForm from '@/screens/addWallet/PasswordForm.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
@@ -76,7 +76,7 @@ import { MnemonicConfirmation } from '@/interfaces';
 
 @Component({
   components: {
-    NoWallets,
+    NegativeMessage,
     AdvancedButton,
     Icon,
     NickNameForm,
@@ -112,11 +112,12 @@ export default class CreateGoogleWallet extends Vue {
       return;
     }
 
+    if (this.step === 3) this.step += 2;
     this.step += 1;
   }
 
   subButtonProceed() {
-    //
+    this.step = 4;
   }
 
   get subButtonText() {

@@ -151,6 +151,7 @@ export default class CreateGoogleWallet extends Vue {
 
   popupHandler() {
     this.showNotificationPopup = false;
+    this.step += 1;
   }
 
   proceed() {
@@ -206,8 +207,8 @@ export default class CreateGoogleWallet extends Vue {
   }
 
   backupWallet(address: string) {
-    const json = JSON.stringify(BaseApi.getPair(address).toJson(this.walletPassword));
-
+    const json = BaseApi.getPair(address).toJson(this.walletPassword);
+    console.log(this.$route.params.access_token, 'token');
     createGoogleFile(json, { name: this.nickname, address }, this.$route.params.access_token);
   }
 

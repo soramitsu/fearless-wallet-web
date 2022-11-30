@@ -30,6 +30,7 @@ export default class Button extends Vue {
   @Prop({ default: '' }) text!: ComponentText;
   @Prop(String) width!: string;
   @Prop(String) iconName!: string;
+  @Prop(String) iconType!: string;
   @Prop(String) iconColor!: string;
   @Prop({ default: 'primary' }) type!: Type;
   @Prop({ default: 'medium' }) size!: Size;
@@ -56,6 +57,7 @@ export default class Button extends Vue {
 
   get prepIconClass() {
     const result = this.iconClass;
+
     if (this.type === 'google') result.push('icon--google');
 
     return result;
@@ -84,6 +86,8 @@ export default class Button extends Vue {
 
   get buttonClasses() {
     const classes = ['button', `button-font-size-${this.fontSize}`];
+
+    if (this.iconType === 'big') classes.push('button__icon');
 
     if (this.type === 'secondary') {
       return [
@@ -168,6 +172,17 @@ export default class Button extends Vue {
   background-color: #f8087b !important;
   border-color: #f8087b !important;
 }
+.button--content-wrap > .el-button span {
+  font-size: 14px;
+  font-weight: 400;
+  flex-flow: row nowrap;
+  white-space: break-spaces;
+}
+
+.button__icon {
+  font-size: 14px;
+  white-space: break-spaces;
+}
 
 .icon {
   margin-right: 8px;
@@ -218,10 +233,12 @@ export default class Button extends Vue {
   color: rgba(45, 41, 38, 1) !important;
   background-color: #c4c4c4 !important;
 }
+
 .google:disabled {
   color: rgba(45, 41, 38, 1) !important;
   background-color: #c4c4c4 !important;
 }
+
 .google-hover:not(:disabled):hover {
   background-color: rgba(255, 255, 255, 0.5) !important;
   border-color: transparent;

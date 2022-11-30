@@ -23,37 +23,47 @@
         @click="openAddWalletComponent('create')"
       />
 
-      <Button
-        class="import-button"
-        width="100%"
-        size="big"
-        fontSize="big"
-        type="google"
-        :text="$t('welcome.manageGoogle')"
-        :border="false"
-        @click="manageGoogle"
-      />
       <div class="additional-options">
         <Button
-          class="import-button"
+          class="import-button button--content-wrap"
           size="big"
+          width="169px"
           fontSize="big"
           type="secondary"
+          iconName="connectMobile"
+          iconType="big"
           :text="$t('welcome.connectMobile')"
           :border="false"
           @click="openAddWalletMobile"
         />
 
         <Button
-          class="import-button"
+          class="import-button button--content-wrap"
           size="big"
+          width="169px"
           fontSize="big"
           type="secondary"
+          iconName="googleManage"
+          iconType="big"
+          :text="$t('welcome.manageGoogle')"
+          :border="false"
+          @click="manageGoogle"
+        />
+
+        <Button
+          class="import-button button--content-wrap"
+          size="big"
+          fontSize="big"
+          width="169px"
+          type="secondary"
+          iconName="importButton"
+          iconType="big"
           :text="$t('welcome.importWallet')"
           :border="false"
           @click="openAddWalletComponent('import')"
         />
       </div>
+
       <div class="privacy-policy">
         {{ $t('welcome.agreeWith') }}
 
@@ -174,8 +184,24 @@ export default class Welcome extends Vue {
     margin-top: 10px;
   }
 
+  .button--icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .button--content-wrap {
+    flex-grow: 1;
+  }
+
+  .button__icon--big {
+    width: 32px;
+    height: 32px;
+  }
+
   .additional-options {
     display: flex;
+    font-size: 14px;
+    line-height: 18px;
     gap: 10px;
   }
 }

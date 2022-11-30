@@ -1,5 +1,5 @@
 import { Http } from './fetchController';
-import { CreateFileProp, IGDriveFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
+import { CreateFileProp, IGetFileMetaResponse, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
 
 class GoogleManage {
   http = Http.create();
@@ -40,13 +40,14 @@ class GoogleManage {
     return prepUrl.href;
   }
 
-  private prepareData(json: string, name: string) {
+  private prepareData(json: string, { name, address }: { name: string; address: string }) {
     return `--foo_bar_baz
     Content-Type: application/json; charset=UTF-8
 
     {
       name: "${name}.json",
       mimeType: "application/json",
+      "description":"${address}",
       parents: ["appDataFolder"]
     }
 
@@ -82,8 +83,17 @@ class GoogleManage {
     });
   }
 
-  public async getFile(id: string, token?: string | undefined) {
+  public async getFileContent(id: string, token?: string | undefined) {
     return this.http.get<string>(`${this.baseURL}/files/${id}?alt=media`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...this.config.headers,
+      },
+    });
+  }
+
+  public async getFileMeta(id: string, token?: string | undefined): Promise<IGetFileMetaResponse> {
+    return this.http.get<IGetFileMetaResponse>(`${this.baseURL}/files/${id}?fields=description`, {
       headers: {
         Authorization: `Bearer ${token}`,
         ...this.config.headers,
@@ -97,8 +107,8 @@ class GoogleManage {
     return this.http.get<VerifyTokenResponse>(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`);
   }
 
-  async createFile({ json, name }: CreateFileProp, token?: string) {
-    const data = this.prepareData(json, name);
+  async createFile({ json, options }: CreateFileProp, token?: string) {
+    const data = this.prepareData(json, options);
     const length = data.length;
 
     return this.http.post(this.baseUploadUrl, data, {

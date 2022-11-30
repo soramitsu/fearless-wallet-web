@@ -6,7 +6,6 @@ import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/
 import { assert, isHex } from '@polkadot/util';
 import { keyExtractSuri, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
 import { CachedUnlocks } from '../types';
-
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
@@ -64,7 +63,7 @@ import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { keyring } from '@/controllers/keyringChrome';
 import { googleManage } from '@/controllers/googleController';
-import { IGDriveFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
+import { ICreateFile, IGetFileMetaResponse, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
 
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
@@ -640,12 +639,16 @@ export default class Extension {
     return googleManage.getFiles(token);
   }
 
-  static async getFile({ id, token }: GoogleFileId): Promise<string> {
-    return googleManage.getFile(id, token);
+  static async getFileContent({ id, token }: GoogleFileId): Promise<string> {
+    return googleManage.getFileContent(id, token);
   }
 
-  static createFile({ json, name, token }: Record<string, string>): void {
-    googleManage.createFile({ json, name }, token);
+  static async createFile({ json, options, token }: ICreateFile): Promise<void> {
+    googleManage.createFile({ json, options }, token);
+  }
+
+  static async getFileMeta({ id, token }: GoogleFileId): Promise<IGetFileMetaResponse> {
+    return googleManage.getFileMeta(id, token);
   }
 
   static deleteFile({ id }: GoogleFileId): void {
@@ -806,10 +809,13 @@ export default class Extension {
         return Extension.verifyToken(request as { token: string });
 
       case 'pri(google.get.file)':
-        return Extension.getFile(request as GoogleFileId);
+        return Extension.getFileContent(request as GoogleFileId);
+
+      case 'pri(google.get.meta)':
+        return Extension.getFileMeta(request as GoogleFileId);
 
       case 'pri(google.create.file)':
-        return Extension.createFile(request as Record<string, string>);
+        return Extension.createFile(request as ICreateFile);
 
       case 'pri(google.delete.file)':
         return Extension.deleteFile(request as GoogleFileId);

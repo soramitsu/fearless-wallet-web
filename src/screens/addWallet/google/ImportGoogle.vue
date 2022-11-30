@@ -11,7 +11,7 @@
     <div class="step__content">
       <NegativeMessage v-if="getToken === 'null'" :message="$t('addWallet.google.somethingWrong')" />
 
-      <GoogleWalletsList v-else-if="!isLoading && isFilesExists" :items="files" @getFile="getFile" />
+      <GoogleWalletsList v-else-if="!isLoading && isFilesExists" :items="files" @getFileContent="getFileContent" />
 
       <div v-else-if="isLoading" class="loader__container">
         <Loader />
@@ -31,7 +31,7 @@ import Checkbox from '@/components/Checkbox.vue';
 import Input from '@/components/Input.vue';
 import Scroll from '@/components/Scroll.vue';
 import GoogleWalletsList from '@/screens/addWallet/google/GoogleWalletsList.vue';
-import { getGoogleFile, getGoogleFiles, verifyToken } from '@/extension/messaging';
+import { getGoogleFile, getGoogleFileMeta, getGoogleFiles, verifyToken } from '@/extension/messaging';
 import { IGDriveFile } from '@/interfaces';
 import { Components } from '@/router/routes';
 import CircleButton from '@/components/CircleButton.vue';
@@ -95,13 +95,16 @@ export default class ManageGoogle extends Vue {
 
     this.step -= 1;
   }
-
-  async getFile(id: string, index: number) {
+  async getFileContent(id: string, index: number) {
     const file = await getGoogleFile(id, this.getToken);
-    this.files[index].json = file;
-    console.log(this.files[index]);
 
-    return file;
+    this.setItemValue(index, { json: file });
+  }
+
+  async getFileMeta(id: string) {
+    const meta = await getGoogleFileMeta(id, this.getToken);
+
+    return meta;
   }
 
   proceed() {
@@ -118,6 +121,10 @@ export default class ManageGoogle extends Vue {
     }
 
     this.step += 1;
+  }
+
+  setItemValue(index: number, data: Record<string, unknown>) {
+    this.files.splice(index, 1, { ...this.files[index], ...data });
   }
 
   async isTokenValid() {
@@ -156,15 +163,20 @@ export default class ManageGoogle extends Vue {
     }
 
     this.files = [...fileResponse.files];
-    this.files.forEach((el) => {
+    this.files.forEach((el, index) => {
+      const [name] = el.name.split('.');
       el.active = false;
+      el.name = name;
       el.password = '';
     });
 
-    // this.files.forEach((el, index) => {
-    //   this.getFile(el.id, index);
-    // });
+    for (const [key, value] of this.files.entries()) {
+      const { description } = await this.getFileMeta(value.id);
 
+      this.setItemValue(key, { address: description });
+    }
+
+    console.log(this.files, 'files');
     this.isLoading = false;
   }
 

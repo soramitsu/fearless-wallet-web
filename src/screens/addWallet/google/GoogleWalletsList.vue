@@ -113,7 +113,7 @@ export default class GoogleWalletsList extends Vue {
       this.setItemValue(index, { isLoading: false, isComplete: false });
     }
 
-    if (this.items[index].json === undefined) this.$emit('getFile', this.items[index].id, index);
+    if (this.items[index].json === undefined) this.$emit('getFileContent', this.items[index].id, index);
 
     this.setItemValue(index, { active: value });
   }

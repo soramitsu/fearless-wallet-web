@@ -1,9 +1,9 @@
 {
   "welcome": {
     "createWallet": "Create a new wallet",
-    "importWallet": "I already have a wallet",
-    "connectMobile": "Connect Mobile Wallet",
-    "manageGoogle": "Manage your Wallets by Google",
+    "importWallet": "Import wallet",
+    "connectMobile": "Connect mobile",
+    "manageGoogle": "Google Drive manage",
     "deFiWallet": "The DeFi Wallet From The Future",
     "agreeWith": "By continuing you agree with",
     "and": "and"

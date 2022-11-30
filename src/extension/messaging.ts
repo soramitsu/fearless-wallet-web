@@ -33,7 +33,7 @@ import type { Chain } from '@polkadot/extension-chains/types';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import { IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
+import { IGetFileMetaResponse, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
 
 const metadataGets = new Map<string, Promise<MetadataDef | null>>();
 
@@ -364,8 +364,16 @@ export async function getGoogleFile(id: string, token: string): Promise<KeyringP
   return sendMessage('pri(google.get.file)', { id, token });
 }
 
-export async function createGoogleFile(json: string, name: string, token: string): Promise<void> {
-  return sendMessage('pri(google.create.file)', { json, name, token });
+export async function getGoogleFileMeta(id: string, token: string): Promise<IGetFileMetaResponse> {
+  return sendMessage('pri(google.get.meta)', { id, token });
+}
+
+export async function createGoogleFile(
+  json: string,
+  options: { name: string; address: string },
+  token: string
+): Promise<void> {
+  return sendMessage('pri(google.create.file)', { json, options, token });
 }
 
 export async function deleteGoogleFile(id: string, token: string): Promise<void> {

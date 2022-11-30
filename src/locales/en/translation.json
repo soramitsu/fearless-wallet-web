@@ -87,8 +87,10 @@
       "fetchInfo": "Fetching info from google",
       "backupWallet": "Google Drive backup",
       "showPassPhrase": "Show my passphrase",
+      "saved": "Saved",
+      "passphraseSaved": "The passphrase has been successfully saved on Google Drive",
       "backupPassPhrase": "Backup the passphrase for your new wallet",
-      "noWallets": "No saved wallets were found on the Google Drive"
+      "noWallets": "No saved wallets have been found on the Google Drive"
     }
   },
   "mobileConnector": {

@@ -457,10 +457,6 @@ export default class AddWallet extends Vue {
       }
 
       const address = this.saveKeypair();
-      const pair = BaseApi.getPair(address);
-      const json = JSON.stringify(pair.toJson(this.walletPassword));
-
-      if (BaseApi.isExtension()) createGoogleFile(json, this.nickname);
 
       this.setSelectedWallet({ selectedWalletAddress: address || this.selectedWallet.address });
 

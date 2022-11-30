@@ -152,8 +152,8 @@ export interface RequestSignatures {
   'pri(google.auth)': [null, void];
   'pri(google.verify.token)': [{ token: string }, VerifyTokenResponse];
   'pri(google.get.files)': [{ token: string }, IGetFilesResponse];
-  'pri(google.get.file)': [GoogleFileId, IGDriveFile];
-  'pri(google.create.file)': [{ json: string; name: string }, void];
+  'pri(google.get.file)': [GoogleFileId, KeyringPair$Json];
+  'pri(google.create.file)': [{ json: string; name: string; token: string }, void];
   'pri(google.delete.file)': [GoogleFileId, void];
 
   // public/external requests, i.e. from a page
@@ -571,6 +571,7 @@ export interface IState {
 
 export interface GoogleFileId {
   id: string;
+  token: string;
 }
 
 export interface RequestGoogleCreateFile {

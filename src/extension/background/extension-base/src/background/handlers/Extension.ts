@@ -63,7 +63,7 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { keyring } from '@/controllers/keyringChrome';
-import { googleAuth } from '@/controllers/googleAuthController';
+import { googleManage } from '@/controllers/googleController';
 import { IGDriveFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
 
 const SEED_DEFAULT_LENGTH = 12;
@@ -623,11 +623,11 @@ export default class Extension {
   }
 
   static initAuth(): void {
-    googleAuth.authExtension();
+    googleManage.authExtension();
   }
 
   static async verifyToken({ token }: { token: string }): Promise<VerifyTokenResponse> {
-    return googleAuth.verifyToken(token);
+    return googleManage.verifyToken(token);
   }
 
   static getToken(): void {
@@ -637,25 +637,21 @@ export default class Extension {
   }
 
   static async getFiles({ token }: { token: string }): Promise<IGetFilesResponse> {
-    return googleAuth.getFiles(token);
+    return googleManage.getFiles(token);
   }
 
-  static async getFile({ id }: GoogleFileId): Promise<IGDriveFile> {
-    if (!Extension.token) await Extension.getToken();
-
-    return googleAuth.getFile(id, Extension.token);
+  static async getFile({ id, token }: GoogleFileId): Promise<string> {
+    return googleManage.getFile(id, token);
   }
 
-  static createFile({ json, name }: Record<string, string>): void {
-    if (!Extension.token) Extension.getToken();
-
-    googleAuth.createFile({ json, name }, Extension.token);
+  static createFile({ json, name, token }: Record<string, string>): void {
+    googleManage.createFile({ json, name }, token);
   }
 
   static deleteFile({ id }: GoogleFileId): void {
     if (!Extension.token) Extension.getToken();
 
-    googleAuth.deleteFile(id, Extension.token);
+    googleManage.deleteFile(id, Extension.token);
   }
 
   static async handle<TMessageType extends MessageTypes>(

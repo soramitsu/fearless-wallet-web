@@ -81,7 +81,7 @@ import AboveForm from '@/components/AboveForm.vue';
 import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
 import { initGoogleAuth } from '@/extension/messaging';
 import { Components } from '@/router/routes';
-import { googleAuth } from '@/controllers/googleAuthController';
+import { googleManage } from '@/controllers/googleController';
 
 @Component({
   components: {
@@ -110,7 +110,7 @@ export default class Welcome extends Vue {
 
   manageGoogle() {
     if (BaseApi.isExtension()) initGoogleAuth();
-    else googleAuth.authDesktop();
+    else googleManage.authDesktop();
   }
 
   closeGooglePopup() {

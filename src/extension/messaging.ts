@@ -360,14 +360,14 @@ export async function getGoogleFiles(token: string): Promise<IGetFilesResponse> 
   return sendMessage('pri(google.get.files)', { token });
 }
 
-export async function getGoogleFile(id: string): Promise<GoogleFileId> {
-  return sendMessage('pri(google.get.file)', { id });
+export async function getGoogleFile(id: string, token: string): Promise<KeyringPair$Json> {
+  return sendMessage('pri(google.get.file)', { id, token });
 }
 
-export async function createGoogleFile(json: string, name: string): Promise<void> {
-  return sendMessage('pri(google.create.file)', { json, name });
+export async function createGoogleFile(json: string, name: string, token: string): Promise<void> {
+  return sendMessage('pri(google.create.file)', { json, name, token });
 }
 
-export async function deleteGoogleFile(id: string): Promise<void> {
-  return sendMessage('pri(google.delete.file)', { id });
+export async function deleteGoogleFile(id: string, token: string): Promise<void> {
+  return sendMessage('pri(google.delete.file)', { id, token });
 }

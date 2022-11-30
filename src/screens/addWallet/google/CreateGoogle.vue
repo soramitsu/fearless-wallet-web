@@ -3,14 +3,14 @@
     <div class="step__content">
       <NegativeMessage v-if="step === 1" :message="$t('addWallet.google.noWallets')" />
 
-      <NickNameForm v-if="step === 2" :nickname="nickname" @update:nickname="setNickname" />
+      <NickNameForm v-if="nickNameStep" :nickname="nickname" @update:nickname="setNickname" />
 
       <div class="icon__container" v-if="step === 3">
         <Icon className="icon--drive" icon="drive" />
       </div>
 
       <CreateWallet
-        v-if="step === 4 || step === 5"
+        v-if="createWalletStep"
         :step="step"
         :shouldShowAtSteps="[4, 5]"
         mnemonic="betray pyramid orange rude orchard stool cement churn path car raw profit"
@@ -20,14 +20,29 @@
         <AdvancedButton @click="toggleAdvancedFormVisible" />
       </CreateWallet>
 
+      <AdvancedForm
+        v-if="showAdvancedForm"
+        :derivationPaths="derivationPaths"
+        :showEthereumDP="showEthereumDP"
+        :showSubstrateDP="showSubstrateDP"
+        @updateDP="updateDP"
+        @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
+      />
+
       <PasswordForm
-        v-if="step === 6"
+        v-if="passwordStep"
         :showMockPassword="false"
         :showSamePasswordText="false"
         @updateWalletPassword="updateWalletPassword"
       />
 
-      <!-- <NotificationPopup /> -->
+      <NotificationPopup
+        v-if="showNotificationPopup"
+        :headers="notificationHeaders"
+        acceptButtonText="common.accept"
+        :showAcceptButton="true"
+        :handlerAccept="proceed"
+      />
     </div>
     <template v-slot:control>
       <Button
@@ -73,12 +88,15 @@ import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
 import NotificationPopup from '@/components/NotificationPopup.vue';
 import { Components } from '@/router/routes';
 import { MnemonicConfirmation } from '@/interfaces';
+import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
+import { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 
 @Component({
   components: {
     NegativeMessage,
     AdvancedButton,
     Icon,
+    AdvancedForm,
     NickNameForm,
     CreateWallet,
     PasswordForm,
@@ -94,6 +112,20 @@ export default class CreateGoogleWallet extends Vue {
   selectedMnemonicElements: MnemonicConfirmation[] = [];
   showAdvancedForm = false;
   walletPassword = '';
+  derivationPaths = INITIAL_DERIVATION_PATHS;
+  showNotificationPopup = false;
+  notificationHeaders = { text: 'addWallet.google.saved', subtext: 'addWallet.google.passphraseSaved' };
+  get nickNameStep() {
+    return this.step === 2;
+  }
+
+  get createWalletStep() {
+    return this.step === 4 || this.step === 5;
+  }
+
+  get passwordStep() {
+    return this.step === 6;
+  }
 
   back() {
     if (this.step === 1) {
@@ -112,12 +144,11 @@ export default class CreateGoogleWallet extends Vue {
       return;
     }
 
-    if (this.step === 3) this.step += 2;
-    this.step += 1;
+    this.step === 3 ? (this.step += 2) : (this.step += 1);
   }
 
   subButtonProceed() {
-    this.step = 4;
+    this.step === 4 ? (this.step += 2) : (this.step = 4);
   }
 
   get subButtonText() {

@@ -1,7 +1,7 @@
 import { Http } from './fetchController';
 import { CreateFileProp, IGDriveFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
 
-class GoogleAuth {
+class GoogleManage {
   http = Http.create();
   private readonly baseURL = 'https://www.googleapis.com/drive/v3';
   private readonly baseUploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
@@ -83,10 +83,7 @@ class GoogleAuth {
   }
 
   public async getFile(id: string, token?: string | undefined) {
-    return this.http.get<IGDriveFile>(`${this.baseURL}/files/${id}`, {
-      params: {
-        alt: 'media',
-      },
+    return this.http.get<string>(`${this.baseURL}/files/${id}?alt=media`, {
       headers: {
         Authorization: `Bearer ${token}`,
         ...this.config.headers,
@@ -126,4 +123,4 @@ class GoogleAuth {
   }
 }
 
-export const googleAuth = new GoogleAuth();
+export const googleManage = new GoogleManage();

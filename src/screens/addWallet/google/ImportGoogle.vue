@@ -11,7 +11,7 @@
     <div class="step__content">
       <NegativeMessage v-if="getToken === 'null'" :message="$t('addWallet.google.somethingWrong')" />
 
-      <GoogleWalletsList v-else-if="!isLoading && isFilesExists" :items="files" />
+      <GoogleWalletsList v-else-if="!isLoading && isFilesExists" :items="files" @getFile="getFile" />
 
       <div v-else-if="isLoading" class="loader__container">
         <Loader />
@@ -26,11 +26,12 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import Checkbox from '@/components/Checkbox.vue';
 import Input from '@/components/Input.vue';
 import Scroll from '@/components/Scroll.vue';
 import GoogleWalletsList from '@/screens/addWallet/google/GoogleWalletsList.vue';
-import { getGoogleFiles, verifyToken } from '@/extension/messaging';
+import { getGoogleFile, getGoogleFiles, verifyToken } from '@/extension/messaging';
 import { IGDriveFile } from '@/interfaces';
 import { Components } from '@/router/routes';
 import CircleButton from '@/components/CircleButton.vue';
@@ -43,6 +44,7 @@ import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
 interface FilesState extends IGDriveFile {
   active?: boolean;
   password?: string;
+  json?: KeyringPair$Json;
 }
 
 @Component({
@@ -79,6 +81,12 @@ export default class ManageGoogle extends Vue {
   }
 
   back() {
+    if (this.step === 6) {
+      this.step -= 2;
+
+      return;
+    }
+
     if (this.step === 1) {
       this.$router.push({ name: Components.Welcome });
 
@@ -86,6 +94,14 @@ export default class ManageGoogle extends Vue {
     }
 
     this.step -= 1;
+  }
+
+  async getFile(id: string, index: number) {
+    const file = await getGoogleFile(id, this.getToken);
+    this.files[index].json = file;
+    console.log(this.files[index]);
+
+    return file;
   }
 
   proceed() {
@@ -145,7 +161,19 @@ export default class ManageGoogle extends Vue {
       el.password = '';
     });
 
+    // this.files.forEach((el, index) => {
+    //   this.getFile(el.id, index);
+    // });
+
     this.isLoading = false;
+  }
+
+  saveKeypairFromJson(json: KeyringPair$Json, password: string) {
+    const substrateJSON = { ...json };
+
+    const { address } = BaseApi.addKeypairFromJson(substrateJSON, password);
+
+    return address;
   }
 }
 </script>

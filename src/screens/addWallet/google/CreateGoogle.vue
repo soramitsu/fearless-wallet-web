@@ -72,6 +72,7 @@
 </template>
 
 <script lang="ts">
+import { Getter, Action } from 'vuex-class';
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
 import Icon from '@/components/Icon.vue';
@@ -83,11 +84,14 @@ import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
 import NotificationPopup from '@/components/NotificationPopup.vue';
 import { Components } from '@/router/routes';
-import { MnemonicConfirmation } from '@/interfaces';
+import { MnemonicConfirmation, TAction } from '@/interfaces';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import BaseApi from '@/util/BaseApi';
 import { createGoogleFile } from '@/extension/messaging';
+import { SelectedWallet, SetSelectedWallet } from '@/store/accounts/types';
+import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({
   components: {
@@ -115,6 +119,8 @@ export default class CreateGoogleWallet extends Vue {
   showNotificationPopup = false;
   notificationHeaders = { text: 'addWallet.google.saved', subtext: 'addWallet.google.passphraseSaved' };
 
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
   mounted() {
     this.mnemonic = BaseApi.generateMnemonic();
   }
@@ -144,6 +150,8 @@ export default class CreateGoogleWallet extends Vue {
   watchStep() {
     if (this.step === 7) {
       const address = this.saveKeypairFromSeed();
+
+      this.setSelectedWallet({ selectedWalletAddress: address || this.selectedWallet.address });
 
       this.backupWallet(address);
     }
@@ -208,7 +216,7 @@ export default class CreateGoogleWallet extends Vue {
 
   backupWallet(address: string) {
     const json = BaseApi.getPair(address).toJson(this.walletPassword);
-    console.log(this.$route.params.access_token, 'token');
+
     createGoogleFile(JSON.stringify(json), { name: this.nickname, address }, this.$route.params.access_token);
   }
 

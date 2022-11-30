@@ -137,6 +137,7 @@ import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
 import AddEthereumAccountPopup from '@/screens/addWallet/AddEthereumAccountPopup.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 import BaseApi from '@/util/BaseApi';
 import NotificationPopup from '@/components/NotificationPopup.vue';
 import CircleButton from '@/components/CircleButton.vue';
@@ -145,8 +146,6 @@ import Button from '@/components/Button.vue';
 import { Components } from '@/router/routes';
 import { WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
-import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
-import { createGoogleFile } from '@/extension/messaging';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
 

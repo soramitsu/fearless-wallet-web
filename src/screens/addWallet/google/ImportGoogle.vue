@@ -65,20 +65,12 @@ export default class ManageGoogle extends Vue {
   isLoading = true;
   readonly countSteps = 2;
   step = 1;
+  token = '';
 
   async mounted() {
-    if (this.getToken === 'null') return;
-
-    const data = await verifyToken(this.getToken);
-
-    if (!data || +data.expires_in <= 0) {
-      this.$router.push({ name: Components.Welcome });
-
-      return;
-    }
-
-    this.isTokenValid();
-    const fileResponse = await getGoogleFiles(this.getToken);
+    await this.isTokenValid();
+    this.token = this.getToken;
+    const fileResponse = await getGoogleFiles(this.token);
 
     if (fileResponse && fileResponse.files.length === 0) {
       this.$router.push({
@@ -92,7 +84,7 @@ export default class ManageGoogle extends Vue {
     }
 
     this.files = [...fileResponse.files];
-    this.files.forEach((el, index) => {
+    this.files.forEach((el) => {
       const [name] = el.name.split('.');
       el.active = false;
       el.name = name;
@@ -128,12 +120,6 @@ export default class ManageGoogle extends Vue {
   }
 
   back() {
-    if (this.step === 6) {
-      this.step -= 2;
-
-      return;
-    }
-
     if (this.step === 1) {
       this.$router.push({ name: Components.Welcome });
 
@@ -144,13 +130,13 @@ export default class ManageGoogle extends Vue {
   }
 
   async getFileContent(id: string, index: number) {
-    const file = await getGoogleFile(id, this.getToken);
+    const file = await getGoogleFile(id, this.token);
 
     this.setItemValue(index, { json: file });
   }
 
   async getFileMeta(id: string) {
-    const meta = await getGoogleFileMeta(id, this.getToken);
+    const meta = await getGoogleFileMeta(id, this.token);
 
     return meta;
   }
@@ -176,9 +162,15 @@ export default class ManageGoogle extends Vue {
   }
 
   async isTokenValid() {
-    const info = await verifyToken(this.getToken);
+    if (this.getToken === 'null') return;
 
-    return info;
+    const data = await verifyToken(this.getToken);
+
+    if (!data || +data.expires_in <= 0) {
+      this.$router.push({ name: Components.Welcome });
+
+      return;
+    }
   }
 
   openFullScreen() {

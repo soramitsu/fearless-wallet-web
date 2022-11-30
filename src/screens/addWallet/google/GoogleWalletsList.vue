@@ -48,6 +48,7 @@
 </template>
 
 <script lang="ts">
+import { Getter, Action } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import Checkbox from '@/components/Checkbox.vue';
@@ -56,8 +57,11 @@ import ValidatedInput from '@/components/ValidatedInput.vue';
 import BorderButton from '@/components/BorderButton.vue';
 import Scroll from '@/components/Scroll.vue';
 import { cut } from '@/helpers/history';
-import { IGDriveFile } from '@/interfaces';
+import { IGDriveFile, TAction } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
+import { SelectedWallet, SetSelectedWallet } from '@/store/accounts/types';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 
 interface FilesState extends IGDriveFile {
   active?: boolean;
@@ -79,6 +83,8 @@ interface FilesState extends IGDriveFile {
 })
 export default class GoogleWalletsList extends Vue {
   @Prop(Array) items!: FilesState[];
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
 
   setItemValue(index: number, data: Record<string, string | boolean>) {
     this.items.splice(index, 1, { ...this.items[index], ...data });
@@ -99,8 +105,9 @@ export default class GoogleWalletsList extends Vue {
       return false;
     }
 
-    BaseApi.addKeypairFromJson(json, password);
+    const pair = BaseApi.addKeypairFromJson(json, password);
     this.setItemValue(index, { isComplete: true });
+    this.setSelectedWallet({ selectedWalletAddress: pair.address || this.selectedWallet.address });
 
     return true;
   }

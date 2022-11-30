@@ -13,7 +13,7 @@
         v-if="createWalletStep"
         :step="step"
         :shouldShowAtSteps="[4, 5]"
-        mnemonic="betray pyramid orange rude orchard stool cement churn path car raw profit"
+        :mnemonic="mnemonic"
         :selectedMnemonicElements="selectedMnemonicElements"
         @update:selectedMnemonicElements="updateSelectedMnemonicElements"
       >
@@ -55,14 +55,8 @@
         @click="proceed"
       />
 
-      <div v-if="step === 4" class="divider__container">
-        <SDivider class="divider" />
-        <span>{{ $t('common.or') }}</span>
-        <SDivider class="divider" />
-      </div>
-
       <Button
-        v-if="step === 3 || step === 4"
+        v-if="step === 3"
         size="big"
         fontSize="big"
         width="100%"
@@ -90,6 +84,7 @@ import { Components } from '@/router/routes';
 import { MnemonicConfirmation } from '@/interfaces';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
+import BaseApi from '@/util/BaseApi';
 
 @Component({
   components: {
@@ -109,12 +104,18 @@ export default class CreateGoogleWallet extends Vue {
   readonly countSteps = 7;
   step = 1;
   nickname = '';
+  mnemonic = '';
   selectedMnemonicElements: MnemonicConfirmation[] = [];
   showAdvancedForm = false;
   walletPassword = '';
   derivationPaths = INITIAL_DERIVATION_PATHS;
   showNotificationPopup = false;
   notificationHeaders = { text: 'addWallet.google.saved', subtext: 'addWallet.google.passphraseSaved' };
+
+  mounted() {
+    this.mnemonic = BaseApi.generateMnemonic();
+  }
+
   get nickNameStep() {
     return this.step === 2;
   }
@@ -156,6 +157,7 @@ export default class CreateGoogleWallet extends Vue {
 
     return this.$t('addWallet.google.showPassPhrase');
   }
+
   get subButtonType() {
     if (this.step === 4) return 'google';
 

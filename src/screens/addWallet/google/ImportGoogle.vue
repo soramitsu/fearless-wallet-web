@@ -19,7 +19,7 @@
     </div>
 
     <template v-slot:control>
-      <Button size="big" fontSize="big" width="100%" :text="$t('common.confirm')" @click="proceed" />
+      <Button v--if="!isLoading" size="big" fontSize="big" width="100%" :text="$t('common.confirm')" @click="proceed" />
     </template>
   </FlowStepLayout>
 </template>

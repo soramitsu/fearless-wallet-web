@@ -2,7 +2,7 @@
   <FlowStepLayout
     :countSteps="countSteps"
     :step="step"
-    :flowSteps="[1, 2]"
+    :flowSteps="getSteps"
     :header="header"
     @back="back"
     :showFullScreenIcon="false"
@@ -107,6 +107,10 @@ export default class ManageGoogle extends Vue {
 
     console.log(this.files, 'files');
     this.isLoading = false;
+  }
+
+  get getSteps() {
+    return this.isLoading ? [] : [1, 2];
   }
 
   get getToken() {

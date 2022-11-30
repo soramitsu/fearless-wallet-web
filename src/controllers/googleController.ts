@@ -42,20 +42,20 @@ class GoogleManage {
 
   private prepareData(json: string, { name, address }: { name: string; address: string }) {
     return `--foo_bar_baz
-    Content-Type: application/json; charset=UTF-8
+Content-Type: application/json; charset=UTF-8
 
-    {
-      name: "${name}.json",
-      mimeType: "application/json",
-      "description":"${address}",
-      parents: ["appDataFolder"]
-    }
+{
+name: "${name}.json",
+mimeType: "application/json",
+deskription:
+parents: ["appDataFolder"]
+}
 
-    --foo_bar_baz
-    Content-Type: application/json
+--foo_bar_baz
+Content-Type: application/json
 
-    ${json}
-    --foo_bar_baz--`;
+${json}
+--foo_bar_baz--`;
   }
 
   public authExtension() {

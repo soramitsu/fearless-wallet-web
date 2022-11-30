@@ -41,7 +41,8 @@
         :headers="notificationHeaders"
         acceptButtonText="common.accept"
         :showAcceptButton="true"
-        :handlerAccept="proceed"
+        :handlerAccept="popupHandler"
+        :handlerClose="popupHandler"
       />
     </div>
     <template v-slot:control>
@@ -50,6 +51,7 @@
         fontSize="big"
         width="100%"
         :border="false"
+        :disabled="disabledProceed"
         :text="buttonText"
         :type="buttonType"
         @click="proceed"
@@ -70,7 +72,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
 import Icon from '@/components/Icon.vue';
 import PasswordForm from '@/screens/addWallet/PasswordForm.vue';
@@ -85,6 +87,7 @@ import { MnemonicConfirmation } from '@/interfaces';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import BaseApi from '@/util/BaseApi';
+import { createGoogleFile } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -137,6 +140,18 @@ export default class CreateGoogleWallet extends Vue {
 
     this.step -= 1;
   }
+  @Watch('step')
+  watchStep() {
+    if (this.step === 7) {
+      const address = this.saveKeypairFromSeed();
+
+      this.backupWallet(address);
+    }
+  }
+
+  popupHandler() {
+    this.showNotificationPopup = false;
+  }
 
   proceed() {
     if (this.step === this.countSteps) {
@@ -145,7 +160,13 @@ export default class CreateGoogleWallet extends Vue {
       return;
     }
 
-    this.step === 3 ? (this.step += 2) : (this.step += 1);
+    if (this.step === 6) {
+      this.showNotificationPopup = true;
+
+      return;
+    }
+
+    this.step === 3 ? (this.step += 3) : (this.step += 1);
   }
 
   subButtonProceed() {
@@ -184,6 +205,12 @@ export default class CreateGoogleWallet extends Vue {
     this.showAdvancedForm = value;
   }
 
+  backupWallet(address: string) {
+    const json = JSON.stringify(BaseApi.getPair(address).toJson(this.walletPassword));
+
+    createGoogleFile(json, { name: this.nickname, address }, this.$route.params.access_token);
+  }
+
   get header() {
     if (this.step === 1) return '';
     if (this.step === 3) return 'Backup the passphrase for your new wallet';
@@ -207,6 +234,36 @@ export default class CreateGoogleWallet extends Vue {
     if (this.step === 2) return this.$t('common.confirm');
 
     return this.$t('addWallet.createWallet');
+  }
+
+  get disabledProceed() {
+    // mutual logic step(password)
+    if (this.nickNameStep) return !this.nickname;
+
+    if (this.passwordStep) return !this.walletPassword;
+
+    return false;
+  }
+
+  get suriSubstrate() {
+    const {
+      substrate: { value: substrateDerivationPath },
+    } = this.derivationPaths;
+
+    return `${this.mnemonic}${substrateDerivationPath.trim()}`;
+  }
+
+  saveKeypairFromSeed() {
+    const meta: Record<string, unknown> = { name: this.nickname.trim(), ethereumAddress: '' };
+    const {
+      substrate: { keypairType },
+    } = this.derivationPaths;
+
+    meta.ethereumAddress = '';
+
+    const { address } = BaseApi.addKeypair(this.suriSubstrate, this.walletPassword, meta, keypairType);
+
+    return address;
   }
 }
 </script>
@@ -232,6 +289,7 @@ export default class CreateGoogleWallet extends Vue {
     place-content: center;
   }
 }
+
 .divider__container {
   display: flex;
   flex-flow: row nowrap;

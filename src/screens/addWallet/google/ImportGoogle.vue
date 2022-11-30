@@ -19,7 +19,7 @@
     </div>
 
     <template v-slot:control>
-      <Button v--if="!isLoading" size="big" fontSize="big" width="100%" :text="$t('common.confirm')" @click="proceed" />
+      <Button v-if="!isLoading" size="big" fontSize="big" width="100%" :text="$t('common.confirm')" @click="proceed" />
     </template>
   </FlowStepLayout>
 </template>
@@ -66,77 +66,6 @@ export default class ManageGoogle extends Vue {
   readonly countSteps = 2;
   step = 1;
 
-  get getToken() {
-    return this.$route.params.access_token;
-  }
-
-  get isFilesExists() {
-    return this.files.length;
-  }
-
-  get header() {
-    if (this.getToken === 'null') return this.$t('addWallet.google.accessDenied');
-
-    return this.isLoading ? this.$t('addWallet.google.fetchInfo') : this.$t('addWallet.google.selectToImport');
-  }
-
-  back() {
-    if (this.step === 6) {
-      this.step -= 2;
-
-      return;
-    }
-
-    if (this.step === 1) {
-      this.$router.push({ name: Components.Welcome });
-
-      return;
-    }
-
-    this.step -= 1;
-  }
-  async getFileContent(id: string, index: number) {
-    const file = await getGoogleFile(id, this.getToken);
-
-    this.setItemValue(index, { json: file });
-  }
-
-  async getFileMeta(id: string) {
-    const meta = await getGoogleFileMeta(id, this.getToken);
-
-    return meta;
-  }
-
-  proceed() {
-    if (this.getToken === 'null') {
-      this.$router.push({ name: Components.Welcome });
-
-      return;
-    }
-
-    if (this.step === this.countSteps) {
-      this.$router.push({ name: Components.Wallet });
-
-      return;
-    }
-
-    this.step += 1;
-  }
-
-  setItemValue(index: number, data: Record<string, unknown>) {
-    this.files.splice(index, 1, { ...this.files[index], ...data });
-  }
-
-  async isTokenValid() {
-    const info = await verifyToken(this.getToken);
-
-    return info;
-  }
-
-  openFullScreen() {
-    BaseApi.windowOpen('/');
-  }
-
   async mounted() {
     if (this.getToken === 'null') return;
 
@@ -178,6 +107,78 @@ export default class ManageGoogle extends Vue {
 
     console.log(this.files, 'files');
     this.isLoading = false;
+  }
+
+  get getToken() {
+    return this.$route.params.access_token;
+  }
+
+  get isFilesExists() {
+    return this.files.length;
+  }
+
+  get header() {
+    if (this.getToken === 'null') return this.$t('addWallet.google.accessDenied');
+
+    return this.isLoading ? this.$t('addWallet.google.fetchInfo') : this.$t('addWallet.google.selectToImport');
+  }
+
+  back() {
+    if (this.step === 6) {
+      this.step -= 2;
+
+      return;
+    }
+
+    if (this.step === 1) {
+      this.$router.push({ name: Components.Welcome });
+
+      return;
+    }
+
+    this.step -= 1;
+  }
+
+  async getFileContent(id: string, index: number) {
+    const file = await getGoogleFile(id, this.getToken);
+
+    this.setItemValue(index, { json: file });
+  }
+
+  async getFileMeta(id: string) {
+    const meta = await getGoogleFileMeta(id, this.getToken);
+
+    return meta;
+  }
+
+  proceed() {
+    if (this.getToken === 'null') {
+      this.$router.push({ name: Components.Welcome });
+
+      return;
+    }
+
+    if (this.step === this.countSteps) {
+      this.$router.push({ name: Components.Wallet });
+
+      return;
+    }
+
+    this.step += 1;
+  }
+
+  setItemValue(index: number, data: Record<string, unknown>) {
+    this.files.splice(index, 1, { ...this.files[index], ...data });
+  }
+
+  async isTokenValid() {
+    const info = await verifyToken(this.getToken);
+
+    return info;
+  }
+
+  openFullScreen() {
+    BaseApi.windowOpen('/');
   }
 
   saveKeypairFromJson(json: KeyringPair$Json, password: string) {

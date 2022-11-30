@@ -169,6 +169,7 @@
       "reward": "Награды",
       "extrinsic": "Экстринсики"
     },
+    "balanceDetails": "Детализация баланса",
     "buyHeader": "Купить {asset} через",
     "buy": "Купить",
     "teleportButtonText": "Телепорт",

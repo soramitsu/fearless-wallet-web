@@ -107,8 +107,7 @@ import { Identicon } from '@polkadot/vue-identicon';
 import { Getter } from 'vuex-class';
 import type { HistoryNode } from '@/interfaces/history';
 import type { SelectedWallet } from '@/store/accounts/types';
-import AboveForm from '@/components/AboveForm.vue';
-import Button from '@/components/Button.vue';
+
 import {
   cut,
   getType,
@@ -123,13 +122,11 @@ import Tooltip from '@/components/Tooltip.vue';
 
 @Component({
   components: {
-    Button,
     Tooltip,
-    AboveForm,
     Identicon,
   },
 })
-export default class SelectNetworkButton extends Vue {
+export default class HistoryDetailsForm extends Vue {
   @Prop(String) assetId!: string;
   @Prop(Object) historyNode!: HistoryNode;
   @Prop(Function) handlerClose!: VoidFunction;

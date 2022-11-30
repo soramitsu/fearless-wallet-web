@@ -169,6 +169,7 @@
       "reward": "Reward",
       "extrinsic": "Extrinsic"
     },
+    "balanceDetails": "Balance details",
     "buyHeader": "Buy {asset} with",
     "buy": "Buy",
     "teleportButtonText": "Teleport",

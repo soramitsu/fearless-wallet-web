@@ -59,37 +59,6 @@ export default class ManageGoogle extends Vue {
   step = 1;
   token = '';
 
-  async mounted() {
-    await this.isTokenValid();
-    this.token = this.getToken;
-    const fileResponse = await getGoogleFiles(this.token);
-
-    if (fileResponse && fileResponse.files.length === 0) {
-      this.$router.push({
-        name: Components.CreateGoogle,
-        params: {
-          access_token: this.$route.params.access_token,
-        },
-      });
-      this.isLoading = false;
-
-      return;
-    }
-
-    fileResponse.files.forEach(({ id, description, name }, index) => {
-      const [prepName] = name.split('.');
-      this.files[index] = {
-        id,
-        name: prepName,
-        address: description,
-        password: '',
-        active: false,
-      };
-    });
-
-    this.isLoading = false;
-  }
-
   get isAccessDenied() {
     return this.getToken === 'null';
   }
@@ -123,6 +92,37 @@ export default class ManageGoogle extends Vue {
     if (this.isFinishForm) return this.$t('');
 
     return this.isLoading ? this.$t('addWallet.google.fetchInfo') : this.$t('addWallet.google.selectToImport');
+  }
+
+  async mounted() {
+    await this.isTokenValid();
+    this.token = this.getToken;
+    const fileResponse = await getGoogleFiles(this.token);
+
+    if (fileResponse && fileResponse.files.length === 0) {
+      this.$router.push({
+        name: Components.CreateGoogle,
+        params: {
+          access_token: this.$route.params.access_token,
+        },
+      });
+      this.isLoading = false;
+
+      return;
+    }
+
+    fileResponse.files.forEach(({ id, description, name }, index) => {
+      const [prepName] = name.split('.');
+      this.files[index] = {
+        id,
+        name: prepName,
+        address: description,
+        password: '',
+        active: false,
+      };
+    });
+
+    this.isLoading = false;
   }
 
   back() {

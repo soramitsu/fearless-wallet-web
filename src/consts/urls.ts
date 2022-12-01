@@ -54,7 +54,7 @@ export function isSafeForExternalOpen(url: string): boolean {
     return true;
   }
 
-  if (Object.values(BASE_URLS_PREFIX).some((item) => url.startsWith(item, 0))) {
+  if (Object.values(BASE_URLS_PREFIX).some((item) => url.startsWith(item))) {
     return true;
   }
 

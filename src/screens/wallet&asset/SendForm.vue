@@ -63,19 +63,14 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import TransferForm from './TransferForm.vue';
 import type { Currencies } from '@/interfaces';
-import type { GetAssetName } from '@/store/networks/types';
-
+import type { GetAssetName, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store/accounts/types';
-
 import { formattedNumber, formattedPrice, addNumbers } from '@/helpers/numbers';
 import { getUtilityAsset } from '@/helpers/currencies';
 
 @Component({
-  components: {
-    TransferForm,
-  },
+  components: { TransferForm },
 })
 export default class SendForm extends Vue {
   partialFee = '';

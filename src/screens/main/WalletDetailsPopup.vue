@@ -23,7 +23,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Mutation } from 'vuex-class';
-import type { SetSelectedWalletProps } from '@/store/accounts/types';
+import type { SetSelectedWalletProps } from '@/store';
 import type { TMutation } from '@/interfaces/common';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';

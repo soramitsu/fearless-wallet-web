@@ -64,7 +64,12 @@
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import NodeItem from './NodeItem.vue';
-import type { SelectedWallet, setAutoSelectNode, GetAutoSelectNodesValueByNetwork } from '@/store/accounts/types';
+import type {
+  SelectedWallet,
+  setAutoSelectNode,
+  GetAutoSelectNodesValueByNetwork,
+  GetActiveNodesByNetwork,
+} from '@/store';
 import type { Node, Networks, TMutation } from '@/interfaces';
 import NetworksController from '@/controllers/networksController';
 import BaseApi from '@/util/BaseApi';
@@ -72,7 +77,6 @@ import { accountController } from '@/controllers/accountController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { GetActiveNodesByNetwork } from '@/store/networks/types';
 
 @Component({
   components: { NodeItem },

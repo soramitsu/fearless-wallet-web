@@ -106,8 +106,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Identicon } from '@polkadot/vue-identicon';
 import { Getter } from 'vuex-class';
 import type { HistoryNode } from '@/interfaces/history';
-import type { SelectedWallet } from '@/store/accounts/types';
-
+import type { SelectedWallet } from '@/store';
 import {
   cut,
   getType,
@@ -118,11 +117,9 @@ import {
 } from '@/helpers/history';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
-import Tooltip from '@/components/Tooltip.vue';
 
 @Component({
   components: {
-    Tooltip,
     Identicon,
   },
 })

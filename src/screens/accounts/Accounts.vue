@@ -36,7 +36,7 @@
 import { Getter, Mutation } from 'vuex-class';
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import AccountsItem from './AccountsItem.vue';
-import type { SelectedWallet, SetSelectedWalletProps } from '@/store/accounts/types';
+import type { SelectedWallet, SetSelectedWalletProps } from '@/store';
 import type { Networks, TMutation } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';

@@ -33,10 +33,9 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import WalletInfo from './WalletInfo.vue';
-import type { SelectedWallet, SetSelectedWalletProps, Accounts } from '@/store/accounts/types';
+import type { SelectedWallet, SetSelectedWalletProps, Accounts } from '@/store';
 import type { Currencies, TMutation, CustomEvent } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
-
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
@@ -44,9 +43,7 @@ import { Components } from '@/router/routes';
 import { addNumbers, getChangeWalletBalance } from '@/helpers/numbers';
 
 @Component({
-  components: {
-    WalletInfo,
-  },
+  components: { WalletInfo },
 })
 export default class SelectWalletPopup extends Vue {
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;

@@ -32,8 +32,7 @@
 <script lang="ts">
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { SelectedWallet } from '@/store/accounts/types';
-
+import type { SelectedWallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';

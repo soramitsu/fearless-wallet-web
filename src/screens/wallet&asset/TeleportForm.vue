@@ -75,13 +75,10 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import TransferForm from './TransferForm.vue';
 import type { Currencies, Networks } from '@/interfaces';
-import type { GetAssetName } from '@/store/networks/types';
-
+import type { GetAssetName, SelectedWallet } from '@/store';
 import Select from '@/components/Select.vue';
-
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store/accounts/types';
 import { firstCharToUp } from '@/helpers/common';
 import { addNumbers, formattedNumber, formattedPrice } from '@/helpers/numbers';
 

@@ -12,13 +12,8 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Tooltip from '@/components/Tooltip.vue';
 
-@Component({
-  components: {
-    Tooltip,
-  },
-})
+@Component
 export default class TabButton extends Vue {
   @Prop({ default: '' }) text!: string;
   @Prop({ default: '' }) title!: string;

@@ -24,7 +24,7 @@ import { Vue, Component } from 'vue-property-decorator';
 import { Action, Getter, Mutation } from 'vuex-class';
 import type { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import type { PermissionResponseOutput } from '@airgap/beacon-sdk';
-import type { SetSelectedWallet } from '@/store/accounts/types';
+import type { SetSelectedWallet } from '@/store';
 import type {
   PermissionSuccess,
   TAction,

@@ -22,7 +22,7 @@
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import type { SelectedWallet } from '@/store/accounts/types';
+import type { SelectedWallet } from '@/store';
 import type { Networks } from '@/interfaces/networks';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';

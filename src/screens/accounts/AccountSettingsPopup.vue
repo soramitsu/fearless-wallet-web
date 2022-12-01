@@ -46,7 +46,7 @@
 <script lang="ts">
 import { Getter } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { SelectedWallet } from '@/store/accounts/types';
+import type { SelectedWallet } from '@/store';
 
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';

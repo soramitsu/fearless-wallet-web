@@ -37,7 +37,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
-import { WalletInfo } from '@/store/accounts/types';
+import { WalletInfo } from '@/store';
 import { cut } from '@/helpers/history';
 
 @Component({

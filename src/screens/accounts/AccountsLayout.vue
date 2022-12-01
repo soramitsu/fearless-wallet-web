@@ -94,7 +94,7 @@ import ReplacePopup from './ReplacePopup.vue';
 import SourceTypePopup from './SourceTypePopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
 import Nodes from './Nodes.vue';
-import type { SelectedWallet } from '@/store/accounts/types';
+import type { SelectedWallet } from '@/store';
 import { accountController } from '@/controllers/accountController';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';

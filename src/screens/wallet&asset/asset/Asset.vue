@@ -118,7 +118,7 @@ import { Getter } from 'vuex-class';
 import HistoryDetailsForm from './HistoryDetailsForm.vue';
 import History from './History.vue';
 import type { HistoryNode } from '@/interfaces/history';
-import type { GetAssetName } from '@/store/networks/types';
+import type { GetAssetName, SelectedWallet, GetNetworkStatus } from '@/store';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
@@ -130,18 +130,14 @@ import BaseApi from '@/util/BaseApi';
 import { Currencies } from '@/interfaces/currencies';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { SelectedWallet } from '@/store/accounts/types';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/helpers/numbers';
-import Tooltip from '@/components/Tooltip.vue';
-import { GetNetworkStatus } from '@/store/networks/types';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
 
 @Component({
   components: {
     History,
-    Tooltip,
     SendForm,
     BuyPopup,
     ReceiveForm,

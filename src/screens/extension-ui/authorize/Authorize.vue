@@ -43,7 +43,7 @@ import { AuthorizeRequest, ApproveAuthRequest } from '@extension-base/background
 import { TAction } from '@/interfaces';
 import Hint from '@/components/Hint.vue';
 import { Components } from '@/router/routes';
-import { Accounts, WalletInfo } from '@/store/accounts/types';
+import { Accounts, WalletInfo } from '@/store';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';

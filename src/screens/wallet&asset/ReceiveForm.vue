@@ -73,14 +73,12 @@ import type { Currencies } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { SelectedWallet } from '@/store/accounts/types';
+import { SelectedWallet } from '@/store';
 import { firstCharToUp } from '@/helpers/common';
 import { cut } from '@/helpers/history';
-import Tooltip from '@/components/Tooltip.vue';
 
 @Component({
   components: {
-    Tooltip,
     RotateInput,
   },
 })

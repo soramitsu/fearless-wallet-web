@@ -1,11 +1,11 @@
 import { Http } from './fetchController';
-import { CreateFileProp, IGetFileMetaResponse, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
+import { CreateFileProp, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
 
 class GoogleManage {
   http = Http.create();
   private readonly baseURL = 'https://www.googleapis.com/drive/v3';
   private readonly baseUploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-  private readonly extensionRedirectURL = 'https://mkikoojmkahfncdffoledbigmfhmllao.chromiumapp.org/welcome';
+  private readonly extensionRedirectURL = 'https://nhlnehondigmgckngjomcpcefcdplmgc.chromiumapp.org/welcome';
   private readonly baseAuthParams = {
     client_id: chrome.runtime.getManifest().oauth2!.client_id,
     response_type: 'token',
@@ -76,13 +76,15 @@ ${json}
   }
 
   public async getFiles(token?: string) {
-    return this.http.get<IGetFilesResponse>(`${this.baseURL}/files`, {
-      params: this.config.params,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        ...this.config.headers,
-      },
-    });
+    return this.http.get<IGetFilesResponse>(
+      `${this.baseURL}/files?fields=files(id,name,description)&spaces=appDataFolder`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...this.config.headers,
+        },
+      }
+    );
   }
 
   public async getFile(id: string, token?: string | undefined) {

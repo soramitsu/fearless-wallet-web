@@ -11,7 +11,7 @@
     <div class="step__content">
       <NegativeMessage v-if="getToken === 'null'" :message="$t('addWallet.google.somethingWrong')" />
 
-      <GoogleWalletsList v-else-if="!isLoading && isFilesExists" :items="files" @getFileContent="getFileContent" />
+      <GoogleWalletsList v-else-if="!isLoading && isFilesExists" :items="files" @getFile="getFile" />
 
       <div v-else-if="isLoading" class="loader__container">
         <Loader />
@@ -31,7 +31,7 @@ import Checkbox from '@/components/Checkbox.vue';
 import Input from '@/components/Input.vue';
 import Scroll from '@/components/Scroll.vue';
 import GoogleWalletsList from '@/screens/addWallet/google/GoogleWalletsList.vue';
-import { getGoogleFile, getGoogleFileMeta, getGoogleFiles, verifyToken } from '@/extension/messaging';
+import { getGoogleFile, getGoogleFiles, verifyToken } from '@/extension/messaging';
 import { IGDriveFile } from '@/interfaces';
 import { Components } from '@/router/routes';
 import CircleButton from '@/components/CircleButton.vue';
@@ -83,21 +83,17 @@ export default class ManageGoogle extends Vue {
       return;
     }
 
-    this.files = [...fileResponse.files];
-    this.files.forEach((el) => {
-      const [name] = el.name.split('.');
-      el.active = false;
-      el.name = name;
-      el.password = '';
+    fileResponse.files.forEach(({ id, description, name }, index) => {
+      const [prepName] = name.split('.');
+      this.files[index] = {
+        id,
+        name: prepName,
+        address: description,
+        password: '',
+        active: false,
+      };
     });
 
-    for (const [key, value] of this.files.entries()) {
-      const { description } = await this.getFileMeta(value.id);
-
-      this.setItemValue(key, { address: description });
-    }
-
-    console.log(this.files, 'files');
     this.isLoading = false;
   }
 
@@ -129,16 +125,10 @@ export default class ManageGoogle extends Vue {
     this.step -= 1;
   }
 
-  async getFileContent(id: string, index: number) {
+  async getFile(id: string, index: number) {
     const file = await getGoogleFile(id, this.token);
 
     this.setItemValue(index, { json: file });
-  }
-
-  async getFileMeta(id: string) {
-    const meta = await getGoogleFileMeta(id, this.token);
-
-    return meta;
   }
 
   proceed() {

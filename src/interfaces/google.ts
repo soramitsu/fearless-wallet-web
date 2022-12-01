@@ -1,13 +1,18 @@
 interface IGDriveFile {
   id: string;
-  kind: string;
-  mimeType: string;
+  address: string;
   name: string;
 }
 
+interface FilesResponse {
+  id: string;
+  name: string;
+  description: string;
+}
+
 interface IGetFilesResponse {
-  files: IGDriveFile[];
-  incompleteSearch: false;
+  files: FilesResponse[];
+  incompleteSearch: boolean;
   kind: 'drive#fileList';
 }
 

@@ -639,16 +639,12 @@ export default class Extension {
     return googleManage.getFiles(token);
   }
 
-  static async getFileContent({ id, token }: GoogleFileId): Promise<string> {
-    return googleManage.getFileContent(id, token);
+  static async getFile({ id, token }: GoogleFileId): Promise<string> {
+    return googleManage.getFile(id, token);
   }
 
   static async createFile({ json, options, token }: ICreateFile): Promise<void> {
     googleManage.createFile({ json, options }, token);
-  }
-
-  static async getFileMeta({ id, token }: GoogleFileId): Promise<IGetFileMetaResponse> {
-    return googleManage.getFileMeta(id, token);
   }
 
   static deleteFile({ id }: GoogleFileId): void {
@@ -809,10 +805,7 @@ export default class Extension {
         return Extension.verifyToken(request as { token: string });
 
       case 'pri(google.get.file)':
-        return Extension.getFileContent(request as GoogleFileId);
-
-      case 'pri(google.get.meta)':
-        return Extension.getFileMeta(request as GoogleFileId);
+        return Extension.getFile(request as GoogleFileId);
 
       case 'pri(google.create.file)':
         return Extension.createFile(request as ICreateFile);

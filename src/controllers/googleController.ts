@@ -18,6 +18,7 @@ class GoogleManage {
   public get config() {
     return {
       params: {
+        fields: 'files(id,name,description)',
         spaces: 'appDataFolder',
       },
       headers: {
@@ -41,13 +42,14 @@ class GoogleManage {
   }
 
   private prepareData(json: string, { name, address }: { name: string; address: string }) {
+    //TODO should it be resumable?
     return `--foo_bar_baz
 Content-Type: application/json; charset=UTF-8
 
 {
 name: "${name}.json",
 mimeType: "application/json",
-deskription:
+description: "${address}",
 parents: ["appDataFolder"]
 }
 
@@ -83,7 +85,7 @@ ${json}
     });
   }
 
-  public async getFileContent(id: string, token?: string | undefined) {
+  public async getFile(id: string, token?: string | undefined) {
     return this.http.get<string>(`${this.baseURL}/files/${id}?alt=media`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -92,18 +94,7 @@ ${json}
     });
   }
 
-  public async getFileMeta(id: string, token?: string | undefined): Promise<IGetFileMetaResponse> {
-    return this.http.get<IGetFileMetaResponse>(`${this.baseURL}/files/${id}?fields=description`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        ...this.config.headers,
-      },
-    });
-  }
-
   public async verifyToken(token: string) {
-    console.log(token);
-
     return this.http.get<VerifyTokenResponse>(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`);
   }
 

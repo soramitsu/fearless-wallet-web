@@ -1,5 +1,5 @@
 <template>
-  <SCheckbox class="fw-checkbox" v-model.lazy="vModel" :size="size" :label="$t(label)" @change="onChange" />
+  <SCheckbox class="fw-checkbox" v-model.lazy="vModel" :size="size" :label="label" @change="onChange" />
 </template>
 
 <script lang="ts">

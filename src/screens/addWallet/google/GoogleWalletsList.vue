@@ -13,7 +13,7 @@
                 v-model.lazy="file.active"
                 @change.self="(value) => onSelect(!file.active, index)"
               />
-              <span @click.self="onSelect(!file.active, index)">{{ cutAddress(file.id) }}</span>
+              <span @click.self="onSelect(!file.active, index)">{{ cutAddress(file.address) }}</span>
             </div>
             <transition name="fade">
               <div v-show="file.active" class="json__controls">
@@ -69,6 +69,7 @@ interface FilesState extends IGDriveFile {
   isError?: boolean;
   isLoading?: boolean;
   isComplete: boolean;
+  description: string;
   json: KeyringPair$Json;
 }
 
@@ -91,8 +92,6 @@ export default class GoogleWalletsList extends Vue {
   }
 
   async onConfirm(index: number) {
-    // this.setItemValue(index, { isLoading: true });
-
     const { json, password } = this.items[index];
 
     if (!json || !password) return;
@@ -106,6 +105,7 @@ export default class GoogleWalletsList extends Vue {
     }
 
     const pair = BaseApi.addKeypairFromJson(json, password);
+
     this.setItemValue(index, { isComplete: true });
     this.setSelectedWallet({ selectedWalletAddress: pair.address || this.selectedWallet.address });
 
@@ -120,7 +120,7 @@ export default class GoogleWalletsList extends Vue {
       this.setItemValue(index, { isLoading: false, isComplete: false });
     }
 
-    if (this.items[index].json === undefined) this.$emit('getFileContent', this.items[index].id, index);
+    if (this.items[index].json === undefined) this.$emit('getFile', this.items[index].id, index);
 
     this.setItemValue(index, { active: value });
   }

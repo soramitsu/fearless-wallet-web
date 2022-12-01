@@ -1,50 +1,49 @@
 <template>
   <FlowStepLayout :countSteps="countSteps" :step="step" :header="header" @back="back" :showFullScreenIcon="false">
-    <div class="step__content">
-      <NegativeMessage v-if="step === 1" :message="$t('addWallet.google.noWallets')" />
+    <NegativeMessage v-if="step === 1" :message="$t('addWallet.google.noWallets')" />
 
-      <NickNameForm v-if="nickNameStep" :nickname="nickname" @update:nickname="setNickname" />
+    <NickNameForm v-if="nickNameStep" :nickname="nickname" @update:nickname="setNickname" />
 
-      <div class="icon__container" v-if="step === 3">
-        <Icon className="icon--drive" icon="drive" />
-      </div>
-
-      <CreateWallet
-        v-if="createWalletStep"
-        :step="step"
-        :shouldShowAtSteps="[4, 5]"
-        :mnemonic="mnemonic"
-        :selectedMnemonicElements="selectedMnemonicElements"
-        @update:selectedMnemonicElements="updateSelectedMnemonicElements"
-      >
-        <AdvancedButton @click="toggleAdvancedFormVisible" />
-      </CreateWallet>
-
-      <AdvancedForm
-        v-if="showAdvancedForm"
-        :derivationPaths="derivationPaths"
-        :showEthereumDP="showEthereumDP"
-        :showSubstrateDP="showSubstrateDP"
-        @updateDP="updateDP"
-        @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
-      />
-
-      <PasswordForm
-        v-if="passwordStep"
-        :showMockPassword="false"
-        :showSamePasswordText="false"
-        @updateWalletPassword="updateWalletPassword"
-      />
-
-      <NotificationPopup
-        v-if="showNotificationPopup"
-        :headers="notificationHeaders"
-        acceptButtonText="common.accept"
-        :showAcceptButton="true"
-        :handlerAccept="popupHandler"
-        :handlerClose="popupHandler"
-      />
+    <div class="icon__container" v-if="step === 3">
+      <Icon className="icon--drive" icon="drive" />
     </div>
+
+    <CreateWallet
+      v-if="createWalletStep"
+      :step="step"
+      :shouldShowAtSteps="[4, 5]"
+      :mnemonic="mnemonic"
+      :selectedMnemonicElements="selectedMnemonicElements"
+      @update:selectedMnemonicElements="updateSelectedMnemonicElements"
+    >
+      <AdvancedButton @click="toggleAdvancedFormVisible" />
+    </CreateWallet>
+
+    <AdvancedForm
+      v-if="showAdvancedForm"
+      :derivationPaths="derivationPaths"
+      :showEthereumDP="showEthereumDP"
+      :showSubstrateDP="showSubstrateDP"
+      @updateDP="updateDP"
+      @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
+    />
+
+    <PasswordForm
+      v-if="passwordStep"
+      :showMockPassword="false"
+      :showSamePasswordText="false"
+      @updateWalletPassword="updateWalletPassword"
+    />
+
+    <NotificationPopup
+      v-if="showNotificationPopup"
+      :headers="notificationHeaders"
+      acceptButtonText="common.accept"
+      :showAcceptButton="true"
+      :handlerAccept="popupHandler"
+      :handlerClose="popupHandler"
+    />
+
     <template v-slot:control>
       <Button
         size="big"
@@ -272,13 +271,6 @@ export default class CreateGoogleWallet extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.step__content {
-  height: 100%;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-}
-
 .icon__container {
   height: 100%;
   width: 100%;

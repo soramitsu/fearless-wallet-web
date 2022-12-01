@@ -26,9 +26,17 @@
       <div class="content">
         <div class="content-header">{{ header }}</div>
       </div>
-      <slot v-if="notFinish"></slot>
+
+      <div v-if="isLoading" class="loader__container">
+        <Loader />
+      </div>
+
+      <div v-else-if="notFinish" class="step__content">
+        <slot></slot>
+      </div>
 
       <FinishForm v-else />
+
       <div class="controls">
         <slot name="control"></slot>
       </div>
@@ -43,11 +51,13 @@ import Input from '@/components/Input.vue';
 import Scroll from '@/components/Scroll.vue';
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
 import CircleButton from '@/components/CircleButton.vue';
+import Loader from '@/components/Loader.vue';
 
 @Component({
   components: {
     Scroll,
     Input,
+    Loader,
     FinishForm,
     CircleButton,
     Checkbox,
@@ -56,6 +66,7 @@ import CircleButton from '@/components/CircleButton.vue';
 export default class FlowStepLayout extends Vue {
   @Prop(Number) countSteps!: number;
   @Prop(Number) step!: number;
+  @Prop({ default: false, type: Boolean }) isLoading!: boolean;
   @Prop(String) header!: string;
   @Prop({ default: false }) showFullScreenIcon!: boolean;
 
@@ -88,6 +99,20 @@ export default class FlowStepLayout extends Vue {
 </script>
 
 <style lang="scss" scoped>
+.step__content {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.loader__container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
 .add-wallet {
   display: flex;
   flex-direction: column;

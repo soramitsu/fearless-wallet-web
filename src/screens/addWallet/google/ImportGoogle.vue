@@ -5,18 +5,12 @@
     :flowSteps="getSteps"
     :header="header"
     @back="back"
+    :isLoading="isLoading"
     :showFullScreenIcon="false"
-    @openFullScreen="openFullScreen"
   >
-    <div class="step__content">
-      <NegativeMessage v-if="getToken === 'null'" :message="$t('addWallet.google.somethingWrong')" />
+    <NegativeMessage v-if="getToken === 'null'" :message="$t('addWallet.google.somethingWrong')" />
 
-      <GoogleWalletsList v-else-if="!isLoading && isFilesExists" :items="files" @getFile="getFile" />
-
-      <div v-else-if="isLoading" class="loader__container">
-        <Loader />
-      </div>
-    </div>
+    <GoogleWalletsList v-else-if="!isLoading && isFilesExists" :items="files" @getFile="getFile" />
 
     <template v-slot:control>
       <Button v-if="!isLoading" size="big" fontSize="big" width="100%" :text="buttonText" @click="proceed" />
@@ -38,7 +32,6 @@ import CircleButton from '@/components/CircleButton.vue';
 import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
 import Button from '@/components/Button.vue';
 import BaseApi from '@/util/BaseApi';
-import Loader from '@/components/Loader.vue';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
 
 interface FilesState extends IGDriveFile {
@@ -52,7 +45,6 @@ interface FilesState extends IGDriveFile {
     FlowStepLayout,
     Scroll,
     Input,
-    Loader,
     NegativeMessage,
     Button,
     CircleButton,
@@ -79,6 +71,7 @@ export default class ManageGoogle extends Vue {
           access_token: this.$route.params.access_token,
         },
       });
+      this.isLoading = false;
 
       return;
     }
@@ -161,19 +154,20 @@ export default class ManageGoogle extends Vue {
   }
 
   async isTokenValid() {
-    if (this.getToken === 'null') return;
+    if (this.getToken === 'null') {
+      this.isLoading = false;
+
+      return;
+    }
 
     const data = await verifyToken(this.getToken);
 
     if (!data || +data.expires_in <= 0) {
       this.$router.push({ name: Components.Welcome });
+      this.isLoading = false;
 
       return;
     }
-  }
-
-  openFullScreen() {
-    BaseApi.windowOpen('/');
   }
 
   saveKeypairFromJson(json: KeyringPair$Json, password: string) {
@@ -185,19 +179,3 @@ export default class ManageGoogle extends Vue {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-.step__content {
-  height: 100%;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-}
-
-.loader__container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-}
-</style>

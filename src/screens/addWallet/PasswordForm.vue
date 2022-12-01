@@ -26,12 +26,8 @@
 
 <script lang="ts">
 import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
-import Hint from '@/components/Hint.vue';
-import ValidatedInput from '@/components/ValidatedInput.vue';
 
-@Component({
-  components: { Hint, ValidatedInput },
-})
+@Component
 export default class PasswordForm extends Vue {
   pass1 = '';
   pass2 = '';

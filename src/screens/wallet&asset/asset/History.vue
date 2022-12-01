@@ -32,9 +32,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import HistoryItem from './HistoryItem.vue';
 import type { FilterHistory, GetHistory } from '@/interfaces';
-import Scroll from '@/components/Scroll.vue';
-import Dropdown from '@/components/Dropdown.vue';
-import ContentForm from '@/components/ContentForm.vue';
+
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
@@ -43,10 +41,7 @@ import BaseApi from '@/util/BaseApi';
 
 @Component({
   components: {
-    Scroll,
-    Dropdown,
     HistoryItem,
-    ContentForm,
   },
 })
 export default class History extends Vue {

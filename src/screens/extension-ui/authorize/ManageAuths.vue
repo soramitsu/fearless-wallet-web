@@ -26,19 +26,13 @@ import { Getter, Action } from 'vuex-class';
 import { AuthUrlInfo } from '@extension-base/background/types';
 import UpdateAuths from './UpdateAuths.vue';
 import { TAction } from '@/interfaces';
-import AboveForm from '@/components/AboveForm.vue';
-import SearchInput from '@/components/SearchInput.vue';
 import AuthItem from '@/screens/extension-ui/authorize/AuthItem.vue';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
-import Scroll from '@/components/Scroll.vue';
 
 @Component({
   components: {
-    Scroll,
     AuthItem,
-    AboveForm,
-    SearchInput,
     UpdateAuths,
   },
 })

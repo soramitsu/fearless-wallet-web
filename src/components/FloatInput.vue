@@ -15,14 +15,11 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
-import Corners from '@/components/Corners.vue';
 
 type Size = 'small' | 'medium' | 'big';
 type Style = 'default' | 'pink';
 
-@Component({
-  components: { Corners },
-})
+@Component
 export default class FloatInput extends Vue {
   @VModel({ type: String || Number }) vModel!: string | number;
   @Prop(String) placeholder!: string;

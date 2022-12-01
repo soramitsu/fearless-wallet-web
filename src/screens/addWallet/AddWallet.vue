@@ -137,10 +137,7 @@ import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
 import AddEthereumAccountPopup from '@/screens/addWallet/AddEthereumAccountPopup.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
-import NotificationPopup from '@/components/NotificationPopup.vue';
-import CircleButton from '@/components/CircleButton.vue';
-import Input from '@/components/Input.vue';
-import Button from '@/components/Button.vue';
+
 import { Components } from '@/router/routes';
 import { WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
@@ -150,17 +147,13 @@ type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'sub
 
 @Component({
   components: {
-    Input,
-    Button,
     FinishForm,
     CreateWallet,
     ImportWallet,
     PasswordForm,
     NicknameForm,
     AdvancedForm,
-    CircleButton,
     AdvancedButton,
-    NotificationPopup,
     AddEthereumAccountPopup,
   },
 })

@@ -102,8 +102,6 @@ import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencie
 import type { TMutation, TabWallet } from '@/interfaces/common';
 import type { SetSelectedNetworkProps } from '@/store/accounts/types';
 import type { Networks } from '@/interfaces';
-import Scroll from '@/components/Scroll.vue';
-import ContentForm from '@/components/ContentForm.vue';
 import { accountController } from '@/controllers/accountController';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -113,19 +111,15 @@ import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutatio
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { addNumbers, formattedNumber, getChangeWalletBalance } from '@/helpers/numbers';
 import Tooltip from '@/components/Tooltip.vue';
-import Shimmer from '@/components/Shimmer.vue';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 
 @Component({
   components: {
     NFTs,
-    Scroll,
     Tooltip,
-    Shimmer,
     SendForm,
     Currencies,
-    ContentForm,
     ReceiveForm,
     WalletBalance,
     ContentSettings,

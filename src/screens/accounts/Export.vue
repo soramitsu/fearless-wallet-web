@@ -33,20 +33,12 @@
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { SelectedWallet } from '@/store/accounts/types';
-import Button from '@/components/Button.vue';
-import ValidatedInput from '@/components/ValidatedInput.vue';
-import InformationBlock from '@/components/InformationBlock.vue';
+
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 
-@Component({
-  components: {
-    Button,
-    ValidatedInput,
-    InformationBlock,
-  },
-})
+@Component
 export default class Export extends Vue {
   password = '';
   isWrongPassword = false;

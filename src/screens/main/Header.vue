@@ -63,9 +63,6 @@
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { SelectedWallet } from '@/store/accounts/types';
-import Logo from '@/components/Logo.vue';
-import CircleButton from '@/components/CircleButton.vue';
-import Rotate from '@/components/Rotate.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
@@ -73,10 +70,7 @@ import Tooltip from '@/components/Tooltip.vue';
 
 @Component({
   components: {
-    Logo,
-    Rotate,
     Tooltip,
-    CircleButton,
   },
 })
 export default class Header extends Vue {

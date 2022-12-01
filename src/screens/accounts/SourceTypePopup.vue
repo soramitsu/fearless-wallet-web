@@ -28,15 +28,11 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Popup from '@/components/Popup.vue';
-import BorderButton from '@/components/BorderButton.vue';
+
 import { Components } from '@/router/routes';
 
 @Component({
-  components: {
-    Popup,
-    BorderButton,
-  },
+  components: {},
 })
 export default class ReplacePopup extends Vue {
   @Prop(Function) handlerClose!: VoidFunction;

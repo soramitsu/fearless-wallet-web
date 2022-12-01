@@ -31,22 +31,13 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import Scroll from '@/components/Scroll.vue';
-import SearchInput from '@/components/SearchInput.vue';
-import Corners from '@/components/Corners.vue';
 
 type HorizontalPlacement = 'left' | 'center' | 'right';
 type VerticalPlacement = 'top' | 'center' | 'bottom';
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type HeaderType = 'default' | 'success' | 'failed' | 'pending';
 
-@Component({
-  components: {
-    Scroll,
-    SearchInput,
-    Corners,
-  },
-})
+@Component
 export default class Popup extends Vue {
   filterValue = '';
 

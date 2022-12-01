@@ -18,23 +18,11 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
-import Input from '@/components/Input.vue';
-import Button from '@/components/Button.vue';
-import QR from '@/components/QR.vue';
-import AboveForm from '@/components/AboveForm.vue';
-import BorderButton from '@/components/BorderButton.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
-import Rotate from '@/components/Rotate.vue';
 import { firstCharToUp } from '@/helpers/common';
 
 @Component({
   components: {
-    QR,
-    Input,
-    Button,
-    Rotate,
-    AboveForm,
-    BorderButton,
     SelectNetworkPopup,
   },
 })

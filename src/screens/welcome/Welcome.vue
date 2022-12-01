@@ -62,24 +62,14 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import Logo from '@/components/Logo.vue';
-import Icon from '@/components/Icon.vue';
-import Button from '@/components/Button.vue';
 import { Components } from '@/router/routes';
-import CircleButton from '@/components/CircleButton.vue';
 import BaseApi from '@/util/BaseApi';
 import URLS from '@/consts/urls';
-import AboveForm from '@/components/AboveForm.vue';
 import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
 
 @Component({
   components: {
-    Logo,
-    Icon,
-    Button,
-    CircleButton,
     MobileConnect,
-    AboveForm,
   },
 })
 export default class Welcome extends Vue {

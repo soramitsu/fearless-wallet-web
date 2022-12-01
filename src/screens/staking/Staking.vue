@@ -6,20 +6,12 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import ComingSoon from '@/components/ComingSoon.vue';
 import { MenuItems } from '@/interfaces/common';
 
-@Component({
-  components: { ComingSoon },
-})
+@Component
 export default class Crowdloans extends Vue {
   get name() {
     return MenuItems.staking;
   }
 }
 </script>
-
-<style lang="scss" scoped>
-.staking {
-}
-</style>

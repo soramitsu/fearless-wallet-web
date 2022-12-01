@@ -76,10 +76,9 @@ import { Getter } from 'vuex-class';
 import TransferForm from './TransferForm.vue';
 import type { Currencies, Networks } from '@/interfaces';
 import type { GetAssetName } from '@/store/networks/types';
-import Button from '@/components/Button.vue';
+
 import Select from '@/components/Select.vue';
-import Popup from '@/components/Popup.vue';
-import Corners from '@/components/Corners.vue';
+
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
@@ -88,10 +87,8 @@ import { addNumbers, formattedNumber, formattedPrice } from '@/helpers/numbers';
 
 @Component({
   components: {
-    Popup,
     Select,
-    Button,
-    Corners,
+
     TransferForm,
   },
 })

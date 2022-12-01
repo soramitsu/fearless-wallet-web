@@ -40,17 +40,11 @@ import { ActionTypes as AccountActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as NetworkGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutations';
-import AboveForm from '@/components/AboveForm.vue';
-import QR from '@/components/QR.vue';
-import Loader from '@/components/Loader.vue';
 import PermissionRequestPopup from '@/screens/mobileConnect/PermissionRequestPopup.vue';
 import { MOONBEAM_GENESISHASH } from '@/consts/networks';
 
 @Component({
   components: {
-    QR,
-    Loader,
-    AboveForm,
     PermissionRequestPopup,
   },
 })

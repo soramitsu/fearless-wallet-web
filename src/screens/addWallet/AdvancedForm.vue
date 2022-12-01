@@ -39,18 +39,9 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { DerivationPaths } from '@/interfaces';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import AboveForm from '@/components/AboveForm.vue';
-import Input from '@/components/Input.vue';
-import Select from '@/components/Select.vue';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 
-@Component({
-  components: {
-    AboveForm,
-    Input,
-    Select,
-  },
-})
+@Component
 export default class AdvancedForm extends Vue {
   readonly ethereumDefaultDerivationPath = ETHEREUM_DEFAULT_DERIVATION_PATH;
   readonly optionsSubstrateKeyPair = [

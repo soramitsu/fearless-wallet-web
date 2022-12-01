@@ -21,16 +21,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Rotate from '@/components/Rotate.vue';
-import Corners from '@/components/Corners.vue';
 import { firstCharToUp } from '@/helpers/common';
 
-@Component({
-  components: {
-    Rotate,
-    Corners,
-  },
-})
+@Component
 export default class SelectNetworkButton extends Vue {
   @Prop(String) text!: string;
   @Prop(Boolean) isActive!: boolean;

@@ -64,22 +64,16 @@ import { Getter } from 'vuex-class';
 import TransferForm from './TransferForm.vue';
 import type { Currencies } from '@/interfaces';
 import type { GetAssetName } from '@/store/networks/types';
-import Input from '@/components/Input.vue';
-import Corners from '@/components/Corners.vue';
-import NetworkLogo from '@/components/NetworkLogo.vue';
+
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import AboveForm from '@/components/AboveForm.vue';
+
 import { formattedNumber, formattedPrice, addNumbers } from '@/helpers/numbers';
 import { getUtilityAsset } from '@/helpers/currencies';
 
 @Component({
   components: {
-    Input,
-    Corners,
-    AboveForm,
-    NetworkLogo,
     TransferForm,
   },
 })

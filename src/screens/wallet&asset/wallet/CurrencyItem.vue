@@ -108,26 +108,16 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Currency } from '@/interfaces/currencies';
 import type { SelectedWallet } from '@/store/accounts/types';
-import CircleButton from '@/components/CircleButton.vue';
-import NetworkLogo from '@/components/NetworkLogo.vue';
-import Switcher from '@/components/Switcher.vue';
-import Shimmer from '@/components/Shimmer.vue';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/helpers/numbers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GetNetworkStatus } from '@/store/networks/types';
-import Lazy from '@/components/Lazy.vue';
 import Tooltip from '@/components/Tooltip.vue';
 
 @Component({
   components: {
-    Lazy,
-    Shimmer,
     Tooltip,
-    Switcher,
-    NetworkLogo,
-    CircleButton,
   },
 })
 export default class CurrencyItem extends Vue {

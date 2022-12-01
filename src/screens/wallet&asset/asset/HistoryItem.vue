@@ -23,14 +23,11 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { GetAssetName } from '@/store/networks/types';
 import type { HistoryNode, Networks, RelayChainName } from '@/interfaces';
-import NetworkLogo from '@/components/NetworkLogo.vue';
 import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, getSignTransfer, cut } from '@/helpers/history';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { TransactionType } from '@/interfaces/history';
 
-@Component({
-  components: { NetworkLogo },
-})
+@Component
 export default class HistoryItem extends Vue {
   @Prop(Object) historyNode!: HistoryNode;
   @Prop(String) assetId!: string;

@@ -17,11 +17,8 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import CircleButton from '@/components/CircleButton.vue';
 
-@Component({
-  components: { CircleButton },
-})
+@Component
 export default class NodeItem extends Vue {
   readonly dotsHorizontalRef = 'dotsHorizontal';
 

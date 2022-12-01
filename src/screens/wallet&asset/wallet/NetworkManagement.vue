@@ -24,21 +24,11 @@ import { Getter } from 'vuex-class';
 import type { Networks } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
-import AboveForm from '@/components/AboveForm.vue';
-import Scroll from '@/components/Scroll.vue';
-import NetworkLogo from '@/components/NetworkLogo.vue';
-import Corners from '@/components/Corners.vue';
-import Button from '@/components/Button.vue';
+
 import { Components } from '@/router/routes';
 
 @Component({
-  components: {
-    Scroll,
-    Button,
-    Corners,
-    AboveForm,
-    NetworkLogo,
-  },
+  components: {},
 })
 export default class ReceiveForm extends Vue {
   @Prop(Array) disconnectedNetworks!: Networks;

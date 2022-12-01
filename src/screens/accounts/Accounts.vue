@@ -38,9 +38,6 @@ import { Vue, Component, Watch } from 'vue-property-decorator';
 import AccountsItem from './AccountsItem.vue';
 import type { SelectedWallet, SetSelectedWalletProps } from '@/store/accounts/types';
 import type { Networks, TMutation } from '@/interfaces';
-import Input from '@/components/Input.vue';
-import CircleButton from '@/components/CircleButton.vue';
-import Scroll from '@/components/Scroll.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
@@ -49,12 +46,7 @@ import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutatio
 import BaseApi from '@/util/BaseApi';
 
 @Component({
-  components: {
-    Input,
-    CircleButton,
-    Scroll,
-    AccountsItem,
-  },
+  components: { AccountsItem },
 })
 export default class Account extends Vue {
   selectedNetwork = '';

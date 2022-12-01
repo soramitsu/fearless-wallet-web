@@ -15,15 +15,8 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
-import Hint from '@/components/Hint.vue';
-import Input from '@/components/Input.vue';
 
-@Component({
-  components: {
-    Hint,
-    Input,
-  },
-})
+@Component
 export default class NicknameForm extends Vue {
   @Prop({ default: false }) readonly!: boolean;
   @PropSync('nickname', { type: String }) syncedNickname!: string;

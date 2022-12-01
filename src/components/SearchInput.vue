@@ -8,13 +8,8 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
-import Input from '@/components/Input.vue';
 
-@Component({
-  components: {
-    Input,
-  },
-})
+@Component
 export default class SearchInput extends Vue {
   @VModel({ type: String }) vModel!: string;
   @Prop(String) placeholder!: string;

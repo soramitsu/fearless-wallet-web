@@ -62,12 +62,6 @@ import { Getter, Action } from 'vuex-class';
 import type { Currencies, Currency, RequestSentInfo, TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
 import { beaconController } from '@/controllers/beaconController';
 import { isSignLocked, refreshPasswordTimeout } from '@/extension/messaging';
-import Loader from '@/components/Loader.vue';
-import Popup from '@/components/Popup.vue';
-import Button from '@/components/Button.vue';
-import Checkbox from '@/components/Checkbox.vue';
-import ValidatedInput from '@/components/ValidatedInput.vue';
-import NetworkLogo from '@/components/NetworkLogo.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/extension/actions';
@@ -78,15 +72,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store/accounts/types';
 
 @Component({
-  components: {
-    Popup,
-    Button,
-    Loader,
-    Checkbox,
-    NetworkLogo,
-    ValidatedInput,
-    SignMobile,
-  },
+  components: { SignMobile },
 })
 export default class ConfirmationPasswordPopup extends Vue {
   password = '';

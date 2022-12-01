@@ -68,20 +68,14 @@ import type { SelectedWallet, setAutoSelectNode, GetAutoSelectNodesValueByNetwor
 import type { Node, Networks, TMutation } from '@/interfaces';
 import NetworksController from '@/controllers/networksController';
 import BaseApi from '@/util/BaseApi';
-import Switcher from '@/components/Switcher.vue';
 import { accountController } from '@/controllers/accountController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import NetworkLogo from '@/components/NetworkLogo.vue';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { GetActiveNodesByNetwork } from '@/store/networks/types';
 
 @Component({
-  components: {
-    Switcher,
-    NodeItem,
-    NetworkLogo,
-  },
+  components: { NodeItem },
 })
 export default class Nodes extends Vue {
   customNodes: Node[] = [];

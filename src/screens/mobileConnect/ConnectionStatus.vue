@@ -9,18 +9,13 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import Button from '@/components/Button.vue';
 import Loader from '@/components/Loader.vue';
-import Corners from '@/components/Corners.vue';
 import Alert from '@/components/Alert.vue';
-import Popup from '@/components/Popup.vue';
 
 @Component({
   components: {
-    Button,
     Loader,
-    Corners,
-    Popup,
+
     Alert,
   },
 })

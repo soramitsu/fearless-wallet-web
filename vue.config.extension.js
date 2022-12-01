@@ -49,6 +49,7 @@ module.exports = defineConfig({
         config: {
           base: './src/extension/manifest.base.json',
           extend: {
+            key: env.EXTENSION_PUBLIC_KEY,
             oauth2: {
               client_id: env.OAUTH_CLIENT_ID,
             },

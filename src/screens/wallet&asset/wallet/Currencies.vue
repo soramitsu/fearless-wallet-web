@@ -10,6 +10,7 @@
       :showAssetsManagementForm="showAssetsManagementForm"
       :toggleVisibleActivityForm="toggleVisibleActivityForm"
       :timeoutCallback="timeoutCallback"
+      @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible')"
     />
   </Draggable>
 </template>
@@ -19,8 +20,7 @@ import Draggable from 'vuedraggable';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Mutation, Getter } from 'vuex-class';
 import CurrencyItem from './CurrencyItem.vue';
-import type { SelectedWallet } from '@/store/accounts/types';
-import type { SetCurrenciesProps } from '@/store/networks/types';
+import type { SelectedWallet, SetCurrenciesProps } from '@/store';
 import type { TMutation } from '@/interfaces/common';
 import type { Currency } from '@/interfaces/currencies';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';

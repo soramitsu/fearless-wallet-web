@@ -18,8 +18,3 @@ export default class Polkaswap extends Vue {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-.polkaswap {
-}
-</style>

@@ -158,7 +158,9 @@
     "turnVisibilityAssets": "Отключить видимость активов с нулевыми остатками",
     "assetManagement": "Управление активами",
     "assetDetails": "Детали актива",
-    "addWallet": "Добавить кошелек"
+    "addWallet": "Добавить кошелек",
+    "networkUnavailable": "Сеть недоступна",
+    "networkUnavailableSubtext": "Сеть недоступна, можете подождать или задать вопрос сообществу"
   },
   "asset": {
     "history": {

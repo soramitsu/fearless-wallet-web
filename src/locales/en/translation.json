@@ -158,7 +158,9 @@
     "turnVisibilityAssets": "Turn off the visibility of assets with zero balances",
     "assetManagement": "Asset management",
     "assetDetails": "Asset details",
-    "addWallet": "Add wallet"
+    "addWallet": "Add wallet",
+    "networkUnavailable": "Network is unavailable",
+    "networkUnavailableSubtext": "The network is unavailable, you can wait or ask a question to the community"
   },
   "asset": {
     "history": {

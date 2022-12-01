@@ -1,6 +1,5 @@
 import type { Wallet, CustomAccounts } from '@/store';
 import type { ChainAccount, Networks } from '@/interfaces';
-
 import BaseApi from '@/util/BaseApi';
 import NetworksController from '@/controllers/networksController';
 

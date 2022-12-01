@@ -5,7 +5,6 @@ import type { Balances, BalanceFP, WalletBalance, RelayChainName, WalletAddress,
 import type { SubmittableExtrinsic, SignerOptions } from '@polkadot/api/submittable/types';
 import type { Wallet, SetHistoryProps } from '@/store';
 import type { ApiPromise } from '@polkadot/api';
-
 import BaseApi from '@/util/BaseApi';
 import LocalStorageController from '@/controllers/localStorageController';
 import NetworksController from '@/controllers/networksController';

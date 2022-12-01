@@ -64,7 +64,7 @@
     </div>
     <div class="activity">
       <template v-if="showWarning">
-        <Icon icon="info-triangle" className="warning-img" @click.native="openSwitchNode" />
+        <Icon icon="info-triangle" className="warning-img" @click.native="$emit('toggleNetworkManagementVisible')" />
 
         <Tooltip text="common.networkDisconnected" target=".warning-img" placement="left" />
       </template>
@@ -107,19 +107,15 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Currency } from '@/interfaces/currencies';
-import type { SelectedWallet } from '@/store/accounts/types';
+import type { SelectedWallet } from '@/store';
+import type { Networks } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/helpers/numbers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GetNetworkStatus } from '@/store/networks/types';
-import Tooltip from '@/components/Tooltip.vue';
+import { GetNetworkStatus } from '@/store';
 
-@Component({
-  components: {
-    Tooltip,
-  },
-})
+@Component
 export default class CurrencyItem extends Vue {
   readonly countDisplayedNetworks = 5;
 
@@ -130,8 +126,9 @@ export default class CurrencyItem extends Vue {
   @Prop({ required: false }) timeoutCallback!: (fn: () => void) => VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
-  @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
+  @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
+  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
 
   get showShimmers() {
     if (this.isCurrentNetwork) return !this.isOnline || this.getNetworkStatus(this.selectedNetwork) === 'pending';
@@ -265,13 +262,6 @@ export default class CurrencyItem extends Vue {
         assetId,
         network: this.redirectNetwork,
       },
-    });
-  }
-
-  openSwitchNode() {
-    this.$router.push({
-      name: Components.Nodes,
-      params: { network: this.redirectNetwork },
     });
   }
 }

@@ -37,9 +37,10 @@
 
     <NotificationPopup
       v-if="showNotificationPopup"
-      :headers="notificationHeaders"
+      :headers="notificationPopupContent"
       acceptButtonText="common.accept"
       :showAcceptButton="true"
+      :showWarningIcon="false"
       :handlerAccept="popupHandler"
       :handlerClose="popupHandler"
     />
@@ -118,6 +119,11 @@ export default class CreateGoogleWallet extends Vue {
   derivationPaths = INITIAL_DERIVATION_PATHS;
   showNotificationPopup = false;
   notificationHeaders = { text: 'addWallet.google.saved', subtext: 'addWallet.google.passphraseSaved' };
+  jsonInvalid = {
+    text: 'addWallet.warningMessages.jsonInvalid.text',
+    subtext: 'addWallet.warningMessages.jsonInvalid.subtext',
+  };
+
   buttonTextForStep: Record<number, TranslateResult> = {
     2: this.$t('common.continue'),
     3: this.$t('addWallet.google.backupWallet'),
@@ -168,6 +174,13 @@ export default class CreateGoogleWallet extends Vue {
 
   popupHandler() {
     this.showNotificationPopup = false;
+
+    if (this.step === 5) {
+      this.step -= 1;
+
+      return;
+    }
+
     this.step += 1;
   }
 
@@ -176,6 +189,19 @@ export default class CreateGoogleWallet extends Vue {
       this.$router.push({ name: Components.Wallet });
 
       return;
+    }
+
+    if (this.step === 5) {
+      const isValidSequenceMnemonic = BaseApi.isValidSequenceMnemonic(
+        this.mnemonic,
+        this.selectedMnemonicElements.map(({ word }) => word)
+      );
+
+      if (!isValidSequenceMnemonic) {
+        this.showNotificationPopup = true;
+
+        return;
+      }
     }
 
     if (this.passwordStep) {
@@ -189,6 +215,10 @@ export default class CreateGoogleWallet extends Vue {
 
   subButtonProceed() {
     this.step === 4 ? (this.step += 2) : (this.step = 4);
+  }
+
+  get notificationPopupContent() {
+    return this.step === 5 ? this.jsonInvalid : this.notificationHeaders;
   }
 
   get subButtonType() {
@@ -246,6 +276,7 @@ export default class CreateGoogleWallet extends Vue {
 
   get disabledProceed() {
     if (this.nickNameStep) return !this.nickname;
+    if (this.step === 5) return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
 
     if (this.passwordStep) return !this.walletPassword;
 

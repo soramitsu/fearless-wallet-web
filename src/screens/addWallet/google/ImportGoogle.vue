@@ -8,9 +8,9 @@
     :isLoading="isLoading"
     :showFullScreenIcon="false"
   >
-    <NegativeMessage v-if="getToken === 'null'" :message="$t('addWallet.google.somethingWrong')" />
+    <NegativeMessage v-if="isAccessDenied" :message="$t('addWallet.google.somethingWrong')" />
 
-    <GoogleWalletsList v-else-if="!isLoading && isFilesExists" :items="files" @getFile="getFile" />
+    <GoogleWalletsList v-else-if="haveWalletsToImport" :items="files" @getFile="getFile" />
 
     <template v-slot:control>
       <Button v-if="!isLoading" size="big" fontSize="big" width="100%" :text="buttonText" @click="proceed" />
@@ -90,6 +90,10 @@ export default class ManageGoogle extends Vue {
     this.isLoading = false;
   }
 
+  get isAccessDenied() {
+    return this.getToken === 'null';
+  }
+
   get isFinishForm() {
     return this.step === this.countSteps;
   }
@@ -104,6 +108,10 @@ export default class ManageGoogle extends Vue {
 
   get isFilesExists() {
     return this.files.length;
+  }
+
+  get haveWalletsToImport() {
+    return !this.isLoading && this.isFilesExists;
   }
 
   get buttonText() {
@@ -134,13 +142,7 @@ export default class ManageGoogle extends Vue {
   }
 
   proceed() {
-    if (this.getToken === 'null') {
-      this.$router.push({ name: Components.Welcome });
-
-      return;
-    }
-
-    if (this.step === this.countSteps) {
+    if (this.isFinishForm || this.isAccessDenied) {
       this.$router.push({ name: Components.Wallet });
 
       return;
@@ -171,9 +173,7 @@ export default class ManageGoogle extends Vue {
   }
 
   saveKeypairFromJson(json: KeyringPair$Json, password: string) {
-    const substrateJSON = { ...json };
-
-    const { address } = BaseApi.addKeypairFromJson(substrateJSON, password);
+    const { address } = BaseApi.addKeypairFromJson(json, password);
 
     return address;
   }

@@ -73,6 +73,7 @@
 <script lang="ts">
 import { Getter, Action } from 'vuex-class';
 import { Component, Vue, Watch } from 'vue-property-decorator';
+import { TranslateResult } from 'vue-i18n';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
 import Icon from '@/components/Icon.vue';
 import PasswordForm from '@/screens/addWallet/PasswordForm.vue';
@@ -117,9 +118,17 @@ export default class CreateGoogleWallet extends Vue {
   derivationPaths = INITIAL_DERIVATION_PATHS;
   showNotificationPopup = false;
   notificationHeaders = { text: 'addWallet.google.saved', subtext: 'addWallet.google.passphraseSaved' };
+  buttonTextForStep: Record<number, TranslateResult> = {
+    2: this.$t('common.continue'),
+    3: this.$t('addWallet.google.backupWallet'),
+    4: this.$t('addWallet.haveWrittenPassphrase'),
+    5: this.$t('addWallet.confirmPassphrase'),
+    7: this.$t('common.finish'),
+  };
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
+
   mounted() {
     this.mnemonic = BaseApi.generateMnemonic();
   }
@@ -145,6 +154,7 @@ export default class CreateGoogleWallet extends Vue {
 
     this.step -= 1;
   }
+
   @Watch('step')
   watchStep() {
     if (this.step === 7) {
@@ -168,7 +178,7 @@ export default class CreateGoogleWallet extends Vue {
       return;
     }
 
-    if (this.step === 6) {
+    if (this.passwordStep) {
       this.showNotificationPopup = true;
 
       return;
@@ -229,17 +239,12 @@ export default class CreateGoogleWallet extends Vue {
   }
 
   get buttonText() {
-    if (this.step === 2) return this.$t('common.continue');
-    if (this.step === 3) return this.$t('addWallet.google.backupWallet');
-    if (this.step === 4) return this.$t('addWallet.haveWrittenPassphrase');
-    if (this.step === 5) return this.$t('addWallet.confirmPassphrase');
-    if (this.step === 7) return this.$t('common.finish');
+    if (this.buttonTextForStep[this.step]) return this.buttonTextForStep[this.step];
 
     return this.$t('addWallet.createWallet');
   }
 
   get disabledProceed() {
-    // mutual logic step(password)
     if (this.nickNameStep) return !this.nickname;
 
     if (this.passwordStep) return !this.walletPassword;

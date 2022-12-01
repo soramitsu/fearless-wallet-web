@@ -1,7 +1,6 @@
 <template>
   <Corners :hover="hover" :size="size" :topLeftCorner="topLeftCorner" :bottomRightCorner="bottomRightCorner">
     <Button
-      :type="type"
       :border="true"
       :borderRadius="borderRadius"
       :disabled="disabled"
@@ -35,7 +34,6 @@ type FontSize = 'small' | 'medium' | 'big';
 export default class BorderButton extends Vue {
   @Prop({ default: '' }) text!: ComponentText;
   @Prop(String) width!: string;
-  @Prop({ default: 'secondary', type: String }) type!: string;
   @Prop(String) iconName!: string;
   @Prop(String) iconColor!: string;
   @Prop({ default: 'medium' }) size!: Size;

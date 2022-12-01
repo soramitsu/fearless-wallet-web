@@ -28,10 +28,11 @@
                   :errorDescriptions="$t('addWallet.warningMessages.jsonPassword.text')"
                 />
 
-                <BorderButton
+                <Button
                   class="button__confirm"
                   type="primary"
                   size="big"
+                  :border="false"
                   :iconName="file.isComplete ? 'check' : ''"
                   :isLoading="file.isLoading"
                   :disabled="!file.password.length || file.isLoading || file.isComplete"
@@ -54,7 +55,7 @@ import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import Checkbox from '@/components/Checkbox.vue';
 import Corners from '@/components/Corners.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
-import BorderButton from '@/components/BorderButton.vue';
+import Button from '@/components/Button.vue';
 import Scroll from '@/components/Scroll.vue';
 import { cut } from '@/helpers/history';
 import { IGDriveFile, TAction } from '@/interfaces';
@@ -78,7 +79,7 @@ interface FilesState extends IGDriveFile {
     Corners,
     Scroll,
     ValidatedInput,
-    BorderButton,
+    Button,
     Checkbox,
   },
 })

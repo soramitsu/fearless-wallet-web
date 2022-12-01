@@ -1,10 +1,10 @@
 const path = require('path');
 const fs = require('fs');
+const { env } = require('process');
 const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
-const WebpackCopyPlugin = require('copy-webpack-plugin');
+const WebpackExtensionManifestPlugin = require('webpack-extension-manifest-plugin');
 const { defineConfig } = require('@vue/cli-service');
 const baseConfig = require('./vue.config.base');
-const outputFolder = path.resolve('dist/extension');
 const pages = {};
 
 function getFileExtension(filename) {
@@ -44,19 +44,17 @@ module.exports = defineConfig({
           });
         });
       });
-
     config.plugins.push(
-      new WebpackCopyPlugin({
-        patterns: [
-          {
-            from: path.resolve(`src/extension/manifest.${process.env.NODE_ENV}.json`),
-            to: `${outputFolder}/manifest.json`,
+      new WebpackExtensionManifestPlugin({
+        config: {
+          base: './src/extension/manifest.base.json',
+          extend: {
+            oauth2: {
+              client_id: env.OAUTH_CLIENT_ID,
+            },
           },
-          {
-            from: path.resolve(`public/`),
-            to: `${outputFolder}/`,
-          },
-        ],
+        },
+        pkgJsonProps: ['version', 'author', 'description'],
       })
     );
 

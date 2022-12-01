@@ -1,10 +1,4 @@
-import {
-  AuthorizeRequest,
-  AuthUrlInfo,
-  MetadataRequest,
-  MetaRequest,
-  SigningRequest,
-} from '@extension-base/background/types';
+import { AuthorizeRequest, AuthUrlInfo, MetadataRequest, SigningRequest } from '@extension-base/background/types';
 
 export type State = {
   requests: {

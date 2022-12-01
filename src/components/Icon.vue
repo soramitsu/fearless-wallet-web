@@ -1,6 +1,6 @@
 <template>
   <svg :class="getClasses" aria-hidden="true" v-on="$listeners">
-    <use :xlink:href="getIconName" class="icon__inner" :class="icon" />
+    <use :xlink:href="getIconName" style="width: 32px; height: 32px" class="icon__inner" :class="icon" />
   </svg>
 </template>
 

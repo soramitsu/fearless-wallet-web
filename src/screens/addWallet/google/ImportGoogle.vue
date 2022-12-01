@@ -19,7 +19,7 @@
     </div>
 
     <template v-slot:control>
-      <Button v-if="!isLoading" size="big" fontSize="big" width="100%" :text="$t('common.confirm')" @click="proceed" />
+      <Button v-if="!isLoading" size="big" fontSize="big" width="100%" :text="buttonText" @click="proceed" />
     </template>
   </FlowStepLayout>
 </template>
@@ -97,6 +97,10 @@ export default class ManageGoogle extends Vue {
     this.isLoading = false;
   }
 
+  get isFinishForm() {
+    return this.step === this.countSteps;
+  }
+
   get getSteps() {
     return this.isLoading ? [] : [1, 2];
   }
@@ -109,8 +113,13 @@ export default class ManageGoogle extends Vue {
     return this.files.length;
   }
 
+  get buttonText() {
+    return this.step === 2 ? this.$t('common.finish') : this.$t('common.confirm');
+  }
+
   get header() {
     if (this.getToken === 'null') return this.$t('addWallet.google.accessDenied');
+    if (this.isFinishForm) return this.$t('');
 
     return this.isLoading ? this.$t('addWallet.google.fetchInfo') : this.$t('addWallet.google.selectToImport');
   }

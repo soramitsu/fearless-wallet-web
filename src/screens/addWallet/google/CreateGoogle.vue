@@ -63,7 +63,7 @@
         fontSize="big"
         width="100%"
         :border="false"
-        :text="subButtonText"
+        :text="$t('addWallet.google.showSecretData')"
         :type="subButtonType"
         @click="subButtonProceed"
       />
@@ -182,12 +182,6 @@ export default class CreateGoogleWallet extends Vue {
     this.step === 4 ? (this.step += 2) : (this.step = 4);
   }
 
-  get subButtonText() {
-    if (this.step === 4) return this.$t('addWallet.google.backupWallet');
-
-    return this.$t('addWallet.google.showPassPhrase');
-  }
-
   get subButtonType() {
     if (this.step === 4) return 'google';
 
@@ -221,12 +215,12 @@ export default class CreateGoogleWallet extends Vue {
   }
 
   get header() {
-    if (this.step === 1) return '';
-    if (this.step === 3) return 'Backup the passphrase for your new wallet';
-    if (this.step === 5) return 'Confirm the passphrase';
-    if (this.step === 6) return 'Set up password';
+    if (this.step === 1 || this.step === 7) return '';
+    if (this.step === 3) return this.$t('addWallet.backupPassphrase');
+    if (this.step === 5) return this.$t('addWallet.confirmPassphrase');
+    if (this.step === 6) return this.$t('addWallet.setupPassword');
 
-    return 'Create new wallet';
+    return this.$t('addWallet.createWallet');
   }
 
   get buttonType() {
@@ -236,11 +230,11 @@ export default class CreateGoogleWallet extends Vue {
   }
 
   get buttonText() {
-    if (this.step === 4) return this.$t('addWallet.haveWrittenPassphrase');
-
+    if (this.step === 2) return this.$t('common.continue');
     if (this.step === 3) return this.$t('addWallet.google.backupWallet');
-
-    if (this.step === 2) return this.$t('common.confirm');
+    if (this.step === 4) return this.$t('addWallet.haveWrittenPassphrase');
+    if (this.step === 5) return this.$t('addWallet.confirmPassphrase');
+    if (this.step === 7) return this.$t('common.finish');
 
     return this.$t('addWallet.createWallet');
   }

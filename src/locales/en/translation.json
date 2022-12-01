@@ -105,7 +105,7 @@
     "requesting": "Requesting permissions...",
     "connected": "Mobile wallet connected to Fearless Wallet Extension",
     "noAnswer": "No answer from your wallet received yet. Please make sure the wallet is open",
-    "signMobile": "To sign with your mobile device, check if your mobile client is open and click 'Sign'"
+    "signMobile": "To sign using a mobile device, make sure your mobile client is open on the Beacon dApp screen and click Sign."
   },
   "metadata": {
     "text": "Metadata",
@@ -173,7 +173,8 @@
     "assetDetails": "Asset details",
     "addWallet": "Add wallet",
     "networkUnavailable": "Network is unavailable",
-    "networkUnavailableSubtext": "The network is unavailable, you can wait or ask a question to the community"
+    "networkUnavailableSubtext": "The network is unavailable, you can wait or ask a question to the community",
+    "nothingFound": "Nothing found"
   },
   "asset": {
     "history": {

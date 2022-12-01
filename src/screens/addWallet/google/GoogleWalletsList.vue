@@ -19,12 +19,12 @@
               <div v-show="file.active" class="json__controls">
                 <ValidatedInput
                   v-model="file.password"
-                  :placeholder="$t('addWallet.enterPassword')"
+                  class="input__validate-pass"
                   typeText="text"
+                  :placeholder="$t('addWallet.enterPassword')"
                   :showPassword="true"
                   :readonly="file.isComplete"
                   :isError="file.isError"
-                  class="input__validate-pass"
                   :errorDescriptions="$t('addWallet.warningMessages.jsonPassword.text')"
                 />
 

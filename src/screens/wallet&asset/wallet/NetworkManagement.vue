@@ -106,7 +106,7 @@ export default class ReceiveForm extends Vue {
           }
 
           .unavailable {
-            color: rgba(255, 255, 255, 0.5);
+            color: $gray-color;
             font-size: 12px;
             line-height: 18px;
           }

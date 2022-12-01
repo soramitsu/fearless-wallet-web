@@ -28,12 +28,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-
 import { Components } from '@/router/routes';
 
-@Component({
-  components: {},
-})
+@Component
 export default class ReplacePopup extends Vue {
   @Prop(Function) handlerClose!: VoidFunction;
 

@@ -17,6 +17,7 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
+import type { CustomEvent } from '@/interfaces';
 
 @Component
 export default class NodeItem extends Vue {
@@ -38,8 +39,8 @@ export default class NodeItem extends Vue {
     ];
   }
 
-  changeNode(event: Event) {
-    const classList = (event.target as HTMLDivElement)?.classList;
+  changeNode(event: CustomEvent) {
+    const classList = event.target?.classList;
 
     if (
       classList.contains('node-item') ||

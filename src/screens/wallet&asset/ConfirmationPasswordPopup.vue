@@ -1,5 +1,11 @@
 <template>
-  <Popup class="sending-popup" :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close">
+  <Popup
+    class="confirmation-password-popup"
+    :headerType="headerType"
+    sizeWidth="big"
+    :headerText="popupHeader"
+    :handlerClose="close"
+  >
     <div class="popup-content">
       <template v-if="!isTransactionInit && !isSignMobile">
         <Icon icon="lock-green" className="icon__lock-green" />
@@ -254,8 +260,8 @@ export default class ConfirmationPasswordPopup extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.sending-popup {
-  z-index: 399;
+.confirmation-password-popup {
+  z-index: 399 !important;
 
   .popup-content {
     display: flex;

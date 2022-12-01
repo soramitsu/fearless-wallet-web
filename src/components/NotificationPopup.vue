@@ -36,9 +36,7 @@ interface Headers {
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 
-@Component({
-  components: {},
-})
+@Component
 export default class NotificationPopup extends Vue {
   @Prop({ default: () => ({ text: '', subtext: '' }) }) headers!: Headers;
   @Prop({ default: false }) showAcceptButton!: boolean;

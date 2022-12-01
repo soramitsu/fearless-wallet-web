@@ -40,9 +40,7 @@ import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { WalletInfo } from '@/store';
 import { cut } from '@/helpers/history';
 
-@Component({
-  components: {},
-})
+@Component
 export default class SelectAuthAccount extends Vue {
   @PropSync('selectAll', { type: Boolean }) syncSelectAll!: boolean;
   @Prop(Object) accounts!: WalletInfo[];

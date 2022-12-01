@@ -586,7 +586,7 @@ export default class SendForm extends Vue {
 
 <style lang="scss" scoped>
 .transfer-select-popup {
-  z-index: 300;
+  z-index: 300 !important;
   text-transform: capitalize;
 }
 

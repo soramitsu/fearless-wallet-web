@@ -42,6 +42,7 @@ export default class Currencies extends Vue {
 
   @Prop(Array) currencies!: Currency[];
   @Prop(String) selectedNetwork!: string;
+  @Prop(String) filterValue!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -49,7 +50,9 @@ export default class Currencies extends Vue {
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
 
   get mainText() {
-    return this.isOnline ? 'wallet.allAssetsHidden' : 'common.offlineStatus';
+    if (!this.isOnline) return 'common.offlineStatus';
+
+    return this.filterValue !== '' ? 'wallet.nothingFound' : 'wallet.allAssetsHidden';
   }
 
   get showAllAssetsHiddenText() {

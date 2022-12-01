@@ -197,7 +197,7 @@ export default class SendForm extends Vue {
     }
 
     .name {
-      color: rgba(255, 255, 255, 0.5);
+      color: $gray-color;
     }
 
     .column {
@@ -206,7 +206,7 @@ export default class SendForm extends Vue {
       align-items: flex-end;
 
       .value {
-        color: rgba(255, 255, 255, 0.75);
+        color: $default-white;
         font-weight: 300;
         font-size: 12px;
         margin-top: 3px;

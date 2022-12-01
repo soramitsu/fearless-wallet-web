@@ -26,11 +26,8 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Popup from './Popup.vue';
 
-@Component({
-  components: {},
-})
+@Component
 export default class ConfirmationPopup extends Vue {
   @Prop(String) text!: string;
   @Prop(Function) handlerClose!: VoidFunction;

@@ -210,7 +210,7 @@ export default class TeleportForm extends Vue {
     }
 
     .name {
-      color: rgba(255, 255, 255, 0.5);
+      color: $gray-color;
       text-align: left;
     }
 

@@ -5,9 +5,10 @@
         <div class="label">{{ name }}</div>
 
         <div class="count">
-          <div class="value">{{ formattedNumber(value) }}</div>
+          <div class="value">{{ formattedNumber(value) }} {{ assetNameUpper }}</div>
 
           <div v-if="getFiatValueVisible(fiat)" class="fiat-value">
+            {{ fiatSymbol }}
             {{ formattedPrice(fiat) }}
           </div>
         </div>
@@ -30,6 +31,11 @@ export default class BalanceDetailsPopup extends Vue {
   @Prop(Object) currency!: CurrencyController;
   @Prop(Function) closePopup!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+
+  get assetNameUpper() {
+    return this.currency.displayName.toUpperCase();
+  }
 
   get balances() {
     const balances = this.currency.getBalanceInNetwork(this.selectedWallet, this.network);

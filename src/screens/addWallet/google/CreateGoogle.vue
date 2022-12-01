@@ -133,6 +133,10 @@ export default class CreateGoogleWallet extends Vue {
     return this.step === 2;
   }
 
+  get skipFirstStep() {
+    return this.$route.params.skipFirstStep !== undefined;
+  }
+
   get createWalletStep() {
     return this.step === 4 || this.step === 5;
   }
@@ -191,6 +195,10 @@ export default class CreateGoogleWallet extends Vue {
 
   mounted() {
     this.mnemonic = BaseApi.generateMnemonic();
+
+    console.log('mounted', this.$route.params);
+
+    if (this.skipFirstStep) this.step = 2;
   }
 
   @Watch('step')
@@ -211,7 +219,7 @@ export default class CreateGoogleWallet extends Vue {
   }
 
   back() {
-    if (this.step === 1) {
+    if (this.step === 1 || (this.skipFirstStep && this.step === 2)) {
       this.$router.push({ name: Components.Welcome });
 
       return;

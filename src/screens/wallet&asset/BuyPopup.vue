@@ -18,9 +18,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 
 import { getProviderUrl } from '@/helpers/currencies';
 
-@Component({
-  components: {},
-})
+@Component
 export default class BuyPopup extends Vue {
   @Prop(String) asset!: string;
   @Prop(String) address!: string;

@@ -24,9 +24,7 @@ import type { ComponentText } from '@/interfaces';
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type FontSize = 'small' | 'medium' | 'big';
 
-@Component({
-  components: {},
-})
+@Component
 export default class BorderButton extends Vue {
   @Prop({ default: '' }) text!: ComponentText;
   @Prop(String) width!: string;

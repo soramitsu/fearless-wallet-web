@@ -21,6 +21,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import type { CustomEvent } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
 
 @Component
@@ -44,8 +45,8 @@ export default class SelectNetworkButton extends Vue {
     ];
   }
 
-  openNetworkPopup(event: Event) {
-    const classList = (event.target as HTMLDivElement)?.classList;
+  openNetworkPopup(event: CustomEvent) {
+    const classList = event.target?.classList;
 
     if (!classList.contains('warning-img') && !classList.contains('info-triangle')) {
       this.$emit('openNetworkPopup');

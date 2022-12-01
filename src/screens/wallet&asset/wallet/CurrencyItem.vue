@@ -108,7 +108,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Currency } from '@/interfaces/currencies';
 import type { SelectedWallet } from '@/store';
-import type { Networks } from '@/interfaces';
+import type { Networks, CustomEvent } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/helpers/numbers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -241,10 +241,10 @@ export default class CurrencyItem extends Vue {
     return this.isCurrentNetwork ? this.selectedNetwork : mainNetwork !== '' ? mainNetwork : firstNetwork;
   }
 
-  openAssetPage(event: Event) {
+  openAssetPage(event: CustomEvent) {
     if (this.showWarning) return;
 
-    const classList = (event.target as HTMLDivElement)?.classList;
+    const classList = event.target?.classList;
 
     if (
       this.showAssetsManagementForm ||

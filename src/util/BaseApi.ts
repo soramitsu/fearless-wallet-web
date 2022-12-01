@@ -9,6 +9,7 @@ import {
 } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import { assetFromToken } from '@equilab/api';
+import { Base } from '@polkadot/ui-keyring/Base';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { BehaviorSubject } from 'rxjs';
@@ -498,6 +499,17 @@ export default class BaseApi {
   }
 
   static updateName(address: string, name: string): void {
+    if (BaseApi.isMobileWallet(address)) {
+      const substrateAddress = BaseApi.encodeAddress(address);
+      const { meta } = BaseApi.getAddress(substrateAddress)!;
+
+      meta.name = name;
+
+      BaseApi.saveAddress(substrateAddress, meta);
+
+      return;
+    }
+
     const pair = BaseApi.getKeyringPair(address);
     const meta = getMetaTyped(pair.meta);
 

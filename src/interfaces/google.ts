@@ -23,14 +23,17 @@ interface CreateFileProp {
     address: string;
   };
 }
+
 export interface ICreateFile {
   json: string;
   options: { name: string; address: string };
   token: string;
 }
+
 export interface IGetFileMetaResponse {
   description: string;
 }
+
 interface VerifyTokenResponse {
   issued_to: string;
   audience: string;

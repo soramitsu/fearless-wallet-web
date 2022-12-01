@@ -56,6 +56,7 @@
             :selectedNetwork="selectedNetwork"
             :showAssetsManagementForm="showAssetsManagementForm"
             :toggleVisibleActivityForm="toggleVisibleActivityForm"
+            :filterValue="filterValue"
             @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
           />
 

@@ -175,13 +175,7 @@ export default class CreateGoogleWallet extends Vue {
   popupHandler() {
     this.showNotificationPopup = false;
 
-    if (this.step === 5) {
-      this.step -= 1;
-
-      return;
-    }
-
-    this.step += 1;
+    this.step === 5 ? (this.step -= 1) : (this.step += 1);
   }
 
   proceed() {

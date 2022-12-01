@@ -24,6 +24,7 @@
     "enterPassphrase": "Введите мнемонику",
     "walletNickname": "Имя кошелька",
     "enterPassword": "Введите пароль",
+    "setupPassword": "Установите пароль",
     "addEthereumAccount": "Добавить ETH аккаунт",
     "haveWrittenPassphrase": "Я записал парольную фразу",
     "usingFearless": "Начните использовать Fearless",
@@ -79,6 +80,17 @@
         "text": "Такой кошелек уже существует",
         "subtext": "Продолжая, вы понимаете, что мобильный кошелек будет заменен текущим кошельком и будет удален."
       }
+    },
+    "google": {
+      "selectToImport": "Выберите кошелек, который вы хотите добавить",
+      "accessDenied": "Доступ запрещен",
+      "somethingWrong": "Что-то пошло не так...",
+      "showSecretData": "Показать мнемонику",
+      "fetchInfo": "Подтягиваем информацию из Google Drive",
+      "backupWallet": "Cохранить в Google Drive",
+      "saved": "Сохранено",
+      "passphraseSaved": "Кошелек был успешно сохранен в Google Drive",
+      "noWallets": "Не нашли кошельки в вашем Google Drive"
     }
   },
   "mobileConnector": {
@@ -262,6 +274,7 @@
     "proceed": "Продолжить",
     "continue": "Продолжить",
     "confirm": "Подтвердить",
+    "finish": "Закончить",
     "copied": "Скопировано",
     "copiedValue": "Скопировано {value}",
     "understood": "Понятно",

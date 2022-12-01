@@ -88,10 +88,8 @@
       "showSecretData": "Show my secret data",
       "fetchInfo": "Fetching info from google",
       "backupWallet": "Google Drive backup",
-      "showPassPhrase": "Show my passphrase",
       "saved": "Saved",
       "passphraseSaved": "The passphrase has been successfully saved on Google Drive",
-      "backupPassPhrase": "Backup the passphrase for your new wallet",
       "noWallets": "No saved wallets have been found on the Google Drive"
     }
   },
@@ -284,7 +282,6 @@
     "save": "Save",
     "yes": "Yes",
     "no": "No",
-    "or": "or",
     "search": "Search",
     "searchNetwork": "Search in networks",
     "searchAmongAssets": "Search among assets",

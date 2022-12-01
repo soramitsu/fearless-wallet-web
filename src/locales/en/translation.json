@@ -1,8 +1,9 @@
 {
   "welcome": {
     "createWallet": "Create a new wallet",
-    "importWallet": "I already have a wallet",
-    "connectMobile": "Connect Mobile Wallet",
+    "importWallet": "Import wallet",
+    "connectMobile": "Connect mobile",
+    "manageGoogle": "Google Drive manage",
     "deFiWallet": "The DeFi Wallet From The Future",
     "agreeWith": "By continuing you agree with",
     "and": "and"
@@ -23,6 +24,7 @@
     "enterPassphrase": "Enter Passphrase",
     "walletNickname": "Wallet nickname",
     "enterPassword": "Enter password",
+    "setupPassword": "Set up password",
     "addEthereumAccount": "Add ethereum account",
     "haveWrittenPassphrase": "I have written down passphrase",
     "usingFearless": "Start using Fearless",
@@ -78,6 +80,17 @@
         "text": "Current wallet already exists",
         "subtext": "By continuing you understand that mobile wallet would be replaced with current wallet and will be deleted"
       }
+    },
+    "google": {
+      "selectToImport": "Select the wallet you want to import",
+      "accessDenied": "Access denied",
+      "somethingWrong": "Something went wrong...",
+      "showSecretData": "Show my secret data",
+      "fetchInfo": "Fetching info from google",
+      "backupWallet": "Google Drive backup",
+      "saved": "Saved",
+      "passphraseSaved": "The passphrase has been successfully saved on Google Drive",
+      "noWallets": "No saved wallets have been found on the Google Drive"
     }
   },
   "mobileConnector": {
@@ -264,6 +277,8 @@
     "accept": "Accept",
     "proceed": "Proceed",
     "continue": "Continue",
+    "confirm": "Confirm",
+    "finish": "Finish",
     "copied": "Сopied",
     "copiedValue": "Сopied {value}",
     "understood": "Understood",

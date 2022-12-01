@@ -20,6 +20,7 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
+import { IGDriveFile, IGetFileMetaResponse, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
 
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;
@@ -148,6 +149,14 @@ export interface RequestSignatures {
   'pri(signing.refreshPasswordTimeout)': [string, number];
   'pri(signing.resetTimeouts)': [null, boolean];
   'pri(signing.saveTimeoutCache)': [string, boolean];
+  'pri(google.auth)': [null, void];
+  'pri(google.verify.token)': [{ token: string }, VerifyTokenResponse];
+  'pri(google.get.files)': [{ token: string }, IGetFilesResponse];
+  'pri(google.get.file)': [GoogleFileId, KeyringPair$Json];
+  'pri(google.get.meta)': [GoogleFileId, IGetFileMetaResponse];
+  'pri(google.create.file)': [{ json: string; options: { name: string; address: string }; token: string }, void];
+  'pri(google.delete.file)': [GoogleFileId, void];
+
   // public/external requests, i.e. from a page
   'pub(accounts.list)': [RequestAccountList, InjectedAccount[]];
   'pub(accounts.subscribe)': [RequestAccountSubscribe, string, InjectedAccount[]];
@@ -559,4 +568,13 @@ export interface IState {
   windows: number[];
   cachedUnlocks: CachedUnlocks;
   connectedTabsUrl: string[];
+}
+
+export interface GoogleFileId {
+  id: string;
+  token: string;
+}
+
+export interface RequestGoogleCreateFile {
+  data: Record<string, string>;
 }

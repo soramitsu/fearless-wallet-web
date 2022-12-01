@@ -58,13 +58,14 @@ export default class SelectAuthAccount extends Vue {
   cutAddress(address: string) {
     return cut(address);
   }
+
   saveToClipboard(value: string) {
     navigator.clipboard.writeText(value);
   }
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .auth-accounts {
   display: flex;
   flex-flow: column;

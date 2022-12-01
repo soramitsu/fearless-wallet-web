@@ -12,6 +12,7 @@ import type {
   AccountJson,
   AllowedPath,
   AuthorizeRequest,
+  GoogleFileId,
   MessageTypes,
   MessageTypesWithNoSubscriptions,
   MessageTypesWithNullRequest,
@@ -32,6 +33,7 @@ import type { Chain } from '@polkadot/extension-chains/types';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
+import { IGetFileMetaResponse, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
 
 const metadataGets = new Map<string, Promise<MetadataDef | null>>();
 
@@ -344,4 +346,36 @@ export async function batchRestore(file: KeyringPairs$Json, password: string): P
 
 export async function setNotification(notification: string): Promise<boolean> {
   return sendMessage('pri(settings.notification)', notification);
+}
+
+export async function verifyToken(token: string): Promise<VerifyTokenResponse> {
+  return sendMessage('pri(google.verify.token)', { token });
+}
+
+export async function initGoogleAuth(): Promise<void> {
+  return sendMessage('pri(google.auth)');
+}
+
+export async function getGoogleFiles(token: string): Promise<IGetFilesResponse> {
+  return sendMessage('pri(google.get.files)', { token });
+}
+
+export async function getGoogleFile(id: string, token: string): Promise<KeyringPair$Json> {
+  return sendMessage('pri(google.get.file)', { id, token });
+}
+
+export async function getGoogleFileMeta(id: string, token: string): Promise<IGetFileMetaResponse> {
+  return sendMessage('pri(google.get.meta)', { id, token });
+}
+
+export async function createGoogleFile(
+  json: string,
+  options: { name: string; address: string },
+  token: string
+): Promise<void> {
+  return sendMessage('pri(google.create.file)', { json, options, token });
+}
+
+export async function deleteGoogleFile(id: string, token: string): Promise<void> {
+  return sendMessage('pri(google.delete.file)', { id, token });
 }

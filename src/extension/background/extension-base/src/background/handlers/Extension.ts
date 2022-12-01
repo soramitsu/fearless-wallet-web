@@ -6,7 +6,6 @@ import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/
 import { assert, isHex } from '@polkadot/util';
 import { keyExtractSuri, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
 import { CachedUnlocks } from '../types';
-
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
@@ -15,6 +14,7 @@ import type {
   AllowedPath,
   AuthorizedAccountsDiff,
   AuthorizeRequest,
+  GoogleFileId,
   MessageTypes,
   MetadataRequest,
   RequestAccountBatchExport,
@@ -62,6 +62,8 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { keyring } from '@/controllers/keyringChrome';
+import { googleManage } from '@/controllers/googleController';
+import { ICreateFile, IGetFileMetaResponse, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
 
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
@@ -76,6 +78,7 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
 }
 
 export default class Extension {
+  private static token = '';
   static async transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
     return Object.values(accounts).map(({ json: { address, meta }, type }): AccountJson => {
       return {
@@ -530,7 +533,7 @@ export default class Extension {
   }
 
   static windowOpen(path: AllowedPath): boolean {
-    const url = `${chrome.runtime.getURL('index.html')}#${path}`;
+    const url = `${chrome.runtime.getURL('popup.html')}#${path}`;
 
     if (!ALLOWED_PATH.includes(path)) {
       console.error('Not allowed to open the url:', url);
@@ -606,8 +609,8 @@ export default class Extension {
     return State.getConnectedTabsUrl();
   }
 
-  static createAddress(request: RequestAddressCreate) {
-    keyring.saveAddress(request.address, request.meta, 'address');
+  static createAddress({ address, meta }: RequestAddressCreate) {
+    keyring.saveAddress(address, meta, 'address');
   }
 
   static removeAddress(address: string) {
@@ -618,8 +621,38 @@ export default class Extension {
     return keyring.getAddresses();
   }
 
-  // Weird thought, the eslint override is not needed in Tabs
-  // eslint-disable-next-line @typescript-eslint/require-await
+  static initAuth(): void {
+    googleManage.authExtension();
+  }
+
+  static async verifyToken({ token }: { token: string }): Promise<VerifyTokenResponse> {
+    return googleManage.verifyToken(token);
+  }
+
+  static getToken(): void {
+    chrome.identity.getAuthToken({}, function (token) {
+      Extension.token = token;
+    });
+  }
+
+  static async getFiles({ token }: { token: string }): Promise<IGetFilesResponse> {
+    return googleManage.getFiles(token);
+  }
+
+  static async getFile({ id, token }: GoogleFileId): Promise<string> {
+    return googleManage.getFile(id, token);
+  }
+
+  static async createFile({ json, options, token }: ICreateFile): Promise<void> {
+    googleManage.createFile({ json, options }, token);
+  }
+
+  static deleteFile({ id }: GoogleFileId): void {
+    if (!Extension.token) Extension.getToken();
+
+    googleManage.deleteFile(id, Extension.token);
+  }
+
   static async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -761,6 +794,24 @@ export default class Extension {
 
       case 'pri(signing.saveTimeoutCache)':
         return await Extension.saveTimeoutCache(request as string);
+
+      case 'pri(google.get.files)':
+        return Extension.getFiles(request as { token: string });
+
+      case 'pri(google.auth)':
+        return Extension.initAuth();
+
+      case 'pri(google.verify.token)':
+        return Extension.verifyToken(request as { token: string });
+
+      case 'pri(google.get.file)':
+        return Extension.getFile(request as GoogleFileId);
+
+      case 'pri(google.create.file)':
+        return Extension.createFile(request as ICreateFile);
+
+      case 'pri(google.delete.file)':
+        return Extension.deleteFile(request as GoogleFileId);
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

@@ -45,6 +45,7 @@
         <CreateWallet
           v-if="showCreateForm"
           :step="step"
+          :shouldShowAtSteps="[2, 3]"
           :mnemonic="mnemonic"
           :selectedMnemonicElements="selectedMnemonicElements"
           @update:selectedMnemonicElements="updateSelectedMnemonicElements"
@@ -136,11 +137,11 @@ import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
 import AddEthereumAccountPopup from '@/screens/addWallet/AddEthereumAccountPopup.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
-import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
 
@@ -406,7 +407,7 @@ export default class AddWallet extends Vue {
   }
 
   @Watch('step')
-  changedCurrentStep(step: number) {
+  async changedCurrentStep(step: number) {
     if (step === 0) this.$router.back();
 
     if (step === 2) {

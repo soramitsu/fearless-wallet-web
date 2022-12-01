@@ -1,0 +1,43 @@
+{
+  "homepage_url": "https://github.com/soramitsu",
+  "name": "Fearless Wallet",
+  "short_name": "FW",
+  "manifest_version": 3,
+  "permissions": ["storage", "tabs", "scripting", "identity"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "icons": {
+    "16": "icons/logo-16.png",
+    "32": "icons/logo-32.png",
+    "48": "icons/logo-48.png",
+    "64": "icons/logo-64.png",
+    "128": "icons/logo-128.png"
+  },
+  "action": {
+    "default_title": "Fearless Wallet",
+    "default_popup": "popup.html"
+  },
+  "oauth2": {
+    "scopes": ["https://www.googleapis.com/auth/drive.appdata"]
+  },
+  "minimum_chrome_version": "92",
+  "content_scripts": [
+    {
+      "js": ["content.js"],
+      "matches": ["https://*/*"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["page.js", "popup.js"],
+      "matches": ["https://*/*"],
+      "use_dynamic_url": true
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self';  style-src 'unsafe-inline';img-src 'self' data:; connect-src https://accounts.google.com https://www.googleapis.com https://api.subquery.network https://polkadot.js.org https://raw.githubusercontent.com https://api.coingecko.com https://beacon-node-1.hope-5.papers.tech https://beacon-node-1.hope-4.papers.tech https://beacon-node-1.sky.papers.tech https://beacon-node-2.sky.papers.tech https://beacon-node-1.hope.papers.tech https://beacon-node-1.hope-2.papers.tech https://beacon-node-1.diamond.papers.tech https://beacon-node-1.hope-3.papers.tech ws:"
+  }
+}

@@ -59,6 +59,7 @@ export default class FinishForm extends Vue {
     display: flex;
     justify-content: space-between;
     margin-top: 15px;
+    gap: 10px;
   }
 
   .description {

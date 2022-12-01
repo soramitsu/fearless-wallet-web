@@ -18,7 +18,7 @@
         />
 
         <div v-if="show15MinCheckbox" class="remember__checkbox">
-          <Checkbox v-model="isSavePass" size="medium" :label="min15Label" />
+          <Checkbox v-model="isSavePass" size="medium" :label="$t(min15Label)" />
         </div>
 
         <Button

@@ -111,7 +111,7 @@ export default class Account extends Vue {
       return;
     }
 
-    BaseApi.updateName(address, this.newName);
+    BaseApi.updateWalletName(address, this.newName);
 
     this.setSelectedWallet({ selectedWalletAddress: address });
   }

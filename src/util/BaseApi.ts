@@ -498,7 +498,7 @@ export default class BaseApi {
     return assetFromToken(symbol)[0];
   }
 
-  static updateName(address: string, name: string): void {
+  static updateWalletName(address: string, name: string): void {
     if (BaseApi.isMobileWallet(address)) {
       const substrateAddress = BaseApi.encodeAddress(address);
       const { meta } = BaseApi.getAddress(substrateAddress)!;

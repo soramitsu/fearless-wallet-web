@@ -64,7 +64,7 @@ interface FilesState extends IGDriveFile {
     GoogleWalletsList,
   },
 })
-export default class ManageGoogle extends Vue {
+export default class AddFromGoogle extends Vue {
   readonly countSteps = 2;
   files: FilesState[] = [];
   isLoading = true;
@@ -96,7 +96,7 @@ export default class ManageGoogle extends Vue {
   }
 
   get buttonText() {
-    return this.step === 2 ? this.$t('common.finish') : this.$t('common.confirm');
+    return this.step === 2 ? this.$t('common.finish') : this.$t('common.continue');
   }
 
   get header() {
@@ -154,18 +154,8 @@ export default class ManageGoogle extends Vue {
   }
 
   addWallet(isImport: false) {
-    if (isImport) {
-      this.$router.push({
-        name: Components.AddFromGoogle,
-        params: {
-          access_token: this.$route.params.access_token,
-          skipFirstStep: '1',
-        },
-      });
-    }
-
     this.$router.push({
-      name: Components.CreateGoogle,
+      name: isImport ? Components.ImportGoogle : Components.CreateGoogle,
       params: {
         access_token: this.$route.params.access_token,
         skipFirstStep: '1',

@@ -102,7 +102,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
     NegativeMessage,
   },
 })
-export default class CreateGoogleWallet extends Vue {
+export default class CreateGoogle extends Vue {
   readonly countSteps = 7;
   step = 1;
   nickname = '';
@@ -195,8 +195,6 @@ export default class CreateGoogleWallet extends Vue {
 
   mounted() {
     this.mnemonic = BaseApi.generateMnemonic();
-
-    console.log('mounted', this.$route.params);
 
     if (this.skipFirstStep) this.step = 2;
   }

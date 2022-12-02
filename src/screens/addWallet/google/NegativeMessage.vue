@@ -10,7 +10,7 @@
 import { Vue, Component, Prop } from 'vue-property-decorator';
 
 @Component
-export default class NoWallets extends Vue {
+export default class NegativeMessage extends Vue {
   @Prop(String) message!: string;
 }
 </script>

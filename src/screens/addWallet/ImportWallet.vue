@@ -154,6 +154,7 @@ export default class ImportWallet extends Vue {
 .import-wallet {
   display: flex;
   flex-direction: column;
+  width: 100%;
 
   .s-icon-file-file-upload-24 {
     color: #ccd2e3 !important;

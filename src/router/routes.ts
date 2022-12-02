@@ -21,6 +21,7 @@ const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
 const AddFromGoogle = () => import('@/screens/addWallet/google/AddFromGoogle.vue');
 const CreateGoogle = () => import('@/screens/addWallet/google/CreateGoogle.vue');
+const ImportGoogle = () => import('@/screens/addWallet/google/ImportGoogle.vue');
 
 export enum Components {
   Welcome = 'Welcome',
@@ -41,6 +42,7 @@ export enum Components {
   MetaRequest = 'MetaRequest',
   Transaction = 'Transaction',
   CreateGoogle = 'CreateGoogle',
+  ImportGoogle = 'ImportGoogle',
   AddFromGoogle = 'AddFromGoogle',
 }
 
@@ -64,6 +66,11 @@ const routes: Array<RouteConfig> = [
     path: '/google/create/:access_token',
     name: Components.CreateGoogle,
     component: CreateGoogle,
+  },
+  {
+    path: '/google/import/:access_token',
+    name: Components.ImportGoogle,
+    component: ImportGoogle,
   },
   {
     path: '/add-wallet/:type',

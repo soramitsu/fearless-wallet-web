@@ -28,10 +28,11 @@
                   :errorDescriptions="$t('addWallet.warningMessages.jsonPassword.text')"
                 />
 
-                <BorderButton
+                <Button
                   class="button__confirm"
                   type="primary"
                   size="big"
+                  :border="false"
                   :iconName="file.isComplete ? 'check' : ''"
                   :isLoading="file.isLoading"
                   :disabled="!file.password.length || file.isLoading || file.isComplete"

@@ -1,7 +1,6 @@
 <template>
   <Corners :hover="hover" :size="size" :topLeftCorner="topLeftCorner" :bottomRightCorner="bottomRightCorner">
     <Button
-      type="secondary"
       :border="true"
       :borderRadius="borderRadius"
       :disabled="disabled"

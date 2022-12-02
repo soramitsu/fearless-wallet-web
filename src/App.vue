@@ -53,9 +53,11 @@ export default class App extends Vue {
   }
 
   @Watch('isOnline')
-  connect() {
-    this.connectToNodes();
-    this.subscribeToBalancesOfNetworks();
+  connect(value: boolean) {
+    if (value) {
+      this.connectToNodes();
+      this.subscribeToBalancesOfNetworks();
+    } else this.unsubscribe();
   }
 
   async connectToNodes() {
@@ -129,11 +131,15 @@ export default class App extends Vue {
     }
   }
 
-  beforeUnmount() {
+  unsubscribe() {
     clearInterval(this.assetsPriceInterval!);
 
     this.subscribeAccounts.unsubscribe();
     this.subscribeAddresses.unsubscribe();
+  }
+
+  beforeUnmount() {
+    this.unsubscribe();
   }
 }
 </script>

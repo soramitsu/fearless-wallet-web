@@ -27,12 +27,10 @@
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import MnemonicColumns from './MnemonicColumns.vue';
 import type { MnemonicConfirmation } from '@/interfaces/common';
-import BorderButton from '@/components/BorderButton.vue';
 
 @Component({
   components: {
     MnemonicColumns,
-    BorderButton,
   },
 })
 export default class MnemonicConfirmationForm extends Vue {

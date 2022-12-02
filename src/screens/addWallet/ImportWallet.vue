@@ -42,15 +42,8 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch, VModel, PropSync } from 'vue-property-decorator';
 import type { ImportType } from '@/interfaces';
-import Input from '@/components/Input.vue';
-import Select from '@/components/Select.vue';
 
-@Component({
-  components: {
-    Input,
-    Select,
-  },
-})
+@Component
 export default class ImportWallet extends Vue {
   readonly optionsImport = [
     { label: 'Mnemonic passphrase', value: 'mnemonic' },
@@ -161,6 +154,7 @@ export default class ImportWallet extends Vue {
 .import-wallet {
   display: flex;
   flex-direction: column;
+  width: 100%;
 
   .s-icon-file-file-upload-24 {
     color: #ccd2e3 !important;

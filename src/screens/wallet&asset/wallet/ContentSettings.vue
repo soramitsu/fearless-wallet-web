@@ -52,11 +52,7 @@ import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { TabWallet } from '@/interfaces/common';
 import type { Currency } from '@/interfaces/currencies';
-import type { SelectedWallet } from '@/store/accounts/types';
-import TabButton from '@/components/TabButton.vue';
-import CircleButton from '@/components/CircleButton.vue';
-import SearchInput from '@/components/SearchInput.vue';
-import Switcher from '@/components/Switcher.vue';
+import type { SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 interface TabsOptions {
@@ -67,14 +63,7 @@ interface TabsOptions {
   target: string;
 }
 
-@Component({
-  components: {
-    TabButton,
-    CircleButton,
-    SearchInput,
-    Switcher,
-  },
-})
+@Component
 export default class ContentSettings extends Vue {
   readonly tabsOptions: TabsOptions[] = [
     {

@@ -8,9 +8,8 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Shimmer from '@/components/Shimmer.vue';
 
-@Component({ components: { Shimmer } })
+@Component
 export default class Currencies extends Vue {
   readonly targetRef = 'target';
   shouldRender = false;

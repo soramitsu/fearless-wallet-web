@@ -9,6 +9,7 @@ import App from '@/App.vue';
 import '@/styles';
 import '@/plugins';
 import '@/assets';
+import '@/components';
 
 Vue.use(Plugin);
 

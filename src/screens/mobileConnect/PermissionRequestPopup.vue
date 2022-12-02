@@ -38,14 +38,10 @@ import { PermissionResponseOutput } from '@airgap/beacon-sdk';
 import ConnectionStatus from './ConnectionStatus.vue';
 import { beaconController } from '@/controllers/beaconController';
 import { PermissionErrorPayload, RequestSentInfo } from '@/interfaces';
-import Button from '@/components/Button.vue';
 import { Components } from '@/router/routes';
-import Popup from '@/components/Popup.vue';
 
 @Component({
   components: {
-    Button,
-    Popup,
     ConnectionStatus,
   },
 })

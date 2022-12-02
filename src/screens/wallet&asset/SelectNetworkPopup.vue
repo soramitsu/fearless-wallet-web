@@ -24,7 +24,6 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Networks as NetworksType, RelayChainName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
-import SelectPopup from '@/components/SelectPopup.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { getIconName } from '@/helpers/imgPath';
 
@@ -36,9 +35,7 @@ interface Options {
   isAll?: true;
 }
 
-@Component({
-  components: { SelectPopup },
-})
+@Component
 export default class SelectNetworkButton extends Vue {
   filterValue = '';
 

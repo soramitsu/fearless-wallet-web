@@ -1,6 +1,5 @@
-import type { Wallet } from '@/store/accounts/types';
+import type { Wallet, CustomAccounts } from '@/store';
 import type { ChainAccount, Networks } from '@/interfaces';
-import type { Accounts } from '@/store/networks/types';
 import BaseApi from '@/util/BaseApi';
 import NetworksController from '@/controllers/networksController';
 
@@ -29,20 +28,20 @@ function getChainAccounts(networks: Networks, wallet: Wallet): ChainAccount[] {
   });
 }
 
-function getAccounts(): Accounts {
+function getAccounts(): CustomAccounts {
   const accounts = BaseApi.getAccounts().reduce((result, { address, meta }) => {
     const { type } = BaseApi.getPair(address);
 
     result[address] = { type, json: { address, meta } };
 
     return result;
-  }, {} as Accounts);
+  }, {} as CustomAccounts);
 
   const mobileAccount = BaseApi.getMobileAddresses().reduce((result, { address, meta }) => {
     result[address] = { type: undefined, json: { address, meta } };
 
     return result;
-  }, {} as Accounts);
+  }, {} as CustomAccounts);
 
   return { ...accounts, ...mobileAccount };
 }

@@ -2,13 +2,7 @@ import axios from 'axios';
 import type { KeySettings } from '@/networks';
 import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
-import type {
-  LoadJsons,
-  LoadHistory,
-  SubscribeToBalances,
-  ToggleActiveNode,
-  AugmentedActionContext,
-} from '@/store/networks/types';
+import type { LoadJsons, LoadHistory, SubscribeToBalances, ToggleActiveNode, AugmentedActionContext } from '@/store';
 import type { FiatJson, AssetJson, NetworkJson, Networks, AssetsPrice, ApiOptions } from '@/interfaces';
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';

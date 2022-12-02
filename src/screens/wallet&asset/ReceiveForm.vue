@@ -71,29 +71,15 @@ import RotateInput from './RotateInput.vue';
 import type { Networks } from '@/interfaces/networks';
 import type { Currencies } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
-import Input from '@/components/Input.vue';
-import Button from '@/components/Button.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { SelectedWallet } from '@/store/accounts/types';
+import { SelectedWallet } from '@/store';
 import { firstCharToUp } from '@/helpers/common';
-import QR from '@/components/QR.vue';
 import { cut } from '@/helpers/history';
-import AboveForm from '@/components/AboveForm.vue';
-import BorderButton from '@/components/BorderButton.vue';
-import Tooltip from '@/components/Tooltip.vue';
-import SelectPopup from '@/components/SelectPopup.vue';
 
 @Component({
   components: {
-    QR,
-    Input,
-    Button,
-    Tooltip,
-    AboveForm,
-    SelectPopup,
     RotateInput,
-    BorderButton,
   },
 })
 export default class ReceiveForm extends Vue {

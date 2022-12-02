@@ -1,6 +1,7 @@
 <template>
   <Corners :hover="hover" :size="size" :topLeftCorner="topLeftCorner" :bottomRightCorner="bottomRightCorner">
     <Button
+      type="secondary"
       :border="true"
       :borderRadius="borderRadius"
       :disabled="disabled"
@@ -18,19 +19,12 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Corners from './Corners.vue';
-import Button from './Button.vue';
 import type { ComponentText } from '@/interfaces';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type FontSize = 'small' | 'medium' | 'big';
 
-@Component({
-  components: {
-    Corners,
-    Button,
-  },
-})
+@Component
 export default class BorderButton extends Vue {
   @Prop({ default: '' }) text!: ComponentText;
   @Prop(String) width!: string;

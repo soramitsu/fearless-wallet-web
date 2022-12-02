@@ -3,9 +3,8 @@ import { ISubmittableResult } from '@polkadot/types/types';
 import { FPNumber } from '@sora-substrate/math';
 import type { Balances, BalanceFP, WalletBalance, RelayChainName, WalletAddress, AccountBalance } from '@/interfaces';
 import type { SubmittableExtrinsic, SignerOptions } from '@polkadot/api/submittable/types';
-import type { Wallet } from '@/store/accounts/types';
+import type { Wallet, SetHistoryProps } from '@/store';
 import type { ApiPromise } from '@polkadot/api';
-import type { SetHistoryProps } from '@/store/networks/types';
 import BaseApi from '@/util/BaseApi';
 import LocalStorageController from '@/controllers/localStorageController';
 import NetworksController from '@/controllers/networksController';
@@ -115,7 +114,7 @@ export default class CurrencyController {
     }, mockBalance);
   }
 
-  private getBalanceInNetwork(wallet: Wallet, _network: string): string {
+  private getTotalBalanceInNetwork(wallet: Wallet, _network: string): string {
     const walletBalance = this.getWalletBalance(wallet);
     const total = walletBalance.find(({ network }) => network === _network)?.balance.total ?? FPNumber.ZERO;
 
@@ -127,6 +126,36 @@ export default class CurrencyController {
     const balance = walletBalance.find(({ network }) => network === _network)?.balance;
 
     return balance?.total.toString() ?? '';
+  }
+
+  public getBalanceInNetwork(wallet: Wallet, _network: string) {
+    const walletBalance = this.getWalletBalance(wallet);
+    const { frozen, locked, reserved, total, transferable } = walletBalance.find(
+      ({ network }) => network === _network
+    )!.balance;
+
+    return {
+      frozen: {
+        value: frozen.toString(),
+        fiat: this.calculateCost(frozen).toString(),
+      },
+      locked: {
+        value: locked.toString(),
+        fiat: this.calculateCost(locked).toString(),
+      },
+      reserved: {
+        value: reserved.toString(),
+        fiat: this.calculateCost(reserved).toString(),
+      },
+      total: {
+        value: total.toString(),
+        fiat: this.calculateCost(total).toString(),
+      },
+      transferable: {
+        value: transferable.toString(),
+        fiat: this.calculateCost(transferable).toString(),
+      },
+    };
   }
 
   public getTransactionAddress(wallet: Wallet, network: string): string {
@@ -211,7 +240,7 @@ export default class CurrencyController {
 
   public getTotalBalance(wallet: Wallet, network?: string): string {
     if (network && network !== 'all') {
-      return this.getBalanceInNetwork(wallet, network);
+      return this.getTotalBalanceInNetwork(wallet, network);
     }
 
     const countAssets = this.countAssets(wallet).total;

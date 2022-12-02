@@ -21,16 +21,13 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
-import Corners from '@/components/Corners.vue';
 
 type Size = 'small' | 'medium' | 'big';
 type Type = 'text' | 'textarea' | 'text-file' | 'number';
 type Style = 'default' | 'pink';
 type TypeText = 'none' | 'uppercase';
 
-@Component({
-  components: { Corners },
-})
+@Component
 export default class Input extends Vue {
   @VModel({ type: String || Number }) vModel!: string | number;
   @Prop(String) placeholder!: string;

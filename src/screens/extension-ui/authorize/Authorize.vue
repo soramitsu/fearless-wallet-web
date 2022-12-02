@@ -41,12 +41,9 @@ import { Vue, Component } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { AuthorizeRequest, ApproveAuthRequest } from '@extension-base/background/types';
 import { TAction } from '@/interfaces';
-import Button from '@/components/Button.vue';
 import Hint from '@/components/Hint.vue';
-import Alert from '@/components/Alert.vue';
-import AboveForm from '@/components/AboveForm.vue';
 import { Components } from '@/router/routes';
-import { Accounts, WalletInfo } from '@/store/accounts/types';
+import { Accounts, WalletInfo } from '@/store';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -56,9 +53,7 @@ import BaseApi from '@/util/BaseApi';
 @Component({
   components: {
     Hint,
-    Alert,
-    Button,
-    AboveForm,
+
     SelectAuthAccount,
   },
 })

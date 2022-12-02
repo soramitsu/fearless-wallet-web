@@ -30,22 +30,12 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import AboveForm from '@/components/AboveForm.vue';
-import Input from '@/components/Input.vue';
-import Button from '@/components/Button.vue';
+
 import { accountController } from '@/controllers/accountController';
 import { firstCharToUp } from '@/helpers/common';
-import ValidatedInput from '@/components/ValidatedInput.vue';
 import NetworksController from '@/controllers/networksController';
 
-@Component({
-  components: {
-    Input,
-    Button,
-    AboveForm,
-    ValidatedInput,
-  },
-})
+@Component
 export default class EditNodeForm extends Vue {
   name = '';
   url = '';

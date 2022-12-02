@@ -21,16 +21,11 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import Checkbox from '@/components/Checkbox.vue';
-import Input from '@/components/Input.vue';
-import Scroll from '@/components/Scroll.vue';
 import GoogleWalletsList from '@/screens/addWallet/google/GoogleWalletsList.vue';
 import { getGoogleFile, getGoogleFiles, verifyToken } from '@/extension/messaging';
 import { IGDriveFile } from '@/interfaces';
 import { Components } from '@/router/routes';
-import CircleButton from '@/components/CircleButton.vue';
 import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
-import Button from '@/components/Button.vue';
 import BaseApi from '@/util/BaseApi';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
 
@@ -43,19 +38,14 @@ interface FilesState extends IGDriveFile {
 @Component({
   components: {
     FlowStepLayout,
-    Scroll,
-    Input,
     NegativeMessage,
-    Button,
-    CircleButton,
     GoogleWalletsList,
-    Checkbox,
   },
 })
-export default class ManageGoogle extends Vue {
+export default class AddFromGoogle extends Vue {
+  readonly countSteps = 2;
   files: FilesState[] = [];
   isLoading = true;
-  readonly countSteps = 2;
   step = 1;
   token = '';
 
@@ -84,7 +74,7 @@ export default class ManageGoogle extends Vue {
   }
 
   get buttonText() {
-    return this.step === 2 ? this.$t('common.finish') : this.$t('common.confirm');
+    return this.step === 2 ? this.$t('common.finish') : this.$t('common.continue');
   }
 
   get header() {
@@ -179,3 +169,9 @@ export default class ManageGoogle extends Vue {
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.add-wallet-button {
+  margin-bottom: 10px;
+}
+</style>

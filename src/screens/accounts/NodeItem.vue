@@ -17,11 +17,9 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import CircleButton from '@/components/CircleButton.vue';
+import type { CustomEvent } from '@/interfaces';
 
-@Component({
-  components: { CircleButton },
-})
+@Component
 export default class NodeItem extends Vue {
   readonly dotsHorizontalRef = 'dotsHorizontal';
 
@@ -41,8 +39,8 @@ export default class NodeItem extends Vue {
     ];
   }
 
-  changeNode(event: Event) {
-    const classList = (event.target as HTMLDivElement)?.classList;
+  changeNode(event: CustomEvent) {
+    const classList = event.target?.classList;
 
     if (
       classList.contains('node-item') ||

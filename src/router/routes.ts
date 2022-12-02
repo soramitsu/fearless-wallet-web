@@ -7,20 +7,20 @@ import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 
-const AddWallet = () => import('@/screens/addWallet/AddWallet.vue');
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Staking = () => import('@/screens/staking/Staking.vue');
 const History = () => import('@/screens/history/History.vue');
 const Polkaswap = () => import('@/screens/polkaswap/Polkaswap.vue');
 const Accounts = () => import('@/screens/accounts/Accounts.vue');
-const Export = () => import('@/screens/accounts/Export.vue');
 const Nodes = () => import('@/screens/accounts/Nodes.vue');
 const MobileConnect = () => import('@/screens/mobileConnect/MobileConnect.vue');
 const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue');
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
-const ImportGoogle = () => import('@/screens/addWallet/google/ImportGoogle.vue');
-const CreateGoogle = () => import('@/screens/addWallet/google/CreateGoogle.vue');
+const AddWallet = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/AddWallet.vue');
+const Export = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/accounts/Export.vue');
+const AddFromGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/AddFromGoogle.vue');
+const CreateGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/CreateGoogle.vue');
 
 export enum Components {
   Welcome = 'Welcome',
@@ -41,7 +41,7 @@ export enum Components {
   MetaRequest = 'MetaRequest',
   Transaction = 'Transaction',
   CreateGoogle = 'CreateGoogle',
-  ImportGoogle = 'ImportGoogle',
+  AddFromGoogle = 'AddFromGoogle',
 }
 
 const haveAccounts = () => BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
@@ -57,8 +57,8 @@ const routes: Array<RouteConfig> = [
   },
   {
     path: '/google/:access_token',
-    name: Components.ImportGoogle,
-    component: ImportGoogle,
+    name: Components.AddFromGoogle,
+    component: AddFromGoogle,
   },
   {
     path: '/google/create/:access_token',

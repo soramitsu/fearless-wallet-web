@@ -81,33 +81,17 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import Logo from '@/components/Logo.vue';
-import Icon from '@/components/Icon.vue';
-import Button from '@/components/Button.vue';
-import CircleButton from '@/components/CircleButton.vue';
+import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
 import URLS from '@/consts/urls';
-import AboveForm from '@/components/AboveForm.vue';
 import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
 import { initGoogleAuth } from '@/extension/messaging';
-import { Components } from '@/router/routes';
 
 @Component({
-  components: {
-    Logo,
-    Icon,
-    Button,
-    CircleButton,
-    MobileConnect,
-    AboveForm,
-  },
+  components: { MobileConnect },
 })
 export default class Welcome extends Vue {
   showGoogleAuthPopup = false;
-
-  created() {
-    if (this.accessToken) this.showGoogleAuthPopup = true;
-  }
 
   get showBackWalletIcon() {
     return BaseApi.getAccounts().length !== 0 || BaseApi.getAddresses().length !== 0;
@@ -115,6 +99,10 @@ export default class Welcome extends Vue {
 
   get accessToken() {
     return this.$route.params.access_token;
+  }
+
+  created() {
+    if (this.accessToken) this.showGoogleAuthPopup = true;
   }
 
   manageGoogle() {

@@ -10,7 +10,6 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
-import Corners from './Corners.vue';
 
 type Size = 'small' | 'medium' | 'big';
 
@@ -19,9 +18,7 @@ interface Options {
   value: string;
 }
 
-@Component({
-  components: { Corners },
-})
+@Component
 export default class Select extends Vue {
   @VModel({ type: String }) vModel!: string;
   @Prop(String) placeholder!: string;

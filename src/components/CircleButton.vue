@@ -11,13 +11,10 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { Placement } from '@/interfaces';
-import Tooltip from '@/components/Tooltip.vue';
 
 type BackgroundType = 'none' | 'black' | 'light-black';
 
-@Component({
-  components: { Tooltip },
-})
+@Component
 export default class CircleButton extends Vue {
   @Prop(String) iconName!: string;
   @Prop(String) backgroundColor!: BackgroundType;

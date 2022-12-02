@@ -76,14 +76,11 @@ import { Getter, Action } from 'vuex-class';
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { TranslateResult } from 'vue-i18n';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
-import Icon from '@/components/Icon.vue';
 import PasswordForm from '@/screens/addWallet/PasswordForm.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
 import NickNameForm from '@/screens/addWallet/NicknameForm.vue';
-import Button from '@/components/Button.vue';
 import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
-import NotificationPopup from '@/components/NotificationPopup.vue';
 import { Components } from '@/router/routes';
 import { MnemonicConfirmation, TAction } from '@/interfaces';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
@@ -96,19 +93,16 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({
   components: {
-    NegativeMessage,
-    AdvancedButton,
-    Icon,
     AdvancedForm,
     NickNameForm,
     CreateWallet,
     PasswordForm,
     FlowStepLayout,
-    NotificationPopup,
-    Button,
+    AdvancedButton,
+    NegativeMessage,
   },
 })
-export default class CreateGoogleWallet extends Vue {
+export default class CreateGoogle extends Vue {
   readonly countSteps = 7;
   step = 1;
   nickname = '';

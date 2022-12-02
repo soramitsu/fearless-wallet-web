@@ -6,13 +6,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import ComingSoon from '@/components/ComingSoon.vue';
 
-@Component({ components: { ComingSoon } })
+@Component
 export default class NFTs extends Vue {}
 </script>
-
-<style lang="scss" scoped>
-.nfts {
-}
-</style>

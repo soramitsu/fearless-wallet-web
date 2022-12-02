@@ -19,12 +19,12 @@
               <div v-show="file.active" class="json__controls">
                 <ValidatedInput
                   v-model="file.password"
-                  :placeholder="$t('addWallet.enterPassword')"
+                  class="input__validate-pass"
                   typeText="text"
+                  :placeholder="$t('addWallet.enterPassword')"
                   :showPassword="true"
                   :readonly="file.isComplete"
                   :isError="file.isError"
-                  class="input__validate-pass"
                   :errorDescriptions="$t('addWallet.warningMessages.jsonPassword.text')"
                 />
 
@@ -52,11 +52,6 @@
 import { Getter, Action } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import Checkbox from '@/components/Checkbox.vue';
-import Corners from '@/components/Corners.vue';
-import ValidatedInput from '@/components/ValidatedInput.vue';
-import Button from '@/components/Button.vue';
-import Scroll from '@/components/Scroll.vue';
 import { cut } from '@/helpers/history';
 import { IGDriveFile, TAction } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
@@ -74,15 +69,7 @@ interface FilesState extends IGDriveFile {
   json: KeyringPair$Json;
 }
 
-@Component({
-  components: {
-    Corners,
-    Scroll,
-    ValidatedInput,
-    Button,
-    Checkbox,
-  },
-})
+@Component
 export default class GoogleWalletsList extends Vue {
   @Prop(Array) items!: FilesState[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;

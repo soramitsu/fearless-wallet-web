@@ -18,13 +18,9 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import Corners from '@/components/Corners.vue';
 import { cut } from '@/helpers/history';
-@Component({
-  components: {
-    Corners,
-  },
-})
+
+@Component
 export default class WalletInfo extends Vue {
   @Prop(String) address!: string;
   @Prop(String) name!: string;

@@ -18,19 +18,13 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import Button from '@/components/Button.vue';
-import Popup from '@/components/Popup.vue';
 
-@Component({
-  components: {
-    Button,
-    Popup,
-  },
-})
+@Component
 export default class SignMobile extends Vue {
   handleSign() {
     this.$emit('onSign');
   }
+
   handleCancel() {
     this.$emit('onCancel');
   }

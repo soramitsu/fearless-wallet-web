@@ -37,19 +37,10 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
-import Checkbox from '@/components/Checkbox.vue';
-import Tooltip from '@/components/Tooltip.vue';
-import { WalletInfo } from '@/store/accounts/types';
+import { WalletInfo } from '@/store';
 import { cut } from '@/helpers/history';
-import Scroll from '@/components/Scroll.vue';
 
-@Component({
-  components: {
-    Scroll,
-    Tooltip,
-    Checkbox,
-  },
-})
+@Component
 export default class SelectAuthAccount extends Vue {
   @PropSync('selectAll', { type: Boolean }) syncSelectAll!: boolean;
   @Prop(Object) accounts!: WalletInfo[];

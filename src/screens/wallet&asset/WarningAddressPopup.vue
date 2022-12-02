@@ -15,11 +15,8 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import NotificationPopup from '@/components/NotificationPopup.vue';
 
-@Component({
-  components: { NotificationPopup },
-})
+@Component
 export default class WarningAddressPopup extends Vue {
   readonly headers = {
     text: 'asset.invalidNetworkText',

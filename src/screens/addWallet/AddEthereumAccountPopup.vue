@@ -10,11 +10,8 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import ConfirmationPopup from '@/components/ConfirmationPopup.vue';
 
-@Component({
-  components: { ConfirmationPopup },
-})
+@Component
 export default class AddEthereumAccountPopup extends Vue {
   @Prop(Function) handlerClose!: VoidFunction;
   @Prop(Function) handlerAgree!: VoidFunction;

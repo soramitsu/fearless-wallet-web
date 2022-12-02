@@ -118,14 +118,17 @@ const actions: ActionTree<State, State> & Actions = {
             });
         }
 
-        commit(MutationTypes.SET_ASSET_PRICE, { assetsPrice });
+        commit(MutationTypes.SET_ASSETS_PRICE, { assetsPrice });
       } catch {
         console.info('%c Coingecko request failed', 'background:red;color:#fff');
       }
     };
 
+    const interval = setInterval(loadAssetsPrice, AUTO_UPDATE_ASSETS_PRICE_MS);
+
+    commit(MutationTypes.SET_ASSETS_PRICE_INTERVAL, { interval });
+
     loadAssetsPrice();
-    setInterval(loadAssetsPrice, AUTO_UPDATE_ASSETS_PRICE_MS);
   },
 
   async [ActionTypes.LOAD_HISTORY]({ commit, getters }, { networkName, walletAddress, pageSize = PAGE_SIZE, assetId }) {

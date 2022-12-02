@@ -11,6 +11,7 @@ import type {
   SetActiveNodeProps,
   SetNetworkApiProps,
   SetNetworkStatusProps,
+  SetAssetsPriceIntervalProps,
 } from './types';
 import { accountController } from '@/controllers/accountController';
 
@@ -18,7 +19,8 @@ export enum MutationTypes {
   SET_NETWORKS = 'SET_NETWORKS',
   SET_ASSETS_JSON = 'SET_ASSETS_JSON',
   SET_FIATS_JSON = 'SET_FIATS_JSON',
-  SET_ASSET_PRICE = 'SET_ASSET_PRICE',
+  SET_ASSETS_PRICE = 'SET_ASSETS_PRICE',
+  SET_ASSETS_PRICE_INTERVAL = 'SET_ASSETS_PRICE_INTERVAL',
   SET_CURRENCIES = 'SET_CURRENCIES',
   SORT_CURRENCIES = 'SORT_CURRENCIES',
   SET_HISTORY = 'SET_HISTORY',
@@ -32,7 +34,8 @@ export type Mutations = {
   [MutationTypes.SET_NETWORKS](state: State, props: SetNetworksStatusProps): void;
   [MutationTypes.SET_ASSETS_JSON](state: State, props: SetAssetsJsonProps): void;
   [MutationTypes.SET_FIATS_JSON](state: State, props: SetFiatsJsonProps): void;
-  [MutationTypes.SET_ASSET_PRICE](state: State, props: SetAssetsPriceProps): void;
+  [MutationTypes.SET_ASSETS_PRICE](state: State, props: SetAssetsPriceProps): void;
+  [MutationTypes.SET_ASSETS_PRICE_INTERVAL](state: State, props: SetAssetsPriceIntervalProps): void;
   [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
   [MutationTypes.UPDATE_CURRENCY_BALANCE](state: State, props: UpdateCurrencyBalanceProps): void;
@@ -64,10 +67,14 @@ const mutations: MutationTree<State> & Mutations = {
     state.fiats = fiats.map((fiat) => ({ ...fiat }));
   },
 
-  [MutationTypes.SET_ASSET_PRICE](state, { assetsPrice }) {
+  [MutationTypes.SET_ASSETS_PRICE](state, { assetsPrice }) {
     state.assetsPrice = assetsPrice;
 
     state.currencies.forEach((currency) => currency.updatePrice());
+  },
+
+  [MutationTypes.SET_ASSETS_PRICE_INTERVAL](state, { interval }) {
+    state.assetsPriceInterval = interval;
   },
 
   [MutationTypes.UPDATE_CURRENCY_BALANCE](

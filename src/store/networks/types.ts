@@ -50,6 +50,10 @@ export type SetAssetsPriceProps = {
   assetsPrice: AssetsPrice;
 };
 
+export type SetAssetsPriceIntervalProps = {
+  interval: NodeJS.Timer;
+};
+
 export type SetCurrenciesProps = {
   currencies: Currencies;
   address?: string;

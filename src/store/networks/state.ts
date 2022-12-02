@@ -8,6 +8,7 @@ export type State = {
   history: History;
   currencies: Currencies;
   activeNodes: ActiveNodes;
+  assetsPriceInterval: NodeJS.Timer | null;
 };
 
 const state = (): State => {
@@ -19,6 +20,7 @@ const state = (): State => {
     currencies: [],
     history: {},
     activeNodes: {},
+    assetsPriceInterval: null,
   };
 };
 

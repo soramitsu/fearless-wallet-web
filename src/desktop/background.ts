@@ -1,6 +1,4 @@
-import path from 'path';
 import { app, protocol, BrowserWindow, shell } from 'electron';
-import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
 import { isSafeForExternalOpen } from '@/consts/urls';
 import { APP_WIDTH, APP_HEIGHT, APP_NAME } from '@/consts/global';

@@ -21,7 +21,6 @@ const AddWallet = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/a
 const Export = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/accounts/Export.vue');
 const AddFromGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/AddFromGoogle.vue');
 const CreateGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/CreateGoogle.vue');
-const ImportGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/ImportGoogle.vue');
 
 export enum Components {
   Welcome = 'Welcome',
@@ -42,7 +41,6 @@ export enum Components {
   MetaRequest = 'MetaRequest',
   Transaction = 'Transaction',
   CreateGoogle = 'CreateGoogle',
-  ImportGoogle = 'ImportGoogle',
   AddFromGoogle = 'AddFromGoogle',
 }
 
@@ -66,11 +64,6 @@ const routes: Array<RouteConfig> = [
     path: '/google/create/:access_token',
     name: Components.CreateGoogle,
     component: CreateGoogle,
-  },
-  {
-    path: '/google/import/:access_token',
-    name: Components.ImportGoogle,
-    component: ImportGoogle,
   },
   {
     path: '/add-wallet/:type',

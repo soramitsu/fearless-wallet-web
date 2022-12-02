@@ -133,10 +133,6 @@ export default class CreateGoogle extends Vue {
     return this.step === 2;
   }
 
-  get skipFirstStep() {
-    return this.$route.params.skipFirstStep !== undefined;
-  }
-
   get createWalletStep() {
     return this.step === 4 || this.step === 5;
   }
@@ -195,8 +191,6 @@ export default class CreateGoogle extends Vue {
 
   mounted() {
     this.mnemonic = BaseApi.generateMnemonic();
-
-    if (this.skipFirstStep) this.step = 2;
   }
 
   @Watch('step')
@@ -217,7 +211,7 @@ export default class CreateGoogle extends Vue {
   }
 
   back() {
-    if (this.step === 1 || (this.skipFirstStep && this.step === 2)) {
+    if (this.step === 1) {
       this.$router.push({ name: Components.Welcome });
 
       return;

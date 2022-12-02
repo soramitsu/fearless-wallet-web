@@ -13,28 +13,6 @@
     <GoogleWalletsList v-else-if="haveWalletsToImport" :items="files" @getFile="getFile" />
 
     <template v-slot:control>
-      <div class="add-wallet-buttons">
-        <BorderButton
-          v-if="!isLoading"
-          size="big"
-          fontSize="big"
-          width="260px"
-          text="addWallet.createWallet"
-          type="secondary"
-          @click="addWallet"
-        />
-
-        <BorderButton
-          v-if="!isLoading"
-          size="big"
-          fontSize="big"
-          width="260px"
-          text="addWallet.importWallet"
-          type="secondary"
-          @click="addWallet(true)"
-        />
-      </div>
-
       <Button v-if="!isLoading" size="big" fontSize="big" width="100%" :text="buttonText" @click="proceed" />
     </template>
   </FlowStepLayout>
@@ -153,16 +131,6 @@ export default class AddFromGoogle extends Vue {
     this.setItemValue(index, { json: file });
   }
 
-  addWallet(isImport: false) {
-    this.$router.push({
-      name: isImport ? Components.ImportGoogle : Components.CreateGoogle,
-      params: {
-        access_token: this.$route.params.access_token,
-        skipFirstStep: '1',
-      },
-    });
-  }
-
   proceed() {
     if (this.isFinishForm || this.isAccessDenied) {
       this.$router.push({ name: Components.Wallet });
@@ -203,9 +171,7 @@ export default class AddFromGoogle extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.add-wallet-buttons {
+.add-wallet-button {
   margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
 }
 </style>

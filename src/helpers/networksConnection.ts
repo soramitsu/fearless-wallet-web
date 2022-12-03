@@ -97,7 +97,7 @@ function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): v
   });
 
   const provider = new WsProvider(node.url, AUTO_CONNECT_MS);
-  const api = new ApiPromise({ provider, registry });
+  const api = new ApiPromise({ provider, registry, noInitWarn: true });
 
   apiOptions.api = api;
   apiOptions.provider = provider;

@@ -1,5 +1,4 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { TypeRegistry } from '@polkadot/types/create';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { Network, ApiOptions, AssetJson } from '@/interfaces';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
@@ -80,7 +79,6 @@ function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): v
   const autoSelectNode = store.getters.getAutoSelectNodesValueByNetwork(networkName);
   const nodesList = autoSelectNode ? nodes : [activeNodes[networkName]];
   const node = _node ?? nodesList[apiOptions.nodeIndex];
-  const registry = new TypeRegistry();
 
   store.commit(MutationTypes.SET_NETWORK_STATUS, {
     network: networkName,
@@ -97,7 +95,7 @@ function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): v
   });
 
   const provider = new WsProvider(node.url, AUTO_CONNECT_MS);
-  const api = new ApiPromise({ provider, registry, noInitWarn: true });
+  const api = new ApiPromise({ provider, noInitWarn: true });
 
   apiOptions.api = api;
   apiOptions.provider = provider;

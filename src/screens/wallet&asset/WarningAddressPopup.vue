@@ -27,9 +27,3 @@ export default class WarningAddressPopup extends Vue {
   @Prop(Function) handlerAccept!: VoidFunction;
 }
 </script>
-
-<style lang="scss" scoped>
-.existential-popup {
-  z-index: 399;
-}
-</style>

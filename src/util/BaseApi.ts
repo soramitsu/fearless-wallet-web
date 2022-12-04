@@ -9,7 +9,6 @@ import {
 } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import { assetFromToken } from '@equilab/api';
-import { Base } from '@polkadot/ui-keyring/Base';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { BehaviorSubject } from 'rxjs';

@@ -36,7 +36,7 @@ export default class Input extends Vue {
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'text' }) type!: Type;
   @Prop({ default: 'none' }) typeText!: TypeText;
-  @Prop({ default: 100 }) maxlength!: number;
+  @Prop({ default: 999 }) maxlength!: number;
   @Prop({ default: false }) readonly!: boolean;
   @Prop({ default: false }) showPassword!: boolean;
   @Prop({ default: 'default' }) styleInput!: Style;

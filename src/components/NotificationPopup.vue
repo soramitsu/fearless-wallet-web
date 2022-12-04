@@ -66,7 +66,7 @@ export default class NotificationPopup extends Vue {
 
 <style lang="scss" scoped>
 .notification-popup {
-  z-index: 299;
+  z-index: 299 !important;
 
   .notification-popup-content {
     display: flex;

@@ -41,7 +41,7 @@
           :border="false"
           :disabled="disabledProceed"
           :text="buttonText"
-          :type="buttonType"
+          type="primary"
           @click="proceed"
         />
       </div>
@@ -122,12 +122,6 @@ export default class CreateGoogle extends Vue {
     return this.step === 6 ? this.jsonInvalid : this.notificationHeaders;
   }
 
-  get subButtonType() {
-    if (this.step === 4) return 'google';
-
-    return 'link';
-  }
-
   get header() {
     if (this.step === 1 || this.step === 7) return '';
     if (this.step === 3) return this.$t('addWallet.backupPassphrase');
@@ -135,12 +129,6 @@ export default class CreateGoogle extends Vue {
     if (this.step === 6) return this.$t('addWallet.setupPassword');
 
     return this.$t('addWallet.createWallet');
-  }
-
-  get buttonType() {
-    if (this.step === 3) return 'google';
-
-    return 'primary';
   }
 
   get buttonText() {

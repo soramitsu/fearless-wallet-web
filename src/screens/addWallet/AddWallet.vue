@@ -90,16 +90,20 @@
 
         <FinishForm v-if="showFinishForm" />
       </div>
+      <div class="controls">
+        <BorderButton v-if="step === 3" :iconName="'reload'" @click="resetAll" />
+        <BorderButton v-if="step === 3" :text="'Skip confirmation'" @click="skipStep" />
 
-      <Button
-        v-if="!showAdvancedForm"
-        size="big"
-        fontSize="big"
-        width="100%"
-        :text="buttonText"
-        :disabled="disabledProceed"
-        @click="proceed"
-      />
+        <Button
+          v-if="!showAdvancedForm"
+          size="big"
+          fontSize="big"
+          width="100%"
+          :text="buttonText"
+          :disabled="disabledProceed"
+          @click="proceed"
+        />
+      </div>
     </div>
 
     <NotificationPopup
@@ -572,6 +576,14 @@ export default class AddWallet extends Vue {
     this.step += 2;
   }
 
+  resetAll() {
+    this.selectedMnemonicElements.splice(0);
+  }
+
+  skipStep() {
+    this.step += 1;
+  }
+
   handlerAgree() {
     this.showAddEthereumAccountPopup = false;
     this.step += 1;
@@ -874,5 +886,13 @@ export default class AddWallet extends Vue {
     width: 32px;
     height: 32px;
   }
+}
+
+.controls {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
 }
 </style>

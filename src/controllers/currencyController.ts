@@ -336,7 +336,7 @@ export default class CurrencyController {
           this.extrinsic = api!.tx.tokens.transfer(to, ormlOptions, precisionAmount);
           break;
         case 'soraAsset':
-          this.extrinsic = api!.tx.assets.transfer(this.assetId, to, precisionAmount);
+          this.extrinsic = api!.tx.assets.transfer(ormlOptions, to, precisionAmount);
           break;
         default:
           this.extrinsic = api!.tx.currencies.transfer(to, ormlOptions, precisionAmount);

@@ -1,6 +1,5 @@
 <template>
   <NotificationPopup
-    class="network-unavailable-popup"
     sizeWidth="big"
     rejectButtonText="Cancel"
     acceptButtonText="accounts.switchNode"
@@ -9,6 +8,7 @@
     :headers="headers"
     :handlerClose="closePopup"
     :handlerAccept="handlerAccept"
+    :zIndex="500"
   />
 </template>
 
@@ -25,9 +25,3 @@ export default class NetworkUnavailablePopup extends Vue {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-.network-unavailable-popup {
-  z-index: 500 !important;
-}
-</style>

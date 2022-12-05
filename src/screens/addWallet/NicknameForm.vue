@@ -4,7 +4,7 @@
       v-model="syncedNickname"
       placeholder="addWallet.walletNickname"
       size="big"
-      :maxlength="15"
+      :maxlength="35"
       :readonly="readonly"
       class="input"
     />

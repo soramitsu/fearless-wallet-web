@@ -1,11 +1,5 @@
 <template>
-  <Popup
-    class="confirmation-password-popup"
-    :headerType="headerType"
-    sizeWidth="big"
-    :headerText="popupHeader"
-    :handlerClose="close"
-  >
+  <Popup :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close" :zIndex="399">
     <div class="popup-content">
       <template v-if="!isTransactionInit && !isSignMobile">
         <Icon icon="lock-green" className="icon__lock-green" />
@@ -260,69 +254,65 @@ export default class ConfirmationPasswordPopup extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.confirmation-password-popup {
-  z-index: 399 !important;
+.popup-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 25px;
+  min-height: 175px;
 
-  .popup-content {
+  .password-input {
+    width: 100%;
+    margin-bottom: 15px;
+  }
+
+  .icon__lock-green {
+    width: 30px;
+    height: 30px;
+  }
+
+  .text {
+    font-weight: 700;
+    font-size: 18px;
+    width: 250px;
+  }
+
+  .row {
+    margin-top: 15px;
+  }
+
+  .descriptions {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 0 25px;
-    min-height: 175px;
+    justify-content: space-between;
+    background: $secondary-background-color;
+    border-radius: 50px;
+    margin-bottom: 20px;
+    padding: 12px;
 
-    .password-input {
-      width: 100%;
-      margin-bottom: 15px;
+    .s-icon-arrows-arrow-right-24 {
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 30px !important;
+      margin: 0 10px;
     }
+  }
 
-    .icon__lock-green {
-      width: 30px;
-      height: 30px;
-    }
+  .transfer-amount {
+    font-weight: 800;
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
 
-    .text {
-      font-weight: 700;
-      font-size: 18px;
-      width: 250px;
-    }
+  .transfer-value {
+    font-size: 16px;
+    color: $gray-color;
+  }
 
-    .row {
-      margin-top: 15px;
-    }
-
-    .descriptions {
-      display: flex;
-      justify-content: space-between;
-      background: $secondary-background-color;
-      border-radius: 50px;
-      margin-bottom: 20px;
-      padding: 12px;
-
-      .s-icon-arrows-arrow-right-24 {
-        color: rgba(255, 255, 255, 0.3);
-        font-size: 30px !important;
-        margin: 0 10px;
-      }
-    }
-
-    .transfer-amount {
-      font-weight: 800;
-      font-size: 20px;
-      margin-bottom: 10px;
-    }
-
-    .transfer-value {
-      font-size: 16px;
-      color: $gray-color;
-    }
-
-    .remember__checkbox {
-      margin-top: -15px;
-      width: 100%;
-      display: flex;
-      align-items: flex-start;
-    }
+  .remember__checkbox {
+    margin-top: -15px;
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
   }
 }
 </style>

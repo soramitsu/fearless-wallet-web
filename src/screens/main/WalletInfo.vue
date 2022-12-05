@@ -97,6 +97,10 @@ export default class WalletInfo extends Vue {
     text-transform: uppercase;
     color: $gray-color;
     margin-bottom: 4px;
+    max-width: 185px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .mobile {
@@ -109,8 +113,8 @@ export default class WalletInfo extends Vue {
   }
 
   .dots-container {
-    height: 30px;
-    width: 30px;
+    height: 20px;
+    width: 20px;
     opacity: 0.9;
     display: flex;
 

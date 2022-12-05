@@ -93,7 +93,7 @@ export default class ContentSettings extends Vue {
 
   get allCurrenciesHidden() {
     const visibleCurrencies = this.currencies.filter((currency) =>
-      currency.getCurrencyVisible(this.selectedWallet.address)
+      currency.getCurrencyVisibility(this.selectedWallet.address)
     );
 
     return visibleCurrencies.length === 0;

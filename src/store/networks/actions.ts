@@ -102,6 +102,7 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.LOAD_ASSETS_PRICE]({ commit, state: { assetsJson, fiats } }) {
     const urlFiatsPart = fiats.map(({ id }) => id).join('%2C');
     const urlsAssets = assetsJson.filter(({ priceId }) => !!priceId).map(({ priceId }) => priceId);
+
     const urlAssetsPart = [...new Set(urlsAssets)].join('%2C');
     const url = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${urlFiatsPart}&include_24hr_change=true&ids=${urlAssetsPart}`;
 
@@ -113,8 +114,8 @@ const actions: ActionTree<State, State> & Actions = {
         for (const priceId in data) {
           assetsJson
             .filter(({ priceId: _priceId }) => _priceId === priceId)
-            .forEach(({ id }) => {
-              assetsPrice[id] = data[priceId];
+            .forEach(({ displayName, symbol }) => {
+              assetsPrice[displayName ?? symbol] = data[priceId];
             });
         }
 

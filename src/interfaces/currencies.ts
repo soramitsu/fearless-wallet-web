@@ -9,6 +9,7 @@ interface AssetBalance {
   precision: number;
   existentialDeposit?: string;
   type: TypeAsset;
+  assetId: string;
 }
 
 interface BalanceFP {

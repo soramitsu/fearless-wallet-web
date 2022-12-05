@@ -187,7 +187,7 @@ export default class Wallet extends Vue {
     if (this.currencies.length === 0) return true; // удалить если добавим лоадер
 
     const index = this.currencies
-      .filter((currency) => currency.getCurrencyVisible(this.selectedWallet.address))
+      .filter((currency) => currency.getCurrencyVisibility(this.selectedWallet.address))
       .flatMap((currency) => currency.getNetworkList())
       .findIndex(({ network }) => {
         const status = this.getNetworkStatus(network);
@@ -278,7 +278,7 @@ export default class Wallet extends Vue {
 
   toggleCurrenciesVisible(allCurrenciesHidden: boolean) {
     if (allCurrenciesHidden) {
-      this.currencies.forEach((currency) => currency.setCurrencyVisible(this.selectedWallet.address, true));
+      this.currencies.forEach((currency) => currency.setCurrencyVisibility(this.selectedWallet.address, true));
 
       return;
     }
@@ -286,24 +286,24 @@ export default class Wallet extends Vue {
     this.currencies.forEach((currency) => {
       const isZeroBalance = currency.getTotalCountAssets(this.selectedWallet) === '0';
 
-      if (isZeroBalance) currency.setCurrencyVisible(this.selectedWallet.address, false);
+      if (isZeroBalance) currency.setCurrencyVisibility(this.selectedWallet.address, false);
     });
 
     const currenciesVisibleWithBalance = this.currencies.filter(
       (currency) =>
-        currency.getCurrencyVisible(this.selectedWallet.address) &&
+        currency.getCurrencyVisibility(this.selectedWallet.address) &&
         currency.getTotalCountAssets(this.selectedWallet) !== '0'
     );
 
     const currenciesInvisibleWithBalance = this.currencies.filter(
       (currency) =>
-        !currency.getCurrencyVisible(this.selectedWallet.address) &&
+        !currency.getCurrencyVisibility(this.selectedWallet.address) &&
         currency.getTotalCountAssets(this.selectedWallet) !== '0'
     );
 
     const currenciesInvisibleWithoutBalance = this.currencies.filter(
       (currency) =>
-        !currency.getCurrencyVisible(this.selectedWallet.address) &&
+        !currency.getCurrencyVisibility(this.selectedWallet.address) &&
         currency.getTotalCountAssets(this.selectedWallet) === '0'
     );
 

@@ -21,12 +21,10 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Popup from '@/components/Popup.vue';
+
 import { Components } from '@/router/routes';
 
-@Component({
-  components: { Popup },
-})
+@Component
 export default class ReplacePopup extends Vue {
   @Prop(String) selectedNetwork!: string;
   @Prop(Function) handlerClose!: VoidFunction;

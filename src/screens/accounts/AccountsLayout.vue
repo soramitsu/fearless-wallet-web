@@ -94,12 +94,7 @@ import ReplacePopup from './ReplacePopup.vue';
 import SourceTypePopup from './SourceTypePopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
 import Nodes from './Nodes.vue';
-import type { SelectedWallet } from '@/store/accounts/types';
-import ContentForm from '@/components/ContentForm.vue';
-import Input from '@/components/Input.vue';
-import CircleButton from '@/components/CircleButton.vue';
-import Scroll from '@/components/Scroll.vue';
-import NotificationPopup from '@/components/NotificationPopup.vue';
+import type { SelectedWallet } from '@/store';
 import { accountController } from '@/controllers/accountController';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
@@ -109,16 +104,11 @@ type NotificationType = 'delete' | 'export' | '';
 
 @Component({
   components: {
-    Input,
-    Scroll,
     ExportForm,
-    ContentForm,
     ReplacePopup,
     EditNodeForm,
-    CircleButton,
     SourceTypePopup,
     NodeSettingsPopup,
-    NotificationPopup,
     AccountSettingsPopup,
   },
 })
@@ -329,7 +319,7 @@ export default class AccountsLayout extends Vue {
 
   back() {
     if (this.isAccountsRoute) this.$router.push({ name: Components.Wallet });
-    else if (this.isNodesRoute || this.isExportRoute) this.$router.push({ name: Components.Accounts });
+    else this.$router.back();
   }
 }
 </script>

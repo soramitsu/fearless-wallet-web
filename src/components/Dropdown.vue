@@ -14,11 +14,8 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Corners from '@/components/Corners.vue';
 
-@Component({
-  components: { Corners },
-})
+@Component
 export default class Dropdown extends Vue {
   @Prop(String) value!: string;
   @Prop(Array) options!: Record<string, string>[];

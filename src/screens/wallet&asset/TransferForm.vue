@@ -137,35 +137,23 @@ import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
 import RotateInput from './RotateInput.vue';
 import type { Currencies, Networks } from '@/interfaces';
-import type { GetAssetName } from '@/store/networks/types';
+import type { GetAssetName } from '@/store';
 import BaseApi from '@/util/BaseApi';
-import Input from '@/components/Input.vue';
 import FloatInput from '@/components/FloatInput.vue';
-import Corners from '@/components/Corners.vue';
-import NetworkLogo from '@/components/NetworkLogo.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store/accounts/types';
+import { SelectedWallet } from '@/store';
 import { firstCharToUp } from '@/helpers/common';
 import { formattedNumber, formattedPrice } from '@/helpers/numbers';
 import { getCurrencyOptions } from '@/helpers/currencies';
-import AboveForm from '@/components/AboveForm.vue';
-import Button from '@/components/Button.vue';
 import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
-import SelectPopup from '@/components/SelectPopup.vue';
 import { getIconName } from '@/helpers/imgPath';
 
 @Component({
   components: {
-    Input,
-    Button,
-    Corners,
     MaxButton,
-    AboveForm,
     FloatInput,
-    SelectPopup,
     RotateInput,
-    NetworkLogo,
     AmountInputs,
     ExistentialPopup,
     WarningAddressPopup,
@@ -598,7 +586,7 @@ export default class SendForm extends Vue {
 
 <style lang="scss" scoped>
 .transfer-select-popup {
-  z-index: 300;
+  z-index: 300 !important;
   text-transform: capitalize;
 }
 

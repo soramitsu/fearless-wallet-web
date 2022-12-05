@@ -8,10 +8,9 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import Corners from '@/components/Corners.vue';
 import { EXTENSION_HEIGHT } from '@/consts/extensionInformation';
 
-@Component({ components: { Corners } })
+@Component
 export default class ContentForm extends Vue {
   @Prop(Number) height!: number;
 

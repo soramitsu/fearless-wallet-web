@@ -1,5 +1,5 @@
 import type { Currencies, Currency, Networks, RelayChainName, Balances } from '@/interfaces';
-import type { Wallet } from '@/store/accounts/types';
+import type { Wallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import CurrencyController from '@/controllers/currencyController';
 import NetworksController from '@/controllers/networksController';

@@ -105,7 +105,7 @@
     "requesting": "Requesting permissions...",
     "connected": "Mobile wallet connected to Fearless Wallet Extension",
     "noAnswer": "No answer from your wallet received yet. Please make sure the wallet is open",
-    "signMobile": "To sign with your mobile device, check if your mobile client is open and click 'Sign'"
+    "signMobile": "To sign using a mobile device, make sure your mobile client is open on the Beacon dApp screen and click Sign."
   },
   "metadata": {
     "text": "Metadata",
@@ -171,7 +171,10 @@
     "turnVisibilityAssets": "Turn off the visibility of assets with zero balances",
     "assetManagement": "Asset management",
     "assetDetails": "Asset details",
-    "addWallet": "Add wallet"
+    "addWallet": "Add wallet",
+    "networkUnavailable": "Network is unavailable",
+    "networkUnavailableSubtext": "The network is unavailable, you can wait or ask a question to the community",
+    "nothingFound": "Nothing found"
   },
   "asset": {
     "history": {
@@ -182,6 +185,7 @@
       "reward": "Reward",
       "extrinsic": "Extrinsic"
     },
+    "balanceDetails": "Balance details",
     "buyHeader": "Buy {asset} with",
     "buy": "Buy",
     "teleportButtonText": "Teleport",
@@ -196,6 +200,7 @@
     "sendFunds": "Send Funds",
     "walletAddress": "Wallet address",
     "receiveFunds": "Receive Funds",
+    "networkIssues": "Network Issues",
     "originNet": "ORIGINAL NETWORK",
     "network": "NETWORK",
     "amount": "AMOUNT",

@@ -26,11 +26,8 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Popup from '@/components/Popup.vue';
 
-@Component({
-  components: { Popup },
-})
+@Component
 export default class NodeSettingsPopup extends Vue {
   @Prop(Number) buttonTopClick!: number;
   @Prop(Function) handlerClose!: VoidFunction;

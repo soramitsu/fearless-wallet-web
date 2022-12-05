@@ -9,13 +9,14 @@ import {
 } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import { assetFromToken } from '@equilab/api';
+import { Base } from '@polkadot/ui-keyring/Base';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { BehaviorSubject } from 'rxjs';
 import type { KeyringPair$Json, KeyringPair$Meta, KeyringPair } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
-import type { Wallet } from '@/store/accounts/types';
+import type { Wallet } from '@/store';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { createAccountSuri, forgetAccount, jsonRestore } from '@/extension/messaging';
 import { getReplacedMetaTyped, getMetaTyped } from '@/helpers/common';
@@ -497,7 +498,18 @@ export default class BaseApi {
     return assetFromToken(symbol)[0];
   }
 
-  static updateName(address: string, name: string): void {
+  static updateWalletName(address: string, name: string): void {
+    if (BaseApi.isMobileWallet(address)) {
+      const substrateAddress = BaseApi.encodeAddress(address);
+      const { meta } = BaseApi.getAddress(substrateAddress)!;
+
+      meta.name = name;
+
+      BaseApi.saveAddress(substrateAddress, meta);
+
+      return;
+    }
+
     const pair = BaseApi.getKeyringPair(address);
     const meta = getMetaTyped(pair.meta);
 

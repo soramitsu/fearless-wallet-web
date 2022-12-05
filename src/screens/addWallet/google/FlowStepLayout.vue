@@ -46,22 +46,10 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Checkbox from '@/components/Checkbox.vue';
-import Input from '@/components/Input.vue';
-import Scroll from '@/components/Scroll.vue';
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
-import CircleButton from '@/components/CircleButton.vue';
-import Loader from '@/components/Loader.vue';
 
 @Component({
-  components: {
-    Scroll,
-    Input,
-    Loader,
-    FinishForm,
-    CircleButton,
-    Checkbox,
-  },
+  components: { FinishForm },
 })
 export default class FlowStepLayout extends Vue {
   @Prop(Number) countSteps!: number;
@@ -70,16 +58,16 @@ export default class FlowStepLayout extends Vue {
   @Prop(String) header!: string;
   @Prop({ default: false }) showFullScreenIcon!: boolean;
 
+  get notFinish() {
+    return this.countSteps !== this.step;
+  }
+
   back() {
     this.$emit('back');
   }
 
   fullScreen() {
     this.$emit('openFullScreen');
-  }
-
-  get notFinish() {
-    return this.countSteps !== this.step;
   }
 
   getClasses(num: number) {

@@ -1,16 +1,16 @@
 <template>
   <div class="container">
     <Icon icon="sad-face" className="img" />
+
     <span class="subtext">{{ message }}</span>
   </div>
 </template>
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import Icon from '@/components/Icon.vue';
 
-@Component({ components: { Icon } })
-export default class NoWallets extends Vue {
+@Component
+export default class NegativeMessage extends Vue {
   @Prop(String) message!: string;
 }
 </script>

@@ -23,6 +23,7 @@ export enum GettersTypes {
   getActiveNodesByNetwork = 'getActiveNodesByNetwork',
   getAllNetworksIsReadyToUse = 'getAllNetworksIsReadyToUse',
   getNetworkStatus = 'getNetworkStatus',
+  getAssetsPriceInterval = 'getAssetsPriceInterval',
 }
 
 export type Getters = {
@@ -33,6 +34,10 @@ export type Getters = {
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
   [GettersTypes.getCurrencies](state: State, getters?: GetterTree<State, State> & Getters): Currencies;
+  [GettersTypes.getAssetsPriceInterval](
+    state: State,
+    getters?: GetterTree<State, State> & Getters
+  ): NodeJS.Timer | null;
   [GettersTypes.getActiveNodesByNetwork](
     state: State,
     getters?: GetterTree<State, State> & Getters
@@ -109,6 +114,10 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.getCurrencies]({ currencies }): Currencies {
     return currencies;
+  },
+
+  [GettersTypes.getAssetsPriceInterval]({ assetsPriceInterval }): NodeJS.Timer | null {
+    return assetsPriceInterval;
   },
 
   [GettersTypes.getActiveNodesByNetwork]:

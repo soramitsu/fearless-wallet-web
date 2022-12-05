@@ -29,3 +29,6 @@ const store = new Store({
 });
 
 export default store;
+
+export * from './accounts/types';
+export * from './networks/types';

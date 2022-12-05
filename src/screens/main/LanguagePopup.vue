@@ -17,12 +17,9 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { Lang } from '@/locales';
-import SelectPopup from '@/components/SelectPopup.vue';
 import { accountController } from '@/controllers/accountController';
 
-@Component({
-  components: { SelectPopup },
-})
+@Component
 export default class AboutPopup extends Vue {
   readonly options = [
     { label: 'English', value: 'en' },

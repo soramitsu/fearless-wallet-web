@@ -2,13 +2,7 @@ import axios from 'axios';
 import type { KeySettings } from '@/networks';
 import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
-import type {
-  LoadJsons,
-  LoadHistory,
-  SubscribeToBalances,
-  ToggleActiveNode,
-  AugmentedActionContext,
-} from '@/store/networks/types';
+import type { LoadJsons, LoadHistory, SubscribeToBalances, ToggleActiveNode, AugmentedActionContext } from '@/store';
 import type { FiatJson, AssetJson, NetworkJson, Networks, AssetsPrice, ApiOptions } from '@/interfaces';
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
@@ -19,6 +13,7 @@ import { getAddressMetaTyped, getReplacedMetaTyped } from '@/helpers/common';
 import { getMockCurrencies } from '@/helpers/currencies';
 import { connectToApi, subscribeAssetsBalances } from '@/helpers/networksConnection';
 import { accountController } from '@/controllers/accountController';
+import { AUTO_UPDATE_ASSETS_PRICE_MS } from '@/consts/global';
 
 export enum ActionTypes {
   LOAD_JSONS = 'LOAD_JSONS',
@@ -110,22 +105,30 @@ const actions: ActionTree<State, State> & Actions = {
     const urlAssetsPart = [...new Set(urlsAssets)].join('%2C');
     const url = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${urlFiatsPart}&include_24hr_change=true&ids=${urlAssetsPart}`;
 
-    try {
-      const { data } = await axios.get<AssetsPrice>(url);
-      const assetsPrice: AssetsPrice = {};
+    const loadAssetsPrice = async () => {
+      try {
+        const { data } = await axios.get<AssetsPrice>(url);
+        const assetsPrice: AssetsPrice = {};
 
-      for (const priceId in data) {
-        assetsJson
-          .filter(({ priceId: _priceId }) => _priceId === priceId)
-          .forEach(({ id }) => {
-            assetsPrice[id] = data[priceId];
-          });
+        for (const priceId in data) {
+          assetsJson
+            .filter(({ priceId: _priceId }) => _priceId === priceId)
+            .forEach(({ id }) => {
+              assetsPrice[id] = data[priceId];
+            });
+        }
+
+        commit(MutationTypes.SET_ASSETS_PRICE, { assetsPrice });
+      } catch {
+        console.info('%c Coingecko request failed', 'background:red;color:#fff');
       }
+    };
 
-      commit(MutationTypes.SET_ASSET_PRICE, { assetsPrice });
-    } catch {
-      console.info('%c Coingecko request failed', 'background:red;color:#fff');
-    }
+    const interval = setInterval(loadAssetsPrice, AUTO_UPDATE_ASSETS_PRICE_MS);
+
+    commit(MutationTypes.SET_ASSETS_PRICE_INTERVAL, { interval });
+
+    loadAssetsPrice();
   },
 
   async [ActionTypes.LOAD_HISTORY]({ commit, getters }, { networkName, walletAddress, pageSize = PAGE_SIZE, assetId }) {

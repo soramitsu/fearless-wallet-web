@@ -28,9 +28,6 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Popup from '@/components/Popup.vue';
-import Button from '@/components/Button.vue';
-import BorderButton from '@/components/BorderButton.vue';
 
 interface Headers {
   text: string;
@@ -39,13 +36,7 @@ interface Headers {
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 
-@Component({
-  components: {
-    Popup,
-    Button,
-    BorderButton,
-  },
-})
+@Component
 export default class NotificationPopup extends Vue {
   @Prop({ default: () => ({ text: '', subtext: '' }) }) headers!: Headers;
   @Prop({ default: false }) showAcceptButton!: boolean;

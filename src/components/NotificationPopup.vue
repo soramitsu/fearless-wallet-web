@@ -1,11 +1,11 @@
 <template>
   <Popup
-    :style="style"
     :showHeader="showHeader"
     :handlerClose="handlerClose"
     :sizeWidth="sizeWidth"
     :showBorder="true"
     :closeBuBackground="closeBuBackground"
+    :zIndex="zIndex"
   >
     <div class="notification-popup-content">
       <Icon v-if="showWarningIcon" icon="info-triangle" className="img" />
@@ -50,14 +50,6 @@ export default class NotificationPopup extends Vue {
   @Prop({ default: 299 }) zIndex!: number;
   @Prop(Function) handlerClose!: VoidFunction;
   @Prop(Function) handlerAccept!: VoidFunction;
-
-  get style() {
-    const styles: Record<string, string> = {};
-
-    if (this.zIndex) styles.zIndex = this.zIndex.toString();
-
-    return styles;
-  }
 
   get text() {
     return this.headers.text;

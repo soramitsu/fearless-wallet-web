@@ -129,11 +129,9 @@ export default class Popup extends Vue {
   }
 
   get popupBackgroundStyles() {
-    let styles: Record<string, string> = {};
+    const styles: Record<string, string> = !this.showBackground ? this.topLeftStyles : {};
 
     if (this.zIndex) styles.zIndex = this.zIndex.toString();
-
-    if (!this.showBackground) styles = { ...styles, ...this.topLeftStyles };
 
     return styles;
   }

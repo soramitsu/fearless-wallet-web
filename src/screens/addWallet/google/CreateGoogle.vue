@@ -1,17 +1,10 @@
 <template>
   <FlowStepLayout :countSteps="countSteps" :step="step" :header="header" @back="back" :showFullScreenIcon="false">
-    <NegativeMessage v-if="step === 1" :message="$t('addWallet.google.noWallets')" />
-
     <NickNameForm v-if="nickNameStep" :nickname="nickname" @update:nickname="setNickname" />
-
-    <div class="icon__container" v-if="step === 3">
-      <Icon className="icon--drive" icon="drive" />
-    </div>
 
     <CreateWallet
       v-if="createWalletStep"
       :step="step"
-      :shouldShowAtSteps="[4, 5]"
       :mnemonic="mnemonic"
       :selectedMnemonicElements="selectedMnemonicElements"
       @update:selectedMnemonicElements="updateSelectedMnemonicElements"
@@ -30,43 +23,28 @@
 
     <PasswordForm
       v-if="passwordStep"
+      :isGoogleFlow="true"
       :showMockPassword="false"
       :showSamePasswordText="false"
       @updateWalletPassword="updateWalletPassword"
     />
 
-    <NotificationPopup
-      v-if="showNotificationPopup"
-      :headers="notificationPopupContent"
-      acceptButtonText="common.accept"
-      :showAcceptButton="true"
-      :showWarningIcon="false"
-      :handlerAccept="popupHandler"
-      :handlerClose="popupHandler"
-    />
-
     <template v-slot:control>
-      <Button
-        size="big"
-        fontSize="big"
-        width="100%"
-        :border="false"
-        :disabled="disabledProceed"
-        :text="buttonText"
-        :type="buttonType"
-        @click="proceed"
-      />
+      <div class="controls">
+        <BorderButton v-if="step === 3" :iconName="'reload'" @click="resetAll" />
+        <BorderButton v-if="step === 3" :text="'Skip confirmation'" @click="skipStep" />
 
-      <Button
-        v-if="step === 3"
-        size="big"
-        fontSize="big"
-        width="100%"
-        :border="false"
-        :text="$t('addWallet.google.showSecretData')"
-        :type="subButtonType"
-        @click="subButtonProceed"
-      />
+        <Button
+          size="big"
+          fontSize="big"
+          width="100%"
+          :border="false"
+          :disabled="disabledProceed"
+          :text="buttonText"
+          :type="buttonType"
+          @click="proceed"
+        />
+      </div>
     </template>
   </FlowStepLayout>
 </template>
@@ -103,7 +81,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
   },
 })
 export default class CreateGoogle extends Vue {
-  readonly countSteps = 7;
+  readonly countSteps = 6;
   step = 1;
   nickname = '';
   mnemonic = '';
@@ -119,30 +97,29 @@ export default class CreateGoogle extends Vue {
   };
 
   buttonTextForStep: Record<number, TranslateResult> = {
-    2: this.$t('common.continue'),
-    3: this.$t('addWallet.google.backupWallet'),
-    4: this.$t('addWallet.haveWrittenPassphrase'),
-    5: this.$t('addWallet.confirmPassphrase'),
-    7: this.$t('common.finish'),
+    1: this.$t('common.continue'),
+    2: this.$t('addWallet.google.backupWallet'),
+    3: this.$t('addWallet.ConfirmSecretData'),
+    6: this.$t('common.finish'),
   };
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
 
   get nickNameStep() {
-    return this.step === 2;
+    return this.step === 1;
   }
 
   get createWalletStep() {
-    return this.step === 4 || this.step === 5;
+    return this.step === 2 || this.step === 3;
   }
 
   get passwordStep() {
-    return this.step === 6;
+    return this.step === 5;
   }
 
   get notificationPopupContent() {
-    return this.step === 5 ? this.jsonInvalid : this.notificationHeaders;
+    return this.step === 6 ? this.jsonInvalid : this.notificationHeaders;
   }
 
   get subButtonType() {
@@ -202,6 +179,14 @@ export default class CreateGoogle extends Vue {
 
       this.backupWallet(address);
     }
+  }
+
+  resetAll() {
+    this.selectedMnemonicElements.splice(0);
+  }
+
+  skipStep() {
+    this.step += 1;
   }
 
   popupHandler() {
@@ -323,5 +308,11 @@ export default class CreateGoogle extends Vue {
   .divider {
     background: rgba(255, 255, 255, 0.1);
   }
+}
+.controls {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: 10px;
 }
 </style>

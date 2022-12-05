@@ -27,7 +27,6 @@ import type { MnemonicConfirmation } from '@/interfaces/common';
 })
 export default class CreateWallet extends Vue {
   @Prop(Number) step!: number;
-  @Prop(Array) shouldShowAtSteps!: number[];
   @Prop(String) mnemonic!: string;
   @PropSync('selectedMnemonicElements', { type: Array }) syncedSelectedMnemonicElements!: MnemonicConfirmation[];
 
@@ -40,11 +39,11 @@ export default class CreateWallet extends Vue {
   }
 
   get showMnemonicBackupForm() {
-    return this.step === this.shouldShowAtSteps[0];
+    return this.step === 2;
   }
 
   get showMnemonicConfirmationForm() {
-    return this.step === this.shouldShowAtSteps[1];
+    return this.step === 3;
   }
 
   updateSelectedMnemonicElements(value: MnemonicConfirmation[]) {

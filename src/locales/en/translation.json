@@ -27,6 +27,7 @@
     "setupPassword": "Set up password",
     "addEthereumAccount": "Add ethereum account",
     "haveWrittenPassphrase": "I have written down passphrase",
+    "ConfirmSecretData": "Confirm secret data",
     "usingFearless": "Start using Fearless",
     "rawSeed": "{type} accounts raw seed",
     "restoreJson": "Restore JSON for {type} accounts",
@@ -89,6 +90,7 @@
       "fetchInfo": "Fetching info from google",
       "backupWallet": "Google Drive backup",
       "saved": "Saved",
+      "dataWillStoreOnGDrive": "By clicking “Confirm” you agree with using Google Drive as a storage for your keys",
       "passphraseSaved": "The passphrase has been successfully saved on Google Drive",
       "noWallets": "No saved wallets have been found on the Google Drive"
     }

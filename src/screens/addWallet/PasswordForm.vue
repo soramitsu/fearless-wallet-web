@@ -21,6 +21,7 @@
     />
 
     <Hint iconName="notification" :text="hintText" />
+    <Hint v-if="isGoogleFlow" iconName="notification" :text="hintGoogleDriveText" />
   </div>
 </template>
 
@@ -33,6 +34,7 @@ export default class PasswordForm extends Vue {
   pass2 = '';
 
   @Prop(Boolean) showMockPassword!: boolean;
+  @Prop({ type: Boolean, default: false }) isGoogleFlow!: boolean;
   @Prop(Boolean) showSamePasswordText!: boolean;
 
   get isShortPassword() {
@@ -45,6 +47,10 @@ export default class PasswordForm extends Vue {
 
   get showPasswordConfirmation() {
     return !this.showMockPassword && this.pass1.length !== 0 && !this.isShortPassword;
+  }
+
+  get hintGoogleDriveText() {
+    return this.t('google.dataWillStoreOnGDrive');
   }
 
   get hintText() {

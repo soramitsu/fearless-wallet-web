@@ -325,14 +325,22 @@ export default class CurrencyController {
     };
 
     try {
-      if (type === 'native') {
-        this.extrinsic = api!.tx.balances.transfer(to, precisionAmount);
-      } else if (type === 'equilibrium') {
-        this.extrinsic = api!.tx.eqBalances.transfer(ormlOptions, to, precisionAmount);
-      } else if (type === 'ormlChain') {
-        this.extrinsic = api!.tx.tokens.transfer(to, ormlOptions, precisionAmount);
-      } else {
-        this.extrinsic = api!.tx.currencies.transfer(to, ormlOptions, precisionAmount);
+      switch (type) {
+        case 'native':
+          this.extrinsic = api!.tx.balances.transfer(to, precisionAmount);
+          break;
+        case 'equilibrium':
+          this.extrinsic = api!.tx.eqBalances.transfer(ormlOptions, to, precisionAmount);
+          break;
+        case 'ormlChain':
+          this.extrinsic = api!.tx.tokens.transfer(to, ormlOptions, precisionAmount);
+          break;
+        case 'soraAsset':
+          this.extrinsic = api!.tx.assets.transfer(ormlOptions, to, precisionAmount);
+          break;
+        default:
+          this.extrinsic = api!.tx.currencies.transfer(to, ormlOptions, precisionAmount);
+          break;
       }
     } catch {
       this.extrinsic = undefined;

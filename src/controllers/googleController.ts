@@ -1,8 +1,9 @@
-import { Http } from './fetchController';
+import axios from 'axios';
+import fetchAdapter from '@vespaiach/axios-fetch-adapter';
+import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import { CreateFileProp, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
 
 class GoogleManage {
-  http = Http.create();
   private readonly baseURL = 'https://www.googleapis.com/drive/v3';
   private readonly baseUploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
   private readonly extensionRedirectURL = 'https://nhlnehondigmgckngjomcpcefcdplmgc.chromiumapp.org/welcome';
@@ -34,6 +35,7 @@ class GoogleManage {
       ...this.baseAuthParams,
       redirect_uri: type === 'extension' ? this.extensionRedirectURL : `http://localhost:5500/${type}`,
     };
+
     Object.keys(params).forEach((key) => {
       prepUrl.searchParams.set(key, params[key]);
     });
@@ -42,7 +44,6 @@ class GoogleManage {
   }
 
   private prepareData(json: string, { name, address }: { name: string; address: string }) {
-    //TODO should it be resumable?
     return `--foo_bar_baz
 Content-Type: application/json; charset=UTF-8
 
@@ -75,36 +76,50 @@ ${json}
     window.open(this.authURL('desktop'));
   }
 
-  public async getFiles(token?: string) {
-    return this.http.get<IGetFilesResponse>(
+  public async getFiles(token?: string): Promise<IGetFilesResponse> {
+    const { data } = await axios.get<IGetFilesResponse>(
       `${this.baseURL}/files?fields=files(id,name,description)&spaces=appDataFolder`,
       {
+        adapter: fetchAdapter,
         headers: {
           Authorization: `Bearer ${token}`,
           ...this.config.headers,
         },
       }
     );
+
+    return data;
   }
 
-  public async getFile(id: string, token?: string | undefined) {
-    return this.http.get<string>(`${this.baseURL}/files/${id}?alt=media`, {
+  public async getFile(id: string, token?: string | undefined): Promise<KeyringPair$Json> {
+    const { data } = await axios.get<KeyringPair$Json>(`${this.baseURL}/files/${id}?alt=media`, {
+      adapter: fetchAdapter,
       headers: {
         Authorization: `Bearer ${token}`,
         ...this.config.headers,
       },
     });
+
+    return data;
   }
 
-  public async verifyToken(token: string) {
-    return this.http.get<VerifyTokenResponse>(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`);
+  public async verifyToken(token: string): Promise<VerifyTokenResponse> {
+    const { data } = await axios.get<VerifyTokenResponse>(
+      `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`,
+      {
+        adapter: fetchAdapter,
+      }
+    );
+
+    return data;
   }
 
   async createFile({ json, options }: CreateFileProp, token?: string) {
     const data = this.prepareData(json, options);
     const length = data.length;
 
-    return this.http.post(this.baseUploadUrl, data, {
+    return axios.post(this.baseUploadUrl, data, {
+      adapter: fetchAdapter,
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'multipart/related; boundary=foo_bar_baz',
@@ -114,7 +129,8 @@ ${json}
   }
 
   async deleteFile(id: string, token: string) {
-    this.http.delete(this.baseURL, {
+    axios.delete(this.baseURL, {
+      adapter: fetchAdapter,
       params: {
         fields: id,
       },

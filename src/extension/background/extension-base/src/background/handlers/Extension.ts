@@ -9,6 +9,7 @@ import { CachedUnlocks } from '../types';
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
+import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type {
   AccountJson,
   AllowedPath,
@@ -59,7 +60,6 @@ import type {
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { keyring } from '@/controllers/keyringChrome';
 import { googleManage } from '@/controllers/googleController';
@@ -639,7 +639,7 @@ export default class Extension {
     return googleManage.getFiles(token);
   }
 
-  static async getFile({ id, token }: GoogleFileId): Promise<string> {
+  static async getFile({ id, token }: GoogleFileId): Promise<KeyringPair$Json> {
     return googleManage.getFile(id, token);
   }
 

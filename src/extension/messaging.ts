@@ -7,12 +7,10 @@ import { getId } from './background/extension-base/src/utils';
 import { PORT_EXTENSION } from './background/extension-base/src/defaults';
 import type { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
 import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types';
-
 import type {
   AccountJson,
   AllowedPath,
   AuthorizeRequest,
-  GoogleFileId,
   MessageTypes,
   MessageTypesWithNoSubscriptions,
   MessageTypesWithNullRequest,
@@ -33,7 +31,7 @@ import type { Chain } from '@polkadot/extension-chains/types';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import { IGetFileMetaResponse, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
+import { IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
 
 const metadataGets = new Map<string, Promise<MetadataDef | null>>();
 
@@ -362,10 +360,6 @@ export async function getGoogleFiles(token: string): Promise<IGetFilesResponse> 
 
 export async function getGoogleFile(id: string, token: string): Promise<KeyringPair$Json> {
   return sendMessage('pri(google.get.file)', { id, token });
-}
-
-export async function getGoogleFileMeta(id: string, token: string): Promise<IGetFileMetaResponse> {
-  return sendMessage('pri(google.get.meta)', { id, token });
 }
 
 export async function createGoogleFile(

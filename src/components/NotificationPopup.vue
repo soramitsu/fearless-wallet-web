@@ -1,6 +1,6 @@
 <template>
   <Popup
-    class="notification-popup"
+    :style="style"
     :showHeader="showHeader"
     :handlerClose="handlerClose"
     :sizeWidth="sizeWidth"
@@ -47,8 +47,17 @@ export default class NotificationPopup extends Vue {
   @Prop({ default: 'medium' }) sizeWidth!: Size;
   @Prop({ default: 'common.cancel' }) rejectButtonText!: string;
   @Prop({ default: 'common.proceed' }) acceptButtonText!: string;
+  @Prop({ default: 299 }) zIndex!: number;
   @Prop(Function) handlerClose!: VoidFunction;
   @Prop(Function) handlerAccept!: VoidFunction;
+
+  get style() {
+    const styles: Record<string, string> = {};
+
+    if (this.zIndex) styles.zIndex = this.zIndex.toString();
+
+    return styles;
+  }
 
   get text() {
     return this.headers.text;
@@ -65,50 +74,46 @@ export default class NotificationPopup extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.notification-popup {
-  z-index: 299 !important;
+.notification-popup-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 10px;
 
-  .notification-popup-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0 10px;
-
-    .img {
-      margin-bottom: 20px;
-      width: 42px;
-      height: 42px;
-    }
-
-    .text {
-      font-weight: 700;
-      font-size: 18px;
-      line-height: 150%;
-      margin-bottom: 4px;
-    }
-
-    .button {
-      margin-top: 20px;
-      width: 150px;
-      width: 100%;
-    }
-
-    .reject-button {
-      margin-top: 10px;
-    }
+  .img {
+    margin-bottom: 20px;
+    width: 42px;
+    height: 42px;
   }
 
-  .subtext {
-    color: $gray-color;
+  .text {
+    font-weight: 700;
+    font-size: 18px;
     line-height: 150%;
+    margin-bottom: 4px;
   }
 
-  .subtext-medium {
-    width: 255px;
+  .button {
+    margin-top: 20px;
+    width: 150px;
+    width: 100%;
   }
 
-  .subtext-big {
-    width: 300px;
+  .reject-button {
+    margin-top: 10px;
   }
+}
+
+.subtext {
+  color: $gray-color;
+  line-height: 150%;
+}
+
+.subtext-medium {
+  width: 255px;
+}
+
+.subtext-big {
+  width: 300px;
 }
 </style>

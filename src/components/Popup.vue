@@ -61,6 +61,7 @@ export default class Popup extends Vue {
   @Prop({ default: 'center' }) horizontalPlacement!: HorizontalPlacement;
   @Prop({ default: 'center' }) verticalPlacement!: VerticalPlacement;
   @Prop({ default: 'default' }) headerType!: HeaderType;
+  @Prop({ default: 199 }) zIndex!: number;
 
   get popupBackgroundClasses() {
     const classes = [
@@ -128,7 +129,13 @@ export default class Popup extends Vue {
   }
 
   get popupBackgroundStyles() {
-    return !this.showBackground ? this.topLeftStyles : {};
+    let styles: Record<string, string> = {};
+
+    if (this.zIndex) styles.zIndex = this.zIndex.toString();
+
+    if (!this.showBackground) styles = { ...styles, ...this.topLeftStyles };
+
+    return styles;
   }
 
   get popupContainerStyle() {
@@ -161,7 +168,6 @@ export default class Popup extends Vue {
   bottom: 0;
   right: 0;
   margin: 0 auto;
-  z-index: 199;
   width: fit-content;
   height: fit-content;
 

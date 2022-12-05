@@ -37,7 +37,7 @@
     "@sora-substrate/math": "^1.11.0",
     "@soramitsu/soramitsu-js-ui": "^1.0.26",
     "@vespaiach/axios-fetch-adapter": "^0.3.1",
-    "axios": "^0.27.2",
+    "axios": "^1.2.0",
     "bignumber.js": "^9.0.2",
     "core-js": "^3.6.5",
     "date-fns": "^2.28.0",

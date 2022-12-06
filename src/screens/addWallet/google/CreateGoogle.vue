@@ -31,14 +31,32 @@
 
     <template v-slot:control>
       <div class="controls">
-        <BorderButton v-if="confirmMnemonicStep" iconName="reload" @click="resetAll" />
-        <BorderButton v-if="confirmMnemonicStep" :text="$t('addWallet.skipConfirmation')" @click="skipStep" />
+        <Button
+          v-if="confirmMnemonicStep"
+          size="big"
+          fontSize="big"
+          width="64px"
+          type="secondary"
+          :border="false"
+          iconName="reload"
+          @click="resetAll"
+        />
+        <Button
+          v-if="confirmMnemonicStep"
+          size="big"
+          fontSize="big"
+          width="100%"
+          type="secondary"
+          :border="false"
+          :text="$t('addWallet.skipConfirmation')"
+          @click="skipStep"
+        />
 
         <Button
           size="big"
           fontSize="big"
           width="100%"
-          type="primary"
+          type="secondary"
           :border="false"
           :disabled="disabledProceed"
           :text="buttonText"

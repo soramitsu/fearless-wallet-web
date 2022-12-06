@@ -57,6 +57,7 @@ export default class Button extends Vue {
 
   get prepIconClass() {
     const result = this.iconClass.slice();
+    if (this.text === '') result.push('icon--without-text');
 
     if (this.iconType === 'loading') result.push('icon--loading');
     if (this.type === 'google') result.push('icon--google');
@@ -190,6 +191,10 @@ export default class Button extends Vue {
   min-width: 20px;
   width: 20px;
   height: 20px;
+}
+
+.icon--without-text {
+  margin: 0;
 }
 
 .icon--pink {

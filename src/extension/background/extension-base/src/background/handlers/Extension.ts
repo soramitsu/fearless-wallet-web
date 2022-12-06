@@ -356,6 +356,16 @@ export default class Extension {
     }
   }
 
+  static jsonValid({ file, password }: RequestJsonRestore): boolean {
+    try {
+      keyring.restoreAccount(file, password);
+    } catch (error) {
+      return false;
+    }
+
+    return true;
+  }
+
   static batchRestore({ file, password }: RequestBatchRestore): void {
     try {
       keyring.restoreAccounts(file, password);
@@ -752,6 +762,9 @@ export default class Extension {
 
       case 'pri(json.restore)':
         return Extension.jsonRestore(request as RequestJsonRestore);
+
+      case 'pri(json.valid)':
+        return Extension.jsonValid(request as RequestJsonRestore);
 
       case 'pri(json.batchRestore)':
         return Extension.batchRestore(request as RequestBatchRestore);

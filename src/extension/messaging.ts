@@ -338,6 +338,10 @@ export async function jsonRestore(file: KeyringPair$Json, password: string): Pro
   return sendMessage('pri(json.restore)', { file, password });
 }
 
+export async function isJsonValid(file: KeyringPair$Json, password: string): Promise<boolean> {
+  return sendMessage('pri(json.valid)', { file, password });
+}
+
 export async function batchRestore(file: KeyringPairs$Json, password: string): Promise<void> {
   return sendMessage('pri(json.batchRestore)', { file, password });
 }

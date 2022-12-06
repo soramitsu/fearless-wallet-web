@@ -163,7 +163,6 @@ export default class AddFromGoogle extends Vue {
   }
 
   saveKeypairFromJson(json: KeyringPair$Json, password: string) {
-    console.log('pass in saveKeyring', password);
     const { address } = BaseApi.addKeypairFromJson(json, password);
 
     return address;

@@ -233,7 +233,6 @@ export default class CreateGoogle extends Vue {
 
   backupWallet(address: string) {
     const json = BaseApi.getPair(address).toJson(this.walletPassword);
-    console.log(this.walletPassword);
 
     createGoogleFile(JSON.stringify(json), { name: this.nickname, address }, this.$route.params.access_token);
   }

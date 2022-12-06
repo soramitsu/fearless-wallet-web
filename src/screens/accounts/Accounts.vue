@@ -1,6 +1,6 @@
 <template>
   <div class="accounts">
-    <Input v-model="newName" placeholder="accounts.walletName" size="big" :maxlength="15" @blur="blurInputName" />
+    <Input v-model="newName" placeholder="accounts.walletName" size="big" :maxlength="35" @blur="blurInputName" />
 
     <template v-if="showReplacedAccounts">
       <div class="row label">{{ $t('accounts.accountsUniquesSecrets') }}</div>
@@ -36,11 +36,8 @@
 import { Getter, Mutation } from 'vuex-class';
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import AccountsItem from './AccountsItem.vue';
-import type { SelectedWallet, SetSelectedWalletProps } from '@/store/accounts/types';
+import type { SelectedWallet, SetSelectedWalletProps } from '@/store';
 import type { Networks, TMutation } from '@/interfaces';
-import Input from '@/components/Input.vue';
-import CircleButton from '@/components/CircleButton.vue';
-import Scroll from '@/components/Scroll.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
@@ -49,12 +46,7 @@ import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutatio
 import BaseApi from '@/util/BaseApi';
 
 @Component({
-  components: {
-    Input,
-    CircleButton,
-    Scroll,
-    AccountsItem,
-  },
+  components: { AccountsItem },
 })
 export default class Account extends Vue {
   selectedNetwork = '';
@@ -119,7 +111,7 @@ export default class Account extends Vue {
       return;
     }
 
-    BaseApi.updateName(address, this.newName);
+    BaseApi.updateWalletName(address, this.newName);
 
     this.setSelectedWallet({ selectedWalletAddress: address });
   }

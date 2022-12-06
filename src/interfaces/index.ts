@@ -8,3 +8,4 @@ export * from '@/interfaces/networks';
 export * from '@/interfaces/nodes';
 export * from '@/interfaces/teleport';
 export * from '@/interfaces/assets';
+export * from '@/interfaces/google';

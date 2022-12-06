@@ -31,6 +31,7 @@ import type { Chain } from '@polkadot/extension-chains/types';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
+import { FilesResponse, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
 
 const metadataGets = new Map<string, Promise<MetadataDef | null>>();
 
@@ -166,6 +167,18 @@ export async function approveSignSignature(id: string, signature: HexString): Pr
 
 export async function createAccountExternal(name: string, address: string, genesisHash: string): Promise<boolean> {
   return sendMessage('pri(accounts.create.external)', { address, genesisHash, name });
+}
+
+export async function refreshPasswordTimeout(address: string): Promise<number> {
+  return sendMessage('pri(signing.refreshPasswordTimeout)', address);
+}
+
+export async function resetTimeouts(): Promise<boolean> {
+  return sendMessage('pri(signing.resetTimeouts)');
+}
+
+export async function saveTimeoutCache(address: string): Promise<boolean> {
+  return sendMessage('pri(signing.saveTimeoutCache)', address);
 }
 
 export async function createAccountHardware(
@@ -325,10 +338,38 @@ export async function jsonRestore(file: KeyringPair$Json, password: string): Pro
   return sendMessage('pri(json.restore)', { file, password });
 }
 
+export async function isJsonValid(file: KeyringPair$Json, password: string): Promise<boolean> {
+  return sendMessage('pri(json.valid)', { file, password });
+}
+
 export async function batchRestore(file: KeyringPairs$Json, password: string): Promise<void> {
   return sendMessage('pri(json.batchRestore)', { file, password });
 }
 
 export async function setNotification(notification: string): Promise<boolean> {
   return sendMessage('pri(settings.notification)', notification);
+}
+
+export async function verifyToken(token: string): Promise<VerifyTokenResponse> {
+  return sendMessage('pri(google.verify.token)', { token });
+}
+
+export async function initGoogleAuth(): Promise<void> {
+  return sendMessage('pri(google.auth)');
+}
+
+export async function getGoogleFiles(token: string): Promise<IGetFilesResponse> {
+  return sendMessage('pri(google.get.files)', { token });
+}
+
+export async function getGoogleFile(id: string, token: string): Promise<KeyringPair$Json> {
+  return sendMessage('pri(google.get.file)', { id, token });
+}
+
+export async function createGoogleFile({ json, options, token }: ICreateFile): Promise<FilesResponse> {
+  return sendMessage('pri(google.create.file)', { json, options, token });
+}
+
+export async function deleteGoogleFile(id: string, token: string): Promise<void> {
+  return sendMessage('pri(google.delete.file)', { id, token });
 }

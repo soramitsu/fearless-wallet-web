@@ -8,7 +8,7 @@
       :class="buttonClasses"
       @click="$emit('click')"
     >
-      <Icon v-if="iconName" :icon="iconName" :className="iconClass" icon-color="pink" />
+      <Icon v-if="shouldBeWithIcon" :icon="prepIconName" :className="prepIconClass" icon-color="pink" />
 
       {{ tText }}
     </SButton>
@@ -21,7 +21,7 @@ import type { ComponentText } from '@/interfaces';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type FontSize = 'small' | 'medium' | 'big';
-type Type = 'primary' | 'secondary' | 'link';
+type Type = 'primary' | 'secondary' | 'link' | 'google';
 
 @Component
 export default class Button extends Vue {
@@ -30,8 +30,8 @@ export default class Button extends Vue {
   @Prop({ default: '' }) text!: ComponentText;
   @Prop(String) width!: string;
   @Prop(String) iconName!: string;
+  @Prop(String) iconType!: string;
   @Prop(String) iconColor!: string;
-  @Prop({ type: String, default: '' }) iconClasses?: string;
   @Prop({ default: 'primary' }) type!: Type;
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'medium' }) fontSize!: FontSize;
@@ -43,11 +43,32 @@ export default class Button extends Vue {
   get tText() {
     if (typeof this.text === 'string') return this.$t(this.text);
 
-    const { tc } = this.text.localeProps;
+    const { text, localeProps } = this.text;
+    const { tc } = localeProps;
 
-    if (tc) return this.$tc(this.text.text, this.text.localeProps.tc, this.text.localeProps);
+    if (tc) return this.$tc(text, tc, localeProps);
 
-    return this.$t(this.text.text, this.text.localeProps);
+    return this.$t(text, localeProps);
+  }
+
+  get shouldBeWithIcon() {
+    return this.iconName || this.type === 'google';
+  }
+
+  get prepIconClass() {
+    const result = [...this.iconClass];
+    if (this.text === '') result.push('icon--without-text');
+
+    if (this.iconType === 'loading') result.push('icon--loading');
+    if (this.type === 'google') result.push('icon--google');
+
+    return result;
+  }
+
+  get prepIconName() {
+    if (this.type === 'google') return 'google';
+
+    return this.iconName;
   }
 
   get containerButtonClasses() {
@@ -68,6 +89,8 @@ export default class Button extends Vue {
   get buttonClasses() {
     const classes = ['button', `button-font-size-${this.fontSize}`];
 
+    if (this.iconType === 'big') classes.push('button__icon');
+
     if (this.type === 'secondary') {
       return [
         ...classes,
@@ -86,6 +109,19 @@ export default class Button extends Vue {
         'link',
         {
           'link-hover': this.hover,
+        },
+      ];
+    }
+
+    if (this.type === 'google') {
+      return [
+        ...classes,
+        `button-font-size-${this.fontSize}`,
+        'google',
+        this.border ? 'google-border' : 'google-border-none',
+        {
+          'google-hover': this.hover,
+          'google-border-hover': this.border && this.hover,
         },
       ];
     }
@@ -138,6 +174,17 @@ export default class Button extends Vue {
   background-color: #f8087b !important;
   border-color: #f8087b !important;
 }
+.button--content-wrap > .el-button span {
+  font-size: 14px;
+  font-weight: 400;
+  flex-flow: row nowrap;
+  white-space: break-spaces;
+}
+
+.button__icon {
+  font-size: 14px;
+  white-space: break-spaces;
+}
 
 .icon {
   margin-right: 8px;
@@ -146,8 +193,17 @@ export default class Button extends Vue {
   height: 20px;
 }
 
+.icon--without-text {
+  margin: 0;
+}
+
 .icon--pink {
   color: $pink-color;
+}
+
+.icon--google {
+  width: 37px;
+  height: 37px;
 }
 
 .secondary {
@@ -177,5 +233,41 @@ export default class Button extends Vue {
 
 .link-hover:hover {
   color: $default-white !important;
+}
+
+.google {
+  color: rgba(45, 41, 38, 1) !important;
+  background-color: #c4c4c4 !important;
+}
+
+.google:disabled {
+  color: rgba(45, 41, 38, 1) !important;
+  background-color: #c4c4c4 !important;
+}
+
+.google-hover:not(:disabled):hover {
+  background-color: rgba(255, 255, 255, 0.5) !important;
+  border-color: transparent;
+}
+
+.google-border {
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+}
+
+.google-border-hover:hover {
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.icon--loading {
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>

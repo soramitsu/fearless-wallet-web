@@ -63,25 +63,14 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import TransferForm from './TransferForm.vue';
 import type { Currencies } from '@/interfaces';
-import type { GetAssetName } from '@/store/networks/types';
-import Input from '@/components/Input.vue';
-import Corners from '@/components/Corners.vue';
-import NetworkLogo from '@/components/NetworkLogo.vue';
+import type { GetAssetName, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store/accounts/types';
-import AboveForm from '@/components/AboveForm.vue';
 import { formattedNumber, formattedPrice, addNumbers } from '@/helpers/numbers';
 import { getUtilityAsset } from '@/helpers/currencies';
 
 @Component({
-  components: {
-    Input,
-    Corners,
-    AboveForm,
-    NetworkLogo,
-    TransferForm,
-  },
+  components: { TransferForm },
 })
 export default class SendForm extends Vue {
   partialFee = '';
@@ -208,7 +197,7 @@ export default class SendForm extends Vue {
     }
 
     .name {
-      color: rgba(255, 255, 255, 0.5);
+      color: $gray-color;
     }
 
     .column {
@@ -217,7 +206,7 @@ export default class SendForm extends Vue {
       align-items: flex-end;
 
       .value {
-        color: rgba(255, 255, 255, 0.75);
+        color: $default-white;
         font-weight: 300;
         font-size: 12px;
         margin-top: 3px;

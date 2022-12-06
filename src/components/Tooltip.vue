@@ -3,21 +3,34 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import tippy from 'tippy.js';
 import 'tippy.js/dist/tippy.css';
 import type { Placement, ComponentText } from '@/interfaces';
-import type { Props } from 'tippy.js';
+import type { Props, Instance } from 'tippy.js';
 
 @Component
 export default class Tooltip extends Vue {
+  tooltips: Instance<Props>[] = [];
+
   @Prop({ default: '' }) text!: ComponentText;
   @Prop(String) target!: string;
   @Prop({ default: 'top' }) placement!: Placement;
   @Prop(String) trigger!: string;
 
+  get language() {
+    return this.$root.$i18n.locale;
+  }
+
   mounted() {
+    this.createTooltip();
+  }
+
+  @Watch('language')
+  createTooltip() {
     if (!this.target) return;
+
+    this.tooltips.forEach((item) => item.destroy());
 
     const content = typeof this.text === 'string' ? this.$t(this.text) : this.$t(this.text.text, this.text.localeProps);
 
@@ -35,7 +48,7 @@ export default class Tooltip extends Vue {
       options.delay = 0;
     }
 
-    tippy(this.target, options);
+    this.tooltips = tippy(this.target, options);
   }
 }
 </script>

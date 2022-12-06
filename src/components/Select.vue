@@ -1,16 +1,15 @@
 <template>
   <Corners :size="size">
     <div :class="containerSelectClasses">
-      <s-select v-model="vModel" :placeholder="$t(placeholder)" :size="size" :disabled="disabled">
-        <s-option v-for="{ value, label } in options" :key="label" :value="value" :label="label" />
-      </s-select>
+      <SSelect v-model="vModel" :placeholder="$t(placeholder)" :size="size" :disabled="disabled">
+        <SOption v-for="{ value, label } in options" :key="label" :value="value" :label="label" />
+      </SSelect>
     </div>
   </Corners>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
-import Corners from './Corners.vue';
 
 type Size = 'small' | 'medium' | 'big';
 
@@ -19,9 +18,7 @@ interface Options {
   value: string;
 }
 
-@Component({
-  components: { Corners },
-})
+@Component
 export default class Select extends Vue {
   @VModel({ type: String }) vModel!: string;
   @Prop(String) placeholder!: string;

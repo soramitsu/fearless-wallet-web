@@ -22,17 +22,19 @@
         <template v-if="!isCurrentNetwork">
           <Shimmer v-if="showShimmers" height="14px" width="60px" />
 
-          <div v-else class="available-networks">
-            <NetworkLogo
-              v-for="{ network } in availableInNetworksPart"
-              class="minor-network-img"
-              :key="network"
-              :name="network"
-              :width="12"
-            />
+          <template v-else-if="!showWarning">
+            <div class="available-networks">
+              <NetworkLogo
+                v-for="{ network } in availableInNetworksPart"
+                class="minor-network-img"
+                :key="network"
+                :name="network"
+                :width="12"
+              />
 
-            <div v-if="isAdditional" class="additional">+{{ additionalCount }}</div>
-          </div>
+              <div v-if="isAdditional" class="additional">+{{ additionalCount }}</div>
+            </div>
+          </template>
         </template>
       </div>
       <div class="row second-row">
@@ -42,7 +44,7 @@
 
         <Shimmer v-if="showShimmers" height="23px" width="60px" />
 
-        <div v-else class="count-assets overflow">
+        <div v-else-if="!showWarning" class="count-assets overflow">
           {{ countAssetsString }}
         </div>
       </div>
@@ -55,13 +57,19 @@
 
         <Shimmer v-if="showShimmers" height="14px" width="70px" />
 
-        <div v-else class="total-balance overflow">
+        <div v-else-if="!showWarning" class="total-balance overflow">
           {{ totalBalanceString }}
         </div>
       </div>
     </div>
     <div class="activity">
-      <template v-if="!showAssetsManagementForm">
+      <template v-if="showWarning">
+        <Icon icon="info-triangle" className="warning-img" @click.native="$emit('toggleNetworkManagementVisible')" />
+
+        <Tooltip text="common.networkDisconnected" target=".warning-img" placement="left" />
+      </template>
+
+      <template v-else-if="!showAssetsManagementForm">
         <CircleButton
           iconName="send-white"
           backgroundColor="black"
@@ -99,27 +107,15 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Currency } from '@/interfaces/currencies';
-import type { SelectedWallet } from '@/store/accounts/types';
-import CircleButton from '@/components/CircleButton.vue';
-import NetworkLogo from '@/components/NetworkLogo.vue';
-import Switcher from '@/components/Switcher.vue';
-import Shimmer from '@/components/Shimmer.vue';
+import type { SelectedWallet } from '@/store';
+import type { Networks, CustomEvent } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/helpers/numbers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GetNetworkStatus } from '@/store/networks/types';
-import Lazy from '@/components/Lazy.vue';
+import { GetNetworkStatus } from '@/store';
 
-@Component({
-  components: {
-    Lazy,
-    Shimmer,
-    Switcher,
-    NetworkLogo,
-    CircleButton,
-  },
-})
+@Component
 export default class CurrencyItem extends Vue {
   readonly countDisplayedNetworks = 5;
 
@@ -130,10 +126,13 @@ export default class CurrencyItem extends Vue {
   @Prop({ required: false }) timeoutCallback!: (fn: () => void) => VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
-  @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
+  @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
+  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
 
   get showShimmers() {
+    if (this.isCurrentNetwork) return !this.isOnline || this.getNetworkStatus(this.selectedNetwork) === 'pending';
+
     const index = this.currency.getNetworkList().findIndex(({ network }) => {
       const status = this.getNetworkStatus(network);
 
@@ -141,6 +140,16 @@ export default class CurrencyItem extends Vue {
     });
 
     return !this.isOnline || index !== -1;
+  }
+
+  get showWarning() {
+    if (this.isCurrentNetwork) return this.getNetworkStatus(this.selectedNetwork) === 'disconnected';
+
+    return this.currency.getNetworkList().every(({ network }) => {
+      const status = this.getNetworkStatus(network);
+
+      return status === 'disconnected';
+    });
   }
 
   get isCurrentNetwork() {
@@ -206,8 +215,6 @@ export default class CurrencyItem extends Vue {
   }
 
   get walletBalance() {
-    // return this.currency.getNetworkWithBalanceList(this.selectedWallet); // Please don't delete. Needed for development.
-
     return this.currency.getNetworksWithBalance(this.selectedWallet);
   }
 
@@ -227,8 +234,17 @@ export default class CurrencyItem extends Vue {
     return this.walletBalance;
   }
 
-  openAssetPage(event: Event) {
-    const classList = (event.target as HTMLDivElement)?.classList;
+  get redirectNetwork() {
+    const { mainNetwork } = this.currency;
+    const [{ network: firstNetwork }] = this.currency.getNetworkList();
+
+    return this.isCurrentNetwork ? this.selectedNetwork : mainNetwork !== '' ? mainNetwork : firstNetwork;
+  }
+
+  openAssetPage(event: CustomEvent) {
+    if (this.showWarning) return;
+
+    const classList = event.target?.classList;
 
     if (
       this.showAssetsManagementForm ||
@@ -238,15 +254,13 @@ export default class CurrencyItem extends Vue {
     )
       return;
 
-    const { mainNetwork, assetId } = this.currency;
-    const [{ network: firstNetwork }] = this.currency.getNetworkList();
-    const network = this.isCurrentNetwork ? this.selectedNetwork : mainNetwork !== '' ? mainNetwork : firstNetwork;
+    const { assetId } = this.currency;
 
     this.$router.push({
       name: Components.Asset,
       params: {
         assetId,
-        network,
+        network: this.redirectNetwork,
       },
     });
   }
@@ -371,6 +385,16 @@ export default class CurrencyItem extends Vue {
 
   .button {
     margin-right: 7px;
+  }
+
+  .warning-img {
+    width: 28px;
+    height: 28px;
+    opacity: 0.9;
+
+    &:hover {
+      opacity: 1;
+    }
   }
 
   .img-container {

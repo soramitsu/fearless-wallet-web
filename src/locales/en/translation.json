@@ -1,8 +1,9 @@
 {
   "welcome": {
     "createWallet": "Create a new wallet",
-    "importWallet": "I already have a wallet",
-    "connectMobile": "Connect Mobile Wallet",
+    "importWallet": "Import wallet",
+    "connectMobile": "Connect mobile",
+    "manageGoogle": "Google Drive manage",
     "deFiWallet": "The DeFi Wallet From The Future",
     "agreeWith": "By continuing you agree with",
     "and": "and"
@@ -23,8 +24,10 @@
     "enterPassphrase": "Enter Passphrase",
     "walletNickname": "Wallet nickname",
     "enterPassword": "Enter password",
+    "setupPassword": "Set up password",
     "addEthereumAccount": "Add ethereum account",
     "haveWrittenPassphrase": "I have written down passphrase",
+    "ConfirmSecretData": "Confirm secret data",
     "usingFearless": "Start using Fearless",
     "rawSeed": "{type} accounts raw seed",
     "restoreJson": "Restore JSON for {type} accounts",
@@ -37,6 +40,7 @@
     "allDone": "All done!",
     "stayFearless": "Stay Fearless!",
     "accounts": "accounts",
+    "skipConfirmation": "Skip confirmation",
     "substrateDP": "Substrate secret derivation path",
     "substrateCryptoType": "SUBSTRATE KEYPAIR CRYPTO TYPE",
     "ethereumDP": "Ethereum secret derivation path",
@@ -78,6 +82,18 @@
         "text": "Current wallet already exists",
         "subtext": "By continuing you understand that mobile wallet would be replaced with current wallet and will be deleted"
       }
+    },
+    "google": {
+      "selectToImport": "Select the wallet you want to import",
+      "accessDenied": "Access denied",
+      "somethingWrong": "Something went wrong...",
+      "showSecretData": "Show my secret data",
+      "fetchInfo": "Fetching info from google",
+      "backupWallet": "Google Drive backup",
+      "saved": "Saved",
+      "dataWillStoreOnGDrive": "By clicking “Confirm” you agree with using Google Drive as a storage for your keys",
+      "passphraseSaved": "The passphrase has been successfully saved on Google Drive",
+      "noWallets": "No saved wallets have been found on the Google Drive"
     }
   },
   "mobileConnector": {
@@ -92,7 +108,7 @@
     "requesting": "Requesting permissions...",
     "connected": "Mobile wallet connected to Fearless Wallet Extension",
     "noAnswer": "No answer from your wallet received yet. Please make sure the wallet is open",
-    "signMobile": "To sign with your mobile device, check if your mobile client is open and click 'Sign'"
+    "signMobile": "To sign using a mobile device, make sure your mobile client is open on the Beacon dApp screen and click Sign."
   },
   "metadata": {
     "text": "Metadata",
@@ -158,7 +174,10 @@
     "turnVisibilityAssets": "Turn off the visibility of assets with zero balances",
     "assetManagement": "Asset management",
     "assetDetails": "Asset details",
-    "addWallet": "Add wallet"
+    "addWallet": "Add wallet",
+    "networkUnavailable": "Network is unavailable",
+    "networkUnavailableSubtext": "The network is unavailable, you can wait or ask a question to the community",
+    "nothingFound": "Nothing found"
   },
   "asset": {
     "history": {
@@ -169,6 +188,7 @@
       "reward": "Reward",
       "extrinsic": "Extrinsic"
     },
+    "balanceDetails": "Balance details",
     "buyHeader": "Buy {asset} with",
     "buy": "Buy",
     "teleportButtonText": "Teleport",
@@ -183,6 +203,7 @@
     "sendFunds": "Send Funds",
     "walletAddress": "Wallet address",
     "receiveFunds": "Receive Funds",
+    "networkIssues": "Network Issues",
     "originNet": "ORIGINAL NETWORK",
     "network": "NETWORK",
     "amount": "AMOUNT",
@@ -260,6 +281,8 @@
     "accept": "Accept",
     "proceed": "Proceed",
     "continue": "Continue",
+    "confirm": "Confirm",
+    "finish": "Finish",
     "copied": "Сopied",
     "copiedValue": "Сopied {value}",
     "understood": "Understood",
@@ -269,6 +292,7 @@
     "no": "No",
     "search": "Search",
     "searchNetwork": "Search in networks",
+    "searchAmongAssets": "Search among assets",
     "searchCurrency": "Search in currencies",
     "invalidPassword": "Incorrect password",
     "password": "Password",
@@ -279,6 +303,7 @@
     "alreadyHaveAccount": "I already have an account",
     "sourceType": "Source Type",
     "allNetworks": "All networks",
-    "offlineStatus": "No Internet connection"
+    "offlineStatus": "No Internet connection",
+    "networkDisconnected": "Network disconnected"
   }
 }

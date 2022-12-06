@@ -46,15 +46,13 @@
 <script lang="ts">
 import { Getter } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { SelectedWallet } from '@/store/accounts/types';
-import Popup from '@/components/Popup.vue';
+import type { SelectedWallet } from '@/store';
+
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
-@Component({
-  components: { Popup },
-})
+@Component
 export default class AccountSettingsPopup extends Vue {
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showSwitchNode!: boolean;

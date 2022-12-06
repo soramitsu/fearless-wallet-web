@@ -27,11 +27,7 @@ import { Vue, Component } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { MetadataRequest } from '@extension-base/background/types';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
-import Corners from '@/components/Corners.vue';
-import Button from '@/components/Button.vue';
 import Hint from '@/components/Hint.vue';
-import Alert from '@/components/Alert.vue';
-import AboveForm from '@/components/AboveForm.vue';
 import store from '@/store';
 import { Components } from '@/router/routes';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
@@ -40,12 +36,8 @@ import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters
 
 @Component({
   components: {
-    Button,
-    AboveForm,
-    Alert,
     InfoList,
     InfoItem,
-    Corners,
     Hint,
   },
 })

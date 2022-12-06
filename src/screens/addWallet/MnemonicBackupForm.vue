@@ -11,10 +11,9 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import MnemonicColumns from './MnemonicColumns.vue';
-import Hint from '@/components/Hint.vue';
 
 @Component({
-  components: { Hint, MnemonicColumns },
+  components: { MnemonicColumns },
 })
 export default class MnemonicBackupForm extends Vue {
   @Prop(Array) mnemonicArray!: string[];

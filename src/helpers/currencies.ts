@@ -1,5 +1,5 @@
 import type { Currencies, Currency, Networks, RelayChainName, Balances } from '@/interfaces';
-import type { Wallet } from '@/store/accounts/types';
+import type { Wallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import CurrencyController from '@/controllers/currencyController';
 import NetworksController from '@/controllers/networksController';
@@ -153,7 +153,7 @@ function getCurrencyOptions(currencies: Currencies) {
 
 function getUtilityAsset(currencies: Currencies, _network: string): string {
   const currency = currencies.find(({ balances }) =>
-    balances.some(({ network, type }) => network === _network && type === 'native')
+    balances.some(({ network, type }) => network === _network && (type === 'native' || type === 'equilibrium'))
   )!;
 
   return currency.displayName;

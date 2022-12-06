@@ -3,9 +3,8 @@ import { ISubmittableResult } from '@polkadot/types/types';
 import { FPNumber } from '@sora-substrate/math';
 import type { Balances, BalanceFP, WalletBalance, RelayChainName, WalletAddress, AccountBalance } from '@/interfaces';
 import type { SubmittableExtrinsic, SignerOptions } from '@polkadot/api/submittable/types';
-import type { Wallet } from '@/store/accounts/types';
+import type { Wallet, SetHistoryProps } from '@/store';
 import type { ApiPromise } from '@polkadot/api';
-import type { SetHistoryProps } from '@/store/networks/types';
 import BaseApi from '@/util/BaseApi';
 import LocalStorageController from '@/controllers/localStorageController';
 import NetworksController from '@/controllers/networksController';
@@ -23,6 +22,7 @@ import { BeaconSigner } from '@/extension/background/extension-base/src/backgrou
 import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { mockBalance } from '@/consts/currencies';
+import { saveTimeoutCache } from '@/extension/messaging';
 
 type TransactionStatus = 'success' | 'failed' | 'pending';
 
@@ -114,7 +114,7 @@ export default class CurrencyController {
     }, mockBalance);
   }
 
-  private getBalanceInNetwork(wallet: Wallet, _network: string): string {
+  private getTotalBalanceInNetwork(wallet: Wallet, _network: string): string {
     const walletBalance = this.getWalletBalance(wallet);
     const total = walletBalance.find(({ network }) => network === _network)?.balance.total ?? FPNumber.ZERO;
 
@@ -126,6 +126,36 @@ export default class CurrencyController {
     const balance = walletBalance.find(({ network }) => network === _network)?.balance;
 
     return balance?.total.toString() ?? '';
+  }
+
+  public getBalanceInNetwork(wallet: Wallet, _network: string) {
+    const walletBalance = this.getWalletBalance(wallet);
+    const { frozen, locked, reserved, total, transferable } = walletBalance.find(
+      ({ network }) => network === _network
+    )!.balance;
+
+    return {
+      frozen: {
+        value: frozen.toString(),
+        fiat: this.calculateCost(frozen).toString(),
+      },
+      locked: {
+        value: locked.toString(),
+        fiat: this.calculateCost(locked).toString(),
+      },
+      reserved: {
+        value: reserved.toString(),
+        fiat: this.calculateCost(reserved).toString(),
+      },
+      total: {
+        value: total.toString(),
+        fiat: this.calculateCost(total).toString(),
+      },
+      transferable: {
+        value: transferable.toString(),
+        fiat: this.calculateCost(transferable).toString(),
+      },
+    };
   }
 
   public getTransactionAddress(wallet: Wallet, network: string): string {
@@ -201,7 +231,7 @@ export default class CurrencyController {
   }
 
   public isUtility(_network: string): boolean {
-    return this.balances.find(({ network }) => network === _network)!.type === 'native';
+    return this.balances.find(({ network }) => network === _network)?.type === 'native';
   }
 
   public getNetworksWithBalance(wallet: Wallet): WalletBalance[] {
@@ -210,7 +240,7 @@ export default class CurrencyController {
 
   public getTotalBalance(wallet: Wallet, network?: string): string {
     if (network && network !== 'all') {
-      return this.getBalanceInNetwork(wallet, network);
+      return this.getTotalBalanceInNetwork(wallet, network);
     }
 
     const countAssets = this.countAssets(wallet).total;
@@ -295,14 +325,22 @@ export default class CurrencyController {
     };
 
     try {
-      if (type === 'native') {
-        this.extrinsic = api!.tx.balances.transfer(to, precisionAmount);
-      } else if (type === 'equilibrium') {
-        this.extrinsic = api!.tx.eqBalances.transfer(ormlOptions, to, precisionAmount);
-      } else if (type === 'ormlChain') {
-        this.extrinsic = api!.tx.tokens.transfer(to, ormlOptions, precisionAmount);
-      } else {
-        this.extrinsic = api!.tx.currencies.transfer(to, ormlOptions, precisionAmount);
+      switch (type) {
+        case 'native':
+          this.extrinsic = api!.tx.balances.transfer(to, precisionAmount);
+          break;
+        case 'equilibrium':
+          this.extrinsic = api!.tx.eqBalances.transfer(ormlOptions, to, precisionAmount);
+          break;
+        case 'ormlChain':
+          this.extrinsic = api!.tx.tokens.transfer(to, ormlOptions, precisionAmount);
+          break;
+        case 'soraAsset':
+          this.extrinsic = api!.tx.assets.transfer(ormlOptions, to, precisionAmount);
+          break;
+        default:
+          this.extrinsic = api!.tx.currencies.transfer(to, ormlOptions, precisionAmount);
+          break;
       }
     } catch {
       this.extrinsic = undefined;
@@ -390,8 +428,11 @@ export default class CurrencyController {
     }
   }
 
-  public async send(from: string, isMobile = false): Promise<boolean> {
+  public async send(from: string, isMobile = false, isSavePass = false): Promise<boolean> {
+    if (isSavePass) await saveTimeoutCache(from);
+
     const account = isMobile ? from : BaseApi.getPair(from);
+
     const options = {
       ...(this.options.transactionsOptions ?? {}),
       signer: isMobile ? new BeaconSigner() : undefined,
@@ -403,7 +444,7 @@ export default class CurrencyController {
     try {
       await this.extrinsic!.signAndSend(account, options, this.statusCallback(from));
 
-      if (typeof account !== 'string') account.lock();
+      if (typeof account !== 'string' && !isSavePass) account.lock();
     } catch (ex) {
       this.transactionStatus = 'failed';
 

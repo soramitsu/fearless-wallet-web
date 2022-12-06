@@ -49,18 +49,14 @@ import { SigningRequest } from '@extension-base/background/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { registry } from '@/extension/background/extension-base/src/background/handlers/State';
 import BaseApi from '@/util/BaseApi';
-import Input from '@/components/Input.vue';
-import Button from '@/components/Button.vue';
 import Checkbox from '@/components/Checkbox.vue';
 import WalletInfo from '@/screens/extension-ui/signing/WalletInfo.vue';
 import InfoList from '@/screens/extension-ui/InfoList.vue';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
-import AboveForm from '@/components/AboveForm.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
-import Loader from '@/components/Loader.vue';
 import { beaconController } from '@/controllers/beaconController';
 import { Components } from '@/router/routes';
 import ExtensionController from '@/controllers/extensionController';
@@ -71,10 +67,6 @@ import ExtensionController from '@/controllers/extensionController';
     ConfirmationPasswordPopup,
     InfoItem,
     InfoList,
-    Input,
-    AboveForm,
-    Button,
-    Loader,
     Checkbox,
   },
 })

@@ -1,0 +1,62 @@
+import { AxiosResponse } from 'axios';
+import type { KeyringPair$Json } from '@polkadot/keyring/types';
+
+interface IGDriveFile {
+  id: string;
+  address: string;
+  name: string;
+}
+
+interface FileData extends IGDriveFile {
+  active: boolean;
+  password: string;
+  isError: boolean;
+  isLoading: boolean;
+  isComplete: boolean;
+  ethWalletID: string;
+  description: string;
+  json: KeyringPair$Json;
+  ethJson: KeyringPair$Json;
+}
+
+export type FilesState = Partial<FileData>;
+export interface FilesResponse {
+  id: string;
+  name: string;
+  description: string;
+}
+
+interface IGetFilesResponse {
+  files: FilesResponse[];
+  incompleteSearch: boolean;
+  kind: 'drive#fileList';
+}
+
+interface CreateFileProp {
+  json: string;
+  options: {
+    name: string;
+    address: string;
+  };
+}
+
+export interface ICreateFile {
+  json: string;
+  options: { name: string; address: string };
+  token: string;
+}
+
+export interface IGetFileMetaResponse {
+  description: string;
+}
+
+interface VerifyTokenResponse {
+  issued_to: string;
+  audience: string;
+  scope: string;
+  expires_in: number;
+  access_type: 'online' | 'offline';
+}
+export type GoogleResponse<T> = Promise<AxiosResponse<T>>;
+
+export { IGetFilesResponse, VerifyTokenResponse, IGDriveFile, CreateFileProp };

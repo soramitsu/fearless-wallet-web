@@ -50,6 +50,10 @@ export type SetAssetsPriceProps = {
   assetsPrice: AssetsPrice;
 };
 
+export type SetAssetsPriceIntervalProps = {
+  interval: NodeJS.Timer;
+};
+
 export type SetCurrenciesProps = {
   currencies: Currencies;
   address?: string;
@@ -104,10 +108,10 @@ export type LoadHistory = {
   pageSize: number;
 };
 
-export type Accounts = Record<string, { type?: KeypairType; json: KeyringJson }> | SubjectInfo;
+export type CustomAccounts = Record<string, { type?: KeypairType; json: KeyringJson }>;
 
 export type SubscribeToBalances = {
-  accounts: Accounts;
+  accounts: CustomAccounts | SubjectInfo;
   networksProps?: Networks;
 };
 

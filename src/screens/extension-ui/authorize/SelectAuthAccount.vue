@@ -37,19 +37,10 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
-import Checkbox from '@/components/Checkbox.vue';
-import Tooltip from '@/components/Tooltip.vue';
-import { WalletInfo } from '@/store/accounts/types';
+import { WalletInfo } from '@/store';
 import { cut } from '@/helpers/history';
-import Scroll from '@/components/Scroll.vue';
 
-@Component({
-  components: {
-    Scroll,
-    Tooltip,
-    Checkbox,
-  },
-})
+@Component
 export default class SelectAuthAccount extends Vue {
   @PropSync('selectAll', { type: Boolean }) syncSelectAll!: boolean;
   @Prop(Object) accounts!: WalletInfo[];
@@ -65,13 +56,14 @@ export default class SelectAuthAccount extends Vue {
   cutAddress(address: string) {
     return cut(address);
   }
+
   saveToClipboard(value: string) {
     navigator.clipboard.writeText(value);
   }
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .auth-accounts {
   display: flex;
   flex-flow: column;

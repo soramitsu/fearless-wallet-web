@@ -1,11 +1,11 @@
 <template>
   <Popup
-    class="notification-popup"
     :showHeader="showHeader"
     :handlerClose="handlerClose"
     :sizeWidth="sizeWidth"
     :showBorder="true"
     :closeBuBackground="closeBuBackground"
+    :zIndex="zIndex"
   >
     <div class="notification-popup-content">
       <Icon v-if="showWarningIcon" icon="info-triangle" className="img" />
@@ -28,9 +28,6 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Popup from '@/components/Popup.vue';
-import Button from '@/components/Button.vue';
-import BorderButton from '@/components/BorderButton.vue';
 
 interface Headers {
   text: string;
@@ -39,13 +36,7 @@ interface Headers {
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 
-@Component({
-  components: {
-    Popup,
-    Button,
-    BorderButton,
-  },
-})
+@Component
 export default class NotificationPopup extends Vue {
   @Prop({ default: () => ({ text: '', subtext: '' }) }) headers!: Headers;
   @Prop({ default: false }) showAcceptButton!: boolean;
@@ -56,6 +47,7 @@ export default class NotificationPopup extends Vue {
   @Prop({ default: 'medium' }) sizeWidth!: Size;
   @Prop({ default: 'common.cancel' }) rejectButtonText!: string;
   @Prop({ default: 'common.proceed' }) acceptButtonText!: string;
+  @Prop({ default: 299 }) zIndex!: number;
   @Prop(Function) handlerClose!: VoidFunction;
   @Prop(Function) handlerAccept!: VoidFunction;
 
@@ -74,50 +66,46 @@ export default class NotificationPopup extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.notification-popup {
-  z-index: 299;
+.notification-popup-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 10px;
 
-  .notification-popup-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0 10px;
-
-    .img {
-      margin-bottom: 20px;
-      width: 42px;
-      height: 42px;
-    }
-
-    .text {
-      font-weight: 700;
-      font-size: 18px;
-      line-height: 150%;
-      margin-bottom: 4px;
-    }
-
-    .button {
-      margin-top: 20px;
-      width: 150px;
-      width: 100%;
-    }
-
-    .reject-button {
-      margin-top: 10px;
-    }
+  .img {
+    margin-bottom: 20px;
+    width: 42px;
+    height: 42px;
   }
 
-  .subtext {
-    color: $gray-color;
+  .text {
+    font-weight: 700;
+    font-size: 18px;
     line-height: 150%;
+    margin-bottom: 4px;
   }
 
-  .subtext-medium {
-    width: 255px;
+  .button {
+    margin-top: 20px;
+    width: 150px;
+    width: 100%;
   }
 
-  .subtext-big {
-    width: 300px;
+  .reject-button {
+    margin-top: 10px;
   }
+}
+
+.subtext {
+  color: $gray-color;
+  line-height: 150%;
+}
+
+.subtext-medium {
+  width: 255px;
+}
+
+.subtext-big {
+  width: 300px;
 }
 </style>

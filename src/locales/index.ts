@@ -5,9 +5,8 @@ import * as ru from './ru/translation.json';
 import { accountController } from '@/controllers/accountController';
 
 Vue.use(VueI18n);
-type MessageSchema = typeof en;
 
-const messages: Record<string, MessageSchema> = {
+const messages = {
   en,
   ru,
 };

@@ -11,23 +11,18 @@
 <script lang="ts">
 import { Watch, Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
-import type {
-  SetSelectedWalletProps,
-  setAccountsProps,
-  Accounts,
-  setAddressesProps,
-  setOnlineStatus,
-} from '@/store/accounts/types';
+import type { SetSelectedWalletProps, setAccountsProps, Accounts, setAddressesProps, setOnlineStatus } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-import { isExtension } from '@/helpers/common';
 import BaseApi from '@/util/BaseApi';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import NetworksController from '@/controllers/networksController';
 import { accountController } from '@/controllers/accountController';
+import { resetTimeouts } from '@/extension/messaging';
 
 @Component
 export default class App extends Vue {
@@ -38,6 +33,7 @@ export default class App extends Vue {
   @Getter(AccountsGettersTypes.getAddresses) addresses!: Accounts;
   @Getter(AccountsGettersTypes.getWallets) wallets!: Record<string, Accounts>;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
+  @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
   @Mutation(AccountsMutationTypes.SET_ADDRESSES) setAddresses!: TMutation<setAddressesProps>;
@@ -45,7 +41,10 @@ export default class App extends Vue {
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
 
   created() {
-    if (isExtension()) this.extensionSubscribe();
+    if (BaseApi.isExtension()) {
+      this.extensionSubscribe();
+      resetTimeouts();
+    }
 
     this.setWallet();
     this.addEventOnline();
@@ -54,9 +53,11 @@ export default class App extends Vue {
   }
 
   @Watch('isOnline')
-  connect() {
-    this.connectToNodes();
-    this.subscribeToBalancesOfNetworks();
+  connect(value: boolean) {
+    if (value) {
+      this.connectToNodes();
+      this.subscribeToBalancesOfNetworks();
+    } else this.unsubscribe();
   }
 
   async connectToNodes() {
@@ -130,9 +131,15 @@ export default class App extends Vue {
     }
   }
 
-  beforeUnmount() {
+  unsubscribe() {
+    clearInterval(this.assetsPriceInterval!);
+
     this.subscribeAccounts.unsubscribe();
     this.subscribeAddresses.unsubscribe();
+  }
+
+  beforeUnmount() {
+    this.unsubscribe();
   }
 }
 </script>

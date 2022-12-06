@@ -41,16 +41,9 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import Logo from '@/components/Logo.vue';
-import BorderButton from '@/components/BorderButton.vue';
 import URLS from '@/consts/urls';
 
-@Component({
-  components: {
-    Logo,
-    BorderButton,
-  },
-})
+@Component
 export default class FinishForm extends Vue {
   readonly URLS = URLS;
 
@@ -66,6 +59,7 @@ export default class FinishForm extends Vue {
     display: flex;
     justify-content: space-between;
     margin-top: 15px;
+    gap: 10px;
   }
 
   .description {

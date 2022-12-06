@@ -90,16 +90,38 @@
 
         <FinishForm v-if="showFinishForm" />
       </div>
+      <div class="controls">
+        <Button
+          v-if="confirmMnemonicStep"
+          size="big"
+          fontSize="big"
+          width="64px"
+          type="secondary"
+          :border="false"
+          :iconName="'reload'"
+          @click="resetAll"
+        />
+        <Button
+          v-if="confirmMnemonicStep"
+          size="big"
+          fontSize="big"
+          width="100%"
+          type="secondary"
+          :border="false"
+          :text="$t('addWallet.skipConfirmation')"
+          @click="skipStep"
+        />
 
-      <Button
-        v-if="!showAdvancedForm"
-        size="big"
-        fontSize="big"
-        width="100%"
-        :text="buttonText"
-        :disabled="disabledProceed"
-        @click="proceed"
-      />
+        <Button
+          v-if="!showAdvancedForm"
+          size="big"
+          fontSize="big"
+          width="100%"
+          :text="buttonText"
+          :disabled="disabledProceed"
+          @click="proceed"
+        />
+      </div>
     </div>
 
     <NotificationPopup
@@ -126,7 +148,7 @@ import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { DerivationPaths, ImportType, ValidateJsonResult, MnemonicConfirmation, TAction } from '@/interfaces';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import type { SelectedWallet, SetSelectedWallet } from '@/store/accounts/types';
+import type { SelectedWallet, SetSelectedWallet } from '@/store';
 import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
 import PasswordForm from '@/screens/addWallet/PasswordForm.vue';
@@ -136,31 +158,23 @@ import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
 import AddEthereumAccountPopup from '@/screens/addWallet/AddEthereumAccountPopup.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 import BaseApi from '@/util/BaseApi';
-import NotificationPopup from '@/components/NotificationPopup.vue';
-import CircleButton from '@/components/CircleButton.vue';
-import Input from '@/components/Input.vue';
-import Button from '@/components/Button.vue';
 import { Components } from '@/router/routes';
 import { WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
-import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
 
 @Component({
   components: {
-    Input,
-    Button,
     FinishForm,
     CreateWallet,
     ImportWallet,
     PasswordForm,
     NicknameForm,
     AdvancedForm,
-    CircleButton,
     AdvancedButton,
-    NotificationPopup,
     AddEthereumAccountPopup,
   },
 })
@@ -194,6 +208,10 @@ export default class AddWallet extends Vue {
 
   get isReplaceAccountFlow() {
     return this.replacedNetwork !== '';
+  }
+
+  get confirmMnemonicStep() {
+    return this.step === 3;
   }
 
   get isOnlyEthereumAccountFlow() {
@@ -414,7 +432,7 @@ export default class AddWallet extends Vue {
   }
 
   @Watch('step')
-  changedCurrentStep(step: number) {
+  async changedCurrentStep(step: number) {
     if (step === 0) this.$router.back();
 
     if (step === 2) {
@@ -580,6 +598,14 @@ export default class AddWallet extends Vue {
     this.step += 2;
   }
 
+  resetAll() {
+    this.selectedMnemonicElements = [];
+  }
+
+  skipStep() {
+    this.step += 1;
+  }
+
   handlerAgree() {
     this.showAddEthereumAccountPopup = false;
     this.step += 1;
@@ -654,10 +680,14 @@ export default class AddWallet extends Vue {
   }
 
   validateSuri() {
-    const { ethereum, substrate } = this.derivationPaths;
+    const {
+      ethereum: { value: ethereumDerivationPath },
+      substrate,
+    } = this.derivationPaths;
+    const ETHDP = (ethereumDerivationPath[0] === '/' ? ethereumDerivationPath.slice(1) : ethereumDerivationPath).trim();
     const isValidMnemonic = this.mnemonic ? BaseApi.isValidPhrase(this.mnemonic.trim()) : true;
     const isValidSubstratePhrase = substrate.value ? BaseApi.isValidSubstrateDerivationPath(substrate) : true;
-    const isValidEthereumDP = ethereum.value ? BaseApi.isValidEthereumDerivationPath(ethereum.value) : true;
+    const isValidEthereumDP = ethereumDerivationPath ? BaseApi.isValidEthereumDerivationPath(ETHDP) : true;
     const isValidSubstrateRawSeed = this.substrateRawSeed ? BaseApi.isHex(this.substrateRawSeed) : true;
     const isValidEthereumRawSeed = this.ethereumRawSeed ? BaseApi.isHex(this.ethereumRawSeed) : true;
 
@@ -678,15 +708,15 @@ export default class AddWallet extends Vue {
         )
       : true;
 
-    if (isValidMnemonic && isValidSubstrateRawSeed && validatedSubstrateJson.value && this.step === 1)
-      this.validateMobileDubs();
-    else if (!isValidSequenceMnemonic) this.warningValueName = 'mnemonicSequence';
+    if (!isValidSequenceMnemonic) this.warningValueName = 'mnemonicSequence';
     else if (!isValidMnemonic) this.warningValueName = 'mnemonic';
     else if (!isValidSubstratePhrase) this.warningValueName = 'substrateDP';
     else if (!isValidEthereumDP) this.warningValueName = 'ethereumDP';
     else if (!isValidSubstrateRawSeed || !isValidEthereumRawSeed) this.warningValueName = 'rawSeed';
     else if (!validatedSubstrateJson.value) this.warningValueName = validatedSubstrateJson.errorType;
     else if (!validatedEthereumJson.value) this.warningValueName = validatedEthereumJson.errorType;
+    else if (isValidMnemonic && isValidSubstrateRawSeed && validatedSubstrateJson.value && this.step === 1)
+      this.validateMobileDubs();
   }
 
   replaceAccount() {
@@ -878,5 +908,13 @@ export default class AddWallet extends Vue {
     width: 32px;
     height: 32px;
   }
+}
+
+.controls {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
 }
 </style>

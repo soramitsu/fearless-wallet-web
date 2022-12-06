@@ -22,24 +22,13 @@
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import type { SelectedWallet } from '@/store/accounts/types';
+import type { SelectedWallet } from '@/store';
 import type { Networks } from '@/interfaces/networks';
-import Input from '@/components/Input.vue';
-import Button from '@/components/Button.vue';
 import BaseApi from '@/util/BaseApi';
-import AboveForm from '@/components/AboveForm.vue';
-import ValidatedInput from '@/components/ValidatedInput.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
-@Component({
-  components: {
-    Input,
-    Button,
-    AboveForm,
-    ValidatedInput,
-  },
-})
+@Component
 export default class ExportForm extends Vue {
   exportType = 'Restore JSON';
 

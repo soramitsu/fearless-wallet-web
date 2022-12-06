@@ -23,16 +23,13 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Mutation } from 'vuex-class';
-import type { SetSelectedWalletProps } from '@/store/accounts/types';
+import type { SetSelectedWalletProps } from '@/store';
 import type { TMutation } from '@/interfaces/common';
-import Popup from '@/components/Popup.vue';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 
-@Component({
-  components: { Popup },
-})
+@Component
 export default class WalletDetailsPopup extends Vue {
   @Prop(Number) buttonTopClick!: number;
   @Prop(String) selectedWalletAddress!: string;

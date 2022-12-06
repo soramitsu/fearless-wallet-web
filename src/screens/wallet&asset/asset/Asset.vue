@@ -1,12 +1,16 @@
 <template>
   <div class="asset">
     <div class="asset-header">
-      <div class="descriptions">
+      <div class="descriptions" @click="toggleBalanceDetailsPopup">
         <Shimmer v-if="showShimmers" height="32px" width="140px" />
 
-        <div v-else class="count-assets">{{ countAssetsString }}</div>
+        <div v-else class="count-assets">
+          <div class="count-value">{{ countAssetsString }}</div>
 
+          <Icon icon="info" class="details-icon" />
+        </div>
         <div class="balance-in-network">{{ balanceInNetworkString }}</div>
+
         <div class="price">{{ assetPriceString }}</div>
       </div>
 
@@ -14,7 +18,7 @@
         :ref="selectNetworkButtonRef"
         :text="selectedNetwork"
         :isActive="showSelectNetworkPopup"
-        @click="toggleSelectNetworkPopupVisible"
+        @openNetworkPopup="toggleSelectNetworkPopupVisible"
       />
     </div>
 
@@ -49,7 +53,7 @@
       />
     </div>
 
-    <History :currency="currentCurrency" @openHistoryDetailsPopup="openHistoryDetailsPopup" />
+    <History :currency="currentCurrency" @openHistoryDetailsForm="openHistoryDetailsForm" />
 
     <SendForm
       v-if="showSendForm"
@@ -90,11 +94,18 @@
       :handlerClose="toggleSelectNetworkPopupVisible"
     />
 
-    <HistoryDetailsPopup
-      v-if="showHistoryDetailsPopup"
-      :handlerClose="closeHistoryDetailsPopup"
+    <HistoryDetailsForm
+      v-if="showHistoryDetailsForm"
+      :handlerClose="closeHistoryDetailsForm"
       :historyNode="historyNode"
       :assetId="selectedAssetId"
+    />
+
+    <BalanceDetailsPopup
+      v-if="showBalanceDetailsPopup"
+      :network="selectedNetwork"
+      :currency="currentCurrency"
+      :closePopup="toggleBalanceDetailsPopup"
     />
 
     <Tooltip text="common.networkManagement" target=".select-network-button" placement="bottom" />
@@ -104,42 +115,36 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import HistoryDetailsPopup from './HistoryDetailsPopup.vue';
+import HistoryDetailsForm from './HistoryDetailsForm.vue';
 import History from './History.vue';
 import type { HistoryNode } from '@/interfaces/history';
-import type { GetAssetName } from '@/store/networks/types';
+import type { GetAssetName, SelectedWallet, GetNetworkStatus } from '@/store';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import TeleportForm from '@/screens/wallet&asset/TeleportForm.vue';
 import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
+import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
-import BorderButton from '@/components/BorderButton.vue';
 import BaseApi from '@/util/BaseApi';
 import { Currencies } from '@/interfaces/currencies';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { SelectedWallet } from '@/store/accounts/types';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/helpers/numbers';
-import Tooltip from '@/components/Tooltip.vue';
-import Shimmer from '@/components/Shimmer.vue';
-import { GetNetworkStatus } from '@/store/networks/types';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
 
 @Component({
   components: {
     History,
-    Tooltip,
-    Shimmer,
     SendForm,
     BuyPopup,
     ReceiveForm,
     TeleportForm,
-    BorderButton,
     SelectNetworkPopup,
-    HistoryDetailsPopup,
+    HistoryDetailsForm,
+    BalanceDetailsPopup,
     SelectNetworkButton,
   },
 })
@@ -151,8 +156,9 @@ export default class Asset extends Vue {
   showReceiveForm = false;
   showTeleportForm = false;
   showBuyPopup = false;
-  showHistoryDetailsPopup = false;
+  showHistoryDetailsForm = false;
   showSelectNetworkPopup = false;
+  showBalanceDetailsPopup = false;
 
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
@@ -254,14 +260,24 @@ export default class Asset extends Vue {
     this[field] = value;
   }
 
-  openHistoryDetailsPopup(historyNode: HistoryNode) {
-    this.showHistoryDetailsPopup = true;
+  openHistoryDetailsForm(historyNode: HistoryNode) {
+    this.showHistoryDetailsForm = true;
     this.historyNode = historyNode;
   }
 
-  closeHistoryDetailsPopup() {
-    this.showHistoryDetailsPopup = false;
+  closeHistoryDetailsForm() {
+    this.showHistoryDetailsForm = false;
     this.historyNode = {};
+  }
+
+  toggleBalanceDetailsPopup() {
+    if (this.showShimmers) {
+      this.showBalanceDetailsPopup = false;
+
+      return;
+    }
+
+    this.showBalanceDetailsPopup = !this.showBalanceDetailsPopup;
   }
 }
 </script>
@@ -285,15 +301,34 @@ export default class Asset extends Vue {
       align-items: flex-start;
       height: 70px;
 
+      &:hover {
+        cursor: pointer;
+      }
+
       .count-assets {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         font-weight: 600;
         font-size: 28px;
         text-align: left;
         max-width: 265px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
         height: 32px;
+
+        .count-value {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .details-icon {
+          width: 18px;
+          height: 18px;
+          min-height: 18px;
+          min-width: 18px;
+          margin-left: 10px;
+          opacity: 0.5;
+        }
       }
 
       .balance-in-network {

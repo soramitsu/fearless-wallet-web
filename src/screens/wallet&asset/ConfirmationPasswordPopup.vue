@@ -1,5 +1,5 @@
 <template>
-  <Popup class="sending-popup" :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close">
+  <Popup :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close" :zIndex="399">
     <div class="popup-content">
       <template v-if="!isTransactionInit && !isSignMobile">
         <Icon icon="lock-green" className="icon__lock-green" />
@@ -7,18 +7,18 @@
         <div class="text row">{{ $t('asset.passwordTransaction') }}</div>
 
         <ValidatedInput
-          v-if="isLocked"
           v-model="password"
           placeholder="common.password"
           size="big"
-          class="input row"
+          class="password-input row"
           errorDescriptions="common.invalidPassword"
+          :readonly="!isLocked"
           :isError="isErrorPassword"
           :showPassword="true"
         />
 
-        <div class="remember__checkbox">
-          <Checkbox v-model="isSavePass" size="medium" :label="min15Label" />
+        <div v-if="show15MinCheckbox" class="remember__checkbox">
+          <Checkbox v-model="isSavePass" size="medium" :label="$t(min15Label)" />
         </div>
 
         <Button
@@ -60,34 +60,18 @@
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { Currencies, Currency, RequestSentInfo, TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
+import type { GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import { beaconController } from '@/controllers/beaconController';
-import { isSignLocked } from '@/extension/messaging';
-import { isExtension } from '@/helpers/common';
-import Loader from '@/components/Loader.vue';
-import Popup from '@/components/Popup.vue';
-import Button from '@/components/Button.vue';
-import Checkbox from '@/components/Checkbox.vue';
-import ValidatedInput from '@/components/ValidatedInput.vue';
-import NetworkLogo from '@/components/NetworkLogo.vue';
+import { isSignLocked, refreshPasswordTimeout } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/extension/actions';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
-import { GetNetworkGenesisHash } from '@/store/networks/types';
 import ExtensionController from '@/controllers/extensionController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store/accounts/types';
 
 @Component({
-  components: {
-    Popup,
-    Button,
-    Loader,
-    Checkbox,
-    NetworkLogo,
-    ValidatedInput,
-    SignMobile,
-  },
+  components: { SignMobile },
 })
 export default class ConfirmationPasswordPopup extends Vue {
   password = '';
@@ -110,6 +94,10 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get show15MinCheckbox() {
+    return BaseApi.isExtension();
+  }
 
   get transactionAddress() {
     return this.currency?.getTransactionAddress(this.selectedWallet, this.firstNetwork) ?? '';
@@ -181,12 +169,22 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async mounted() {
-    if (!isExtension() && this.isSignMobile) return;
+    if (!BaseApi.isExtension() && this.isSignMobile) return;
 
     if (this.transactionId !== undefined) {
       const { isLocked } = await isSignLocked(this.transactionId);
       this.isLocked = isLocked;
       this.isSavePass = !this.isLocked;
+    } else {
+      const remainingTime = await refreshPasswordTimeout(this.transactionAddress);
+
+      this.isLocked = remainingTime <= 0;
+
+      if (this.isLocked) BaseApi.lockPair(this.transactionAddress);
+      else {
+        this.password = '00000';
+        this.isSavePass = true;
+      }
     }
   }
 
@@ -250,73 +248,71 @@ export default class ConfirmationPasswordPopup extends Vue {
         isSavePass: this.isSavePass,
         password: this.password,
       });
-    } else await this.currency?.send(this.transactionAddress);
+    } else await this.currency?.send(this.transactionAddress, false, this.isSavePass);
   }
 }
 </script>
 
 <style lang="scss" scoped>
-.sending-popup {
-  z-index: 399;
+.popup-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 25px;
+  min-height: 175px;
 
-  .popup-content {
+  .password-input {
+    width: 100%;
+    margin-bottom: 15px;
+  }
+
+  .icon__lock-green {
+    width: 30px;
+    height: 30px;
+  }
+
+  .text {
+    font-weight: 700;
+    font-size: 18px;
+    width: 250px;
+  }
+
+  .row {
+    margin-top: 15px;
+  }
+
+  .descriptions {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 0 25px;
-    min-height: 175px;
+    justify-content: space-between;
+    background: $secondary-background-color;
+    border-radius: 50px;
+    margin-bottom: 20px;
+    padding: 12px;
 
-    .input {
-      width: 100%;
+    .s-icon-arrows-arrow-right-24 {
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 30px !important;
+      margin: 0 10px;
     }
+  }
 
-    .icon__lock-green {
-      width: 30px;
-      height: 30px;
-    }
+  .transfer-amount {
+    font-weight: 800;
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
 
-    .text {
-      font-weight: 700;
-      font-size: 18px;
-      width: 250px;
-    }
+  .transfer-value {
+    font-size: 16px;
+    color: $gray-color;
+  }
 
-    .row {
-      margin-top: 15px;
-    }
-
-    .descriptions {
-      display: flex;
-      justify-content: space-between;
-      background: $secondary-background-color;
-      border-radius: 50px;
-      margin-bottom: 20px;
-      padding: 12px;
-
-      .s-icon-arrows-arrow-right-24 {
-        color: rgba(255, 255, 255, 0.3);
-        font-size: 30px !important;
-        margin: 0 10px;
-      }
-    }
-
-    .transfer-amount {
-      font-weight: 800;
-      font-size: 20px;
-      margin-bottom: 10px;
-    }
-
-    .transfer-value {
-      font-size: 16px;
-      color: $gray-color;
-    }
-
-    .remember__checkbox {
-      width: 100%;
-      display: flex;
-      align-items: flex-start;
-    }
+  .remember__checkbox {
+    margin-top: -15px;
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
   }
 }
 </style>

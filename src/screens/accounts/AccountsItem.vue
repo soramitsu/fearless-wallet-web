@@ -24,12 +24,8 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import CircleButton from '@/components/CircleButton.vue';
-import NetworkLogo from '@/components/NetworkLogo.vue';
 
-@Component({
-  components: { CircleButton, NetworkLogo },
-})
+@Component
 export default class AccountsItem extends Vue {
   readonly circleButtonRef = 'circleButton';
 

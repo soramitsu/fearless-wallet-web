@@ -20,13 +20,12 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { ChangeWalletBalance } from '@/interfaces';
-import Corners from '@/components/Corners.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { CustomEvent } from '@/interfaces';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 
 @Component({
-  components: { Corners, WalletBalance },
+  components: { WalletBalance },
 })
 export default class WalletInfo extends Vue {
   readonly dotsHorizontalRef = 'dotsHorizontal';
@@ -98,6 +97,10 @@ export default class WalletInfo extends Vue {
     text-transform: uppercase;
     color: $gray-color;
     margin-bottom: 4px;
+    max-width: 185px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .mobile {
@@ -110,8 +113,8 @@ export default class WalletInfo extends Vue {
   }
 
   .dots-container {
-    height: 30px;
-    width: 30px;
+    height: 20px;
+    width: 20px;
     opacity: 0.9;
     display: flex;
 

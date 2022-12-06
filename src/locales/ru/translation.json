@@ -3,6 +3,7 @@
     "createWallet": "Создать новый кошелек",
     "importWallet": "У меня уже есть кошелек",
     "connectMobile": "Подключить мобильный кошелек",
+    "manageGoogle": "Управление Google Drive",
     "deFiWallet": "Децентрализованный кошелек из будущего",
     "agreeWith": "Продолжая, вы принимаете",
     "and": "и"
@@ -23,6 +24,7 @@
     "enterPassphrase": "Введите мнемонику",
     "walletNickname": "Имя кошелька",
     "enterPassword": "Введите пароль",
+    "setupPassword": "Установите пароль",
     "addEthereumAccount": "Добавить ETH аккаунт",
     "haveWrittenPassphrase": "Я записал парольную фразу",
     "usingFearless": "Начните использовать Fearless",
@@ -37,6 +39,7 @@
     "allDone": "Все готово!",
     "stayFearless": "Stay Fearless!",
     "accounts": "аккаунты",
+    "skipConfirmation": "Пропустить подтверждение",
     "substrateDP": "Substrate секретный путь деривации",
     "substrateCryptoType": "SUBSTRATE тип шифрования",
     "ethereumDP": "Ethereum секретный путь деривации",
@@ -78,6 +81,18 @@
         "text": "Такой кошелек уже существует",
         "subtext": "Продолжая, вы понимаете, что мобильный кошелек будет заменен текущим кошельком и будет удален."
       }
+    },
+    "google": {
+      "selectToImport": "Выберите кошелек, который вы хотите добавить",
+      "accessDenied": "Доступ запрещен",
+      "somethingWrong": "Что-то пошло не так...",
+      "showSecretData": "Показать мнемонику",
+      "fetchInfo": "Подтягиваем информацию из Google Drive",
+      "backupWallet": "Cохранить в Google Drive",
+      "saved": "Сохранено",
+      "dataWillStoreOnGDrive": "Кликая 'Подтвердить', вы соглашаетесь, чтобы ваши секретные ключи были сохранены в приватном хранилище Google Drive",
+      "passphraseSaved": "Кошелек был успешно сохранен в Google Drive",
+      "noWallets": "Не нашли кошельки в вашем Google Drive"
     }
   },
   "mobileConnector": {
@@ -92,7 +107,7 @@
     "requesting": "Запрашиваем разрешения...",
     "connected": "Мобильный кошелек, подключенн к Fearless Wallet Extension",
     "noAnswer": "Ответ от вашего кошелька еще не получен. Пожалуйста, убедитесь, что кошелек открыт",
-    "signMobile": "Чтобы подписать с помощью мобильного устройства, проверьте, открыт ли ваш мобильный клиент, и нажмите «Подписать»."
+    "signMobile": "Чтобы подписать с помощью мобильного устройства, проверьте, что ваш мобильный клиент открыт на странице Beacon dApp, и нажмите «Подписать»."
   },
   "metadata": {
     "text": "Метадата",
@@ -158,7 +173,10 @@
     "turnVisibilityAssets": "Отключить видимость активов с нулевыми остатками",
     "assetManagement": "Управление активами",
     "assetDetails": "Детали актива",
-    "addWallet": "Добавить кошелек"
+    "addWallet": "Добавить кошелек",
+    "networkUnavailable": "Сеть недоступна",
+    "networkUnavailableSubtext": "Сеть недоступна, можете подождать или задать вопрос сообществу",
+    "nothingFound": "Ничего не найдено"
   },
   "asset": {
     "history": {
@@ -169,6 +187,7 @@
       "reward": "Награды",
       "extrinsic": "Экстринсики"
     },
+    "balanceDetails": "Детализация баланса",
     "buyHeader": "Купить {asset} через",
     "buy": "Купить",
     "teleportButtonText": "Телепорт",
@@ -182,6 +201,7 @@
     "sendTo": "КОМУ",
     "walletAddress": "Адрес кошелька",
     "receiveFunds": "Получить средства",
+    "networkIssues": "Проблемы с сетями",
     "originNet": "Основная сеть",
     "network": "СЕТЬ",
     "amount": "КОЛИЧЕСТВО",
@@ -260,6 +280,8 @@
     "accept": "Принять",
     "proceed": "Продолжить",
     "continue": "Продолжить",
+    "confirm": "Подтвердить",
+    "finish": "Закончить",
     "copied": "Скопировано",
     "copiedValue": "Скопировано {value}",
     "understood": "Понятно",
@@ -269,6 +291,7 @@
     "no": "Нет",
     "search": "Поиск",
     "searchNetwork": "Поиск по сетям",
+    "searchAmongAssets": "Поиск по ассетам",
     "searchCurrency": "Поиск по валютам",
     "invalidPassword": "Неверный пароль",
     "password": "Пароль",
@@ -279,6 +302,7 @@
     "alreadyHaveAccount": "У меня уже есть аккаунт",
     "sourceType": "Тип источника",
     "allNetworks": "Все сети",
-    "offlineStatus": "Отсутствует интернет"
+    "offlineStatus": "Отсутствует интернет",
+    "networkDisconnected": "Сеть отключена"
   }
 }

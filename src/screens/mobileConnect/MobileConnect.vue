@@ -24,7 +24,7 @@ import { Vue, Component } from 'vue-property-decorator';
 import { Action, Getter, Mutation } from 'vuex-class';
 import type { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import type { PermissionResponseOutput } from '@airgap/beacon-sdk';
-import type { SetSelectedWallet } from '@/store/accounts/types';
+import type { SetSelectedWallet } from '@/store';
 import type {
   PermissionSuccess,
   TAction,
@@ -40,18 +40,11 @@ import { ActionTypes as AccountActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as NetworkGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutations';
-import AboveForm from '@/components/AboveForm.vue';
-import QR from '@/components/QR.vue';
-import Loader from '@/components/Loader.vue';
 import PermissionRequestPopup from '@/screens/mobileConnect/PermissionRequestPopup.vue';
 import { MOONBEAM_GENESISHASH } from '@/consts/networks';
-import { isExtension } from '@/helpers/common';
 
 @Component({
   components: {
-    QR,
-    Loader,
-    AboveForm,
     PermissionRequestPopup,
   },
 })
@@ -176,7 +169,7 @@ export default class MobileConnect extends Vue {
     const ethereumAddress = this.getEthereumAccount(account);
     const meta: KeyringJson$Meta = { name: 'mobile wallet', isMobile: true, ethereumAddress };
 
-    if (isExtension()) await createAddress(substrateAccount, meta); //extenstion service worker
+    if (BaseApi.isExtension()) await createAddress(substrateAccount, meta); //extenstion service worker
 
     BaseApi.saveAddress(substrateAccount, meta);
     await this.setSelectedWallet({ selectedWalletAddress: substrateAccount });

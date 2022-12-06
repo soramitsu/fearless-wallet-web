@@ -38,6 +38,7 @@ const URLS = {
 const BASE_URLS_PREFIX = {
   MOONPAY: 'https://buy.moonpay.com',
   RAMP: 'https://buy.ramp.network',
+  GOOGLE: 'https://accounts.google.com',
 };
 
 const BASE_URLS_SUFFIX = {

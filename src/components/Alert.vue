@@ -14,15 +14,8 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import Corners from '@/components/Corners.vue';
-import Hint from '@/components/Hint.vue';
 
-@Component({
-  components: {
-    Corners,
-    Hint,
-  },
-})
+@Component
 export default class Container extends Vue {
   @Prop(String) message!: string;
 }

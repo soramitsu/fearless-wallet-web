@@ -7,7 +7,6 @@
       :isError="isShortPassword"
       :showPassword="true"
       :readonly="showMockPassword"
-      :maxlength="25"
       class="row"
     />
 
@@ -18,27 +17,24 @@
       :placeholder="t('reEnterPassword')"
       :isError="isWrongPassword"
       :showPassword="true"
-      :maxlength="25"
       class="row"
     />
 
-    <Hint iconName="notification" :text="hintText" />
+    <Hint class="hint" iconName="notification" :text="hintText" />
+    <Hint v-if="isGoogleFlow" class="hint" iconName="notification" :text="hintGoogleDriveText" />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
-import Hint from '@/components/Hint.vue';
-import ValidatedInput from '@/components/ValidatedInput.vue';
 
-@Component({
-  components: { Hint, ValidatedInput },
-})
+@Component
 export default class PasswordForm extends Vue {
   pass1 = '';
   pass2 = '';
 
   @Prop(Boolean) showMockPassword!: boolean;
+  @Prop({ type: Boolean, default: false }) isGoogleFlow!: boolean;
   @Prop(Boolean) showSamePasswordText!: boolean;
 
   get isShortPassword() {
@@ -51,6 +47,10 @@ export default class PasswordForm extends Vue {
 
   get showPasswordConfirmation() {
     return !this.showMockPassword && this.pass1.length !== 0 && !this.isShortPassword;
+  }
+
+  get hintGoogleDriveText() {
+    return this.t('google.dataWillStoreOnGDrive');
   }
 
   get hintText() {
@@ -96,6 +96,10 @@ export default class PasswordForm extends Vue {
 .password-form {
   .row {
     margin-bottom: 14px;
+  }
+
+  .hint {
+    margin-top: 10px;
   }
 }
 </style>

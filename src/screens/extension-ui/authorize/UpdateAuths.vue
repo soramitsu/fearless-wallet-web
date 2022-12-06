@@ -13,17 +13,13 @@ import { AuthUrlInfo } from '@extension-base/background/types';
 import { updateAuthorization } from '@/extension/messaging';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
-import AboveForm from '@/components/AboveForm.vue';
-import Button from '@/components/Button.vue';
-import { WalletInfo } from '@/store/accounts/types';
+import { WalletInfo } from '@/store';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { TAction } from '@/interfaces';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
 @Component({
   components: {
-    Button,
-    AboveForm,
     SelectAuthAccount,
   },
 })

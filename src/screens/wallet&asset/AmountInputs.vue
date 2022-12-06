@@ -37,12 +37,10 @@ import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import MaxButton from './MaxButton.vue';
 import type { Currency } from '@/interfaces/currencies';
-import FloatInput from '@/components/FloatInput.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({
   components: {
-    FloatInput,
     MaxButton,
   },
 })

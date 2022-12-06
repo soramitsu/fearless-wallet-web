@@ -1,7 +1,7 @@
 <template>
   <Corners :isError="isError" :size="size" :class="wrapperClasses">
     <div :class="containerInputClasses" spellcheck="false">
-      <s-input
+      <SInput
         v-model="vModel"
         :class="inputClasses"
         :type="type"
@@ -21,16 +21,13 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
-import Corners from '@/components/Corners.vue';
 
 type Size = 'small' | 'medium' | 'big';
 type Type = 'text' | 'textarea' | 'text-file' | 'number';
 type Style = 'default' | 'pink';
 type TypeText = 'none' | 'uppercase';
 
-@Component({
-  components: { Corners },
-})
+@Component
 export default class Input extends Vue {
   @VModel({ type: String || Number }) vModel!: string | number;
   @Prop(String) placeholder!: string;
@@ -39,7 +36,7 @@ export default class Input extends Vue {
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'text' }) type!: Type;
   @Prop({ default: 'none' }) typeText!: TypeText;
-  @Prop({ default: 100 }) maxlength!: number;
+  @Prop({ default: 999 }) maxlength!: number;
   @Prop({ default: false }) readonly!: boolean;
   @Prop({ default: false }) showPassword!: boolean;
   @Prop({ default: 'default' }) styleInput!: Style;

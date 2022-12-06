@@ -114,15 +114,17 @@ export function getHumanTransferFee(historyNode: HistoryNode, assetId: string) {
   if (type === TransactionType.transfer) {
     const { fee } = transfer!;
     const value = getHumanValue(fee, assetId);
+    const formattedValue = formattedNumber(value, { decimalsValue: 4 });
 
-    return `-${formattedNumber(value, { decimalsValue: 4 })}`;
+    return `${formattedValue !== '0' ? '-' : ''}${formattedValue}`;
   }
 
   if (type === TransactionType.extrinsic) {
     const { fee } = extrinsic!;
     const value = getHumanValue(fee, assetId);
+    const formattedValue = formattedNumber(value, { decimalsValue: 4 });
 
-    return `-${formattedNumber(value, { decimalsValue: 4 })}`;
+    return `${formattedValue !== '0' ? '-' : ''}${formattedValue}`;
   }
 
   return '';

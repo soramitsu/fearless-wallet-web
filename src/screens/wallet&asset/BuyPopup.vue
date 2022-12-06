@@ -15,16 +15,10 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import Popup from '@/components/Popup.vue';
-import Button from '@/components/Button.vue';
+
 import { getProviderUrl } from '@/helpers/currencies';
 
-@Component({
-  components: {
-    Popup,
-    Button,
-  },
-})
+@Component
 export default class BuyPopup extends Vue {
   @Prop(String) asset!: string;
   @Prop(String) address!: string;

@@ -3,7 +3,7 @@
     <Corners size="big" :topLeftCorner="showBorder" :bottomRightCorner="showBorder" :style="popupContainerStyle">
       <div :class="popupContainerClasses" :style="popupContainerStyles">
         <div v-if="showHeader" class="header">
-          <SearchInput v-if="showSearch" v-model="filterValue" :placeholder="placeholder" width="230px" />
+          <SearchInput v-if="showSearch" v-model="filterValue" :placeholder="placeholder" width="235px" />
 
           <template v-else>
             <div class="button-close"></div>
@@ -14,9 +14,9 @@
             </div>
           </template>
 
-          <s-button type="link" class="button-close" @click="close">
+          <SButton type="link" class="button-close" @click="close">
             <SIcon name="basic-close-24" />
-          </s-button>
+          </SButton>
         </div>
 
         <Scroll>
@@ -31,22 +31,13 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import Scroll from '@/components/Scroll.vue';
-import SearchInput from '@/components/SearchInput.vue';
-import Corners from '@/components/Corners.vue';
 
 type HorizontalPlacement = 'left' | 'center' | 'right';
 type VerticalPlacement = 'top' | 'center' | 'bottom';
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type HeaderType = 'default' | 'success' | 'failed' | 'pending';
 
-@Component({
-  components: {
-    Scroll,
-    SearchInput,
-    Corners,
-  },
-})
+@Component
 export default class Popup extends Vue {
   filterValue = '';
 
@@ -70,6 +61,7 @@ export default class Popup extends Vue {
   @Prop({ default: 'center' }) horizontalPlacement!: HorizontalPlacement;
   @Prop({ default: 'center' }) verticalPlacement!: VerticalPlacement;
   @Prop({ default: 'default' }) headerType!: HeaderType;
+  @Prop({ default: 199 }) zIndex!: number;
 
   get popupBackgroundClasses() {
     const classes = [
@@ -137,7 +129,11 @@ export default class Popup extends Vue {
   }
 
   get popupBackgroundStyles() {
-    return !this.showBackground ? this.topLeftStyles : {};
+    const styles: Record<string, string> = !this.showBackground ? this.topLeftStyles : {};
+
+    if (this.zIndex) styles.zIndex = this.zIndex.toString();
+
+    return styles;
   }
 
   get popupContainerStyle() {
@@ -170,7 +166,6 @@ export default class Popup extends Vue {
   bottom: 0;
   right: 0;
   margin: 0 auto;
-  z-index: 199;
   width: fit-content;
   height: fit-content;
 

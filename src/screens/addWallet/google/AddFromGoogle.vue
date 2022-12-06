@@ -13,7 +13,15 @@
     <GoogleWalletsList v-else-if="haveWalletsToImport" :items="files" @getFile="getFile" />
 
     <template v-slot:control>
-      <Button v-if="!isLoading" size="big" fontSize="big" width="100%" :text="buttonText" @click="proceed" />
+      <Button
+        v-if="!isLoading"
+        size="big"
+        fontSize="big"
+        :disabled="isImportInProgress"
+        width="100%"
+        :text="buttonText"
+        @click="proceed"
+      />
     </template>
   </FlowStepLayout>
 </template>
@@ -26,7 +34,6 @@ import { getGoogleFile, getGoogleFiles, verifyToken } from '@/extension/messagin
 import { Components } from '@/router/routes';
 import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
-import BaseApi from '@/util/BaseApi';
 import { ETHEREUM_ADDRESS_PREFIX } from '@/consts/networks';
 
 @Component({
@@ -42,7 +49,6 @@ export default class AddFromGoogle extends Vue {
   isLoading = true;
   step = 1;
   token = '';
-  mnemonic: any;
   ethereumRawSeed: any;
 
   get isAccessDenied() {
@@ -55,6 +61,10 @@ export default class AddFromGoogle extends Vue {
 
   get getSteps() {
     return this.isLoading ? [] : [1, 2];
+  }
+
+  get isImportInProgress() {
+    return this.files.some((el) => el.isLoading);
   }
 
   get getToken() {

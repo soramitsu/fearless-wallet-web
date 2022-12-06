@@ -31,17 +31,17 @@
 
     <template v-slot:control>
       <div class="controls">
-        <BorderButton v-if="step === 3" :iconName="'reload'" @click="resetAll" />
-        <BorderButton v-if="step === 3" :text="'Skip confirmation'" @click="skipStep" />
+        <BorderButton v-if="confirmMnemonicStep" iconName="reload" @click="resetAll" />
+        <BorderButton v-if="confirmMnemonicStep" :text="$t('addWallet.skipConfirmation')" @click="skipStep" />
 
         <Button
           size="big"
           fontSize="big"
           width="100%"
+          type="primary"
           :border="false"
           :disabled="disabledProceed"
           :text="buttonText"
-          type="primary"
           @click="proceed"
         />
       </div>
@@ -81,7 +81,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
   },
 })
 export default class CreateGoogle extends Vue {
-  readonly countSteps = 6;
+  readonly countSteps = 5;
   step = 1;
   nickname = '';
   mnemonic = '';
@@ -100,7 +100,7 @@ export default class CreateGoogle extends Vue {
     1: this.$t('common.continue'),
     2: this.$t('addWallet.google.backupWallet'),
     3: this.$t('addWallet.ConfirmSecretData'),
-    6: this.$t('common.finish'),
+    5: this.$t('common.finish'),
   };
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -115,18 +115,15 @@ export default class CreateGoogle extends Vue {
   }
 
   get passwordStep() {
-    return this.step === 5;
-  }
-
-  get notificationPopupContent() {
-    return this.step === 6 ? this.jsonInvalid : this.notificationHeaders;
+    return this.step === 4;
   }
 
   get header() {
-    if (this.step === 1 || this.step === 7) return '';
-    if (this.step === 3) return this.$t('addWallet.backupPassphrase');
-    if (this.step === 5) return this.$t('addWallet.confirmPassphrase');
-    if (this.step === 6) return this.$t('addWallet.setupPassword');
+    if (this.nickNameStep) return this.$t('addWallet.createWallet');
+    if (this.step === 2) return this.$t('addWallet.backupPassphrase');
+    if (this.step === 3) return this.$t('addWallet.confirmPassphrase');
+    if (this.passwordStep) return this.$t('addWallet.setupPassword');
+    if (this.step === 5) return '';
 
     return this.$t('addWallet.createWallet');
   }
@@ -139,11 +136,15 @@ export default class CreateGoogle extends Vue {
 
   get disabledProceed() {
     if (this.nickNameStep) return !this.nickname;
-    if (this.step === 5) return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
+    if (this.step === 3) return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
 
     if (this.passwordStep) return !this.walletPassword;
 
     return false;
+  }
+
+  get confirmMnemonicStep() {
+    return this.step === 3;
   }
 
   get suriSubstrate() {
@@ -160,7 +161,7 @@ export default class CreateGoogle extends Vue {
 
   @Watch('step')
   watchStep() {
-    if (this.step === 7) {
+    if (this.step === 5) {
       const address = this.saveKeypairFromSeed();
 
       this.setSelectedWallet({ selectedWalletAddress: address || this.selectedWallet.address });
@@ -175,12 +176,6 @@ export default class CreateGoogle extends Vue {
 
   skipStep() {
     this.step += 1;
-  }
-
-  popupHandler() {
-    this.showNotificationPopup = false;
-
-    this.step === 5 ? (this.step -= 1) : (this.step += 1);
   }
 
   back() {
@@ -200,7 +195,7 @@ export default class CreateGoogle extends Vue {
       return;
     }
 
-    if (this.step === 5) {
+    if (this.step === 3) {
       const isValidSequenceMnemonic = BaseApi.isValidSequenceMnemonic(
         this.mnemonic,
         this.selectedMnemonicElements.map(({ word }) => word)
@@ -213,17 +208,7 @@ export default class CreateGoogle extends Vue {
       }
     }
 
-    if (this.passwordStep) {
-      this.showNotificationPopup = true;
-
-      return;
-    }
-
-    this.step === 3 ? (this.step += 3) : (this.step += 1);
-  }
-
-  subButtonProceed() {
-    this.step === 4 ? (this.step += 2) : (this.step = 4);
+    this.step += 1;
   }
 
   updateWalletPassword(password: string) {
@@ -248,6 +233,7 @@ export default class CreateGoogle extends Vue {
 
   backupWallet(address: string) {
     const json = BaseApi.getPair(address).toJson(this.walletPassword);
+    console.log(this.walletPassword);
 
     createGoogleFile(JSON.stringify(json), { name: this.nickname, address }, this.$route.params.access_token);
   }

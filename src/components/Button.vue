@@ -38,6 +38,7 @@ export default class Button extends Vue {
   @Prop({ default: 'medium' }) borderRadius!: Size;
   @Prop({ default: false }) disabled!: boolean;
   @Prop({ default: true }) hover!: boolean;
+  @Prop({ default: false }) isLoading!: boolean;
   @Prop({ default: true }) border!: boolean;
 
   get tText() {
@@ -64,6 +65,7 @@ export default class Button extends Vue {
   }
 
   get prepIconName() {
+    if (this.isLoading) return 'loader';
     if (this.type === 'google') return 'google';
 
     return this.iconName;
@@ -86,8 +88,10 @@ export default class Button extends Vue {
 
   get buttonClasses() {
     const classes = ['button', `button-font-size-${this.fontSize}`];
+    if (this.isLoading) classes.push('button--loading');
 
     if (this.iconType === 'big') classes.push('button__icon');
+    if (this.isLoading) classes.push('button__loading');
 
     if (this.type === 'secondary') {
       return [
@@ -250,5 +254,15 @@ export default class Button extends Vue {
 
 .google-border-hover:hover {
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.button--loading {
+  animation-name: rotate;
+}
+
+@keyframes rotate {
+  100% {
+    transform: rotateZ(360deg);
+  }
 }
 </style>

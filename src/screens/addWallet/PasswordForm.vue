@@ -20,8 +20,8 @@
       class="row"
     />
 
-    <Hint iconName="notification" :text="hintText" />
-    <Hint v-if="isGoogleFlow" iconName="notification" :text="hintGoogleDriveText" />
+    <Hint class="hint" iconName="notification" :text="hintText" />
+    <Hint v-if="isGoogleFlow" class="hint" iconName="notification" :text="hintGoogleDriveText" />
   </div>
 </template>
 
@@ -96,6 +96,10 @@ export default class PasswordForm extends Vue {
 .password-form {
   .row {
     margin-bottom: 14px;
+  }
+
+  .hint {
+    margin: 10px;
   }
 }
 </style>

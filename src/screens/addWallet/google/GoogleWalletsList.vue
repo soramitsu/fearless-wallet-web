@@ -80,8 +80,9 @@ export default class GoogleWalletsList extends Vue {
   }
 
   async onConfirm(index: number) {
+    console.log(this.items[index]);
     const { json, password } = this.items[index];
-
+    console.log(password, json, 'pass and json');
     if (!json || !password) return;
 
     const res = BaseApi.isValidJson(json, password);

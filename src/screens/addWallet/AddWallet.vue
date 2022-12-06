@@ -91,8 +91,8 @@
         <FinishForm v-if="showFinishForm" />
       </div>
       <div class="controls">
-        <BorderButton v-if="step === 3" :iconName="'reload'" @click="resetAll" />
-        <BorderButton v-if="step === 3" :text="'Skip confirmation'" @click="skipStep" />
+        <BorderButton v-if="confirmMnemonicStep" :iconName="'reload'" @click="resetAll" />
+        <BorderButton v-if="confirmMnemonicStep" :text="$t('addWallet.skipConfirmation')" @click="skipStep" />
 
         <Button
           v-if="!showAdvancedForm"
@@ -190,6 +190,10 @@ export default class AddWallet extends Vue {
 
   get isReplaceAccountFlow() {
     return this.replacedNetwork !== '';
+  }
+
+  get confirmMnemonicStep() {
+    return this.step === 3;
   }
 
   get isOnlyEthereumAccountFlow() {

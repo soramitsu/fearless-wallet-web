@@ -40,6 +40,7 @@
     "allDone": "All done!",
     "stayFearless": "Stay Fearless!",
     "accounts": "accounts",
+    "skipConfirmation": "Skip confirmation",
     "substrateDP": "Substrate secret derivation path",
     "substrateCryptoType": "SUBSTRATE KEYPAIR CRYPTO TYPE",
     "ethereumDP": "Ethereum secret derivation path",

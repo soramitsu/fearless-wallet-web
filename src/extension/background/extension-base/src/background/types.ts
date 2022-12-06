@@ -20,7 +20,7 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import { IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
+import { FilesResponse, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
 
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;
@@ -154,7 +154,7 @@ export interface RequestSignatures {
   'pri(google.verify.token)': [{ token: string }, VerifyTokenResponse];
   'pri(google.get.files)': [{ token: string }, IGetFilesResponse];
   'pri(google.get.file)': [GoogleFileId, KeyringPair$Json];
-  'pri(google.create.file)': [{ json: string; options: { name: string; address: string }; token: string }, void];
+  'pri(google.create.file)': [ICreateFile, FilesResponse];
   'pri(google.delete.file)': [GoogleFileId, void];
 
   // public/external requests, i.e. from a page

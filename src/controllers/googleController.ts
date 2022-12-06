@@ -1,7 +1,14 @@
 import axios from 'axios';
 import fetchAdapter from '@vespaiach/axios-fetch-adapter';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import { CreateFileProp, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
+import {
+  CreateFileProp,
+  FilesResponse,
+  ICreateFile,
+  IGDriveFile,
+  IGetFilesResponse,
+  VerifyTokenResponse,
+} from '@/interfaces/google';
 
 class GoogleManage {
   private readonly baseURL = 'https://www.googleapis.com/drive/v3';
@@ -114,11 +121,11 @@ ${json}
     return data;
   }
 
-  async createFile({ json, options }: CreateFileProp, token?: string) {
-    const data = this.prepareData(json, options);
-    const length = data.length;
+  async createFile({ json, options, token }: ICreateFile): Promise<FilesResponse> {
+    const prepData = this.prepareData(json, options);
+    const length = prepData.length;
 
-    return axios.post(this.baseUploadUrl, data, {
+    const { data } = await axios.post<FilesResponse>(this.baseUploadUrl, prepData, {
       adapter: fetchAdapter,
       headers: {
         Authorization: `Bearer ${token}`,
@@ -126,6 +133,8 @@ ${json}
         'Content-Length': length.toString(),
       },
     });
+
+    return data;
   }
 
   async deleteFile(id: string, token: string) {

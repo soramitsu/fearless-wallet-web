@@ -51,24 +51,13 @@
 <script lang="ts">
 import { Getter, Action } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { KeyringPair$Json } from '@polkadot/keyring/types';
+import type { FilesState, TAction } from '@/interfaces';
 import { cut } from '@/helpers/history';
-import { IGDriveFile, TAction } from '@/interfaces';
+import BaseApi from '@/util/BaseApi';
 import { SelectedWallet, SetSelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
-import BaseApi from '@/util/BaseApi';
 import { isJsonValid } from '@/extension/messaging';
-
-interface FilesState extends IGDriveFile {
-  active?: boolean;
-  password?: string;
-  isError?: boolean;
-  isLoading?: boolean;
-  isComplete: boolean;
-  description: string;
-  json: KeyringPair$Json;
-}
 
 @Component
 export default class GoogleWalletsList extends Vue {
@@ -83,8 +72,9 @@ export default class GoogleWalletsList extends Vue {
   async onConfirm(index: number) {
     this.setItemValue(index, { isLoading: true });
 
-    const { json, password } = this.items[index];
-    if (!json || !password) return;
+    const { json, ethJson, password } = this.items[index];
+
+    if (!json || !ethJson || !password) return;
 
     const res = await isJsonValid(json, password);
 
@@ -94,6 +84,8 @@ export default class GoogleWalletsList extends Vue {
       return false;
     }
 
+    BaseApi.addKeypairFromJson(ethJson, password);
+
     const pair = BaseApi.addKeypairFromJson(json, password);
 
     this.setItemValue(index, { isComplete: true, isLoading: false });
@@ -102,17 +94,19 @@ export default class GoogleWalletsList extends Vue {
     return true;
   }
 
-  onSelect(value: boolean, index: number) {
-    const file = this.items[index];
+  onSelect(value: boolean, key: number) {
+    const file = this.items[key];
+    const item = this.items[key];
 
     if (file.isComplete) return;
     else if (file.isComplete === undefined) {
-      this.setItemValue(index, { isLoading: false, isComplete: false });
+      this.setItemValue(key, { isLoading: false, isComplete: false });
     }
 
-    if (this.items[index].json === undefined) this.$emit('getFile', this.items[index].id, index);
+    if (item.json === undefined) this.$emit('getFile', item.id, key);
+    if (item.ethJson === undefined) this.$emit('getFile', item.ethWalletID, key);
 
-    this.setItemValue(index, { active: value });
+    this.setItemValue(key, { active: value });
   }
 
   cutAddress(address: string) {

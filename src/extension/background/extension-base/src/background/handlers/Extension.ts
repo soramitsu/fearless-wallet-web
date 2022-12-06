@@ -63,7 +63,7 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { keyring } from '@/controllers/keyringChrome';
 import { googleManage } from '@/controllers/googleController';
-import { ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
+import { FilesResponse, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
 
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
@@ -653,8 +653,8 @@ export default class Extension {
     return googleManage.getFile(id, token);
   }
 
-  static async createFile({ json, options, token }: ICreateFile): Promise<void> {
-    googleManage.createFile({ json, options }, token);
+  static async createFile({ json, options, token }: ICreateFile): Promise<FilesResponse> {
+    return googleManage.createFile({ json, options, token });
   }
 
   static deleteFile({ id }: GoogleFileId): void {

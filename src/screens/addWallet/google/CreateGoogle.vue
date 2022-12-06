@@ -56,7 +56,7 @@
           size="big"
           fontSize="big"
           width="100%"
-          type="secondary"
+          type="primary"
           :border="false"
           :disabled="disabledProceed"
           :text="buttonText"
@@ -80,7 +80,7 @@ import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
 import { Components } from '@/router/routes';
 import { MnemonicConfirmation, TAction } from '@/interfaces';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
-import { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
+import { ETHEREUM_DEFAULT_DERIVATION_PATH, INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import BaseApi from '@/util/BaseApi';
 import { createGoogleFile } from '@/extension/messaging';
 import { SelectedWallet, SetSelectedWallet } from '@/store/accounts/types';
@@ -170,7 +170,23 @@ export default class CreateGoogle extends Vue {
       substrate: { value: substrateDerivationPath },
     } = this.derivationPaths;
 
-    return `${this.mnemonic}${substrateDerivationPath.trim()}`;
+    return `${this.mnemonic.trim()}${substrateDerivationPath.trim()}`;
+  }
+
+  get suriEthereum() {
+    const {
+      ethereum: { value: ethereumDerivationPath },
+    } = this.derivationPaths;
+
+    const ethereumDP = (
+      ethereumDerivationPath.length !== 0
+        ? ethereumDerivationPath[0] === '/'
+          ? ethereumDerivationPath
+          : `/${ethereumDerivationPath}`
+        : ETHEREUM_DEFAULT_DERIVATION_PATH
+    ).trim();
+
+    return `${this.mnemonic}${ethereumDP}`;
   }
 
   mounted() {
@@ -249,21 +265,44 @@ export default class CreateGoogle extends Vue {
     this.showAdvancedForm = value;
   }
 
-  backupWallet(address: string) {
+  async backupWallet(address: string) {
     const json = BaseApi.getPair(address).toJson(this.walletPassword);
+    const ethAddress = json.meta.ethereumAddress as string;
+    const ethJson = BaseApi.getPair(ethAddress).toJson(this.walletPassword);
+    const token = this.$route.params.access_token;
 
-    createGoogleFile(JSON.stringify(json), { name: this.nickname, address }, this.$route.params.access_token);
+    const ethRes = await createGoogleFile({
+      json: JSON.stringify(ethJson),
+      options: { name: this.nickname, address: ethAddress },
+      token,
+    });
+
+    createGoogleFile({
+      json: JSON.stringify(json),
+      options: { name: this.nickname, address: `${address}/${ethRes.id}` },
+      token,
+    });
   }
 
   saveKeypairFromSeed() {
     const meta: Record<string, unknown> = { name: this.nickname.trim(), ethereumAddress: '' };
     const {
-      substrate: { keypairType },
+      substrate: { keypairType: substrateKeypairType },
+      ethereum: { keypairType: ethereumKeypairType },
     } = this.derivationPaths;
 
-    meta.ethereumAddress = '';
+    if (this.suriEthereum !== '') {
+      const { address: ethereumAddress } = BaseApi.addKeypair(
+        this.suriEthereum,
+        this.walletPassword,
+        meta,
+        ethereumKeypairType
+      );
 
-    const { address } = BaseApi.addKeypair(this.suriSubstrate, this.walletPassword, meta, keypairType);
+      meta.ethereumAddress = ethereumAddress;
+    }
+
+    const { address } = BaseApi.addKeypair(this.suriSubstrate, this.walletPassword, meta, substrateKeypairType);
 
     return address;
   }

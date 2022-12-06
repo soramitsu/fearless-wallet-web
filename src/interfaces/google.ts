@@ -1,4 +1,5 @@
 import { AxiosResponse } from 'axios';
+import type { KeyringPair$Json } from '@polkadot/keyring/types';
 
 interface IGDriveFile {
   id: string;
@@ -6,7 +7,20 @@ interface IGDriveFile {
   name: string;
 }
 
-interface FilesResponse {
+interface FileData extends IGDriveFile {
+  active: boolean;
+  password: string;
+  isError: boolean;
+  isLoading: boolean;
+  isComplete: boolean;
+  ethWalletID: string;
+  description: string;
+  json: KeyringPair$Json;
+  ethJson: KeyringPair$Json;
+}
+
+export type FilesState = Partial<FileData>;
+export interface FilesResponse {
   id: string;
   name: string;
   description: string;

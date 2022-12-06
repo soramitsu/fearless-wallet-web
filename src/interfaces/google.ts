@@ -1,3 +1,5 @@
+import { AxiosResponse } from 'axios';
+
 interface IGDriveFile {
   id: string;
   address: string;
@@ -41,5 +43,6 @@ interface VerifyTokenResponse {
   expires_in: number;
   access_type: 'online' | 'offline';
 }
+export type GoogleResponse<T> = Promise<AxiosResponse<T>>;
 
 export { IGetFilesResponse, VerifyTokenResponse, IGDriveFile, CreateFileProp };

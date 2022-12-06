@@ -56,8 +56,10 @@ export default class Button extends Vue {
   }
 
   get prepIconClass() {
-    const result = this.iconClass;
+    const result = [...this.iconClass];
+    if (this.text === '') result.push('icon--without-text');
 
+    if (this.iconType === 'loading') result.push('icon--loading');
     if (this.type === 'google') result.push('icon--google');
 
     return result;
@@ -191,6 +193,10 @@ export default class Button extends Vue {
   height: 20px;
 }
 
+.icon--without-text {
+  margin: 0;
+}
+
 .icon--pink {
   color: $pink-color;
 }
@@ -250,5 +256,18 @@ export default class Button extends Vue {
 
 .google-border-hover:hover {
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.icon--loading {
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>

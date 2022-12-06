@@ -20,7 +20,7 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import { IGDriveFile, IGetFileMetaResponse, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
+import { IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
 
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;
@@ -130,6 +130,7 @@ export interface RequestSignatures {
   'pri(derivation.create)': [RequestDeriveCreate, boolean];
   'pri(derivation.validate)': [RequestDeriveValidate, ResponseDeriveValidate];
   'pri(json.restore)': [RequestJsonRestore, void];
+  'pri(json.valid)': [RequestJsonRestore, boolean];
   'pri(json.batchRestore)': [RequestBatchRestore, void];
   'pri(json.account.info)': [KeyringPair$Json, ResponseJsonGetAccountInfo];
   'pri(metadata.approve)': [RequestMetadataApprove, boolean];
@@ -153,7 +154,6 @@ export interface RequestSignatures {
   'pri(google.verify.token)': [{ token: string }, VerifyTokenResponse];
   'pri(google.get.files)': [{ token: string }, IGetFilesResponse];
   'pri(google.get.file)': [GoogleFileId, KeyringPair$Json];
-  'pri(google.get.meta)': [GoogleFileId, IGetFileMetaResponse];
   'pri(google.create.file)': [{ json: string; options: { name: string; address: string }; token: string }, void];
   'pri(google.delete.file)': [GoogleFileId, void];
 

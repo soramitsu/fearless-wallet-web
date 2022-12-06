@@ -87,9 +87,9 @@ export default class AddFromGoogle extends Vue {
   async mounted() {
     await this.isTokenValid();
     this.token = this.getToken;
-    const fileResponse = await getGoogleFiles(this.token);
+    const { files } = await getGoogleFiles(this.token);
 
-    if (fileResponse && fileResponse.files.length === 0) {
+    if (files.length === 0) {
       this.$router.push({
         name: Components.CreateGoogle,
         params: {
@@ -101,7 +101,7 @@ export default class AddFromGoogle extends Vue {
       return;
     }
 
-    fileResponse.files.forEach(({ id, description, name }, index) => {
+    files.forEach(({ id, description, name }, index) => {
       const [prepName] = name.split('.');
       this.files[index] = {
         id,

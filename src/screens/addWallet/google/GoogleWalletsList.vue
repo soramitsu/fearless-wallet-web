@@ -23,7 +23,7 @@
                   typeText="text"
                   :placeholder="$t('addWallet.enterPassword')"
                   :showPassword="true"
-                  :readonly="file.isComplete"
+                  :readonly="file.isComplete || file.isLoading"
                   :isError="file.isError"
                   :errorDescriptions="$t('addWallet.warningMessages.jsonPassword.text')"
                 />
@@ -33,8 +33,8 @@
                   type="primary"
                   size="big"
                   :border="false"
-                  :iconName="file.isComplete ? 'check' : ''"
-                  :isLoading="file.isLoading"
+                  :iconName="file.isComplete ? 'check' : file.isLoading ? 'loader' : ''"
+                  :iconType="file.isLoading ? 'loading' : ''"
                   :disabled="!file.password.length || file.isLoading || file.isComplete"
                   :text="file.isLoading || file.isComplete ? '' : $t('common.confirm')"
                   @click="onConfirm(index)"
@@ -54,10 +54,11 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import { cut } from '@/helpers/history';
 import { IGDriveFile, TAction } from '@/interfaces';
-import BaseApi from '@/util/BaseApi';
 import { SelectedWallet, SetSelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
+import BaseApi from '@/util/BaseApi';
+import { isJsonValid } from '@/extension/messaging';
 
 interface FilesState extends IGDriveFile {
   active?: boolean;
@@ -80,21 +81,22 @@ export default class GoogleWalletsList extends Vue {
   }
 
   async onConfirm(index: number) {
-    const { json, password } = this.items[index];
+    this.setItemValue(index, { isLoading: true });
 
+    const { json, password } = this.items[index];
     if (!json || !password) return;
 
-    const res = BaseApi.isValidJson(json, password);
+    const res = await isJsonValid(json, password);
 
-    if (!res.value) {
-      this.setItemValue(index, { isError: true });
+    if (!res) {
+      this.setItemValue(index, { isError: true, isLoading: false });
 
       return false;
     }
 
     const pair = BaseApi.addKeypairFromJson(json, password);
 
-    this.setItemValue(index, { isComplete: true });
+    this.setItemValue(index, { isComplete: true, isLoading: false });
     this.setSelectedWallet({ selectedWalletAddress: pair.address || this.selectedWallet.address });
 
     return true;

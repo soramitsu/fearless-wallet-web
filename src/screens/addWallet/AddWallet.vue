@@ -45,7 +45,6 @@
         <CreateWallet
           v-if="showCreateForm"
           :step="step"
-          :shouldShowAtSteps="[2, 3]"
           :mnemonic="mnemonic"
           :selectedMnemonicElements="selectedMnemonicElements"
           @update:selectedMnemonicElements="updateSelectedMnemonicElements"
@@ -91,16 +90,38 @@
 
         <FinishForm v-if="showFinishForm" />
       </div>
+      <div class="controls">
+        <Button
+          v-if="confirmMnemonicStep"
+          size="big"
+          fontSize="big"
+          width="64px"
+          type="secondary"
+          :border="false"
+          :iconName="'reload'"
+          @click="resetAll"
+        />
+        <Button
+          v-if="confirmMnemonicStep"
+          size="big"
+          fontSize="big"
+          width="100%"
+          type="secondary"
+          :border="false"
+          :text="$t('addWallet.skipConfirmation')"
+          @click="skipStep"
+        />
 
-      <Button
-        v-if="!showAdvancedForm"
-        size="big"
-        fontSize="big"
-        width="100%"
-        :text="buttonText"
-        :disabled="disabledProceed"
-        @click="proceed"
-      />
+        <Button
+          v-if="!showAdvancedForm"
+          size="big"
+          fontSize="big"
+          width="100%"
+          :text="buttonText"
+          :disabled="disabledProceed"
+          @click="proceed"
+        />
+      </div>
     </div>
 
     <NotificationPopup
@@ -187,6 +208,10 @@ export default class AddWallet extends Vue {
 
   get isReplaceAccountFlow() {
     return this.replacedNetwork !== '';
+  }
+
+  get confirmMnemonicStep() {
+    return this.step === 3;
   }
 
   get isOnlyEthereumAccountFlow() {
@@ -573,6 +598,14 @@ export default class AddWallet extends Vue {
     this.step += 2;
   }
 
+  resetAll() {
+    this.selectedMnemonicElements = [];
+  }
+
+  skipStep() {
+    this.step += 1;
+  }
+
   handlerAgree() {
     this.showAddEthereumAccountPopup = false;
     this.step += 1;
@@ -875,5 +908,13 @@ export default class AddWallet extends Vue {
     width: 32px;
     height: 32px;
   }
+}
+
+.controls {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
 }
 </style>

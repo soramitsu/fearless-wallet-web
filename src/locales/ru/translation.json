@@ -39,6 +39,7 @@
     "allDone": "Все готово!",
     "stayFearless": "Stay Fearless!",
     "accounts": "аккаунты",
+    "skipConfirmation": "Пропустить подтверждение",
     "substrateDP": "Substrate секретный путь деривации",
     "substrateCryptoType": "SUBSTRATE тип шифрования",
     "ethereumDP": "Ethereum секретный путь деривации",
@@ -89,6 +90,7 @@
       "fetchInfo": "Подтягиваем информацию из Google Drive",
       "backupWallet": "Cохранить в Google Drive",
       "saved": "Сохранено",
+      "dataWillStoreOnGDrive": "Кликая 'Подтвердить', вы соглашаетесь, чтобы ваши секретные ключи были сохранены в приватном хранилище Google Drive",
       "passphraseSaved": "Кошелек был успешно сохранен в Google Drive",
       "noWallets": "Не нашли кошельки в вашем Google Drive"
     }

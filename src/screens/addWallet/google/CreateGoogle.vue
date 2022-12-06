@@ -1,17 +1,10 @@
 <template>
   <FlowStepLayout :countSteps="countSteps" :step="step" :header="header" @back="back" :showFullScreenIcon="false">
-    <NegativeMessage v-if="step === 1" :message="$t('addWallet.google.noWallets')" />
-
     <NickNameForm v-if="nickNameStep" :nickname="nickname" @update:nickname="setNickname" />
-
-    <div class="icon__container" v-if="step === 3">
-      <Icon className="icon--drive" icon="drive" />
-    </div>
 
     <CreateWallet
       v-if="createWalletStep"
       :step="step"
-      :shouldShowAtSteps="[4, 5]"
       :mnemonic="mnemonic"
       :selectedMnemonicElements="selectedMnemonicElements"
       @update:selectedMnemonicElements="updateSelectedMnemonicElements"
@@ -30,43 +23,46 @@
 
     <PasswordForm
       v-if="passwordStep"
+      :isGoogleFlow="true"
       :showMockPassword="false"
       :showSamePasswordText="false"
       @updateWalletPassword="updateWalletPassword"
     />
 
-    <NotificationPopup
-      v-if="showNotificationPopup"
-      :headers="notificationPopupContent"
-      acceptButtonText="common.accept"
-      :showAcceptButton="true"
-      :showWarningIcon="false"
-      :handlerAccept="popupHandler"
-      :handlerClose="popupHandler"
-    />
-
     <template v-slot:control>
-      <Button
-        size="big"
-        fontSize="big"
-        width="100%"
-        :border="false"
-        :disabled="disabledProceed"
-        :text="buttonText"
-        :type="buttonType"
-        @click="proceed"
-      />
+      <div class="controls">
+        <Button
+          v-if="confirmMnemonicStep"
+          size="big"
+          fontSize="big"
+          width="64px"
+          type="secondary"
+          :border="false"
+          iconName="reload"
+          @click="resetAll"
+        />
+        <Button
+          v-if="confirmMnemonicStep"
+          size="big"
+          fontSize="big"
+          width="100%"
+          type="secondary"
+          :border="false"
+          :text="$t('addWallet.skipConfirmation')"
+          @click="skipStep"
+        />
 
-      <Button
-        v-if="step === 3"
-        size="big"
-        fontSize="big"
-        width="100%"
-        :border="false"
-        :text="$t('addWallet.google.showSecretData')"
-        :type="subButtonType"
-        @click="subButtonProceed"
-      />
+        <Button
+          size="big"
+          fontSize="big"
+          width="100%"
+          type="secondary"
+          :border="false"
+          :disabled="disabledProceed"
+          :text="buttonText"
+          @click="proceed"
+        />
+      </div>
     </template>
   </FlowStepLayout>
 </template>
@@ -103,7 +99,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
   },
 })
 export default class CreateGoogle extends Vue {
-  readonly countSteps = 7;
+  readonly countSteps = 5;
   step = 1;
   nickname = '';
   mnemonic = '';
@@ -119,51 +115,35 @@ export default class CreateGoogle extends Vue {
   };
 
   buttonTextForStep: Record<number, TranslateResult> = {
-    2: this.$t('common.continue'),
-    3: this.$t('addWallet.google.backupWallet'),
-    4: this.$t('addWallet.haveWrittenPassphrase'),
-    5: this.$t('addWallet.confirmPassphrase'),
-    7: this.$t('common.finish'),
+    1: this.$t('common.continue'),
+    2: this.$t('addWallet.google.backupWallet'),
+    3: this.$t('addWallet.ConfirmSecretData'),
+    5: this.$t('common.finish'),
   };
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
 
   get nickNameStep() {
-    return this.step === 2;
+    return this.step === 1;
   }
 
   get createWalletStep() {
-    return this.step === 4 || this.step === 5;
+    return this.step === 2 || this.step === 3;
   }
 
   get passwordStep() {
-    return this.step === 6;
-  }
-
-  get notificationPopupContent() {
-    return this.step === 5 ? this.jsonInvalid : this.notificationHeaders;
-  }
-
-  get subButtonType() {
-    if (this.step === 4) return 'google';
-
-    return 'link';
+    return this.step === 4;
   }
 
   get header() {
-    if (this.step === 1 || this.step === 7) return '';
-    if (this.step === 3) return this.$t('addWallet.backupPassphrase');
-    if (this.step === 5) return this.$t('addWallet.confirmPassphrase');
-    if (this.step === 6) return this.$t('addWallet.setupPassword');
+    if (this.nickNameStep) return this.$t('addWallet.createWallet');
+    if (this.step === 2) return this.$t('addWallet.backupPassphrase');
+    if (this.step === 3) return this.$t('addWallet.confirmPassphrase');
+    if (this.passwordStep) return this.$t('addWallet.setupPassword');
+    if (this.step === 5) return '';
 
     return this.$t('addWallet.createWallet');
-  }
-
-  get buttonType() {
-    if (this.step === 3) return 'google';
-
-    return 'primary';
   }
 
   get buttonText() {
@@ -174,11 +154,15 @@ export default class CreateGoogle extends Vue {
 
   get disabledProceed() {
     if (this.nickNameStep) return !this.nickname;
-    if (this.step === 5) return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
+    if (this.step === 3) return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
 
     if (this.passwordStep) return !this.walletPassword;
 
     return false;
+  }
+
+  get confirmMnemonicStep() {
+    return this.step === 3;
   }
 
   get suriSubstrate() {
@@ -195,7 +179,7 @@ export default class CreateGoogle extends Vue {
 
   @Watch('step')
   watchStep() {
-    if (this.step === 7) {
+    if (this.step === 5) {
       const address = this.saveKeypairFromSeed();
 
       this.setSelectedWallet({ selectedWalletAddress: address || this.selectedWallet.address });
@@ -204,10 +188,12 @@ export default class CreateGoogle extends Vue {
     }
   }
 
-  popupHandler() {
-    this.showNotificationPopup = false;
+  resetAll() {
+    this.selectedMnemonicElements = [];
+  }
 
-    this.step === 5 ? (this.step -= 1) : (this.step += 1);
+  skipStep() {
+    this.step += 1;
   }
 
   back() {
@@ -227,7 +213,7 @@ export default class CreateGoogle extends Vue {
       return;
     }
 
-    if (this.step === 5) {
+    if (this.step === 3) {
       const isValidSequenceMnemonic = BaseApi.isValidSequenceMnemonic(
         this.mnemonic,
         this.selectedMnemonicElements.map(({ word }) => word)
@@ -240,17 +226,7 @@ export default class CreateGoogle extends Vue {
       }
     }
 
-    if (this.passwordStep) {
-      this.showNotificationPopup = true;
-
-      return;
-    }
-
-    this.step === 3 ? (this.step += 3) : (this.step += 1);
-  }
-
-  subButtonProceed() {
-    this.step === 4 ? (this.step += 2) : (this.step = 4);
+    this.step += 1;
   }
 
   updateWalletPassword(password: string) {
@@ -323,5 +299,11 @@ export default class CreateGoogle extends Vue {
   .divider {
     background: rgba(255, 255, 255, 0.1);
   }
+}
+.controls {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: 10px;
 }
 </style>

@@ -9,6 +9,7 @@ import { CachedUnlocks } from '../types';
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
+import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type {
   AccountJson,
   AllowedPath,
@@ -59,11 +60,10 @@ import type {
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { keyring } from '@/controllers/keyringChrome';
 import { googleManage } from '@/controllers/googleController';
-import { ICreateFile, IGetFileMetaResponse, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
+import { ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
 
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
@@ -356,6 +356,16 @@ export default class Extension {
     }
   }
 
+  static jsonValid({ file, password }: RequestJsonRestore): boolean {
+    try {
+      keyring.restoreAccount(file, password);
+    } catch (error) {
+      return false;
+    }
+
+    return true;
+  }
+
   static batchRestore({ file, password }: RequestBatchRestore): void {
     try {
       keyring.restoreAccounts(file, password);
@@ -639,7 +649,7 @@ export default class Extension {
     return googleManage.getFiles(token);
   }
 
-  static async getFile({ id, token }: GoogleFileId): Promise<string> {
+  static async getFile({ id, token }: GoogleFileId): Promise<KeyringPair$Json> {
     return googleManage.getFile(id, token);
   }
 
@@ -752,6 +762,9 @@ export default class Extension {
 
       case 'pri(json.restore)':
         return Extension.jsonRestore(request as RequestJsonRestore);
+
+      case 'pri(json.valid)':
+        return Extension.jsonValid(request as RequestJsonRestore);
 
       case 'pri(json.batchRestore)':
         return Extension.batchRestore(request as RequestBatchRestore);

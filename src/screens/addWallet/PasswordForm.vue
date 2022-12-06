@@ -99,7 +99,7 @@ export default class PasswordForm extends Vue {
   }
 
   .hint {
-    margin: 10px;
+    margin-top: 10px;
   }
 }
 </style>

@@ -56,7 +56,7 @@ export default class Button extends Vue {
   }
 
   get prepIconClass() {
-    const result = this.iconClass.slice();
+    const result = [...this.iconClass];
     if (this.text === '') result.push('icon--without-text');
 
     if (this.iconType === 'loading') result.push('icon--loading');

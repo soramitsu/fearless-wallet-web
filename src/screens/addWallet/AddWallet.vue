@@ -599,7 +599,7 @@ export default class AddWallet extends Vue {
   }
 
   resetAll() {
-    this.selectedMnemonicElements.splice(0);
+    this.selectedMnemonicElements = [];
   }
 
   skipStep() {

@@ -1,4 +1,4 @@
-import type { Currencies, Currency, Networks, RelayChainName, Balances } from '@/interfaces';
+import type { Currencies, Currency, Networks, RelayChainName, Balances, NetworkName } from '@/interfaces';
 import type { Wallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import CurrencyController from '@/controllers/currencyController';
@@ -71,6 +71,7 @@ function getMockCurrencies(networks: Networks): Currencies {
             type: type ?? 'native',
             precision,
             balance: {},
+            assetId,
           },
         ];
 
@@ -151,7 +152,7 @@ function getCurrencyOptions(currencies: Currencies) {
   });
 }
 
-function getUtilityAsset(currencies: Currencies, _network: string): string {
+function getUtilityAsset(currencies: Currencies, _network: NetworkName): string {
   const currency = currencies.find(({ balances }) =>
     balances.some(({ network, type }) => network === _network && (type === 'native' || type === 'equilibrium'))
   )!;

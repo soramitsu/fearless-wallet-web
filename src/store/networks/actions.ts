@@ -113,8 +113,8 @@ const actions: ActionTree<State, State> & Actions = {
         for (const priceId in data) {
           assetsJson
             .filter(({ priceId: _priceId }) => _priceId === priceId)
-            .forEach(({ id }) => {
-              assetsPrice[id] = data[priceId];
+            .forEach(({ displayName, symbol }) => {
+              assetsPrice[displayName ?? symbol] = data[priceId];
             });
         }
 

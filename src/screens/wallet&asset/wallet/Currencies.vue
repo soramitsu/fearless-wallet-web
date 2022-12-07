@@ -57,7 +57,7 @@ export default class Currencies extends Vue {
 
   get showAllAssetsHiddenText() {
     const visibleCurrencies = this.currencies.filter((currency) =>
-      currency.getCurrencyVisible(this.selectedWallet.address)
+      currency.getCurrencyVisibility(this.selectedWallet.address)
     );
 
     return visibleCurrencies.length === 0 && !this.showAssetsManagementForm;

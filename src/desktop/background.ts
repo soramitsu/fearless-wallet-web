@@ -141,7 +141,7 @@ app.on('activate', () => {
 // Some APIs can only be used after this event occurs.
 app.on('ready', createWindow);
 app.on('open-url', (event, url) => {
-  console.log('Welcome Back', `You arrived from: ${url}`);
+  console.info('Welcome Back', `You arrived from: ${url}`);
 });
 
 // Exit cleanly on request from parent process in development mode.

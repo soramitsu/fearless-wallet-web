@@ -86,11 +86,7 @@
       @setNetworkUnavailable="setNetworkUnavailable"
     />
 
-    <NetworkUnavailablePopup
-      v-if="showNetworkUnavailablePopup"
-      :closePopup="setNetworkUnavailable"
-      :handlerAccept="acceptNetworkUnavailablePopup"
-    />
+    <NetworkUnavailablePopup v-if="showNetworkUnavailablePopup" :closePopup="setNetworkUnavailable" />
 
     <Tooltip text="wallet.walletBalance" target=".wallet-balance" placement="right" />
     <Tooltip text="common.networkManagement" target=".select-network-button" placement="bottom" />
@@ -120,7 +116,6 @@ import { addNumbers, formattedNumber, getChangeWalletBalance } from '@/helpers/n
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
-import { Components } from '@/router/routes';
 
 @Component({
   components: {
@@ -187,7 +182,7 @@ export default class Wallet extends Vue {
     if (this.currencies.length === 0) return true; // удалить если добавим лоадер
 
     const index = this.currencies
-      .filter((currency) => currency.getCurrencyVisible(this.selectedWallet.address))
+      .filter((currency) => currency.getCurrencyVisibility(this.selectedWallet.address))
       .flatMap((currency) => currency.getNetworkList())
       .findIndex(({ network }) => {
         const status = this.getNetworkStatus(network);
@@ -260,13 +255,6 @@ export default class Wallet extends Vue {
     this.networkUnavailable = network;
   }
 
-  acceptNetworkUnavailablePopup() {
-    this.$router.push({
-      name: Components.Nodes,
-      params: { network: this.networkUnavailable },
-    });
-  }
-
   toggleNetworkManagementVisible() {
     this.showNetworkManagement = !this.showNetworkManagement;
     this.showSelectNetworkPopup = false;
@@ -278,7 +266,7 @@ export default class Wallet extends Vue {
 
   toggleCurrenciesVisible(allCurrenciesHidden: boolean) {
     if (allCurrenciesHidden) {
-      this.currencies.forEach((currency) => currency.setCurrencyVisible(this.selectedWallet.address, true));
+      this.currencies.forEach((currency) => currency.setCurrencyVisibility(this.selectedWallet.address, true));
 
       return;
     }
@@ -286,24 +274,24 @@ export default class Wallet extends Vue {
     this.currencies.forEach((currency) => {
       const isZeroBalance = currency.getTotalCountAssets(this.selectedWallet) === '0';
 
-      if (isZeroBalance) currency.setCurrencyVisible(this.selectedWallet.address, false);
+      if (isZeroBalance) currency.setCurrencyVisibility(this.selectedWallet.address, false);
     });
 
     const currenciesVisibleWithBalance = this.currencies.filter(
       (currency) =>
-        currency.getCurrencyVisible(this.selectedWallet.address) &&
+        currency.getCurrencyVisibility(this.selectedWallet.address) &&
         currency.getTotalCountAssets(this.selectedWallet) !== '0'
     );
 
     const currenciesInvisibleWithBalance = this.currencies.filter(
       (currency) =>
-        !currency.getCurrencyVisible(this.selectedWallet.address) &&
+        !currency.getCurrencyVisibility(this.selectedWallet.address) &&
         currency.getTotalCountAssets(this.selectedWallet) !== '0'
     );
 
     const currenciesInvisibleWithoutBalance = this.currencies.filter(
       (currency) =>
-        !currency.getCurrencyVisible(this.selectedWallet.address) &&
+        !currency.getCurrencyVisibility(this.selectedWallet.address) &&
         currency.getTotalCountAssets(this.selectedWallet) === '0'
     );
 

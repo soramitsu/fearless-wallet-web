@@ -157,11 +157,11 @@ export default class CurrencyItem extends Vue {
   }
 
   get currencyVisible() {
-    return this.currency.getCurrencyVisible(this.selectedWallet.address);
+    return this.currency.getCurrencyVisibility(this.selectedWallet.address);
   }
 
   set currencyVisible(value: boolean) {
-    this.currency.setCurrencyVisible(this.selectedWallet.address, value);
+    this.currency.setCurrencyVisibility(this.selectedWallet.address, value);
   }
 
   get showCurrencyItem() {

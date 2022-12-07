@@ -320,7 +320,7 @@ export default class SendForm extends Vue {
   }
 
   get transferrableAmount() {
-    const count = +(this.currency?.getTransferableCountAssets(this.syncedSelectedNetwork, this.selectedWallet) ?? 0);
+    const count = +(this.currency?.getTransferableCountAssets(this.selectedWallet, this.syncedSelectedNetwork) ?? 0);
 
     return formattedNumber(count, {
       decimalsValue: 4,
@@ -503,8 +503,8 @@ export default class SendForm extends Vue {
     if (!this.currency) return;
 
     const maxTransferableCountAssets = this.currency?.getTransferableCountAssets(
-      this.syncedSelectedNetwork,
-      this.selectedWallet
+      this.selectedWallet,
+      this.syncedSelectedNetwork
     );
     const partialFee = await this.createTransferAndGetFee(maxTransferableCountAssets);
     const transferableCountAssets = this.currency

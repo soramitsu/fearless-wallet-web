@@ -1,7 +1,15 @@
 import { isFunction } from '@polkadot/util';
 import { ISubmittableResult } from '@polkadot/types/types';
 import { FPNumber } from '@sora-substrate/math';
-import type { Balances, BalanceFP, WalletBalance, RelayChainName, WalletAddress, AccountBalance } from '@/interfaces';
+import type {
+  Balances,
+  BalanceFP,
+  WalletBalance,
+  RelayChainName,
+  WalletAddress,
+  AccountBalance,
+  NetworkName,
+} from '@/interfaces';
 import type { SubmittableExtrinsic, SignerOptions } from '@polkadot/api/submittable/types';
 import type { Wallet, SetHistoryProps } from '@/store';
 import type { ApiPromise } from '@polkadot/api';
@@ -17,7 +25,7 @@ import {
   getOrmlOptions,
 } from '@/util/teleport';
 import { getReplacedMetaTyped } from '@/helpers/common';
-import { getAssetOptions } from '@/util/assets';
+import { createExtrinsicTransfer } from '@/util/assets';
 import { BeaconSigner } from '@/extension/background/extension-base/src/background/BeaconSigner';
 import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
@@ -26,15 +34,15 @@ import { saveTimeoutCache } from '@/extension/messaging';
 
 type TransactionStatus = 'success' | 'failed' | 'pending';
 
-type Options = {
+type ExtrinsicOptions = {
   transactionsOptions?: Partial<SignerOptions>;
-  historyOptions?: { networkName: string; amount: string; to: string };
+  historyOptions?: { networkProps: WalletBalance; amount: string; to: string };
   api?: ApiPromise;
 };
 
-type UpdateBalance = {
+type UpdateBalanceProps = {
   walletAddress: WalletAddress;
-  network: string;
+  network: NetworkName;
   balance: AccountBalance;
 };
 
@@ -42,12 +50,22 @@ export default class CurrencyController {
   private readonly lsCurrency = new LocalStorageController('currency');
   private readonly visibleStorageName = 'visible';
   public extrinsic!: SubmittableExtrinsic<'promise'> | undefined;
-  public options: Options = {};
+  public extrinsicOptions: ExtrinsicOptions = {};
   public price = 0;
   public hours24Change = 0;
   public currenciesVisible!: Record<string, Record<string, boolean>>;
   public transactionStatus?: TransactionStatus;
 
+  /**
+   * Create a currency item.
+   * @param {string} mainNetwork - the network in which the asset is a utility
+   * @param {string} assetId - asset id
+   * @param {string} asset - asset name (same symbol)
+   * @param {string[]} providers - list of providers
+   * @param {string} relayChain - relay chain name (polkadot | kusama)
+   * @param {Balances} balances - asset balance
+   * @param {string} displayName - asset display name (example: asset = KSM, displayName = KSM and asset = KSM, displayName = vKSM)
+   */
   constructor(
     public mainNetwork: string,
     public assetId: string,
@@ -60,19 +78,32 @@ export default class CurrencyController {
     this.currenciesVisible = this.lsCurrency.get(this.visibleStorageName).value ?? {};
   }
 
+  /**
+   * Update fiat price
+   */
   public updatePrice() {
-    const { price, hours24Change } = NetworksController.getAssetPrice(this.assetId);
+    const { price, hours24Change } = NetworksController.getAssetPrice(this.displayName);
 
     this.price = price ?? 0;
     this.hours24Change = hours24Change ?? 0;
   }
 
+  /**
+   * Calculate cost by quantity
+   * @param {FPNumber} count
+   * @returns {FPNumber}
+   */
   private calculateCost(count: FPNumber): FPNumber {
     const FPPrice = new FPNumber(this.price);
 
     return count.mul(FPPrice);
   }
 
+  /**
+   * Get wallet balance
+   * @param {Wallet} wallet
+   * @returns {WalletBalance[]}
+   */
   private getWalletBalance(wallet: Wallet): WalletBalance[] {
     const { address, ethereumAddress } = wallet;
 
@@ -87,7 +118,7 @@ export default class CurrencyController {
     }, {} as Record<string, string>);
 
     return this.balances.map((item) => {
-      const { network, type, precision, existentialDeposit, balance } = item;
+      const { network, type, precision, existentialDeposit, balance, assetId } = item;
       const isEthereumNetwork = BaseApi.isEthereumNetwork(network);
       const replacedAddress = replacedNetworks[network];
       const walletBalance = replacedAddress
@@ -96,11 +127,16 @@ export default class CurrencyController {
         ? balance[ethereumAddress]
         : balance[address];
 
-      return { network, type, precision, existentialDeposit, balance: walletBalance ?? mockBalance };
+      return { network, type, precision, existentialDeposit, balance: walletBalance ?? mockBalance, assetId };
     });
   }
 
-  private countAssets(wallet: Wallet): BalanceFP {
+  /**
+   * Count the number of assets in all networks
+   * @param {Wallet} wallet
+   * @returns {BalanceFP}
+   */
+  private calculateCountAssets(wallet: Wallet): BalanceFP {
     const walletBalance = this.getWalletBalance(wallet);
 
     return walletBalance.reduce((obj, { balance: { total, frozen, locked, reserved, transferable } }) => {
@@ -114,20 +150,24 @@ export default class CurrencyController {
     }, mockBalance);
   }
 
-  private getTotalBalanceInNetwork(wallet: Wallet, _network: string): string {
+  /**
+   * Get total fiat balance of wallet in network
+   * @param {Wallet} wallet
+   * @param {NetworkName} _network
+   * @returns {string}
+   */
+  private getTotalBalanceInNetwork(wallet: Wallet, _network: NetworkName): string {
     const walletBalance = this.getWalletBalance(wallet);
     const total = walletBalance.find(({ network }) => network === _network)?.balance.total ?? FPNumber.ZERO;
 
     return this.calculateCost(total).toString();
   }
 
-  private getTotalCountAssetsByNetwork(wallet: Wallet, _network: string): string {
-    const walletBalance = this.getWalletBalance(wallet);
-    const balance = walletBalance.find(({ network }) => network === _network)?.balance;
-
-    return balance?.total.toString() ?? '';
-  }
-
+  /**
+   * Get balance of wallet assets in network
+   * @param {Wallet} wallet
+   * @param {NetworkName} _network
+   */
   public getBalanceInNetwork(wallet: Wallet, _network: string) {
     const walletBalance = this.getWalletBalance(wallet);
     const { frozen, locked, reserved, total, transferable } = walletBalance.find(
@@ -158,7 +198,13 @@ export default class CurrencyController {
     };
   }
 
-  public getTransactionAddress(wallet: Wallet, network: string): string {
+  /**
+   * Get transaction address for wallet(taking network and replaced wallet)
+   * @param {Wallet} wallet
+   * @param {NetworkName} network
+   * @returns {string}
+   */
+  public getTransactionAddress(wallet: Wallet, network: NetworkName): string {
     const { address, ethereumAddress } = wallet;
     const replacedAccount = BaseApi.getReplacedAccountByNetwork(wallet, network);
 
@@ -171,7 +217,11 @@ export default class CurrencyController {
     return BaseApi.isEthereumNetwork(network) ? ethereumAddress : address;
   }
 
-  public updateCurrencyBalance({ walletAddress, network, balance }: UpdateBalance): void {
+  /**
+   * Update asset balance
+   * @param {UpdateBalanceProps} props
+   */
+  public updateCurrencyBalance({ walletAddress, network, balance }: UpdateBalanceProps): void {
     const { frozen, locked, reserved, total, transferable } = balance;
     const oldBalances = [...this.balances];
     const indexNetwork = oldBalances.findIndex(({ network: _network }) => _network === network);
@@ -190,24 +240,53 @@ export default class CurrencyController {
     this.balances.splice(indexNetwork, 1, balancesForNetwork);
   }
 
-  public getTotalCountAssets(wallet: Wallet, network?: string): string {
+  /**
+   * Get total count assets by network
+   * @param {Wallet} wallet
+   * @param {NetworkName} network
+   * @returns {string}
+   */
+  public getTotalCountAssets(wallet: Wallet, network?: NetworkName): string {
     if (network && network !== 'all') {
-      return this.getTotalCountAssetsByNetwork(wallet, network);
+      return this.getBalanceInNetwork(wallet, network).total.value;
     }
 
-    return this.countAssets(wallet).total.toString();
+    return this.calculateCountAssets(wallet).total.toString();
   }
 
-  public getTransferableCountAssets(networkProp: string, wallet: Wallet): string {
-    const walletBalance = this.getWalletBalance(wallet);
-    const balance = walletBalance.find(({ network }) => network === networkProp)?.balance;
+  /**
+   * Get total fiat balance by network
+   * @param {Wallet} wallet
+   * @param {NetworkName} network
+   * @returns {string}
+   */
+  public getTotalBalance(wallet: Wallet, network?: NetworkName): string {
+    if (network && network !== 'all') {
+      return this.getTotalBalanceInNetwork(wallet, network);
+    }
 
-    if (!balance) return '';
+    const countAssets = this.calculateCountAssets(wallet).total;
 
-    return balance.transferable.toString();
+    return this.calculateCost(countAssets).toString();
   }
 
-  public getTransferableCountAssetsMinusFee(fee: string, _network: string, wallet: Wallet): FPNumber {
+  /**
+   * Get transferable count assets by network
+   * @param {Wallet} wallet
+   * @param {NetworkName} _network
+   * @returns {string}
+   */
+  public getTransferableCountAssets(wallet: Wallet, _network: NetworkName): string {
+    return this.getBalanceInNetwork(wallet, _network).transferable.value;
+  }
+
+  /**
+   * Get transferable count assets by network minus fee
+   * @param {Wallet} wallet
+   * @param {NetworkName} _network
+   * @returns {FPNumber}
+   */
+  public getTransferableCountAssetsMinusFee(fee: string, _network: NetworkName, wallet: Wallet): FPNumber {
     const walletBalance = this.getWalletBalance(wallet);
     const {
       precision,
@@ -220,39 +299,59 @@ export default class CurrencyController {
     return FPNumber.lt(result, FPNumber.ZERO) ? FPNumber.ZERO : result;
   }
 
-  public validateCountAssets(count: string, fee: string, network: string, wallet: Wallet): boolean {
+  /**
+   * Validate count assets
+   * @param {string} count
+   * @param {NetworkName} network
+   * @param {Wallet} wallet
+   * @returns {boolean}
+   */
+  public validateCountAssets(count: string, fee: string, network: NetworkName, wallet: Wallet): boolean {
     const transferableCountAssetsMinusFee = this.getTransferableCountAssetsMinusFee(fee, network, wallet);
 
     return FPNumber.lte(new FPNumber(count), transferableCountAssetsMinusFee);
   }
 
+  /**
+   * Get list of networks for asset
+   * @returns {Balances}
+   */
   public getNetworkList(): Balances {
     return this.balances;
   }
 
-  public isUtility(_network: string): boolean {
+  /**
+   * Check if this is utility asset for network
+   * @param {NetworkName} _network
+   * @returns {Balances}
+   */
+  public isUtility(_network: NetworkName): boolean {
     return this.balances.find(({ network }) => network === _network)?.type === 'native';
   }
 
+  /**
+   * Get a list of networks with a balance
+   * @param {Wallet} wallet
+   * @returns {WalletBalance[]}
+   */
   public getNetworksWithBalance(wallet: Wallet): WalletBalance[] {
     return this.getWalletBalance(wallet).filter(({ balance: { total } }) => !FPNumber.isEqualTo(total, FPNumber.ZERO));
   }
 
-  public getTotalBalance(wallet: Wallet, network?: string): string {
-    if (network && network !== 'all') {
-      return this.getTotalBalanceInNetwork(wallet, network);
-    }
-
-    const countAssets = this.countAssets(wallet).total;
-    const cost = this.calculateCost(countAssets);
-
-    return cost.toString();
-  }
-
+  /**
+   * Get asset cost
+   * @param {string} count
+   * @returns {string}
+   */
   public getCostOfAssets(count: string): string {
     return this.calculateCost(new FPNumber(count)).toString();
   }
 
+  /**
+   * Get count of assets by total price
+   * @param {string} cost
+   * @returns {string}
+   */
   public getCountAssetsByPrice(cost: string): string {
     const FPCost = new FPNumber(cost);
     const price = new FPNumber(this.price);
@@ -260,11 +359,21 @@ export default class CurrencyController {
     return FPCost.div(price).toString();
   }
 
-  public getCurrencyVisible(address: string): boolean {
+  /**
+   * Get currency visibility
+   * @param {string} address
+   * @returns {boolean}
+   */
+  public getCurrencyVisibility(address: string): boolean {
     return this.currenciesVisible?.[address]?.[this.assetId] ?? true;
   }
 
-  public setCurrencyVisible(address: string, value: boolean): void {
+  /**
+   * Set currency visibility
+   * @param {string} address
+   * @param {boolean} value
+   */
+  public setCurrencyVisibility(address: string, value: boolean): void {
     this.currenciesVisible = this.lsCurrency.get(this.visibleStorageName).value ?? {};
 
     if (this.currenciesVisible[address]) this.currenciesVisible[address][this.assetId] = value;
@@ -276,6 +385,13 @@ export default class CurrencyController {
     this.lsCurrency.set(this.visibleStorageName, this.currenciesVisible);
   }
 
+  /**
+   * Get currency visibility
+   * @param {string} _amount
+   * @param {number} precision
+   * @param {boolean} [returnFPNumber=false] return FPNumber or string value
+   * @returns {string | FPNumber}
+   */
   public getPrecisionValue(_amount: string, precision: number, returnFPNumber = false): string | FPNumber {
     const amount = _amount === '' ? '0' : _amount;
     const amountFP = new FPNumber(amount, precision);
@@ -283,7 +399,15 @@ export default class CurrencyController {
     return returnFPNumber ? amountFP : amountFP.toCodecString();
   }
 
-  public validateExistentialDeposit(wallet: Wallet, _network: string, amount: string, fee: string): boolean {
+  /**
+   * Validation for Existential Deposit
+   * @param {Wallet} wallet
+   * @param {NetworkName} _network
+   * @param {string} amount
+   * @param {string} fee
+   * @returns {boolean}
+   */
+  public validateExistentialDeposit(wallet: Wallet, _network: NetworkName, amount: string, fee: string): boolean {
     const walletBalance = this.getWalletBalance(wallet);
     const {
       existentialDeposit,
@@ -305,49 +429,42 @@ export default class CurrencyController {
     return FPNumber.gte(residualBalance, FPNumber.fromCodecValue(exDeposit, precision));
   }
 
-  public createTransferExtrinsic(wallet: Wallet, to: string, amount: string, networkName: string): void {
+  /**
+   * Create transfer extrinsic
+   * @param {Wallet} wallet
+   * @param {string} to
+   * @param {string} amount
+   * @param {NetworkName} networkName
+   */
+  public createTransferExtrinsic(wallet: Wallet, to: string, amount: string, networkName: NetworkName): void {
+    const network = NetworksController.getNetwork(networkName);
     const {
       api,
       settings: { DefaultTip },
-    } = NetworksController.getNetwork(networkName);
+    } = network;
 
     if (api === undefined) return;
 
     const walletBalance = this.getWalletBalance(wallet) ?? [];
-    const { precision, type } = walletBalance.find(({ network }) => network === networkName)!;
-    const ormlOptions = getAssetOptions(this.asset, type, this.assetId);
-    const precisionAmount = this.getPrecisionValue(amount, precision) as string;
+    const networkProps = walletBalance.find(({ network }) => network === networkName)!;
 
-    this.options = {
-      transactionsOptions: { tip: DefaultTip },
-      historyOptions: { networkName, amount: precisionAmount, to },
-      api,
-    };
-
-    try {
-      switch (type) {
-        case 'native':
-          this.extrinsic = api!.tx.balances.transfer(to, precisionAmount);
-          break;
-        case 'equilibrium':
-          this.extrinsic = api!.tx.eqBalances.transfer(ormlOptions, to, precisionAmount);
-          break;
-        case 'ormlChain':
-          this.extrinsic = api!.tx.tokens.transfer(to, ormlOptions, precisionAmount);
-          break;
-        case 'soraAsset':
-          this.extrinsic = api!.tx.assets.transfer(ormlOptions, to, precisionAmount);
-          break;
-        default:
-          this.extrinsic = api!.tx.currencies.transfer(to, ormlOptions, precisionAmount);
-          break;
-      }
-    } catch {
-      this.extrinsic = undefined;
-      this.options = {};
-    }
+    this.extrinsic = createExtrinsicTransfer({ api, to, amount, asset: this.asset, networkProps });
+    this.extrinsicOptions = this.extrinsic
+      ? {
+          transactionsOptions: { tip: DefaultTip },
+          historyOptions: { networkProps, amount, to },
+          api,
+        }
+      : {};
   }
 
+  /**
+   * Create teleport extrinsic
+   * @param {Wallet} wallet
+   * @param {string} originNet
+   * @param {string} destNet
+   * @param {string} amount
+   */
   public async createTeleportExtrinsic(
     wallet: Wallet,
     originNet: string,
@@ -355,9 +472,8 @@ export default class CurrencyController {
     amount: string
   ): Promise<void> {
     const walletBalance = this.getWalletBalance(wallet) ?? [];
-    const { precision } = walletBalance.find(({ network }) => network === originNet)!;
+    const networkProps = walletBalance.find(({ network }) => network === originNet)!;
     const toAddress = this.getTransactionAddress(wallet, destNet);
-    const precisionAmount = this.getPrecisionValue(amount, precision) as string;
 
     if (isNativeNetwork(originNet)) {
       // Case RelayChain -> Nonnative ParaChain (polkadot -> acala, etc; kusama -> bifrost, etc) paraId = 2000-2999, pallet = xcmPallet, module = reserveTransferAssets
@@ -365,53 +481,73 @@ export default class CurrencyController {
       // Case Native ParaChain -> RelayChain (statemint -> polkadot; statemine, encointer -> kusama) paraId = -1, pallet = polkadotXcm, module = limitedTeleportAssets
       // TODO: add case: Native ParaChain -> Nonnative ParaChain
       // TODO: add case: Native ParaChain -> Native ParaChain
-      this.createNativeTeleportExtrinsic(originNet, destNet, toAddress, precisionAmount);
+      this.createNativeTeleportExtrinsic(originNet, destNet, toAddress, amount, networkProps);
 
       return;
     }
 
     // Case Nonnative ParaChain -> Nonnative ParaChain (karura, etc -> bifrost, etc) paraId = 2000-2999
     // Case Nonnative ParaChain -> RelayChain (karura, etc -> kusama, etc; acala, etc  -> polkadot)
-    this.createOrmlTeleportExtrinsic(originNet, destNet, toAddress, precisionAmount);
+    this.createOrmlTeleportExtrinsic(originNet, destNet, toAddress, amount, networkProps);
   }
 
+  /**
+   * Create native teleport extrinsic
+   * @param {string} originNet
+   * @param {string} destNet
+   * @param {string} toAddress
+   * @param {string} amount
+   * @param {WalletBalance} networkProps
+   */
   public async createNativeTeleportExtrinsic(
     originNet: string,
     destNet: string,
     toAddress: string,
-    precisionAmount: string
+    amount: string,
+    networkProps: WalletBalance
   ): Promise<void> {
     const { api } = NetworksController.getNetwork(originNet);
 
     if (api === undefined) return;
 
+    const precisionAmount = this.getPrecisionValue(amount, networkProps.precision) as string;
     const module = isNativeNetwork(destNet) ? 'limitedTeleportAssets' : 'reserveTransferAssets';
     const pallet = XCM_NATIVE_PALLETS.find((pallet) => api!.tx[pallet] && isFunction(api!.tx[pallet][module]))!;
     const tx = api!.tx[pallet][module];
     const params = getNativeTeleportParams(destNet, toAddress, precisionAmount);
 
     this.extrinsic = tx(...params);
-    this.options = { historyOptions: { networkName: originNet, amount: precisionAmount, to: toAddress }, api };
+    this.extrinsicOptions = { historyOptions: { networkProps, amount: precisionAmount, to: toAddress }, api };
   }
 
+  /**
+   * Create orml teleport extrinsic
+   * @param {string} originNet
+   * @param {string} destNet
+   * @param {string} toAddress
+   * @param {string} amount
+   * @param {WalletBalance} networkProps
+   */
   public async createOrmlTeleportExtrinsic(
     originNet: string,
     destNet: string,
     toAddress: string,
-    precisionAmount: string
+    amount: string,
+    networkProps: WalletBalance
   ): Promise<void> {
     const { api } = NetworksController.getNetwork(originNet);
 
     if (api === undefined) return;
 
+    const precisionAmount = this.getPrecisionValue(amount, networkProps.precision) as string;
     const ormlOptions = getOrmlOptions(this.asset, originNet);
     const params = getOrmlTeleportParams(originNet, destNet, toAddress);
 
     this.extrinsic = api!.tx.xTokens.transfer(ormlOptions, precisionAmount, params, FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT);
-    this.options = { historyOptions: { networkName: originNet, amount: precisionAmount, to: toAddress }, api };
+    this.extrinsicOptions = { historyOptions: { networkProps, amount: precisionAmount, to: toAddress }, api };
   }
 
-  public async getPartialFee(wallet: Wallet, _network: string): Promise<string> {
+  public async getPartialFee(wallet: Wallet, _network: NetworkName): Promise<string> {
     if (!this.extrinsic) return '0';
 
     const transactionAddress = this.getTransactionAddress(wallet, _network);
@@ -428,15 +564,22 @@ export default class CurrencyController {
     }
   }
 
+  /**
+   * Send assets
+   * @param {string} from
+   * @param {boolean} [isMobile=false]
+   * @param {boolean} [isSavePass=false]
+   * @returns {Promise<boolean>}
+   */
   public async send(from: string, isMobile = false, isSavePass = false): Promise<boolean> {
     if (isSavePass) await saveTimeoutCache(from);
 
     const account = isMobile ? from : BaseApi.getPair(from);
 
     const options = {
-      ...(this.options.transactionsOptions ?? {}),
+      ...(this.extrinsicOptions.transactionsOptions ?? {}),
       signer: isMobile ? new BeaconSigner() : undefined,
-      nonce: await this.options.api?.rpc.system.accountNextIndex(from),
+      nonce: await this.extrinsicOptions.api?.rpc.system.accountNextIndex(from),
     };
 
     this.transactionStatus = 'pending';
@@ -458,6 +601,9 @@ export default class CurrencyController {
     return true;
   }
 
+  /**
+   * log status transaction
+   */
   private statusCallback(from: string) {
     return (result: ISubmittableResult) => {
       const { status } = result;
@@ -476,19 +622,32 @@ export default class CurrencyController {
     };
   }
 
+  /**
+   * clear transaction status
+   */
   public clearSendStatus() {
     this.transactionStatus = undefined;
   }
 
+  /**
+   * Create mock history
+   * @param {string} from
+   * @param {boolean} success
+   */
   private async setMockHistory(from: string, success: boolean): Promise<void> {
-    const { networkName, amount, to } = this.options.historyOptions!;
+    const {
+      networkProps: { network, precision },
+      amount,
+      to,
+    } = this.extrinsicOptions.historyOptions!;
 
     const paymentInfo = await this.extrinsic!.paymentInfo(from);
     const fee = JSON.parse(paymentInfo.toString()).partialFee;
+    const precisionAmount = this.getPrecisionValue(amount, precision) as string;
 
     const historyOptions: SetHistoryProps = {
       assetId: this.assetId,
-      networkName,
+      networkName: network,
       isPreviously: true,
       isMock: true,
       walletAddress: from,
@@ -499,9 +658,9 @@ export default class CurrencyController {
             id: '',
             timestamp: `${Date.now() / 1000}`,
             transfer: {
-              from: BaseApi.getDisplayAddressByNetwork({ address: from, ethereumAddress: from }, networkName),
+              from: BaseApi.getDisplayAddressByNetwork({ address: from, ethereumAddress: from }, network),
               success,
-              amount,
+              amount: precisionAmount,
               eventIdx: 0,
               fee,
               to,
@@ -518,6 +677,6 @@ export default class CurrencyController {
 
     store.commit(NetworksMutationTypes.SET_HISTORY, historyOptions);
 
-    this.options = {};
+    this.extrinsicOptions = {};
   }
 }

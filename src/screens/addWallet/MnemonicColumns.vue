@@ -59,10 +59,17 @@ export default class MnemonicColumns extends Vue {
 </script>
 
 <style lang="scss" scoped>
+@font-face {
+  font-family: 'Roboto mono';
+  src: local('Roboto mono'), url(../../assets/fonts/RobotoMono-Regular.ttf) format('truetype');
+}
+
 .mnemonic-columns {
   display: flex;
   justify-content: space-evenly;
-  font-size: 20px;
+  font-size: 16px;
+  font-family: 'Roboto mono', sans-serif;
+  font-weight: 400;
 
   .mnemonic-element {
     display: flex;

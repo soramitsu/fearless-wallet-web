@@ -62,7 +62,7 @@ export default class CurrencyController {
    * @param {string} assetId - asset id
    * @param {string} asset - asset name (same symbol)
    * @param {string[]} providers - list of providers
-   * @param {string} relayChain - relay  chain name (polkadot | kusama)
+   * @param {string} relayChain - relay chain name (polkadot | kusama)
    * @param {Balances} balances - asset balance
    * @param {string} displayName - asset display name (example: asset = KSM, displayName = KSM and asset = KSM, displayName = vKSM)
    */

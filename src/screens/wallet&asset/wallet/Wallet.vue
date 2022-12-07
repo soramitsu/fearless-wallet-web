@@ -86,11 +86,7 @@
       @setNetworkUnavailable="setNetworkUnavailable"
     />
 
-    <NetworkUnavailablePopup
-      v-if="showNetworkUnavailablePopup"
-      :closePopup="setNetworkUnavailable"
-      :handlerAccept="acceptNetworkUnavailablePopup"
-    />
+    <NetworkUnavailablePopup v-if="showNetworkUnavailablePopup" :closePopup="setNetworkUnavailable" />
 
     <Tooltip text="wallet.walletBalance" target=".wallet-balance" placement="right" />
     <Tooltip text="common.networkManagement" target=".select-network-button" placement="bottom" />
@@ -120,7 +116,6 @@ import { addNumbers, formattedNumber, getChangeWalletBalance } from '@/helpers/n
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
-import { Components } from '@/router/routes';
 
 @Component({
   components: {
@@ -258,13 +253,6 @@ export default class Wallet extends Vue {
 
   setNetworkUnavailable(network = '') {
     this.networkUnavailable = network;
-  }
-
-  acceptNetworkUnavailablePopup() {
-    this.$router.push({
-      name: Components.Nodes,
-      params: { network: this.networkUnavailable },
-    });
   }
 
   toggleNetworkManagementVisible() {

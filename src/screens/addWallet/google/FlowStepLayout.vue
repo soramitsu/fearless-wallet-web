@@ -2,7 +2,7 @@
   <div class="add-wallet">
     <div class="header">
       <div class="icon-container">
-        <CircleButton v-if="notFinish" backgroundColor="light-black" iconName="chevron-left" @click="back" />
+        <CircleButton v-if="showBackButton" backgroundColor="light-black" iconName="chevron-left" @click="back" />
       </div>
 
       <div class="steps">
@@ -57,9 +57,14 @@ export default class FlowStepLayout extends Vue {
   @Prop({ default: false, type: Boolean }) isLoading!: boolean;
   @Prop(String) header!: string;
   @Prop({ default: false }) showFullScreenIcon!: boolean;
+  @Prop({ default: false }) showAdvancedForm!: boolean;
 
   get notFinish() {
     return this.countSteps !== this.step;
+  }
+
+  get showBackButton() {
+    return !this.showAdvancedForm || !this.notFinish;
   }
 
   back() {

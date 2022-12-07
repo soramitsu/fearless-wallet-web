@@ -211,7 +211,7 @@ export default class AddWallet extends Vue {
   }
 
   get confirmMnemonicStep() {
-    return this.step === 3;
+    return this.step === 3 && this.isCreateWallet;
   }
 
   get isOnlyEthereumAccountFlow() {
@@ -314,7 +314,7 @@ export default class AddWallet extends Vue {
   }
 
   get showBackIcon() {
-    return this.step < 5;
+    return this.step < 5 && !this.showAdvancedForm;
   }
 
   get showFinishForm() {

@@ -6,6 +6,14 @@ import type { ApiPromise } from '@polkadot/api';
 import NetworksController from '@/controllers/networksController';
 import BaseApi from '@/util/BaseApi';
 
+type ExtrinsicTransferProps = {
+  api: ApiPromise;
+  to: string;
+  amount: string;
+  asset: string;
+  networkProps: WalletBalance;
+};
+
 const ORML_PALLETS_TYPES = ['ormlChain', 'equilibrium'];
 
 function getAssetOptions(symbol: string, type: TypeAsset, assetId: string) {
@@ -32,12 +40,9 @@ function getPrecisionValue(_amount: string, precision: number, returnFPNumber = 
 }
 
 function createExtrinsicTransfer(
-  api: ApiPromise,
-  to: string,
-  amount: string,
-  asset: string,
-  networkProps: WalletBalance
+  props: ExtrinsicTransferProps
 ): SubmittableExtrinsic<'promise', ISubmittableResult> | undefined {
+  const { amount, api, asset, networkProps, to } = props;
   const { precision, type, assetId } = networkProps;
   const ormlOptions = getAssetOptions(asset, type, assetId);
   const precisionAmount = getPrecisionValue(amount, precision) as string;

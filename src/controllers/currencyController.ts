@@ -448,7 +448,7 @@ export default class CurrencyController {
     const walletBalance = this.getWalletBalance(wallet) ?? [];
     const networkProps = walletBalance.find(({ network }) => network === networkName)!;
 
-    this.extrinsic = createExtrinsicTransfer(api, to, amount, this.asset, networkProps);
+    this.extrinsic = createExtrinsicTransfer({ api, to, amount, asset: this.asset, networkProps });
     this.extrinsicOptions = this.extrinsic
       ? {
           transactionsOptions: { tip: DefaultTip },

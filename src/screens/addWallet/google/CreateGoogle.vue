@@ -1,5 +1,12 @@
 <template>
-  <FlowStepLayout :countSteps="countSteps" :step="step" :header="header" @back="back" :showFullScreenIcon="false">
+  <FlowStepLayout
+    :countSteps="countSteps"
+    :showAdvancedForm="showAdvancedForm"
+    :step="step"
+    :header="header"
+    @back="back"
+    :showFullScreenIcon="false"
+  >
     <NickNameForm v-if="nickNameStep" :nickname="nickname" @update:nickname="setNickname" />
 
     <CreateWallet
@@ -41,6 +48,7 @@
           iconName="reload"
           @click="resetAll"
         />
+
         <Button
           v-if="confirmMnemonicStep"
           size="big"
@@ -78,7 +86,7 @@ import NickNameForm from '@/screens/addWallet/NicknameForm.vue';
 import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
 import { Components } from '@/router/routes';
-import { MnemonicConfirmation, TAction } from '@/interfaces';
+import { DerivationPaths, MnemonicConfirmation, TAction } from '@/interfaces';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH, INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import BaseApi from '@/util/BaseApi';
@@ -202,6 +210,10 @@ export default class CreateGoogle extends Vue {
 
       this.backupWallet(address);
     }
+  }
+
+  updateDP(derivationPaths: DerivationPaths) {
+    this.derivationPaths = derivationPaths;
   }
 
   resetAll() {

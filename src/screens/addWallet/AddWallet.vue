@@ -314,7 +314,7 @@ export default class AddWallet extends Vue {
   }
 
   get showBackIcon() {
-    return this.step < 5;
+    return this.step < 5 && !this.showAdvancedForm;
   }
 
   get showFinishForm() {

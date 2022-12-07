@@ -126,6 +126,7 @@ export default class CreateGoogle extends Vue {
     1: this.$t('common.continue'),
     2: this.$t('addWallet.haveWrittenPassphrase'),
     3: this.$t('addWallet.ConfirmSecretData'),
+    4: this.$t('common.confirm'),
     5: this.$t('common.finish'),
   };
 
@@ -148,7 +149,7 @@ export default class CreateGoogle extends Vue {
     if (this.nickNameStep) return this.$t('addWallet.createWallet');
     if (this.step === 2) return this.$t('addWallet.backupPassphrase');
     if (this.step === 3) return this.$t('addWallet.confirmPassphrase');
-    if (this.passwordStep) return this.$t('common.confirm');
+    if (this.passwordStep) return this.$t('addWallet.setupPassword');
     if (this.step === 5) return '';
 
     return this.$t('addWallet.createWallet');

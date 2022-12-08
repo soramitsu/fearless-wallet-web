@@ -84,7 +84,11 @@ export default class GoogleExportPopup extends Vue {
   }
 
   async onConfirm() {
-    if (this.isFileUploaded) this.closePopup();
+    if (this.isFileUploaded) {
+      this.closePopup();
+
+      return;
+    }
 
     const pair = BaseApi.getPair(this.selectedWallet);
 

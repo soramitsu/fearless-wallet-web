@@ -97,7 +97,6 @@ ${json}
       });
 
       const baseURL = `${chrome.runtime.getURL('popup.html')}#/${this.urlTypes[type]}/${params.access_token}`;
-      console.log(baseURL);
 
       if (type === 'export' && wallet) {
         chrome.tabs.create({ url: `${baseURL}?wallet=${wallet}` });

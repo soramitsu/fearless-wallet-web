@@ -63,7 +63,7 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { keyring } from '@/controllers/keyringChrome';
 import { googleManage } from '@/controllers/googleController';
-import { FilesResponse, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
+import { FilesResponse, GoogleAuthTypes, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
 
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
@@ -631,8 +631,8 @@ export default class Extension {
     return keyring.getAddresses();
   }
 
-  static initAuth(): void {
-    googleManage.authExtension();
+  static initAuth({ type, wallet }: GoogleAuthTypes): void {
+    googleManage.authExtension(type, wallet);
   }
 
   static async verifyToken({ token }: { token: string }): Promise<VerifyTokenResponse> {
@@ -812,7 +812,7 @@ export default class Extension {
         return Extension.getFiles(request as { token: string });
 
       case 'pri(google.auth)':
-        return Extension.initAuth();
+        return Extension.initAuth(request as GoogleAuthTypes);
 
       case 'pri(google.verify.token)':
         return Extension.verifyToken(request as { token: string });

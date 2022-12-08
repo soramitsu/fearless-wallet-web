@@ -1,14 +1,8 @@
 import axios from 'axios';
 import fetchAdapter from '@vespaiach/axios-fetch-adapter';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import {
-  CreateFileProp,
-  FilesResponse,
-  ICreateFile,
-  IGDriveFile,
-  IGetFilesResponse,
-  VerifyTokenResponse,
-} from '@/interfaces/google';
+import type { FilesResponse, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
+import { createGoogleFile } from '@/extension/messaging';
 
 class GoogleManage {
   private readonly baseURL = 'https://www.googleapis.com/drive/v3';
@@ -21,6 +15,11 @@ class GoogleManage {
     access_type: 'online',
     prompt: 'consent',
     scope: 'https://www.googleapis.com/auth/drive.appdata',
+  };
+
+  urlTypes = {
+    main: 'google',
+    export: 'main/wallet',
   };
 
   public get config() {
@@ -68,14 +67,45 @@ ${json}
 --foo_bar_baz--`;
   }
 
-  public authExtension() {
+  public async saveSubstrateAndEthereumWallet(
+    json: string,
+    ethJson: string,
+    name: string,
+    address: string,
+    ethAddress: string,
+    token: string
+  ) {
+    const ethRes = await createGoogleFile({
+      json: JSON.stringify(ethJson),
+      options: { name, address: ethAddress },
+      token,
+    });
+
+    const res = await createGoogleFile({
+      json: JSON.stringify(json),
+      options: { name, address: `${address}/${ethRes.id}` },
+      token,
+    });
+
+    return res.id;
+  }
+
+  public authExtension(type: 'main' | 'export' = 'main', wallet?: string) {
     chrome.identity.launchWebAuthFlow({ url: this.authURL('extension'), interactive: true }, (url) => {
       const params: any = new Proxy(new URLSearchParams(url), {
         get: (searchParams, prop) => searchParams.get(prop as string),
       });
-      const urlToOpen = `${chrome.runtime.getURL('popup.html')}#/google/${params.access_token}`;
 
-      chrome.tabs.create({ url: urlToOpen });
+      const baseURL = `${chrome.runtime.getURL('popup.html')}#/${this.urlTypes[type]}/${params.access_token}`;
+      console.log(baseURL);
+
+      if (type === 'export' && wallet) {
+        chrome.tabs.create({ url: `${baseURL}?wallet=${wallet}` });
+
+        return;
+      }
+
+      chrome.tabs.create({ url: baseURL });
     });
   }
 

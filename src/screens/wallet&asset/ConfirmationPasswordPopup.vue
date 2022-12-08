@@ -2,7 +2,7 @@
   <Popup :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close" :zIndex="399">
     <div class="popup-content">
       <template v-if="!isTransactionInit && !isSignMobile">
-        <Icon icon="lock-green" className="icon__lock-green" />
+        <Icon icon="lock-green" className="icon__lock-green" iconColor="success" />
 
         <div class="text row">{{ $t('asset.passwordTransaction') }}</div>
 

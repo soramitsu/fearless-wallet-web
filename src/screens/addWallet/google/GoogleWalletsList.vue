@@ -94,19 +94,19 @@ export default class GoogleWalletsList extends Vue {
     return true;
   }
 
-  onSelect(value: boolean, key: number) {
-    const file = this.items[key];
-    const item = this.items[key];
+  onSelect(value: boolean, index: number) {
+    const file = this.items[index];
+    const item = this.items[index];
 
     if (file.isComplete) return;
     else if (file.isComplete === undefined) {
-      this.setItemValue(key, { isLoading: false, isComplete: false });
+      this.setItemValue(index, { isLoading: false, isComplete: false });
     }
 
-    if (item.json === undefined) this.$emit('getFile', item.id, key);
-    if (item.ethJson === undefined) this.$emit('getFile', item.ethWalletID, key);
+    if (item.json === undefined) this.$emit('getFile', item.id, index);
+    if (item.ethJson === undefined) this.$emit('getFile', item.ethWalletID, index);
 
-    this.setItemValue(key, { active: value });
+    this.setItemValue(index, { active: value });
   }
 
   cutAddress(address: string) {

@@ -107,12 +107,12 @@ export default class AddFromGoogle extends Vue {
       return;
     }
 
-    files.forEach(({ id, description, name }, index) => {
+    files.forEach(({ id, description, name }) => {
       const [prepName] = name.split('.');
       const [address, ethID] = description.split('/');
       if (ethID === undefined) return;
 
-      this.files[index] = {
+      this.files.push({
         id,
         name: prepName,
         address,
@@ -122,7 +122,7 @@ export default class AddFromGoogle extends Vue {
         ethWalletID: ethID,
         password: '',
         active: false,
-      };
+      });
     });
 
     this.isLoading = false;
@@ -148,6 +148,7 @@ export default class AddFromGoogle extends Vue {
 
   proceed() {
     if (this.isFinishForm || this.isAccessDenied) {
+      this.$router.replace('/');
       this.$router.push({ name: Components.Wallet });
 
       return;

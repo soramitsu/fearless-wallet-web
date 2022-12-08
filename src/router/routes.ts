@@ -101,7 +101,8 @@ const routes: Array<RouteConfig> = [
         },
       },
       {
-        path: 'wallet',
+        path: 'wallet/:access_token',
+        props: (route) => ({ query: route.query.wallet }),
         name: Components.Wallet,
         component: Wallet,
         beforeEnter: (to, from, next) => {

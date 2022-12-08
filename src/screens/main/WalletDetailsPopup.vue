@@ -13,6 +13,9 @@
       <div class="row" @click="openWalletDetails">
         <div class="label">Wallet Details</div>
       </div>
+      <div class="row" @click="exportToGoogleDrive">
+        <div class="label google">Export to Google</div>
+      </div>
       <div class="row" @click="deleteWallet">
         <div class="label delete">Delete Wallet</div>
       </div>
@@ -28,6 +31,7 @@ import type { TMutation } from '@/interfaces/common';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { initGoogleAuth } from '@/extension/messaging';
 
 @Component
 export default class WalletDetailsPopup extends Vue {
@@ -63,6 +67,10 @@ export default class WalletDetailsPopup extends Vue {
     if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
   }
 
+  exportToGoogleDrive() {
+    initGoogleAuth('export', this.selectedWalletAddress);
+  }
+
   openWalletDetails() {
     this.setSelectedWallet({ selectedWalletAddress: this.selectedWalletAddress });
 
@@ -77,7 +85,7 @@ export default class WalletDetailsPopup extends Vue {
 .wallet-details {
   color: $default-white;
   font-weight: 500;
-  height: 60px;
+  height: 90px;
   padding: 0 10px;
 
   .row {

@@ -37,6 +37,12 @@ export default class MnemonicBackupForm extends Vue {
 </script>
 
 <style lang="scss" scoped>
+.mnemonic-backup-form {
+  display: flex;
+  flex-flow: column;
+  gap: 10px;
+}
+
 .seed-hint {
   border-radius: $default-border-radius;
   width: 480px;

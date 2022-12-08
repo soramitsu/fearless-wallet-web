@@ -13,27 +13,28 @@
     <GoogleWalletsList v-else-if="haveWalletsToImport" :items="files" @getFile="getFile" />
 
     <template v-slot:control>
-      <Button v-if="!isLoading" size="big" fontSize="big" width="100%" :text="buttonText" @click="proceed" />
+      <Button
+        v-if="!isLoading"
+        size="big"
+        fontSize="big"
+        :disabled="isImportInProgress"
+        width="100%"
+        :text="buttonText"
+        @click="proceed"
+      />
     </template>
   </FlowStepLayout>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import type { KeyringPair$Json } from '@polkadot/keyring/types';
+import type { FilesState } from '@/interfaces';
 import GoogleWalletsList from '@/screens/addWallet/google/GoogleWalletsList.vue';
 import { getGoogleFile, getGoogleFiles, verifyToken } from '@/extension/messaging';
-import { IGDriveFile } from '@/interfaces';
 import { Components } from '@/router/routes';
 import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
-import BaseApi from '@/util/BaseApi';
 import NegativeMessage from '@/screens/addWallet/google/NegativeMessage.vue';
-
-interface FilesState extends IGDriveFile {
-  active?: boolean;
-  password?: string;
-  json?: KeyringPair$Json;
-}
+import { ETHEREUM_ADDRESS_PREFIX } from '@/consts/networks';
 
 @Component({
   components: {
@@ -48,6 +49,7 @@ export default class AddFromGoogle extends Vue {
   isLoading = true;
   step = 1;
   token = '';
+  ethereumRawSeed: any;
 
   get isAccessDenied() {
     return this.getToken === 'null';
@@ -59,6 +61,10 @@ export default class AddFromGoogle extends Vue {
 
   get getSteps() {
     return this.isLoading ? [] : [1, 2];
+  }
+
+  get isImportInProgress() {
+    return this.files.some((el) => el.isLoading);
   }
 
   get getToken() {
@@ -87,9 +93,9 @@ export default class AddFromGoogle extends Vue {
   async mounted() {
     await this.isTokenValid();
     this.token = this.getToken;
-    const fileResponse = await getGoogleFiles(this.token);
+    const { files } = await getGoogleFiles(this.token);
 
-    if (fileResponse && fileResponse.files.length === 0) {
+    if (files.length === 0) {
       this.$router.push({
         name: Components.CreateGoogle,
         params: {
@@ -101,15 +107,22 @@ export default class AddFromGoogle extends Vue {
       return;
     }
 
-    fileResponse.files.forEach(({ id, description, name }, index) => {
+    files.forEach(({ id, description, name }) => {
       const [prepName] = name.split('.');
-      this.files[index] = {
+      const [address, ethID] = description.split('/');
+      if (ethID === undefined) return;
+
+      this.files.push({
         id,
         name: prepName,
-        address: description,
+        address,
+        isComplete: false,
+        isLoading: false,
+        isError: false,
+        ethWalletID: ethID,
         password: '',
         active: false,
-      };
+      });
     });
 
     this.isLoading = false;
@@ -125,14 +138,17 @@ export default class AddFromGoogle extends Vue {
     this.step -= 1;
   }
 
-  async getFile(id: string, index: number) {
+  async getFile(id: string, key: number) {
     const file = await getGoogleFile(id, this.token);
 
-    this.setItemValue(index, { json: file });
+    file.address.startsWith(ETHEREUM_ADDRESS_PREFIX)
+      ? this.setItemValue(key, { ethJson: file })
+      : this.setItemValue(key, { json: file });
   }
 
   proceed() {
     if (this.isFinishForm || this.isAccessDenied) {
+      this.$router.replace('/');
       this.$router.push({ name: Components.Wallet });
 
       return;
@@ -142,7 +158,7 @@ export default class AddFromGoogle extends Vue {
   }
 
   setItemValue(index: number, data: Record<string, unknown>) {
-    this.files.splice(index, 1, { ...this.files[index], ...data });
+    this.$set(this.files, index, { ...this.files[index], ...data });
   }
 
   async isTokenValid() {
@@ -160,12 +176,6 @@ export default class AddFromGoogle extends Vue {
 
       return;
     }
-  }
-
-  saveKeypairFromJson(json: KeyringPair$Json, password: string) {
-    const { address } = BaseApi.addKeypairFromJson(json, password);
-
-    return address;
   }
 }
 </script>

@@ -3,7 +3,7 @@
     "createWallet": "Создать новый кошелек",
     "importWallet": "У меня уже есть кошелек",
     "connectMobile": "Подключить мобильный кошелек",
-    "manageGoogle": "Управление Google Drive",
+    "manageGoogle": "Подключить к Google Drive",
     "deFiWallet": "Децентрализованный кошелек из будущего",
     "agreeWith": "Продолжая, вы принимаете",
     "and": "и"
@@ -39,6 +39,7 @@
     "allDone": "Все готово!",
     "stayFearless": "Stay Fearless!",
     "accounts": "аккаунты",
+    "skipConfirmation": "Пропустить подтверждение",
     "substrateDP": "Substrate секретный путь деривации",
     "substrateCryptoType": "SUBSTRATE тип шифрования",
     "ethereumDP": "Ethereum секретный путь деривации",
@@ -89,6 +90,7 @@
       "fetchInfo": "Подтягиваем информацию из Google Drive",
       "backupWallet": "Cохранить в Google Drive",
       "saved": "Сохранено",
+      "dataWillStoreOnGDrive": "Кликая 'Подтвердить', вы соглашаетесь, чтобы ваши секретные ключи были сохранены в приватном хранилище Google Drive",
       "passphraseSaved": "Кошелек был успешно сохранен в Google Drive",
       "noWallets": "Не нашли кошельки в вашем Google Drive"
     }
@@ -174,7 +176,8 @@
     "addWallet": "Добавить кошелек",
     "networkUnavailable": "Сеть недоступна",
     "networkUnavailableSubtext": "Сеть недоступна, можете подождать или задать вопрос сообществу",
-    "nothingFound": "Ничего не найдено"
+    "nothingFound": "Ничего не найдено",
+    "googleExportSuccess": "Ваши приватные данные были успешно сохранены в Google Drive"
   },
   "asset": {
     "history": {
@@ -245,6 +248,7 @@
     "export": "Экспорт аккаунта",
     "exportJson": "Экспорт JSON",
     "wantExportJson": "Я хочу экспортировать JSON",
+    "validatePass": "Подтверждение пароля",
     "passwordWallet": "Пароль для текущего кошелька",
     "replace": "Заменить аккаунт",
     "switchNode": "Сменить ноду",

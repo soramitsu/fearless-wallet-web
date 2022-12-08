@@ -9,6 +9,7 @@ import { CachedUnlocks } from '../types';
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
+import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type {
   AccountJson,
   AllowedPath,
@@ -59,11 +60,10 @@ import type {
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { keyring } from '@/controllers/keyringChrome';
 import { googleManage } from '@/controllers/googleController';
-import { ICreateFile, IGetFileMetaResponse, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
+import { FilesResponse, GoogleAuthTypes, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
 
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
@@ -356,6 +356,16 @@ export default class Extension {
     }
   }
 
+  static jsonValid({ file, password }: RequestJsonRestore): boolean {
+    try {
+      keyring.restoreAccount(file, password);
+    } catch (error) {
+      return false;
+    }
+
+    return true;
+  }
+
   static batchRestore({ file, password }: RequestBatchRestore): void {
     try {
       keyring.restoreAccounts(file, password);
@@ -621,8 +631,8 @@ export default class Extension {
     return keyring.getAddresses();
   }
 
-  static initAuth(): void {
-    googleManage.authExtension();
+  static initAuth({ type, wallet }: GoogleAuthTypes): void {
+    googleManage.authExtension(type, wallet);
   }
 
   static async verifyToken({ token }: { token: string }): Promise<VerifyTokenResponse> {
@@ -639,12 +649,12 @@ export default class Extension {
     return googleManage.getFiles(token);
   }
 
-  static async getFile({ id, token }: GoogleFileId): Promise<string> {
+  static async getFile({ id, token }: GoogleFileId): Promise<KeyringPair$Json> {
     return googleManage.getFile(id, token);
   }
 
-  static async createFile({ json, options, token }: ICreateFile): Promise<void> {
-    googleManage.createFile({ json, options }, token);
+  static async createFile({ json, options, token }: ICreateFile): Promise<FilesResponse> {
+    return googleManage.createFile({ json, options, token });
   }
 
   static deleteFile({ id }: GoogleFileId): void {
@@ -753,6 +763,9 @@ export default class Extension {
       case 'pri(json.restore)':
         return Extension.jsonRestore(request as RequestJsonRestore);
 
+      case 'pri(json.valid)':
+        return Extension.jsonValid(request as RequestJsonRestore);
+
       case 'pri(json.batchRestore)':
         return Extension.batchRestore(request as RequestBatchRestore);
 
@@ -799,7 +812,7 @@ export default class Extension {
         return Extension.getFiles(request as { token: string });
 
       case 'pri(google.auth)':
-        return Extension.initAuth();
+        return Extension.initAuth(request as GoogleAuthTypes);
 
       case 'pri(google.verify.token)':
         return Extension.verifyToken(request as { token: string });

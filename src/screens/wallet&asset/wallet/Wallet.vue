@@ -88,6 +88,12 @@
 
     <NetworkUnavailablePopup v-if="showNetworkUnavailablePopup" :closePopup="setNetworkUnavailable" />
 
+    <GoogleExportPopup
+      v-if="showGoogleExportPopup"
+      :closePopup="closeGoogleExportPopup"
+      :selectedWallet="getWalletToExport"
+    />
+
     <Tooltip text="wallet.walletBalance" target=".wallet-balance" placement="right" />
     <Tooltip text="common.networkManagement" target=".select-network-button" placement="bottom" />
   </div>
@@ -96,17 +102,17 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
-import SendForm from '../SendForm.vue';
-import ReceiveForm from '../ReceiveForm.vue';
-import SelectNetworkButton from '../SelectNetworkButton.vue';
-import SelectNetworkPopup from '../SelectNetworkPopup.vue';
-import ContentSettings from './ContentSettings.vue';
-import Currencies from './Currencies.vue';
-import NFTs from './NFTs.vue';
 import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
 import type { TMutation, TabWallet } from '@/interfaces/common';
 import type { SetSelectedNetworkProps, SelectedWallet, SetCurrenciesProps, GetNetworkStatus } from '@/store';
 import type { Networks } from '@/interfaces';
+import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
+import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
+import ContentSettings from '@/screens/wallet&asset/wallet/ContentSettings.vue';
+import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
+import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
+import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
+import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import { accountController } from '@/controllers/accountController';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -116,6 +122,7 @@ import { addNumbers, formattedNumber, getChangeWalletBalance } from '@/helpers/n
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
+import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 
 @Component({
   components: {
@@ -129,6 +136,7 @@ import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavai
     SelectNetworkPopup,
     SelectNetworkButton,
     NetworkUnavailablePopup,
+    GoogleExportPopup,
   },
 })
 export default class Wallet extends Vue {
@@ -138,6 +146,7 @@ export default class Wallet extends Vue {
   showSendForm = false;
   showReceiveForm = false;
   showSelectNetworkPopup = false;
+  showGoogleExportPopup = false;
   networkUnavailable = '';
   currenciesKey = 0;
   activeTabName: TabWallet = 'Currencies';
@@ -169,6 +178,10 @@ export default class Wallet extends Vue {
 
   get disconnectedNetworks() {
     return this.networks.filter(({ status }) => status === 'disconnected');
+  }
+
+  get getWalletToExport() {
+    return this.$route.query.wallet;
   }
 
   get changeWalletBalance() {
@@ -241,6 +254,15 @@ export default class Wallet extends Vue {
 
   get showNfts() {
     return this.activeTabName === 'NFTs';
+  }
+
+  mounted() {
+    if (this.$route.params.access_token && this.$route.params.access_token !== 'null')
+      this.showGoogleExportPopup = true;
+  }
+
+  closeGoogleExportPopup() {
+    this.showGoogleExportPopup = false;
   }
 
   deactivated() {

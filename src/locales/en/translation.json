@@ -3,7 +3,7 @@
     "createWallet": "Create a new wallet",
     "importWallet": "Import wallet",
     "connectMobile": "Connect mobile",
-    "manageGoogle": "Google Drive manage",
+    "manageGoogle": "Connect Google Drive",
     "deFiWallet": "The DeFi Wallet From The Future",
     "agreeWith": "By continuing you agree with",
     "and": "and"
@@ -27,6 +27,7 @@
     "setupPassword": "Set up password",
     "addEthereumAccount": "Add ethereum account",
     "haveWrittenPassphrase": "I have written down passphrase",
+    "ConfirmSecretData": "Confirm secret data",
     "usingFearless": "Start using Fearless",
     "rawSeed": "{type} accounts raw seed",
     "restoreJson": "Restore JSON for {type} accounts",
@@ -39,6 +40,7 @@
     "allDone": "All done!",
     "stayFearless": "Stay Fearless!",
     "accounts": "accounts",
+    "skipConfirmation": "Skip confirmation",
     "substrateDP": "Substrate secret derivation path",
     "substrateCryptoType": "SUBSTRATE KEYPAIR CRYPTO TYPE",
     "ethereumDP": "Ethereum secret derivation path",
@@ -89,6 +91,7 @@
       "fetchInfo": "Fetching info from google",
       "backupWallet": "Google Drive backup",
       "saved": "Saved",
+      "dataWillStoreOnGDrive": "By clicking “Confirm” you agree with using Google Drive as a storage for your keys",
       "passphraseSaved": "The passphrase has been successfully saved on Google Drive",
       "noWallets": "No saved wallets have been found on the Google Drive"
     }
@@ -174,7 +177,8 @@
     "addWallet": "Add wallet",
     "networkUnavailable": "Network is unavailable",
     "networkUnavailableSubtext": "The network is unavailable, you can wait or ask a question to the community",
-    "nothingFound": "Nothing found"
+    "nothingFound": "Nothing found",
+    "googleExportSuccess": "The secret data has been successfully saved on Google Drive"
   },
   "asset": {
     "history": {
@@ -245,6 +249,7 @@
     "export": "Export account",
     "exportJson": "Export JSON",
     "wantExportJson": "I want to export JSON",
+    "validatePass": "Validate password",
     "passwordWallet": "Password for this wallet",
     "replace": "Replace account",
     "switchNode": "Switch node",

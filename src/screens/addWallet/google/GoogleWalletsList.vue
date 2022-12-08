@@ -23,7 +23,7 @@
                   typeText="text"
                   :placeholder="$t('addWallet.enterPassword')"
                   :showPassword="true"
-                  :readonly="file.isComplete"
+                  :readonly="file.isComplete || file.isLoading"
                   :isError="file.isError"
                   :errorDescriptions="$t('addWallet.warningMessages.jsonPassword.text')"
                 />
@@ -33,8 +33,8 @@
                   type="primary"
                   size="big"
                   :border="false"
-                  :iconName="file.isComplete ? 'check' : ''"
-                  :isLoading="file.isLoading"
+                  :iconName="file.isComplete ? 'check' : file.isLoading ? 'loader' : ''"
+                  :iconType="file.isLoading ? 'loading' : ''"
                   :disabled="!file.password.length || file.isLoading || file.isComplete"
                   :text="file.isLoading || file.isComplete ? '' : $t('common.confirm')"
                   @click="onConfirm(index)"
@@ -51,23 +51,13 @@
 <script lang="ts">
 import { Getter, Action } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { KeyringPair$Json } from '@polkadot/keyring/types';
+import type { FilesState, TAction } from '@/interfaces';
 import { cut } from '@/helpers/history';
-import { IGDriveFile, TAction } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { SelectedWallet, SetSelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
-
-interface FilesState extends IGDriveFile {
-  active?: boolean;
-  password?: string;
-  isError?: boolean;
-  isLoading?: boolean;
-  isComplete: boolean;
-  description: string;
-  json: KeyringPair$Json;
-}
+import { isJsonValid } from '@/extension/messaging';
 
 @Component
 export default class GoogleWalletsList extends Vue {
@@ -80,21 +70,25 @@ export default class GoogleWalletsList extends Vue {
   }
 
   async onConfirm(index: number) {
-    const { json, password } = this.items[index];
+    this.setItemValue(index, { isLoading: true });
 
-    if (!json || !password) return;
+    const { json, ethJson, password } = this.items[index];
 
-    const res = BaseApi.isValidJson(json, password);
+    if (!json || !ethJson || !password) return;
 
-    if (!res.value) {
-      this.setItemValue(index, { isError: true });
+    const res = await isJsonValid(json, password);
+
+    if (!res) {
+      this.setItemValue(index, { isError: true, isLoading: false });
 
       return false;
     }
 
+    BaseApi.addKeypairFromJson(ethJson, password);
+
     const pair = BaseApi.addKeypairFromJson(json, password);
 
-    this.setItemValue(index, { isComplete: true });
+    this.setItemValue(index, { isComplete: true, isLoading: false });
     this.setSelectedWallet({ selectedWalletAddress: pair.address || this.selectedWallet.address });
 
     return true;
@@ -102,13 +96,15 @@ export default class GoogleWalletsList extends Vue {
 
   onSelect(value: boolean, index: number) {
     const file = this.items[index];
+    const item = this.items[index];
 
     if (file.isComplete) return;
     else if (file.isComplete === undefined) {
       this.setItemValue(index, { isLoading: false, isComplete: false });
     }
 
-    if (this.items[index].json === undefined) this.$emit('getFile', this.items[index].id, index);
+    if (item.json === undefined) this.$emit('getFile', item.id, index);
+    if (item.ethJson === undefined) this.$emit('getFile', item.ethWalletID, index);
 
     this.setItemValue(index, { active: value });
   }

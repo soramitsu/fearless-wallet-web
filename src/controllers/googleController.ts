@@ -1,8 +1,10 @@
-import { Http } from './fetchController';
-import { CreateFileProp, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
+import axios from 'axios';
+import fetchAdapter from '@vespaiach/axios-fetch-adapter';
+import type { KeyringPair$Json } from '@polkadot/keyring/types';
+import type { FilesResponse, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
+import { createGoogleFile } from '@/extension/messaging';
 
 class GoogleManage {
-  http = Http.create();
   private readonly baseURL = 'https://www.googleapis.com/drive/v3';
   private readonly baseUploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
   private readonly extensionRedirectURL = 'https://nhlnehondigmgckngjomcpcefcdplmgc.chromiumapp.org/welcome';
@@ -13,6 +15,11 @@ class GoogleManage {
     access_type: 'online',
     prompt: 'consent',
     scope: 'https://www.googleapis.com/auth/drive.appdata',
+  };
+
+  urlTypes = {
+    main: 'google',
+    export: 'main/wallet',
   };
 
   public get config() {
@@ -34,6 +41,7 @@ class GoogleManage {
       ...this.baseAuthParams,
       redirect_uri: type === 'extension' ? this.extensionRedirectURL : `http://localhost:5500/${type}`,
     };
+
     Object.keys(params).forEach((key) => {
       prepUrl.searchParams.set(key, params[key]);
     });
@@ -42,7 +50,6 @@ class GoogleManage {
   }
 
   private prepareData(json: string, { name, address }: { name: string; address: string }) {
-    //TODO should it be resumable?
     return `--foo_bar_baz
 Content-Type: application/json; charset=UTF-8
 
@@ -60,14 +67,45 @@ ${json}
 --foo_bar_baz--`;
   }
 
-  public authExtension() {
+  public async saveSubstrateAndEthereumWallet(
+    json: string,
+    ethJson: string,
+    name: string,
+    address: string,
+    ethAddress: string,
+    token: string
+  ) {
+    const ethRes = await createGoogleFile({
+      json: JSON.stringify(ethJson),
+      options: { name, address: ethAddress },
+      token,
+    });
+
+    const res = await createGoogleFile({
+      json: JSON.stringify(json),
+      options: { name, address: `${address}/${ethRes.id}` },
+      token,
+    });
+
+    return res.id;
+  }
+
+  public authExtension(type: 'main' | 'export' = 'main', wallet?: string) {
     chrome.identity.launchWebAuthFlow({ url: this.authURL('extension'), interactive: true }, (url) => {
       const params: any = new Proxy(new URLSearchParams(url), {
         get: (searchParams, prop) => searchParams.get(prop as string),
       });
-      const urlToOpen = `${chrome.runtime.getURL('popup.html')}#/google/${params.access_token}`;
 
-      chrome.tabs.create({ url: urlToOpen });
+      const baseURL = `${chrome.runtime.getURL('popup.html')}#/${this.urlTypes[type]}/${params.access_token}`;
+      console.log(baseURL);
+
+      if (type === 'export' && wallet) {
+        chrome.tabs.create({ url: `${baseURL}?wallet=${wallet}` });
+
+        return;
+      }
+
+      chrome.tabs.create({ url: baseURL });
     });
   }
 
@@ -75,46 +113,63 @@ ${json}
     window.open(this.authURL('desktop'));
   }
 
-  public async getFiles(token?: string) {
-    return this.http.get<IGetFilesResponse>(
+  public async getFiles(token?: string): Promise<IGetFilesResponse> {
+    const { data } = await axios.get<IGetFilesResponse>(
       `${this.baseURL}/files?fields=files(id,name,description)&spaces=appDataFolder`,
       {
+        adapter: fetchAdapter,
         headers: {
           Authorization: `Bearer ${token}`,
           ...this.config.headers,
         },
       }
     );
+
+    return data;
   }
 
-  public async getFile(id: string, token?: string | undefined) {
-    return this.http.get<string>(`${this.baseURL}/files/${id}?alt=media`, {
+  public async getFile(id: string, token?: string | undefined): Promise<KeyringPair$Json> {
+    const { data } = await axios.get<KeyringPair$Json>(`${this.baseURL}/files/${id}?alt=media`, {
+      adapter: fetchAdapter,
       headers: {
         Authorization: `Bearer ${token}`,
         ...this.config.headers,
       },
     });
+
+    return data;
   }
 
-  public async verifyToken(token: string) {
-    return this.http.get<VerifyTokenResponse>(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`);
+  public async verifyToken(token: string): Promise<VerifyTokenResponse> {
+    const { data } = await axios.get<VerifyTokenResponse>(
+      `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`,
+      {
+        adapter: fetchAdapter,
+      }
+    );
+
+    return data;
   }
 
-  async createFile({ json, options }: CreateFileProp, token?: string) {
-    const data = this.prepareData(json, options);
-    const length = data.length;
+  async createFile({ json, options, token }: ICreateFile): Promise<FilesResponse> {
+    const prepData = this.prepareData(json, options);
+    const length = prepData.length;
 
-    return this.http.post(this.baseUploadUrl, data, {
+    const { data } = await axios.post<FilesResponse>(this.baseUploadUrl, prepData, {
+      adapter: fetchAdapter,
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'multipart/related; boundary=foo_bar_baz',
         'Content-Length': length.toString(),
       },
     });
+
+    return data;
   }
 
   async deleteFile(id: string, token: string) {
-    this.http.delete(this.baseURL, {
+    axios.delete(this.baseURL, {
+      adapter: fetchAdapter,
       params: {
         fields: id,
       },

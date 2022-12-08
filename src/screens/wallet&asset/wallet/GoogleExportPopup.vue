@@ -1,9 +1,11 @@
 <template>
   <Popup headerType="success" sizeWidth="big" :handlerClose="closePopup" :zIndex="399">
     <div class="popup-content">
-      <Icon :icon="getIconName" className="icon__lock-green" />
+      <template v-if="!isFileUploading">
+        <Icon :icon="getIconName" className="icon__lock-green" iconColor="success" />
 
-      <div class="text row">{{ $t('accounts.validatePass') }}</div>
+        <div class="text row">{{ popupMessage }}</div>
+      </template>
 
       <template v-if="isAwaitsConfirmation">
         <ValidatedInput
@@ -22,11 +24,7 @@
 
       <Loader v-if="isFileUploading" />
 
-      <template v-if="isFileUploaded">
-        <div class="descriptions">
-          <span>{{ $t('wallet.googleExportSuccess') }}</span>
-        </div>
-      </template>
+      <span v-if="isFileUploaded" class="descriptions">{{ $t('wallet.googleExportSuccess') }}</span>
 
       <Button
         v-if="!isFileUploading"
@@ -86,6 +84,8 @@ export default class GoogleExportPopup extends Vue {
   }
 
   async onConfirm() {
+    if (this.isFileUploaded) this.closePopup();
+
     const pair = BaseApi.getPair(this.selectedWallet);
 
     try {
@@ -96,6 +96,7 @@ export default class GoogleExportPopup extends Vue {
       return;
     }
 
+    this.isFileUploading = true;
     const ethJson = await createGoogleFile({
       json: JSON.stringify(BaseApi.getPair(pair.meta.ethereumAddress as string).toJson(this.password)),
       options: {
@@ -115,7 +116,7 @@ export default class GoogleExportPopup extends Vue {
       },
       token: this.$route.params.access_token,
     });
-
+    this.isFileUploading = false;
     if (ethJson.id && substrateJson.id) this.isFileUploaded = true;
   }
 }
@@ -153,10 +154,11 @@ export default class GoogleExportPopup extends Vue {
   .descriptions {
     display: flex;
     justify-content: space-between;
-    background: $secondary-background-color;
+    color: $gray-color;
     border-radius: 50px;
     margin-bottom: 20px;
     padding: 12px;
+    max-width: 350px;
 
     .s-icon-arrows-arrow-right-24 {
       color: rgba(255, 255, 255, 0.3);

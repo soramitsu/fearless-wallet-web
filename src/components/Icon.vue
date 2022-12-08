@@ -11,6 +11,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 export default class Icon extends Vue {
   @Prop(String) icon!: string;
   @Prop(String) iconColor?: string;
+  @Prop(String) refName?: string;
   @Prop({ type: String, default: '32px' }) width!: string;
   @Prop({ type: String, default: '32px' }) height!: string;
   @Prop({ default: '' }) className!: string[] | string;

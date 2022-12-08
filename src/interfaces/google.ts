@@ -19,8 +19,8 @@ interface FileData extends IGDriveFile {
   ethJson: KeyringPair$Json;
 }
 
-export type FilesState = Partial<FileData>;
-export interface FilesResponse {
+type FilesState = Partial<FileData>;
+interface FilesResponse {
   id: string;
   name: string;
   description: string;
@@ -40,13 +40,13 @@ interface CreateFileProp {
   };
 }
 
-export interface ICreateFile {
+interface ICreateFile {
   json: string;
-  options: { name: string; address: string };
+  options: { name: string; address: string; password?: string };
   token: string;
 }
 
-export interface IGetFileMetaResponse {
+interface IGetFileMetaResponse {
   description: string;
 }
 
@@ -57,6 +57,27 @@ interface VerifyTokenResponse {
   expires_in: number;
   access_type: 'online' | 'offline';
 }
-export type GoogleResponse<T> = Promise<AxiosResponse<T>>;
+type GoogleResponse<T> = Promise<AxiosResponse<T>>;
+interface GoogleAuthTypes {
+  type: 'main' | 'export';
+  wallet?: string;
+}
 
-export { IGetFilesResponse, VerifyTokenResponse, IGDriveFile, CreateFileProp };
+type GoogleAuthRequest = {
+  type: GoogleAuthTypes;
+  wallet: string;
+};
+
+export {
+  IGetFilesResponse,
+  VerifyTokenResponse,
+  IGetFileMetaResponse,
+  GoogleAuthTypes,
+  ICreateFile,
+  FilesState,
+  IGDriveFile,
+  GoogleResponse,
+  FilesResponse,
+  CreateFileProp,
+  GoogleAuthRequest,
+};

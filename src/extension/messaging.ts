@@ -31,7 +31,7 @@ import type { Chain } from '@polkadot/extension-chains/types';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import { FilesResponse, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces/google';
+import { FilesResponse, GoogleAuthTypes, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
 
 const metadataGets = new Map<string, Promise<MetadataDef | null>>();
 
@@ -354,8 +354,8 @@ export async function verifyToken(token: string): Promise<VerifyTokenResponse> {
   return sendMessage('pri(google.verify.token)', { token });
 }
 
-export async function initGoogleAuth(): Promise<void> {
-  return sendMessage('pri(google.auth)');
+export async function initGoogleAuth(type: GoogleAuthTypes['type'] = 'main', wallet?: string): Promise<void> {
+  return sendMessage('pri(google.auth)', { type, wallet });
 }
 
 export async function getGoogleFiles(token: string): Promise<IGetFilesResponse> {

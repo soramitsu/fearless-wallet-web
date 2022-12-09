@@ -2,7 +2,7 @@
   <div :class="popupBackgroundClasses" :style="popupBackgroundStyles" @click="backgroundClick">
     <Corners size="big" :topLeftCorner="showBorder" :bottomRightCorner="showBorder" :style="popupContainerStyle">
       <div :class="popupContainerClasses" :style="popupContainerStyles">
-        <div v-if="showHeader" class="header">
+        <div v-if="showHeader" class="header" :class="headerCentered">
           <SearchInput v-if="showSearch" v-model="filterValue" :placeholder="placeholder" width="235px" />
 
           <template v-else>
@@ -14,7 +14,7 @@
             </div>
           </template>
 
-          <SButton type="link" class="button-close" @click="close">
+          <SButton v-if="showCloseButton" type="link" class="button-close" @click="close">
             <SIcon name="basic-close-24" />
           </SButton>
         </div>
@@ -58,6 +58,7 @@ export default class Popup extends Vue {
   @Prop({ default: false }) showSearch!: boolean;
   @Prop({ default: false }) showBorder!: boolean;
   @Prop({ default: 'medium' }) sizeWidth!: Size;
+  @Prop({ type: Boolean, default: true }) showCloseButton!: boolean;
   @Prop({ default: 'center' }) horizontalPlacement!: HorizontalPlacement;
   @Prop({ default: 'center' }) verticalPlacement!: VerticalPlacement;
   @Prop({ default: 'default' }) headerType!: HeaderType;
@@ -103,6 +104,10 @@ export default class Popup extends Vue {
     if (this.maxHeight) styles.maxHeight = `${this.maxHeight}px`;
 
     return styles;
+  }
+
+  get headerCentered() {
+    return !this.showCloseButton ? 'header--centered' : '';
   }
 
   get headerClasses() {
@@ -246,6 +251,10 @@ export default class Popup extends Vue {
     .header-text-failed {
       color: $reject-color;
     }
+  }
+  .header--centered {
+    align-items: center;
+    justify-content: center;
   }
 
   .s-icon-basic-close-24 {

@@ -8,7 +8,7 @@
       :class="buttonClasses"
       @click="$emit('click')"
     >
-      <Icon v-if="shouldBeWithIcon" :icon="prepIconName" :className="prepIconClass" icon-color="pink" />
+      <Icon v-if="shouldBeWithIcon" :icon="prepIconName" :className="prepIconClass" :iconColor="iconColor" />
 
       {{ tText }}
     </SButton>
@@ -31,7 +31,7 @@ export default class Button extends Vue {
   @Prop(String) width!: string;
   @Prop(String) iconName!: string;
   @Prop(String) iconType!: string;
-  @Prop(String) iconColor!: string;
+  @Prop({ type: String, default: 'default' }) iconColor!: string;
   @Prop({ default: 'primary' }) type!: Type;
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'medium' }) fontSize!: FontSize;

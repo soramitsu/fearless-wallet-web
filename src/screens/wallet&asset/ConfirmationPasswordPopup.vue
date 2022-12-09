@@ -1,5 +1,12 @@
 <template>
-  <Popup :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close" :zIndex="399">
+  <Popup
+    :headerType="headerType"
+    sizeWidth="big"
+    :headerText="popupHeader"
+    :showCloseButton="showCloseButton"
+    :handlerClose="close"
+    :zIndex="399"
+  >
     <div class="popup-content">
       <template v-if="!isTransactionInit && !isSignMobile">
         <Icon icon="lock-green" className="icon__lock-green" iconColor="success" />
@@ -127,6 +134,10 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.transactionStatus === 'failed') return 'failed';
 
     return 'pending';
+  }
+
+  get showCloseButton() {
+    return !this.isTransactionPending && !this.isSignMobile;
   }
 
   get popupHeader() {

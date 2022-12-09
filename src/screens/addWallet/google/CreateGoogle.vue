@@ -227,6 +227,7 @@ export default class CreateGoogle extends Vue {
 
   back() {
     if (this.step === 1) {
+      this.$router.replace('/');
       this.$router.push({ name: Components.Welcome });
 
       return;
@@ -237,6 +238,7 @@ export default class CreateGoogle extends Vue {
 
   proceed() {
     if (this.step === this.countSteps) {
+      this.$router.replace('/');
       this.$router.push({ name: Components.Wallet });
 
       return;

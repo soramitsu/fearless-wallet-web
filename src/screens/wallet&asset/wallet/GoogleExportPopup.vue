@@ -73,11 +73,13 @@ export default class GoogleExportPopup extends Vue {
 
     return 'lock-green';
   }
-  get popupMessage() {
-    if (this.isAwaitsConfirmation) return this.$t('addWallet.google.saved');
 
-    return this.$t('accounts.validatePass');
+  get popupMessage() {
+    if (this.isAwaitsConfirmation) return this.$t('accounts.validatePass');
+
+    return this.$t('addWallet.google.saved');
   }
+
   @Watch('password')
   resetStatusError() {
     this.isErrorPassword = false;

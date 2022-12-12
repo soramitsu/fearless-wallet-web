@@ -205,7 +205,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     if (this.isTransactionFinished) {
-      this.currency?.clearSendStatus();
+      this.currency?.setTransactionStatus();
       this.transactionState = undefined;
 
       this.$emit('close', true);

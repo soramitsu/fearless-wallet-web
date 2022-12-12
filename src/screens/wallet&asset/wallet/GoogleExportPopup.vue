@@ -69,15 +69,15 @@ export default class GoogleExportPopup extends Vue {
   }
 
   get getIconName() {
-    if (this.isFileUploaded) return 'check';
-
-    return 'lock-green';
+    return this.isFileUploaded ? 'check' : 'lock-green';
   }
+
   get popupMessage() {
-    if (this.isAwaitsConfirmation) return this.$t('addWallet.google.saved');
+    if (this.isAwaitsConfirmation) return this.$t('accounts.validatePass');
 
-    return this.$t('accounts.validatePass');
+    return this.$t('addWallet.google.saved');
   }
+
   @Watch('password')
   resetStatusError() {
     this.isErrorPassword = false;
@@ -120,7 +120,9 @@ export default class GoogleExportPopup extends Vue {
       },
       token: this.$route.params.access_token,
     });
+
     this.isFileUploading = false;
+
     if (ethJson.id && substrateJson.id) this.isFileUploaded = true;
   }
 }

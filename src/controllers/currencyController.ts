@@ -25,6 +25,7 @@ import {
   getOrmlOptions,
 } from '@/util/teleport';
 import { getReplacedMetaTyped } from '@/helpers/common';
+import { statusLogging } from '@/helpers/currencies';
 import { createExtrinsicTransfer } from '@/util/assets';
 import { BeaconSigner } from '@/extension/background/extension-base/src/background/BeaconSigner';
 import store from '@/store';
@@ -588,13 +589,15 @@ export default class CurrencyController {
     this.transactionStatus = 'pending';
 
     try {
-      await this.extrinsic!.signAndSend(account, options, this.statusCallback(from));
+      await this.extrinsic!.signAndSend(
+        account,
+        options,
+        statusLogging(() => this.statusCallback(from, 'success'))
+      );
 
       if (typeof account !== 'string' && !isSavePass) account.lock();
     } catch (ex) {
-      this.transactionStatus = 'failed';
-
-      this.setMockHistory(from, false);
+      this.statusCallback(from, 'failed');
 
       console.info(`Transaction failed ${ex}`);
 
@@ -605,31 +608,18 @@ export default class CurrencyController {
   }
 
   /**
-   * log status transaction
+   * Status callback
    */
-  private statusCallback(from: string) {
-    return (result: ISubmittableResult) => {
-      const { status } = result;
-
-      if (status.isInBlock) {
-        console.info(`Successful transfer with hash ${status.asInBlock.toHex()}`);
-
-        this.transactionStatus = 'success';
-
-        this.setMockHistory(from, true);
-      } else if (status.isFinalized) {
-        console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
-      } else {
-        console.info(`Status of transfer: ${status.type}`);
-      }
-    };
+  private statusCallback(from: string, status?: TransactionStatus) {
+    this.setTransactionStatus(status);
+    this.setMockHistory(from, status === 'success');
   }
 
   /**
-   * clear transaction status
+   * Set transaction status
    */
-  public clearSendStatus() {
-    this.transactionStatus = undefined;
+  public setTransactionStatus(status?: TransactionStatus) {
+    this.transactionStatus = status;
   }
 
   /**

@@ -4,8 +4,8 @@
     :showAdvancedForm="showAdvancedForm"
     :step="step"
     :header="header"
-    @back="back"
     :showFullScreenIcon="false"
+    @back="back"
   >
     <NickNameForm v-if="nickNameStep" :nickname="nickname" @update:nickname="setNickname" />
 
@@ -108,27 +108,22 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 })
 export default class CreateGoogle extends Vue {
   readonly countSteps = 5;
-  step = 1;
-  nickname = '';
-  mnemonic = '';
-  selectedMnemonicElements: MnemonicConfirmation[] = [];
-  showAdvancedForm = false;
-  walletPassword = '';
-  derivationPaths = INITIAL_DERIVATION_PATHS;
-  showNotificationPopup = false;
-  notificationHeaders = { text: 'addWallet.google.saved', subtext: 'addWallet.google.passphraseSaved' };
-  jsonInvalid = {
-    text: 'addWallet.warningMessages.jsonInvalid.text',
-    subtext: 'addWallet.warningMessages.jsonInvalid.subtext',
-  };
-
-  buttonTextForStep: Record<number, TranslateResult> = {
+  readonly buttonTextForStep: Record<number, TranslateResult> = {
     1: this.$t('common.continue'),
     2: this.$t('addWallet.haveWrittenPassphrase'),
     3: this.$t('addWallet.ConfirmSecretData'),
     4: this.$t('common.confirm'),
     5: this.$t('common.finish'),
   };
+
+  selectedMnemonicElements: MnemonicConfirmation[] = [];
+  step = 1;
+  nickname = '';
+  mnemonic = '';
+  showAdvancedForm = false;
+  walletPassword = '';
+  derivationPaths = INITIAL_DERIVATION_PATHS;
+  showNotificationPopup = false;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
@@ -237,6 +232,7 @@ export default class CreateGoogle extends Vue {
 
   proceed() {
     if (this.step === this.countSteps) {
+      this.$router.replace('/');
       this.$router.push({ name: Components.Wallet });
 
       return;

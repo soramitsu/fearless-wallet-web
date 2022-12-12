@@ -1,3 +1,4 @@
+import { ISubmittableResult } from '@polkadot/types/types';
 import type { Currencies, Currency, Networks, RelayChainName, Balances, NetworkName } from '@/interfaces';
 import type { Wallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
@@ -162,4 +163,27 @@ function getUtilityAsset(currencies: Currencies, _network: NetworkName): string 
   return currency.displayName;
 }
 
-export { getCurrencyOptions, getProviderUrl, defaultSortingCurrencies, getMockCurrencies, getUtilityAsset };
+function statusLogging(callback: () => void) {
+  return (result: ISubmittableResult) => {
+    const { status } = result;
+
+    if (status.isInBlock) {
+      console.info(`Successful transfer with hash ${status.asInBlock.toHex()}`);
+
+      callback();
+    } else if (status.isFinalized) {
+      console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
+    } else {
+      console.info(`Status of transfer: ${status.type}`);
+    }
+  };
+}
+
+export {
+  getCurrencyOptions,
+  getProviderUrl,
+  defaultSortingCurrencies,
+  getMockCurrencies,
+  getUtilityAsset,
+  statusLogging,
+};

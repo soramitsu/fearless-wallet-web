@@ -48,11 +48,10 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   async deleteWallet() {
-    const walletType = BaseApi.getWalletType(this.selectedWalletAddress);
-    const walletsCount =
-      walletType === 'native'
-        ? BaseApi.deleteNativeWallet(this.selectedWalletAddress)
-        : await BaseApi.deleteMobileWallet(this.selectedWalletAddress);
+    const isMobile = BaseApi.isMobileWallet(this.selectedWalletAddress);
+    const walletsCount = isMobile
+      ? await BaseApi.deleteMobileWallet(this.selectedWalletAddress)
+      : BaseApi.deleteNativeWallet(this.selectedWalletAddress);
 
     if (walletsCount === 0) this.$router.push({ name: Components.Welcome });
     else {

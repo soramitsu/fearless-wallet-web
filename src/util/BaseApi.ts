@@ -456,8 +456,9 @@ export default class BaseApi {
   static async deleteMobileWallet(address: string): Promise<number> {
     BaseApi.forgetAddress(address);
 
-    await forgetAccount(address, 'mobile');
-    await beaconController.resetConnection();
+    beaconController.resetConnection();
+
+    forgetAccount(address, 'mobile');
 
     return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
   }

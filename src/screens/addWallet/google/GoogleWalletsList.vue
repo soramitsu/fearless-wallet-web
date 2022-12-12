@@ -26,7 +26,7 @@
                   :showPassword="true"
                   :readonly="file.isComplete || file.isLoading"
                   :isError="file.isError"
-                  :errorDescriptions="$t('addWallet.warningMessages.jsonPassword.text')"
+                  :errorDescriptions="$t('common.invalidPassword')"
                 />
 
                 <Button

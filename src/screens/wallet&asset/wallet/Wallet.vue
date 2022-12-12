@@ -211,7 +211,7 @@ export default class Wallet extends Vue {
 
     if (address === '') return [];
 
-    const sequence = accountController.getSequenceAssetsByAddress(address);
+    const sequence = accountController.getSequenceAssetsByAddress(address, this.selectedNetwork);
 
     return this.currencies.sort((currency1, currency2) => {
       const { assetId: assetId1 } = currency1;
@@ -302,19 +302,19 @@ export default class Wallet extends Vue {
     const currenciesVisibleWithBalance = this.currencies.filter(
       (currency) =>
         currency.getCurrencyVisibility(this.selectedWallet.address) &&
-        currency.getTotalCountAssets(this.selectedWallet) !== '0'
+        currency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork) !== '0'
     );
 
     const currenciesInvisibleWithBalance = this.currencies.filter(
       (currency) =>
         !currency.getCurrencyVisibility(this.selectedWallet.address) &&
-        currency.getTotalCountAssets(this.selectedWallet) !== '0'
+        currency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork) !== '0'
     );
 
     const currenciesInvisibleWithoutBalance = this.currencies.filter(
       (currency) =>
         !currency.getCurrencyVisibility(this.selectedWallet.address) &&
-        currency.getTotalCountAssets(this.selectedWallet) === '0'
+        currency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork) === '0'
     );
 
     this.setCurrencies({
@@ -324,6 +324,7 @@ export default class Wallet extends Vue {
         ...currenciesInvisibleWithoutBalance,
       ],
       address: this.selectedWallet.address,
+      network: this.selectedNetwork,
     });
 
     this.currenciesKey += 1;

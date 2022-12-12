@@ -5,7 +5,7 @@ import CurrencyController from '@/controllers/currencyController';
 import NetworksController from '@/controllers/networksController';
 import { MAIN_NETWORKS } from '@/consts/networks';
 import { getIconName } from '@/helpers/imgPath';
-import { mockBalance } from '@/consts/currencies';
+import { mockFPBalance } from '@/consts/currencies';
 
 type CurrencyMock = {
   mainNetwork: string;
@@ -80,7 +80,7 @@ function getMockCurrencies(networks: Networks): Currencies {
             const isEthereumAccountType = BaseApi.getPair(address).type === 'ethereum';
 
             if ((isEthereumNetwork && isEthereumAccountType) || (!isEthereumNetwork && !isEthereumAccountType))
-              balance[address] = mockBalance;
+              balance[address] = mockFPBalance;
           });
         });
 
@@ -97,13 +97,15 @@ function getMockCurrencies(networks: Networks): Currencies {
   return currencies;
 }
 
-function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet) {
-  const relayChains = [];
-  const currenciesWithAssets = currencies.filter((currency) => currency.getTotalCountAssets(wallet) !== '0');
-  const currenciesWithoutAssets = currencies.filter((currency) => currency.getTotalCountAssets(wallet) === '0');
+function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet, network?: NetworkName) {
+  const currenciesWithAssets = currencies.filter((currency) => currency.getTotalCountAssets(wallet, network) !== '0');
+  const currenciesWithoutAssets = currencies.filter(
+    (currency) => currency.getTotalCountAssets(wallet, network) === '0'
+  );
 
-  const dotIndex = currenciesWithoutAssets.findIndex(({ asset }) => asset === 'dot');
-  const ksmIndex = currenciesWithoutAssets.findIndex(({ asset }) => asset === 'ksm');
+  const relayChains = [];
+  const dotIndex = currenciesWithoutAssets.findIndex(({ displayName }) => displayName === 'dot');
+  const ksmIndex = currenciesWithoutAssets.findIndex(({ displayName }) => displayName === 'ksm');
 
   if (dotIndex !== -1) {
     const dot = currenciesWithoutAssets.splice(dotIndex, 1)[0];
@@ -118,8 +120,8 @@ function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet) {
   }
 
   currenciesWithAssets.sort((currency1, currency2) => {
-    const totalBalanceOne = +currency1.getTotalBalance(wallet);
-    const totalBalanceTwo = +currency2.getTotalBalance(wallet);
+    const totalBalanceOne = +currency1.getTotalBalance(wallet, network);
+    const totalBalanceTwo = +currency2.getTotalBalance(wallet, network);
 
     return totalBalanceTwo - totalBalanceOne;
   });

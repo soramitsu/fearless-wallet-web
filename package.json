@@ -115,7 +115,7 @@
   "license": "Apache-2.0",
   "lint-staged": {
     "*.{js,jsx,vue,ts,tsx}": [
-      "vue-cli-service lint --fix",
+      "vue-cli-service --mode production lint --fix",
       "git add"
     ]
   }

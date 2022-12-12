@@ -12,6 +12,7 @@ import type {
   FiatJson,
   NetworkStatus,
   Node,
+  NetworkName,
 } from '@/interfaces';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { KeyringJson } from '@polkadot/ui-keyring/types';
@@ -21,17 +22,17 @@ import type { State } from '@/store/networks/state';
 import type { Mutations } from '@/store/networks/mutations';
 
 // getters
-export type GetNetwork = (networkName: string) => Network;
+export type GetNetwork = (networkName: NetworkName) => Network;
 
-export type GetNetworkGenesisHash = (networkName: string) => HexString;
+export type GetNetworkGenesisHash = (networkName: NetworkName) => HexString;
 
 export type GetAssetName = (assetId: string) => string;
 
 export type GetAssetPrice = (assetId: string) => AssetPrice;
 
-export type GetNetworkStatus = (networkName: string) => NetworkStatus;
+export type GetNetworkStatus = (networkName: NetworkName) => NetworkStatus;
 
-export type GetActiveNodesByNetwork = (networkName: string) => Node;
+export type GetActiveNodesByNetwork = (networkName: NetworkName) => Node;
 
 // Mutations
 export type SetNetworksStatusProps = {
@@ -55,14 +56,15 @@ export type SetAssetsPriceIntervalProps = {
 };
 
 export type SetCurrenciesProps = {
-  currencies: Currencies;
+  currencies: Currencies | Record<NetworkName, Currencies>;
   address?: string;
+  network?: NetworkName;
 };
 
 export type SetHistoryProps = {
   history: HistoryItem;
   walletAddress: string;
-  networkName: string;
+  networkName: NetworkName;
   isPreviously: boolean;
   assetId: string;
   isMock?: true;
@@ -70,27 +72,27 @@ export type SetHistoryProps = {
 
 export type UpdateCurrencyBalanceProps = {
   walletAddress: string;
-  network: string;
+  network: NetworkName;
   assetId: string;
   balance: AccountBalance;
   parentId: string | undefined;
 };
 
 export type SetActiveNodeProps = {
-  network: string;
+  network: NetworkName;
   name: string;
   url: string;
   saveNode: boolean;
 };
 
 export type SetNetworkApiProps = {
-  network: string;
+  network: NetworkName;
   provider?: WsProvider;
   api?: ApiPromise;
 };
 
 export type SetNetworkStatusProps = {
-  network: string;
+  network: NetworkName;
   status: NetworkStatus;
 };
 
@@ -102,7 +104,7 @@ export type LoadJsons = {
 };
 
 export type LoadHistory = {
-  networkName: string;
+  networkName: NetworkName;
   walletAddress: string;
   assetId: string;
   pageSize: number;
@@ -116,7 +118,7 @@ export type SubscribeToBalances = {
 };
 
 export type ToggleActiveNode = {
-  network: string;
+  network: NetworkName;
   nodeName?: string;
   nodeUrl?: string;
   oldNodeUrl?: string;

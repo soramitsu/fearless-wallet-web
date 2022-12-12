@@ -29,7 +29,7 @@ import { createExtrinsicTransfer } from '@/util/assets';
 import { BeaconSigner } from '@/extension/background/extension-base/src/background/BeaconSigner';
 import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
-import { mockBalance } from '@/consts/currencies';
+import { mockBalance, mockFPBalance } from '@/consts/currencies';
 import { saveTimeoutCache } from '@/extension/messaging';
 
 type TransactionStatus = 'success' | 'failed' | 'pending';
@@ -127,7 +127,7 @@ export default class CurrencyController {
         ? balance[ethereumAddress]
         : balance[address];
 
-      return { network, type, precision, existentialDeposit, balance: walletBalance ?? mockBalance, assetId };
+      return { network, type, precision, existentialDeposit, balance: walletBalance ?? mockFPBalance, assetId };
     });
   }
 
@@ -147,7 +147,7 @@ export default class CurrencyController {
         reserved: obj.reserved.add(reserved),
         transferable: obj.transferable.add(transferable),
       };
-    }, mockBalance);
+    }, mockFPBalance);
   }
 
   /**
@@ -170,9 +170,12 @@ export default class CurrencyController {
    */
   public getBalanceInNetwork(wallet: Wallet, _network: string) {
     const walletBalance = this.getWalletBalance(wallet);
-    const { frozen, locked, reserved, total, transferable } = walletBalance.find(
-      ({ network }) => network === _network
-    )!.balance;
+
+    const balance = walletBalance.find(({ network }) => network === _network)?.balance;
+
+    if (balance === undefined) return mockBalance;
+
+    const { frozen, locked, reserved, total, transferable } = balance;
 
     return {
       frozen: {

@@ -66,6 +66,7 @@ import type { SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
+import { windowOpen } from '@/extension/messaging';
 
 @Component
 export default class Header extends Vue {
@@ -116,7 +117,7 @@ export default class Header extends Vue {
   }
 
   openFullScreen() {
-    BaseApi.windowOpen('/');
+    windowOpen('/');
   }
 
   toggleSettingsVisible() {

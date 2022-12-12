@@ -542,7 +542,15 @@ export default class Extension {
     return true;
   }
 
-  static windowOpen(path: AllowedPath): boolean {
+  static async windowOpen(path: AllowedPath): Promise<boolean> {
+    const [tab] = await chrome.tabs.query({ title: 'fearless-wallet' });
+
+    if (tab && tab.id) {
+      chrome.tabs.update(tab.id, { active: true });
+
+      return true;
+    }
+
     const url = `${chrome.runtime.getURL('popup.html')}#${path}`;
 
     if (!ALLOWED_PATH.includes(path)) {

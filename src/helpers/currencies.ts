@@ -99,12 +99,12 @@ function getMockCurrencies(networks: Networks): Currencies {
 }
 
 function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet, network?: NetworkName) {
+  const relayChains = [];
   const currenciesWithAssets = currencies.filter((currency) => currency.getTotalCountAssets(wallet, network) !== '0');
   const currenciesWithoutAssets = currencies.filter(
     (currency) => currency.getTotalCountAssets(wallet, network) === '0'
   );
 
-  const relayChains = [];
   const dotIndex = currenciesWithoutAssets.findIndex(({ displayName }) => displayName === 'dot');
   const ksmIndex = currenciesWithoutAssets.findIndex(({ displayName }) => displayName === 'ksm');
 

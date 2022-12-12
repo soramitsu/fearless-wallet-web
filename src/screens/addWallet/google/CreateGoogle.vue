@@ -72,6 +72,14 @@
         />
       </div>
     </template>
+
+    <NotificationPopup
+      v-if="showNotificationPopup"
+      :headers="invalidMessages"
+      acceptButtonText="common.accept"
+      :handlerClose="handlerCloseNotificationPopup"
+      :handlerAccept="handlerAcceptAddWallet"
+    />
   </FlowStepLayout>
 </template>
 
@@ -94,6 +102,7 @@ import { createGoogleFile } from '@/extension/messaging';
 import { SelectedWallet, SetSelectedWallet } from '@/store/accounts/types';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { WarningValueName } from '@/consts/messages';
 
 @Component({
   components: {
@@ -117,10 +126,19 @@ export default class CreateGoogle extends Vue {
   derivationPaths = INITIAL_DERIVATION_PATHS;
   showNotificationPopup = false;
   notificationHeaders = { text: 'addWallet.google.saved', subtext: 'addWallet.google.passphraseSaved' };
-  jsonInvalid = {
-    text: 'addWallet.warningMessages.jsonInvalid.text',
-    subtext: 'addWallet.warningMessages.jsonInvalid.subtext',
-  };
+
+  warningValueName: WarningValueName = '';
+
+  get invalidMessages() {
+    if (!this.warningValueName) return {};
+
+    const mainPath = `addWallet.warningMessages.${this.warningValueName}`;
+
+    return {
+      text: `${mainPath}.text`,
+      subtext: `${mainPath}.subtext`,
+    };
+  }
 
   buttonTextForStep: Record<number, TranslateResult> = {
     1: this.$t('common.continue'),
@@ -225,6 +243,18 @@ export default class CreateGoogle extends Vue {
     this.step += 1;
   }
 
+  async handlerCloseNotificationPopup() {
+    this.warningValueName = '';
+    this.selectedMnemonicElements = [];
+    this.showNotificationPopup = false;
+  }
+
+  async handlerAcceptAddWallet() {
+    this.warningValueName = '';
+
+    this.step += 1;
+  }
+
   back() {
     if (this.step === 1) {
       this.$router.replace('/');
@@ -251,6 +281,7 @@ export default class CreateGoogle extends Vue {
       );
 
       if (!isValidSequenceMnemonic) {
+        this.warningValueName = 'mnemonicSequence';
         this.showNotificationPopup = true;
 
         return;

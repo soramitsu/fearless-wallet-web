@@ -16,7 +16,7 @@ export default class Tooltip extends Vue {
   @Prop({ default: '' }) text!: ComponentText;
   @Prop(String) target!: string;
   @Prop({ default: 'top' }) placement!: Placement;
-  @Prop(String) trigger!: string;
+  @Prop(String) trigger?: string;
 
   get language() {
     return this.$root.$i18n.locale;

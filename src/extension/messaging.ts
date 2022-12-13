@@ -59,7 +59,7 @@ interface Handler {
 }
 
 type Handlers = Record<string, Handler>;
-const port = chrome.runtime ? chrome.runtime.connect({ name: PORT_EXTENSION }) : null;
+const port = chrome.runtime ? chrome.runtime.connect('nhlnehondigmgckngjomcpcefcdplmgc') : null;
 const handlers: Handlers = {};
 
 // setup a listener for messages, any incoming resolves the promise

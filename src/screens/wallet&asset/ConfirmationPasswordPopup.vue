@@ -8,7 +8,7 @@
     :zIndex="399"
   >
     <div class="popup-content">
-      <template v-if="!isTransactionInit && !isSignMobile">
+      <template v-if="isTransactionNotInit && !isSignMobile">
         <Icon icon="lock-green" className="icon__lock-green" iconColor="success" />
 
         <div class="text row">{{ $t('asset.passwordTransaction') }}</div>
@@ -40,7 +40,7 @@
         />
       </template>
 
-      <SignMobile v-else-if="!isTransactionInit" @onSign="signMobile" @onCancel="close" />
+      <SignMobile v-else-if="isTransactionNotInit" @onSign="onSignMobile" @onCancel="close" />
 
       <Loader v-if="isTransactionPending" />
 
@@ -87,6 +87,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   isSavePass = false;
   signedPayload: RequestSentInfo | null = null;
   transactionState: 'pending' | 'success' | 'failed' | undefined = undefined;
+  showUnknownErrorPopup = false;
 
   @Prop(String) amount!: string;
   @Prop(String) value!: string;
@@ -137,7 +138,11 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get showCloseButton() {
-    return !this.isTransactionPending && !this.isSignMobile;
+    if (this.isSignMobile) {
+      return !this.isTransactionPending;
+    }
+
+    return true;
   }
 
   get popupHeader() {
@@ -158,18 +163,18 @@ export default class ConfirmationPasswordPopup extends Vue {
     return `$${this.value}`;
   }
 
-  get isTransactionInit() {
-    return !!this.transactionStatus;
+  get isTransactionNotInit() {
+    return this.transactionStatus === undefined;
   }
 
   get isTransactionPending() {
-    if (!this.isTransactionInit) return false;
+    if (this.isTransactionNotInit) return false;
 
     return this.transactionStatus === 'pending';
   }
 
   get isTransactionFinished() {
-    if (!this.isTransactionInit) return false;
+    if (this.isTransactionNotInit) return false;
 
     return this.transactionStatus !== 'pending';
   }
@@ -200,7 +205,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   close() {
-    if (!this.isTransactionInit) {
+    if (this.isTransactionNotInit) {
       this.$emit('close');
 
       return;
@@ -223,8 +228,9 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
   }
 
-  async signMobile() {
-    if (!this.transactionId && this.currency?.extrinsic) await this.currency?.send(this.transactionAddress, true);
+  async onSignMobile() {
+    if (!this.transactionId && this.currency?.extrinsic)
+      await this.currency?.send(this.transactionAddress, true, false);
     else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
   }
 
@@ -259,7 +265,11 @@ export default class ConfirmationPasswordPopup extends Vue {
         isSavePass: this.isSavePass,
         password: this.password,
       });
-    } else await this.currency?.send(this.transactionAddress, false, this.isSavePass);
+
+      return;
+    }
+
+    await this.currency?.send(this.transactionAddress, false, this.isSavePass);
   }
 }
 </script>

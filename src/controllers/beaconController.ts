@@ -9,6 +9,7 @@ import {
   Serializer,
   AccountInfo,
   AppMetadata,
+  defaultEventCallbacks,
 } from '@airgap/beacon-sdk';
 import type {
   PayloadJSON,
@@ -41,15 +42,14 @@ class BeaconController {
             console.error('INTERNAL ERROR', error);
           },
         },
-        UNKNOWN: {
-          handler: (error) => {
-            console.error('UNKNOWN ERROR', error);
-          },
+        CHANNEL_CLOSED: {
+          handler: defaultEventCallbacks.CHANNEL_CLOSED,
         },
-        NO_PERMISSIONS: {
-          handler: (error) => {
-            console.error('NO PERMISSIONS ERROR', error);
-          },
+        LOCAL_RATE_LIMIT_REACHED: {
+          handler: defaultEventCallbacks.LOCAL_RATE_LIMIT_REACHED,
+        },
+        UNKNOWN: {
+          handler: defaultEventCallbacks.UNKNOWN,
         },
       },
     });
@@ -118,6 +118,10 @@ class BeaconController {
 
   public async onPermissionRequest(callback: TCallback<RequestSentInfo>) {
     this.app.subscribeToEvent(BeaconEvent.PERMISSION_REQUEST_SENT, callback);
+  }
+
+  public async onUnknownError(callback: TCallback<undefined>) {
+    this.app.subscribeToEvent(BeaconEvent.UNKNOWN, callback);
   }
 
   public async onPermissionsResponse(callback: TCallback<PermissionSuccess>) {

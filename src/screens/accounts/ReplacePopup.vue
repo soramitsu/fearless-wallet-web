@@ -81,9 +81,11 @@ export default class ReplacePopup extends Vue {
       font-size: 14px;
       margin-right: 10px;
       padding: 20px 0;
-      .button__text {
+
+      &__text {
         line-height: 21px;
       }
+
       &:last-child {
         margin-right: 0;
       }

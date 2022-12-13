@@ -7,12 +7,12 @@
         <div class="button" @click="openAddWalletComponent('create')">
           <Icon icon="create" className="img" />
 
-          <div>{{ $t('accounts.createAccount') }}</div>
+          <div class="button__text">{{ $t('accounts.createAccount') }}</div>
         </div>
         <div class="button" @click="openAddWalletComponent('import')">
           <Icon icon="import" className="img" />
 
-          <div>{{ $t('accounts.importAccount') }}</div>
+          <div class="button__text">{{ $t('accounts.importAccount') }}</div>
         </div>
       </div>
     </div>
@@ -34,6 +34,8 @@ export default class ReplacePopup extends Vue {
   }
 
   openAddWalletComponent(type: string) {
+    this.handlerClose();
+
     this.$router.push({
       name: Components.AddWallet,
       params: {
@@ -79,6 +81,10 @@ export default class ReplacePopup extends Vue {
       font-size: 14px;
       margin-right: 10px;
       padding: 20px 0;
+
+      &__text {
+        line-height: 21px;
+      }
 
       &:last-child {
         margin-right: 0;

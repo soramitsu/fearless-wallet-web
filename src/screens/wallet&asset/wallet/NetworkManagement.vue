@@ -62,7 +62,7 @@ export default class ReceiveForm extends Vue {
 
 <style lang="scss" scoped>
 .network-management {
-  z-index: 400 !important;
+  z-index: 198 !important;
 
   .management-content {
     margin-right: -16px;

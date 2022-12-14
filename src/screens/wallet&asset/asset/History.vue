@@ -9,7 +9,11 @@
 
       <Scroll>
         <div :class="classes">
-          <template>
+          <div v-if="isFetchingHistory">
+            <Loader />
+          </div>
+
+          <template v-else-if="!isEmptyHistory">
             <HistoryItem
               v-for="historyNode in filteredHistory"
               :key="historyNode.id"
@@ -20,7 +24,7 @@
             />
           </template>
 
-          <div v-if="isEmptyHistory">{{ $t('asset.history.noHistory') }}</div>
+          <div v-else>{{ $t('asset.history.noHistory') }}</div>
         </div>
       </Scroll>
     </div>
@@ -28,12 +32,14 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Action, Getter } from 'vuex-class';
 import HistoryItem from './HistoryItem.vue';
-import type { FilterHistory, GetHistory } from '@/interfaces';
-import type { SelectedWallet } from '@/store';
+import type { FilterHistory, GetHistory, TAction } from '@/interfaces';
+import type { LoadHistory, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { ActionTypes as NetworksActionsTypes } from '@/store/networks/actions';
+
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Currency } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
@@ -51,10 +57,11 @@ export default class History extends Vue {
     { label: 'asset.history.extrinsic', value: 'extrinsic' },
   ];
   filterHistoryValue: FilterHistory = 'all';
-
+  isFetchingHistory = false;
   @Prop(Object) currency!: Currency;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Action(NetworksActionsTypes.LOAD_HISTORY) loadHistory!: TAction<LoadHistory>;
 
   get selectedNetwork() {
     return this.$route.params.network;
@@ -91,6 +98,28 @@ export default class History extends Vue {
     const filteredHistory = this.history.filter((historyItem) => historyItem[field] !== null);
 
     return filteredHistory;
+  }
+
+  @Watch('currency')
+  async watchCurrency() {
+    this.fetchHistory();
+  }
+
+  mounted() {
+    this.fetchHistory();
+  }
+
+  async fetchHistory() {
+    this.isFetchingHistory = true;
+
+    await this.loadHistory({
+      networkName: this.selectedNetwork,
+      walletAddress: this.selectedWallet.address,
+      assetId: this.currency.assetId,
+      pageSize: 45,
+    });
+
+    this.isFetchingHistory = false;
   }
 
   filterHistoryValueUpdate(name: FilterHistory) {

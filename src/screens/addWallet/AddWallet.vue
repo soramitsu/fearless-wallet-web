@@ -447,8 +447,6 @@ export default class AddWallet extends Vue {
       const type =
         this.isEthereumReplacedNetwork || this.isOnlyEthereumAccountFlow ? ethereumKeypairType : substrateKeypairType;
 
-      console.log(suri, type);
-
       const { address } = BaseApi.createFromUri(suri, type);
 
       if (BaseApi.isDuplicateReplacedKeypair(address)) this.showMockPassword = true;

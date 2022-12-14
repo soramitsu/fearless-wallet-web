@@ -39,7 +39,11 @@
     <ManageAuths v-if="showManageAuthsVisible" :handlerClose="toggleManageAuthsVisible" />
 
     <keep-alive include="Wallet">
-      <router-view class="main-child" @openFiatsPopup="toggleFiatsPopupVisible" />
+      <router-view
+        class="main-child"
+        @openFiatsPopup="toggleFiatsPopupVisible"
+        @closeSelectWalletPopup="setSelectWalletPopupVisible(false)"
+      />
     </keep-alive>
 
     <Menu />

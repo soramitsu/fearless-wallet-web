@@ -35,7 +35,7 @@ export default class ExportForm extends Vue {
   @Prop(String) password!: string;
   @Prop(Function) closeHandler!: (password: string) => void;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
+  @Getter(NetworksGettersTypes.getAllNetworks) networks!: Networks;
 
   get network() {
     return this.$route.params.network;

@@ -53,8 +53,11 @@ export default class GoogleExportPopup extends Vue {
   isFileUploaded = false;
   isFileUploading = false;
 
-  @Prop(String) selectedWallet!: string;
   @Prop(Function) closePopup!: VoidFunction;
+
+  get selectedWallet() {
+    return this.$route.query.wallet as string;
+  }
 
   get isAwaitsConfirmation() {
     return !this.isFileUploaded && !this.isFileUploading;
@@ -101,6 +104,7 @@ export default class GoogleExportPopup extends Vue {
     }
 
     this.isFileUploading = true;
+
     const ethJson = await createGoogleFile({
       json: JSON.stringify(BaseApi.getPair(pair.meta.ethereumAddress as string).toJson(this.password)),
       options: {

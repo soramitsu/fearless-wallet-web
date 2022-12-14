@@ -90,24 +90,18 @@ ${json}
     return res.id;
   }
 
-  public async authExtension(type: 'main' | 'export' = 'main', wallet?: string) {
-    await chrome.identity.launchWebAuthFlow({ url: this.authURL('extension'), interactive: true }, async (url) => {
+  public authExtension(type: 'main' | 'export' = 'main', wallet?: string) {
+    chrome.identity.launchWebAuthFlow({ url: this.authURL('extension'), interactive: true }, async (url) => {
       const params: any = new Proxy(new URLSearchParams(url), {
         get: (searchParams, prop) => searchParams.get(prop as string),
       });
       const baseURL = `${chrome.runtime.getURL('popup.html')}#/${this.urlTypes[type]}/${params.access_token}`;
+      const URL = type === 'export' && wallet ? `${baseURL}?wallet=${wallet}` : baseURL;
 
       const [tab] = await chrome.tabs.query({ title: 'fearless-wallet' });
 
-      if (tab && tab.id) {
-        type === 'export' && wallet
-          ? chrome.tabs.update(tab.id, { active: true, url: `${baseURL}?wallet=${wallet}` })
-          : chrome.tabs.update(tab.id, { active: true, url: baseURL });
-
-        return true;
-      }
-
-      chrome.tabs.create({ url: baseURL });
+      if (tab && tab.id) chrome.tabs.update(tab.id, { active: true, url: URL });
+      else chrome.tabs.create({ url: URL });
     });
   }
 

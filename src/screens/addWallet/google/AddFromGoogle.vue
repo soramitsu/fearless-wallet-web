@@ -91,6 +91,7 @@ export default class AddFromGoogle extends Vue {
 
   async mounted() {
     await this.isTokenValid();
+
     this.token = this.getToken;
     const { files } = await getGoogleFiles(this.token);
 
@@ -101,6 +102,7 @@ export default class AddFromGoogle extends Vue {
           access_token: this.$route.params.access_token,
         },
       });
+
       this.isLoading = false;
 
       return;

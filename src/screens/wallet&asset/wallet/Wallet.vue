@@ -88,11 +88,7 @@
 
     <NetworkUnavailablePopup v-if="showNetworkUnavailablePopup" :closePopup="setNetworkUnavailable" />
 
-    <GoogleExportPopup
-      v-if="showGoogleExportPopup"
-      :closePopup="closeGoogleExportPopup"
-      :selectedWallet="getWalletToExport"
-    />
+    <GoogleExportPopup v-if="showGoogleExportPopup" :closePopup="closeGoogleExportPopup" />
 
     <Tooltip text="wallet.walletBalance" target=".wallet-balance" placement="right" />
     <Tooltip text="common.networkManagement" target=".select-network-button" placement="bottom" />
@@ -123,6 +119,7 @@ import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
+import { Components } from '@/router/routes';
 
 @Component({
   components: {
@@ -146,7 +143,6 @@ export default class Wallet extends Vue {
   showSendForm = false;
   showReceiveForm = false;
   showSelectNetworkPopup = false;
-  showGoogleExportPopup = false;
   networkUnavailable = '';
   currenciesKey = 0;
   activeTabName: TabWallet = 'Currencies';
@@ -178,10 +174,6 @@ export default class Wallet extends Vue {
 
   get disconnectedNetworks() {
     return this.networks.filter(({ status }) => status === 'disconnected');
-  }
-
-  get getWalletToExport() {
-    return this.$route.query.wallet;
   }
 
   get changeWalletBalance() {
@@ -256,13 +248,15 @@ export default class Wallet extends Vue {
     return this.activeTabName === 'NFTs';
   }
 
-  mounted() {
-    if (this.$route.params.access_token && this.$route.params.access_token !== 'null')
-      this.showGoogleExportPopup = true;
+  get showGoogleExportPopup() {
+    return this.$route.params.access_token && this.$route.params.access_token !== 'null';
   }
 
   closeGoogleExportPopup() {
-    this.showGoogleExportPopup = false;
+    this.$router.replace('/');
+    this.$router.push({ name: Components.Wallet });
+
+    this.$emit('closeSelectWalletPopup');
   }
 
   deactivated() {

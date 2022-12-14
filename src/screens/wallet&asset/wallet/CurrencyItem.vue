@@ -108,7 +108,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Currency } from '@/interfaces/currencies';
 import type { SelectedWallet } from '@/store';
-import type { Networks, CustomEvent } from '@/interfaces';
+import type { CustomEvent } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/helpers/numbers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -128,7 +128,6 @@ export default class CurrencyItem extends Vue {
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
 
   get showShimmers() {
     if (this.isCurrentNetwork) return !this.isOnline || this.getNetworkStatus(this.selectedNetwork) === 'pending';

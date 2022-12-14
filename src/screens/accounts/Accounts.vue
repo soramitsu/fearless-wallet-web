@@ -54,7 +54,7 @@ export default class Account extends Vue {
   newName = '';
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
+  @Getter(NetworksGettersTypes.getAllNetworks) networks!: Networks;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
 
   get showReplacedAccounts() {

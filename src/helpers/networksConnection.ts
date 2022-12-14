@@ -105,7 +105,8 @@ function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): v
   api.on('ready', () => readyHandler(network));
 }
 
-function subscribeUtilityAssetsBalances(address: string, { name: networkName, parentId, api, assets }: Network): void {
+async function subscribeUtilityAssetsBalances(address: string, network: Network): Promise<void> {
+  const { name: networkName, parentId, api, assets } = network;
   const networkUtilityAsset = assets.find(
     ({ isUtility, type }) => isUtility && !ORML_PALLETS_TYPES.includes(type as string)
   )!;
@@ -116,6 +117,8 @@ function subscribeUtilityAssetsBalances(address: string, { name: networkName, pa
   const { precision } = (store.getters[NetworksGettersTypes.getAssetsJson] as AssetJson[]).find(
     ({ id }) => id === assetId
   )!;
+
+  await api?.isReadyOrError;
 
   api!.rx.query.system.account<ISubscribeData>(address).subscribe(async ({ data }) => {
     const historyForNetwork = store.getters[NetworksGettersTypes.getHistory](assetId, address, networkName);
@@ -136,7 +139,7 @@ function subscribeUtilityAssetsBalances(address: string, { name: networkName, pa
 function subscribeOrmlAssetsBalances(address: string, network: Network): void {
   const { name: networkName, api, assets, parentId } = network;
 
-  assets.forEach(({ assetId, type }) => {
+  assets.forEach(async ({ assetId, type }) => {
     if (type === undefined) return; // is utility Asset
 
     const { symbol, precision } = (store.getters[NetworksGettersTypes.getAssetsJson] as AssetJson[]).find(
@@ -144,6 +147,8 @@ function subscribeOrmlAssetsBalances(address: string, network: Network): void {
     )!;
 
     if (symbol === 'csm') return; // TODO: fix
+
+    await api?.isReadyOrError;
 
     const options = getAssetOptions(symbol, type, assetId);
     const query = api!.rx.query;

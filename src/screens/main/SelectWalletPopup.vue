@@ -81,7 +81,14 @@ export default class SelectWalletPopup extends Vue {
   }
 
   walletPopupClick({ target: { classList } }: CustomEvent) {
-    if (!(classList.contains('dots-container') || classList.contains('dots') || classList.contains('dots-horizontal')))
+    if (
+      !(
+        classList.contains('dots-container') ||
+        classList.contains('dots') ||
+        classList.contains('dots-horizontal') ||
+        classList.contains('icon__inner')
+      )
+    )
       this.$emit('toggleWalletDetailsPopupVisible', false);
   }
 

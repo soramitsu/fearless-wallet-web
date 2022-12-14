@@ -4,9 +4,9 @@
     :step="step"
     :flowSteps="getSteps"
     :header="header"
-    @back="back"
     :isLoading="isLoading"
     :showFullScreenIcon="false"
+    @back="back"
   >
     <NegativeMessage v-if="isAccessDenied" :message="$t('addWallet.google.somethingWrong')" />
 
@@ -91,6 +91,7 @@ export default class AddFromGoogle extends Vue {
 
   async mounted() {
     await this.isTokenValid();
+
     this.token = this.getToken;
     const { files } = await getGoogleFiles(this.token);
 
@@ -101,6 +102,7 @@ export default class AddFromGoogle extends Vue {
           access_token: this.$route.params.access_token,
         },
       });
+
       this.isLoading = false;
 
       return;
@@ -129,6 +131,7 @@ export default class AddFromGoogle extends Vue {
 
   back() {
     if (this.step === 1) {
+      this.$router.replace('/');
       this.$router.push({ name: Components.Welcome });
 
       return;

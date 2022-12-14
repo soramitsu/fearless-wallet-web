@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { assert } from '@polkadot/util';
-import { PORT_EXTENSION } from '@extension-base/defaults';
 import Extension from './Extension';
 import Tabs from './Tabs';
 import State from './State';

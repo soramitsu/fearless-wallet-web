@@ -112,12 +112,24 @@ export default class ImportWallet extends Vue {
 
   get placeholderTypeImportValue() {
     if (this.typeImport === 'rawSeed') {
+      if (this.isReplaceAccountFlow) {
+        const type = this.isEthereumReplacedNetwork ? 'ETH' : 'Substrate';
+
+        return this.t('rawSeed', { type });
+      }
+
+      if (this.isOnlyEthereumAccountFlow) {
+        return this.t('rawSeed', { type: 'ETH' });
+      }
+
       if (this.step === 1) return this.t('rawSeed', { type: 'Substrate' });
+
       if (this.step === 2) return this.t('rawSeed', { type: 'ETH' });
     }
 
     if (this.typeImport === 'json') {
       if (this.step === 1) return this.t('restoreJson', { type: 'Substrate' });
+
       if (this.step === 2) return this.t('restoreJson', { type: 'Ethereum' });
     }
 

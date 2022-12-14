@@ -74,7 +74,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import TransferForm from './TransferForm.vue';
-import type { Currencies, Networks } from '@/interfaces';
+import type { Currencies } from '@/interfaces';
 import type { GetAssetName, SelectedWallet } from '@/store';
 import Select from '@/components/Select.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -104,7 +104,6 @@ export default class TeleportForm extends Vue {
   @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
 

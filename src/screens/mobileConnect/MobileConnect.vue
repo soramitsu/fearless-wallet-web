@@ -61,7 +61,7 @@ export default class MobileConnect extends Vue {
   permissionRequestDenied = false;
 
   @Action(AccountActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
-  @Getter(NetworkGettersTypes.getNetworks) getNetworks!: Networks;
+  @Getter(NetworkGettersTypes.getAllNetworks) getNetworks!: Networks;
   @Getter(AccountGettersTypes.GET_QR) getQR!: Nullable<string>;
   @Mutation(AccountMutationsTypes.SET_QR) setQR!: TMutation<string>;
 
@@ -150,6 +150,7 @@ export default class MobileConnect extends Vue {
 
     if (account.scopes.length === 0) {
       this.permissionRequestDenied = true;
+
       beaconController.resetConnection();
 
       return;

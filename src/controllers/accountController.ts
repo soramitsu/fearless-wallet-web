@@ -1,4 +1,4 @@
-import type { Node } from '@/interfaces/nodes';
+import type { Node, NetworkName } from '@/interfaces';
 import type { Lang } from '@/locales';
 import LocalStorageController from '@/controllers/localStorageController';
 
@@ -13,7 +13,7 @@ class AccountController {
   private readonly selectedWalletStorageName = 'selected-wallet';
   private readonly selectedNetworkStorageName = 'selected-network';
 
-  private getSequenceAssets(): Record<string, string> {
+  private getSequenceAssets(): Record<string, Record<NetworkName, string>> {
     const sequencesAssets = this.lsAccount.get(this.sequenceAssetsStorageName);
 
     return sequencesAssets.value ?? {};
@@ -65,20 +65,39 @@ class AccountController {
     this.lsAccount.set(this.selectedNetworkStorageName, newValue);
   }
 
-  public getSequenceAssetsByAddress(address: string): string[] {
+  public getSequenceAssetsByAddress(address: string, network: string): string[] {
     const sequencesAssets = this.getSequenceAssets();
 
-    return (sequencesAssets?.[address]?.split(',') as string[]) ?? [];
+    return (sequencesAssets?.[address]?.[network]?.split(',') as string[]) ?? [];
   }
 
-  public setSequenceAssets(sequence: string[], address: string): void {
+  public setSequenceAssets(
+    sequence: string[] | Record<NetworkName, string[]>,
+    address: string,
+    network?: string
+  ): void {
     const prevSequence = this.getSequenceAssets();
-    const newSequence = {
-      ...prevSequence,
-      [address]: sequence.join(),
-    };
 
-    this.lsAccount.set(this.sequenceAssetsStorageName, newSequence);
+    if (Array.isArray(sequence)) {
+      const prevSequenceByAddress = prevSequence[address];
+
+      const newSequence = {
+        ...prevSequence,
+        [address]: {
+          ...prevSequenceByAddress,
+          [network!]: sequence.join(),
+        },
+      };
+
+      this.lsAccount.set(this.sequenceAssetsStorageName, newSequence);
+    } else {
+      const newSequence = {
+        ...prevSequence,
+        [address]: sequence,
+      };
+
+      this.lsAccount.set(this.sequenceAssetsStorageName, newSequence);
+    }
   }
 
   public getAutoSelectNodesValue(): Record<string, boolean> {

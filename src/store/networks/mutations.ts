@@ -49,14 +49,24 @@ const mutations: MutationTree<State> & Mutations = {
     state.networks = networks;
   },
 
-  [MutationTypes.SET_CURRENCIES](state, { currencies, address }) {
-    if (address) {
-      const sequence = currencies.map(({ assetId }) => assetId);
+  [MutationTypes.SET_CURRENCIES](state, { currencies, address, network }) {
+    if (address && network) {
+      if (Array.isArray(currencies)) {
+        const sequence = currencies.map(({ assetId }) => assetId);
 
-      accountController.setSequenceAssets(sequence, address);
+        accountController.setSequenceAssets(sequence, address, network);
+      } else {
+        const entries = Object.entries(currencies).map(([network, currencies]) => {
+          const sequence = currencies.map(({ assetId }) => assetId).join();
+
+          return [network, sequence];
+        });
+
+        accountController.setSequenceAssets(Object.fromEntries(entries), address);
+      }
     }
 
-    state.currencies = currencies;
+    state.currencies = Array.isArray(currencies) ? currencies : currencies[network!];
   },
 
   [MutationTypes.SET_ASSETS_JSON](state, { assetsJson }) {

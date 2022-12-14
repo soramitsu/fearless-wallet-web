@@ -180,7 +180,7 @@ export default class SendForm extends Vue {
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('value', { type: String }) syncedValue!: string;
   @PropSync('partialFee', { type: String }) syncedPartialFee!: string;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
+  @Getter(NetworksGettersTypes.getAllNetworks) networks!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) onlineStatus!: string;

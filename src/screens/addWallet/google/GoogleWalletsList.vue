@@ -13,6 +13,7 @@
                 v-model.lazy="file.active"
                 @change.self="(value) => onSelect(!file.active, index)"
               />
+
               <span @click.self="onSelect(!file.active, index)">{{ cutAddress(file.address) }}</span>
             </div>
             <transition name="fade">

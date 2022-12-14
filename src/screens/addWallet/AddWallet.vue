@@ -366,7 +366,7 @@ export default class AddWallet extends Vue {
         return (
           !this.mnemonic &&
           !this.substrateRawSeed &&
-          (this.isReplaceAccountFlow && this.isEthereumReplacedNetwork
+          ((this.isReplaceAccountFlow && this.isEthereumReplacedNetwork) || this.isOnlyEthereumAccountFlow
             ? !this.ethereumRawSeed && this.isLengthZero(this.ethereumJson) && this.passwordEthereumJson
             : true) &&
           (this.isLengthZero(this.substrateJson) || !this.passwordSubstrateJson)
@@ -385,10 +385,6 @@ export default class AddWallet extends Vue {
     if (this.step === 3) return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
 
     return false;
-  }
-
-  isLengthZero(value: string | KeyringPair$Json) {
-    return Object.keys(value).length === 0;
   }
 
   get suriSubstrate() {
@@ -486,6 +482,10 @@ export default class AddWallet extends Vue {
 
   mounted() {
     if (this.isOnlyEthereumAccountFlow && this.isCreateWallet) this.proceed();
+  }
+
+  isLengthZero(value: string | KeyringPair$Json) {
+    return Object.keys(value).length === 0;
   }
 
   t(value: string, obj: Record<string, string> = {}) {
@@ -663,6 +663,8 @@ export default class AddWallet extends Vue {
   }
 
   validateMobileDubs() {
+    if (this.isEthereumReplacedNetwork || this.isOnlyEthereumAccountFlow) return;
+
     if (this.typeImport === 'json') {
       this.validateAddressForDubMobileWallet(this.substrateJSON.address);
 
@@ -671,10 +673,10 @@ export default class AddWallet extends Vue {
 
     //raw seed & mnemonic validation
     const {
-      substrate: { keypairType },
+      substrate: { keypairType: substrateKeypairType },
     } = this.derivationPaths;
 
-    const { address } = BaseApi.createFromUri(this.suriSubstrate, keypairType);
+    const { address } = BaseApi.createFromUri(this.suriSubstrate, substrateKeypairType);
 
     this.validateAddressForDubMobileWallet(address);
   }

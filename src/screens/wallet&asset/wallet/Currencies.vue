@@ -68,7 +68,11 @@ export default class Currencies extends Vue {
   }
 
   set filteredCurrencies(currencies) {
-    this.setCurrencies({ currencies, address: this.selectedWallet.address });
+    this.setCurrencies({
+      currencies,
+      address: this.selectedWallet.address,
+      network: this.selectedNetwork,
+    });
   }
 
   timeoutCallback(fn: () => void) {

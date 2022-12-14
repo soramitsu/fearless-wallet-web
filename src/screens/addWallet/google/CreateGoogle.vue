@@ -4,8 +4,8 @@
     :showAdvancedForm="showAdvancedForm"
     :step="step"
     :header="header"
-    @back="back"
     :showFullScreenIcon="false"
+    @back="back"
   >
     <NickNameForm v-if="nickNameStep" :nickname="nickname" @update:nickname="setNickname" />
 
@@ -117,17 +117,26 @@ import { WarningValueName } from '@/consts/messages';
 })
 export default class CreateGoogle extends Vue {
   readonly countSteps = 5;
+  readonly buttonTextForStep: Record<number, TranslateResult> = {
+    1: this.$t('common.continue'),
+    2: this.$t('addWallet.haveWrittenPassphrase'),
+    3: this.$t('addWallet.ConfirmSecretData'),
+    4: this.$t('common.confirm'),
+    5: this.$t('common.finish'),
+  };
+
+  selectedMnemonicElements: MnemonicConfirmation[] = [];
   step = 1;
   nickname = '';
   mnemonic = '';
-  selectedMnemonicElements: MnemonicConfirmation[] = [];
   showAdvancedForm = false;
   walletPassword = '';
   derivationPaths = INITIAL_DERIVATION_PATHS;
   showNotificationPopup = false;
-  notificationHeaders = { text: 'addWallet.google.saved', subtext: 'addWallet.google.passphraseSaved' };
-
   warningValueName: WarningValueName = '';
+
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
 
   get invalidMessages() {
     if (!this.warningValueName) return {};
@@ -139,17 +148,6 @@ export default class CreateGoogle extends Vue {
       subtext: `${mainPath}.subtext`,
     };
   }
-
-  buttonTextForStep: Record<number, TranslateResult> = {
-    1: this.$t('common.continue'),
-    2: this.$t('addWallet.haveWrittenPassphrase'),
-    3: this.$t('addWallet.ConfirmSecretData'),
-    4: this.$t('common.confirm'),
-    5: this.$t('common.finish'),
-  };
-
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
 
   get nickNameStep() {
     return this.step === 1;

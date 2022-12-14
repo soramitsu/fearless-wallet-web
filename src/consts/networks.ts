@@ -166,6 +166,7 @@ const NETWORK_AND_ASSET: Record<string, string> = {
   'snow kusama': 'snow',
   icz: 'snow',
 };
+
 const PHA: Record<string, string> = {
   polkadot: 'phala',
   kusama: 'khala',

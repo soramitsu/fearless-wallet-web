@@ -43,8 +43,10 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import type { KeyringPair } from '@polkadot/keyring/types';
 import { createGoogleFile } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
+import { ICreateFile } from '@/interfaces';
 
 @Component
 export default class GoogleExportPopup extends Vue {
@@ -104,30 +106,38 @@ export default class GoogleExportPopup extends Vue {
     }
 
     this.isFileUploading = true;
+    const ethPair = BaseApi.getPair(pair.meta.ethereumAddress as string);
+    const ethJson = JSON.stringify(ethPair.toJson(this.password));
+    const substrateJson = JSON.stringify(pair.toJson(this.password));
+    const ethOptions = this.prepUploadMeta(ethPair);
 
-    const ethJson = await createGoogleFile({
-      json: JSON.stringify(BaseApi.getPair(pair.meta.ethereumAddress as string).toJson(this.password)),
-      options: {
-        name: pair.meta.name as string,
-        address: pair.meta.ethereumAddress as string,
-        password: this.password,
-      },
-      token: this.$route.params.access_token,
-    });
+    const ethWalletId = await this.createFile(ethJson, ethOptions);
+    if (!ethWalletId) return;
 
-    const substrateJson = await createGoogleFile({
-      json: JSON.stringify(pair.toJson(this.password)),
-      options: {
-        name: pair.meta.name as string,
-        address: `${pair.address}/${ethJson.id}`,
-        password: this.password,
-      },
-      token: this.$route.params.access_token,
-    });
+    const substrateOptions = this.prepUploadMeta(pair, ethWalletId);
+
+    const substrateWalletId = await this.createFile(substrateJson, substrateOptions);
 
     this.isFileUploading = false;
+    if (ethWalletId && substrateWalletId) this.isFileUploaded = true;
+  }
 
-    if (ethJson.id && substrateJson.id) this.isFileUploaded = true;
+  prepUploadMeta(pair: KeyringPair, ethWalletId?: string): ICreateFile['options'] {
+    return {
+      name: pair.meta.name as string,
+      address: ethWalletId ? `${pair.address}/${ethWalletId}` : (pair.meta.ethereumAddress as string),
+      password: this.password,
+    };
+  }
+
+  async createFile(json: string, options: ICreateFile['options']): Promise<string> {
+    const res = await createGoogleFile({
+      json,
+      options,
+      token: this.$route.params.access_token,
+    });
+
+    return res.id;
   }
 }
 </script>

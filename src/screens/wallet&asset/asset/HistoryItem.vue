@@ -22,7 +22,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { GetAssetName } from '@/store';
-import type { HistoryNode, Networks, RelayChainName } from '@/interfaces';
+import type { HistoryNode, RelayChainName } from '@/interfaces';
 import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, getSignTransfer, cut } from '@/helpers/history';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { TransactionType } from '@/interfaces/history';
@@ -32,7 +32,6 @@ export default class HistoryItem extends Vue {
   @Prop(Object) historyNode!: HistoryNode;
   @Prop(String) assetId!: string;
   @Prop(String) relayChain!: RelayChainName;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
 
   get signTransfer() {

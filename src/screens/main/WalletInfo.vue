@@ -53,7 +53,8 @@ export default class WalletInfo extends Vue {
     const shouldUpdateSelectedWallet = !(
       classList.contains('dots-container') ||
       classList.contains('dots') ||
-      classList.contains('dots-horizontal')
+      classList.contains('dots-horizontal') ||
+      classList.contains('icon__inner')
     );
 
     if (shouldUpdateSelectedWallet) this.$emit('updateSelectedWallet');
@@ -113,8 +114,8 @@ export default class WalletInfo extends Vue {
   }
 
   .dots-container {
-    height: 20px;
-    width: 20px;
+    height: 25px;
+    width: 25px;
     opacity: 0.9;
     display: flex;
 

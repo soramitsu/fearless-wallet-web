@@ -72,6 +72,7 @@ class BeaconController {
   public getActiveAccount() {
     return this.app.getActiveAccount();
   }
+
   public async resetConnection() {
     await this.app.disconnect().then(() => {
       store.commit(AccountMutationTypes.DELETE_QR);

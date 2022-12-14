@@ -25,17 +25,17 @@
     <div class="content-wrapper">
       <div class="content">
         <div class="content-header">{{ header }}</div>
-      </div>
 
-      <div v-if="isLoading" class="loader__container">
-        <Loader />
-      </div>
+        <div v-if="isLoading" class="loader__container">
+          <Loader />
+        </div>
 
-      <div v-else-if="notFinish" class="step__content">
-        <slot></slot>
-      </div>
+        <div v-else-if="!isFinishStep" class="step__content">
+          <slot></slot>
+        </div>
 
-      <FinishForm v-else />
+        <FinishForm v-else />
+      </div>
 
       <div class="controls">
         <slot name="control"></slot>
@@ -59,12 +59,12 @@ export default class FlowStepLayout extends Vue {
   @Prop({ default: false }) showFullScreenIcon!: boolean;
   @Prop({ default: false }) showAdvancedForm!: boolean;
 
-  get notFinish() {
-    return this.countSteps !== this.step;
+  get isFinishStep() {
+    return this.countSteps === this.step;
   }
 
   get showBackButton() {
-    return !this.showAdvancedForm || !this.notFinish;
+    return !this.showAdvancedForm && !this.isFinishStep;
   }
 
   back() {
@@ -103,7 +103,7 @@ export default class FlowStepLayout extends Vue {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  height: calc(100% - 60px);
 }
 
 .add-wallet {
@@ -150,6 +150,7 @@ export default class FlowStepLayout extends Vue {
 
     .content {
       width: 100%;
+      height: 100%;
 
       .selected-network {
         margin-bottom: 16px;

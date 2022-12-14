@@ -25,11 +25,12 @@ import {
   getOrmlOptions,
 } from '@/util/teleport';
 import { getReplacedMetaTyped } from '@/helpers/common';
+import { statusLogging } from '@/helpers/currencies';
 import { createExtrinsicTransfer } from '@/util/assets';
 import { BeaconSigner } from '@/extension/background/extension-base/src/background/BeaconSigner';
 import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
-import { mockBalance } from '@/consts/currencies';
+import { mockBalance, mockFPBalance } from '@/consts/currencies';
 import { saveTimeoutCache } from '@/extension/messaging';
 
 type TransactionStatus = 'success' | 'failed' | 'pending';
@@ -127,7 +128,7 @@ export default class CurrencyController {
         ? balance[ethereumAddress]
         : balance[address];
 
-      return { network, type, precision, existentialDeposit, balance: walletBalance ?? mockBalance, assetId };
+      return { network, type, precision, existentialDeposit, balance: walletBalance ?? mockFPBalance, assetId };
     });
   }
 
@@ -147,7 +148,7 @@ export default class CurrencyController {
         reserved: obj.reserved.add(reserved),
         transferable: obj.transferable.add(transferable),
       };
-    }, mockBalance);
+    }, mockFPBalance);
   }
 
   /**
@@ -170,9 +171,12 @@ export default class CurrencyController {
    */
   public getBalanceInNetwork(wallet: Wallet, _network: string) {
     const walletBalance = this.getWalletBalance(wallet);
-    const { frozen, locked, reserved, total, transferable } = walletBalance.find(
-      ({ network }) => network === _network
-    )!.balance;
+
+    const balance = walletBalance.find(({ network }) => network === _network)?.balance;
+
+    if (balance === undefined) return mockBalance;
+
+    const { frozen, locked, reserved, total, transferable } = balance;
 
     return {
       frozen: {
@@ -585,13 +589,15 @@ export default class CurrencyController {
     this.transactionStatus = 'pending';
 
     try {
-      await this.extrinsic!.signAndSend(account, options, this.statusCallback(from));
+      await this.extrinsic!.signAndSend(
+        account,
+        options,
+        statusLogging(() => this.statusCallback(from, 'success'))
+      );
 
       if (typeof account !== 'string' && !isSavePass) account.lock();
     } catch (ex) {
-      this.transactionStatus = 'failed';
-
-      this.setMockHistory(from, false);
+      this.statusCallback(from, 'failed');
 
       console.info(`Transaction failed ${ex}`);
 
@@ -602,31 +608,18 @@ export default class CurrencyController {
   }
 
   /**
-   * log status transaction
+   * Status callback
    */
-  private statusCallback(from: string) {
-    return (result: ISubmittableResult) => {
-      const { status } = result;
-
-      if (status.isInBlock) {
-        console.info(`Successful transfer with hash ${status.asInBlock.toHex()}`);
-
-        this.transactionStatus = 'success';
-
-        this.setMockHistory(from, true);
-      } else if (status.isFinalized) {
-        console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
-      } else {
-        console.info(`Status of transfer: ${status.type}`);
-      }
-    };
+  private statusCallback(from: string, status?: TransactionStatus) {
+    this.setTransactionStatus(status);
+    this.setMockHistory(from, status === 'success');
   }
 
   /**
-   * clear transaction status
+   * Set transaction status
    */
-  public clearSendStatus() {
-    this.transactionStatus = undefined;
+  public setTransactionStatus(status?: TransactionStatus) {
+    this.transactionStatus = status;
   }
 
   /**

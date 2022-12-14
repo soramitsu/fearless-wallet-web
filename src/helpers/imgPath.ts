@@ -1,36 +1,39 @@
 import type { RelayChainName } from '@/interfaces/teleport';
 import { LIT, NETWORK_AND_ASSET, PHA, UNIT } from '@/consts/networks';
 
+const ormlNetworks: Record<string, string> = {
+  ausd: 'aUSD',
+  lcdot: 'lcDOT',
+  tdot: 'tDOT',
+  tai: 'TAI',
+  ldot: 'lDOT',
+  vsksm: 'vsKSM',
+  taiksm: 'taiKSM',
+  aris: 'ARIS',
+  lksm: 'LKSM',
+  kusd: 'KUSD',
+  rmrk: 'RMRK',
+  kbtc: 'KBTC',
+  usdt: 'USDT',
+  zlk: 'ZLK',
+  eqd: 'EQD',
+  vksm: 'vKSM',
+  xstusd: 'XSTUSD',
+  val: 'VAL',
+  pswap: 'PSWAP',
+  xst: 'XST',
+  busd: 'BUSD',
+  usdc: 'USDC',
+  deo: 'DEO',
+  noir: 'NOIRE',
+  umi: 'UMI',
+  ceres: 'CERES',
+  dai: 'DAI',
+  eth: 'ETH',
+};
+
 function getOrmlFileName(value: string) {
   const prepValue = value.toLocaleLowerCase();
-  const ormlNetworks: Record<string, string> = {
-    ausd: 'aUSD',
-    lcdot: 'lcDOT',
-    tdot: 'tDOT',
-    tai: 'TAI',
-    ldot: 'lDOT',
-    vsksm: 'vsKSM',
-    taiksm: 'taiKSM',
-    aris: 'ARIS',
-    lksm: 'LKSM',
-    kusd: 'KUSD',
-    rmrk: 'RMRK',
-    kbtc: 'KBTC',
-    usdt: 'USDT',
-    zlk: 'ZLK',
-    eqd: 'EQD',
-    vksm: 'vKSM',
-    xstusd: 'XSTUSD',
-    val: 'VAL',
-    pswap: 'PSWAP',
-    xst: 'XST',
-    busd: 'BUSD',
-    usdc: 'USDC',
-    deo: 'DEO',
-    noir: 'NOIRE',
-    umi: 'UMI',
-    ceres: 'CERES',
-  };
 
   return ormlNetworks[prepValue] ?? '';
 }

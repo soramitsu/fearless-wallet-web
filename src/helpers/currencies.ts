@@ -1,3 +1,4 @@
+import { ISubmittableResult } from '@polkadot/types/types';
 import type { Currencies, Currency, Networks, RelayChainName, Balances, NetworkName } from '@/interfaces';
 import type { Wallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
@@ -5,7 +6,7 @@ import CurrencyController from '@/controllers/currencyController';
 import NetworksController from '@/controllers/networksController';
 import { MAIN_NETWORKS } from '@/consts/networks';
 import { getIconName } from '@/helpers/imgPath';
-import { mockBalance } from '@/consts/currencies';
+import { mockFPBalance } from '@/consts/currencies';
 
 type CurrencyMock = {
   mainNetwork: string;
@@ -80,7 +81,7 @@ function getMockCurrencies(networks: Networks): Currencies {
             const isEthereumAccountType = BaseApi.getPair(address).type === 'ethereum';
 
             if ((isEthereumNetwork && isEthereumAccountType) || (!isEthereumNetwork && !isEthereumAccountType))
-              balance[address] = mockBalance;
+              balance[address] = mockFPBalance;
           });
         });
 
@@ -97,13 +98,15 @@ function getMockCurrencies(networks: Networks): Currencies {
   return currencies;
 }
 
-function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet) {
+function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet, network?: NetworkName) {
   const relayChains = [];
-  const currenciesWithAssets = currencies.filter((currency) => currency.getTotalCountAssets(wallet) !== '0');
-  const currenciesWithoutAssets = currencies.filter((currency) => currency.getTotalCountAssets(wallet) === '0');
+  const currenciesWithAssets = currencies.filter((currency) => currency.getTotalCountAssets(wallet, network) !== '0');
+  const currenciesWithoutAssets = currencies.filter(
+    (currency) => currency.getTotalCountAssets(wallet, network) === '0'
+  );
 
-  const dotIndex = currenciesWithoutAssets.findIndex(({ asset }) => asset === 'dot');
-  const ksmIndex = currenciesWithoutAssets.findIndex(({ asset }) => asset === 'ksm');
+  const dotIndex = currenciesWithoutAssets.findIndex(({ displayName }) => displayName === 'dot');
+  const ksmIndex = currenciesWithoutAssets.findIndex(({ displayName }) => displayName === 'ksm');
 
   if (dotIndex !== -1) {
     const dot = currenciesWithoutAssets.splice(dotIndex, 1)[0];
@@ -118,8 +121,8 @@ function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet) {
   }
 
   currenciesWithAssets.sort((currency1, currency2) => {
-    const totalBalanceOne = +currency1.getTotalBalance(wallet);
-    const totalBalanceTwo = +currency2.getTotalBalance(wallet);
+    const totalBalanceOne = +currency1.getTotalBalance(wallet, network);
+    const totalBalanceTwo = +currency2.getTotalBalance(wallet, network);
 
     return totalBalanceTwo - totalBalanceOne;
   });
@@ -160,4 +163,27 @@ function getUtilityAsset(currencies: Currencies, _network: NetworkName): string 
   return currency.displayName;
 }
 
-export { getCurrencyOptions, getProviderUrl, defaultSortingCurrencies, getMockCurrencies, getUtilityAsset };
+function statusLogging(callback: () => void) {
+  return (result: ISubmittableResult) => {
+    const { status } = result;
+
+    if (status.isInBlock) {
+      console.info(`Successful transfer with hash ${status.asInBlock.toHex()}`);
+
+      callback();
+    } else if (status.isFinalized) {
+      console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
+    } else {
+      console.info(`Status of transfer: ${status.type}`);
+    }
+  };
+}
+
+export {
+  getCurrencyOptions,
+  getProviderUrl,
+  defaultSortingCurrencies,
+  getMockCurrencies,
+  getUtilityAsset,
+  statusLogging,
+};

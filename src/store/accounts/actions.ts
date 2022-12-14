@@ -2,7 +2,7 @@ import type { ActionTree, ActionContext } from 'vuex';
 import type { Mutations } from '@/store/accounts/mutations';
 import type { State } from '@/store/accounts/state';
 import type { SetSelectedFiat, SetSelectedWallet } from './types';
-import type { Currencies } from '@/interfaces/currencies';
+import type { Currencies, Networks, NetworkName } from '@/interfaces';
 import { MutationTypes } from '@/store/accounts/mutations';
 import { defaultSortingCurrencies } from '@/helpers/currencies';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
@@ -31,19 +31,31 @@ const actions: ActionTree<State, State> & Actions = {
     });
   },
 
-  async [ActionTypes.SET_SELECTED_WALLET]({ rootState, commit, state }, { selectedWalletAddress }) {
+  async [ActionTypes.SET_SELECTED_WALLET]({ rootState, commit, state, getters }, { selectedWalletAddress }) {
     commit(MutationTypes.SET_SELECTED_WALLET, {
       selectedWalletAddress,
     });
 
     setTimeout(() => {
-      const currencies: Currencies = defaultSortingCurrencies(rootState.networks.currencies, state.selectedWallet);
+      const { currencies: stateCurrencies, networks } = rootState.networks;
+      const { selectedWallet } = state;
+      const currenciesByNetworks: Record<NetworkName, Currencies> = {
+        all: defaultSortingCurrencies(stateCurrencies, selectedWallet),
+        ...(networks as Networks).reduce(
+          (result, { name }) => ({
+            ...result,
+            [name]: defaultSortingCurrencies(stateCurrencies, selectedWallet, name),
+          }),
+          {}
+        ),
+      };
 
       (commit as any)(
         NetworksMutationTypes.SET_CURRENCIES,
         {
-          currencies: currencies,
+          currencies: currenciesByNetworks,
           address: selectedWalletAddress,
+          network: getters.getSelectedNetwork,
         },
         { root: true }
       );

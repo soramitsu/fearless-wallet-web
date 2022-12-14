@@ -68,7 +68,6 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
 import RotateInput from './RotateInput.vue';
-import type { Networks } from '@/interfaces/networks';
 import type { Currencies } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -76,11 +75,10 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store';
 import { firstCharToUp } from '@/helpers/common';
 import { cut } from '@/helpers/history';
+import { ETHEREUM_NETWORKS } from '@/consts/networks';
 
 @Component({
-  components: {
-    RotateInput,
-  },
+  components: { RotateInput },
 })
 export default class ReceiveForm extends Vue {
   readonly selectNetworkInputRef = 'selectNetworkInput';
@@ -93,7 +91,6 @@ export default class ReceiveForm extends Vue {
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
 
   get currency() {
@@ -111,7 +108,10 @@ export default class ReceiveForm extends Vue {
   }
 
   get optionsNetworks() {
-    const walletBalance = this.currency?.getNetworkList() ?? [];
+    const haveEthereumAccount = this.selectedWallet.ethereumAddress !== '';
+    const walletBalance = (this.currency?.getNetworkList() ?? []).filter(({ network }) =>
+      ETHEREUM_NETWORKS.includes(network) ? haveEthereumAccount : true
+    );
     const filter = this.filterValue.trim().toLowerCase();
 
     return walletBalance

@@ -8,7 +8,7 @@
           v-if="showWarningIcon"
           icon="info-triangle"
           className="warning"
-          @click.native="$emit('toggleNetworkManagementVisible')"
+          @click.stop.native="$emit('toggleNetworkManagementVisible')"
         />
 
         <Rotate :isActive="isActive" class="icon-chevron">

@@ -13,8 +13,8 @@
 
           <template v-else-if="!isEmptyHistory">
             <HistoryItem
-              v-for="historyNode in filteredHistory"
-              :key="historyNode.id"
+              v-for="(historyNode, index) in filteredHistory"
+              :key="index"
               :historyNode="historyNode"
               :assetId="currency.assetId"
               :relayChain="currency.relayChain"

@@ -85,6 +85,8 @@ export default class GoogleWalletsList extends Vue {
       return false;
     }
 
+    if (this.items[index].isError) this.setItemValue(index, { isError: false });
+
     BaseApi.addKeypairFromJson(ethJson, password);
 
     const pair = BaseApi.addKeypairFromJson(json, password);

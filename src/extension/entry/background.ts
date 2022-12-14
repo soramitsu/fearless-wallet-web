@@ -6,10 +6,6 @@ import { keyring } from '@/controllers/keyringChrome';
 
 chrome.runtime.onInstalled.addListener(async () => {
   await initState();
-
-  chrome.storage.local.get(null).then((store) => {
-    console.info(store, 'chrome store on install');
-  });
 });
 
 chrome.runtime.onConnect.addListener((tab): void => {

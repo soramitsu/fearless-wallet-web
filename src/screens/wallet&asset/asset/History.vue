@@ -79,12 +79,7 @@ export default class History extends Vue {
   }
 
   get history() {
-    const addressByNetwork = BaseApi.getDefaultAddressByNetworkIncludingReplacedAccount(
-      this.selectedWallet,
-      this.selectedNetwork
-    );
-    const historyForNetwork = this.getHistory(this.currency?.assetId, addressByNetwork, this.selectedNetwork);
-    const historyForWalletAddress = historyForNetwork?.nodes ?? [];
+    const historyForWalletAddress = this.historyForNetwork?.nodes ?? [];
 
     return historyForWalletAddress;
   }
@@ -107,14 +102,24 @@ export default class History extends Vue {
     if (this.currency.assetId) this.fetchHistory();
   }
 
+  get historyForNetwork() {
+    const addressByNetwork = BaseApi.getDefaultAddressByNetworkIncludingReplacedAccount(
+      this.selectedWallet,
+      this.selectedNetwork
+    );
+
+    return this.getHistory(this.currency?.assetId, addressByNetwork, this.selectedNetwork);
+  }
+
   async fetchHistory() {
     this.isFetchingHistory = true;
+    const delay = this.historyForNetwork ? 45 : 0;
 
     await this.loadHistory({
       networkName: this.selectedNetwork,
       walletAddress: this.selectedWallet.address,
       assetId: this.currency.assetId,
-      pageSize: 45,
+      pageSize: delay,
     });
 
     this.isFetchingHistory = false;

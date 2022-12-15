@@ -9,9 +9,7 @@
 
       <Scroll>
         <div :class="classes">
-          <div v-if="isFetchingHistory">
-            <Loader />
-          </div>
+          <Loader v-if="isFetchingHistory" />
 
           <template v-else-if="!isEmptyHistory">
             <HistoryItem
@@ -100,13 +98,13 @@ export default class History extends Vue {
     return filteredHistory;
   }
 
-  @Watch('currency')
-  async watchCurrency() {
-    this.fetchHistory();
+  mounted() {
+    if (this.currency.assetId) this.fetchHistory();
   }
 
-  mounted() {
-    this.fetchHistory();
+  @Watch('currency')
+  async watchCurrency() {
+    if (this.currency.assetId) this.fetchHistory();
   }
 
   async fetchHistory() {

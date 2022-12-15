@@ -121,9 +121,6 @@ async function subscribeUtilityAssetsBalances(address: string, network: Network)
   await api?.isReadyOrError;
 
   api!.rx.query.system.account<ISubscribeData>(address).subscribe(async ({ data }) => {
-    // const historyForNetwork = store.getters[NetworksGettersTypes.getHistory](assetId, address, networkName);
-    // const delay = historyForNetwork ? 45 : 0;
-
     store.commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
       walletAddress: address,
       network: networkName,
@@ -131,8 +128,6 @@ async function subscribeUtilityAssetsBalances(address: string, network: Network)
       balance: formatBalance(data, precision),
       parentId,
     });
-
-    // NetworksController.loadHistory(networkName, address, assetId, delay);
   });
 }
 

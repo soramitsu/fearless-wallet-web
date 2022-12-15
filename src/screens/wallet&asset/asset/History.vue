@@ -37,10 +37,10 @@ import type { FilterHistory, GetHistory, TAction } from '@/interfaces';
 import type { LoadHistory, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as NetworksActionsTypes } from '@/store/networks/actions';
-
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Currency } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
+import networksController from '@/controllers/networksController';
 
 @Component({
   components: {
@@ -94,12 +94,12 @@ export default class History extends Vue {
   }
 
   mounted() {
-    if (this.currency.assetId) this.fetchHistory();
+    if (this.currency?.assetId) this.fetchHistory();
   }
 
   @Watch('currency')
   async watchCurrency() {
-    if (this.currency.assetId) this.fetchHistory();
+    if (this.currency?.assetId) this.fetchHistory();
   }
 
   get historyForNetwork() {
@@ -115,12 +115,12 @@ export default class History extends Vue {
     this.isFetchingHistory = true;
     const delay = this.historyForNetwork ? 45 : 0;
 
-    await this.loadHistory({
-      networkName: this.selectedNetwork,
-      walletAddress: this.selectedWallet.address,
-      assetId: this.currency.assetId,
-      pageSize: delay,
-    });
+    await networksController.loadHistory(
+      this.selectedNetwork,
+      this.selectedWallet.address,
+      this.currency.assetId,
+      delay
+    );
 
     this.isFetchingHistory = false;
   }

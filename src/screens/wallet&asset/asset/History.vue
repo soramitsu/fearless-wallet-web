@@ -31,12 +31,11 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import { Action, Getter } from 'vuex-class';
+import { Getter } from 'vuex-class';
 import HistoryItem from './HistoryItem.vue';
-import type { FilterHistory, GetHistory, TAction } from '@/interfaces';
-import type { LoadHistory, SelectedWallet } from '@/store';
+import type { FilterHistory, GetHistory } from '@/interfaces';
+import type { SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { ActionTypes as NetworksActionsTypes } from '@/store/networks/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Currency } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
@@ -59,7 +58,6 @@ export default class History extends Vue {
   @Prop(Object) currency!: Currency;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Action(NetworksActionsTypes.LOAD_HISTORY) loadHistory!: TAction<LoadHistory>;
 
   get selectedNetwork() {
     return this.$route.params.network;

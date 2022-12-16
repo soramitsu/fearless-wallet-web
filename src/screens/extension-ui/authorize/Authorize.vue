@@ -156,7 +156,7 @@ export default class Authorize extends Vue {
   }
 
   .authorize-account-list {
-    height: 180px;
+    height: 300px;
   }
 }
 </style>

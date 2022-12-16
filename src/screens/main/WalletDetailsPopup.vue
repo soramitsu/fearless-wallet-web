@@ -95,7 +95,7 @@ export default class WalletDetailsPopup extends Vue {
   flex-flow: column;
   max-height: 90px;
   min-height: 60px;
-  overflow: auto;
+  overflow: hidden;
   gap: 16px;
   padding: 0 10px;
 

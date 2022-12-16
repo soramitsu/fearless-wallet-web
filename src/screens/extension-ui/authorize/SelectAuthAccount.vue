@@ -69,6 +69,7 @@ export default class SelectAuthAccount extends Vue {
   flex-flow: column;
   align-items: flex-start;
   overflow-y: hidden;
+  height: 100%;
 }
 
 .auth-account {

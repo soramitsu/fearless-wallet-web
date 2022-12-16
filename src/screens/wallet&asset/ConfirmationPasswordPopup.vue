@@ -258,10 +258,8 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   async send() {
     if (this.isLocked) {
-      this.isErrorPassword = !BaseApi.unlockPair(
-        this.transactionId && this.payload?.address ? this.payload.address : this.transactionAddress,
-        this.password
-      );
+      const address = this.transactionId && this.payload?.address ? this.payload.address : this.transactionAddress;
+      this.isErrorPassword = !BaseApi.unlockPair(address, this.password);
 
       if (this.isErrorPassword) return;
     }

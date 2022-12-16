@@ -254,7 +254,6 @@ export default class Wallet extends Vue {
 
   closeGoogleExportPopup() {
     this.$router.replace('/');
-    this.$router.push({ name: Components.Wallet });
 
     this.$emit('closeSelectWalletPopup');
   }

@@ -118,6 +118,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get isSignMobile() {
+    if (this.transactionId && this.payload?.address) return BaseApi.isMobileWallet(this.payload.address);
+
     return BaseApi.isMobileWallet(this.transactionAddress);
   }
 
@@ -254,7 +256,10 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   async send() {
     if (this.isLocked) {
-      this.isErrorPassword = !BaseApi.unlockPair(this.transactionAddress, this.password);
+      this.isErrorPassword = !BaseApi.unlockPair(
+        this.transactionId && this.payload?.address ? this.payload.address : this.transactionAddress,
+        this.password
+      );
 
       if (this.isErrorPassword) return;
     }

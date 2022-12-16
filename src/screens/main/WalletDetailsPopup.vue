@@ -13,7 +13,7 @@
       <div class="row" @click="openWalletDetails">
         <div class="label">Wallet Details</div>
       </div>
-      <div class="row" @click="exportToGoogleDrive">
+      <div v-if="isExportPossible" class="row" @click="exportToGoogleDrive">
         <div class="label google">Export to Google</div>
       </div>
       <div class="row" @click="deleteWallet">
@@ -39,6 +39,14 @@ export default class WalletDetailsPopup extends Vue {
   @Prop(String) selectedWalletAddress!: string;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
 
+  get isMobileWallet() {
+    return BaseApi.isMobileWallet(this.selectedWalletAddress);
+  }
+
+  get isExportPossible() {
+    return !this.isMobileWallet;
+  }
+
   get top() {
     return this.buttonTopClick - 30;
   }
@@ -48,8 +56,7 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   async deleteWallet() {
-    const isMobile = BaseApi.isMobileWallet(this.selectedWalletAddress);
-    const walletsCount = isMobile
+    const walletsCount = this.isMobileWallet
       ? await BaseApi.deleteMobileWallet(this.selectedWalletAddress)
       : BaseApi.deleteNativeWallet(this.selectedWalletAddress);
 
@@ -84,13 +91,15 @@ export default class WalletDetailsPopup extends Vue {
 .wallet-details {
   color: $default-white;
   font-weight: 500;
-  height: 90px;
+  display: flex;
+  flex-flow: column;
+  max-height: 90px;
+  min-height: 60px;
+  overflow: auto;
+  gap: 16px;
   padding: 0 10px;
 
   .row {
-    display: flex;
-    margin-bottom: 16px;
-
     &:last-child {
       margin-bottom: 0;
     }

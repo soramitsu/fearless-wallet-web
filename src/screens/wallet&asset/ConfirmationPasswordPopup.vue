@@ -14,6 +14,7 @@
         <div class="text row">{{ $t('asset.passwordTransaction') }}</div>
 
         <ValidatedInput
+          v-if="isLocked"
           v-model="password"
           placeholder="common.password"
           size="big"
@@ -187,10 +188,11 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async mounted() {
-    if (!BaseApi.isExtension() && this.isSignMobile) return;
+    if (!BaseApi.isExtension() || this.isSignMobile) return;
 
     if (this.transactionId !== undefined) {
       const { isLocked } = await isSignLocked(this.transactionId);
+
       this.isLocked = isLocked;
       this.isSavePass = !this.isLocked;
     } else {
@@ -335,7 +337,6 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   .remember__checkbox {
-    margin-top: -15px;
     width: 100%;
     display: flex;
     align-items: flex-start;

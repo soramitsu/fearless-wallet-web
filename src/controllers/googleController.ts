@@ -96,7 +96,7 @@ ${json}
       const baseURL = `${chrome.runtime.getURL('popup.html')}#/${this.urlTypes[type]}/${token}`;
       const url = type === 'export' && wallet ? `${baseURL}?wallet=${wallet}` : baseURL;
       const [tab] = await chrome.tabs.query({ title: 'fearless-wallet' });
-      console.log(url, wallet, type);
+
       tab && tab.id ? chrome.tabs.update(tab.id, { active: true, url }) : chrome.tabs.create({ active: true, url });
     });
   }

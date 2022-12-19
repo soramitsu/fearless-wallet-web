@@ -2,7 +2,6 @@ import axios from 'axios';
 import fetchAdapter from '@vespaiach/axios-fetch-adapter';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { FilesResponse, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
-import { createGoogleFile } from '@/extension/messaging';
 
 class GoogleManage {
   private readonly baseURL = 'https://www.googleapis.com/drive/v3';
@@ -65,29 +64,6 @@ Content-Type: application/json
 
 ${json}
 --foo_bar_baz--`;
-  }
-
-  public async saveSubstrateAndEthereumWallet(
-    json: string,
-    ethJson: string,
-    name: string,
-    address: string,
-    ethAddress: string,
-    token: string
-  ) {
-    const ethRes = await createGoogleFile({
-      json: JSON.stringify(ethJson),
-      options: { name, address: ethAddress },
-      token,
-    });
-
-    const res = await createGoogleFile({
-      json: JSON.stringify(json),
-      options: { name, address: `${address}/${ethRes.id}` },
-      token,
-    });
-
-    return res.id;
   }
 
   public async authExtension(type: 'main' | 'export' = 'main', wallet?: string) {

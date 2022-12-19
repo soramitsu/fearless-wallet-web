@@ -1,7 +1,13 @@
 <template>
-  <Popup headerType="success" sizeWidth="big" :handlerClose="closePopup" :zIndex="399">
+  <Popup
+    headerType="success"
+    sizeWidth="big"
+    :headerText="statusMessagesHeader"
+    :handlerClose="closePopup"
+    :zIndex="399"
+  >
     <div class="popup-content">
-      <template v-if="!isFileUploading">
+      <template v-if="isAwaiting">
         <Icon :icon="getIconName" className="icon__lock-green" iconColor="success" />
 
         <div class="text row">{{ popupMessage }}</div>
@@ -22,12 +28,12 @@
         <Hint class="hint" iconName="notification" :text="hintGoogleDriveText" />
       </template>
 
-      <Loader v-if="isFileUploading" />
+      <Loader v-if="isUploading" />
 
-      <span v-if="isFileUploaded" class="descriptions">{{ $t('wallet.googleExportSuccess') }}</span>
+      <span v-if="isFinishedUpload" class="descriptions">{{ $t('wallet.googleExportSuccess') }}</span>
 
       <Button
-        v-if="!isFileUploading"
+        v-if="isAwaiting"
         text="common.confirm"
         width="100%"
         size="medium"
@@ -44,7 +50,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import type { KeyringPair } from '@polkadot/keyring/types';
-import { createGoogleFile } from '@/extension/messaging';
+import { createGoogleFile, exportAccount, validateAccount } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import { ICreateFile } from '@/interfaces';
 
@@ -52,17 +58,28 @@ import { ICreateFile } from '@/interfaces';
 export default class GoogleExportPopup extends Vue {
   password = '';
   isErrorPassword = false;
-  isFileUploaded = false;
-  isFileUploading = false;
 
+  status: 'prepare' | 'upload' | 'uploaded' | 'await' = 'await';
   @Prop(Function) closePopup!: VoidFunction;
 
   get selectedWallet() {
     return this.$route.query.wallet as string;
   }
 
+  get isAwaiting() {
+    return this.status === 'await' || this.status === 'uploaded';
+  }
+
+  get isUploading() {
+    return this.status === 'prepare' || this.status === 'upload';
+  }
+
+  get isFinishedUpload() {
+    return this.status === 'uploaded';
+  }
+
   get isAwaitsConfirmation() {
-    return !this.isFileUploaded && !this.isFileUploading;
+    return this.status === 'await';
   }
 
   get disabledButton() {
@@ -74,11 +91,11 @@ export default class GoogleExportPopup extends Vue {
   }
 
   get getIconName() {
-    return this.isFileUploaded ? 'check' : 'lock-green';
+    return this.status === 'uploaded' ? 'check' : 'lock-green';
   }
 
   get popupMessage() {
-    if (this.isAwaitsConfirmation) return this.$t('accounts.validatePass');
+    if (this.status === 'await') return this.$t('accounts.validatePass');
 
     return this.$t('addWallet.google.saved');
   }
@@ -89,37 +106,47 @@ export default class GoogleExportPopup extends Vue {
   }
 
   async onConfirm() {
-    if (this.isFileUploaded) {
+    if (this.status === 'uploaded') {
       this.closePopup();
+
+      return;
+    }
+
+    this.status = 'prepare';
+
+    const isValid = await validateAccount(this.selectedWallet, this.password);
+
+    if (!isValid) {
+      this.status = 'await';
+      this.isErrorPassword = true;
 
       return;
     }
 
     const pair = BaseApi.getPair(this.selectedWallet);
 
-    try {
-      pair.toJson(this.password);
-    } catch {
-      this.isErrorPassword = true;
-
-      return;
-    }
-
-    this.isFileUploading = true;
     const ethPair = BaseApi.getPair(pair.meta.ethereumAddress as string);
-    const ethJson = JSON.stringify(ethPair.toJson(this.password));
-    const substrateJson = JSON.stringify(pair.toJson(this.password));
+    const ethJson = ethPair.toJson(this.password);
+    const substrateJson = await exportAccount(pair.address, this.password);
     const ethOptions = this.prepUploadMeta(ethPair);
 
-    const ethWalletId = await this.createFile(ethJson, ethOptions);
+    this.status = 'upload';
+
+    const ethWalletId = await this.createFile(JSON.stringify(ethJson), ethOptions);
+
     if (!ethWalletId) return;
 
     const substrateOptions = this.prepUploadMeta(pair, ethWalletId);
+    const substrateWalletId = await this.createFile(JSON.stringify(substrateJson), substrateOptions);
 
-    const substrateWalletId = await this.createFile(substrateJson, substrateOptions);
+    if (ethWalletId && substrateWalletId) this.status = 'uploaded';
+  }
 
-    this.isFileUploading = false;
-    if (ethWalletId && substrateWalletId) this.isFileUploaded = true;
+  get statusMessagesHeader() {
+    if (this.status === 'prepare') return this.$t('googleExport.prepData');
+    if (this.status === 'upload') return this.$t('googleExport.uploading');
+
+    return '';
   }
 
   prepUploadMeta(pair: KeyringPair, ethWalletId?: string): ICreateFile['options'] {

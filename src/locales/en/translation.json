@@ -110,6 +110,10 @@
     "noAnswer": "No answer from your wallet received yet. Please make sure the wallet is open",
     "signMobile": "To sign using a mobile device, make sure your mobile client is open on the Beacon dApp screen and click Sign."
   },
+  "googleExport": {
+    "prepData": "Preparing data...",
+    "uploading": "Uploading..."
+  },
   "metadata": {
     "text": "Metadata",
     "appAccess": "Yes, allow this application access",

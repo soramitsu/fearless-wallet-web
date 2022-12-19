@@ -181,6 +181,7 @@ const actions: ActionTree<State, State> & Actions = {
 
     router.push({ name: Components.Wallet });
   },
+
   [ActionTypes.SUBSCRIBE_EXTENSION_REQUESTS]({ dispatch }) {
     const auth = dispatch(ActionTypes.SUBSCRIBE_AUTH_REQUESTS);
     const sign = dispatch(ActionTypes.SUBSCRIBE_SIGN_REQUESTS);

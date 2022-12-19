@@ -95,6 +95,10 @@
       "noWallets": "Не нашли кошельки в вашем Google Drive"
     }
   },
+  "googleExport": {
+    "prepData": "Готовим данные...",
+    "uploading": "Загружаем..."
+  },
   "mobileConnector": {
     "connectionSet": "Соединение установлено",
     "connectionFailed": "Соединение установлено",

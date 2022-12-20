@@ -59,15 +59,10 @@ interface Handler {
 }
 
 type Handlers = Record<string, Handler>;
-let port = chrome.runtime ? chrome.runtime.connect({ name: PORT_EXTENSION }) : null;
+const port = chrome.runtime ? chrome.runtime.connect({ name: PORT_EXTENSION }) : null;
 const handlers: Handlers = {};
 
-// setup a listener for messages, any incoming resolves the promise
-port?.onDisconnect.addListener((tab) => {
-  port = chrome.runtime.connect({ name: PORT_EXTENSION });
-});
-
-port?.onMessage.addListener((data: Message['data']): void => {
+const onMessage = (data: Message['data']): void => {
   const handler = handlers[data.id];
 
   if (!handler) {
@@ -86,7 +81,17 @@ port?.onMessage.addListener((data: Message['data']): void => {
   } else {
     handler.resolve(data.response);
   }
-});
+};
+
+// setup a listener for messages, any incoming resolves the promise
+const connect = () => {
+  if (!port) return;
+
+  port.onDisconnect.addListener(connect);
+  port.onMessage.addListener(onMessage);
+};
+
+connect();
 
 function sendMessage<TMessageType extends MessageTypesWithNullRequest>(
   message: TMessageType

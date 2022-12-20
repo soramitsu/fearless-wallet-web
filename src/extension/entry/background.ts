@@ -9,10 +9,15 @@ chrome.runtime.onInstalled.addListener(async () => {
 });
 
 chrome.runtime.onConnect.addListener((tab): void => {
+  console.info('onConnect fired');
   State.injectFromStorage();
-
+  console.info(tab, 'tab');
   tab.onMessage.addListener((data: TransportRequestMessage<keyof RequestSignatures>) => handlers(data, tab));
   tab.onDisconnect.addListener(() => console.warn(`Disconnected from ${tab.name}`));
+});
+
+chrome.runtime.onSuspend.addListener(() => {
+  console.info('suspend');
 });
 
 cryptoWaitReady()

@@ -36,11 +36,13 @@
           @click="openFullScreen"
         />
 
-        <div class="background-ellipse button-margin">
-          <div :class="statusConnectedClasses"></div>
+        <div class="background-ellipse button-margin" @click="toggleConnectionPopup">
+          <div class="connect" :class="statusConnectedClasses"></div>
 
           {{ $t(statusConnectedText) }}
         </div>
+
+        <ConnectionPopup v-if="showConnectionPopup" :tabStatus="tabStatus" :handlerClose="toggleConnectionPopup" />
 
         <Tooltip text="header.connectionStatus" target=".background-ellipse" placement="top" />
 
@@ -66,17 +68,24 @@ import type { SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
-import { windowOpen } from '@/extension/messaging';
+import { isTabAuthorize, windowOpen } from '@/extension/messaging';
+import { ActiveTabAuthorizeStatus } from '@/extension/background/extension-base/src/background/types';
+import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
 
-@Component
+@Component({
+  components: {
+    ConnectionPopup,
+  },
+})
 export default class Header extends Vue {
   readonly walletNameRef = 'walletName';
   readonly settingsNameRef = 'settingsName';
+  tabStatus: ActiveTabAuthorizeStatus | null = null;
+  showConnectionPopup = false;
 
   @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
 
   get showFullScreenIcon() {
     return BaseApi.useIsPopup();
@@ -91,11 +100,11 @@ export default class Header extends Vue {
   }
 
   get statusConnectedClasses() {
-    return ['connect', this.isOnline ? 'success-connect' : 'fail-connect'];
+    return !this.tabStatus || !this.tabStatus.isAuthorize ? 'fail-connect' : 'success-connect';
   }
 
   get statusConnectedText() {
-    return this.isOnline ? 'header.connected' : 'header.disconnect';
+    return !this.tabStatus || !this.tabStatus.isAuthorize ? 'header.notConnected' : 'header.connected';
   }
 
   @Watch('syncedShowSelectWalletPopup')
@@ -110,6 +119,16 @@ export default class Header extends Vue {
     const targetElement = (this.$refs[this.settingsNameRef] as Vue).$el as HTMLElement;
 
     targetElement.style.zIndex = value ? '300' : '0';
+  }
+
+  async mounted() {
+    this.tabStatus = await isTabAuthorize();
+  }
+
+  toggleConnectionPopup() {
+    if (!this.tabStatus) return;
+
+    this.showConnectionPopup = !this.showConnectionPopup;
   }
 
   backToWallet() {
@@ -214,7 +233,7 @@ export default class Header extends Vue {
   }
 
   .fail-connect {
-    background-color: #ee7700;
+    background-color: $gray-color;
   }
 }
 </style>

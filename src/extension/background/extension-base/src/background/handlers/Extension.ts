@@ -5,7 +5,7 @@ import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { assert, isHex } from '@polkadot/util';
 import { keyExtractSuri, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
-import { CachedUnlocks } from '../types';
+import { ActiveTabAuthorizeStatus, CachedUnlocks } from '../types';
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
@@ -284,6 +284,29 @@ export default class Extension {
 
   static async getAuthList(): Promise<ResponseAuthorizeList> {
     return { list: State.authUrls };
+  }
+
+  static async isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
+    const [tab] = await chrome.tabs.query({ active: true });
+
+    if (!tab || !tab.url)
+      return {
+        isAuthorize: false,
+        authorizeAccountsCount: 0,
+        dAppName: '',
+      };
+
+    const tabHostName = new URL(tab.url).hostname;
+    const authorizeUrl = Object.keys(State.authUrls).filter((url) => {
+      return url === tabHostName;
+    });
+    const isAuthorize = authorizeUrl.length !== 0;
+
+    return {
+      isAuthorize,
+      authorizeAccountsCount: isAuthorize ? State.authUrls[tabHostName].authorizedAccounts.length : 0,
+      dAppName: tabHostName,
+    };
   }
 
   // FIXME This looks very much like what we have in accounts
@@ -833,6 +856,9 @@ export default class Extension {
 
       case 'pri(google.delete.file)':
         return Extension.deleteFile(request as GoogleFileId);
+
+      case 'pri(tab.status)':
+        return Extension.isTabAuthorize();
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

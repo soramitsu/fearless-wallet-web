@@ -1,7 +1,7 @@
 <template>
   <NotificationPopup
     sizeWidth="big"
-    rejectButtonText="Cancel"
+    rejectButtonText="common.cancel"
     acceptButtonText="accounts.switchNode"
     :showRejectButton="true"
     :headers="headers"

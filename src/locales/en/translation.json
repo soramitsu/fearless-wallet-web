@@ -128,7 +128,9 @@
   },
   "header": {
     "connected": "Connected",
-    "disconnect": "Disconnect",
+    "notConnected": "not connected",
+    "connectedMessage": "You have 1 account connected to this site.| You have {count} accounts connected to this site.",
+    "connectionStatusMessage": "Fearless Wallet is not connected to this site. To connect web3 site, find and click connect button.",
     "connectionStatus": "Connection status",
     "walletManagement": "Wallet management",
     "settings": {

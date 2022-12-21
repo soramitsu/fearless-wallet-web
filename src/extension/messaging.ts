@@ -10,6 +10,7 @@ import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types
 import type {
   AccountJson,
   AllowedPath,
+  ActiveTabAuthorizeStatus,
   AuthorizeRequest,
   MessageTypes,
   MessageTypesWithNoSubscriptions,
@@ -63,7 +64,7 @@ let port = chrome.runtime ? chrome.runtime.connect({ name: PORT_EXTENSION }) : n
 const handlers: Handlers = {};
 
 // setup a listener for messages, any incoming resolves the promise
-port?.onDisconnect.addListener((tab) => {
+port?.onDisconnect.addListener(() => {
   port = chrome.runtime.connect({ name: PORT_EXTENSION });
 });
 
@@ -376,4 +377,8 @@ export async function createGoogleFile({ json, options, token }: ICreateFile): P
 
 export async function deleteGoogleFile(id: string, token: string): Promise<void> {
   return sendMessage('pri(google.delete.file)', { id, token });
+}
+
+export async function isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
+  return sendMessage('pri(tab.status)');
 }

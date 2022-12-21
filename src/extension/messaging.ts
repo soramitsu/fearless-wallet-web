@@ -59,7 +59,7 @@ interface Handler {
 }
 
 type Handlers = Record<string, Handler>;
-const port = chrome.runtime ? chrome.runtime.connect({ name: PORT_EXTENSION }) : null;
+let port = chrome.runtime ? chrome.runtime.connect({ name: PORT_EXTENSION }) : null;
 const handlers: Handlers = {};
 
 const onMessage = (data: Message['data']): void => {
@@ -85,9 +85,16 @@ const onMessage = (data: Message['data']): void => {
 
 // setup a listener for messages, any incoming resolves the promise
 const connect = () => {
-  if (!port) return;
+  if (!port) port = chrome.runtime.connect({ name: PORT_EXTENSION });
 
-  port.onDisconnect.addListener(connect);
+  const onDisconnect = (_port: chrome.runtime.Port) => {
+    _port.onDisconnect.removeListener(onDisconnect);
+    _port.onMessage.removeListener(onMessage);
+
+    connect();
+  };
+
+  port.onDisconnect.addListener(onDisconnect);
   port.onMessage.addListener(onMessage);
 };
 

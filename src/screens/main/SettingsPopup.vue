@@ -20,7 +20,7 @@
       <SettingMenuItem
         v-if="isExtension"
         title="common.manageDApp"
-        icon="polkadot"
+        icon="mechanic-tool"
         @onOpen="openPopup('openManageAuths')"
       />
     </div>

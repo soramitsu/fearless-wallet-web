@@ -84,21 +84,21 @@ const onMessage = (data: Message['data']): void => {
 };
 
 // setup a listener for messages, any incoming resolves the promise
-const connect = () => {
+const connect = (onDisconnect: (_port: chrome.runtime.Port) => void) => {
   if (!port) port = chrome.runtime.connect({ name: PORT_EXTENSION });
-
-  const onDisconnect = (_port: chrome.runtime.Port) => {
-    _port.onDisconnect.removeListener(onDisconnect);
-    _port.onMessage.removeListener(onMessage);
-
-    connect();
-  };
 
   port.onDisconnect.addListener(onDisconnect);
   port.onMessage.addListener(onMessage);
 };
 
-connect();
+const onDisconnect = (_port: chrome.runtime.Port) => {
+  _port.onDisconnect.removeListener(onDisconnect);
+  _port.onMessage.removeListener(onMessage);
+
+  connect(onDisconnect);
+};
+
+connect(onDisconnect);
 
 function sendMessage<TMessageType extends MessageTypesWithNullRequest>(
   message: TMessageType

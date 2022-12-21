@@ -1,24 +1,16 @@
 import { ethers } from 'ethers';
+import EthWallet from '@/controllers/ethers/ethWallet';
 
 class EthProvider {
-  provider: ethers.providers.WebSocketProvider;
+  provider: ethers.providers.BaseProvider;
+
   constructor() {
-    this.provider = new ethers.providers.WebSocketProvider(
-      'wss://mainnet.infura.io/ws/v3/69a249c61c2d469c8695ddf3a9205961'
-    );
+    this.provider = new ethers.providers.EtherscanProvider('homestead', 'ZWNEGMN2EBP34B8B25MQWGTBPSNZG4VBY1');
+    EthWallet.createFromMnemonic('antique scrub mix lyrics pear legal buddy used silent consider delay utility');
   }
 
   static create() {
     return new EthProvider();
-  }
-
-  async getTokenBalance() {
-    const abi = [
-      'function balanceOf(walletAddress) view returns (uint256)',
-      'function decimals() view returns (uint256)',
-    ];
-    const newContract = new ethers.Contract('0xdAC17F958D2ee523a2206206994597C13D831ec7', abi, this.provider);
-    const decimals = await newContract.decimals();
   }
 }
 

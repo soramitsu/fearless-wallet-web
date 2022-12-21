@@ -1,3 +1,5 @@
+import { ContractType } from '@/interfaces/ether';
+
 const ETHEREUM_NETWORKS = ['moonbeam', 'moonriver', 'moonbase alpha', 'astarEvm', 'shidenEvm'];
 const NOT_SUPPORTED_ALL_TRANSFER_NETWORKS = ['karura', 'acala', 'acala_testnet'];
 
@@ -182,11 +184,48 @@ const UNIT: Record<string, string> = {
   'kusama (test)': 'kusama',
 };
 
+const ETH_BLOCK_EXPLORER: Record<string, string> = {
+  // moonbeam: 'https://moonbeam.moonscan.io',
+  // moonriver: 'https://moonriver.moonscan.io',
+  // moonbase: 'https://moonbase.moonscan.io',
+  ethereum: 'https://etherscan.io',
+  // ethereum_goerli: 'https://goerli.etherscan.io',
+  // binance: 'https://bscscan.com',
+  // binance_test: 'https://testnet.bscscan.com',
+};
+const PREDEFINED_NETWORKS = {
+  ethereum: {
+    key: 'ethereum',
+    chain: 'Ethereum Mainnet',
+    genesisHash: '0xb60d7bdd334cd3768d43f14a05c7fe7e886ba5bcb77e1064530052fed1a3f145',
+    ss58Format: 0,
+    providers: {
+      Cloudflare: 'https://cloudflare-eth.com',
+      BlastApi: 'https://eth-mainnet.public.blastapi.io',
+      Infura: 'https://mainnet.infura.io/v3/b6bf7d3508c941499b10025c0776eaf8',
+    },
+    active: false,
+    currentProviderMode: 'http',
+    currentProvider: 'Infura',
+    groups: ['MAIN_NET'],
+    isEthereum: true,
+    nativeToken: 'ETH',
+    decimals: 18,
+    coinGeckoKey: 'ethereum',
+    evmChainId: 1,
+    supportBonding: false,
+    getStakingOnChain: false,
+    abiExplorer: 'https://etherscan.io',
+    supportSmartContract: [ContractType.evm],
+  },
+};
 export {
   UNIT,
   LIT,
   PHA,
+  ETH_BLOCK_EXPLORER,
   NETWORK_AND_ASSET,
+  PREDEFINED_NETWORKS,
   RELAY_CHAINS,
   MAIN_NETWORKS,
   NATIVE_NETWORKS,

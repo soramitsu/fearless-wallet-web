@@ -26,7 +26,7 @@
     "enterPassword": "Enter password",
     "setupPassword": "Set up password",
     "addEthereumAccount": "Add ethereum account",
-    "haveWrittenPassphrase": "I have written down passphrase",
+    "haveWrittenPassphrase": "I have written down the passphrase",
     "ConfirmSecretData": "Confirm secret data",
     "usingFearless": "Start using Fearless",
     "rawSeed": "{type} accounts raw seed",
@@ -281,7 +281,7 @@
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
   },
   "common": {
-    "developing": "Under Development",
+    "comingSoon": "Coming Soon",
     "attention": "Attention",
     "delete": "Delete",
     "accept": "Accept",

@@ -64,6 +64,7 @@ const actions: ActionTree<State, State> & Actions = {
 
           return {
             name: networkName,
+            label: name,
             nodes,
             assets,
             chainId,

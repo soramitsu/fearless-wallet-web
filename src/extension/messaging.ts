@@ -86,6 +86,8 @@ const onMessage = (data: Message['data']): void => {
 
 // setup a listener for messages, any incoming resolves the promise
 const connect = (onDisconnect: (_port: chrome.runtime.Port) => void) => {
+  if (chrome.extension === undefined) return;
+
   if (!port) port = chrome.runtime.connect({ name: PORT_EXTENSION });
 
   port.onDisconnect.addListener(onDisconnect);
@@ -99,7 +101,7 @@ const onDisconnect = (_port: chrome.runtime.Port) => {
   connect(onDisconnect);
 };
 
-if (chrome.extension !== undefined) connect(onDisconnect);
+connect(onDisconnect);
 
 function sendMessage<TMessageType extends MessageTypesWithNullRequest>(
   message: TMessageType

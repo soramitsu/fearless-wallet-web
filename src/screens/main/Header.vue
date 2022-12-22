@@ -36,10 +36,12 @@
           @click="openFullScreen"
         />
 
-        <div class="background-ellipse button-margin" @click="toggleConnectionPopup">
-          <div class="connect" :class="statusConnectedClasses"></div>
-
-          {{ $t(statusConnectedText) }}
+        <div v-if="isExtension" class="background-ellipse button-margin" @click="toggleConnectionPopup">
+          <Loading v-if="!tabStatus" />
+          <template v-else>
+            <div class="connect" :class="statusConnectedClasses"></div>
+            <span>{{ $t(statusConnectedText) }}</span>
+          </template>
         </div>
 
         <ConnectionPopup v-if="showConnectionPopup" :tabStatus="tabStatus" :handlerClose="toggleConnectionPopup" />
@@ -70,11 +72,13 @@ import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
 import { isTabAuthorize, windowOpen } from '@/extension/messaging';
 import { ActiveTabAuthorizeStatus } from '@/extension/background/extension-base/src/background/types';
+import Loading from '@/components/Loading.vue';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
 
 @Component({
   components: {
     ConnectionPopup,
+    Loading,
   },
 })
 export default class Header extends Vue {
@@ -106,7 +110,9 @@ export default class Header extends Vue {
   get statusConnectedText() {
     return !this.tabStatus || !this.tabStatus.isAuthorize ? 'header.notConnected' : 'header.connected';
   }
-
+  get isExtension() {
+    return BaseApi.isExtension();
+  }
   @Watch('syncedShowSelectWalletPopup')
   updateZIndexSelectWalletPopup() {
     const targetElement = this.$refs[this.walletNameRef] as HTMLElement;
@@ -137,6 +143,7 @@ export default class Header extends Vue {
 
   openFullScreen() {
     windowOpen('/');
+    window.close();
   }
 
   toggleSettingsVisible() {
@@ -213,8 +220,10 @@ export default class Header extends Vue {
       justify-content: center;
       align-items: center;
       height: 32px;
+      width: 145px;
       padding: 0 12px;
       font-size: 12px;
+      line-height: 18px;
       border-radius: 20px;
       background-color: $default-background-color;
       user-select: none;

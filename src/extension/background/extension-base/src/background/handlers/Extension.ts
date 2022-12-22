@@ -287,7 +287,7 @@ export default class Extension {
   }
 
   static async isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
-    const [tab] = await chrome.tabs.query({ active: true });
+    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
 
     if (!tab || !tab.url)
       return {

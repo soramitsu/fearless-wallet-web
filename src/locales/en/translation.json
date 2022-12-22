@@ -133,6 +133,7 @@
     "connectionStatusMessage": "Fearless Wallet is not connected to this site. To connect web3 site, find and click connect button.",
     "connectionStatus": "Connection status",
     "walletManagement": "Wallet management",
+    "settingsAndManagement": "Settings and account management",
     "settings": {
       "accounts": "Accounts",
       "currency": "Currency",
@@ -283,6 +284,7 @@
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
   },
   "common": {
+    "fearlessWallet": "Fearless Wallet",
     "comingSoon": "Coming Soon",
     "attention": "Attention",
     "delete": "Delete",

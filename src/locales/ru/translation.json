@@ -131,6 +131,7 @@
     "connectedMessage": "У вас есть 1 аккаунт подключенный к этому сайту.| У вас есть {count} аккаунтов подключенных к этому сайту.",
     "connectionStatus": "Статус подключения",
     "walletManagement": "Управление кошельком",
+    "settingsAndManagement": "Настройки и управление аккаунтом",
     "settings": {
       "accounts": "Аккаунты",
       "currency": "Валюты",

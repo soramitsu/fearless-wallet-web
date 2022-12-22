@@ -53,7 +53,7 @@
           backgroundColor="none"
           placement="left"
           target=".settings"
-          tooltipText="Settings and account management"
+          tooltipText="header.settingsAndManagement"
           @click="toggleSettingsVisible"
         />
       </div>

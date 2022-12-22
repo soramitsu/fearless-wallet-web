@@ -32,7 +32,7 @@ import type { Chain } from '@polkadot/extension-chains/types';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import { FilesResponse, GoogleAuthTypes, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
+import type { FilesResponse, GoogleAuthTypes, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
 
 const metadataGets = new Map<string, Promise<MetadataDef | null>>();
 
@@ -99,7 +99,7 @@ const onDisconnect = (_port: chrome.runtime.Port) => {
   connect(onDisconnect);
 };
 
-connect(onDisconnect);
+if (chrome.extension !== undefined) connect(onDisconnect);
 
 function sendMessage<TMessageType extends MessageTypesWithNullRequest>(
   message: TMessageType

@@ -1,4 +1,10 @@
-import { AuthorizeRequest, AuthUrlInfo, MetadataRequest, SigningRequest } from '@extension-base/background/types';
+import {
+  ActiveTabAuthorizeStatus,
+  AuthorizeRequest,
+  AuthUrlInfo,
+  MetadataRequest,
+  SigningRequest,
+} from '@extension-base/background/types';
 
 export type State = {
   requests: {
@@ -7,6 +13,7 @@ export type State = {
     meta: MetadataRequest[];
   };
   authList: Record<string, AuthUrlInfo>;
+  tabStatus: ActiveTabAuthorizeStatus | null;
 };
 
 const state = (): State => {
@@ -17,6 +24,7 @@ const state = (): State => {
       sign: [],
     },
     authList: {},
+    tabStatus: null,
   };
 };
 

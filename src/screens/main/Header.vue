@@ -38,6 +38,7 @@
 
         <div v-if="isExtension" class="background-ellipse button-margin" @click="toggleConnectionPopup">
           <Loading v-if="!tabStatus" />
+
           <template v-else>
             <div class="connect" :class="statusConnectedClasses"></div>
             <span>{{ $t(statusConnectedText) }}</span>
@@ -65,15 +66,18 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+import { Getter, Action } from 'vuex-class';
 import type { SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
+import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
-import { isTabAuthorize, windowOpen } from '@/extension/messaging';
+import { windowOpen } from '@/extension/messaging';
 import { ActiveTabAuthorizeStatus } from '@/extension/background/extension-base/src/background/types';
 import Loading from '@/components/Loading.vue';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
+import { TAction } from '@/interfaces';
 
 @Component({
   components: {
@@ -84,12 +88,14 @@ import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
 export default class Header extends Vue {
   readonly walletNameRef = 'walletName';
   readonly settingsNameRef = 'settingsName';
-  tabStatus: ActiveTabAuthorizeStatus | null = null;
+
   showConnectionPopup = false;
 
   @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(ExtensionGettersTypes.getTabStatus) tabStatus!: ActiveTabAuthorizeStatus;
+  @Action(ExtensionActionTypes.FETCH_TAB_STATUS) fetchTabStatus!: TAction<ActiveTabAuthorizeStatus>;
 
   get showFullScreenIcon() {
     return BaseApi.useIsPopup();
@@ -110,6 +116,7 @@ export default class Header extends Vue {
   get statusConnectedText() {
     return !this.tabStatus || !this.tabStatus.isAuthorize ? 'header.notConnected' : 'header.connected';
   }
+
   get isExtension() {
     return BaseApi.isExtension();
   }
@@ -128,7 +135,7 @@ export default class Header extends Vue {
   }
 
   async mounted() {
-    this.tabStatus = await isTabAuthorize();
+    this.fetchTabStatus();
   }
 
   toggleConnectionPopup() {

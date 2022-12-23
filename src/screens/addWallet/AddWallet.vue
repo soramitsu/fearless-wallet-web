@@ -816,6 +816,7 @@ export default class AddWallet extends Vue {
 
   openFullScreen() {
     BaseApi.windowOpen('/');
+    window.close();
   }
 
   backIsOnlyEthereumAccountFlow() {

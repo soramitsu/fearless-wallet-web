@@ -169,11 +169,16 @@ export default class Button extends Vue {
   margin-left: 0;
 }
 
+.el-button.s-primary:disabled {
+  color: $gray-color;
+}
+
 .is-disabled {
   opacity: 0.7;
   background-color: #f8087b !important;
   border-color: #f8087b !important;
 }
+
 .button--content-wrap > .el-button span {
   font-size: 14px;
   font-weight: 400;

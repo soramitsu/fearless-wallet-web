@@ -13,78 +13,86 @@
     >
       <div class="about-popup">
         <div class="header">{{ t('text') }}</div>
-        <div class="title">Fearless Wallet</div>
+        <div class="title">{{ $t('common.fearlessWallet') }}</div>
+        <div class="item__container">
+          <div v-for="{ icon, label, subLabel, url } in mainItems" class="about-item" :key="label" @click="open(url)">
+            <div class="about-left-part">
+              <Icon :icon="icon" class="icon" />
 
-        <div v-for="{ icon, label, subLabel, url } in mainItems" class="about-item" :key="label" @click="open(url)">
-          <div class="about-left-part">
-            <Icon :icon="icon" class="icon" />
+              <div class="item-descriptions">
+                <div class="label">{{ t(label) }}</div>
 
-            <div class="item-descriptions">
-              <div class="label">{{ t(label) }}</div>
-
-              <div v-if="subLabel" class="sub-label">{{ subLabel }}</div>
+                <div v-if="subLabel" class="sub-label">{{ subLabel }}</div>
+              </div>
             </div>
+
+            <Icon icon="chevron-right" :href="url" className="chevron-right" />
           </div>
-
-          <Icon icon="chevron-right" :href="url" className="chevron-right" />
         </div>
-
         <div class="title">{{ t('communityWallet') }}</div>
 
-        <div
-          v-for="{ icon, label, subLabel, url } in communityItems"
-          class="about-item"
-          :key="label"
-          @click="open(url)"
-        >
-          <div class="about-left-part">
-            <Icon :icon="icon" class="icon" />
+        <div class="item__container">
+          <div
+            v-for="{ icon, label, subLabel, url } in communityItems"
+            class="about-item"
+            :key="label"
+            @click="open(url)"
+          >
+            <div class="about-left-part">
+              <Icon :icon="icon" class="icon" />
 
-            <div class="item-descriptions">
-              <div class="label">{{ t(label) }}</div>
+              <div class="item-descriptions">
+                <div class="label">{{ t(label) }}</div>
 
-              <div v-if="subLabel" class="sub-label">{{ subLabel }}</div>
+                <div v-if="subLabel" class="sub-label">{{ subLabel }}</div>
+              </div>
             </div>
+
+            <Icon icon="chevron-right" className="chevron-right" />
           </div>
-
-          <Icon icon="chevron-right" className="chevron-right" />
         </div>
-
         <div class="title">{{ t('socialMedia') }}</div>
 
-        <div
-          v-for="{ icon, label, subLabel, url } in socialMediaItems"
-          class="about-item"
-          :key="label"
-          @click="open(url)"
-        >
-          <div class="about-left-part">
-            <Icon :icon="icon" class="icon" />
+        <div class="item__container">
+          <div
+            v-for="{ icon, label, subLabel, url } in socialMediaItems"
+            class="about-item"
+            :key="label"
+            @click="open(url)"
+          >
+            <div class="about-left-part">
+              <Icon :icon="icon" class="icon" />
 
-            <div class="item-descriptions">
-              <div class="label">{{ t(label) }}</div>
+              <div class="item-descriptions">
+                <div class="label">{{ t(label) }}</div>
 
-              <div v-if="subLabel" class="sub-label">{{ subLabel }}</div>
+                <div v-if="subLabel" class="sub-label">{{ subLabel }}</div>
+              </div>
             </div>
+            <Icon icon="chevron-right" className="chevron-right" />
           </div>
-
-          <Icon icon="chevron-right" className="chevron-right" />
         </div>
 
         <div class="title">{{ t('supportFeedback') }}</div>
+        <div class="item__container">
+          <div
+            v-for="{ icon, label, subLabel, url } in supportItems"
+            class="about-item"
+            :key="label"
+            @click="open(url)"
+          >
+            <div class="about-left-part">
+              <Icon :icon="icon" class="icon" />
 
-        <div v-for="{ icon, label, subLabel, url } in supportItems" class="about-item" :key="label" @click="open(url)">
-          <div class="about-left-part">
-            <Icon :icon="icon" class="icon" />
+              <div class="item-descriptions">
+                <div class="label">{{ t(label) }}</div>
 
-            <div class="item-descriptions">
-              <div class="label">{{ t(label) }}</div>
-
-              <div v-if="subLabel" class="sub-label">{{ subLabel }}</div>
+                <div v-if="subLabel" class="sub-label">{{ subLabel }}</div>
+              </div>
             </div>
-          </div>
 
-          <Icon icon="chevron-right" className="chevron-right" />
+            <Icon icon="chevron-right" className="chevron-right" />
+          </div>
         </div>
       </div>
     </Popup>
@@ -122,7 +130,19 @@ export default class AboutPopup extends Vue {
   display: flex;
   flex-direction: column;
   text-align: left;
-  padding: 0 $default-padding;
+  padding: 0 $default-padding 7px;
+
+  .item__container {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    text-align: left;
+    gap: 14px;
+  }
+
+  .item__container:not(:last-child) {
+    margin-bottom: 32px;
+  }
 
   .header {
     font-weight: 700;
@@ -138,7 +158,6 @@ export default class AboutPopup extends Vue {
   .about-item {
     display: flex;
     justify-content: space-between;
-    padding-bottom: 12px;
 
     &:last-child {
       padding-bottom: 0px;

@@ -36,11 +36,16 @@
           @click="openFullScreen"
         />
 
-        <div class="background-ellipse button-margin">
-          <div :class="statusConnectedClasses"></div>
+        <div v-if="isExtension" class="background-ellipse button-margin" @click="toggleConnectionPopup">
+          <Loading v-if="!tabStatus" />
 
-          {{ $t(statusConnectedText) }}
+          <template v-else>
+            <div class="connect" :class="statusConnectedClasses"></div>
+            <span>{{ $t(statusConnectedText) }}</span>
+          </template>
         </div>
+
+        <ConnectionPopup v-if="showConnectionPopup" :tabStatus="tabStatus" :handlerClose="toggleConnectionPopup" />
 
         <Tooltip text="header.connectionStatus" target=".background-ellipse" placement="top" />
 
@@ -51,7 +56,7 @@
           backgroundColor="none"
           placement="left"
           target=".settings"
-          tooltipText="Settings and account management"
+          tooltipText="header.settingsAndManagement"
           @click="toggleSettingsVisible"
         />
       </div>
@@ -61,22 +66,36 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+import { Getter, Action } from 'vuex-class';
 import type { SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
+import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
 import { windowOpen } from '@/extension/messaging';
+import { ActiveTabAuthorizeStatus } from '@/extension/background/extension-base/src/background/types';
+import Loading from '@/components/Loading.vue';
+import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
+import { TAction } from '@/interfaces';
 
-@Component
+@Component({
+  components: {
+    ConnectionPopup,
+    Loading,
+  },
+})
 export default class Header extends Vue {
   readonly walletNameRef = 'walletName';
   readonly settingsNameRef = 'settingsName';
 
+  showConnectionPopup = false;
+
   @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
+  @Getter(ExtensionGettersTypes.getTabStatus) tabStatus!: ActiveTabAuthorizeStatus;
+  @Action(ExtensionActionTypes.FETCH_TAB_STATUS) fetchTabStatus!: TAction<ActiveTabAuthorizeStatus>;
 
   get showFullScreenIcon() {
     return BaseApi.useIsPopup();
@@ -91,13 +110,16 @@ export default class Header extends Vue {
   }
 
   get statusConnectedClasses() {
-    return ['connect', this.isOnline ? 'success-connect' : 'fail-connect'];
+    return !this.tabStatus || !this.tabStatus.isAuthorize ? 'fail-connect' : 'success-connect';
   }
 
   get statusConnectedText() {
-    return this.isOnline ? 'header.connected' : 'header.disconnect';
+    return !this.tabStatus || !this.tabStatus.isAuthorize ? 'header.notConnected' : 'header.connected';
   }
 
+  get isExtension() {
+    return BaseApi.isExtension();
+  }
   @Watch('syncedShowSelectWalletPopup')
   updateZIndexSelectWalletPopup() {
     const targetElement = this.$refs[this.walletNameRef] as HTMLElement;
@@ -112,12 +134,23 @@ export default class Header extends Vue {
     targetElement.style.zIndex = value ? '300' : '0';
   }
 
+  async mounted() {
+    this.fetchTabStatus();
+  }
+
+  toggleConnectionPopup() {
+    if (!this.tabStatus) return;
+
+    this.showConnectionPopup = !this.showConnectionPopup;
+  }
+
   backToWallet() {
     this.$router.push({ name: Components.Wallet });
   }
 
   openFullScreen() {
     windowOpen('/');
+    window.close();
   }
 
   toggleSettingsVisible() {
@@ -194,8 +227,10 @@ export default class Header extends Vue {
       justify-content: center;
       align-items: center;
       height: 32px;
+      width: 145px;
       padding: 0 12px;
       font-size: 12px;
+      line-height: 18px;
       border-radius: 20px;
       background-color: $default-background-color;
       user-select: none;
@@ -214,7 +249,7 @@ export default class Header extends Vue {
   }
 
   .fail-connect {
-    background-color: #ee7700;
+    background-color: $gray-color;
   }
 }
 </style>

@@ -1,21 +1,17 @@
 <template>
   <div class="wallet">
     <header class="wallet-header">
-      <template v-if="showShimmers">
-        <div class="balance-shimmers">
-          <Shimmer height="25px" width="150px" class="balance-shimmer" />
-
-          <Shimmer height="15px" width="100px" />
+      <div class="wallet-balance__container">
+        <WalletBalance
+          class="balance"
+          :balance="totalBalance"
+          :changeWalletBalance="changeWalletBalance"
+          @click.native="$emit('openFiatsPopup', true)"
+        />
+        <div class="wallet-balance__loading">
+          <Loading :width="28" v-if="showShimmers" />
         </div>
-      </template>
-
-      <WalletBalance
-        v-else
-        class="balance"
-        :balance="totalBalance"
-        :changeWalletBalance="changeWalletBalance"
-        @click.native="$emit('openFiatsPopup', true)"
-      />
+      </div>
 
       <SelectNetworkButton
         :ref="selectNetworkButtonRef"
@@ -119,7 +115,7 @@ import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
-import { Components } from '@/router/routes';
+import Loading from '@/components/Loading.vue';
 
 @Component({
   components: {
@@ -128,6 +124,7 @@ import { Components } from '@/router/routes';
     Currencies,
     ReceiveForm,
     WalletBalance,
+    Loading,
     ContentSettings,
     NetworkManagement,
     SelectNetworkPopup,
@@ -377,7 +374,14 @@ export default class Wallet extends Vue {
     justify-content: space-between;
     margin-bottom: 10px;
   }
-
+  .wallet-balance__container {
+    display: flex;
+    flex-flow: row;
+    gap: 5px;
+  }
+  .wallet-balance__loading {
+    height: 46px;
+  }
   .balance {
     font-size: 22px;
     line-height: 28px;

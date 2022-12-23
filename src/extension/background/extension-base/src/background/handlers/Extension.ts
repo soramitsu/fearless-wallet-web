@@ -297,9 +297,7 @@ export default class Extension {
       };
 
     const tabHostName = new URL(tab.url).hostname;
-    const authorizeUrl = Object.keys(State.authUrls).filter((url) => {
-      return url === tabHostName;
-    });
+    const authorizeUrl = Object.keys(State.authUrls).filter((url) => url === tabHostName);
     const isAuthorize = authorizeUrl.length !== 0;
 
     return {

@@ -385,7 +385,7 @@ export default class Wallet extends Vue {
   .balance {
     font-size: 22px;
     line-height: 28px;
-    max-width: 270px;
+    max-width: 245px;
   }
 
   .balance-shimmers {

@@ -1,6 +1,6 @@
 <template>
-  <svg :class="getClasses" aria-hidden="true" v-on="$listeners">
-    <use :xlink:href="getIconName" :style="styles" class="icon__inner" />
+  <svg :class="getSvgClasses" aria-hidden="true" v-on="$listeners">
+    <use :xlink:href="getIconName" :style="styles" :class="getUseClasses" />
   </svg>
 </template>
 
@@ -23,12 +23,16 @@ export default class Icon extends Vue {
     return `${this.width}: 32px; ${this.height}: 32px`;
   }
 
-  get getClasses() {
+  get getSvgClasses() {
     const classes = ['svg-icon', ...[this.className].flat()];
 
     if (this.iconColor) classes.push(this.getIconColor);
 
     return classes;
+  }
+
+  get getUseClasses() {
+    return ['icon__inner', this.icon];
   }
 
   get getIconName() {

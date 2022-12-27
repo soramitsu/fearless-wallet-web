@@ -71,7 +71,6 @@ type FiatJson = {
 
 type ChainAccount = {
   network: string;
-  asset: string;
   address: string;
   isReplaced: boolean;
 };

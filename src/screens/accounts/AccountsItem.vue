@@ -30,7 +30,6 @@ export default class AccountsItem extends Vue {
 
   @Prop(String) network!: string;
   @Prop(Boolean) isMobile!: boolean;
-  @Prop(String) asset!: string;
   @Prop(String) address!: string;
 
   get showSettingsIcon() {

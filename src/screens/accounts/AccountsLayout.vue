@@ -38,7 +38,7 @@
       v-if="showAccountSettingsPopup"
       :selectedNetwork="selectedNetwork"
       :handlerClose="closeAccountSettings"
-      :showSwitchNode="!isNodesRoute"
+      :isNodesRoute="isNodesRoute"
       :showExport="!isExportRoute"
       :showReplaceAccount="showReplaceAccount"
       :buttonTopClick="buttonTopClick"

@@ -6,7 +6,6 @@
       </div>
       <div class="description">
         <div class="network-name">{{ getUpperValue(network) }}</div>
-        <div class="asset-name">{{ getUpperValue(asset) }}</div>
         <div class="address">{{ address }}</div>
       </div>
     </div>
@@ -107,6 +106,7 @@ export default class AccountsItem extends Vue {
 
     .address {
       color: rgba(255, 255, 255, 1);
+      margin-top: 10px;
       font-size: 13px;
       width: 100%;
       text-align: left;

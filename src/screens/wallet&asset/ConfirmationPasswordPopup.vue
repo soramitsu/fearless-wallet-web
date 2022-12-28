@@ -23,6 +23,7 @@
           :readonly="!isLocked"
           :isError="isErrorPassword"
           :showPassword="true"
+          @keydown.native.enter="send"
         />
 
         <div v-if="show15MinCheckbox" class="remember__checkbox">

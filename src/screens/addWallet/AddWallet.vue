@@ -847,7 +847,7 @@ export default class AddWallet extends Vue {
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: calc(100% - 16px);
+  height: 100%;
 
   .header {
     width: 100%;

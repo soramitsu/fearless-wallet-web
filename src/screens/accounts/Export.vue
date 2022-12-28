@@ -82,15 +82,14 @@ export default class Export extends Vue {
   flex-direction: column;
   justify-content: space-between;
   margin-right: 16px;
-  margin-bottom: 16px;
-  height: calc(100% - 16px);
+  height: 100%;
 
   .information {
     margin-top: 25px;
   }
 
   .want-export {
-    margin-top: 16px;
+    margin: 16px 0;
   }
 
   .description {

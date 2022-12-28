@@ -7,7 +7,7 @@
     "name": "Soramitsu",
     "url": "https://soramitsu.co.jp"
   },
-  "description": "Non-Custodial, Decentralized and Open-Source wallet for the Polkadot and Kusama ecosystems with the best UX, performance, and, most importantly, security",
+  "description": "Non-Custodial and Decentralized wallet for the Polkadot and Kusama ecosystems with the best UX, performance and security.",
   "scripts": {
     "serve": "env-cmd -f .env.desktop vue-cli-service serve",
     "build": "env-cmd -f .env.desktop vue-cli-service build",

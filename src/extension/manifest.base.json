@@ -3,7 +3,7 @@
   "name": "Fearless Wallet",
   "short_name": "FW",
   "manifest_version": 3,
-  "permissions": ["storage", "tabs", "scripting", "identity"],
+  "permissions": ["storage", "tabs", "identity"],
   "background": {
     "service_worker": "background.js",
     "type": "module"

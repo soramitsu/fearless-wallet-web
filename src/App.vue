@@ -1,7 +1,5 @@
 <template>
   <div id="app">
-    <div class="drag"></div>
-
     <keep-alive include="Main">
       <router-view />
     </keep-alive>
@@ -164,14 +162,9 @@ body {
   color: white;
   text-align: center;
   margin: 0 auto;
-  padding: 0 $default-padding $default-padding $default-padding;
+  padding: $default-padding;
   background-image: url('./assets/background.png');
   background-position: center;
   background-size: cover;
-
-  .drag {
-    height: 16px;
-    -webkit-app-region: drag;
-  }
 }
 </style>

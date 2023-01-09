@@ -10,6 +10,7 @@ import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types
 import type {
   AccountJson,
   AllowedPath,
+  ActiveTabAuthorizeStatus,
   AuthorizeRequest,
   MessageTypes,
   MessageTypesWithNoSubscriptions,
@@ -31,7 +32,7 @@ import type { Chain } from '@polkadot/extension-chains/types';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import { FilesResponse, GoogleAuthTypes, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
+import type { FilesResponse, GoogleAuthTypes, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
 
 const metadataGets = new Map<string, Promise<MetadataDef | null>>();
 
@@ -62,12 +63,7 @@ type Handlers = Record<string, Handler>;
 let port = chrome.runtime ? chrome.runtime.connect({ name: PORT_EXTENSION }) : null;
 const handlers: Handlers = {};
 
-// setup a listener for messages, any incoming resolves the promise
-port?.onDisconnect.addListener((tab) => {
-  port = chrome.runtime.connect({ name: PORT_EXTENSION });
-});
-
-port?.onMessage.addListener((data: Message['data']): void => {
+const onMessage = (data: Message['data']): void => {
   const handler = handlers[data.id];
 
   if (!handler) {
@@ -86,7 +82,26 @@ port?.onMessage.addListener((data: Message['data']): void => {
   } else {
     handler.resolve(data.response);
   }
-});
+};
+
+// setup a listener for messages, any incoming resolves the promise
+const connect = (onDisconnect: (_port: chrome.runtime.Port) => void) => {
+  if (chrome.extension === undefined) return;
+
+  if (!port) port = chrome.runtime.connect({ name: PORT_EXTENSION });
+
+  port.onDisconnect.addListener(onDisconnect);
+  port.onMessage.addListener(onMessage);
+};
+
+const onDisconnect = (_port: chrome.runtime.Port) => {
+  _port.onDisconnect.removeListener(onDisconnect);
+  _port.onMessage.removeListener(onMessage);
+
+  connect(onDisconnect);
+};
+
+connect(onDisconnect);
 
 function sendMessage<TMessageType extends MessageTypesWithNullRequest>(
   message: TMessageType
@@ -376,4 +391,8 @@ export async function createGoogleFile({ json, options, token }: ICreateFile): P
 
 export async function deleteGoogleFile(id: string, token: string): Promise<void> {
   return sendMessage('pri(google.delete.file)', { id, token });
+}
+
+export async function isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
+  return sendMessage('pri(tab.status)');
 }

@@ -1,4 +1,10 @@
-import { AuthorizeRequest, AuthUrlInfo, MetadataRequest, SigningRequest } from '@extension-base/background/types';
+import {
+  ActiveTabAuthorizeStatus,
+  AuthorizeRequest,
+  AuthUrlInfo,
+  MetadataRequest,
+  SigningRequest,
+} from '@extension-base/background/types';
 import { State } from './state';
 import type { GetterTree } from 'vuex';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
@@ -12,12 +18,17 @@ export enum GettersTypes {
   getSignRequestPayload = 'getSignRequestPayload',
   getSignRequest = 'getSignRequest',
   getSignList = 'getSignList',
+
+  getTabStatus = 'getTabStatus',
 }
 
 export type Getters = {
   [GettersTypes.getAuthRequests](state: State, getters?: GetterTree<State, State> & Getters): AuthorizeRequest[];
   [GettersTypes.getAuthList](state: State, getters?: GetterTree<State, State> & Getters): Record<string, AuthUrlInfo>;
-
+  [GettersTypes.getTabStatus](
+    state: State,
+    getters?: GetterTree<State, State> & Getters
+  ): ActiveTabAuthorizeStatus | null;
   [GettersTypes.getMetaRequests](state: State, getters?: GetterTree<State, State> & Getters): MetadataRequest[];
   [GettersTypes.getSignRequestPayload](
     state: State,
@@ -56,6 +67,9 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.getSignList](state): SigningRequest[] {
     return state.requests.sign;
+  },
+  [GettersTypes.getTabStatus]({ tabStatus }): ActiveTabAuthorizeStatus | null {
+    return tabStatus;
   },
 };
 

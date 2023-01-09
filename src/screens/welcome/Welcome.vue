@@ -10,7 +10,7 @@
         />
       </div>
 
-      <Logo class="description" size="big" text="Fearless Wallet" :subtext="$t('welcome.deFiWallet')" />
+      <Logo class="description" size="big" text="common.fearlessWallet" :subtext="$t('welcome.deFiWallet')" />
     </div>
 
     <div>

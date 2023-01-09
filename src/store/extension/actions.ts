@@ -18,6 +18,7 @@ import {
   subscribeMetadataRequests,
   cancelSignRequest,
   subscribeSigningRequests,
+  isTabAuthorize,
 } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';
@@ -40,6 +41,7 @@ export enum ActionTypes {
   APPROVE_META_REQUEST = 'APPROVE_META_REQUEST',
   REJECT_META_REQUEST = 'REJECT_META_REQUEST',
   SUBSCRIBE_EXTENSION_REQUESTS = 'SUBSCRIBE_EXTENSION_REQUESTS',
+  FETCH_TAB_STATUS = 'FETCH_TAB_STATUS',
 }
 
 export type ApprovePayload = {
@@ -73,6 +75,8 @@ export type Actions = {
   [ActionTypes.APPROVE_SIGN_PASSWORD](context: AugmentedActionContext, payload: ApprovePayload): Promise<void>;
   [ActionTypes.SIGN_SIGNATURE](context: AugmentedActionContext, payload: SignPayload): Promise<void>;
   [ActionTypes.SUBSCRIBE_EXTENSION_REQUESTS](context: AugmentedActionContext): Promise<void[]>;
+
+  [ActionTypes.FETCH_TAB_STATUS](context: AugmentedActionContext): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
@@ -92,16 +96,20 @@ const actions: ActionTree<State, State> & Actions = {
     return subscribeAuthorizeRequests(callback);
   },
 
-  async [ActionTypes.APPROVE_AUTH_REQUEST]({ commit }, { request, accounts }) {
+  async [ActionTypes.APPROVE_AUTH_REQUEST]({ commit, dispatch }, { request, accounts }) {
     await approveAuthRequest(request.id, accounts);
 
     commit(MutationTypes.DELETE_REQUEST, 'auth');
+
+    dispatch(ActionTypes.FETCH_TAB_STATUS);
   },
 
-  async [ActionTypes.REJECT_AUTH_REQUEST]({ commit }, payload) {
+  async [ActionTypes.REJECT_AUTH_REQUEST]({ commit, dispatch }, payload) {
     await deleteAuthRequest(payload.id);
 
     commit(MutationTypes.DELETE_REQUEST, 'auth');
+
+    dispatch(ActionTypes.FETCH_TAB_STATUS);
   },
 
   async [ActionTypes.GET_AUTHLIST]({ commit }) {
@@ -132,15 +140,18 @@ const actions: ActionTree<State, State> & Actions = {
     return subscribeMetadataRequests(callback);
   },
 
-  async [ActionTypes.APPROVE_META_REQUEST]({ commit }, payload) {
+  async [ActionTypes.APPROVE_META_REQUEST]({ commit, dispatch }, payload) {
     await approveMetaRequest(payload.id);
 
     commit(MutationTypes.DELETE_REQUEST, 'meta');
+
+    dispatch(ActionTypes.FETCH_TAB_STATUS);
   },
 
-  async [ActionTypes.REJECT_META_REQUEST]({ commit }, payload) {
+  async [ActionTypes.REJECT_META_REQUEST]({ commit, dispatch }, payload) {
     await rejectMetaRequest(payload.id);
     commit(MutationTypes.DELETE_REQUEST, 'meta');
+    dispatch(ActionTypes.FETCH_TAB_STATUS);
   },
 
   async [ActionTypes.SUBSCRIBE_SIGN_REQUESTS]({ commit }) {
@@ -159,18 +170,22 @@ const actions: ActionTree<State, State> & Actions = {
     return subscribeSigningRequests(callback);
   },
 
-  async [ActionTypes.APPROVE_SIGN_PASSWORD]({ commit }, { id, isSavePass, password }) {
+  async [ActionTypes.APPROVE_SIGN_PASSWORD]({ commit, dispatch }, { id, isSavePass, password }) {
     ExtensionController.approveSignPassword(id, isSavePass, password);
 
     commit(MutationTypes.DELETE_REQUEST, 'sign');
 
     router.push({ name: Components.Wallet });
+
+    dispatch(ActionTypes.FETCH_TAB_STATUS);
   },
 
-  async [ActionTypes.SIGN_SIGNATURE]({ commit }, { payload, id }) {
+  async [ActionTypes.SIGN_SIGNATURE]({ commit, dispatch }, { payload, id }) {
     ExtensionController.approveSignSignature(id, payload.signature);
 
     commit(MutationTypes.DELETE_REQUEST, 'sign');
+
+    dispatch(ActionTypes.FETCH_TAB_STATUS);
 
     router.push({ name: Components.Wallet });
   },
@@ -188,6 +203,12 @@ const actions: ActionTree<State, State> & Actions = {
     const meta = dispatch(ActionTypes.SUBSCRIBE_META_REQUESTS);
 
     return Promise.all([auth, sign, meta]);
+  },
+
+  async [ActionTypes.FETCH_TAB_STATUS]({ commit }) {
+    const tabStatus = await isTabAuthorize();
+
+    commit(MutationTypes.SET_TABSTATUS, tabStatus);
   },
 };
 

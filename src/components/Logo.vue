@@ -88,7 +88,7 @@ export default class Logo extends Vue {
   }
 
   .circle-primary {
-    background: conic-gradient(from 180deg at 50% 50%, #ee7777 0deg, $pink-color 187.5deg, #7777ee 360deg);
+    background-color: $pink-color;
   }
 
   .circle-secondary {
@@ -105,7 +105,6 @@ export default class Logo extends Vue {
   }
 
   .circle-blur-primary {
-    backdrop-filter: blur(10px);
     border: 1px solid $default-background-color;
   }
 

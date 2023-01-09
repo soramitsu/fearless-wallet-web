@@ -1,14 +1,9 @@
 import type { Wallet, CustomAccounts } from '@/store';
 import type { ChainAccount, Networks } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
-import NetworksController from '@/controllers/networksController';
 
 function getChainAccounts(networks: Networks, wallet: Wallet): ChainAccount[] {
-  const assetsJson = NetworksController.getAssetsJson();
-
-  return networks.map(({ name, assets: networkAssets }) => {
-    const assetId = networkAssets.find(({ isUtility }) => isUtility)!.assetId;
-    const asset = assetsJson.find(({ id }) => id === assetId)!.symbol;
+  return networks.map(({ name }) => {
     const replacedAccount = BaseApi.getReplacedAccountByNetwork(wallet, name);
     const replacedAddress = replacedAccount?.address;
 
@@ -21,7 +16,6 @@ function getChainAccounts(networks: Networks, wallet: Wallet): ChainAccount[] {
 
     return {
       network: name,
-      asset,
       address: BaseApi.formatAddress(finalWallet, name),
       isReplaced: !!replacedAddress,
     };

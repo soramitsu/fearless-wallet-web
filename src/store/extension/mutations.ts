@@ -1,4 +1,5 @@
 import {
+  ActiveTabAuthorizeStatus,
   AuthorizeRequest,
   MetadataRequest,
   ResponseAuthorizeList,
@@ -13,6 +14,7 @@ export enum MutationTypes {
   DELETE_AUTHLIST_ITEM = 'DELETE_AUTHLIST_ITEM',
   DELETE_REQUEST = 'DELETE_REQUEST',
   SET_REQUEST = 'SET_REQUEST',
+  SET_TABSTATUS = 'SET_TABSTATUS',
 }
 
 interface SetPayload {
@@ -25,6 +27,7 @@ export type Mutations = {
   [MutationTypes.DELETE_AUTHLIST_ITEM](state: State, payload: string): void;
   [MutationTypes.DELETE_REQUEST](state: State, payload: keyof State['requests']): void;
   [MutationTypes.SET_REQUEST](state: State, payload: SetPayload): void;
+  [MutationTypes.SET_TABSTATUS](state: State, props: ActiveTabAuthorizeStatus): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -51,6 +54,9 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.DELETE_AUTHLIST_ITEM](state, id) {
     Vue.delete(state.authList, id);
+  },
+  [MutationTypes.SET_TABSTATUS](state, payload) {
+    state.tabStatus = payload;
   },
 };
 

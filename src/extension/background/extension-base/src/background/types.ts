@@ -156,6 +156,7 @@ export interface RequestSignatures {
   'pri(google.get.file)': [GoogleFileId, KeyringPair$Json];
   'pri(google.create.file)': [ICreateFile, FilesResponse];
   'pri(google.delete.file)': [GoogleFileId, void];
+  'pri(tab.status)': [null, ActiveTabAuthorizeStatus];
 
   // public/external requests, i.e. from a page
   'pub(accounts.list)': [RequestAccountList, InjectedAccount[]];
@@ -504,6 +505,11 @@ export interface AuthResponse {
   result: boolean;
   authorizedAccounts: string[];
 }
+export type ActiveTabAuthorizeStatus = {
+  isAuthorize: boolean;
+  authorizeAccountsCount: number;
+  dAppName: string;
+};
 
 // List of providers passed into constructor. This is the list of providers
 // exposed by the extension.

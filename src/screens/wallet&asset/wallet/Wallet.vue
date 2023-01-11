@@ -116,6 +116,9 @@ import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.v
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import Loading from '@/components/Loading.vue';
+import { DEFAULT_EVM_TOKENS, PREDEFINED_NETWORKS } from '@/consts/networks';
+import EthContract from '@/controllers/ethers/ethContract';
+import EthProvider from '@/controllers/ethers/ethProvider';
 
 @Component({
   components: {
@@ -158,7 +161,20 @@ export default class Wallet extends Vue {
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
+  async mounted() {
+    const evmTokens = DEFAULT_EVM_TOKENS.erc20;
+    const { provider } = EthProvider.create('wss://eth-mainnet.g.alchemy.com/v2/r2rCN7zWhPZ0cggKYqk_MElwxrrRM4Kw');
 
+    for (const token of evmTokens) {
+      const contract = new EthContract(token?.smartContract, provider);
+      const balance = await contract.getBalance('0x30Fe67eaE94E33F944bB7f468C6F6dE97f444122');
+      console.info(balance, token.name, token.symbol);
+    }
+  }
+
+  get predefNetworks() {
+    return PREDEFINED_NETWORKS;
+  }
   get showNetworkUnavailablePopup() {
     return this.networkUnavailable !== '';
   }

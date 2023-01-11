@@ -203,11 +203,10 @@ const PREDEFINED_NETWORKS = {
     providers: {
       Cloudflare: 'https://cloudflare-eth.com',
       BlastApi: 'https://eth-mainnet.public.blastapi.io',
-      Infura: 'https://mainnet.infura.io/v3/b6bf7d3508c941499b10025c0776eaf8',
     },
     active: false,
     currentProviderMode: 'http',
-    currentProvider: 'Infura',
+    currentProvider: 'BlastApi',
     groups: ['MAIN_NET'],
     isEthereum: true,
     nativeToken: 'ETH',

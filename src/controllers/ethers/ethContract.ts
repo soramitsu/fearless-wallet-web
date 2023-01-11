@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import EthProvider from './ethProvider';
 
 export default class EthContract {
   contract: ethers.Contract;
@@ -18,8 +19,8 @@ export default class EthContract {
     'event Transfer(address indexed from, address indexed to, uint amount)',
   ];
 
-  constructor(address: string, signerOrProvider?: ethers.Signer | ethers.providers.Provider) {
-    this.contract = new ethers.Contract(address, this.abi, signerOrProvider);
+  constructor(contractAddress: string, provider: ethers.providers.Provider) {
+    this.contract = new ethers.Contract(contractAddress, this.abi, provider);
   }
 
   getName() {
@@ -28,6 +29,10 @@ export default class EthContract {
 
   getSymbol() {
     return this.contract.symbol();
+  }
+
+  estimateGas() {
+    return this.contract.estimateGas;
   }
 
   getDecimals() {

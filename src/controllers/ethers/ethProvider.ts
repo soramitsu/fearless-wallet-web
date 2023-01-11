@@ -1,17 +1,18 @@
 import { ethers } from 'ethers';
 import EthWallet from '@/controllers/ethers/ethWallet';
 
-class EthProvider {
+export default class EthProvider {
   provider: ethers.providers.BaseProvider;
 
-  constructor() {
-    this.provider = new ethers.providers.EtherscanProvider('homestead', 'ZWNEGMN2EBP34B8B25MQWGTBPSNZG4VBY1');
-    EthWallet.createFromMnemonic('antique scrub mix lyrics pear legal buddy used silent consider delay utility');
+  constructor(url: string) {
+    this.provider = new ethers.providers.AlchemyWebSocketProvider(url);
   }
 
-  static create() {
-    return new EthProvider();
+  static create(url: string) {
+    return new EthProvider(url);
+  }
+
+  public getGasPrice() {
+    return this.provider.getGasPrice();
   }
 }
-
-export const ethProvider = EthProvider.create();

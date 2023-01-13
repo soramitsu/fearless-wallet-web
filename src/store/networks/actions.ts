@@ -3,7 +3,7 @@ import type { KeySettings } from '@/networks';
 import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
 import type { LoadJsons, LoadHistory, SubscribeToBalances, ToggleActiveNode, AugmentedActionContext } from '@/store';
-import type { FiatJson, AssetJson, NetworkJson, Networks, AssetsPrice, ApiOptions } from '@/interfaces';
+import type { FiatJson, AssetJson, NetworkJson, Networks, ApiOptions } from '@/interfaces';
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
@@ -14,6 +14,7 @@ import { getMockCurrencies } from '@/helpers/currencies';
 import { connectToApi, subscribeAssetsBalances } from '@/helpers/networksConnection';
 import { accountController } from '@/controllers/accountController';
 import { AUTO_UPDATE_ASSETS_PRICE_MS } from '@/consts/global';
+import { getTokenPrice } from '@/helpers/coingecko';
 
 export enum ActionTypes {
   LOAD_JSONS = 'LOAD_JSONS',
@@ -100,24 +101,14 @@ const actions: ActionTree<State, State> & Actions = {
     });
   },
 
-  async [ActionTypes.LOAD_ASSETS_PRICE]({ commit, state: { assetsJson, fiats } }) {
-    const urlFiatsPart = fiats.map(({ id }) => id).join('%2C');
+  async [ActionTypes.LOAD_ASSETS_PRICE]({ commit, state: { assetsJson } }) {
     const urlsAssets = assetsJson.filter(({ priceId }) => !!priceId).map(({ priceId }) => priceId);
-    const urlAssetsPart = [...new Set(urlsAssets)].join('%2C');
-    const url = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${urlFiatsPart}&include_24hr_change=true&ids=${urlAssetsPart}`;
+
+    const currency = accountController.getSelectedFiat();
 
     const loadAssetsPrice = async () => {
       try {
-        const { data } = await axios.get<AssetsPrice>(url);
-        const assetsPrice: AssetsPrice = {};
-
-        for (const priceId in data) {
-          assetsJson
-            .filter(({ priceId: _priceId }) => _priceId === priceId)
-            .forEach(({ displayName, symbol }) => {
-              assetsPrice[displayName ?? symbol] = data[priceId];
-            });
-        }
+        const assetsPrice = await getTokenPrice([...new Set(urlsAssets as unknown as string)], currency, assetsJson);
 
         commit(MutationTypes.SET_ASSETS_PRICE, { assetsPrice });
       } catch {

@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 type TProgressCallback = ethers.utils.ProgressCallback | undefined;
 type TWallet = ethers.Wallet;
+
 export default class EthWallet {
   static createRandom(): TWallet {
     return ethers.Wallet.createRandom();

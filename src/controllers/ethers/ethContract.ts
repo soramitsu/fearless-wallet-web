@@ -1,9 +1,8 @@
 import { ethers } from 'ethers';
-import EthProvider from './ethProvider';
 
 export default class EthContract {
   contract: ethers.Contract;
-
+  signer: Nullable<ethers.Signer>;
   abi = [
     // Some details about the token
     'function name() view returns (string)',
@@ -12,6 +11,7 @@ export default class EthContract {
     // Get the account balance
     'function balanceOf(address) view returns (uint)',
     'function decimals() view returns (uint256)',
+
     // Send some of your tokens to someone else
     'function transfer(address to, uint amount)',
 
@@ -19,24 +19,9 @@ export default class EthContract {
     'event Transfer(address indexed from, address indexed to, uint amount)',
   ];
 
-  constructor(contractAddress: string, provider: ethers.providers.Provider) {
+  constructor(contractAddress: string, provider: ethers.providers.Provider, signer?: ethers.Signer) {
     this.contract = new ethers.Contract(contractAddress, this.abi, provider);
-  }
-
-  getName() {
-    return this.contract.name();
-  }
-
-  getSymbol() {
-    return this.contract.symbol();
-  }
-
-  estimateGas() {
-    return this.contract.estimateGas;
-  }
-
-  getDecimals() {
-    return this.contract.decimals();
+    if (signer) this.signer = signer;
   }
 
   async connectSigner(signer: ethers.Signer) {

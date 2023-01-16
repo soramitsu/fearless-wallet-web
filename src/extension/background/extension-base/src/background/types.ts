@@ -35,7 +35,7 @@ type IsNull<T, K extends keyof T> = { [K1 in Exclude<keyof T, K>]: T[K1] } & T[K
 type NullKeys<T> = { [K in keyof T]: IsNull<T, K> }[keyof T];
 
 export type SeedLengths = 12 | 24;
-
+export type Port = chrome.runtime.Port;
 export interface AccountJson extends KeyringPair$Meta {
   address: string;
   genesisHash?: string | null;
@@ -559,14 +559,15 @@ export interface AccountSub {
   subscription: Subscription;
   url: string;
 }
-export type Subscriptions = Record<string, chrome.runtime.Port>;
+export type Subscriptions = Record<string, Port>;
 
 export interface IState {
   registry: TypeRegistry;
   metaStore: MetadataStore;
   authUrls: AuthUrls;
+  addresses: Record<string, string>;
   defaultAuthAccountSelection: string[];
-  injectedProviders: Map<chrome.runtime.Port, ProviderInterface>;
+  injectedProviders: Map<Port, ProviderInterface>;
   notification: string;
   subscriptions: Subscriptions;
   providers: Providers;

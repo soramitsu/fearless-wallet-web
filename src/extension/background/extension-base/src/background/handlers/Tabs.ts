@@ -17,6 +17,7 @@ import type {
   AccountSub,
   AuthResponse,
   MessageTypes,
+  Port,
   RequestAccountList,
   RequestAccountUnsubscribe,
   RequestAuthorizeTab,
@@ -68,7 +69,7 @@ export default class Tabs {
     return await Tabs.filterForAuthorizedAccounts(totalAccounts, url);
   }
 
-  static async accountsSubscribeAuthorized(url: string, id: string, port: chrome.runtime.Port): Promise<string> {
+  static async accountsSubscribeAuthorized(url: string, id: string, port: Port): Promise<string> {
     const cb = await createSubscription<'pub(accounts.subscribe)'>(id, port);
     Tabs.accountSubs[id] = {
       subscription: accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
@@ -147,15 +148,15 @@ export default class Tabs {
     return State.rpcListProviders();
   }
 
-  static rpcSend(request: RequestRpcSend, port: chrome.runtime.Port): Promise<JsonRpcResponse> {
+  static rpcSend(request: RequestRpcSend, port: Port): Promise<JsonRpcResponse> {
     return State.rpcSend(request, port);
   }
 
-  static rpcStartProvider(key: string, port: chrome.runtime.Port): Promise<ProviderMeta> {
+  static rpcStartProvider(key: string, port: Port): Promise<ProviderMeta> {
     return State.rpcStartProvider(key, port);
   }
 
-  static async rpcSubscribe(request: RequestRpcSubscribe, id: string, port: chrome.runtime.Port): Promise<boolean> {
+  static async rpcSubscribe(request: RequestRpcSubscribe, id: string, port: Port): Promise<boolean> {
     const innerCb = await createSubscription<'pub(rpc.subscribe)'>(id, port);
     const cb = (_error: Error | null, data: SubscriptionMessageTypes['pub(rpc.subscribe)']): void => innerCb(data);
     const subscriptionId = await State.rpcSubscribe(request, cb, port);
@@ -168,7 +169,7 @@ export default class Tabs {
     return true;
   }
 
-  static async rpcSubscribeConnected(request: null, id: string, port: chrome.runtime.Port): Promise<boolean> {
+  static async rpcSubscribeConnected(request: null, id: string, port: Port): Promise<boolean> {
     const innerCb = await createSubscription<'pub(rpc.subscribeConnected)'>(id, port);
     const cb = (_error: Error | null, data: SubscriptionMessageTypes['pub(rpc.subscribeConnected)']): void =>
       innerCb(data);
@@ -182,7 +183,7 @@ export default class Tabs {
     return Promise.resolve(true);
   }
 
-  static async rpcUnsubscribe(request: RequestRpcUnsubscribe, port: chrome.runtime.Port): Promise<boolean> {
+  static async rpcUnsubscribe(request: RequestRpcUnsubscribe, port: Port): Promise<boolean> {
     return State.rpcUnsubscribe(request, port);
   }
 
@@ -216,7 +217,7 @@ export default class Tabs {
     type: TMessageType,
     request: RequestTypes[TMessageType],
     url: string,
-    port?: chrome.runtime.Port
+    port?: Port
   ): Promise<ResponseTypes[keyof ResponseTypes]> {
     if (type === 'pub(phishing.redirectIfDenied)') return Tabs.redirectIfPhishing(url);
 

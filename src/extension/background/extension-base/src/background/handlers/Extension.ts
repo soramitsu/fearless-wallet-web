@@ -5,7 +5,7 @@ import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { assert, isHex } from '@polkadot/util';
 import { keyExtractSuri, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
-import { ActiveTabAuthorizeStatus, CachedUnlocks } from '../types';
+import { ActiveTabAuthorizeStatus, CachedUnlocks, Port } from '../types';
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
@@ -248,7 +248,7 @@ export default class Extension {
     }
   }
 
-  static async accountsSubscribe(id: string, port: chrome.runtime.Port): Promise<boolean> {
+  static async accountsSubscribe(id: string, port: Port): Promise<boolean> {
     const cb = await createSubscription<'pri(accounts.subscribe)'>(id, port);
     const subscription = accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
       const acc = await Extension.transformAccounts(accounts);
@@ -308,7 +308,7 @@ export default class Extension {
   }
 
   // FIXME This looks very much like what we have in accounts
-  static async authorizeSubscribe(id: string, port: chrome.runtime.Port): Promise<boolean> {
+  static async authorizeSubscribe(id: string, port: Port): Promise<boolean> {
     const cb = await createSubscription<'pri(authorize.requests)'>(id, port);
 
     const subscription = State.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
@@ -355,7 +355,7 @@ export default class Extension {
     return true;
   }
 
-  static async metadataSubscribe(id: string, port: chrome.runtime.Port): Promise<boolean> {
+  static async metadataSubscribe(id: string, port: Port): Promise<boolean> {
     const cb = await createSubscription<'pri(metadata.requests)'>(id, port);
     // const { metaSubject } = await State.getFromStorage(['metaSubject']);
 
@@ -549,7 +549,7 @@ export default class Extension {
   }
 
   // FIXME This looks very much like what we have in authorization
-  static async signingSubscribe(id: string, port: chrome.runtime.Port): Promise<boolean> {
+  static async signingSubscribe(id: string, port: Port): Promise<boolean> {
     const cb = await createSubscription<'pri(signing.requests)'>(id, port);
     // const { signSubject } = await State.getFromStorage(['signSubject']);
 
@@ -696,7 +696,7 @@ export default class Extension {
     id: string,
     type: TMessageType,
     request: RequestTypes[TMessageType],
-    port?: chrome.runtime.Port
+    port?: Port
   ): Promise<ResponseType<TMessageType>> {
     switch (type) {
       case 'pri(authorize.approve)':

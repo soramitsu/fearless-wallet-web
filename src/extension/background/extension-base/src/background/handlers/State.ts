@@ -29,9 +29,11 @@ import {
   RequestSign,
   ResponseRpcListProviders,
   IState,
+  Port,
 } from '../types';
 import { getId } from '../../utils';
 import MetadataStore from '../../stores/Metadata';
+import { storage } from '../../stores/Storage';
 import { stripUrl, withErrorLog } from './helpers';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
@@ -77,7 +79,7 @@ const metaStore = new MetadataStore();
 export async function initState() {
   extractMetadata(metaStore);
 
-  await chrome.storage.local.set({
+  await storage.set({
     authUrls: {},
     defaultAuthAccountSelection: [],
     accountSubs: {},
@@ -105,8 +107,8 @@ export default class State {
     return knownMetadata();
   }
 
-  static getFromStorage(key: (keyof IState)[]): Promise<Pick<IState, typeof key[number]>> {
-    return chrome.storage.local.get(key) as Promise<Pick<IState, typeof key[number]>>;
+  static getFromStorage(key: (keyof IState)[]) {
+    return storage.get(key);
   }
 
   private static async numAuthRequests() {
@@ -122,8 +124,6 @@ export default class State {
   }
 
   static async allAuthRequests(): Promise<AuthorizeRequest[]> {
-    // const { authRequests } = await State.getFromStorage(['authRequests']);
-
     return Object.values(State.authRequests).map(({ id, request, url }): AuthorizeRequest => ({ id, request, url }));
   }
 
@@ -146,7 +146,7 @@ export default class State {
 
     windows?.forEach((id: number) => withErrorLog(() => chrome.windows.remove(id)));
 
-    await chrome.storage.local.set({ windows: [] });
+    await storage.set({ windows: [] });
   }
 
   static async popupOpen(): Promise<void> {
@@ -158,7 +158,8 @@ export default class State {
         async (window): Promise<void> => {
           if (window) {
             windows.push(window.id || 0);
-            await chrome.storage.local.set({ windows });
+
+            await storage.set({ windows });
           }
         }
       );
@@ -232,7 +233,7 @@ export default class State {
       })
       .filter((value) => !!value) as string[];
 
-    await chrome.storage.local.set({ connectedTabsUrl: connectedTabs });
+    await storage.set({ connectedTabsUrl: connectedTabs });
   }
 
   static async getConnectedTabsUrl() {
@@ -248,15 +249,15 @@ export default class State {
   }
 
   private static async saveCurrentAuthList() {
-    await chrome.storage.local.set({ authUrls: State.authUrls });
+    await storage.set({ authUrls: State.authUrls });
   }
 
   private static async saveDefaultAuthAccounts() {
-    await chrome.storage.local.set({ defaultAuthAccountSelection: State });
+    await storage.set({ defaultAuthAccountSelection: State.defaultAuthAccountSelection });
   }
 
   static async updateDefaultAuthAccounts(newList: string[]) {
-    await chrome.storage.local.set({ defaultAuthAccountSelection: newList });
+    this.defaultAuthAccountSelection = newList;
 
     State.saveDefaultAuthAccounts();
   }
@@ -327,7 +328,7 @@ export default class State {
 
     delete State.authUrls[url];
 
-    await chrome.storage.local.set({ authUrls: State.authUrls });
+    await storage.set({ authUrls: State.authUrls });
 
     State.saveCurrentAuthList();
 
@@ -454,7 +455,7 @@ export default class State {
     );
   }
 
-  static async rpcSend(request: RequestRpcSend, port: chrome.runtime.Port): Promise<JsonRpcResponse> {
+  static async rpcSend(request: RequestRpcSend, port: Port): Promise<JsonRpcResponse> {
     const { injectedProviders } = await State.getFromStorage(['injectedProviders']);
 
     const provider = injectedProviders.get(port);
@@ -465,7 +466,7 @@ export default class State {
   }
 
   // Start a provider, return its meta
-  static async rpcStartProvider(key: string, port: chrome.runtime.Port): Promise<ProviderMeta> {
+  static async rpcStartProvider(key: string, port: Port): Promise<ProviderMeta> {
     const { providers, injectedProviders } = await State.getFromStorage(['providers', 'injectedProviders']);
 
     assert(Object.keys(providers).includes(key), `Provider ${key} is not exposed by extension`);
@@ -476,7 +477,7 @@ export default class State {
 
     // Instantiate the provider
     injectedProviders.set(port, providers[key].start());
-    await chrome.storage.local.set({ injectedProviders });
+    await storage.set({ injectedProviders });
 
     // Close provider connection when page is closed
     port.onDisconnect.addListener(async (): Promise<void> => {
@@ -487,7 +488,7 @@ export default class State {
       }
 
       injectedProviders.delete(port);
-      await chrome.storage.local.set({ injectedProviders });
+      await storage.set({ injectedProviders });
     });
 
     return Promise.resolve(providers[key].meta);
@@ -496,7 +497,7 @@ export default class State {
   static async rpcSubscribe(
     { method, params, type }: RequestRpcSubscribe,
     cb: ProviderInterfaceCallback,
-    port: chrome.runtime.Port
+    port: Port
   ): Promise<number | string> {
     const { injectedProviders } = await State.getFromStorage(['injectedProviders']);
 
@@ -507,11 +508,7 @@ export default class State {
     return provider.subscribe(type, method, params, cb);
   }
 
-  static async rpcSubscribeConnected(
-    _request: null,
-    cb: ProviderInterfaceCallback,
-    port: chrome.runtime.Port
-  ): Promise<void> {
+  static async rpcSubscribeConnected(_request: null, cb: ProviderInterfaceCallback, port: Port): Promise<void> {
     const { injectedProviders } = await State.getFromStorage(['injectedProviders']);
 
     const provider = injectedProviders.get(port);
@@ -523,7 +520,7 @@ export default class State {
     provider.on('disconnected', () => cb(null, false));
   }
 
-  static async rpcUnsubscribe(request: RequestRpcUnsubscribe, port: chrome.runtime.Port): Promise<boolean> {
+  static async rpcUnsubscribe(request: RequestRpcUnsubscribe, port: Port): Promise<boolean> {
     const { injectedProviders } = await State.getFromStorage(['injectedProviders']);
 
     const provider = injectedProviders.get(port);
@@ -540,7 +537,7 @@ export default class State {
   }
 
   static async setNotification(notification: string): Promise<boolean> {
-    await chrome.storage.local.set({ notification });
+    storage.set({ notification });
 
     return true;
   }

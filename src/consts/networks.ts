@@ -184,42 +184,6 @@ const UNIT: Record<string, string> = {
   'kusama (test)': 'kusama',
 };
 
-const ETH_BLOCK_EXPLORER: Record<string, string> = {
-  // moonbeam: 'https://moonbeam.moonscan.io',
-  // moonriver: 'https://moonriver.moonscan.io',
-  // moonbase: 'https://moonbase.moonscan.io',
-  ethereum: 'https://etherscan.io',
-  // ethereum_goerli: 'https://goerli.etherscan.io',
-  // binance: 'https://bscscan.com',
-  // binance_test: 'https://testnet.bscscan.com',
-};
-
-const PREDEFINED_NETWORKS = {
-  ethereum: {
-    key: 'ethereum',
-    chain: 'Ethereum Mainnet',
-    genesisHash: '0xb60d7bdd334cd3768d43f14a05c7fe7e886ba5bcb77e1064530052fed1a3f145',
-    ss58Format: 0,
-    providers: {
-      Cloudflare: 'https://cloudflare-eth.com',
-      BlastApi: 'https://eth-mainnet.public.blastapi.io',
-    },
-    active: false,
-    currentProviderMode: 'http',
-    currentProvider: 'BlastApi',
-    groups: ['MAIN_NET'],
-    isEthereum: true,
-    nativeToken: 'ETH',
-    decimals: 18,
-    coinGeckoKey: 'ethereum',
-    evmChainId: 1,
-    supportBonding: false,
-    getStakingOnChain: false,
-    abiExplorer: 'https://etherscan.io',
-    supportSmartContract: [ContractType.evm],
-  },
-};
-
 export enum CustomTokenType {
   erc20 = 'erc20',
 }
@@ -465,9 +429,7 @@ export {
   UNIT,
   LIT,
   PHA,
-  ETH_BLOCK_EXPLORER,
   NETWORK_AND_ASSET,
-  PREDEFINED_NETWORKS,
   RELAY_CHAINS,
   MAIN_NETWORKS,
   NATIVE_NETWORKS,

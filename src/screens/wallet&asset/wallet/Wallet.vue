@@ -94,6 +94,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
+import { ethers } from 'ethers';
 import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
 import type { TMutation, TabWallet } from '@/interfaces/common';
 import type { SetSelectedNetworkProps, SelectedWallet, SetCurrenciesProps, GetNetworkStatus } from '@/store';
@@ -116,9 +117,8 @@ import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.v
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import Loading from '@/components/Loading.vue';
-import { DEFAULT_EVM_TOKENS, PREDEFINED_NETWORKS } from '@/consts/networks';
-import EthContract from '@/controllers/ethers/ethContract';
-import EthProvider from '@/controllers/ethers/ethProvider';
+import { DEFAULT_EVM_TOKENS } from '@/consts/networks';
+import EthProvider from '@/api/evm/ethProvider';
 
 @Component({
   components: {
@@ -151,7 +151,11 @@ export default class Wallet extends Vue {
     mainNetwork?: string;
     assetId?: string;
   };
-
+  currency = {
+    balance: '8888',
+    displayName: 'Ether',
+    name: 'Ether',
+  };
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
@@ -161,19 +165,19 @@ export default class Wallet extends Vue {
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
+
   async mounted() {
     const evmTokens = DEFAULT_EVM_TOKENS.erc20;
     const { provider } = EthProvider.create();
+    const balance = await provider.getBalance(this.selectedWallet.ethereumAddress);
 
-    for (const token of evmTokens) {
-      const contract = new EthContract(token.smartContract, provider);
-      const balance = await contract.getBalance('0x30Fe67eaE94E33F944bB7f468C6F6dE97f444122');
-      console.info(balance, token.name, token.symbol);
-    }
-  }
+    //  console.log(balance, ethers.utils.formatEther(balance));
 
-  get predefNetworks() {
-    return PREDEFINED_NETWORKS;
+    // for (const token of evmTokens) {
+    //   const contract = new EthContract(token.smartContract, provider);
+    //   const balance = await contract.getBalance('0x599dC6fD485E0eD55C1BCc7D8AE02EDAF7bE4f4e');
+    //   console.info(balance, token.name, token.symbol);
+    // }
   }
 
   get showNetworkUnavailablePopup() {

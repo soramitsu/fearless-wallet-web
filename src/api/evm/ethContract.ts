@@ -19,13 +19,22 @@ export default class EthContract {
     'event Transfer(address indexed from, address indexed to, uint amount)',
   ];
 
-  constructor(contractAddress: string, provider: ethers.providers.Provider, signer?: ethers.Signer) {
-    this.contract = new ethers.Contract(contractAddress, this.abi, provider);
-    if (signer) this.signer = signer;
+  constructor(contractAddress: string, signerOrProvider: ethers.Signer | ethers.providers.Provider) {
+    this.contract = new ethers.Contract(contractAddress, this.abi, signerOrProvider);
   }
 
-  async connectSigner(signer: ethers.Signer) {
+  connectSigner(signer: ethers.Signer) {
+    if (this.contract.signer._isSigner) return;
+
     this.contract.connect(signer);
+  }
+
+  getListeners() {
+    return this.contract.listeners();
+  }
+
+  async sendTx() {
+    this.contract.transfer('', '');
   }
 
   async getBalance(address: string) {

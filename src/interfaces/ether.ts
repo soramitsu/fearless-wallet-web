@@ -1,5 +1,10 @@
+import { ethers } from 'ethers';
+
 export enum ContractType {
   wasm = 'wasm',
   evm = 'evm',
 }
-export type ProviderNetworkType = 'homestead' | 'goerli';
+export type EvmNetworkType = 'homestead' | 'goerli';
+export type EvmTransaction = ethers.Transaction;
+export type EvmUnsignedTransaction = ethers.UnsignedTransaction;
+export type EvmSigner = ethers.Signer;

@@ -1,15 +1,15 @@
 import { ethers } from 'ethers';
-import EthWallet from '@/controllers/ethers/ethWallet';
-import { ProviderNetworkType } from '@/interfaces/ether';
+import EthWallet from '@/api/evm/ethWallet';
+import { EvmNetworkType } from '@/interfaces/ether';
 
 export default class EthProvider {
   provider: ethers.providers.BaseProvider;
 
-  constructor(network: ProviderNetworkType) {
+  constructor(network: EvmNetworkType) {
     this.provider = new ethers.providers.InfuraWebSocketProvider(network, '69a249c61c2d469c8695ddf3a9205961');
   }
 
-  static create(network: ProviderNetworkType = 'homestead') {
+  static create(network: EvmNetworkType = 'goerli') {
     return new EthProvider(network);
   }
 
@@ -22,5 +22,8 @@ export default class EthProvider {
 
   public getGasPrice() {
     return this.provider.getGasPrice();
+  }
+  public getEstimateGas(tx: ethers.providers.TransactionRequest) {
+    return this.provider.estimateGas(tx);
   }
 }

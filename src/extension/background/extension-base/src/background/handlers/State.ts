@@ -152,17 +152,26 @@ export default class State {
   static async popupOpen(): Promise<void> {
     const { notification, windows } = await State.getFromStorage(['notification', 'windows']);
     if (notification && notification !== 'extension')
-      chrome.windows.create(
-        notification === 'window' ? NORMAL_WINDOW_OPTS : POPUP_WINDOW_OPTS,
+      chrome.windows.getCurrent((win) => {
+        const popupOptions = { ...POPUP_WINDOW_OPTS };
 
-        async (window): Promise<void> => {
-          if (window) {
-            windows.push(window.id || 0);
-
-            await storage.set({ windows });
-          }
+        if (win) {
+          popupOptions.left = (win.left || 0) + (win.width || 0) - (POPUP_WINDOW_OPTS.width || 0) - 20;
+          popupOptions.top = (win.top || 0) + 75;
         }
-      );
+
+        chrome.windows.create(
+          notification === 'window' ? NORMAL_WINDOW_OPTS : popupOptions,
+
+          async (window): Promise<void> => {
+            if (window) {
+              windows.push(window.id || 0);
+
+              await storage.set({ windows });
+            }
+          }
+        );
+      });
   }
 
   static async injectFromStorage() {

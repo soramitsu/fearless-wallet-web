@@ -535,9 +535,7 @@ const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
 export const POPUP_WINDOW_OPTS: chrome.windows.CreateData = {
   focused: true,
   height: 640,
-  width: 575,
-  left: 700,
-  top: 150,
+  width: 561,
   type: 'popup',
   url: NOTIFICATION_URL,
 };

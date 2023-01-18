@@ -9,6 +9,7 @@ import { assert, isNumber } from '@polkadot/util';
 import RequestBytesSign from '@extension-base/background/RequestBytesSign';
 import RequestExtrinsicSign from '@extension-base/background/RequestExtrinsicSign';
 
+import keyring from '@polkadot/ui-keyring';
 import BeaconSignerJSON from '../BeaconSignerJSON';
 import { stripUrl, transformAccounts, transformAddresses, withErrorLog } from './helpers';
 import State from './State';
@@ -40,7 +41,7 @@ import type {
   MetadataDef,
   ProviderMeta,
 } from '@polkadot/extension-inject/types';
-import { keyring } from '@/controllers/keyringChrome';
+
 export default class Tabs {
   static accountSubs: Record<string, AccountSub> = {};
 

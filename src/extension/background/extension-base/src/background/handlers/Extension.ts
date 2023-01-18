@@ -5,6 +5,7 @@ import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { assert, isHex } from '@polkadot/util';
 import { keyExtractSuri, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
+import { keyring } from '@polkadot/ui-keyring';
 import { ActiveTabAuthorizeStatus, CachedUnlocks, Port } from '../types';
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
@@ -61,7 +62,6 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
-import { keyring } from '@/controllers/keyringChrome';
 import { googleManage } from '@/controllers/googleController';
 import { FilesResponse, GoogleAuthTypes, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
 

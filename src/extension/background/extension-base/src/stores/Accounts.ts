@@ -5,9 +5,19 @@ import { EXTENSION_PREFIX } from '../defaults';
 import BaseStore from './Base';
 import type { KeyringJson, KeyringStore } from '@polkadot/ui-keyring/types';
 
-class AccountsStore extends BaseStore<KeyringJson> implements KeyringStore {
+export default class AccountsStore extends BaseStore<KeyringJson> implements KeyringStore {
   constructor() {
-    super(`${EXTENSION_PREFIX}`);
+    super(EXTENSION_PREFIX);
+  }
+
+  public override set(key: string, value: KeyringJson, update?: () => void): void {
+    // shortcut, don't save testing accounts in extension storage
+    if (key.startsWith('account:') && value.meta && value.meta.isTesting) {
+      update && update();
+
+      return;
+    }
+
+    super.set(key, value, update);
   }
 }
-export const accountStore = new AccountsStore();

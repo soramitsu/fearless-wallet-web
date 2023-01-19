@@ -32,6 +32,7 @@ import {
 } from '../types';
 import { getId } from '../../utils';
 import MetadataStore from '../../stores/Metadata';
+import EthProvider from '../../api/evm/ethProvider';
 import { stripUrl, withErrorLog } from './helpers';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
@@ -94,6 +95,9 @@ export default class State {
   static authUrls: AuthUrls = {};
   static signature: HexString | null = null;
   static defaultAuthAccountSelection: string[] = [];
+  static apis: { evm: Record<string, EthProvider> } = {
+    evm: {},
+  };
   static authRequests: Record<string, AuthRequest> = {};
   static metaRequests: Record<string, MetaRequest> = {};
   static signRequests: Record<string, SignRequest> = {};

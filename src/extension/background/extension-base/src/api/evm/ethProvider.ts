@@ -6,7 +6,7 @@ export default class EthProvider {
   provider: ethers.providers.BaseProvider;
 
   constructor(network: EvmNetworkType) {
-    this.provider = new ethers.providers.InfuraWebSocketProvider(network, '69a249c61c2d469c8695ddf3a9205961');
+    this.provider = new ethers.providers.JsonRpcProvider(network, '69a249c61c2d469c8695ddf3a9205961');
   }
 
   static create(network: EvmNetworkType = 'goerli') {

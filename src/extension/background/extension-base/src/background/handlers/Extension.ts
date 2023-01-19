@@ -6,6 +6,7 @@ import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/
 import { assert, isHex } from '@polkadot/util';
 import { keyExtractSuri, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
 import { ActiveTabAuthorizeStatus, CachedUnlocks } from '../types';
+import EthProvider from '../../api/evm/ethProvider';
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
@@ -658,6 +659,10 @@ export default class Extension {
 
   static getAddresses() {
     return keyring.getAddresses();
+  }
+
+  static initExtension() {
+    State.apis.evm['mainnet'] = new EthProvider('homestead');
   }
 
   static initAuth({ type, wallet }: GoogleAuthTypes): void {

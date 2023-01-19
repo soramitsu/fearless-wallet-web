@@ -663,6 +663,7 @@ export default class Extension {
 
   static initExtension() {
     State.apis.evm['mainnet'] = new EthProvider('homestead');
+    State.apis.evm['goerli'] = new EthProvider('goerli');
   }
 
   static initAuth({ type, wallet }: GoogleAuthTypes): void {

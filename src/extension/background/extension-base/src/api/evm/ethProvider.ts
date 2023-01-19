@@ -20,9 +20,16 @@ export default class EthProvider {
     return signer;
   }
 
+  public async getBalance(address: string) {
+    const balance = await this.provider.getBalance(address);
+
+    return ethers.utils.formatEther(balance);
+  }
+
   public getGasPrice() {
     return this.provider.getGasPrice();
   }
+
   public getEstimateGas(tx: ethers.providers.TransactionRequest) {
     return this.provider.estimateGas(tx);
   }

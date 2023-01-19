@@ -1,12 +1,11 @@
 // Copyright 2019-2022 @polkadot/extension-bg authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { knownGenesis } from '@polkadot/networks/defaults';
 import { assert } from '@polkadot/util';
 import { TypeRegistry } from '@polkadot/types';
-
 import {
   AuthorizeRequest,
   AuthRequest,
@@ -35,10 +34,14 @@ import { getId } from '../../utils';
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';
+import { CustomToken, CustomTokenJson, NetworkJson } from '../../api/evm/types/ether';
+import CustomTokenStore from '../../stores/CustomEvmToken';
+import { initEvmTokenState } from '../../api/evm/utils/eth';
 import { stripUrl, withErrorLog } from './helpers';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
+import { DEFAULT_EVM_TOKENS } from '@/consts/networks';
 
 function extractMetadata(store: MetadataStore): void {
   store.allMap((map): void => {
@@ -100,6 +103,12 @@ export default class State {
   static apis: { evm: Record<string, EthProvider> } = {
     evm: {},
   };
+  private static networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
+  private static networkMapSubject = new Subject<Record<string, NetworkJson>>();
+
+  static customTokenStore = new CustomTokenStore();
+  private static customTokenState: CustomTokenJson = { erc20: [] };
+  private static customTokenSubject = new Subject<CustomTokenJson>();
   static authRequests: Record<string, AuthRequest> = {};
   static metaRequests: Record<string, MetaRequest> = {};
   static signRequests: Record<string, SignRequest> = {};
@@ -569,5 +578,42 @@ export default class State {
       State.updateIconSign();
       State.popupOpen();
     });
+  }
+  public getActiveErc20Tokens() {
+    const filteredErc20Tokens: CustomToken[] = [];
+
+    State.customTokenState.erc20.forEach((token) => {
+      if (!token.isDeleted) {
+        filteredErc20Tokens.push(token);
+      }
+    });
+
+    return filteredErc20Tokens;
+  }
+  public initCustomTokenState() {
+    State.customTokenStore.get('EvmToken', (storedCustomTokens) => {
+      if (!storedCustomTokens) {
+        State.customTokenState = DEFAULT_EVM_TOKENS;
+      } else {
+        const processedEvmTokens = initEvmTokenState(storedCustomTokens, State.networkMap);
+
+        State.customTokenState = { ...processedEvmTokens };
+      }
+
+      State.customTokenStore.set('EvmToken', State.customTokenState);
+      State.customTokenSubject.next(State.customTokenState);
+    });
+  }
+
+  public static getActiveErc20Tokens() {
+    const filteredErc20Tokens: CustomToken[] = [];
+
+    State.customTokenState.erc20.forEach((token) => {
+      if (!token.isDeleted) {
+        filteredErc20Tokens.push(token);
+      }
+    });
+
+    return filteredErc20Tokens;
   }
 }

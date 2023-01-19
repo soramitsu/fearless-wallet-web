@@ -1,12 +1,18 @@
 import { ethers } from 'ethers';
+
 import EthWallet from '@/extension/background/extension-base/src/api/evm/ethWallet';
 import { EvmNetworkType } from '@/interfaces/ether';
 
+const providers: Record<EvmNetworkType, string> = {
+  homestead: 'wss://eth-mainnet.g.alchemy.com/v2/r2rCN7zWhPZ0cggKYqk_MElwxrrRM4Kw',
+  goerli: 'wss://eth-goerli.g.alchemy.com/v2/WJz4vP6DoqLvRxiJDofxQWq8Fc9UCLbH',
+};
 export default class EthProvider {
   provider: ethers.providers.BaseProvider;
 
   constructor(network: EvmNetworkType) {
-    this.provider = new ethers.providers.JsonRpcProvider(network, '69a249c61c2d469c8695ddf3a9205961');
+    this.provider = new ethers.providers.WebSocketProvider(providers[network], network);
+    console.info(`Provider of ${network} is init`);
   }
 
   static create(network: EvmNetworkType = 'goerli') {

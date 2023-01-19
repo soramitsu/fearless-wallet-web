@@ -1,7 +1,15 @@
 // Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { ApiPromise } from '@polkadot/api';
+import { BN } from '@polkadot/util';
+import { ethers } from 'ethers';
+import { ASTAR_REFRESH_BALANCE_INTERVAL, SUB_TOKEN_REFRESH_BALANCE_INTERVAL } from '../../const/intervals';
+import State from '../../background/handlers/State';
+import { APIItemState, BalanceChildItem, BalanceItem, TokenInfo } from './types/ether';
 import EthProvider from './ethProvider';
+import { getERC20Contract, sumBN } from './utils/eth';
+import { getRegistry } from './utils/registery';
 
 export async function getEVMBalance(
   networkKey: string,
@@ -15,4 +23,107 @@ export async function getEVMBalance(
       return await eth.getBalance(address);
     })
   );
+}
+
+function subscribeERC20Interval(
+  addresses: string[],
+  networkKey: string,
+  api: ApiPromise,
+  web3ApiMap: Record<string, EthProvider>,
+  subCallback: (rs: Record<string, BalanceChildItem>) => void
+): () => void {
+  let tokenList = {} as TokenInfo[];
+  const ERC20ContractMap = {} as Record<string, ethers.Contract>;
+
+  const getTokenBalances = () => {
+    Object.values(tokenList).map(async ({ decimals, symbol }) => {
+      let free = new BN(0);
+
+      try {
+        const contract = ERC20ContractMap[symbol];
+        const bals = await Promise.all(
+          addresses.map((address): Promise<string> => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
+            return contract.methods.balanceOf(address).call();
+          })
+        );
+
+        free = sumBN(bals.map((bal) => new BN(bal || 0)));
+        // console.log('TokenBals', symbol, addresses, bals, free);
+
+        subCallback({
+          [symbol]: {
+            reserved: '0',
+            frozen: '0',
+            free: free.toString(),
+            decimals,
+          },
+        });
+      } catch (err) {
+        console.warn('There is problem when fetching ' + symbol + ' token balance', err);
+      }
+    });
+  };
+
+  getRegistry(networkKey, api, State.getActiveErc20Tokens())
+    .then(({ tokenMap }) => {
+      tokenList = Object.values(tokenMap).filter(({ contractAddress }) => !!contractAddress);
+      tokenList.forEach(({ contractAddress, symbol }) => {
+        if (contractAddress) {
+          ERC20ContractMap[symbol] = getERC20Contract(networkKey, contractAddress, web3ApiMap);
+        }
+      });
+      getTokenBalances();
+    })
+    .catch(console.warn);
+
+  const interval = setInterval(getTokenBalances, SUB_TOKEN_REFRESH_BALANCE_INTERVAL);
+
+  return () => {
+    clearInterval(interval);
+  };
+}
+
+export function subscribeEVMBalance(
+  networkKey: string,
+  api: ApiPromise,
+  addresses: string[],
+  web3ApiMap: Record<string, EthProvider>,
+  callback: (networkKey: string, rs: BalanceItem) => void
+) {
+  const balanceItem = {
+    state: APIItemState.PENDING,
+    free: '0',
+    reserved: '0',
+    miscFrozen: '0',
+    feeFrozen: '0',
+  } as BalanceItem;
+
+  function getBalance() {
+    getEVMBalance(networkKey, addresses, web3ApiMap)
+      .then((balances) => {
+        balanceItem.free = sumBN(balances.map((b) => new BN(b || '0'))).toString();
+        balanceItem.state = APIItemState.READY;
+        callback(networkKey, balanceItem);
+      })
+      .catch(console.warn);
+  }
+
+  function subCallback(children: Record<string, BalanceChildItem>) {
+    if (!Object.keys(children).length) {
+      return;
+    }
+
+    balanceItem.children = { ...balanceItem.children, ...children };
+    callback(networkKey, balanceItem);
+  }
+
+  getBalance();
+  const interval = setInterval(getBalance, ASTAR_REFRESH_BALANCE_INTERVAL);
+  const unsub2 = subscribeERC20Interval(addresses, networkKey, api, web3ApiMap, subCallback);
+
+  return () => {
+    clearInterval(interval);
+    unsub2 && unsub2();
+  };
 }

@@ -1,8 +1,21 @@
 import BigN from 'bignumber.js';
+import { BN, hexStripPrefix, numberToHex, u8aToHex } from '@polkadot/util';
 import BNEther from 'bn.js';
 import RLP from 'rlp';
 import { ethers } from 'ethers';
-import { hexStripPrefix, numberToHex, u8aToHex } from '@polkadot/util';
+import { isEthereumAddress } from '@polkadot/util-crypto';
+import { CustomTokenJson, NetworkJson } from '../types/ether';
+import EthProvider from '../ethProvider';
+import ERC20Contract from '../helpers/ERC20Contract.json';
+import { DEFAULT_EVM_TOKENS } from '@/consts/networks';
+
+export function isEqualContractAddress(address1: string, address2: string) {
+  if (isEthereumAddress(address1) && isEthereumAddress(address2)) {
+    return address1.toLowerCase() === address2.toLowerCase(); // EVM address is case-insensitive
+  }
+
+  return address2 === address1;
+}
 
 const hexToNumberString = (s: string): string => {
   const temp = parseInt(s, 16);
@@ -88,4 +101,68 @@ export const signatureToHex = (sig: ethers.Transaction): string => {
   const hexV = hexStripPrefix(numberToHex(v));
 
   return hexR + hexS + hexV;
+};
+
+export function sumBN(inputArr: BN[]) {
+  let rs = new BN(0);
+
+  inputArr.forEach((input) => {
+    rs = rs.add(input);
+  });
+
+  return rs;
+}
+
+export function initEvmTokenState(customTokenState: CustomTokenJson, networkMap: Record<string, NetworkJson>) {
+  const evmTokenState = { erc20: customTokenState.erc20 };
+
+  for (const defaultToken of DEFAULT_EVM_TOKENS.erc20) {
+    let exist = false;
+
+    for (const storedToken of evmTokenState.erc20) {
+      if (
+        isEqualContractAddress(defaultToken.smartContract, storedToken.smartContract) &&
+        defaultToken.chain === storedToken.chain
+      ) {
+        if (storedToken.isCustom) {
+          // if existed, migrate the custom token -> default token
+          delete storedToken.isCustom;
+        }
+
+        exist = true;
+        break;
+      }
+    }
+
+    if (!exist) {
+      evmTokenState.erc20.push(defaultToken);
+    }
+  }
+
+  // Update networkKey in case networkMap change
+  for (const token of evmTokenState.erc20) {
+    if (!(token.chain in networkMap) && token.chain.startsWith('custom_')) {
+      let newKey = '';
+      const genesisHash = token.chain.split('custom_')[1]; // token from custom network has key with prefix custom_
+
+      for (const [key, network] of Object.entries(networkMap)) {
+        if (network.genesisHash.toLowerCase() === genesisHash.toLowerCase()) {
+          newKey = key;
+          break;
+        }
+      }
+
+      token.chain = newKey;
+    }
+  }
+
+  return evmTokenState;
+}
+
+export const getERC20Contract = (
+  networkKey: string,
+  assetAddress: string,
+  web3ApiMap: Record<string, EthProvider>
+): ethers.Contract => {
+  return new ethers.Contract(assetAddress, ERC20Contract.abi, web3ApiMap[networkKey].provider);
 };

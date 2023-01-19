@@ -6,6 +6,7 @@ import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { knownGenesis } from '@polkadot/networks/defaults';
 import { assert } from '@polkadot/util';
 import { TypeRegistry } from '@polkadot/types';
+
 import {
   AuthorizeRequest,
   AuthRequest,
@@ -29,15 +30,18 @@ import {
   ResponseRpcListProviders,
   IState,
   Port,
+  BalanceJson,
 } from '../types';
 import { getId } from '../../utils';
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';
-import { CustomToken, CustomTokenJson, NetworkJson } from '../../api/evm/types/ether';
+import { APIItemState, BalanceItem, CustomToken, CustomTokenJson, NetworkJson } from '../../api/evm/types/ether';
 import CustomTokenStore from '../../stores/CustomEvmToken';
 import { initEvmTokenState } from '../../api/evm/utils/eth';
-import BalanceStore from '../../stores/Balance';
+
+import BalanceService from '../../shared/balanceService';
+import CurrentAccountStore, { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import { stripUrl, withErrorLog } from './helpers';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
@@ -106,9 +110,10 @@ export default class State {
   };
   private static networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
   private static networkMapSubject = new Subject<Record<string, NetworkJson>>();
-
+  private static readonly currentAccountStore = new CurrentAccountStore();
   static customTokenStore = new CustomTokenStore();
-  static balanceStore = new BalanceStore();
+  private static balanceMap: Record<string, BalanceItem> = State.generateDefaultBalanceMap();
+  private static balanceSubject = new Subject<BalanceJson>();
   private static customTokenState: CustomTokenJson = { erc20: [] };
   private static customTokenSubject = new Subject<CustomTokenJson>();
   static authRequests: Record<string, AuthRequest> = {};
@@ -117,7 +122,7 @@ export default class State {
   static readonly authSubject: BehaviorSubject<AuthorizeRequest[]> = new BehaviorSubject<AuthorizeRequest[]>([]);
   static readonly metaSubject: BehaviorSubject<MetadataRequest[]> = new BehaviorSubject<MetadataRequest[]>([]);
   static readonly signSubject: BehaviorSubject<SigningRequest[]> = new BehaviorSubject<SigningRequest[]>([]);
-
+  static balanceService = new BalanceService();
   static get knownMetadata(): MetadataDef[] {
     return knownMetadata();
   }
@@ -617,5 +622,53 @@ export default class State {
     });
 
     return filteredErc20Tokens;
+  }
+
+  public setBalanceItem(networkKey: string, item: BalanceItem) {
+    // eslint-disable-next-line no-prototype-builtins
+    if (typeof item === 'object' && item.hasOwnProperty('children') && item.children === undefined) {
+      delete item.children;
+    }
+
+    const itemData = { timestamp: +new Date(), ...item };
+
+    State.balanceMap[networkKey] = { ...State.balanceMap[networkKey], ...itemData };
+    this.updateBalanceStore(networkKey, item);
+  }
+
+  public static getNetworkGenesisHashByKey(key: string) {
+    const network = State.networkMap[key];
+
+    return network && network.genesisHash;
+  }
+
+  public static getCurrentAccount(update: (value: CurrentAccountInfo) => void): void {
+    return State.currentAccountStore.get('CurrentAccountInfo', update);
+  }
+
+  private updateBalanceStore(networkKey: string, item: BalanceItem) {
+    State.getCurrentAccount((currentAccountInfo) => {
+      State.balanceService
+        .updateBalanceStore(networkKey, State.getNetworkGenesisHashByKey(networkKey), currentAccountInfo.address, item)
+        .catch((e) => console.warn(e));
+    });
+  }
+
+  public subscribeBalance() {
+    return State.balanceSubject;
+  }
+
+  public static generateDefaultBalanceMap() {
+    const balanceMap: Record<string, BalanceItem> = {};
+
+    Object.values(this.networkMap).forEach((networkJson) => {
+      if (networkJson.active) {
+        balanceMap[networkJson.key] = {
+          state: APIItemState.PENDING,
+        };
+      }
+    });
+
+    return balanceMap;
   }
 }

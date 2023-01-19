@@ -7,6 +7,7 @@ import { TypeRegistry } from '@polkadot/types';
 import { Subscription } from 'rxjs';
 import { ALLOWED_PATH } from '../defaults';
 import MetadataStore from '../stores/Metadata';
+import { BalanceItem } from '../api/evm/types/ether';
 import type {
   InjectedAccount,
   InjectedMetadataKnown,
@@ -158,6 +159,13 @@ export interface RequestSignatures {
   'pri(google.delete.file)': [GoogleFileId, void];
   'pri(tab.status)': [null, ActiveTabAuthorizeStatus];
 
+  //ether
+  'pri(evm.get.balances)': [];
+  'pri(evm.get.tokens)': [];
+  'pri(evm.accounts.list)': [];
+  'pri(evm.sign.transaction)': [];
+  'pri(evm.sign.message)': [];
+
   // public/external requests, i.e. from a page
   'pub(accounts.list)': [RequestAccountList, InjectedAccount[]];
   'pub(accounts.subscribe)': [RequestAccountSubscribe, string, InjectedAccount[]];
@@ -240,6 +248,11 @@ export interface RequestAccountCreateHardware {
   genesisHash: string;
   hardwareType: string;
   name: string;
+}
+
+export interface BalanceJson {
+  reset?: boolean;
+  details: Record<string, BalanceItem>;
 }
 
 export interface RequestAccountChangePassword {

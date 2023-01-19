@@ -26,6 +26,7 @@ import type {
   SeedLengths,
   SigningRequest,
   SubscriptionMessageTypes,
+  Port,
 } from '@extension-base/background/types';
 import type { Message } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
@@ -85,7 +86,7 @@ const onMessage = (data: Message['data']): void => {
 };
 
 // setup a listener for messages, any incoming resolves the promise
-const connect = (onDisconnect: (_port: chrome.runtime.Port) => void) => {
+const connect = (onDisconnect: (_port: Port) => void) => {
   if (chrome.extension === undefined) return;
 
   if (!port) port = chrome.runtime.connect({ name: PORT_EXTENSION });
@@ -94,7 +95,7 @@ const connect = (onDisconnect: (_port: chrome.runtime.Port) => void) => {
   port.onMessage.addListener(onMessage);
 };
 
-const onDisconnect = (_port: chrome.runtime.Port) => {
+const onDisconnect = (_port: Port) => {
   _port.onDisconnect.removeListener(onDisconnect);
   _port.onMessage.removeListener(onMessage);
 

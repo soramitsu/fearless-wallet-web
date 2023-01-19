@@ -1,9 +1,10 @@
+import { keyring } from '@polkadot/ui-keyring';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import handlers from '@extension-base/background/handlers';
 import State, { initState } from '@extension-base/background/handlers/State';
 import Extension from '../background/extension-base/src/background/handlers/Extension';
+import AccountsStore from '../background/extension-base/src/stores/Accounts';
 import type { RequestSignatures, TransportRequestMessage } from '@extension-base/background/types';
-import { keyring } from '@/controllers/keyringChrome';
 
 chrome.runtime.onInstalled.addListener(async () => {
   await initState();
@@ -21,6 +22,7 @@ chrome.runtime.onConnect.addListener((tab): void => {
 cryptoWaitReady()
   .then((): void => {
     keyring.loadAll({
+      store: new AccountsStore(),
       type: 'sr25519',
     });
   })

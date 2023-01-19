@@ -6,11 +6,11 @@ import { PORT_EXTENSION } from '../../defaults';
 import Extension from './Extension';
 import Tabs from './Tabs';
 import State from './State';
-import type { MessageTypes, TransportRequestMessage } from '../types';
+import type { MessageTypes, Port, TransportRequestMessage } from '../types';
 
 export default function handler<TMessageType extends MessageTypes>(
   { id, message, request }: TransportRequestMessage<TMessageType>,
-  port?: chrome.runtime.Port,
+  port?: Port,
   extensionPortName = PORT_EXTENSION
 ): void {
   const isExtension = !port || port?.name === extensionPortName;

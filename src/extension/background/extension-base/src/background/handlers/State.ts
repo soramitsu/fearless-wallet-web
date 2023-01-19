@@ -37,6 +37,7 @@ import EthProvider from '../../api/evm/ethProvider';
 import { CustomToken, CustomTokenJson, NetworkJson } from '../../api/evm/types/ether';
 import CustomTokenStore from '../../stores/CustomEvmToken';
 import { initEvmTokenState } from '../../api/evm/utils/eth';
+import BalanceStore from '../../stores/Balance';
 import { stripUrl, withErrorLog } from './helpers';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
@@ -107,6 +108,7 @@ export default class State {
   private static networkMapSubject = new Subject<Record<string, NetworkJson>>();
 
   static customTokenStore = new CustomTokenStore();
+  static balanceStore = new BalanceStore();
   private static customTokenState: CustomTokenJson = { erc20: [] };
   private static customTokenSubject = new Subject<CustomTokenJson>();
   static authRequests: Record<string, AuthRequest> = {};

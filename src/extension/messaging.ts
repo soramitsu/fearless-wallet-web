@@ -27,6 +27,7 @@ import type {
   SigningRequest,
   SubscriptionMessageTypes,
   Port,
+  BalanceJson,
 } from '@extension-base/background/types';
 import type { Message } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
@@ -396,4 +397,15 @@ export async function deleteGoogleFile(id: string, token: string): Promise<void>
 
 export async function isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
   return sendMessage('pri(tab.status)');
+}
+
+export async function getBalance(): Promise<BalanceJson> {
+  return sendMessage('pri(balance.get.balance)');
+}
+
+export async function subscribeBalance(
+  request: null,
+  callback: (balanceData: BalanceJson) => void
+): Promise<BalanceJson> {
+  return sendMessage('pri(balance.get.subscription)', request, callback);
 }

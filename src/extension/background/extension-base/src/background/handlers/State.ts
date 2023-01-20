@@ -43,6 +43,7 @@ import { initEvmTokenState } from '../../api/evm/utils/eth';
 import BalanceService from '../../shared/balanceService';
 import CurrentAccountStore, { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import { stripUrl, withErrorLog } from './helpers';
+import { isSubscriptionRunning, unsubscribe } from './subscriptions';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
@@ -102,12 +103,14 @@ export async function initState() {
 }
 
 export default class State {
+  private static readonly unsubscriptionMap: Record<string, () => void> = {};
   static authUrls: AuthUrls = {};
   static signature: HexString | null = null;
   static defaultAuthAccountSelection: string[] = [];
   static apis: { evm: Record<string, EthProvider> } = {
     evm: {},
   };
+
   private static networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
   private static networkMapSubject = new Subject<Record<string, NetworkJson>>();
   private static readonly currentAccountStore = new CurrentAccountStore();
@@ -125,6 +128,24 @@ export default class State {
   static balanceService = new BalanceService();
   static get knownMetadata(): MetadataDef[] {
     return knownMetadata();
+  }
+
+  public static createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
+    State.unsubscriptionMap[id] = unsubscribe;
+  }
+
+  public static cancelSubscription(id: string): boolean {
+    if (isSubscriptionRunning(id)) {
+      unsubscribe(id);
+    }
+
+    if (State.unsubscriptionMap[id]) {
+      State.unsubscriptionMap[id]();
+
+      delete State.unsubscriptionMap[id];
+    }
+
+    return true;
   }
 
   static getFromStorage(key: (keyof IState)[]) {
@@ -670,5 +691,31 @@ export default class State {
     });
 
     return balanceMap;
+  }
+
+  private static removeInactiveNetworkData<T>(data: Record<string, T>) {
+    const activeData: Record<string, T> = {};
+
+    Object.entries(data).forEach(([networkKey, items]) => {
+      if (this.networkMap[networkKey]?.active) {
+        activeData[networkKey] = items;
+      }
+    });
+
+    return activeData;
+  }
+
+  public createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
+    State.unsubscriptionMap[id] = unsubscribe;
+  }
+
+  public static subscribeBalance() {
+    return this.balanceSubject;
+  }
+
+  public static getBalance(reset?: boolean): BalanceJson {
+    const activeData = State.removeInactiveNetworkData(this.balanceMap);
+
+    return { details: activeData, reset } as BalanceJson;
   }
 }

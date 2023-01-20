@@ -6,7 +6,7 @@ import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/
 import { assert, isHex } from '@polkadot/util';
 import { keyExtractSuri, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
 import { keyring } from '@polkadot/ui-keyring';
-import { ActiveTabAuthorizeStatus, CachedUnlocks, Port } from '../types';
+import { ActiveTabAuthorizeStatus, BalanceJson, CachedUnlocks, Port, SubscribeBalanceRequest } from '../types';
 import EthProvider from '../../api/evm/ethProvider';
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
@@ -91,6 +91,9 @@ export default class Extension {
     });
   }
 
+  private static cancelSubscription(id: string): boolean {
+    return State.cancelSubscription(id);
+  }
   static accountsCreateExternal({ address, genesisHash, name }: RequestAccountCreateExternal): boolean {
     keyring.addExternal(address, { genesisHash, name });
 
@@ -698,6 +701,31 @@ export default class Extension {
     googleManage.deleteFile(id, Extension.token);
   }
 
+  static getBalance(reset?: boolean): BalanceJson {
+    return State.getBalance(reset);
+  }
+  private static createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
+    State.createUnsubscriptionHandle(id, unsubscribe);
+  }
+
+  static subscribeBalance({ id, port }: SubscribeBalanceRequest): BalanceJson {
+    const cb = createSubscription<'pri(balance.get.subscription)'>(id, port);
+
+    const balanceSubscription = State.subscribeBalance().subscribe({
+      next: (rs) => {
+        cb(rs);
+      },
+    });
+
+    Extension.createUnsubscriptionHandle(id, balanceSubscription.unsubscribe);
+
+    port.onDisconnect.addListener((): void => {
+      Extension.cancelSubscription(id);
+    });
+
+    return this.getBalance(true);
+  }
+
   static async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -863,6 +891,12 @@ export default class Extension {
 
       case 'pri(tab.status)':
         return Extension.isTabAuthorize();
+
+      case 'pri(balance.get.balance)':
+        return Extension.getBalance();
+
+      case 'pri(balance.get.subscription)':
+        return Extension.subscribeBalance({ id, port } as SubscribeBalanceRequest);
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

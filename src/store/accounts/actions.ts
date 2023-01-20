@@ -6,9 +6,11 @@ import type { Currencies, Networks, NetworkName } from '@/interfaces';
 import { MutationTypes } from '@/store/accounts/mutations';
 import { defaultSortingCurrencies } from '@/helpers/currencies';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
+import { BalanceJson } from '@/extension/background/extension-base/src/background/types';
 
 export enum ActionTypes {
   SET_SELECTED_FIAT = 'SET_SELECTED_FIAT',
+  SET_BALANCE = 'SET_BALANCE',
   SET_SELECTED_WALLET = 'SET_SELECTED_WALLET',
 }
 
@@ -18,10 +20,15 @@ type AugmentedActionContext = {
 
 export type Actions = {
   [ActionTypes.SET_SELECTED_FIAT](context: AugmentedActionContext, props: SetSelectedFiat): Promise<void>;
+  [ActionTypes.SET_BALANCE](context: AugmentedActionContext, props: BalanceJson): Promise<void>;
   [ActionTypes.SET_SELECTED_WALLET](context: AugmentedActionContext, props: SetSelectedWallet): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
+  async [ActionTypes.SET_BALANCE]({ commit }, payload) {
+    commit(MutationTypes.SET_BALANCE, payload);
+  },
+
   async [ActionTypes.SET_SELECTED_FIAT]({ rootState, commit }, { fiatName }) {
     const currencies: Currencies = rootState.networks.currencies;
 

@@ -14,6 +14,8 @@ import type { KeyringPair$Meta } from '@polkadot/keyring/types';
 import BaseApi from '@/util/BaseApi';
 import { accountController } from '@/controllers/accountController';
 import { getMetaTyped } from '@/helpers/common';
+import { BalanceItem } from '@/extension/background/extension-base/src/api/evm/types/ether';
+import { BalanceJson } from '@/extension/background/extension-base/src/background/types';
 
 export enum MutationTypes {
   SET_SELECTED_WALLET = 'SET_SELECTED_WALLET',
@@ -24,6 +26,7 @@ export enum MutationTypes {
   SET_ADDRESSES = 'SET_ADDRESSES',
   SET_AUTO_SELECT_NODE = 'SET_AUTO_SELECT_NODE',
   SET_QR = 'SET_QR',
+  SET_BALANCE = 'SET_BALANCE',
   DELETE_QR = 'DELETE_QR',
 }
 
@@ -34,6 +37,7 @@ export type Mutations = {
   [MutationTypes.SET_ACCOUNTS](state: State, props: setAccountsProps): void;
   [MutationTypes.SET_ONLINE_STATUS](state: State, props: setOnlineStatus): void;
   [MutationTypes.SET_ADDRESSES](state: State, props: setAddressesProps): void;
+  [MutationTypes.SET_BALANCE](state: State, props: BalanceJson): void;
   [MutationTypes.SET_AUTO_SELECT_NODE](state: State, props: setAutoSelectNode): void;
   [MutationTypes.SET_QR](state: State, props: string): void;
   [MutationTypes.DELETE_QR](state: State): void;
@@ -105,6 +109,10 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.DELETE_QR](state) {
     state.qr = null;
+  },
+
+  [MutationTypes.SET_BALANCE](state, payload) {
+    state.balance = payload.reset ? payload.details : { ...state.balance, ...payload.details };
   },
 };
 

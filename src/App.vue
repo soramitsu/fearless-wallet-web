@@ -9,6 +9,7 @@
 <script lang="ts">
 import { Watch, Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
+import { BalanceJson } from './extension/background/extension-base/src/background/types';
 import type { SetSelectedWalletProps, setAccountsProps, Accounts, setAddressesProps, setOnlineStatus } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
 import type { BehaviorSubject } from 'rxjs';
@@ -20,7 +21,8 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import NetworksController from '@/controllers/networksController';
 import { accountController } from '@/controllers/accountController';
-import { resetTimeouts } from '@/extension/messaging';
+import { resetTimeouts, subscribeBalance } from '@/extension/messaging';
+import store from '@/store';
 
 @Component
 export default class App extends Vue {
@@ -38,7 +40,18 @@ export default class App extends Vue {
   @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<setOnlineStatus>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
 
+  updateBalance(balanceData: BalanceJson): void {
+    console.info(balanceData, 'data');
+    store.dispatch('SET_BALANCE', balanceData);
+  }
+
+  useSetupBalance(): void {
+    subscribeBalance(null, this.updateBalance).then(this.updateBalance).catch(console.error);
+  }
+
   created() {
+    this.useSetupBalance();
+
     if (BaseApi.isExtension()) {
       this.extensionSubscribe();
       resetTimeouts();

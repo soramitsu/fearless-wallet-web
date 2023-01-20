@@ -5,16 +5,16 @@ import type { MessageTypesWithSubscriptions, Port, SubscriptionMessageTypes, Sub
 const subscriptions: Subscriptions = {};
 
 // return a subscription callback, that will send the data to the caller via the port
-export async function createSubscription<TMessageType extends MessageTypesWithSubscriptions>(
+export function createSubscription<TMessageType extends MessageTypesWithSubscriptions>(
   id: string,
   port: Port
-): Promise<(data: SubscriptionMessageTypes[TMessageType]) => void> {
+): (data: SubscriptionMessageTypes[TMessageType]) => void {
   subscriptions[id] = port;
 
-  await chrome.storage.local.set({ subscriptions });
-
   return (subscription: unknown): void => {
-    if (subscriptions[id]) port.postMessage({ id, subscription });
+    if (subscriptions[id]) {
+      port.postMessage({ id, subscription });
+    }
   };
 }
 
@@ -28,4 +28,8 @@ export async function unsubscribe(id: string): Promise<void> {
   } else {
     console.error(`Unable to unsubscribe from ${id}`);
   }
+}
+
+export function isSubscriptionRunning(id: string): boolean {
+  return !!subscriptions[id];
 }

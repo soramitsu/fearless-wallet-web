@@ -116,8 +116,6 @@ import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.v
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import Loading from '@/components/Loading.vue';
-import { DEFAULT_EVM_TOKENS } from '@/consts/networks';
-import EthProvider from '@/api/evm/ethProvider';
 
 @Component({
   components: {

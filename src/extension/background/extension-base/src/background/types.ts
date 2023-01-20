@@ -96,7 +96,10 @@ export interface RequestAddressCreate {
 export interface RequestAddressRemove {
   address: string;
 }
-
+export interface SubscribeBalanceRequest {
+  id: string;
+  port: Port;
+}
 export type ConnectedTabsUrlResponse = string[];
 
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
@@ -160,11 +163,8 @@ export interface RequestSignatures {
   'pri(tab.status)': [null, ActiveTabAuthorizeStatus];
 
   //ether
-  'pri(evm.get.balances)': [];
-  'pri(evm.get.tokens)': [];
-  'pri(evm.accounts.list)': [];
-  'pri(evm.sign.transaction)': [];
-  'pri(evm.sign.message)': [];
+  'pri(balance.get.balance)': [null, BalanceJson];
+  'pri(balance.get.subscription)': [null, BalanceJson, BalanceJson];
 
   // public/external requests, i.e. from a page
   'pub(accounts.list)': [RequestAccountList, InjectedAccount[]];

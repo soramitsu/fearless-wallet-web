@@ -8,6 +8,7 @@ import { keyExtractSuri, mnemonicGenerate, mnemonicValidate } from '@polkadot/ut
 import { keyring } from '@polkadot/ui-keyring';
 import { ActiveTabAuthorizeStatus, BalanceJson, CachedUnlocks, Port, SubscribeBalanceRequest } from '../types';
 import EthProvider from '../../api/evm/ethProvider';
+import { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
@@ -113,8 +114,22 @@ export default class Extension {
     return true;
   }
 
-  static accountsCreateSuri({ genesisHash, name, password, suri, type }: RequestAccountCreateSuri): boolean {
+  static async accountsCreateSuri({
+    genesisHash,
+    name,
+    password,
+    suri,
+    type,
+  }: RequestAccountCreateSuri): Promise<boolean> {
+    const currentAccount = await new Promise<CurrentAccountInfo | void>((resolve) => {
+      State.getCurrentAccount();
+      resolve();
+    });
+    const _suri = getSuri(suri, type);
+    const address = keyring.createFromUri(_suri, {}, type).address;
     keyring.addUri(getSuri(suri, type), password, { genesisHash, name }, type);
+    const allGenesisHash = currentAccount?.allGenesisHash || undefined;
+    State.setCurrentAccount({ address, currentGenesisHash: genesisHash || null, allGenesisHash });
 
     return true;
   }

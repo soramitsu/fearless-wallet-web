@@ -42,7 +42,7 @@ const MAX_CONTINUE_RETRY = 3;
 
 const WESTEND_GENESISHASH = '0xe143f23803ac50e8f6f8e62695d1ce9e4e1d68aa36c1cd2cfd15340213f3423e';
 const MOONBEAM_GENESISHASH = '0xfe58ea77779b7abda7da4ec526d14db9b1e9cd40a217c34892af80a9b332b76d';
-
+export const IGNORE_GET_SUBSTRATE_FEATURES_LIST: string[] = ['ethereum', 'ethereum_goerli'];
 const NETWORK_AND_ASSET: Record<string, string> = {
   statemine: 'statemine',
   statemint: 'statemine',

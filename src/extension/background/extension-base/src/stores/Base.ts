@@ -18,6 +18,10 @@ export default abstract class BaseStore<T> {
     this.#prefix = prefix ? `${prefix}:` : '';
   }
 
+  public getPrefix(): string {
+    return this.#prefix;
+  }
+
   public all(update: (key: string, value: T) => void): void {
     this.allMap((map): void => {
       Object.entries(map).forEach(([key, value]): void => {
@@ -55,7 +59,7 @@ export default abstract class BaseStore<T> {
     });
   }
 
-  public remove(_key: string | keyof T, update?: () => void): void {
+  public remove(_key: string, update?: () => void): void {
     const key = `${this.#prefix}${_key}`;
 
     chrome.storage.local.remove(key, (): void => {
@@ -65,7 +69,7 @@ export default abstract class BaseStore<T> {
     });
   }
 
-  public set(_key: string | keyof T, value: T, update?: () => void): void {
+  public set(_key: string, value: T, update?: () => void): void {
     const key = `${this.#prefix}${_key}`;
 
     chrome.storage.local.set({ [key]: value }, (): void => {

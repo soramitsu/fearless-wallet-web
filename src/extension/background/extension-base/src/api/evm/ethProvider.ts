@@ -9,9 +9,13 @@ const providers: Record<EvmNetworkType, string> = {
 };
 export default class EthProvider {
   provider: ethers.providers.BaseProvider;
-
+  isReady = false;
   constructor(network: EvmNetworkType) {
     this.provider = new ethers.providers.WebSocketProvider(providers[network], network);
+    this.provider._ready().then((res) => {
+      this.isReady = true;
+    });
+
     console.info(`Provider of ${network} is init`);
   }
 

@@ -73,7 +73,6 @@ export interface NetworkJson {
   currentProvider: string | null; // Current provider key
   currentProviderMode: 'http' | 'ws'; // Current provider mode, compute depend on provider protocol. the feature need to know this to decide use subscribe or cronjob to use this features.
   customProviders?: Record<string, string>; // Custom provider map, provider name same with provider map
-  nftProvider?: string;
 
   // Metadata get after connect to provider
   genesisHash: string; // identifier for network

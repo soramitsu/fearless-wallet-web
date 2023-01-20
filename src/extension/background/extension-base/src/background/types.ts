@@ -4,10 +4,14 @@
 /* eslint-disable no-use-before-define */
 
 import { TypeRegistry } from '@polkadot/types';
+import { BN } from '@polkadot/util';
 import { Subscription } from 'rxjs';
 import { ALLOWED_PATH } from '../defaults';
 import MetadataStore from '../stores/Metadata';
-import { BalanceItem } from '../api/evm/types/ether';
+import { BalanceItem, NetworkJson } from '../api/evm/types/ether';
+import { ChainRegistry } from '../api/evm/utils/registery';
+import { CurrentAccountInfo } from '../stores/CurrentAccountStore';
+import EthProvider from '../api/evm/ethProvider';
 import type {
   InjectedAccount,
   InjectedMetadataKnown,
@@ -21,7 +25,13 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import { FilesResponse, GoogleAuthTypes, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
+import {
+  FilesResponse,
+  GoogleAuthTypes,
+  ICreateFile,
+  IGetFilesResponse,
+  VerifyTokenResponse,
+} from '@/interfaces/google';
 
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;
@@ -306,6 +316,22 @@ export interface RequestAccountExport {
   address: string;
   password: string;
 }
+export interface TokenBalanceRaw {
+  reserved: BN;
+  frozen: BN;
+  free: BN;
+}
+export interface ApiMap {
+  substrate?: Record<string, any>;
+  evm: Record<string, EthProvider>;
+}
+export interface ServiceInfo {
+  networkMap: Record<string, NetworkJson>;
+  apiMap: ApiMap;
+  isLock?: boolean;
+  currentAccountInfo: CurrentAccountInfo;
+  chainRegistry: Record<string, ChainRegistry>;
+}
 
 export interface RequestAccountBatchExport {
   addresses: string[];
@@ -497,15 +523,17 @@ export interface AuthRequest extends Resolver<AuthResponse> {
 export type AuthUrls = Record<string, AuthUrlInfo>;
 
 export type AuthorizedAccountsDiff = [url: string, authorizedAccounts: AuthUrlInfo['authorizedAccounts']][];
-
+export type AccountAuthType = 'substrate' | 'evm' | 'both';
 export interface AuthUrlInfo {
   count: number;
   id: string;
-  // this is from pre-0.44.1
-  isAllowed?: boolean;
+  isAllowed: boolean;
   origin: string;
   url: string;
+  accountAuthType?: AccountAuthType;
   authorizedAccounts: string[];
+  isAllowedMap: Record<string, boolean>;
+  currentEvmNetworkKey?: string;
 }
 
 export interface MetaRequest extends Resolver<boolean> {

@@ -80,28 +80,41 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
 }
 
 export default class Extension {
-  private static token = '';
-  static async transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
+  private token: string;
+  protected readonly cachedUnlocks: CachedUnlocks;
+
+  readonly state: State;
+
+  constructor(state: State) {
+    this.cachedUnlocks = {};
+    this.state = state;
+    this.token = '';
+
+    this.initExtension();
+  }
+
+  async transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
     return Object.values(accounts).map(({ json: { address, meta }, type }): AccountJson => {
       return {
         address,
-        isDefaultAuthSelected: State.defaultAuthAccountSelection.includes(address),
+        isDefaultAuthSelected: this.state.defaultAuthAccountSelection.includes(address),
         ...meta,
         type,
       };
     });
   }
 
-  private static cancelSubscription(id: string): boolean {
-    return State.cancelSubscription(id);
+  private cancelSubscription(id: string): boolean {
+    return this.state.cancelSubscription(id);
   }
-  static accountsCreateExternal({ address, genesisHash, name }: RequestAccountCreateExternal): boolean {
+
+  accountsCreateExternal({ address, genesisHash, name }: RequestAccountCreateExternal): boolean {
     keyring.addExternal(address, { genesisHash, name });
 
     return true;
   }
 
-  static accountsCreateHardware({
+  accountsCreateHardware({
     accountIndex,
     address,
     addressOffset,
@@ -114,27 +127,21 @@ export default class Extension {
     return true;
   }
 
-  static async accountsCreateSuri({
-    genesisHash,
-    name,
-    password,
-    suri,
-    type,
-  }: RequestAccountCreateSuri): Promise<boolean> {
+  async accountsCreateSuri({ genesisHash, name, password, suri, type }: RequestAccountCreateSuri): Promise<boolean> {
     const currentAccount = await new Promise<CurrentAccountInfo | void>((resolve) => {
-      State.getCurrentAccount();
+      this.state.getCurrentAccount();
       resolve();
     });
     const _suri = getSuri(suri, type);
     const address = keyring.createFromUri(_suri, {}, type).address;
     keyring.addUri(getSuri(suri, type), password, { genesisHash, name }, type);
     const allGenesisHash = currentAccount?.allGenesisHash || undefined;
-    State.setCurrentAccount({ address, currentGenesisHash: genesisHash || null, allGenesisHash });
+    this.state.setCurrentAccount({ address, currentGenesisHash: genesisHash || null, allGenesisHash });
 
     return true;
   }
 
-  static accountsChangePassword({ address, newPass, oldPass }: RequestAccountChangePassword): boolean {
+  accountsChangePassword({ address, newPass, oldPass }: RequestAccountChangePassword): boolean {
     const pair = keyring.getPair(address);
 
     assert(pair, 'Unable to find pair');
@@ -152,7 +159,7 @@ export default class Extension {
     return true;
   }
 
-  static accountsEdit({ address, name }: RequestAccountEdit): boolean {
+  accountsEdit({ address, name }: RequestAccountEdit): boolean {
     const pair = keyring.getPair(address);
 
     assert(pair, 'Unable to find pair');
@@ -162,24 +169,21 @@ export default class Extension {
     return true;
   }
 
-  static accountsExport({ address, password }: RequestAccountExport): ResponseAccountExport {
+  accountsExport({ address, password }: RequestAccountExport): ResponseAccountExport {
     return { exportedJson: keyring.backupAccount(keyring.getPair(address), password) };
   }
 
-  static async accountsBatchExport({
-    addresses,
-    password,
-  }: RequestAccountBatchExport): Promise<ResponseAccountsExport> {
+  async accountsBatchExport({ addresses, password }: RequestAccountBatchExport): Promise<ResponseAccountsExport> {
     return {
       exportedJson: await keyring.backupAccounts(addresses, password),
     };
   }
 
-  static async accountsForget({ address, type }: RequestAccountForget): Promise<boolean> {
+  async accountsForget({ address, type }: RequestAccountForget): Promise<boolean> {
     const authorizedAccountsDiff: AuthorizedAccountsDiff = [];
 
     // cycle through authUrls and prepare the array of diff
-    Object.entries(State.authUrls).forEach(([url, urlInfo]) => {
+    Object.entries(this.state.authUrls).forEach(([url, urlInfo]) => {
       if (!urlInfo.authorizedAccounts.includes(address)) {
         return;
       }
@@ -190,24 +194,24 @@ export default class Extension {
       ]);
     });
 
-    State.updateAuthorizedAccounts(authorizedAccountsDiff);
+    this.state.updateAuthorizedAccounts(authorizedAccountsDiff);
 
     // cycle through default account selection for auth and remove any occurence of the account
-    const newDefaultAuthAccounts = State.defaultAuthAccountSelection.filter(
+    const newDefaultAuthAccounts = this.state.defaultAuthAccountSelection.filter(
       (defaultSelectionAddress) => defaultSelectionAddress !== address
     );
 
-    State.updateDefaultAuthAccounts(newDefaultAuthAccounts);
+    this.state.updateDefaultAuthAccounts(newDefaultAuthAccounts);
 
     type === 'native' ? keyring.forgetAccount(address) : keyring.forgetAddress(address);
 
     return true;
   }
 
-  static async refreshAccountPasswordCache(_pair: KeyringPair | string): Promise<number> {
+  async refreshAccountPasswordCache(_pair: KeyringPair | string): Promise<number> {
     const pair = typeof _pair === 'string' ? keyring.getPair(_pair) : _pair;
     const { address } = pair;
-    const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
+    const { cachedUnlocks } = await this.state.getFromStorage(['cachedUnlocks']);
     const savedExpiry = cachedUnlocks[address] || 0;
     const remainingTime = savedExpiry - Date.now();
 
@@ -226,8 +230,8 @@ export default class Extension {
     return remainingTime;
   }
 
-  static async resetTimeouts(): Promise<boolean> {
-    const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
+  async resetTimeouts(): Promise<boolean> {
+    const { cachedUnlocks } = await this.state.getFromStorage(['cachedUnlocks']);
     const newCachedUnlocks: CachedUnlocks = {};
 
     Object.keys(cachedUnlocks).map((address) => (newCachedUnlocks[address] = 0));
@@ -237,7 +241,7 @@ export default class Extension {
     return true;
   }
 
-  static accountsShow({ address, isShowing }: RequestAccountShow): boolean {
+  accountsShow({ address, isShowing }: RequestAccountShow): boolean {
     const pair = keyring.getPair(address);
 
     assert(pair, 'Unable to find pair');
@@ -247,7 +251,7 @@ export default class Extension {
     return true;
   }
 
-  static accountsTie({ address, genesisHash }: RequestAccountTie): boolean {
+  accountsTie({ address, genesisHash }: RequestAccountTie): boolean {
     const pair = keyring.getPair(address);
 
     assert(pair, 'Unable to find pair');
@@ -257,7 +261,7 @@ export default class Extension {
     return true;
   }
 
-  static accountsValidate({ address, password }: RequestAccountValidate): boolean {
+  accountsValidate({ address, password }: RequestAccountValidate): boolean {
     try {
       keyring.backupAccount(keyring.getPair(address), password);
 
@@ -267,10 +271,10 @@ export default class Extension {
     }
   }
 
-  static async accountsSubscribe(id: string, port: Port): Promise<boolean> {
+  async accountsSubscribe(id: string, port: Port): Promise<boolean> {
     const cb = await createSubscription<'pri(accounts.subscribe)'>(id, port);
     const subscription = accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
-      const acc = await Extension.transformAccounts(accounts);
+      const acc = await this.transformAccounts(accounts);
 
       return cb(acc);
     });
@@ -286,8 +290,8 @@ export default class Extension {
     return true;
   }
 
-  static async authorizeApprove({ authorizedAccounts, id }: RequestAuthorizeApprove): Promise<boolean> {
-    const queued = await State.getAuthRequest(id);
+  async authorizeApprove({ authorizedAccounts, id }: RequestAuthorizeApprove): Promise<boolean> {
+    const queued = await this.state.getAuthRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -297,15 +301,15 @@ export default class Extension {
     return true;
   }
 
-  static async authorizeUpdate({ authorizedAccounts, url }: RequestUpdateAuthorizedAccounts): Promise<void> {
-    return State.updateAuthorizedAccounts([[url, authorizedAccounts]]);
+  async authorizeUpdate({ authorizedAccounts, url }: RequestUpdateAuthorizedAccounts): Promise<void> {
+    return this.state.updateAuthorizedAccounts([[url, authorizedAccounts]]);
   }
 
-  static async getAuthList(): Promise<ResponseAuthorizeList> {
-    return { list: State.authUrls };
+  async getAuthList(): Promise<ResponseAuthorizeList> {
+    return { list: this.state.authUrls };
   }
 
-  static async isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
+  async isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
 
     if (!tab || !tab.url)
@@ -316,21 +320,21 @@ export default class Extension {
       };
 
     const tabHostName = new URL(tab.url).hostname;
-    const authorizeUrl = Object.keys(State.authUrls).filter((url) => url === tabHostName);
+    const authorizeUrl = Object.keys(this.state.authUrls).filter((url) => url === tabHostName);
     const isAuthorize = authorizeUrl.length !== 0;
 
     return {
       isAuthorize,
-      authorizeAccountsCount: isAuthorize ? State.authUrls[tabHostName].authorizedAccounts.length : 0,
+      authorizeAccountsCount: isAuthorize ? this.state.authUrls[tabHostName].authorizedAccounts.length : 0,
       dAppName: tabHostName,
     };
   }
 
   // FIXME This looks very much like what we have in accounts
-  static async authorizeSubscribe(id: string, port: Port): Promise<boolean> {
+  async authorizeSubscribe(id: string, port: Port): Promise<boolean> {
     const cb = await createSubscription<'pri(authorize.requests)'>(id, port);
 
-    const subscription = State.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
+    const subscription = this.state.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -340,30 +344,30 @@ export default class Extension {
     return true;
   }
 
-  static async metadataApprove({ id }: RequestMetadataApprove): Promise<boolean> {
-    const queued = State.getMetaRequest(id);
+  async metadataApprove({ id }: RequestMetadataApprove): Promise<boolean> {
+    const queued = this.state.getMetaRequest(id);
 
     assert(queued, 'Unable to find request');
 
     const { request, resolve } = await queued;
 
-    State.saveMetadata(request);
+    this.state.saveMetadata(request);
 
     resolve(true);
 
     return true;
   }
 
-  static metadataGet(genesisHash: string | null): MetadataDef | null {
-    return State.knownMetadata.find((result) => result.genesisHash === genesisHash) || null;
+  metadataGet(genesisHash: string | null): MetadataDef | null {
+    return this.state.knownMetadata.find((result) => result.genesisHash === genesisHash) || null;
   }
 
-  static metadataList(): MetadataDef[] {
-    return State.knownMetadata;
+  metadataList(): MetadataDef[] {
+    return this.state.knownMetadata;
   }
 
-  static async metadataReject({ id }: RequestMetadataReject): Promise<boolean> {
-    const queued = await State.getMetaRequest(id);
+  async metadataReject({ id }: RequestMetadataReject): Promise<boolean> {
+    const queued = await this.state.getMetaRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -374,11 +378,11 @@ export default class Extension {
     return true;
   }
 
-  static async metadataSubscribe(id: string, port: Port): Promise<boolean> {
+  async metadataSubscribe(id: string, port: Port): Promise<boolean> {
     const cb = await createSubscription<'pri(metadata.requests)'>(id, port);
-    // const { metaSubject } = await State.getFromStorage(['metaSubject']);
+    // const { metaSubject } = await this.state.getFromStorage(['metaSubject']);
 
-    const subscription = State.metaSubject.subscribe((requests: MetadataRequest[]): void => cb(requests));
+    const subscription = this.state.metaSubject.subscribe((requests: MetadataRequest[]): void => cb(requests));
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -388,7 +392,7 @@ export default class Extension {
     return true;
   }
 
-  static jsonRestore({ file, password }: RequestJsonRestore): void {
+  jsonRestore({ file, password }: RequestJsonRestore): void {
     try {
       keyring.restoreAccount(file, password);
     } catch (error) {
@@ -396,7 +400,7 @@ export default class Extension {
     }
   }
 
-  static jsonValid({ file, password }: RequestJsonRestore): boolean {
+  jsonValid({ file, password }: RequestJsonRestore): boolean {
     try {
       keyring.restoreAccount(file, password);
     } catch (error) {
@@ -406,7 +410,7 @@ export default class Extension {
     return true;
   }
 
-  static batchRestore({ file, password }: RequestBatchRestore): void {
+  batchRestore({ file, password }: RequestBatchRestore): void {
     try {
       keyring.restoreAccounts(file, password);
     } catch (error) {
@@ -414,7 +418,7 @@ export default class Extension {
     }
   }
 
-  static jsonGetAccountInfo(json: KeyringPair$Json): ResponseJsonGetAccountInfo {
+  jsonGetAccountInfo(json: KeyringPair$Json): ResponseJsonGetAccountInfo {
     try {
       const {
         address,
@@ -434,7 +438,7 @@ export default class Extension {
     }
   }
 
-  static seedCreate({ length = SEED_DEFAULT_LENGTH, seed: _seed, type }: RequestSeedCreate): ResponseSeedCreate {
+  seedCreate({ length = SEED_DEFAULT_LENGTH, seed: _seed, type }: RequestSeedCreate): ResponseSeedCreate {
     const seed = _seed || mnemonicGenerate(length);
 
     return {
@@ -443,7 +447,7 @@ export default class Extension {
     };
   }
 
-  static seedValidate({ suri, type }: RequestSeedValidate): ResponseSeedValidate {
+  seedValidate({ suri, type }: RequestSeedValidate): ResponseSeedValidate {
     const { phrase } = keyExtractSuri(suri);
 
     if (isHex(phrase)) {
@@ -463,9 +467,9 @@ export default class Extension {
     };
   }
 
-  static async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
-    const queued = await State.getSignRequest(id);
-    const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
+  async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
+    const queued = await this.state.getSignRequest(id);
+    const { cachedUnlocks } = await this.state.getFromStorage(['cachedUnlocks']);
 
     assert(queued, 'Unable to find request');
 
@@ -480,7 +484,7 @@ export default class Extension {
 
     const { address } = pair;
 
-    await Extension.refreshAccountPasswordCache(pair);
+    await this.refreshAccountPasswordCache(pair);
 
     // if the keyring pair is locked, the password is needed
     if (pair.isLocked && !password) reject(new Error('Password needed to unlock the account'));
@@ -491,7 +495,9 @@ export default class Extension {
 
     if (isJsonPayload(payload)) {
       // Get the metadata for the genesisHash
-      const currentMetadata = State.knownMetadata.find((meta: MetadataDef) => meta.genesisHash === payload.genesisHash);
+      const currentMetadata = this.state.knownMetadata.find(
+        (meta: MetadataDef) => meta.genesisHash === payload.genesisHash
+      );
 
       // set the registry before calling the sign function
       registry.setSignedExtensions(payload.signedExtensions, currentMetadata?.userExtensions);
@@ -515,8 +521,8 @@ export default class Extension {
     return true;
   }
 
-  static async saveTimeoutCache(address: string): Promise<boolean> {
-    const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
+  async saveTimeoutCache(address: string): Promise<boolean> {
+    const { cachedUnlocks } = await this.state.getFromStorage(['cachedUnlocks']);
 
     cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
 
@@ -525,9 +531,9 @@ export default class Extension {
     return true;
   }
 
-  static async signingApproveSignature({ id, signature }: RequestSigningApproveSignature): Promise<boolean> {
-    State.signature = signature;
-    const queued = await State.getSignRequest(id);
+  async signingApproveSignature({ id, signature }: RequestSigningApproveSignature): Promise<boolean> {
+    this.state.signature = signature;
+    const queued = await this.state.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -538,8 +544,8 @@ export default class Extension {
     return true;
   }
 
-  static async signingCancel({ id }: RequestSigningCancel): Promise<boolean> {
-    const queued = await State.getSignRequest(id);
+  async signingCancel({ id }: RequestSigningCancel): Promise<boolean> {
+    const queued = await this.state.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -550,8 +556,8 @@ export default class Extension {
     return true;
   }
 
-  static async signingIsLocked({ id }: RequestSigningIsLocked): Promise<ResponseSigningIsLocked> {
-    const queued = await State.getSignRequest(id);
+  async signingIsLocked({ id }: RequestSigningIsLocked): Promise<ResponseSigningIsLocked> {
+    const queued = await this.state.getSignRequest(id);
     assert(queued, 'Unable to find request');
     const address = queued.request.payload.address;
 
@@ -559,7 +565,7 @@ export default class Extension {
 
     assert(pair, 'Unable to find pair');
 
-    const remainingTime = await Extension.refreshAccountPasswordCache(pair);
+    const remainingTime = await this.refreshAccountPasswordCache(pair);
 
     return {
       isLocked: pair.isLocked,
@@ -568,11 +574,11 @@ export default class Extension {
   }
 
   // FIXME This looks very much like what we have in authorization
-  static async signingSubscribe(id: string, port: Port): Promise<boolean> {
+  async signingSubscribe(id: string, port: Port): Promise<boolean> {
     const cb = await createSubscription<'pri(signing.requests)'>(id, port);
-    // const { signSubject } = await State.getFromStorage(['signSubject']);
+    // const { signSubject } = await this.state.getFromStorage(['signSubject']);
 
-    const subscription = State.signSubject.subscribe((requests: SigningRequest[]): void => cb(requests));
+    const subscription = this.state.signSubject.subscribe((requests: SigningRequest[]): void => cb(requests));
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -582,7 +588,7 @@ export default class Extension {
     return true;
   }
 
-  static async windowOpen(path: AllowedPath): Promise<boolean> {
+  async windowOpen(path: AllowedPath): Promise<boolean> {
     const [tab] = await chrome.tabs.query({ title: 'fearless-wallet' });
 
     if (tab && tab.id) {
@@ -604,7 +610,7 @@ export default class Extension {
     return true;
   }
 
-  static derive(parentAddress: string, suri: string, password: string, metadata: KeyringPair$Meta): KeyringPair {
+  derive(parentAddress: string, suri: string, password: string, metadata: KeyringPair$Meta): KeyringPair {
     const parentPair = keyring.getPair(parentAddress);
 
     try {
@@ -620,7 +626,7 @@ export default class Extension {
     }
   }
 
-  static derivationValidate({ parentAddress, parentPassword, suri }: RequestDeriveValidate): ResponseDeriveValidate {
+  derivationValidate({ parentAddress, parentPassword, suri }: RequestDeriveValidate): ResponseDeriveValidate {
     const childPair = this.derive(parentAddress, suri, parentPassword, {});
 
     return {
@@ -629,14 +635,7 @@ export default class Extension {
     };
   }
 
-  static derivationCreate({
-    genesisHash,
-    name,
-    parentAddress,
-    parentPassword,
-    password,
-    suri,
-  }: RequestDeriveCreate): boolean {
+  derivationCreate({ genesisHash, name, parentAddress, parentPassword, password, suri }: RequestDeriveCreate): boolean {
     const childPair = this.derive(parentAddress, suri, parentPassword, {
       genesisHash,
       name,
@@ -649,99 +648,99 @@ export default class Extension {
     return true;
   }
 
-  static async removeAuthorization(url: string): Promise<ResponseAuthorizeList> {
-    const list = await State.removeAuthorization(url);
+  async removeAuthorization(url: string): Promise<ResponseAuthorizeList> {
+    const list = await this.state.removeAuthorization(url);
 
     return { list };
   }
 
-  static async deleteAuthRequest(requestId: string): Promise<void> {
-    return State.deleteAuthRequest(requestId);
+  async deleteAuthRequest(requestId: string): Promise<void> {
+    return this.state.deleteAuthRequest(requestId);
   }
 
-  static updateCurrentTabs({ urls }: RequestActiveTabsUrlUpdate) {
-    State.updateCurrentTabsUrl(urls);
+  updateCurrentTabs({ urls }: RequestActiveTabsUrlUpdate) {
+    this.state.updateCurrentTabsUrl(urls);
   }
 
-  static getConnectedTabsUrl() {
-    return State.getConnectedTabsUrl();
+  getConnectedTabsUrl() {
+    return this.state.getConnectedTabsUrl();
   }
 
-  static createAddress({ address, meta }: RequestAddressCreate) {
+  createAddress({ address, meta }: RequestAddressCreate) {
     keyring.saveAddress(address, meta, 'address');
   }
 
-  static removeAddress(address: string) {
+  removeAddress(address: string) {
     keyring.forgetAddress(address);
   }
 
-  static getAddresses() {
+  getAddresses() {
     return keyring.getAddresses();
   }
 
-  static initExtension() {
-    State.apis.evm['mainnet'] = new EthProvider('homestead');
-    State.apis.evm['goerli'] = new EthProvider('goerli');
+  initExtension() {
+    this.state.apis.evm['mainnet'] = new EthProvider('homestead');
+    this.state.apis.evm['goerli'] = new EthProvider('goerli');
   }
 
-  static initAuth({ type, wallet }: GoogleAuthTypes): void {
+  initAuth({ type, wallet }: GoogleAuthTypes): void {
     googleManage.authExtension(type, wallet);
   }
 
-  static async verifyToken({ token }: { token: string }): Promise<VerifyTokenResponse> {
+  async verifyToken({ token }: { token: string }): Promise<VerifyTokenResponse> {
     return googleManage.verifyToken(token);
   }
 
-  static getToken(): void {
-    chrome.identity.getAuthToken({}, function (token) {
-      Extension.token = token;
+  getToken(): void {
+    chrome.identity.getAuthToken({}, (token) => {
+      this.token = token;
     });
   }
 
-  static async getFiles({ token }: { token: string }): Promise<IGetFilesResponse> {
+  async getFiles({ token }: { token: string }): Promise<IGetFilesResponse> {
     return googleManage.getFiles(token);
   }
 
-  static async getFile({ id, token }: GoogleFileId): Promise<KeyringPair$Json> {
+  async getFile({ id, token }: GoogleFileId): Promise<KeyringPair$Json> {
     return googleManage.getFile(id, token);
   }
 
-  static async createFile({ json, options, token }: ICreateFile): Promise<FilesResponse> {
+  async createFile({ json, options, token }: ICreateFile): Promise<FilesResponse> {
     return googleManage.createFile({ json, options, token });
   }
 
-  static deleteFile({ id }: GoogleFileId): void {
-    if (!Extension.token) Extension.getToken();
+  deleteFile({ id }: GoogleFileId): void {
+    if (!this.token) this.getToken();
 
-    googleManage.deleteFile(id, Extension.token);
+    googleManage.deleteFile(id, this.token);
   }
 
-  static getBalance(reset?: boolean): BalanceJson {
-    return State.getBalance(reset);
+  getBalance(reset?: boolean): BalanceJson {
+    return this.state.getBalance(reset);
   }
-  private static createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
-    State.createUnsubscriptionHandle(id, unsubscribe);
+  private createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
+    this.state.createUnsubscriptionHandle(id, unsubscribe);
   }
 
-  static subscribeBalance({ id, port }: SubscribeBalanceRequest): BalanceJson {
+  subscribeBalance({ id, port }: SubscribeBalanceRequest): BalanceJson {
     const cb = createSubscription<'pri(balance.get.subscription)'>(id, port);
 
-    const balanceSubscription = State.subscribeBalance().subscribe({
+    const balanceSubscription = this.state.subscribeBalance().subscribe({
       next: (rs) => {
         cb(rs);
       },
     });
 
-    Extension.createUnsubscriptionHandle(id, balanceSubscription.unsubscribe);
+    this.createUnsubscriptionHandle(id, balanceSubscription.unsubscribe);
 
     port.onDisconnect.addListener((): void => {
-      Extension.cancelSubscription(id);
+      this.cancelSubscription(id);
     });
 
     return this.getBalance(true);
   }
 
-  static async handle<TMessageType extends MessageTypes>(
+  async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
     request: RequestTypes[TMessageType],
@@ -749,169 +748,169 @@ export default class Extension {
   ): Promise<ResponseType<TMessageType>> {
     switch (type) {
       case 'pri(authorize.approve)':
-        return Extension.authorizeApprove(request as RequestAuthorizeApprove);
+        return this.authorizeApprove(request as RequestAuthorizeApprove);
 
       case 'pri(authorize.list)':
-        return Extension.getAuthList();
+        return this.getAuthList();
 
       case 'pri(authorize.remove)':
-        return Extension.removeAuthorization(request as string);
+        return this.removeAuthorization(request as string);
 
       case 'pri(authorize.delete.request)':
-        return Extension.deleteAuthRequest(request as string);
+        return this.deleteAuthRequest(request as string);
 
       case 'pri(authorize.requests)':
-        return port && (await Extension.authorizeSubscribe(id, port));
+        return port && (await this.authorizeSubscribe(id, port));
 
       case 'pri(addresses.create)':
-        return Extension.createAddress(request as RequestAddressCreate);
+        return this.createAddress(request as RequestAddressCreate);
 
       case 'pri(addresses.remove)':
-        return Extension.removeAddress(request as string);
+        return this.removeAddress(request as string);
 
       case 'pri(addresses.get)':
-        return Extension.getAddresses();
+        return this.getAddresses();
 
       case 'pri(authorize.update)':
-        return Extension.authorizeUpdate(request as RequestUpdateAuthorizedAccounts);
+        return this.authorizeUpdate(request as RequestUpdateAuthorizedAccounts);
 
       case 'pri(accounts.create.external)':
-        return Extension.accountsCreateExternal(request as RequestAccountCreateExternal);
+        return this.accountsCreateExternal(request as RequestAccountCreateExternal);
 
       case 'pri(accounts.create.hardware)':
-        return Extension.accountsCreateHardware(request as RequestAccountCreateHardware);
+        return this.accountsCreateHardware(request as RequestAccountCreateHardware);
 
       case 'pri(accounts.create.suri)':
-        return Extension.accountsCreateSuri(request as RequestAccountCreateSuri);
+        return this.accountsCreateSuri(request as RequestAccountCreateSuri);
 
       case 'pri(accounts.changePassword)':
-        return Extension.accountsChangePassword(request as RequestAccountChangePassword);
+        return this.accountsChangePassword(request as RequestAccountChangePassword);
 
       case 'pri(accounts.edit)':
-        return Extension.accountsEdit(request as RequestAccountEdit);
+        return this.accountsEdit(request as RequestAccountEdit);
 
       case 'pri(accounts.export)':
-        return Extension.accountsExport(request as RequestAccountExport);
+        return this.accountsExport(request as RequestAccountExport);
 
       case 'pri(accounts.batchExport)':
-        return Extension.accountsBatchExport(request as RequestAccountBatchExport);
+        return this.accountsBatchExport(request as RequestAccountBatchExport);
 
       case 'pri(accounts.forget)':
-        return Extension.accountsForget(request as RequestAccountForget);
+        return this.accountsForget(request as RequestAccountForget);
 
       case 'pri(accounts.show)':
-        return Extension.accountsShow(request as RequestAccountShow);
+        return this.accountsShow(request as RequestAccountShow);
 
       case 'pri(accounts.subscribe)':
-        return port && Extension.accountsSubscribe(id, port);
+        return port && this.accountsSubscribe(id, port);
 
       case 'pri(accounts.tie)':
-        return Extension.accountsTie(request as RequestAccountTie);
+        return this.accountsTie(request as RequestAccountTie);
 
       case 'pri(accounts.validate)':
-        return Extension.accountsValidate(request as RequestAccountValidate);
+        return this.accountsValidate(request as RequestAccountValidate);
 
       case 'pri(metadata.approve)':
-        return Extension.metadataApprove(request as RequestMetadataApprove);
+        return this.metadataApprove(request as RequestMetadataApprove);
 
       case 'pri(metadata.get)':
-        return Extension.metadataGet(request as string);
+        return this.metadataGet(request as string);
 
       case 'pri(metadata.list)':
-        return Extension.metadataList();
+        return this.metadataList();
 
       case 'pri(metadata.reject)':
-        return Extension.metadataReject(request as RequestMetadataReject);
+        return this.metadataReject(request as RequestMetadataReject);
 
       case 'pri(metadata.requests)':
-        return port && Extension.metadataSubscribe(id, port);
+        return port && this.metadataSubscribe(id, port);
 
       case 'pri(activeTabsUrl.update)':
-        return Extension.updateCurrentTabs(request as RequestActiveTabsUrlUpdate);
+        return this.updateCurrentTabs(request as RequestActiveTabsUrlUpdate);
 
       case 'pri(connectedTabsUrl.get)':
-        return Extension.getConnectedTabsUrl();
+        return this.getConnectedTabsUrl();
 
       case 'pri(derivation.create)':
-        return Extension.derivationCreate(request as RequestDeriveCreate);
+        return this.derivationCreate(request as RequestDeriveCreate);
 
       case 'pri(derivation.validate)':
-        return Extension.derivationValidate(request as RequestDeriveValidate);
+        return this.derivationValidate(request as RequestDeriveValidate);
 
       case 'pri(json.restore)':
-        return Extension.jsonRestore(request as RequestJsonRestore);
+        return this.jsonRestore(request as RequestJsonRestore);
 
       case 'pri(json.valid)':
-        return Extension.jsonValid(request as RequestJsonRestore);
+        return this.jsonValid(request as RequestJsonRestore);
 
       case 'pri(json.batchRestore)':
-        return Extension.batchRestore(request as RequestBatchRestore);
+        return this.batchRestore(request as RequestBatchRestore);
 
       case 'pri(json.account.info)':
-        return Extension.jsonGetAccountInfo(request as KeyringPair$Json);
+        return this.jsonGetAccountInfo(request as KeyringPair$Json);
 
       case 'pri(seed.create)':
-        return Extension.seedCreate(request as RequestSeedCreate);
+        return this.seedCreate(request as RequestSeedCreate);
 
       case 'pri(seed.validate)':
-        return Extension.seedValidate(request as RequestSeedValidate);
+        return this.seedValidate(request as RequestSeedValidate);
 
       case 'pri(settings.notification)':
-        return State.setNotification(request as string);
+        return this.state.setNotification(request as string);
 
       case 'pri(signing.approve.password)':
-        return Extension.signingApprovePassword(request as RequestSigningApprovePassword);
+        return this.signingApprovePassword(request as RequestSigningApprovePassword);
 
       case 'pri(signing.approve.signature)':
-        return Extension.signingApproveSignature(request as RequestSigningApproveSignature);
+        return this.signingApproveSignature(request as RequestSigningApproveSignature);
 
       case 'pri(signing.cancel)':
-        return Extension.signingCancel(request as RequestSigningCancel);
+        return this.signingCancel(request as RequestSigningCancel);
 
       case 'pri(signing.isLocked)':
-        return await Extension.signingIsLocked(request as RequestSigningIsLocked);
+        return await this.signingIsLocked(request as RequestSigningIsLocked);
 
       case 'pri(signing.requests)':
-        return port && Extension.signingSubscribe(id, port);
+        return port && this.signingSubscribe(id, port);
 
       case 'pri(window.open)':
-        return Extension.windowOpen(request as AllowedPath);
+        return this.windowOpen(request as AllowedPath);
 
       case 'pri(signing.refreshPasswordTimeout)':
-        return await Extension.refreshAccountPasswordCache(request as string);
+        return await this.refreshAccountPasswordCache(request as string);
 
       case 'pri(signing.resetTimeouts)':
-        return await Extension.resetTimeouts();
+        return await this.resetTimeouts();
 
       case 'pri(signing.saveTimeoutCache)':
-        return await Extension.saveTimeoutCache(request as string);
+        return await this.saveTimeoutCache(request as string);
 
       case 'pri(google.get.files)':
-        return Extension.getFiles(request as { token: string });
+        return this.getFiles(request as { token: string });
 
       case 'pri(google.auth)':
-        return Extension.initAuth(request as GoogleAuthTypes);
+        return this.initAuth(request as GoogleAuthTypes);
 
       case 'pri(google.verify.token)':
-        return Extension.verifyToken(request as { token: string });
+        return this.verifyToken(request as { token: string });
 
       case 'pri(google.get.file)':
-        return Extension.getFile(request as GoogleFileId);
+        return this.getFile(request as GoogleFileId);
 
       case 'pri(google.create.file)':
-        return Extension.createFile(request as ICreateFile);
+        return this.createFile(request as ICreateFile);
 
       case 'pri(google.delete.file)':
-        return Extension.deleteFile(request as GoogleFileId);
+        return this.deleteFile(request as GoogleFileId);
 
       case 'pri(tab.status)':
-        return Extension.isTabAuthorize();
+        return this.isTabAuthorize();
 
       case 'pri(balance.get.balance)':
-        return Extension.getBalance();
+        return this.getBalance();
 
       case 'pri(balance.get.subscription)':
-        return Extension.subscribeBalance({ id, port } as SubscribeBalanceRequest);
+        return this.subscribeBalance({ id, port } as SubscribeBalanceRequest);
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

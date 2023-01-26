@@ -28,10 +28,10 @@ import {
   RequestRpcUnsubscribe,
   RequestSign,
   ResponseRpcListProviders,
-  IState,
   Port,
   BalanceJson,
   ServiceInfo,
+  IState,
 } from '../types';
 import { getId } from '../../utils';
 import MetadataStore from '../../stores/Metadata';
@@ -109,127 +109,138 @@ export async function initState() {
 }
 
 export default class State {
-  static subscription = new FWSubscription();
-  static chainRegistryMap: Record<string, ChainRegistry> = {};
-  static chainRegistrySubject = new Subject<Record<string, ChainRegistry>>();
-  static readonly unsubscriptionMap: Record<string, () => void> = {};
-  // private static readonly authorizeStore = new AuthorizeStore();
-  public static authUrls: AuthUrls = {};
-  public static signature: HexString | null = null;
-  public static defaultAuthAccountSelection: string[] = [];
-  static apis: { evm: Record<string, EthProvider> } = {
+  subscription = new FWSubscription();
+  chainRegistryMap: Record<string, ChainRegistry> = {};
+  chainRegistrySubject = new Subject<Record<string, ChainRegistry>>();
+  readonly unsubscriptionMap: Record<string, () => void> = {};
+  // private  readonly authorizeStore = new AuthorizeStore();
+  public authUrls: AuthUrls = {};
+  public signature: HexString | null = null;
+  public defaultAuthAccountSelection: string[] = [];
+  apis: { evm: Record<string, EthProvider> } = {
     evm: {},
   };
 
-  static authorizeCached: AuthUrls | undefined = undefined;
-  static networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
-  static readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
-  static networkMapSubject = new Subject<Record<string, NetworkJson>>();
-  static serviceInfoSubject = new Subject<ServiceInfo>();
-  static currentAccountStore: Record<string, CurrentAccountInfo> = {};
-  static balanceMap: Record<string, BalanceItem> = State.generateDefaultBalanceMap();
-  static balanceSubject = new Subject<BalanceJson>();
-  static customTokenState: CustomTokenJson = { erc20: [] };
-  static customTokenSubject = new Subject<CustomTokenJson>();
-  public static customTokenStore = new CustomTokenStore();
-  public static authRequests: Record<string, AuthRequest> = {};
-  public static metaRequests: Record<string, MetaRequest> = {};
-  public static signRequests: Record<string, SignRequest> = {};
-  public static readonly authSubject: BehaviorSubject<AuthorizeRequest[]> = new BehaviorSubject<AuthorizeRequest[]>([]);
-  public static readonly metaSubject: BehaviorSubject<MetadataRequest[]> = new BehaviorSubject<MetadataRequest[]>([]);
-  public static readonly signSubject: BehaviorSubject<SigningRequest[]> = new BehaviorSubject<SigningRequest[]>([]);
-  public static balanceService = new BalanceService();
-  static lazyMap: Record<string, unknown> = {};
-  static ready = false;
-  public static get knownMetadata(): MetadataDef[] {
+  authorizeCached: AuthUrls | undefined = undefined;
+  networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
+  readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
+  networkMapSubject = new Subject<Record<string, NetworkJson>>();
+  serviceInfoSubject = new Subject<ServiceInfo>();
+  currentAccountStore: Record<string, CurrentAccountInfo> = {};
+  balanceMap: Record<string, BalanceItem> = this.generateDefaultBalanceMap();
+  balanceSubject = new Subject<BalanceJson>();
+  customTokenthis: CustomTokenJson = { erc20: [] };
+  customTokenSubject = new Subject<CustomTokenJson>();
+  public customTokenStore = new CustomTokenStore();
+  public authRequests: Record<string, AuthRequest> = {};
+  public metaRequests: Record<string, MetaRequest> = {};
+  public signRequests: Record<string, SignRequest> = {};
+  public readonly authSubject: BehaviorSubject<AuthorizeRequest[]> = new BehaviorSubject<AuthorizeRequest[]>([]);
+  public readonly metaSubject: BehaviorSubject<MetadataRequest[]> = new BehaviorSubject<MetadataRequest[]>([]);
+  public readonly signSubject: BehaviorSubject<SigningRequest[]> = new BehaviorSubject<SigningRequest[]>([]);
+  public balanceService = new BalanceService();
+  lazyMap: Record<string, unknown> = {};
+  ready = false;
+
+  public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
   }
-  public static getSubstrateApiMap() {
-    // return State.apis.substrate;
+
+  constructor() {
+    initState();
+    this.injectFromStorage();
+  }
+
+  public getSubstrateApiMap() {
+    // return this.apis.substrate;
     return;
   }
 
-  public static getSubstrateApi(networkKey: string) {
-    // return State.apis.substrate[networkKey];
+  public getSubstrateApi(networkKey: string) {
+    // return this.apis.substrate[networkKey];
   }
 
-  public static getEvmApi(networkKey: string) {
-    return State.apis.evm[networkKey];
+  public getEvmApi(networkKey: string) {
+    return this.apis.evm[networkKey];
   }
 
-  public static getApiMap() {
-    return State.apis;
+  public getApiMap() {
+    return this.apis;
   }
-  // public static setAuthorize(data: AuthUrls, callback?: () => void): void {
-  //   State.authorizeStore.set('authUrls', data, () => {
-  //     State.authorizeCached = data;
-  //     State.evmChainSubject.next(State.authorizeCached);
-  //     State.authorizeUrlSubject.next(State.authorizeCached);
+  // public  setAuthorize(data: AuthUrls, callback?: () => void): void {
+  //   this.authorizeStore.set('authUrls', data, () => {
+  //     this.authorizeCached = data;
+  //     this.evmChainSubject.next(this.authorizeCached);
+  //     this.authorizeUrlSubject.next(this.authorizeCached);
   //     callback && callback();
   //   });
   // }
-  public static createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
-    State.unsubscriptionMap[id] = unsubscribe;
+  public createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
+    this.unsubscriptionMap[id] = unsubscribe;
   }
 
-  public static cancelSubscription(id: string): boolean {
+  public cancelSubscription(id: string): boolean {
     if (isSubscriptionRunning(id)) {
       unsubscribe(id);
     }
 
-    if (State.unsubscriptionMap[id]) {
-      State.unsubscriptionMap[id]();
+    if (this.unsubscriptionMap[id]) {
+      this.unsubscriptionMap[id]();
 
-      delete State.unsubscriptionMap[id];
+      delete this.unsubscriptionMap[id];
     }
 
     return true;
   }
 
-  public static subscribeServiceInfo() {
-    return State.serviceInfoSubject;
+  public subscribeServiceInfo() {
+    return this.serviceInfoSubject;
   }
 
-  public static getFromStorage(key: (keyof IState)[]) {
+  public getFromStorage(key: (keyof IState)[]) {
     return storage.get(key);
   }
 
-  private static async numAuthRequests() {
-    return Object.keys(State.authRequests).length;
+  private async numAuthRequests() {
+    return Object.keys(this.authRequests).length;
   }
 
-  private static async numMetaRequests() {
-    return Object.keys(State.metaRequests).length;
+  private async numMetaRequests() {
+    return Object.keys(this.metaRequests).length;
   }
 
-  private static async numSignRequests() {
-    return Object.keys(State.signRequests).length;
+  private async numSignRequests() {
+    return Object.keys(this.signRequests).length;
   }
 
-  public static async allAuthRequests(): Promise<AuthorizeRequest[]> {
-    return Object.values(State.authRequests).map(({ id, request, url }): AuthorizeRequest => ({ id, request, url }));
+  public isReady() {
+    return this.ready;
   }
 
-  public static async allMetaRequests(): Promise<MetadataRequest[]> {
-    return Object.values(State.metaRequests).map(({ id, request, url }): MetadataRequest => ({ id, request, url }));
+  public async allAuthRequests(): Promise<AuthorizeRequest[]> {
+    return Object.values(this.authRequests).map(({ id, request, url }): AuthorizeRequest => ({ id, request, url }));
   }
 
-  public static async allSignRequests(): Promise<SigningRequest[]> {
-    return Object.values(State.signRequests).map(
+  public async allMetaRequests(): Promise<MetadataRequest[]> {
+    return Object.values(this.metaRequests).map(({ id, request, url }): MetadataRequest => ({ id, request, url }));
+  }
+
+  public async allSignRequests(): Promise<SigningRequest[]> {
+    return Object.values(this.signRequests).map(
       ({ account, id, request, url }): SigningRequest => ({ account, id, request, url })
     );
   }
 
-  static async popupClose(): Promise<void> {
-    const { windows } = await State.getFromStorage(['windows']);
+  async popupClose(): Promise<void> {
+    const { windows } = await this.getFromStorage(['windows']);
 
     windows?.forEach((id: number) => withErrorLog(() => chrome.windows.remove(id)));
 
     await storage.set({ windows: [] });
   }
 
-  static async popupOpen(): Promise<void> {
-    const { notification, windows } = await State.getFromStorage(['notification', 'windows']);
+  async popupOpen(): Promise<void> {
+    const { notification, windows } = await this.getFromStorage(['notification', 'windows']);
     if (notification && notification !== 'extension')
       chrome.windows.getCurrent((win) => {
         const popupOptions = { ...POPUP_WINDOW_OPTS };
@@ -253,16 +264,16 @@ export default class State {
       });
   }
 
-  static async injectFromStorage() {
-    const { authUrls, defaultAuthAccountSelection } = await State.getFromStorage([
+  async injectFromStorage() {
+    const { authUrls, defaultAuthAccountSelection } = await this.getFromStorage([
       'authUrls',
       'defaultAuthAccountSelection',
     ]);
-    State.authUrls = authUrls;
-    State.defaultAuthAccountSelection = defaultAuthAccountSelection;
+    this.authUrls = authUrls;
+    this.defaultAuthAccountSelection = defaultAuthAccountSelection;
   }
 
-  static authComplete = (
+  authComplete = (
     id: string,
     resolve: (resValue: AuthResponse) => void,
     reject: (error: Error) => void
@@ -272,11 +283,11 @@ export default class State {
         id: idStr,
         request: { origin },
         url,
-      } = State.authRequests[id];
+      } = this.authRequests[id];
 
       const stripedUrl = stripUrl(url);
 
-      State.authUrls[stripedUrl] = {
+      this.authUrls[stripedUrl] = {
         authorizedAccounts,
         count: 0,
         isAllowed: true,
@@ -286,12 +297,12 @@ export default class State {
         url,
       };
 
-      await State.saveCurrentAuthList();
-      await State.updateDefaultAuthAccounts(authorizedAccounts);
+      await this.saveCurrentAuthList();
+      await this.updateDefaultAuthAccounts(authorizedAccounts);
 
-      delete State.authRequests[id];
+      delete this.authRequests[id];
 
-      State.updateIconAuth(true);
+      this.updateIconAuth(true);
     };
 
     return {
@@ -306,18 +317,18 @@ export default class State {
     };
   };
 
-  public static getAuthorize(update: (value: AuthUrls) => void): void {
+  public getAuthorize(update: (value: AuthUrls) => void): void {
     // This action can be use many by DApp interaction => caching it in memory
-    if (State.authorizeCached) {
-      update(State.authorizeCached);
+    if (this.authorizeCached) {
+      update(this.authorizeCached);
     } else {
-      // State.authorizeStore.get('authUrls', (data) => {
-      //   State.authorizeCached = data;
-      //   update(State.authorizeCached);
+      // this.authorizeStore.get('authUrls', (data) => {
+      //   this.authorizeCached = data;
+      //   update(this.authorizeCached);
       // });
     }
   }
-  static async updateCurrentTabsUrl(urls: string[]) {
+  async updateCurrentTabsUrl(urls: string[]) {
     const connectedTabs = urls
       .map((url) => {
         let strippedUrl = '';
@@ -330,102 +341,102 @@ export default class State {
         }
 
         // return the stripped url only if this website is known
-        return !!strippedUrl && State.authUrls[strippedUrl] ? strippedUrl : undefined;
+        return !!strippedUrl && this.authUrls[strippedUrl] ? strippedUrl : undefined;
       })
       .filter((value) => !!value) as string[];
 
     await storage.set({ connectedTabsUrl: connectedTabs });
   }
-  public static async upsertNetworkMap(data: NetworkJson): Promise<boolean> {
-    if (data.key in State.networkMap) {
+  public async upsertNetworkMap(data: NetworkJson): Promise<boolean> {
+    if (data.key in this.networkMap) {
       // update provider for existed network
       if (data.customProviders) {
-        State.networkMap[data.key].customProviders = data.customProviders;
+        this.networkMap[data.key].customProviders = data.customProviders;
       }
 
-      if (data.currentProvider !== State.networkMap[data.key].currentProvider && data.currentProvider) {
-        State.networkMap[data.key].currentProvider = data.currentProvider;
-        State.networkMap[data.key].currentProviderMode = 'ws';
+      if (data.currentProvider !== this.networkMap[data.key].currentProvider && data.currentProvider) {
+        this.networkMap[data.key].currentProvider = data.currentProvider;
+        this.networkMap[data.key].currentProviderMode = 'ws';
       }
 
-      State.networkMap[data.key].chain = data.chain;
+      this.networkMap[data.key].chain = data.chain;
 
-      if (data.nativeToken) State.networkMap[data.key].nativeToken = data.nativeToken;
+      if (data.nativeToken) this.networkMap[data.key].nativeToken = data.nativeToken;
 
-      if (data.decimals) State.networkMap[data.key].decimals = data.decimals;
+      if (data.decimals) this.networkMap[data.key].decimals = data.decimals;
 
-      State.networkMap[data.key].paraId = data.paraId;
+      this.networkMap[data.key].paraId = data.paraId;
 
-      State.networkMap[data.key].blockExplorer = data.blockExplorer;
+      this.networkMap[data.key].blockExplorer = data.blockExplorer;
     } else {
       // insert
-      State.networkMap[data.key] = data;
+      this.networkMap[data.key] = data;
     }
 
-    if (State.networkMap[data.key].active) {
+    if (this.networkMap[data.key].active) {
       // update API map if network is active
       // if (data.key in this.apiMap.dotSama) {
-      // State.apis.substrate[data.key].api?.disconnect && (await this.apiMap.dotSama[data.key].api.disconnect());
-      // delete State.apis.dotSama[data.key];
+      // this.apis.substrate[data.key].api?.disconnect && (await this.apiMap.dotSama[data.key].api.disconnect());
+      // delete this.apis.dotSama[data.key];
       // }
 
-      State.apis.evm['homestead'] = new EthProvider('homestead');
-      State.apis.evm['goerli'] = new EthProvider('goerli');
+      this.apis.evm['homestead'] = new EthProvider('homestead');
+      this.apis.evm['goerli'] = new EthProvider('goerli');
     }
 
-    State.networkMapSubject.next(State.networkMap);
-    State.networkMapStore.set('NetworkMap', State.networkMap);
-    State.updateServiceInfo();
+    this.networkMapSubject.next(this.networkMap);
+    this.networkMapStore.set('NetworkMap', this.networkMap);
+    this.updateServiceInfo();
     // this.lockNetworkMap = false;
 
     return true;
   }
-  public static updateServiceInfo() {
-    const account = State.getCurrentAccount();
+  public updateServiceInfo() {
+    const account = this.getCurrentAccount();
 
-    State.serviceInfoSubject.next({
-      networkMap: State.networkMap,
-      apiMap: State.apis,
+    this.serviceInfoSubject.next({
+      networkMap: this.networkMap,
+      apiMap: this.apis,
       currentAccountInfo: account,
-      chainRegistry: State.chainRegistryMap,
+      chainRegistry: this.chainRegistryMap,
     });
   }
 
-  static async getConnectedTabsUrl() {
-    const { connectedTabsUrl } = await State.getFromStorage(['connectedTabsUrl']);
+  async getConnectedTabsUrl() {
+    const { connectedTabsUrl } = await this.getFromStorage(['connectedTabsUrl']);
 
     return connectedTabsUrl;
   }
 
-  static async deleteAuthRequest(requestId: string) {
-    delete State.authRequests[requestId];
+  async deleteAuthRequest(requestId: string) {
+    delete this.authRequests[requestId];
 
-    State.updateIconAuth(true);
+    this.updateIconAuth(true);
   }
 
-  private static async saveCurrentAuthList() {
-    await storage.set({ authUrls: State.authUrls });
+  private async saveCurrentAuthList() {
+    await storage.set({ authUrls: this.authUrls });
   }
 
-  private static async saveDefaultAuthAccounts() {
-    await storage.set({ defaultAuthAccountSelection: State.defaultAuthAccountSelection });
+  private async saveDefaultAuthAccounts() {
+    await storage.set({ defaultAuthAccountSelection: this.defaultAuthAccountSelection });
   }
 
-  static async updateDefaultAuthAccounts(newList: string[]) {
-    State.defaultAuthAccountSelection = newList;
+  async updateDefaultAuthAccounts(newList: string[]) {
+    this.defaultAuthAccountSelection = newList;
 
-    State.saveDefaultAuthAccounts();
+    this.saveDefaultAuthAccounts();
   }
 
-  private static metaComplete = (
+  private metaComplete = (
     id: string,
     resolve: (result: boolean) => void,
     reject: (error: Error) => void
   ): Resolver<boolean> => {
     const complete = async (): Promise<void> => {
-      delete State.metaRequests[id];
+      delete this.metaRequests[id];
 
-      State.updateIconMeta(true);
+      this.updateIconMeta(true);
     };
 
     return {
@@ -440,14 +451,14 @@ export default class State {
     };
   };
 
-  private static signComplete = (
+  private signComplete = (
     id: string,
     resolve: (result: ResponseSigning) => void,
     reject: (error: Error) => void
   ): Resolver<ResponseSigning> => {
     const complete = async (): Promise<void> => {
-      delete State.signRequests[id];
-      State.updateIconSign(true);
+      delete this.signRequests[id];
+      this.updateIconSign(true);
     };
 
     return {
@@ -462,10 +473,10 @@ export default class State {
     };
   };
 
-  static async updateIcon(shouldClose?: boolean): Promise<void> {
-    const authCount = await State.numAuthRequests();
-    const metaCount = await State.numMetaRequests();
-    const signCount = await State.numSignRequests();
+  async updateIcon(shouldClose?: boolean): Promise<void> {
+    const authCount = await this.numAuthRequests();
+    const metaCount = await this.numMetaRequests();
+    const signCount = await this.numSignRequests();
 
     const text = authCount ? 'Auth' : metaCount ? 'Meta' : signCount ? `${signCount}` : '';
 
@@ -476,62 +487,62 @@ export default class State {
     }
   }
 
-  static async removeAuthorization(url: string): Promise<AuthUrls> {
-    const entry = State.authUrls[url];
+  async removeAuthorization(url: string): Promise<AuthUrls> {
+    const entry = this.authUrls[url];
 
     assert(entry, `The source ${url} is not known`);
 
-    delete State.authUrls[url];
+    delete this.authUrls[url];
 
-    await storage.set({ authUrls: State.authUrls });
+    await storage.set({ authUrls: this.authUrls });
 
-    State.saveCurrentAuthList();
+    this.saveCurrentAuthList();
 
-    return State.authUrls;
+    return this.authUrls;
   }
 
-  static async updateIconAuth(shouldClose?: boolean): Promise<void> {
-    const allAuthRequests = await State.allAuthRequests();
+  async updateIconAuth(shouldClose?: boolean): Promise<void> {
+    const allAuthRequests = await this.allAuthRequests();
 
-    State.authSubject.next(allAuthRequests);
+    this.authSubject.next(allAuthRequests);
 
-    State.updateIcon(shouldClose);
+    this.updateIcon(shouldClose);
   }
 
-  static async updateIconMeta(shouldClose?: boolean): Promise<void> {
-    const allMetaRequests = await State.allMetaRequests();
+  async updateIconMeta(shouldClose?: boolean): Promise<void> {
+    const allMetaRequests = await this.allMetaRequests();
 
-    State.metaSubject.next(allMetaRequests);
-    State.updateIcon(shouldClose);
+    this.metaSubject.next(allMetaRequests);
+    this.updateIcon(shouldClose);
   }
 
-  static async updateIconSign(shouldClose?: boolean): Promise<void> {
-    const allSignRequests = await State.allSignRequests();
+  async updateIconSign(shouldClose?: boolean): Promise<void> {
+    const allSignRequests = await this.allSignRequests();
 
-    State.signSubject.next(allSignRequests);
-    State.updateIcon(shouldClose);
+    this.signSubject.next(allSignRequests);
+    this.updateIcon(shouldClose);
   }
 
-  static async updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): Promise<void> {
+  async updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): Promise<void> {
     authorizedAccountDiff.forEach(([url, authorizedAccountDiff]) => {
-      State.authUrls[url].authorizedAccounts = authorizedAccountDiff;
+      this.authUrls[url].authorizedAccounts = authorizedAccountDiff;
     });
 
-    State.saveCurrentAuthList();
+    this.saveCurrentAuthList();
   }
 
-  static async authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<AuthResponse> {
+  async authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<AuthResponse> {
     const idStr = stripUrl(url);
 
     // Do not enqueue duplicate authorization requests.
-    const isDuplicate = Object.values(State.authRequests).some((request) => request.idStr === idStr);
+    const isDuplicate = Object.values(this.authRequests).some((request) => request.idStr === idStr);
 
     assert(!isDuplicate, `The source ${url} has a pending authorization request`);
 
-    if (State.authUrls[idStr]) {
+    if (this.authUrls[idStr]) {
       // this url was seen in the past
       assert(
-        State.authUrls[idStr].authorizedAccounts || State.authUrls[idStr].isAllowed,
+        this.authUrls[idStr].authorizedAccounts || this.authUrls[idStr].isAllowed,
         `The source ${url} is not allowed to interact with this extension`
       );
 
@@ -544,9 +555,9 @@ export default class State {
     return new Promise((res, rej): void => {
       const id = getId();
 
-      const { reject, resolve } = State.authComplete(id, res, rej);
+      const { reject, resolve } = this.authComplete(id, res, rej);
 
-      State.authRequests[id] = {
+      this.authRequests[id] = {
         reject,
         resolve,
         id,
@@ -555,51 +566,51 @@ export default class State {
         url,
       };
 
-      State.updateIconAuth();
-      State.popupOpen();
+      this.updateIconAuth();
+      this.popupOpen();
     });
   }
 
-  static async ensureUrlAuthorized(url: string): Promise<boolean> {
+  async ensureUrlAuthorized(url: string): Promise<boolean> {
     const stripedUrl = stripUrl(url);
-    const entry = State.authUrls[stripedUrl];
+    const entry = this.authUrls[stripedUrl];
 
     assert(entry, `The source ${url} has not been enabled yet`);
 
     return true;
   }
 
-  static async injectMetadata(url: string, request: MetadataDef): Promise<boolean> {
+  async injectMetadata(url: string, request: MetadataDef): Promise<boolean> {
     return new Promise((resolve, reject): void => {
       const id = getId();
 
-      State.metaRequests[id] = {
-        ...State.metaComplete(id, resolve, reject),
+      this.metaRequests[id] = {
+        ...this.metaComplete(id, resolve, reject),
         id,
         request,
         url,
       };
 
-      State.updateIconMeta();
-      State.popupOpen();
+      this.updateIconMeta();
+      this.popupOpen();
     });
   }
 
-  static async getAuthRequest(id: string): Promise<AuthRequest> {
-    return State.authRequests[id];
+  async getAuthRequest(id: string): Promise<AuthRequest> {
+    return this.authRequests[id];
   }
 
-  static async getMetaRequest(id: string): Promise<MetaRequest> {
-    return State.metaRequests[id];
+  async getMetaRequest(id: string): Promise<MetaRequest> {
+    return this.metaRequests[id];
   }
 
-  static async getSignRequest(id: string): Promise<SignRequest> {
-    return State.signRequests[id];
+  async getSignRequest(id: string): Promise<SignRequest> {
+    return this.signRequests[id];
   }
 
   // List all providers the extension is exposing
-  static async rpcListProviders(): Promise<ResponseRpcListProviders> {
-    const { providers } = await State.getFromStorage(['providers']);
+  async rpcListProviders(): Promise<ResponseRpcListProviders> {
+    const { providers } = await this.getFromStorage(['providers']);
 
     return Promise.resolve(
       Object.keys(providers).reduce((acc, key) => {
@@ -610,8 +621,8 @@ export default class State {
     );
   }
 
-  static async rpcSend(request: RequestRpcSend, port: Port): Promise<JsonRpcResponse> {
-    const { injectedProviders } = await State.getFromStorage(['injectedProviders']);
+  async rpcSend(request: RequestRpcSend, port: Port): Promise<JsonRpcResponse> {
+    const { injectedProviders } = await this.getFromStorage(['injectedProviders']);
 
     const provider = injectedProviders.get(port);
 
@@ -621,8 +632,8 @@ export default class State {
   }
 
   // Start a provider, return its meta
-  static async rpcStartProvider(key: string, port: Port): Promise<ProviderMeta> {
-    const { providers, injectedProviders } = await State.getFromStorage(['providers', 'injectedProviders']);
+  async rpcStartProvider(key: string, port: Port): Promise<ProviderMeta> {
+    const { providers, injectedProviders } = await this.getFromStorage(['providers', 'injectedProviders']);
 
     assert(Object.keys(providers).includes(key), `Provider ${key} is not exposed by extension`);
 
@@ -649,12 +660,12 @@ export default class State {
     return Promise.resolve(providers[key].meta);
   }
 
-  static async rpcSubscribe(
+  async rpcSubscribe(
     { method, params, type }: RequestRpcSubscribe,
     cb: ProviderInterfaceCallback,
     port: Port
   ): Promise<number | string> {
-    const { injectedProviders } = await State.getFromStorage(['injectedProviders']);
+    const { injectedProviders } = await this.getFromStorage(['injectedProviders']);
 
     const provider = injectedProviders.get(port);
 
@@ -663,8 +674,8 @@ export default class State {
     return provider.subscribe(type, method, params, cb);
   }
 
-  static async rpcSubscribeConnected(_request: null, cb: ProviderInterfaceCallback, port: Port): Promise<void> {
-    const { injectedProviders } = await State.getFromStorage(['injectedProviders']);
+  async rpcSubscribeConnected(_request: null, cb: ProviderInterfaceCallback, port: Port): Promise<void> {
+    const { injectedProviders } = await this.getFromStorage(['injectedProviders']);
 
     const provider = injectedProviders.get(port);
 
@@ -675,8 +686,8 @@ export default class State {
     provider.on('disconnected', () => cb(null, false));
   }
 
-  static async rpcUnsubscribe(request: RequestRpcUnsubscribe, port: Port): Promise<boolean> {
-    const { injectedProviders } = await State.getFromStorage(['injectedProviders']);
+  async rpcUnsubscribe(request: RequestRpcUnsubscribe, port: Port): Promise<boolean> {
+    const { injectedProviders } = await this.getFromStorage(['injectedProviders']);
 
     const provider = injectedProviders.get(port);
 
@@ -685,38 +696,38 @@ export default class State {
     return provider.unsubscribe(request.type, request.method, request.subscriptionId);
   }
 
-  static async saveMetadata(meta: MetadataDef): Promise<void> {
+  async saveMetadata(meta: MetadataDef): Promise<void> {
     metaStore.set(meta.genesisHash, meta);
 
     addMetadata(meta);
   }
 
-  static async setNotification(notification: string): Promise<boolean> {
+  async setNotification(notification: string): Promise<boolean> {
     storage.set({ notification });
 
     return true;
   }
 
-  static async sign(url: string, request: RequestSign, account: AccountJson): Promise<ResponseSigning> {
+  async sign(url: string, request: RequestSign, account: AccountJson): Promise<ResponseSigning> {
     const id = getId();
 
     return new Promise((resolve, reject): void => {
-      State.signRequests[id] = {
-        ...State.signComplete(id, resolve, reject),
+      this.signRequests[id] = {
+        ...this.signComplete(id, resolve, reject),
         account,
         id,
         request,
         url,
       };
-      State.updateIconSign();
-      State.popupOpen();
+      this.updateIconSign();
+      this.popupOpen();
     });
   }
-  public static async getDecodedAddresses(address?: string): Promise<string[]> {
+  public async getDecodedAddresses(address?: string): Promise<string[]> {
     let checkingAddress: string | null | undefined = address;
 
     if (!address) {
-      checkingAddress = await State.getAccountAddress();
+      checkingAddress = await this.getAccountAddress();
     }
 
     if (!checkingAddress) {
@@ -730,9 +741,9 @@ export default class State {
     return [checkingAddress];
   }
 
-  public static getAccountAddress(): Promise<string | null | undefined> {
+  public getAccountAddress(): Promise<string | null | undefined> {
     return new Promise((resolve, reject) => {
-      const account = State.getCurrentAccount();
+      const account = this.getCurrentAccount();
 
       if (account) {
         resolve(account.address);
@@ -742,36 +753,36 @@ export default class State {
     });
   }
 
-  public static async getStoredBalance(address: string): Promise<Record<string, BalanceItem>> {
-    const items = await State.balanceMap;
+  public async getStoredBalance(address: string): Promise<Record<string, BalanceItem>> {
+    const items = await this.balanceMap;
 
     return items || {};
   }
 
-  public static async switchAccount(newAddress: string) {
-    await Promise.all([State.resetBalanceMap(newAddress)]);
+  public async switchAccount(newAddress: string) {
+    await Promise.all([this.resetBalanceMap(newAddress)]);
   }
 
-  private static publishBalance(reset?: boolean) {
-    State.balanceSubject.next(State.getBalance(reset));
+  private publishBalance(reset?: boolean) {
+    this.balanceSubject.next(this.getBalance(reset));
   }
 
-  public static async resetBalanceMap(newAddress: string) {
-    const defaultData = State.generateDefaultBalanceMap();
-    let storedData = await State.getStoredBalance(newAddress);
+  public async resetBalanceMap(newAddress: string) {
+    const defaultData = this.generateDefaultBalanceMap();
+    let storedData = await this.getStoredBalance(newAddress);
 
-    storedData = State.removeInactiveNetworkData(storedData);
+    storedData = this.removeInactiveNetworkData(storedData);
 
     const merge = { ...defaultData, ...storedData } as Record<string, BalanceItem>;
 
-    State.balanceMap = merge;
-    State.publishBalance(true);
+    this.balanceMap = merge;
+    this.publishBalance(true);
   }
 
-  public static getActiveErc20Tokens() {
+  public getActiveErc20Tokens() {
     const filteredErc20Tokens: CustomToken[] = [];
 
-    State.customTokenState.erc20.forEach((token) => {
+    this.customTokenthis.erc20.forEach((token) => {
       if (!token.isDeleted) {
         filteredErc20Tokens.push(token);
       }
@@ -780,22 +791,22 @@ export default class State {
     return filteredErc20Tokens;
   }
 
-  public static initCustomTokenState() {
-    State.customTokenStore.get('EvmToken', (storedCustomTokens) => {
+  public initCustomTokenthis() {
+    this.customTokenStore.get('EvmToken', (storedCustomTokens) => {
       if (!storedCustomTokens) {
-        State.customTokenState = DEFAULT_EVM_TOKENS;
+        this.customTokenthis = DEFAULT_EVM_TOKENS;
       } else {
-        const processedEvmTokens = initEvmTokenState(storedCustomTokens, State.networkMap);
+        const processedEvmTokens = initEvmTokenState(storedCustomTokens, this.networkMap);
 
-        State.customTokenState = { ...processedEvmTokens };
+        this.customTokenthis = { ...processedEvmTokens };
       }
 
-      State.customTokenStore.set('EvmToken', State.customTokenState);
-      State.customTokenSubject.next(State.customTokenState);
+      this.customTokenStore.set('EvmToken', this.customTokenthis);
+      this.customTokenSubject.next(this.customTokenthis);
     });
   }
 
-  public static setBalanceItem(networkKey: string, item: BalanceItem) {
+  public setBalanceItem(networkKey: string, item: BalanceItem) {
     // eslint-disable-next-line no-prototype-builtins
     if (typeof item === 'object' && item.hasOwnProperty('children') && item.children === undefined) {
       delete item.children;
@@ -803,17 +814,17 @@ export default class State {
 
     const itemData = { timestamp: +new Date(), ...item };
 
-    State.balanceMap[networkKey] = { ...State.balanceMap[networkKey], ...itemData };
-    State.updateBalanceStore(networkKey, item);
+    this.balanceMap[networkKey] = { ...this.balanceMap[networkKey], ...itemData };
+    this.updateBalanceStore(networkKey, item);
   }
 
-  public static getNetworkGenesisHashByKey(key: string) {
-    const network = State.networkMap[key];
+  public getNetworkGenesisHashByKey(key: string) {
+    const network = this.networkMap[key];
 
     return network && network.genesisHash;
   }
 
-  public static getCurrentAccount() {
+  public getCurrentAccount() {
     return {
       address: '14aR963sW6gNo6breubdqbQHdd7HT1K75YQp3Pk9qWFdtnbF',
       ethereumAddress: '0x599dC6fD485E0eD55C1BCc7D8AE02EDAF7bE4f4e',
@@ -821,31 +832,31 @@ export default class State {
     };
   }
 
-  public static setCurrentAccount(data: CurrentAccountInfo, callback?: () => void): void {
+  public setCurrentAccount(data: CurrentAccountInfo, callback?: () => void): void {
     const { address, currentGenesisHash } = data;
 
     if (address === 'ALL') {
       data.allGenesisHash = currentGenesisHash || undefined;
     }
 
-    State.currentAccountStore = {
+    this.currentAccountStore = {
       [address]: data,
     };
-    State.updateServiceInfo();
+    this.updateServiceInfo();
     callback && callback();
   }
 
-  private static updateBalanceStore(networkKey: string, item: BalanceItem) {
-    const account = State.getCurrentAccount();
-    State.balanceService
-      .updateBalanceStore(networkKey, State.getNetworkGenesisHashByKey(networkKey), account.address, item)
+  private updateBalanceStore(networkKey: string, item: BalanceItem) {
+    const account = this.getCurrentAccount();
+    this.balanceService
+      .updateBalanceStore(networkKey, this.getNetworkGenesisHashByKey(networkKey), account.address, item)
       .catch((e) => console.warn(e));
   }
 
-  public static generateDefaultBalanceMap() {
+  public generateDefaultBalanceMap() {
     const balanceMap: Record<string, BalanceItem> = {};
 
-    Object.values(State.networkMap).forEach((networkJson) => {
+    Object.values(this.networkMap).forEach((networkJson) => {
       if (networkJson.active) {
         balanceMap[networkJson.key] = {
           state: APIItemState.PENDING,
@@ -856,11 +867,11 @@ export default class State {
     return balanceMap;
   }
 
-  private static removeInactiveNetworkData<T>(data: Record<string, T>) {
+  private removeInactiveNetworkData<T>(data: Record<string, T>) {
     const activeData: Record<string, T> = {};
 
     Object.entries(data).forEach(([networkKey, items]) => {
-      if (State.networkMap[networkKey]?.active) {
+      if (this.networkMap[networkKey]?.active) {
         activeData[networkKey] = items;
       }
     });
@@ -868,26 +879,26 @@ export default class State {
     return activeData;
   }
 
-  public static subscribeBalance() {
-    return State.balanceSubject;
+  public subscribeBalance() {
+    return this.balanceSubject;
   }
 
-  public static getBalance(reset?: boolean): BalanceJson {
-    const activeData = State.removeInactiveNetworkData(State.balanceMap);
+  public getBalance(reset?: boolean): BalanceJson {
+    const activeData = this.removeInactiveNetworkData(this.balanceMap);
 
     return { details: activeData, reset } as BalanceJson;
   }
 
-  public static getCustomTokenStore(callback: (data: CustomTokenJson) => void) {
-    return State.customTokenStore.get('EvmToken', (data) => {
+  public getCustomTokenStore(callback: (data: CustomTokenJson) => void) {
+    return this.customTokenStore.get('EvmToken', (data) => {
       callback(data);
     });
   }
-  private static lazyNext = (key: string, callback: () => void) => {
+  private lazyNext = (key: string, callback: () => void) => {
     if (this.lazyMap[key]) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      clearTimeout(State.lazyMap[key]);
+      clearTimeout(this.lazyMap[key]);
     }
 
     const lazy = setTimeout(() => {
@@ -895,32 +906,32 @@ export default class State {
       clearTimeout(lazy);
     }, 300);
 
-    State.lazyMap[key] = lazy;
+    this.lazyMap[key] = lazy;
   };
 
-  public static getAddressList(value = false): Record<string, boolean> {
+  public getAddressList(value = false): Record<string, boolean> {
     const addressList = Object.keys(accounts.subject.value);
 
     return addressList.reduce((addressList, v) => ({ ...addressList, [v]: value }), {});
   }
 
-  public static getChainRegistryMap(): Record<string, ChainRegistry> {
-    return State.chainRegistryMap;
+  public getChainRegistryMap(): Record<string, ChainRegistry> {
+    return this.chainRegistryMap;
   }
 
-  public static setChainRegistryItem(networkKey: string, registry: ChainRegistry) {
-    State.chainRegistryMap[networkKey] = registry;
-    State.lazyNext('setChainRegistry', () => {
-      State.chainRegistrySubject.next(State.getChainRegistryMap());
+  public setChainRegistryItem(networkKey: string, registry: ChainRegistry) {
+    this.chainRegistryMap[networkKey] = registry;
+    this.lazyNext('setChainRegistry', () => {
+      this.chainRegistrySubject.next(this.getChainRegistryMap());
     });
   }
 
-  public static initChainRegistry() {
-    State.chainRegistryMap = cacheRegistryMap; // prevents deleting token registry even when network is disabled
-    State.getCustomTokenStore((storedCustomTokens) => {
+  public initChainRegistry() {
+    this.chainRegistryMap = cacheRegistryMap; // prevents deleting token registry even when network is disabled
+    this.getCustomTokenStore((storedCustomTokens) => {
       // const customTokens = getTokensForChainRegistry(storedCustomTokens);
 
-      State.setChainRegistryItem('polkadot', {
+      this.setChainRegistryItem('polkadot', {
         chainDecimals: [10],
         chainTokens: ['DOT'],
         tokenMap: {
@@ -933,7 +944,7 @@ export default class State {
         },
       });
 
-      State.setChainRegistryItem('kusama', {
+      this.setChainRegistryItem('kusama', {
         chainDecimals: [12],
         chainTokens: ['KSM'],
         tokenMap: {
@@ -954,13 +965,13 @@ export default class State {
       //     .catch(this.logger.error);
       // });
 
-      State.onReady();
+      this.onReady();
     });
   }
 
-  private static onReady() {
-    State.subscription.start();
+  private onReady() {
+    this.subscription.start();
 
-    State.ready = true;
+    this.ready = true;
   }
 }

@@ -5,7 +5,6 @@ import { ApiPromise } from '@polkadot/api';
 import { BN } from '@polkadot/util';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { Contract } from 'ethers';
-import State from '../../background/handlers/State';
 
 import {
   SUB_TOKEN_REFRESH_BALANCE_INTERVAL,
@@ -61,7 +60,7 @@ function subscribeERC20Interval(
     });
   };
 
-  getRegistry(networkKey, api, State.getActiveErc20Tokens())
+  getRegistry(networkKey, api, getActiveErc20Tokens())
     .then(({ tokenMap }) => {
       tokenList = Object.values(tokenMap).filter(({ contractAddress }) => !!contractAddress);
       tokenList.forEach(({ contractAddress, symbol }) => {

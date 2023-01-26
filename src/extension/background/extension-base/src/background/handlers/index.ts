@@ -7,6 +7,23 @@ import Extension from './Extension';
 import Tabs from './Tabs';
 import State from './State';
 import type { MessageTypes, Port, TransportRequestMessage } from '../types';
+export const state = new State();
+export const extension = new Extension(state);
+export const tabs = new Tabs(state);
+
+// Migration
+async function makeSureStateReady() {
+  const poll = (resolve: (value: unknown) => void) => {
+    if (state.isReady()) {
+      resolve(true);
+    } else {
+      console.info('Waiting for State is ready...');
+      setTimeout(() => poll(resolve), 400);
+    }
+  };
+
+  return new Promise(poll);
+}
 
 export default function handler<TMessageType extends MessageTypes>(
   { id, message, request }: TransportRequestMessage<TMessageType>,
@@ -21,8 +38,8 @@ export default function handler<TMessageType extends MessageTypes>(
   console.info(` [in] ${source}`); // :: ${JSON.stringify(request)}`);
 
   const promise = isExtension
-    ? Extension.handle(id, message, request, port)
-    : Tabs.handle(id, message, request, from, port);
+    ? extension.handle(id, message, request, port)
+    : tabs.handle(id, message, request, from, port);
 
   promise
     .then((response): void => {
@@ -35,7 +52,7 @@ export default function handler<TMessageType extends MessageTypes>(
       port.postMessage({ id, response });
     })
     .then(() => {
-      State.signature = null;
+      state.signature = null;
     })
     .catch((error: Error): void => {
       console.info(`[err] ${source}:: ${error.message}`);

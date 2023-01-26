@@ -16,6 +16,7 @@ type Subscriptions = Record<string, chrome.runtime.Port>;
 const subscriptions: Subscriptions = {};
 export class FWSubscription {
   private serviceSubscription: Subscription | undefined;
+  private state: State;
   private subscriptionMap: Record<SubscriptionName, (() => void) | undefined> = {
     balance: undefined,
   };
@@ -24,6 +25,7 @@ export class FWSubscription {
 
   constructor() {
     this.logger = createLogger('Subscription');
+    this.state = new State();
     this.init();
   }
 
@@ -51,19 +53,19 @@ export class FWSubscription {
 
   start() {
     this.logger.log('Starting subscription');
-    const account = State.getCurrentAccount();
+    const account = this.state.getCurrentAccount();
 
     if (account) {
       const { address } = account;
-      this.subscribeBalancesAndCrowdloans(address, State.apis.evm);
+      this.subscribeBalancesAndCrowdloans(address, this.state.apis.evm);
     }
 
     !this.serviceSubscription &&
-      (this.serviceSubscription = State.subscribeServiceInfo().subscribe({
+      (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
         next: (serviceInfo) => {
           const { address } = serviceInfo.currentAccountInfo;
 
-          State.initChainRegistry();
+          this.state.initChainRegistry();
           this.subscribeBalancesAndCrowdloans(address, serviceInfo.apiMap.evm);
         },
       }));
@@ -81,16 +83,16 @@ export class FWSubscription {
   }
 
   init() {
-    State.getAuthorize(async (value) => {
+    this.state.getAuthorize(async (value) => {
       const { authUrls } = await storage.get(['authUrls']);
       const previousAuth = authUrls;
 
       if (previousAuth && Object.keys(previousAuth).length) {
         Object.keys(previousAuth).forEach((url) => {
           if (previousAuth[url].isAllowed) {
-            previousAuth[url].isAllowedMap = State.getAddressList(true);
+            previousAuth[url].isAllowedMap = this.state.getAddressList(true);
           } else {
-            previousAuth[url].isAllowedMap = State.getAddressList();
+            previousAuth[url].isAllowedMap = this.state.getAddressList();
           }
         });
       }
@@ -99,12 +101,12 @@ export class FWSubscription {
 
       // State.setAuthorize(migrateValue);
     });
-    const account = State.getCurrentAccount();
+    const account = this.state.getCurrentAccount();
 
     if (account) {
       const { address } = account;
 
-      this.subscribeBalancesAndCrowdloans(address, State.apis.evm, true);
+      this.subscribeBalancesAndCrowdloans(address, this.state.apis.evm, true);
 
       // this.stopAllSubscription();
     }
@@ -115,9 +117,11 @@ export class FWSubscription {
     web3ApiMap: Record<string, EthProvider>,
     onlyRunOnFirstTime?: boolean
   ) {
-    State.switchAccount(address)
+    this.state
+      .switchAccount(address)
       .then(() => {
-        State.getDecodedAddresses(address)
+        this.state
+          .getDecodedAddresses(address)
           .then((addresses) => {
             if (!addresses.length) return;
 
@@ -138,7 +142,7 @@ export class FWSubscription {
     onlyRunOnFirstTime?: boolean
   ) {
     const unsub = subscribeBalance(addresses, web3ApiMap, (networkKey, rs) => {
-      State.setBalanceItem(networkKey, rs);
+      this.state.setBalanceItem(networkKey, rs);
     });
 
     if (onlyRunOnFirstTime) {

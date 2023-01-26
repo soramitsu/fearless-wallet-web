@@ -57,7 +57,7 @@ const SOCIAL_MEDIA_ITEMS = [
   {
     icon: 'twitter',
     label: 'followTwitter',
-    subLabel: 'twitter.com/Soramitsu_co',
+    subLabel: 'twitter.com/fearlesswallet',
     url: URLS.TWITTER,
   },
   {

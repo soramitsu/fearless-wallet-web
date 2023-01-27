@@ -5,13 +5,14 @@ import { ApiPromise } from '@polkadot/api';
 import { BN } from '@polkadot/util';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { Contract } from 'ethers';
+import { state } from '../../background/handlers';
+import { categoryAddresses } from '../../background/handlers/helpers';
 
 import {
   SUB_TOKEN_REFRESH_BALANCE_INTERVAL,
   ASTAR_REFRESH_BALANCE_INTERVAL,
   SUBSCRIBE_BALANCE_FAST_INTERVAL,
 } from '../../const/intervals';
-import { categoryAddresses } from '../../utils';
 import { getEVMBalance } from '../evm/balance';
 import EthProvider from '../evm/ethProvider';
 import { APIItemState, BalanceChildItem, BalanceItem, TokenInfo } from '../evm/types/ether';
@@ -60,7 +61,7 @@ function subscribeERC20Interval(
     });
   };
 
-  getRegistry(networkKey, api, getActiveErc20Tokens())
+  getRegistry(networkKey, api, state.getActiveErc20Tokens())
     .then(({ tokenMap }) => {
       tokenList = Object.values(tokenMap).filter(({ contractAddress }) => !!contractAddress);
       tokenList.forEach(({ contractAddress, symbol }) => {

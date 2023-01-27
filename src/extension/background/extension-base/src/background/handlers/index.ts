@@ -52,7 +52,7 @@ export default function handler<TMessageType extends MessageTypes>(
       port.postMessage({ id, response });
     })
     .then(() => {
-      state.signature = null;
+      State.signature = null;
     })
     .catch((error: Error): void => {
       console.info(`[err] ${source}:: ${error.message}`);

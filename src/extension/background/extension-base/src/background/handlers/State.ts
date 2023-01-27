@@ -39,9 +39,11 @@ import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';
 import { APIItemState, BalanceItem, CustomToken, CustomTokenJson, NetworkJson } from '../../api/evm/types/ether';
 import CustomTokenStore from '../../stores/CustomEvmToken';
+
+import CurrentAccountStore, { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
+
 import { initEvmTokenState } from '../../api/evm/utils/eth';
 import BalanceService from '../../shared/balanceService';
-import { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import { ChainRegistry } from '../../api/evm/utils/registery';
 
 import NetworkMapStore from '../../stores/NetworkMap';
@@ -109,15 +111,15 @@ export async function initState() {
 }
 
 export default class State {
-  subscription = new FWSubscription();
+  subscription: FWSubscription;
   chainRegistryMap: Record<string, ChainRegistry> = {};
   chainRegistrySubject = new Subject<Record<string, ChainRegistry>>();
   readonly unsubscriptionMap: Record<string, () => void> = {};
   // private  readonly authorizeStore = new AuthorizeStore();
   public authUrls: AuthUrls = {};
-  public signature: HexString | null = null;
+  public static signature: HexString | null = null;
   public defaultAuthAccountSelection: string[] = [];
-  apis: { evm: Record<string, EthProvider> } = {
+  public apis: { evm: Record<string, EthProvider> } = {
     evm: {},
   };
 
@@ -126,10 +128,10 @@ export default class State {
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   networkMapSubject = new Subject<Record<string, NetworkJson>>();
   serviceInfoSubject = new Subject<ServiceInfo>();
-  currentAccountStore: Record<string, CurrentAccountInfo> = {};
+  private readonly currentAccountStore = new CurrentAccountStore();
   balanceMap: Record<string, BalanceItem> = this.generateDefaultBalanceMap();
   balanceSubject = new Subject<BalanceJson>();
-  customTokenthis: CustomTokenJson = { erc20: [] };
+  customTokenState: CustomTokenJson = { erc20: [] };
   customTokenSubject = new Subject<CustomTokenJson>();
   public customTokenStore = new CustomTokenStore();
   public authRequests: Record<string, AuthRequest> = {};
@@ -149,6 +151,7 @@ export default class State {
   constructor() {
     initState();
     this.injectFromStorage();
+    this.subscription = new FWSubscription(this);
   }
 
   public getSubstrateApiMap() {
@@ -167,6 +170,7 @@ export default class State {
   public getApiMap() {
     return this.apis;
   }
+
   // public  setAuthorize(data: AuthUrls, callback?: () => void): void {
   //   this.authorizeStore.set('authUrls', data, () => {
   //     this.authorizeCached = data;
@@ -175,6 +179,7 @@ export default class State {
   //     callback && callback();
   //   });
   // }
+
   public createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
     this.unsubscriptionMap[id] = unsubscribe;
   }
@@ -391,14 +396,15 @@ export default class State {
 
     return true;
   }
-  public updateServiceInfo() {
-    const account = this.getCurrentAccount();
 
-    this.serviceInfoSubject.next({
-      networkMap: this.networkMap,
-      apiMap: this.apis,
-      currentAccountInfo: account,
-      chainRegistry: this.chainRegistryMap,
+  public updateServiceInfo() {
+    this.getCurrentAccount((value) => {
+      this.serviceInfoSubject.next({
+        networkMap: this.networkMap,
+        apiMap: this.apis,
+        currentAccountInfo: value,
+        chainRegistry: this.chainRegistryMap,
+      });
     });
   }
 
@@ -743,13 +749,13 @@ export default class State {
 
   public getAccountAddress(): Promise<string | null | undefined> {
     return new Promise((resolve, reject) => {
-      const account = this.getCurrentAccount();
-
-      if (account) {
-        resolve(account.address);
-      } else {
-        resolve(null);
-      }
+      this.getCurrentAccount((account) => {
+        if (account) {
+          resolve(account.address);
+        } else {
+          resolve(null);
+        }
+      });
     });
   }
 
@@ -782,7 +788,7 @@ export default class State {
   public getActiveErc20Tokens() {
     const filteredErc20Tokens: CustomToken[] = [];
 
-    this.customTokenthis.erc20.forEach((token) => {
+    this.customTokenState.erc20.forEach((token) => {
       if (!token.isDeleted) {
         filteredErc20Tokens.push(token);
       }
@@ -791,18 +797,18 @@ export default class State {
     return filteredErc20Tokens;
   }
 
-  public initCustomTokenthis() {
+  public initCustomTokenState() {
     this.customTokenStore.get('EvmToken', (storedCustomTokens) => {
       if (!storedCustomTokens) {
-        this.customTokenthis = DEFAULT_EVM_TOKENS;
+        this.customTokenState = DEFAULT_EVM_TOKENS;
       } else {
         const processedEvmTokens = initEvmTokenState(storedCustomTokens, this.networkMap);
 
-        this.customTokenthis = { ...processedEvmTokens };
+        this.customTokenState = { ...processedEvmTokens };
       }
 
-      this.customTokenStore.set('EvmToken', this.customTokenthis);
-      this.customTokenSubject.next(this.customTokenthis);
+      this.customTokenStore.set('EvmToken', this.customTokenState);
+      this.customTokenSubject.next(this.customTokenState);
     });
   }
 
@@ -824,33 +830,27 @@ export default class State {
     return network && network.genesisHash;
   }
 
-  public getCurrentAccount() {
-    return {
-      address: '14aR963sW6gNo6breubdqbQHdd7HT1K75YQp3Pk9qWFdtnbF',
-      ethereumAddress: '0x599dC6fD485E0eD55C1BCc7D8AE02EDAF7bE4f4e',
-      currentGenesisHash: '',
-    };
+  public getCurrentAccount(update: (value: CurrentAccountInfo) => void): void {
+    this.currentAccountStore.get('CurrentAccountInfo', update);
   }
 
   public setCurrentAccount(data: CurrentAccountInfo, callback?: () => void): void {
     const { address, currentGenesisHash } = data;
 
-    if (address === 'ALL') {
-      data.allGenesisHash = currentGenesisHash || undefined;
-    }
+    if (address === 'ALL') data.allGenesisHash = currentGenesisHash || undefined;
 
-    this.currentAccountStore = {
-      [address]: data,
-    };
-    this.updateServiceInfo();
-    callback && callback();
+    this.currentAccountStore.set('CurrentAccountInfo', data, () => {
+      this.updateServiceInfo();
+      callback && callback();
+    });
   }
 
   private updateBalanceStore(networkKey: string, item: BalanceItem) {
-    const account = this.getCurrentAccount();
-    this.balanceService
-      .updateBalanceStore(networkKey, this.getNetworkGenesisHashByKey(networkKey), account.address, item)
-      .catch((e) => console.warn(e));
+    this.getCurrentAccount((currentAccountInfo) => {
+      this.balanceService
+        .updateBalanceStore(networkKey, this.getNetworkGenesisHashByKey(networkKey), currentAccountInfo.address, item)
+        .catch((e) => console.warn(e));
+    });
   }
 
   public generateDefaultBalanceMap() {

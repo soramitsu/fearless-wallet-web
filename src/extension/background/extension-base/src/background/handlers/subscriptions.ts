@@ -23,9 +23,9 @@ export class FWSubscription {
 
   private logger: Logger;
 
-  constructor() {
+  constructor(state: State) {
     this.logger = createLogger('Subscription');
-    this.state = new State();
+    this.state = state;
     this.init();
   }
 
@@ -53,12 +53,13 @@ export class FWSubscription {
 
   start() {
     this.logger.log('Starting subscription');
-    const account = this.state.getCurrentAccount();
+    this.state.getCurrentAccount((currentAccountInfo) => {
+      if (currentAccountInfo) {
+        const { address } = currentAccountInfo;
 
-    if (account) {
-      const { address } = account;
-      this.subscribeBalancesAndCrowdloans(address, this.state.apis.evm);
-    }
+        this.subscribeBalances(address, this.state.apis.evm);
+      }
+    });
 
     !this.serviceSubscription &&
       (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
@@ -66,7 +67,7 @@ export class FWSubscription {
           const { address } = serviceInfo.currentAccountInfo;
 
           this.state.initChainRegistry();
-          this.subscribeBalancesAndCrowdloans(address, serviceInfo.apiMap.evm);
+          this.subscribeBalances(address, serviceInfo.apiMap.evm);
         },
       }));
   }
@@ -101,22 +102,19 @@ export class FWSubscription {
 
       // State.setAuthorize(migrateValue);
     });
-    const account = this.state.getCurrentAccount();
 
-    if (account) {
-      const { address } = account;
+    this.state.getCurrentAccount((currentAccountInfo) => {
+      if (currentAccountInfo) {
+        const { address } = currentAccountInfo;
 
-      this.subscribeBalancesAndCrowdloans(address, this.state.apis.evm, true);
+        this.subscribeBalances(address, this.state.apis.evm, true);
 
-      // this.stopAllSubscription();
-    }
+        // this.stopAllSubscription();
+      }
+    });
   }
 
-  subscribeBalancesAndCrowdloans(
-    address: string,
-    web3ApiMap: Record<string, EthProvider>,
-    onlyRunOnFirstTime?: boolean
-  ) {
+  subscribeBalances(address: string, web3ApiMap: Record<string, EthProvider>, onlyRunOnFirstTime?: boolean) {
     this.state
       .switchAccount(address)
       .then(() => {

@@ -129,8 +129,7 @@ export default class Extension {
 
   async accountsCreateSuri({ genesisHash, name, password, suri, type }: RequestAccountCreateSuri): Promise<boolean> {
     const currentAccount = await new Promise<CurrentAccountInfo | void>((resolve) => {
-      this.state.getCurrentAccount();
-      resolve();
+      this.state.getCurrentAccount(resolve);
     });
     const _suri = getSuri(suri, type);
     const address = keyring.createFromUri(_suri, {}, type).address;
@@ -532,7 +531,7 @@ export default class Extension {
   }
 
   async signingApproveSignature({ id, signature }: RequestSigningApproveSignature): Promise<boolean> {
-    this.state.signature = signature;
+    State.signature = signature;
     const queued = await this.state.getSignRequest(id);
 
     assert(queued, 'Unable to find request');

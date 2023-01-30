@@ -10,6 +10,7 @@
 
         <div class="settings" @click="openSettings">
           <div class="settings-text">{{ marketUP }}</div>
+
           <div class="settings-circle">
             <Icon icon="settings" class="img" />
           </div>
@@ -19,71 +20,94 @@
 
     <Scroll>
       <div class="swap-content">
-        <SwapSelectInput text="send" amount="1" balance="1" price="1" :asset="sendAsset" />
+        <template v-if="step === 1">
+          <SwapSelectInput
+            text="asset.sendButtonText"
+            balance="1"
+            :price="sendPrice"
+            :asset="sendAsset"
+            :amount="sendAmount"
+            :isRotate="isRotateSend"
+            @update:amount="updateSendAmount"
+            @setMax="setMax"
+            @toggleSelectAssetPopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'send')"
+          />
 
-        <div class="swap-icon">
-          <Icon icon="swap" class="img" />
-        </div>
-
-        <SwapSelectInput text="receive" amount="1" balance="1" price="1" class="receive-input" :asset="receiveAsset" />
-
-        <div class="row">
-          {{ sendAssetUP }} / {{ receiveAssetUP }}
-
-          <div class="fiat-info">
-            <div>{{ sendAmount }}</div>
-
-            <div class="price">{{ fiatSymbol }} {{ sendPrice }}</div>
+          <div class="swap-icon">
+            <Icon icon="swap" class="img" />
           </div>
-        </div>
 
-        <div class="row">
-          {{ receiveAssetUP }} / {{ sendAssetUP }}
+          <SwapSelectInput
+            class="receive-input"
+            text="asset.receiveButtonText"
+            balance="1"
+            :price="receivePrice"
+            :asset="receiveAsset"
+            :amount="receiveAmount"
+            :isRotate="isRotateReceive"
+            @update:amount="updateReceiveAmount"
+            @setMax="setMax"
+            @toggleSelectAssetPopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'receive')"
+          />
 
-          <div class="fiat-info">
-            <div>{{ receiveAmount }}</div>
+          <div class="row">
+            {{ sendAssetUP }} / {{ receiveAssetUP }}
 
-            <div class="price">{{ fiatSymbol }} {{ receivePrice }}</div>
+            <div class="fiat-info">
+              <div>{{ sendAmount }}</div>
+
+              <div class="price">{{ fiatSymbol }} {{ sendPrice }}</div>
+            </div>
           </div>
-        </div>
 
-        <div class="row">
-          <div>Min received</div>
+          <div class="row">
+            {{ receiveAssetUP }} / {{ sendAssetUP }}
 
-          <div class="fiat-info">
-            <div>{{ minReceivedAmount }}</div>
+            <div class="fiat-info">
+              <div>{{ receiveAmount }}</div>
 
-            <div class="price">{{ fiatSymbol }} {{ minReceivedPrice }}</div>
+              <div class="price">{{ fiatSymbol }} {{ receivePrice }}</div>
+            </div>
           </div>
-        </div>
 
-        <div class="row">
-          Price impact
+          <div class="row">
+            <div>Min received</div>
 
-          <div class="fiat-info">
-            <div>{{ priceImpact }} %</div>
+            <div class="fiat-info">
+              <div>{{ minReceivedAmount }}</div>
+
+              <div class="price">{{ fiatSymbol }} {{ minReceivedPrice }}</div>
+            </div>
           </div>
-        </div>
 
-        <div class="row">
-          Route
+          <div class="row">
+            Price impact
 
-          <div class="fiat-info">
-            <div>-</div>
+            <div class="fiat-info">
+              <div>{{ priceImpact }} %</div>
+            </div>
           </div>
-        </div>
 
-        <div class="row">
-          Network fee
+          <div class="row">
+            Route
 
-          <div class="fiat-info">
-            <div>{{ fee }}</div>
-
-            <div class="price">{{ fiatSymbol }} {{ feePrice }}</div>
+            <div class="fiat-info">
+              <div>-</div>
+            </div>
           </div>
-        </div>
 
-        <Button size="big" text="asset.preview" :disabled="buttonPreviewDisabled" @click="proceed" />
+          <div class="row">
+            Network fee
+
+            <div class="fiat-info">
+              <div>{{ fee }}</div>
+
+              <div class="price">{{ fiatSymbol }} {{ feePrice }}</div>
+            </div>
+          </div>
+        </template>
+
+        <Button size="big" :text="buttonText" :disabled="buttonPreviewDisabled" @click="proceed" />
       </div>
     </Scroll>
   </AboveForm>
@@ -114,16 +138,33 @@ export default class SwapForm extends Vue {
   priceImpact = '1';
   fee = '1';
   feePrice = '1';
+  selectAssetType = '';
 
   @Prop(Function) closeForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
-  get buttonPreviewDisabled() {
-    return this.sendAsset === '' || this.receiveAsset === '' || this.sendAmount === '';
+  get isRotateSend() {
+    return this.selectAssetType === 'send';
   }
 
-  get showPrice() {
-    return true;
+  get isRotateReceive() {
+    return this.selectAssetType === 'receive';
+  }
+
+  get showSelectSendAsset() {
+    return false;
+  }
+
+  get showReceiveAsset() {
+    return false;
+  }
+
+  get buttonText() {
+    return this.step === 1 ? 'asset.preview' : 'common.confirm';
+  }
+
+  get buttonPreviewDisabled() {
+    return this.sendAsset === '' || this.receiveAsset === '' || this.sendAmount === '';
   }
 
   get marketUP() {
@@ -138,8 +179,21 @@ export default class SwapForm extends Vue {
     return this.receiveAsset.toUpperCase();
   }
 
+  toggleSelectAssetPopupVisibility(value: 'send' | 'receive') {
+    if (this.selectAssetType !== '') this.selectAssetType = '';
+    else this.selectAssetType = value;
+  }
+
+  updateSendAmount(value: string) {
+    this.sendAmount = value;
+  }
+
+  updateReceiveAmount(value: string) {
+    this.receiveAmount = value;
+  }
+
   proceed() {
-    if (this.step === 1) this.step += 2;
+    if (this.step === 1) this.step += 1;
     else {
       // this.swap(); // TODO
     }
@@ -159,6 +213,10 @@ export default class SwapForm extends Vue {
   back() {
     if (this.step === 1) this.closeForm();
     else this.step -= 1;
+  }
+
+  setMax() {
+    // TODO
   }
 }
 </script>
@@ -209,6 +267,7 @@ export default class SwapForm extends Vue {
   width: 112px !important;
   height: 20px;
   opacity: 0.65;
+  cursor: pointer;
 }
 
 .img {

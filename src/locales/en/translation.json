@@ -190,7 +190,7 @@
   "asset": {
     "history": {
       "text": "History",
-      "noHistory": "Will appear here history",
+      "noHistory": "Your history will appear here",
       "all": "All",
       "transfer": "Transfer",
       "reward": "Reward",

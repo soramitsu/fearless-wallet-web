@@ -55,8 +55,21 @@
             :filterValue="filterValue"
             @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
           />
-
           <NFTs v-else-if="showNfts" />
+
+          <CurrencyItemStateLess
+            v-for="(asset, assetKey) in evmCurrencies.details"
+            :assetData="asset"
+            :assetName="assetKey"
+            :key="assetKey"
+          />
+
+          <CurrencyItemStateLess
+            v-for="(asset, assetKey) in evmCurrencies.details.ethereum.children"
+            :assetData="asset"
+            :assetName="assetKey"
+            :key="assetKey"
+          />
         </Scroll>
       </div>
     </ContentForm>
@@ -100,6 +113,7 @@ import type { SetSelectedNetworkProps, SelectedWallet, SetCurrenciesProps, GetNe
 import type { Networks } from '@/interfaces';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
+import CurrencyItemStateLess from '@/screens/wallet&asset/wallet/CurrencyItemStateLess.vue';
 import ContentSettings from '@/screens/wallet&asset/wallet/ContentSettings.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
@@ -116,12 +130,14 @@ import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.v
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import Loading from '@/components/Loading.vue';
+import { getBalance } from '@/extension/messaging';
 
 @Component({
   components: {
     NFTs,
     SendForm,
     Currencies,
+    CurrencyItemStateLess,
     ReceiveForm,
     WalletBalance,
     Loading,
@@ -148,6 +164,7 @@ export default class Wallet extends Vue {
     mainNetwork?: string;
     assetId?: string;
   };
+  evmCurrencies = {};
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
@@ -157,6 +174,10 @@ export default class Wallet extends Vue {
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
+
+  async mounted() {
+    this.evmCurrencies = await getBalance();
+  }
 
   get showNetworkUnavailablePopup() {
     return this.networkUnavailable !== '';

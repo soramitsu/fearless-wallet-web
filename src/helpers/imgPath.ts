@@ -25,7 +25,7 @@ const ormlNetworks: Record<string, string> = {
   busd: 'BUSD',
   usdc: 'USDC',
   deo: 'DEO',
-  noir: 'NOIRE',
+  noir: 'NOIR',
   umi: 'UMI',
   ceres: 'CERES',
   dai: 'DAI',
@@ -38,7 +38,7 @@ function getOrmlFileName(value: string) {
   return ormlNetworks[prepValue] ?? '';
 }
 
-function getImgPathByNetworkOrAssetName(value = '', relayChain?: RelayChainName) {
+export function getImgPathByNetworkOrAssetName(value = '', relayChain?: RelayChainName) {
   const prepValue = value.toLowerCase();
 
   if (NETWORK_AND_ASSET[prepValue]) return NETWORK_AND_ASSET[prepValue];
@@ -59,7 +59,7 @@ function getIconName(value: string, relayChain?: RelayChainName) {
 
   if (ormlFileName !== '') return ormlFileName;
 
-  return getImgPathByNetworkOrAssetName(value, relayChain).toLocaleLowerCase();
+  return getImgPathByNetworkOrAssetName(value, relayChain);
 }
 
 export { getIconName };

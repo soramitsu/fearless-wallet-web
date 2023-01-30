@@ -1,6 +1,6 @@
 <template>
   <div class="history-item">
-    <NetworkLogo :name="asset" :relayChain="relayChain" />
+    <NetworkLogo :isAsset="false" :name="asset" :relayChain="relayChain" />
 
     <div class="column">
       <div class="first-row">

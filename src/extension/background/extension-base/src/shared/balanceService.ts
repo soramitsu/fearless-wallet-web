@@ -19,12 +19,13 @@ export default class BalanceService {
     if (item.state === APIItemState.READY) {
       this.logger.log(`Updating balance for [${chain}]`);
       const { balances } = await storage.get(['balances']);
+      const balanceByAddress = balances[address] ?? {};
 
       return chrome.storage.local.set({
         balances: {
           ...balances,
           [address]: {
-            ...balances.address,
+            ...balanceByAddress,
             [chain]: { chainHash, chain, address, ...item },
           },
         },

@@ -95,8 +95,9 @@ export function subscribeEVMBalance(
   function getBalance() {
     getEVMBalance(networkKey, addresses, web3ApiMap)
       .then((balances) => {
-        balanceItem.free = sumBN(balances.map((b) => new BN(b || '0'))).toString();
+        balanceItem.free = balances.toString();
         balanceItem.state = APIItemState.READY;
+
         callback(networkKey, balanceItem);
       })
       .catch(console.warn);

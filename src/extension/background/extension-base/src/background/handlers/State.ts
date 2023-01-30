@@ -931,7 +931,12 @@ export default class State {
   private updateBalanceStore(networkKey: string, item: BalanceItem) {
     this.getCurrentAccount((currentAccountInfo) => {
       this.balanceService
-        .updateBalanceStore(networkKey, this.getNetworkGenesisHashByKey(networkKey), currentAccountInfo.address, item)
+        .updateBalanceStore(
+          networkKey,
+          this.getNetworkGenesisHashByKey(networkKey),
+          currentAccountInfo.ethereumAddress as string,
+          item
+        )
         .catch((e) => console.warn(e));
     });
   }

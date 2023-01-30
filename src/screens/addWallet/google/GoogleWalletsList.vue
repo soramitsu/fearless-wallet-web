@@ -146,7 +146,7 @@ export default class GoogleWalletsList extends Vue {
     background-color: $default-background-color;
     clip-path: $big-clip-path-left-top-and-right-bottom;
     padding: 10px;
-    border-radius: 8px;
+    border-radius: $default-border-radius;
     z-index: 1;
 
     .json__info {

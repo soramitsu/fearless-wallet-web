@@ -164,7 +164,7 @@
     "wallet": "Кошелек",
     "crowdloans": "Краудлоны",
     "staking": "Стэйкинг",
-    "polkaswap": "Полькасвоп",
+    "polkaswap": "Polkaswap",
     "history": "История"
   },
   "wallet": {
@@ -194,9 +194,12 @@
       "reward": "Награды",
       "extrinsic": "Экстринсики"
     },
+    "preview": "Предпросмотр",
     "balanceDetails": "Детализация баланса",
     "buyHeader": "Купить {asset} через",
     "buy": "Купить",
+    "polkaswap": "Polkaswap",
+    "swap": "Своп",
     "teleportButtonText": "Телепорт",
     "from": "От",
     "to": "Кому",

@@ -196,9 +196,12 @@
       "reward": "Reward",
       "extrinsic": "Extrinsic"
     },
+    "preview": "Preview",
     "balanceDetails": "Balance details",
     "buyHeader": "Buy {asset} with",
     "buy": "Buy",
+    "swap": "Swap",
+    "polkaswap": "Polkaswap",
     "teleportButtonText": "Teleport",
     "from": "From",
     "to": "To",

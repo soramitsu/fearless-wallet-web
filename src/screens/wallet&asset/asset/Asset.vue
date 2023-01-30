@@ -51,6 +51,14 @@
         iconName="plus-pink"
         @click="toggleVisible('showBuyPopup', true)"
       />
+
+      <BorderButton
+        v-if="showSwapButton"
+        class="activity-button"
+        text="asset.swap"
+        iconName="swap"
+        @click="toggleVisible('showSwapForm', true)"
+      />
     </div>
 
     <History :currency="currentCurrency" @openHistoryDetailsForm="openHistoryDetailsForm" />
@@ -75,6 +83,8 @@
       :_selectedAssetId="selectedAssetId"
       :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
     />
+
+    <SwapForm v-if="showSwapForm" :closeForm="toggleVisible.bind(null, 'showSwapForm', false)" />
 
     <BuyPopup
       v-if="showBuyPopup"
@@ -123,6 +133,7 @@ import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue'
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import TeleportForm from '@/screens/wallet&asset/TeleportForm.vue';
+import SwapForm from '@/screens/wallet&asset/SwapForm.vue';
 import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
 import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
@@ -133,12 +144,13 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/helpers/numbers';
 
-type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
+type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup' | 'showSwapForm';
 
 @Component({
   components: {
     History,
     SendForm,
+    SwapForm,
     BuyPopup,
     ReceiveForm,
     TeleportForm,
@@ -155,6 +167,7 @@ export default class Asset extends Vue {
   showSendForm = false;
   showReceiveForm = false;
   showTeleportForm = false;
+  showSwapForm = true; // TODO
   showBuyPopup = false;
   showHistoryDetailsForm = false;
   showSelectNetworkPopup = false;
@@ -183,6 +196,10 @@ export default class Asset extends Vue {
 
   get showBuyButton() {
     return this.providers.length !== 0 && this.currentCurrency?.mainNetwork === this.selectedNetwork;
+  }
+
+  get showSwapButton() {
+    return this.selectedNetwork === 'sora mainnet' || this.selectedNetwork === 'sora test';
   }
 
   get currentCurrency() {

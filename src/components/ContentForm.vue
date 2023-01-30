@@ -33,7 +33,7 @@ export default class ContentForm extends Vue {
   border: 1px solid $default-background-color;
   background-color: $secondary-background-color;
   clip-path: $big-clip-path-left-top;
-  border-radius: 8px;
+  border-radius: $default-border-radius;
   z-index: 1;
   width: calc(100% - 1px);
 }

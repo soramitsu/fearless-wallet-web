@@ -4,7 +4,8 @@
 import { ApiPromise } from '@polkadot/api';
 import { BN } from '@polkadot/util';
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import { Contract } from 'ethers';
+import { Contract, ethers } from 'ethers';
+import { add } from 'lodash';
 import { state } from '../../background/handlers';
 import { categoryAddresses } from '../../background/handlers/helpers';
 
@@ -21,10 +22,9 @@ import { getRegistry } from '../evm/utils/registery';
 
 type EqBalanceItem = [number, { positive: number }];
 
-function subscribeERC20Interval(
+export function subscribeERC20Interval(
   addresses: string[],
   networkKey: string,
-  api: ApiPromise,
   web3ApiMap: Record<string, EthProvider>,
   subCallback: (rs: Record<string, BalanceChildItem>) => void
 ): () => void {
@@ -33,19 +33,16 @@ function subscribeERC20Interval(
 
   const getTokenBalances = () => {
     Object.values(tokenList).map(async ({ decimals, symbol }) => {
-      let free = new BN(0);
-
       try {
         const contract = ERC20ContractMap[symbol];
-        const bals = await Promise.all(
-          addresses.map((address): Promise<string> => {
+        const bals: ethers.BigNumberish[] = await Promise.all(
+          addresses.map((address): Promise<ethers.BigNumberish> => {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-return,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-            return contract.methods.balanceOf(address).call();
+
+            return contract.balanceOf(address);
           })
         );
-
-        free = sumBN(bals.map((bal) => new BN(bal || 0)));
-        // console.log('TokenBals', symbol, addresses, bals, free);
+        const free = bals.map((bal) => ethers.utils.formatUnits(bal, decimals));
 
         subCallback({
           [symbol]: {
@@ -61,6 +58,7 @@ function subscribeERC20Interval(
     });
   };
 
+  const api: ApiPromise = {} as ApiPromise;
   getRegistry(networkKey, api, state.getActiveErc20Tokens())
     .then(({ tokenMap }) => {
       tokenList = Object.values(tokenMap).filter(({ contractAddress }) => !!contractAddress);
@@ -115,11 +113,11 @@ export function subscribeEVMBalance(
 
   getBalance();
   const interval = setInterval(getBalance, ASTAR_REFRESH_BALANCE_INTERVAL);
-  // const unsub2 = subscribeERC20Interval(addresses, networkKey, api, web3ApiMap, subCallback);
+  const unsub2 = subscribeERC20Interval(addresses, networkKey, web3ApiMap, subCallback);
 
   return () => {
     clearInterval(interval);
-    // unsub2 && unsub2();
+    unsub2 && unsub2();
   };
 }
 
@@ -128,8 +126,7 @@ export function subscribeBalance(
   web3ApiMap: Record<string, EthProvider>,
   callback: (networkKey: string, rs: BalanceItem) => void
 ) {
-  const [evmAddresses] = categoryAddresses(addresses);
-
+  const [substrateAdresses, evmAddresses] = categoryAddresses(addresses);
   const unsubList = Object.entries(web3ApiMap).map(async ([networkKey, apiProps]) => {
     const useAddresses = evmAddresses;
 

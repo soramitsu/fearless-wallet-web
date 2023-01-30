@@ -13,7 +13,7 @@ export const PREDEFINED_NETWORKS: Record<string, NetworkJson> = {
     providers: {
       Alchemy: 'wss://eth-mainnet.g.alchemy.com/v2/r2rCN7zWhPZ0cggKYqk_MElwxrrRM4Kw',
     },
-    active: false,
+    active: true,
     currentProviderMode: 'http',
     currentProvider: 'Alchemy',
     groups: ['MAIN_NET'],
@@ -34,7 +34,7 @@ export const PREDEFINED_NETWORKS: Record<string, NetworkJson> = {
     providers: {
       Alchemy: 'wss://eth-goerli.g.alchemy.com/v2/WJz4vP6DoqLvRxiJDofxQWq8Fc9UCLbH',
     },
-    active: false,
+    active: true,
     currentProviderMode: 'http',
     currentProvider: 'Alchemy',
     groups: ['TEST_NET'],

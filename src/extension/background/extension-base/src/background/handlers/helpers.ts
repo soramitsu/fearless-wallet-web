@@ -3,6 +3,7 @@
 import { assert } from '@polkadot/util';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { canDerive } from '../../utils';
+import { NetworkJson } from '../../api/evm/types/ether';
 import type { InjectedAccount } from '@polkadot/extension-inject/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
@@ -88,3 +89,64 @@ export function categoryAddresses(addresses: string[]) {
 
   return [substrateAddresses, evmAddresses];
 }
+
+export function mergeNetworkProviders(
+  customNetwork: NetworkJson,
+  predefinedNetwork: NetworkJson
+): {
+  currentProviderMethod: 'http' | 'ws';
+  parsedProviderKey: string;
+  parsedCustomProviders: Record<string, string>;
+} {
+  // merge providers for 2 networks with the same genesisHash
+  if (customNetwork.customProviders) {
+    const parsedCustomProviders: Record<string, string> = {};
+    const currentProvider = customNetwork.customProviders[customNetwork.currentProvider || ''] || '';
+    const currentProviderMethod: 'http' | 'ws' = currentProvider.startsWith('http') ? 'http' : 'ws';
+    let parsedProviderKey = '';
+
+    for (const customProvider of Object.values(customNetwork.customProviders)) {
+      let exist = false;
+
+      for (const [key, provider] of Object.entries(predefinedNetwork.providers)) {
+        if (currentProvider === provider) {
+          // point currentProvider to predefined
+          parsedProviderKey = key;
+        }
+
+        if (provider === customProvider) {
+          exist = true;
+          break;
+        }
+      }
+
+      if (!exist) {
+        const index = Object.values(parsedCustomProviders).length;
+
+        parsedCustomProviders[`custom_${index}`] = customProvider;
+      }
+    }
+
+    for (const [key, parsedProvider] of Object.entries(parsedCustomProviders)) {
+      if (currentProvider === parsedProvider) {
+        parsedProviderKey = key;
+      }
+    }
+
+    return { currentProviderMethod, parsedProviderKey, parsedCustomProviders };
+  } else {
+    return { currentProviderMethod: 'ws', parsedProviderKey: '', parsedCustomProviders: {} };
+  }
+}
+
+export const getCurrentProvider = (data: NetworkJson) => {
+  if (!data?.currentProvider) {
+    return null;
+  }
+
+  if (data.currentProvider.startsWith('custom') && data.customProviders) {
+    return data.customProviders[data.currentProvider];
+  } else {
+    return data.providers[data.currentProvider];
+  }
+};

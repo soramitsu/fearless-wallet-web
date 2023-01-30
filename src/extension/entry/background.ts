@@ -2,7 +2,12 @@ import { keyring } from '@polkadot/ui-keyring';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import handlers from '@extension-base/background/handlers';
 import AccountsStore from '../background/extension-base/src/stores/Accounts';
+import { initState } from '../background/extension-base/src/background/handlers/State';
 import type { RequestSignatures, TransportRequestMessage } from '@extension-base/background/types';
+
+chrome.runtime.onInstalled.addListener(() => {
+  initState();
+});
 
 chrome.runtime.onConnect.addListener((tab): void => {
   tab.onMessage.addListener((data: TransportRequestMessage<keyof RequestSignatures>) => handlers(data, tab));

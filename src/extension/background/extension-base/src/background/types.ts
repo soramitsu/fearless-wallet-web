@@ -249,6 +249,7 @@ export interface RequestAccountCreateSuri {
   password: string;
   suri: string;
   type?: KeypairType;
+  meta?: Record<string, unknown>;
 }
 
 export interface RequestAccountCreateHardware {
@@ -613,6 +614,7 @@ export interface IState {
   accountSubs: Record<string, AccountSub>;
   windows: number[];
   cachedUnlocks: CachedUnlocks;
+  balances: Record<string, any>;
   connectedTabsUrl: string[];
 }
 

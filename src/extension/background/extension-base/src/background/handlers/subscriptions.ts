@@ -4,7 +4,7 @@
 import { logger as createLogger } from '@polkadot/util';
 import { Logger } from '@polkadot/util/types';
 import { Subscription } from 'rxjs';
-import { MessageTypesWithSubscriptions, SubscriptionMessageTypes } from '../types';
+import { MessageTypesWithSubscriptions, Port, SubscriptionMessageTypes } from '../types';
 import EthProvider from '../../api/evm/ethProvider';
 import { storage } from '../../stores/Storage';
 import { subscribeBalance } from '../../api/substrate/balance';
@@ -53,21 +53,21 @@ export class FWSubscription {
 
   start() {
     this.logger.log('Starting subscription');
+
     this.state.getCurrentAccount((currentAccountInfo) => {
       if (currentAccountInfo) {
-        const { address } = currentAccountInfo;
-
-        this.subscribeBalances(address, this.state.apis.evm);
+        const { address, ethereumAddress } = currentAccountInfo;
+        this.subscribeBalances(ethereumAddress as string, this.state.getEvmApiMap());
       }
     });
 
     !this.serviceSubscription &&
       (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
         next: (serviceInfo) => {
-          const { address } = serviceInfo.currentAccountInfo;
+          const { ethereumAddress } = serviceInfo.currentAccountInfo;
 
           this.state.initChainRegistry();
-          this.subscribeBalances(address, serviceInfo.apiMap.evm);
+          this.subscribeBalances(ethereumAddress as string, serviceInfo.apiMap.evm);
         },
       }));
   }
@@ -98,18 +98,16 @@ export class FWSubscription {
         });
       }
 
-      // const migrateValue = { ...previousAuth, ...value };
+      const migrateValue = { ...previousAuth, ...value };
 
-      // State.setAuthorize(migrateValue);
+      this.state.setAuthorize(migrateValue);
     });
 
     this.state.getCurrentAccount((currentAccountInfo) => {
       if (currentAccountInfo) {
-        const { address } = currentAccountInfo;
+        const { address, ethereumAddress } = currentAccountInfo;
 
-        this.subscribeBalances(address, this.state.apis.evm, true);
-
-        // this.stopAllSubscription();
+        this.subscribeBalances(ethereumAddress as string, this.state.getEvmApiMap(), true);
       }
     });
   }
@@ -157,7 +155,7 @@ export class FWSubscription {
 
 export function createSubscription<TMessageType extends MessageTypesWithSubscriptions>(
   id: string,
-  port: chrome.runtime.Port
+  port: Port
 ): (data: SubscriptionMessageTypes[TMessageType]) => void {
   subscriptions[id] = port;
 

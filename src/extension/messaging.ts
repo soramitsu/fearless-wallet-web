@@ -225,9 +225,10 @@ export async function createAccountSuri(
   password: string,
   suri: string,
   type?: KeypairType,
-  genesisHash?: string
+  genesisHash?: string,
+  meta?: Record<string, unknown>
 ): Promise<boolean> {
-  return sendMessage('pri(accounts.create.suri)', { genesisHash, name, password, suri, type });
+  return sendMessage('pri(accounts.create.suri)', { genesisHash, name, password, suri, type, meta });
 }
 
 export async function createAddress(address: string, meta: KeyringPair$Meta): Promise<boolean> {

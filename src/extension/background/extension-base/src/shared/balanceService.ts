@@ -4,21 +4,31 @@
 import { logger as createLogger } from '@polkadot/util';
 import { Logger } from '@polkadot/util/types';
 import { APIItemState, BalanceItem } from '../api/evm/types/ether';
+import { storage } from '../stores/Storage';
 import { TransactionHistoryItemType } from '../types';
 
 export default class BalanceService {
   private logger: Logger;
 
   constructor() {
-    this.logger = createLogger('DB-Service');
+    this.logger = createLogger('Balance-service');
   }
 
   // Balance
   async updateBalanceStore(chain: string, chainHash: string, address: string, item: BalanceItem) {
     if (item.state === APIItemState.READY) {
       this.logger.log(`Updating balance for [${chain}]`);
+      const { balances } = await storage.get(['balances']);
 
-      return chrome.storage.local.set({ balances: { chainHash, chain, address, ...item } });
+      return chrome.storage.local.set({
+        balances: {
+          ...balances,
+          [address]: {
+            ...balances.address,
+            [chain]: { chainHash, chain, address, ...item },
+          },
+        },
+      });
     }
   }
 

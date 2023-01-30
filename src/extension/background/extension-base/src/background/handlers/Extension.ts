@@ -89,8 +89,6 @@ export default class Extension {
     this.cachedUnlocks = {};
     this.state = state;
     this.token = '';
-
-    this.initExtension();
   }
 
   async transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
@@ -127,7 +125,14 @@ export default class Extension {
     return true;
   }
 
-  async accountsCreateSuri({ genesisHash, name, password, suri, type }: RequestAccountCreateSuri): Promise<boolean> {
+  async accountsCreateSuri({
+    genesisHash,
+    name,
+    password,
+    suri,
+    type,
+    meta,
+  }: RequestAccountCreateSuri): Promise<boolean> {
     const currentAccount = await new Promise<CurrentAccountInfo | void>((resolve) => {
       this.state.getCurrentAccount(resolve);
     });
@@ -135,7 +140,12 @@ export default class Extension {
     const address = keyring.createFromUri(_suri, {}, type).address;
     keyring.addUri(getSuri(suri, type), password, { genesisHash, name }, type);
     const allGenesisHash = currentAccount?.allGenesisHash || undefined;
-    this.state.setCurrentAccount({ address, currentGenesisHash: genesisHash || null, allGenesisHash });
+    this.state.setCurrentAccount({
+      address,
+      ethereumAddress: (meta?.ethereumAddress as string) ?? '',
+      currentGenesisHash: genesisHash || null,
+      allGenesisHash,
+    });
 
     return true;
   }
@@ -675,11 +685,6 @@ export default class Extension {
 
   getAddresses() {
     return keyring.getAddresses();
-  }
-
-  initExtension() {
-    this.state.apis.evm['mainnet'] = new EthProvider('homestead');
-    this.state.apis.evm['goerli'] = new EthProvider('goerli');
   }
 
   initAuth({ type, wallet }: GoogleAuthTypes): void {

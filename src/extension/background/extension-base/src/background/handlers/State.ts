@@ -29,9 +29,9 @@ import {
   RequestSign,
   ResponseRpcListProviders,
   Port,
-  BalanceJson,
-  ServiceInfo,
   IState,
+  ServiceInfo,
+  BalanceJson,
 } from '../types';
 import { getId } from '../../utils';
 import MetadataStore from '../../stores/Metadata';
@@ -47,7 +47,10 @@ import BalanceService from '../../shared/balanceService';
 import { ChainRegistry } from '../../api/evm/utils/registery';
 
 import NetworkMapStore from '../../stores/NetworkMap';
-import { stripUrl, withErrorLog } from './helpers';
+import AuthorizeStore from '../../stores/Authorize';
+import { PREDEFINED_GENESIS_HASHES, PREDEFINED_NETWORKS } from '../../predefinedNetworks';
+import { initWeb3Api } from '../../api/evm';
+import { getCurrentProvider, mergeNetworkProviders, stripUrl, withErrorLog } from './helpers';
 
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
@@ -115,7 +118,9 @@ export default class State {
   chainRegistryMap: Record<string, ChainRegistry> = {};
   chainRegistrySubject = new Subject<Record<string, ChainRegistry>>();
   readonly unsubscriptionMap: Record<string, () => void> = {};
-  // private  readonly authorizeStore = new AuthorizeStore();
+  private readonly authorizeStore = new AuthorizeStore();
+  private readonly evmChainSubject = new Subject<AuthUrls>();
+  private readonly authorizeUrlSubject = new Subject<AuthUrls>();
   public authUrls: AuthUrls = {};
   public static signature: HexString | null = null;
   public defaultAuthAccountSelection: string[] = [];
@@ -149,14 +154,17 @@ export default class State {
   }
 
   constructor() {
-    initState();
     this.injectFromStorage();
     this.subscription = new FWSubscription(this);
+    this.init();
   }
 
   public getSubstrateApiMap() {
-    // return this.apis.substrate;
-    return;
+    //return this.apis.substrate;
+  }
+
+  public getEvmApiMap() {
+    return this.apis.evm;
   }
 
   public getSubstrateApi(networkKey: string) {
@@ -171,14 +179,14 @@ export default class State {
     return this.apis;
   }
 
-  // public  setAuthorize(data: AuthUrls, callback?: () => void): void {
-  //   this.authorizeStore.set('authUrls', data, () => {
-  //     this.authorizeCached = data;
-  //     this.evmChainSubject.next(this.authorizeCached);
-  //     this.authorizeUrlSubject.next(this.authorizeCached);
-  //     callback && callback();
-  //   });
-  // }
+  public setAuthorize(data: AuthUrls, callback?: () => void): void {
+    this.authorizeStore.set('authUrls', data, () => {
+      this.authorizeCached = data;
+      this.evmChainSubject.next(this.authorizeCached);
+      this.authorizeUrlSubject.next(this.authorizeCached);
+      callback && callback();
+    });
+  }
 
   public createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
     this.unsubscriptionMap[id] = unsubscribe;
@@ -327,12 +335,13 @@ export default class State {
     if (this.authorizeCached) {
       update(this.authorizeCached);
     } else {
-      // this.authorizeStore.get('authUrls', (data) => {
-      //   this.authorizeCached = data;
-      //   update(this.authorizeCached);
-      // });
+      this.authorizeStore.get('authUrls', (data) => {
+        this.authorizeCached = data;
+        update(this.authorizeCached);
+      });
     }
   }
+
   async updateCurrentTabsUrl(urls: string[]) {
     const connectedTabs = urls
       .map((url) => {
@@ -352,41 +361,38 @@ export default class State {
 
     await storage.set({ connectedTabsUrl: connectedTabs });
   }
+
   public async upsertNetworkMap(data: NetworkJson): Promise<boolean> {
-    if (data.key in this.networkMap) {
+    const { key, currentProvider, chain, blockExplorer, paraId, nativeToken, decimals } = data;
+
+    if (key in this.networkMap) {
       // update provider for existed network
-      if (data.customProviders) {
-        this.networkMap[data.key].customProviders = data.customProviders;
+      if (data.customProviders) this.networkMap[data.key].customProviders = data.customProviders;
+
+      if (currentProvider !== this.networkMap[key].currentProvider && currentProvider) {
+        this.networkMap[key].currentProvider = currentProvider;
+        this.networkMap[key].currentProviderMode = 'ws';
       }
 
-      if (data.currentProvider !== this.networkMap[data.key].currentProvider && data.currentProvider) {
-        this.networkMap[data.key].currentProvider = data.currentProvider;
-        this.networkMap[data.key].currentProviderMode = 'ws';
-      }
+      this.networkMap[key].chain = chain;
 
-      this.networkMap[data.key].chain = data.chain;
+      if (nativeToken) this.networkMap[key].nativeToken = nativeToken;
 
-      if (data.nativeToken) this.networkMap[data.key].nativeToken = data.nativeToken;
+      if (decimals) this.networkMap[key].decimals = decimals;
 
-      if (data.decimals) this.networkMap[data.key].decimals = data.decimals;
-
-      this.networkMap[data.key].paraId = data.paraId;
-
-      this.networkMap[data.key].blockExplorer = data.blockExplorer;
+      this.networkMap[key].paraId = paraId;
+      this.networkMap[key].blockExplorer = blockExplorer;
     } else {
       // insert
-      this.networkMap[data.key] = data;
+      this.networkMap[key] = data;
     }
 
-    if (this.networkMap[data.key].active) {
+    if (this.networkMap[key].active) {
       // update API map if network is active
       // if (data.key in this.apiMap.dotSama) {
       // this.apis.substrate[data.key].api?.disconnect && (await this.apiMap.dotSama[data.key].api.disconnect());
       // delete this.apis.dotSama[data.key];
       // }
-
-      this.apis.evm['homestead'] = new EthProvider('homestead');
-      this.apis.evm['goerli'] = new EthProvider('goerli');
     }
 
     this.networkMapSubject.next(this.networkMap);
@@ -797,11 +803,87 @@ export default class State {
     return filteredErc20Tokens;
   }
 
+  public init() {
+    this.initNetworkStates();
+    this.updateServiceInfo();
+  }
+
+  public initNetworkStates() {
+    this.networkMapStore.get('NetworkMap', (storedNetworkMap) => {
+      if (!storedNetworkMap) {
+        // first time init extension
+        this.networkMapStore.set('NetworkMap', PREDEFINED_NETWORKS);
+        this.networkMap = PREDEFINED_NETWORKS;
+      } else {
+        // merge custom providers in stored data with predefined data
+        const mergedNetworkMap: Record<string, NetworkJson> = PREDEFINED_NETWORKS;
+
+        for (const [key, storedNetwork] of Object.entries(storedNetworkMap)) {
+          if (key in PREDEFINED_NETWORKS) {
+            // check change and override custom providers if exist
+            if ('customProviders' in storedNetwork) {
+              mergedNetworkMap[key].customProviders = storedNetwork.customProviders;
+              mergedNetworkMap[key].currentProvider = storedNetwork.currentProvider;
+            }
+
+            // if (key !== 'polkadot' && key !== 'kusama') {
+            //   mergedNetworkMap[key].active = storedNetwork.active;
+            // }
+
+            mergedNetworkMap[key].blockExplorer = storedNetwork.blockExplorer;
+            mergedNetworkMap[key].currentProviderMode = (mergedNetworkMap[key].currentProvider || '').startsWith('http')
+              ? 'http'
+              : 'ws';
+          } else {
+            if (Object.keys(PREDEFINED_GENESIS_HASHES).includes(storedNetwork.genesisHash)) {
+              // merge networks with same genesis hash
+
+              const targetKey = PREDEFINED_GENESIS_HASHES[storedNetwork.genesisHash];
+
+              const { currentProviderMethod, parsedCustomProviders, parsedProviderKey } = mergeNetworkProviders(
+                storedNetwork,
+                PREDEFINED_NETWORKS[targetKey]
+              );
+
+              mergedNetworkMap[targetKey].customProviders = parsedCustomProviders;
+              mergedNetworkMap[targetKey].currentProvider = parsedProviderKey;
+              mergedNetworkMap[targetKey].active = storedNetwork.active;
+              mergedNetworkMap[targetKey].currentProviderMode = currentProviderMethod;
+            } else {
+              if (key.startsWith('custom')) {
+                // in case a predefined network is removed, it will be discarded
+                mergedNetworkMap[key] = storedNetwork;
+              }
+            }
+          }
+        }
+
+        this.networkMapStore.set('NetworkMap', mergedNetworkMap);
+        this.networkMap = mergedNetworkMap; // init networkMap state
+      }
+
+      for (const [key, network] of Object.entries(this.networkMap)) {
+        const currentProvider = getCurrentProvider(network);
+
+        if (!currentProvider) continue;
+
+        if (network.active) {
+          // this.apiMap.dotSama[key] = initApi(key, currentProvider, network.isEthereum);
+
+          if (network.isEthereum && network.isEthereum) {
+            this.apis.evm[key] = initWeb3Api(key === 'ethereum' ? 'ethereum' : 'ethereum_goerli');
+          }
+        }
+      }
+
+      this.initCustomTokenState();
+    });
+  }
+
   public initCustomTokenState() {
     this.customTokenStore.get('EvmToken', (storedCustomTokens) => {
-      if (!storedCustomTokens) {
-        this.customTokenState = DEFAULT_EVM_TOKENS;
-      } else {
+      if (!storedCustomTokens) this.customTokenState = DEFAULT_EVM_TOKENS;
+      else {
         const processedEvmTokens = initEvmTokenState(storedCustomTokens, this.networkMap);
 
         this.customTokenState = { ...processedEvmTokens };
@@ -810,6 +892,8 @@ export default class State {
       this.customTokenStore.set('EvmToken', this.customTokenState);
       this.customTokenSubject.next(this.customTokenState);
     });
+
+    this.initChainRegistry();
   }
 
   public setBalanceItem(networkKey: string, item: BalanceItem) {
@@ -819,7 +903,6 @@ export default class State {
     }
 
     const itemData = { timestamp: +new Date(), ...item };
-
     this.balanceMap[networkKey] = { ...this.balanceMap[networkKey], ...itemData };
     this.updateBalanceStore(networkKey, item);
   }

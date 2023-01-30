@@ -307,7 +307,6 @@ export default class Extension {
     };
   }
 
-  // FIXME This looks very much like what we have in accounts
   static async authorizeSubscribe(id: string, port: Port): Promise<boolean> {
     const cb = await createSubscription<'pri(authorize.requests)'>(id, port);
 
@@ -691,7 +690,9 @@ export default class Extension {
 
     googleManage.deleteFile(id, Extension.token);
   }
-
+  static cancelAuthRequest(id: string) {
+    State.authorizeCancel({ id });
+  }
   static async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -710,6 +711,9 @@ export default class Extension {
 
       case 'pri(authorize.delete.request)':
         return Extension.deleteAuthRequest(request as string);
+
+      case 'pri(authorize.cancel)':
+        return Extension.cancelAuthRequest(request as string);
 
       case 'pri(authorize.requests)':
         return port && (await Extension.authorizeSubscribe(id, port));

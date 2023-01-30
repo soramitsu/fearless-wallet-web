@@ -61,10 +61,12 @@ interface Handler {
 }
 
 type Handlers = Record<string, Handler>;
-let port = chrome.runtime ? chrome.runtime.connect({ name: PORT_EXTENSION }) : null;
+
+const port = chrome.runtime.connect({ name: PORT_EXTENSION });
 const handlers: Handlers = {};
 
-const onMessage = (data: Message['data']): void => {
+// setup a listener for messages, any incoming resolves the promise
+port.onMessage.addListener((data: Message['data']): void => {
   const handler = handlers[data.id];
 
   if (!handler) {
@@ -73,7 +75,9 @@ const onMessage = (data: Message['data']): void => {
     return;
   }
 
-  if (!handler.subscriber) delete handlers[data.id];
+  if (!handler.subscriber) {
+    delete handlers[data.id];
+  }
 
   if (data.subscription) {
     // eslint-disable-next-line @typescript-eslint/ban-types
@@ -83,26 +87,7 @@ const onMessage = (data: Message['data']): void => {
   } else {
     handler.resolve(data.response);
   }
-};
-
-// setup a listener for messages, any incoming resolves the promise
-const connect = (onDisconnect: (_port: Port) => void) => {
-  if (chrome.extension === undefined) return;
-
-  if (!port) port = chrome.runtime.connect({ name: PORT_EXTENSION });
-
-  port.onDisconnect.addListener(onDisconnect);
-  port.onMessage.addListener(onMessage);
-};
-
-const onDisconnect = (_port: Port) => {
-  _port.onDisconnect.removeListener(onDisconnect);
-  _port.onMessage.removeListener(onMessage);
-
-  connect(onDisconnect);
-};
-
-connect(onDisconnect);
+});
 
 function sendMessage<TMessageType extends MessageTypesWithNullRequest>(
   message: TMessageType
@@ -313,6 +298,10 @@ export async function updateAuthorization(authorizedAccounts: string[], url: str
 
 export async function deleteAuthRequest(requestId: string): Promise<void> {
   return sendMessage('pri(authorize.delete.request)', requestId);
+}
+
+export async function cancelAuthRequest(requestId: string): Promise<boolean> {
+  return sendMessage('pri(authorize.cancel)', requestId);
 }
 
 export async function subscribeMetadataRequests(cb: (accounts: MetadataRequest[]) => void): Promise<boolean> {

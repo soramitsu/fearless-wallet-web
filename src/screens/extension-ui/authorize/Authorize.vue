@@ -49,6 +49,7 @@ import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import BaseApi from '@/util/BaseApi';
+import { cancelAuthRequest } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -110,13 +111,16 @@ export default class Authorize extends Vue {
   }
 
   onApprove() {
-    this.onApproveAuthRequest({ request: this.request, accounts: this.prepAccounts });
+    this.onApproveAuthRequest({
+      request: this.request,
+      accounts: this.prepAccounts,
+    });
 
     this.redirect();
   }
 
-  onReject() {
-    this.onRejectAuthRequest(this.request);
+  async onReject() {
+    cancelAuthRequest(this.request.id);
 
     this.redirect();
   }

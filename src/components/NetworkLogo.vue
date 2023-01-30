@@ -29,14 +29,21 @@ export default class NetworkLogo extends Vue {
     return styles;
   }
 
+  get urlType() {
+    return this.isAsset ? this.baseUrl : this.baseUrlChains;
+  }
+
+  get iconType() {
+    return this.isAsset ? 'coloured' : 'white';
+  }
+
   get iconName() {
     if (this.name === undefined || this.name === '') return '';
 
     const name = getIconName(this.name, this.relayChain);
+    const prepName = this.isAsset ? name.toUpperCase() : name;
 
-    return `${this.isAsset ? this.baseUrl : this.baseUrlChains}${this.isAsset ? 'coloured' : 'white'}/${
-      this.isAsset ? name.toUpperCase() : name
-    }.svg`;
+    return `${this.urlType}${this.iconType}/${prepName}.svg`;
   }
 }
 </script>

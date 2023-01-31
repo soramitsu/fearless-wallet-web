@@ -40,18 +40,7 @@ export default class App extends Vue {
   @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<setOnlineStatus>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
 
-  updateBalance(balanceData: BalanceJson): void {
-    console.info(balanceData, 'data');
-    store.dispatch('SET_BALANCE', balanceData);
-  }
-
-  useSetupBalance(): void {
-    subscribeBalance(null, this.updateBalance).then(this.updateBalance).catch(console.error);
-  }
-
   created() {
-    this.useSetupBalance();
-
     if (BaseApi.isExtension()) {
       this.extensionSubscribe();
       resetTimeouts();

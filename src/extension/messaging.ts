@@ -29,7 +29,7 @@ import type {
   Port,
   BalanceJson,
 } from '@extension-base/background/types';
-import type { Message } from '@extension-base/types';
+import type { Message, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
@@ -410,3 +410,25 @@ export async function subscribeBalance(
 ): Promise<BalanceJson> {
   return sendMessage('pri(balance.get.subscription)', request, callback);
 }
+
+export async function subscribeHistory(
+  callback: (historyMap: Record<string, TransactionHistoryItemType[]>) => void
+): Promise<Record<string, TransactionHistoryItemType[]>> {
+  return sendMessage('pri(transaction.history.get.subscription)', null, callback);
+}
+
+export async function updateTransactionHistory(
+  address: string,
+  networkKey: string,
+  item: TransactionHistoryItemType,
+  callback: (items: TransactionHistoryItemType[]) => void
+): Promise<boolean> {
+  return sendMessage('pri(transaction.history.add)', { address, networkKey, item }, callback);
+}
+
+// export async function getPrice (): Promise<PriceJson> {
+//   return sendMessage('pri(price.getPrice)', null);
+// }
+
+// export async function subscribePrice (request: RequestSubscribePrice, callback: (priceData: PriceJson) => void): Promise<PriceJson> {
+//   return sendMessage('pri(price.getSubscription)', request, callback);

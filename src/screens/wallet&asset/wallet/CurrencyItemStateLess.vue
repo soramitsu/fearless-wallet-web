@@ -1,18 +1,13 @@
 <template>
-  <Lazy :timeoutCallback="timeoutCallback" class="currency-item">
+  <Lazy class="currency-item">
     <div class="img-container">
-      <!-- <NetworkLogo
-        class="main-network-img"
-        :name="currency.displayName"
-        :relayChain="currency.relayChain"
-        :width="32"
-      /> -->
+      <!-- <img :src="icon" :alt="assetName" /> -->
     </div>
 
     <div class="descriptions-column">
       <div class="row first-row">
         <div>
-          {{ upperNetworkName }}
+          <!-- {{ upperNetworkName }} -->
         </div>
 
         <template>
@@ -117,6 +112,10 @@ interface AssetData {
 export default class CurrencyItemStateLess extends Vue {
   @Prop(Object) assetData!: AssetData;
   @Prop(String) assetName!: string;
+
+  get icon() {
+    return `https://github.com/soramitsu/fearless-utils/tree/master/icons/tokens/coloured/${this.assetName}`;
+  }
 }
 </script>
 

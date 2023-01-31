@@ -26,3 +26,9 @@ export interface TransactionHistoryItemType {
   origin?: 'app' | 'network';
   eventIdx?: number | null;
 }
+
+export interface RequestTransactionHistoryAdd {
+  address: string;
+  networkKey: string;
+  item: TransactionHistoryItemType;
+}

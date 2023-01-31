@@ -13,6 +13,7 @@ import { ETHEREUM_NETWORKS } from '@/consts/networks';
 
 export enum GettersTypes {
   getNetworks = 'getNetworks',
+  getBalance = 'getBalance',
   getAllNetworks = 'getAllNetworks',
   getNetwork = 'getNetwork',
   getNetworkGenesisHash = 'getNetworkGenesisHash',

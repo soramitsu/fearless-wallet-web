@@ -12,6 +12,7 @@ import { BalanceItem, NetworkJson } from '../api/evm/types/ether';
 import { ChainRegistry } from '../api/evm/utils/registery';
 import { CurrentAccountInfo } from '../stores/CurrentAccountStore';
 import EthProvider from '../api/evm/ethProvider';
+import { RequestTransactionHistoryAdd, TransactionHistoryItemType } from '../types';
 import type {
   InjectedAccount,
   InjectedMetadataKnown,
@@ -175,7 +176,12 @@ export interface RequestSignatures {
   //ether
   'pri(balance.get.balance)': [null, BalanceJson];
   'pri(balance.get.subscription)': [null, BalanceJson, BalanceJson];
-
+  'pri(transaction.history.get.subscription)': [
+    null,
+    Record<string, TransactionHistoryItemType[]>,
+    Record<string, TransactionHistoryItemType[]>
+  ];
+  'pri(transaction.history.add)': [RequestTransactionHistoryAdd, boolean, TransactionHistoryItemType[]];
   // public/external requests, i.e. from a page
   'pub(accounts.list)': [RequestAccountList, InjectedAccount[]];
   'pub(accounts.subscribe)': [RequestAccountSubscribe, string, InjectedAccount[]];
@@ -616,6 +622,7 @@ export interface IState {
   cachedUnlocks: CachedUnlocks;
   balances: Record<string, any>;
   connectedTabsUrl: string[];
+  transaction: Record<string, TransactionHistoryItem[]>;
 }
 
 export interface GoogleFileId {
@@ -625,4 +632,19 @@ export interface GoogleFileId {
 
 export interface RequestGoogleCreateFile {
   data: Record<string, string>;
+}
+export interface TransactionHistoryItem {
+  time: number | string;
+  networkKey: string;
+  change: string;
+  changeSymbol?: string; // if undefined => main token
+  fee?: string;
+  feeSymbol?: string;
+  // if undefined => main token, sometime "fee" uses different token than "change"
+  // ex: sub token (DOT, AUSD, KSM, ...) of Acala, Karaura uses main token to pay fee
+  isSuccess: boolean;
+  action: 'send' | 'received';
+  extrinsicHash: string;
+  origin?: 'app' | 'network';
+  eventIdx?: number | null;
 }

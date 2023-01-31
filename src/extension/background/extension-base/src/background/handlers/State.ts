@@ -50,6 +50,7 @@ import NetworkMapStore from '../../stores/NetworkMap';
 import AuthorizeStore from '../../stores/Authorize';
 import { PREDEFINED_GENESIS_HASHES, PREDEFINED_NETWORKS } from '../../predefinedNetworks';
 import { initWeb3Api } from '../../api/evm';
+import { TransactionHistoryItemType } from '../../types';
 import { getCurrentProvider, mergeNetworkProviders, stripUrl, withErrorLog } from './helpers';
 
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
@@ -142,6 +143,8 @@ export default class State {
   public authRequests: Record<string, AuthRequest> = {};
   public metaRequests: Record<string, MetaRequest> = {};
   public signRequests: Record<string, SignRequest> = {};
+  private historyMap: Record<string, TransactionHistoryItemType[]> = {};
+  private historySubject = new Subject<Record<string, TransactionHistoryItemType[]>>();
   public readonly authSubject: BehaviorSubject<AuthorizeRequest[]> = new BehaviorSubject<AuthorizeRequest[]>([]);
   public readonly metaSubject: BehaviorSubject<MetadataRequest[]> = new BehaviorSubject<MetadataRequest[]>([]);
   public readonly signSubject: BehaviorSubject<SigningRequest[]> = new BehaviorSubject<SigningRequest[]>([]);
@@ -1061,5 +1064,111 @@ export default class State {
     this.subscription.start();
 
     this.ready = true;
+  }
+
+  public getHistoryMap(): Record<string, TransactionHistoryItemType[]> {
+    return this.removeInactiveNetworkData(this.historyMap);
+  }
+
+  public getNetworkMap() {
+    return this.networkMap;
+  }
+
+  public setHistory(
+    address: string,
+    network: string,
+    item: TransactionHistoryItemType | TransactionHistoryItemType[],
+    callback?: (items: TransactionHistoryItemType[]) => void
+  ): void {
+    let items: TransactionHistoryItemType[];
+    const networkInfo = this.getNetworkMap()[network];
+
+    if (!networkInfo) {
+      return;
+    }
+
+    if (item && !Array.isArray(item)) {
+      item.origin = 'app';
+      items = [item];
+    } else {
+      items = item;
+    }
+
+    items.forEach((item) => {
+      item.feeSymbol = networkInfo.nativeToken;
+
+      if (!item.changeSymbol) {
+        item.changeSymbol = networkInfo.nativeToken;
+      }
+    });
+
+    if (items.length) {
+      this.getAccountAddress().then((currentAddress) => {
+        if (currentAddress === address) {
+          const oldItems = this.historyMap[network] || [];
+
+          this.historyMap[network] = this.combineHistories(oldItems, items);
+          this.saveHistoryToStorage(address, network, this.historyMap[network]);
+          callback && callback(this.historyMap[network]);
+
+          this.lazyNext('setHistory', () => {
+            this.publishHistory();
+          });
+        } else {
+          this.saveHistoryToStorage(address, network, items);
+          callback && callback(this.historyMap[network]);
+        }
+      });
+    }
+  }
+
+  public subscribeHistory() {
+    return this.historySubject;
+  }
+
+  private publishHistory() {
+    this.historySubject.next(this.getHistoryMap());
+  }
+
+  public async getStoredHistories(address: string) {
+    const { transaction } = await storage.get(['transaction']);
+
+    return transaction[address] || {};
+  }
+
+  private async saveHistoryToStorage(address: string, network: string, items: TransactionHistoryItemType[]) {
+    const { transaction } = await storage.get(['transaction']);
+    const historyByAddress = transaction[address];
+    storage.set({
+      transaction: {
+        [address]: {
+          ...historyByAddress,
+          [network]: {
+            ...items,
+          },
+        },
+      },
+    });
+  }
+
+  private combineHistories(
+    oldItems: TransactionHistoryItemType[],
+    newItems: TransactionHistoryItemType[]
+  ): TransactionHistoryItemType[] {
+    const newHistories = newItems.filter((item) => !oldItems.some((old) => this.isSameHistory(old, item)));
+
+    return [...oldItems, ...newHistories].filter((his) => his.origin === 'app' || his.eventIdx);
+  }
+
+  public isSameHistory(oldItem: TransactionHistoryItemType, newItem: TransactionHistoryItemType): boolean {
+    if (oldItem.extrinsicHash === newItem.extrinsicHash && oldItem.action === newItem.action) {
+      if (oldItem.origin === 'app') {
+        return true;
+      } else {
+        return !oldItem.eventIdx || !newItem.eventIdx || oldItem.eventIdx === newItem.eventIdx;
+      }
+    }
+
+    return false;
   }
 }

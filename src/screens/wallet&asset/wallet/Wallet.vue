@@ -45,7 +45,7 @@
         />
 
         <Scroll>
-          <Currencies
+          <!-- <Currencies
             v-if="showCurrencies"
             :key="currenciesKey"
             :currencies="filteredCurrencies"
@@ -55,21 +55,21 @@
             :filterValue="filterValue"
             @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
           />
-          <NFTs v-else-if="showNfts" />
+          <NFTs v-else-if="showNfts" /> -->
 
           <CurrencyItemStateLess
-            v-for="(asset, assetKey) in evmCurrencies.details"
+            v-for="(asset, assetKey) in balance.details"
             :assetData="asset"
             :assetName="assetKey"
             :key="assetKey"
           />
 
-          <CurrencyItemStateLess
+          <!-- <CurrencyItemStateLess
             v-for="(asset, assetKey) in evmCurrencies.details.ethereum.children"
             :assetData="asset"
             :assetName="assetKey"
             :key="assetKey"
-          />
+          /> -->
         </Scroll>
       </div>
     </ContentForm>
@@ -105,7 +105,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
 import type { TMutation, TabWallet } from '@/interfaces/common';
@@ -130,7 +130,9 @@ import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.v
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import Loading from '@/components/Loading.vue';
-import { getBalance } from '@/extension/messaging';
+import { getBalance, subscribeBalance } from '@/extension/messaging';
+import store from '@/store';
+import { BalanceJson } from '@/extension/background/extension-base/src/background/types';
 
 @Component({
   components: {
@@ -174,9 +176,22 @@ export default class Wallet extends Vue {
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
+  balance: BalanceJson = [] as unknown as BalanceJson;
+  updateBalance(balanceData: BalanceJson): void {
+    console.info(balanceData, 'data');
+    this.balance = balanceData;
+    store.dispatch('SET_BALANCE', balanceData);
+  }
 
-  async mounted() {
-    this.evmCurrencies = await getBalance();
+  @Watch('balance', {
+    immediate: true,
+  })
+  watchBalance() {
+    setInterval(this.useSetupBalance, 10000);
+  }
+
+  useSetupBalance(): void {
+    subscribeBalance(null, this.updateBalance).then(this.updateBalance).catch(console.error);
   }
 
   get showNetworkUnavailablePopup() {

@@ -7,8 +7,8 @@ import { assert, isHex } from '@polkadot/util';
 import { keyExtractSuri, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
 import { keyring } from '@polkadot/ui-keyring';
 import { ActiveTabAuthorizeStatus, BalanceJson, CachedUnlocks, Port, SubscribeBalanceRequest } from '../types';
-import EthProvider from '../../api/evm/ethProvider';
 import { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
+import { RequestTransactionHistoryAdd, TransactionHistoryItemType } from '../../types';
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
@@ -726,7 +726,7 @@ export default class Extension {
     this.state.createUnsubscriptionHandle(id, unsubscribe);
   }
 
-  subscribeBalance({ id, port }: SubscribeBalanceRequest): BalanceJson {
+  private subscribeBalance(id: string, port: chrome.runtime.Port): BalanceJson {
     const cb = createSubscription<'pri(balance.get.subscription)'>(id, port);
 
     const balanceSubscription = this.state.subscribeBalance().subscribe({
@@ -742,6 +742,42 @@ export default class Extension {
     });
 
     return this.getBalance(true);
+  }
+
+  private subscribeHistory(id: string, port: chrome.runtime.Port): Record<string, TransactionHistoryItemType[]> {
+    const cb = createSubscription<'pri(transaction.history.get.subscription)'>(id, port);
+
+    const historySubscription = this.state.subscribeHistory().subscribe({
+      next: (rs) => {
+        cb(rs);
+      },
+    });
+
+    this.createUnsubscriptionHandle(id, historySubscription.unsubscribe);
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+    });
+
+    return this.state.getHistoryMap();
+  }
+
+  private updateTransactionHistory(
+    { address, item, networkKey }: RequestTransactionHistoryAdd,
+    id: string,
+    port: chrome.runtime.Port
+  ): boolean {
+    const cb = createSubscription<'pri(transaction.history.add)'>(id, port);
+
+    this.state.setHistory(address, networkKey, item, (items) => {
+      cb(items);
+    });
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+    });
+
+    return true;
   }
 
   async handle<TMessageType extends MessageTypes>(
@@ -914,8 +950,13 @@ export default class Extension {
         return this.getBalance();
 
       case 'pri(balance.get.subscription)':
-        return this.subscribeBalance({ id, port } as SubscribeBalanceRequest);
+        return this.subscribeBalance(id, port as Port);
 
+      case 'pri(transaction.history.add)':
+        return this.updateTransactionHistory(request as RequestTransactionHistoryAdd, id, port as Port);
+
+      case 'pri(transaction.history.get.subscription)':
+        return this.subscribeHistory(id, port as Port);
       default:
         throw new Error(`Unable to handle message of type ${type}`);
     }

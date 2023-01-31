@@ -348,7 +348,6 @@ export default class Extension {
     };
   }
 
-  // FIXME This looks very much like what we have in accounts
   async authorizeSubscribe(id: string, port: Port): Promise<boolean> {
     const cb = await createSubscription<'pri(authorize.requests)'>(id, port);
 
@@ -785,6 +784,9 @@ export default class Extension {
     googleManage.deleteFile(id, this.token);
   }
 
+  cancelAuthRequest(id: string) {
+    this.state.authorizeCancel({ id });
+  }
   getBalance(reset?: boolean): BalanceJson {
     return this.state.getBalance(reset);
   }
@@ -891,6 +893,9 @@ export default class Extension {
 
       case 'pri(authorize.delete.request)':
         return this.deleteAuthRequest(request as string);
+
+      case 'pri(authorize.cancel)':
+        return this.cancelAuthRequest(request as string);
 
       case 'pri(authorize.requests)':
         return port && (await this.authorizeSubscribe(id, port));

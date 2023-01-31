@@ -142,6 +142,7 @@ export interface RequestSignatures {
   'pri(authorize.requests)': [RequestAuthorizeSubscribe, boolean, AuthorizeRequest[]];
   'pri(authorize.remove)': [string, ResponseAuthorizeList];
   'pri(authorize.delete.request)': [string, void];
+  'pri(authorize.cancel)': [string, boolean];
   'pri(authorize.update)': [RequestUpdateAuthorizedAccounts, void];
   'pri(activeTabsUrl.update)': [RequestActiveTabsUrlUpdate, void];
   'pri(connectedTabsUrl.get)': [null, ConnectedTabsUrlResponse];
@@ -661,4 +662,8 @@ export interface TransactionHistoryItem {
   extrinsicHash: string;
   origin?: 'app' | 'network';
   eventIdx?: number | null;
+}
+
+export interface RequestAuthorizeCancel {
+  id: string;
 }

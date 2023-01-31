@@ -29,6 +29,7 @@ import {
   RequestSign,
   ResponseRpcListProviders,
   Port,
+  RequestAuthorizeCancel,
   IState,
   ServiceInfo,
   BalanceJson,
@@ -300,12 +301,19 @@ export default class State {
     resolve: (resValue: AuthResponse) => void,
     reject: (error: Error) => void
   ): Resolver<AuthResponse> => {
-    const complete = async (authorizedAccounts: string[] = []) => {
+    const complete = async (authorizedAccounts: string[] = [], isAllowed = true) => {
       const {
         id: idStr,
         request: { origin },
         url,
       } = this.authRequests[id];
+
+      if (!isAllowed) {
+        delete this.authRequests[id];
+        this.updateIconAuth(true);
+
+        return;
+      }
 
       const stripedUrl = stripUrl(url);
 
@@ -329,7 +337,7 @@ export default class State {
 
     return {
       reject: (error: Error): void => {
-        complete();
+        complete([], false);
         reject(error);
       },
       resolve: ({ authorizedAccounts, result }: AuthResponse): void => {
@@ -433,6 +441,19 @@ export default class State {
     delete this.authRequests[requestId];
 
     this.updateIconAuth(true);
+  }
+
+  async authorizeCancel({ id }: RequestAuthorizeCancel): Promise<boolean> {
+    const queued = await this.getAuthRequest(id);
+
+    assert(queued, 'Unable to find request');
+
+    const { reject } = queued;
+
+    // Reject without error meaning cancel
+    reject(new Error('Cancelled'));
+
+    return true;
   }
 
   private async saveCurrentAuthList() {

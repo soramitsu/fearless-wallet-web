@@ -180,8 +180,8 @@ const LIT: Record<string, string> = {
 };
 
 const UNIT: Record<string, string> = {
-  'polkadot (test)': 'Polkadot',
-  'kusama (test)': 'Kusama',
+  'polkadot (test)': 'DOT',
+  'kusama (test)': 'KSM',
 };
 
 export {

@@ -183,13 +183,9 @@ export default class Wallet extends Vue {
     store.dispatch('SET_BALANCE', balanceData);
   }
 
-  @Watch('balance', {
-    immediate: true,
-  })
-  watchBalance() {
-    setInterval(this.useSetupBalance, 10000);
+  activated() {
+    this.useSetupBalance();
   }
-
   useSetupBalance(): void {
     subscribeBalance(null, this.updateBalance).then(this.updateBalance).catch(console.error);
   }

@@ -37,7 +37,14 @@ import { getId } from '../../utils';
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';
-import { APIItemState, BalanceItem, CustomToken, CustomTokenJson, NetworkJson } from '../../api/evm/types/ether';
+import {
+  APIItemState,
+  BalanceChildItem,
+  BalanceItem,
+  CustomToken,
+  CustomTokenJson,
+  NetworkJson,
+} from '../../api/evm/types/ether';
 import CustomTokenStore from '../../stores/CustomEvmToken';
 
 import CurrentAccountStore, { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
@@ -111,6 +118,7 @@ export async function initState() {
     providers: {},
     connectedTabsUrl: [],
     cachedUnlocks: {},
+    balances: {},
   });
 }
 
@@ -900,11 +908,6 @@ export default class State {
   }
 
   public setBalanceItem(networkKey: string, item: BalanceItem) {
-    // eslint-disable-next-line no-prototype-builtins
-    if (typeof item === 'object' && item.hasOwnProperty('children') && item.children === undefined) {
-      delete item.children;
-    }
-
     const itemData = { timestamp: +new Date(), ...item };
     this.balanceMap[networkKey] = { ...this.balanceMap[networkKey], ...itemData };
     this.updateBalanceStore(networkKey, item);

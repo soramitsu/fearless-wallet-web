@@ -3,7 +3,7 @@
 
 import { logger as createLogger } from '@polkadot/util';
 import { Logger } from '@polkadot/util/types';
-import { APIItemState, BalanceItem } from '../api/evm/types/ether';
+import { APIItemState, BalanceChildItem, BalanceItem } from '../api/evm/types/ether';
 import { storage } from '../stores/Storage';
 import { TransactionHistoryItemType } from '../types';
 
@@ -19,9 +19,11 @@ export default class BalanceService {
     if (item.state === APIItemState.READY) {
       this.logger.log(`Updating balance for [${chain}]`);
       const { balances } = await storage.get(['balances']);
-      const balanceByAddress = balances[address] ?? {};
 
-      return chrome.storage.local.set({
+      const balanceByAddress = balances[address] ?? {};
+      if (item.children) this.updateChildren(item.children, chainHash, chain, address);
+
+      return storage.set({
         balances: {
           ...balances,
           [address]: {
@@ -33,6 +35,24 @@ export default class BalanceService {
     }
   }
 
+  async updateChildren(children: Record<string, BalanceChildItem>, chainHash: string, chain: string, address: string) {
+    const { balances } = await storage.get(['balances']);
+    const balanceByAddress = balances[address] ?? {};
+    Object.keys(children).forEach((token) => {
+      this.logger.log(`Updating balance for [${token}]`);
+
+      balanceByAddress[token] = { ...children[token], chain, chainHash, address };
+
+      storage.set({
+        balances: {
+          ...balances,
+          [address]: {
+            ...balanceByAddress,
+          },
+        },
+      });
+    });
+  }
   public async getBalanceObservable(address: string) {
     const { balances } = await chrome.storage.local.get(['balances']);
 

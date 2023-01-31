@@ -37,19 +37,16 @@ function subscribeERC20Interval(
 
   const getTokenBalances = () => {
     Object.values(tokenList).map(async ({ decimals, symbol }) => {
-      let free = new BN(0);
-
       try {
         const contract = ERC20ContractMap[symbol];
         const bals = await Promise.all(
           addresses.map((address): Promise<string> => {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-return,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-            return contract.methods.balanceOf(address).call();
+            return contract.balanceOf(address);
           })
         );
 
-        free = sumBN(bals.map((bal) => new BN(bal || 0)));
-        // console.log('TokenBals', symbol, addresses, bals, free);
+        const free = bals.map((bal) => ethers.utils.formatUnits(bal, decimals));
 
         subCallback({
           [symbol]: {
@@ -102,7 +99,7 @@ export function subscribeEVMBalance(
   function getBalance() {
     getEVMBalance(networkKey, addresses, web3ApiMap)
       .then((balances) => {
-        balanceItem.free = sumBN(balances.map((b) => new BN(b || '0'))).toString();
+        balanceItem.free = balances.map((bal) => ethers.utils.formatUnits(bal)).toString();
         balanceItem.state = APIItemState.READY;
         callback(networkKey, balanceItem);
       })
@@ -110,9 +107,7 @@ export function subscribeEVMBalance(
   }
 
   function subCallback(children: Record<string, BalanceChildItem>) {
-    if (!Object.keys(children).length) {
-      return;
-    }
+    if (!Object.keys(children).length) return;
 
     balanceItem.children = { ...balanceItem.children, ...children };
     callback(networkKey, balanceItem);

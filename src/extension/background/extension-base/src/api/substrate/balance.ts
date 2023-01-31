@@ -20,8 +20,6 @@ import { APIItemState, BalanceChildItem, BalanceItem, TokenInfo } from '../evm/t
 import { sumBN, getERC20Contract } from '../evm/utils/eth';
 import { getRegistry } from '../evm/utils/registery';
 
-type EqBalanceItem = [number, { positive: number }];
-
 export function subscribeERC20Interval(
   addresses: string[],
   networkKey: string,

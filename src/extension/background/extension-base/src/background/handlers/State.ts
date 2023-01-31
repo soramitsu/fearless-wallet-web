@@ -32,19 +32,13 @@ import {
   IState,
   ServiceInfo,
   BalanceJson,
+  PriceJson,
 } from '../types';
 import { getId } from '../../utils';
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';
-import {
-  APIItemState,
-  BalanceChildItem,
-  BalanceItem,
-  CustomToken,
-  CustomTokenJson,
-  NetworkJson,
-} from '../../api/evm/types/ether';
+import { APIItemState, BalanceItem, CustomToken, CustomTokenJson, NetworkJson } from '../../api/evm/types/ether';
 import CustomTokenStore from '../../stores/CustomEvmToken';
 
 import CurrentAccountStore, { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
@@ -58,6 +52,8 @@ import AuthorizeStore from '../../stores/Authorize';
 import { PREDEFINED_GENESIS_HASHES, PREDEFINED_NETWORKS } from '../../predefinedNetworks';
 import { initWeb3Api } from '../../api/evm';
 import { TransactionHistoryItemType } from '../../types';
+import PriceStore from '../../stores/Price';
+import { getTokenPrice } from '../../utils/coingecko';
 import { getCurrentProvider, mergeNetworkProviders, stripUrl, withErrorLog } from './helpers';
 
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
@@ -128,15 +124,17 @@ export default class State {
   chainRegistrySubject = new Subject<Record<string, ChainRegistry>>();
   readonly unsubscriptionMap: Record<string, () => void> = {};
   private readonly authorizeStore = new AuthorizeStore();
+  private readonly priceStore = new PriceStore();
   private readonly evmChainSubject = new Subject<AuthUrls>();
   private readonly authorizeUrlSubject = new Subject<AuthUrls>();
   public authUrls: AuthUrls = {};
   public static signature: HexString | null = null;
   public defaultAuthAccountSelection: string[] = [];
+
   public apis: { evm: Record<string, EthProvider> } = {
     evm: {},
   };
-
+  private priceStoreReady = false;
   authorizeCached: AuthUrls | undefined = undefined;
   networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
@@ -907,6 +905,39 @@ export default class State {
     this.initChainRegistry();
   }
 
+  public setPrice(priceData: PriceJson, callback?: (priceData: PriceJson) => void): void {
+    this.priceStore.set('PriceData', priceData, () => {
+      if (callback) {
+        callback(priceData);
+        this.priceStoreReady = true;
+      }
+    });
+  }
+
+  public subscribePrice() {
+    return this.priceStore.getSubject();
+  }
+
+  public getPrice(update: (value: PriceJson) => void): void {
+    this.priceStore.get('PriceData', (rs) => {
+      if (this.priceStoreReady) {
+        update(rs);
+      } else {
+        const activeNetworks = Object.values(this.getNetworkMap())
+          .map((network) => network.coinGeckoKey)
+          .filter((key) => key) as string[];
+
+        getTokenPrice(activeNetworks)
+          .then((rs) => {
+            this.setPrice(rs);
+            update(rs);
+          })
+          .catch((err) => {
+            throw err;
+          });
+      }
+    });
+  }
   public setBalanceItem(networkKey: string, item: BalanceItem) {
     const itemData = { timestamp: +new Date(), ...item };
     this.balanceMap[networkKey] = { ...this.balanceMap[networkKey], ...itemData };

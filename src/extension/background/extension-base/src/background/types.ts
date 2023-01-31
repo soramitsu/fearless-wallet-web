@@ -116,14 +116,13 @@ export type ConnectedTabsUrlResponse = string[];
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
 export interface RequestSignatures {
   // private/internal requests, i.e. from a popup
+  //Account Managment
   'pri(accounts.create.external)': [RequestAccountCreateExternal, boolean];
   'pri(accounts.create.hardware)': [RequestAccountCreateHardware, boolean];
   'pri(accounts.create.suri)': [RequestAccountCreateSuri, boolean];
-
   'pri(addresses.create)': [RequestAddressCreate, boolean];
   'pri(addresses.remove)': [RequestAddressRemove, boolean];
   'pri(addresses.get)': [null, KeyringAddress[]];
-
   'pri(accounts.edit)': [RequestAccountEdit, boolean];
   'pri(accounts.export)': [RequestAccountExport, ResponseAccountExport];
   'pri(accounts.batchExport)': [RequestAccountBatchExport, ResponseAccountsExport];
@@ -134,6 +133,10 @@ export interface RequestSignatures {
   'pri(accounts.subscribe)': [RequestAccountSubscribe, boolean, AccountJson[]];
   'pri(accounts.validate)': [RequestAccountValidate, boolean];
   'pri(accounts.changePassword)': [RequestAccountChangePassword, boolean];
+  'pri(accounts.current.saveAddress)': [RequestCurrentAccountAddress, boolean, CurrentAccountInfo];
+  'pri(accounts.update.current)': [string, boolean];
+
+  //Authorize
   'pri(authorize.approve)': [RequestAuthorizeApprove, boolean];
   'pri(authorize.list)': [null, ResponseAuthorizeList];
   'pri(authorize.requests)': [RequestAuthorizeSubscribe, boolean, AuthorizeRequest[]];
@@ -182,6 +185,8 @@ export interface RequestSignatures {
     Record<string, TransactionHistoryItemType[]>
   ];
   'pri(transaction.history.add)': [RequestTransactionHistoryAdd, boolean, TransactionHistoryItemType[]];
+  'pri(price.get.price)': [RequestPrice, PriceJson];
+  'pri(price.get.subscription)': [RequestSubscribePrice, PriceJson, PriceJson];
   // public/external requests, i.e. from a page
   'pub(accounts.list)': [RequestAccountList, InjectedAccount[]];
   'pub(accounts.subscribe)': [RequestAccountSubscribe, string, InjectedAccount[]];
@@ -199,7 +204,11 @@ export interface RequestSignatures {
   'pub(rpc.subscribeConnected)': [null, boolean, boolean];
   'pub(rpc.unsubscribe)': [RequestRpcUnsubscribe, boolean];
 }
-
+export type RequestPrice = null;
+export type RequestSubscribePrice = null;
+export interface RequestCurrentAccountAddress {
+  address: string;
+}
 export type MessageTypes = keyof RequestSignatures;
 
 // Requests
@@ -266,7 +275,12 @@ export interface RequestAccountCreateHardware {
   hardwareType: string;
   name: string;
 }
-
+export interface PriceJson {
+  ready?: boolean;
+  currency: string;
+  priceMap: Record<string, number>;
+  tokenPriceMap: Record<string, number>;
+}
 export interface BalanceJson {
   reset?: boolean;
   details: Record<string, BalanceItem>;

@@ -6,9 +6,18 @@ import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/
 import { assert, isHex } from '@polkadot/util';
 import { keyExtractSuri, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
 import { keyring } from '@polkadot/ui-keyring';
-import { ActiveTabAuthorizeStatus, BalanceJson, CachedUnlocks, Port, SubscribeBalanceRequest } from '../types';
+import {
+  ActiveTabAuthorizeStatus,
+  BalanceJson,
+  CachedUnlocks,
+  Port,
+  PriceJson,
+  RequestCurrentAccountAddress,
+  SubscribeBalanceRequest,
+} from '../types';
 import { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import { RequestTransactionHistoryAdd, TransactionHistoryItemType } from '../../types';
+import { ALL_GENESIS_HASH } from '../../const';
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
@@ -455,6 +464,63 @@ export default class Extension {
       seed,
     };
   }
+  private _saveCurrentAccountAddress(address: string, callback?: (data: CurrentAccountInfo) => void) {
+    this.state.getCurrentAccount((accountInfo) => {
+      if (!accountInfo) {
+        accountInfo = {
+          address,
+          currentGenesisHash: ALL_GENESIS_HASH,
+          allGenesisHash: ALL_GENESIS_HASH || undefined,
+        };
+      } else {
+        accountInfo.address = address;
+
+        if (address !== 'ALL') {
+          const currentKeyPair = keyring.getAccount(address);
+
+          accountInfo.currentGenesisHash = (currentKeyPair?.meta.genesisHash as string) || ALL_GENESIS_HASH;
+        } else {
+          accountInfo.currentGenesisHash = accountInfo.allGenesisHash || ALL_GENESIS_HASH;
+        }
+      }
+
+      this.state.setCurrentAccount(accountInfo, () => {
+        callback && callback(accountInfo);
+      });
+    });
+  }
+
+  private triggerAccountsSubscription(): boolean {
+    const accountsSubject = accountsObservable.subject;
+
+    accountsSubject.next(accountsSubject.getValue());
+
+    return true;
+  }
+
+  private updateCurrentAccountAddress(address: string): boolean {
+    this._saveCurrentAccountAddress(address, () => {
+      this.triggerAccountsSubscription();
+    });
+
+    return true;
+  }
+
+  private saveCurrentAccountAddress(
+    data: RequestCurrentAccountAddress,
+    id: string,
+    port: chrome.runtime.Port
+  ): boolean {
+    const cb = createSubscription<'pri(accounts.current.saveAddress)'>(id, port);
+
+    this._saveCurrentAccountAddress(data.address, cb);
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+    });
+
+    return true;
+  }
 
   seedValidate({ suri, type }: RequestSeedValidate): ResponseSeedValidate {
     const { phrase } = keyExtractSuri(suri);
@@ -722,6 +788,7 @@ export default class Extension {
   getBalance(reset?: boolean): BalanceJson {
     return this.state.getBalance(reset);
   }
+
   private createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
     this.state.createUnsubscriptionHandle(id, unsubscribe);
   }
@@ -780,6 +847,32 @@ export default class Extension {
     return true;
   }
 
+  private getPrice(): Promise<PriceJson> {
+    return new Promise<PriceJson>((resolve, reject) => {
+      this.state.getPrice((rs: PriceJson) => {
+        resolve(rs);
+      });
+    });
+  }
+
+  private subscribePrice(id: string, port: chrome.runtime.Port): Promise<PriceJson> {
+    const cb = createSubscription<'pri(price.get.subscription)'>(id, port);
+
+    const priceSubscription = this.state.subscribePrice().subscribe({
+      next: (rs) => {
+        cb(rs);
+      },
+    });
+
+    this.createUnsubscriptionHandle(id, priceSubscription.unsubscribe);
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+    });
+
+    return this.getPrice();
+  }
+
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -828,6 +921,18 @@ export default class Extension {
 
       case 'pri(accounts.edit)':
         return this.accountsEdit(request as RequestAccountEdit);
+
+      case 'pri(price.get.price)':
+        return await this.getPrice();
+
+      case 'pri(price.get.subscription)':
+        return await this.subscribePrice(id, port as Port);
+
+      case 'pri(accounts.current.saveAddress)':
+        return this.saveCurrentAccountAddress(request as RequestCurrentAccountAddress, id, port as Port);
+
+      case 'pri(accounts.update.current)':
+        return this.updateCurrentAccountAddress(request as string);
 
       case 'pri(accounts.export)':
         return this.accountsExport(request as RequestAccountExport);

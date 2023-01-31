@@ -30,6 +30,7 @@ import {
   ResponseRpcListProviders,
   IState,
   Port,
+  RequestAuthorizeCancel,
 } from '../types';
 import { getId } from '../../utils';
 import MetadataStore from '../../stores/Metadata';
@@ -188,12 +189,19 @@ export default class State {
     resolve: (resValue: AuthResponse) => void,
     reject: (error: Error) => void
   ): Resolver<AuthResponse> => {
-    const complete = async (authorizedAccounts: string[] = []) => {
+    const complete = async (authorizedAccounts: string[] = [], isAllowed = true) => {
       const {
         id: idStr,
         request: { origin },
         url,
       } = State.authRequests[id];
+
+      if (!isAllowed) {
+        delete State.authRequests[id];
+        State.updateIconAuth(true);
+
+        return;
+      }
 
       const stripedUrl = stripUrl(url);
 
@@ -215,7 +223,7 @@ export default class State {
 
     return {
       reject: (error: Error): void => {
-        complete();
+        complete([], false);
         reject(error);
       },
       resolve: ({ authorizedAccounts, result }: AuthResponse): void => {
@@ -255,6 +263,19 @@ export default class State {
     delete State.authRequests[requestId];
 
     State.updateIconAuth(true);
+  }
+
+  static async authorizeCancel({ id }: RequestAuthorizeCancel): Promise<boolean> {
+    const queued = await State.getAuthRequest(id);
+
+    assert(queued, 'Unable to find request');
+
+    const { reject } = queued;
+
+    // Reject without error meaning cancel
+    reject(new Error('Cancelled'));
+
+    return true;
   }
 
   private static async saveCurrentAuthList() {

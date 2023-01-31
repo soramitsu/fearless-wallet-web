@@ -1,6 +1,5 @@
 import { ethers } from 'ethers';
 
-import EthWallet from '@/extension/background/extension-base/src/api/evm/ethWallet';
 import { EvmNetworkType } from '@/interfaces/ether';
 
 const providers: Record<EvmNetworkType, string> = {
@@ -21,13 +20,6 @@ export default class EthProvider {
 
   static create(network: EvmNetworkType = 'ethereum_goerli') {
     return new EthProvider(network);
-  }
-
-  getSigner() {
-    const signer = EthWallet.createRandom();
-    signer.connect(this.provider);
-
-    return signer;
   }
 
   public async getBalance(address: string) {

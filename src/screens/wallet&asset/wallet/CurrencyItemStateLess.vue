@@ -1,7 +1,7 @@
 <template>
   <Lazy class="currency-item">
     <div class="img-container">
-      <!-- <img :src="icon" :alt="assetName" /> -->
+      <NetworkLogo :name="assetName" />
     </div>
 
     <div class="descriptions-column">
@@ -90,15 +90,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { Currency } from '@/interfaces/currencies';
-import type { SelectedWallet } from '@/store';
-import type { CustomEvent } from '@/interfaces';
-import { Components } from '@/router/routes';
-import { formattedNumber, formattedPrice } from '@/helpers/numbers';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GetNetworkStatus } from '@/store';
+
 interface AssetData {
   feeFrozen: string;
   free: string;

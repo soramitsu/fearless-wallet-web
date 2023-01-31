@@ -163,6 +163,8 @@ const NETWORK_AND_ASSET: Record<string, string> = {
   litmus: 'litmus',
   phala: 'phala',
   khala: 'Khala',
+  ethereum: 'ETH',
+  ethereum_goerli: 'ETH',
   'sora test': 'SORA',
   'sora mainnet': 'SORA',
   'snow kusama': 'SNOW',

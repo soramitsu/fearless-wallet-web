@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ApiPromise } from '@polkadot/api';
-import { BN } from '@polkadot/util';
 import { ethers } from 'ethers';
 import { ASTAR_REFRESH_BALANCE_INTERVAL, SUB_TOKEN_REFRESH_BALANCE_INTERVAL } from '../../const/intervals';
 import { state } from '../../background/handlers';
 import { APIItemState, BalanceChildItem, BalanceItem, TokenInfo } from './types/ether';
 import EthProvider from './ethProvider';
-import { getERC20Contract, sumBN } from './utils/eth';
+import { getERC20Contract } from './utils/eth';
 import { getRegistry } from './utils/registery';
 
 export async function getEVMBalance(

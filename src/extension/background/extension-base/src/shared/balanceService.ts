@@ -39,8 +39,6 @@ export default class BalanceService {
     const { balances } = await storage.get(['balances']);
     const balanceByAddress = balances[address] ?? {};
     Object.keys(children).forEach((token) => {
-      this.logger.log(`Updating balance for [${token}]`);
-
       balanceByAddress[token] = { ...children[token], chain, chainHash, address };
 
       storage.set({

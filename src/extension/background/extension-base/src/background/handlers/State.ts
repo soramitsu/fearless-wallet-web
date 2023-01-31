@@ -1010,8 +1010,26 @@ export default class State {
 
   public getBalance(reset?: boolean): BalanceJson {
     const activeData = this.removeInactiveNetworkData(this.balanceMap);
+    let prepData = {};
+    Object.keys(this.balanceMap).forEach((key) => {
+      if (this.balanceMap[key].children) {
+        const item = { ...this.balanceMap[key] };
+        delete item.children;
 
-    return { details: activeData, reset } as BalanceJson;
+        prepData = {
+          ...prepData,
+          ...this.balanceMap[key].children,
+          [key]: item,
+        };
+      } else {
+        prepData = {
+          ...prepData,
+          [key]: this.balanceMap[key],
+        };
+      }
+    });
+
+    return { details: prepData, reset } as BalanceJson;
   }
 
   public getCustomTokenStore(callback: (data: CustomTokenJson) => void) {

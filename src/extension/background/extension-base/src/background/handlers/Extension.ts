@@ -788,7 +788,7 @@ export default class Extension {
   cancelAuthRequest(id: string) {
     this.state.authorizeCancel({ id });
   }
-  getBalance(reset?: boolean): BalanceJson {
+  getBalance(reset?: boolean): Promise<BalanceJson> {
     return this.state.getBalance(reset);
   }
 
@@ -796,7 +796,7 @@ export default class Extension {
     this.state.createUnsubscriptionHandle(id, unsubscribe);
   }
 
-  private subscribeBalance(id: string, port: chrome.runtime.Port): BalanceJson {
+  private subscribeBalance(id: string, port: chrome.runtime.Port): Promise<BalanceJson> {
     const cb = createSubscription<'pri(balance.get.subscription)'>(id, port);
 
     const balanceSubscription = this.state.subscribeBalance().subscribe({

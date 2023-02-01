@@ -58,9 +58,11 @@
           <NFTs v-else-if="showNfts" /> -->
 
           <CurrencyItemStateLess
-            v-for="(asset, assetKey) in balance.details"
+            v-for="(asset, assetKey) in balance"
             :assetData="asset"
             :assetName="assetKey"
+            :price="getAssetPrice(assetKey)"
+            :priceChange="getPriceChange(assetKey)"
             :key="assetKey"
           />
 
@@ -130,9 +132,9 @@ import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.v
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import Loading from '@/components/Loading.vue';
-import { getHistory, subscribeBalance } from '@/extension/messaging';
+import { getPrice, subscribeBalance } from '@/extension/messaging';
 import store from '@/store';
-import { BalanceJson } from '@/extension/background/extension-base/src/background/types';
+import { BalanceJson, PriceJson } from '@/extension/background/extension-base/src/background/types';
 
 @Component({
   components: {
@@ -177,14 +179,27 @@ export default class Wallet extends Vue {
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
   balance: BalanceJson = [] as unknown as BalanceJson;
+  price: PriceJson = {} as PriceJson;
+
   updateBalance(balanceData: BalanceJson): void {
-    console.info(balanceData, 'data');
-    this.balance = balanceData;
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
+    this.balance = balanceData.details[this.selectedWallet.ethereumAddress];
+    console.info(balanceData.details[this.selectedWallet.ethereumAddress], this.selectedWallet.ethereumAddress, 'data');
     store.dispatch('SET_BALANCE', balanceData);
   }
 
   async activated() {
     this.useSetupBalance();
+    this.price = await getPrice();
+  }
+
+  getAssetPrice(assetKey: string) {
+    return this.price.tokenPriceMap[assetKey.toLowerCase()];
+  }
+
+  getPriceChange(assetKey: string) {
+    return this.price.tokenPriceChange[assetKey.toLowerCase()];
   }
 
   useSetupBalance(): void {

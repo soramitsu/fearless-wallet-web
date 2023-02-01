@@ -28,6 +28,8 @@ import type {
   SubscriptionMessageTypes,
   Port,
   BalanceJson,
+  PriceJson,
+  RequestSubscribePrice,
 } from '@extension-base/background/types';
 import type { Message, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
@@ -419,9 +421,13 @@ export async function updateTransactionHistory(
   return sendMessage('pri(transaction.history.add)', { address, networkKey, item }, callback);
 }
 
-// export async function getPrice (): Promise<PriceJson> {
-//   return sendMessage('pri(price.getPrice)', null);
-// }
+export async function getPrice(): Promise<PriceJson> {
+  return sendMessage('pri(price.get.price)', null);
+}
 
-// export async function subscribePrice (request: RequestSubscribePrice, callback: (priceData: PriceJson) => void): Promise<PriceJson> {
-//   return sendMessage('pri(price.getSubscription)', request, callback);
+export async function subscribePrice(
+  request: RequestSubscribePrice,
+  callback: (priceData: PriceJson) => void
+): Promise<PriceJson> {
+  return sendMessage('pri(price.get.subscription)', request, callback);
+}

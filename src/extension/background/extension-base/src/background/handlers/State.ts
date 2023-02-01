@@ -806,8 +806,8 @@ export default class State {
     await Promise.all([this.resetBalanceMap(newAddress)]);
   }
 
-  private publishBalance(reset?: boolean) {
-    this.balanceSubject.next(this.getBalance(reset));
+  private async publishBalance(reset?: boolean) {
+    this.balanceSubject.next(await this.getBalance(reset));
   }
 
   public async resetBalanceMap(newAddress: string) {
@@ -1030,27 +1030,10 @@ export default class State {
     return this.balanceSubject;
   }
 
-  public getBalance(reset?: boolean): BalanceJson {
-    let prepData = {};
-    Object.keys(this.balanceMap).forEach((key) => {
-      if (this.balanceMap[key].children) {
-        const item = { ...this.balanceMap[key] };
-        delete item.children;
+  public async getBalance(reset?: boolean): Promise<BalanceJson> {
+    const { balances } = (await storage.get(['balances'])) as any;
 
-        prepData = {
-          ...prepData,
-          ...this.balanceMap[key].children,
-          [key]: item,
-        };
-      } else {
-        prepData = {
-          ...prepData,
-          [key]: this.balanceMap[key],
-        };
-      }
-    });
-
-    return { details: prepData, reset } as BalanceJson;
+    return { details: balances, reset } as BalanceJson;
   }
 
   public getCustomTokenStore(callback: (data: CustomTokenJson) => void) {

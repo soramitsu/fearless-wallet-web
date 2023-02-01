@@ -11,8 +11,11 @@ export const getTokenPrice = async (
 ): Promise<AssetsPrice> => {
   try {
     const chainsStr = chains.join(',');
+    const evmAssets = ['ethereum', 'bitcoin', 'tether', 'usd-coin', 'binancecoin', 'binance-usd', 'dai'];
+    const prepCurrency = [...currency].push(...evmAssets);
+
     const { data, status } = await axios.get<AssetsPrice>(
-      `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${currency}&include_24hr_change=true&ids=${chainsStr}`
+      `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${prepCurrency}&include_24hr_change=true&ids=${chainsStr}&precision="4"`
     );
 
     if (status !== 200) console.warn('Failed to get token price');
@@ -26,6 +29,10 @@ export const getTokenPrice = async (
           assetsPrice[displayName ?? symbol] = data[priceId];
         });
     }
+
+    Object.keys(data).forEach((key) => {
+      if (!assetsPrice[key]) assetsPrice[key] = data[key];
+    });
 
     return assetsPrice;
   } catch (err) {

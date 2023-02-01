@@ -283,6 +283,7 @@ export interface PriceJson {
   currency: string;
   priceMap: Record<string, number>;
   tokenPriceMap: Record<string, number>;
+  tokenPriceChange: Record<string, number>;
 }
 export interface BalanceJson {
   reset?: boolean;

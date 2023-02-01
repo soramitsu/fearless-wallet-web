@@ -7,7 +7,7 @@
     <div class="descriptions-column">
       <div class="row first-row">
         <div>
-          <!-- {{ upperNetworkName }} -->
+          {{ assetData.chain.toUpperCase() }}
         </div>
 
         <template>
@@ -39,16 +39,14 @@
       </div>
       <div class="row third-row">
         <div class="price row">
-          {{ assetData.free }}
+          {{ price }}
 
-          <!-- <div :class="changePriceClasses">{{ usd24HoursChangeString }}</div> -->
+          <div :class="changePriceClasses">{{ priceChange }}</div>
         </div>
 
         <!-- <Shimmer v-if="showShimmers" height="14px" width="70px" /> -->
 
-        <!-- <div v-else-if="!showWarning" class="total-balance overflow">
-          {{ totalBalanceString }}
-        </div> -->
+        <div class="total-balance overflow">{{ assetData.free }}</div>
       </div>
     </div>
     <div class="activity">
@@ -98,15 +96,27 @@ interface AssetData {
   reserved: string;
   state: string;
   timestamp: number;
+  network: string;
 }
 
 @Component
 export default class CurrencyItemStateLess extends Vue {
   @Prop(Object) assetData!: AssetData;
   @Prop(String) assetName!: string;
+  @Prop(Number) price!: number;
+  @Prop(Number) priceChange!: number;
 
-  get icon() {
-    return `https://github.com/soramitsu/fearless-utils/tree/master/icons/tokens/coloured/${this.assetName}`;
+  mounted() {
+    //
+  }
+
+  get changePriceClasses() {
+    const classes = ['price-change'];
+
+    if (this.price > 0) classes.push('up-price');
+    else if (this.price < 0) classes.push('down-price');
+
+    return classes;
   }
 }
 </script>

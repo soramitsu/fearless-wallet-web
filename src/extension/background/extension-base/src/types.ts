@@ -32,3 +32,9 @@ export interface RequestTransactionHistoryAdd {
   networkKey: string;
   item: TransactionHistoryItemType;
 }
+
+export interface RequestTransactionHistoryGet {
+  address: string;
+  networkKey: string;
+  token?: string;
+}

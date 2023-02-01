@@ -12,7 +12,7 @@ import { BalanceItem, NetworkJson } from '../api/evm/types/ether';
 import { ChainRegistry } from '../api/evm/utils/registery';
 import { CurrentAccountInfo } from '../stores/CurrentAccountStore';
 import EthProvider from '../api/evm/ethProvider';
-import { RequestTransactionHistoryAdd, TransactionHistoryItemType } from '../types';
+import { RequestTransactionHistoryAdd, RequestTransactionHistoryGet, TransactionHistoryItemType } from '../types';
 import type {
   InjectedAccount,
   InjectedMetadataKnown,
@@ -186,8 +186,10 @@ export interface RequestSignatures {
     Record<string, TransactionHistoryItemType[]>
   ];
   'pri(transaction.history.add)': [RequestTransactionHistoryAdd, boolean, TransactionHistoryItemType[]];
+  'pri(transaction.history.get)': [RequestTransactionHistoryGet, any];
   'pri(price.get.price)': [RequestPrice, PriceJson];
   'pri(price.get.subscription)': [RequestSubscribePrice, PriceJson, PriceJson];
+
   // public/external requests, i.e. from a page
   'pub(accounts.list)': [RequestAccountList, InjectedAccount[]];
   'pub(accounts.subscribe)': [RequestAccountSubscribe, string, InjectedAccount[]];
@@ -344,7 +346,7 @@ export interface TokenBalanceRaw {
   free: BN;
 }
 export interface ApiMap {
-  substrate?: Record<string, any>;
+  substrate?: Record<string, unknown>;
   evm: Record<string, EthProvider>;
 }
 export interface ServiceInfo {
@@ -635,7 +637,7 @@ export interface IState {
   accountSubs: Record<string, AccountSub>;
   windows: number[];
   cachedUnlocks: CachedUnlocks;
-  balances: Record<string, any>;
+  balances: Record<string, Record<string, BalanceItem>>;
   connectedTabsUrl: string[];
   transaction: Record<string, TransactionHistoryItem[]>;
 }

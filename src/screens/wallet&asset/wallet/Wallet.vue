@@ -105,7 +105,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
 import type { TMutation, TabWallet } from '@/interfaces/common';
@@ -130,7 +130,7 @@ import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.v
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import Loading from '@/components/Loading.vue';
-import { getBalance, subscribeBalance } from '@/extension/messaging';
+import { getHistory, subscribeBalance } from '@/extension/messaging';
 import store from '@/store';
 import { BalanceJson } from '@/extension/background/extension-base/src/background/types';
 
@@ -183,9 +183,10 @@ export default class Wallet extends Vue {
     store.dispatch('SET_BALANCE', balanceData);
   }
 
-  activated() {
+  async activated() {
     this.useSetupBalance();
   }
+
   useSetupBalance(): void {
     subscribeBalance(null, this.updateBalance).then(this.updateBalance).catch(console.error);
   }

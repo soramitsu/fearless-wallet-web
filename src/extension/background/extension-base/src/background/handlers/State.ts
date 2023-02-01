@@ -7,6 +7,7 @@ import { knownGenesis } from '@polkadot/networks/defaults';
 import { assert } from '@polkadot/util';
 import { TypeRegistry } from '@polkadot/types';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
+import axios from 'axios';
 import {
   AuthorizeRequest,
   AuthRequest,
@@ -960,7 +961,7 @@ export default class State {
     });
   }
   public setBalanceItem(networkKey: string, item: BalanceItem) {
-    const itemData = { timestamp: +new Date(), ...item };
+    const itemData = { timestamp: +new Date(), ...item, network: networkKey };
     this.balanceMap[networkKey] = { ...this.balanceMap[networkKey], ...itemData };
     this.updateBalanceStore(networkKey, item);
   }
@@ -1030,7 +1031,6 @@ export default class State {
   }
 
   public getBalance(reset?: boolean): BalanceJson {
-    const activeData = this.removeInactiveNetworkData(this.balanceMap);
     let prepData = {};
     Object.keys(this.balanceMap).forEach((key) => {
       if (this.balanceMap[key].children) {
@@ -1140,7 +1140,7 @@ export default class State {
   }
 
   public getHistoryMap(): Record<string, TransactionHistoryItemType[]> {
-    return this.removeInactiveNetworkData(this.historyMap);
+    return this.historyMap;
   }
 
   public getNetworkMap() {

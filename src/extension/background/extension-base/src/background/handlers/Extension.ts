@@ -16,8 +16,9 @@ import {
   SubscribeBalanceRequest,
 } from '../types';
 import { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
-import { RequestTransactionHistoryAdd, TransactionHistoryItemType } from '../../types';
+import { RequestTransactionHistoryAdd, RequestTransactionHistoryGet, TransactionHistoryItemType } from '../../types';
 import { ALL_GENESIS_HASH } from '../../const';
+import { fetchHistory } from '../../api/evm/history';
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
@@ -831,6 +832,10 @@ export default class Extension {
     return this.state.getHistoryMap();
   }
 
+  private getHistory({ address, networkKey, token }: RequestTransactionHistoryGet) {
+    return fetchHistory(address, networkKey, token);
+  }
+
   private updateTransactionHistory(
     { address, item, networkKey }: RequestTransactionHistoryAdd,
     id: string,
@@ -1064,7 +1069,8 @@ export default class Extension {
 
       case 'pri(transaction.history.add)':
         return this.updateTransactionHistory(request as RequestTransactionHistoryAdd, id, port as Port);
-
+      case 'pri(transaction.history.get)':
+        return this.getHistory(request as RequestTransactionHistoryGet);
       case 'pri(transaction.history.get.subscription)':
         return this.subscribeHistory(id, port as Port);
       default:

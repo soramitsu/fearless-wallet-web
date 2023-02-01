@@ -11,7 +11,7 @@ export default class EthProvider {
   isReady = false;
   constructor(network: EvmNetworkType) {
     this.provider = new ethers.providers.WebSocketProvider(providers[network]);
-    this.provider._ready().then((res) => {
+    this.provider._ready().then(() => {
       this.isReady = true;
     });
 

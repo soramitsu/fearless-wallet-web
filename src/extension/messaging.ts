@@ -406,6 +406,10 @@ export async function subscribeHistory(
   return sendMessage('pri(transaction.history.get.subscription)', null, callback);
 }
 
+export async function getHistory(address: string, networkKey: string, token?: string) {
+  return sendMessage('pri(transaction.history.get)', { address, networkKey, token });
+}
+
 export async function updateTransactionHistory(
   address: string,
   networkKey: string,

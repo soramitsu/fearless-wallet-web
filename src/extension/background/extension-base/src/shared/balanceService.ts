@@ -39,16 +39,15 @@ export default class BalanceService {
     const { balances } = await storage.get(['balances']);
     const balanceByAddress = balances[address] ?? {};
     Object.keys(children).forEach((token) => {
-      balanceByAddress[token] = { ...children[token], chain, chainHash, address };
-
-      storage.set({
-        balances: {
-          ...balances,
-          [address]: {
-            ...balanceByAddress,
-          },
+      balanceByAddress[token] = { ...children[token], chain, chainHash, address, state: APIItemState.READY };
+    });
+    storage.set({
+      balances: {
+        ...balances,
+        [address]: {
+          ...balanceByAddress,
         },
-      });
+      },
     });
   }
   public async getBalanceObservable(address: string) {

@@ -22,6 +22,9 @@ export interface BalanceItem {
   feeFrozen?: string;
   children?: Record<string, BalanceChildItem>;
   timestamp?: number;
+  chain?: string;
+  chainHash?: string;
+  address?: string;
 }
 
 export enum CustomTokenType {

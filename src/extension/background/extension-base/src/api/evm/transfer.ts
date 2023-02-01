@@ -80,7 +80,8 @@ export async function handleTransfer(
   callback: (data: BasicTxResponse) => void
 ) {
   const web3Api = web3ApiMap[networkKey];
-  const signer = ethers.Wallet.fromMnemonic(privateKey);
+  const signer = new ethers.Wallet(privateKey);
+
   const signedTransaction = await signer.signTransaction(transactionObject);
   const response: BasicTxResponse = {
     errors: [],

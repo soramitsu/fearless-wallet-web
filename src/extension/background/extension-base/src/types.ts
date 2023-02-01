@@ -14,7 +14,7 @@ export interface Message extends MessageEvent {
 export interface TransactionHistoryItemType {
   time: number | string;
   networkKey: string;
-  change: string;
+  change: number;
   changeSymbol?: string; // if undefined => main token
   fee?: string;
   feeSymbol?: string;

@@ -3,25 +3,46 @@
 
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
-import { assert, isHex } from '@polkadot/util';
-import { keyExtractSuri, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
+import { assert, isHex, BN, BN_ZERO } from '@polkadot/util';
+import { keyExtractSuri, mnemonicGenerate, mnemonicValidate, isEthereumAddress } from '@polkadot/util-crypto';
+
 import { keyring } from '@polkadot/ui-keyring';
 import {
   ActiveTabAuthorizeStatus,
   BalanceJson,
+  BasicTxError,
+  BasicTxErrorCode,
+  BasicTxResponse,
+  BasicTxWarning,
+  BasicTxWarningCode,
   CachedUnlocks,
   Port,
   PriceJson,
+  RequestAccountExportPrivateKey,
+  RequestCheckTransfer,
   RequestCurrentAccountAddress,
-  SubscribeBalanceRequest,
+  RequestTransfer,
+  ResponseAccountExportPrivateKey,
+  ResponseCheckTransfer,
+  TransferErrorCode,
 } from '../types';
 import { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import { RequestTransactionHistoryAdd, RequestTransactionHistoryGet, TransactionHistoryItemType } from '../../types';
 import { ALL_GENESIS_HASH } from '../../const';
 import { fetchHistory } from '../../api/evm/history';
+import { TokenInfo } from '../../api/evm/types/ether';
+import {
+  getERC20TransactionObject,
+  getEVMTransactionObject,
+  getExistentialDeposit,
+  makeERC20Transfer,
+  makeEVMTransfer,
+} from '../../api/evm/transfer';
+import { getFreeBalance } from '../../api/substrate/balance';
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
+import { state } from '.';
 import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type {
   AccountJson,
@@ -150,6 +171,7 @@ export default class Extension {
     const address = keyring.createFromUri(_suri, {}, type).address;
     keyring.addUri(getSuri(suri, type), password, { genesisHash, name }, type);
     const allGenesisHash = currentAccount?.allGenesisHash || undefined;
+
     this.state.setCurrentAccount({
       address,
       ethereumAddress: (meta?.ethereumAddress as string) ?? '',
@@ -880,6 +902,404 @@ export default class Extension {
     return this.getPrice();
   }
 
+  private async isInWalletAccount(address?: string) {
+    return new Promise((resolve) => {
+      if (address) {
+        accountsObservable.subject.subscribe((storedAccounts: SubjectInfo): void => {
+          if (storedAccounts[address]) {
+            resolve(true);
+          }
+
+          resolve(false);
+        });
+      } else {
+        resolve(false);
+      }
+    });
+  }
+
+  private makeTransferCallback(
+    address: string,
+    recipientAddress: string,
+    networkKey: string,
+    token: string | undefined,
+    portCallback: (res: BasicTxResponse) => void
+  ): (res: BasicTxResponse) => void {
+    return (res: BasicTxResponse) => {
+      // !res.isFinalized to prevent duplicate action
+      if (!res.isFinalized && res.txResult && res.extrinsicHash) {
+        const transaction = {
+          time: Date.now(),
+          networkKey,
+          change: res.txResult.change,
+          changeSymbol: res.txResult.changeSymbol || token,
+          fee: res.txResult.fee,
+          feeSymbol: res.txResult.feeSymbol,
+          isSuccess: !!res.status,
+          extrinsicHash: res.extrinsicHash,
+        } as TransactionHistoryItemType;
+
+        state.setHistory(address, networkKey, { ...transaction, action: 'send' });
+
+        this.isInWalletAccount(recipientAddress)
+          .then((isValid) => {
+            if (isValid) {
+              state.setHistory(recipientAddress, networkKey, { ...transaction, action: 'received' });
+            } else {
+              console.info(`The recipient address [${recipientAddress}] is not in wallet.`);
+            }
+          })
+          .catch((err) => console.warn(err));
+      }
+
+      portCallback(res);
+    };
+  }
+
+  private async validateTransfer(
+    networkKey: string,
+    token: string | undefined,
+    from: string,
+    to: string,
+    password: string | undefined,
+    value: number | undefined,
+    transferAll: boolean | undefined
+  ): Promise<[Array<BasicTxError>, KeyringPair | undefined, BN | undefined, TokenInfo | undefined]> {
+    // const dotSamaApiMap = this.state.getSubstrateApiMap();
+    const errors = [] as Array<BasicTxError>;
+    let keypair: KeyringPair | undefined;
+    let transferValue;
+
+    if (!transferAll) {
+      try {
+        if (value === undefined) {
+          errors.push({
+            code: TransferErrorCode.INVALID_VALUE,
+            message: 'Require transfer value',
+          });
+        }
+
+        if (value) {
+          transferValue = new BN(value);
+        }
+      } catch (e) {
+        errors.push({
+          code: TransferErrorCode.INVALID_VALUE,
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          message: String(e.message),
+        });
+      }
+    }
+
+    try {
+      keypair = keyring.getPair(from);
+
+      if (password) {
+        keypair.unlock(password);
+      }
+    } catch (e) {
+      errors.push({
+        code: BasicTxErrorCode.KEYRING_ERROR,
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        message: String(e.message),
+      });
+    }
+
+    let tokenInfo: TokenInfo | undefined;
+
+    if (token) {
+      // tokenInfo = await getTokenInfo(networkKey, dotSamaApiMap[networkKey].api, token);
+
+      // if (!tokenInfo) {
+      //   errors.push({
+      //     code: TransferErrorCode.INVALID_TOKEN,
+      //     message: 'Not found token from registry',
+      //   });
+      // }
+
+      if (isEthereumAddress(from) && isEthereumAddress(to) && !tokenInfo?.isMainToken && !tokenInfo?.contractAddress) {
+        errors.push({
+          code: TransferErrorCode.INVALID_TOKEN,
+          message: 'Not found ERC20 address for this token',
+        });
+      }
+    }
+
+    return [errors, keypair, transferValue, tokenInfo];
+  }
+
+  private accountExportPrivateKey({
+    address,
+    password,
+  }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
+    return state.accountExportPrivateKey({ address, password });
+  }
+
+  private async checkTransfer({
+    from,
+    networkKey,
+    to,
+    token,
+    transferAll,
+    value,
+  }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
+    const [errors, fromKeyPair, valueNumber, tokenInfo] = await this.validateTransfer(
+      networkKey,
+      token,
+      from,
+      to,
+      undefined,
+      value,
+      transferAll
+    );
+    // const dotSamaApiMap = state.getSubstrateApiMap();
+    const web3ApiMap = state.getApiMap().evm;
+    let mainToken: string | undefined;
+    let mainTokenDecimals: number | undefined;
+    const warnings: BasicTxWarning[] = [];
+
+    if (tokenInfo && !tokenInfo.isMainToken) {
+      const mainNetwork = this.state.getNetworkMapByKey(networkKey);
+
+      mainToken = mainNetwork.nativeToken as string;
+      mainTokenDecimals = mainNetwork.decimals;
+    }
+
+    // const existentialDeposit = await getExistentialDeposit(
+    //   networkKey,
+    //   tokenInfo && !tokenInfo.isMainToken ? mainToken || '' : token || ''
+    //   // state.getSubstrateApiMap()
+    // );
+
+    let fee = '0';
+    let feeSymbol;
+    let fromAccountFreeBalance = 0;
+    let toAccountFreeBalance = 0;
+    let fromAccountNativeBalance = 0;
+
+    if (isEthereumAddress(from) && isEthereumAddress(to)) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      [fromAccountFreeBalance, toAccountFreeBalance, fromAccountNativeBalance] = await Promise.all([
+        getFreeBalance(networkKey, from, web3ApiMap, token),
+        getFreeBalance(networkKey, to, web3ApiMap, token),
+        getFreeBalance(networkKey, from, web3ApiMap, mainToken),
+      ]);
+      const txVal: number = transferAll ? fromAccountFreeBalance : value || 0;
+
+      // Estimate with EVM API
+      if (tokenInfo && !tokenInfo.isMainToken && tokenInfo.contractAddress) {
+        [, , fee] = await getERC20TransactionObject(
+          tokenInfo.contractAddress,
+          networkKey,
+          from,
+          to,
+          txVal,
+          !!transferAll,
+          web3ApiMap
+        );
+      } else {
+        [, , fee] = await getEVMTransactionObject(networkKey, to, txVal, !!transferAll, web3ApiMap);
+      }
+    }
+    // else {
+    //   // Estimate with DotSama API
+    //   if (tokenInfo && !tokenInfo.isMainToken) {
+    //     [[fee, feeSymbol], fromAccountFreeBalance, toAccountFreeBalance, fromAccountNativeBalance] = await Promise.all([
+    //       estimateFee(networkKey, fromKeyPair, to, value, !!transferAll, dotSamaApiMap, tokenInfo),
+    //       getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, token),
+    //       getFreeBalance(networkKey, to, dotSamaApiMap, web3ApiMap, token),
+    //       getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, mainToken),
+    //     ]);
+    //   } else {
+    //     [[fee, feeSymbol], fromAccountFreeBalance, toAccountFreeBalance] = await Promise.all([
+    //       estimateFee(networkKey, fromKeyPair, to, value, !!transferAll, dotSamaApiMap, tokenInfo),
+    //       getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, token),
+    //       getFreeBalance(networkKey, to, dotSamaApiMap, web3ApiMap, token),
+    //     ]);
+    //   }
+    // }
+
+    const fromAccountFreeNumber = new BN(fromAccountFreeBalance);
+    const feeNumber = fee ? new BN(fee) : undefined;
+    const fromAccountNativeBalanceNumber = new BN(fromAccountNativeBalance);
+    // const existentialDepositNumber = new BN(existentialDeposit);
+    // const rawExistentialDeposit =
+    //   Number(existentialDeposit) / Math.pow(10, mainTokenDecimals || tokenInfo?.decimals || 0);
+
+    if (!transferAll && value && feeNumber && valueNumber && valueNumber.gt(BN_ZERO)) {
+      if (tokenInfo && tokenInfo.isMainToken) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        if (fromAccountFreeNumber.gt(valueNumber)) {
+          // if (!fromAccountFreeNumber.gte(valueNumber.add(feeNumber).add(existentialDepositNumber))) {
+          // if (existentialDepositNumber.gt(BN_ZERO)) {
+          //   warnings.push({
+          //     code: BasicTxWarningCode.NOT_ENOUGH_EXISTENTIAL_DEPOSIT,
+          //     message: `Beware! This transaction might cause a total loss of assets in this account because it would lower your balance below the minimum threshold of ${rawExistentialDeposit} ${tokenInfo.symbol}`,
+          //   });
+          // }
+
+          const isEnoughBalanceToSend = fromAccountFreeNumber.gte(valueNumber.add(feeNumber));
+
+          if (!isEnoughBalanceToSend) {
+            errors.push({
+              code: TransferErrorCode.NOT_ENOUGH_FEE,
+              message: `Not enough ${tokenInfo.symbol} to pay the network fee`,
+            });
+            // }
+          }
+        } else {
+          errors.push({
+            code: TransferErrorCode.NOT_ENOUGH_VALUE,
+            message: 'Not enough balance free to make transfer',
+          });
+        }
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        if (fromAccountFreeNumber.gte(valueNumber)) {
+          // if (!fromAccountNativeBalanceNumber.gte(existentialDepositNumber.add(feeNumber))) {
+          // if (existentialDepositNumber.gt(BN_ZERO)) {
+          //   warnings.push({
+          //     code: BasicTxWarningCode.NOT_ENOUGH_EXISTENTIAL_DEPOSIT,
+          //     message: `Beware! This transaction might cause a total loss of assets in this account because it would lower your balance below the minimum threshold of ${rawExistentialDeposit} ${
+          //       mainToken || ''
+          //     }`,
+          //   });
+          // }
+
+          if (!fromAccountNativeBalanceNumber.gte(feeNumber)) {
+            errors.push({
+              code: TransferErrorCode.NOT_ENOUGH_FEE,
+              message: `Not enough ${mainToken || ''} to pay the network fee`,
+            });
+            // }
+          }
+        } else {
+          errors.push({
+            code: TransferErrorCode.NOT_ENOUGH_VALUE,
+            message: 'Not enough balance free to make transfer',
+          });
+        }
+      }
+    }
+
+    return {
+      errors,
+      warnings,
+      fromAccountFree: fromAccountFreeBalance,
+      toAccountFree: toAccountFreeBalance,
+      estimateFee: fee,
+      feeSymbol,
+    } as ResponseCheckTransfer;
+  }
+
+  private async makeTransfer(
+    id: string,
+    port: Port,
+    { from, networkKey, password, to, token, transferAll, value }: RequestTransfer
+  ): Promise<BasicTxResponse | undefined> {
+    const txState: BasicTxResponse = {};
+
+    const [errors, fromKeyPair, , tokenInfo] = await this.validateTransfer(
+      networkKey,
+      token,
+      from,
+      to,
+      password,
+      value,
+      transferAll
+    );
+
+    if (errors.length) {
+      txState.txError = true;
+      txState.errors = errors;
+      setTimeout(() => {
+        this.cancelSubscription(id);
+      }, 500);
+
+      // todo: add condition to lock KeyPair (for example: not remember password)
+      fromKeyPair && fromKeyPair.lock();
+
+      return txState;
+    }
+
+    if (fromKeyPair) {
+      const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
+      const callback = this.makeTransferCallback(from, to, networkKey, token, cb);
+
+      let transferProm: Promise<void> | undefined;
+
+      if (isEthereumAddress(from) && isEthereumAddress(to)) {
+        // Make transfer with EVM API
+        const { privateKey } = this.accountExportPrivateKey({ address: from, password });
+        const web3ApiMap = state.getApiMap().evm;
+
+        if (tokenInfo && !tokenInfo.isMainToken && tokenInfo.contractAddress) {
+          transferProm = makeERC20Transfer(
+            tokenInfo.contractAddress,
+            networkKey,
+            from,
+            to,
+            privateKey,
+            value || 0,
+            !!transferAll,
+            web3ApiMap,
+            callback
+          );
+        } else {
+          transferProm = makeEVMTransfer(networkKey, to, privateKey, value || 0, !!transferAll, web3ApiMap, callback);
+        }
+      } else {
+        // const dotSamaApiMap = state.getDotSamaApiMap();
+
+        // Make transfer with Dotsama API
+        //   transferProm = makeTransfer({
+        //     networkKey: networkKey,
+        //     tokenInfo: tokenInfo,
+        //     value: value || '0',
+        //     to: to,
+        //     dotSamaApiMap: dotSamaApiMap,
+        //     transferAll: !!transferAll,
+        //     callback: callback,
+        //     from: fromKeyPair.address,
+        //   });
+        // }
+
+        //   transferProm
+        //     .then(() => {
+        //       // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+        //       console.log(`Start transfer ${transferAll ? 'all' : value} from ${from} to ${to}`);
+
+        //       // todo: add condition to lock KeyPair
+        //       fromKeyPair.lock();
+        //     })
+        //     .catch((e) => {
+        //       // eslint-disable-next-line node/no-callback-literal
+        //       cb({
+        //         txError: true,
+        //         status: false,
+        //         errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (e as Error).message }],
+        //       });
+        //       console.error('Transfer error', e);
+        //       setTimeout(() => {
+        //         this.cancelSubscription(id);
+        //       }, 500);
+
+        //       // todo: add condition to lock KeyPair
+        //       fromKeyPair.lock();
+        //     });
+        // }
+
+        port.onDisconnect.addListener((): void => {
+          this.cancelSubscription(id);
+        });
+
+        return txState;
+      }
+    }
+  }
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -1066,7 +1486,12 @@ export default class Extension {
 
       case 'pri(balance.get.subscription)':
         return this.subscribeBalance(id, port as Port);
-
+      /// Transfer
+      case 'pri(accounts.checkTransfer)':
+        return await this.checkTransfer(request as RequestCheckTransfer);
+      case 'pri(accounts.transfer)':
+        return await this.makeTransfer(id, port as Port, request as RequestTransfer);
+      case 'pri(accounts.checkCrossChainTransfer)':
       case 'pri(transaction.history.add)':
         return this.updateTransactionHistory(request as RequestTransactionHistoryAdd, id, port as Port);
       case 'pri(transaction.history.get)':

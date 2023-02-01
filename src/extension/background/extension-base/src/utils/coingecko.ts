@@ -11,7 +11,7 @@ export const getTokenPrice = async (
   currency = 'usd'
 ): Promise<PriceJson> => {
   try {
-    const inverseMap: Record<string, string> = {};
+    // const inverseMap: Record<string, string> = {};
 
     chains.push(...['ethereum', 'bitcoin', 'tether', 'usd-coin', 'binancecoin', 'binance-usd', 'dai']);
 

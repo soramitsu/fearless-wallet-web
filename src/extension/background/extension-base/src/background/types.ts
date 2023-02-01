@@ -2,10 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /* eslint-disable no-use-before-define */
-
+import { SignerResult } from '@polkadot/types/types/extrinsic';
 import { TypeRegistry } from '@polkadot/types';
+import { Registry } from '@polkadot/types/types';
+import { SubmittableExtrinsicFunction } from '@polkadot/api/promise/types';
 import { BN } from '@polkadot/util';
 import { Subscription } from 'rxjs';
+import { ApiPromise } from '@polkadot/api';
 import { ALLOWED_PATH } from '../defaults';
 import MetadataStore from '../stores/Metadata';
 import { BalanceItem, NetworkJson } from '../api/evm/types/ether';
@@ -176,6 +179,9 @@ export interface RequestSignatures {
   'pri(google.create.file)': [ICreateFile, FilesResponse];
   'pri(google.delete.file)': [GoogleFileId, void];
   'pri(tab.status)': [null, ActiveTabAuthorizeStatus];
+  //Transfer
+  'pri(accounts.checkTransfer)': [RequestCheckTransfer, ResponseCheckTransfer];
+  'pri(accounts.transfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
 
   //ether
   'pri(balance.get.balance)': [null, BalanceJson];
@@ -290,6 +296,148 @@ export interface BalanceJson {
   details: Record<string, BalanceItem>;
 }
 
+export enum TransferErrorCode {
+  NOT_ENOUGH_VALUE = 'notEnoughValue',
+  NOT_ENOUGH_FEE = 'notEnoughValue',
+  INVALID_VALUE = 'invalidValue',
+  INVALID_TOKEN = 'invalidToken',
+  TRANSFER_ERROR = 'transferError',
+  UNSUPPORTED = 'unsupported',
+}
+
+export enum BasicTxErrorCode {
+  INVALID_PARAM = 'invalidParam',
+  KEYRING_ERROR = 'keyringError',
+  STAKING_ERROR = 'stakingError',
+  UN_STAKING_ERROR = 'unStakingError',
+  WITHDRAW_STAKING_ERROR = 'withdrawStakingError',
+  CLAIM_REWARD_ERROR = 'claimRewardError',
+  CREATE_COMPOUND_ERROR = 'createCompoundError',
+  CANCEL_COMPOUND_ERROR = 'cancelCompoundError',
+  TIMEOUT = 'timeout',
+  BALANCE_TO_LOW = 'balanceTooLow1',
+  UNKNOWN_ERROR = 'unknownError',
+}
+export interface ExternalState {
+  externalId: string;
+}
+export interface BasicTxResponse {
+  passwordError?: string | null;
+  callHash?: string;
+  status?: boolean;
+  extrinsicHash?: string;
+  txError?: boolean;
+  errors?: BasicTxError[];
+  externalState?: ExternalState;
+  isBusy?: boolean;
+  txResult?: TxResultType;
+  isFinalized?: boolean;
+}
+
+export type TxResultType = {
+  change: number;
+  changeSymbol?: string;
+  fee?: string;
+  feeSymbol?: string;
+};
+
+export enum BasicTxWarningCode {
+  NOT_ENOUGH_EXISTENTIAL_DEPOSIT = 'notEnoughExistentialDeposit',
+}
+
+export type TxErrorCode = TransferErrorCode | BasicTxErrorCode;
+
+export type TxWarningCode = BasicTxWarningCode;
+
+export type BasicTxError = {
+  code: TxErrorCode;
+  data?: object;
+  message: string;
+};
+export interface DefaultFormatBalance {
+  decimals?: number[] | number;
+  unit?: string[] | string;
+}
+export interface ApiState {
+  apiDefaultTx: SubmittableExtrinsicFunction;
+  apiDefaultTxSudo: SubmittableExtrinsicFunction;
+  isApiInitialized: boolean;
+  isApiReady: boolean;
+  isDevelopment?: boolean;
+  isEthereum?: boolean;
+  specName: string;
+  specVersion: string;
+  systemChain: string;
+  systemName: string;
+  systemVersion: string;
+  registry: Registry;
+  defaultFormatBalance: DefaultFormatBalance;
+}
+export interface ApiProps extends ApiState {
+  api: ApiPromise;
+  apiError?: string;
+  apiUrl: string;
+  isNotSupport?: boolean;
+  isApiConnected: boolean;
+  isEthereum: boolean;
+  isEthereumOnly: boolean;
+  isApiInitialized: boolean;
+  isReady: Promise<ApiProps>;
+  apiRetry?: number;
+  recoverConnect?: () => void;
+  useEvmAddress?: boolean;
+}
+export type BasicTxWarning = {
+  code: TxWarningCode;
+  data?: object;
+  message: string;
+};
+// eslint-disable-next-line @typescript-eslint/ban-types
+export type BaseRequestSign = {};
+export interface RequestCheckTransfer extends BaseRequestSign {
+  networkKey: string;
+  from: string;
+  to: string;
+  value?: number;
+  transferAll?: boolean;
+  token?: string;
+}
+
+export interface ResponseCheckTransfer {
+  errors?: Array<BasicTxError>;
+  warnings?: Array<BasicTxWarning>;
+  fromAccountFree: number;
+  toAccountFree: number;
+  estimateFee?: string;
+  feeSymbol?: string; // if undefined => use main token
+}
+
+export type PasswordRequestSign<T extends BaseRequestSign> = T & { password: string };
+
+export type ExternalRequestSign<T extends BaseRequestSign> = Omit<T, 'password'>;
+
+export type RequestTransfer = PasswordRequestSign<RequestCheckTransfer>;
+export interface RequestAccountExportPrivateKey {
+  address: string;
+  password: string;
+}
+export interface ExternalRequestPromise {
+  resolve?: (result: SignerResult | PromiseLike<SignerResult>) => void;
+  reject?: (error?: Error) => void;
+  status: ExternalRequestPromiseStatus;
+  message?: string;
+  createdAt: number;
+}
+export enum ExternalRequestPromiseStatus {
+  PENDING,
+  REJECTED,
+  FAILED,
+  COMPLETED,
+}
+export interface ResponseAccountExportPrivateKey {
+  privateKey: string;
+  publicKey: string;
+}
 export interface RequestAccountChangePassword {
   address: string;
   oldPass: string;

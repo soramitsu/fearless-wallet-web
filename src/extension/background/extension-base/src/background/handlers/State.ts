@@ -4,10 +4,12 @@
 import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { knownGenesis } from '@polkadot/networks/defaults';
-import { assert } from '@polkadot/util';
+import { assert, u8aToHex } from '@polkadot/util';
 import { TypeRegistry } from '@polkadot/types';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
-import axios from 'axios';
+import { base64Decode } from '@polkadot/util-crypto';
+import { decodePair } from '@polkadot/keyring/pair/decode';
+import { keyring } from '@polkadot/ui-keyring';
 import {
   AuthorizeRequest,
   AuthRequest,
@@ -35,6 +37,8 @@ import {
   ServiceInfo,
   BalanceJson,
   PriceJson,
+  RequestAccountExportPrivateKey,
+  ResponseAccountExportPrivateKey,
 } from '../types';
 import { getId } from '../../utils';
 import MetadataStore from '../../stores/Metadata';
@@ -172,6 +176,10 @@ export default class State {
 
   public getSubstrateApiMap() {
     //return this.apis.substrate;
+  }
+
+  public getNetworkMapByKey(key: string) {
+    return this.networkMap[key];
   }
 
   public getEvmApiMap() {
@@ -1024,6 +1032,21 @@ export default class State {
     });
 
     return activeData;
+  }
+
+  public accountExportPrivateKey({
+    address,
+    password,
+  }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    const exportedJson = keyring.backupAccount(keyring.getPair(address), password);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    const decoded = decodePair(password, base64Decode(exportedJson.encoded), exportedJson.encoding.type);
+
+    return {
+      privateKey: u8aToHex(decoded.secretKey),
+      publicKey: u8aToHex(decoded.publicKey),
+    };
   }
 
   public subscribeBalance() {

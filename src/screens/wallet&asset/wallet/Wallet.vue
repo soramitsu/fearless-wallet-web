@@ -64,6 +64,7 @@
             :price="getAssetPrice(assetKey)"
             :priceChange="getPriceChange(assetKey)"
             :key="assetKey"
+            :toggleVisibleActivityForm="toggleVisibleActivityForm"
           />
 
           <!-- <CurrencyItemStateLess
@@ -76,16 +77,16 @@
       </div>
     </ContentForm>
 
-    <SendForm
+    <SendFormStateLess
       v-if="showSendForm"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :_selectedAssetId="selectedCurrency.assetId"
       :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false)"
     />
 
-    <ReceiveForm
+    <ReceiveFormStateLess
       v-if="showReceiveForm"
-      :_selectedNetwork="selectedNetwork"
+      :_selectedNetwork="selectedCurrency.mainNetwork"
       :selectedAssetId="selectedCurrency.assetId"
       :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', false)"
     />
@@ -119,8 +120,8 @@ import CurrencyItemStateLess from '@/screens/wallet&asset/wallet/CurrencyItemSta
 import ContentSettings from '@/screens/wallet&asset/wallet/ContentSettings.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
-import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
-import SendForm from '@/screens/wallet&asset/SendForm.vue';
+import ReceiveFormStateLess from '@/screens/wallet&asset/wallet/ReceiveFormStateLess.vue';
+import SendFormStateLess from '@/screens/wallet&asset/wallet/SendFormStateLess.vue';
 import { accountController } from '@/controllers/accountController';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -140,10 +141,10 @@ import { COINGECKO_TOKENS } from '@/consts/networks';
 @Component({
   components: {
     NFTs,
-    SendForm,
+    SendFormStateLess,
     Currencies,
     CurrencyItemStateLess,
-    ReceiveForm,
+    ReceiveFormStateLess,
     WalletBalance,
     Loading,
     ContentSettings,
@@ -196,11 +197,15 @@ export default class Wallet extends Vue {
   }
 
   getAssetPrice(assetKey: string) {
-    if (Object.keys(this.price.tokenPriceMap).length) return this.price.tokenPriceMap[COINGECKO_TOKENS[assetKey]];
+    if (Object.keys(this.price).length) return this.price.tokenPriceMap[COINGECKO_TOKENS[assetKey]];
+
+    return 0;
   }
 
   getPriceChange(assetKey: string) {
-    if (Object.keys(this.price.tokenPriceChange).length) return this.price.tokenPriceChange[COINGECKO_TOKENS[assetKey]];
+    if (Object.keys(this.price).length) return this.price.tokenPriceChange[COINGECKO_TOKENS[assetKey]];
+
+    return 0;
   }
 
   useSetupBalance(): void {
@@ -368,7 +373,11 @@ export default class Wallet extends Vue {
     this.currenciesKey += 1;
   }
 
-  toggleVisibleActivityForm(field: 'showSendForm' | 'showReceiveForm', value = true, currency: Currency) {
+  toggleVisibleActivityForm(
+    field: 'showSendForm' | 'showReceiveForm',
+    value = true,
+    currency: Currency | { mainNetwork: string; assetId: string }
+  ) {
     this[field] = value;
 
     this.selectedCurrency = value

@@ -155,6 +155,7 @@ export default class BaseApi {
    */
   public static getDisplayAddressByNetwork(wallet: Wallet, network: string): string {
     const defaultWallet = BaseApi.getWalletIncludingReplacedAccount(wallet, network);
+    console.info(wallet, network);
 
     return BaseApi.formatAddress(defaultWallet, network);
   }

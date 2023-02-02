@@ -30,6 +30,10 @@ import type {
   BalanceJson,
   PriceJson,
   RequestSubscribePrice,
+  BasicTxResponse,
+  RequestTransfer,
+  RequestCheckTransfer,
+  ResponseCheckTransfer,
 } from '@extension-base/background/types';
 import type { Message, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
@@ -430,4 +434,15 @@ export async function subscribePrice(
   callback: (priceData: PriceJson) => void
 ): Promise<PriceJson> {
   return sendMessage('pri(price.get.subscription)', request, callback);
+}
+
+export async function makeTransfer(
+  request: RequestTransfer,
+  callback: (data: BasicTxResponse) => void
+): Promise<BasicTxResponse> {
+  return sendMessage('pri(accounts.transfer)', request, callback);
+}
+
+export async function checkTransfer(request: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
+  return sendMessage('pri(accounts.checkTransfer)', request);
 }

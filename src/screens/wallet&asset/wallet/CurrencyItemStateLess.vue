@@ -63,6 +63,7 @@
           class="button send"
           tooltipText="asset.sendButtonText"
           target=".send"
+          @click="toggleVisibleActivityForm('showSendForm', true, { mainNetwork: 'ethereum', assetId: assetName })"
         />
 
         <CircleButton
@@ -71,6 +72,7 @@
           class="button receive"
           tooltipText="asset.receiveButtonText"
           target=".receive"
+          @click="toggleVisibleActivityForm('showReceiveForm', true, { mainNetwork: 'ethereum', assetId: assetName })"
         />
 
         <CircleButton
@@ -105,6 +107,7 @@ export default class CurrencyItemStateLess extends Vue {
   @Prop(String) assetName!: string;
   @Prop(Number) price!: number;
   @Prop(Number) priceChange!: number;
+  @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
 
   mounted() {
     //

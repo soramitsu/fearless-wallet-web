@@ -113,8 +113,8 @@ export default class CurrencyItemStateLess extends Vue {
   get changePriceClasses() {
     const classes = ['price-change'];
 
-    if (this.price > 0) classes.push('up-price');
-    else if (this.price < 0) classes.push('down-price');
+    if (this.priceChange > 0) classes.push('up-price');
+    else if (this.priceChange < 0) classes.push('down-price');
 
     return classes;
   }

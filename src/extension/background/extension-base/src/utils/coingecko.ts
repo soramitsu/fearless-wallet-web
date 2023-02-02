@@ -13,7 +13,22 @@ export const getTokenPrice = async (
   try {
     // const inverseMap: Record<string, string> = {};
 
-    chains.push(...['ethereum', 'bitcoin', 'tether', 'usd-coin', 'binancecoin', 'binance-usd', 'dai']);
+    chains.push(
+      ...[
+        'ethereum',
+        'tether',
+        'usd-coin',
+        'binancecoin',
+        'binance-usd',
+        'dai',
+        'link',
+        '1inch',
+        'ape',
+        'uniswap',
+        'shiba-inu',
+        'near',
+      ]
+    );
 
     const chainsStr = chains.join(',');
     const res = await axios.get(

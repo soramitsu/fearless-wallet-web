@@ -135,6 +135,7 @@ import Loading from '@/components/Loading.vue';
 import { getPrice, subscribeBalance } from '@/extension/messaging';
 import store from '@/store';
 import { BalanceJson, PriceJson } from '@/extension/background/extension-base/src/background/types';
+import { COINGECKO_TOKENS } from '@/consts/networks';
 
 @Component({
   components: {
@@ -195,11 +196,11 @@ export default class Wallet extends Vue {
   }
 
   getAssetPrice(assetKey: string) {
-    return this.price.tokenPriceMap[assetKey.toLowerCase()];
+    if (Object.keys(this.price.tokenPriceMap).length) return this.price.tokenPriceMap[COINGECKO_TOKENS[assetKey]];
   }
 
   getPriceChange(assetKey: string) {
-    return this.price.tokenPriceChange[assetKey.toLowerCase()];
+    if (Object.keys(this.price.tokenPriceChange).length) return this.price.tokenPriceChange[COINGECKO_TOKENS[assetKey]];
   }
 
   useSetupBalance(): void {

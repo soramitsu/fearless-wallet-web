@@ -27,7 +27,7 @@
               <NetworkLogo
                 v-for="{ network } in availableInNetworksPart"
                 class="minor-network-img"
-                :isAsset="false"
+                type="network"
                 :key="network"
                 :name="network"
                 :width="12"

@@ -5,6 +5,7 @@
     headerText="header.settings.language.translated"
     :value="language"
     :top="50"
+    iconType="fiat"
     :showAnimation="false"
     :showIcon="false"
     :showSearch="false"
@@ -22,8 +23,8 @@ import { accountController } from '@/controllers/accountController';
 @Component
 export default class AboutPopup extends Vue {
   readonly options = [
-    { label: 'English', value: 'en' },
-    { label: 'Русский', value: 'ru' },
+    { label: 'English', value: 'usd' },
+    { label: 'Русский', value: 'rub' },
   ];
 
   @Prop(Function) handlerClose!: VoidFunction;

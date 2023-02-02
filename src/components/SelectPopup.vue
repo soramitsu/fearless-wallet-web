@@ -20,10 +20,10 @@
   >
     <div v-for="{ label, value, path } in options" :key="label" :class="rowClasses(value)" @click="toggle(value)">
       <div class="description">
-        <Icon v-if="path === 'globus'" :icon="path" className="img" />
-        <Icon v-else-if="path === '_default'" :icon="path" className="img" />
+        <Icon v-if="path === 'globus' && showIcon" :icon="path" className="img" />
+        <Icon v-else-if="path === '_default' && showIcon" :icon="path" className="img" />
 
-        <NetworkLogo v-else :type="iconType" :name="value" class="img" />
+        <NetworkLogo v-else-if="showIcon" :type="iconType" :name="value" class="img" />
         {{ label }}
       </div>
 

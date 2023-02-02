@@ -9,7 +9,7 @@ import type { RelayChainName } from '@/interfaces';
 import { getIconName } from '@/helpers/imgPath';
 
 @Component
-export default class NetworkLogo extends Vue {
+export default class ExternalLogo extends Vue {
   @Prop(String) name!: string;
   @Prop({ required: false, type: String }) relayChain?: RelayChainName;
   @Prop({ default: 'asset', type: String }) type!: 'asset' | 'network' | 'fiat';

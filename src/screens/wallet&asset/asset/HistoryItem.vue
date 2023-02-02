@@ -1,6 +1,6 @@
 <template>
   <div class="history-item">
-    <NetworkLogo type="network" :name="asset" :relayChain="relayChain" />
+    <ExternalLogo type="asset" :name="asset" :relayChain="relayChain" />
 
     <div class="column">
       <div class="first-row">

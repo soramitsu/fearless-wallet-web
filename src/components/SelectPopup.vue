@@ -23,7 +23,7 @@
         <Icon v-if="path === 'globus'" :icon="path" className="img" />
         <Icon v-else-if="path === '_default'" :icon="path" className="img" />
 
-        <NetworkLogo v-else :isAsset="false" :name="value" class="img" />
+        <NetworkLogo v-else :type="iconType" :name="value" class="img" />
         {{ label }}
       </div>
 
@@ -48,6 +48,7 @@ export default class SelectPopup extends Vue {
   formattedOptions: Record<string, string>[] = [];
 
   @Prop(String) value!: string;
+  @Prop({ default: 'asset', type: String }) iconType!: string;
   @Prop(Array) options!: Record<string, string>[];
   @Prop(String) headerText!: string;
   @Prop(Number) top!: number;

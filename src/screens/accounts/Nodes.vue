@@ -3,7 +3,7 @@
     <div class="network-description">
       <div class="description">
         <div class="img-container">
-          <NetworkLogo class="img" :isAsset="false" :name="selectedNetwork" />
+          <NetworkLogo class="img" type="network" :name="selectedNetwork" />
         </div>
 
         <div>

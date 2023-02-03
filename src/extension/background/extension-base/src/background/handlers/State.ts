@@ -1038,9 +1038,7 @@ export default class State {
     address,
     password,
   }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     const exportedJson = keyring.backupAccount(keyring.getPair(address), password);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     const decoded = decodePair(password, base64Decode(exportedJson.encoded), exportedJson.encoding.type);
 
     return {

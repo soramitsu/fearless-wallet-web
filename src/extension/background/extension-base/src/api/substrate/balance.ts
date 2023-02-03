@@ -150,14 +150,14 @@ export async function getFreeBalance(
   address: string,
   web3ApiMap: Record<string, EthProvider>,
   token?: string
-): Promise<number> {
+): Promise<string> {
   const web3Api = web3ApiMap[networkKey];
 
   // web3Api support mean isEthereum Network support
 
-  const balance = await web3Api.getBalance(address);
+  const balance = (await web3Api.provider.getBalance(address)).toString();
 
-  return Number(balance) || 0;
+  return balance || '0';
 }
 
 export async function subscribeFreeBalance(

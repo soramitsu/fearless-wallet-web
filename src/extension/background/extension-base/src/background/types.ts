@@ -335,7 +335,7 @@ export interface BasicTxResponse {
 }
 
 export type TxResultType = {
-  change: number;
+  change: string;
   changeSymbol?: string;
   fee?: string;
   feeSymbol?: string;
@@ -398,7 +398,7 @@ export interface RequestCheckTransfer extends BaseRequestSign {
   networkKey: string;
   from: string;
   to: string;
-  value?: number;
+  value?: string;
   transferAll?: boolean;
   token?: string;
 }
@@ -406,8 +406,8 @@ export interface RequestCheckTransfer extends BaseRequestSign {
 export interface ResponseCheckTransfer {
   errors?: Array<BasicTxError>;
   warnings?: Array<BasicTxWarning>;
-  fromAccountFree: number;
-  toAccountFree: number;
+  fromAccountFree: string;
+  toAccountFree: string;
   estimateFee?: string;
   feeSymbol?: string; // if undefined => use main token
 }

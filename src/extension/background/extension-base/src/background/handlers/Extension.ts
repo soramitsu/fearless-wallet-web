@@ -962,7 +962,7 @@ export default class Extension {
     from: string,
     to: string,
     password: string | undefined,
-    value: number | undefined,
+    value: string | undefined,
     transferAll: boolean | undefined
   ): Promise<[Array<BasicTxError>, KeyringPair | undefined, BN | undefined, TokenInfo | undefined]> {
     // const dotSamaApiMap = this.state.getSubstrateApiMap();
@@ -979,9 +979,7 @@ export default class Extension {
           });
         }
 
-        if (value) {
-          transferValue = new BN(value);
-        }
+        if (value) transferValue = new BN(Number(value));
       } catch (e) {
         errors.push({
           code: TransferErrorCode.INVALID_VALUE,
@@ -995,9 +993,7 @@ export default class Extension {
     try {
       keypair = keyring.getPair(from);
 
-      if (password) {
-        keypair.unlock(password);
-      }
+      if (password) keypair.unlock(password);
     } catch (e) {
       errors.push({
         code: BasicTxErrorCode.KEYRING_ERROR,
@@ -1028,13 +1024,6 @@ export default class Extension {
     }
 
     return [errors, keypair, transferValue, tokenInfo];
-  }
-
-  private accountExportPrivateKey({
-    address,
-    password,
-  }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
-    return state.accountExportPrivateKey({ address, password });
   }
 
   private async checkTransfer({
@@ -1075,19 +1064,18 @@ export default class Extension {
 
     let fee = '0';
     let feeSymbol;
-    let fromAccountFreeBalance = 0;
-    let toAccountFreeBalance = 0;
-    let fromAccountNativeBalance = 0;
+    let fromAccountFreeBalance = '0';
+    let toAccountFreeBalance = '0';
+    let fromAccountNativeBalance = '0';
 
-    if (isEthereumAddress(from) && isEthereumAddress(to)) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
+    if (isEthereumAddress(to)) {
       [fromAccountFreeBalance, toAccountFreeBalance, fromAccountNativeBalance] = await Promise.all([
         getFreeBalance(networkKey, from, web3ApiMap, token),
         getFreeBalance(networkKey, to, web3ApiMap, token),
         getFreeBalance(networkKey, from, web3ApiMap, mainToken),
       ]);
-      const txVal: number = transferAll ? fromAccountFreeBalance : value || 0;
+
+      const txVal: string = transferAll ? fromAccountFreeBalance : value || '0';
 
       // Estimate with EVM API
       if (tokenInfo && !tokenInfo.isMainToken && tokenInfo.contractAddress) {
@@ -1195,6 +1183,13 @@ export default class Extension {
     } as ResponseCheckTransfer;
   }
 
+  private accountExportPrivateKey({
+    address,
+    password,
+  }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
+    return state.accountExportPrivateKey({ address, password });
+  }
+
   private async makeTransfer(
     id: string,
     port: Port,
@@ -1231,9 +1226,10 @@ export default class Extension {
 
       let transferProm: Promise<void> | undefined;
 
-      if (isEthereumAddress(from) && isEthereumAddress(to)) {
+      if (isEthereumAddress(to)) {
         // Make transfer with EVM API
         const { privateKey } = this.accountExportPrivateKey({ address: from, password });
+
         const web3ApiMap = state.getApiMap().evm;
 
         if (tokenInfo && !tokenInfo.isMainToken && tokenInfo.contractAddress) {
@@ -1243,13 +1239,13 @@ export default class Extension {
             from,
             to,
             privateKey,
-            value || 0,
+            value || '0',
             !!transferAll,
             web3ApiMap,
             callback
           );
         } else {
-          transferProm = makeEVMTransfer(networkKey, to, privateKey, value || 0, !!transferAll, web3ApiMap, callback);
+          transferProm = makeEVMTransfer(networkKey, to, privateKey, value || '0', !!transferAll, web3ApiMap, callback);
         }
       } else {
         // const dotSamaApiMap = state.getDotSamaApiMap();

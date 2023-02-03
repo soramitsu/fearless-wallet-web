@@ -19,6 +19,8 @@ export default class Loading extends Vue {
 .spinner {
   animation: spin-animation 1.5s infinite;
   display: inline-block;
+  width: 24px;
+  height: 24px;
 }
 
 @keyframes spin-animation {

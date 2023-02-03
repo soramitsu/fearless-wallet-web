@@ -1,6 +1,6 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-
+import browser from 'webextension-polyfill';
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { assert, isHex } from '@polkadot/util';
@@ -195,14 +195,14 @@ export default class Extension {
     if (remainingTime < 0) {
       cachedUnlocks[address] = 0;
 
-      await chrome.storage.local.set({ cachedUnlocks });
+      await browser.storage.local.set({ cachedUnlocks });
 
       pair.lock();
 
       return 0;
     }
 
-    await chrome.storage.local.set({ cachedUnlocks });
+    await browser.storage.local.set({ cachedUnlocks });
 
     return remainingTime;
   }
@@ -213,7 +213,7 @@ export default class Extension {
 
     Object.keys(cachedUnlocks).map((address) => (newCachedUnlocks[address] = 0));
 
-    await chrome.storage.local.set({ cachedUnlocks: newCachedUnlocks });
+    await browser.storage.local.set({ cachedUnlocks: newCachedUnlocks });
 
     return true;
   }
@@ -287,7 +287,7 @@ export default class Extension {
   }
 
   static async isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
-    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    const [tab] = await browser.tabs.query({ active: true, lastFocusedWindow: true });
 
     if (!tab || !tab.url)
       return {
@@ -484,7 +484,7 @@ export default class Extension {
     const result = request.sign(registry, pair);
     cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
 
-    if (savePass) await chrome.storage.local.set({ cachedUnlocks });
+    if (savePass) await browser.storage.local.set({ cachedUnlocks });
     else pair.lock();
 
     resolve({
@@ -500,7 +500,7 @@ export default class Extension {
 
     cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
 
-    await chrome.storage.local.set({ cachedUnlocks });
+    await browser.storage.local.set({ cachedUnlocks });
 
     return true;
   }
@@ -563,15 +563,15 @@ export default class Extension {
   }
 
   static async windowOpen(path: AllowedPath): Promise<boolean> {
-    const [tab] = await chrome.tabs.query({ title: 'fearless-wallet' });
+    const [tab] = await browser.tabs.query({ title: 'fearless-wallet' });
 
     if (tab && tab.id) {
-      chrome.tabs.update(tab.id, { active: true });
+      browser.tabs.update(tab.id, { active: true });
 
       return true;
     }
 
-    const url = `${chrome.runtime.getURL('popup.html')}#${path}`;
+    const url = `${browser.runtime.getURL('popup.html')}#${path}`;
 
     if (!ALLOWED_PATH.includes(path)) {
       console.error('Not allowed to open the url:', url);
@@ -579,7 +579,7 @@ export default class Extension {
       return false;
     }
 
-    withErrorLog(() => chrome.tabs.create({ url }));
+    withErrorLog(() => browser.tabs.create({ url }));
 
     return true;
   }
@@ -667,12 +667,6 @@ export default class Extension {
     return googleManage.verifyToken(token);
   }
 
-  static getToken(): void {
-    chrome.identity.getAuthToken({}, function (token) {
-      Extension.token = token;
-    });
-  }
-
   static async getFiles({ token }: { token: string }): Promise<IGetFilesResponse> {
     return googleManage.getFiles(token);
   }
@@ -686,10 +680,9 @@ export default class Extension {
   }
 
   static deleteFile({ id }: GoogleFileId): void {
-    if (!Extension.token) Extension.getToken();
-
     googleManage.deleteFile(id, Extension.token);
   }
+
   static cancelAuthRequest(id: string) {
     State.authorizeCancel({ id });
   }

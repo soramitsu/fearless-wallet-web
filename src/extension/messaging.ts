@@ -3,6 +3,7 @@
 
 import { metadataExpand } from '@polkadot/extension-chains';
 import { selectableNetworks } from '@polkadot/networks';
+import browser from 'webextension-polyfill';
 import { getId } from './background/extension-base/src/utils';
 import { PORT_EXTENSION } from './background/extension-base/src/defaults';
 import type { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
@@ -26,7 +27,6 @@ import type {
   SeedLengths,
   SigningRequest,
   SubscriptionMessageTypes,
-  Port,
 } from '@extension-base/background/types';
 import type { Message } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
@@ -61,10 +61,9 @@ interface Handler {
 }
 
 type Handlers = Record<string, Handler>;
+const port = browser.runtime.connect({ name: PORT_EXTENSION });
 
-const port = chrome.runtime.connect({ name: PORT_EXTENSION });
 const handlers: Handlers = {};
-
 // setup a listener for messages, any incoming resolves the promise
 port.onMessage.addListener((data: Message['data']): void => {
   const handler = handlers[data.id];
@@ -111,7 +110,7 @@ function sendMessage<TMessageType extends MessageTypes>(
 
     handlers[id] = { reject, resolve, subscriber };
 
-    port?.postMessage({ id, message, request: request || {} });
+    port.postMessage({ id, message, request: request || {} });
   });
 }
 

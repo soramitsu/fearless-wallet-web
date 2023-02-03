@@ -6,6 +6,12 @@ const WebpackExtensionManifestPlugin = require('webpack-extension-manifest-plugi
 const { defineConfig } = require('@vue/cli-service');
 const baseConfig = require('./vue.config.base');
 const pages = {};
+const manifestExtend = {
+  key: env.EXTENSION_PUBLIC_KEY,
+  oauth2: {
+    client_id: env.OAUTH_CLIENT_ID,
+  },
+};
 
 function getFileExtension(filename) {
   return /[.]/.exec(filename) ? /[^.]+$/.exec(filename)[0] : undefined;
@@ -47,15 +53,10 @@ module.exports = defineConfig({
     config.plugins.push(
       new WebpackExtensionManifestPlugin({
         config: {
-          base: './src/extension/manifest.base.json',
-          extend: {
-            key: env.EXTENSION_PUBLIC_KEY,
-            oauth2: {
-              client_id: env.OAUTH_CLIENT_ID,
-            },
-          },
+          base: `./src/extension/manifest.base${env.EXTENSION_TYPE === 'CHROME' ? '' : '.firefox'}.json`,
+          extend: env.EXTENSION_TYPE === 'CHROME' ? manifestExtend : {},
         },
-        pkgJsonProps: ['version', 'author', 'description'],
+        pkgJsonProps: ['version', 'description'],
       })
     );
 

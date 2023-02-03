@@ -168,3 +168,10 @@ body {
   background-size: cover;
 }
 </style>
+
+<style lang="scss">
+body {
+  width: 561px;
+  height: 600px;
+}
+</style>

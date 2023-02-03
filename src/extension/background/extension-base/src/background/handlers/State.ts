@@ -6,7 +6,7 @@ import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { knownGenesis } from '@polkadot/networks/defaults';
 import { assert } from '@polkadot/util';
 import { TypeRegistry } from '@polkadot/types';
-
+import browser from 'webextension-polyfill';
 import {
   AuthorizeRequest,
   AuthRequest,
@@ -145,34 +145,33 @@ export default class State {
   static async popupClose(): Promise<void> {
     const { windows } = await State.getFromStorage(['windows']);
 
-    windows?.forEach((id: number) => withErrorLog(() => chrome.windows.remove(id)));
+    windows?.forEach((id: number) => withErrorLog(() => browser.windows.remove(id)));
 
     await storage.set({ windows: [] });
   }
 
   static async popupOpen(): Promise<void> {
     const { notification, windows } = await State.getFromStorage(['notification', 'windows']);
-    if (notification && notification !== 'extension')
-      chrome.windows.getCurrent((win) => {
-        const popupOptions = { ...POPUP_WINDOW_OPTS };
 
-        if (win) {
-          popupOptions.left = (win.left || 0) + (win.width || 0) - (POPUP_WINDOW_OPTS.width || 0) - 20;
-          popupOptions.top = (win.top || 0) + 75;
-        }
+    if (notification && notification !== 'extension') {
+      const win = await browser.windows.getCurrent();
+      const popupOptions = { ...POPUP_WINDOW_OPTS };
 
-        chrome.windows.create(
-          notification === 'window' ? NORMAL_WINDOW_OPTS : popupOptions,
+      if (win) {
+        popupOptions.left = (win.left || 0) + (win.width || 0) - (POPUP_WINDOW_OPTS.width || 0) - 20;
+        popupOptions.top = (win.top || 0) + 75;
+      }
 
-          async (window): Promise<void> => {
-            if (window) {
-              windows.push(window.id || 0);
+      browser.windows
+        .create(notification === 'window' ? NORMAL_WINDOW_OPTS : popupOptions)
+        .then(async (window): Promise<void> => {
+          if (window) {
+            windows.push(window.id || 0);
 
-              await storage.set({ windows });
-            }
+            await storage.set({ windows });
           }
-        );
-      });
+        });
+    }
   }
 
   static async injectFromStorage() {
@@ -344,7 +343,7 @@ export default class State {
 
     const text = authCount ? 'Auth' : metaCount ? 'Meta' : signCount ? `${signCount}` : '';
 
-    withErrorLog(() => chrome.action.setBadgeText({ text }));
+    withErrorLog(() => browser.action.setBadgeText({ text }));
 
     if (shouldClose && text === '') {
       this.popupClose();

@@ -1,6 +1,6 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-
+import browser from 'webextension-polyfill';
 import { PHISHING_PAGE_REDIRECT } from '@extension-base/defaults';
 import { checkIfDenied } from '@polkadot/phishing';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
@@ -77,7 +77,7 @@ export default class Tabs {
         const transformedAccounts = transformAccounts(accounts);
         const transformedMobileAccount = transformAddresses(keyring.addresses.subject.value);
         const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
-        await chrome.storage.local.set({ transformAccounts: allAccounts });
+        await browser.storage.local.set({ transformAccounts: allAccounts });
 
         const auths = await Tabs.filterForAuthorizedAccounts(allAccounts, url);
 
@@ -191,13 +191,13 @@ export default class Tabs {
   static redirectPhishingLanding(phishingWebsite: string): void {
     const nonFragment = phishingWebsite.split('#')[0];
     const encodedWebsite = encodeURIComponent(nonFragment);
-    const url = `${chrome.runtime.getURL('index.html')}#${PHISHING_PAGE_REDIRECT}/${encodedWebsite}`;
+    const url = `${browser.runtime.getURL('index.html')}#${PHISHING_PAGE_REDIRECT}/${encodedWebsite}`;
 
-    chrome.tabs.query({ url: nonFragment }, (tabs) => {
+    browser.tabs.query({ url: nonFragment }).then((tabs) => {
       tabs
         .map(({ id }) => id)
         .filter((id): id is number => isNumber(id))
-        .forEach((id) => withErrorLog(() => chrome.tabs.update(id, { url })));
+        .forEach((id) => withErrorLog(() => browser.tabs.update(id, { url })));
     });
   }
 

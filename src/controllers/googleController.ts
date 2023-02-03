@@ -1,5 +1,6 @@
 import axios from 'axios';
 import fetchAdapter from '@vespaiach/axios-fetch-adapter';
+import browser from 'webextension-polyfill';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { FilesResponse, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
 
@@ -8,7 +9,7 @@ class GoogleManage {
   private readonly baseUploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
   private readonly extensionRedirectURL = 'https://nhlnehondigmgckngjomcpcefcdplmgc.chromiumapp.org/welcome';
   private readonly baseAuthParams = {
-    client_id: chrome.runtime.getManifest().oauth2!.client_id,
+    client_id: '621183184145-3hd3h5ioiejqu2bs1ngamlpd616mmcio.apps.googleusercontent.com',
     response_type: 'token',
     state: 'pass-through value',
     access_type: 'online',
@@ -67,14 +68,16 @@ ${json}
   }
 
   public async authExtension(type: 'main' | 'export' = 'main', wallet?: string) {
-    chrome.identity.launchWebAuthFlow({ url: this.authURL('extension'), interactive: true }, async (redirect_url) => {
-      const token = new URLSearchParams(redirect_url).get('access_token');
-      const baseURL = `${chrome.runtime.getURL('popup.html')}#/${this.urlTypes[type]}/${token}`;
-      const url = type === 'export' && wallet ? `${baseURL}?wallet=${wallet}` : baseURL;
-      const [tab] = await chrome.tabs.query({ title: 'fearless-wallet' });
-
-      tab && tab.id ? chrome.tabs.update(tab.id, { active: true, url }) : chrome.tabs.create({ active: true, url });
+    const redirect_url = await browser.identity.launchWebAuthFlow({
+      url: this.authURL('extension'),
+      interactive: true,
     });
+    const token = new URLSearchParams(redirect_url).get('access_token');
+    const baseURL = `${browser.runtime.getURL('popup.html')}#/${this.urlTypes[type]}/${token}`;
+    const url = type === 'export' && wallet ? `${baseURL}?wallet=${wallet}` : baseURL;
+    const [tab] = await browser.tabs.query({ title: 'fearless-wallet' });
+
+    tab && tab.id ? browser.tabs.update(tab.id, { active: true, url }) : browser.tabs.create({ active: true, url });
   }
 
   public authDesktop() {

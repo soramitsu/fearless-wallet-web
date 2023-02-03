@@ -1,4 +1,5 @@
 import { keyring } from '@polkadot/ui-keyring';
+import browser from 'webextension-polyfill';
 import {
   decodeAddress,
   encodeAddress,
@@ -464,15 +465,15 @@ export default class BaseApi {
   }
 
   public static isExtension(): boolean {
-    return chrome.extension !== undefined;
+    return browser.extension !== undefined;
   }
 
   public static windowOpen(path: string): void {
     if (!BaseApi.isExtension()) return;
 
-    const url = `${chrome.runtime.getURL('popup.html')}#${path}`;
+    const url = `${browser.runtime.getURL('popup.html')}#${path}`;
 
-    chrome.tabs.create({ url });
+    browser.tabs.create({ url });
   }
 
   public static useIsPopup(): boolean {

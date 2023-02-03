@@ -2,14 +2,15 @@ import { keyring } from '@polkadot/ui-keyring';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import handlers from '@extension-base/background/handlers';
 import State, { initState } from '@extension-base/background/handlers/State';
+import browser from 'webextension-polyfill';
 import AccountsStore from '../background/extension-base/src/stores/Accounts';
 import type { RequestSignatures, TransportRequestMessage } from '@extension-base/background/types';
 
-chrome.runtime.onInstalled.addListener(async () => {
+browser.runtime.onInstalled.addListener(async () => {
   await initState();
 });
 
-chrome.runtime.onConnect.addListener((port): void => {
+browser.runtime.onConnect.addListener((port): void => {
   State.injectFromStorage();
 
   port.onMessage.addListener((data: TransportRequestMessage<keyof RequestSignatures>) => handlers(data, port));
@@ -19,7 +20,7 @@ chrome.runtime.onConnect.addListener((port): void => {
 function getActiveTabs() {
   // queriing the current active tab in the current window should only ever return 1 tab
   // although an array is specified here
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+  browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
     // get the urls of the active tabs. In the case of new tab the url may be empty or undefined
     // we filter these out
     const urls: string[] = tabs.map(({ url }) => url).filter((url) => !!url) as string[];
@@ -36,7 +37,7 @@ function getActiveTabs() {
 }
 
 // listen to tab updates this is fired on url change
-chrome.tabs.onUpdated.addListener((_, changeInfo) => {
+browser.tabs.onUpdated.addListener((_, changeInfo) => {
   // we are only interested in url change
   if (!changeInfo.url) {
     return;
@@ -47,16 +48,16 @@ chrome.tabs.onUpdated.addListener((_, changeInfo) => {
 
 // the list of active tab changes when switching window
 // in a mutli window setup
-chrome.windows.onFocusChanged.addListener(() => getActiveTabs());
+browser.windows.onFocusChanged.addListener(() => getActiveTabs());
 
 // when clicking on an existing tab or opening a new tab this will be fired
 // before the url is entered by users
-chrome.tabs.onActivated.addListener(() => {
+browser.tabs.onActivated.addListener(() => {
   getActiveTabs();
 });
 
 // when deleting a tab this will be fired
-chrome.tabs.onRemoved.addListener(() => {
+browser.tabs.onRemoved.addListener(() => {
   getActiveTabs();
 });
 

@@ -36,6 +36,14 @@ import {
   IGetFilesResponse,
   VerifyTokenResponse,
 } from '@/interfaces/google';
+export interface PrepareExternalRequest {
+  id: string;
+  setState: (promise: ExternalRequestPromise) => void;
+  updateState: (promise: Partial<ExternalRequestPromise>) => void;
+}
+export enum SignerType {
+  PASSWORD = 'PASSWORD',
+}
 
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;
@@ -817,4 +825,44 @@ export interface TransactionHistoryItem {
 
 export interface RequestAuthorizeCancel {
   id: string;
+}
+export interface FormattedMethod {
+  args?: ArgInfo[];
+  methodName: string;
+}
+
+export interface ArgInfo {
+  argName: string;
+  argValue: string | string[];
+}
+
+export interface EraInfo {
+  period: number;
+  phase: number;
+}
+
+export interface ResponseParseTransactionSubstrate {
+  era: EraInfo | string;
+  nonce: number;
+  method: string | FormattedMethod[];
+  tip: number;
+  specVersion: number;
+  message: string;
+}
+
+export interface SupportTransferResponse {
+  supportTransfer: boolean;
+  supportTransferAll: boolean;
+}
+export type ChainRelationType = 'p' | 'r'; // parachain | relaychain
+
+export interface ChainRelationInfo {
+  type: ChainRelationType;
+  isEthereum: boolean;
+  supportedToken: string[];
+}
+export interface CrossChainRelation {
+  type: ChainRelationType;
+  isEthereum: boolean;
+  relationMap: Record<string, ChainRelationInfo>;
 }

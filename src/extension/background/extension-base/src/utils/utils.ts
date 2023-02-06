@@ -8,7 +8,6 @@ import { decodeAddress, encodeAddress, ethereumEncode, isEthereumAddress } from 
 import { NetworkJson } from '../api/evm/types/ether';
 import { AccountJson, AccountAuthType } from '../background/types';
 import { ALL_ACCOUNT_KEY } from '../const';
-import { EXTENSION_PREFIX } from '../defaults';
 
 export const notDef = (x: any) => x === null || typeof x === 'undefined';
 export const isDef = (x: any) => !notDef(x);
@@ -308,10 +307,4 @@ export function parseNumberToDisplay(amount: BN, decimals: number | undefined) {
   const formattedString = parseFloat(roundedString); // remove excess zeros at the end
 
   return formattedString.toString();
-}
-
-let counter = 0;
-
-export function getId(): string {
-  return `${EXTENSION_PREFIX}.${Date.now()}.${++counter}`;
 }

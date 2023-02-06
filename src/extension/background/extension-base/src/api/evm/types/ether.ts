@@ -29,6 +29,9 @@ export interface BalanceItem {
 
 export enum CustomTokenType {
   erc20 = 'erc20',
+  erc721 = 'erc721',
+  psp22 = 'psp22',
+  psp34 = 'psp34',
 }
 
 export interface CustomToken {

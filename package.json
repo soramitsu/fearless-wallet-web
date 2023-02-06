@@ -29,6 +29,8 @@
     "@airgap/beacon-sdk": "^3.3.0",
     "@equilab/api": "^1.13.1",
     "@polkadot/api": "^9.2.3",
+    "@polkadot/types": "^9.2.3",
+    "@polkadot/api-contract": "^9.2.3",
     "@polkadot/extension-chains": "^0.44.6",
     "@polkadot/extension-dapp": "^0.44.6",
     "@polkadot/extension-inject": "^0.44.6",

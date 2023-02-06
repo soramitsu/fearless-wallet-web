@@ -40,7 +40,7 @@ import {
   RequestAccountExportPrivateKey,
   ResponseAccountExportPrivateKey,
 } from '../types';
-import { getId } from '../../utils';
+
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';
@@ -60,6 +60,7 @@ import { initWeb3Api } from '../../api/evm';
 import { TransactionHistoryItemType } from '../../types';
 import PriceStore from '../../stores/Price';
 import { getTokenPrice } from '../../utils/coingecko';
+import { getId } from '../../utils';
 import { getCurrentProvider, mergeNetworkProviders, stripUrl, withErrorLog } from './helpers';
 
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';

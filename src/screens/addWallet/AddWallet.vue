@@ -101,6 +101,7 @@
           :iconName="'reload'"
           @click="resetAll"
         />
+
         <Button
           v-if="confirmMnemonicStep"
           size="big"

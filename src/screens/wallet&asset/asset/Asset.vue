@@ -133,7 +133,7 @@ import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue'
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import TeleportForm from '@/screens/wallet&asset/TeleportForm.vue';
-import SwapForm from '@/screens/wallet&asset/SwapForm.vue';
+import SwapForm from '@/screens/wallet&asset/swap/SwapForm.vue';
 import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
 import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';

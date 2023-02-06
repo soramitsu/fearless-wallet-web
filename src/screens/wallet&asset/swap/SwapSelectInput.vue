@@ -12,11 +12,15 @@
       <div class="column right-column">
         <Corners @click.native="$emit('toggleSelectAssetPopupVisibility')">
           <button class="select-button">
-            <NetworkLogo class="asset-icon" :name="asset" :width="32" />
+            <template v-if="asset !== ''">
+              <NetworkLogo class="asset-icon" :name="asset" :relayChain="relayChain" :width="32" />
 
-            <div class="asset">{{ asset }}</div>
+              <div class="asset">{{ asset.toUpperCase() }}</div>
+            </template>
 
-            <Rotate :isActive="syncedIsRotate">
+            <div v-else class="select-label">Select</div>
+
+            <Rotate :isActive="syncedIsRotate" class="rotate-asset">
               <SIcon name="chevron-bottom-16" />
             </Rotate>
           </button>
@@ -34,6 +38,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import type { RelayChainName } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component
@@ -44,6 +49,7 @@ export default class SwapSelectInput extends Vue {
   @Prop({ default: '' }) asset!: string;
   @Prop({ default: '' }) price!: string;
   @Prop({ default: '' }) balance!: string;
+  @Prop(String) relayChain!: RelayChainName;
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
@@ -127,6 +133,10 @@ export default class SwapSelectInput extends Vue {
     }
   }
 
+  .select-label {
+    color: $gray-color;
+  }
+
   .right-column {
     text-align: right;
 
@@ -149,7 +159,11 @@ export default class SwapSelectInput extends Vue {
       }
 
       .asset {
-        margin: 0 5px;
+        margin-left: 5px;
+      }
+
+      .rotate-asset {
+        margin-left: 5px;
       }
 
       .s-icon-chevron-bottom-16 {

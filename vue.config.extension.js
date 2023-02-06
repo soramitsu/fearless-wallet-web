@@ -36,7 +36,7 @@ entries.forEach((name) => {
 module.exports = defineConfig({
   ...baseConfig,
   pages,
-  outputDir: 'dist/extension',
+  outputDir: `dist/extension/${env.EXTENSION_TYPE}`,
   filenameHashing: false,
   configureWebpack: (config) => {
     config.plugins.push(new NodePolyfillPlugin());
@@ -53,8 +53,8 @@ module.exports = defineConfig({
     config.plugins.push(
       new WebpackExtensionManifestPlugin({
         config: {
-          base: `./src/extension/manifest.base${env.EXTENSION_TYPE === 'CHROME' ? '' : '.firefox'}.json`,
-          extend: env.EXTENSION_TYPE === 'CHROME' ? manifestExtend : {},
+          base: `./src/extension/manifest.base${env.EXTENSION_TYPE === 'chrome' ? '' : '.firefox'}.json`,
+          extend: env.EXTENSION_TYPE === 'chrome' ? manifestExtend : {},
         },
         pkgJsonProps: ['version', 'description'],
       })

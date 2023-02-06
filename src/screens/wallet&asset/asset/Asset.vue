@@ -84,7 +84,11 @@
       :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
     />
 
-    <SwapForm v-if="showSwapForm" :closeForm="toggleVisible.bind(null, 'showSwapForm', false)" />
+    <SwapForm
+      v-if="showSwapForm"
+      :selectedNetwork="selectedNetwork"
+      :closeForm="toggleVisible.bind(null, 'showSwapForm', false)"
+    />
 
     <BuyPopup
       v-if="showBuyPopup"
@@ -167,7 +171,7 @@ export default class Asset extends Vue {
   showSendForm = false;
   showReceiveForm = false;
   showTeleportForm = false;
-  showSwapForm = true; // TODO
+  showSwapForm = false;
   showBuyPopup = false;
   showHistoryDetailsForm = false;
   showSelectNetworkPopup = false;

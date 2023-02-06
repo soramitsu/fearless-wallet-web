@@ -6,7 +6,7 @@
 
         <input v-model="syncedAmount" type="number" @focus="setFocusValue(true)" @blur="setFocusValue(false)" />
 
-        <div class="price">{{ fiatSymbol }}{{ price }}</div>
+        <div class="price">{{ fiatSymbol }}{{ value }}</div>
       </div>
 
       <div class="column right-column">
@@ -47,7 +47,7 @@ export default class SwapSelectInput extends Vue {
 
   @Prop({ default: '' }) text!: string;
   @Prop({ default: '' }) asset!: string;
-  @Prop({ default: '' }) price!: string;
+  @Prop({ default: '' }) value!: string;
   @Prop({ default: '' }) balance!: string;
   @Prop(String) relayChain!: RelayChainName;
   @PropSync('amount', { type: String }) syncedAmount!: string;

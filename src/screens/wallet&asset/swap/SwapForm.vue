@@ -3,14 +3,14 @@
     <template v-slot:header>
       <div class="header-content">
         <div :class="classesBackIcon">
-          <Icon v-if="!showSettings" icon="chevron-left" class="img" @click="back" />
+          <Icon v-show="!showSettings" icon="chevron-left" class="img" @click="back" />
         </div>
 
         <div class="header">{{ header }}</div>
 
         <Icon v-if="showSettings" icon="close" class="img close" @click="toggleSettingsVisibility" />
 
-        <div :class="classesSettings" @click="toggleSettingsVisibility">
+        <div v-else :class="classesSettings" @click="toggleSettingsVisibility">
           <template v-if="step === 1">
             <div class="settings-text">{{ marketTypeUP }}</div>
 
@@ -39,9 +39,9 @@
             <SwapSelectInput
               text="asset.sendButtonText"
               balance="1"
-              :price="sendPrice"
+              :value="sendValue"
               :asset="sendAsset"
-              :relayChain="currentSendCurrency"
+              :relayChain="currentSendCurrencyRelayChain"
               :amount="sendAmount"
               :isRotate="isSendAssetType"
               @update:amount="updateSendAmount"
@@ -53,9 +53,9 @@
               class="receive-input"
               text="asset.receiveButtonText"
               balance="1"
-              :price="receivePrice"
+              :value="receiveValue"
               :asset="receiveAsset"
-              :relayChain="currentReceiveCurrency"
+              :relayChain="currentReceiveCurrencyRelayChain"
               :amount="receiveAmount"
               :isRotate="isReceiveAssetType"
               @update:amount="updateReceiveAmount"
@@ -72,7 +72,7 @@
 
               <div class="fiat-info">
                 <div>{{ sendAmount }} {{ receiveAssetUP }}</div>
-                <div class="price">{{ fiatSymbol }} {{ sendPrice }}</div>
+                <div class="price">{{ fiatSymbol }} {{ sendValue }}</div>
               </div>
             </div>
 
@@ -81,7 +81,7 @@
 
               <div class="fiat-info">
                 <div>{{ receiveAmount }} {{ sendAssetUP }}</div>
-                <div class="price">{{ fiatSymbol }} {{ receivePrice }}</div>
+                <div class="price">{{ fiatSymbol }} {{ receiveValue }}</div>
               </div>
             </div>
 
@@ -170,6 +170,15 @@
       :toggleValue="toggleSelectedAsset"
       :handlerClose="toggleSelectAssetPopupVisibility.bind(null, '')"
     />
+
+    <ConfirmationPasswordPopup
+      v-if="showConfirmationPasswordPopup"
+      :currency="currentSendCurrency"
+      :amount="sendAmount"
+      :value="sendValue"
+      :firstNetwork="currentSendCurrencyRelayChain"
+      @close="confirmationPasswordPopupClose"
+    />
   </AboveForm>
 </template>
 
@@ -184,12 +193,14 @@ import SwapSettings from '@/screens/wallet&asset/swap/SwapSettings.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 
 @Component({
   components: {
     SwapPreview,
     SwapSettings,
     SwapSelectInput,
+    ConfirmationPasswordPopup,
   },
 })
 export default class SwapForm extends Vue {
@@ -201,9 +212,9 @@ export default class SwapForm extends Vue {
   sendAssetId = '';
   receiveAssetId = '';
   sendAmount = '1';
-  sendPrice = '1';
+  sendValue = '1';
   receiveAmount = '1';
-  receivePrice = '1';
+  receiveValue = '1';
   minReceivedAmount = '1';
   minReceivedPrice = '1';
   priceImpact = '1';
@@ -212,8 +223,10 @@ export default class SwapForm extends Vue {
   selectAssetType = '';
   filterValue = '';
   showSettings = false;
+  showConfirmationPasswordPopup = false;
 
   @Prop(Function) closeForm!: VoidFunction;
+  @Prop(String) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
@@ -253,11 +266,11 @@ export default class SwapForm extends Vue {
   }
 
   get sendAsset() {
-    return this.getAssetName(this.sendAssetId) || 'sss';
+    return this.getAssetName(this.sendAssetId);
   }
 
   get receiveAsset() {
-    return this.getAssetName(this.receiveAssetId) || 'xxx';
+    return this.getAssetName(this.receiveAssetId);
   }
 
   get showSelectPopup() {
@@ -265,7 +278,9 @@ export default class SwapForm extends Vue {
   }
 
   get optionsCurrency() {
-    return getCurrencyOptions(this.currencies).filter(({ label }) => {
+    const currenciesFilteredByNetwork = this.currencies.filter(({ relayChain }) => relayChain === this.selectedNetwork);
+
+    return getCurrencyOptions(currenciesFilteredByNetwork, ['soraAsset']).filter(({ label }) => {
       const filter = this.filterValue.toLowerCase();
 
       return label.toLowerCase().includes(filter);
@@ -282,14 +297,16 @@ export default class SwapForm extends Vue {
     return this.currencies.find(({ assetId }) => assetId === this.sendAssetId);
   }
 
-  get currentReceiveCurrency() {
-    return this.currencies.find(({ assetId }) => assetId === this.receiveAssetId);
+  get currentReceiveCurrencyRelayChain() {
+    return this.currencies.find(({ assetId }) => assetId === this.receiveAssetId)?.relayChain;
+  }
+
+  get currentSendCurrencyRelayChain() {
+    return this.currentSendCurrency?.relayChain;
   }
 
   get top() {
-    if (this.isSendAssetType) return 145;
-
-    return 250;
+    return this.isSendAssetType ? 145 : 250;
   }
 
   get selectPopupValue() {
@@ -345,6 +362,10 @@ export default class SwapForm extends Vue {
     this.toggleSelectAssetPopupVisibility('');
   }
 
+  confirmationPasswordPopupClose() {
+    this.showConfirmationPasswordPopup = false;
+  }
+
   handlerFilter(value: string) {
     this.filterValue = value;
   }
@@ -362,7 +383,7 @@ export default class SwapForm extends Vue {
     this.receiveAmount = value;
   }
 
-  proceed() {
+  async proceed() {
     if (this.showSettings) {
       this.marketType = this.temporaryMarketType;
       this.slippage = this.temporarySlippage;
@@ -370,7 +391,11 @@ export default class SwapForm extends Vue {
       this.showSettings = false;
     } else if (this.step === 1) this.step += 1;
     else {
-      // this.swap(); // TODO
+      this.showConfirmationPasswordPopup = true;
+
+      // await this.swap(); // TODO
+
+      // this.showConfirmationPasswordPopup = false;
     }
   }
 
@@ -426,6 +451,9 @@ export default class SwapForm extends Vue {
     text-align: right;
     display: flex;
     flex-direction: column;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 
     .amount {
       color: $default-white;

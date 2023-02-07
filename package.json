@@ -26,9 +26,16 @@
   },
   "main": "index.js",
   "dependencies": {
+    "@acala-network/type-definitions": "^4.1.5",
     "@airgap/beacon-sdk": "^3.3.0",
+    "@crustio/type-definitions": "^1.3.0",
+    "@darwinia/types": "^2.8.10",
     "@equilab/api": "^1.13.1",
+    "@interlay/interbtc-types": "^0.31.6",
+    "@kiltprotocol/type-definitions": "^0.30.0",
+    "@laminar/type-definitions": "^0.3.1",
     "@oak-foundation/types": "^0.0.23",
+    "@phala/typedefs": "^0.2.33",
     "@polkadot/api": "9.10.3",
     "@polkadot/api-contract": "9.10.3",
     "@polkadot/extension-chains": "^0.44.6",
@@ -39,6 +46,7 @@
     "@polkadot/types": "9.10.3",
     "@polkadot/ui-keyring": "^2.9.6",
     "@polkadot/vue-identicon": "^2.9.8",
+    "@snowfork/snowbridge-types": "^0.2.7",
     "@sora-substrate/math": "^1.11.0",
     "@sora-substrate/type-definitions": "^1.14.7",
     "@soramitsu/soramitsu-js-ui": "^1.0.42",
@@ -53,7 +61,7 @@
     "moonbeam-types-bundle": "^2.0.9",
     "qrcode": "^1.5.1",
     "rlp": "^3.0.0",
-    "rxjs": "^7.8.0",
+    "rxjs": "^7.5.6",
     "svg-sprite-loader": "^6.0.11",
     "tippy.js": "^6.3.7",
     "vue": "^2.6.14",
@@ -127,5 +135,16 @@
       "yarn lint:precommit",
       "git add"
     ]
+  },
+  "resolutions": {
+    "@polkadot/api": "^9.10.3",
+    "@polkadot/api-contract": "^9.10.3",
+    "@polkadot/keyring": "^10.2.1",
+    "@polkadot/networks": "^10.2.1",
+    "@polkadot/types": "^9.10.3",
+    "@polkadot/util": "^10.2.1",
+    "@polkadot/util-crypto": "^10.2.1",
+    "@polkadot/x-fetch": "^10.2.1",
+    "rxjs": "^7.5.4"
   }
 }

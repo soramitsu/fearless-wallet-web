@@ -5,8 +5,7 @@ import { ApiPromise } from '@polkadot/api';
 import { BN, bnToHex } from '@polkadot/util';
 import { PREDEFINE_TOKEN_DATA_MAP } from '../evm/predefineChainTokens';
 import { TokenInfo, CustomToken } from '../evm/types/ether';
-import { ChainRegistry } from '../evm/utils/registery';
-import { moonbeamBaseChains } from './api-helper';
+import { ChainRegistry, moonbeamBaseChains } from '../evm/utils/registery';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 

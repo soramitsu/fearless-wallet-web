@@ -10,6 +10,7 @@ import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { base64Decode } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
+
 import {
   AuthorizeRequest,
   AuthRequest,
@@ -39,12 +40,20 @@ import {
   PriceJson,
   RequestAccountExportPrivateKey,
   ResponseAccountExportPrivateKey,
+  ApiProps,
 } from '../types';
 
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';
-import { APIItemState, BalanceItem, CustomToken, CustomTokenJson, NetworkJson } from '../../api/evm/types/ether';
+import {
+  APIItemState,
+  BalanceItem,
+  CustomToken,
+  CustomTokenJson,
+  NetworkJson,
+  NETWORK_STATUS,
+} from '../../api/evm/types/ether';
 import CustomTokenStore from '../../stores/CustomEvmToken';
 
 import CurrentAccountStore, { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
@@ -61,6 +70,9 @@ import { TransactionHistoryItemType } from '../../types';
 import PriceStore from '../../stores/Price';
 import { getTokenPrice } from '../../utils/coingecko';
 import { getId } from '../../utils';
+import { initApi } from '../../api/substrate';
+import { getRegistry } from '../../api/substrate/registry';
+import { getTokensForChainRegistry } from '../../api/tokens';
 import { getCurrentProvider, mergeNetworkProviders, stripUrl, withErrorLog } from './helpers';
 
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
@@ -137,8 +149,9 @@ export default class State {
   public authUrls: AuthUrls = {};
   public static signature: HexString | null = null;
   public defaultAuthAccountSelection: string[] = [];
-
-  public apis: { evm: Record<string, EthProvider> } = {
+  private lockNetworkMap = false;
+  public apis: { evm: Record<string, EthProvider>; substrate: Record<string, ApiProps> } = {
+    substrate: {},
     evm: {},
   };
   private priceStoreReady = false;
@@ -176,7 +189,7 @@ export default class State {
   }
 
   public getSubstrateApiMap() {
-    //return this.apis.substrate;
+    return this.apis.substrate;
   }
 
   public getNetworkMapByKey(key: string) {
@@ -188,7 +201,7 @@ export default class State {
   }
 
   public getSubstrateApi(networkKey: string) {
-    // return this.apis.substrate[networkKey];
+    return this.apis.substrate[networkKey];
   }
 
   public getEvmApi(networkKey: string) {
@@ -390,6 +403,11 @@ export default class State {
   }
 
   public async upsertNetworkMap(data: NetworkJson): Promise<boolean> {
+    if (this.lockNetworkMap) {
+      return false;
+    }
+
+    this.lockNetworkMap = true;
     const { key, currentProvider, chain, blockExplorer, paraId, nativeToken, decimals } = data;
 
     if (key in this.networkMap) {
@@ -416,16 +434,136 @@ export default class State {
 
     if (this.networkMap[key].active) {
       // update API map if network is active
-      // if (data.key in this.apiMap.dotSama) {
-      // this.apis.substrate[data.key].api?.disconnect && (await this.apiMap.dotSama[data.key].api.disconnect());
-      // delete this.apis.dotSama[data.key];
-      // }
+      if (data.key in this.apis.substrate) {
+        this.apis.substrate[data.key].api?.disconnect && (await this.apis.substrate[data.key].api.disconnect());
+        delete this.apis.substrate[data.key];
+      }
+
+      if (data.isEthereum && data.key in this.apis.evm) {
+        delete this.apis.evm[data.key];
+      }
+
+      const currentProvider = getCurrentProvider(data);
+
+      if (currentProvider) {
+        this.apis.substrate[data.key] = initApi(data.key, currentProvider, data.isEthereum);
+
+        if (data.isEthereum && data.isEthereum) {
+          this.apis.evm[data.key] = initWeb3Api(currentProvider);
+        }
+      }
     }
 
     this.networkMapSubject.next(this.networkMap);
     this.networkMapStore.set('NetworkMap', this.networkMap);
     this.updateServiceInfo();
-    // this.lockNetworkMap = false;
+    this.lockNetworkMap = false;
+
+    return true;
+  }
+
+  public async disableNetworkMap(networkKey: string): Promise<boolean> {
+    if (this.lockNetworkMap) {
+      return false;
+    }
+
+    this.lockNetworkMap = true;
+    this.apis.substrate[networkKey].api.disconnect && (await this.apis.substrate[networkKey].api.disconnect());
+    delete this.apis.substrate[networkKey];
+
+    if (this.networkMap[networkKey].isEthereum && this.networkMap[networkKey].isEthereum) {
+      delete this.apis.evm[networkKey];
+    }
+
+    this.networkMap[networkKey].active = false;
+    this.networkMap[networkKey].apiStatus = NETWORK_STATUS.DISCONNECTED;
+    this.networkMapSubject.next(this.networkMap);
+    this.networkMapStore.set('NetworkMap', this.networkMap);
+    this.updateServiceInfo();
+    this.lockNetworkMap = false;
+
+    this.getAuthorize((data) => {
+      if (this.networkMap[networkKey].isEthereum) {
+        this.evmChainSubject.next(data);
+      }
+
+      this.authorizeUrlSubject.next(data);
+    });
+
+    return true;
+  }
+  public enableNetworkMap(networkKey: string) {
+    if (this.lockNetworkMap) {
+      return false;
+    }
+
+    const networkData = this.networkMap[networkKey];
+
+    this.lockNetworkMap = true;
+    const currentProvider = getCurrentProvider(networkData);
+
+    if (currentProvider) {
+      this.apis.substrate[networkKey] = initApi(networkKey, currentProvider, networkData.isEthereum);
+
+      if (networkData.isEthereum && networkData.isEthereum) {
+        this.apis.evm[networkKey] = initWeb3Api(currentProvider);
+      }
+    }
+
+    networkData.active = true;
+    this.networkMapSubject.next(this.networkMap);
+    this.networkMapStore.set('NetworkMap', this.networkMap);
+    this.updateServiceInfo();
+    this.lockNetworkMap = false;
+
+    this.getAuthorize((data) => {
+      if (this.networkMap[networkKey].isEthereum) {
+        this.evmChainSubject.next(data);
+      }
+
+      this.authorizeUrlSubject.next(data);
+    });
+
+    return true;
+  }
+
+  public enableAllNetworks() {
+    if (this.lockNetworkMap) {
+      return false;
+    }
+
+    this.lockNetworkMap = true;
+    const targetNetworkKeys: string[] = [];
+
+    for (const [key, network] of Object.entries(this.networkMap)) {
+      if (!network.active) {
+        targetNetworkKeys.push(key);
+        this.networkMap[key].active = true;
+      }
+    }
+
+    this.networkMapSubject.next(this.networkMap);
+    this.networkMapStore.set('NetworkMap', this.networkMap);
+
+    for (const key of targetNetworkKeys) {
+      const currentProvider = getCurrentProvider(this.networkMap[key]);
+
+      if (currentProvider) {
+        this.apis.substrate[key] = initApi(key, currentProvider, this.networkMap[key].isEthereum);
+
+        if (this.networkMap[key].isEthereum && this.networkMap[key].isEthereum) {
+          this.apis.evm[key] = initWeb3Api(currentProvider);
+        }
+      }
+    }
+
+    this.updateServiceInfo();
+    this.lockNetworkMap = false;
+
+    this.getAuthorize((data) => {
+      this.evmChainSubject.next(data);
+      this.authorizeUrlSubject.next(data);
+    });
 
     return true;
   }
@@ -439,6 +577,26 @@ export default class State {
         chainRegistry: this.chainRegistryMap,
       });
     });
+  }
+
+  public refreshSubstrateApi(key: string) {
+    const apiProps = this.apis.substrate[key];
+
+    if (key in this.apis.substrate) {
+      if (!apiProps.isApiConnected) {
+        apiProps.recoverConnect && apiProps.recoverConnect();
+      }
+    }
+
+    return true;
+  }
+
+  public refreshWeb3Api(key: string) {
+    const currentProvider = getCurrentProvider(this.networkMap[key]);
+
+    if (currentProvider) {
+      this.apis.evm[key] = initWeb3Api(currentProvider);
+    }
   }
 
   async getConnectedTabsUrl() {
@@ -866,9 +1024,9 @@ export default class State {
               mergedNetworkMap[key].currentProvider = storedNetwork.currentProvider;
             }
 
-            // if (key !== 'polkadot' && key !== 'kusama') {
-            //   mergedNetworkMap[key].active = storedNetwork.active;
-            // }
+            if (key !== 'polkadot' && key !== 'kusama') {
+              mergedNetworkMap[key].active = storedNetwork.active;
+            }
 
             mergedNetworkMap[key].blockExplorer = storedNetwork.blockExplorer;
             mergedNetworkMap[key].currentProviderMode = (mergedNetworkMap[key].currentProvider || '').startsWith('http')
@@ -908,7 +1066,7 @@ export default class State {
         if (!currentProvider) continue;
 
         if (network.active) {
-          // this.apiMap.dotSama[key] = initApi(key, currentProvider, network.isEthereum);
+          this.apis.substrate[key] = initApi(key, currentProvider, network.isEthereum);
 
           if (network.isEthereum && network.isEthereum) {
             this.apis.evm[key] = initWeb3Api(key === 'ethereum' ? 'ethereum' : 'ethereum_goerli');
@@ -1098,7 +1256,7 @@ export default class State {
   public initChainRegistry() {
     this.chainRegistryMap = cacheRegistryMap; // prevents deleting token registry even when network is disabled
     this.getCustomTokenStore((storedCustomTokens) => {
-      // const customTokens = getTokensForChainRegistry(storedCustomTokens);
+      const customTokens = getTokensForChainRegistry(storedCustomTokens);
 
       this.setChainRegistryItem('polkadot', {
         chainDecimals: [10],
@@ -1126,13 +1284,15 @@ export default class State {
         },
       });
 
-      // Object.entries(this.apiMap.dotSama).forEach(([networkKey, { api }]) => {
-      //   getRegistry(networkKey, api, customTokens)
-      //     .then((rs) => {
-      //       this.setChainRegistryItem(networkKey, rs);
-      //     })
-      //     .catch(this.logger.error);
-      // });
+      Object.entries(this.apis.substrate).forEach(([networkKey, { api }]) => {
+        getRegistry(networkKey, api, customTokens)
+          .then((rs) => {
+            this.setChainRegistryItem(networkKey, rs);
+          })
+          .catch((e) => {
+            console.error(e);
+          });
+      });
 
       this.onReady();
     });

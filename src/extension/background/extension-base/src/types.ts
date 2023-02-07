@@ -1,6 +1,8 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { CustomTokenType } from './api/evm/types/ether';
+
 export interface Message extends MessageEvent {
   data: {
     error?: string;
@@ -37,4 +39,38 @@ export interface RequestTransactionHistoryGet {
   address: string;
   networkKey: string;
   token?: string;
+}
+
+export interface DeleteCustomTokenParams {
+  smartContract: string;
+  chain: string;
+  type: CustomTokenType;
+}
+
+/// EVM transaction
+export type NestedArray<T> = T | NestedArray<T>[];
+
+/// EVM Contract Input
+
+export interface EVMTransactionArg {
+  name: string;
+  type: string;
+  value: string;
+  children?: EVMTransactionArg[];
+}
+
+export interface ParseEVMTransactionData {
+  method: string;
+  methodName: string;
+  args: EVMTransactionArg[];
+}
+
+export interface RequestParseEVMContractInput {
+  data: string;
+  contract: string;
+  chainId: number;
+}
+
+export interface ResponseParseEVMContractInput {
+  result: ParseEVMTransactionData | string;
 }

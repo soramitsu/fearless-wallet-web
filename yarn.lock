@@ -1926,10 +1926,24 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
+"@oak-foundation/types@^0.0.23":
+  version "0.0.23"
+  resolved "https://registry.yarnpkg.com/@oak-foundation/types/-/types-0.0.23.tgz#d1b5998f20eebe16935c09f7c13db915416180e7"
+  integrity sha512-7wW42C2ckZGEfRIJLlmRty1K7xI+1vkf/O28paALv3Ch6H+78cF6sD/O0v3HwK79ST+zTaPlwsW8oFOW3RDyDg==
+  dependencies:
+    "@open-web3/orml-type-definitions" "^2.0.1"
+
 "@open-web3/orml-type-definitions@1.0.1":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@open-web3/orml-type-definitions/-/orml-type-definitions-1.0.1.tgz#497a708ae658dd7c7fed024306c2a3015ebc7b4b"
   integrity sha512-FGSeVaQv6DcQSa3E0YX20ymJpqtD8XJmLukCuC4AhVfSgLqT6roI2SfrRhUiYVbe1PQph7ptxx1EhEV/PNcnEw==
+  dependencies:
+    lodash.merge "^4.6.2"
+
+"@open-web3/orml-type-definitions@^2.0.1":
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/@open-web3/orml-type-definitions/-/orml-type-definitions-2.0.1.tgz#b3db4fb5777dc05c55fa5184c34f4ec91030f012"
+  integrity sha512-wqeSBOKk8UU9CBqYhK2yQh9YqwaS7vai71WuOGFNJnzRT+6WnzY0leaLTionuzfE3M4Y/jTrc8BTL6+PVFCr6Q==
   dependencies:
     lodash.merge "^4.6.2"
 

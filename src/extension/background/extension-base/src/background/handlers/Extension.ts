@@ -39,6 +39,7 @@ import {
   makeEVMTransfer,
 } from '../../api/evm/transfer';
 import { getFreeBalance } from '../../api/substrate/balance';
+import { estimateFee } from '../../api/substrate/transfer';
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
@@ -1043,7 +1044,7 @@ export default class Extension {
       value,
       transferAll
     );
-    // const dotSamaApiMap = state.getSubstrateApiMap();
+    const dotSamaApiMap = state.getSubstrateApiMap();
     const web3ApiMap = state.getApiMap().evm;
     let mainToken: string | undefined;
     let mainTokenDecimals: number | undefined;
@@ -1070,9 +1071,9 @@ export default class Extension {
 
     if (isEthereumAddress(to)) {
       [fromAccountFreeBalance, toAccountFreeBalance, fromAccountNativeBalance] = await Promise.all([
-        getFreeBalance(networkKey, from, web3ApiMap, token),
-        getFreeBalance(networkKey, to, web3ApiMap, token),
-        getFreeBalance(networkKey, from, web3ApiMap, mainToken),
+        getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, token),
+        getFreeBalance(networkKey, to, dotSamaApiMap, web3ApiMap, token),
+        getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, mainToken),
       ]);
 
       const txVal: string = transferAll ? fromAccountFreeBalance : value || '0';
@@ -1091,24 +1092,23 @@ export default class Extension {
       } else {
         [, , fee] = await getEVMTransactionObject(networkKey, to, txVal, !!transferAll, web3ApiMap);
       }
+    } else {
+      // Estimate with DotSama API
+      if (tokenInfo && !tokenInfo.isMainToken) {
+        [[fee, feeSymbol], fromAccountFreeBalance, toAccountFreeBalance, fromAccountNativeBalance] = await Promise.all([
+          estimateFee(networkKey, fromKeyPair, to, value, !!transferAll, dotSamaApiMap, tokenInfo),
+          getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, token),
+          getFreeBalance(networkKey, to, dotSamaApiMap, web3ApiMap, token),
+          getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, mainToken),
+        ]);
+      } else {
+        [[fee, feeSymbol], fromAccountFreeBalance, toAccountFreeBalance] = await Promise.all([
+          estimateFee(networkKey, fromKeyPair, to, value, !!transferAll, dotSamaApiMap, tokenInfo),
+          getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, token),
+          getFreeBalance(networkKey, to, dotSamaApiMap, web3ApiMap, token),
+        ]);
+      }
     }
-    // else {
-    //   // Estimate with DotSama API
-    //   if (tokenInfo && !tokenInfo.isMainToken) {
-    //     [[fee, feeSymbol], fromAccountFreeBalance, toAccountFreeBalance, fromAccountNativeBalance] = await Promise.all([
-    //       estimateFee(networkKey, fromKeyPair, to, value, !!transferAll, dotSamaApiMap, tokenInfo),
-    //       getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, token),
-    //       getFreeBalance(networkKey, to, dotSamaApiMap, web3ApiMap, token),
-    //       getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, mainToken),
-    //     ]);
-    //   } else {
-    //     [[fee, feeSymbol], fromAccountFreeBalance, toAccountFreeBalance] = await Promise.all([
-    //       estimateFee(networkKey, fromKeyPair, to, value, !!transferAll, dotSamaApiMap, tokenInfo),
-    //       getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, token),
-    //       getFreeBalance(networkKey, to, dotSamaApiMap, web3ApiMap, token),
-    //     ]);
-    //   }
-    // }
 
     const fromAccountFreeNumber = new BN(fromAccountFreeBalance);
     const feeNumber = fee ? new BN(fee) : undefined;

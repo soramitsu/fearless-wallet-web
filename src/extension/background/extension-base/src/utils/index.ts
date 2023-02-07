@@ -9,6 +9,7 @@ import { NetworkJson } from '../api/evm/types/ether';
 import { AccountJson, AccountAuthType } from '../background/types';
 import { ALL_ACCOUNT_KEY } from '../const';
 import { EXTENSION_PREFIX } from '../defaults';
+import type { KeypairType } from '@polkadot/util-crypto/types';
 
 export const notDef = (x: any) => x === null || typeof x === 'undefined';
 export const isDef = (x: any) => !notDef(x);
@@ -314,4 +315,8 @@ let counter = 0;
 
 export function getId(): string {
   return `${EXTENSION_PREFIX}.${Date.now()}.${++counter}`;
+}
+
+export function canDerive(type?: KeypairType): boolean {
+  return !!type && ['ed25519', 'sr25519', 'ecdsa', 'ethereum'].includes(type);
 }

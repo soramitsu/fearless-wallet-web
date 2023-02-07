@@ -284,7 +284,7 @@ export function updateTransferResponseTxResult(
   transferAmount?: string
 ): void {
   if (!response.txResult) {
-    if (tokenInfo && tokenInfo.type === CustomTokenType.psp22) {
+    if (tokenInfo) {
       response.txResult = { change: transferAmount || '0' };
     } else {
       response.txResult = { change: '0' };

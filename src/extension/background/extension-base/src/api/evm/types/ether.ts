@@ -29,9 +29,9 @@ export interface BalanceItem {
 
 export enum CustomTokenType {
   erc20 = 'erc20',
-  erc721 = 'erc721',
-  psp22 = 'psp22',
-  psp34 = 'psp34',
+  // erc721 = 'erc721',
+  // psp22 = 'psp22',
+  // psp34 = 'psp34',
 }
 
 export interface CustomToken {
@@ -73,7 +73,6 @@ export interface NetworkJson {
   chain: string; // Name of the network
   icon?: string; // Icon name, available with known network
   active: boolean; // Network is active or not
-
   // Provider Information
   providers: Record<string, string>; // Predefined provider map
   currentProvider: string | null; // Current provider key
@@ -91,13 +90,10 @@ export interface NetworkJson {
   // Ethereum related information for predefined network only
   isEthereum?: boolean; // Only show network with isEthereum=true when select one EVM account // user input
   evmChainId?: number;
-
   isHybrid?: boolean;
-
   // Native token information
   nativeToken?: string;
   decimals?: number;
-
   // Other information
   coinGeckoKey?: string; // Provider key to get token price from CoinGecko // user input
   blockExplorer?: string; // Link to block scanner to check transaction with extrinsic hash // user input

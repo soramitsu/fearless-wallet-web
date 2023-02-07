@@ -1,18 +1,14 @@
 // Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { CustomTokenJson, CustomTokenType, NetworkJson } from '@subwallet/extension-base/background/KoniTypes';
-import { isEqualContractAddress } from '@subwallet/extension-koni-base/api/tokens';
-import { DEFAULT_EVM_TOKENS } from '@subwallet/extension-koni-base/api/tokens/evm/defaultEvmToken';
-import { ERC20Contract, ERC721Contract } from '@subwallet/extension-koni-base/api/tokens/evm/web3';
-import Web3 from 'web3';
-import { Contract } from 'web3-eth-contract';
+import { Contract, ethers } from 'ethers';
+import { isEqualContractAddress } from '..';
+import EthProvider from '../../evm/ethProvider';
+import { CustomTokenType, CustomTokenJson, NetworkJson } from '../../evm/types/ether';
+import { DEFAULT_EVM_TOKENS } from './defaultEvmToken';
+import { ERC721Contract, ERC20Contract } from './web3';
 
-export async function validateEvmToken(
-  contractAddress: string,
-  tokenType: CustomTokenType.erc20 | CustomTokenType.erc721,
-  web3: Web3
-) {
+export async function validateEvmToken(contractAddress: string, tokenType: CustomTokenType.erc20, web3: EthProvider) {
   let tokenContract: Contract;
   let name = '';
   let decimals: number | undefined = -1;
@@ -20,34 +16,19 @@ export async function validateEvmToken(
   let contractError = false;
 
   try {
-    if (tokenType === CustomTokenType.erc721) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument,@typescript-eslint/no-unsafe-member-access
-      tokenContract = new web3.eth.Contract(ERC721Contract, contractAddress);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument,@typescript-eslint/no-unsafe-member-access
+    tokenContract = new ethers.Contract(contractAddress, ERC20Contract.abi);
 
-      const [_name, _symbol] = await Promise.all([
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-        tokenContract.methods.name().call() as string,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-        tokenContract.methods.symbol().call() as string,
-      ]);
+    const [_decimals, _symbol] = await Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
+      tokenContract.methods.decimals().call() as number,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
+      tokenContract.methods.symbol().call() as string,
+    ]);
 
-      name = _name;
-      symbol = _symbol;
-    } else {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument,@typescript-eslint/no-unsafe-member-access
-      tokenContract = new web3.eth.Contract(ERC20Contract.abi, contractAddress);
-
-      const [_decimals, _symbol] = await Promise.all([
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-        tokenContract.methods.decimals().call() as number,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-        tokenContract.methods.symbol().call() as string,
-      ]);
-
-      name = _symbol;
-      decimals = _decimals;
-      symbol = _symbol;
-    }
+    name = _symbol;
+    decimals = _decimals;
+    symbol = _symbol;
 
     if (name === '' || symbol === '') {
       contractError = true;
@@ -72,7 +53,7 @@ export async function validateEvmToken(
 }
 
 export function initEvmTokenState(customTokenState: CustomTokenJson, networkMap: Record<string, NetworkJson>) {
-  const evmTokenState = { erc20: customTokenState.erc20, erc721: customTokenState.erc721 };
+  const evmTokenState = { erc20: customTokenState.erc20 };
 
   for (const defaultToken of DEFAULT_EVM_TOKENS.erc20) {
     let exist = false;
@@ -97,47 +78,8 @@ export function initEvmTokenState(customTokenState: CustomTokenJson, networkMap:
     }
   }
 
-  for (const defaultToken of DEFAULT_EVM_TOKENS.erc721) {
-    let exist = false;
-
-    for (const storedToken of evmTokenState.erc721) {
-      if (
-        isEqualContractAddress(defaultToken.smartContract, storedToken.smartContract) &&
-        defaultToken.chain === storedToken.chain
-      ) {
-        if (storedToken.isCustom) {
-          // if existed custom token before, migrate the custom token -> default token
-          delete storedToken.isCustom;
-        }
-
-        exist = true;
-        break;
-      }
-    }
-
-    if (!exist) {
-      evmTokenState.erc721.push(defaultToken);
-    }
-  }
-
   // Update networkKey in case networkMap change
   for (const token of evmTokenState.erc20) {
-    if (!(token.chain in networkMap) && token.chain.startsWith('custom_')) {
-      let newKey = '';
-      const genesisHash = token.chain.split('custom_')[1]; // token from custom network has key with prefix custom_
-
-      for (const [key, network] of Object.entries(networkMap)) {
-        if (network.genesisHash.toLowerCase() === genesisHash.toLowerCase()) {
-          newKey = key;
-          break;
-        }
-      }
-
-      token.chain = newKey;
-    }
-  }
-
-  for (const token of evmTokenState.erc721) {
     if (!(token.chain in networkMap) && token.chain.startsWith('custom_')) {
       let newKey = '';
       const genesisHash = token.chain.split('custom_')[1]; // token from custom network has key with prefix custom_

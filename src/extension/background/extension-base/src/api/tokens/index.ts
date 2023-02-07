@@ -1,31 +1,23 @@
 // Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import {
-  ApiProps,
-  ChainRegistry,
-  CustomToken,
-  CustomTokenJson,
-  CustomTokenType,
-  DeleteCustomTokenParams,
-} from '@subwallet/extension-base/background/KoniTypes';
-import { validateEvmToken } from '@subwallet/extension-koni-base/api/tokens/evm/utils';
-import { validateWasmToken } from '@subwallet/extension-koni-base/api/tokens/wasm/utils';
-import Web3 from 'web3';
-
 import { isEthereumAddress } from '@polkadot/util-crypto';
+import { ApiProps } from '../../background/types';
+import { DeleteCustomTokenParams } from '../../types';
+import EthProvider from '../evm/ethProvider';
+import { CustomTokenType, CustomTokenJson, CustomToken } from '../evm/types/ether';
+import { ChainRegistry } from '../evm/utils/registery';
+import { validateEvmToken } from './evm/utils';
 
 export async function validateCustomToken(
   contractAddress: string,
   tokenType: CustomTokenType,
-  web3: Web3 | undefined,
+  web3: EthProvider | undefined,
   apiProps: ApiProps | undefined,
   contractCaller?: string
 ) {
-  if ((tokenType === CustomTokenType.erc20 || tokenType === CustomTokenType.erc721) && web3 !== undefined) {
+  if (tokenType === CustomTokenType.erc20 && web3 !== undefined) {
     return await validateEvmToken(contractAddress, tokenType, web3);
-  } else if ((tokenType === CustomTokenType.psp22 || tokenType === CustomTokenType.psp34) && apiProps !== undefined) {
-    return await validateWasmToken(contractAddress, tokenType, apiProps.api, contractCaller);
   }
 
   return {
@@ -51,7 +43,7 @@ export function isEqualContractAddress(address1: string, address2: string) {
 
 export function upsertCustomToken(targetToken: CustomToken, customTokenState: CustomTokenJson): UpsertCustomTokenResp {
   let isExisted = false;
-  const tokenList = customTokenState[targetToken.type];
+  const tokenList: CustomToken[] = customTokenState[targetToken.type];
   let newTokenList = tokenList;
 
   for (const token of tokenList) {
@@ -64,7 +56,7 @@ export function upsertCustomToken(targetToken: CustomToken, customTokenState: Cu
   if (!isExisted) {
     newTokenList.push(targetToken);
   } else {
-    newTokenList = tokenList.map((token) => {
+    newTokenList = tokenList.map((token: CustomToken) => {
       if (isEqualContractAddress(token.smartContract, targetToken.smartContract)) {
         if (token.isDeleted) {
           return {
@@ -82,8 +74,7 @@ export function upsertCustomToken(targetToken: CustomToken, customTokenState: Cu
     });
   }
 
-  const needUpdateChainRegistry =
-    targetToken.type === CustomTokenType.erc20 || targetToken.type === CustomTokenType.psp22; // more logic when there are more standards
+  const needUpdateChainRegistry = targetToken.type === CustomTokenType.erc20; // more logic when there are more standards
 
   return {
     newCustomTokenState: { ...customTokenState, [targetToken.type]: newTokenList },
@@ -91,13 +82,13 @@ export function upsertCustomToken(targetToken: CustomToken, customTokenState: Cu
   } as UpsertCustomTokenResp;
 }
 
-export const FUNGIBLE_TOKEN_STANDARDS = [CustomTokenType.erc20, CustomTokenType.psp22];
+export const FUNGIBLE_TOKEN_STANDARDS = [CustomTokenType.erc20];
 
 export function getTokensForChainRegistry(customTokenJson: CustomTokenJson) {
   const customTokens: CustomToken[] = [];
 
   for (const tokenType of FUNGIBLE_TOKEN_STANDARDS) {
-    customTokenJson[tokenType].forEach((token) => {
+    customTokenJson[tokenType].forEach((token: CustomToken) => {
       if (!token.isDeleted) {
         customTokens.push(token);
       }

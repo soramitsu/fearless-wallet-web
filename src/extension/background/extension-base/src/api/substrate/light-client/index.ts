@@ -1,7 +1,8 @@
 // Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { ScProvider } from '@polkadot/api';
+import { ScProvider } from '@polkadot/rpc-provider';
+
 import {
   ProviderInterface,
   ProviderInterfaceCallback,
@@ -63,6 +64,8 @@ class ProviderPlaceholder implements ProviderInterface {
   }
 
   clone(): ProviderInterface {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
     return this.provider!.clone();
   }
 

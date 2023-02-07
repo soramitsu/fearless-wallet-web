@@ -20,6 +20,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     preBuildCmds:               ['apt-get update && apt-get install zip && yarn install'],
     nexusFiles:                 [ '.zip'],
     uploadToNexusFor:           ['master'],
+    uploadToGoogleFor:          ['master'],
     buildWithCred:              buildWithCred
 )
 pipeline.runPipeline()

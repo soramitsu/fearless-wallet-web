@@ -15,10 +15,14 @@ module.exports = {
           @import "@/styles/common.scss";
         `,
       },
+      postcss: {
+        postcssOptions: {
+          plugins: [['autoprefixer']],
+        },
+      },
     },
   },
   productionSourceMap: false,
-  runtimeCompiler: true,
   chainWebpack: (config) => {
     config.plugin('define').tap((definitions) => {
       definitions[0]['process.env'].EXTENSION_PREFIX = JSON.stringify(process.env.EXTENSION_PREFIX);
@@ -40,5 +44,17 @@ module.exports = {
         symbolId: 'icon-[name]',
       })
       .end();
+
+    config.optimization.merge({
+      splitChunks: {
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/](vue|qrcode|file-saver|vuedraggable|tippy.js|vue-class-component|@airgap)[\\/]/,
+            name: 'vendor',
+            chunks: 'all',
+          },
+        },
+      },
+    });
   },
 };

@@ -9,7 +9,7 @@ class GoogleManage {
   private readonly baseUploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
   private readonly extensionRedirectURL = 'https://nhlnehondigmgckngjomcpcefcdplmgc.chromiumapp.org/welcome';
   private readonly baseAuthParams = {
-    client_id: '621183184145-3hd3h5ioiejqu2bs1ngamlpd616mmcio.apps.googleusercontent.com',
+    client_id: process.env.OAUTH_CLIENT_ID as string,
     response_type: 'token',
     state: 'pass-through value',
     access_type: 'online',

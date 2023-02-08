@@ -141,7 +141,7 @@ export default class Welcome extends Vue {
   flex-direction: column;
   height: $default-height-page;
   justify-content: space-between;
-
+  min-height: 561px;
   .back-wallet-container {
     height: 32px;
   }

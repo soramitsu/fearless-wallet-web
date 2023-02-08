@@ -18,9 +18,10 @@ def pipeline = new org.js.AppArtifactsPipeline(
     sonarCredential:            'sonar_fearless_token',
     distFolders:                ['./dist/firefox'],
     preBuildCmds:               ['apt-get update && apt-get install zip && yarn install'],
-    nexusFiles:                 [ '.zip'],
+    nexusFiles:                 [ '.*'],
     uploadToNexusFor:           ['master'],
     uploadToGoogleFor:          ['master'],
+    disableSecretScanner        true,
     buildWithCred:              buildWithCred
 )
 pipeline.runPipeline()

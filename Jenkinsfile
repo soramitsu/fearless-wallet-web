@@ -21,7 +21,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     nexusFiles:                 [ '.*'],
     uploadToNexusFor:           ['master'],
     uploadToGoogleFor:          ['master'],
-    disableSecretScanner        true,
+    disableSecretScanner:       true,
     buildWithCred:              buildWithCred
 )
 pipeline.runPipeline()

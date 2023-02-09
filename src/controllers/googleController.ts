@@ -77,9 +77,10 @@ ${json}
         const token = new URLSearchParams(redirect_url).get('access_token');
         const baseURL = `${chrome.runtime.getURL('popup.html')}#/${this.urlTypes[type]}/${token}`;
         const url = type === 'export' && wallet ? `${baseURL}?wallet=${wallet}` : baseURL;
-        const [tab] = await chrome.tabs.query({ title: 'fearless-wallet' });
 
-        tab && tab.id ? chrome.tabs.update(tab.id, { active: true, url }) : chrome.tabs.create({ active: true, url });
+        chrome.tabs.query({ title: 'fearless-wallet' }, ([tab]) => {
+          tab && tab.id ? chrome.tabs.update(tab.id, { active: true, url }) : chrome.tabs.create({ active: true, url });
+        });
       }
     );
   }

@@ -562,26 +562,26 @@ export default class Extension {
     return true;
   }
 
-  static async windowOpen(path: AllowedPath): Promise<boolean> {
-    const [tab] = await chrome.tabs.query({ title: 'fearless-wallet' });
+  static async windowOpen(path: AllowedPath): Promise<void> {
+    chrome.tabs.query({ title: 'fearless-wallet' }, ([tab]) => {
+      if (tab && tab.id) {
+        chrome.tabs.update(tab.id, { active: true });
 
-    if (tab && tab.id) {
-      chrome.tabs.update(tab.id, { active: true });
+        return true;
+      }
+
+      const url = `${chrome.runtime.getURL('popup.html')}#${path}`;
+
+      if (!ALLOWED_PATH.includes(path)) {
+        console.error('Not allowed to open the url:', url);
+
+        return false;
+      }
+
+      withErrorLog(() => chrome.tabs.create({ url }));
 
       return true;
-    }
-
-    const url = `${chrome.runtime.getURL('popup.html')}#${path}`;
-
-    if (!ALLOWED_PATH.includes(path)) {
-      console.error('Not allowed to open the url:', url);
-
-      return false;
-    }
-
-    withErrorLog(() => chrome.tabs.create({ url }));
-
-    return true;
+    });
   }
 
   static derive(parentAddress: string, suri: string, password: string, metadata: KeyringPair$Meta): KeyringPair {

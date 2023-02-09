@@ -288,15 +288,15 @@ export default class Extension {
 
   static async isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-
     if (!tab || !tab.url)
       return {
         isAuthorize: false,
         authorizeAccountsCount: 0,
         dAppName: '',
       };
-
-    const tabHostName = new URL(tab.url).hostname;
+    const url = new URL(tab.url);
+    const tabHostName =
+      url.hostname === 'nkbihfbeogaeaoehlefnkodbefgpgknn' ? 'header.currentExtensionPage' : url.hostname;
     const authorizeUrl = Object.keys(State.authUrls).filter((url) => url === tabHostName);
     const isAuthorize = authorizeUrl.length !== 0;
 

@@ -1,4 +1,4 @@
-@Library('jenkins-library@feature/FWW-161/cd-for-chrome-web-store')
+@Library('jenkins-library@feature/FWW-278/cd-firefox-ext')
 
 def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'OAUTH_CLIENT_ID', variable: 'OAUTH_CLIENT_ID'],
@@ -10,17 +10,18 @@ def buildWithCred  = [
 
 def pipeline = new org.js.AppArtifactsPipeline(
     steps:                      this,
-    buildCmds:                  ['yarn build:extension:firefox'],
+    buildCmds:                  ['yarn build:extension:firefox:zip'],
     nexusCredential:            'bot-fearless-rw',
     nexusProjectPath:           'fearless/desktop',
     sonarProjectKey:            'fearless:fearless-wallet-web',
     sonarProjectName:           'fearless-wallet-web',
     sonarCredential:            'sonar_fearless_token',
-    distFolders:                ['./dist/extension/firefox'],
+    distFolders:                ['./dist/firefox'],
     preBuildCmds:               ['apt-get update && apt-get install zip && yarn install'],
-    nexusFiles:                 [ '.*'],
+    nexusFiles:                 [ '.zip'],
     uploadToNexusFor:           ['master'],
     uploadToGoogleFor:          ['master'],
+    uploadToFirefoxFor:         ['master'],
     disableSecretScanner:       true,
     buildWithCred:              buildWithCred
 )

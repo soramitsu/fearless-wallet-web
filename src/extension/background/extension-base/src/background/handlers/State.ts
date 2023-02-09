@@ -145,7 +145,7 @@ export default class State {
   static async popupClose(): Promise<void> {
     const { windows } = await State.getFromStorage(['windows']);
 
-    windows?.forEach((id: number) => withErrorLog(() => browser.windows.remove(id)));
+    windows?.forEach((id: number) => withErrorLog(() => chrome.windows.remove(id)));
 
     await storage.set({ windows: [] });
   }
@@ -154,7 +154,7 @@ export default class State {
     const { notification, windows } = await State.getFromStorage(['notification', 'windows']);
 
     if (notification && notification !== 'extension') {
-      const win = await browser.windows.getCurrent();
+      const win = await chrome.windows.getCurrent();
       const popupOptions = { ...POPUP_WINDOW_OPTS };
 
       if (win) {
@@ -162,7 +162,7 @@ export default class State {
         popupOptions.top = (win.top || 0) + 75;
       }
 
-      browser.windows
+      chrome.windows
         .create(notification === 'window' ? NORMAL_WINDOW_OPTS : popupOptions)
         .then(async (window): Promise<void> => {
           if (window) {
@@ -343,7 +343,7 @@ export default class State {
 
     const text = authCount ? 'Auth' : metaCount ? 'Meta' : signCount ? `${signCount}` : '';
 
-    withErrorLog(() => browser.action.setBadgeText({ text }));
+    withErrorLog(() => chrome.action.setBadgeText({ text }));
 
     if (shouldClose && text === '') {
       this.popupClose();

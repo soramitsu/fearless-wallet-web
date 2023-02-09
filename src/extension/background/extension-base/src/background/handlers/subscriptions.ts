@@ -1,6 +1,5 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-import browser from 'webextension-polyfill';
 import type { MessageTypesWithSubscriptions, Port, SubscriptionMessageTypes, Subscriptions } from '../types';
 const subscriptions: Subscriptions = {};
 
@@ -11,7 +10,7 @@ export async function createSubscription<TMessageType extends MessageTypesWithSu
 ): Promise<(data: SubscriptionMessageTypes[TMessageType]) => void> {
   subscriptions[id] = port;
 
-  await browser.storage.local.set({ subscriptions });
+  await chrome.storage.local.set({ subscriptions });
 
   return (subscription: unknown): void => {
     if (subscriptions[id]) port.postMessage({ id, subscription });
@@ -24,7 +23,7 @@ export async function unsubscribe(id: string): Promise<void> {
     console.info(`Unsubscribing from ${id}`);
 
     delete subscriptions[id];
-    await browser.storage.local.set({ subscriptions });
+    await chrome.storage.local.set({ subscriptions });
   } else {
     console.error(`Unable to unsubscribe from ${id}`);
   }

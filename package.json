@@ -117,7 +117,6 @@
     "vue-cli-plugin-chrome-extension-cli": "^1.1.4",
     "vue-cli-plugin-electron-builder": "^3.0.0-alpha.4",
     "vue-template-compiler": "2.6.14",
-    "webextension-polyfill": "^0.10.0",
     "webpack-extension-manifest-plugin": "^0.8.0"
   },
   "gitHooks": {

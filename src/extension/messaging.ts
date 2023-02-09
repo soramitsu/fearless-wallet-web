@@ -3,7 +3,7 @@
 
 import { metadataExpand } from '@polkadot/extension-chains';
 import { selectableNetworks } from '@polkadot/networks';
-import browser from 'webextension-polyfill';
+
 import { getId } from './background/extension-base/src/utils';
 import { PORT_EXTENSION } from './background/extension-base/src/defaults';
 import type { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
@@ -61,7 +61,7 @@ interface Handler {
 }
 
 type Handlers = Record<string, Handler>;
-const port = browser.runtime.connect({ name: PORT_EXTENSION });
+const port = chrome.runtime.connect({ name: PORT_EXTENSION });
 
 const handlers: Handlers = {};
 // setup a listener for messages, any incoming resolves the promise

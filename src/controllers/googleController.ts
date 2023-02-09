@@ -68,16 +68,20 @@ ${json}
   }
 
   public async authExtension(type: 'main' | 'export' = 'main', wallet?: string) {
-    const redirect_url = await browser.identity.launchWebAuthFlow({
-      url: this.authURL('extension'),
-      interactive: true,
-    });
-    const token = new URLSearchParams(redirect_url).get('access_token');
-    const baseURL = `${browser.runtime.getURL('popup.html')}#/${this.urlTypes[type]}/${token}`;
-    const url = type === 'export' && wallet ? `${baseURL}?wallet=${wallet}` : baseURL;
-    const [tab] = await browser.tabs.query({ title: 'fearless-wallet' });
+    chrome.identity.launchWebAuthFlow(
+      {
+        url: this.authURL('extension'),
+        interactive: true,
+      },
+      async (redirect_url) => {
+        const token = new URLSearchParams(redirect_url).get('access_token');
+        const baseURL = `${chrome.runtime.getURL('popup.html')}#/${this.urlTypes[type]}/${token}`;
+        const url = type === 'export' && wallet ? `${baseURL}?wallet=${wallet}` : baseURL;
+        const [tab] = await chrome.tabs.query({ title: 'fearless-wallet' });
 
-    tab && tab.id ? browser.tabs.update(tab.id, { active: true, url }) : browser.tabs.create({ active: true, url });
+        tab && tab.id ? chrome.tabs.update(tab.id, { active: true, url }) : chrome.tabs.create({ active: true, url });
+      }
+    );
   }
 
   public authDesktop() {

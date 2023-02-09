@@ -10,7 +10,7 @@ import '@/styles';
 import '@/plugins';
 import '@/assets';
 import '@/components';
-
+import '@polkadot/extension-inject/crossenv';
 Vue.use(Plugin);
 
 Vue.config.productionTip = false;

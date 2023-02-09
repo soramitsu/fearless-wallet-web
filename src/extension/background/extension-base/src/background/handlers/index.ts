@@ -1,21 +1,20 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-import Browser from 'webextension-polyfill';
 import { assert } from '@polkadot/util';
 
 import { PORT_EXTENSION } from '../../defaults';
 import Extension from './Extension';
 import Tabs from './Tabs';
 import State from './State';
-import type { MessageTypes, TransportRequestMessage } from '../types';
+import type { MessageTypes, Port, TransportRequestMessage } from '../types';
 
 export default function handler<TMessageType extends MessageTypes>(
   { id, message, request }: TransportRequestMessage<TMessageType>,
-  port?: Browser.Runtime.Port,
+  port?: Port,
   extensionPortName = PORT_EXTENSION
 ): void {
   const isExtension = !port || port?.name === extensionPortName;
-  const sender = port?.sender as Browser.Runtime.MessageSender;
+  const sender = port?.sender as chrome.runtime.MessageSender;
   const from = isExtension ? 'extension' : (sender.tab && sender.tab.url) || sender.url || '<unknown>';
   const source = `${from}: ${id}: ${message}`;
 

@@ -4,7 +4,7 @@ import browser from 'webextension-polyfill';
 type StoreValue = Record<string, unknown>;
 
 const lastError = (type: string): void => {
-  const error = browser.runtime.lastError;
+  const error = chrome.runtime.lastError;
 
   if (error) {
     console.error(`BaseStore.${type}:: runtime.lastError:`, error);
@@ -27,7 +27,7 @@ export default abstract class BaseStore<T> {
   }
 
   public allMap(update: (value: Record<string, T>) => void): void {
-    browser.storage.local.get().then((result: StoreValue): void => {
+    chrome.storage.local.get().then((result: StoreValue): void => {
       lastError('all');
 
       const entries = Object.entries(result);
@@ -48,7 +48,7 @@ export default abstract class BaseStore<T> {
   public get(_key: string, update: (value: T) => void): void {
     const key = `${this.#prefix}${_key}`;
 
-    browser.storage.local.get([key]).then((result: StoreValue): void => {
+    chrome.storage.local.get([key]).then((result: StoreValue): void => {
       lastError('get');
 
       update(result[key] as T);
@@ -58,7 +58,7 @@ export default abstract class BaseStore<T> {
   public remove(_key: string | keyof T, update?: () => void): void {
     const key = `${this.#prefix}${_key}`;
 
-    browser.storage.local.remove(key).then((): void => {
+    chrome.storage.local.remove(key).then((): void => {
       lastError('remove');
 
       update && update();
@@ -68,7 +68,7 @@ export default abstract class BaseStore<T> {
   public set(_key: string | keyof T, value: T, update?: () => void): void {
     const key = `${this.#prefix}${_key}`;
 
-    browser.storage.local.set({ [key]: value }).then((): void => {
+    chrome.storage.local.set({ [key]: value }).then((): void => {
       lastError('set');
 
       update && update();

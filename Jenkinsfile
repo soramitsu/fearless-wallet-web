@@ -17,7 +17,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     sonarProjectName:           'fearless-wallet-web',
     sonarCredential:            'sonar_fearless_token',
     distFolders:                ['./dist/extension/firefox'],
-    preBuildCmds:               ['apt-get update && apt-get install zip && yarn install && xxd'],
+    preBuildCmds:               ['apt-get update && apt-get install zip xxd && yarn install'],
     nexusFiles:                 [ '.zip'],
     uploadToNexusFor:           ['master'],
     uploadToGoogleFor:          ['master'],

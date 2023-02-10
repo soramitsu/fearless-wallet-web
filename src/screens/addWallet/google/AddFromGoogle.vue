@@ -17,7 +17,7 @@
         v-if="!isLoading"
         size="big"
         fontSize="big"
-        :disabled="isImportInProgress"
+        :disabled="isAllowedContinue"
         width="100%"
         :text="buttonText"
         @click="proceed"
@@ -80,6 +80,14 @@ export default class AddFromGoogle extends Vue {
 
   get buttonText() {
     return this.step === 2 ? this.$t('common.finish') : this.$t('common.continue');
+  }
+
+  get isActiveNotComplete() {
+    return this.files.some((el) => el.active && !el.isComplete);
+  }
+
+  get isAllowedContinue() {
+    return this.isImportInProgress || this.isActiveNotComplete;
   }
 
   get header() {

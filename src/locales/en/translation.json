@@ -85,6 +85,7 @@
     },
     "google": {
       "selectToImport": "Select the wallet you want to import",
+      "importExplanation": "Select wallets and enter their passwords",
       "accessDenied": "Access denied",
       "somethingWrong": "Something went wrong...",
       "showSecretData": "Show my secret data",

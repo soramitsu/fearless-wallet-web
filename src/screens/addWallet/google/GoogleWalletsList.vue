@@ -1,5 +1,7 @@
 <template>
   <div class="wallets-container">
+    <span class="wallets__description">{{ $t('addWallet.google.importExplanation') }}</span>
+
     <Scroll>
       <ul class="wallets__list">
         <Corners v-for="(file, index) in items" size="big" v-bind:key="file.id">
@@ -10,7 +12,7 @@
                 size="big"
                 :name="file.name"
                 :label="file.name"
-                v-model.lazy="file.active"
+                :value="file.active"
                 @change.self="(value) => onSelect(!file.active, index)"
               />
 
@@ -99,15 +101,14 @@ export default class GoogleWalletsList extends Vue {
 
   onSelect(value: boolean, index: number) {
     const file = this.items[index];
-    const item = this.items[index];
 
     if (file.isComplete) return;
     else if (file.isComplete === undefined) {
       this.setItemValue(index, { isLoading: false, isComplete: false });
     }
 
-    if (item.json === undefined) this.$emit('getFile', item.id, index);
-    if (item.ethJson === undefined) this.$emit('getFile', item.ethWalletID, index);
+    if (file.json === undefined) this.$emit('getFile', file.id, index);
+    if (file.ethJson === undefined) this.$emit('getFile', file.ethWalletID, index);
 
     this.setItemValue(index, { active: value });
   }
@@ -119,25 +120,27 @@ export default class GoogleWalletsList extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.wallets-container {
-  display: flex;
-  flex-flow: column;
-  width: 100%;
-  align-items: flex-start;
-  overflow-y: hidden;
-  min-height: 300px;
-  max-height: 450px;
-}
+.wallets {
+  &-container {
+    display: flex;
+    flex-flow: column;
+    width: 100%;
+    align-items: center;
+    overflow-y: hidden;
+    min-height: 300px;
+    max-height: 450px;
+  }
 
-.wallets__list {
-  padding: 5px;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-flow: column nowrap;
-  gap: 10px;
+  &__list {
+    padding: 5px;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-flow: column nowrap;
+    gap: 10px;
+  }
 
-  .wallets__item {
+  &__item {
     display: flex;
     flex-flow: column nowrap;
     justify-content: space-between;
@@ -157,19 +160,24 @@ export default class GoogleWalletsList extends Vue {
       width: 100%;
     }
   }
-}
 
-.wallet__checkbox {
-  flex-shrink: 1;
-
-  .account__checkbox .el-checkbox__label {
-    font-size: 16px;
+  &__description {
+    color: $default-white;
+    padding-bottom: 24px;
   }
 
-  .checkbox {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+  .wallet__checkbox {
+    flex-shrink: 1;
+
+    .account__checkbox .el-checkbox__label {
+      font-size: 16px;
+    }
+
+    .checkbox {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
   }
 }
 
@@ -182,6 +190,7 @@ export default class GoogleWalletsList extends Vue {
     width: 182px;
     height: 100%;
   }
+
   .input__validate-pass {
     flex-grow: 1;
     height: 100%;

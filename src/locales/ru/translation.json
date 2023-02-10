@@ -84,6 +84,7 @@
     },
     "google": {
       "selectToImport": "Выберите кошелек, который вы хотите добавить",
+      "importExplanation": "Выберите кошельки и введите пароли от них.",
       "accessDenied": "Доступ запрещен",
       "somethingWrong": "Что-то пошло не так...",
       "showSecretData": "Показать мнемонику",

@@ -6,7 +6,6 @@ import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { knownGenesis } from '@polkadot/networks/defaults';
 import { assert } from '@polkadot/util';
 import { TypeRegistry } from '@polkadot/types';
-import browser from 'webextension-polyfill';
 import {
   AuthorizeRequest,
   AuthRequest,
@@ -14,7 +13,6 @@ import {
   AuthUrls,
   MetadataRequest,
   MetaRequest,
-  NORMAL_WINDOW_OPTS,
   POPUP_WINDOW_OPTS,
   ResponseSigning,
   SigningRequest,

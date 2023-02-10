@@ -1,5 +1,4 @@
 import { MESSAGE_ORIGIN_CONTENT, MESSAGE_ORIGIN_PAGE, PORT_CONTENT } from '@extension-base/defaults';
-import browser from 'webextension-polyfill';
 import type { Message } from '@extension-base/types';
 class Content {
   private port = chrome.runtime.connect({ name: PORT_CONTENT });

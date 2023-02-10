@@ -1,6 +1,5 @@
 import axios from 'axios';
 import fetchAdapter from '@vespaiach/axios-fetch-adapter';
-import browser from 'webextension-polyfill';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { FilesResponse, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
 

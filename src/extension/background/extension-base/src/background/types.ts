@@ -5,7 +5,6 @@
 
 import { TypeRegistry } from '@polkadot/types';
 import { Subscription } from 'rxjs';
-import browser from 'webextension-polyfill';
 import { ALLOWED_PATH } from '../defaults';
 import MetadataStore from '../stores/Metadata';
 import type {

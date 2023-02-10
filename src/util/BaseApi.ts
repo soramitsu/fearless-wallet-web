@@ -1,5 +1,4 @@
 import { keyring } from '@polkadot/ui-keyring';
-import browser from 'webextension-polyfill';
 import {
   decodeAddress,
   encodeAddress,

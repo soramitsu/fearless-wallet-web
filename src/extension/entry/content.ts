@@ -1,25 +1,32 @@
 import { MESSAGE_ORIGIN_CONTENT, MESSAGE_ORIGIN_PAGE, PORT_CONTENT } from '@extension-base/defaults';
-import browser from 'webextension-polyfill';
+import { chrome } from '@polkadot/extension-inject/chrome';
+import { Port } from '../background/extension-base/src/background/types';
 import type { Message } from '@extension-base/types';
+let port: Port;
 class Content {
-  private port = browser.runtime.connect({ name: PORT_CONTENT });
-
   private setListeners() {
-    this.port.onMessage.addListener((data): void => {
-      window.postMessage({ ...data, origin: MESSAGE_ORIGIN_CONTENT }, '*');
-    });
+    port = chrome.runtime.connect({ name: PORT_CONTENT });
 
-    window.addEventListener('message', ({ data, source }: Message): void => {
+    const onMessage = ({ data, source }: Message): void => {
       if (source !== window || data.origin !== MESSAGE_ORIGIN_PAGE) return;
 
-      this.port.postMessage(data);
+      port.postMessage(data);
+    };
+
+    port.onMessage.addListener((data): void => {
+      window.postMessage({ ...data, origin: MESSAGE_ORIGIN_CONTENT }, '*');
     });
+    port.onDisconnect.addListener(this.setListeners);
+
+    port.onDisconnect.addListener(this.setListeners);
+
+    window.addEventListener('message', onMessage);
   }
 
   private injectScript() {
     const script = document.createElement('script');
 
-    script.src = browser.runtime.getURL('page.js');
+    script.src = chrome.runtime.getURL('page.js');
 
     script.onload = (): void => {
       if (script.parentNode) script.parentNode.removeChild(script);
@@ -34,5 +41,4 @@ class Content {
   }
 }
 
-const content = new Content();
-content.init();
+new Content().init();

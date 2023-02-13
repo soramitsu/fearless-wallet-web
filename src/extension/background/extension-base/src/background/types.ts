@@ -5,7 +5,6 @@
 
 import { TypeRegistry } from '@polkadot/types';
 import { Subscription } from 'rxjs';
-import browser from 'webextension-polyfill';
 import { ALLOWED_PATH } from '../defaults';
 import MetadataStore from '../stores/Metadata';
 import type {
@@ -36,7 +35,7 @@ type IsNull<T, K extends keyof T> = { [K1 in Exclude<keyof T, K>]: T[K1] } & T[K
 type NullKeys<T> = { [K in keyof T]: IsNull<T, K> }[keyof T];
 
 export type SeedLengths = 12 | 24;
-export type Port = browser.Runtime.Port;
+export type Port = chrome.runtime.Port;
 export interface AccountJson extends KeyringPair$Meta {
   address: string;
   genesisHash?: string | null;
@@ -308,7 +307,7 @@ export interface RequestAccountList {
 export type RequestAccountSubscribe = null;
 
 export interface RequestActiveTabsUrlUpdate {
-  urls: string[];
+  tabs: chrome.tabs.Tab[];
 }
 
 export interface RequestAccountUnsubscribe {
@@ -532,9 +531,9 @@ export interface SignRequest extends Resolver<ResponseSigning> {
   url: string;
 }
 
-const NOTIFICATION_URL = browser.runtime.getURL('popup.html');
+const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
 
-export const POPUP_WINDOW_OPTS: browser.Windows.CreateCreateDataType = {
+export const POPUP_WINDOW_OPTS: chrome.windows.CreateData = {
   focused: true,
   height: 640,
   width: 561,
@@ -542,7 +541,7 @@ export const POPUP_WINDOW_OPTS: browser.Windows.CreateCreateDataType = {
   url: NOTIFICATION_URL,
 };
 
-export const NORMAL_WINDOW_OPTS: browser.Windows.CreateCreateDataType = {
+export const NORMAL_WINDOW_OPTS: chrome.windows.CreateData = {
   focused: true,
   type: 'normal',
   url: NOTIFICATION_URL,

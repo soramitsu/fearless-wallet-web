@@ -6,7 +6,6 @@ import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { knownGenesis } from '@polkadot/networks/defaults';
 import { assert } from '@polkadot/util';
 import { TypeRegistry } from '@polkadot/types';
-import browser from 'webextension-polyfill';
 import {
   AuthorizeRequest,
   AuthRequest,
@@ -14,7 +13,6 @@ import {
   AuthUrls,
   MetadataRequest,
   MetaRequest,
-  NORMAL_WINDOW_OPTS,
   POPUP_WINDOW_OPTS,
   ResponseSigning,
   SigningRequest,
@@ -31,6 +29,7 @@ import {
   IState,
   Port,
   RequestAuthorizeCancel,
+  ActiveTabAuthorizeStatus,
 } from '../types';
 import { getId } from '../../utils';
 import MetadataStore from '../../stores/Metadata';
@@ -85,15 +84,13 @@ export async function initState() {
     defaultAuthAccountSelection: [],
     accountSubs: {},
     addresses: {},
-    windows: [],
-    notification: 'popup',
     providers: {},
-    connectedTabsUrl: [],
-    cachedUnlocks: {},
   });
 }
 
 export default class State {
+  static notification = 'popup';
+  static windows: number[] = [];
   static authUrls: AuthUrls = {};
   static signature: HexString | null = null;
   static defaultAuthAccountSelection: string[] = [];
@@ -103,7 +100,7 @@ export default class State {
   static readonly authSubject: BehaviorSubject<AuthorizeRequest[]> = new BehaviorSubject<AuthorizeRequest[]>([]);
   static readonly metaSubject: BehaviorSubject<MetadataRequest[]> = new BehaviorSubject<MetadataRequest[]>([]);
   static readonly signSubject: BehaviorSubject<SigningRequest[]> = new BehaviorSubject<SigningRequest[]>([]);
-
+  static currentTabStatus: ActiveTabAuthorizeStatus;
   static get knownMetadata(): MetadataDef[] {
     return knownMetadata();
   }
@@ -143,45 +140,31 @@ export default class State {
   }
 
   static async popupClose(): Promise<void> {
-    const { windows } = await State.getFromStorage(['windows']);
-
-    windows?.forEach((id: number) => withErrorLog(() => browser.windows.remove(id)));
-
-    await storage.set({ windows: [] });
+    State.windows.forEach((id: number) => withErrorLog(() => chrome.windows.remove(id)));
   }
 
   static async popupOpen(): Promise<void> {
-    const { notification, windows } = await State.getFromStorage(['notification', 'windows']);
+    if (State.notification && State.notification !== 'extension') {
+      chrome.windows.getCurrent((win) => {
+        const popupOptions = { ...POPUP_WINDOW_OPTS };
 
-    if (notification && notification !== 'extension') {
-      const win = await browser.windows.getCurrent();
-      const popupOptions = { ...POPUP_WINDOW_OPTS };
+        if (win) {
+          popupOptions.left = (win.left || 0) + (win.width || 0) - (POPUP_WINDOW_OPTS.width || 0) - 20;
+          popupOptions.top = (win.top || 0) + 75;
+        }
 
-      if (win) {
-        popupOptions.left = (win.left || 0) + (win.width || 0) - (POPUP_WINDOW_OPTS.width || 0) - 20;
-        popupOptions.top = (win.top || 0) + 75;
-      }
-
-      browser.windows
-        .create(notification === 'window' ? NORMAL_WINDOW_OPTS : popupOptions)
-        .then(async (window): Promise<void> => {
-          if (window) {
-            windows.push(window.id || 0);
-
-            await storage.set({ windows });
-          }
+        chrome.windows.create(popupOptions, (window): void => {
+          if (window) State.windows.push(window.id || 0);
         });
+      });
     }
   }
 
-  static async injectFromStorage() {
-    const { authUrls, defaultAuthAccountSelection } = await State.getFromStorage([
-      'authUrls',
-      'defaultAuthAccountSelection',
-    ]);
-    State.authUrls = authUrls;
-    State.defaultAuthAccountSelection = defaultAuthAccountSelection;
-  }
+  // static async injectFromStorage() {
+  //   const { authUrls, defaultAuthAccountSelection } = await storage.get(['authUrls', 'defaultAuthAccountSelection']);
+  //   State.authUrls = authUrls;
+  //   State.defaultAuthAccountSelection = defaultAuthAccountSelection;
+  // }
 
   static authComplete = (
     id: string,
@@ -232,30 +215,32 @@ export default class State {
     };
   };
 
-  static async updateCurrentTabsUrl(urls: string[]) {
-    const connectedTabs = urls
-      .map((url) => {
-        let strippedUrl = '';
+  static async updateCurrentTabsUrl([tab]: chrome.tabs.Tab[]) {
+    if (!tab || !tab.url) {
+      State.currentTabStatus = {
+        isAuthorize: false,
+        authorizeAccountsCount: 0,
+        dAppName: '',
+      };
 
-        // the assert in stripUrl may throw for new tabs with "chrome://newtab/"
-        try {
-          strippedUrl = stripUrl(url);
-        } catch (e) {
-          console.error(e);
-        }
+      return;
+    }
 
-        // return the stripped url only if this website is known
-        return !!strippedUrl && State.authUrls[strippedUrl] ? strippedUrl : undefined;
-      })
-      .filter((value) => !!value) as string[];
+    const url = new URL(tab.url);
+    const tabHostName =
+      url.hostname === 'nhlnehondigmgckngjomcpcefcdplmgc' ? 'header.currentExtensionPage' : url.hostname;
+    const authorizeUrl = Object.keys(State.authUrls).filter((url) => url === tabHostName);
+    const isAuthorize = authorizeUrl.length !== 0;
 
-    await storage.set({ connectedTabsUrl: connectedTabs });
+    State.currentTabStatus = {
+      isAuthorize,
+      authorizeAccountsCount: isAuthorize ? State.authUrls[tabHostName].authorizedAccounts.length : 0,
+      dAppName: tabHostName,
+    };
   }
 
-  static async getConnectedTabsUrl() {
-    const { connectedTabsUrl } = await State.getFromStorage(['connectedTabsUrl']);
-
-    return connectedTabsUrl;
+  static getCurrentTabStatus() {
+    return State.currentTabStatus;
   }
 
   static async deleteAuthRequest(requestId: string) {
@@ -343,7 +328,10 @@ export default class State {
 
     const text = authCount ? 'Auth' : metaCount ? 'Meta' : signCount ? `${signCount}` : '';
 
-    withErrorLog(() => browser.action.setBadgeText({ text }));
+    withErrorLog(() => {
+      if (chrome.browserAction) chrome.browserAction.setBadgeText({ text });
+      else chrome.action.setBadgeText({ text });
+    });
 
     if (shouldClose && text === '') {
       this.popupClose();

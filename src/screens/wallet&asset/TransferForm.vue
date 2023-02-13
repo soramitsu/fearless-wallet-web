@@ -98,6 +98,7 @@
       :left="left"
       :height="285"
       :options="options"
+      iconType="network"
       :handlerFilter="handlerFilter"
       :toggleValue="toggleSelectedNetwork"
       :handlerClose="handlerCloseSelectPopup"

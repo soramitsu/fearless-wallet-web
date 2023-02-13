@@ -1,18 +1,25 @@
 import { MESSAGE_ORIGIN_CONTENT, MESSAGE_ORIGIN_PAGE, PORT_CONTENT } from '@extension-base/defaults';
+import { chrome } from '@polkadot/extension-inject/chrome';
+import { Port } from '../background/extension-base/src/background/types';
 import type { Message } from '@extension-base/types';
+let port: Port;
 class Content {
-  private port = chrome.runtime.connect({ name: PORT_CONTENT });
-
   private setListeners() {
-    this.port.onMessage.addListener((data): void => {
+    port = chrome.runtime.connect({ name: PORT_CONTENT });
+
+    const onMessage = ({ data, source }: Message): void => {
+      if (source !== window || data.origin !== MESSAGE_ORIGIN_PAGE) return;
+
+      port.postMessage(data);
+    };
+
+    port.onMessage.addListener((data): void => {
       window.postMessage({ ...data, origin: MESSAGE_ORIGIN_CONTENT }, '*');
     });
 
-    window.addEventListener('message', ({ data, source }: Message): void => {
-      if (source !== window || data.origin !== MESSAGE_ORIGIN_PAGE) return;
+    port.onDisconnect.addListener(this.setListeners);
 
-      this.port.postMessage(data);
-    });
+    window.addEventListener('message', onMessage);
   }
 
   private injectScript() {

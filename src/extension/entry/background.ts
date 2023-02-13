@@ -8,8 +8,25 @@ import type { Port, RequestSignatures, TransportRequestMessage } from '@extensio
 interface ModifiedPort extends Port {
   timer?: NodeJS.Timeout;
 }
+
+function getActiveTabs() {
+  // queriing the current active tab in the current window should only ever return 1 tab
+  // although an array is specified here
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const request: TransportRequestMessage<'pri(activeTabsUrl.update)'> = {
+      id: 'background',
+      message: 'pri(activeTabsUrl.update)',
+      origin: 'background',
+      request: { tabs },
+    };
+
+    handlers(request);
+  });
+}
+
 chrome.runtime.onInstalled.addListener(async () => {
   await initState();
+  getActiveTabs();
 });
 
 function deleteTimer(port: ModifiedPort) {
@@ -29,25 +46,6 @@ chrome.runtime.onConnect.addListener((port: ModifiedPort) => {
   port.onDisconnect.addListener(deleteTimer);
   port.timer = setTimeout(forceReconnect, 250e3, port);
 });
-
-function getActiveTabs() {
-  // queriing the current active tab in the current window should only ever return 1 tab
-  // although an array is specified here
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    // get the urls of the active tabs. In the case of new tab the url may be empty or undefined
-    // we filter these out
-    const urls: string[] = tabs.map(({ url }) => url).filter((url) => !!url) as string[];
-
-    const request: TransportRequestMessage<'pri(activeTabsUrl.update)'> = {
-      id: 'background',
-      message: 'pri(activeTabsUrl.update)',
-      origin: 'background',
-      request: { urls },
-    };
-
-    handlers(request);
-  });
-}
 
 // listen to tab updates this is fired on url change
 chrome.tabs.onUpdated.addListener((_, changeInfo) => {

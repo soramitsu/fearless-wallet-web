@@ -277,25 +277,8 @@ export default class Extension {
     return { list: State.authUrls };
   }
 
-  static async isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
-    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-    if (!tab || !tab.url)
-      return {
-        isAuthorize: false,
-        authorizeAccountsCount: 0,
-        dAppName: '',
-      };
-    const url = new URL(tab.url);
-    const tabHostName =
-      url.hostname === 'nkbihfbeogaeaoehlefnkodbefgpgknn' ? 'header.currentExtensionPage' : url.hostname;
-    const authorizeUrl = Object.keys(State.authUrls).filter((url) => url === tabHostName);
-    const isAuthorize = authorizeUrl.length !== 0;
-
-    return {
-      isAuthorize,
-      authorizeAccountsCount: isAuthorize ? State.authUrls[tabHostName].authorizedAccounts.length : 0,
-      dAppName: tabHostName,
-    };
+  static isTabAuthorize(): ActiveTabAuthorizeStatus {
+    return State.currentTabStatus;
   }
 
   static async authorizeSubscribe(id: string, port: Port): Promise<boolean> {
@@ -622,12 +605,8 @@ export default class Extension {
     return State.deleteAuthRequest(requestId);
   }
 
-  static updateCurrentTabs({ urls }: RequestActiveTabsUrlUpdate) {
-    State.updateCurrentTabsUrl(urls);
-  }
-
-  static getConnectedTabsUrl() {
-    return State.getConnectedTabsUrl();
+  static updateCurrentTabs({ tabs }: RequestActiveTabsUrlUpdate) {
+    State.updateCurrentTabsUrl(tabs);
   }
 
   static createAddress({ address, meta }: RequestAddressCreate) {
@@ -759,9 +738,6 @@ export default class Extension {
 
       case 'pri(activeTabsUrl.update)':
         return Extension.updateCurrentTabs(request as RequestActiveTabsUrlUpdate);
-
-      case 'pri(connectedTabsUrl.get)':
-        return Extension.getConnectedTabsUrl();
 
       case 'pri(derivation.create)':
         return Extension.derivationCreate(request as RequestDeriveCreate);

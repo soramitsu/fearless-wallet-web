@@ -29,6 +29,7 @@ import {
   IState,
   Port,
   RequestAuthorizeCancel,
+  ActiveTabAuthorizeStatus,
 } from '../types';
 import { getId } from '../../utils';
 import MetadataStore from '../../stores/Metadata';
@@ -89,7 +90,6 @@ export async function initState() {
 
 export default class State {
   static notification = 'popup';
-  static connectedTabsUrl: string[] = [];
   static windows: number[] = [];
   static authUrls: AuthUrls = {};
   static signature: HexString | null = null;
@@ -100,7 +100,7 @@ export default class State {
   static readonly authSubject: BehaviorSubject<AuthorizeRequest[]> = new BehaviorSubject<AuthorizeRequest[]>([]);
   static readonly metaSubject: BehaviorSubject<MetadataRequest[]> = new BehaviorSubject<MetadataRequest[]>([]);
   static readonly signSubject: BehaviorSubject<SigningRequest[]> = new BehaviorSubject<SigningRequest[]>([]);
-
+  static currentTabStatus: ActiveTabAuthorizeStatus;
   static get knownMetadata(): MetadataDef[] {
     return knownMetadata();
   }
@@ -215,28 +215,32 @@ export default class State {
     };
   };
 
-  static async updateCurrentTabsUrl(urls: string[]) {
-    const connectedTabs = urls
-      .map((url) => {
-        let strippedUrl = '';
+  static async updateCurrentTabsUrl([tab]: chrome.tabs.Tab[]) {
+    if (!tab || !tab.url) {
+      State.currentTabStatus = {
+        isAuthorize: false,
+        authorizeAccountsCount: 0,
+        dAppName: '',
+      };
 
-        // the assert in stripUrl may throw for new tabs with "chrome://newtab/"
-        try {
-          strippedUrl = stripUrl(url);
-        } catch (e) {
-          console.error(e);
-        }
+      return;
+    }
 
-        // return the stripped url only if this website is known
-        return !!strippedUrl && State.authUrls[strippedUrl] ? strippedUrl : undefined;
-      })
-      .filter((value) => !!value) as string[];
+    const url = new URL(tab.url);
+    const tabHostName =
+      url.hostname === 'nhlnehondigmgckngjomcpcefcdplmgc' ? 'header.currentExtensionPage' : url.hostname;
+    const authorizeUrl = Object.keys(State.authUrls).filter((url) => url === tabHostName);
+    const isAuthorize = authorizeUrl.length !== 0;
 
-    await storage.set({ connectedTabsUrl: connectedTabs });
+    State.currentTabStatus = {
+      isAuthorize,
+      authorizeAccountsCount: isAuthorize ? State.authUrls[tabHostName].authorizedAccounts.length : 0,
+      dAppName: tabHostName,
+    };
   }
 
-  static getConnectedTabsUrl() {
-    return State.connectedTabsUrl;
+  static getCurrentTabStatus() {
+    return State.currentTabStatus;
   }
 
   static async deleteAuthRequest(requestId: string) {

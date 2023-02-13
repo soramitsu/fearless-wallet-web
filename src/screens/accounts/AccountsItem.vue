@@ -2,7 +2,7 @@
   <div class="accounts-item">
     <div class="left-part">
       <div class="img-container">
-        <NetworkLogo :isAsset="false" :name="network" class="img" />
+        <ExternalLogo type="network" :name="network" class="img" />
       </div>
       <div class="description">
         <div class="network-name">{{ getUpperValue(network) }}</div>

@@ -85,6 +85,7 @@
     },
     "google": {
       "selectToImport": "Select the wallet you want to import",
+      "importExplanation": "Select wallets and enter their passwords",
       "accessDenied": "Access denied",
       "somethingWrong": "Something went wrong...",
       "showSecretData": "Show my secret data",
@@ -128,6 +129,7 @@
   },
   "header": {
     "connected": "Connected",
+    "currentExtensionPage": "Current extension page",
     "notConnected": "not connected",
     "connectedMessage": "You have 1 account connected to this site.| You have {count} accounts connected to this site.",
     "connectionStatusMessage": "Fearless Wallet is not connected to this site. To connect web3 site, find and click connect button.",

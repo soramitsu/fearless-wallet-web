@@ -5,7 +5,7 @@
     </div>
 
     <div class="img-container">
-      <NetworkLogo
+      <ExternalLogo
         class="main-network-img"
         :name="currency.displayName"
         :relayChain="currency.relayChain"
@@ -24,10 +24,10 @@
 
           <template v-else-if="!showWarning">
             <div class="available-networks">
-              <NetworkLogo
+              <ExternalLogo
                 v-for="{ network } in availableInNetworksPart"
                 class="minor-network-img"
-                :isAsset="false"
+                type="network"
                 :key="network"
                 :name="network"
                 :width="12"

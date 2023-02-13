@@ -1,5 +1,7 @@
 import type { RelayChainName } from '@/interfaces/teleport';
 import { LIT, NETWORK_AND_ASSET, PHA, UNIT } from '@/consts/networks';
+import store from '@/store';
+import { FiatJson } from '@/interfaces';
 
 const ormlNetworks: Record<string, string> = {
   ausd: 'aUSD',
@@ -56,6 +58,9 @@ export function getImgPathByNetworkOrAssetName(value = '', relayChain?: RelayCha
 
 function getIconName(value: string, relayChain?: RelayChainName) {
   const ormlFileName = getOrmlFileName(value);
+  const fiats: FiatJson[] = store.getters.getFiats;
+
+  if (fiats.find((el) => el.id === value)) return value;
 
   if (ormlFileName !== '') return ormlFileName;
 

@@ -1,17 +1,33 @@
 import { keyring } from '@polkadot/ui-keyring';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import handlers from '@extension-base/background/handlers';
+import { initState } from '@extension-base/background/handlers/State';
+import '@polkadot/extension-inject/crossenv';
 import AccountsStore from '../background/extension-base/src/stores/Accounts';
-import { initState } from '../background/extension-base/src/background/handlers/State';
-import type { RequestSignatures, TransportRequestMessage } from '@extension-base/background/types';
-
-chrome.runtime.onInstalled.addListener(() => {
-  initState();
+import type { Port, RequestSignatures, TransportRequestMessage } from '@extension-base/background/types';
+interface ModifiedPort extends Port {
+  timer?: NodeJS.Timeout;
+}
+chrome.runtime.onInstalled.addListener(async () => {
+  await initState();
 });
 
-chrome.runtime.onConnect.addListener((port): void => {
+function deleteTimer(port: ModifiedPort) {
+  if (port.timer) {
+    clearTimeout(port.timer);
+    delete port.timer;
+  }
+}
+
+function forceReconnect(port: Port) {
+  deleteTimer(port);
+  port.disconnect();
+}
+
+chrome.runtime.onConnect.addListener((port: ModifiedPort) => {
   port.onMessage.addListener((data: TransportRequestMessage<keyof RequestSignatures>) => handlers(data, port));
-  port.onDisconnect.addListener(() => console.warn(`Disconnected from ${port.name}`));
+  port.onDisconnect.addListener(deleteTimer);
+  port.timer = setTimeout(forceReconnect, 250e3, port);
 });
 
 function getActiveTabs() {

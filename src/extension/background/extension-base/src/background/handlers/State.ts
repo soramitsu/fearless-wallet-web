@@ -83,15 +83,14 @@ export async function initState() {
     defaultAuthAccountSelection: [],
     accountSubs: {},
     addresses: {},
-    windows: [],
-    notification: 'popup',
     providers: {},
-    connectedTabsUrl: [],
-    cachedUnlocks: {},
   });
 }
 
 export default class State {
+  static notification = 'popup';
+  static connectedTabsUrl: string[] = [];
+  static windows: number[] = [];
   static authUrls: AuthUrls = {};
   static signature: HexString | null = null;
   static defaultAuthAccountSelection: string[] = [];
@@ -141,17 +140,11 @@ export default class State {
   }
 
   static async popupClose(): Promise<void> {
-    const { windows } = await State.getFromStorage(['windows']);
-
-    windows?.forEach((id: number) => withErrorLog(() => chrome.windows.remove(id)));
-
-    await storage.set({ windows: [] });
+    State.windows.forEach((id: number) => withErrorLog(() => chrome.windows.remove(id)));
   }
 
   static async popupOpen(): Promise<void> {
-    const { notification, windows } = await State.getFromStorage(['notification', 'windows']);
-
-    if (notification && notification !== 'extension') {
+    if (State.notification && State.notification !== 'extension') {
       chrome.windows.getCurrent((win) => {
         const popupOptions = { ...POPUP_WINDOW_OPTS };
 
@@ -161,24 +154,17 @@ export default class State {
         }
 
         chrome.windows.create(popupOptions, (window): void => {
-          if (window) {
-            windows.push(window.id || 0);
-
-            storage.set({ windows });
-          }
+          if (window) State.windows.push(window.id || 0);
         });
       });
     }
   }
 
-  static async injectFromStorage() {
-    const { authUrls, defaultAuthAccountSelection } = await State.getFromStorage([
-      'authUrls',
-      'defaultAuthAccountSelection',
-    ]);
-    State.authUrls = authUrls;
-    State.defaultAuthAccountSelection = defaultAuthAccountSelection;
-  }
+  // static async injectFromStorage() {
+  //   const { authUrls, defaultAuthAccountSelection } = await storage.get(['authUrls', 'defaultAuthAccountSelection']);
+  //   State.authUrls = authUrls;
+  //   State.defaultAuthAccountSelection = defaultAuthAccountSelection;
+  // }
 
   static authComplete = (
     id: string,
@@ -249,10 +235,8 @@ export default class State {
     await storage.set({ connectedTabsUrl: connectedTabs });
   }
 
-  static async getConnectedTabsUrl() {
-    const { connectedTabsUrl } = await State.getFromStorage(['connectedTabsUrl']);
-
-    return connectedTabsUrl;
+  static getConnectedTabsUrl() {
+    return State.connectedTabsUrl;
   }
 
   static async deleteAuthRequest(requestId: string) {
@@ -340,7 +324,10 @@ export default class State {
 
     const text = authCount ? 'Auth' : metaCount ? 'Meta' : signCount ? `${signCount}` : '';
 
-    withErrorLog(() => chrome.action.setBadgeText({ text }));
+    withErrorLog(() => {
+      if (chrome.browserAction) chrome.browserAction.setBadgeText({ text });
+      else chrome.action.setBadgeText({ text });
+    });
 
     if (shouldClose && text === '') {
       this.popupClose();

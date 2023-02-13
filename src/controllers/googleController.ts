@@ -6,9 +6,9 @@ import type { FilesResponse, ICreateFile, IGetFilesResponse, VerifyTokenResponse
 class GoogleManage {
   private readonly baseURL = 'https://www.googleapis.com/drive/v3';
   private readonly baseUploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-  private readonly extensionRedirectURL = 'https://nhlnehondigmgckngjomcpcefcdplmgc.chromiumapp.org/welcome';
+  private readonly extensionRedirectURL = `${chrome.identity.getRedirectURL()}welcome`;
   private readonly baseAuthParams = {
-    client_id: process.env.OAUTH_CLIENT_ID as string,
+    client_id: chrome.runtime.getManifest().oauth2?.client_id || (process.env.OAUTH_CLIENT_ID as string),
     response_type: 'token',
     state: 'pass-through value',
     access_type: 'online',

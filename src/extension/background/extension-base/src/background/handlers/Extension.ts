@@ -79,6 +79,7 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
 
 export default class Extension {
   private static token = '';
+  static readonly cachedUnlocks: CachedUnlocks = {};
   static async transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
     return Object.values(accounts).map(({ json: { address, meta }, type }): AccountJson => {
       return {
@@ -188,32 +189,22 @@ export default class Extension {
   static async refreshAccountPasswordCache(_pair: KeyringPair | string): Promise<number> {
     const pair = typeof _pair === 'string' ? keyring.getPair(_pair) : _pair;
     const { address } = pair;
-    const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
-    const savedExpiry = cachedUnlocks[address] || 0;
+    const savedExpiry = Extension.cachedUnlocks[address] || 0;
     const remainingTime = savedExpiry - Date.now();
 
     if (remainingTime < 0) {
-      cachedUnlocks[address] = 0;
-
-      await chrome.storage.local.set({ cachedUnlocks });
+      Extension.cachedUnlocks[address] = 0;
 
       pair.lock();
 
       return 0;
     }
 
-    await chrome.storage.local.set({ cachedUnlocks });
-
     return remainingTime;
   }
 
   static async resetTimeouts(): Promise<boolean> {
-    const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
-    const newCachedUnlocks: CachedUnlocks = {};
-
-    Object.keys(cachedUnlocks).map((address) => (newCachedUnlocks[address] = 0));
-
-    await chrome.storage.local.set({ cachedUnlocks: newCachedUnlocks });
+    Object.keys(Extension.cachedUnlocks).map((address) => (Extension.cachedUnlocks[address] = 0));
 
     return true;
   }
@@ -356,7 +347,6 @@ export default class Extension {
 
   static async metadataSubscribe(id: string, port: Port): Promise<boolean> {
     const cb = await createSubscription<'pri(metadata.requests)'>(id, port);
-    // const { metaSubject } = await State.getFromStorage(['metaSubject']);
 
     const subscription = State.metaSubject.subscribe((requests: MetadataRequest[]): void => cb(requests));
 
@@ -445,7 +435,6 @@ export default class Extension {
 
   static async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
     const queued = await State.getSignRequest(id);
-    const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
 
     assert(queued, 'Unable to find request');
 
@@ -482,10 +471,9 @@ export default class Extension {
     }
 
     const result = request.sign(registry, pair);
-    cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
+    Extension.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
 
-    if (savePass) await chrome.storage.local.set({ cachedUnlocks });
-    else pair.lock();
+    if (!savePass) pair.lock();
 
     resolve({
       id,
@@ -496,11 +484,7 @@ export default class Extension {
   }
 
   static async saveTimeoutCache(address: string): Promise<boolean> {
-    const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
-
-    cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
-
-    await chrome.storage.local.set({ cachedUnlocks });
+    Extension.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
 
     return true;
   }
@@ -550,7 +534,6 @@ export default class Extension {
   // FIXME This looks very much like what we have in authorization
   static async signingSubscribe(id: string, port: Port): Promise<boolean> {
     const cb = await createSubscription<'pri(signing.requests)'>(id, port);
-    // const { signSubject } = await State.getFromStorage(['signSubject']);
 
     const subscription = State.signSubject.subscribe((requests: SigningRequest[]): void => cb(requests));
 

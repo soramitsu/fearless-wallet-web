@@ -193,7 +193,7 @@ export default class Tabs {
     const encodedWebsite = encodeURIComponent(nonFragment);
     const url = `${chrome.runtime.getURL('index.html')}#${PHISHING_PAGE_REDIRECT}/${encodedWebsite}`;
 
-    chrome.tabs.query({ url: nonFragment }).then((tabs) => {
+    chrome.tabs.query({ url: nonFragment }, (tabs) => {
       tabs
         .map(({ id }) => id)
         .filter((id): id is number => isNumber(id))

@@ -33,7 +33,7 @@ chrome.runtime.onConnect.addListener((port: ModifiedPort) => {
 function getActiveTabs() {
   // queriing the current active tab in the current window should only ever return 1 tab
   // although an array is specified here
-  chrome.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     // get the urls of the active tabs. In the case of new tab the url may be empty or undefined
     // we filter these out
     const urls: string[] = tabs.map(({ url }) => url).filter((url) => !!url) as string[];

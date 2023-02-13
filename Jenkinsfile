@@ -6,7 +6,8 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'OAUTH_REFRESH_TOKEN', variable: 'OAUTH_REFRESH_TOKEN'],
     [$class: 'StringBinding', credentialsId: 'OAUTH_ITEM_ID', variable: 'OAUTH_ITEM_ID'],
     [$class: 'StringBinding', credentialsId: 'EXTENSION_PUBLIC_KEY', variable: 'EXTENSION_PUBLIC_KEY'],
-    [$class: 'StringBinding', credentialsId: 'MOZILLA_API_KEY', variable: 'MOZILLA_API_KEY']
+    [$class: 'StringBinding', credentialsId: 'MOZILLA_API_USER', variable: 'MOZILLA_API_USER'],
+    [$class: 'StringBinding', credentialsId: 'MOZILLA_API_TOKEN', variable: 'MOZILLA_API_TOKEN']
   ]
 
 def pipeline = new org.js.AppArtifactsPipeline(
@@ -23,7 +24,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     uploadToNexusFor:           ['master'],
     uploadToGoogleFor:          ['master'],
     uploadToFirefoxFor:         ['master'],
-    disableSecretScanner:       true,
+    disableSecretScanner:       false,
     buildWithCred:              buildWithCred
 )
 pipeline.runPipeline()

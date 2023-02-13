@@ -26,6 +26,7 @@ module.exports = {
   chainWebpack: (config) => {
     config.plugin('define').tap((definitions) => {
       definitions[0]['process.env'].EXTENSION_PREFIX = JSON.stringify(process.env.EXTENSION_PREFIX);
+      definitions[0]['process.env'].OAUTH_CLIENT_ID = JSON.stringify(process.env.OAUTH_CLIENT_ID);
       definitions[0]['process.env'].PORT_PREFIX = JSON.stringify(process.env.PORT_PREFIX);
 
       return definitions;

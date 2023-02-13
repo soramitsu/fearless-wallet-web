@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { CustomTokenType } from './api/evm/types/ether';
+import { ExternalApi, NetworkAssets } from '@/interfaces';
 
 export interface Message extends MessageEvent {
   data: {
@@ -74,3 +75,20 @@ export interface RequestParseEVMContractInput {
 export interface ResponseParseEVMContractInput {
   result: ParseEVMTransactionData | string;
 }
+type TypesForMobile = {
+  url: string;
+  name: string;
+};
+export type NetworkJsonOld = {
+  chainId: string;
+  parentId?: string;
+  paraId?: string;
+  name: string;
+  externalApi?: ExternalApi;
+  assets: NetworkAssets[];
+  nodes: Node[];
+  icon: string;
+  addressPrefix: number;
+  types: TypesForMobile;
+  options?: string[];
+};

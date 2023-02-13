@@ -11,6 +11,7 @@ import { base64Decode } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
 
+import fetchAdapter from '@vespaiach/axios-fetch-adapter';
 import {
   AuthorizeRequest,
   AuthRequest,
@@ -66,13 +67,15 @@ import NetworkMapStore from '../../stores/NetworkMap';
 import AuthorizeStore from '../../stores/Authorize';
 import { PREDEFINED_GENESIS_HASHES, PREDEFINED_NETWORKS } from '../../predefinedNetworks';
 import { initWeb3Api } from '../../api/evm';
-import { TransactionHistoryItemType } from '../../types';
+import { NetworkJsonOld, TransactionHistoryItemType } from '../../types';
 import PriceStore from '../../stores/Price';
 import { getTokenPrice } from '../../utils/coingecko';
 import { getId } from '../../utils';
 import { initApi } from '../../api/substrate';
 import { getRegistry } from '../../api/substrate/registry';
 import { getTokensForChainRegistry } from '../../api/tokens';
+import { axios } from '../../utils/axios';
+import { CHAINS } from '../../const/networks';
 import { getCurrentProvider, mergeNetworkProviders, stripUrl, withErrorLog } from './helpers';
 
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
@@ -1005,9 +1008,16 @@ export default class State {
     this.initNetworkStates();
     this.updateServiceInfo();
   }
+  public async prepNetworkJsons() {
+    const { data: networks } = await axios.get<NetworkJsonOld[]>(CHAINS);
+    networks.forEach((el) => {
+      console.info(el);
+    });
+  }
 
   public initNetworkStates() {
-    this.networkMapStore.get('NetworkMap', (storedNetworkMap) => {
+    this.prepNetworkJsons();
+    this.networkMapStore.get('NetworkMap', async (storedNetworkMap) => {
       if (!storedNetworkMap) {
         // first time init extension
         this.networkMapStore.set('NetworkMap', PREDEFINED_NETWORKS);

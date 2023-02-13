@@ -2,13 +2,12 @@ import axios from 'axios';
 import fetchAdapter from '@vespaiach/axios-fetch-adapter';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { FilesResponse, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
-
 class GoogleManage {
   private readonly baseURL = 'https://www.googleapis.com/drive/v3';
   private readonly baseUploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
   private readonly extensionRedirectURL = `${chrome.identity.getRedirectURL()}welcome`;
   private readonly baseAuthParams = {
-    client_id: chrome.runtime.getManifest().oauth2?.client_id || (process.env.OAUTH_CLIENT_ID as string),
+    client_id: process.env.OAUTH_CLIENT_ID as string,
     response_type: 'token',
     state: 'pass-through value',
     access_type: 'online',
@@ -73,7 +72,8 @@ ${json}
         interactive: true,
       },
       async (redirect_url) => {
-        const token = new URLSearchParams(redirect_url).get('access_token');
+        const searchParams = new URLSearchParams(redirect_url);
+        const token = searchParams.get('access_token') || searchParams.get(`${this.extensionRedirectURL}#access_token`);
         const baseURL = `${chrome.runtime.getURL('popup.html')}#/${this.urlTypes[type]}/${token}`;
         const url = type === 'export' && wallet ? `${baseURL}?wallet=${wallet}` : baseURL;
 

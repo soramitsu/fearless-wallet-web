@@ -27,6 +27,7 @@ import type {
   SeedLengths,
   SigningRequest,
   SubscriptionMessageTypes,
+  Port,
 } from '@extension-base/background/types';
 import type { Message } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';

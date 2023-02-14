@@ -37,7 +37,7 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component } from 'vue-property-decorator';
+import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { AuthorizeRequest, ApproveAuthRequest } from '@extension-base/background/types';
 import { TAction } from '@/interfaces';
@@ -73,8 +73,13 @@ export default class Authorize extends Vue {
     return BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
   }
 
-  get request() {
+  get request(): AuthorizeRequest {
     return this.requests[0];
+  }
+
+  @Watch('requests')
+  updateRoute(value: AuthorizeRequest[]) {
+    if (value.length === 0) this.$router.push({ name: Components.Wallet });
   }
 
   mounted() {
@@ -121,8 +126,6 @@ export default class Authorize extends Vue {
 
   async onReject() {
     cancelAuthRequest(this.request.id);
-
-    this.redirect();
   }
 
   redirect() {

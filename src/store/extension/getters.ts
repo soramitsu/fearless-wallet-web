@@ -16,7 +16,6 @@ export enum GettersTypes {
   getMetaRequests = 'getMetaRequests',
 
   getSignRequestPayload = 'getSignRequestPayload',
-  getSignRequest = 'getSignRequest',
   getSignList = 'getSignList',
 
   getTabStatus = 'getTabStatus',
@@ -34,7 +33,6 @@ export type Getters = {
     state: State,
     getters?: GetterTree<State, State> & Getters
   ): SignerPayloadJSON | SignerPayloadRaw;
-  [GettersTypes.getSignRequest](state: State, getters?: GetterTree<State, State> & Getters): SigningRequest;
   [GettersTypes.getSignList](state: State, getters?: GetterTree<State, State> & Getters): SigningRequest[];
 };
 
@@ -61,13 +59,10 @@ const getters: GetterTree<State, State> & Getters = {
     return payload;
   },
 
-  [GettersTypes.getSignRequest](state): SigningRequest {
-    return state.requests.sign[0];
-  },
-
   [GettersTypes.getSignList](state): SigningRequest[] {
     return state.requests.sign;
   },
+
   [GettersTypes.getTabStatus]({ tabStatus }): ActiveTabAuthorizeStatus | null {
     return tabStatus;
   },

@@ -19,7 +19,7 @@ export enum MutationTypes {
 
 interface SetPayload {
   type: keyof State['requests'];
-  data: AuthorizeRequest | SigningRequest | MetadataRequest;
+  requests: AuthorizeRequest[] | SigningRequest[] | MetadataRequest[];
 }
 
 export type Mutations = {
@@ -34,16 +34,16 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.DELETE_REQUEST](state, type) {
     state.requests[type].shift();
   },
-  [MutationTypes.SET_REQUEST](state, { type, data }) {
+  [MutationTypes.SET_REQUEST](state, { type, requests }) {
     if (type === 'auth') {
-      state.requests.auth.push(data as AuthorizeRequest);
+      state.requests.auth = [...(requests as AuthorizeRequest[])];
 
       return;
     }
 
     type === 'meta'
-      ? state.requests.meta.push(data as MetadataRequest)
-      : state.requests.sign.push(data as SigningRequest);
+      ? (state.requests.meta = [...(requests as MetadataRequest[])])
+      : (state.requests.sign = [...(requests as SigningRequest[])]);
   },
 
   [MutationTypes.SET_AUTHLIST](state, { list }) {

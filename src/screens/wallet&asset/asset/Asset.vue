@@ -240,7 +240,9 @@ export default class Asset extends Vue {
 
   toggleSelectedNetwork(network: string) {
     if (this.selectedNetwork === network) return;
-    tieAccount(this.selectedWallet.address, `0x${this.getNetwork(network).chainId}`);
+    const prepNetwork = network === 'all' ? null : `0x${this.getNetwork(network).chainId}`;
+
+    tieAccount(this.selectedWallet.address, prepNetwork);
 
     this.$router.push({
       name: Components.Asset,

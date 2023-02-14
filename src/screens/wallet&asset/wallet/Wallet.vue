@@ -339,8 +339,10 @@ export default class Wallet extends Vue {
   toggleSelectedNetwork(network: string) {
     if (this.selectedNetwork === network) return;
 
+    const prepNetwork = network === 'all' ? null : `0x${this.getNetwork(network).chainId}`;
+
     this.setSelectedNetwork({ network });
-    tieAccount(this.selectedWallet.address, `0x${this.getNetwork(network).chainId}`);
+    tieAccount(this.selectedWallet.address, prepNetwork);
     this.toggleSelectNetworkPopupVisible();
   }
 

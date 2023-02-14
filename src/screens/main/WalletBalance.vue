@@ -80,7 +80,7 @@ export default class WalletBalance extends Vue {
     font-weight: 800;
     text-overflow: ellipsis;
     overflow-x: hidden;
-    height: 23px;
+    height: 30px;
   }
 }
 </style>

@@ -454,9 +454,9 @@ export default class Extension {
     }
 
     const result = request.sign(registry, pair);
-    Extension.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
 
-    if (!savePass) pair.lock();
+    if (savePass) Extension.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
+    else pair.lock();
 
     resolve({
       id,

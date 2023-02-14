@@ -160,12 +160,6 @@ export default class State {
     }
   }
 
-  // static async injectFromStorage() {
-  //   const { authUrls, defaultAuthAccountSelection } = await storage.get(['authUrls', 'defaultAuthAccountSelection']);
-  //   State.authUrls = authUrls;
-  //   State.defaultAuthAccountSelection = defaultAuthAccountSelection;
-  // }
-
   static authComplete = (
     id: string,
     resolve: (resValue: AuthResponse) => void,

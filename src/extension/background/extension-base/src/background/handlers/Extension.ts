@@ -204,7 +204,7 @@ export default class Extension {
   }
 
   static async resetTimeouts(): Promise<boolean> {
-    Object.keys(Extension.cachedUnlocks).map((address) => (Extension.cachedUnlocks[address] = 0));
+    Object.keys(Extension.cachedUnlocks).forEach((address) => (Extension.cachedUnlocks[address] = 0));
 
     return true;
   }

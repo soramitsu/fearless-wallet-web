@@ -82,15 +82,16 @@ export type Actions = {
 const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.SUBSCRIBE_AUTH_REQUESTS]({ commit }) {
     const callback = (requests: AuthorizeRequest[]) => {
-      const [request] = requests;
+      commit(MutationTypes.SET_REQUEST, { type: 'auth', requests });
+      // if (router.currentRoute.name === 'Authorize' && requests.length === 0)
+      //   router.push({
+      //     name: Components.Wallet,
+      //   });
 
-      if (request) {
-        commit(MutationTypes.SET_REQUEST, { type: 'auth', data: request });
-
+      if (requests.length)
         router.push({
           name: Components.Authorize,
         });
-      }
     };
 
     return subscribeAuthorizeRequests(callback);
@@ -126,15 +127,17 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.SUBSCRIBE_META_REQUESTS]({ commit }) {
     const callback = (requests: MetadataRequest[]) => {
-      const [request] = requests;
+      commit(MutationTypes.SET_REQUEST, { type: 'meta', requests });
 
-      if (request && request.id) {
-        commit(MutationTypes.SET_REQUEST, { type: 'meta', data: request });
+      if (router.currentRoute.name === 'MetaRequest' && requests.length === 0)
+        router.push({
+          name: Components.Wallet,
+        });
 
+      if (requests.length)
         router.push({
           name: Components.MetaRequest,
         });
-      }
     };
 
     return subscribeMetadataRequests(callback);
@@ -156,15 +159,15 @@ const actions: ActionTree<State, State> & Actions = {
 
   async [ActionTypes.SUBSCRIBE_SIGN_REQUESTS]({ commit }) {
     const callback = (requests: SigningRequest[]) => {
-      const [request] = requests;
-
-      if (request) {
-        commit(MutationTypes.SET_REQUEST, { type: 'sign', data: request });
-
+      commit(MutationTypes.SET_REQUEST, { type: 'sign', requests });
+      if (router.currentRoute.name === 'Transaction' && requests.length === 0)
+        router.push({
+          name: Components.Wallet,
+        });
+      if (requests.length)
         router.push({
           name: Components.Transaction,
         });
-      }
     };
 
     return subscribeSigningRequests(callback);

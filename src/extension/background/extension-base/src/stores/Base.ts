@@ -1,4 +1,4 @@
-// Copyright 2019-2022 @polkadot/extension-base authors & contributors
+// Copyright 2019-2023 @polkadot/extension-base authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
 type StoreValue = Record<string, unknown>;
@@ -55,7 +55,7 @@ export default abstract class BaseStore<T> {
     });
   }
 
-  public remove(_key: string | keyof T, update?: () => void): void {
+  public remove(_key: string, update?: () => void): void {
     const key = `${this.#prefix}${_key}`;
 
     chrome.storage.local.remove(key, (): void => {
@@ -65,7 +65,7 @@ export default abstract class BaseStore<T> {
     });
   }
 
-  public set(_key: string | keyof T, value: T, update?: () => void): void {
+  public set(_key: string, value: T, update?: () => void): void {
     const key = `${this.#prefix}${_key}`;
 
     chrome.storage.local.set({ [key]: value }, (): void => {

@@ -1,6 +1,5 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-
 import type { MessageTypesWithSubscriptions, Port, SubscriptionMessageTypes, Subscriptions } from '../types';
 const subscriptions: Subscriptions = {};
 

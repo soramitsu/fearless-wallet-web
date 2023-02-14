@@ -8,20 +8,25 @@
 .scroll {
   overflow-y: auto;
   overflow-x: hidden;
-  width: 100%;
   height: 100%;
-}
+  width: 100%;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
 
-::-webkit-scrollbar {
-  width: 6px;
-}
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
 
-::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.25);
-  border-radius: $default-border-radius;
+  &::-webkit-scrollbar-track {
+    width: 6px;
+  }
 
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.15);
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.25);
+    border-radius: $default-border-radius;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.15);
+    }
   }
 }
 </style>

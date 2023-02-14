@@ -307,7 +307,7 @@ export interface RequestAccountList {
 export type RequestAccountSubscribe = null;
 
 export interface RequestActiveTabsUrlUpdate {
-  urls: string[];
+  tabs: chrome.tabs.Tab[];
 }
 
 export interface RequestAccountUnsubscribe {

@@ -9,7 +9,7 @@ import { assert, isNumber } from '@polkadot/util';
 import RequestBytesSign from '@extension-base/background/RequestBytesSign';
 import RequestExtrinsicSign from '@extension-base/background/RequestExtrinsicSign';
 
-import keyring from '@polkadot/ui-keyring';
+import { keyring } from '@polkadot/ui-keyring';
 import BeaconSignerJSON from '../BeaconSignerJSON';
 import { stripUrl, transformAccounts, transformAddresses, withErrorLog } from './helpers';
 import State from './State';

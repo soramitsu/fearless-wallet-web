@@ -31,7 +31,7 @@
   "content_security_policy": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self';  style-src 'unsafe-inline';img-src 'self' https://raw.githubusercontent.com data:; connect-src 'self' https://accounts.google.com https://www.googleapis.com https://api.subquery.network https://polkadot.js.org https://raw.githubusercontent.com https://api.coingecko.com https://beacon-node-1.hope-5.papers.tech https://beacon-node-1.hope-4.papers.tech https://beacon-node-1.sky.papers.tech https://beacon-node-2.sky.papers.tech https://beacon-node-1.hope.papers.tech https://beacon-node-1.hope-2.papers.tech https://beacon-node-1.diamond.papers.tech https://beacon-node-1.hope-3.papers.tech ws:",
   "browser_specific_settings": {
     "gecko": {
-      "id": "{6a9332b9-e864-4d0a-a591-140fe75a29ba}"
+      "id": "fearless-wallet@mozilla.org"
     }
   }
 }

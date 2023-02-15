@@ -247,7 +247,7 @@ export default class SendForm extends Vue {
 
     if (!this.currency) return '';
 
-    if (this.step === 2) return this.extrinsicType === 'transfer' ? 'Send' : 'Teleport';
+    if (this.step === 2) return this.extrinsicType === 'transfer' ? 'asset.sendButtonText' : 'asset.teleportButtonText';
 
     if (this.extrinsicType === 'transfer' && this.syncedRecipient !== '' && !this.isValidRecipientAddress) {
       if (this.isSameAddress) return 'asset.isSameAddress';

@@ -3,6 +3,7 @@
 
 import { metadataExpand } from '@polkadot/extension-chains';
 import { selectableNetworks } from '@polkadot/networks';
+
 import { getId } from './background/extension-base/src/utils';
 import { PORT_EXTENSION } from './background/extension-base/src/defaults';
 import type { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
@@ -398,7 +399,7 @@ export async function deleteGoogleFile(id: string, token: string): Promise<void>
   return sendMessage('pri(google.delete.file)', { id, token });
 }
 
-export async function isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
+export function isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
   return sendMessage('pri(tab.status)');
 }
 

@@ -113,7 +113,7 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
 
 export default class Extension {
   private token: string;
-  protected readonly cachedUnlocks: CachedUnlocks;
+  protected cachedUnlocks: CachedUnlocks;
 
   readonly state: State;
 
@@ -258,27 +258,22 @@ export default class Extension {
     const remainingTime = savedExpiry - Date.now();
 
     if (remainingTime < 0) {
-      cachedUnlocks[address] = 0;
-
-      await chrome.storage.local.set({ cachedUnlocks });
+      this.cachedUnlocks[address] = 0;
 
       pair.lock();
 
       return 0;
     }
 
-    await chrome.storage.local.set({ cachedUnlocks });
-
     return remainingTime;
   }
 
   async resetTimeouts(): Promise<boolean> {
-    const { cachedUnlocks } = await this.state.getFromStorage(['cachedUnlocks']);
     const newCachedUnlocks: CachedUnlocks = {};
 
-    Object.keys(cachedUnlocks).map((address) => (newCachedUnlocks[address] = 0));
+    Object.keys(this.cachedUnlocks).forEach((address) => (newCachedUnlocks[address] = 0));
 
-    await chrome.storage.local.set({ cachedUnlocks: newCachedUnlocks });
+    this.cachedUnlocks = newCachedUnlocks;
 
     return true;
   }
@@ -605,9 +600,8 @@ export default class Extension {
     }
 
     const result = request.sign(registry, pair);
-    cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
 
-    if (savePass) await chrome.storage.local.set({ cachedUnlocks });
+    if (savePass) this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
     else pair.lock();
 
     resolve({
@@ -755,8 +749,8 @@ export default class Extension {
     return this.state.deleteAuthRequest(requestId);
   }
 
-  updateCurrentTabs({ urls }: RequestActiveTabsUrlUpdate) {
-    this.state.updateCurrentTabsUrl(urls);
+  updateCurrentTabs({ tabs }: RequestActiveTabsUrlUpdate) {
+    this.state.updateCurrentTabsUrl(tabs);
   }
 
   getConnectedTabsUrl() {

@@ -10,7 +10,6 @@ import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { base64Decode } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
-
 import fetchAdapter from '@vespaiach/axios-fetch-adapter';
 import {
   AuthorizeRequest,
@@ -19,7 +18,6 @@ import {
   AuthUrls,
   MetadataRequest,
   MetaRequest,
-  NORMAL_WINDOW_OPTS,
   POPUP_WINDOW_OPTS,
   ResponseSigning,
   SigningRequest,
@@ -42,6 +40,7 @@ import {
   RequestAccountExportPrivateKey,
   ResponseAccountExportPrivateKey,
   ApiProps,
+  ActiveTabAuthorizeStatus,
 } from '../types';
 
 import MetadataStore from '../../stores/Metadata';
@@ -131,8 +130,6 @@ export async function initState() {
     defaultAuthAccountSelection: [],
     accountSubs: {},
     addresses: {},
-    windows: [],
-    notification: 'popup',
     providers: {},
     connectedTabsUrl: [],
     cachedUnlocks: {},
@@ -141,6 +138,8 @@ export async function initState() {
 }
 
 export default class State {
+  static notification = 'popup';
+  static windows: number[] = [];
   subscription: FWSubscription;
   chainRegistryMap: Record<string, ChainRegistry> = {};
   chainRegistrySubject = new Subject<Record<string, ChainRegistry>>();
@@ -180,7 +179,7 @@ export default class State {
   public balanceService = new BalanceService();
   lazyMap: Record<string, unknown> = {};
   ready = false;
-
+  static currentTabStatus: ActiveTabAuthorizeStatus;
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
   }
@@ -299,17 +298,9 @@ export default class State {
           popupOptions.top = (win.top || 0) + 75;
         }
 
-        chrome.windows.create(
-          notification === 'window' ? NORMAL_WINDOW_OPTS : popupOptions,
-
-          async (window): Promise<void> => {
-            if (window) {
-              windows.push(window.id || 0);
-
-              await storage.set({ windows });
-            }
-          }
-        );
+        chrome.windows.create(popupOptions, (window): void => {
+          if (window) State.windows.push(window.id || 0);
+        });
       });
   }
 
@@ -385,24 +376,30 @@ export default class State {
     }
   }
 
-  async updateCurrentTabsUrl(urls: string[]) {
-    const connectedTabs = urls
-      .map((url) => {
-        let strippedUrl = '';
+  async updateCurrentTabsUrl([tab]: chrome.tabs.Tab[]) {
+    if (!tab || !tab.url) {
+      State.currentTabStatus = {
+        isAuthorize: false,
+        authorizeAccountsCount: 0,
+        dAppName: '',
+      };
 
-        // the assert in stripUrl may throw for new tabs with "chrome://newtab/"
-        try {
-          strippedUrl = stripUrl(url);
-        } catch (e) {
-          console.error(e);
-        }
+      return;
+    }
 
-        // return the stripped url only if this website is known
-        return !!strippedUrl && this.authUrls[strippedUrl] ? strippedUrl : undefined;
-      })
-      .filter((value) => !!value) as string[];
+    const url = new URL(tab.url);
+    const tabHostName =
+      url.hostname === 'nhlnehondigmgckngjomcpcefcdplmgc' || url.hostname === '39fb1478-3519-4b4e-8eba-15e6e594494c'
+        ? 'header.currentExtensionPage'
+        : url.hostname;
+    const authorizeUrl = Object.keys(this.authUrls).filter((url) => url === tabHostName);
+    const isAuthorize = authorizeUrl.length !== 0;
 
-    await storage.set({ connectedTabsUrl: connectedTabs });
+    State.currentTabStatus = {
+      isAuthorize,
+      authorizeAccountsCount: isAuthorize ? this.authUrls[tabHostName].authorizedAccounts.length : 0,
+      dAppName: tabHostName,
+    };
   }
 
   public async upsertNetworkMap(data: NetworkJson): Promise<boolean> {
@@ -608,6 +605,10 @@ export default class State {
     return connectedTabsUrl;
   }
 
+  getCurrentTabStatus() {
+    return State.currentTabStatus;
+  }
+
   async deleteAuthRequest(requestId: string) {
     delete this.authRequests[requestId];
 
@@ -693,7 +694,10 @@ export default class State {
 
     const text = authCount ? 'Auth' : metaCount ? 'Meta' : signCount ? `${signCount}` : '';
 
-    withErrorLog(() => chrome.action.setBadgeText({ text }));
+    withErrorLog(() => {
+      if (chrome.browserAction) chrome.browserAction.setBadgeText({ text });
+      else chrome.action.setBadgeText({ text });
+    });
 
     if (shouldClose && text === '') {
       this.popupClose();

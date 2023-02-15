@@ -132,6 +132,8 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { formattedNumber, formattedPrice } from '@/helpers/numbers';
+import { tieAccount } from '@/extension/messaging';
+import { Network } from '@/interfaces';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
 
@@ -165,6 +167,8 @@ export default class Asset extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => Network;
+
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
 
   get showShimmers() {
@@ -236,6 +240,9 @@ export default class Asset extends Vue {
 
   toggleSelectedNetwork(network: string) {
     if (this.selectedNetwork === network) return;
+    const prepNetwork = network === 'all' ? null : `0x${this.getNetwork(network).chainId}`;
+
+    tieAccount(this.selectedWallet.address, prepNetwork);
 
     this.$router.push({
       name: Components.Asset,

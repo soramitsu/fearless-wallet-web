@@ -69,7 +69,7 @@ export interface SignerPayloadJSON {
   version: number;
 }
 export interface PayloadJSON extends SignerPayloadJSON {
-  type: 'json';
+  type?: 'json';
 }
 
 export interface SubstrateSignPayloadRequest extends BlockchainRequestV3<'substrate'> {

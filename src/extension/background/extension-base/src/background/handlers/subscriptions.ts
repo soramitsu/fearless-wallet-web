@@ -1,6 +1,5 @@
 // Copyright 2019-2022 @subwallet/extension-koni authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-
 import { logger as createLogger } from '@polkadot/util';
 import { Logger } from '@polkadot/util/types';
 import { Subscription } from 'rxjs';

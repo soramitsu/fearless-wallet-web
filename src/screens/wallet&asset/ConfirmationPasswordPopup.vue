@@ -173,6 +173,10 @@ export default class ConfirmationPasswordPopup extends Vue {
     this.isErrorPassword = false;
   }
 
+  created() {
+    this.resetTxStatus();
+  }
+
   async mounted() {
     if (!BaseApi.isExtension() || this.isSignMobile) return;
 
@@ -194,14 +198,14 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
   }
 
-  close() {
-    if (this.isTransactionPending) {
-      this.transactionState = undefined;
-    }
+  resetTxStatus() {
+    this.currency?.setTransactionStatus();
+    this.transactionState = undefined;
+  }
 
-    if (this.isTransactionFinished) {
-      this.currency?.setTransactionStatus();
-      this.transactionState = undefined;
+  close() {
+    if (this.isTransactionPending || this.isTransactionFinished) {
+      this.resetTxStatus();
     }
 
     this.$emit('close', true);

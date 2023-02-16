@@ -21,7 +21,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     mozillaSlug:                'fearless-wallet',
     mozillaGUIDext:             '{6a9332b9-e864-4d0a-a591-140fe75a29ba}',
     distFolders:                ['./dist/extension/firefox'],
-    preBuildCmds:               ['apt-get update && apt-get install zip xxd jq && yarn install'],
+    preBuildCmds:               ['apt-get update && apt-get install zip xxd jq -y && yarn install'],
     nexusFiles:                 [ '.zip'],
     uploadToNexusFor:           ['master'],
     uploadToGoogleFor:          ['master'],

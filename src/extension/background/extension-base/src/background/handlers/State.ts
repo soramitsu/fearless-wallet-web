@@ -10,7 +10,7 @@ import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { base64Decode } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
-import fetchAdapter from '@vespaiach/axios-fetch-adapter';
+import { providers } from 'ethers';
 import {
   AuthorizeRequest,
   AuthRequest,
@@ -46,14 +46,7 @@ import {
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';
-import {
-  APIItemState,
-  BalanceItem,
-  CustomToken,
-  CustomTokenJson,
-  NetworkJson,
-  NETWORK_STATUS,
-} from '../../api/evm/types/ether';
+import { APIItemState, BalanceItem, CustomToken, CustomTokenJson, NETWORK_STATUS } from '../../api/evm/types/ether';
 import CustomTokenStore from '../../stores/CustomEvmToken';
 
 import CurrentAccountStore, { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
@@ -64,7 +57,6 @@ import { ChainRegistry } from '../../api/evm/utils/registery';
 
 import NetworkMapStore from '../../stores/NetworkMap';
 import AuthorizeStore from '../../stores/Authorize';
-import { PREDEFINED_GENESIS_HASHES, PREDEFINED_NETWORKS } from '../../predefinedNetworks';
 import { initWeb3Api } from '../../api/evm';
 import { NetworkJsonOld, TransactionHistoryItemType } from '../../types';
 import PriceStore from '../../stores/Price';
@@ -74,8 +66,8 @@ import { initApi } from '../../api/substrate';
 import { getRegistry } from '../../api/substrate/registry';
 import { getTokensForChainRegistry } from '../../api/tokens';
 import { axios } from '../../utils/axios';
-import { CHAINS } from '../../const/networks';
-import { getCurrentProvider, mergeNetworkProviders, stripUrl, withErrorLog } from './helpers';
+import { CHAINS, ASSETS } from '../../const/networks';
+import { getCurrentProvider, stripUrl, withErrorLog } from './helpers';
 
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
@@ -138,8 +130,8 @@ export async function initState() {
 }
 
 export default class State {
-  static notification = 'popup';
-  static windows: number[] = [];
+  notification = 'popup';
+  windows: number[] = [];
   subscription: FWSubscription;
   chainRegistryMap: Record<string, ChainRegistry> = {};
   chainRegistrySubject = new Subject<Record<string, ChainRegistry>>();
@@ -158,9 +150,9 @@ export default class State {
   };
   private priceStoreReady = false;
   authorizeCached: AuthUrls | undefined = undefined;
-  networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
+  networkMap: Record<string, NetworkJsonOld> = {}; // mapping to networkMapStore, for uses in background
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
-  networkMapSubject = new Subject<Record<string, NetworkJson>>();
+  networkMapSubject = new Subject<Record<string, NetworkJsonOld>>();
   serviceInfoSubject = new Subject<ServiceInfo>();
   private readonly currentAccountStore = new CurrentAccountStore();
   balanceMap: Record<string, BalanceItem> = this.generateDefaultBalanceMap();
@@ -179,7 +171,11 @@ export default class State {
   public balanceService = new BalanceService();
   lazyMap: Record<string, unknown> = {};
   ready = false;
-  static currentTabStatus: ActiveTabAuthorizeStatus;
+  currentTabStatus: ActiveTabAuthorizeStatus = {
+    isAuthorize: false,
+    authorizeAccountsCount: 0,
+    dAppName: '',
+  };
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
   }
@@ -288,7 +284,7 @@ export default class State {
   }
 
   async popupOpen(): Promise<void> {
-    const { notification, windows } = await this.getFromStorage(['notification', 'windows']);
+    const { notification } = await this.getFromStorage(['notification']);
     if (notification && notification !== 'extension')
       chrome.windows.getCurrent((win) => {
         const popupOptions = { ...POPUP_WINDOW_OPTS };
@@ -299,7 +295,7 @@ export default class State {
         }
 
         chrome.windows.create(popupOptions, (window): void => {
-          if (window) State.windows.push(window.id || 0);
+          if (window) this.windows.push(window.id || 0);
         });
       });
   }
@@ -378,7 +374,7 @@ export default class State {
 
   async updateCurrentTabsUrl([tab]: chrome.tabs.Tab[]) {
     if (!tab || !tab.url) {
-      State.currentTabStatus = {
+      this.currentTabStatus = {
         isAuthorize: false,
         authorizeAccountsCount: 0,
         dAppName: '',
@@ -395,14 +391,14 @@ export default class State {
     const authorizeUrl = Object.keys(this.authUrls).filter((url) => url === tabHostName);
     const isAuthorize = authorizeUrl.length !== 0;
 
-    State.currentTabStatus = {
+    this.currentTabStatus = {
       isAuthorize,
       authorizeAccountsCount: isAuthorize ? this.authUrls[tabHostName].authorizedAccounts.length : 0,
       dAppName: tabHostName,
     };
   }
 
-  public async upsertNetworkMap(data: NetworkJson): Promise<boolean> {
+  public async upsertNetworkMap(data: NetworkJsonOld): Promise<boolean> {
     if (this.lockNetworkMap) {
       return false;
     }
@@ -416,7 +412,6 @@ export default class State {
 
       if (currentProvider !== this.networkMap[key].currentProvider && currentProvider) {
         this.networkMap[key].currentProvider = currentProvider;
-        this.networkMap[key].currentProviderMode = 'ws';
       }
 
       this.networkMap[key].chain = chain;
@@ -606,7 +601,7 @@ export default class State {
   }
 
   getCurrentTabStatus() {
-    return State.currentTabStatus;
+    return this.currentTabStatus;
   }
 
   async deleteAuthRequest(requestId: string) {
@@ -1012,29 +1007,52 @@ export default class State {
     this.initNetworkStates();
     this.updateServiceInfo();
   }
-  public async prepNetworkJsons() {
+  public async prepNetworkJson() {
+    const result: Record<string, NetworkJsonOld> = {};
     const { data: networks } = await axios.get<NetworkJsonOld[]>(CHAINS);
+    const { data: assets } = await axios.get<NetworkJsonOld[]>(ASSETS);
+    // console.log(networks);
     networks.forEach((el) => {
-      console.info(el);
+      const prepCurrentProvider = el.nodes[0].name;
+
+      const prepNodes: Record<string, string> = {};
+      el.nodes.map((el) => {
+        prepNodes[el.name] = el.url;
+      });
+
+      result[el.name] = {
+        ...el,
+        key: el.name,
+        isEthereum: false,
+        genesisHash: `0x${el.chainId}`,
+        chainType: 'substrate',
+        active: true,
+        customNodes: {},
+        providers: prepNodes,
+        currentProvider: prepCurrentProvider,
+      };
     });
+
+    return result;
   }
 
   public initNetworkStates() {
-    this.prepNetworkJsons();
     this.networkMapStore.get('NetworkMap', async (storedNetworkMap) => {
+      const networks = await this.prepNetworkJson();
+
       if (!storedNetworkMap) {
         // first time init extension
-        this.networkMapStore.set('NetworkMap', PREDEFINED_NETWORKS);
-        this.networkMap = PREDEFINED_NETWORKS;
+        this.networkMapStore.set('NetworkMap', networks);
+        this.networkMap = networks;
       } else {
         // merge custom providers in stored data with predefined data
-        const mergedNetworkMap: Record<string, NetworkJson> = PREDEFINED_NETWORKS;
+        const mergedNetworkMap: Record<string, NetworkJsonOld> = networks;
 
         for (const [key, storedNetwork] of Object.entries(storedNetworkMap)) {
-          if (key in PREDEFINED_NETWORKS) {
+          if (key in networks) {
             // check change and override custom providers if exist
-            if ('customProviders' in storedNetwork) {
-              mergedNetworkMap[key].customProviders = storedNetwork.customProviders;
+            if ('customNodes' in networks) {
+              mergedNetworkMap[key].customNodes = storedNetwork.customProviders;
               mergedNetworkMap[key].currentProvider = storedNetwork.currentProvider;
             }
 
@@ -1043,30 +1061,27 @@ export default class State {
             }
 
             mergedNetworkMap[key].blockExplorer = storedNetwork.blockExplorer;
-            mergedNetworkMap[key].currentProviderMode = (mergedNetworkMap[key].currentProvider || '').startsWith('http')
-              ? 'http'
-              : 'ws';
-          } else {
-            if (Object.keys(PREDEFINED_GENESIS_HASHES).includes(storedNetwork.genesisHash)) {
-              // merge networks with same genesis hash
+          }
+          // } else {
+          //   if (Object.keys(networks).includes(storedNetwork.genesisHash)) {
+          //     // merge networks with same genesis hash
 
-              const targetKey = PREDEFINED_GENESIS_HASHES[storedNetwork.genesisHash];
+          //     const targetKey = PREDEFINED_GENESIS_HASHES[storedNetwork.genesisHash];
 
-              const { currentProviderMethod, parsedCustomProviders, parsedProviderKey } = mergeNetworkProviders(
-                storedNetwork,
-                PREDEFINED_NETWORKS[targetKey]
-              );
+          //     const { currentProviderMethod, parsedCustomProviders, parsedProviderKey } = mergeNetworkProviders(
+          //       storedNetwork,
+          //       networks[targetKey]
+          //     );
 
-              mergedNetworkMap[targetKey].customProviders = parsedCustomProviders;
-              mergedNetworkMap[targetKey].currentProvider = parsedProviderKey;
-              mergedNetworkMap[targetKey].active = storedNetwork.active;
-              mergedNetworkMap[targetKey].currentProviderMode = currentProviderMethod;
-            } else {
-              if (key.startsWith('custom')) {
-                // in case a predefined network is removed, it will be discarded
-                mergedNetworkMap[key] = storedNetwork;
-              }
-            }
+          //     mergedNetworkMap[targetKey].customProviders = parsedCustomProviders;
+          //     mergedNetworkMap[targetKey].currentProvider = parsedProviderKey;
+          //     mergedNetworkMap[targetKey].active = storedNetwork.active;
+          //     mergedNetworkMap[targetKey].currentProviderMode = currentProviderMethod;
+          //   } else {
+
+          if (key.startsWith('custom')) {
+            // in case a predefined network is removed, it will be discarded
+            mergedNetworkMap[key] = storedNetwork;
           }
         }
 
@@ -1080,6 +1095,7 @@ export default class State {
         if (!currentProvider) continue;
 
         if (network.active) {
+          console;
           this.apis.substrate[key] = initApi(key, currentProvider, network.isEthereum);
 
           if (network.isEthereum && network.isEthereum) {

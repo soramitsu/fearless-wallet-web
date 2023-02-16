@@ -1,13 +1,9 @@
 // Copyright 2019-2022 @subwallet/extension-koni authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 import { PriceJson } from '../background/types';
-import { PREDEFINED_NETWORKS } from '../predefinedNetworks';
 import { axios } from './axios';
 
-export const getTokenPrice = async (
-  chains: Array<string> = Object.keys(PREDEFINED_NETWORKS),
-  currency = 'usd'
-): Promise<PriceJson> => {
+export const getTokenPrice = async (chains: Array<string>, currency = 'usd'): Promise<PriceJson> => {
   try {
     // const inverseMap: Record<string, string> = {};
 

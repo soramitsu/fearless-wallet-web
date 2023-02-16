@@ -268,7 +268,7 @@ export default class Extension {
     return remainingTime;
   }
 
-  async resetTimeouts(): Promise<boolean> {
+  resetTimeouts(): boolean {
     const newCachedUnlocks: CachedUnlocks = {};
 
     Object.keys(this.cachedUnlocks).forEach((address) => (newCachedUnlocks[address] = 0));

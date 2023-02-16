@@ -3,19 +3,14 @@
 
 import { getCurrentProvider } from '../../background/handlers/helpers';
 import { ApiProps } from '../../background/types';
-import { PREDEFINED_NETWORKS } from '../../predefinedNetworks';
-import { NetworkJson } from '../evm/types/ether';
+import { NetworkJsonOld } from '../../types';
 import { initApi } from './api';
 
 export * from './api';
 
-export function getGenesis(name: string): string {
-  if (
-    PREDEFINED_NETWORKS[name] &&
-    PREDEFINED_NETWORKS[name].genesisHash &&
-    PREDEFINED_NETWORKS[name].genesisHash.toLowerCase() !== 'unknown'
-  ) {
-    return PREDEFINED_NETWORKS[name].genesisHash;
+export function getGenesis(name: string, networks: Record<string, NetworkJsonOld>): string {
+  if (networks[name] && networks[name].genesisHash && networks[name].genesisHash.toLowerCase() !== 'unknown') {
+    return networks[name].genesisHash;
   }
 
   console.info(`Genesis hash of ${name} is not available`);
@@ -24,8 +19,8 @@ export function getGenesis(name: string): string {
 }
 
 export function connectDotSamaApis(
-  networks = PREDEFINED_NETWORKS,
-  networkMap: Record<string, NetworkJson>
+  networks: Record<string, NetworkJsonOld>,
+  networkMap: Record<string, NetworkJsonOld>
 ): Record<string, ApiProps> {
   const apisMap: Record<string, ApiProps> = {};
 

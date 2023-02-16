@@ -76,7 +76,7 @@ export interface NetworkJson {
   // Provider Information
   providers: Record<string, string>; // Predefined provider map
   currentProvider: string | null; // Current provider key
-  currentProviderMode: 'http' | 'ws'; // Current provider mode, compute depend on provider protocol. the feature need to know this to decide use subscribe or cronjob to use this features.
+  // currentProviderMode: 'http' | 'ws'; // Current provider mode, compute depend on provider protocol. the feature need to know this to decide use subscribe or cronjob to use this features.
   customProviders?: Record<string, string>; // Custom provider map, provider name same with provider map
 
   // Metadata get after connect to provider
@@ -90,7 +90,7 @@ export interface NetworkJson {
   // Ethereum related information for predefined network only
   isEthereum?: boolean; // Only show network with isEthereum=true when select one EVM account // user input
   evmChainId?: number;
-  isHybrid?: boolean;
+  // isHybrid?: boolean;
   // Native token information
   nativeToken?: string;
   decimals?: number;
@@ -99,8 +99,8 @@ export interface NetworkJson {
   blockExplorer?: string; // Link to block scanner to check transaction with extrinsic hash // user input
   abiExplorer?: string; // Link to block scanner to check transaction with extrinsic hash // user input
   dependencies?: string[]; // Auto active network in dependencies if current network is activated
-  getStakingOnChain?: boolean; // support get bonded on chain
-  supportBonding?: boolean;
+  // getStakingOnChain?: boolean; // support get bonded on chain
+  // supportBonding?: boolean;
   supportSmartContract?: ContractType[]; // if network supports PSP smart contracts
 
   apiStatus?: NETWORK_STATUS;
@@ -120,4 +120,17 @@ export type TokenInfo = {
   specialOption?: object;
   assetId?: string; // for moon assets
   assetIndex?: number | string;
+};
+
+export type AssetJsonOld = {
+  id: string;
+  symbol: string;
+  displayName?: string;
+  chainId: string;
+  precision: number;
+  priceId?: string;
+  icon: string;
+  currencyId?: string;
+  transfersEnabled?: true;
+  existentialDeposit: string;
 };

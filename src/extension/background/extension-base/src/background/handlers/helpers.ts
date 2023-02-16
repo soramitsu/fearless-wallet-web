@@ -4,6 +4,7 @@ import { assert } from '@polkadot/util';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { canDerive } from '../../utils';
 import { NetworkJson } from '../../api/evm/types/ether';
+import { NetworkJsonOld } from '../../types';
 import type { InjectedAccount } from '@polkadot/extension-inject/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
@@ -139,7 +140,7 @@ export function mergeNetworkProviders(
   }
 }
 
-export const getCurrentProvider = (data: NetworkJson) => {
+export const getCurrentProvider = (data: NetworkJsonOld) => {
   if (!data?.currentProvider) {
     return null;
   }

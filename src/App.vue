@@ -9,7 +9,7 @@
 <script lang="ts">
 import { Watch, Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
-import { BalanceJson } from './extension/background/extension-base/src/background/types';
+// import { BalanceJson } from './extension/background/extension-base/src/background/types';
 import type { SetSelectedWalletProps, setAccountsProps, Accounts, setAddressesProps, setOnlineStatus } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
 import type { BehaviorSubject } from 'rxjs';
@@ -22,7 +22,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import NetworksController from '@/controllers/networksController';
 import { accountController } from '@/controllers/accountController';
 import { resetTimeouts, subscribeBalance } from '@/extension/messaging';
-import store from '@/store';
+// import store from '@/store';
 
 @Component
 export default class App extends Vue {
@@ -47,16 +47,16 @@ export default class App extends Vue {
     }
 
     this.setWallet();
-    this.addEventOnline();
-    this.connectToNodes();
-    this.subscribeToBalancesOfNetworks();
+    // this.addEventOnline();
+    // this.connectToNodes();
+    // this.subscribeToBalancesOfNetworks();
   }
 
   @Watch('isOnline')
   connect(value: boolean) {
     if (value) {
-      this.connectToNodes();
-      this.subscribeToBalancesOfNetworks();
+      // this.connectToNodes();
+      // this.subscribeToBalancesOfNetworks();
     } else this.unsubscribe();
   }
 

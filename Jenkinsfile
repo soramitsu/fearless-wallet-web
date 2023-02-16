@@ -12,7 +12,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     steps:                      this,
     buildCmds:                  ['yarn build:extension:zip'],
     nexusCredential:            'bot-fearless-rw',
-    nexusProjectPath:           'fearless/desktop',
+    nexusProjectPath:           'fearless/extension',
     sonarProjectKey:            'fearless:fearless-wallet-web',
     sonarProjectName:           'fearless-wallet-web',
     sonarCredential:            'sonar_fearless_token',

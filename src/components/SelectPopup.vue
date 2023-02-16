@@ -18,12 +18,17 @@
     :top="top"
     :left="left"
   >
-    <div v-for="{ label, value, path } in options" :key="label" :class="rowClasses(value)" @click="toggle(value)">
+    <div
+      v-for="{ label, value, path, relayChain } in options"
+      :key="label"
+      :class="rowClasses(value)"
+      @click="toggle(value)"
+    >
       <div class="description">
         <Icon v-if="path === 'globus' && showIcon" :icon="path" className="img" />
         <Icon v-else-if="path === '_default' && showIcon" :icon="path" className="img" />
 
-        <ExternalLogo v-else-if="showIcon" :type="iconType" :name="path" class="img" />
+        <ExternalLogo v-else-if="showIcon" :type="iconType" :name="path" :relayChain="relayChain" class="img" />
         {{ label }}
       </div>
 

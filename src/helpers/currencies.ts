@@ -150,7 +150,8 @@ function getCurrencyOptions(currencies: Currencies) {
     return {
       label,
       value: assetId,
-      path: getIconName(displayName),
+      path: displayName,
+      relayChain,
     };
   });
 }

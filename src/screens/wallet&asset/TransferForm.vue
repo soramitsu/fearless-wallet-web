@@ -314,7 +314,7 @@ export default class SendForm extends Vue {
     return walletBalance.map(({ network }) => ({
       label: firstCharToUp(network),
       value: `${network}`,
-      path: getIconName(network),
+      path: network,
       relayChain: this.currency?.relayChain,
     }));
   }

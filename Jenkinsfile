@@ -1,0 +1,26 @@
+@Library('jenkins-library')
+
+def buildWithCred  = [
+    [$class: 'StringBinding', credentialsId: 'OAUTH_CLIENT_ID', variable: 'OAUTH_CLIENT_ID'],
+    [$class: 'StringBinding', credentialsId: 'OAUTH_CLIENT_SECRET', variable: 'OAUTH_CLIENT_SECRET'],
+    [$class: 'StringBinding', credentialsId: 'OAUTH_REFRESH_TOKEN', variable: 'OAUTH_REFRESH_TOKEN'],
+    [$class: 'StringBinding', credentialsId: 'OAUTH_ITEM_ID', variable: 'OAUTH_ITEM_ID'],
+    [$class: 'StringBinding', credentialsId: 'EXTENSION_PUBLIC_KEY', variable: 'EXTENSION_PUBLIC_KEY ']
+  ]
+
+def pipeline = new org.js.AppArtifactsPipeline(
+    steps:                      this,
+    buildCmds:                  ['yarn build:extension:zip'],
+    nexusCredential:            'bot-fearless-rw',
+    nexusProjectPath:           'fearless/desktop',
+    sonarProjectKey:            'fearless:fearless-wallet-web',
+    sonarProjectName:           'fearless-wallet-web',
+    sonarCredential:            'sonar_fearless_token',
+    distFolders:                ['./dist/extension'],
+    preBuildCmds:               ['apt-get update && apt-get install zip && yarn install'],
+    nexusFiles:                 [ '.zip'],
+    uploadToNexusFor:           ['master'],
+    uploadToGoogleFor:          ['master'],
+    buildWithCred:              buildWithCred
+)
+pipeline.runPipeline()

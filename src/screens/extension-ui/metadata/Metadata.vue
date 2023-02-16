@@ -23,16 +23,16 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+import { Vue, Component, Watch } from 'vue-property-decorator';
+import { Action, Getter } from 'vuex-class';
 import { MetadataRequest } from '@extension-base/background/types';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
 import Hint from '@/components/Hint.vue';
-import store from '@/store';
 import { Components } from '@/router/routes';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import InfoList from '@/screens/extension-ui/InfoList.vue';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
+import { TAction } from '@/interfaces';
 
 @Component({
   components: {
@@ -43,21 +43,24 @@ import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters
 })
 export default class MetaRequest extends Vue {
   @Getter(ExtensionGettersTypes.getMetaRequests) requests!: MetadataRequest[];
+  @Action(ExtensionActionTypes.APPROVE_META_REQUEST) onApproveMetaRequest!: TAction<MetadataRequest>;
+  @Action(ExtensionActionTypes.REJECT_META_REQUEST) onRejectMetaRequest!: TAction<MetadataRequest>;
 
   get request() {
     return this.requests[0];
   }
 
-  onApprove() {
-    store.dispatch(ExtensionActionTypes.APPROVE_META_REQUEST, this.request); // TODO: @Action
+  @Watch('requests')
+  updateRoute(value: MetadataRequest[]) {
+    if (value.length === 0) this.$router.push({ name: Components.Wallet });
+  }
 
-    this.$router.push({ name: Components.Wallet });
+  onApprove() {
+    this.onApproveMetaRequest(this.request);
   }
 
   onReject() {
-    store.dispatch(ExtensionActionTypes.REJECT_META_REQUEST, this.request); // TODO: @Action
-
-    this.$router.push({ name: Components.Wallet });
+    this.onRejectMetaRequest(this.request);
   }
 }
 </script>

@@ -204,7 +204,7 @@ export default class Extension {
   }
 
   static async resetTimeouts(): Promise<boolean> {
-    Object.keys(Extension.cachedUnlocks).map((address) => (Extension.cachedUnlocks[address] = 0));
+    Object.keys(Extension.cachedUnlocks).forEach((address) => (Extension.cachedUnlocks[address] = 0));
 
     return true;
   }
@@ -454,9 +454,9 @@ export default class Extension {
     }
 
     const result = request.sign(registry, pair);
-    Extension.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
 
-    if (!savePass) pair.lock();
+    if (savePass) Extension.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
+    else pair.lock();
 
     resolve({
       id,

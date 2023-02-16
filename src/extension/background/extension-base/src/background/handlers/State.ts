@@ -160,12 +160,6 @@ export default class State {
     }
   }
 
-  // static async injectFromStorage() {
-  //   const { authUrls, defaultAuthAccountSelection } = await storage.get(['authUrls', 'defaultAuthAccountSelection']);
-  //   State.authUrls = authUrls;
-  //   State.defaultAuthAccountSelection = defaultAuthAccountSelection;
-  // }
-
   static authComplete = (
     id: string,
     resolve: (resValue: AuthResponse) => void,
@@ -228,7 +222,9 @@ export default class State {
 
     const url = new URL(tab.url);
     const tabHostName =
-      url.hostname === 'nhlnehondigmgckngjomcpcefcdplmgc' ? 'header.currentExtensionPage' : url.hostname;
+      url.hostname === 'nhlnehondigmgckngjomcpcefcdplmgc' || url.hostname === '39fb1478-3519-4b4e-8eba-15e6e594494c'
+        ? 'header.currentExtensionPage'
+        : url.hostname;
     const authorizeUrl = Object.keys(State.authUrls).filter((url) => url === tabHostName);
     const isAuthorize = authorizeUrl.length !== 0;
 

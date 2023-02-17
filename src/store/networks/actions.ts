@@ -206,7 +206,7 @@ const actions: ActionTree<State, State> & Actions = {
       return;
     }
 
-    await networkApi.provider?.disconnect();
+    await networkApi.api?.disconnect();
 
     const nodeOptions = nodeName && nodeUrl ? { name: nodeName, url: nodeUrl } : undefined;
     const apiOptions: ApiOptions = {

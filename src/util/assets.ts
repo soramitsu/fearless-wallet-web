@@ -1,5 +1,5 @@
-import { ISubmittableResult } from '@polkadot/types/types';
 import { FPNumber } from '@sora-substrate/math';
+import type { ISubmittableResult } from '@polkadot/api/node_modules/@polkadot/types/types/extrinsic';
 import type { AssetJson, TypeAsset, WalletBalance } from '@/interfaces';
 import type { SubmittableExtrinsic } from '@polkadot/api/submittable/types';
 import type { ApiPromise } from '@polkadot/api';

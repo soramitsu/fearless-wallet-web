@@ -1,4 +1,4 @@
-import { ISubmittableResult } from '@polkadot/types/types';
+import type { ISubmittableResult } from '@polkadot/api/node_modules/@polkadot/types/types/extrinsic';
 import type { Currencies, Currency, Networks, RelayChainName, Balances, NetworkName, TypeAsset } from '@/interfaces';
 import type { Wallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
@@ -7,12 +7,6 @@ import NetworksController from '@/controllers/networksController';
 import { MAIN_NETWORKS } from '@/consts/networks';
 import { getIconName } from '@/helpers/imgPath';
 import { mockFPBalance } from '@/consts/currencies';
-
-interface CurrenciesOptions {
-  label: string;
-  value: string;
-  path: string;
-}
 
 type CurrencyMock = {
   mainNetwork: string;
@@ -147,23 +141,18 @@ function getProviderUrl(name: 'moonPay' | 'ramp', asset: string, address: string
   return provider[name];
 }
 
-function getCurrencyOptions(currencies: Currencies, typesFilter: TypeAsset[] = []): CurrenciesOptions[] {
-  return currencies.reduce((result, { assetId, relayChain, displayName, balances }) => {
-    const isAssetWithCorrectType =
-      typesFilter.length !== 0 ? balances.findIndex(({ type }) => typesFilter.includes(type)) : 0;
+function getCurrencyOptions(currencies: Currencies) {
+  return currencies.map(({ assetId, relayChain, displayName }) => {
     const assetUpper = displayName.toUpperCase();
     const filteredOptions = currencies.filter(({ displayName: _displayName }) => _displayName === displayName);
     const label = filteredOptions.length > 1 ? `${assetUpper} (${relayChain.toUpperCase()})` : assetUpper;
 
-    if (isAssetWithCorrectType !== -1)
-      result.push({
-        label,
-        value: assetId,
-        path: getIconName(displayName),
-      });
-
-    return result;
-  }, [] as CurrenciesOptions[]);
+    return {
+      label,
+      value: assetId,
+      path: getIconName(displayName),
+    };
+  });
 }
 
 function getUtilityAsset(currencies: Currencies, _network: NetworkName): string {
@@ -175,7 +164,7 @@ function getUtilityAsset(currencies: Currencies, _network: NetworkName): string 
 }
 
 function statusLogging(callback: () => void) {
-  return (result: ISubmittableResult) => {
+  return (result: ISubmittableResult): void | Promise<void> => {
     const { status } = result;
 
     if (status.isInBlock) {

@@ -4,13 +4,20 @@
       <div class="column left-column">
         <div class="header">{{ $t(text).toUpperCase() }}</div>
 
-        <input v-model="syncedAmount" type="number" @focus="setFocusValue(true)" @blur="setFocusValue(false)" />
+        <input
+          v-model="syncedAmount"
+          placeholder="0.00"
+          type="number"
+          @focus="setFocusValue(true)"
+          @blur="setFocusValue(false)"
+          @input="$emit('setExchange')"
+        />
 
         <div class="price">{{ fiatSymbol }}{{ value }}</div>
       </div>
 
       <div class="column right-column">
-        <Corners @click.native="$emit('toggleSelectAssetPopupVisibility')">
+        <Corners class="corners-button" @click.native="$emit('toggleSelectAssetPopupVisibility')">
           <button class="select-button">
             <template v-if="asset !== ''">
               <NetworkLogo class="asset-icon" :name="asset" :relayChain="relayChain" :width="32" />
@@ -94,6 +101,7 @@ export default class SwapSelectInput extends Vue {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    max-width: 250px;
   }
 
   .left-column {
@@ -138,7 +146,13 @@ export default class SwapSelectInput extends Vue {
   }
 
   .right-column {
-    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+
+    .corners-button {
+      width: fit-content;
+    }
 
     .select-button {
       display: flex;
@@ -173,9 +187,12 @@ export default class SwapSelectInput extends Vue {
 
     .balance {
       display: flex;
-      justify-content: flex-end;
       font-size: 12px;
       user-select: none;
+      max-width: 250px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
 
       .balance-value {
         cursor: pointer;

@@ -1,6 +1,9 @@
 import { isFunction } from '@polkadot/util';
-import { ISubmittableResult } from '@polkadot/types/types';
 import { FPNumber } from '@sora-substrate/math';
+import { api as apiSora } from '@sora-substrate/util';
+import { LiquiditySourceTypes } from '@sora-substrate/liquidity-proxy';
+import { DexId } from '@sora-substrate/util/build/dex/consts';
+import { keyring } from '@polkadot/ui-keyring';
 import type {
   Balances,
   BalanceFP,
@@ -13,6 +16,7 @@ import type {
 import type { SubmittableExtrinsic, SignerOptions } from '@polkadot/api/submittable/types';
 import type { Wallet, SetHistoryProps } from '@/store';
 import type { ApiPromise } from '@polkadot/api';
+import type { Asset } from '@sora-substrate/util/build/assets/types';
 import BaseApi from '@/util/BaseApi';
 import LocalStorageController from '@/controllers/localStorageController';
 import NetworksController from '@/controllers/networksController';
@@ -26,7 +30,7 @@ import {
 } from '@/util/teleport';
 import { getReplacedMetaTyped } from '@/helpers/common';
 import { statusLogging } from '@/helpers/currencies';
-import { createExtrinsicTransfer } from '@/util/assets';
+import { createExtrinsicTransfer, getAssetOptions } from '@/util/assets';
 import { BeaconSigner } from '@/extension/background/extension-base/src/background/BeaconSigner';
 import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
@@ -39,12 +43,18 @@ type ExtrinsicOptions = {
   transactionsOptions?: Partial<SignerOptions>;
   historyOptions?: { networkProps: WalletBalance; amount: string; to: string };
   api?: ApiPromise;
+  swapDexId?: DexId;
 };
 
 type UpdateBalanceProps = {
   walletAddress: WalletAddress;
   network: NetworkName;
   balance: AccountBalance;
+};
+
+type CreateSwapResult = {
+  amount: string;
+  fee: string;
 };
 
 export default class CurrencyController {
@@ -465,14 +475,14 @@ export default class CurrencyController {
   /**
    * Create teleport extrinsic
    * @param {Wallet} wallet
-   * @param {string} originNet
-   * @param {string} destNet
+   * @param {NetworkName} originNet
+   * @param {NetworkName} destNet
    * @param {string} amount
    */
   public async createTeleportExtrinsic(
     wallet: Wallet,
-    originNet: string,
-    destNet: string,
+    originNet: NetworkName,
+    destNet: NetworkName,
     amount: string
   ): Promise<void> {
     const walletBalance = this.getWalletBalance(wallet) ?? [];
@@ -497,15 +507,15 @@ export default class CurrencyController {
 
   /**
    * Create native teleport extrinsic
-   * @param {string} originNet
-   * @param {string} destNet
+   * @param {NetworkName} originNet
+   * @param {NetworkName} destNet
    * @param {string} toAddress
    * @param {string} amount
    * @param {WalletBalance} networkProps
    */
   public async createNativeTeleportExtrinsic(
-    originNet: string,
-    destNet: string,
+    originNet: NetworkName,
+    destNet: NetworkName,
     toAddress: string,
     amount: string,
     networkProps: WalletBalance
@@ -551,6 +561,103 @@ export default class CurrencyController {
     this.extrinsicOptions = { historyOptions: { networkProps, amount: precisionAmount, to: toAddress }, api };
   }
 
+  public async createSwap(
+    wallet: Wallet,
+    network: NetworkName,
+    sendAssetId: string,
+    receiveAssetId: string,
+    isExchangeB: boolean,
+    sendAmount: string
+  ): Promise<CreateSwapResult> {
+    const sendAssetAddress = getAssetOptions('', 'soraAsset', sendAssetId) as string;
+    const receiveAssetAddress = getAssetOptions('', 'soraAsset', receiveAssetId) as string;
+    const transactionAddress = this.getTransactionAddress(wallet, network);
+    const pair = BaseApi.getPair(transactionAddress);
+
+    await apiSora.initialize(false);
+
+    apiSora.account = { json: null as any, pair };
+
+    const { amount: amountOne } = await apiSora.swap.getResultFromBackend(
+      sendAssetAddress,
+      receiveAssetAddress,
+      sendAmount,
+      isExchangeB,
+      LiquiditySourceTypes.Default,
+      DexId.XOR
+    );
+
+    const { amount: amountTwo } = await apiSora.swap.getResultFromBackend(
+      sendAssetAddress,
+      receiveAssetAddress,
+      sendAmount,
+      isExchangeB,
+      LiquiditySourceTypes.Default,
+      DexId.XSTUSD
+    );
+
+    const fee = FPNumber.fromCodecValue(apiSora.NetworkFee.Swap).toString();
+
+    console.log(amountOne, fee);
+    console.log(amountTwo, fee);
+
+    if (FPNumber.lt(new FPNumber(amountOne), new FPNumber(amountTwo))) {
+      this.extrinsicOptions.swapDexId = DexId.XOR;
+
+      return { amount: amountTwo, fee };
+    } else {
+      this.extrinsicOptions.swapDexId = DexId.XSTUSD;
+
+      return { amount: amountOne, fee };
+    }
+  }
+
+  public async sendSwap(
+    wallet: Wallet,
+    receiveCurrency: CurrencyController,
+    _network: string,
+    sendAssetId: string,
+    sendAsset: string,
+    receiveAssetId: string,
+    receiveAsset: string,
+    sendAmount: string,
+    receiveAmount: string,
+    slippage: number,
+    isExchange: boolean
+  ): Promise<void> {
+    const sendAssetAddress = getAssetOptions('', 'soraAsset', sendAssetId) as string;
+    const receiveAssetAddress = getAssetOptions('', 'soraAsset', receiveAssetId) as string;
+    const walletBalanceAssetA = this.getWalletBalance(wallet) ?? [];
+    const walletBalanceAssetB = receiveCurrency.getWalletBalance(wallet) ?? [];
+    const { precision: precisionAssetA } = walletBalanceAssetA.find(({ network }) => network === _network)!;
+    const { precision: precisionAssetB } = walletBalanceAssetB.find(({ network }) => network === _network)!;
+
+    const assetA: Asset = { address: sendAssetAddress, decimals: precisionAssetA, name: sendAsset, symbol: sendAsset };
+    const assetB: Asset = {
+      address: receiveAssetAddress,
+      decimals: precisionAssetB,
+      name: receiveAsset,
+      symbol: receiveAsset,
+    };
+
+    await apiSora.swap.execute(
+      assetA,
+      assetB,
+      sendAmount,
+      receiveAmount,
+      slippage,
+      isExchange,
+      LiquiditySourceTypes.Default,
+      this.extrinsicOptions.swapDexId
+    );
+  }
+
+  /**
+   * Get extrinsic fee
+   * @param {Wallet} wallet
+   * @param {NetworkName} _network
+   * @returns {Promise<string>}
+   */
   public async getPartialFee(wallet: Wallet, _network: NetworkName): Promise<string> {
     if (!this.extrinsic) return '0';
 

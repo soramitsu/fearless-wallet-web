@@ -68,6 +68,7 @@ export default class Currencies extends Vue {
   }
 
   set filteredCurrencies(currencies) {
+    this.$emit('setCustomSort');
     this.setCurrencies({
       currencies,
       address: this.selectedWallet.address,

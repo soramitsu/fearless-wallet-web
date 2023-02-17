@@ -9,6 +9,7 @@ export type State = {
   accounts: Accounts;
   addresses: Accounts;
   autoSelectNode: AutoSelectNode;
+  isCustomSort: Record<string, boolean>;
   qr: string | null;
 };
 
@@ -20,6 +21,7 @@ const state = (): State => {
     isOnline: navigator.onLine,
     accounts: {},
     addresses: {},
+    isCustomSort: accountController.getCustomSort(),
     autoSelectNode: accountController.getAutoSelectNodesValue(),
     qr: null,
   };

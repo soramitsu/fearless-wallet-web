@@ -18,6 +18,7 @@ export enum GettersTypes {
   getWallets = 'getWallets',
   getAutoSelectNodesValueByNetwork = 'getAutoSelectNodesValueByNetwork',
   GET_QR = 'getQR',
+  getIsCustomSort = 'getIsCustomSort',
 }
 
 export type Getters = {
@@ -35,6 +36,10 @@ export type Getters = {
     getters?: GetterTree<State, State> & Getters
   ): GetAutoSelectNodesValueByNetwork;
   [GettersTypes.GET_QR](state: State, getters?: GetterTree<State, State> & Getters): Nullable<string>;
+  [GettersTypes.getIsCustomSort](
+    state: State,
+    getters?: GetterTree<State, State> & Getters
+  ): (address: string) => boolean;
 };
 
 const getters: GetterTree<State, State> & Getters = {
@@ -100,6 +105,12 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.GET_QR]({ qr }): Nullable<string> {
     return qr;
   },
+
+  [GettersTypes.getIsCustomSort]:
+    ({ isCustomSort }) =>
+    (address: string) => {
+      return isCustomSort[address] ?? false;
+    },
 };
 
 export default getters;

@@ -118,6 +118,7 @@ import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavai
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import Loading from '@/components/Loading.vue';
 import { tieAccount } from '@/extension/messaging';
+import { defaultSortingCurrencies } from '@/helpers/currencies';
 
 @Component({
   components: {
@@ -223,7 +224,7 @@ export default class Wallet extends Vue {
   get filteredCurrencies() {
     const filter = this.filterValue.trim().toLowerCase();
 
-    const result = this.sortedCurrencies.filter((currency) => {
+    const result: TCurrencies = this.sortedCurrencies.filter((currency) => {
       const isAllNetworks = this.selectedNetwork === 'all';
       const walletBalance = currency.getNetworkList().map(({ network }) => network);
       const isAvailableInSelectedNetwork = walletBalance.includes(this.selectedNetwork);
@@ -236,13 +237,7 @@ export default class Wallet extends Vue {
       return walletBalance.join(' ').includes(filter) || displayName.includes(filter) || mainNetwork.includes(filter);
     });
 
-    if (!this.isCustomSort(this.selectedWallet.address))
-      return result.sort((currency1, currency2) => {
-        const assets1 = currency1.getTotalCountAssets(this.selectedWallet, this.selectedNetwork);
-        const assets2 = currency2.getTotalCountAssets(this.selectedWallet, this.selectedNetwork);
-
-        return +assets2 - +assets1;
-      });
+    if (!this.isCustomSort(this.selectedWallet.address)) return defaultSortingCurrencies(result, this.selectedWallet);
 
     return result;
   }

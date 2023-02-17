@@ -1,12 +1,5 @@
 <template>
-  <Popup
-    :headerType="headerType"
-    sizeWidth="big"
-    :headerText="popupHeader"
-    :showCloseButton="showCloseButton"
-    :handlerClose="close"
-    :zIndex="399"
-  >
+  <Popup :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close" :zIndex="399">
     <div class="popup-content">
       <template v-if="isTransactionNotInit && !isSignMobile">
         <Icon icon="lock-green" className="icon__lock-green" iconColor="success" />
@@ -141,14 +134,6 @@ export default class ConfirmationPasswordPopup extends Vue {
     return 'pending';
   }
 
-  get showCloseButton() {
-    if (this.isSignMobile) {
-      return !this.isTransactionPending;
-    }
-
-    return true;
-  }
-
   get popupHeader() {
     if (this.transactionStatus === 'success') return 'asset.transactionDone';
 
@@ -188,6 +173,10 @@ export default class ConfirmationPasswordPopup extends Vue {
     this.isErrorPassword = false;
   }
 
+  created() {
+    this.resetTxStatus();
+  }
+
   async mounted() {
     if (!BaseApi.isExtension() || this.isSignMobile) return;
 
@@ -209,33 +198,21 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
   }
 
+  resetTxStatus() {
+    this.currency?.setTransactionStatus();
+    this.transactionState = undefined;
+  }
+
   close() {
-    if (this.isTransactionNotInit) {
-      this.$emit('close');
-
-      return;
+    if (this.isTransactionPending || this.isTransactionFinished) {
+      this.resetTxStatus();
     }
 
-    if (this.transactionId && this.isTransactionPending) {
-      ExtensionController.cancelSign(this.transactionId);
-      this.transactionState = undefined;
-
-      this.$emit('close', true);
-
-      return;
-    }
-
-    if (this.isTransactionFinished) {
-      this.currency?.setTransactionStatus();
-      this.transactionState = undefined;
-
-      this.$emit('close', true);
-    }
+    this.$emit('close', true);
   }
 
   async onSignMobile() {
-    if (!this.transactionId && this.currency?.extrinsic)
-      await this.currency?.send(this.transactionAddress, true, false);
+    if (!this.transactionId && this.currency?.extrinsic) await this.currency.send(this.transactionAddress, true, false);
     else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
   }
 

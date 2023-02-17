@@ -45,7 +45,9 @@ export default class ExternalLogo extends Vue {
     if (this.name === undefined || this.name === '') return '';
 
     const name = getIconName(this.name, this.relayChain);
-    const prepName = this.type === 'asset' ? name.toUpperCase() : name;
+    const isNeedUpperCase = this.type === 'asset' && this.name !== 'csm';
+
+    const prepName = isNeedUpperCase ? name.toUpperCase() : name;
 
     return `${this.urlType}${this.iconType}/${prepName}.svg`;
   }

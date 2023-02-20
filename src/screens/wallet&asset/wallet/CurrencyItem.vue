@@ -20,11 +20,11 @@
           <template v-else-if="!showWarning">
             <div class="available-networks">
               <ExternalLogo
-                v-for="{ network } in availableInNetworksPart"
+                v-for="{ icon, network } in availableInNetworksPart"
                 class="minor-network-img"
                 type="network"
                 :key="network"
-                :name="network"
+                :name="icon"
                 :width="12"
               />
 

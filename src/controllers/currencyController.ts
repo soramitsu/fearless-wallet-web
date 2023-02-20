@@ -130,7 +130,15 @@ export default class CurrencyController {
         ? balance[ethereumAddress]
         : balance[address];
 
-      return { network, type, precision, existentialDeposit, balance: walletBalance ?? mockFPBalance, assetId };
+      return {
+        network,
+        type,
+        precision,
+        icon: this.icon,
+        existentialDeposit,
+        balance: walletBalance ?? mockFPBalance,
+        assetId,
+      };
     });
   }
 

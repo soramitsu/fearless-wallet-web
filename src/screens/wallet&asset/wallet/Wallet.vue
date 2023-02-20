@@ -53,6 +53,7 @@
             :showAssetsManagementForm="showAssetsManagementForm"
             :toggleVisibleActivityForm="toggleVisibleActivityForm"
             :filterValue="filterValue"
+            @setCustomSort="setCustomSort"
             @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
           />
 
@@ -117,6 +118,7 @@ import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavai
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import Loading from '@/components/Loading.vue';
 import { tieAccount } from '@/extension/messaging';
+import { defaultSortingCurrencies } from '@/helpers/currencies';
 
 @Component({
   components: {
@@ -152,6 +154,7 @@ export default class Wallet extends Vue {
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
@@ -163,6 +166,7 @@ export default class Wallet extends Vue {
 
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
+  @Mutation(AccountsMutationTypes.SET_CUSTOM_SORT) setCustomSorting!: TMutation<string>;
 
   get showNetworkUnavailablePopup() {
     return this.networkUnavailable !== '';
@@ -218,11 +222,9 @@ export default class Wallet extends Vue {
   }
 
   get filteredCurrencies() {
-    if (this.showAssetsManagementForm) return this.sortedCurrencies;
-
     const filter = this.filterValue.trim().toLowerCase();
 
-    return this.sortedCurrencies.filter((currency) => {
+    const result: TCurrencies = this.sortedCurrencies.filter((currency) => {
       const isAllNetworks = this.selectedNetwork === 'all';
       const walletBalance = currency.getNetworkList().map(({ network }) => network);
       const isAvailableInSelectedNetwork = walletBalance.includes(this.selectedNetwork);
@@ -234,6 +236,10 @@ export default class Wallet extends Vue {
 
       return walletBalance.join(' ').includes(filter) || displayName.includes(filter) || mainNetwork.includes(filter);
     });
+
+    if (!this.isCustomSort(this.selectedWallet.address)) return defaultSortingCurrencies(result, this.selectedWallet);
+
+    return result;
   }
 
   get totalBalance() {
@@ -252,6 +258,10 @@ export default class Wallet extends Vue {
 
   get showGoogleExportPopup() {
     return this.$route.params.access_token && this.$route.params.access_token !== 'null';
+  }
+
+  setCustomSort() {
+    this.setCustomSorting(this.selectedWallet.address);
   }
 
   closeGoogleExportPopup() {

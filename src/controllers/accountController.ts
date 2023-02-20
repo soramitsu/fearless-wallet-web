@@ -13,6 +13,7 @@ class AccountController {
   private readonly selectedFiatStorageName = 'selected-fiat';
   private readonly selectedWalletStorageName = 'selected-wallet';
   private readonly selectedNetworkStorageName = 'selected-network';
+  private readonly customSort = 'customSort';
 
   private getSequenceAssets(): Record<string, Record<NetworkName, string>> {
     const sequencesAssets = this.lsAccount.get(this.sequenceAssetsStorageName);
@@ -107,6 +108,14 @@ class AccountController {
     const autoSelectNodes = this.lsAccount.get(this.autoSelectNodesStorageName);
 
     return autoSelectNodes.value ?? {};
+  }
+
+  public setCustomSort(address: string) {
+    this.lsAccount.set(this.customSort, { [address]: true });
+  }
+
+  public getCustomSort(): Record<string, boolean> {
+    return this.lsAccount.get(this.customSort).value ?? {};
   }
 
   public setAutoSelectNodes(value: boolean, network: string): void {

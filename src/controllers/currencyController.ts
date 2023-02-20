@@ -601,7 +601,7 @@ export default class CurrencyController {
     this.transactionStatus = 'pending';
 
     try {
-      await this.extrinsic!.signAndSend(
+      this.extrinsic!.signAndSend(
         account,
         options,
         statusLogging(() => this.statusCallback(from, 'success'))

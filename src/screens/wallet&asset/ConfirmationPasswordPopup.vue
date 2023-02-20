@@ -41,12 +41,12 @@
 
       <template v-else-if="isTransactionFinished">
         <div class="descriptions">
-          <ExternalLogo :name="firstNetwork" type="network" :width="30" />
+          <ExternalLogo :name="firstNetwork" :width="30" />
 
           <template v-if="secondNetwork">
             <SIcon name="arrows-arrow-right-24" />
 
-            <ExternalLogo :name="secondNetwork" iconType="network" :width="30" />
+            <ExternalLogo :name="secondNetwork" :width="30" />
           </template>
         </div>
 

@@ -6,9 +6,10 @@
       <div class="row label">{{ $t('accounts.accountsUniquesSecrets') }}</div>
 
       <AccountsItem
-        v-for="{ network, address } in replacedAccountsItems"
+        v-for="{ network, address, icon } in replacedAccountsItems"
         :key="network"
         :network="network"
+        :icon="icon"
         :address="address"
         @openAccountSettingsPopup="openAccountSettingsPopup"
       />
@@ -18,9 +19,10 @@
       <div class="row label">{{ $t('accounts.accountsDefaultSecrets') }}</div>
 
       <AccountsItem
-        v-for="{ network, address } in sharedAccountsItems"
+        v-for="{ network, address, icon } in sharedAccountsItems"
         :key="network"
         :network="network"
+        :icon="icon"
         :address="address"
         :isMobile="isMobileWallet"
         @openSourceTypePopup="$emit('openSourceTypePopup')"

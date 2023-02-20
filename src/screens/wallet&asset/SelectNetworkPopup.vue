@@ -26,7 +26,6 @@ import { Getter } from 'vuex-class';
 import type { Networks as NetworksType, RelayChainName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { getIconName } from '@/helpers/imgPath';
 
 interface Options {
   label: string;

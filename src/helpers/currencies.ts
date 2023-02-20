@@ -150,7 +150,8 @@ function getCurrencyOptions(currencies: Currencies) {
     return {
       label,
       value: assetId,
-      path: getIconName(displayName),
+      path: displayName,
+      relayChain,
     };
   });
 }
@@ -167,14 +168,10 @@ function statusLogging(callback: () => void) {
   return (result: ISubmittableResult) => {
     const { status } = result;
 
-    if (status.isInBlock) {
-      console.info(`Successful transfer with hash ${status.asInBlock.toHex()}`);
+    if (status.isBroadcast) {
+      console.info(`Successful transfer with hash ${status.asBroadcast.toString()}`);
 
       callback();
-    } else if (status.isFinalized) {
-      console.info(`Transaction finalized at blockHash ${status.asFinalized}`);
-    } else {
-      console.info(`Status of transfer: ${status.type}`);
     }
   };
 }

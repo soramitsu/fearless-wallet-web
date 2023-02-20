@@ -1,5 +1,5 @@
 import { isFunction } from '@polkadot/util';
-import { ISubmittableResult } from '@polkadot/types/types';
+
 import { FPNumber } from '@sora-substrate/math';
 import type {
   Balances,

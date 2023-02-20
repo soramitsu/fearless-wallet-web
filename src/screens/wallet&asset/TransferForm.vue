@@ -148,7 +148,6 @@ import { firstCharToUp } from '@/helpers/common';
 import { formattedNumber, formattedPrice } from '@/helpers/numbers';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
-import { getIconName } from '@/helpers/imgPath';
 
 @Component({
   components: {
@@ -311,12 +310,16 @@ export default class SendForm extends Vue {
   get optionsNetworks() {
     const walletBalance = this.currency?.getNetworkList() ?? [];
 
-    return walletBalance.map(({ network }) => ({
-      label: firstCharToUp(network),
-      value: `${network}`,
-      path: network,
-      relayChain: this.currency?.relayChain,
-    }));
+    return walletBalance.map(({ network }) => {
+      const { icon } = this.$store.getters.getNetwork(network);
+
+      return {
+        label: firstCharToUp(network),
+        value: `${network}`,
+        path: icon,
+        relayChain: this.currency?.relayChain,
+      };
+    });
   }
 
   get optionsDestNet() {

@@ -2,7 +2,7 @@
   <div class="accounts-item">
     <div class="left-part">
       <div class="img-container">
-        <ExternalLogo type="network" :name="network" class="img" />
+        <ExternalLogo :name="icon" class="img" />
       </div>
       <div class="description">
         <div class="network-name">{{ getUpperValue(network) }}</div>
@@ -27,7 +27,7 @@ import { Vue, Component, Prop } from 'vue-property-decorator';
 @Component
 export default class AccountsItem extends Vue {
   readonly circleButtonRef = 'circleButton';
-
+  @Prop(String) icon!: string;
   @Prop(String) network!: string;
   @Prop(Boolean) isMobile!: boolean;
   @Prop(String) address!: string;

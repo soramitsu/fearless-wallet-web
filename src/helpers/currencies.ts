@@ -1,5 +1,5 @@
-import type { ISubmittableResult } from '@polkadot/api/node_modules/@polkadot/types/types/extrinsic';
-import type { Currencies, Currency, Networks, RelayChainName, Balances, NetworkName, TypeAsset } from '@/interfaces';
+import { ISubmittableResult } from '@polkadot/types/types';
+import type { Currencies, Currency, Networks, RelayChainName, Balances, NetworkName } from '@/interfaces';
 import type { Wallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import CurrencyController from '@/controllers/currencyController';
@@ -164,7 +164,7 @@ function getUtilityAsset(currencies: Currencies, _network: NetworkName): string 
 }
 
 function statusLogging(callback: () => void) {
-  return (result: ISubmittableResult): void | Promise<void> => {
+  return (result: ISubmittableResult) => {
     const { status } = result;
 
     if (status.isInBlock) {

@@ -791,7 +791,7 @@ export default class Extension {
         return await Extension.resetTimeouts();
 
       case 'pri(signing.saveTimeoutCache)':
-        return await Extension.saveTimeoutCache(request as string);
+        return Extension.saveTimeoutCache(request as string);
 
       case 'pri(google.get.files)':
         return Extension.getFiles(request as { token: string });

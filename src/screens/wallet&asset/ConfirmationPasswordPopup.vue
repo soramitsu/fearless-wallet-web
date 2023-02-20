@@ -217,7 +217,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async signTransactionJSON(id: string) {
-    const payload: PayloadJSON = this.payload as any;
+    const payload: PayloadJSON = this.payload as SignerPayloadJSON;
     delete payload.address;
     payload.type = 'json';
 
@@ -243,7 +243,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     if (this.transactionId) {
-      await this.onSignApprove({
+      this.onSignApprove({
         id: this.transactionId,
         isSavePass: this.isSavePass,
         password: this.password,
@@ -252,7 +252,7 @@ export default class ConfirmationPasswordPopup extends Vue {
       return;
     }
 
-    await this.currency?.send(this.transactionAddress, false, this.isSavePass);
+    this.currency?.send(this.transactionAddress, false, this.isSavePass);
   }
 }
 </script>

@@ -18,6 +18,10 @@ export default class NetworksController {
     return store.getters[NetworksGettersTypes.getAssetsJson];
   }
 
+  public static getAssetsIcon(assetId: string): string {
+    return store.getters[NetworksGettersTypes.getAssetIcon](assetId);
+  }
+
   public static getAssetPrice(assetId: string): AssetPrice {
     return store.getters[NetworksGettersTypes.getAssetPrice](assetId);
   }

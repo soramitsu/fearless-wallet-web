@@ -6,6 +6,7 @@
 import { Vue, Prop, Component } from 'vue-property-decorator';
 
 import type { RelayChainName } from '@/interfaces';
+import NetworksController from '@/controllers/networksController';
 
 @Component
 export default class ExternalLogo extends Vue {
@@ -29,9 +30,7 @@ export default class ExternalLogo extends Vue {
     if (this.name === undefined || this.name === '') return '';
 
     if (this.type === 'asset') {
-      const icon = this.$store.getters.getAssetIcon(this.name);
-
-      return icon;
+      return NetworksController.getAssetsIcon(this.name);
     }
 
     return this.name;

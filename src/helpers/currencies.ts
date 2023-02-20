@@ -5,7 +5,6 @@ import BaseApi from '@/util/BaseApi';
 import CurrencyController from '@/controllers/currencyController';
 import NetworksController from '@/controllers/networksController';
 import { MAIN_NETWORKS } from '@/consts/networks';
-import { getIconName } from '@/helpers/imgPath';
 import { mockFPBalance } from '@/consts/currencies';
 
 type CurrencyMock = {
@@ -14,6 +13,7 @@ type CurrencyMock = {
   symbol: string;
   displayName: string;
   relayChain: RelayChainName;
+  icon: string;
   providers: string[];
   balances: Balances;
 };
@@ -23,7 +23,7 @@ function getMockCurrencies(networks: Networks): Currencies {
 
   const currencies = networks
     .reduce<CurrencyMock[]>((result, network) => {
-      const { assets: networkAssets, name: mainNet, parentId, isEthereumNetwork } = network;
+      const { assets: networkAssets, name: mainNet, parentId, isEthereumNetwork, icon } = network;
       const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNet) as RelayChainName;
 
       networkAssets.forEach(({ assetId, purchaseProviders, isUtility, isNative, type }) => {
@@ -52,6 +52,7 @@ function getMockCurrencies(networks: Networks): Currencies {
             symbol,
             displayName,
             relayChain,
+            icon,
             providers: purchaseProviders ?? [],
             balances: [],
           };
@@ -91,8 +92,8 @@ function getMockCurrencies(networks: Networks): Currencies {
       return result;
     }, [])
     .map(
-      ({ mainNetwork, assetId, symbol, relayChain, providers, displayName, balances }) =>
-        new CurrencyController(mainNetwork, assetId, symbol, providers, relayChain, balances, displayName)
+      ({ mainNetwork, assetId, symbol, relayChain, providers, displayName, balances, icon }) =>
+        new CurrencyController(mainNetwork, assetId, symbol, providers, relayChain, balances, icon, displayName)
     );
 
   return currencies;

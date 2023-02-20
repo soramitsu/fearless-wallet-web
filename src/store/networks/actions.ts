@@ -57,7 +57,7 @@ const actions: ActionTree<State, State> & Actions = {
       const { data: networksJson } = await axios.get<NetworkJson[]>(chainsUrl);
 
       const networks: Networks = networksJson.map(
-        ({ nodes, name, assets, addressPrefix, externalApi: originalExternalApi, chainId, parentId, paraId }) => {
+        ({ nodes, name, assets, addressPrefix, icon, externalApi: originalExternalApi, chainId, parentId, paraId }) => {
           const networkName = name.toLowerCase();
           const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
           const externalApi = originalExternalApi ?? {};
@@ -66,6 +66,7 @@ const actions: ActionTree<State, State> & Actions = {
           return {
             name: networkName,
             label: name,
+            icon,
             nodes,
             assets,
             chainId,

@@ -44,6 +44,15 @@ export default class ExternalLogo extends Vue {
   get iconName() {
     if (this.name === undefined || this.name === '') return '';
 
+    if (this.type === 'asset') {
+      const icon = this.$store.getters.getAssetIcon(this.name);
+      if (icon) return icon;
+    }
+
+    if (this.type === 'network') {
+      if (this.name.startsWith('https://')) return this.name;
+    }
+
     const name = getIconName(this.name, this.relayChain);
     const isNeedUpperCase = this.type === 'asset' && this.name !== 'csm';
 

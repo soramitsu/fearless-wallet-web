@@ -27,6 +27,7 @@ export type GetNetwork = (networkName: NetworkName) => Network;
 export type GetNetworkGenesisHash = (networkName: NetworkName) => HexString;
 
 export type GetAssetName = (assetId: string) => string;
+export type GetAssetIcon = (assetId: string) => string;
 
 export type GetAssetPrice = (assetId: string) => AssetPrice;
 

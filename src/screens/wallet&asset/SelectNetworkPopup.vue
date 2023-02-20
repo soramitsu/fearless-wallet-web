@@ -60,13 +60,13 @@ export default class SelectNetworkButton extends Vue {
     if (this._optionsNetworks !== undefined) return this._optionsNetworks;
 
     let options: Options[] = [
-      ...this.networks.map(({ name, label, parentId }) => {
+      ...this.networks.map(({ name, label, parentId, icon }) => {
         const relayChain = this.networks.find(({ chainId }) => chainId === parentId)?.name ?? name;
 
         return {
           label: firstCharToUp(label),
           value: name,
-          path: getIconName(name),
+          path: icon,
           relayChain: relayChain as RelayChainName,
         };
       }),

@@ -5,12 +5,7 @@
     </div>
 
     <div class="img-container">
-      <ExternalLogo
-        class="main-network-img"
-        :name="currency.displayName"
-        :relayChain="currency.relayChain"
-        :width="42"
-      />
+      <ExternalLogo class="main-network-img" :name="currency.displayName" :width="42" />
     </div>
 
     <div class="descriptions-column">

@@ -3,6 +3,7 @@
 
 import { metadataExpand } from '@polkadot/extension-chains';
 import { selectableNetworks } from '@polkadot/networks';
+
 import { getId } from './background/extension-base/src/utils';
 import { PORT_EXTENSION } from './background/extension-base/src/defaults';
 import type { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
@@ -61,48 +62,41 @@ interface Handler {
 }
 
 type Handlers = Record<string, Handler>;
-let port = chrome.runtime ? chrome.runtime.connect({ name: PORT_EXTENSION }) : null;
+
+let port: Port;
 const handlers: Handlers = {};
 
-const onMessage = (data: Message['data']): void => {
-  const handler = handlers[data.id];
+function connect() {
+  port = chrome.runtime.connect({ name: PORT_EXTENSION });
+  port.onDisconnect.addListener(connect);
 
-  if (!handler) {
-    console.error(`Unknown response: ${JSON.stringify(data)}`);
+  port.onMessage.addListener((data: Message['data']): void => {
+    const handler = handlers[data.id];
 
-    return;
-  }
+    if (!handler) {
+      console.error(`Unknown response: ${JSON.stringify(data)}`);
 
-  if (!handler.subscriber) delete handlers[data.id];
+      return;
+    }
 
-  if (data.subscription) {
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    (handler.subscriber as Function)(data.subscription);
-  } else if (data.error) {
-    handler.reject(new Error(data.error));
-  } else {
-    handler.resolve(data.response);
-  }
-};
+    if (!handler.subscriber) {
+      delete handlers[data.id];
+    }
+
+    if (data.subscription) {
+      // eslint-disable-next-line @typescript-eslint/ban-types
+      (handler.subscriber as Function)(data.subscription);
+    } else if (data.error) {
+      handler.reject(new Error(data.error));
+    } else {
+      handler.resolve(data.response);
+    }
+  });
+}
+
+connect();
 
 // setup a listener for messages, any incoming resolves the promise
-const connect = (onDisconnect: (_port: Port) => void) => {
-  if (chrome.extension === undefined) return;
-
-  if (!port) port = chrome.runtime.connect({ name: PORT_EXTENSION });
-
-  port.onDisconnect.addListener(onDisconnect);
-  port.onMessage.addListener(onMessage);
-};
-
-const onDisconnect = (_port: Port) => {
-  _port.onDisconnect.removeListener(onDisconnect);
-  _port.onMessage.removeListener(onMessage);
-
-  connect(onDisconnect);
-};
-
-connect(onDisconnect);
 
 function sendMessage<TMessageType extends MessageTypesWithNullRequest>(
   message: TMessageType
@@ -125,8 +119,7 @@ function sendMessage<TMessageType extends MessageTypes>(
     const id = getId();
 
     handlers[id] = { reject, resolve, subscriber };
-
-    port?.postMessage({ id, message, request: request || {} });
+    port.postMessage({ id, message, request: request || {} });
   });
 }
 
@@ -315,6 +308,10 @@ export async function deleteAuthRequest(requestId: string): Promise<void> {
   return sendMessage('pri(authorize.delete.request)', requestId);
 }
 
+export async function cancelAuthRequest(requestId: string): Promise<boolean> {
+  return sendMessage('pri(authorize.cancel)', requestId);
+}
+
 export async function subscribeMetadataRequests(cb: (accounts: MetadataRequest[]) => void): Promise<boolean> {
   return sendMessage('pri(metadata.requests)', null, cb);
 }
@@ -394,6 +391,6 @@ export async function deleteGoogleFile(id: string, token: string): Promise<void>
   return sendMessage('pri(google.delete.file)', { id, token });
 }
 
-export async function isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
+export function isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
   return sendMessage('pri(tab.status)');
 }

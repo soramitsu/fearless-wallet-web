@@ -19,12 +19,7 @@
         <WalletInfo class="wallet-info" :name="request.account.name" :address="request.account.address" />
 
         <InfoList>
-          <InfoItem name="from" :value="request.url" />
-          <InfoItem name="genesis" :value="genesisHash" />
-          <InfoItem name="version" :value="specVersion" />
-          <InfoItem name="nounce" :value="nonce" />
-          <InfoItem name="method Data" :value="method" />
-          <InfoItem name="lifetime" :value="morality" />
+          <InfoItem v-for="(value, key) in txInfo" :name="key" :value="value" :key="key" />
         </InfoList>
 
         <ConfirmationPasswordPopup
@@ -43,7 +38,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { SigningRequest } from '@extension-base/background/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
@@ -75,24 +70,24 @@ export default class Auth extends Vue {
   isSignPopupVisible = false;
 
   @Getter(ExtensionGettersTypes.getSignRequestPayload) payload!: SignerPayloadJSON;
-  @Getter(ExtensionGettersTypes.getSignRequest) request!: SigningRequest;
+  @Getter(ExtensionGettersTypes.getSignList) requests!: SigningRequest[];
   @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
 
-  async mounted() {
-    if (this.isMobileSignRequired) {
-      const payload: PayloadJSON = this.payload as any;
-      delete payload.address;
-      payload.type = 'json';
-
-      const response = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
-
-      if (!response || !response.blockchainData.signature) ExtensionController.cancelSign(this.request.id);
-
-      ExtensionController.approveSignSignature(this.request.id, response.blockchainData.signature);
-
-      this.$router.push(Components.Main);
-    }
+  get request() {
+    return this.requests[0];
   }
+
+  get txInfo() {
+    return {
+      url: this.request.url,
+      nonce: this.nonce,
+      genesisHash: this.genesisHash,
+      specVersion: this.specVersion,
+      method: this.method,
+      mortality: this.mortality,
+    };
+  }
+
   get typedPayload() {
     registry.setSignedExtensions(this.payload.signedExtensions);
 
@@ -121,11 +116,32 @@ export default class Auth extends Vue {
     return this.typedPayload.method.toString();
   }
 
-  get morality() {
+  get mortality(): string {
     return this.mortalityAsString(this.typedPayload.era, this.payload.blockNumber);
   }
 
-  mortalityAsString(era: ExtrinsicEra, hexBlockNumber: string) {
+  async mounted() {
+    if (this.isMobileSignRequired) {
+      const payload: PayloadJSON = this.payload;
+      delete payload.address;
+      payload.type = 'json';
+
+      const response = await beaconController.sendRequestJSON(payload as unknown as PayloadJSON);
+
+      if (!response || !response.blockchainData.signature) ExtensionController.cancelSign(this.request.id);
+
+      ExtensionController.approveSignSignature(this.request.id, response.blockchainData.signature);
+
+      this.$router.push(Components.Main);
+    }
+  }
+
+  @Watch('requests')
+  updateRoute(value: SigningRequest[]) {
+    if (value.length === 0) this.$router.push({ name: Components.Wallet });
+  }
+
+  mortalityAsString(era: ExtrinsicEra, hexBlockNumber: string): string {
     if (era.isImmortalEra) return 'immortal';
 
     const { birth, death } = BaseApi.mortalityDecode(era, hexBlockNumber);
@@ -142,7 +158,7 @@ export default class Auth extends Vue {
   }
 
   async onReject() {
-    await this.onSignCancel(this.request.id);
+    this.onSignCancel(this.request.id);
   }
 }
 </script>

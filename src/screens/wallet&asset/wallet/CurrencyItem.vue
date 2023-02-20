@@ -5,11 +5,11 @@
     </div>
 
     <div class="img-container">
-      <NetworkLogo
+      <ExternalLogo
         class="main-network-img"
         :name="currency.displayName"
         :relayChain="currency.relayChain"
-        :width="32"
+        :width="42"
       />
     </div>
 
@@ -24,9 +24,10 @@
 
           <template v-else-if="!showWarning">
             <div class="available-networks">
-              <NetworkLogo
+              <ExternalLogo
                 v-for="{ network } in availableInNetworksPart"
                 class="minor-network-img"
+                type="network"
                 :key="network"
                 :name="network"
                 :width="12"
@@ -398,10 +399,12 @@ export default class CurrencyItem extends Vue {
 
   .img-container {
     margin: auto;
+    min-width: 45px;
     user-select: none;
+    margin-right: 12px;
 
     .main-network-img {
-      margin-right: 13px;
+      width: 42px;
     }
   }
 

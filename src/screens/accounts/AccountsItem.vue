@@ -2,7 +2,7 @@
   <div class="accounts-item">
     <div class="left-part">
       <div class="img-container">
-        <NetworkLogo :name="network" />
+        <ExternalLogo type="network" :name="network" class="img" />
       </div>
       <div class="description">
         <div class="network-name">{{ getUpperValue(network) }}</div>
@@ -80,6 +80,9 @@ export default class AccountsItem extends Vue {
   .img-container {
     width: 60px;
     margin: auto 0;
+    .img {
+      width: 32px;
+    }
   }
 
   .description {

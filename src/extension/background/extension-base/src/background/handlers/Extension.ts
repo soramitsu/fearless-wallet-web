@@ -79,6 +79,7 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
 
 export default class Extension {
   private static token = '';
+  static readonly cachedUnlocks: CachedUnlocks = {};
   static async transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
     return Object.values(accounts).map(({ json: { address, meta }, type }): AccountJson => {
       return {
@@ -188,32 +189,22 @@ export default class Extension {
   static async refreshAccountPasswordCache(_pair: KeyringPair | string): Promise<number> {
     const pair = typeof _pair === 'string' ? keyring.getPair(_pair) : _pair;
     const { address } = pair;
-    const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
-    const savedExpiry = cachedUnlocks[address] || 0;
+    const savedExpiry = Extension.cachedUnlocks[address] || 0;
     const remainingTime = savedExpiry - Date.now();
 
     if (remainingTime < 0) {
-      cachedUnlocks[address] = 0;
-
-      await chrome.storage.local.set({ cachedUnlocks });
+      Extension.cachedUnlocks[address] = 0;
 
       pair.lock();
 
       return 0;
     }
 
-    await chrome.storage.local.set({ cachedUnlocks });
-
     return remainingTime;
   }
 
   static async resetTimeouts(): Promise<boolean> {
-    const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
-    const newCachedUnlocks: CachedUnlocks = {};
-
-    Object.keys(cachedUnlocks).map((address) => (newCachedUnlocks[address] = 0));
-
-    await chrome.storage.local.set({ cachedUnlocks: newCachedUnlocks });
+    Object.keys(Extension.cachedUnlocks).forEach((address) => (Extension.cachedUnlocks[address] = 0));
 
     return true;
   }
@@ -286,28 +277,10 @@ export default class Extension {
     return { list: State.authUrls };
   }
 
-  static async isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
-    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-
-    if (!tab || !tab.url)
-      return {
-        isAuthorize: false,
-        authorizeAccountsCount: 0,
-        dAppName: '',
-      };
-
-    const tabHostName = new URL(tab.url).hostname;
-    const authorizeUrl = Object.keys(State.authUrls).filter((url) => url === tabHostName);
-    const isAuthorize = authorizeUrl.length !== 0;
-
-    return {
-      isAuthorize,
-      authorizeAccountsCount: isAuthorize ? State.authUrls[tabHostName].authorizedAccounts.length : 0,
-      dAppName: tabHostName,
-    };
+  static isTabAuthorize(): ActiveTabAuthorizeStatus {
+    return State.currentTabStatus;
   }
 
-  // FIXME This looks very much like what we have in accounts
   static async authorizeSubscribe(id: string, port: Port): Promise<boolean> {
     const cb = await createSubscription<'pri(authorize.requests)'>(id, port);
 
@@ -357,7 +330,6 @@ export default class Extension {
 
   static async metadataSubscribe(id: string, port: Port): Promise<boolean> {
     const cb = await createSubscription<'pri(metadata.requests)'>(id, port);
-    // const { metaSubject } = await State.getFromStorage(['metaSubject']);
 
     const subscription = State.metaSubject.subscribe((requests: MetadataRequest[]): void => cb(requests));
 
@@ -446,7 +418,6 @@ export default class Extension {
 
   static async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
     const queued = await State.getSignRequest(id);
-    const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
 
     assert(queued, 'Unable to find request');
 
@@ -483,9 +454,8 @@ export default class Extension {
     }
 
     const result = request.sign(registry, pair);
-    cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
 
-    if (savePass) await chrome.storage.local.set({ cachedUnlocks });
+    if (savePass) Extension.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
     else pair.lock();
 
     resolve({
@@ -497,11 +467,7 @@ export default class Extension {
   }
 
   static async saveTimeoutCache(address: string): Promise<boolean> {
-    const { cachedUnlocks } = await State.getFromStorage(['cachedUnlocks']);
-
-    cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
-
-    await chrome.storage.local.set({ cachedUnlocks });
+    Extension.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
 
     return true;
   }
@@ -551,7 +517,6 @@ export default class Extension {
   // FIXME This looks very much like what we have in authorization
   static async signingSubscribe(id: string, port: Port): Promise<boolean> {
     const cb = await createSubscription<'pri(signing.requests)'>(id, port);
-    // const { signSubject } = await State.getFromStorage(['signSubject']);
 
     const subscription = State.signSubject.subscribe((requests: SigningRequest[]): void => cb(requests));
 
@@ -563,26 +528,26 @@ export default class Extension {
     return true;
   }
 
-  static async windowOpen(path: AllowedPath): Promise<boolean> {
-    const [tab] = await chrome.tabs.query({ title: 'fearless-wallet' });
+  static async windowOpen(path: AllowedPath): Promise<void> {
+    chrome.tabs.query({ title: 'fearless-wallet' }, ([tab]) => {
+      if (tab && tab.id) {
+        chrome.tabs.update(tab.id, { active: true });
 
-    if (tab && tab.id) {
-      chrome.tabs.update(tab.id, { active: true });
+        return true;
+      }
+
+      const url = `${chrome.runtime.getURL('popup.html')}#${path}`;
+
+      if (!ALLOWED_PATH.includes(path)) {
+        console.error('Not allowed to open the url:', url);
+
+        return false;
+      }
+
+      withErrorLog(() => chrome.tabs.create({ url }));
 
       return true;
-    }
-
-    const url = `${chrome.runtime.getURL('popup.html')}#${path}`;
-
-    if (!ALLOWED_PATH.includes(path)) {
-      console.error('Not allowed to open the url:', url);
-
-      return false;
-    }
-
-    withErrorLog(() => chrome.tabs.create({ url }));
-
-    return true;
+    });
   }
 
   static derive(parentAddress: string, suri: string, password: string, metadata: KeyringPair$Meta): KeyringPair {
@@ -640,12 +605,8 @@ export default class Extension {
     return State.deleteAuthRequest(requestId);
   }
 
-  static updateCurrentTabs({ urls }: RequestActiveTabsUrlUpdate) {
-    State.updateCurrentTabsUrl(urls);
-  }
-
-  static getConnectedTabsUrl() {
-    return State.getConnectedTabsUrl();
+  static updateCurrentTabs({ tabs }: RequestActiveTabsUrlUpdate) {
+    State.updateCurrentTabsUrl(tabs);
   }
 
   static createAddress({ address, meta }: RequestAddressCreate) {
@@ -668,12 +629,6 @@ export default class Extension {
     return googleManage.verifyToken(token);
   }
 
-  static getToken(): void {
-    chrome.identity.getAuthToken({}, function (token) {
-      Extension.token = token;
-    });
-  }
-
   static async getFiles({ token }: { token: string }): Promise<IGetFilesResponse> {
     return googleManage.getFiles(token);
   }
@@ -687,11 +642,12 @@ export default class Extension {
   }
 
   static deleteFile({ id }: GoogleFileId): void {
-    if (!Extension.token) Extension.getToken();
-
     googleManage.deleteFile(id, Extension.token);
   }
 
+  static cancelAuthRequest(id: string) {
+    State.authorizeCancel({ id });
+  }
   static async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -710,6 +666,9 @@ export default class Extension {
 
       case 'pri(authorize.delete.request)':
         return Extension.deleteAuthRequest(request as string);
+
+      case 'pri(authorize.cancel)':
+        return Extension.cancelAuthRequest(request as string);
 
       case 'pri(authorize.requests)':
         return port && (await Extension.authorizeSubscribe(id, port));
@@ -779,9 +738,6 @@ export default class Extension {
 
       case 'pri(activeTabsUrl.update)':
         return Extension.updateCurrentTabs(request as RequestActiveTabsUrlUpdate);
-
-      case 'pri(connectedTabsUrl.get)':
-        return Extension.getConnectedTabsUrl();
 
       case 'pri(derivation.create)':
         return Extension.derivationCreate(request as RequestDeriveCreate);

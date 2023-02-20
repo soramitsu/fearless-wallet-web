@@ -37,7 +37,7 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component } from 'vue-property-decorator';
+import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { AuthorizeRequest, ApproveAuthRequest } from '@extension-base/background/types';
 import { TAction } from '@/interfaces';
@@ -49,6 +49,7 @@ import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import BaseApi from '@/util/BaseApi';
+import { cancelAuthRequest } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -72,8 +73,13 @@ export default class Authorize extends Vue {
     return BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
   }
 
-  get request() {
+  get request(): AuthorizeRequest {
     return this.requests[0];
+  }
+
+  @Watch('requests')
+  updateRoute(value: AuthorizeRequest[]) {
+    if (value.length === 0) this.$router.push({ name: Components.Wallet });
   }
 
   mounted() {
@@ -110,15 +116,16 @@ export default class Authorize extends Vue {
   }
 
   onApprove() {
-    this.onApproveAuthRequest({ request: this.request, accounts: this.prepAccounts });
+    this.onApproveAuthRequest({
+      request: this.request,
+      accounts: this.prepAccounts,
+    });
 
     this.redirect();
   }
 
-  onReject() {
-    this.onRejectAuthRequest(this.request);
-
-    this.redirect();
+  async onReject() {
+    cancelAuthRequest(this.request.id);
   }
 
   redirect() {

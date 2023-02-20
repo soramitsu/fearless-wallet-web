@@ -1,5 +1,7 @@
 import type { RelayChainName } from '@/interfaces/teleport';
 import { LIT, NETWORK_AND_ASSET, PHA, UNIT } from '@/consts/networks';
+import store from '@/store';
+import { FiatJson } from '@/interfaces';
 
 const ormlNetworks: Record<string, string> = {
   ausd: 'aUSD',
@@ -25,7 +27,7 @@ const ormlNetworks: Record<string, string> = {
   busd: 'BUSD',
   usdc: 'USDC',
   deo: 'DEO',
-  noir: 'NOIRE',
+  noir: 'NOIR',
   umi: 'UMI',
   ceres: 'CERES',
   dai: 'DAI',
@@ -38,7 +40,7 @@ function getOrmlFileName(value: string) {
   return ormlNetworks[prepValue] ?? '';
 }
 
-function getImgPathByNetworkOrAssetName(value = '', relayChain?: RelayChainName) {
+export function getImgPathByNetworkOrAssetName(value = '', relayChain?: RelayChainName) {
   const prepValue = value.toLowerCase();
 
   if (NETWORK_AND_ASSET[prepValue]) return NETWORK_AND_ASSET[prepValue];
@@ -56,10 +58,13 @@ function getImgPathByNetworkOrAssetName(value = '', relayChain?: RelayChainName)
 
 function getIconName(value: string, relayChain?: RelayChainName) {
   const ormlFileName = getOrmlFileName(value);
+  const fiats: FiatJson[] = store.getters.getFiats;
+
+  if (fiats.find((el) => el.id === value)) return value;
 
   if (ormlFileName !== '') return ormlFileName;
 
-  return getImgPathByNetworkOrAssetName(value, relayChain).toLocaleLowerCase();
+  return getImgPathByNetworkOrAssetName(value, relayChain);
 }
 
 export { getIconName };

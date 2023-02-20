@@ -4,7 +4,7 @@
       <Scroll>
         <Corners v-for="{ name } in disconnectedNetworks" :key="name" size="big" class="network-corners">
           <div class="network-item">
-            <NetworkLogo class="network-img" :name="name" :width="32" />
+            <ExternalLogo class="network-img" type="network" :name="name" />
 
             <div class="description">
               <div class="name">{{ name }}</div>
@@ -85,6 +85,7 @@ export default class ReceiveForm extends Vue {
         border-radius: $default-border-radius;
 
         .network-img {
+          width: 32px;
           margin-right: 16px;
           opacity: 0.65;
         }

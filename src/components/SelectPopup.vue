@@ -20,7 +20,10 @@
   >
     <div v-for="{ label, value, path } in options" :key="label" :class="rowClasses(value)" @click="toggle(value)">
       <div class="description">
-        <Icon v-if="showIcon" :icon="path" className="img" />
+        <Icon v-if="path === 'globus' && showIcon" :icon="path" className="img" />
+        <Icon v-else-if="path === '_default' && showIcon" :icon="path" className="img" />
+
+        <ExternalLogo v-else-if="showIcon" :type="iconType" :name="value" class="img" />
         {{ label }}
       </div>
 
@@ -45,6 +48,7 @@ export default class SelectPopup extends Vue {
   formattedOptions: Record<string, string>[] = [];
 
   @Prop(String) value!: string;
+  @Prop({ default: 'asset', type: String }) iconType!: string;
   @Prop(Array) options!: Record<string, string>[];
   @Prop(String) headerText!: string;
   @Prop(Number) top!: number;

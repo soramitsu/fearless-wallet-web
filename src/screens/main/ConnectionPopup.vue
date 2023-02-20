@@ -37,7 +37,9 @@ export default class ConnectionPopup extends Vue {
   }
 
   get activeTabName() {
-    return this.tabStatus.dAppName;
+    return this.tabStatus.dAppName === 'header.currentExtensionPage'
+      ? this.$t(this.tabStatus.dAppName)
+      : this.tabStatus.dAppName;
   }
 
   get classesSubtext() {

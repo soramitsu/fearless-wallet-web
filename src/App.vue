@@ -145,8 +145,7 @@ export default class App extends Vue {
 <style lang="scss">
 body {
   background-color: rgb(54, 49, 52);
-  height: 100vh;
-  width: 100%;
+  min-height: 100%;
 }
 </style>
 
@@ -157,7 +156,7 @@ body {
   font-feature-settings: 'tnum' on, 'lnum' on;
   min-height: $extension-height;
   min-width: $extension-width;
-  height: 100%;
+  height: 100vh;
   width: $extension-width;
   color: white;
   text-align: center;

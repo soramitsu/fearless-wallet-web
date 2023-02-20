@@ -148,6 +148,7 @@ import { firstCharToUp } from '@/helpers/common';
 import { formattedNumber, formattedPrice } from '@/helpers/numbers';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
+import NetworksController from '@/controllers/networksController';
 
 @Component({
   components: {
@@ -311,7 +312,7 @@ export default class SendForm extends Vue {
     const walletBalance = this.currency?.getNetworkList() ?? [];
 
     return walletBalance.map(({ network }) => {
-      const { icon } = this.$store.getters.getNetwork(network);
+      const { icon } = NetworksController.getNetwork(network);
 
       return {
         label: firstCharToUp(network),

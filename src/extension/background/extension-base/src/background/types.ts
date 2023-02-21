@@ -503,7 +503,7 @@ export interface TokenBalanceRaw {
   free: BN;
 }
 export interface ApiMap {
-  substrate?: Record<string, unknown>;
+  substrate: Record<string, ApiProps>;
   evm: Record<string, EthProvider>;
 }
 export interface ServiceInfo {
@@ -675,8 +675,8 @@ export interface RequestBatchRestore {
 export interface ResponseJsonRestore {
   error: string | null;
 }
-
-export type AllowedPath = typeof ALLOWED_PATH[number];
+type TAllowPath = typeof ALLOWED_PATH;
+export type AllowedPath = TAllowPath[number];
 
 export interface ResponseJsonGetAccountInfo {
   address: string;

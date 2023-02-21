@@ -18,7 +18,7 @@ function extract(address: string) {
   console.info(rs.publicKey);
 }
 
-export function extractPrivateKey(keyring: Keyring, address: string, password: string) {
+export function extractPrivateKey(keyring: Keyring, address: string) {
   extract.call(keyring, address);
 }
 

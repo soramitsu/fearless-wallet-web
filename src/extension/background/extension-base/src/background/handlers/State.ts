@@ -10,7 +10,7 @@ import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { base64Decode } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
-import { providers } from 'ethers';
+
 import {
   AuthorizeRequest,
   AuthRequest,
@@ -34,13 +34,13 @@ import {
   Port,
   RequestAuthorizeCancel,
   IState,
-  ServiceInfo,
+  ActiveTabAuthorizeStatus,
+  ApiProps,
   BalanceJson,
   PriceJson,
   RequestAccountExportPrivateKey,
   ResponseAccountExportPrivateKey,
-  ApiProps,
-  ActiveTabAuthorizeStatus,
+  ServiceInfo,
 } from '../types';
 
 import MetadataStore from '../../stores/Metadata';
@@ -48,17 +48,13 @@ import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';
 import { APIItemState, BalanceItem, CustomToken, CustomTokenJson, NETWORK_STATUS } from '../../api/evm/types/ether';
 import CustomTokenStore from '../../stores/CustomEvmToken';
-
 import CurrentAccountStore, { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
-
 import { initEvmTokenState } from '../../api/evm/utils/eth';
 import BalanceService from '../../shared/balanceService';
 import { ChainRegistry } from '../../api/evm/utils/registery';
-
 import NetworkMapStore from '../../stores/NetworkMap';
 import AuthorizeStore from '../../stores/Authorize';
 import { initWeb3Api } from '../../api/evm';
-import { NetworkJsonOld, TransactionHistoryItemType } from '../../types';
 import PriceStore from '../../stores/Price';
 import { getTokenPrice } from '../../utils/coingecko';
 import { getId } from '../../utils';
@@ -67,13 +63,13 @@ import { getRegistry } from '../../api/substrate/registry';
 import { getTokensForChainRegistry } from '../../api/tokens';
 import { axios } from '../../utils/axios';
 import { CHAINS, ASSETS } from '../../const/networks';
+import { DEFAULT_EVM_TOKENS } from '../../api/tokens/evm/defaultEvmToken';
+import { NetworkJsonOld, TransactionHistoryItemType } from '../../types';
 import { getCurrentProvider, stripUrl, withErrorLog } from './helpers';
-
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
-import { DEFAULT_EVM_TOKENS } from '@/consts/networks';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -124,8 +120,6 @@ export async function initState() {
     addresses: {},
     providers: {},
     connectedTabsUrl: [],
-    cachedUnlocks: {},
-    balances: {},
   });
 }
 
@@ -149,16 +143,16 @@ export default class State {
     evm: {},
   };
   private priceStoreReady = false;
-  authorizeCached: AuthUrls | undefined = undefined;
-  networkMap: Record<string, NetworkJsonOld> = {}; // mapping to networkMapStore, for uses in background
+  public authorizeCached: AuthUrls | undefined = undefined;
+  public networkMap: Record<string, NetworkJsonOld> = {}; // mapping to networkMapStore, for uses in background
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
-  networkMapSubject = new Subject<Record<string, NetworkJsonOld>>();
-  serviceInfoSubject = new Subject<ServiceInfo>();
+  public networkMapSubject = new Subject<Record<string, NetworkJsonOld>>();
+  public serviceInfoSubject = new Subject<ServiceInfo>();
   private readonly currentAccountStore = new CurrentAccountStore();
-  balanceMap: Record<string, BalanceItem> = this.generateDefaultBalanceMap();
-  balanceSubject = new Subject<BalanceJson>();
-  customTokenState: CustomTokenJson = { erc20: [] };
-  customTokenSubject = new Subject<CustomTokenJson>();
+  public balanceMap: Record<string, BalanceItem> = this.generateDefaultBalanceMap();
+  public balanceSubject = new Subject<BalanceJson>();
+  public customTokenState: CustomTokenJson = { erc20: [] };
+  public customTokenSubject = new Subject<CustomTokenJson>();
   public customTokenStore = new CustomTokenStore();
   public authRequests: Record<string, AuthRequest> = {};
   public metaRequests: Record<string, MetaRequest> = {};
@@ -169,9 +163,9 @@ export default class State {
   public readonly metaSubject: BehaviorSubject<MetadataRequest[]> = new BehaviorSubject<MetadataRequest[]>([]);
   public readonly signSubject: BehaviorSubject<SigningRequest[]> = new BehaviorSubject<SigningRequest[]>([]);
   public balanceService = new BalanceService();
-  lazyMap: Record<string, unknown> = {};
-  ready = false;
-  currentTabStatus: ActiveTabAuthorizeStatus = {
+  public lazyMap: Record<string, unknown> = {};
+  public ready = false;
+  public currentTabStatus: ActiveTabAuthorizeStatus = {
     isAuthorize: false,
     authorizeAccountsCount: 0,
     dAppName: '',
@@ -186,7 +180,7 @@ export default class State {
     this.init();
   }
 
-  public getSubstrateApiMap() {
+  public get getSubstrateApiMap() {
     return this.apis.substrate;
   }
 
@@ -194,7 +188,7 @@ export default class State {
     return this.networkMap[key];
   }
 
-  public getEvmApiMap() {
+  public get getEvmApiMap() {
     return this.apis.evm;
   }
 
@@ -1010,8 +1004,7 @@ export default class State {
   public async prepNetworkJson() {
     const result: Record<string, NetworkJsonOld> = {};
     const { data: networks } = await axios.get<NetworkJsonOld[]>(CHAINS);
-    const { data: assets } = await axios.get<NetworkJsonOld[]>(ASSETS);
-    // console.log(networks);
+    // const { data: assets } = await axios.get<NetworkJsonOld[]>(ASSETS);
     networks.forEach((el) => {
       const prepCurrentProvider = el.nodes[0].name;
 
@@ -1160,6 +1153,7 @@ export default class State {
   public setBalanceItem(networkKey: string, item: BalanceItem) {
     const itemData = { timestamp: +new Date(), ...item, network: networkKey };
     this.balanceMap[networkKey] = { ...this.balanceMap[networkKey], ...itemData };
+
     this.updateBalanceStore(networkKey, item);
   }
 
@@ -1240,10 +1234,10 @@ export default class State {
     return this.balanceSubject;
   }
 
-  public async getBalance(reset?: boolean): Promise<BalanceJson> {
-    const { balances } = (await storage.get(['balances'])) as any;
+  public getBalance(reset?: boolean): BalanceJson {
+    const activeData = this.removeInactiveNetworkData(this.balanceMap);
 
-    return { details: balances, reset } as BalanceJson;
+    return { details: activeData, reset } as BalanceJson;
   }
 
   public getCustomTokenStore(callback: (data: CustomTokenJson) => void) {

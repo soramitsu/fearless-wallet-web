@@ -804,15 +804,16 @@ export default class Extension {
   cancelAuthRequest(id: string) {
     this.state.authorizeCancel({ id });
   }
-  getBalance(reset?: boolean): Promise<BalanceJson> {
-    return this.state.getBalance(reset);
-  }
 
   private createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
     this.state.createUnsubscriptionHandle(id, unsubscribe);
   }
 
-  private subscribeBalance(id: string, port: chrome.runtime.Port): Promise<BalanceJson> {
+  private getBalance(reset?: boolean): BalanceJson {
+    return state.getBalance(reset);
+  }
+
+  private subscribeBalance(id: string, port: Port): BalanceJson {
     const cb = createSubscription<'pri(balance.get.subscription)'>(id, port);
 
     const balanceSubscription = this.state.subscribeBalance().subscribe({
@@ -1037,7 +1038,7 @@ export default class Extension {
       value,
       transferAll
     );
-    const dotSamaApiMap = state.getSubstrateApiMap();
+    const dotSamaApiMap = state.getSubstrateApiMap;
     const web3ApiMap = state.getApiMap().evm;
     let mainToken: string | undefined;
     let mainTokenDecimals: number | undefined;

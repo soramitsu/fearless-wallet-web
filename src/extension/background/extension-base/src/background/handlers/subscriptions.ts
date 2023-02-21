@@ -3,7 +3,7 @@
 import { logger as createLogger } from '@polkadot/util';
 import { Logger } from '@polkadot/util/types';
 import { Subscription } from 'rxjs';
-import { MessageTypesWithSubscriptions, Port, SubscriptionMessageTypes } from '../types';
+import { ApiProps, MessageTypesWithSubscriptions, Port, SubscriptionMessageTypes } from '../types';
 import EthProvider from '../../api/evm/ethProvider';
 import { storage } from '../../stores/Storage';
 import { subscribeBalance } from '../../api/substrate/balance';
@@ -56,17 +56,17 @@ export class FWSubscription {
     this.state.getCurrentAccount((currentAccountInfo) => {
       if (currentAccountInfo) {
         const { address, ethereumAddress } = currentAccountInfo;
-        this.subscribeBalances(ethereumAddress as string, this.state.getEvmApiMap());
+        this.subscribeBalances(address, this.state.getSubstrateApiMap, this.state.getEvmApiMap);
       }
     });
 
     !this.serviceSubscription &&
       (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
         next: (serviceInfo) => {
-          const { ethereumAddress } = serviceInfo.currentAccountInfo;
+          const { address } = serviceInfo.currentAccountInfo;
 
           this.state.initChainRegistry();
-          this.subscribeBalances(ethereumAddress as string, serviceInfo.apiMap.evm);
+          this.subscribeBalances(address, serviceInfo.apiMap.substrate, serviceInfo.apiMap.evm);
         },
       }));
   }
@@ -83,8 +83,8 @@ export class FWSubscription {
   }
 
   init() {
-    this.state.getAuthorize(async (value) => {
-      const { authUrls } = await storage.get(['authUrls']);
+    this.state.getAuthorize((value) => {
+      const authUrls = this.state.authUrls;
       const previousAuth = authUrls;
 
       if (previousAuth && Object.keys(previousAuth).length) {
@@ -104,14 +104,20 @@ export class FWSubscription {
 
     this.state.getCurrentAccount((currentAccountInfo) => {
       if (currentAccountInfo) {
-        const { address, ethereumAddress } = currentAccountInfo;
+        const { address } = currentAccountInfo;
 
-        this.subscribeBalances(ethereumAddress as string, this.state.getEvmApiMap(), true);
+        this.subscribeBalances(address, this.state.getSubstrateApiMap, this.state.getEvmApiMap, true);
       }
     });
   }
 
-  subscribeBalances(address: string, web3ApiMap: Record<string, EthProvider>, onlyRunOnFirstTime?: boolean) {
+  subscribeBalances(
+    address: string,
+    dotSamaApiMap: Record<string, ApiProps>,
+    web3ApiMap: Record<string, EthProvider>,
+    onlyRunOnFirstTime?: boolean
+  ) {
+    this.logger.log('Start balance sub');
     this.state
       .switchAccount(address)
       .then(() => {
@@ -119,9 +125,10 @@ export class FWSubscription {
           .getDecodedAddresses(address)
           .then((addresses) => {
             if (!addresses.length) return;
+
             this.updateSubscription(
               'balance',
-              this.initBalanceSubscription(address, addresses, web3ApiMap, onlyRunOnFirstTime)
+              this.initBalanceSubscription(address, addresses, dotSamaApiMap, web3ApiMap, onlyRunOnFirstTime)
             );
           })
           .catch(this.logger.error);
@@ -132,10 +139,11 @@ export class FWSubscription {
   initBalanceSubscription(
     key: string,
     addresses: string[],
+    dotSamaApiMap: Record<string, ApiProps>,
     web3ApiMap: Record<string, EthProvider>,
     onlyRunOnFirstTime?: boolean
   ) {
-    const unsub = subscribeBalance(addresses, web3ApiMap, (networkKey, rs) => {
+    const unsub = subscribeBalance(addresses, dotSamaApiMap, web3ApiMap, (networkKey, rs) => {
       this.state.setBalanceItem(networkKey, rs);
     });
 

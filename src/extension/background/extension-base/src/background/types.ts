@@ -225,6 +225,7 @@ export type RequestPrice = null;
 export type RequestSubscribePrice = null;
 export interface RequestCurrentAccountAddress {
   address: string;
+  ethAddress: string;
 }
 export type MessageTypes = keyof RequestSignatures;
 

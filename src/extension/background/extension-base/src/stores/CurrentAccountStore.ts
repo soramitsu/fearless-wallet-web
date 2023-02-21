@@ -6,7 +6,7 @@ import SubscribableStore from './SubscribableStore';
 
 export interface CurrentAccountInfo {
   address: string;
-  ethereumAddress?: string;
+  ethereumAddress: string;
   currentGenesisHash: string | null;
   allGenesisHash?: string;
 }

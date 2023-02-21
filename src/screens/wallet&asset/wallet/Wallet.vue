@@ -191,7 +191,7 @@ export default class Wallet extends Vue {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //@ts-ignore
     this.balance = balanceData.details[this.selectedWallet.ethereumAddress];
-    console.info(balanceData.details[this.selectedWallet.ethereumAddress], this.selectedWallet.ethereumAddress, 'data');
+    console.info(balanceData.details[this.selectedWallet.address], this.selectedWallet.address, 'data');
     store.dispatch('SET_BALANCE', balanceData);
   }
 

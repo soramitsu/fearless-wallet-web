@@ -5,12 +5,11 @@ import { Logger } from '@polkadot/util/types';
 import { Subscription } from 'rxjs';
 import { ApiProps, MessageTypesWithSubscriptions, Port, SubscriptionMessageTypes } from '../types';
 import EthProvider from '../../api/evm/ethProvider';
-import { storage } from '../../stores/Storage';
 import { subscribeBalance } from '../../api/substrate/balance';
 import State from './State';
 
-type SubscriptionName = 'balance';
-type Subscriptions = Record<string, chrome.runtime.Port>;
+type SubscriptionName = 'balance' | 'balanceEVM';
+type Subscriptions = Record<string, Port>;
 
 const subscriptions: Subscriptions = {};
 export class FWSubscription {
@@ -18,6 +17,7 @@ export class FWSubscription {
   private state: State;
   private subscriptionMap: Record<SubscriptionName, (() => void) | undefined> = {
     balance: undefined,
+    balanceEVM: undefined,
   };
 
   private logger: Logger;
@@ -128,7 +128,7 @@ export class FWSubscription {
 
             this.updateSubscription(
               'balance',
-              this.initBalanceSubscription(address, addresses, dotSamaApiMap, web3ApiMap, onlyRunOnFirstTime)
+              this.initBalanceSubscription(addresses, dotSamaApiMap, web3ApiMap, onlyRunOnFirstTime)
             );
           })
           .catch(this.logger.error);
@@ -137,7 +137,6 @@ export class FWSubscription {
   }
 
   initBalanceSubscription(
-    key: string,
     addresses: string[],
     dotSamaApiMap: Record<string, ApiProps>,
     web3ApiMap: Record<string, EthProvider>,

@@ -5,6 +5,7 @@ import { isEthereumAddress } from '@polkadot/util-crypto';
 import { canDerive } from '../../utils';
 import { NetworkJson } from '../../api/evm/types/ether';
 import { NetworkJsonOld } from '../../types';
+import { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import type { InjectedAccount } from '@polkadot/extension-inject/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
@@ -74,21 +75,6 @@ export function transformAddresses(addresses: SubjectInfo): InjectedAccount[] {
         type,
       })
     );
-}
-
-export function categoryAddresses(addresses: string[]) {
-  const substrateAddresses: string[] = [];
-  const evmAddresses: string[] = [];
-
-  addresses.forEach((address) => {
-    if (isEthereumAddress(address)) {
-      evmAddresses.push(address);
-    } else {
-      substrateAddresses.push(address);
-    }
-  });
-
-  return [substrateAddresses, evmAddresses];
 }
 
 export function mergeNetworkProviders(

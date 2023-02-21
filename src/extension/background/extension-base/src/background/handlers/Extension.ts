@@ -481,11 +481,16 @@ export default class Extension {
       seed,
     };
   }
-  private _saveCurrentAccountAddress(address: string, callback?: (data: CurrentAccountInfo) => void) {
+  private _saveCurrentAccountAddress(
+    address: string,
+    ethAddress: string,
+    callback?: (data: CurrentAccountInfo) => void
+  ) {
     this.state.getCurrentAccount((accountInfo) => {
       if (!accountInfo) {
         accountInfo = {
           address,
+          ethereumAddress: ethAddress,
           currentGenesisHash: ALL_GENESIS_HASH,
           allGenesisHash: ALL_GENESIS_HASH || undefined,
         };
@@ -515,22 +520,18 @@ export default class Extension {
     return true;
   }
 
-  private updateCurrentAccountAddress(address: string): boolean {
-    this._saveCurrentAccountAddress(address, () => {
+  private updateCurrentAccountAddress({ address, ethAddress }: RequestCurrentAccountAddress): boolean {
+    this._saveCurrentAccountAddress(address, ethAddress, () => {
       this.triggerAccountsSubscription();
     });
 
     return true;
   }
 
-  private saveCurrentAccountAddress(
-    data: RequestCurrentAccountAddress,
-    id: string,
-    port: chrome.runtime.Port
-  ): boolean {
+  private saveCurrentAccountAddress(data: RequestCurrentAccountAddress, id: string, port: Port): boolean {
     const cb = createSubscription<'pri(accounts.current.saveAddress)'>(id, port);
 
-    this._saveCurrentAccountAddress(data.address, cb);
+    this._saveCurrentAccountAddress(data.address, data.ethAddress, cb);
 
     port.onDisconnect.addListener((): void => {
       this.cancelSubscription(id);
@@ -1352,7 +1353,7 @@ export default class Extension {
         return this.saveCurrentAccountAddress(request as RequestCurrentAccountAddress, id, port as Port);
 
       case 'pri(accounts.update.current)':
-        return this.updateCurrentAccountAddress(request as string);
+        return this.updateCurrentAccountAddress(request as RequestCurrentAccountAddress);
 
       case 'pri(accounts.export)':
         return this.accountsExport(request as RequestAccountExport);

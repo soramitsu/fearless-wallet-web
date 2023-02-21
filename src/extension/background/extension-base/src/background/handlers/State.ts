@@ -65,11 +65,13 @@ import { axios } from '../../utils/axios';
 import { CHAINS, ASSETS } from '../../const/networks';
 import { DEFAULT_EVM_TOKENS } from '../../api/tokens/evm/defaultEvmToken';
 import { NetworkJsonOld, TransactionHistoryItemType } from '../../types';
-import { getCurrentProvider, stripUrl, withErrorLog } from './helpers';
+import { getGenesisHashes } from '../../predefinedNetworks';
+import { getCurrentProvider, mergeNetworkProviders, stripUrl, withErrorLog } from './helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
+import { AssetJson } from '@/interfaces';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -120,6 +122,7 @@ export async function initState() {
     addresses: {},
     providers: {},
     connectedTabsUrl: [],
+    balances: {},
   });
 }
 
@@ -481,6 +484,7 @@ export default class State {
 
     return true;
   }
+
   public enableNetworkMap(networkKey: string) {
     if (this.lockNetworkMap) {
       return false;
@@ -929,6 +933,7 @@ export default class State {
       this.popupOpen();
     });
   }
+
   public async getDecodedAddresses(address?: string): Promise<string[]> {
     let checkingAddress: string | null | undefined = address;
 
@@ -948,7 +953,7 @@ export default class State {
   }
 
   public getAccountAddress(): Promise<string | null | undefined> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       this.getCurrentAccount((account) => {
         if (account) {
           resolve(account.address);
@@ -960,6 +965,8 @@ export default class State {
   }
 
   public async getStoredBalance(address: string): Promise<Record<string, BalanceItem>> {
+    // const { balances } = await storage.get(['balances']);
+
     const items = await this.balanceMap;
 
     return items || {};
@@ -970,7 +977,7 @@ export default class State {
   }
 
   private async publishBalance(reset?: boolean) {
-    this.balanceSubject.next(await this.getBalance(reset));
+    this.balanceSubject.next(this.getBalance(reset));
   }
 
   public async resetBalanceMap(newAddress: string) {
@@ -989,9 +996,7 @@ export default class State {
     const filteredErc20Tokens: CustomToken[] = [];
 
     this.customTokenState.erc20.forEach((token) => {
-      if (!token.isDeleted) {
-        filteredErc20Tokens.push(token);
-      }
+      if (!token.isDeleted) filteredErc20Tokens.push(token);
     });
 
     return filteredErc20Tokens;
@@ -1001,29 +1006,47 @@ export default class State {
     this.initNetworkStates();
     this.updateServiceInfo();
   }
+
   public async prepNetworkJson() {
     const result: Record<string, NetworkJsonOld> = {};
     const { data: networks } = await axios.get<NetworkJsonOld[]>(CHAINS);
-    // const { data: assets } = await axios.get<NetworkJsonOld[]>(ASSETS);
-    networks.forEach((el) => {
-      const prepCurrentProvider = el.nodes[0].name;
+    const { data: assets } = await axios.get<AssetJson[]>(ASSETS);
+
+    networks.forEach((network) => {
+      const prepCurrentProvider = network.nodes[0].name;
 
       const prepNodes: Record<string, string> = {};
-      el.nodes.map((el) => {
-        prepNodes[el.name] = el.url;
+      network.nodes.map((node) => {
+        prepNodes[node.name] = node.url;
       });
 
-      result[el.name] = {
-        ...el,
-        key: el.name,
+      result[network.name] = {
+        ...network,
+        key: network.name,
         isEthereum: false,
-        genesisHash: `0x${el.chainId}`,
+        genesisHash: `0x${network.chainId}`,
         chainType: 'substrate',
         active: true,
         customNodes: {},
         providers: prepNodes,
         currentProvider: prepCurrentProvider,
       };
+
+      network.assets.forEach((asset) => {
+        const searchedAsset = assets.find((el) => el.id === asset.assetId);
+
+        if (!searchedAsset) return;
+        const name = searchedAsset.displayName ?? searchedAsset.symbol;
+
+        result[name] = {
+          ...result[network.name],
+          coinGeckoKey: searchedAsset?.priceId,
+          name,
+          icon: searchedAsset.icon,
+          decimals: searchedAsset.precision,
+          genesisHash: `0x${searchedAsset.chainId}`,
+        };
+      });
     });
 
     return result;
@@ -1032,6 +1055,8 @@ export default class State {
   public initNetworkStates() {
     this.networkMapStore.get('NetworkMap', async (storedNetworkMap) => {
       const networks = await this.prepNetworkJson();
+
+      const hashes = getGenesisHashes(networks);
 
       if (!storedNetworkMap) {
         // first time init extension
@@ -1049,32 +1074,31 @@ export default class State {
               mergedNetworkMap[key].currentProvider = storedNetwork.currentProvider;
             }
 
-            if (key !== 'polkadot' && key !== 'kusama') {
+            if (key !== 'Polkadot' && key !== 'Kusama') {
               mergedNetworkMap[key].active = storedNetwork.active;
             }
 
             mergedNetworkMap[key].blockExplorer = storedNetwork.blockExplorer;
-          }
-          // } else {
-          //   if (Object.keys(networks).includes(storedNetwork.genesisHash)) {
-          //     // merge networks with same genesis hash
+          } else {
+            if (Object.keys(networks).includes(storedNetwork.genesisHash)) {
+              // merge networks with same genesis hash
 
-          //     const targetKey = PREDEFINED_GENESIS_HASHES[storedNetwork.genesisHash];
+              const targetKey = hashes[storedNetwork.genesisHash];
 
-          //     const { currentProviderMethod, parsedCustomProviders, parsedProviderKey } = mergeNetworkProviders(
-          //       storedNetwork,
-          //       networks[targetKey]
-          //     );
+              const { parsedCustomProviders, parsedProviderKey } = mergeNetworkProviders(
+                storedNetwork,
+                networks[targetKey]
+              );
 
-          //     mergedNetworkMap[targetKey].customProviders = parsedCustomProviders;
-          //     mergedNetworkMap[targetKey].currentProvider = parsedProviderKey;
-          //     mergedNetworkMap[targetKey].active = storedNetwork.active;
-          //     mergedNetworkMap[targetKey].currentProviderMode = currentProviderMethod;
-          //   } else {
-
-          if (key.startsWith('custom')) {
-            // in case a predefined network is removed, it will be discarded
-            mergedNetworkMap[key] = storedNetwork;
+              mergedNetworkMap[targetKey].customProviders = parsedCustomProviders;
+              mergedNetworkMap[targetKey].currentProvider = parsedProviderKey;
+              mergedNetworkMap[targetKey].active = storedNetwork.active;
+            } else {
+              if (key.startsWith('custom')) {
+                // in case a predefined network is removed, it will be discarded
+                mergedNetworkMap[key] = storedNetwork;
+              }
+            }
           }
         }
 
@@ -1088,10 +1112,9 @@ export default class State {
         if (!currentProvider) continue;
 
         if (network.active) {
-          console;
           this.apis.substrate[key] = initApi(key, currentProvider, network.isEthereum);
 
-          if (network.isEthereum && network.isEthereum) {
+          if (network.isEthereum) {
             this.apis.evm[key] = initWeb3Api(key === 'ethereum' ? 'ethereum' : 'ethereum_goerli');
           }
         }
@@ -1150,11 +1173,21 @@ export default class State {
       }
     });
   }
-  public setBalanceItem(networkKey: string, item: BalanceItem) {
-    const itemData = { timestamp: +new Date(), ...item, network: networkKey };
-    this.balanceMap[networkKey] = { ...this.balanceMap[networkKey], ...itemData };
 
+  public setBalanceItem(networkKey: string, item: BalanceItem) {
+    // eslint-disable-next-line no-prototype-builtins
+    if (typeof item === 'object' && item.hasOwnProperty('children') && item.children === undefined) {
+      delete item.children;
+    }
+
+    const itemData = { timestamp: +new Date(), ...item };
+
+    this.balanceMap[networkKey] = { ...this.balanceMap[networkKey], ...itemData };
     this.updateBalanceStore(networkKey, item);
+
+    this.lazyNext('setBalanceItem', () => {
+      this.publishBalance();
+    });
   }
 
   public getNetworkGenesisHashByKey(key: string) {
@@ -1181,12 +1214,7 @@ export default class State {
   private updateBalanceStore(networkKey: string, item: BalanceItem) {
     this.getCurrentAccount((currentAccountInfo) => {
       this.balanceService
-        .updateBalanceStore(
-          networkKey,
-          this.getNetworkGenesisHashByKey(networkKey),
-          currentAccountInfo.ethereumAddress as string,
-          item
-        )
+        .updateBalanceStore(networkKey, this.getNetworkGenesisHashByKey(networkKey), currentAccountInfo.address, item)
         .catch((e) => console.warn(e));
     });
   }
@@ -1245,6 +1273,7 @@ export default class State {
       callback(data);
     });
   }
+
   private lazyNext = (key: string, callback: () => void) => {
     if (this.lazyMap[key]) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment

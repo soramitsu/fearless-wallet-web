@@ -3,9 +3,10 @@
 
 import { ApiPromise } from '@polkadot/api';
 import { BN, bnToHex } from '@polkadot/util';
-import { PREDEFINE_TOKEN_DATA_MAP } from '../evm/predefineChainTokens';
+import { state } from '../../background/handlers';
+import { ChainRegistry } from '../../types';
 import { TokenInfo, CustomToken } from '../evm/types/ether';
-import { ChainRegistry, moonbeamBaseChains } from '../evm/utils/registery';
+import { moonbeamBaseChains } from './api-helper';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -199,7 +200,7 @@ export const getRegistry = async (networkKey: string, api: ApiPromise, customTok
     });
   }
 
-  const predefineTokenMap = PREDEFINE_TOKEN_DATA_MAP[networkKey];
+  const predefineTokenMap = state.tokenMap[networkKey];
 
   if (predefineTokenMap) {
     Object.assign(tokenMap, predefineTokenMap);

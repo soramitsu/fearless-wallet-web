@@ -23,10 +23,10 @@ import { getEVMBalance } from '../evm/balance';
 import EthProvider from '../evm/ethProvider';
 import { APIItemState, BalanceChildItem, BalanceItem, TokenInfo } from '../evm/types/ether';
 import { getERC20Contract } from '../evm/utils/eth';
-import { getRegistry, getTokenInfo, moonbeamBaseChains } from '../evm/utils/registery';
-import { IGNORE_GET_SUBSTRATE_FEATURES_LIST } from '../../const';
+import { IGNORE_GET_SUBSTRATE_FEATURES_LIST, moonbeamBaseChains } from '../../const';
 import { getPSP22ContractPromise } from '../tokens/wasm';
 import { categoryAddresses } from '../../utils/utils';
+import { getRegistry, getTokenInfo } from './registry';
 
 type EqBalanceItem = [number, { positive: number }];
 

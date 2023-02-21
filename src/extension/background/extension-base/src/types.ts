@@ -1,7 +1,7 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { CustomTokenType, NetworkJson } from './api/evm/types/ether';
+import { CustomTokenType, NetworkJson, TokenInfo } from './api/evm/types/ether';
 import { ExternalApi, NetworkAssets } from '@/interfaces';
 
 export interface Message extends MessageEvent {
@@ -98,4 +98,10 @@ export interface NetworkJsonOld extends NetworkJson {
   addressPrefix: number;
   types: TypesForMobile;
   options?: string[];
+}
+
+export interface ChainRegistry {
+  chainDecimals: number[];
+  chainTokens: string[];
+  tokenMap: Record<string, TokenInfo>;
 }

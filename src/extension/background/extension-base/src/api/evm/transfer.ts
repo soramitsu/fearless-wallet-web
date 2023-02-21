@@ -10,11 +10,13 @@ import {
   ExternalRequestPromiseStatus,
   TransferErrorCode,
 } from '../../background/types';
+import { getTokenInfo } from '../substrate/registry';
 
 import EthProvider from './ethProvider';
+import { TokenInfo } from './types/ether';
 
 import { getERC20Contract } from './utils/eth';
-import { getTokenInfo } from './utils/registery';
+
 export type HandleBasicTx = (data: BasicTxResponse) => void;
 export type HandleTxResponse<T extends BasicTxResponse> = (data: T) => void;
 interface HandleTransferBalanceResultProps {

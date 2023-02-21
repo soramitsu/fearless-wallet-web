@@ -3,10 +3,10 @@
 
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { ApiProps } from '../../background/types';
-import { DeleteCustomTokenParams } from '../../types';
+import { ChainRegistry, DeleteCustomTokenParams } from '../../types';
 import EthProvider from '../evm/ethProvider';
 import { CustomTokenType, CustomTokenJson, CustomToken } from '../evm/types/ether';
-import { ChainRegistry } from '../evm/utils/registery';
+
 import { validateEvmToken } from './evm/utils';
 
 export async function validateCustomToken(

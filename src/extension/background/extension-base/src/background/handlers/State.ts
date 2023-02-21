@@ -46,12 +46,18 @@ import {
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';
-import { APIItemState, BalanceItem, CustomToken, CustomTokenJson, NETWORK_STATUS } from '../../api/evm/types/ether';
+import {
+  APIItemState,
+  BalanceItem,
+  CustomToken,
+  CustomTokenJson,
+  NETWORK_STATUS,
+  TokenInfo,
+} from '../../api/evm/types/ether';
 import CustomTokenStore from '../../stores/CustomEvmToken';
 import CurrentAccountStore, { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import { initEvmTokenState } from '../../api/evm/utils/eth';
 import BalanceService from '../../shared/balanceService';
-import { ChainRegistry } from '../../api/evm/utils/registery';
 import NetworkMapStore from '../../stores/NetworkMap';
 import AuthorizeStore from '../../stores/Authorize';
 import { initWeb3Api } from '../../api/evm';
@@ -64,7 +70,7 @@ import { getTokensForChainRegistry } from '../../api/tokens';
 import { axios } from '../../utils/axios';
 import { CHAINS, ASSETS } from '../../const/networks';
 import { DEFAULT_EVM_TOKENS } from '../../api/tokens/evm/defaultEvmToken';
-import { NetworkJsonOld, TransactionHistoryItemType } from '../../types';
+import { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '../../types';
 import { getGenesisHashes } from '../../predefinedNetworks';
 import { getCurrentProvider, mergeNetworkProviders, stripUrl, withErrorLog } from './helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
@@ -147,6 +153,7 @@ export default class State {
   };
   private priceStoreReady = false;
   public authorizeCached: AuthUrls | undefined = undefined;
+  public tokenMap: Record<string, Record<string, TokenInfo>> = {};
   public networkMap: Record<string, NetworkJsonOld> = {}; // mapping to networkMapStore, for uses in background
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJsonOld>>();
@@ -1006,11 +1013,33 @@ export default class State {
     this.initNetworkStates();
     this.updateServiceInfo();
   }
+  public async mapTokens(networks: NetworkJsonOld[]) {
+    const { data: assets } = await axios.get<AssetJson[]>(ASSETS);
 
+    networks.forEach((network) => {
+      network.assets.forEach((asset) => {
+        const searchedAsset = assets.find((el) => el.id === asset.assetId);
+
+        if (!searchedAsset) return;
+
+        const name = searchedAsset.displayName ?? searchedAsset.symbol;
+
+        this.tokenMap[network.name][searchedAsset.symbol] = {
+          isMainToken: !!asset.isNative,
+          symbol: searchedAsset.symbol,
+          // type?: CustomTokenType; // to differentiate custom tokens from native tokens
+          decimals: searchedAsset.precision,
+          name,
+          coinGeckoKey: searchedAsset.priceId,
+          assetId: searchedAsset.id,
+        };
+      });
+    });
+  }
   public async prepNetworkJson() {
     const result: Record<string, NetworkJsonOld> = {};
     const { data: networks } = await axios.get<NetworkJsonOld[]>(CHAINS);
-    const { data: assets } = await axios.get<AssetJson[]>(ASSETS);
+    this.mapTokens(networks);
 
     networks.forEach((network) => {
       const prepCurrentProvider = network.nodes[0].name;
@@ -1031,22 +1060,6 @@ export default class State {
         providers: prepNodes,
         currentProvider: prepCurrentProvider,
       };
-
-      network.assets.forEach((asset) => {
-        const searchedAsset = assets.find((el) => el.id === asset.assetId);
-
-        if (!searchedAsset) return;
-        const name = searchedAsset.displayName ?? searchedAsset.symbol;
-
-        result[name] = {
-          ...result[network.name],
-          coinGeckoKey: searchedAsset?.priceId,
-          name,
-          icon: searchedAsset.icon,
-          decimals: searchedAsset.precision,
-          genesisHash: `0x${searchedAsset.chainId}`,
-        };
-      });
     });
 
     return result;

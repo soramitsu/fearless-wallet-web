@@ -12,10 +12,14 @@ import { ApiPromise } from '@polkadot/api';
 import { ALLOWED_PATH } from '../defaults';
 import MetadataStore from '../stores/Metadata';
 import { BalanceItem, NetworkJson } from '../api/evm/types/ether';
-import { ChainRegistry } from '../api/evm/utils/registery';
+import {
+  ChainRegistry,
+  RequestTransactionHistoryAdd,
+  RequestTransactionHistoryGet,
+  TransactionHistoryItemType,
+} from '../types';
 import { CurrentAccountInfo } from '../stores/CurrentAccountStore';
 import EthProvider from '../api/evm/ethProvider';
-import { RequestTransactionHistoryAdd, RequestTransactionHistoryGet, TransactionHistoryItemType } from '../types';
 import type {
   InjectedAccount,
   InjectedMetadataKnown,

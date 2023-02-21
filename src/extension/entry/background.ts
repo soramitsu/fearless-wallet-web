@@ -43,8 +43,8 @@ function forceReconnect(port: Port) {
 
 chrome.runtime.onConnect.addListener((port: ModifiedPort) => {
   port.onMessage.addListener((data: TransportRequestMessage<keyof RequestSignatures>) => handlers(data, port));
-  // port.onDisconnect.addListener(deleteTimer);
-  // port.timer = setTimeout(forceReconnect, 250e3, port);
+  port.onDisconnect.addListener(deleteTimer);
+  port.timer = setTimeout(forceReconnect, 250e3, port);
 });
 
 // listen to tab updates this is fired on url change

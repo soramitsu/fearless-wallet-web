@@ -5,10 +5,10 @@ import { ApiPromise } from '@polkadot/api';
 import { ethers } from 'ethers';
 import { ASTAR_REFRESH_BALANCE_INTERVAL, SUB_TOKEN_REFRESH_BALANCE_INTERVAL } from '../../const/intervals';
 import { state } from '../../background/handlers';
+import { getRegistry } from '../substrate/registry';
 import { APIItemState, BalanceChildItem, BalanceItem, TokenInfo } from './types/ether';
 import EthProvider from './ethProvider';
 import { getERC20Contract } from './utils/eth';
-import { getRegistry } from './utils/registery';
 
 export async function getEVMBalance(
   networkKey: string,

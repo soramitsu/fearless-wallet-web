@@ -7,8 +7,8 @@ import { accountController } from '@/controllers/accountController';
 Vue.use(VueI18n);
 
 const messages = {
-  en,
-  ru,
+  'en-EN': en,
+  'ru-RU': ru,
 };
 
 type Lang = keyof typeof messages;
@@ -17,6 +17,42 @@ export default new VueI18n({
   locale: accountController.getLang(),
   fallbackLocale: 'en',
   messages,
+  numberFormats: {
+    'en-EN': {
+      currency: {
+        style: 'currency',
+        currency: 'USD',
+        notation: 'standard',
+      },
+      decimal: {
+        style: 'decimal',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      },
+      percent: {
+        style: 'percent',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 4,
+      },
+    },
+    'ru-RU': {
+      currency: {
+        style: 'currency',
+        currency: 'RUB',
+        currencyDisplay: 'symbol',
+      },
+      decimal: {
+        style: 'decimal',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      },
+      percent: {
+        style: 'percent',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      },
+    },
+  },
 });
 
 export { Lang };

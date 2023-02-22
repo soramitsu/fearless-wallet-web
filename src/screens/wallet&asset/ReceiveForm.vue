@@ -56,6 +56,7 @@
       :left="-160"
       :height="360"
       :options="optionsNetworks"
+      iconType="network"
       :handlerFilter="handlerFilter"
       :toggleValue="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
@@ -76,6 +77,7 @@ import { SelectedWallet } from '@/store';
 import { firstCharToUp } from '@/helpers/common';
 import { cut } from '@/helpers/history';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
+import NetworksController from '@/controllers/networksController';
 
 @Component({
   components: { RotateInput },
@@ -115,11 +117,16 @@ export default class ReceiveForm extends Vue {
     const filter = this.filterValue.trim().toLowerCase();
 
     return walletBalance
-      .map(({ network }) => ({
-        label: firstCharToUp(network),
-        value: `${network}`,
-        relayChain: this.currency?.relayChain,
-      }))
+      .map(({ network }) => {
+        const icon = NetworksController.getNetwork(network).icon;
+
+        return {
+          label: firstCharToUp(network),
+          value: `${network}`,
+          path: icon,
+          relayChain: this.currency?.relayChain,
+        };
+      })
       .filter(({ value }) => {
         return value.includes(filter);
       });

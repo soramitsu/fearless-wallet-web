@@ -320,6 +320,7 @@ export default class BaseApi {
       const pair = BaseApi.createFromJson(json);
 
       pair.decodePkcs8(passwordJson);
+      BaseApi.encodeAddress(pair.address);
 
       return { value: true };
     } catch ({ message }) {

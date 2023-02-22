@@ -56,6 +56,7 @@ export default class CurrencyController {
    * @param {string[]} providers - list of providers
    * @param {string} relayChain - relay chain name (polkadot | kusama)
    * @param {Balances} balances - asset balance
+   * @param {string} icon - asset icon
    * @param {string} displayName - asset display name (example: asset = KSM, displayName = KSM and asset = KSM, displayName = vKSM)
    */
   constructor(
@@ -65,6 +66,7 @@ export default class CurrencyController {
     public providers: string[],
     public relayChain: RelayChainName,
     public balances: Balances,
+    public icon: string,
     public displayName: string
   ) {
     this.currenciesVisible = this.lsCurrency.get(this.visibleStorageName).value ?? {};
@@ -119,7 +121,15 @@ export default class CurrencyController {
         ? balance[ethereumAddress]
         : balance[address];
 
-      return { network, type, precision, existentialDeposit, balance: walletBalance ?? mockFPBalance, assetId };
+      return {
+        network,
+        type,
+        precision,
+        icon: this.icon,
+        existentialDeposit,
+        balance: walletBalance ?? mockFPBalance,
+        assetId,
+      };
     });
   }
 
@@ -330,7 +340,9 @@ export default class CurrencyController {
    * @returns {WalletBalance[]}
    */
   public getNetworksWithBalance(wallet: Wallet): WalletBalance[] {
-    return this.getWalletBalance(wallet).filter(({ balance: { total } }) => !FPNumber.isEqualTo(total, FPNumber.ZERO));
+    return this.getWalletBalance(wallet)
+      .filter(({ balance: { total } }) => !FPNumber.isEqualTo(total, FPNumber.ZERO))
+      .map((el) => el);
   }
 
   /**
@@ -728,7 +740,7 @@ export default class CurrencyController {
     this.setTransactionStatus('pending');
 
     try {
-      await this.extrinsic!.signAndSend(
+      this.extrinsic!.signAndSend(
         account,
         options,
         statusLogging(() => this.statusCallback(from, 'success'))

@@ -127,7 +127,7 @@ export default class GoogleExportPopup extends Vue {
 
     const ethPair = BaseApi.getPair(pair.meta.ethereumAddress as string);
     const ethJson = ethPair.toJson(this.password);
-    const substrateJson = await exportAccount(pair.address, this.password);
+    const substrateJson = (await exportAccount(pair.address, this.password)).exportedJson;
     const ethOptions = this.prepUploadMeta(ethPair);
 
     this.status = 'upload';

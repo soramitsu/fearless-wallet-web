@@ -1,12 +1,5 @@
 <template>
-  <Popup
-    :headerType="headerType"
-    sizeWidth="big"
-    :headerText="popupHeader"
-    :showCloseButton="showCloseButton"
-    :handlerClose="close"
-    :zIndex="399"
-  >
+  <Popup :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close" :zIndex="399">
     <div class="popup-content">
       <template v-if="isTransactionNotInit && !isSignMobile">
         <Icon icon="lock-green" className="icon__lock-green" iconColor="success" />
@@ -48,12 +41,12 @@
 
       <template v-else-if="isTransactionFinished">
         <div class="descriptions">
-          <ExternalLogo :name="firstNetwork" type="network" :width="30" />
+          <ExternalLogo :name="firstNetwork" :width="30" />
 
           <template v-if="secondNetwork">
             <SIcon name="arrows-arrow-right-24" />
 
-            <ExternalLogo :name="secondNetwork" iconType="network" :width="30" />
+            <ExternalLogo :name="secondNetwork" :width="30" />
           </template>
         </div>
 
@@ -142,14 +135,6 @@ export default class ConfirmationPasswordPopup extends Vue {
     return 'pending';
   }
 
-  get showCloseButton() {
-    if (this.isSignMobile) {
-      return !this.isTransactionPending;
-    }
-
-    return true;
-  }
-
   get popupHeader() {
     if (this.transactionStatus === 'success') return 'asset.transactionDone';
 
@@ -189,6 +174,10 @@ export default class ConfirmationPasswordPopup extends Vue {
     this.isErrorPassword = false;
   }
 
+  created() {
+    this.resetTxStatus();
+  }
+
   async mounted() {
     if (!BaseApi.isExtension() || this.isSignMobile) return;
 
@@ -210,28 +199,17 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
   }
 
+  resetTxStatus() {
+    this.currency?.setTransactionStatus();
+    this.transactionState = undefined;
+  }
+
   close() {
-    if (this.isTransactionNotInit) {
-      this.$emit('close');
-
-      return;
+    if (this.isTransactionPending || this.isTransactionFinished) {
+      this.resetTxStatus();
     }
 
-    if (this.transactionId && this.isTransactionPending) {
-      ExtensionController.cancelSign(this.transactionId);
-      this.transactionState = undefined;
-
-      this.$emit('close', true);
-
-      return;
-    }
-
-    if (this.isTransactionFinished) {
-      this.currency?.setTransactionStatus();
-      this.transactionState = undefined;
-
-      this.$emit('close', true);
-    }
+    this.$emit('close', true);
   }
 
   async onSignMobile() {
@@ -242,7 +220,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async signTransactionJSON(id: string) {
-    const payload: PayloadJSON = this.payload as any;
+    const payload: PayloadJSON = this.payload as SignerPayloadJSON;
     delete payload.address;
     payload.type = 'json';
 
@@ -268,7 +246,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     if (this.transactionId) {
-      await this.onSignApprove({
+      this.onSignApprove({
         id: this.transactionId,
         isSavePass: this.isSavePass,
         password: this.password,

@@ -63,7 +63,7 @@ interface Handler {
 
 type Handlers = Record<string, Handler>;
 
-let port: Port;
+let port: Port | undefined;
 const handlers: Handlers = {};
 
 function connect() {

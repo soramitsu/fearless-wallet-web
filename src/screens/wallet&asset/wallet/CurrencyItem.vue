@@ -5,12 +5,7 @@
     </div>
 
     <div class="img-container">
-      <ExternalLogo
-        class="main-network-img"
-        :name="currency.displayName"
-        :relayChain="currency.relayChain"
-        :width="42"
-      />
+      <ExternalLogo class="main-network-img" type="asset" :name="currency.displayName" :width="42" />
     </div>
 
     <div class="descriptions-column">
@@ -25,11 +20,10 @@
           <template v-else-if="!showWarning">
             <div class="available-networks">
               <ExternalLogo
-                v-for="{ network } in availableInNetworksPart"
+                v-for="{ icon, network } in availableInNetworksPart"
                 class="minor-network-img"
-                type="network"
                 :key="network"
-                :name="network"
+                :name="icon"
                 :width="12"
               />
 

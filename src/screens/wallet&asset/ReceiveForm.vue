@@ -117,13 +117,14 @@ export default class ReceiveForm extends Vue {
     const filter = this.filterValue.trim().toLowerCase();
 
     return walletBalance
-      .map(({ network }) => {
+      .map(({ network, type }) => {
         const icon = NetworksController.getNetwork(network).icon;
 
         return {
           label: firstCharToUp(network),
           value: `${network}`,
           path: icon,
+          type,
           relayChain: this.currency?.relayChain,
         };
       })
@@ -133,7 +134,11 @@ export default class ReceiveForm extends Vue {
   }
 
   mounted() {
-    this.selectedNetwork = this._selectedNetwork !== 'all' ? this._selectedNetwork : this.optionsNetworks[0].value;
+    const nativeNet = this.optionsNetworks.find((el) => el.type === 'native');
+
+    if (nativeNet) {
+      this.selectedNetwork = nativeNet.value;
+    }
   }
 
   toggleSelectNetworkPopupVisible() {

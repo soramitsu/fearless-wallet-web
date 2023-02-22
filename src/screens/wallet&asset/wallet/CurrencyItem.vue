@@ -22,6 +22,7 @@
               <ExternalLogo
                 v-for="{ icon, network } in availableInNetworksPart"
                 class="minor-network-img"
+                type="network"
                 :key="network"
                 :name="icon"
                 :width="12"

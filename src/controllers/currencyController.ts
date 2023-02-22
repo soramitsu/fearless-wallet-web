@@ -1,21 +1,20 @@
 import { isFunction } from '@polkadot/util';
-import { FPNumber } from '@sora-substrate/math';
-import { api as apiSora } from '@sora-substrate/util';
+import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import { LiquiditySourceTypes } from '@sora-substrate/liquidity-proxy';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
-import { keyring } from '@polkadot/ui-keyring';
 import type {
   Balances,
   BalanceFP,
   WalletBalance,
   RelayChainName,
-  WalletAddress,
-  AccountBalance,
   NetworkName,
+  SwapOptions,
+  ExtrinsicOptions,
+  UpdateBalanceProps,
+  CreateSwapResult,
 } from '@/interfaces';
-import type { SubmittableExtrinsic, SignerOptions } from '@polkadot/api/submittable/types';
+import type { SubmittableExtrinsic } from '@polkadot/api/submittable/types';
 import type { Wallet, SetHistoryProps } from '@/store';
-import type { ApiPromise } from '@polkadot/api';
 import type { Asset } from '@sora-substrate/util/build/assets/types';
 import BaseApi from '@/util/BaseApi';
 import LocalStorageController from '@/controllers/localStorageController';
@@ -38,24 +37,6 @@ import { mockBalance, mockFPBalance } from '@/consts/currencies';
 import { saveTimeoutCache } from '@/extension/messaging';
 
 type TransactionStatus = 'success' | 'failed' | 'pending';
-
-type ExtrinsicOptions = {
-  transactionsOptions?: Partial<SignerOptions>;
-  historyOptions?: { networkProps: WalletBalance; amount: string; to: string };
-  api?: ApiPromise;
-  swapDexId?: DexId;
-};
-
-type UpdateBalanceProps = {
-  walletAddress: WalletAddress;
-  network: NetworkName;
-  balance: AccountBalance;
-};
-
-type CreateSwapResult = {
-  amount: string;
-  fee: string;
-};
 
 export default class CurrencyController {
   private readonly lsCurrency = new LocalStorageController('currency');
@@ -561,95 +542,144 @@ export default class CurrencyController {
     this.extrinsicOptions = { historyOptions: { networkProps, amount: precisionAmount, to: toAddress }, api };
   }
 
-  public async createSwap(
-    wallet: Wallet,
-    network: NetworkName,
-    sendAssetId: string,
-    receiveAssetId: string,
-    isExchangeB: boolean,
-    sendAmount: string
-  ): Promise<CreateSwapResult> {
-    const sendAssetAddress = getAssetOptions('', 'soraAsset', sendAssetId) as string;
-    const receiveAssetAddress = getAssetOptions('', 'soraAsset', receiveAssetId) as string;
-    const transactionAddress = this.getTransactionAddress(wallet, network);
+  public async createSwap(wallet: Wallet, options: Partial<SwapOptions>): Promise<CreateSwapResult> {
+    const { network, assetAId, assetBId, isExchangeB, amountA, amountB, symbolA, symbolB, slippage } = options;
+    const assetAAddress = getAssetOptions('', 'soraAsset', assetAId!) as string;
+    const assetBAddress = getAssetOptions('', 'soraAsset', assetBId!) as string;
+    const transactionAddress = this.getTransactionAddress(wallet, network!);
     const pair = BaseApi.getPair(transactionAddress);
+    const amountWithDirection = (isExchangeB ? amountB : amountA) as string;
+    const assetA: Asset = { address: assetAAddress, decimals: 18, name: symbolA!, symbol: symbolA! };
+    const assetB: Asset = {
+      address: assetBAddress,
+      decimals: 18,
+      name: symbolB!,
+      symbol: symbolB!,
+    };
 
     await apiSora.initialize(false);
 
     apiSora.account = { json: null as any, pair };
 
-    const { amount: amountOne } = await apiSora.swap.getResultFromBackend(
-      sendAssetAddress,
-      receiveAssetAddress,
-      sendAmount,
+    const { amount: amountDexIdXOR, fee: providerFeeDexIdXOR } = await apiSora.swap.getResultFromBackend(
+      assetAAddress,
+      assetBAddress,
+      amountWithDirection,
       isExchangeB,
       LiquiditySourceTypes.Default,
       DexId.XOR
     );
 
-    const { amount: amountTwo } = await apiSora.swap.getResultFromBackend(
-      sendAssetAddress,
-      receiveAssetAddress,
-      sendAmount,
+    const { amount: amountDexIdXSTUSD, fee: providerFeeDexIdXSTUSD } = await apiSora.swap.getResultFromBackend(
+      assetAAddress,
+      assetBAddress,
+      amountWithDirection,
       isExchangeB,
       LiquiditySourceTypes.Default,
       DexId.XSTUSD
     );
 
     const fee = FPNumber.fromCodecValue(apiSora.NetworkFee.Swap).toString();
+    const swapOptions = { ...options, assetA, assetB } as SwapOptions;
+    const amountDexIdXORFP = FPNumber.fromCodecValue(amountDexIdXOR);
+    const amountDexIdXSTUSDFP = FPNumber.fromCodecValue(amountDexIdXSTUSD);
 
-    console.log(amountOne, fee);
-    console.log(amountTwo, fee);
+    if (isExchangeB) {
+      const isDexXor = FPNumber.lt(amountDexIdXORFP, amountDexIdXSTUSDFP);
+      const expectedAmountA = amountDexIdXORFP.isZero()
+        ? amountDexIdXSTUSDFP
+        : amountDexIdXSTUSDFP.isZero()
+        ? amountDexIdXORFP
+        : isDexXor
+        ? amountDexIdXORFP
+        : amountDexIdXSTUSDFP;
 
-    if (FPNumber.lt(new FPNumber(amountOne), new FPNumber(amountTwo))) {
-      this.extrinsicOptions.swapDexId = DexId.XOR;
+      const minMaxValue = apiSora.swap.getMinMaxValue(
+        assetA,
+        assetB,
+        expectedAmountA.toString(),
+        amountB!,
+        isExchangeB,
+        slippage!
+      );
 
-      return { amount: amountTwo, fee };
+      this.extrinsicOptions.swapOptions = {
+        ...swapOptions,
+        amountA: expectedAmountA.toString(),
+        amountB: amountB!,
+        swapDexId: isDexXor ? DexId.XOR : DexId.XSTUSD,
+      };
+
+      return {
+        amountA: expectedAmountA.toString(),
+        amountB: amountB!,
+        AToB: expectedAmountA.div(new FPNumber(amountB!)).toString(),
+        BToA: new FPNumber(amountB!).div(expectedAmountA).toString(),
+        minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
+        providerFee: FPNumber.fromCodecValue(providerFeeDexIdXSTUSD).toString(),
+        fee,
+      };
     } else {
-      this.extrinsicOptions.swapDexId = DexId.XSTUSD;
+      const isDexXor = FPNumber.gt(amountDexIdXORFP, amountDexIdXSTUSDFP);
+      const expectedAmountB = amountDexIdXORFP.isZero()
+        ? amountDexIdXSTUSDFP
+        : amountDexIdXSTUSDFP.isZero()
+        ? amountDexIdXORFP
+        : isDexXor
+        ? amountDexIdXORFP
+        : amountDexIdXSTUSDFP;
 
-      return { amount: amountOne, fee };
+      const minMaxValue = apiSora.swap.getMinMaxValue(
+        assetA,
+        assetB,
+        amountA!,
+        expectedAmountB.toString(),
+        isExchangeB!,
+        slippage!
+      );
+
+      this.extrinsicOptions.swapOptions = {
+        ...swapOptions,
+        amountA: amountA!,
+        amountB: expectedAmountB.toString(),
+        swapDexId: isDexXor ? DexId.XOR : DexId.XSTUSD,
+      };
+
+      return {
+        amountA: amountA!,
+        amountB: expectedAmountB.toString(),
+        AToB: new FPNumber(amountA!).div(expectedAmountB).toString(),
+        BToA: expectedAmountB.div(new FPNumber(amountA!)).toString(),
+        minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
+        providerFee: FPNumber.fromCodecValue(providerFeeDexIdXOR).toString(),
+        fee,
+      };
     }
   }
 
-  public async sendSwap(
-    wallet: Wallet,
-    receiveCurrency: CurrencyController,
-    _network: string,
-    sendAssetId: string,
-    sendAsset: string,
-    receiveAssetId: string,
-    receiveAsset: string,
-    sendAmount: string,
-    receiveAmount: string,
-    slippage: number,
-    isExchange: boolean
-  ): Promise<void> {
-    const sendAssetAddress = getAssetOptions('', 'soraAsset', sendAssetId) as string;
-    const receiveAssetAddress = getAssetOptions('', 'soraAsset', receiveAssetId) as string;
-    const walletBalanceAssetA = this.getWalletBalance(wallet) ?? [];
-    const walletBalanceAssetB = receiveCurrency.getWalletBalance(wallet) ?? [];
-    const { precision: precisionAssetA } = walletBalanceAssetA.find(({ network }) => network === _network)!;
-    const { precision: precisionAssetB } = walletBalanceAssetB.find(({ network }) => network === _network)!;
+  public async sendSwap(): Promise<void> {
+    const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB } = this.extrinsicOptions.swapOptions!;
 
-    const assetA: Asset = { address: sendAssetAddress, decimals: precisionAssetA, name: sendAsset, symbol: sendAsset };
-    const assetB: Asset = {
-      address: receiveAssetAddress,
-      decimals: precisionAssetB,
-      name: receiveAsset,
-      symbol: receiveAsset,
-    };
+    this.setTransactionStatus('pending');
 
-    await apiSora.swap.execute(
-      assetA,
-      assetB,
-      sendAmount,
-      receiveAmount,
-      slippage,
-      isExchange,
-      LiquiditySourceTypes.Default,
-      this.extrinsicOptions.swapDexId
-    );
+    try {
+      await apiSora.swap.execute(
+        assetA,
+        assetB,
+        amountA,
+        amountB,
+        slippage,
+        isExchangeB,
+        LiquiditySourceTypes.Default,
+        swapDexId
+      );
+    } catch (ex) {
+      this.setTransactionStatus('failed');
+
+      console.info(`Swap transaction failed ${ex}`);
+    }
+
+    this.setTransactionStatus('success');
   }
 
   /**
@@ -687,13 +717,15 @@ export default class CurrencyController {
 
     const account = isMobile ? from : BaseApi.getPair(from);
 
+    const nonce = (await this.extrinsicOptions.api?.rpc.system.accountNextIndex(from)) as unknown as number;
+
     const options = {
       ...(this.extrinsicOptions.transactionsOptions ?? {}),
       signer: isMobile ? new BeaconSigner() : undefined,
-      nonce: await this.extrinsicOptions.api?.rpc.system.accountNextIndex(from),
+      nonce,
     };
 
-    this.transactionStatus = 'pending';
+    this.setTransactionStatus('pending');
 
     try {
       await this.extrinsic!.signAndSend(

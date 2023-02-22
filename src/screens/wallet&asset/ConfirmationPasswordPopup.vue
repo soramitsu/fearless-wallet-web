@@ -23,7 +23,7 @@
           :readonly="!isLocked"
           :isError="isErrorPassword"
           :showPassword="true"
-          @keydown.native.enter="send"
+          @keydown.native.enter="sendExtrinsic"
         />
 
         <div v-if="show15MinCheckbox" class="remember__checkbox">
@@ -38,7 +38,7 @@
           type="primary"
           :disabled="disabledButton"
           :border="false"
-          @click="send"
+          @click="sendExtrinsic"
         />
       </template>
 
@@ -98,6 +98,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(String) transactionId?: string;
   @Prop(Object) currency?: Currency;
   @Prop(Object) payload?: SignerPayloadJSON;
+  @Prop({ default: 'send' }) extrinsicType!: 'send' | 'sendSwap';
 
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: TAction<ApprovePayload>;
@@ -234,9 +235,10 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async onSignMobile() {
-    if (!this.transactionId && this.currency?.extrinsic)
-      await this.currency?.send(this.transactionAddress, true, false);
-    else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
+    if (!this.transactionId && this.currency?.extrinsic) {
+      if (this.extrinsicType === 'send') await this.currency.send(this.transactionAddress, true, false);
+      else if (this.extrinsicType === 'sendSwap') await this.currency.sendSwap();
+    } else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
   }
 
   async signTransactionJSON(id: string) {
@@ -257,7 +259,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     ExtensionController.approveSignSignature(id, blockchainData.signature);
   }
 
-  async send() {
+  async sendExtrinsic() {
     if (this.isLocked) {
       const address = this.transactionId && this.payload?.address ? this.payload.address : this.transactionAddress;
       this.isErrorPassword = !BaseApi.unlockPair(address, this.password);
@@ -275,7 +277,8 @@ export default class ConfirmationPasswordPopup extends Vue {
       return;
     }
 
-    await this.currency?.send(this.transactionAddress, false, this.isSavePass);
+    if (this.extrinsicType === 'send') await this.currency?.send(this.transactionAddress, false, this.isSavePass);
+    else if (this.extrinsicType === 'sendSwap') await this.currency?.sendSwap();
   }
 }
 </script>

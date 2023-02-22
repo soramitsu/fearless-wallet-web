@@ -67,10 +67,10 @@ let port: Port;
 const handlers: Handlers = {};
 
 function connect() {
-  port = chrome.runtime.connect({ name: PORT_EXTENSION });
-  port.onDisconnect.addListener(connect);
+  port = chrome.runtime?.connect({ name: PORT_EXTENSION });
+  port?.onDisconnect.addListener(connect);
 
-  port.onMessage.addListener((data: Message['data']): void => {
+  port?.onMessage.addListener((data: Message['data']): void => {
     const handler = handlers[data.id];
 
     if (!handler) {
@@ -119,7 +119,7 @@ function sendMessage<TMessageType extends MessageTypes>(
     const id = getId();
 
     handlers[id] = { reject, resolve, subscriber };
-    port.postMessage({ id, message, request: request || {} });
+    port?.postMessage({ id, message, request: request || {} });
   });
 }
 

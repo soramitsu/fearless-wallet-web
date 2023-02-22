@@ -10,17 +10,16 @@
           type="number"
           @focus="setFocusValue(true)"
           @blur="setFocusValue(false)"
-          @input="$emit('setExchange')"
         />
 
-        <div class="price">{{ fiatSymbol }}{{ value }}</div>
+        <div class="price">{{ fiatSymbol }}{{ valueCut }}</div>
       </div>
 
       <div class="column right-column">
         <Corners class="corners-button" @click.native="$emit('toggleSelectAssetPopupVisibility')">
           <button class="select-button">
             <template v-if="asset !== ''">
-              <NetworkLogo class="asset-icon" :name="asset" :relayChain="relayChain" :width="32" />
+              <ExternalLogo class="asset-icon" :name="asset" :relayChain="relayChain" :width="32" />
 
               <div class="asset">{{ asset.toUpperCase() }}</div>
             </template>
@@ -47,6 +46,7 @@ import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { RelayChainName } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { formattedPrice } from '@/helpers/numbers';
 
 @Component
 export default class SwapSelectInput extends Vue {
@@ -60,6 +60,10 @@ export default class SwapSelectInput extends Vue {
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+
+  get valueCut() {
+    return formattedPrice(+this.value);
+  }
 
   get selectClasses() {
     return [

@@ -3,8 +3,8 @@
     <ContentForm class="direction-form">
       <div class="direction">
         <div class="column left-column">
-          <div class="amount">1 {{ sendAssetUP }}</div>
-          <div class="price">{{ fiatSymbol }}1</div>
+          <div class="amount">{{ sendAmountCut }} {{ sendAssetUP }}</div>
+          <div class="price">{{ fiatSymbol }} {{ sendValueCut }}</div>
         </div>
 
         <div class="hr"></div>
@@ -14,15 +14,15 @@
         </div>
 
         <div class="column right-column">
-          <div class="amount">1 {{ receiveAssetUP }}</div>
-          <div class="price">{{ fiatSymbol }}1</div>
+          <div class="amount">{{ receiveAmountCut }} {{ receiveAssetUP }}</div>
+          <div class="price">{{ fiatSymbol }} {{ receiveValueCut }}</div>
         </div>
       </div>
     </ContentForm>
 
     <ContentForm>
       <div class="row">
-        Market
+        {{ $t('asset.market') }}
 
         <div class="value">
           {{ marketTypeUP }}
@@ -30,7 +30,7 @@
       </div>
 
       <div class="row">
-        Slippage
+        {{ $t('asset.Slippage') }}
 
         <div class="value">
           {{ slippage }}
@@ -38,33 +38,33 @@
       </div>
 
       <div class="row">
-        Price Impact
+        {{ $t('asset.priceImpact') }}
+
+        <div class="value">-</div>
+      </div>
+
+      <div class="row">
+        {{ $t(minMaxLabel) }}
 
         <div class="value">
-          {{ priceImpact }}
+          <div>{{ minMaxAmount }} {{ minMaxAssetName }}</div>
+          <div class="price">{{ fiatSymbol }} {{ minMaxAmountPrice }}</div>
         </div>
       </div>
 
       <div class="row">
-        Min received
+        {{ $t('asset.liquidityProvideFeer') }}
 
         <div class="value">
-          <div>{{ minReceivedAmount }} {{ receiveAssetUP }}</div>
-          <div class="price">{{ fiatSymbol }} {{ minReceivedPrice }}</div>
+          <div>{{ providerFee }} XOR</div>
+
+          <!-- Бесполезная информация, в полькасвопе не показывается, обсудить -->
+          <!-- <div class="price">{{ fiatSymbol }} {{ liquidityProviderFeePrice }}</div> -->
         </div>
       </div>
 
       <div class="row">
-        Liquidity Provider Fee
-
-        <div class="value">
-          <div>{{ liquidityProviderFee }}</div>
-          <div class="price">{{ fiatSymbol }} {{ liquidityProviderFeePrice }}</div>
-        </div>
-      </div>
-
-      <div class="row">
-        Network fee
+        {{ $t('asset.networkFee') }}
 
         <div class="value">
           <div>{{ fee }}</div>
@@ -80,22 +80,49 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { firstCharToUp } from '@/helpers/common';
+import { formattedCountAsset, formattedPrice } from '@/helpers/numbers';
 
 @Component
 export default class SwapPreview extends Vue {
-  priceImpact = '-';
-  liquidityProviderFee = '-';
-  liquidityProviderFeePrice = '-';
-
   @Prop({ default: '' }) marketType!: string;
   @Prop({ default: '' }) slippage!: string;
-  @Prop({ default: '' }) minReceivedAmount!: string;
-  @Prop({ default: '' }) minReceivedPrice!: string;
+  @Prop({ default: '' }) sendAmount!: string;
+  @Prop({ default: '' }) receiveAmount!: string;
+  @Prop({ default: '' }) sendValue!: string;
+  @Prop({ default: '' }) receiveValue!: string;
+  @Prop({ default: '' }) minMaxAmount!: string;
+  @Prop({ default: '' }) minMaxAmountPrice!: string;
   @Prop({ default: '' }) fee!: string;
   @Prop({ default: '' }) feePrice!: string;
+  @Prop({ default: '' }) providerFee!: string;
   @Prop({ default: '' }) sendAssetUP!: string;
   @Prop({ default: '' }) receiveAssetUP!: string;
+  @Prop(Boolean) isExchangeB!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+
+  get minMaxAssetName() {
+    return this.isExchangeB ? this.sendAssetUP : this.receiveAssetUP;
+  }
+
+  get sendAmountCut() {
+    return formattedCountAsset(+this.sendAmount);
+  }
+
+  get receiveAmountCut() {
+    return formattedCountAsset(+this.receiveAmount);
+  }
+
+  get sendValueCut() {
+    return formattedPrice(+this.sendValue);
+  }
+
+  get receiveValueCut() {
+    return formattedPrice(+this.receiveValue);
+  }
+
+  get minMaxLabel() {
+    return this.isExchangeB ? 'asset.maxSales' : 'asset.minReceived';
+  }
 
   get marketTypeUP() {
     return firstCharToUp(this.marketType);

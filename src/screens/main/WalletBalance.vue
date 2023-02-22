@@ -10,7 +10,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { ChangeWalletBalance } from '@/interfaces';
-import { formattedNumber } from '@/helpers/numbers';
+import { formattedNumber, formattedCountAsset } from '@/helpers/numbers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component
@@ -28,11 +28,7 @@ export default class WalletBalance extends Vue {
     const sign = percent > 0 ? '+' : '';
     const signPercent = percent !== 0 ? '%' : '';
     const displayAmount = amount < 0 ? amount * -1 : amount;
-    const formattedAmount = formattedNumber(displayAmount, {
-      decimalsValue: 4,
-      returnOriginNumber: false,
-      removeTrailingZeros: true,
-    });
+    const formattedAmount = formattedCountAsset(displayAmount);
 
     return `${sign}${formattedNumber(percent)}${signPercent}(${this.fiatSymbol}${formattedAmount})`;
   }

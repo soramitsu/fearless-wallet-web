@@ -5,7 +5,7 @@
         <div class="label">{{ name }}</div>
 
         <div class="count">
-          <div class="value">{{ formattedNumber(value) }} {{ assetNameUpper }}</div>
+          <div class="value">{{ formattedValue(value) }} {{ assetNameUpper }}</div>
 
           <div v-if="getFiatValueVisible(fiat)" class="fiat-value">
             {{ fiatSymbol }}
@@ -23,7 +23,7 @@ import { Getter } from 'vuex-class';
 import type CurrencyController from '@/controllers/currencyController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { formattedNumber, formattedPrice } from '@/helpers/numbers';
+import { formattedCountAsset, formattedPrice } from '@/helpers/numbers';
 
 @Component
 export default class BalanceDetailsPopup extends Vue {
@@ -59,12 +59,8 @@ export default class BalanceDetailsPopup extends Vue {
     return formattedPrice(value);
   }
 
-  formattedNumber(value: number) {
-    return formattedNumber(value, {
-      decimalsValue: 4,
-      returnOriginNumber: false,
-      removeTrailingZeros: true,
-    });
+  formattedValue(value: number) {
+    return formattedCountAsset(value);
   }
 }
 </script>

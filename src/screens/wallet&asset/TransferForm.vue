@@ -145,7 +145,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 import { firstCharToUp } from '@/helpers/common';
-import { formattedNumber, formattedPrice } from '@/helpers/numbers';
+import { formattedCountAsset, formattedPrice } from '@/helpers/numbers';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
 import { getIconName } from '@/helpers/imgPath';
@@ -323,11 +323,7 @@ export default class SendForm extends Vue {
   get transferrableAmount() {
     const count = +(this.currency?.getTransferableCountAssets(this.selectedWallet, this.syncedSelectedNetwork) ?? 0);
 
-    return formattedNumber(count, {
-      decimalsValue: 4,
-      returnOriginNumber: false,
-      removeTrailingZeros: true,
-    });
+    return formattedCountAsset(count);
   }
 
   get transferrableValue() {

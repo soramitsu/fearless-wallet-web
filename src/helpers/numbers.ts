@@ -29,6 +29,14 @@ function formattedNumber(number: number, options: Options = {}): string {
   return roundValue.toFixed(decimalsValue);
 }
 
+function formattedCountAsset(number: number): string {
+  return formattedNumber(number, {
+    decimalsValue: 4,
+    returnOriginNumber: false,
+    removeTrailingZeros: true,
+  });
+}
+
 function formattedPrice(price: number): string {
   const decimalsValue = price < 0.00001 ? 6 : price < 0.0001 ? 5 : price < 0.001 ? 4 : price < 0.01 ? 3 : 2;
 
@@ -60,4 +68,4 @@ function getChangeWalletBalance(currencies: Currencies, address: string, ethereu
   };
 }
 
-export { formattedNumber, addNumbers, formattedPrice, getChangeWalletBalance };
+export { formattedNumber, formattedCountAsset, addNumbers, formattedPrice, getChangeWalletBalance };

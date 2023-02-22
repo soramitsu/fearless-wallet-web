@@ -50,6 +50,8 @@ const disconnectHandler = (
     provider: undefined,
   });
 
+  if (isSora(network.name)) console.info(apiOptions.apiRetry); // todo remove
+
   if (apiOptions.apiRetry >= MAX_CONTINUE_RETRY) {
     currentProvider?.disconnect();
 

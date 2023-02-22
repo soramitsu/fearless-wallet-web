@@ -47,7 +47,6 @@
               @update:amount="updateSendAmount"
               @setMax="setMax"
               @toggleSelectAssetPopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'send')"
-              @setExchange="setExchange(false)"
             />
 
             <SwapSelectInput
@@ -60,52 +59,52 @@
               :amount="receiveAmount"
               :isRotate="isReceiveAssetType"
               @update:amount="updateReceiveAmount"
-              @setMax="setMax"
               @toggleSelectAssetPopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'receive')"
-              @setExchange="setExchange(true)"
             />
 
             <div class="swap-icon" @click="swapAssets">
               <Icon icon="swap" class="img" />
             </div>
 
-            <div v-if="showSwapInfo" class="row">
-              {{ sendAssetUP }} / {{ receiveAssetUP }}
+            <template v-if="showSwapInfo">
+              <div class="row">
+                {{ sendAssetUP }} / {{ receiveAssetUP }}
 
-              <div class="fiat-info">
-                <div>{{ sendAmount }} {{ receiveAssetUP }}</div>
-                <div class="price">{{ fiatSymbol }} {{ sendValue }}</div>
+                <div class="fiat-info">
+                  <div>{{ AToBCut }} {{ receiveAssetUP }}</div>
+                  <div class="price">{{ fiatSymbol }} {{ AToBValueCut }}</div>
+                </div>
               </div>
-            </div>
 
-            <div v-if="showSwapInfo" class="row">
-              {{ receiveAssetUP }} / {{ sendAssetUP }}
+              <div class="row">
+                {{ receiveAssetUP }} / {{ sendAssetUP }}
+
+                <div class="fiat-info">
+                  <div>{{ BToACut }} {{ sendAssetUP }}</div>
+                  <div class="price">{{ fiatSymbol }} {{ BToAValueCut }}</div>
+                </div>
+              </div>
+            </template>
+
+            <div class="row">
+              <div>{{ $t(minMaxLabel) }}</div>
 
               <div class="fiat-info">
-                <div>{{ receiveAmount }} {{ sendAssetUP }}</div>
-                <div class="price">{{ fiatSymbol }} {{ receiveValue }}</div>
+                <div>{{ minMaxAmountCut }} {{ minMaxAssetName }}</div>
+                <div class="price">{{ fiatSymbol }} {{ minMaxAmountPrice }}</div>
               </div>
             </div>
 
             <div class="row">
-              <div>Min received</div>
+              {{ $t('asset.priceImpact') }}
 
               <div class="fiat-info">
-                <div>{{ minReceivedAmount }}</div>
-                <div class="price">{{ fiatSymbol }} {{ minReceivedPrice }}</div>
+                <div>-</div>
               </div>
             </div>
 
             <div class="row">
-              Price impact
-
-              <div class="fiat-info">
-                <div>{{ priceImpact }} %</div>
-              </div>
-            </div>
-
-            <div class="row">
-              Route
+              {{ $t('asset.route') }}
 
               <div class="fiat-info">
                 <div>-</div>
@@ -113,7 +112,7 @@
             </div>
 
             <div class="row last-row">
-              Network fee
+              {{ $t('asset.networkFee') }}
 
               <div class="fiat-info">
                 <div>{{ fee }}</div>
@@ -126,12 +125,18 @@
             v-if="step === 2"
             :marketType="marketType"
             :slippage="slippage"
-            :minReceivedAmount="minReceivedAmount"
-            :minReceivedPrice="minReceivedPrice"
+            :sendAmount="sendAmount"
+            :receiveAmount="receiveAmount"
+            :sendValue="sendValue"
+            :receiveValue="receiveValue"
+            :minMaxAmount="minMaxAmountCut"
+            :minMaxAmountPrice="minMaxAmountPrice"
             :fee="fee"
             :feePrice="feePrice"
+            :providerFee="providerFee"
             :sendAssetUP="sendAssetUP"
             :receiveAssetUP="receiveAssetUP"
+            :isExchangeB="isExchangeB"
           />
         </div>
 
@@ -179,13 +184,14 @@
       :amount="sendAmount"
       :value="sendValue"
       :firstNetwork="currentSendCurrencyRelayChain"
+      extrinsicType="sendSwap"
       @close="confirmationPasswordPopupClose"
     />
   </AboveForm>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Currencies } from '@/interfaces';
 import type { GetAssetName, SelectedWallet } from '@/store';
@@ -196,7 +202,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
-import { formattedNumber } from '@/helpers/numbers';
+import { formattedCountAsset, formattedPrice } from '@/helpers/numbers';
 
 @Component({
   components: {
@@ -218,10 +224,12 @@ export default class SwapForm extends Vue {
   receiveAmount = '';
   sendValue = '';
   receiveValue = '';
-  minReceivedAmount = '1';
-  priceImpact = '1';
-  fee = '1';
+  minMaxAmount = '';
+  fee = '';
+  providerFee = '';
   selectAssetType = '';
+  AToB = '';
+  BToA = '';
   filterValue = '';
   showSettings = false;
   showConfirmationPasswordPopup = false;
@@ -239,9 +247,44 @@ export default class SwapForm extends Vue {
     return this.fee;
   }
 
-  //TODO
-  get minReceivedPrice() {
-    return this.minReceivedAmount;
+  get minMaxAmountPrice() {
+    const price = this.isExchangeB
+      ? this.sendCurrency?.getCostOfAssets(this.minMaxAmount)
+      : this.receiveCurrency?.getCostOfAssets(this.minMaxAmount);
+
+    return formattedPrice(+(price ?? '0'));
+  }
+
+  get minMaxAmountCut() {
+    return formattedCountAsset(+this.minMaxAmount);
+  }
+
+  get minMaxAssetName() {
+    return this.isExchangeB ? this.sendAssetUP : this.receiveAssetUP;
+  }
+
+  get AToBCut() {
+    return this.sendAmount === '' || this.receiveAmount === '' ? '0' : formattedCountAsset(+this.AToB);
+  }
+
+  get BToACut() {
+    return this.sendAmount === '' || this.receiveAmount === '' ? '0' : formattedCountAsset(+this.BToA);
+  }
+
+  get AToBValueCut() {
+    return this.sendAmount === '' || this.receiveAmount === ''
+      ? '0'
+      : formattedPrice(+this.sendCurrency!.getCostOfAssets(this.AToB));
+  }
+
+  get BToAValueCut() {
+    return this.sendAmount === '' || this.receiveAmount === ''
+      ? '0'
+      : formattedPrice(+this.sendCurrency!.getCostOfAssets(this.BToA));
+  }
+
+  get minMaxLabel() {
+    return this.isExchangeB ? 'asset.maxSales' : 'asset.minReceived';
   }
 
   get widthButton() {
@@ -275,7 +318,7 @@ export default class SwapForm extends Vue {
   }
 
   get showSwapInfo() {
-    return this.sendAssetId !== '' && this.receiveAssetId !== '';
+    return this.sendAssetId !== '' && this.receiveAssetId !== '' && this.sendAmount !== '' && this.receiveAmount !== '';
   }
 
   get sendAsset() {
@@ -375,60 +418,88 @@ export default class SwapForm extends Vue {
   get transferrableSendAmount() {
     const count = +(this.sendCurrency?.getTransferableCountAssets(this.selectedWallet, this.selectedNetwork) ?? 0);
 
-    return formattedNumber(count, {
-      decimalsValue: 4,
-      returnOriginNumber: false,
-      removeTrailingZeros: true,
-    });
+    return formattedCountAsset(count);
   }
 
   get transferrableReceiveAmount() {
     const count = +(this.receiveCurrency?.getTransferableCountAssets(this.selectedWallet, this.selectedNetwork) ?? 0);
 
-    return formattedNumber(count, {
-      decimalsValue: 4,
-      returnOriginNumber: false,
-      removeTrailingZeros: true,
-    });
+    return formattedCountAsset(count);
   }
 
-  @Watch('sendAssetId')
-  @Watch('receiveAssetId')
-  @Watch('sendAmount')
-  @Watch('receiveAmount')
-  async filter() {
-    if (this.sendAssetId === '' || this.receiveAssetId === '') return;
+  async createSwap() {
+    if (
+      this.sendAssetId === '' ||
+      this.receiveAssetId === '' ||
+      (this.isExchangeB && this.receiveAmount == '') ||
+      (!this.isExchangeB && this.sendAmount === '')
+    ) {
+      this.sendAmount = '';
+      this.receiveAmount = '';
+      this.sendValue = '';
+      this.receiveValue = '';
 
-    const amountWithDirection = this.isExchangeB ? this.receiveAmount : this.sendAmount;
+      return;
+    }
 
-    const { amount, fee } = await this.sendCurrency!.createSwap(
+    const { amountA, amountB, fee, AToB, BToA, providerFee, minMaxValue } = await this.sendCurrency!.createSwap(
       this.selectedWallet,
-      this.selectedNetwork,
-      this.sendAssetId,
-      this.receiveAssetId,
-      this.isExchangeB,
-      amountWithDirection
+      {
+        network: this.selectedNetwork,
+        amountA: this.sendAmount,
+        amountB: this.receiveAmount,
+        assetAId: this.sendAssetId,
+        assetBId: this.receiveAssetId,
+        slippage: this.slippage,
+        symbolA: this.sendAsset,
+        symbolB: this.receiveAsset,
+        isExchangeB: this.isExchangeB,
+      }
     );
 
-    if (this.isExchangeB) this.sendAmount = amount;
-    else this.receiveAmount = amount;
+    if (this.isExchangeB) {
+      this.sendAmount = amountA;
+      this.sendValue = this.sendCurrency!.getCostOfAssets(amountA);
+      this.receiveValue = this.receiveCurrency!.getCostOfAssets(this.receiveAmount);
+    } else {
+      this.receiveAmount = amountB;
+      this.sendValue = this.sendCurrency!.getCostOfAssets(this.sendAmount);
+      this.receiveValue = this.receiveCurrency!.getCostOfAssets(amountB);
+    }
 
+    this.minMaxAmount = minMaxValue;
     this.fee = fee;
+    this.providerFee = providerFee;
+    this.AToB = AToB;
+    this.BToA = BToA;
   }
 
-  setExchange(value: boolean) {
-    this.isExchangeB = value;
+  updateSendAmount(value: string) {
+    this.isExchangeB = false;
+    this.sendAmount = value;
+
+    this.createSwap();
+  }
+
+  updateReceiveAmount(value: string) {
+    this.isExchangeB = true;
+    this.receiveAmount = value;
+
+    this.createSwap();
   }
 
   toggleSelectedAsset(value: string) {
     if (this.isSendAssetType) this.sendAssetId = value;
     else this.receiveAssetId = value;
 
+    this.createSwap();
     this.toggleSelectAssetPopupVisibility('');
   }
 
-  confirmationPasswordPopupClose() {
+  confirmationPasswordPopupClose(closeForm: boolean) {
     this.showConfirmationPasswordPopup = false;
+
+    if (closeForm) this.closeForm();
   }
 
   handlerFilter(value: string) {
@@ -438,42 +509,19 @@ export default class SwapForm extends Vue {
   toggleSelectAssetPopupVisibility(value: 'send' | 'receive' | '') {
     if (this.selectAssetType !== '') this.selectAssetType = '';
     else this.selectAssetType = value;
-  }
 
-  updateSendAmount(value: string) {
-    this.sendAmount = value;
-  }
-
-  updateReceiveAmount(value: string) {
-    this.receiveAmount = value;
+    this.filterValue = '';
   }
 
   async proceed() {
     if (this.showSettings) {
       this.marketType = this.temporaryMarketType;
       this.slippage = this.temporarySlippage;
-
       this.showSettings = false;
+
+      this.createSwap();
     } else if (this.step === 1) this.step += 1;
-    else {
-      this.showConfirmationPasswordPopup = true;
-
-      await this.sendCurrency?.sendSwap(
-        this.selectedWallet,
-        this.receiveCurrency!,
-        this.selectedNetwork,
-        this.sendAssetId,
-        this.sendAsset,
-        this.receiveAssetId,
-        this.receiveAsset,
-        this.sendAmount,
-        this.receiveAmount,
-        this.slippage,
-        this.isExchangeB
-      );
-
-      this.showConfirmationPasswordPopup = false;
-    }
+    else this.showConfirmationPasswordPopup = true;
   }
 
   resetSettings() {
@@ -492,8 +540,14 @@ export default class SwapForm extends Vue {
   swapAssets() {
     const sendAssetId = this.sendAssetId;
 
+    if (this.isExchangeB) this.sendAmount = this.receiveAmount;
+    else this.receiveAmount = this.sendAmount;
+
+    this.isExchangeB = !this.isExchangeB;
     this.sendAssetId = this.receiveAssetId;
     this.receiveAssetId = sendAssetId;
+
+    this.createSwap();
   }
 
   back() {
@@ -510,7 +564,9 @@ export default class SwapForm extends Vue {
   }
 
   setMax() {
-    // TODO
+    this.sendAmount = this.transferrableSendAmount;
+
+    this.createSwap();
   }
 }
 </script>
@@ -531,11 +587,6 @@ export default class SwapForm extends Vue {
     max-width: 300px;
     overflow: hidden;
     text-overflow: ellipsis;
-
-    .amount {
-      color: $default-white;
-      margin-bottom: 3px;
-    }
 
     .price {
       color: $gray-color;

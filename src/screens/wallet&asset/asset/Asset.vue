@@ -146,7 +146,7 @@ import { Currencies } from '@/interfaces/currencies';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
-import { formattedNumber, formattedPrice } from '@/helpers/numbers';
+import { formattedNumber, formattedCountAsset, formattedPrice } from '@/helpers/numbers';
 import { tieAccount } from '@/extension/messaging';
 import { Network } from '@/interfaces';
 
@@ -242,11 +242,7 @@ export default class Asset extends Vue {
     if (!this.currentCurrency) return `${this.selectedAssetUpper} 0`;
 
     const totalCountAssets = +this.currentCurrency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork);
-    const total = formattedNumber(totalCountAssets, {
-      decimalsValue: 4,
-      returnOriginNumber: false,
-      removeTrailingZeros: true,
-    });
+    const total = formattedCountAsset(totalCountAssets);
 
     return `${this.selectedAssetUpper} ${total}`;
   }

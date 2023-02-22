@@ -104,8 +104,6 @@ const mutations: MutationTree<State> & Mutations = {
       }
     )!;
 
-    if (network === 'sora mainnet' || network === 'sora test') console.log(network, currentCurrency, balance);
-
     currentCurrency.updateCurrencyBalance({ walletAddress, network, balance });
   },
 

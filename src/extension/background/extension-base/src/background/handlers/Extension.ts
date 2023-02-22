@@ -671,7 +671,7 @@ export default class Extension {
         return Extension.cancelAuthRequest(request as string);
 
       case 'pri(authorize.requests)':
-        return port && (await Extension.authorizeSubscribe(id, port));
+        return Extension.authorizeSubscribe(id, port as Port);
 
       case 'pri(addresses.create)':
         return Extension.createAddress(request as RequestAddressCreate);
@@ -713,7 +713,7 @@ export default class Extension {
         return Extension.accountsShow(request as RequestAccountShow);
 
       case 'pri(accounts.subscribe)':
-        return port && Extension.accountsSubscribe(id, port);
+        return Extension.accountsSubscribe(id, port as Port);
 
       case 'pri(accounts.tie)':
         return Extension.accountsTie(request as RequestAccountTie);
@@ -734,7 +734,7 @@ export default class Extension {
         return Extension.metadataReject(request as RequestMetadataReject);
 
       case 'pri(metadata.requests)':
-        return port && Extension.metadataSubscribe(id, port);
+        return Extension.metadataSubscribe(id, port as Port);
 
       case 'pri(activeTabsUrl.update)':
         return Extension.updateCurrentTabs(request as RequestActiveTabsUrlUpdate);
@@ -776,19 +776,19 @@ export default class Extension {
         return Extension.signingCancel(request as RequestSigningCancel);
 
       case 'pri(signing.isLocked)':
-        return await Extension.signingIsLocked(request as RequestSigningIsLocked);
+        return Extension.signingIsLocked(request as RequestSigningIsLocked);
 
       case 'pri(signing.requests)':
-        return port && Extension.signingSubscribe(id, port);
+        return Extension.signingSubscribe(id, port as Port);
 
       case 'pri(window.open)':
         return Extension.windowOpen(request as AllowedPath);
 
       case 'pri(signing.refreshPasswordTimeout)':
-        return await Extension.refreshAccountPasswordCache(request as string);
+        return Extension.refreshAccountPasswordCache(request as string);
 
       case 'pri(signing.resetTimeouts)':
-        return await Extension.resetTimeouts();
+        return Extension.resetTimeouts();
 
       case 'pri(signing.saveTimeoutCache)':
         return Extension.saveTimeoutCache(request as string);

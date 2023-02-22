@@ -41,12 +41,12 @@
 
       <template v-else-if="isTransactionFinished">
         <div class="descriptions">
-          <ExternalLogo :name="firstNetwork" :width="30" />
+          <ExternalLogo :name="networkIcon(firstNetwork)" type="network" :width="30" />
 
           <template v-if="secondNetwork">
             <SIcon name="arrows-arrow-right-24" />
 
-            <ExternalLogo :name="secondNetwork" :width="30" />
+            <ExternalLogo :name="networkIcon(secondNetwork)" type="network" :width="30" />
           </template>
         </div>
 
@@ -71,6 +71,7 @@ import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/ext
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import ExtensionController from '@/controllers/extensionController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import NetworksController from '@/controllers/networksController';
 
 @Component({
   components: { SignMobile },
@@ -196,6 +197,10 @@ export default class ConfirmationPasswordPopup extends Vue {
         this.isSavePass = true;
       }
     }
+  }
+
+  networkIcon(network: string) {
+    return NetworksController.getNetwork(network).icon;
   }
 
   resetTxStatus() {

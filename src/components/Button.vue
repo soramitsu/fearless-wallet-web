@@ -10,7 +10,7 @@
     >
       <Icon v-if="shouldBeWithIcon" :icon="prepIconName" :className="prepIconClass" :iconColor="iconColor" />
 
-      {{ tText }}
+      <span>{{ tText }}</span>
     </SButton>
   </div>
 </template>
@@ -142,6 +142,14 @@ export default class Button extends Vue {
   }
 }
 
+.import-button {
+  height: 109px;
+}
+
+.import-button .el-button {
+  padding: 12px 38px;
+}
+
 .button-size-medium {
   .el-button {
     clip-path: $medium-clip-path-left-top-and-right-bottom;
@@ -189,6 +197,12 @@ export default class Button extends Vue {
 .button__icon {
   font-size: 14px;
   white-space: break-spaces;
+}
+
+.import-button .el-button span .icon {
+  margin-right: 0px;
+  width: 32px;
+  height: 32px;
 }
 
 .icon {
@@ -274,5 +288,20 @@ export default class Button extends Vue {
   100% {
     transform: rotate(360deg);
   }
+}
+</style>
+
+<style lang="scss">
+.import-button .el-button span {
+  line-height: 18px;
+  flex-flow: column;
+  max-width: 140px;
+  font-size: 14px;
+  font-weight: 400;
+  gap: 5px;
+}
+
+.import-button .button {
+  height: 100%;
 }
 </style>

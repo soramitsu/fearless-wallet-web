@@ -221,21 +221,17 @@ export default class Asset extends Vue {
     if (!this.currentCurrency) return `${this.selectedAssetUpper} 0`;
 
     const totalCountAssets = +this.currentCurrency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork);
-    const total = formattedNumber(totalCountAssets, {
-      decimalsValue: 4,
-      returnOriginNumber: false,
-      removeTrailingZeros: true,
-    });
+    const total = this.$n(totalCountAssets, 'decimal');
 
     return `${this.selectedAssetUpper} ${total}`;
   }
 
   get balanceInNetworkString() {
-    if (!this.currentCurrency) return `$ 0`;
+    if (!this.currentCurrency) return `${this.fiatSymbol} 0`;
 
     const total = this.currentCurrency.getTotalBalance(this.selectedWallet, this.selectedNetwork);
 
-    return `${this.fiatSymbol} ${formattedNumber(+total)}`;
+    return `${this.fiatSymbol} ${this.$n(+total, 'decimal')}`;
   }
 
   toggleSelectedNetwork(network: string) {

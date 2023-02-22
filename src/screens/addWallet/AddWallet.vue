@@ -341,7 +341,7 @@ export default class AddWallet extends Vue {
       return this.typeImport === 'mnemonic' ? this.t('importWallet') : this.t('importAccount', { type: 'substrate' });
     }
 
-    if (this.step === 2) return this.t('importAccount', { type: 'substrate' });
+    if (this.step === 2) return this.t('importAccount', { type: 'ethereum' });
 
     if (this.step === 3) return this.t('walletNickname');
 

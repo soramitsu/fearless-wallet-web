@@ -136,8 +136,10 @@ export default class ReceiveForm extends Vue {
   mounted() {
     const nativeNet = this.optionsNetworks.find((el) => el.type === 'native');
 
-    if (nativeNet) {
+    if (this._selectedNetwork === 'all' && nativeNet) {
       this.selectedNetwork = nativeNet.value;
+    } else {
+      this.selectedNetwork = this._selectedNetwork;
     }
   }
 

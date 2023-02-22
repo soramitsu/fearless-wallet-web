@@ -2,9 +2,9 @@
   <AboveForm header="asset.networkIssues" class="network-management" :blur="true" :closeHandler="closeForm">
     <div class="management-content">
       <Scroll>
-        <Corners v-for="{ name } in disconnectedNetworks" :key="name" size="big" class="network-corners">
+        <Corners v-for="{ name, icon } in disconnectedNetworks" :key="name" size="big" class="network-corners">
           <div class="network-item">
-            <ExternalLogo class="network-img" :name="name" />
+            <ExternalLogo class="network-img" :name="icon" type="network" />
 
             <div class="description">
               <div class="name">{{ name }}</div>

@@ -1,4 +1,4 @@
-@Library('jenkins-library@feature/FWW-161/cd-for-chrome-web-store')
+@Library('jenkins-library@feature/FWW-278/cd-firefox-ext')
 
 def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'OAUTH_CLIENT_ID', variable: 'OAUTH_CLIENT_ID'],

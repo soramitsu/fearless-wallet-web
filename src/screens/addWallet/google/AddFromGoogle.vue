@@ -98,7 +98,9 @@ export default class AddFromGoogle extends Vue {
   }
 
   async mounted() {
-    await this.isTokenValid();
+    const isValidToken = await this.isTokenValid();
+
+    if (!isValidToken) return;
 
     this.token = this.getToken;
     const { files } = await getGoogleFiles(this.token);
@@ -175,7 +177,7 @@ export default class AddFromGoogle extends Vue {
     if (this.getToken === 'null') {
       this.isLoading = false;
 
-      return;
+      return false;
     }
 
     const data = await verifyToken(this.getToken);
@@ -184,8 +186,10 @@ export default class AddFromGoogle extends Vue {
       this.$router.push({ name: Components.Welcome });
       this.isLoading = false;
 
-      return;
+      return false;
     }
+
+    return true;
   }
 }
 </script>

@@ -5,11 +5,11 @@
         <div class="label">{{ name }}</div>
 
         <div class="count">
-          <div class="value">{{ formattedValue(value) }} {{ assetNameUpper }}</div>
+          <div class="value">{{ $n(value, 'decimal') }} {{ assetNameUpper }}</div>
 
           <div v-if="getFiatValueVisible(fiat)" class="fiat-value">
             {{ fiatSymbol }}
-            {{ formattedPrice(fiat) }}
+            {{ $n(fiat, 'decimal') }}
           </div>
         </div>
       </div>

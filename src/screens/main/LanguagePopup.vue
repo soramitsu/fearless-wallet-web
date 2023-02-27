@@ -22,8 +22,8 @@ import { accountController } from '@/controllers/accountController';
 @Component
 export default class LanguagePopup extends Vue {
   readonly options = [
-    { label: 'English', value: 'en' },
-    { label: 'Русский', value: 'ru' },
+    { label: 'English', value: 'en-EN' },
+    { label: 'Русский', value: 'ru-RU' },
   ];
 
   @Prop(Function) handlerClose!: VoidFunction;

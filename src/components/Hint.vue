@@ -60,7 +60,7 @@ export default class Hint extends Vue {
     width: 491px;
     font-size: 14px;
     margin: auto 0;
-    line-height: 14px;
+    line-height: 19px;
   }
   .info-text--big {
     font-size: 16px;

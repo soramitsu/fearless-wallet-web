@@ -24,7 +24,7 @@ class AccountController {
   public getLang(): Lang {
     const lang = this.lsAccount.get(this.langStorageName);
 
-    return lang.value ?? 'en';
+    return lang.value ?? 'en-EN';
   }
 
   public setLang(lang: Lang): void {

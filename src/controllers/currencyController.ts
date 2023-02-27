@@ -740,7 +740,7 @@ export default class CurrencyController {
     this.setTransactionStatus('pending');
 
     try {
-      this.extrinsic!.signAndSend(
+      await this.extrinsic!.signAndSend(
         account,
         options,
         statusLogging(() => this.statusCallback(from, 'success'))

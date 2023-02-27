@@ -146,7 +146,7 @@ import { Currencies } from '@/interfaces/currencies';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
-import { formattedNumber, formattedCountAsset, formattedPrice } from '@/helpers/numbers';
+import { formattedPrice } from '@/helpers/numbers';
 import { tieAccount } from '@/extension/messaging';
 import { Network } from '@/interfaces';
 
@@ -242,17 +242,17 @@ export default class Asset extends Vue {
     if (!this.currentCurrency) return `${this.selectedAssetUpper} 0`;
 
     const totalCountAssets = +this.currentCurrency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork);
-    const total = formattedCountAsset(totalCountAssets);
+    const total = this.$n(totalCountAssets, 'decimal');
 
     return `${this.selectedAssetUpper} ${total}`;
   }
 
   get balanceInNetworkString() {
-    if (!this.currentCurrency) return `$ 0`;
+    if (!this.currentCurrency) return `${this.fiatSymbol} 0`;
 
     const total = this.currentCurrency.getTotalBalance(this.selectedWallet, this.selectedNetwork);
 
-    return `${this.fiatSymbol} ${formattedNumber(+total)}`;
+    return `${this.fiatSymbol} ${this.$n(+total, 'decimal')}`;
   }
 
   toggleSelectedNetwork(network: string) {

@@ -477,20 +477,17 @@ export default class SwapForm extends Vue {
       return;
     }
 
-    const { amountA, amountB, AToB, BToA, providerFee, minMaxValue } = await this.sendCurrency!.createSwap(
-      this.selectedWallet,
-      {
-        network: this.selectedNetwork,
-        amountA: this.sendAmount,
-        amountB: this.receiveAmount,
-        assetAId: this.sendAssetId,
-        assetBId: this.receiveAssetId,
-        slippage: this.slippage,
-        symbolA: this.sendAsset,
-        symbolB: this.receiveAsset,
-        isExchangeB: this.isExchangeB,
-      }
-    );
+    const { amountA, amountB, AToB, BToA, providerFee, minMaxValue } = await this.sendCurrency!.createSwap({
+      network: this.selectedNetwork,
+      amountA: this.sendAmount,
+      amountB: this.receiveAmount,
+      assetAId: this.sendAssetId,
+      assetBId: this.receiveAssetId,
+      slippage: this.slippage,
+      symbolA: this.sendAsset,
+      symbolB: this.receiveAsset,
+      isExchangeB: this.isExchangeB,
+    });
 
     if (this.isExchangeB) {
       this.sendAmount = amountA;

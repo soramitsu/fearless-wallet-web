@@ -216,7 +216,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   async onSignMobile() {
     if (!this.transactionId && this.currency?.extrinsic) {
       if (this.extrinsicType === 'default') await this.currency.send(this.transactionAddress, true, false);
-      else if (this.extrinsicType === 'swap') await this.currency.sendSwap();
+      else if (this.extrinsicType === 'swap') await this.currency.sendSwap(this.transactionAddress);
     } else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
   }
 
@@ -257,7 +257,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     if (this.extrinsicType === 'default') await this.currency?.send(this.transactionAddress, false, this.isSavePass);
-    else if (this.extrinsicType === 'swap') await this.currency?.sendSwap();
+    else if (this.extrinsicType === 'swap') await this.currency?.sendSwap(this.transactionAddress);
   }
 }
 </script>

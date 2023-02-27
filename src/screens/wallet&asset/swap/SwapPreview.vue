@@ -10,7 +10,7 @@
         <div class="hr"></div>
 
         <div class="chevron-right">
-          <Icon icon="chevron-right-pink" class="img" />
+          <Icon icon="chevron-right" class="img" />
         </div>
 
         <div class="column right-column">
@@ -222,5 +222,6 @@ export default class SwapPreview extends Vue {
   height: 20px;
   width: 20px;
   margin-left: 4px;
+  color: #ee0077;
 }
 </style>

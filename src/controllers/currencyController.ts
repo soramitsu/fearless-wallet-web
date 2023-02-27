@@ -554,12 +554,16 @@ export default class CurrencyController {
     this.extrinsicOptions = { historyOptions: { networkProps, amount: precisionAmount, to: toAddress }, api };
   }
 
-  public async createSwap(wallet: Wallet, options: Partial<SwapOptions>): Promise<CreateSwapResult> {
-    const { network, assetAId, assetBId, isExchangeB, amountA, amountB, symbolA, symbolB, slippage } = options;
+  /**
+   * Create swap extrinsic
+   * @param {Partial<SwapOptions>} options
+   * @returns {Promise<CreateSwapResult>}
+   */
+  public async createSwap(options: Partial<SwapOptions>): Promise<CreateSwapResult> {
+    const { assetAId, assetBId, isExchangeB, amountA, amountB, symbolA, symbolB, slippage } = options;
     const assetAAddress = getAssetOptions('', 'soraAsset', assetAId!) as string;
     const assetBAddress = getAssetOptions('', 'soraAsset', assetBId!) as string;
-    const transactionAddress = this.getTransactionAddress(wallet, network!);
-    const pair = BaseApi.getPair(transactionAddress);
+
     const amountWithDirection = (isExchangeB ? amountB : amountA) as string;
     const assetA: Asset = { address: assetAAddress, decimals: 18, name: symbolA!, symbol: symbolA! };
     const assetB: Asset = {
@@ -568,8 +572,6 @@ export default class CurrencyController {
       name: symbolB!,
       symbol: symbolB!,
     };
-
-    apiSora.account = { json: null as any, pair };
 
     const { amount: amountDexIdXOR, fee: providerFeeDexIdXOR } = await apiSora.swap.getResultFromBackend(
       assetAAddress,
@@ -664,8 +666,16 @@ export default class CurrencyController {
     }
   }
 
-  public async sendSwap(): Promise<void> {
+  /**
+   * Create swap extrinsic
+   * @param {string} transactionAddress
+   */
+  public async sendSwap(transactionAddress: string): Promise<void> {
     const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB } = this.extrinsicOptions.swapOptions!;
+
+    const pair = BaseApi.getPair(transactionAddress);
+
+    apiSora.account = { json: null as any, pair };
 
     this.setTransactionStatus('pending');
 

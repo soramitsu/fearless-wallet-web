@@ -84,13 +84,22 @@
       :closePopup="toggleVisible.bind(null, 'showBuyPopup', false)"
     />
 
-    <SelectNetworkPopup
+    <SelectPopup
       v-if="showSelectNetworkPopup"
-      :selectedNetwork="selectedNetwork"
+      sizeWidth="big"
+      placeholder="common.searchNetwork"
+      verticalPlacement="top"
+      horizontalPlacement="right"
+      :value="selectedNetwork"
+      :showBlur="true"
+      :showBackground="true"
       :height="410"
-      :allNetworksItem="false"
-      :relayChain="relayChain"
-      :toggleSelectedNetwork="toggleSelectedNetwork"
+      :top="105"
+      :left="0"
+      :options="optionsNetworks"
+      iconType="network"
+      :handlerFilter="handlerFilter"
+      :toggleValue="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
     />
 
@@ -131,9 +140,12 @@ import { Currencies } from '@/interfaces/currencies';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
-import { formattedNumber, formattedPrice } from '@/helpers/numbers';
+import { formattedPrice } from '@/helpers/numbers';
 import { tieAccount } from '@/extension/messaging';
 import { Network } from '@/interfaces';
+import { ETHEREUM_NETWORKS } from '@/consts/networks';
+import { firstCharToUp } from '@/helpers/common';
+import NetworksController from '@/controllers/networksController';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
 
@@ -161,7 +173,7 @@ export default class Asset extends Vue {
   showHistoryDetailsForm = false;
   showSelectNetworkPopup = false;
   showBalanceDetailsPopup = false;
-
+  filterValue = '';
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -233,6 +245,33 @@ export default class Asset extends Vue {
 
     return `${this.fiatSymbol} ${this.$n(+total, 'decimal')}`;
   }
+  get currency() {
+    return this.currencies.find(({ assetId }) => assetId === this.selectedAssetId);
+  }
+
+  get optionsNetworks() {
+    const haveEthereumAccount = this.selectedWallet.ethereumAddress !== '';
+    const walletBalance = (this.currency?.getNetworkList() ?? []).filter(({ network }) =>
+      ETHEREUM_NETWORKS.includes(network) ? haveEthereumAccount : true
+    );
+    const filter = this.filterValue.trim().toLowerCase();
+
+    return walletBalance
+      .map(({ network, type }) => {
+        const icon = NetworksController.getNetwork(network).icon;
+
+        return {
+          label: firstCharToUp(network),
+          value: network,
+          path: icon,
+          type,
+          relayChain: this.currency?.relayChain,
+        };
+      })
+      .filter(({ value }) => {
+        return value.includes(filter);
+      });
+  }
 
   toggleSelectedNetwork(network: string) {
     if (this.selectedNetwork === network) return;
@@ -261,6 +300,10 @@ export default class Asset extends Vue {
 
   toggleVisible(field: ShowField, value: boolean) {
     this[field] = value;
+  }
+
+  handlerFilter(value: string) {
+    this.filterValue = value;
   }
 
   openHistoryDetailsForm(historyNode: HistoryNode) {

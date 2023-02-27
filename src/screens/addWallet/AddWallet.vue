@@ -700,7 +700,7 @@ export default class AddWallet extends Vue {
 
     const validatedEthereumJson =
       this.ethereumJson !== ''
-        ? BaseApi.isValidJson(this.ethereumJSON, this.passwordEthereumJson)
+        ? BaseApi.isValidJson(this.ethereumJSON, this.passwordEthereumJson, false)
         : ({ value: true } as ValidateJsonResult);
 
     const isValidSequenceMnemonic = this.isCreateWallet

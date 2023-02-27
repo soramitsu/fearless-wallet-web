@@ -1,5 +1,7 @@
 import { FPNumber } from '@sora-substrate/math';
 
+const soraUtilityAsset = 'XOR';
+
 const mockFPBalance = {
   frozen: FPNumber.ZERO,
   locked: FPNumber.ZERO,
@@ -31,4 +33,4 @@ const mockBalance = {
   },
 };
 
-export { mockBalance, mockFPBalance };
+export { mockBalance, mockFPBalance, soraUtilityAsset };

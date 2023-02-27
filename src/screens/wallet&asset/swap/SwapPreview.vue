@@ -56,7 +56,7 @@
         {{ $t('asset.liquidityProvideFeer') }}
 
         <div class="value">
-          <div>{{ providerFee }} XOR</div>
+          <div>{{ providerFeeCut }} {{ soraMainAsset }}</div>
 
           <!-- Бесполезная информация, в полькасвопе не показывается, обсудить -->
           <!-- <div class="price">{{ fiatSymbol }} {{ liquidityProviderFeePrice }}</div> -->
@@ -67,7 +67,7 @@
         {{ $t('asset.networkFee') }}
 
         <div class="value">
-          <div>{{ fee }}</div>
+          <div>{{ fee }} {{ soraMainAsset }}</div>
           <div class="price">{{ fiatSymbol }} {{ feePrice }}</div>
         </div>
       </div>
@@ -81,6 +81,7 @@ import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { firstCharToUp } from '@/helpers/common';
 import { formattedCountAsset, formattedPrice } from '@/helpers/numbers';
+import { soraUtilityAsset } from '@/consts/currencies';
 
 @Component
 export default class SwapPreview extends Vue {
@@ -100,6 +101,10 @@ export default class SwapPreview extends Vue {
   @Prop(Boolean) isExchangeB!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
+  get soraMainAsset() {
+    return soraUtilityAsset;
+  }
+
   get minMaxAssetName() {
     return this.isExchangeB ? this.sendAssetUP : this.receiveAssetUP;
   }
@@ -110,6 +115,10 @@ export default class SwapPreview extends Vue {
 
   get receiveAmountCut() {
     return formattedCountAsset(+this.receiveAmount);
+  }
+
+  get providerFeeCut() {
+    return formattedCountAsset(+this.providerFee);
   }
 
   get sendValueCut() {

@@ -14,12 +14,11 @@ import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 import { getAccounts } from '@/helpers/accounts';
 import store from '@/store';
 import { accountController } from '@/controllers/accountController';
+import { isSora } from '@/helpers/common';
 
 interface ISubscribeData {
   data: AccountData;
 }
-
-const isSora = (network: string) => network === 'sora test'; // network === 'sora mainnet'
 
 const connectedHandler = (apiOptions: ApiOptions, network: Network) => {
   const api = isSora(network.name) ? soraConnection.api : apiOptions.api;

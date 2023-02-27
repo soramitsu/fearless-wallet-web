@@ -87,6 +87,7 @@
     <SwapForm
       v-if="showSwapForm"
       :selectedNetwork="selectedNetwork"
+      :_selectedAssetId="selectedAssetId"
       :closeForm="toggleVisible.bind(null, 'showSwapForm', false)"
     />
 
@@ -149,6 +150,7 @@ import { Components } from '@/router/routes';
 import { formattedPrice } from '@/helpers/numbers';
 import { tieAccount } from '@/extension/messaging';
 import { Network } from '@/interfaces';
+import { isSora } from '@/helpers/common';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup' | 'showSwapForm';
 
@@ -207,7 +209,7 @@ export default class Asset extends Vue {
   }
 
   get showSwapButton() {
-    return this.selectedNetwork === 'sora mainnet' || this.selectedNetwork === 'sora test';
+    return isSora(this.selectedNetwork); // this.selectedNetwork === 'sora mainnet'
   }
 
   get currentCurrency() {

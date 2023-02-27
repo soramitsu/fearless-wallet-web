@@ -41,12 +41,12 @@
 
       <template v-else-if="isTransactionFinished">
         <div class="descriptions">
-          <ExternalLogo :name="networkIcon(firstNetwork)" type="network" :width="30" />
+          <ExternalLogo :name="firstIcon" :width="30" />
 
-          <template v-if="secondNetwork">
+          <template v-if="secondIcon">
             <SIcon name="arrows-arrow-right-24" />
 
-            <ExternalLogo :name="networkIcon(secondNetwork)" type="network" :width="30" />
+            <ExternalLogo :name="secondIcon" :width="30" />
           </template>
         </div>
 
@@ -71,7 +71,6 @@ import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/ext
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import ExtensionController from '@/controllers/extensionController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import NetworksController from '@/controllers/networksController';
 
 @Component({
   components: { SignMobile },
@@ -87,12 +86,13 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   @Prop(String) amount!: string;
   @Prop(String) value!: string;
-  @Prop(String) firstNetwork!: string;
-  @Prop(String) secondNetwork!: string;
+  @Prop(String) firstIcon!: string;
+  @Prop(String) network!: string;
+  @Prop(String) secondIcon!: string;
   @Prop(String) transactionId?: string;
   @Prop(Object) currency?: Currency;
   @Prop(Object) payload?: SignerPayloadJSON;
-  @Prop({ default: 'send' }) extrinsicType!: 'send' | 'sendSwap';
+  @Prop({ default: 'default' }) extrinsicType!: 'default' | 'swap';
 
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: TAction<ApprovePayload>;
@@ -105,7 +105,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transactionAddress() {
-    return this.currency?.getTransactionAddress(this.selectedWallet, this.firstNetwork) ?? '';
+    return this.currency?.getTransactionAddress(this.selectedWallet, this.network) ?? '';
   }
 
   get disabledButton() {
@@ -200,10 +200,6 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
   }
 
-  networkIcon(network: string) {
-    return NetworksController.getNetwork(network).icon;
-  }
-
   resetTxStatus() {
     this.currency?.setTransactionStatus();
     this.transactionState = undefined;
@@ -219,8 +215,8 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   async onSignMobile() {
     if (!this.transactionId && this.currency?.extrinsic) {
-      if (this.extrinsicType === 'send') await this.currency.send(this.transactionAddress, true, false);
-      else if (this.extrinsicType === 'sendSwap') await this.currency.sendSwap();
+      if (this.extrinsicType === 'default') await this.currency.send(this.transactionAddress, true, false);
+      else if (this.extrinsicType === 'swap') await this.currency.sendSwap();
     } else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
   }
 
@@ -260,8 +256,8 @@ export default class ConfirmationPasswordPopup extends Vue {
       return;
     }
 
-    if (this.extrinsicType === 'send') await this.currency?.send(this.transactionAddress, false, this.isSavePass);
-    else if (this.extrinsicType === 'sendSwap') await this.currency?.sendSwap();
+    if (this.extrinsicType === 'default') await this.currency?.send(this.transactionAddress, false, this.isSavePass);
+    else if (this.extrinsicType === 'swap') await this.currency?.sendSwap();
   }
 }
 </script>

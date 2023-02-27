@@ -1,18 +1,24 @@
 import type { Meta, ReplacedMeta, AddressMeta } from '@/interfaces/common';
 import type { KeyringPair$Meta } from '@polkadot/keyring/types';
 
-export function firstCharToUp(string: string) {
+function firstCharToUp(string: string) {
   return `${string.charAt(0).toUpperCase()}${string.slice(1)}`;
 }
 
-export function getMetaTyped(meta: KeyringPair$Meta) {
+function getMetaTyped(meta: KeyringPair$Meta) {
   return meta as unknown as Meta;
 }
 
-export function getAddressMetaTyped(meta: KeyringPair$Meta) {
+function getAddressMetaTyped(meta: KeyringPair$Meta) {
   return meta as unknown as AddressMeta;
 }
 
-export function getReplacedMetaTyped(meta: KeyringPair$Meta) {
+function getReplacedMetaTyped(meta: KeyringPair$Meta) {
   return meta as unknown as ReplacedMeta;
 }
+
+function isSora(network: string) {
+  return network === 'sora test'; // network === 'sora mainnet'
+}
+
+export { getReplacedMetaTyped, getAddressMetaTyped, getMetaTyped, firstCharToUp, isSora };

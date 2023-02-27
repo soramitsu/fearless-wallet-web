@@ -19,7 +19,7 @@
         <Corners class="corners-button" @click.native="$emit('toggleSelectAssetPopupVisibility')">
           <button class="select-button">
             <template v-if="asset !== ''">
-              <ExternalLogo class="asset-icon" :name="asset" :relayChain="relayChain" :width="32" />
+              <ExternalLogo class="asset-icon" :name="asset" :width="32" />
 
               <div class="asset">{{ asset.toUpperCase() }}</div>
             </template>
@@ -44,7 +44,6 @@
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { RelayChainName } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { formattedPrice } from '@/helpers/numbers';
 
@@ -56,7 +55,6 @@ export default class SwapSelectInput extends Vue {
   @Prop({ default: '' }) asset!: string;
   @Prop({ default: '' }) value!: string;
   @Prop({ default: '' }) balance!: string;
-  @Prop(String) relayChain!: RelayChainName;
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;

@@ -1,3 +1,4 @@
+import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { AssetJson, Networks, Network, AssetPrice } from '@/interfaces';
 import store from '@/store';
@@ -18,7 +19,7 @@ export default class NetworksController {
     return store.getters[NetworksGettersTypes.getAssetsJson];
   }
 
-  public static getAssetsIcon(assetId: string): string {
+  public static getAssetIcon(assetId: string): string {
     return store.getters[NetworksGettersTypes.getAssetIcon](assetId);
   }
 
@@ -70,5 +71,15 @@ export default class NetworksController {
     oldNodeUrl?: string
   ): Promise<void> {
     await store.dispatch(NetworksActionTypes.TOGGLE_ACTIVE_NODE, { network, nodeName, nodeUrl, oldNodeUrl });
+  }
+
+  public static async initializeSora() {
+    await apiSora.initialize(false);
+  }
+
+  public static async calcSoraFee() {
+    await apiSora.calcStaticNetworkFees();
+
+    return FPNumber.fromCodecValue(apiSora.NetworkFee.Swap).toString();
   }
 }

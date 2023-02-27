@@ -98,7 +98,6 @@
       :left="left"
       :height="285"
       :options="options"
-      :iconType="toggleIconType"
       :handlerFilter="handlerFilter"
       :toggleValue="toggleSelectedNetwork"
       :handlerClose="handlerCloseSelectPopup"
@@ -109,8 +108,9 @@
       :currency="currency"
       :amount="syncedAmount"
       :value="syncedValue"
-      :firstNetwork="syncedSelectedNetwork"
-      :secondNetwork="syncedDestNet"
+      :network="syncedSelectedNetwork"
+      :firstIcon="firstIcon"
+      :secondIcon="syncedDestNet"
       @close="confirmationPasswordPopupClose"
     />
 
@@ -188,11 +188,12 @@ export default class SendForm extends Vue {
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
 
+  get firstIcon() {
+    return this.extrinsicType === 'transfer' ? this.selectedAsset : this.syncedSelectedNetwork;
+  }
+
   get placeholderSelectPopup() {
     return this.showSelectedAssetPopup ? 'common.searchAmongAssets' : 'common.searchNetwork';
-  }
-  get toggleIconType() {
-    return this.showSelectedAssetPopup ? 'asset' : 'network';
   }
 
   get showTransferableValue() {
@@ -339,10 +340,12 @@ export default class SendForm extends Vue {
     return formattedPrice(cost);
   }
 
-  get selectedAssetUpper() {
-    const assetName = this.getAssetName(this.syncedSelectedAssetId);
+  get selectedAsset() {
+    return this.getAssetName(this.syncedSelectedAssetId);
+  }
 
-    return assetName.toUpperCase();
+  get selectedAssetUpper() {
+    return this.selectedAsset.toUpperCase();
   }
 
   get optionsCurrency() {

@@ -41,7 +41,6 @@
               :balance="transferrableSendAmount"
               :value="sendValue"
               :asset="sendAsset"
-              :relayChain="currentSendCurrencyRelayChain"
               :amount="sendAmount"
               :isRotate="isSendAssetType"
               @update:amount="updateSendAmount"
@@ -55,7 +54,6 @@
               :balance="transferrableReceiveAmount"
               :value="receiveValue"
               :asset="receiveAsset"
-              :relayChain="currentReceiveCurrencyRelayChain"
               :amount="receiveAmount"
               :isRotate="isReceiveAssetType"
               @update:amount="updateReceiveAmount"
@@ -114,10 +112,12 @@
             <div class="row last-row">
               {{ $t('asset.networkFee') }}
 
-              <div class="fiat-info">
-                <div>{{ fee }}</div>
+              <div v-if="fee" class="fiat-info">
+                <div>{{ fee }} {{ soraMainAsset }}</div>
+
                 <div class="price">{{ fiatSymbol }} {{ feePrice }}</div>
               </div>
+              <div v-else>-</div>
             </div>
           </template>
 
@@ -183,18 +183,20 @@
       :currency="sendCurrency"
       :amount="sendAmount"
       :value="sendValue"
-      :firstNetwork="currentSendCurrencyRelayChain"
-      extrinsicType="sendSwap"
+      :network="selectedNetwork"
+      :firstIcon="sendAsset"
+      :secondIcon="receiveAsset"
+      extrinsicType="swap"
       @close="confirmationPasswordPopupClose"
     />
   </AboveForm>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { Currencies } from '@/interfaces';
-import type { GetAssetName, SelectedWallet } from '@/store';
+import type { Currencies, NetworkStatus } from '@/interfaces';
+import type { GetAssetName, SelectedWallet, GetNetworkStatus } from '@/store';
 import SwapSelectInput from '@/screens/wallet&asset/swap/SwapSelectInput.vue';
 import SwapPreview from '@/screens/wallet&asset/swap/SwapPreview.vue';
 import SwapSettings from '@/screens/wallet&asset/swap/SwapSettings.vue';
@@ -203,6 +205,8 @@ import { getCurrencyOptions } from '@/helpers/currencies';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { formattedCountAsset, formattedPrice } from '@/helpers/numbers';
+import NetworksController from '@/controllers/networksController';
+import { soraUtilityAsset } from '@/consts/currencies';
 
 @Component({
   components: {
@@ -237,14 +241,24 @@ export default class SwapForm extends Vue {
 
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) selectedNetwork!: string;
+  @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
 
-  //TODO
   get feePrice() {
-    return this.fee;
+    const mainAsset = this.soraMainAsset.toLocaleLowerCase();
+    const currencyXOR = this.currencies.find(({ displayName }) => {
+      return displayName === mainAsset;
+    });
+
+    return formattedPrice(+currencyXOR!.getCostOfAssets(this.fee));
+  }
+
+  get soraMainAsset() {
+    return soraUtilityAsset;
   }
 
   get minMaxAmountPrice() {
@@ -357,14 +371,6 @@ export default class SwapForm extends Vue {
     return this.currencies.find(({ assetId }) => assetId === this.receiveAssetId);
   }
 
-  get currentReceiveCurrencyRelayChain() {
-    return this.currencies.find(({ assetId }) => assetId === this.receiveAssetId)?.relayChain;
-  }
-
-  get currentSendCurrencyRelayChain() {
-    return this.sendCurrency?.relayChain;
-  }
-
   get top() {
     return this.isSendAssetType ? 145 : 250;
   }
@@ -394,11 +400,15 @@ export default class SwapForm extends Vue {
   get buttonText() {
     if (this.showSettings) return 'common.save';
 
+    if (this.sendAmount !== '' && this.receiveAmount !== '' && this.fee === '') return 'asset.calculateFee';
+
     return this.step === 1 ? 'asset.preview' : 'common.confirm';
   }
 
   get buttonPreviewDisabled() {
     if (this.step === 2) return false;
+
+    if (this.fee === '') return true;
 
     return (this.sendAssetId === '' || this.receiveAssetId === '' || this.sendAmount === '') && !this.showSettings;
   }
@@ -427,6 +437,31 @@ export default class SwapForm extends Vue {
     return formattedCountAsset(count);
   }
 
+  get networkStatus() {
+    return this.getNetworkStatus(this.selectedNetwork);
+  }
+
+  @Watch('networkStatus')
+  connect(status: NetworkStatus) {
+    if (status === 'ready') this.initializeSora();
+  }
+
+  async created() {
+    this.sendAssetId = this._selectedAssetId;
+
+    if (this.networkStatus === 'ready') this.initializeSora();
+  }
+
+  async initializeSora() {
+    try {
+      await NetworksController.initializeSora();
+
+      this.fee = await NetworksController.calcSoraFee();
+    } catch (ex) {
+      console.info('initializeSora', ex);
+    }
+  }
+
   async createSwap() {
     if (
       this.sendAssetId === '' ||
@@ -442,7 +477,7 @@ export default class SwapForm extends Vue {
       return;
     }
 
-    const { amountA, amountB, fee, AToB, BToA, providerFee, minMaxValue } = await this.sendCurrency!.createSwap(
+    const { amountA, amountB, AToB, BToA, providerFee, minMaxValue } = await this.sendCurrency!.createSwap(
       this.selectedWallet,
       {
         network: this.selectedNetwork,
@@ -468,7 +503,6 @@ export default class SwapForm extends Vue {
     }
 
     this.minMaxAmount = minMaxValue;
-    this.fee = fee;
     this.providerFee = providerFee;
     this.AToB = AToB;
     this.BToA = BToA;

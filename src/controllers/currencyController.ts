@@ -569,8 +569,6 @@ export default class CurrencyController {
       symbol: symbolB!,
     };
 
-    await apiSora.initialize(false);
-
     apiSora.account = { json: null as any, pair };
 
     const { amount: amountDexIdXOR, fee: providerFeeDexIdXOR } = await apiSora.swap.getResultFromBackend(
@@ -591,7 +589,6 @@ export default class CurrencyController {
       DexId.XSTUSD
     );
 
-    const fee = FPNumber.fromCodecValue(apiSora.NetworkFee.Swap).toString();
     const swapOptions = { ...options, assetA, assetB } as SwapOptions;
     const amountDexIdXORFP = FPNumber.fromCodecValue(amountDexIdXOR);
     const amountDexIdXSTUSDFP = FPNumber.fromCodecValue(amountDexIdXSTUSD);
@@ -629,7 +626,6 @@ export default class CurrencyController {
         BToA: new FPNumber(amountB!).div(expectedAmountA).toString(),
         minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
         providerFee: FPNumber.fromCodecValue(providerFeeDexIdXSTUSD).toString(),
-        fee,
       };
     } else {
       const isDexXor = FPNumber.gt(amountDexIdXORFP, amountDexIdXSTUSDFP);
@@ -664,7 +660,6 @@ export default class CurrencyController {
         BToA: expectedAmountB.div(new FPNumber(amountA!)).toString(),
         minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
         providerFee: FPNumber.fromCodecValue(providerFeeDexIdXOR).toString(),
-        fee,
       };
     }
   }

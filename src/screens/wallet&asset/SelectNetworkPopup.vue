@@ -6,7 +6,6 @@
     :value="selectedNetwork"
     :height="height"
     :maxHeight="maxHeight"
-    iconType="network"
     :horizontalPlacement="horizontalPlacement"
     :verticalPlacement="verticalPlacement"
     :top="top"

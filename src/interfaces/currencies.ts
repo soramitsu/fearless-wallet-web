@@ -74,7 +74,6 @@ type CreateSwapResult = {
   amountA: string;
   amountB: string;
   minMaxValue: string;
-  fee: string;
   providerFee: string;
   AToB: string;
   BToA: string;

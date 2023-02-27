@@ -17,7 +17,6 @@
               :key="index"
               :historyNode="historyNode"
               :assetId="currency.assetId"
-              :relayChain="currency.relayChain"
               @click.native="$emit('openHistoryDetailsForm', historyNode)"
             />
           </template>
@@ -42,9 +41,7 @@ import BaseApi from '@/util/BaseApi';
 import networksController from '@/controllers/networksController';
 
 @Component({
-  components: {
-    HistoryItem,
-  },
+  components: { HistoryItem },
 })
 export default class History extends Vue {
   readonly historyDropdownOption = [
@@ -91,15 +88,6 @@ export default class History extends Vue {
     return filteredHistory;
   }
 
-  mounted() {
-    if (this.currency?.assetId) this.fetchHistory();
-  }
-
-  @Watch('currency')
-  async watchCurrency() {
-    if (this.currency?.assetId) this.fetchHistory();
-  }
-
   get historyForNetwork() {
     const addressByNetwork = BaseApi.getDefaultAddressByNetworkIncludingReplacedAccount(
       this.selectedWallet,
@@ -107,6 +95,15 @@ export default class History extends Vue {
     );
 
     return this.getHistory(this.currency?.assetId, addressByNetwork, this.selectedNetwork);
+  }
+
+  @Watch('currency')
+  async watchCurrency() {
+    if (this.currency?.assetId) this.fetchHistory();
+  }
+
+  mounted() {
+    if (this.currency?.assetId) this.fetchHistory();
   }
 
   async fetchHistory() {

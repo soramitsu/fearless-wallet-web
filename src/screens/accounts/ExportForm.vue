@@ -27,6 +27,7 @@ import type { Networks } from '@/interfaces/networks';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import NetworksController from '@/controllers/networksController';
 
 @Component
 export default class ExportForm extends Vue {
@@ -50,7 +51,11 @@ export default class ExportForm extends Vue {
   }
 
   get addressByNetwork() {
-    return BaseApi.getDefaultAddressByNetworkIncludingReplacedAccount(this.selectedWallet, this.network);
+    if (BaseApi.isEthereumNetwork(this.network)) return this.selectedWallet.ethereumAddress;
+
+    const network = NetworksController.getNetwork(this.network);
+
+    return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
   }
 
   get keyringPairJson() {

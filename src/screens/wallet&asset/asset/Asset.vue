@@ -37,12 +37,12 @@
         @click="toggleVisible('showReceiveForm', true)"
       />
 
-      <BorderButton
+      <!-- <BorderButton
         class="activity-button"
         text="asset.teleportButtonText"
         iconName="teleport"
         @click="toggleVisible('showTeleportForm', true)"
-      />
+      /> -->
 
       <BorderButton
         v-if="showBuyButton"

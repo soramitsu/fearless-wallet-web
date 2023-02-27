@@ -122,7 +122,7 @@ export default class ReceiveForm extends Vue {
 
         return {
           label: firstCharToUp(network),
-          value: `${network}`,
+          value: network,
           path: icon,
           type,
           relayChain: this.currency?.relayChain,
@@ -134,13 +134,18 @@ export default class ReceiveForm extends Vue {
   }
 
   mounted() {
-    const nativeNet = this.optionsNetworks.find((el) => el.type === 'native');
+    const nativeNet = this.optionsNetworks.find((el) => {
+      const network = NetworksController.getNetwork(el.value);
+      const nativeAsset = network.assets.find(
+        (asset) => asset.assetId === this.selectedAssetId && (asset.isNative || asset.isUtility)
+      );
 
-    if (this._selectedNetwork === 'all' && nativeNet) {
-      this.selectedNetwork = nativeNet.value;
-    } else {
-      this.selectedNetwork = this._selectedNetwork;
-    }
+      if (nativeAsset) return true;
+
+      return false;
+    });
+
+    this.selectedNetwork = nativeNet ? nativeNet.value : this._selectedNetwork;
   }
 
   toggleSelectNetworkPopupVisible() {

@@ -10,7 +10,6 @@ import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { base64Decode } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
-
 import {
   AuthorizeRequest,
   AuthRequest,
@@ -42,18 +41,10 @@ import {
   ResponseAccountExportPrivateKey,
   ServiceInfo,
 } from '../types';
-
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';
-import {
-  APIItemState,
-  BalanceItem,
-  CustomToken,
-  CustomTokenJson,
-  NETWORK_STATUS,
-  TokenInfo,
-} from '../../api/evm/types/ether';
+import { APIItemState, BalanceItem, CustomToken, CustomTokenJson, NETWORK_STATUS } from '../../api/evm/types/ether';
 import CustomTokenStore from '../../stores/CustomEvmToken';
 import CurrentAccountStore, { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import { initEvmTokenState } from '../../api/evm/utils/eth';
@@ -133,11 +124,11 @@ export async function initState() {
 }
 
 export default class State {
-  notification = 'popup';
-  windows: number[] = [];
-  subscription: FWSubscription;
-  chainRegistryMap: Record<string, ChainRegistry> = {};
-  chainRegistrySubject = new Subject<Record<string, ChainRegistry>>();
+  public notification = 'popup';
+  public windows: number[] = [];
+  public subscription: FWSubscription;
+  public chainRegistryMap: Record<string, ChainRegistry> = {};
+  public chainRegistrySubject = new Subject<Record<string, ChainRegistry>>();
   readonly unsubscriptionMap: Record<string, () => void> = {};
   private readonly authorizeStore = new AuthorizeStore();
   private readonly priceStore = new PriceStore();
@@ -153,7 +144,7 @@ export default class State {
   };
   private priceStoreReady = false;
   public authorizeCached: AuthUrls | undefined = undefined;
-  public tokenMap: Record<string, Record<string, TokenInfo>> = {};
+  public tokenMap: AssetJson[] = [];
   public networkMap: Record<string, NetworkJsonOld> = {}; // mapping to networkMapStore, for uses in background
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJsonOld>>();
@@ -194,12 +185,12 @@ export default class State {
     return this.apis.substrate;
   }
 
-  public getNetworkMapByKey(key: string) {
-    return this.networkMap[key];
-  }
-
   public get getEvmApiMap() {
     return this.apis.evm;
+  }
+
+  public getNetworkMapByKey(key: string) {
+    return this.networkMap[key];
   }
 
   public getSubstrateApi(networkKey: string) {
@@ -210,7 +201,7 @@ export default class State {
     return this.apis.evm[networkKey];
   }
 
-  public getApiMap() {
+  public get getApiMap() {
     return this.apis;
   }
 
@@ -971,12 +962,10 @@ export default class State {
     });
   }
 
-  public async getStoredBalance(address: string): Promise<Record<string, BalanceItem>> {
-    // const { balances } = await storage.get(['balances']);
+  public async getStoredBalance(address: string): Promise<Record<string, Record<string, BalanceItem>>> {
+    const { balances } = await storage.get(['balances']);
 
-    const items = await this.balanceMap;
-
-    return items || {};
+    return balances || {};
   }
 
   public async switchAccount(newAddress: string) {
@@ -1009,37 +998,12 @@ export default class State {
     return filteredErc20Tokens;
   }
 
-  public init() {
-    this.initNetworkStates();
-    this.updateServiceInfo();
-  }
-  public async mapTokens(networks: NetworkJsonOld[]) {
-    const { data: assets } = await axios.get<AssetJson[]>(ASSETS);
-
-    networks.forEach((network) => {
-      network.assets.forEach((asset) => {
-        const searchedAsset = assets.find((el) => el.id === asset.assetId);
-
-        if (!searchedAsset) return;
-
-        const name = searchedAsset.displayName ?? searchedAsset.symbol;
-
-        this.tokenMap[network.name][searchedAsset.symbol] = {
-          isMainToken: !!asset.isNative,
-          symbol: searchedAsset.symbol,
-          // type?: CustomTokenType; // to differentiate custom tokens from native tokens
-          decimals: searchedAsset.precision,
-          name,
-          coinGeckoKey: searchedAsset.priceId,
-          assetId: searchedAsset.id,
-        };
-      });
-    });
-  }
   public async prepNetworkJson() {
     const result: Record<string, NetworkJsonOld> = {};
     const { data: networks } = await axios.get<NetworkJsonOld[]>(CHAINS);
-    this.mapTokens(networks);
+    const { data: assets } = await axios.get<AssetJson[]>(ASSETS);
+
+    this.tokenMap = assets;
 
     networks.forEach((network) => {
       const prepCurrentProvider = network.nodes[0].name;
@@ -1065,6 +1029,11 @@ export default class State {
     return result;
   }
 
+  public init() {
+    this.initNetworkStates();
+    this.updateServiceInfo();
+  }
+
   public initNetworkStates() {
     this.networkMapStore.get('NetworkMap', async (storedNetworkMap) => {
       const networks = await this.prepNetworkJson();
@@ -1081,12 +1050,6 @@ export default class State {
 
         for (const [key, storedNetwork] of Object.entries(storedNetworkMap)) {
           if (key in networks) {
-            // check change and override custom providers if exist
-            if ('customNodes' in networks) {
-              mergedNetworkMap[key].customNodes = storedNetwork.customProviders;
-              mergedNetworkMap[key].currentProvider = storedNetwork.currentProvider;
-            }
-
             if (key !== 'Polkadot' && key !== 'Kusama') {
               mergedNetworkMap[key].active = storedNetwork.active;
             }
@@ -1324,34 +1287,8 @@ export default class State {
     this.getCustomTokenStore((storedCustomTokens) => {
       const customTokens = getTokensForChainRegistry(storedCustomTokens);
 
-      this.setChainRegistryItem('polkadot', {
-        chainDecimals: [10],
-        chainTokens: ['DOT'],
-        tokenMap: {
-          DOT: {
-            isMainToken: true,
-            name: 'DOT',
-            symbol: 'DOT',
-            decimals: 10,
-          },
-        },
-      });
-
-      this.setChainRegistryItem('kusama', {
-        chainDecimals: [12],
-        chainTokens: ['KSM'],
-        tokenMap: {
-          KSM: {
-            isMainToken: true,
-            name: 'KSM',
-            symbol: 'KSM',
-            decimals: 12,
-          },
-        },
-      });
-
       Object.entries(this.apis.substrate).forEach(([networkKey, { api }]) => {
-        getRegistry(networkKey, api, customTokens)
+        getRegistry(networkKey, api)
           .then((rs) => {
             this.setChainRegistryItem(networkKey, rs);
           })

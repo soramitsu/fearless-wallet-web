@@ -13,7 +13,6 @@ import {
 import { getTokenInfo } from '../substrate/registry';
 
 import EthProvider from './ethProvider';
-import { TokenInfo } from './types/ether';
 
 import { getERC20Contract } from './utils/eth';
 

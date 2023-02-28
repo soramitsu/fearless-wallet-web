@@ -1,9 +1,7 @@
 // Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { rpc as oakRpc, types as oakTypes } from '@oak-foundation/types';
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { ApiOptions } from '@polkadot/api/types';
 import { TypeRegistry } from '@polkadot/types/create';
 import { ChainProperties, ChainType } from '@polkadot/types/interfaces';
 import { Registry } from '@polkadot/types/types';
@@ -11,7 +9,6 @@ import { formatBalance, isTestChain, objectSpread, stringify } from '@polkadot/u
 import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defaults';
 import { ApiState, ApiProps } from '../../background/types';
 import { DOTSAMA_AUTO_CONNECT_MS, DOTSAMA_MAX_CONTINUE_RETRY } from '../../const/intervals';
-import { getSubstrateConnectProvider } from './light-client';
 
 export const DEFAULT_AUX = ['Aux1', 'Aux2', 'Aux3', 'Aux4', 'Aux5', 'Aux6', 'Aux7', 'Aux8', 'Aux9'];
 
@@ -137,29 +134,10 @@ export function initApi(networkKey: string, apiUrl: string, isEthereum?: boolean
   }
 
   const registry = new TypeRegistry();
-
-  const provider = apiUrl.startsWith('light://')
-    ? getSubstrateConnectProvider(apiUrl.replace('light://substrate-connect/', ''))
-    : new WsProvider(apiUrl, DOTSAMA_AUTO_CONNECT_MS);
+  const provider = new WsProvider(apiUrl, DOTSAMA_AUTO_CONNECT_MS);
 
   // Init ApiPromise with selected provider
-  let api: ApiPromise;
-  const typesBundle = {};
-  const apiOption = { provider, typesBundle } as ApiOptions;
-
-  apiOption.registry = registry;
-
-  if (['acala', 'karura', 'origintrail', 'kintsugi'].includes(networkKey)) {
-    api = new ApiPromise({ provider });
-  } else if (['turingStaging', 'turing'].includes(networkKey)) {
-    api = new ApiPromise({
-      provider,
-      rpc: oakRpc,
-      types: oakTypes,
-    });
-  } else {
-    api = new ApiPromise(apiOption);
-  }
+  const api = new ApiPromise({ provider, noInitWarn: true });
 
   // Create APIProps Object
   const result: ApiProps = {
@@ -183,12 +161,6 @@ export function initApi(networkKey: string, apiUrl: string, isEthereum?: boolean
     apiRetry: 0,
     recoverConnect: async () => {
       result.apiRetry = 0;
-
-      if (!apiUrl.startsWith('light')) {
-        console.info('Recover connect to', apiUrl);
-        await result.api.disconnect();
-        await result.api.connect();
-      }
     },
     get isReady() {
       const self = this as ApiProps;
@@ -198,7 +170,7 @@ export function initApi(networkKey: string, apiUrl: string, isEthereum?: boolean
           await self.api.isReady;
         }
 
-        return new Promise<ApiProps>((resolve, reject) => {
+        return new Promise<ApiProps>((resolve) => {
           (function wait() {
             if (self.isApiReady) {
               return resolve(self);

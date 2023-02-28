@@ -61,7 +61,7 @@ function subscribeERC20Interval(
     });
   };
 
-  getRegistry(networkKey, api, state.getActiveErc20Tokens())
+  getRegistry(networkKey, api)
     .then(({ tokenMap }) => {
       tokenList = Object.values(tokenMap).filter(({ contractAddress }) => !!contractAddress);
       tokenList.forEach(({ contractAddress, symbol }) => {

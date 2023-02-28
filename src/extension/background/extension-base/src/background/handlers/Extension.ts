@@ -1041,7 +1041,7 @@ export default class Extension {
       transferAll
     );
     const dotSamaApiMap = state.getSubstrateApiMap;
-    const web3ApiMap = state.getApiMap().evm;
+    const web3ApiMap = state.getApiMap.evm;
     let mainToken: string | undefined;
     let mainTokenDecimals: number | undefined;
     const warnings: BasicTxWarning[] = [];
@@ -1227,7 +1227,7 @@ export default class Extension {
       if (isEthereumAddress(from) && isEthereumAddress(to)) {
         // Make transfer with EVM API
         const { privateKey } = this.accountExportPrivateKey({ address: from, password });
-        const web3ApiMap = state.getApiMap().evm;
+        const web3ApiMap = state.getApiMap.evm;
 
         if (tokenInfo && !tokenInfo.isMainToken && tokenInfo.contractAddress) {
           transferProm = makeERC20Transfer(

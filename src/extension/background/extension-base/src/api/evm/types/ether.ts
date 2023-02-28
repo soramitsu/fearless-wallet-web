@@ -107,7 +107,20 @@ export interface NetworkJson {
   requestId?: string;
 }
 
+export type TokenBalance = {
+  network: string;
+  state: APIItemState;
+  balance?: {
+    total?: string;
+    frozen?: string;
+    locked?: string;
+    reserved?: string;
+    transferable: string;
+  };
+};
+
 export type TokenInfo = {
+  network: string;
   isMainToken: boolean;
   symbol: string;
   symbolAlt?: string; // Alternate display for symbol

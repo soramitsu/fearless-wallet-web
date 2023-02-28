@@ -5,8 +5,7 @@ import { ApiPromise } from '@polkadot/api';
 import { BN, bnToHex } from '@polkadot/util';
 import { state } from '../../background/handlers';
 import { ChainRegistry } from '../../types';
-import { TokenInfo, CustomToken } from '../evm/types/ether';
-import { moonbeamBaseChains } from './api-helper';
+import { TokenInfo } from '../evm/types/ether';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -75,97 +74,7 @@ export async function getMoonAssets(api: ApiPromise) {
   return assetRecord;
 }
 
-export async function getForeignToken(api: ApiPromise) {
-  await api.isReady;
-  const allTokens = await api.query.assetRegistry.assetMetadatas.entries();
-
-  const tokenMap = {} as Record<string, TokenInfo>;
-
-  allTokens.forEach(([storageKey, tokenData]) => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-assignment
-    const assetMetadata = storageKey.toHuman()[0] as Record<string, any>;
-
-    let specialOption;
-
-    if (assetMetadata.ForeignAssetId) {
-      specialOption = {
-        ForeignAsset: assetMetadata.ForeignAssetId as string,
-      };
-    } else if (assetMetadata.NativeAssetId) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (assetMetadata.NativeAssetId.Token) {
-        specialOption = {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          Token: assetMetadata.NativeAssetId.Token as string,
-        };
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      } else if (assetMetadata.NativeAssetId.LiquidCrowdloan) {
-        specialOption = {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          LiquidCrowdloan: assetMetadata.NativeAssetId.LiquidCrowdloan as string,
-        };
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      } else if (assetMetadata.NativeAssetId.VSToken) {
-        specialOption = {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          VSToken: assetMetadata.NativeAssetId.VSToken as string,
-        };
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      } else if (assetMetadata.NativeAssetId.Native) {
-        specialOption = {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          Native: assetMetadata.NativeAssetId.Native as string,
-        };
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      } else if (assetMetadata.NativeAssetId.Stable) {
-        specialOption = {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          Stable: assetMetadata.NativeAssetId.Stable as string,
-        };
-      }
-    } else if (assetMetadata.Erc20) {
-      specialOption = {
-        Erc20: assetMetadata.Erc20 as string,
-      };
-    } else if (assetMetadata.StableAssetId) {
-      specialOption = {
-        StableAssetPoolToken: assetMetadata.StableAssetId as string,
-      };
-    }
-
-    const { decimals, name, symbol } = tokenData.toHuman() as {
-      symbol: string;
-      decimals: string;
-      name: string;
-    };
-
-    if (!(symbol in tokenMap)) {
-      if (symbol === 'KUSD') {
-        tokenMap.aUSD = {
-          isMainToken: false,
-          symbol: 'aUSD',
-          decimals: parseInt(decimals),
-          name,
-          specialOption,
-        };
-      } else {
-        tokenMap[symbol] = {
-          isMainToken: false,
-          symbol,
-          decimals: parseInt(decimals),
-          name,
-          specialOption,
-        };
-      }
-    }
-  });
-
-  return tokenMap;
-}
-
-export const getRegistry = async (networkKey: string, api: ApiPromise, customTokens?: CustomToken[]) => {
+export const getRegistry = async (networkKey: string, api: ApiPromise) => {
   const cached = cacheRegistryMap[networkKey];
 
   if (cached) {
@@ -177,72 +86,8 @@ export const getRegistry = async (networkKey: string, api: ApiPromise, customTok
   const { chainDecimals, chainTokens } = api.registry ||
     DEFAULT_TOKEN_REGISTRY[networkKey] || { chainDecimals: [], chainTokens: [] };
 
-  // Hotfix for these network because substrate and evm response different decimal
-  if (['pangolinEvm', 'crabEvm'].includes(networkKey)) {
-    chainDecimals.forEach((x, i, l) => {
-      l[i] = 18;
-    });
-  }
-
   // Build token map
   const tokenMap = {} as Record<string, TokenInfo>;
-
-  if (!['genshiro_testnet', 'genshiro', 'equilibrium_parachain', 'acala', 'karura'].includes(networkKey)) {
-    chainTokens.forEach((token, index) => {
-      const formattedToken = formatTokenSymbol(token);
-
-      tokenMap[formattedToken] = {
-        isMainToken: index === 0,
-        name: formattedToken,
-        symbol: formattedToken,
-        decimals: chainDecimals[index],
-      };
-    });
-  }
-
-  const predefineTokenMap = state.tokenMap[networkKey];
-
-  if (predefineTokenMap) {
-    Object.assign(tokenMap, predefineTokenMap);
-  }
-
-  if (['karura', 'acala', 'bifrost'].indexOf(networkKey) > -1) {
-    const foreignTokens = await getForeignToken(api);
-
-    Object.assign(tokenMap, foreignTokens);
-
-    if (networkKey === 'karura') {
-      // quick fix for native token
-      tokenMap.KAR.isMainToken = true;
-    } else if (networkKey === 'acala') {
-      tokenMap.ACA.isMainToken = true;
-    } else if (networkKey === 'bifrost') {
-      tokenMap.BNC.isMainToken = true;
-      delete tokenMap.KUSD;
-    }
-  }
-
-  // Get moonbeam base chains tokens
-  if (moonbeamBaseChains.indexOf(networkKey) > -1) {
-    const moonTokens = await getMoonAssets(api);
-
-    Object.assign(tokenMap, moonTokens);
-  }
-
-  if (customTokens) {
-    for (const customToken of customTokens) {
-      if (customToken.chain === networkKey && customToken.symbol && !(customToken.symbol in tokenMap)) {
-        tokenMap[customToken.symbol] = {
-          contractAddress: customToken.smartContract,
-          isMainToken: false,
-          name: customToken.name,
-          symbol: customToken.symbol,
-          decimals: customToken.decimals as number,
-          type: customToken.type, // must have type to retrieve balance
-        } as TokenInfo;
-      }
-    }
-  }
 
   const chainRegistry = {
     chainDecimals,

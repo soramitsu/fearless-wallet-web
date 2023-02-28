@@ -54,8 +54,10 @@ export class FWSubscription {
     this.logger.log('Starting subscription');
 
     this.state.getCurrentAccount((currentAccountInfo) => {
+      // console.log(currentAccountInfo, 'curr account');
+
       if (currentAccountInfo) {
-        const { address, ethereumAddress } = currentAccountInfo;
+        const { address } = currentAccountInfo;
         this.subscribeBalances(address, this.state.getSubstrateApiMap, this.state.getEvmApiMap);
       }
     });
@@ -125,7 +127,7 @@ export class FWSubscription {
           .getDecodedAddresses(address)
           .then((addresses) => {
             if (!addresses.length) return;
-
+            // console.log(dotSamaApiMap, 'api map');
             this.updateSubscription(
               'balance',
               this.initBalanceSubscription(addresses, dotSamaApiMap, web3ApiMap, onlyRunOnFirstTime)

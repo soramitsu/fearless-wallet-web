@@ -78,7 +78,6 @@ import { firstCharToUp } from '@/helpers/common';
 import { cut } from '@/helpers/history';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';
-import networks from '@/store/networks';
 
 @Component({
   components: { RotateInput },

@@ -140,7 +140,6 @@ import { Currencies } from '@/interfaces/currencies';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
-import { formattedPrice } from '@/helpers/numbers';
 import { tieAccount } from '@/extension/messaging';
 import { Network } from '@/interfaces';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';

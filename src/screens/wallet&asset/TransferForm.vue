@@ -145,7 +145,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 import { firstCharToUp } from '@/helpers/common';
-import { formattedNumber, formattedPrice } from '@/helpers/numbers';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';

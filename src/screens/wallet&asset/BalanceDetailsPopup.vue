@@ -23,7 +23,6 @@ import { Getter } from 'vuex-class';
 import type CurrencyController from '@/controllers/currencyController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { formattedNumber } from '@/helpers/numbers';
 
 @Component
 export default class BalanceDetailsPopup extends Vue {
@@ -53,14 +52,6 @@ export default class BalanceDetailsPopup extends Vue {
 
   getFiatValueVisible(value: string) {
     return value !== '0';
-  }
-
-  formattedNumber(value: number) {
-    return formattedNumber(value, {
-      decimalsValue: 4,
-      returnOriginNumber: false,
-      removeTrailingZeros: true,
-    });
   }
 }
 </script>

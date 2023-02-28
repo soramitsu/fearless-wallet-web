@@ -4,7 +4,7 @@
   "short_name": "FW",
   "author": "Soramitsu",
   "manifest_version": 3,
-  "permissions": ["storage", "tabs", "identity"],
+  "permissions": ["storage", "tabs", "identity", "alarms"],
   "background": {
     "service_worker": "background.js",
     "type": "module"

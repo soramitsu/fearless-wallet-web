@@ -36,11 +36,6 @@ function deleteTimer(port: ModifiedPort) {
   }
 }
 
-chrome.alarms.create({ periodInMinutes: 4.5 });
-chrome.alarms.onAlarm.addListener(() => {
-  console.info('wake up');
-});
-
 function forceReconnect(port: Port) {
   deleteTimer(port);
   port.disconnect();

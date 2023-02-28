@@ -78,6 +78,7 @@ import { firstCharToUp } from '@/helpers/common';
 import { cut } from '@/helpers/history';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';
+import networks from '@/store/networks';
 
 @Component({
   components: { RotateInput },
@@ -134,18 +135,35 @@ export default class ReceiveForm extends Vue {
   }
 
   mounted() {
-    const nativeNet = this.optionsNetworks.find((el) => {
-      const network = NetworksController.getNetwork(el.value);
-      const nativeAsset = network.assets.find(
-        (asset) => asset.assetId === this.selectedAssetId && (asset.isNative || asset.isUtility)
-      );
+    const nativeNet = this.getNetworkNameByAsset();
 
-      if (nativeAsset) return true;
+    if (nativeNet === undefined) {
+      const utilityNet = this.getNetworkNameByAsset(false);
+
+      if (utilityNet !== undefined) this.selectedNetwork = utilityNet.value;
+      else
+        this.selectedNetwork = this._selectedNetwork === 'all' ? this.optionsNetworks[0].value : this._selectedNetwork;
+
+      return;
+    }
+
+    this.selectedNetwork = nativeNet.value;
+  }
+
+  getNetworkNameByAsset(isNative = true) {
+    return this.optionsNetworks.find((el) => {
+      const network = NetworksController.getNetwork(el.value);
+
+      const searchedAsset = network.assets.find((asset) => {
+        const key = isNative ? 'isNative' : 'isUtility';
+
+        return asset.assetId === this.selectedAssetId && asset[key];
+      });
+
+      if (searchedAsset) return true;
 
       return false;
     });
-
-    this.selectedNetwork = nativeNet ? nativeNet.value : this._selectedNetwork;
   }
 
   toggleSelectNetworkPopupVisible() {

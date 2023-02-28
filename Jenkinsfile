@@ -5,22 +5,30 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'OAUTH_CLIENT_SECRET', variable: 'OAUTH_CLIENT_SECRET'],
     [$class: 'StringBinding', credentialsId: 'OAUTH_REFRESH_TOKEN', variable: 'OAUTH_REFRESH_TOKEN'],
     [$class: 'StringBinding', credentialsId: 'OAUTH_ITEM_ID', variable: 'OAUTH_ITEM_ID'],
-    [$class: 'StringBinding', credentialsId: 'EXTENSION_PUBLIC_KEY', variable: 'EXTENSION_PUBLIC_KEY ']
+    [$class: 'StringBinding', credentialsId: 'EXTENSION_PUBLIC_KEY', variable: 'EXTENSION_PUBLIC_KEY'],
+    [$class: 'StringBinding', credentialsId: 'MOZILLA_API_USER', variable: 'MOZILLA_API_USER'],
+    [$class: 'StringBinding', credentialsId: 'MOZILLA_API_TOKEN', variable: 'MOZILLA_API_TOKEN'],
+    [$class: 'StringBinding', credentialsId: 'sorabot-github-token', variable: 'GH_TOKEN']
   ]
 
 def pipeline = new org.js.AppArtifactsPipeline(
     steps:                      this,
-    buildCmds:                  ['yarn build:extension:zip'],
+    buildCmds:                  ['yarn build:extension:all'],
     nexusCredential:            'bot-fearless-rw',
     nexusProjectPath:           'fearless/extension',
     sonarProjectKey:            'fearless:fearless-wallet-web',
     sonarProjectName:           'fearless-wallet-web',
     sonarCredential:            'sonar_fearless_token',
-    distFolders:                ['./dist/extension/chrome'],
-    preBuildCmds:               ['apt-get update && apt-get install zip && yarn install'],
-    nexusFiles:                 [ 'fearless-wallet-extension-chrome.zip'],
+    mozillaSlug:                'fearless-wallet',
+    mozillaChannel:             'unlisted',
+    distFolders:                ['./dist/extension/firefox','./dist/extension/chrome'],
+    preBuildCmds:               ['apt-get update && apt-get install zip -y && yarn install'],
+    nexusFiles:                 [ '.zip'],
+    chromeExtFile:              'fearless-wallet-extension-chrome.zip',
+    mozillaExtFile:             'fearless-wallet-extension-firefox.zip',
     uploadToNexusFor:           ['master'],
     uploadToGoogleFor:          ['master'],
+    uploadToFirefoxFor:         ['master'],
     buildWithCred:              buildWithCred
 )
 pipeline.runPipeline()

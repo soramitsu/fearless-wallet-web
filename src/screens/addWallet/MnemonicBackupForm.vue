@@ -46,7 +46,6 @@ export default class MnemonicBackupForm extends Vue {
 .seed-hint {
   border-radius: $default-border-radius;
   width: 480px;
-  height: 48px;
   padding: 8px 16px;
   background-color: rgba(255, 255, 255, 0.24);
   margin: 0 auto;

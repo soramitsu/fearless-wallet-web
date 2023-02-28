@@ -51,11 +51,7 @@ export default class ExportForm extends Vue {
   }
 
   get addressByNetwork() {
-    if (BaseApi.isEthereumNetwork(this.network)) return this.selectedWallet.ethereumAddress;
-
-    const network = NetworksController.getNetwork(this.network);
-
-    return BaseApi.encodeAddress(this.selectedWallet.address, network.addressPrefix);
+    return BaseApi.formatAddress(this.selectedWallet, this.network);
   }
 
   get keyringPairJson() {

@@ -1,6 +1,6 @@
 <template>
   <div class="wallet-balance">
-    <div class="fiat-balance">{{ fiatSymbol }}{{ $n(balanceString, 'decimal') }}</div>
+    <div class="fiat-balance">{{ fiatSymbol }}{{ $n(balanceString, 'price') }}</div>
 
     <div :class="percentClasses">{{ percentString }}</div>
   </div>
@@ -26,10 +26,10 @@ export default class WalletBalance extends Vue {
   get percentString() {
     const { percent, amount } = this.changeWalletBalance;
     const sign = percent > 0 ? '+' : '';
-    const signPercent = percent !== 0 ? '%' : '';
     const displayAmount = amount < 0 ? amount * -1 : amount;
+    const prepData = percent / 100;
 
-    return `${sign}${formattedNumber(percent)}${signPercent}(${this.fiatSymbol}${this.$n(displayAmount, 'decimal')})`;
+    return `${sign}${this.$n(prepData, 'percent')}(${this.fiatSymbol}${this.$n(displayAmount, 'price')})`;
   }
 
   get percentClasses() {

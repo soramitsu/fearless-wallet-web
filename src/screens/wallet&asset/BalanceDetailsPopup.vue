@@ -9,7 +9,7 @@
 
           <div v-if="getFiatValueVisible(fiat)" class="fiat-value">
             {{ fiatSymbol }}
-            {{ $n(fiat, 'decimal') }}
+            {{ $n(fiat, 'price') }}
           </div>
         </div>
       </div>

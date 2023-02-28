@@ -193,11 +193,11 @@ export default class CurrencyItem extends Vue {
   get totalBalanceString() {
     const balance = +this.currency.getTotalBalance(this.selectedWallet, this.selectedNetwork);
 
-    return `${this.fiatSymbol}${this.$n(balance, 'decimal')}`;
+    return `${this.fiatSymbol}${this.$n(balance, 'price')}`;
   }
 
   get priceString() {
-    return `${this.fiatSymbol}${this.$n(this.currency.price, 'decimal')}`;
+    return `${this.fiatSymbol}${this.$n(this.currency.price, 'price')}`;
   }
 
   get upperNetworkName() {

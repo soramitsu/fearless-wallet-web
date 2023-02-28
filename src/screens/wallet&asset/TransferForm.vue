@@ -58,7 +58,7 @@
                 <div class="transferrable-label">{{ $t('asset.transferrable') }}</div>
 
                 <div class="transferrable-descriptions">
-                  <div class="transferrable-amount">{{ transferrableAmount }}</div>
+                  <div class="transferrable-amount">{{ $n(transferrableAmount, 'decimal') }}</div>
                   <div class="transferrable-assets">{{ selectedAssetUpper }}</div>
                 </div>
               </div>
@@ -330,17 +330,13 @@ export default class SendForm extends Vue {
   get transferrableAmount() {
     const count = +(this.currency?.getTransferableCountAssets(this.selectedWallet, this.syncedSelectedNetwork) ?? 0);
 
-    return formattedNumber(count, {
-      decimalsValue: 4,
-      returnOriginNumber: false,
-      removeTrailingZeros: true,
-    });
+    return count.toString();
   }
 
   get transferrableValue() {
     const cost = +(this.currency?.getCostOfAssets(this.transferrableAmount) ?? 0);
 
-    return formattedPrice(cost);
+    return this.$n(cost, 'price');
   }
 
   get selectedAssetUpper() {

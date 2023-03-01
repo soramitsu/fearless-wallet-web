@@ -306,7 +306,7 @@ export interface PriceJson {
 }
 export interface BalanceJson {
   reset?: boolean;
-  details: Record<string, BalanceItem>;
+  details: Record<string, Record<string, BalanceItem>>;
 }
 
 export enum TransferErrorCode {
@@ -799,7 +799,7 @@ export interface IState {
   accountSubs: Record<string, AccountSub>;
   windows: number[];
   cachedUnlocks: CachedUnlocks;
-  balances: Record<string, Record<string, BalanceItem>>;
+  balances: Record<string, Record<string, Record<string, BalanceItem>>>;
   connectedTabsUrl: string[];
   transaction: Record<string, TransactionHistoryItem[]>;
 }

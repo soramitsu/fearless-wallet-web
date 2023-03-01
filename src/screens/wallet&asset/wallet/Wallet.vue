@@ -57,7 +57,7 @@
             @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
           />
           <NFTs v-else-if="showNfts" /> -->
-
+          <!--
           <CurrencyItemStateLess
             v-for="(asset, assetKey) in balance"
             :assetData="asset"
@@ -66,7 +66,7 @@
             :priceChange="getPriceChange(assetKey)"
             :key="assetKey"
             :toggleVisibleActivityForm="toggleVisibleActivityForm"
-          />
+          /> -->
 
           <!-- <CurrencyItemStateLess
             v-for="(asset, assetKey) in evmCurrencies.details.ethereum.children"
@@ -193,8 +193,8 @@ export default class Wallet extends Vue {
   updateBalance(balanceData: BalanceJson): void {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //@ts-ignore
-    this.balance = balanceData.details[this.selectedWallet.ethereumAddress];
-    console.info(balanceData.details[this.selectedWallet.address], this.selectedWallet.address, 'data');
+    this.balance = balanceData.details;
+
     store.dispatch('SET_BALANCE', balanceData);
   }
 

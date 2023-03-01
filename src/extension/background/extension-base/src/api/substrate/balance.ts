@@ -45,7 +45,7 @@ function subscribeERC20Interval(
   const ERC20ContractMap = {} as Record<string, Contract>;
 
   const getTokenBalances = () => {
-    Object.values(tokenList).map(async ({ symbol }) => {
+    Object.values(tokenList).map(async ({ symbol, name }) => {
       let free = new BN(0);
 
       try {
@@ -57,10 +57,10 @@ function subscribeERC20Interval(
         );
 
         free = sumBN(bals.map((bal) => new BN(bal || 0)));
-        // console.log('TokenBals', symbol, addresses, bals, free);
 
         subCallback({
           state: APIItemState.READY,
+          name,
           symbol,
           reserved: '0',
           feeFrozen: '0',
@@ -497,11 +497,9 @@ async function subscribeTokensBalance(
     const searchedAsset = state.tokenMap.find((token) => token.id === asset.assetId) as AssetJson;
     setBalance({
       state: APIItemState.PENDING,
+      chain: networkKey,
+      name: searchedAsset.displayName ?? searchedAsset.symbol,
       symbol: searchedAsset.symbol,
-      free: '0',
-      reserved: '0',
-      miscFrozen: '0',
-      feeFrozen: '0',
     });
 
     return {
@@ -517,12 +515,11 @@ async function subscribeTokensBalance(
   if (tokenList.length > 0) console.info('Get tokens balance of', networkKey, tokenList);
 
   const unsubList = await Promise.all(
-    tokenList.map(async ({ precision, symbol, id, type, isUtility, icon }) => {
+    tokenList.map(async ({ precision, symbol, id, type, isUtility, icon, displayName }) => {
       try {
         const options = getAssetOptions(symbol, type, id);
         const assetType = type === 'equilibrium' ? 'eqBalances' : 'tokens';
         const assetFetchField = assetType === 'tokens' ? 'accounts' : 'account';
-        //    .rx.query.system.account
 
         const pallet =
           isUtility && !ORML_PALLETS_TYPES.includes(type)
@@ -531,13 +528,14 @@ async function subscribeTokensBalance(
 
         const onBalanceFetch = (balances: any) => {
           const tokenBalance = formatBalance(balances as OrmlAccountData, precision);
-          // console.info(tokenBalance, 'balances', networkKey, symbol);
+          // console.info(tokenBalance, networkKey, displayName, symbol);
 
           setBalance({
             state: APIItemState.READY,
+            chain: networkKey,
             symbol,
+            name: displayName ?? symbol,
             icon,
-            free: tokenBalance.transferable,
             reserved: tokenBalance.reserved,
             feeFrozen: tokenBalance.frozen,
             total: tokenBalance.total,
@@ -578,20 +576,20 @@ export function subscribeBalance(
       return subscribeEVMBalance(networkKey, networkAPI.api, useAddresses, web3ApiMap, callback);
     }
 
-    if (!useAddresses || useAddresses.length === 0 || IGNORE_GET_SUBSTRATE_FEATURES_LIST.indexOf(networkKey) > -1) {
-      // Return zero balance if not have any address
-      const zeroBalance = {
-        state: APIItemState.READY,
-        free: '0',
-        reserved: '0',
-        miscFrozen: '0',
-        feeFrozen: '0',
-      } as BalanceItem;
+    // if (!useAddresses || useAddresses.length === 0 || IGNORE_GET_SUBSTRATE_FEATURES_LIST.indexOf(networkKey) > -1) {
+    //   // Return zero balance if not have any address
+    //   const zeroBalance = {
+    //     state: APIItemState.READY,
+    //     free: '0',
+    //     reserved: '0',
+    //     miscFrozen: '0',
+    //     feeFrozen: '0',
+    //   } as BalanceItem;
 
-      callback(networkKey, zeroBalance);
+    //   callback(networkKey, zeroBalance);
 
-      return undefined;
-    }
+    //   return undefined;
+    // }
 
     return subscribeWithAccountMulti(useAddresses, networkKey, networkAPI, web3ApiMap, callback);
   });

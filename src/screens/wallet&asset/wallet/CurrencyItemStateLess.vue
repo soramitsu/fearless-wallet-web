@@ -1,7 +1,7 @@
 <template>
   <Lazy class="currency-item">
     <div class="img-container">
-      <NetworkLogo :name="assetName" />
+      <ExternalLogo class="main-network-img" :name="assetData.icon" :width="42" />
     </div>
 
     <div class="descriptions-column">

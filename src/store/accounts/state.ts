@@ -9,7 +9,7 @@ export type State = {
   isOnline: boolean;
   accounts: Accounts;
   addresses: Accounts;
-  balance: Record<string, BalanceItem>;
+  balance: Record<string, Record<string, BalanceItem>>;
   autoSelectNode: AutoSelectNode;
   isCustomSort: Record<string, boolean>;
   qr: string | null;

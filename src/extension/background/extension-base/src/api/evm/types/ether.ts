@@ -17,6 +17,7 @@ export interface BalanceChildItem {
 export interface BalanceItem {
   state: APIItemState;
   symbol: string;
+  name: string;
   free?: string;
   icon?: string;
   reserved?: string;

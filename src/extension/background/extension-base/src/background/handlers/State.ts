@@ -44,7 +44,7 @@ import {
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';
-import { APIItemState, BalanceItem, CustomToken, CustomTokenJson, NETWORK_STATUS } from '../../api/evm/types/ether';
+import { BalanceItem, CustomToken, CustomTokenJson, NETWORK_STATUS } from '../../api/evm/types/ether';
 import CustomTokenStore from '../../stores/CustomEvmToken';
 import CurrentAccountStore, { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import { initEvmTokenState } from '../../api/evm/utils/eth';
@@ -150,7 +150,7 @@ export default class State {
   public networkMapSubject = new Subject<Record<string, NetworkJsonOld>>();
   public serviceInfoSubject = new Subject<ServiceInfo>();
   private readonly currentAccountStore = new CurrentAccountStore();
-  public balanceMap: Record<string, BalanceItem> = this.generateDefaultBalanceMap();
+  public balanceMap: Record<string, Record<string, Record<string, BalanceItem>>> = this.generateDefaultBalanceMap();
   public balanceSubject = new Subject<BalanceJson>();
   public customTokenState: CustomTokenJson = { erc20: [] };
   public customTokenSubject = new Subject<CustomTokenJson>();
@@ -965,7 +965,7 @@ export default class State {
   public async getStoredBalance(address: string): Promise<Record<string, Record<string, BalanceItem>>> {
     const { balances } = await storage.get(['balances']);
 
-    return balances || {};
+    return balances[address] || {};
   }
 
   public async switchAccount(newAddress: string) {
@@ -973,7 +973,7 @@ export default class State {
   }
 
   private async publishBalance(reset?: boolean) {
-    this.balanceSubject.next(this.getBalance(reset));
+    this.balanceSubject.next(await this.getBalance(reset));
   }
 
   public async resetBalanceMap(newAddress: string) {
@@ -982,7 +982,7 @@ export default class State {
 
     storedData = this.removeInactiveNetworkData(storedData);
 
-    const merge = { ...defaultData, ...storedData } as Record<string, BalanceItem>;
+    const merge = { ...defaultData, ...storedData } as Record<string, Record<string, Record<string, BalanceItem>>>;
 
     this.balanceMap = merge;
     this.publishBalance(true);
@@ -1152,8 +1152,15 @@ export default class State {
 
   public setBalanceItem(networkKey: string, item: BalanceItem) {
     const itemData = { timestamp: +new Date(), ...item };
-    this.balanceMap[item.symbol] = { ...this.balanceMap[item.symbol as string], ...itemData };
-    this.updateBalanceStore(networkKey, item);
+    this.getCurrentAccount(({ address }) => {
+      if (!this.balanceMap[address]) this.balanceMap[address] = {};
+      if (!this.balanceMap[address][item.name]) this.balanceMap[address][item.name] = {};
+
+      this.balanceMap[address][item.name][item.chain as string] = itemData;
+    });
+
+    chrome.storage.local.set({ balance: this.balanceMap });
+    // this.updateBalanceStore(networkKey, item);
 
     this.lazyNext('setBalanceItem', () => {
       this.publishBalance();
@@ -1182,15 +1189,15 @@ export default class State {
   }
 
   private updateBalanceStore(networkKey: string, item: BalanceItem) {
-    this.getCurrentAccount((currentAccountInfo) => {
-      this.balanceService
+    this.getCurrentAccount(async (currentAccountInfo) => {
+      await this.balanceService
         .updateBalanceStore(networkKey, currentAccountInfo.address, item)
         .catch((e) => console.warn(e));
     });
   }
 
   public generateDefaultBalanceMap() {
-    const balanceMap: Record<string, BalanceItem> = {};
+    const balanceMap: Record<string, Record<string, Record<string, BalanceItem>>> = {};
 
     // Object.values(this.networkMap).forEach((networkJson) => {
     //   if (networkJson.active) {
@@ -1232,10 +1239,12 @@ export default class State {
     return this.balanceSubject;
   }
 
-  public getBalance(reset?: boolean): BalanceJson {
-    const activeData = this.removeInactiveNetworkData(this.balanceMap);
-
-    return { details: activeData, reset } as BalanceJson;
+  public getBalance(reset?: boolean): Promise<BalanceJson> {
+    return new Promise((resolve) => {
+      this.getCurrentAccount(({ address }) => {
+        resolve({ details: this.balanceMap[address], reset });
+      });
+    });
   }
 
   public getCustomTokenStore(callback: (data: CustomTokenJson) => void) {

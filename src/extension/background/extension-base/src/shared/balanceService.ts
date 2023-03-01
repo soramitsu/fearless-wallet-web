@@ -3,7 +3,8 @@
 
 import { logger as createLogger } from '@polkadot/util';
 import { Logger } from '@polkadot/util/types';
-import { APIItemState, BalanceChildItem, BalanceItem } from '../api/evm/types/ether';
+import { APIItemState, BalanceItem } from '../api/evm/types/ether';
+import { state } from '../background/handlers';
 import { storage } from '../stores/Storage';
 import { TransactionHistoryItemType } from '../types';
 
@@ -19,26 +20,14 @@ export default class BalanceService {
     if (item.state === APIItemState.READY) {
       this.logger.log(`Updating balance for [${chain}]`);
       const { balances } = await storage.get(['balances']);
+      const copyBalance = { ...balances };
 
-      const balanceByAddress = balances[address] ?? {};
-      const balanceByNet = balanceByAddress[item.symbol] ?? {};
-      const prepData = {
-        ...balances,
-        [address]: {
-          ...balanceByAddress,
-          [item.symbol]: {
-            ...balanceByNet,
-            [chain]: {
-              chain,
-              ...item,
-            },
-          },
-        },
-      };
+      if (!copyBalance[address]) copyBalance[address] = {};
+      if (!copyBalance[address][item.name]) copyBalance[address][item.name] = {};
 
-      return storage.set({
-        balances: prepData,
-      });
+      copyBalance[address][item.name][chain] = { chain, ...item };
+
+      await storage.set({ balances: copyBalance });
     }
   }
 

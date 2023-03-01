@@ -811,11 +811,11 @@ export default class Extension {
     this.state.createUnsubscriptionHandle(id, unsubscribe);
   }
 
-  private getBalance(reset?: boolean): BalanceJson {
+  private getBalance(reset?: boolean): Promise<BalanceJson> {
     return state.getBalance(reset);
   }
 
-  private subscribeBalance(id: string, port: Port): BalanceJson {
+  private subscribeBalance(id: string, port: Port): Promise<BalanceJson> {
     const cb = createSubscription<'pri(balance.get.subscription)'>(id, port);
 
     const balanceSubscription = this.state.subscribeBalance().subscribe({

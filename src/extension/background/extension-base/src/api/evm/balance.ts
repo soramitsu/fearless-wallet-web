@@ -35,7 +35,7 @@ function subscribeERC20Interval(
   const ERC20ContractMap = {} as Record<string, ethers.Contract>;
 
   const getTokenBalances = () => {
-    Object.values(tokenList).map(async ({ decimals, symbol }) => {
+    Object.values(tokenList).map(async ({ decimals, symbol, name }) => {
       try {
         const contract = ERC20ContractMap[symbol];
         const bals = await Promise.all(
@@ -49,6 +49,7 @@ function subscribeERC20Interval(
 
         subCallback({
           state: APIItemState.READY,
+          name,
           symbol,
           reserved: '0',
           feeFrozen: '0',

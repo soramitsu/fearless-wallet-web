@@ -161,7 +161,6 @@ import { tieAccount } from '@/extension/messaging';
 import { Network } from '@/interfaces';
 import { isSora, firstCharToUp } from '@/helpers/common';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
-import NetworksController from '@/controllers/networksController';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup' | 'showSwapForm';
 

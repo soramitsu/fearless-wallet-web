@@ -196,6 +196,7 @@
       "reward": "Награды",
       "extrinsic": "Экстринсики"
     },
+    "transactionFrontrun": "{value}% -  Ваша транзакция может не пройти",
     "market": "Маркет",
     "swapPreview": "Предпросмотр свопа",
     "slippage": "Допуск проскальзывания",

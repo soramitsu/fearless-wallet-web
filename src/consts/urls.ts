@@ -1,4 +1,5 @@
-const isProduction = process.env.NODE_ENV === 'production';
+import { isProduction } from '@/consts/global';
+
 const CHAINS = isProduction
   ? 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v3-jsonupd/chains/chains.json'
   : 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v3-jsonupd/chains/chains_dev.json';

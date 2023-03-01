@@ -3,8 +3,8 @@
     <ContentForm class="direction-form">
       <div class="direction">
         <div class="column left-column">
-          <div class="amount">{{ sendAmountCut }} {{ sendAssetUP }}</div>
-          <div class="price">{{ fiatSymbol }} {{ sendValueCut }}</div>
+          <div class="amount">{{ sendAmountCut }}</div>
+          <div class="price">{{ sendValueCut }}</div>
         </div>
 
         <div class="hr"></div>
@@ -14,8 +14,8 @@
         </div>
 
         <div class="column right-column">
-          <div class="amount">{{ receiveAmountCut }} {{ receiveAssetUP }}</div>
-          <div class="price">{{ fiatSymbol }} {{ receiveValueCut }}</div>
+          <div class="amount">{{ receiveAmountCut }}</div>
+          <div class="price">{{ receiveValueCut }}</div>
         </div>
       </div>
     </ContentForm>
@@ -110,11 +110,11 @@ export default class SwapPreview extends Vue {
   }
 
   get sendAmountCut() {
-    return formattedCountAsset(+this.sendAmount);
+    return `${formattedCountAsset(+this.sendAmount)} ${this.sendAssetUP}`;
   }
 
   get receiveAmountCut() {
-    return formattedCountAsset(+this.receiveAmount);
+    return `${formattedCountAsset(+this.receiveAmount)} ${this.receiveAssetUP}`;
   }
 
   get providerFeeCut() {
@@ -122,11 +122,11 @@ export default class SwapPreview extends Vue {
   }
 
   get sendValueCut() {
-    return formattedPrice(+this.sendValue);
+    return `${this.fiatSymbol} ${formattedPrice(+this.sendValue)}`;
   }
 
   get receiveValueCut() {
-    return formattedPrice(+this.receiveValue);
+    return `${this.fiatSymbol} ${formattedPrice(+this.receiveValue)}`;
   }
 
   get minMaxLabel() {
@@ -153,6 +153,10 @@ export default class SwapPreview extends Vue {
       display: flex;
       flex-direction: column;
       width: 245px;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
 
       .amount {
         font-weight: 800;

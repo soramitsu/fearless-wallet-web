@@ -219,7 +219,7 @@ export default class Asset extends Vue {
   }
 
   get showSwapButton() {
-    return isSora(this.selectedNetwork); // this.selectedNetwork === 'sora mainnet'
+    return isSora(this.selectedNetwork);
   }
 
   get currentCurrency() {

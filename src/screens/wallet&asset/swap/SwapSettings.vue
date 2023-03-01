@@ -8,7 +8,15 @@
       class="row"
     />
 
-    <Input v-model="slippagePercent" placeholder="asset.slippage" size="big" :readonly="true" class="row" />
+    <ValidatedInput
+      v-model="slippagePercent"
+      placeholder="asset.slippage"
+      typeText="uppercase"
+      class="row"
+      :errorDescriptions="warningMessage"
+      :isError="isErrorSlippageInput"
+      :readonly="true"
+    />
 
     <div class="slippage-values row">
       <div
@@ -49,6 +57,14 @@ export default class SwapSettings extends Vue {
 
   get slippagePercent() {
     return `${this.syncedSlippage} %`;
+  }
+
+  get isErrorSlippageInput() {
+    return [0.1].includes(this.syncedSlippage); // [0.1, 0.5]
+  }
+
+  get warningMessage() {
+    return this.$t('asset.transactionFrontrun', { value: this.syncedSlippage });
   }
 
   setSlippage(value: number) {
@@ -104,5 +120,11 @@ export default class SwapSettings extends Vue {
   color: $gray-color;
   width: 370px;
   margin: 0 auto;
+}
+
+.transaction-warning {
+  color: $error-color !important;
+  font-size: 14px;
+  margin-left: 16px;
 }
 </style>

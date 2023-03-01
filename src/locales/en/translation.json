@@ -198,6 +198,7 @@
       "reward": "Reward",
       "extrinsic": "Extrinsic"
     },
+    "transactionFrontrun": "{value}% - Your transaction may fail",
     "market": "Market",
     "swapPreview": "Swap preview",
     "slippage": "Slippage Tolerance",

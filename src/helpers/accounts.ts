@@ -16,7 +16,7 @@ function getChainAccounts(networks: Networks, wallet: Wallet): ChainAccount[] {
 
     return {
       network: name,
-      icon,
+      networkIcon: icon,
       address: BaseApi.formatAddress(finalWallet, name),
       isReplaced: !!replacedAddress,
     };

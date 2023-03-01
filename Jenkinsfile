@@ -22,7 +22,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     mozillaSlug:                'fearless-wallet',
     mozillaChannel:             'unlisted',
     distFolders:                ['./dist/extension/firefox','./dist/extension/chrome'],
-    preBuildCmds:               ['apt-get update && apt-get install zip -y && yarn install'],
+    preBuildCmds:               ['apt-get update && apt-get install zip -y && yarn set version 3.4.1 && yarn install'],
     nexusFiles:                 [ '.zip'],
     chromeExtFile:              'fearless-wallet-extension-chrome.zip',
     mozillaExtFile:             'fearless-wallet-extension-firefox.zip',

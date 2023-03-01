@@ -3,7 +3,7 @@
     <div class="network-description">
       <div class="description">
         <div class="img-container">
-          <ExternalLogo class="img" type="network" :name="networkIcon" />
+          <ExternalLogo class="img" :name="selectedNetwork" />
         </div>
 
         <div>
@@ -111,10 +111,6 @@ export default class Nodes extends Vue {
 
   get defaultNodes() {
     return this.networks.find(({ name }) => name === this.selectedNetwork)?.nodes ?? [];
-  }
-
-  get networkIcon() {
-    return NetworksController.getNetwork(this.selectedNetwork).icon;
   }
 
   get route() {

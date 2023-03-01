@@ -151,7 +151,7 @@ function getCurrencyOptions(currencies: Currencies) {
     return {
       label,
       value: assetId,
-      path: displayName,
+      path: assetId,
       relayChain,
     };
   });

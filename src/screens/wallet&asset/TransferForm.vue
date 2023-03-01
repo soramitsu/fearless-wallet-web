@@ -98,7 +98,7 @@
       :left="left"
       :height="285"
       :options="options"
-      iconType="network"
+      :iconType="toggleIconType"
       :handlerFilter="handlerFilter"
       :toggleValue="toggleSelectedNetwork"
       :handlerClose="handlerCloseSelectPopup"
@@ -148,7 +148,7 @@ import { firstCharToUp } from '@/helpers/common';
 import { formattedNumber, formattedPrice } from '@/helpers/numbers';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
-import { getIconName } from '@/helpers/imgPath';
+import NetworksController from '@/controllers/networksController';
 
 @Component({
   components: {
@@ -190,6 +190,9 @@ export default class SendForm extends Vue {
 
   get placeholderSelectPopup() {
     return this.showSelectedAssetPopup ? 'common.searchAmongAssets' : 'common.searchNetwork';
+  }
+  get toggleIconType() {
+    return this.showSelectedAssetPopup ? 'asset' : 'network';
   }
 
   get showTransferableValue() {
@@ -247,7 +250,7 @@ export default class SendForm extends Vue {
 
     if (!this.currency) return '';
 
-    if (this.step === 2) return this.extrinsicType === 'transfer' ? 'Send' : 'Teleport';
+    if (this.step === 2) return this.extrinsicType === 'transfer' ? 'asset.sendButtonText' : 'asset.teleportButtonText';
 
     if (this.extrinsicType === 'transfer' && this.syncedRecipient !== '' && !this.isValidRecipientAddress) {
       if (this.isSameAddress) return 'asset.isSameAddress';
@@ -308,12 +311,16 @@ export default class SendForm extends Vue {
   get optionsNetworks() {
     const walletBalance = this.currency?.getNetworkList() ?? [];
 
-    return walletBalance.map(({ network }) => ({
-      label: firstCharToUp(network),
-      value: `${network}`,
-      path: getIconName(network),
-      relayChain: this.currency?.relayChain,
-    }));
+    return walletBalance.map(({ network }) => {
+      const { icon } = NetworksController.getNetwork(network);
+
+      return {
+        label: firstCharToUp(network),
+        value: `${network}`,
+        path: icon,
+        relayChain: this.currency?.relayChain,
+      };
+    });
   }
 
   get optionsDestNet() {

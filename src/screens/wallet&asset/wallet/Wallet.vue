@@ -53,6 +53,7 @@
             :showAssetsManagementForm="showAssetsManagementForm"
             :toggleVisibleActivityForm="toggleVisibleActivityForm"
             :filterValue="filterValue"
+            @setCustomSort="setCustomSort"
             @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
           />
           <NFTs v-else-if="showNfts" /> -->
@@ -137,6 +138,7 @@ import { tieAccount, getPrice, subscribeBalance } from '@/extension/messaging';
 import store from '@/store';
 import { BalanceJson, PriceJson } from '@/extension/background/extension-base/src/background/types';
 import { COINGECKO_TOKENS } from '@/consts/networks';
+import { defaultSortingCurrencies } from '@/helpers/currencies';
 
 @Component({
   components: {
@@ -173,6 +175,7 @@ export default class Wallet extends Vue {
   evmCurrencies = {};
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
@@ -215,6 +218,7 @@ export default class Wallet extends Vue {
   useSetupBalance(): void {
     subscribeBalance(null, this.updateBalance).then(this.updateBalance).catch(console.error);
   }
+  @Mutation(AccountsMutationTypes.SET_CUSTOM_SORT) setCustomSorting!: TMutation<string>;
 
   get showNetworkUnavailablePopup() {
     return this.networkUnavailable !== '';
@@ -270,22 +274,18 @@ export default class Wallet extends Vue {
   }
 
   get filteredCurrencies() {
-    if (this.showAssetsManagementForm) return this.sortedCurrencies;
-
     const filter = this.filterValue.trim().toLowerCase();
+    const isAllNetworks = this.selectedNetwork === 'all';
 
-    return this.sortedCurrencies.filter((currency) => {
-      const isAllNetworks = this.selectedNetwork === 'all';
-      const walletBalance = currency.getNetworkList().map(({ network }) => network);
-      const isAvailableInSelectedNetwork = walletBalance.includes(this.selectedNetwork);
+    const result: TCurrencies = this.sortedCurrencies.filter((currency) => currency.displayName.includes(filter));
 
-      // if a network is selected and there is no currency in this network
-      if (!isAllNetworks && !isAvailableInSelectedNetwork) return false;
+    if (!this.isCustomSort(this.selectedWallet.address)) {
+      const network = isAllNetworks ? undefined : this.selectedNetwork;
 
-      const { displayName, mainNetwork } = currency;
+      return defaultSortingCurrencies(result, this.selectedWallet, network);
+    }
 
-      return walletBalance.join(' ').includes(filter) || displayName.includes(filter) || mainNetwork.includes(filter);
-    });
+    return result;
   }
 
   get totalBalance() {
@@ -304,6 +304,10 @@ export default class Wallet extends Vue {
 
   get showGoogleExportPopup() {
     return this.$route.params.access_token && this.$route.params.access_token !== 'null';
+  }
+
+  setCustomSort() {
+    this.setCustomSorting(this.selectedWallet.address);
   }
 
   closeGoogleExportPopup() {

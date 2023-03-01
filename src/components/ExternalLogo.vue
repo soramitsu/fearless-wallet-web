@@ -6,19 +6,14 @@
 import { Vue, Prop, Component } from 'vue-property-decorator';
 
 import type { RelayChainName } from '@/interfaces';
-import { getIconName } from '@/helpers/imgPath';
+import NetworksController from '@/controllers/networksController';
 
 @Component
 export default class ExternalLogo extends Vue {
   @Prop(String) name!: string;
   @Prop({ required: false, type: String }) relayChain?: RelayChainName;
-  @Prop({ default: 'asset', type: String }) type!: 'asset' | 'network' | 'fiat';
+  @Prop(String) type!: string;
   @Prop({ default: 32 }) width!: number;
-  urlTypes: Record<string, string> = {
-    asset: 'https://raw.githubusercontent.com/soramitsu/fearless-utils/master/icons/tokens/',
-    network: 'https://raw.githubusercontent.com/soramitsu/fearless-utils/master/icons/chains/',
-    fiat: 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.2/icons/fiat/',
-  };
 
   get style() {
     const styles: Record<string, string> = {};
@@ -31,23 +26,14 @@ export default class ExternalLogo extends Vue {
     return styles;
   }
 
-  get urlType() {
-    return this.urlTypes[this.type];
-  }
-
-  get iconType() {
-    if (this.type === 'fiat') return '';
-
-    return this.type === 'asset' ? 'coloured' : 'white';
-  }
-
   get iconName() {
     if (this.name === undefined || this.name === '') return '';
 
-    const name = getIconName(this.name, this.relayChain);
-    const prepName = this.type === 'asset' ? name.toUpperCase() : name;
+    if (this.type === 'asset') {
+      return NetworksController.getAssetsIcon(this.name);
+    }
 
-    return `${this.urlType}${this.iconType}/${prepName}.svg`;
+    return this.name;
   }
 }
 </script>

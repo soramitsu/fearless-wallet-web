@@ -22,6 +22,7 @@ interface BalanceFP {
 
 type WalletBalance = AssetBalance & {
   balance: BalanceFP;
+  icon: string;
 };
 
 type AssetsBalances = AssetBalance & {

@@ -1434,22 +1434,22 @@ export default class Extension {
         return this.signingCancel(request as RequestSigningCancel);
 
       case 'pri(signing.isLocked)':
-        return await this.signingIsLocked(request as RequestSigningIsLocked);
+        return this.signingIsLocked(request as RequestSigningIsLocked);
 
       case 'pri(signing.requests)':
-        return port && this.signingSubscribe(id, port);
+        return this.signingSubscribe(id, port as Port);
 
       case 'pri(window.open)':
         return this.windowOpen(request as AllowedPath);
 
       case 'pri(signing.refreshPasswordTimeout)':
-        return await this.refreshAccountPasswordCache(request as string);
+        return this.refreshAccountPasswordCache(request as string);
 
       case 'pri(signing.resetTimeouts)':
-        return await this.resetTimeouts();
+        return this.resetTimeouts();
 
       case 'pri(signing.saveTimeoutCache)':
-        return await this.saveTimeoutCache(request as string);
+        return this.saveTimeoutCache(request as string);
 
       case 'pri(google.get.files)':
         return this.getFiles(request as { token: string });

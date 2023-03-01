@@ -6,6 +6,7 @@ import type {
   GetNetworkGenesisHash,
   GetNetworkStatus,
   GetActiveNodesByNetwork,
+  GetAssetIcon,
 } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
@@ -20,6 +21,7 @@ export enum GettersTypes {
   getAssetsJson = 'getAssetsJson',
   getAssetPrice = 'getAssetPrice',
   getAssetName = 'getAssetName',
+  getAssetIcon = 'getAssetIcon',
   getFiats = 'getFiats',
   getHistory = 'getHistory',
   getCurrencies = 'getCurrencies',
@@ -35,6 +37,7 @@ export type Getters = {
   [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
   [GettersTypes.getAssetsJson](state: State, getters?: GetterTree<State, State> & Getters): AssetJson[];
   [GettersTypes.getAssetName](state: State, getters?: GetterTree<State, State> & Getters): GetAssetName;
+  [GettersTypes.getAssetIcon](state: State, getters?: GetterTree<State, State> & Getters): GetAssetIcon;
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
   [GettersTypes.getCurrencies](state: State, getters?: GetterTree<State, State> & Getters): Currencies;
@@ -114,6 +117,16 @@ const getters: GetterTree<State, State> & Getters = {
       const { symbol, displayName } = asset;
 
       return displayName ?? symbol;
+    },
+
+  [GettersTypes.getAssetIcon]:
+    ({ assetsJson }) =>
+    (assetId: string) => {
+      const asset = assetsJson.find((el) => el.symbol === assetId || el.displayName === assetId);
+
+      if (!asset) return '';
+
+      return asset.icon;
     },
 
   [GettersTypes.getHistory]:

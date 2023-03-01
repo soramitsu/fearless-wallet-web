@@ -38,8 +38,8 @@ export default class FiatsPopup extends Vue {
 
     return this.fiats
       .filter(({ name }) => name.toLowerCase().includes(filter))
-      .map(({ name, id }) => {
-        return { label: name, value: id, path: id };
+      .map(({ name, id, icon }) => {
+        return { label: name, value: id, path: icon };
       });
   }
 

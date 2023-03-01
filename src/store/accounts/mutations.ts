@@ -23,6 +23,7 @@ export enum MutationTypes {
   SET_ACCOUNTS = 'SET_ACCOUNTS',
   SET_ONLINE_STATUS = 'SET_ONLINE_STATUS',
   SET_ADDRESSES = 'SET_ADDRESSES',
+  SET_CUSTOM_SORT = 'SET_CUSTOM_SORT',
   SET_AUTO_SELECT_NODE = 'SET_AUTO_SELECT_NODE',
   SET_QR = 'SET_QR',
   SET_BALANCE = 'SET_BALANCE',
@@ -40,6 +41,7 @@ export type Mutations = {
   [MutationTypes.SET_AUTO_SELECT_NODE](state: State, props: setAutoSelectNode): void;
   [MutationTypes.SET_QR](state: State, props: string): void;
   [MutationTypes.DELETE_QR](state: State): void;
+  [MutationTypes.SET_CUSTOM_SORT](state: State, props: string): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -108,6 +110,15 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.DELETE_QR](state) {
     state.qr = null;
+  },
+
+  [MutationTypes.SET_CUSTOM_SORT](state, address: string) {
+    accountController.setCustomSort(address);
+
+    state.isCustomSort = {
+      ...state.isCustomSort,
+      [address]: true,
+    };
   },
 
   [MutationTypes.SET_BALANCE](state, payload) {

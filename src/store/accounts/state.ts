@@ -11,6 +11,7 @@ export type State = {
   addresses: Accounts;
   balance: Record<string, BalanceItem>;
   autoSelectNode: AutoSelectNode;
+  isCustomSort: Record<string, boolean>;
   qr: string | null;
 };
 
@@ -23,6 +24,7 @@ const state = (): State => {
     accounts: {},
     balance: {},
     addresses: {},
+    isCustomSort: accountController.getCustomSort(),
     autoSelectNode: accountController.getAutoSelectNodesValue(),
     qr: null,
   };

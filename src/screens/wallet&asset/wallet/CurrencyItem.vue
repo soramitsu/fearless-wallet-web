@@ -5,12 +5,7 @@
     </div>
 
     <div class="img-container">
-      <ExternalLogo
-        class="main-network-img"
-        :name="currency.displayName"
-        :relayChain="currency.relayChain"
-        :width="42"
-      />
+      <ExternalLogo class="main-network-img" type="asset" :name="currency.displayName" :width="42" />
     </div>
 
     <div class="descriptions-column">
@@ -25,11 +20,11 @@
           <template v-else-if="!showWarning">
             <div class="available-networks">
               <ExternalLogo
-                v-for="{ network } in availableInNetworksPart"
+                v-for="{ icon, network } in availableInNetworksPart"
                 class="minor-network-img"
                 type="network"
                 :key="network"
-                :name="network"
+                :name="icon"
                 :width="12"
               />
 
@@ -111,7 +106,7 @@ import type { Currency } from '@/interfaces/currencies';
 import type { SelectedWallet } from '@/store';
 import type { CustomEvent } from '@/interfaces';
 import { Components } from '@/router/routes';
-import { formattedNumber, formattedPrice } from '@/helpers/numbers';
+import { formattedNumber } from '@/helpers/numbers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GetNetworkStatus } from '@/store';
@@ -180,9 +175,9 @@ export default class CurrencyItem extends Vue {
 
   get usd24HoursChangeString() {
     const { hours24Change } = this.currency;
-    const change = +formattedNumber(hours24Change, { returnOriginNumber: false });
+    const change = +formattedNumber(hours24Change, { returnOriginNumber: false }) / 100;
 
-    return change > 0 ? `+${change}%` : change < 0 ? `${change}%` : '';
+    return this.$n(change, 'percent');
   }
 
   get assetString() {
@@ -192,20 +187,17 @@ export default class CurrencyItem extends Vue {
   get countAssetsString() {
     const totalCountAssets = +this.currency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork);
 
-    return formattedNumber(totalCountAssets, {
-      decimalsValue: 4,
-      returnOriginNumber: false,
-    });
+    return this.$n(totalCountAssets, 'decimal');
   }
 
   get totalBalanceString() {
     const balance = +this.currency.getTotalBalance(this.selectedWallet, this.selectedNetwork);
 
-    return `${this.fiatSymbol}${formattedPrice(balance)}`;
+    return `${this.fiatSymbol}${this.$n(balance, 'decimal')}`;
   }
 
   get priceString() {
-    return `${this.fiatSymbol}${formattedPrice(this.currency.price)}`;
+    return `${this.fiatSymbol}${this.$n(this.currency.price, 'decimal')}`;
   }
 
   get upperNetworkName() {
@@ -230,6 +222,15 @@ export default class CurrencyItem extends Vue {
     if (this.isCurrentNetwork) return [{ network: this.selectedNetwork }];
 
     if (this.isAdditional) return [...this.walletBalance].splice(0, this.countDisplayedNetworks - 1);
+
+    const isInludeMainNet = this.walletBalance.findIndex((el) => el.network.toUpperCase() === this.upperNetworkName);
+
+    if (isInludeMainNet >= 0) {
+      const array = [...this.walletBalance];
+      array.splice(isInludeMainNet, 1);
+
+      return array;
+    }
 
     return this.walletBalance;
   }

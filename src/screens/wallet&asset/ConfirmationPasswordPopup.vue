@@ -1,12 +1,5 @@
 <template>
-  <Popup
-    :headerType="headerType"
-    sizeWidth="big"
-    :headerText="popupHeader"
-    :showCloseButton="showCloseButton"
-    :handlerClose="close"
-    :zIndex="399"
-  >
+  <Popup :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close" :zIndex="399">
     <div class="popup-content">
       <template v-if="isTransactionNotInit && !isSignMobile">
         <Icon icon="lock-green" className="icon__lock-green" iconColor="success" />
@@ -48,12 +41,12 @@
 
       <template v-else-if="isTransactionFinished">
         <div class="descriptions">
-          <ExternalLogo :name="firstNetwork" type="network" :width="30" />
+          <ExternalLogo :name="networkIcon(firstNetwork)" type="network" :width="30" />
 
           <template v-if="secondNetwork">
             <SIcon name="arrows-arrow-right-24" />
 
-            <ExternalLogo :name="secondNetwork" iconType="network" :width="30" />
+            <ExternalLogo :name="networkIcon(secondNetwork)" type="network" :width="30" />
           </template>
         </div>
 
@@ -78,6 +71,7 @@ import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/ext
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import ExtensionController from '@/controllers/extensionController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import NetworksController from '@/controllers/networksController';
 
 @Component({
   components: { SignMobile },
@@ -141,14 +135,6 @@ export default class ConfirmationPasswordPopup extends Vue {
     return 'pending';
   }
 
-  get showCloseButton() {
-    if (this.isSignMobile) {
-      return !this.isTransactionPending;
-    }
-
-    return true;
-  }
-
   get popupHeader() {
     if (this.transactionStatus === 'success') return 'asset.transactionDone';
 
@@ -188,6 +174,10 @@ export default class ConfirmationPasswordPopup extends Vue {
     this.isErrorPassword = false;
   }
 
+  created() {
+    this.resetTxStatus();
+  }
+
   async mounted() {
     if (!BaseApi.isExtension() || this.isSignMobile) return;
 
@@ -209,38 +199,30 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
   }
 
+  networkIcon(network: string) {
+    return NetworksController.getNetwork(network).icon;
+  }
+
+  resetTxStatus() {
+    this.currency?.setTransactionStatus();
+    this.transactionState = undefined;
+  }
+
   close() {
-    if (this.isTransactionNotInit) {
-      this.$emit('close');
-
-      return;
+    if (this.isTransactionPending || this.isTransactionFinished) {
+      this.resetTxStatus();
     }
 
-    if (this.transactionId && this.isTransactionPending) {
-      ExtensionController.cancelSign(this.transactionId);
-      this.transactionState = undefined;
-
-      this.$emit('close', true);
-
-      return;
-    }
-
-    if (this.isTransactionFinished) {
-      this.currency?.setTransactionStatus();
-      this.transactionState = undefined;
-
-      this.$emit('close', true);
-    }
+    this.$emit('close', true);
   }
 
   async onSignMobile() {
-    if (!this.transactionId && this.currency?.extrinsic)
-      await this.currency?.send(this.transactionAddress, true, false);
+    if (!this.transactionId && this.currency?.extrinsic) await this.currency.send(this.transactionAddress, true, false);
     else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
   }
 
   async signTransactionJSON(id: string) {
-    const payload: PayloadJSON = this.payload as any;
+    const payload: PayloadJSON = this.payload as SignerPayloadJSON;
     delete payload.address;
     payload.type = 'json';
 
@@ -266,7 +248,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     if (this.transactionId) {
-      await this.onSignApprove({
+      this.onSignApprove({
         id: this.transactionId,
         isSavePass: this.isSavePass,
         password: this.password,
@@ -275,7 +257,7 @@ export default class ConfirmationPasswordPopup extends Vue {
       return;
     }
 
-    await this.currency?.send(this.transactionAddress, false, this.isSavePass);
+    this.currency?.send(this.transactionAddress, false, this.isSavePass);
   }
 }
 </script>

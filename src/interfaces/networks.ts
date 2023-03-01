@@ -64,6 +64,7 @@ type NetworkJson = {
 type Network = {
   name: string;
   label: string;
+  icon: string;
   api?: ApiPromise;
   provider?: WsProvider;
   nodes: Node[];

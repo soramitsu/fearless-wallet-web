@@ -341,7 +341,7 @@ export default class AddWallet extends Vue {
       return this.typeImport === 'mnemonic' ? this.t('importWallet') : this.t('importAccount', { type: 'substrate' });
     }
 
-    if (this.step === 2) return this.t('importAccount', { type: 'substrate' });
+    if (this.step === 2) return this.t('importAccount', { type: 'ethereum' });
 
     if (this.step === 3) return this.t('walletNickname');
 
@@ -627,7 +627,8 @@ export default class AddWallet extends Vue {
 
   createFlow() {
     if (this.step === 1 && !this.mnemonic.length) this.mnemonic = BaseApi.generateMnemonic();
-    else if (this.step === 3) this.validateSuri();
+    else if (this.step === 2) this.validateSuri();
+    else if (this.step === 3) this.validateSequenceMnemonic();
     else if (this.step === 4 && (this.isOnlyEthereumAccountFlow || this.isReplaceAccountFlow)) this.checkPassword();
   }
 
@@ -681,6 +682,17 @@ export default class AddWallet extends Vue {
     this.validateAddressForDubMobileWallet(address);
   }
 
+  validateSequenceMnemonic() {
+    const isValidSequenceMnemonic = this.isCreateWallet
+      ? BaseApi.isValidSequenceMnemonic(
+          this.mnemonic,
+          this.selectedMnemonicElements.map(({ word }) => word)
+        )
+      : true;
+
+    if (!isValidSequenceMnemonic) this.warningValueName = 'mnemonicSequence';
+  }
+
   validateSuri() {
     const {
       ethereum: { value: ethereumDerivationPath },
@@ -700,18 +712,10 @@ export default class AddWallet extends Vue {
 
     const validatedEthereumJson =
       this.ethereumJson !== ''
-        ? BaseApi.isValidJson(this.ethereumJSON, this.passwordEthereumJson)
+        ? BaseApi.isValidJson(this.ethereumJSON, this.passwordEthereumJson, false)
         : ({ value: true } as ValidateJsonResult);
 
-    const isValidSequenceMnemonic = this.isCreateWallet
-      ? BaseApi.isValidSequenceMnemonic(
-          this.mnemonic,
-          this.selectedMnemonicElements.map(({ word }) => word)
-        )
-      : true;
-
-    if (!isValidSequenceMnemonic) this.warningValueName = 'mnemonicSequence';
-    else if (!isValidMnemonic) this.warningValueName = 'mnemonic';
+    if (!isValidMnemonic) this.warningValueName = 'mnemonic';
     else if (!isValidSubstratePhrase) this.warningValueName = 'substrateDP';
     else if (!isValidEthereumDP) this.warningValueName = 'ethereumDP';
     else if (!isValidSubstrateRawSeed || !isValidEthereumRawSeed) this.warningValueName = 'rawSeed';

@@ -56,6 +56,7 @@
       :left="-160"
       :height="360"
       :options="optionsNetworks"
+      iconType="network"
       :handlerFilter="handlerFilter"
       :toggleValue="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
@@ -76,6 +77,7 @@ import { SelectedWallet } from '@/store';
 import { firstCharToUp } from '@/helpers/common';
 import { cut } from '@/helpers/history';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
+import NetworksController from '@/controllers/networksController';
 
 @Component({
   components: { RotateInput },
@@ -115,18 +117,52 @@ export default class ReceiveForm extends Vue {
     const filter = this.filterValue.trim().toLowerCase();
 
     return walletBalance
-      .map(({ network }) => ({
-        label: firstCharToUp(network),
-        value: `${network}`,
-        relayChain: this.currency?.relayChain,
-      }))
+      .map(({ network, type }) => {
+        const icon = NetworksController.getNetwork(network).icon;
+
+        return {
+          label: firstCharToUp(network),
+          value: network,
+          path: icon,
+          type,
+          relayChain: this.currency?.relayChain,
+        };
+      })
       .filter(({ value }) => {
         return value.includes(filter);
       });
   }
 
   mounted() {
-    this.selectedNetwork = this._selectedNetwork !== 'all' ? this._selectedNetwork : this.optionsNetworks[0].value;
+    const nativeNet = this.getNetworkNameByAsset();
+
+    if (nativeNet === undefined) {
+      const utilityNet = this.getNetworkNameByAsset(false);
+
+      if (utilityNet !== undefined) this.selectedNetwork = utilityNet.value;
+      else
+        this.selectedNetwork = this._selectedNetwork === 'all' ? this.optionsNetworks[0].value : this._selectedNetwork;
+
+      return;
+    }
+
+    this.selectedNetwork = nativeNet.value;
+  }
+
+  getNetworkNameByAsset(isNative = true) {
+    return this.optionsNetworks.find((el) => {
+      const network = NetworksController.getNetwork(el.value);
+
+      const searchedAsset = network.assets.find((asset) => {
+        const key = isNative ? 'isNative' : 'isUtility';
+
+        return asset.assetId === this.selectedAssetId && asset[key];
+      });
+
+      if (searchedAsset) return true;
+
+      return false;
+    });
   }
 
   toggleSelectNetworkPopupVisible() {

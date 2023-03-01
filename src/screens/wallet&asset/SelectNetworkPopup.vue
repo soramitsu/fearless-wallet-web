@@ -26,7 +26,6 @@ import { Getter } from 'vuex-class';
 import type { Networks as NetworksType, RelayChainName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { getIconName } from '@/helpers/imgPath';
 
 interface Options {
   label: string;
@@ -60,13 +59,13 @@ export default class SelectNetworkButton extends Vue {
     if (this._optionsNetworks !== undefined) return this._optionsNetworks;
 
     let options: Options[] = [
-      ...this.networks.map(({ name, label, parentId }) => {
+      ...this.networks.map(({ name, label, parentId, icon }) => {
         const relayChain = this.networks.find(({ chainId }) => chainId === parentId)?.name ?? name;
 
         return {
           label: firstCharToUp(label),
           value: name,
-          path: getIconName(name),
+          path: icon,
           relayChain: relayChain as RelayChainName,
         };
       }),

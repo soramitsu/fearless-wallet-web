@@ -21,7 +21,7 @@ import {
 import { sumBN } from '../../utils';
 import { getEVMBalance } from '../evm/balance';
 import EthProvider from '../evm/ethProvider';
-import { APIItemState, BalanceChildItem, BalanceItem, TokenInfo } from '../evm/types/ether';
+import { APIItemState, BalanceItem, TokenInfo } from '../evm/types/ether';
 import { getERC20Contract } from '../evm/utils/eth';
 import { IGNORE_GET_SUBSTRATE_FEATURES_LIST } from '../../const';
 import { getPSP22ContractPromise } from '../tokens/wasm';
@@ -45,7 +45,7 @@ function subscribeERC20Interval(
   const ERC20ContractMap = {} as Record<string, Contract>;
 
   const getTokenBalances = () => {
-    Object.values(tokenList).map(async ({ decimals, symbol }) => {
+    Object.values(tokenList).map(async ({ symbol }) => {
       let free = new BN(0);
 
       try {
@@ -65,6 +65,7 @@ function subscribeERC20Interval(
           reserved: '0',
           feeFrozen: '0',
           free: free.toString(),
+          chain: networkKey,
         });
       } catch (err) {
         console.info('There is problem when fetching ' + symbol + ' token balance', err);
@@ -516,7 +517,7 @@ async function subscribeTokensBalance(
   if (tokenList.length > 0) console.info('Get tokens balance of', networkKey, tokenList);
 
   const unsubList = await Promise.all(
-    tokenList.map(async ({ precision, symbol, id, type, isUtility }) => {
+    tokenList.map(async ({ precision, symbol, id, type, isUtility, icon }) => {
       try {
         const options = getAssetOptions(symbol, type, id);
         const assetType = type === 'equilibrium' ? 'eqBalances' : 'tokens';
@@ -535,6 +536,7 @@ async function subscribeTokensBalance(
           setBalance({
             state: APIItemState.READY,
             symbol,
+            icon,
             free: tokenBalance.transferable,
             reserved: tokenBalance.reserved,
             feeFrozen: tokenBalance.frozen,

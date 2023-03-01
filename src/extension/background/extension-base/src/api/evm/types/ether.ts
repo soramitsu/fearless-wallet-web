@@ -18,6 +18,7 @@ export interface BalanceItem {
   state: APIItemState;
   symbol: string;
   free?: string;
+  icon?: string;
   reserved?: string;
   miscFrozen?: string;
   feeFrozen?: string;

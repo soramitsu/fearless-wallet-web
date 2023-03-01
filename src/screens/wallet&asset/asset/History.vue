@@ -17,7 +17,6 @@
               :key="index"
               :historyNode="historyNode"
               :assetId="currency.assetId"
-              :relayChain="currency.relayChain"
               @click.native="$emit('openHistoryDetailsForm', historyNode)"
             />
           </template>

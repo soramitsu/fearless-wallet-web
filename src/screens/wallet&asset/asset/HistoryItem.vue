@@ -1,6 +1,6 @@
 <template>
   <div class="history-item">
-    <ExternalLogo :name="asset" />
+    <ExternalLogo :name="assetId" />
 
     <div class="column">
       <div class="first-row">

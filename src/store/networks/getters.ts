@@ -120,8 +120,10 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.getAssetIcon]:
     ({ assetsJson }) =>
-    (assetName: string) => {
-      const asset = assetsJson.find((el) => el.symbol === assetName || el.displayName === assetName);
+    (assetId: string) => {
+      const asset = assetsJson.find(({ id }) => id === assetId);
+
+      if (!asset) return '';
 
       return asset?.icon ?? '';
     },

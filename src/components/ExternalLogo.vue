@@ -26,10 +26,12 @@ export default class ExternalLogo extends Vue {
   get iconName() {
     if (this.name === undefined || this.name === '') return '';
 
+    if (this.name.startsWith('https://')) return this.name;
+
     const assetIcon = NetworksController.getAssetIcon(this.name);
     const networkIcon = NetworksController.getNetwork(this.name)?.icon;
 
-    return assetIcon || (networkIcon ?? this.name);
+    return assetIcon || networkIcon || this.name;
   }
 }
 </script>

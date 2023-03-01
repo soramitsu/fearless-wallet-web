@@ -184,8 +184,8 @@
       :amount="sendAmount"
       :value="sendValue"
       :network="selectedNetwork"
-      :firstIcon="sendAsset"
-      :secondIcon="receiveAsset"
+      :firstIcon="sendAssetId"
+      :secondIcon="receiveAssetId"
       extrinsicType="swap"
       @close="confirmationPasswordPopupClose"
     />

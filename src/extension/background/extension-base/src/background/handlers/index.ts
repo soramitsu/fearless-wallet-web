@@ -8,7 +8,7 @@ import Tabs from './Tabs';
 import State from './State';
 import type { MessageTypes, Port, TransportRequestMessage } from '../types';
 export const state = new State();
-export const extension = new Extension(state);
+export const extension = new Extension();
 export const tabs = new Tabs(state);
 
 // Migration

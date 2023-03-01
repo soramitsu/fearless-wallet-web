@@ -935,17 +935,11 @@ export default class State {
   public async getDecodedAddresses(address?: string): Promise<string[]> {
     let checkingAddress: string | null | undefined = address;
 
-    if (!address) {
-      checkingAddress = await this.getAccountAddress();
-    }
+    if (!address) checkingAddress = await this.getAccountAddress();
 
-    if (!checkingAddress) {
-      return [];
-    }
+    if (!checkingAddress) return [];
 
-    if (checkingAddress === 'ALL') {
-      return Object.keys(accounts.subject.value);
-    }
+    if (checkingAddress === 'ALL') return Object.keys(accounts.subject.value);
 
     return [checkingAddress];
   }
@@ -973,7 +967,9 @@ export default class State {
   }
 
   private async publishBalance(reset?: boolean) {
-    this.balanceSubject.next(await this.getBalance(reset));
+    const balance = await this.getBalance(reset);
+
+    this.balanceSubject.next(balance);
   }
 
   public async resetBalanceMap(newAddress: string) {
@@ -1125,18 +1121,14 @@ export default class State {
     });
   }
 
-  public subscribePrice() {
-    return this.priceStore.getSubject();
-  }
-
   public getPrice(update: (value: PriceJson) => void): void {
     this.priceStore.get('PriceData', (rs) => {
       if (this.priceStoreReady) {
         update(rs);
       } else {
-        const activeNetworks = Object.values(this.getNetworkMap())
-          .map((network) => network.coinGeckoKey)
-          .filter((key) => key) as string[];
+        const activeNetworks: string[] = Object.values(this.tokenMap)
+          .filter((el) => el.priceId)
+          .map((asset) => asset.priceId as string);
 
         getTokenPrice(activeNetworks)
           .then((rs) => {
@@ -1148,6 +1140,10 @@ export default class State {
           });
       }
     });
+  }
+
+  public subscribePrice() {
+    return this.priceStore.getSubject();
   }
 
   public setBalanceItem(networkKey: string, item: BalanceItem) {
@@ -1314,7 +1310,7 @@ export default class State {
     return this.historyMap;
   }
 
-  public getNetworkMap() {
+  public get getNetworkMap() {
     return this.networkMap;
   }
 
@@ -1325,7 +1321,7 @@ export default class State {
     callback?: (items: TransactionHistoryItemType[]) => void
   ): void {
     let items: TransactionHistoryItemType[];
-    const networkInfo = this.getNetworkMap()[network];
+    const networkInfo = this.getNetworkMap[network];
 
     if (!networkInfo) {
       return;

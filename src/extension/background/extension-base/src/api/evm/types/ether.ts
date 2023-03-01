@@ -98,7 +98,7 @@ export interface NetworkJson {
   nativeToken?: string;
   decimals?: number;
   // Other information
-  coinGeckoKey?: string; // Provider key to get token price from CoinGecko // user input
+  coinGeckoKey: string; // Provider key to get token price from CoinGecko // user input
   blockExplorer?: string; // Link to block scanner to check transaction with extrinsic hash // user input
   abiExplorer?: string; // Link to block scanner to check transaction with extrinsic hash // user input
   dependencies?: string[]; // Auto active network in dependencies if current network is activated

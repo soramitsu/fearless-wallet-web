@@ -6,7 +6,6 @@ import { axios } from './axios';
 export const getTokenPrice = async (chains: Array<string>, currency = 'usd'): Promise<PriceJson> => {
   try {
     // const inverseMap: Record<string, string> = {};
-
     chains.push(
       ...[
         'ethereum',

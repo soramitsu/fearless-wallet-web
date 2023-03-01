@@ -15,41 +15,33 @@ export default class BalanceService {
   }
 
   // Balance
-  async updateBalanceStore(chain: string, chainHash: string, address: string, item: BalanceItem) {
+  async updateBalanceStore(chain: string, address: string, item: BalanceItem) {
     if (item.state === APIItemState.READY) {
       this.logger.log(`Updating balance for [${chain}]`);
       const { balances } = await storage.get(['balances']);
 
       const balanceByAddress = balances[address] ?? {};
-      if (item.children) this.updateChildren(item.children, chainHash, chain, address);
-
-      return storage.set({
-        balances: {
-          ...balances,
-          [address]: {
-            ...balanceByAddress,
-            [chain]: { chainHash, chain, address, ...item },
+      const balanceByNet = balanceByAddress[item.symbol] ?? {};
+      const prepData = {
+        ...balances,
+        [address]: {
+          ...balanceByAddress,
+          [item.symbol]: {
+            ...balanceByNet,
+            [chain]: {
+              chain,
+              ...item,
+            },
           },
         },
+      };
+
+      return storage.set({
+        balances: prepData,
       });
     }
   }
 
-  async updateChildren(children: Record<string, BalanceChildItem>, chainHash: string, chain: string, address: string) {
-    const { balances } = await storage.get(['balances']);
-    const balanceByAddress = balances[address] ?? {};
-    Object.keys(children).forEach((token) => {
-      balanceByAddress[token] = { ...children[token], chain, chainHash, address, state: APIItemState.READY };
-    });
-    storage.set({
-      balances: {
-        ...balances,
-        [address]: {
-          ...balanceByAddress,
-        },
-      },
-    });
-  }
   public async getBalanceObservable(address: string) {
     const { balances } = await chrome.storage.local.get(['balances']);
 

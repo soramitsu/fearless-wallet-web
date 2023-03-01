@@ -14,7 +14,6 @@ import type { KeyringPair$Meta } from '@polkadot/keyring/types';
 import BaseApi from '@/util/BaseApi';
 import { accountController } from '@/controllers/accountController';
 import { getMetaTyped } from '@/helpers/common';
-import { BalanceItem } from '@/extension/background/extension-base/src/api/evm/types/ether';
 import { BalanceJson } from '@/extension/background/extension-base/src/background/types';
 
 export enum MutationTypes {

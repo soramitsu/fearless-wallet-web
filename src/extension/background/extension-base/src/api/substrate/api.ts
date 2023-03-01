@@ -55,7 +55,7 @@ async function loadOnReady(registry: Registry, api: ApiPromise): Promise<ApiStat
   const tokenDecimals = properties.tokenDecimals.unwrapOr([DEFAULT_DECIMALS]);
   const isDevelopment = systemChainType.isDevelopment || systemChainType.isLocal || isTestChain(systemChain);
 
-  console.info(`chain: ${systemChain} (${systemChainType.toString()}), ${stringify(properties)}`);
+  // console.info(`chain: ${systemChain} (${systemChainType.toString()}), ${stringify(properties)}`);
 
   // explicitly override the ss58Format as specified
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -119,7 +119,7 @@ function generateEvmHttpApi(apiUrl: string): ApiProps {
     systemVersion: '',
     apiRetry: 0,
     recoverConnect: () => {
-      console.info('Reconnect http API', apiUrl);
+      // console.info('Reconnect http API', apiUrl);
     },
     get isReady() {
       return Promise.resolve(this);
@@ -186,7 +186,7 @@ export function initApi(networkKey: string, apiUrl: string, isEthereum?: boolean
   // Listen ApiPromise events
   // On connected: provider is connected
   api.on('connected', () => {
-    console.info('DotSamaAPI connected to', apiUrl);
+    // console.info('DotSamaAPI connected to', apiUrl);
     result.apiRetry = 0;
     result.isApiConnected = true;
     result.isApiReady = result.isApiInitialized; // result.isApiInitialized && result.isApiConnected
@@ -198,10 +198,10 @@ export function initApi(networkKey: string, apiUrl: string, isEthereum?: boolean
     result.isApiConnected = false;
     result.isApiReady = false; // result.isApiInitialized && result.isApiConnected
 
-    console.info(`DotSamaAPI disconnected from ${JSON.stringify(apiUrl)} ${JSON.stringify(result.apiRetry)} times`);
+    // console.info(`DotSamaAPI disconnected from ${JSON.stringify(apiUrl)} ${JSON.stringify(result.apiRetry)} times`);
 
     if (result.apiRetry > DOTSAMA_MAX_CONTINUE_RETRY) {
-      console.info(`Discontinue to use ${JSON.stringify(apiUrl)} because max retry`);
+      // console.info(`Discontinue to use ${JSON.stringify(apiUrl)} because max retry`);
       provider.disconnect().then(console.info).catch(console.error);
     } else {
       // Todo: Implement reconnect api here
@@ -210,7 +210,7 @@ export function initApi(networkKey: string, apiUrl: string, isEthereum?: boolean
 
   // On ready: Load all metadata and ready to init data
   api.on('ready', () => {
-    console.info('DotSamaAPI ready with', apiUrl);
+    // console.info('DotSamaAPI ready with', apiUrl);
     loadOnReady(registry, api)
       .then((rs) => {
         objectSpread(result, rs);

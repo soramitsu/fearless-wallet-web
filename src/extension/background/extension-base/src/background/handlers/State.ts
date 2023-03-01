@@ -1151,14 +1151,8 @@ export default class State {
   }
 
   public setBalanceItem(networkKey: string, item: BalanceItem) {
-    // eslint-disable-next-line no-prototype-builtins
-    if (typeof item === 'object' && item.hasOwnProperty('children') && item.children === undefined) {
-      delete item.children;
-    }
-
     const itemData = { timestamp: +new Date(), ...item };
-
-    this.balanceMap[networkKey] = { ...this.balanceMap[networkKey], ...itemData };
+    this.balanceMap[item.symbol] = { ...this.balanceMap[item.symbol as string], ...itemData };
     this.updateBalanceStore(networkKey, item);
 
     this.lazyNext('setBalanceItem', () => {
@@ -1190,7 +1184,7 @@ export default class State {
   private updateBalanceStore(networkKey: string, item: BalanceItem) {
     this.getCurrentAccount((currentAccountInfo) => {
       this.balanceService
-        .updateBalanceStore(networkKey, this.getNetworkGenesisHashByKey(networkKey), currentAccountInfo.address, item)
+        .updateBalanceStore(networkKey, currentAccountInfo.address, item)
         .catch((e) => console.warn(e));
     });
   }
@@ -1198,13 +1192,13 @@ export default class State {
   public generateDefaultBalanceMap() {
     const balanceMap: Record<string, BalanceItem> = {};
 
-    Object.values(this.networkMap).forEach((networkJson) => {
-      if (networkJson.active) {
-        balanceMap[networkJson.key] = {
-          state: APIItemState.PENDING,
-        };
-      }
-    });
+    // Object.values(this.networkMap).forEach((networkJson) => {
+    //   if (networkJson.active) {
+    //     balanceMap[networkJson.key] = {
+    //       state: APIItemState.PENDING,
+    //     };
+    //   }
+    // });
 
     return balanceMap;
   }

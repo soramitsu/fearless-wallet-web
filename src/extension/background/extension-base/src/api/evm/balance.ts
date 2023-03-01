@@ -29,7 +29,7 @@ function subscribeERC20Interval(
   networkKey: string,
   api: ApiPromise,
   web3ApiMap: Record<string, EthProvider>,
-  subCallback: (rs: Record<string, BalanceChildItem>) => void
+  subCallback: (rs: BalanceItem) => void
 ): () => void {
   let tokenList = {} as TokenInfo[];
   const ERC20ContractMap = {} as Record<string, ethers.Contract>;
@@ -48,12 +48,11 @@ function subscribeERC20Interval(
         const free = bals.map((bal) => ethers.utils.formatUnits(bal, decimals));
 
         subCallback({
-          [symbol]: {
-            reserved: '0',
-            frozen: '0',
-            free: free.toString(),
-            decimals,
-          },
+          state: APIItemState.READY,
+          symbol,
+          reserved: '0',
+          feeFrozen: '0',
+          free: free.toString(),
         });
       } catch (err) {
         console.warn('There is problem when fetching ' + symbol + ' token balance', err);
@@ -105,11 +104,8 @@ export function subscribeEVMBalance(
       .catch(console.warn);
   }
 
-  function subCallback(children: Record<string, BalanceChildItem>) {
-    if (!Object.keys(children).length) return;
-
-    balanceItem.children = { ...balanceItem.children, ...children };
-    callback(networkKey, balanceItem);
+  function subCallback(item: BalanceItem) {
+    callback(networkKey, item);
   }
 
   getBalance();

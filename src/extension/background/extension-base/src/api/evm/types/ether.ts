@@ -16,11 +16,12 @@ export interface BalanceChildItem {
 
 export interface BalanceItem {
   state: APIItemState;
+  symbol: string;
   free?: string;
   reserved?: string;
   miscFrozen?: string;
   feeFrozen?: string;
-  children?: Record<string, BalanceChildItem>;
+  total?: string;
   timestamp?: number;
   chain?: string;
   chainHash?: string;

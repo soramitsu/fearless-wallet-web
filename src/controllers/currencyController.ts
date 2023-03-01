@@ -134,7 +134,6 @@ export default class CurrencyController {
         network,
         type,
         precision,
-        icon: NetworksController.getNetwork(network).icon,
         existentialDeposit,
         balance: walletBalance ?? mockFPBalance,
         assetId,
@@ -349,9 +348,7 @@ export default class CurrencyController {
    * @returns {WalletBalance[]}
    */
   public getNetworksWithBalance(wallet: Wallet): WalletBalance[] {
-    return this.getWalletBalance(wallet)
-      .filter(({ balance: { total } }) => !FPNumber.isEqualTo(total, FPNumber.ZERO))
-      .map((el) => el);
+    return this.getWalletBalance(wallet).filter(({ balance: { total } }) => !FPNumber.isEqualTo(total, FPNumber.ZERO));
   }
 
   /**

@@ -5,14 +5,11 @@
 <script lang="ts">
 import { Vue, Prop, Component } from 'vue-property-decorator';
 
-import type { RelayChainName } from '@/interfaces';
 import NetworksController from '@/controllers/networksController';
 
 @Component
 export default class ExternalLogo extends Vue {
   @Prop(String) name!: string;
-  @Prop({ required: false, type: String }) relayChain?: RelayChainName;
-  @Prop(String) type!: string;
   @Prop({ default: 32 }) width!: number;
 
   get style() {
@@ -29,11 +26,10 @@ export default class ExternalLogo extends Vue {
   get iconName() {
     if (this.name === undefined || this.name === '') return '';
 
-    if (this.type === 'asset') {
-      return NetworksController.getAssetsIcon(this.name);
-    }
+    const assetIcon = NetworksController.getAssetIcon(this.name);
+    const networkIcon = NetworksController.getNetwork(this.name)?.icon;
 
-    return this.name;
+    return assetIcon || networkIcon || this.name;
   }
 }
 </script>

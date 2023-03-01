@@ -98,7 +98,6 @@
       :left="left"
       :height="285"
       :options="options"
-      :iconType="toggleIconType"
       :handlerFilter="handlerFilter"
       :toggleValue="toggleSelectedNetwork"
       :handlerClose="handlerCloseSelectPopup"
@@ -190,9 +189,6 @@ export default class SendForm extends Vue {
 
   get placeholderSelectPopup() {
     return this.showSelectedAssetPopup ? 'common.searchAmongAssets' : 'common.searchNetwork';
-  }
-  get toggleIconType() {
-    return this.showSelectedAssetPopup ? 'asset' : 'network';
   }
 
   get showTransferableValue() {

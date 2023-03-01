@@ -56,7 +56,6 @@
       :left="-160"
       :height="360"
       :options="optionsNetworks"
-      iconType="network"
       :handlerFilter="handlerFilter"
       :toggleValue="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"

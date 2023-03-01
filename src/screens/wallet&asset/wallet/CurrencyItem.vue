@@ -5,7 +5,7 @@
     </div>
 
     <div class="img-container">
-      <ExternalLogo class="main-network-img" type="asset" :name="currency.displayName" :width="42" />
+      <ExternalLogo class="main-network-img" :name="currency.assetId" :width="42" />
     </div>
 
     <div class="descriptions-column">
@@ -20,11 +20,10 @@
           <template v-else-if="!showWarning">
             <div class="available-networks">
               <ExternalLogo
-                v-for="{ icon, network } in availableInNetworksPart"
+                v-for="{ network } in availableInNetworksPart"
                 class="minor-network-img"
-                type="network"
                 :key="network"
-                :name="icon"
+                :name="network"
                 :width="12"
               />
 
@@ -223,11 +222,12 @@ export default class CurrencyItem extends Vue {
 
     if (this.isAdditional) return [...this.walletBalance].splice(0, this.countDisplayedNetworks - 1);
 
-    const isInludeMainNet = this.walletBalance.findIndex((el) => el.network.toUpperCase() === this.upperNetworkName);
+    const isIncludeMainNet = this.walletBalance.findIndex((el) => el.network.toUpperCase() === this.upperNetworkName);
 
-    if (isInludeMainNet >= 0) {
+    if (isIncludeMainNet !== -1) {
       const array = [...this.walletBalance];
-      array.splice(isInludeMainNet, 1);
+
+      array.splice(isIncludeMainNet, 1);
 
       return array;
     }

@@ -125,7 +125,7 @@ export default class CurrencyController {
         network,
         type,
         precision,
-        icon: this.icon,
+        icon: NetworksController.getNetwork(network).icon,
         existentialDeposit,
         balance: walletBalance ?? mockFPBalance,
         assetId,

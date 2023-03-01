@@ -222,6 +222,15 @@ export default class CurrencyItem extends Vue {
 
     if (this.isAdditional) return [...this.walletBalance].splice(0, this.countDisplayedNetworks - 1);
 
+    const isInludeMainNet = this.walletBalance.findIndex((el) => el.network.toUpperCase() === this.upperNetworkName);
+
+    if (isInludeMainNet >= 0) {
+      const array = [...this.walletBalance];
+      array.splice(isInludeMainNet, 1);
+
+      return array;
+    }
+
     return this.walletBalance;
   }
 

@@ -315,12 +315,12 @@ export default class BaseApi {
     }
   }
 
-  public static isValidJson(json: KeyringPair$Json, passwordJson: string): ValidateJsonResult {
+  public static isValidJson(json: KeyringPair$Json, passwordJson: string, isSubstrate = true): ValidateJsonResult {
     try {
       const pair = BaseApi.createFromJson(json);
 
       pair.decodePkcs8(passwordJson);
-      BaseApi.encodeAddress(pair.address);
+      if (isSubstrate) BaseApi.encodeAddress(pair.address);
 
       return { value: true };
     } catch ({ message }) {

@@ -10,6 +10,10 @@
 import { Watch, Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 // import { BalanceJson } from './extension/background/extension-base/src/background/types';
+import keyring from '@polkadot/ui-keyring';
+import { base64Decode } from '@polkadot/util-crypto';
+import { decodePair } from '@polkadot/keyring/pair/decode';
+import { u8aToHex } from '@polkadot/util';
 import type { SetSelectedWalletProps, setAccountsProps, Accounts, setAddressesProps, setOnlineStatus } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
 import type { BehaviorSubject } from 'rxjs';
@@ -23,7 +27,6 @@ import NetworksController from '@/controllers/networksController';
 import { accountController } from '@/controllers/accountController';
 import { resetTimeouts, subscribeBalance } from '@/extension/messaging';
 // import store from '@/store';
-
 @Component
 export default class App extends Vue {
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;

@@ -29,6 +29,11 @@ chrome.runtime.onInstalled.addListener(async () => {
   getActiveTabs();
 });
 
+chrome.alarms.create({ periodInMinutes: 0.4 });
+chrome.alarms.onAlarm.addListener(() => {
+  console.info('wake up service worker');
+});
+
 function deleteTimer(port: ModifiedPort) {
   if (port.timer) {
     clearTimeout(port.timer);

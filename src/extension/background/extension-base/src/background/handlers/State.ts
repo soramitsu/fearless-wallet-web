@@ -1174,10 +1174,6 @@ export default class State {
   }
 
   public setCurrentAccount(data: CurrentAccountInfo, callback?: () => void): void {
-    const { address, currentGenesisHash } = data;
-
-    if (address === 'ALL') data.allGenesisHash = currentGenesisHash || undefined;
-
     this.currentAccountStore.set('CurrentAccountInfo', data, () => {
       this.updateServiceInfo();
       callback && callback();
@@ -1282,22 +1278,9 @@ export default class State {
   }
 
   public initChainRegistry() {
-    this.chainRegistryMap = cacheRegistryMap; // prevents deleting token registry even when network is disabled
-    this.getCustomTokenStore((storedCustomTokens) => {
-      const customTokens = getTokensForChainRegistry(storedCustomTokens);
+    //INIT TOKEN MAP THERE
 
-      Object.entries(this.apis.substrate).forEach(([networkKey, { api }]) => {
-        getRegistry(networkKey, api)
-          .then((rs) => {
-            this.setChainRegistryItem(networkKey, rs);
-          })
-          .catch((e) => {
-            console.error(e);
-          });
-      });
-
-      this.onReady();
-    });
+    this.onReady();
   }
 
   private onReady() {

@@ -99,6 +99,7 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { googleManage } from '@/controllers/googleController';
 import { FilesResponse, GoogleAuthTypes, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
+import { getMetaTyped } from '@/helpers/common';
 
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
@@ -154,30 +155,36 @@ export default class Extension {
     return true;
   }
 
-  async accountsCreateSuri({
-    genesisHash,
-    name,
-    password,
-    suri,
-    type,
-    meta,
-  }: RequestAccountCreateSuri): Promise<boolean> {
+  createAccountsFromSuri() {
+    //create substrate pair
+    //crate ethereum pair
+  }
+
+  async accountsCreateSuri({ genesisHash, password, suri, type, meta }: RequestAccountCreateSuri): Promise<string> {
     const currentAccount = await new Promise<CurrentAccountInfo | void>((resolve) => {
       state.getCurrentAccount(resolve);
     });
-    const _suri = getSuri(suri, type);
-    const address = keyring.createFromUri(_suri, {}, type).address;
-    keyring.addUri(getSuri(suri, type), password, { genesisHash, name }, type);
     const allGenesisHash = currentAccount?.allGenesisHash || undefined;
+    const { pair } = keyring.addUri(suri, password, meta, type);
+    const { address } = pair;
+
+    if (isEthereumAddress(address)) {
+      const metaData = getMetaTyped(pair.meta);
+      metaData.ethereumAddress = address;
+      keyring.saveAccountMeta(pair, metaData as any);
+
+      return address;
+    }
 
     state.setCurrentAccount({
       address,
+      isMobile: (meta?.isMobile as boolean) ?? false,
       ethereumAddress: (meta?.ethereumAddress as string) ?? '',
       currentGenesisHash: genesisHash || null,
       allGenesisHash,
     });
 
-    return true;
+    return address;
   }
 
   accountsChangePassword({ address, newPass, oldPass }: RequestAccountChangePassword): boolean {
@@ -483,23 +490,20 @@ export default class Extension {
     callback?: (data: CurrentAccountInfo) => void
   ) {
     state.getCurrentAccount((accountInfo) => {
+      const isMobile = accountInfo.isMobile;
+
       if (!accountInfo) {
         accountInfo = {
           address,
+          isMobile,
           ethereumAddress: ethAddress,
           currentGenesisHash: ALL_GENESIS_HASH,
           allGenesisHash: ALL_GENESIS_HASH || undefined,
         };
       } else {
-        accountInfo.address = address;
-
-        if (address !== 'ALL') {
-          const currentKeyPair = keyring.getAccount(address);
-
-          accountInfo.currentGenesisHash = (currentKeyPair?.meta.genesisHash as string) || ALL_GENESIS_HASH;
-        } else {
-          accountInfo.currentGenesisHash = accountInfo.allGenesisHash || ALL_GENESIS_HASH;
-        }
+        const currentKeyPair = keyring.getAccount(address);
+        accountInfo.isMobile = currentKeyPair?.meta.isMobile as boolean;
+        accountInfo.currentGenesisHash = (currentKeyPair?.meta.genesisHash as string) || ALL_GENESIS_HASH;
       }
 
       state.setCurrentAccount(accountInfo, () => {

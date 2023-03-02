@@ -134,7 +134,7 @@ export interface RequestSignatures {
   //Account Managment
   'pri(accounts.create.external)': [RequestAccountCreateExternal, boolean];
   'pri(accounts.create.hardware)': [RequestAccountCreateHardware, boolean];
-  'pri(accounts.create.suri)': [RequestAccountCreateSuri, boolean];
+  'pri(accounts.create.suri)': [RequestAccountCreateSuri, string];
   'pri(addresses.create)': [RequestAddressCreate, boolean];
   'pri(addresses.remove)': [RequestAddressRemove, boolean];
   'pri(addresses.get)': [null, KeyringAddress[]];
@@ -281,10 +281,9 @@ export interface RequestAccountCreateExternal {
 }
 
 export interface RequestAccountCreateSuri {
-  name: string;
-  genesisHash?: string | null;
-  password: string;
   suri: string;
+  password: string;
+  genesisHash?: string | null;
   type?: KeypairType;
   meta?: Record<string, unknown>;
 }

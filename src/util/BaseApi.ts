@@ -201,7 +201,7 @@ export default class BaseApi {
     const { pair } = keyring.addUri(suri, password, meta, type);
     const name = meta.name as string;
 
-    createAccountSuri(name, password, suri, type, undefined, meta); // for proper work of extension
+    createAccountSuri(password, suri, type, undefined, meta); // for proper work of extension
 
     return pair;
   }

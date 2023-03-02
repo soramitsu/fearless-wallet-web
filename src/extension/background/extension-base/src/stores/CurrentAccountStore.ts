@@ -7,6 +7,7 @@ import SubscribableStore from './SubscribableStore';
 export interface CurrentAccountInfo {
   address: string;
   ethereumAddress: string;
+  isMobile: boolean;
   currentGenesisHash: string | null;
   allGenesisHash?: string;
 }

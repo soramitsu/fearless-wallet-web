@@ -163,6 +163,7 @@ import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
+import { createAccountSuri } from '@/extension/messaging';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
 
@@ -468,7 +469,7 @@ export default class AddWallet extends Vue {
         return;
       }
 
-      const address = this.saveKeypair();
+      const address = await this.saveKeypair();
 
       this.setSelectedWallet({ selectedWalletAddress: address || this.selectedWallet.address });
 
@@ -744,7 +745,7 @@ export default class AddWallet extends Vue {
     return this.saveKeypairFromSeed();
   }
 
-  saveKeypairFromSeed() {
+  async saveKeypairFromSeed() {
     const meta: Record<string, unknown> = { name: this.nickname.trim(), ethereumAddress: '' };
     const {
       substrate: { keypairType: substrateKeypairType },
@@ -752,23 +753,26 @@ export default class AddWallet extends Vue {
     } = this.derivationPaths;
 
     if (this.suriEthereum !== '') {
-      const { address: ethereumAddress } = BaseApi.addKeypair(
-        this.suriEthereum,
+      const ethereumAddress = await createAccountSuri(
         this.walletPassword,
-        meta,
-        ethereumKeypairType
-      );
-
-      if (this.isOnlyEthereumAccountFlow) {
-        BaseApi.saveEthereumAddress(this.selectedWallet.address, ethereumAddress);
-
-        return '';
-      }
+        this.suriEthereum,
+        ethereumKeypairType,
+        undefined,
+        meta
+      ); // for proper work of extension
 
       meta.ethereumAddress = ethereumAddress;
     }
 
-    const { address } = BaseApi.addKeypair(this.suriSubstrate, this.walletPassword, meta, substrateKeypairType);
+    const address = await createAccountSuri(
+      this.walletPassword,
+      this.suriSubstrate,
+      substrateKeypairType,
+      undefined,
+      meta
+    ); // for proper work of extension
+
+    // const { address } = BaseApi.addKeypair(this.suriSubstrate, this.walletPassword, meta, substrateKeypairType);
 
     return address;
   }

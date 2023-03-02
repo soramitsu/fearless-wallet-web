@@ -4,7 +4,7 @@
       <div class="content">
         <div class="name">{{ name }}</div>
 
-        <WalletBalance class="balance" :balance="balance" :changeWalletBalance="changeWalletBalance" />
+        <!-- <WalletBalance class="balance" :balance="balance" :changeWalletBalance="changeWalletBalance" /> -->
       </div>
 
       <Icon v-if="isMobile" icon="mobile" className="mobile" />
@@ -49,6 +49,7 @@ export default class WalletInfo extends Vue {
       },
     ];
   }
+
   updateSelectedWallet({ target: { classList } }: CustomEvent) {
     const shouldUpdateSelectedWallet = !(
       classList.contains('dots-container') ||

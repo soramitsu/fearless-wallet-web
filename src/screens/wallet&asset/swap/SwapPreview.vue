@@ -47,8 +47,8 @@
         {{ $t(minMaxLabel) }}
 
         <div class="value">
-          <div>{{ minMaxAmount }} {{ minMaxAssetName }}</div>
-          <div class="price">{{ fiatSymbol }} {{ minMaxAmountPrice }}</div>
+          <div>{{ minMaxAmount }}</div>
+          <div class="price">{{ minMaxAmountPrice }}</div>
         </div>
       </div>
 
@@ -81,7 +81,7 @@ import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { firstCharToUp } from '@/helpers/common';
 import { formattedCountAsset, formattedPrice } from '@/helpers/numbers';
-import { soraUtilityAsset } from '@/consts/currencies';
+import { SORA_UTILITY_ASSET } from '@/consts/networks';
 
 @Component
 export default class SwapPreview extends Vue {
@@ -102,11 +102,7 @@ export default class SwapPreview extends Vue {
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
   get soraMainAsset() {
-    return soraUtilityAsset;
-  }
-
-  get minMaxAssetName() {
-    return this.isExchangeB ? this.sendAssetUP : this.receiveAssetUP;
+    return SORA_UTILITY_ASSET;
   }
 
   get sendAmountCut() {

@@ -97,8 +97,14 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
 import type { TMutation, TabWallet } from '@/interfaces/common';
-import type { SetSelectedNetworkProps, SelectedWallet, SetCurrenciesProps, GetNetworkStatus } from '@/store';
-import type { Network, Networks } from '@/interfaces';
+import type {
+  SetSelectedNetworkProps,
+  SelectedWallet,
+  SetCurrenciesProps,
+  GetNetworkStatus,
+  GetNetwork,
+} from '@/store';
+import type { Networks } from '@/interfaces';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import ContentSettings from '@/screens/wallet&asset/wallet/ContentSettings.vue';
@@ -159,11 +165,9 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => Network;
-
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
-
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
   @Mutation(AccountsMutationTypes.SET_CUSTOM_SORT) setCustomSorting!: TMutation<string>;

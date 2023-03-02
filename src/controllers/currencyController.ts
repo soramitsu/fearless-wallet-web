@@ -33,7 +33,7 @@ import { createExtrinsicTransfer, getAssetOptions } from '@/util/assets';
 import { BeaconSigner } from '@/extension/background/extension-base/src/background/BeaconSigner';
 import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
-import { mockBalance, mockFPBalance } from '@/consts/currencies';
+import { MOCK_BALANCE, MOCK_FP_BALANCE } from '@/consts/currencies';
 import { saveTimeoutCache } from '@/extension/messaging';
 
 type TransactionStatus = 'success' | 'failed' | 'pending';
@@ -126,7 +126,7 @@ export default class CurrencyController {
         type,
         precision,
         existentialDeposit,
-        balance: walletBalance ?? mockFPBalance,
+        balance: walletBalance ?? MOCK_FP_BALANCE,
         assetId,
       };
     });
@@ -148,7 +148,7 @@ export default class CurrencyController {
         reserved: obj.reserved.add(reserved),
         transferable: obj.transferable.add(transferable),
       };
-    }, mockFPBalance);
+    }, MOCK_FP_BALANCE);
   }
 
   /**
@@ -174,7 +174,7 @@ export default class CurrencyController {
 
     const balance = walletBalance.find(({ network }) => network === _network)?.balance;
 
-    if (balance === undefined) return mockBalance;
+    if (balance === undefined) return MOCK_BALANCE;
 
     const { frozen, locked, reserved, total, transferable } = balance;
 

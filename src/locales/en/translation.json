@@ -198,6 +198,7 @@
       "reward": "Reward",
       "extrinsic": "Extrinsic"
     },
+    "balance": "Balance:",
     "transactionFrontrun": "{value}% - Your transaction may fail",
     "market": "Market",
     "swapPreview": "Swap preview",

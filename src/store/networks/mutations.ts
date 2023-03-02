@@ -1,3 +1,4 @@
+import { FPNumber } from '@sora-substrate/util';
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
 import type {
@@ -12,8 +13,10 @@ import type {
   SetNetworkApiProps,
   SetNetworkStatusProps,
   SetAssetsPriceIntervalProps,
+  SetSoraFee,
 } from './types';
 import { accountController } from '@/controllers/accountController';
+import { isSora } from '@/helpers/common';
 
 export enum MutationTypes {
   SET_NETWORKS = 'SET_NETWORKS',
@@ -28,6 +31,7 @@ export enum MutationTypes {
   SET_ACTIVE_NODE = 'SET_ACTIVE_NODE',
   SET_NETWORK_API = 'SET_NETWORK_API',
   SET_NETWORK_STATUS = 'SET_NETWORK_STATUS',
+  SET_SORA_FEE = 'SET_SORA_FEE',
 }
 
 export type Mutations = {
@@ -42,6 +46,7 @@ export type Mutations = {
   [MutationTypes.SET_ACTIVE_NODE](state: State, props: SetActiveNodeProps): void;
   [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApiProps): void;
   [MutationTypes.SET_NETWORK_STATUS](state: State, props: SetNetworkStatusProps): void;
+  [MutationTypes.SET_SORA_FEE](state: State, props: SetSoraFee): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -217,6 +222,13 @@ const mutations: MutationTree<State> & Mutations = {
     } else {
       state.networks[networkIndex].status = status;
     }
+  },
+
+  [MutationTypes.SET_SORA_FEE](state, { fee }) {
+    const soraIndex = state.networks.findIndex(({ name }) => isSora(name))!;
+    const newSoraItem = { ...state.networks[soraIndex], fee: FPNumber.fromCodecValue(fee).toString() };
+
+    state.networks.splice(soraIndex, 1, newSoraItem);
   },
 };
 

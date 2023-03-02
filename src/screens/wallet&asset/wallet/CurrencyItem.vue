@@ -176,7 +176,7 @@ export default class CurrencyItem extends Vue {
     const { hours24Change } = this.currency;
     const change = +formattedNumber(hours24Change, { returnOriginNumber: false }) / 100;
 
-    return this.$n(change, 'percent');
+    return change === 0 ? '' : `${change > 0 ? '+' : ''}${this.$n(change, 'percent')}`;
   }
 
   get assetString() {
@@ -192,11 +192,11 @@ export default class CurrencyItem extends Vue {
   get totalBalanceString() {
     const balance = +this.currency.getTotalBalance(this.selectedWallet, this.selectedNetwork);
 
-    return `${this.fiatSymbol}${this.$n(balance, 'decimal')}`;
+    return `${this.fiatSymbol}${this.$n(balance, 'price')}`;
   }
 
   get priceString() {
-    return `${this.fiatSymbol}${this.$n(this.currency.price, 'decimal')}`;
+    return `${this.fiatSymbol}${this.$n(this.currency.price, 'price')}`;
   }
 
   get upperNetworkName() {

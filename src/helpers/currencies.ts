@@ -5,7 +5,7 @@ import BaseApi from '@/util/BaseApi';
 import CurrencyController from '@/controllers/currencyController';
 import NetworksController from '@/controllers/networksController';
 import { MAIN_NETWORKS } from '@/consts/networks';
-import { mockFPBalance } from '@/consts/currencies';
+import { MOCK_FP_BALANCE } from '@/consts/currencies';
 
 type CurrencyMock = {
   mainNetwork: string;
@@ -82,7 +82,7 @@ function getMockCurrencies(networks: Networks): Currencies {
             const isEthereumAccountType = BaseApi.getPair(address).type === 'ethereum';
 
             if ((isEthereumNetwork && isEthereumAccountType) || (!isEthereumNetwork && !isEthereumAccountType))
-              balance[address] = mockFPBalance;
+              balance[address] = MOCK_FP_BALANCE;
           });
         });
 

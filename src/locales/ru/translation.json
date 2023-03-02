@@ -196,6 +196,7 @@
       "reward": "Награды",
       "extrinsic": "Экстринсики"
     },
+    "balance": "Баланс:",
     "transactionFrontrun": "{value}% -  Ваша транзакция может не пройти",
     "market": "Маркет",
     "swapPreview": "Предпросмотр свопа",

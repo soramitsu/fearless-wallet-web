@@ -34,6 +34,10 @@ export default new VueI18n({
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       },
+      price: {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      },
     },
     'ru-RU': {
       currency: {
@@ -48,6 +52,10 @@ export default new VueI18n({
       },
       percent: {
         style: 'percent',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      },
+      price: {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       },

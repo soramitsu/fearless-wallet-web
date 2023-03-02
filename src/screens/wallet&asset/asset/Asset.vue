@@ -190,6 +190,7 @@ export default class Asset extends Vue {
   showSelectNetworkPopup = false;
   showBalanceDetailsPopup = false;
   filterValue = '';
+
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -265,6 +266,7 @@ export default class Asset extends Vue {
 
     return `${this.fiatSymbol} ${this.$n(+total, 'decimal')}`;
   }
+
   get currency() {
     return this.currencies.find(({ assetId }) => assetId === this.selectedAssetId);
   }

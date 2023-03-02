@@ -147,11 +147,11 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transferAmountString() {
-    return `-${this.amount} ${this.currency?.displayName.toUpperCase()}`;
+    return `-${this.$n(+this.amount, 'decimal')} ${this.currency?.displayName.toUpperCase()}`;
   }
 
   get transferValueString() {
-    return `$${this.value}`;
+    return `$${this.$n(+this.value, 'price')}`;
   }
 
   get isTransactionNotInit() {

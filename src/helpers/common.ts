@@ -1,6 +1,6 @@
 import type { Meta, ReplacedMeta, AddressMeta } from '@/interfaces/common';
 import type { KeyringPair$Meta } from '@polkadot/keyring/types';
-import { isProduction } from '@/consts/global';
+import { SORA_NETWORK_NAME } from '@/consts/networks';
 
 function firstCharToUp(string: string) {
   return `${string.charAt(0).toUpperCase()}${string.slice(1)}`;
@@ -19,9 +19,7 @@ function getReplacedMetaTyped(meta: KeyringPair$Meta) {
 }
 
 function isSora(network: string) {
-  const networkName = isProduction ? 'sora mainnet' : 'sora test';
-
-  return network === networkName;
+  return network === SORA_NETWORK_NAME;
 }
 
 export { getReplacedMetaTyped, getAddressMetaTyped, getMetaTyped, firstCharToUp, isSora };

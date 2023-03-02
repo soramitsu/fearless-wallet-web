@@ -62,7 +62,7 @@
               @toggleSelectAssetPopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'receive')"
             />
 
-            <div class="swap-icon" @click="swapAssets">
+            <div :class="classesSwapIcon" @click="swapAssets">
               <Icon icon="swap" class="img" />
             </div>
 
@@ -71,8 +71,8 @@
                 {{ sendAssetUP }} / {{ receiveAssetUP }}
 
                 <div class="fiat-info">
-                  <div>{{ AToBCut }} {{ receiveAssetUP }}</div>
-                  <div class="price">{{ fiatSymbol }} {{ AToBValueCut }}</div>
+                  <div>{{ AToBCut }}</div>
+                  <div class="price">{{ AToBValueCut }}</div>
                 </div>
               </div>
 
@@ -80,36 +80,36 @@
                 {{ receiveAssetUP }} / {{ sendAssetUP }}
 
                 <div class="fiat-info">
-                  <div>{{ BToACut }} {{ sendAssetUP }}</div>
-                  <div class="price">{{ fiatSymbol }} {{ BToAValueCut }}</div>
+                  <div>{{ BToACut }}</div>
+                  <div class="price">{{ BToAValueCut }}</div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div>{{ $t(minMaxLabel) }}</div>
+
+                <div class="fiat-info">
+                  <div>{{ minMaxAmountCut }}</div>
+                  <div class="price">{{ minMaxAmountPrice }}</div>
                 </div>
               </div>
             </template>
 
-            <div class="row">
-              <div>{{ $t(minMaxLabel) }}</div>
-
-              <div class="fiat-info">
-                <div>{{ minMaxAmountCut }} {{ minMaxAssetName }}</div>
-                <div class="price">{{ fiatSymbol }} {{ minMaxAmountPrice }}</div>
-              </div>
-            </div>
-
-            <div class="row">
+            <!-- <div class="row">
               {{ $t('asset.priceImpact') }}
 
               <div class="fiat-info">
                 <div>-</div>
               </div>
-            </div>
+            </div> -->
 
-            <div class="row">
+            <!-- <div class="row">
               {{ $t('asset.route') }}
 
               <div class="fiat-info">
                 <div>-</div>
               </div>
-            </div>
+            </div> -->
 
             <div class="row last-row">
               {{ $t('asset.networkFee') }}
@@ -198,7 +198,7 @@
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Currencies, NetworkStatus } from '@/interfaces';
-import type { GetAssetName, SelectedWallet, GetNetworkStatus } from '@/store';
+import type { GetAssetName, SelectedWallet, GetNetworkStatus, GetNetwork } from '@/store';
 import SwapSelectInput from '@/screens/wallet&asset/swap/SwapSelectInput.vue';
 import SwapPreview from '@/screens/wallet&asset/swap/SwapPreview.vue';
 import SwapSettings from '@/screens/wallet&asset/swap/SwapSettings.vue';
@@ -208,7 +208,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { formattedCountAsset, formattedPrice } from '@/helpers/numbers';
 import NetworksController from '@/controllers/networksController';
-import { soraUtilityAsset } from '@/consts/currencies';
+import { SORA_UTILITY_ASSET } from '@/consts/networks';
 
 @Component({
   components: {
@@ -228,10 +228,7 @@ export default class SwapForm extends Vue {
   receiveAssetId = '';
   sendAmount = '';
   receiveAmount = '';
-  sendValue = '';
-  receiveValue = '';
   minMaxAmount = '';
-  fee = '';
   providerFee = '';
   selectAssetType = '';
   AToB = '';
@@ -244,11 +241,21 @@ export default class SwapForm extends Vue {
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) selectedNetwork!: string;
   @Prop(String) _selectedAssetId!: string;
-  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get classesSwapIcon() {
+    return [
+      'swap-icon',
+      {
+        'swap-icon-disable': this.receiveAssetId === '',
+      },
+    ];
+  }
 
   get feePrice() {
     const mainAsset = this.soraMainAsset.toLocaleLowerCase();
@@ -260,7 +267,11 @@ export default class SwapForm extends Vue {
   }
 
   get soraMainAsset() {
-    return soraUtilityAsset;
+    return SORA_UTILITY_ASSET;
+  }
+
+  get fee() {
+    return this.getNetwork(this.selectedNetwork)?.fee ?? '';
   }
 
   get minMaxAmountPrice() {
@@ -268,11 +279,11 @@ export default class SwapForm extends Vue {
       ? this.sendCurrency?.getCostOfAssets(this.minMaxAmount)
       : this.receiveCurrency?.getCostOfAssets(this.minMaxAmount);
 
-    return formattedPrice(+(price ?? '0'));
+    return `${this.fiatSymbol} ${formattedPrice(+(price ?? '0'))}`;
   }
 
   get minMaxAmountCut() {
-    return formattedCountAsset(+this.minMaxAmount);
+    return `${formattedCountAsset(+this.minMaxAmount)} ${this.minMaxAssetName}`;
   }
 
   get minMaxAssetName() {
@@ -280,23 +291,33 @@ export default class SwapForm extends Vue {
   }
 
   get AToBCut() {
-    return this.sendAmount === '' || this.receiveAmount === '' ? '0' : formattedCountAsset(+this.AToB);
+    const value = this.sendAmount === '' || this.receiveAmount === '' ? '0' : formattedCountAsset(+this.AToB);
+
+    return `${value} ${this.receiveAssetUP}`;
   }
 
   get BToACut() {
-    return this.sendAmount === '' || this.receiveAmount === '' ? '0' : formattedCountAsset(+this.BToA);
+    const value = this.sendAmount === '' || this.receiveAmount === '' ? '0' : formattedCountAsset(+this.BToA);
+
+    return `${value} ${this.sendAssetUP}`;
   }
 
   get AToBValueCut() {
-    return this.sendAmount === '' || this.receiveAmount === ''
-      ? '0'
-      : formattedPrice(+this.sendCurrency!.getCostOfAssets(this.AToB));
+    const value =
+      this.sendAmount === '' || this.receiveAmount === ''
+        ? '0'
+        : formattedPrice(+this.sendCurrency!.getCostOfAssets(this.AToB));
+
+    return `${this.fiatSymbol} ${value}`;
   }
 
   get BToAValueCut() {
-    return this.sendAmount === '' || this.receiveAmount === ''
-      ? '0'
-      : formattedPrice(+this.sendCurrency!.getCostOfAssets(this.BToA));
+    const value =
+      this.sendAmount === '' || this.receiveAmount === ''
+        ? '0'
+        : formattedPrice(+this.sendCurrency!.getCostOfAssets(this.BToA));
+
+    return `${this.fiatSymbol} ${value}`;
   }
 
   get minMaxLabel() {
@@ -443,6 +464,14 @@ export default class SwapForm extends Vue {
     return this.getNetworkStatus(this.selectedNetwork);
   }
 
+  get sendValue() {
+    return this.sendCurrency?.getCostOfAssets(this.sendAmount);
+  }
+
+  get receiveValue() {
+    return this.receiveCurrency?.getCostOfAssets(this.receiveAmount);
+  }
+
   @Watch('networkStatus')
   connect(status: NetworkStatus) {
     if (status === 'ready') this.initializeSora();
@@ -455,26 +484,27 @@ export default class SwapForm extends Vue {
   }
 
   async initializeSora() {
+    if (this.fee !== '') return;
+
     try {
       await NetworksController.initializeSora();
-
-      this.fee = await NetworksController.calcSoraFee();
+      await NetworksController.calcSoraFee();
     } catch (ex) {
       console.info('initializeSora', ex);
     }
   }
 
   async createSwap() {
-    if (
-      this.sendAssetId === '' ||
-      this.receiveAssetId === '' ||
-      (this.isExchangeB && this.receiveAmount == '') ||
-      (!this.isExchangeB && this.sendAmount === '')
-    ) {
+    if (this.sendAssetId === '' || this.receiveAssetId === '') {
+      if (this.isExchangeB) this.sendAmount = '';
+      else this.receiveAmount = '';
+
+      return;
+    }
+
+    if ((this.isExchangeB && this.receiveAmount == '') || (!this.isExchangeB && this.sendAmount === '')) {
       this.sendAmount = '';
       this.receiveAmount = '';
-      this.sendValue = '';
-      this.receiveValue = '';
 
       return;
     }
@@ -491,15 +521,8 @@ export default class SwapForm extends Vue {
       isExchangeB: this.isExchangeB,
     });
 
-    if (this.isExchangeB) {
-      this.sendAmount = amountA;
-      this.sendValue = this.sendCurrency!.getCostOfAssets(amountA);
-      this.receiveValue = this.receiveCurrency!.getCostOfAssets(this.receiveAmount);
-    } else {
-      this.receiveAmount = amountB;
-      this.sendValue = this.sendCurrency!.getCostOfAssets(this.sendAmount);
-      this.receiveValue = this.receiveCurrency!.getCostOfAssets(amountB);
-    }
+    if (this.isExchangeB) this.sendAmount = amountA;
+    else this.receiveAmount = amountB;
 
     this.minMaxAmount = minMaxValue;
     this.providerFee = providerFee;
@@ -571,6 +594,8 @@ export default class SwapForm extends Vue {
   }
 
   swapAssets() {
+    if (this.receiveAssetId === '') return;
+
     const sendAssetId = this.sendAssetId;
 
     if (this.isExchangeB) this.sendAmount = this.receiveAmount;
@@ -665,6 +690,11 @@ export default class SwapForm extends Vue {
 .img {
   height: 20px;
   width: 20px;
+}
+
+.swap-icon-disable {
+  cursor: not-allowed !important;
+  background-color: rgb(29, 29, 29) !important;
 }
 
 .close {

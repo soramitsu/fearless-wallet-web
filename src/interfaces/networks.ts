@@ -77,6 +77,7 @@ type Network = {
   settings: Record<string, any>;
   externalApi: ExternalApi;
   status: NetworkStatus;
+  fee?: string; // only Sora network
 };
 
 type Networks = Network[];

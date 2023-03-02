@@ -227,11 +227,10 @@ export interface RequestAccountCreateExternal {
 }
 
 export interface RequestAccountCreateSuri {
-  name: string;
-  genesisHash?: string | null;
   password: string;
   suri: string;
   type?: KeypairType;
+  meta: KeyringPair$Meta;
 }
 
 export interface RequestAccountCreateHardware {

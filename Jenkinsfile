@@ -9,8 +9,10 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'MOZILLA_API_USER', variable: 'MOZILLA_API_USER'],
     [$class: 'StringBinding', credentialsId: 'MOZILLA_API_TOKEN', variable: 'MOZILLA_API_TOKEN'],
     [$class: 'StringBinding', credentialsId: 'sorabot-github-token', variable: 'GH_TOKEN'],
-    [$class: 'StringBinding', credentialsId: 'moonpay-test-secret', variable: 'MOONPAY_TEST_SECRET'],
-    [$class: 'StringBinding', credentialsId: 'moonpay-production-secret', variable: 'MOONPAY_PRODUCTION_SECRET']
+    [$class: 'StringBinding', credentialsId: 'RAMP_TEST_API_KEY', variable: 'RAMP_TEST_API_KEY'],
+    [$class: 'StringBinding', credentialsId: 'RAMP_PROD_API_KEY', variable: 'RAMP_PROD_API_KEY'],
+    [$class: 'StringBinding', credentialsId: 'MOONPAY_TEST_API_KEY', variable: 'MOONPAY_TEST_API_KEY'],
+    [$class: 'StringBinding', credentialsId: 'MOONPAY_PROD_API_KEY', variable: 'MOONPAY_PROD_API_KEY']
   ]
 
 def pipeline = new org.js.AppArtifactsPipeline(

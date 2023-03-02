@@ -29,7 +29,7 @@ export default class BuyPopup extends Vue {
     return this.$t('asset.buyHeader', { asset: this.asset });
   }
 
-  openProvider(providerName: 'moonPay' | 'ramp') {
+  openProvider(providerName: 'moonpay' | 'ramp') {
     const url = getProviderUrl(providerName, this.asset, this.address);
 
     window.open(url);

@@ -19,7 +19,7 @@
         <Corners class="corners-button" @click.native="$emit('toggleSelectAssetPopupVisibility')">
           <button class="select-button">
             <template v-if="asset !== ''">
-              <ExternalLogo class="asset-icon" :name="asset" :width="32" />
+              <ExternalLogo class="asset-icon" :name="assetId" :width="32" />
 
               <div class="asset">{{ asset.toUpperCase() }}</div>
             </template>
@@ -53,6 +53,7 @@ export default class SwapSelectInput extends Vue {
 
   @Prop({ default: '' }) text!: string;
   @Prop({ default: '' }) asset!: string;
+  @Prop({ default: '' }) assetId!: string;
   @Prop({ default: '' }) value!: string;
   @Prop({ default: '' }) balance!: string;
   @PropSync('amount', { type: String }) syncedAmount!: string;

@@ -189,7 +189,7 @@ export default class SendForm extends Vue {
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
 
   get firstIcon() {
-    return this.extrinsicType === 'transfer' ? this.selectedAsset : this.syncedSelectedNetwork;
+    return this.extrinsicType === 'transfer' ? this.syncedSelectedAssetId : this.syncedSelectedNetwork;
   }
 
   get placeholderSelectPopup() {

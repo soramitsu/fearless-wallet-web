@@ -41,6 +41,7 @@
               :balance="transferrableSendAmount"
               :value="sendValue"
               :asset="sendAsset"
+              :assetId="sendAssetId"
               :amount="sendAmount"
               :isRotate="isSendAssetType"
               @update:amount="updateSendAmount"
@@ -54,6 +55,7 @@
               :balance="transferrableReceiveAmount"
               :value="receiveValue"
               :asset="receiveAsset"
+              :assetId="receiveAssetId"
               :amount="receiveAmount"
               :isRotate="isReceiveAssetType"
               @update:amount="updateReceiveAmount"
@@ -406,11 +408,11 @@ export default class SwapForm extends Vue {
   }
 
   get buttonPreviewDisabled() {
-    if (this.step === 2) return false;
+    if (this.step === 2 || this.showSettings) return false;
 
     if (this.fee === '') return true;
 
-    return (this.sendAssetId === '' || this.receiveAssetId === '' || this.sendAmount === '') && !this.showSettings;
+    return this.sendAssetId === '' || this.receiveAssetId === '' || this.sendAmount === '';
   }
 
   get marketTypeUP() {

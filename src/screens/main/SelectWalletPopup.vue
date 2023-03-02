@@ -41,7 +41,6 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
 import { addNumbers, getChangeWalletBalance } from '@/helpers/numbers';
-import { subscribeAccounts } from '@/extension/messaging';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types';
 
 @Component({
@@ -54,12 +53,6 @@ export default class SelectWalletPopup extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
   accountsFromSub: AccountJson[] = [];
-
-  mounted() {
-    subscribeAccounts((accounts) => {
-      this.accountsFromSub.push(...accounts);
-    });
-  }
 
   get wallets() {
     const accounts = Object.keys(this.accounts)

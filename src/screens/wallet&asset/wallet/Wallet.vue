@@ -134,7 +134,7 @@ import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.v
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import Loading from '@/components/Loading.vue';
-import { tieAccount, subscribeBalance, subscribeAccounts, subscribePrice } from '@/extension/messaging';
+import { tieAccount, subscribeBalance, subscribePrice } from '@/extension/messaging';
 import store from '@/store';
 import { BalanceJson, PriceJson } from '@/extension/background/extension-base/src/background/types';
 import { COINGECKO_TOKENS } from '@/consts/networks';

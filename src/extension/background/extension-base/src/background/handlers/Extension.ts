@@ -3,9 +3,15 @@
 
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
-import { assert, isHex, BN, BN_ZERO } from '@polkadot/util';
-import { keyExtractSuri, mnemonicGenerate, mnemonicValidate, isEthereumAddress } from '@polkadot/util-crypto';
-
+import { hexToU8a, isHex, assert, BN, BN_ZERO } from '@polkadot/util';
+import {
+  keyExtractSuri,
+  mnemonicGenerate,
+  mnemonicValidate,
+  isEthereumAddress,
+  base64Decode,
+} from '@polkadot/util-crypto';
+import { createPair } from '@polkadot/keyring';
 import { keyring } from '@polkadot/ui-keyring';
 import {
   ActiveTabAuthorizeStatus,
@@ -21,10 +27,12 @@ import {
   RequestAccountExportPrivateKey,
   RequestCheckTransfer,
   RequestCurrentAccountAddress,
+  RequestJsonValidate,
   RequestTransfer,
   ResponseAccountExportPrivateKey,
   ResponseCheckTransfer,
   TransferErrorCode,
+  ValidateJsonResult,
 } from '../types';
 import { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import { RequestTransactionHistoryAdd, RequestTransactionHistoryGet, TransactionHistoryItemType } from '../../types';
@@ -272,6 +280,14 @@ export default class Extension {
     return remainingTime;
   }
 
+  public encodeAddress = (key: string | Uint8Array, ss58Format?: number): string => {
+    return keyring.encodeAddress(key, ss58Format);
+  };
+
+  public decodeAddress = (key: string | Uint8Array, ignoreChecksum?: boolean, ss58Format?: number): Uint8Array => {
+    return keyring.decodeAddress(key, ignoreChecksum, ss58Format);
+  };
+
   resetTimeouts(): boolean {
     const newCachedUnlocks: CachedUnlocks = {};
 
@@ -430,22 +446,63 @@ export default class Extension {
     return true;
   }
 
-  jsonRestore({ file, password }: RequestJsonRestore): void {
+  private validatePassword(json: KeyringPair$Json, password: string): boolean {
+    const cryptoType = Array.isArray(json.encoding.content) ? json.encoding.content[1] : 'ed25519';
+    const encType = Array.isArray(json.encoding.type) ? json.encoding.type : [json.encoding.type];
+    const pair = createPair(
+      { toSS58: this.encodeAddress, type: cryptoType as KeypairType },
+      { publicKey: this.decodeAddress(json.address, true) },
+      json.meta,
+      isHex(json.encoded) ? hexToU8a(json.encoded) : base64Decode(json.encoded),
+      encType
+    );
+
+    // unlock then lock (locking cleans secretKey, so needs to be last)
     try {
-      keyring.restoreAccount(file, password);
-    } catch (error) {
-      throw new Error((error as Error).message);
+      pair.decodePkcs8(password);
+      pair.lock();
+
+      return true;
+    } catch (e) {
+      console.error(e);
+
+      return false;
     }
   }
 
-  jsonValid({ file, password }: RequestJsonRestore): boolean {
-    try {
-      keyring.restoreAccount(file, password);
-    } catch (error) {
-      return false;
-    }
+  jsonRestore({ file, password }: RequestJsonRestore): Promise<string> {
+    const isPasswordValidated = this.validatePassword(file, password);
+    const { address, ethereumAddress } = this.jsonGetAccountInfo(file);
 
-    return true;
+    if (isPasswordValidated) {
+      return new Promise((resolve, reject) => {
+        try {
+          this._saveCurrentAccountAddress(address, ethereumAddress, () => {
+            const pair = keyring.restoreAccount(file, password);
+
+            resolve(pair.address);
+          });
+        } catch (error) {
+          reject({ error: (error as Error).message });
+        }
+      });
+    } else {
+      throw new Error('Unable to decode using the supplied passphrase');
+    }
+  }
+
+  jsonValid({ file, password, isSubstrate }: RequestJsonValidate): ValidateJsonResult {
+    try {
+      const pair = keyring.restoreAccount(file, password);
+      pair.decodePkcs8(password);
+      if (isSubstrate) keyring.encodeAddress(pair.address);
+
+      return { value: true };
+    } catch ({ message }) {
+      const errorType = message === 'Unable to decode using the supplied passphrase' ? 'jsonPassword' : 'jsonInvalid';
+
+      return { value: false, errorType };
+    }
   }
 
   batchRestore({ file, password }: RequestBatchRestore): void {
@@ -460,12 +517,13 @@ export default class Extension {
     try {
       const {
         address,
-        meta: { genesisHash, name },
+        meta: { genesisHash, name, ethereumAddress },
         type,
       } = keyring.createFromJson(json);
 
       return {
         address,
+        ethereumAddress,
         genesisHash,
         name,
         type,

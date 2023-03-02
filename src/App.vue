@@ -7,13 +7,8 @@
 </template>
 
 <script lang="ts">
-import { Watch, Component, Vue } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
-// import { BalanceJson } from './extension/background/extension-base/src/background/types';
-import keyring from '@polkadot/ui-keyring';
-import { base64Decode } from '@polkadot/util-crypto';
-import { decodePair } from '@polkadot/keyring/pair/decode';
-import { u8aToHex } from '@polkadot/util';
 import type { SetSelectedWalletProps, setAccountsProps, Accounts, setAddressesProps, setOnlineStatus } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
 import type { BehaviorSubject } from 'rxjs';
@@ -24,9 +19,8 @@ import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutatio
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import NetworksController from '@/controllers/networksController';
-import { accountController } from '@/controllers/accountController';
-import { resetTimeouts, subscribeBalance } from '@/extension/messaging';
-// import store from '@/store';
+import { subscribeAccounts } from '@/extension/messaging';
+
 @Component
 export default class App extends Vue {
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
@@ -46,30 +40,9 @@ export default class App extends Vue {
   created() {
     if (BaseApi.isExtension()) {
       this.extensionSubscribe();
-      resetTimeouts();
     }
 
     this.setWallet();
-    // this.addEventOnline();
-    // this.connectToNodes();
-    // this.subscribeToBalancesOfNetworks();
-  }
-
-  @Watch('isOnline')
-  connect(value: boolean) {
-    if (value) {
-      // this.connectToNodes();
-      // this.subscribeToBalancesOfNetworks();
-    } else this.unsubscribe();
-  }
-
-  async connectToNodes() {
-    if (!this.isOnline) return;
-
-    const { loadJsons, connectToNodes } = NetworksController;
-
-    await loadJsons();
-    await connectToNodes();
   }
 
   subscribeToBalancesOfNetworks() {
@@ -124,14 +97,9 @@ export default class App extends Vue {
   }
 
   setWallet() {
-    const LSSelectedWalletAddress = accountController.getSelectedWalletAddress();
-    const selectedWalletAddress = LSSelectedWalletAddress || BaseApi.getFirstSubstrateWalletAddress();
-
-    if (selectedWalletAddress) {
-      const selectedSubstrateAddress = BaseApi.encodeAddress(selectedWalletAddress);
-
-      this.setSelectedWallet({ selectedWalletAddress: selectedSubstrateAddress });
-    }
+    subscribeAccounts((accounts) => {
+      this.setSelectedWallet({ selectedWalletAddress: accounts[0].address });
+    });
   }
 
   unsubscribe() {

@@ -40,6 +40,7 @@ import {
   IGetFilesResponse,
   VerifyTokenResponse,
 } from '@/interfaces/google';
+
 export interface PrepareExternalRequest {
   id: string;
   setState: (promise: ExternalRequestPromise) => void;
@@ -139,6 +140,7 @@ export interface RequestSignatures {
   'pri(addresses.remove)': [RequestAddressRemove, boolean];
   'pri(addresses.get)': [null, KeyringAddress[]];
   'pri(accounts.edit)': [RequestAccountEdit, boolean];
+  'pri(accounts.get.meta)': [RequestAccountMeta, ResponseAccountMeta];
   'pri(accounts.export)': [RequestAccountExport, ResponseAccountExport];
   'pri(accounts.batchExport)': [RequestAccountBatchExport, ResponseAccountsExport];
   'pri(accounts.forget)': [RequestAccountForget, boolean];
@@ -163,8 +165,8 @@ export interface RequestSignatures {
   'pri(connectedTabsUrl.get)': [null, ConnectedTabsUrlResponse];
   'pri(derivation.create)': [RequestDeriveCreate, boolean];
   'pri(derivation.validate)': [RequestDeriveValidate, ResponseDeriveValidate];
-  'pri(json.restore)': [RequestJsonRestore, void];
-  'pri(json.valid)': [RequestJsonRestore, boolean];
+  'pri(json.restore)': [RequestJsonRestore, string];
+  'pri(json.valid)': [RequestJsonValidate, ValidateJsonResult];
   'pri(json.batchRestore)': [RequestBatchRestore, void];
   'pri(json.account.info)': [KeyringPair$Json, ResponseJsonGetAccountInfo];
   'pri(metadata.approve)': [RequestMetadataApprove, boolean];
@@ -666,9 +668,16 @@ export interface RequestSignJSON {
 
   sign(): { signature: HexString };
 }
+
 export interface RequestJsonRestore {
   file: KeyringPair$Json;
   password: string;
+}
+
+export interface RequestJsonValidate {
+  file: KeyringPair$Json;
+  password: string;
+  isSubstrate?: boolean;
 }
 
 export interface RequestBatchRestore {
@@ -684,6 +693,7 @@ export type AllowedPath = TAllowPath[number];
 
 export interface ResponseJsonGetAccountInfo {
   address: string;
+  ethereumAddress: string;
   name: string;
   genesisHash: string;
   type: KeypairType;
@@ -869,4 +879,33 @@ export interface CrossChainRelation {
   type: ChainRelationType;
   isEthereum: boolean;
   relationMap: Record<string, ChainRelationInfo>;
+}
+type WarningValueName =
+  | 'mnemonicSequence'
+  | 'mnemonic'
+  | 'substrateDP'
+  | 'ethereumDP'
+  | 'rawSeed'
+  | 'jsonPassword'
+  | 'jsonInvalid'
+  | 'isNotSamePassword'
+  | 'duplicateMobileWallet'
+  | '';
+interface ValidateJsonResultPositive {
+  value: true;
+}
+
+interface ValidateJsonResultNegative {
+  value: false;
+  errorType: WarningValueName;
+}
+
+export type ValidateJsonResult = ValidateJsonResultPositive | ValidateJsonResultNegative;
+
+export interface RequestAccountMeta {
+  address: string | Uint8Array;
+}
+
+export interface ResponseAccountMeta {
+  meta: KeyringPair$Meta;
 }

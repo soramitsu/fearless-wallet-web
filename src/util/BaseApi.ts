@@ -17,12 +17,13 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
 import type { Wallet } from '@/store';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
-import { createAccountSuri, forgetAccount, jsonRestore } from '@/extension/messaging';
+import { createAccountSuri, forgetAccount, isJsonValid, jsonRestore } from '@/extension/messaging';
 import { getReplacedMetaTyped, getMetaTyped } from '@/helpers/common';
 import { ETHEREUM_NETWORKS, ETHEREUM_ADDRESS_LENGTH, ETHEREUM_ADDRESS_PREFIX } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { beaconController } from '@/controllers/beaconController';
+import store from '@/store';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;
 type WalletTypes = 'mobile' | 'native';
@@ -199,19 +200,14 @@ export default class BaseApi {
 
   public static addKeypair(suri: string, password: string, meta: KeyringPair$Meta, type: KeypairType): KeyringPair {
     const { pair } = keyring.addUri(suri, password, meta, type);
-    const name = meta.name as string;
 
     createAccountSuri(password, suri, type, undefined, meta); // for proper work of extension
 
     return pair;
   }
 
-  public static addKeypairFromJson(json: KeyringPair$Json, password: string): KeyringPair {
-    const pair = keyring.restoreAccount(json, password);
-
-    jsonRestore(json, password); // for proper work of extension
-
-    return pair;
+  public static async addKeypairFromJson(json: KeyringPair$Json, password: string): Promise<string> {
+    return jsonRestore(json, password); // for proper work of extension
   }
 
   public static replaceAccountFromSeed(
@@ -264,9 +260,9 @@ export default class BaseApi {
   public static getAccount(address: string): KeyringAddress | undefined {
     return keyring.getAccount(address);
   }
-
+  //TEMP FOR TESTING
   public static getAccounts(): KeyringAddress[] {
-    return keyring.getAccounts();
+    return [store.getters.getSelectedWallet.address];
   }
 
   public static getAddress(address: string): KeyringAddress | undefined {
@@ -316,19 +312,12 @@ export default class BaseApi {
     }
   }
 
-  public static isValidJson(json: KeyringPair$Json, passwordJson: string, isSubstrate = true): ValidateJsonResult {
-    try {
-      const pair = BaseApi.createFromJson(json);
-
-      pair.decodePkcs8(passwordJson);
-      if (isSubstrate) BaseApi.encodeAddress(pair.address);
-
-      return { value: true };
-    } catch ({ message }) {
-      const errorType = message === 'Unable to decode using the supplied passphrase' ? 'jsonPassword' : 'jsonInvalid';
-
-      return { value: false, errorType };
-    }
+  public static isValidJson(
+    json: KeyringPair$Json,
+    passwordJson: string,
+    isSubstrate = true
+  ): Promise<ValidateJsonResult> {
+    return isJsonValid(json, passwordJson, isSubstrate);
   }
 
   public static decodeAddress(address: string): Uint8Array {

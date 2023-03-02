@@ -35,6 +35,9 @@ import type {
   RequestTransfer,
   RequestCheckTransfer,
   ResponseCheckTransfer,
+  ValidateJsonResult,
+  RequestAccountMeta,
+  ResponseAccountMeta,
 } from '@extension-base/background/types';
 import type { Message, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
@@ -303,6 +306,10 @@ export async function getAuthList(): Promise<ResponseAuthorizeList> {
   return sendMessage('pri(authorize.list)');
 }
 
+export async function getAccountMeta(request: RequestAccountMeta): Promise<ResponseAccountMeta> {
+  return sendMessage('pri(accounts.get.meta)', request);
+}
+
 export async function removeAuthorization(url: string): Promise<ResponseAuthorizeList> {
   return sendMessage('pri(authorize.remove)', url);
 }
@@ -358,12 +365,16 @@ export async function jsonGetAccountInfo(json: KeyringPair$Json): Promise<Respon
   return sendMessage('pri(json.account.info)', json);
 }
 
-export async function jsonRestore(file: KeyringPair$Json, password: string): Promise<void> {
+export async function jsonRestore(file: KeyringPair$Json, password: string): Promise<string> {
   return sendMessage('pri(json.restore)', { file, password });
 }
 
-export async function isJsonValid(file: KeyringPair$Json, password: string): Promise<boolean> {
-  return sendMessage('pri(json.valid)', { file, password });
+export async function isJsonValid(
+  file: KeyringPair$Json,
+  password: string,
+  isSubstrate = true
+): Promise<ValidateJsonResult> {
+  return sendMessage('pri(json.valid)', { file, password, isSubstrate });
 }
 
 export async function batchRestore(file: KeyringPairs$Json, password: string): Promise<void> {

@@ -79,9 +79,9 @@ export default class GoogleWalletsList extends Vue {
 
     if (!json || !ethJson || !password) return;
 
-    const res = await isJsonValid(json, password);
+    const { value: isValid } = await isJsonValid(json, password);
 
-    if (!res) {
+    if (!isValid) {
       this.setItemValue(index, { isError: true, isLoading: false });
 
       return false;
@@ -91,10 +91,10 @@ export default class GoogleWalletsList extends Vue {
 
     BaseApi.addKeypairFromJson(ethJson, password);
 
-    const pair = BaseApi.addKeypairFromJson(json, password);
+    const address = await BaseApi.addKeypairFromJson(json, password);
 
     this.setItemValue(index, { isComplete: true, isLoading: false });
-    this.setSelectedWallet({ selectedWalletAddress: pair.address || this.selectedWallet.address });
+    this.setSelectedWallet({ selectedWalletAddress: address || this.selectedWallet.address });
 
     return true;
   }

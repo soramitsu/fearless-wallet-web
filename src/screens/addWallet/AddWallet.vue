@@ -694,7 +694,7 @@ export default class AddWallet extends Vue {
     if (!isValidSequenceMnemonic) this.warningValueName = 'mnemonicSequence';
   }
 
-  validateSuri() {
+  async validateSuri() {
     const {
       ethereum: { value: ethereumDerivationPath },
       substrate,
@@ -708,12 +708,12 @@ export default class AddWallet extends Vue {
 
     const validatedSubstrateJson =
       this.substrateJson !== ''
-        ? BaseApi.isValidJson(this.substrateJSON, this.passwordSubstrateJson)
+        ? await BaseApi.isValidJson(this.substrateJSON, this.passwordSubstrateJson)
         : ({ value: true } as ValidateJsonResult);
 
     const validatedEthereumJson =
       this.ethereumJson !== ''
-        ? BaseApi.isValidJson(this.ethereumJSON, this.passwordEthereumJson, false)
+        ? await BaseApi.isValidJson(this.ethereumJSON, this.passwordEthereumJson, false)
         : ({ value: true } as ValidateJsonResult);
 
     if (!isValidMnemonic) this.warningValueName = 'mnemonic';
@@ -772,16 +772,14 @@ export default class AddWallet extends Vue {
       meta
     ); // for proper work of extension
 
-    // const { address } = BaseApi.addKeypair(this.suriSubstrate, this.walletPassword, meta, substrateKeypairType);
-
     return address;
   }
 
-  saveKeypairFromJson() {
+  async saveKeypairFromJson() {
     const substrateJSON = { ...this.substrateJSON };
 
     if (this.ethereumJson) {
-      const { address: ethereumAddress } = BaseApi.addKeypairFromJson(this.ethereumJSON, this.passwordEthereumJson);
+      const ethereumAddress = await BaseApi.addKeypairFromJson(this.ethereumJSON, this.passwordEthereumJson);
 
       if (this.isOnlyEthereumAccountFlow) {
         BaseApi.saveEthereumAddress(this.selectedWallet.address, ethereumAddress);
@@ -792,7 +790,7 @@ export default class AddWallet extends Vue {
       substrateJSON.meta.ethereumAddress = ethereumAddress;
     }
 
-    const { address } = BaseApi.addKeypairFromJson(substrateJSON, this.passwordSubstrateJson);
+    const address = await BaseApi.addKeypairFromJson(substrateJSON, this.passwordSubstrateJson);
 
     return address;
   }

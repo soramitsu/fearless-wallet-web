@@ -6,8 +6,9 @@ const WebpackExtensionManifestPlugin = require('webpack-extension-manifest-plugi
 const { defineConfig } = require('@vue/cli-service');
 const baseConfig = require('./vue.config.base');
 const pages = {};
+
 const manifestExtend = {
-  key: env.EXTENSION_PUBLIC_KEY,
+  key: env.EXTENSION_PUBLIC_KEY.replace(/ /g, ''),
   oauth2: {
     client_id: env.OAUTH_CLIENT_ID,
   },

@@ -78,7 +78,7 @@ export function getHumanValue(value: string, assetId: string) {
   const assetJson = assetsJson.find(({ id }) => id === assetId)!;
   const precision = assetJson?.precision ?? 0;
 
-  return +FPNumber.fromCodecValue(value, precision).toString();
+  return +FPNumber.fromCodecValue(value, precision);
 }
 
 export function getHistoryValue(historyNode: HistoryNode, assetId: string) {
@@ -90,21 +90,21 @@ export function getHistoryValue(historyNode: HistoryNode, assetId: string) {
     const { amount } = transfer!;
     const value = getHumanValue(amount, assetId);
 
-    return `${signTransfer}${formattedNumber(value, HISTORY_VALUE_OPTIONS)}`;
+    return { signTransfer, value };
   }
 
   if (type === TransactionType.reward) {
     const { amount } = reward!;
     const value = getHumanValue(amount, assetId);
 
-    return `+${formattedNumber(value, HISTORY_VALUE_OPTIONS)}`;
+    return { signTransfer: '+', value };
   }
 
   // extrinsic
   const { fee } = extrinsic!;
   const value = getHumanValue(fee, assetId);
 
-  return `-${formattedNumber(value, HISTORY_VALUE_OPTIONS)}`;
+  return { signTransfer: '-', value };
 }
 
 export function getHumanTransferFee(historyNode: HistoryNode, assetId: string) {

@@ -5,11 +5,11 @@
         <div class="label">{{ name }}</div>
 
         <div class="count">
-          <div class="value">{{ $n(value, 'decimal') }} {{ assetNameUpper }}</div>
+          <div class="value">{{ $n(value, 'decimalPrecise') }} {{ assetNameUpper }}</div>
 
           <div v-if="getFiatValueVisible(fiat)" class="fiat-value">
             {{ fiatSymbol }}
-            {{ $n(fiat, 'decimal') }}
+            {{ $n(fiat, 'price') }}
           </div>
         </div>
       </div>
@@ -23,7 +23,6 @@ import { Getter } from 'vuex-class';
 import type CurrencyController from '@/controllers/currencyController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { formattedNumber } from '@/helpers/numbers';
 
 @Component
 export default class BalanceDetailsPopup extends Vue {
@@ -53,14 +52,6 @@ export default class BalanceDetailsPopup extends Vue {
 
   getFiatValueVisible(value: string) {
     return value !== '0';
-  }
-
-  formattedNumber(value: number) {
-    return formattedNumber(value, {
-      decimalsValue: 4,
-      returnOriginNumber: false,
-      removeTrailingZeros: true,
-    });
   }
 }
 </script>

@@ -66,7 +66,7 @@ import type { Currencies } from '@/interfaces';
 import type { GetAssetName, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { formattedNumber, formattedPrice, addNumbers } from '@/helpers/numbers';
+import { formattedNumber, addNumbers } from '@/helpers/numbers';
 import { getUtilityAsset } from '@/helpers/currencies';
 
 @Component({
@@ -107,7 +107,7 @@ export default class SendForm extends Vue {
   }
 
   get valueString() {
-    return `${this.fiatSymbol}${formattedPrice(+this.value)}`;
+    return `${this.fiatSymbol}${this.$n(+this.value, 'price')}`;
   }
 
   get amountString() {

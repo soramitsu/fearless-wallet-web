@@ -1,3 +1,4 @@
+import { FPNumber } from '@sora-substrate/math';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { Node } from '@/interfaces';
 
@@ -77,7 +78,7 @@ type Network = {
   settings: Record<string, any>;
   externalApi: ExternalApi;
   status: NetworkStatus;
-  fee?: string; // only Sora network
+  fee?: FPNumber; // only Sora network
 };
 
 type Networks = Network[];

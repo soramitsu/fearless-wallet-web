@@ -102,7 +102,7 @@ export default class SwapPreview extends Vue {
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
   get soraMainAsset() {
-    return SORA_UTILITY_ASSET;
+    return SORA_UTILITY_ASSET.toUpperCase();
   }
 
   get sendAmountCut() {

@@ -226,7 +226,7 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.SET_SORA_FEE](state, { fee }) {
     const soraIndex = state.networks.findIndex(({ name }) => isSora(name))!;
-    const newSoraItem = { ...state.networks[soraIndex], fee: FPNumber.fromCodecValue(fee).toString() };
+    const newSoraItem = { ...state.networks[soraIndex], fee: FPNumber.fromCodecValue(fee) };
 
     state.networks.splice(soraIndex, 1, newSoraItem);
   },

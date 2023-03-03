@@ -396,7 +396,7 @@ export default class SendForm extends Vue {
   @Watch('syncedDestNet')
   @Watch('syncedRecipient')
   @Watch('syncedAmount')
-  async createSendTransfer() {
+  async createTransfer() {
     this.syncedPartialFee = '';
 
     if (

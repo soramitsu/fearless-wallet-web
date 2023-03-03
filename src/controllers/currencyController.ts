@@ -306,12 +306,16 @@ export default class CurrencyController {
   /**
    * Validate count assets
    * @param {string} count
+   * @param {string} fee
    * @param {NetworkName} network
    * @param {Wallet} wallet
    * @returns {boolean}
    */
-  public validateCountAssets(count: string, fee: string, network: NetworkName, wallet: Wallet): boolean {
+  public validateCountAssets(_count: string, fee: string, network: NetworkName, wallet: Wallet): boolean {
+    const count = _count === '' ? '0' : _count;
     const transferableCountAssetsMinusFee = this.getTransferableCountAssetsMinusFee(fee, network, wallet);
+
+    if (FPNumber.isEqualTo(transferableCountAssetsMinusFee, FPNumber.ZERO)) return false;
 
     return FPNumber.lte(new FPNumber(count), transferableCountAssetsMinusFee);
   }

@@ -1,8 +1,9 @@
-const isProduction = process.env.NODE_ENV === 'production';
-const CHAINS = isProduction
+import { IS_PRODUCTION } from '@/consts/global';
+
+const CHAINS = IS_PRODUCTION
   ? 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v3-jsonupd/chains/chains.json'
   : 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v3-jsonupd/chains/chains_dev.json';
-const ASSETS = isProduction
+const ASSETS = IS_PRODUCTION
   ? 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v3-jsonupd/chains/assets.json'
   : 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v3-jsonupd/chains/assets_dev.json';
 const FIATS = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';
@@ -50,7 +51,7 @@ const BASE_URLS_SUFFIX = {
   SUBSCAN: 'subscan.io',
 };
 
-export function isSafeForExternalOpen(url: string): boolean {
+function isSafeForExternalOpen(url: string): boolean {
   if (!url) {
     return false;
   }
@@ -71,3 +72,4 @@ export function isSafeForExternalOpen(url: string): boolean {
 }
 
 export default URLS;
+export { isSafeForExternalOpen, BASE_URLS_PREFIX };

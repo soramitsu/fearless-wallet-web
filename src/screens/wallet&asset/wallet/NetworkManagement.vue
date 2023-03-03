@@ -4,7 +4,7 @@
       <Scroll>
         <Corners v-for="{ name, icon } in disconnectedNetworks" :key="name" size="big" class="network-corners">
           <div class="network-item">
-            <ExternalLogo class="network-img" :name="icon" type="network" />
+            <ExternalLogo class="network-img" :name="icon" />
 
             <div class="description">
               <div class="name">{{ name }}</div>

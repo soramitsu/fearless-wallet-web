@@ -6,7 +6,6 @@
     :value="selectedNetwork"
     :height="height"
     :maxHeight="maxHeight"
-    iconType="network"
     :horizontalPlacement="horizontalPlacement"
     :verticalPlacement="verticalPlacement"
     :top="top"
@@ -23,7 +22,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { Networks as NetworksType, RelayChainName } from '@/interfaces';
+import type { Networks, RelayChainName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
@@ -53,7 +52,7 @@ export default class SelectNetworkButton extends Vue {
   @Prop(Array) _optionsNetworks!: Options[];
   @Prop(Function) toggleSelectedNetwork!: (value: string) => void;
   @Prop(Function) handlerClose!: VoidFunction;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: NetworksType;
+  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
 
   get optionsNetworks() {
     if (this._optionsNetworks !== undefined) return this._optionsNetworks;

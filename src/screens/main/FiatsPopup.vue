@@ -5,7 +5,6 @@
     placeholder="common.searchCurrency"
     :value="selectedFiat"
     :top="50"
-    iconType="fiat"
     :showAnimation="showAnimation"
     :options="filteredOptionsFiats"
     :toggleValue="toggleSelectedFiat"

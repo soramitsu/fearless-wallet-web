@@ -58,7 +58,7 @@
                 <div class="transferrable-label">{{ $t('asset.transferrable') }}</div>
 
                 <div class="transferrable-descriptions">
-                  <div class="transferrable-amount">{{ transferrableAmount }}</div>
+                  <div class="transferrable-amount">{{ $n(transferrableAmount, 'decimal') }}</div>
                   <div class="transferrable-assets">{{ selectedAssetUpper }}</div>
                 </div>
               </div>
@@ -145,7 +145,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 import { firstCharToUp } from '@/helpers/common';
-import { formattedCountAsset, formattedPrice } from '@/helpers/numbers';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';
@@ -331,13 +330,13 @@ export default class SendForm extends Vue {
   get transferrableAmount() {
     const count = +(this.currency?.getTransferableCountAssets(this.selectedWallet, this.syncedSelectedNetwork) ?? 0);
 
-    return formattedCountAsset(count);
+    return this.$n(count, 'decimal');
   }
 
   get transferrableValue() {
     const cost = +(this.currency?.getCostOfAssets(this.transferrableAmount) ?? 0);
 
-    return formattedPrice(cost);
+    return this.$n(cost, 'price');
   }
 
   get selectedAsset() {

@@ -155,7 +155,6 @@ import { Currencies } from '@/interfaces/currencies';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
-import { formattedPrice } from '@/helpers/numbers';
 import { tieAccount } from '@/extension/messaging';
 import { Network } from '@/interfaces';
 import { isSora, firstCharToUp } from '@/helpers/common';
@@ -231,7 +230,7 @@ export default class Asset extends Vue {
   }
 
   get assetPriceString() {
-    return `1 ${this.selectedAssetUpper} = ${this.fiatSymbol}${formattedPrice(this.price ?? 0)}`;
+    return `1 ${this.selectedAssetUpper} = ${this.fiatSymbol}${this.$n(this.price ?? 0, 'price')}`;
   }
 
   get selectedNetwork() {
@@ -264,7 +263,7 @@ export default class Asset extends Vue {
 
     const total = this.currentCurrency.getTotalBalance(this.selectedWallet, this.selectedNetwork);
 
-    return `${this.fiatSymbol} ${this.$n(+total, 'decimal')}`;
+    return `${this.fiatSymbol} ${this.$n(+total, 'price')}`;
   }
 
   get currency() {

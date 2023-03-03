@@ -45,7 +45,6 @@
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { formattedPrice } from '@/helpers/numbers';
 
 @Component
 export default class SwapSelectInput extends Vue {
@@ -61,7 +60,7 @@ export default class SwapSelectInput extends Vue {
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
   get valueCut() {
-    return formattedPrice(+this.value);
+    return this.$n(+this.value, 'price');
   }
 
   get selectClasses() {

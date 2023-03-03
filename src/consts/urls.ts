@@ -51,7 +51,7 @@ const BASE_URLS_SUFFIX = {
   SUBSCAN: 'subscan.io',
 };
 
-export function isSafeForExternalOpen(url: string): boolean {
+function isSafeForExternalOpen(url: string): boolean {
   if (!url) {
     return false;
   }
@@ -72,3 +72,4 @@ export function isSafeForExternalOpen(url: string): boolean {
 }
 
 export default URLS;
+export { isSafeForExternalOpen, BASE_URLS_PREFIX };

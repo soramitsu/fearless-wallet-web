@@ -110,8 +110,8 @@ export default class Extension {
     return true;
   }
 
-  static accountsCreateSuri({ genesisHash, name, password, suri, type }: RequestAccountCreateSuri): boolean {
-    keyring.addUri(getSuri(suri, type), password, { genesisHash, name }, type);
+  static accountsCreateSuri({ password, suri, type, meta }: RequestAccountCreateSuri): boolean {
+    keyring.addUri(suri, password, meta, type);
 
     return true;
   }

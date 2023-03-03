@@ -80,7 +80,6 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { firstCharToUp } from '@/helpers/common';
-import { formattedCountAsset, formattedPrice } from '@/helpers/numbers';
 import { SORA_UTILITY_ASSET } from '@/consts/networks';
 
 @Component
@@ -106,23 +105,23 @@ export default class SwapPreview extends Vue {
   }
 
   get sendAmountCut() {
-    return `${formattedCountAsset(+this.sendAmount)} ${this.sendAssetUP}`;
+    return `${this.$n(+this.sendAmount, 'decimal')} ${this.sendAssetUP}`;
   }
 
   get receiveAmountCut() {
-    return `${formattedCountAsset(+this.receiveAmount)} ${this.receiveAssetUP}`;
+    return `${this.$n(+this.receiveAmount, 'decimal')} ${this.receiveAssetUP}`;
   }
 
   get providerFeeCut() {
-    return formattedCountAsset(+this.providerFee);
+    return this.$n(+this.providerFee, 'decimal');
   }
 
   get sendValueCut() {
-    return `${this.fiatSymbol} ${formattedPrice(+this.sendValue)}`;
+    return `${this.fiatSymbol} ${this.$n(+this.sendValue, 'price')}`;
   }
 
   get receiveValueCut() {
-    return `${this.fiatSymbol} ${formattedPrice(+this.receiveValue)}`;
+    return `${this.fiatSymbol} ${this.$n(+this.receiveValue, 'price')}`;
   }
 
   get minMaxLabel() {

@@ -80,7 +80,7 @@ import Select from '@/components/Select.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { firstCharToUp } from '@/helpers/common';
-import { addNumbers, formattedNumber, formattedPrice } from '@/helpers/numbers';
+import { addNumbers, formattedNumber } from '@/helpers/numbers';
 
 @Component({
   components: {
@@ -123,7 +123,7 @@ export default class TeleportForm extends Vue {
   }
 
   get valueString() {
-    return `${this.fiatSymbol}${formattedPrice(+this.value)}`;
+    return `${this.fiatSymbol}${this.$n(+this.value, 'price')}`;
   }
 
   get originalNetworkPartialFeeString() {

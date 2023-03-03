@@ -6,6 +6,8 @@ import CurrencyController from '@/controllers/currencyController';
 import NetworksController from '@/controllers/networksController';
 import { MAIN_NETWORKS } from '@/consts/networks';
 import { mockFPBalance } from '@/consts/currencies';
+import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
+import { BASE_URLS_PREFIX } from '@/consts/urls';
 
 type CurrencyMock = {
   mainNetwork: string;
@@ -133,10 +135,12 @@ function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet, networ
   return [...currenciesWithAssets, ...relayChains, ...currenciesWithoutAssets];
 }
 
-function getProviderUrl(name: 'moonPay' | 'ramp', asset: string, address: string) {
+function getProviderUrl(name: 'moonpay' | 'ramp', asset: string, address: string) {
+  const { MOONPAY, RAMP } = BASE_URLS_PREFIX;
+
   const provider = {
-    moonPay: `https://buy.moonpay.com/?currencyCode=${asset.toLowerCase()}&walletAddress=${address}&showWalletAddressForm=true`,
-    ramp: `https://buy.ramp.network/?swapAsset=${asset}&userAddress=${address}`,
+    moonpay: `${MOONPAY}/?apiKey=${MOONPAY_API_KEY}&currencyCode=${asset.toLowerCase()}&walletAddress=${address}&showWalletAddressForm=true`,
+    ramp: `${RAMP}/?swapAsset=${asset.toUpperCase()}&userAddress=${address}&hostApiKey=${RAMP_API_KEY}`,
   };
 
   return provider[name];

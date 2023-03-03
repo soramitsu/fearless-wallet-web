@@ -213,13 +213,12 @@ export async function createAccountHardware(
 }
 
 export async function createAccountSuri(
-  name: string,
   password: string,
   suri: string,
-  type?: KeypairType,
-  genesisHash?: string
+  type: KeypairType,
+  meta: KeyringPair$Meta
 ): Promise<boolean> {
-  return sendMessage('pri(accounts.create.suri)', { genesisHash, name, password, suri, type });
+  return sendMessage('pri(accounts.create.suri)', { password, suri, type, meta });
 }
 
 export async function createAddress(address: string, meta: KeyringPair$Meta): Promise<boolean> {

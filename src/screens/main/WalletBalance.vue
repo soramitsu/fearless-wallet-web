@@ -16,7 +16,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 @Component
 export default class WalletBalance extends Vue {
   @Prop(Object) changeWalletBalance!: ChangeWalletBalance;
-  @Prop(String) balance!: string;
+  @Prop(Number) balance!: number;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
   get balanceString() {

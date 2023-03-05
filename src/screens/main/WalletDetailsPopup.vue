@@ -25,22 +25,26 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Mutation } from 'vuex-class';
-import type { SetSelectedWalletProps } from '@/store';
+import { Getter, Mutation } from 'vuex-class';
+import type { SetSelectedWallet } from '@/store';
 import type { TMutation } from '@/interfaces/common';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { initGoogleAuth } from '@/extension/messaging';
+import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+
+import { forgetAccount, initGoogleAuth } from '@/extension/messaging';
+import { AccountJson } from '@/extension/background/extension-base/src/background/types';
 
 @Component
 export default class WalletDetailsPopup extends Vue {
   @Prop(Number) buttonTopClick!: number;
   @Prop(String) selectedWalletAddress!: string;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
+  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWallet>;
+  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
   get isMobileWallet() {
-    return BaseApi.isMobileWallet(this.selectedWalletAddress);
+    return this.accounts.find((el) => el.address === this.selectedWalletAddress && el.isMobile);
   }
 
   get isExportPossible() {
@@ -56,11 +60,9 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   async deleteWallet() {
-    const walletsCount = this.isMobileWallet
-      ? await BaseApi.deleteMobileWallet(this.selectedWalletAddress)
-      : BaseApi.deleteNativeWallet(this.selectedWalletAddress);
+    forgetAccount(this.selectedWalletAddress, this.isMobileWallet ? 'mobile' : 'native');
 
-    if (walletsCount === 0) this.$router.push({ name: Components.Welcome });
+    if (this.accounts.length === 0) this.$router.push({ name: Components.Welcome });
     else {
       this.setWallet();
       this.close();

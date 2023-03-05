@@ -1,6 +1,7 @@
 import type { Currencies } from '@/interfaces/currencies';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { WalletAddress, NetworkName } from '@/interfaces';
+import { AccountJson } from '@/extension/background/extension-base/src/background/types';
 
 export interface Wallet {
   address: string;
@@ -21,7 +22,7 @@ export type GetAutoSelectNodesValueByNetwork = (networkName: string) => boolean;
 
 // mutations
 export type SetSelectedWalletProps = {
-  selectedWalletAddress: string;
+  selectedWallet: SelectedWallet;
 };
 
 export type SetSelectedFiatProps = {
@@ -34,7 +35,7 @@ export type SetSelectedNetworkProps = {
 };
 
 export type setAccountsProps = {
-  accounts: Accounts;
+  accounts: AccountJson[];
 };
 
 export type setAddressesProps = {

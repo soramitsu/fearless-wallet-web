@@ -124,7 +124,11 @@ export default class Tabs {
     const address = request.address;
     const pair = this.getSigningPair(address);
 
-    return this.state.sign(url, new RequestBytesSign(request), { address, ...pair.meta });
+    return this.state.sign(url, new RequestBytesSign(request), {
+      address: pair.address,
+      ethereumAddress: pair.meta.ethereumAddress as string,
+      ...pair.meta,
+    });
   }
 
   extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
@@ -133,10 +137,19 @@ export default class Tabs {
     let meta;
     if (keyring.getAccount(address)) meta = this.getSigningPair(address).meta;
     else if (isMobile) meta = keyring.getAddress(address, 'address')?.meta;
+    const pair = this.getSigningPair(address);
+    if (isMobile)
+      return this.state.sign(url, new BeaconSignerJSON(request), {
+        address: pair.address,
+        ethereumAddress: pair.meta.ethereumAddress as string,
+        ...meta,
+      });
 
-    if (isMobile) return this.state.sign(url, new BeaconSignerJSON(request), { address, ...meta });
-
-    return this.state.sign(url, new RequestExtrinsicSign(request), { address, ...meta });
+    return this.state.sign(url, new RequestExtrinsicSign(request), {
+      address: pair.address,
+      ethereumAddress: pair.meta.ethereumAddress as string,
+      ...meta,
+    });
   }
 
   metadataProvide(url: string, request: MetadataDef): Promise<boolean> {

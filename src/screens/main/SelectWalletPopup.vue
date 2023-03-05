@@ -12,7 +12,7 @@
   >
     <div class="wallet-content">
       <WalletInfo
-        v-for="({ name, ethereumAddress, address }, index) in accountsFromSub"
+        v-for="({ name, ethereumAddress, address }, index) in accounts"
         :key="name + index"
         :name="name"
         :isSelected="selectedWallet.address === address"
@@ -33,25 +33,27 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import WalletInfo from './WalletInfo.vue';
-import type { SelectedWallet, SetSelectedWalletProps, Accounts } from '@/store';
+import type { SelectedWallet, SetSelectedWallet, SetSelectedWalletProps } from '@/store';
 import type { Currencies, TMutation, CustomEvent } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { Components } from '@/router/routes';
 import { addNumbers, getChangeWalletBalance } from '@/helpers/numbers';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types';
+import { saveCurrentAccountAddress } from '@/extension/messaging';
 
 @Component({
   components: { WalletInfo },
 })
 export default class SelectWalletPopup extends Vue {
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
-  @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
-  @Getter(AccountsGettersTypes.getAddresses) addresses!: Accounts;
+  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
+  // @Getter(AccountsGettersTypes.getAddresses) addresses!: Accounts;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
+
+  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWallet>;
   accountsFromSub: AccountJson[] = [];
 
   get wallets() {
@@ -59,9 +61,9 @@ export default class SelectWalletPopup extends Vue {
       .map((address) => BaseApi.getPair(address))
       .filter(({ type, meta }) => type !== 'ethereum' && !meta.isReplacedAccount);
 
-    const addresses = Object.keys(this.addresses).map((address) => BaseApi.getAddress(address));
+    // const addresses = Object.keys(this.addresses).map((address) => BaseApi.getAddress(address));
 
-    return [...addresses, ...accounts];
+    return [...accounts];
   }
 
   addWallet() {
@@ -95,8 +97,9 @@ export default class SelectWalletPopup extends Vue {
   }
 
   updateSelectedWallet(address: string) {
-    this.setSelectedWallet({ selectedWalletAddress: address });
-
+    saveCurrentAccountAddress({ address: address }, (data) => {
+      this.setSelectedWallet({ selectedWalletAddress: data.address });
+    });
     this.close();
   }
 

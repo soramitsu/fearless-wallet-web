@@ -44,7 +44,7 @@ export enum Components {
   AddFromGoogle = 'AddFromGoogle',
 }
 
-const haveAccounts = () => BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
+const haveAccounts = () => store.getters.getAccounts.length;
 const haveAuthRequests = () => store.getters.getAuthList.length;
 const haveSignRequests = () => store.getters.getSignList.length;
 const haveMetaRequests = () => store.getters.getMetaRequests.length;

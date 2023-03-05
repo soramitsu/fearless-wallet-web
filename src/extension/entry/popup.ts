@@ -26,7 +26,6 @@ cryptoWaitReady().then((): void => {
   });
 
   console.info('initialization completed');
-  console.info(keyring.getAccounts());
 
   new Vue({
     store,

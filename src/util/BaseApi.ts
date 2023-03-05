@@ -17,13 +17,14 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
 import type { Wallet } from '@/store';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
-import { createAccountSuri, forgetAccount, isJsonValid, jsonRestore } from '@/extension/messaging';
+import { createAccountSuri, forgetAccount, getAccountMeta, isJsonValid, jsonRestore } from '@/extension/messaging';
 import { getReplacedMetaTyped, getMetaTyped } from '@/helpers/common';
 import { ETHEREUM_NETWORKS, ETHEREUM_ADDRESS_LENGTH, ETHEREUM_ADDRESS_PREFIX } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { beaconController } from '@/controllers/beaconController';
 import store from '@/store';
+import { AccountJson } from '@/extension/background/extension-base/src/background/types';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;
 type WalletTypes = 'mobile' | 'native';
@@ -116,7 +117,8 @@ export default class BaseApi {
 
   public static getReplacedAccounts({ address, ethereumAddress }: Wallet): KeyringPair[] {
     return BaseApi.getAccounts()
-      .filter(({ meta }) => {
+      .filter(async (account) => {
+        const { meta } = await getAccountMeta({ address: account.address });
         const { isReplacedAccount, replacedSettings } = getReplacedMetaTyped(meta);
 
         if (!isReplacedAccount) return false;
@@ -261,8 +263,10 @@ export default class BaseApi {
     return keyring.getAccount(address);
   }
   //TEMP FOR TESTING
-  public static getAccounts(): KeyringAddress[] {
-    return [store.getters.getSelectedWallet.address];
+  public static getAccounts(): { address: string }[] {
+    return (store.getters.getAccounts as AccountJson[]).map(({ address }) => {
+      return { address };
+    });
   }
 
   public static getAddress(address: string): KeyringAddress | undefined {
@@ -291,7 +295,9 @@ export default class BaseApi {
 
   public static isDuplicateReplacedKeypair(addressProp: string): boolean {
     const accounts = BaseApi.getAccounts();
-    const index = accounts.findIndex(({ address, meta }) => address === addressProp && meta.isReplacedAccount === true);
+    // const index = accounts.findIndex(({ address, meta }) => address === addressProp && meta.isReplacedAccount === true);
+    //TEMP
+    const index = accounts.findIndex(({ address }) => address === addressProp);
 
     return index !== -1;
   }

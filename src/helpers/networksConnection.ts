@@ -9,7 +9,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { ORML_PALLETS_TYPES, getAssetOptions } from '@/util/assets';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
-import { getAccounts } from '@/helpers/accounts';
 import store from '@/store';
 import { accountController } from '@/controllers/accountController';
 
@@ -61,7 +60,7 @@ const disconnectHandler = (apiOptions: ApiOptions, network: Network, provider: W
 
 const readyHandler = (network: Network) => {
   store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, {
-    accounts: getAccounts(),
+    accounts: store.getters.getAccounts,
     loadHistory: false,
     networksProps: [network],
   });

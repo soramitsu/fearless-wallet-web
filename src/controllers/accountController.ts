@@ -3,6 +3,7 @@ import type { Lang } from '@/locales';
 import LocalStorageController from '@/controllers/localStorageController';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
+import { AccountJson } from '@/extension/background/extension-base/src/background/types';
 class AccountController {
   private readonly lsAccount = new LocalStorageController('account');
   private readonly langStorageName = 'lang';
@@ -14,6 +15,7 @@ class AccountController {
   private readonly selectedWalletStorageName = 'selected-wallet';
   private readonly selectedNetworkStorageName = 'selected-network';
   private readonly customSort = 'customSort';
+  private readonly accounts = 'accounts';
 
   private getSequenceAssets(): Record<string, Record<NetworkName, string>> {
     const sequencesAssets = this.lsAccount.get(this.sequenceAssetsStorageName);
@@ -51,6 +53,14 @@ class AccountController {
     this.lsAccount.set(this.selectedFiatStorageName, fiat);
 
     store.dispatch(NetworksActionTypes.LOAD_ASSETS_PRICE);
+  }
+
+  public getAccounts(): AccountJson[] {
+    return this.lsAccount.get(this.accounts).value ?? [];
+  }
+
+  public setAccounts(accounts: AccountJson[]) {
+    this.lsAccount.set(this.accounts, accounts);
   }
 
   public getSelectedNetwork(): Record<string, string> {

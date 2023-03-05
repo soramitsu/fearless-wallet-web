@@ -9,13 +9,15 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
-import type { SetSelectedWalletProps, setAccountsProps, Accounts, setAddressesProps, setOnlineStatus } from '@/store';
+import { Components } from './router/routes';
+import type { setAccountsProps, Accounts, setOnlineStatus, SetSelectedWallet } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import BaseApi from '@/util/BaseApi';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import NetworksController from '@/controllers/networksController';
@@ -31,9 +33,8 @@ export default class App extends Vue {
   @Getter(AccountsGettersTypes.getWallets) wallets!: Record<string, Accounts>;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
+  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWallet>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
-  @Mutation(AccountsMutationTypes.SET_ADDRESSES) setAddresses!: TMutation<setAddressesProps>;
   @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<setOnlineStatus>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
 
@@ -57,7 +58,7 @@ export default class App extends Vue {
       const accountsCount = Object.keys(accounts).length;
       const newAccountsCount = Object.keys(newAccounts).length;
 
-      this.setAccounts({ accounts });
+      // this.setAccounts({ accounts });
 
       if (newAccountsCount === 0) return;
 
@@ -69,7 +70,7 @@ export default class App extends Vue {
       const addressesCount = Object.keys(addresses).length;
       const newAddressesCount = Object.keys(newAddresses).length;
 
-      this.setAddresses({ addresses });
+      // this.setAddresses({ addresses });
 
       if (newAddressesCount === 0) return;
 
@@ -98,7 +99,9 @@ export default class App extends Vue {
 
   setWallet() {
     subscribeAccounts((accounts) => {
-      this.setSelectedWallet({ selectedWalletAddress: accounts[0].address });
+      this.setAccounts({ accounts });
+
+      this.$router.push(Components.Wallet);
     });
   }
 

@@ -1,10 +1,11 @@
 import { IWallet } from './types';
 import type { GetterTree } from 'vuex';
-import type { SelectedWallet, Accounts, WalletInfo, GetAutoSelectNodesValueByNetwork } from './types';
+import type { SelectedWallet, WalletInfo, GetAutoSelectNodesValueByNetwork } from './types';
 import type { State } from './state';
 import type { FiatJson } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import store from '@/store';
+import { AccountJson } from '@/extension/background/extension-base/src/background/types';
 
 export enum GettersTypes {
   getSelectedWallet = 'getSelectedWallet',
@@ -28,8 +29,7 @@ export type Getters = {
   [GettersTypes.getFiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getOnlineStatus](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getFiatId](state: State, getters?: GetterTree<State, State> & Getters): string;
-  [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
-  [GettersTypes.getAddresses](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
+  [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): AccountJson[];
   [GettersTypes.getWallets](state: State, getters?: GetterTree<State, State> & Getters): WalletInfo[];
   [GettersTypes.getAutoSelectNodesValueByNetwork](
     state: State,
@@ -73,12 +73,8 @@ const getters: GetterTree<State, State> & Getters = {
     return fiat?.id ?? '';
   },
 
-  [GettersTypes.getAccounts]({ accounts }): Accounts {
+  [GettersTypes.getAccounts]({ accounts }): AccountJson[] {
     return accounts;
-  },
-
-  [GettersTypes.getAddresses]({ addresses }): Accounts {
-    return addresses;
   },
 
   [GettersTypes.getAutoSelectNodesValueByNetwork]:
@@ -87,9 +83,9 @@ const getters: GetterTree<State, State> & Getters = {
       return autoSelectNode[networkName] ?? true;
     },
 
-  [GettersTypes.getWallets]({ addresses, accounts }): WalletInfo[] {
+  [GettersTypes.getWallets]({ accounts }): WalletInfo[] {
     const wallets: WalletInfo[] = [];
-    const prepAccounts = { ...addresses, ...accounts };
+    const prepAccounts = { ...accounts };
     (Object.values(prepAccounts) as any).forEach((wallet: IWallet) => {
       if (wallet.type !== 'ethereum')
         wallets.push({
@@ -102,6 +98,7 @@ const getters: GetterTree<State, State> & Getters = {
 
     return wallets;
   },
+
   [GettersTypes.GET_QR]({ qr }): Nullable<string> {
     return qr;
   },

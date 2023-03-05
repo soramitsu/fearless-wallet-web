@@ -66,6 +66,7 @@ export type SeedLengths = 12 | 24;
 export type Port = chrome.runtime.Port;
 export interface AccountJson extends KeyringPair$Meta {
   address: string;
+  ethereumAddress: string;
   genesisHash?: string | null;
   isExternal?: boolean;
   isHardware?: boolean;
@@ -231,7 +232,6 @@ export type RequestPrice = null;
 export type RequestSubscribePrice = null;
 export interface RequestCurrentAccountAddress {
   address: string;
-  ethAddress: string;
 }
 export type MessageTypes = keyof RequestSignatures;
 

@@ -1,19 +1,14 @@
-import { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import type { MutationTree } from 'vuex';
 import type {
   SetSelectedWalletProps,
   SetSelectedFiatProps,
   SetSelectedNetworkProps,
   setAccountsProps,
-  setAddressesProps,
   setAutoSelectNode,
   setOnlineStatus,
 } from './types';
 import type { State } from './state';
-import type { KeyringPair$Meta } from '@polkadot/keyring/types';
-import BaseApi from '@/util/BaseApi';
 import { accountController } from '@/controllers/accountController';
-import { getMetaTyped } from '@/helpers/common';
 import { BalanceJson } from '@/extension/background/extension-base/src/background/types';
 
 export enum MutationTypes {
@@ -22,7 +17,6 @@ export enum MutationTypes {
   SET_SELECTED_NETWORK = 'SET_SELECTED_NETWORK',
   SET_ACCOUNTS = 'SET_ACCOUNTS',
   SET_ONLINE_STATUS = 'SET_ONLINE_STATUS',
-  SET_ADDRESSES = 'SET_ADDRESSES',
   SET_CUSTOM_SORT = 'SET_CUSTOM_SORT',
   SET_AUTO_SELECT_NODE = 'SET_AUTO_SELECT_NODE',
   SET_QR = 'SET_QR',
@@ -36,7 +30,6 @@ export type Mutations = {
   [MutationTypes.SET_SELECTED_NETWORK](state: State, props: SetSelectedNetworkProps): void;
   [MutationTypes.SET_ACCOUNTS](state: State, props: setAccountsProps): void;
   [MutationTypes.SET_ONLINE_STATUS](state: State, props: setOnlineStatus): void;
-  [MutationTypes.SET_ADDRESSES](state: State, props: setAddressesProps): void;
   [MutationTypes.SET_BALANCE](state: State, props: BalanceJson): void;
   [MutationTypes.SET_AUTO_SELECT_NODE](state: State, props: setAutoSelectNode): void;
   [MutationTypes.SET_QR](state: State, props: string): void;
@@ -45,25 +38,11 @@ export type Mutations = {
 };
 
 const mutations: MutationTree<State> & Mutations = {
-  [MutationTypes.SET_SELECTED_WALLET](state, { selectedWalletAddress }) {
-    let meta: KeyringPair$Meta | KeyringJson$Meta;
-
-    if (BaseApi.getWalletType(selectedWalletAddress) === 'native') meta = BaseApi.getPair(selectedWalletAddress).meta;
-    else {
-      const address = BaseApi.getAddress(selectedWalletAddress);
-
-      if (!address) return;
-
-      meta = address.meta;
-    }
-
-    const { name, ethereumAddress } = getMetaTyped(meta);
-    accountController.setSelectedWalletAddress(selectedWalletAddress);
-
+  [MutationTypes.SET_SELECTED_WALLET](state, { selectedWallet }) {
     state.selectedWallet = {
-      address: selectedWalletAddress,
-      ethereumAddress: ethereumAddress ?? '',
-      name,
+      address: selectedWallet.address,
+      ethereumAddress: selectedWallet.ethereumAddress ?? '',
+      name: selectedWallet.name ?? '',
     };
   },
 
@@ -91,11 +70,9 @@ const mutations: MutationTree<State> & Mutations = {
   },
 
   [MutationTypes.SET_ACCOUNTS](state, { accounts }) {
-    state.accounts = accounts;
-  },
+    state.accounts = [...accounts];
 
-  [MutationTypes.SET_ADDRESSES](state, { addresses }) {
-    state.addresses = addresses;
+    accountController.setAccounts(accounts);
   },
 
   [MutationTypes.SET_AUTO_SELECT_NODE](state, { network, value }) {

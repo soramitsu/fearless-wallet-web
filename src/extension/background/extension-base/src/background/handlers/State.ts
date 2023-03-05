@@ -383,6 +383,7 @@ export default class State {
       url.hostname === 'nhlnehondigmgckngjomcpcefcdplmgc' || url.hostname === '39fb1478-3519-4b4e-8eba-15e6e594494c'
         ? 'header.currentExtensionPage'
         : url.hostname;
+
     const authorizeUrl = Object.keys(this.authUrls).filter((url) => url === tabHostName);
     const isAuthorize = authorizeUrl.length !== 0;
 

@@ -121,14 +121,26 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
   return (value as SignerPayloadJSON).genesisHash !== undefined;
 }
 
-function transformAccounts(accounts: SubjectInfo): AccountJson[] {
-  return Object.values(accounts).map(
-    ({ json: { address, meta }, type }): AccountJson => ({
-      address,
-      ...meta,
-      type,
+async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
+  const currentAccount = await new Promise<CurrentAccountInfo>((res) =>
+    state.getCurrentAccount((value) => {
+      res(value);
     })
   );
+
+  return Object.values(accounts)
+    .map(
+      ({ json: { address, meta }, type }): AccountJson => ({
+        address,
+        ethereumAddress: meta.ethereumAddress as string,
+        ...meta,
+        isDefaultAuthSelected: address === currentAccount.address ?? false,
+        type,
+      })
+    )
+    .filter((el) => {
+      return !isEthereumAddress(el.address);
+    });
 }
 
 export default class Extension {
@@ -330,8 +342,8 @@ export default class Extension {
 
   accountsSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(accounts.subscribe)'>(id, port);
-    const subscription = accountsObservable.subject.subscribe((accounts: SubjectInfo): void => {
-      cb(transformAccounts(accounts));
+    const subscription = accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
+      cb(await transformAccounts(accounts));
     });
 
     port.onDisconnect.addListener((): void => {
@@ -477,7 +489,7 @@ export default class Extension {
     if (isPasswordValidated) {
       return new Promise((resolve, reject) => {
         try {
-          this._saveCurrentAccountAddress(address, ethereumAddress, () => {
+          this._saveCurrentAccountAddress(address, () => {
             const pair = keyring.restoreAccount(file, password);
 
             resolve(pair.address);
@@ -542,24 +554,20 @@ export default class Extension {
       seed,
     };
   }
-  private _saveCurrentAccountAddress(
-    address: string,
-    ethAddress: string,
-    callback?: (data: CurrentAccountInfo) => void
-  ) {
+  private _saveCurrentAccountAddress(address: string, callback?: (data: CurrentAccountInfo) => void) {
     state.getCurrentAccount((accountInfo) => {
       const isMobile = accountInfo.isMobile;
+      const currentKeyPair = keyring.getAccount(address);
 
       if (!accountInfo) {
         accountInfo = {
           address,
           isMobile,
-          ethereumAddress: ethAddress,
+          ethereumAddress: (currentKeyPair?.meta.ethereumAddress as string) ?? '',
           currentGenesisHash: ALL_GENESIS_HASH,
           allGenesisHash: ALL_GENESIS_HASH || undefined,
         };
       } else {
-        const currentKeyPair = keyring.getAccount(address);
         accountInfo.isMobile = currentKeyPair?.meta.isMobile as boolean;
         accountInfo.currentGenesisHash = (currentKeyPair?.meta.genesisHash as string) || ALL_GENESIS_HASH;
       }
@@ -578,8 +586,8 @@ export default class Extension {
     return true;
   }
 
-  private updateCurrentAccountAddress({ address, ethAddress }: RequestCurrentAccountAddress): boolean {
-    this._saveCurrentAccountAddress(address, ethAddress, () => {
+  private updateCurrentAccountAddress({ address }: RequestCurrentAccountAddress): boolean {
+    this._saveCurrentAccountAddress(address, () => {
       this.triggerAccountsSubscription();
     });
 
@@ -589,7 +597,7 @@ export default class Extension {
   private saveCurrentAccountAddress(data: RequestCurrentAccountAddress, id: string, port: Port): boolean {
     const cb = createSubscription<'pri(accounts.current.saveAddress)'>(id, port);
 
-    this._saveCurrentAccountAddress(data.address, data.ethAddress, cb);
+    this._saveCurrentAccountAddress(data.address, cb);
 
     port.onDisconnect.addListener((): void => {
       this.cancelSubscription(id);

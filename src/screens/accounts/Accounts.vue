@@ -36,13 +36,13 @@
 import { Getter, Mutation } from 'vuex-class';
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import AccountsItem from './AccountsItem.vue';
-import type { SelectedWallet, SetSelectedWalletProps } from '@/store';
+import type { SelectedWallet, SetSelectedWallet } from '@/store';
 import type { Networks, TMutation } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { getChainAccounts } from '@/helpers/accounts';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import BaseApi from '@/util/BaseApi';
 
 @Component({
@@ -55,7 +55,7 @@ export default class Account extends Vue {
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getAllNetworks) networks!: Networks;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
+  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWallet>;
 
   get showReplacedAccounts() {
     return this.replacedAccountsItems.length > 0;

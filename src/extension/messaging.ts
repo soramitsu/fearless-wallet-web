@@ -6,6 +6,7 @@ import { selectableNetworks } from '@polkadot/networks';
 
 import { getId } from './background/extension-base/src/utils';
 import { PORT_EXTENSION } from './background/extension-base/src/defaults';
+import { CurrentAccountInfo } from './background/extension-base/src/stores/CurrentAccountStore';
 import type { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
 import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
@@ -38,6 +39,7 @@ import type {
   ValidateJsonResult,
   RequestAccountMeta,
   ResponseAccountMeta,
+  RequestCurrentAccountAddress,
 } from '@extension-base/background/types';
 import type { Message, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
@@ -296,6 +298,13 @@ export async function rejectMetaRequest(id: string): Promise<boolean> {
 
 export async function subscribeAccounts(cb: (accounts: AccountJson[]) => void): Promise<boolean> {
   return sendMessage('pri(accounts.subscribe)', null, cb);
+}
+
+export async function saveCurrentAccountAddress(
+  data: RequestCurrentAccountAddress,
+  callback: (data: CurrentAccountInfo) => void
+): Promise<boolean> {
+  return sendMessage('pri(accounts.current.saveAddress)', data, callback);
 }
 
 export async function subscribeAuthorizeRequests(cb: (accounts: AuthorizeRequest[]) => void): Promise<boolean> {

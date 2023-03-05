@@ -23,22 +23,4 @@ function getChainAccounts(networks: Networks, wallet: Wallet): ChainAccount[] {
   });
 }
 
-function getAccounts(): CustomAccounts {
-  const accounts = BaseApi.getAccounts().reduce((result, { address, meta }) => {
-    const { type } = BaseApi.getPair(address);
-
-    result[address] = { type, json: { address, meta } };
-
-    return result;
-  }, {} as CustomAccounts);
-
-  const mobileAccount = BaseApi.getMobileAddresses().reduce((result, { address, meta }) => {
-    result[address] = { type: undefined, json: { address, meta } };
-
-    return result;
-  }, {} as CustomAccounts);
-
-  return { ...accounts, ...mobileAccount };
-}
-
-export { getChainAccounts, getAccounts };
+export { getChainAccounts };

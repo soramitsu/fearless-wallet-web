@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="asset.polkaswap" :fullScreen="true" :closeHandler="closeForm">
+  <AboveForm header="assets.polkaswap" :fullScreen="true" :closeHandler="closeForm">
     <template v-slot:header>
       <div class="header-content">
         <div :class="classesBackIcon">
@@ -9,7 +9,7 @@
         <div class="header">
           {{ header }}
 
-          <Icon icon="polkaswap" class="polkaswap" />
+          <Icon v-if="showPolkaswapIcon" icon="polkaswap" class="polkaswap" />
         </div>
 
         <Icon v-if="showSettings" icon="close" class="img close" @click="toggleSettingsVisibility" />
@@ -41,7 +41,7 @@
 
           <template v-else-if="step === 1">
             <SwapSelectInput
-              text="asset.sendButtonText"
+              text="assets.sendButtonText"
               :balance="transferrableSendAmount"
               :value="sendValue"
               :asset="sendAsset"
@@ -55,7 +55,7 @@
 
             <SwapSelectInput
               class="receive-input"
-              text="asset.receiveButtonText"
+              text="assets.receiveButtonText"
               :balance="transferrableReceiveAmount"
               :value="receiveValue"
               :asset="receiveAsset"
@@ -131,7 +131,7 @@
           <Button
             v-if="showSettings"
             size="big"
-            text="asset.resetToDefault"
+            text="assets.resetToDefault"
             type="secondary"
             width="49%"
             :border="false"
@@ -234,6 +234,10 @@ export default class SwapForm extends Vue {
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
+  get showPolkaswapIcon() {
+    return this.step === 1 && !this.showSettings;
+  }
+
   get classesSwapIcon() {
     return [
       'swap-icon',
@@ -330,11 +334,11 @@ export default class SwapForm extends Vue {
   }
 
   get header() {
-    if (this.showSettings) return this.$t('asset.swapSettings');
+    if (this.showSettings) return this.$t('assets.swapSettings');
 
-    if (this.step === 1) return this.$t('asset.polkaswap');
+    if (this.step === 1) return this.$t('assets.polkaswap');
 
-    return this.$t('asset.swapPreview');
+    return this.$t('assets.swapPreview');
   }
 
   get showSwapInfo() {
@@ -403,14 +407,14 @@ export default class SwapForm extends Vue {
   get buttonText() {
     if (this.showSettings) return 'common.save';
 
-    if (this.sendAmount !== '' && this.receiveAmount !== '' && this.fee === '') return 'asset.calculateFee';
+    if (this.sendAmount !== '' && this.receiveAmount !== '' && this.fee === '') return 'assets.calculateFee';
 
-    if (!this.isValidSendAsset) return { text: 'asset.insufficientBalance', localeProps: { asset: this.sendAssetUP } };
+    if (!this.isValidSendAsset) return { text: 'assets.insufficientBalance', localeProps: { asset: this.sendAssetUP } };
 
     if (!this.isValidCountXOR)
-      return { text: 'asset.insufficientBalance', localeProps: { asset: this.soraMainAssetUpper } };
+      return { text: 'assets.insufficientBalance', localeProps: { asset: this.soraMainAssetUpper } };
 
-    return this.step === 1 ? 'asset.preview' : 'common.confirm';
+    return this.step === 1 ? 'assets.preview' : 'common.confirm';
   }
 
   get buttonPreviewDisabled() {

@@ -1,7 +1,7 @@
 <template>
   <NotificationPopup
-    acceptButtonText="asset.changeAddress"
-    rejectButtonText="asset.switchNetwork"
+    acceptButtonText="assets.changeAddress"
+    rejectButtonText="assets.switchNetwork"
     sizeWidth="big"
     :showHeader="false"
     :showAcceptButton="true"

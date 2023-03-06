@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="row">
-      {{ $t('asset.market') }}
+      {{ $t('assets.market') }}
 
       <div class="value">
         {{ marketTypeUP }}
@@ -9,7 +9,7 @@
     </div>
 
     <div class="row">
-      {{ $t('asset.Slippage') }}
+      {{ $t('assets.Slippage') }}
 
       <div class="value">{{ slippage }}%</div>
     </div>
@@ -24,7 +24,7 @@
     </div>
 
     <div class="row">
-      {{ $t('asset.liquidityProvideFeer') }}
+      {{ $t('assets.liquidityProvideFeer') }}
 
       <div class="value">
         <div>{{ providerFeeCut }} {{ soraMainAsset }}</div>
@@ -35,7 +35,7 @@
     </div>
 
     <div class="row">
-      {{ $t('asset.networkFee') }}
+      {{ $t('assets.networkFee') }}
 
       <div v-if="fee" class="value">
         <div>{{ fee }} {{ soraMainAsset }}</div>
@@ -97,7 +97,7 @@ export default class SwapPreview extends Vue {
   }
 
   get minMaxLabel() {
-    return this.isExchangeB ? 'asset.maxSales' : 'asset.minReceived';
+    return this.isExchangeB ? 'assets.maxSales' : 'assets.minReceived';
   }
 
   get marketTypeUP() {

@@ -3,14 +3,14 @@
     <Select
       v-model="syncedMarketType"
       :options="optionsSubstrateKeyPair"
-      placeholder="asset.market"
+      placeholder="assets.market"
       size="big"
       class="row"
     />
 
     <ValidatedInput
       v-model="slippagePercent"
-      placeholder="asset.slippage"
+      placeholder="assets.slippage"
       typeText="uppercase"
       class="row"
       :errorDescriptions="warningMessage"
@@ -29,7 +29,7 @@
       </div>
     </div>
 
-    <div class="slippage-warning">{{ $t('asset.slippageWarning') }}</div>
+    <div class="slippage-warning">{{ $t('assets.slippageWarning') }}</div>
   </div>
 </template>
 
@@ -64,7 +64,7 @@ export default class SwapSettings extends Vue {
   }
 
   get warningMessage() {
-    return this.$t('asset.transactionFrontrun', { value: this.syncedSlippage });
+    return this.$t('assets.transactionFrontrun', { value: this.syncedSlippage });
   }
 
   setSlippage(value: number) {

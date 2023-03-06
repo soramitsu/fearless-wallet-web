@@ -69,7 +69,7 @@
           iconName="send-white"
           backgroundColor="black"
           class="button send"
-          tooltipText="asset.sendButtonText"
+          tooltipText="assets.sendButtonText"
           target=".send"
           @click="toggleVisibleActivityForm('showSendForm', true, currency)"
         />
@@ -78,7 +78,7 @@
           iconName="receive-white"
           backgroundColor="black"
           class="button receive"
-          tooltipText="asset.receiveButtonText"
+          tooltipText="assets.receiveButtonText"
           target=".receive"
           @click="toggleVisibleActivityForm('showReceiveForm', true, currency)"
         />

@@ -33,7 +33,7 @@
         </Corners>
 
         <div class="balance">
-          {{ $t('asset.balance') }}
+          {{ $t('assets.balance') }}
           <div class="balance-value" @click="setMax">&nbsp;{{ balance }}</div>
         </div>
       </div>

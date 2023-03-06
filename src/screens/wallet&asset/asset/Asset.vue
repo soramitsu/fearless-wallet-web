@@ -25,21 +25,21 @@
     <div class="activity">
       <BorderButton
         class="activity-button"
-        text="asset.sendButtonText"
+        text="assets.sendButtonText"
         iconName="send"
         @click="toggleVisible('showSendForm', true)"
       />
 
       <BorderButton
         class="activity-button"
-        text="asset.receiveButtonText"
+        text="assets.receiveButtonText"
         iconName="receive"
         @click="toggleVisible('showReceiveForm', true)"
       />
 
       <!-- <BorderButton
         class="activity-button"
-        text="asset.teleportButtonText"
+        text="assets.teleportButtonText"
         iconName="teleport"
         @click="toggleVisible('showTeleportForm', true)"
       /> -->
@@ -47,7 +47,7 @@
       <BorderButton
         v-if="showBuyButton"
         class="activity-button"
-        text="asset.buy"
+        text="assets.buy"
         iconName="plus-pink"
         @click="toggleVisible('showBuyPopup', true)"
       />
@@ -55,7 +55,7 @@
       <BorderButton
         v-if="showSwapButton"
         class="activity-button"
-        text="asset.swap"
+        text="assets.swap"
         iconName="swap"
         @click="toggleVisible('showSwapForm', true)"
       />

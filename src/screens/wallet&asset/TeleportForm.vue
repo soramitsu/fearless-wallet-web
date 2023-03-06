@@ -1,7 +1,7 @@
 <template>
   <TransferForm
     extrinsicType="teleport"
-    header="asset.teleportFunds"
+    header="assets.teleportFunds"
     :selectedAssetId="selectedAssetId"
     :selectedNetwork="originalNetwork"
     :amount="amount"

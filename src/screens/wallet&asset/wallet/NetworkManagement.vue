@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="asset.networkIssues" class="network-management" :blur="true" :closeHandler="closeForm">
+  <AboveForm header="assets.networkIssues" class="network-management" :blur="true" :closeHandler="closeForm">
     <div class="management-content">
       <Scroll>
         <Corners v-for="{ name, icon } in disconnectedNetworks" :key="name" size="big" class="network-corners">

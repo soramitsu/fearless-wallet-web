@@ -4,7 +4,7 @@
       <template v-if="isTransactionNotInit && !isSignMobile">
         <Icon icon="lock-green" className="icon__lock-green" iconColor="success" />
 
-        <div class="text row">{{ $t('asset.passwordTransaction') }}</div>
+        <div class="text row">{{ $t('assets.passwordTransaction') }}</div>
 
         <ValidatedInput
           v-if="isLocked"
@@ -123,7 +123,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get min15Label() {
-    return this.isLocked ? 'asset.15min' : 'asset.15minExtend';
+    return this.isLocked ? 'assets.15min' : 'assets.15minExtend';
   }
 
   get headerType() {
@@ -135,11 +135,11 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get popupHeader() {
-    if (this.transactionStatus === 'success') return 'asset.transactionDone';
+    if (this.transactionStatus === 'success') return 'assets.transactionDone';
 
-    if (this.transactionStatus === 'failed') return 'asset.transactionError';
+    if (this.transactionStatus === 'failed') return 'assets.transactionError';
 
-    if (this.isTransactionPending) return 'asset.transactionPending';
+    if (this.isTransactionPending) return 'assets.transactionPending';
 
     return '';
   }

@@ -187,7 +187,7 @@
     "nothingFound": "Ничего не найдено",
     "googleExportSuccess": "Ваши приватные данные были успешно сохранены в Google Drive"
   },
-  "asset": {
+  "assets": {
     "history": {
       "text": "История",
       "noHistory": "Здесь появится история",

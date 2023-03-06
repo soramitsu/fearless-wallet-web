@@ -52,9 +52,9 @@ export default class TeleportForm extends Vue {
   @Getter(AccountsGettersTypes.getFiatId) fiatId!: string;
 
   get amountPlaceholder() {
-    if (this.syncedAmount === '') return 'asset.amount';
+    if (this.syncedAmount === '') return 'assets.amount';
 
-    return 'asset.amountIn';
+    return 'assets.amountIn';
   }
 
   get amountPlaceholderProps() {
@@ -62,9 +62,9 @@ export default class TeleportForm extends Vue {
   }
 
   get valuePlaceholder() {
-    if (this.syncedValue === '') return 'asset.value';
+    if (this.syncedValue === '') return 'assets.value';
 
-    return 'asset.valueIn';
+    return 'assets.valueIn';
   }
 
   get valuePlaceholderProps() {

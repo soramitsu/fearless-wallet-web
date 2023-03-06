@@ -12,7 +12,7 @@
 
         <div class="receive-content">
           <div class="address-wrapper">
-            <span>{{ $t('asset.walletAddress') }}</span>
+            <span>{{ $t('assets.walletAddress') }}</span>
 
             <div class="address">
               {{ cutAddress }}

@@ -189,7 +189,7 @@
     "nothingFound": "Nothing found",
     "googleExportSuccess": "The secret data has been successfully saved on Google Drive"
   },
-  "asset": {
+  "assets": {
     "history": {
       "text": "History",
       "noHistory": "Your history will appear here",

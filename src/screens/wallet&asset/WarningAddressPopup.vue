@@ -19,8 +19,8 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 @Component
 export default class WarningAddressPopup extends Vue {
   readonly headers = {
-    text: 'asset.invalidNetworkText',
-    subtext: 'asset.invalidNetworkSubtext',
+    text: 'assets.invalidNetworkText',
+    subtext: 'assets.invalidNetworkSubtext',
   };
 
   @Prop(Function) handlerClose!: VoidFunction;

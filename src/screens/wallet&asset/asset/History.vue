@@ -2,7 +2,7 @@
   <ContentForm :height="306">
     <div class="history">
       <div class="history-settings">
-        <div class="history-label">{{ $t('asset.history.text') }}</div>
+        <div class="history-label">{{ $t('assets.history.text') }}</div>
 
         <Dropdown :value="filterHistoryValue" :options="historyDropdownOption" :handler="filterHistoryValueUpdate" />
       </div>
@@ -21,7 +21,7 @@
             />
           </template>
 
-          <div v-else>{{ $t('asset.history.noHistory') }}</div>
+          <div v-else>{{ $t('assets.history.noHistory') }}</div>
         </div>
       </Scroll>
     </div>
@@ -45,10 +45,10 @@ import networksController from '@/controllers/networksController';
 })
 export default class History extends Vue {
   readonly historyDropdownOption = [
-    { label: 'asset.history.all', value: 'all' },
-    { label: 'asset.history.transfer', value: 'transfer' },
-    { label: 'asset.history.reward', value: 'reward' },
-    { label: 'asset.history.extrinsic', value: 'extrinsic' },
+    { label: 'assets.history.all', value: 'all' },
+    { label: 'assets.history.transfer', value: 'transfer' },
+    { label: 'assets.history.reward', value: 'reward' },
+    { label: 'assets.history.extrinsic', value: 'extrinsic' },
   ];
   filterHistoryValue: FilterHistory = 'all';
   isFetchingHistory = false;

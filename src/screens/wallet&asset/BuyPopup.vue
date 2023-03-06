@@ -25,7 +25,7 @@ export default class BuyPopup extends Vue {
   @Prop(Function) closePopup!: VoidFunction;
 
   get headerText() {
-    return this.$t('asset.buyHeader', { asset: this.asset });
+    return this.$t('assets.buyHeader', { asset: this.asset });
   }
 
   openProvider(providerName: 'moonpay' | 'ramp') {

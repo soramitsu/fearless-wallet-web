@@ -21,56 +21,22 @@
     </ContentForm>
 
     <ContentForm>
-      <div class="row">
-        {{ $t('asset.market') }}
-
-        <div class="value">
-          {{ marketTypeUP }}
-        </div>
-      </div>
-
-      <div class="row">
-        {{ $t('asset.Slippage') }}
-
-        <div class="value">
-          {{ slippage }}
-        </div>
-      </div>
-
-      <div class="row">
-        {{ $t('asset.priceImpact') }}
-
-        <div class="value">-</div>
-      </div>
-
-      <div class="row">
-        {{ $t(minMaxLabel) }}
-
-        <div class="value">
-          <div>{{ minMaxAmount }}</div>
-          <div class="price">{{ minMaxAmountPrice }}</div>
-        </div>
-      </div>
-
-      <div class="row">
-        {{ $t('asset.liquidityProvideFeer') }}
-
-        <div class="value">
-          <div>{{ providerFeeCut }} {{ soraMainAsset }}</div>
-
-          <!-- Бесполезная информация, в полькасвопе не показывается, обсудить -->
-          <!-- <div class="price">{{ fiatSymbol }} {{ liquidityProviderFeePrice }}</div> -->
-        </div>
-      </div>
-
-      <div class="row">
-        {{ $t('asset.networkFee') }}
-
-        <div class="value">
-          <div>{{ fee }} {{ soraMainAsset }}</div>
-          <div class="price">{{ fiatSymbol }} {{ feePrice }}</div>
-        </div>
-      </div>
+      <SwapInfo
+        :marketType="marketType"
+        :slippage="slippage"
+        :sendAmount="sendAmount"
+        :receiveAmount="receiveAmount"
+        :sendValue="sendValue"
+        :receiveValue="receiveValue"
+        :minMaxAmount="minMaxAmount"
+        :minMaxAmountPrice="minMaxAmountPrice"
+        :fee="fee"
+        :feePrice="feePrice"
+        :providerFee="providerFee"
+        :sendAssetUP="sendAssetUP"
+        :receiveAssetUP="receiveAssetUP"
+        :isExchangeB="isExchangeB"
+      />
     </ContentForm>
   </div>
 </template>
@@ -79,10 +45,11 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { firstCharToUp } from '@/helpers/common';
-import { SORA_UTILITY_ASSET } from '@/consts/networks';
+import SwapInfo from '@/screens/wallet&asset/swap/SwapInfo.vue';
 
-@Component
+@Component({
+  components: { SwapInfo },
+})
 export default class SwapPreview extends Vue {
   @Prop({ default: '' }) marketType!: string;
   @Prop({ default: '' }) slippage!: string;
@@ -100,10 +67,6 @@ export default class SwapPreview extends Vue {
   @Prop(Boolean) isExchangeB!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
-  get soraMainAsset() {
-    return SORA_UTILITY_ASSET.toUpperCase();
-  }
-
   get sendAmountCut() {
     return `${this.$n(+this.sendAmount, 'decimal')} ${this.sendAssetUP}`;
   }
@@ -112,24 +75,12 @@ export default class SwapPreview extends Vue {
     return `${this.$n(+this.receiveAmount, 'decimal')} ${this.receiveAssetUP}`;
   }
 
-  get providerFeeCut() {
-    return this.$n(+this.providerFee, 'decimal');
-  }
-
   get sendValueCut() {
     return `${this.fiatSymbol} ${this.$n(+this.sendValue, 'price')}`;
   }
 
   get receiveValueCut() {
     return `${this.fiatSymbol} ${this.$n(+this.receiveValue, 'price')}`;
-  }
-
-  get minMaxLabel() {
-    return this.isExchangeB ? 'asset.maxSales' : 'asset.minReceived';
-  }
-
-  get marketTypeUP() {
-    return firstCharToUp(this.marketType);
   }
 }
 </script>

@@ -6,7 +6,11 @@
           <Icon v-show="!showSettings" icon="chevron-left" class="img" @click="back" />
         </div>
 
-        <div class="header">{{ header }}</div>
+        <div class="header">
+          {{ header }}
+
+          <Icon icon="polkaswap" class="polkaswap" />
+        </div>
 
         <Icon v-if="showSettings" icon="close" class="img close" @click="toggleSettingsVisibility" />
 
@@ -84,43 +88,24 @@
                   <div class="price">{{ BToAValueCut }}</div>
                 </div>
               </div>
-
-              <div class="row">
-                <div>{{ $t(minMaxLabel) }}</div>
-
-                <div class="fiat-info">
-                  <div>{{ minMaxAmountCut }}</div>
-                  <div class="price">{{ minMaxAmountPrice }}</div>
-                </div>
-              </div>
             </template>
 
-            <!-- <div class="row">
-              {{ $t('asset.priceImpact') }}
-
-              <div class="fiat-info">
-                <div>-</div>
-              </div>
-            </div> -->
-
-            <!-- <div class="row">
-              {{ $t('asset.route') }}
-
-              <div class="fiat-info">
-                <div>-</div>
-              </div>
-            </div> -->
-
-            <div class="row last-row">
-              {{ $t('asset.networkFee') }}
-
-              <div v-if="fee" class="fiat-info">
-                <div>{{ fee }} {{ soraMainAssetUpper }}</div>
-
-                <div class="price">{{ fiatSymbol }} {{ feePrice }}</div>
-              </div>
-              <div v-else>-</div>
-            </div>
+            <SwapInfo
+              :marketType="marketType"
+              :slippage="slippage"
+              :sendAmount="sendAmount"
+              :receiveAmount="receiveAmount"
+              :sendValue="sendValue"
+              :receiveValue="receiveValue"
+              :minMaxAmount="minMaxAmountCut"
+              :minMaxAmountPrice="minMaxAmountPrice"
+              :fee="fee"
+              :feePrice="feePrice"
+              :providerFee="providerFee"
+              :sendAssetUP="sendAssetUP"
+              :receiveAssetUP="receiveAssetUP"
+              :isExchangeB="isExchangeB"
+            />
           </template>
 
           <SwapPreview
@@ -201,6 +186,7 @@ import type { Currencies, NetworkStatus } from '@/interfaces';
 import type { GetAssetName, SelectedWallet, GetNetworkStatus, GetNetwork } from '@/store';
 import SwapSelectInput from '@/screens/wallet&asset/swap/SwapSelectInput.vue';
 import SwapPreview from '@/screens/wallet&asset/swap/SwapPreview.vue';
+import SwapInfo from '@/screens/wallet&asset/swap/SwapInfo.vue';
 import SwapSettings from '@/screens/wallet&asset/swap/SwapSettings.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getCurrencyOptions } from '@/helpers/currencies';
@@ -211,6 +197,7 @@ import { SORA_UTILITY_ASSET } from '@/consts/networks';
 
 @Component({
   components: {
+    SwapInfo,
     SwapPreview,
     SwapSettings,
     SwapSelectInput,
@@ -318,10 +305,6 @@ export default class SwapForm extends Vue {
         : this.$n(+this.sendCurrency!.getCostOfAssets(this.BToA), 'price');
 
     return `${this.fiatSymbol} ${value}`;
-  }
-
-  get minMaxLabel() {
-    return this.isExchangeB ? 'asset.maxSales' : 'asset.minReceived';
   }
 
   get widthButton() {
@@ -638,6 +621,7 @@ export default class SwapForm extends Vue {
   }
 
   setMax() {
+    this.isExchangeB = false;
     this.sendAmount = this.sendCurrency!.getTransferableCountAssetsMinusFee(
       this.fee,
       this.selectedNetwork,
@@ -672,10 +656,6 @@ export default class SwapForm extends Vue {
   }
 }
 
-.last-row {
-  border: none;
-}
-
 .buttons {
   display: flex;
   justify-content: space-between;
@@ -689,6 +669,17 @@ export default class SwapForm extends Vue {
   align-items: center;
   padding: $default-padding;
   border-bottom: 1px solid $default-background-color;
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+
+  .polkaswap {
+    width: 32px;
+    height: 32px;
+    color: $pink-color;
+  }
 }
 
 .back {

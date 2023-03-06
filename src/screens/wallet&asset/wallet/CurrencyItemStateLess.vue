@@ -7,29 +7,27 @@
     <div class="descriptions-column">
       <div class="row first-row">
         <div>
-          {{ assetData.chain.toUpperCase() }}
+          {{ getMainNetwork }}
         </div>
 
         <template>
           <!-- <Shimmer v-if="showShimmers" height="14px" width="60px" /> -->
 
-          <!-- <template v-else-if="!showWarning">
-            <div class="available-networks">
-              <NetworkLogo
-                v-for="{ network } in availableInNetworksPart"
-                class="minor-network-img"
-                :key="network"
-                :name="network"
-                :width="12"
-              />
+          <div class="available-networks">
+            <ExternalLogo
+              v-for="{ icon, name } in networkBadges"
+              class="minor-network-img"
+              :key="name"
+              :name="icon"
+              :width="12"
+            />
 
-              <div v-if="isAdditional" class="additional">+{{ additionalCount }}</div>
-            </div>
-          </template> -->
+            <!-- <div v-if="isAdditional" class="additional">+{{ additionalCount }}</div> -->
+          </div>
         </template>
       </div>
       <div class="row second-row">
-        <div class="currency-name overflow">{{ assetName }}</div>
+        <div class="currency-name overflow">{{ assetData.name.toUpperCase() }}</div>
 
         <!-- <Shimmer v-if="showShimmers" height="23px" width="60px" /> -->
 
@@ -46,7 +44,7 @@
 
         <!-- <Shimmer v-if="showShimmers" height="14px" width="70px" /> -->
 
-        <div class="total-balance overflow">{{ assetData.free }}</div>
+        <div class="total-balance overflow">{{ free }}</div>
       </div>
     </div>
     <div class="activity">
@@ -90,29 +88,35 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-
-interface AssetData {
-  feeFrozen: string;
-  free: string;
-  miscFrozen: string;
-  reserved: string;
-  state: string;
-  timestamp: number;
-  network: string;
-}
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 
 @Component
 export default class CurrencyItemStateLess extends Vue {
-  @Prop(Object) assetData!: AssetData;
+  @Prop(Object) assetData!: TokenBalance;
   @Prop(String) assetName!: string;
   @Prop(Number) price!: number;
   @Prop(Number) priceChange!: number;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
 
-  mounted() {
-    //
+  get getMainNetwork() {
+    const network = this.assetData.balances.find((el) => el.isNative || el.isUtility);
+
+    return network?.name.toUpperCase();
   }
 
+  get networkBadges() {
+    return this.assetData.balances;
+  }
+
+  get free() {
+    const init = 0;
+
+    return this.assetData.balances.reduce((init, cur) => {
+      if (cur.free) return (init += +cur.free);
+
+      return 0;
+    }, init);
+  }
   get changePriceClasses() {
     const classes = ['price-change'];
 

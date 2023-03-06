@@ -57,16 +57,16 @@
             @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
           />
           <NFTs v-else-if="showNfts" /> -->
-          <!--
+
           <CurrencyItemStateLess
-            v-for="(asset, assetKey) in balance"
+            v-for="(asset, assetKey) in balances"
             :assetData="asset"
             :assetName="assetKey"
             :price="getAssetPrice(assetKey)"
             :priceChange="getPriceChange(assetKey)"
             :key="assetKey"
             :toggleVisibleActivityForm="toggleVisibleActivityForm"
-          /> -->
+          />
 
           <!-- <CurrencyItemStateLess
             v-for="(asset, assetKey) in evmCurrencies.details.ethereum.children"
@@ -136,7 +136,7 @@ import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.v
 import Loading from '@/components/Loading.vue';
 import { tieAccount, subscribeBalance, subscribePrice } from '@/extension/messaging';
 import store from '@/store';
-import { BalanceJson, PriceJson } from '@/extension/background/extension-base/src/background/types';
+import { BalanceJson, PriceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { COINGECKO_TOKENS } from '@/consts/networks';
 import { defaultSortingCurrencies } from '@/helpers/currencies';
 
@@ -174,6 +174,8 @@ export default class Wallet extends Vue {
   };
   evmCurrencies = {};
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getBalances) balances!: Record<string, TokenBalance>;
+
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
@@ -187,14 +189,11 @@ export default class Wallet extends Vue {
 
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
-  balance: BalanceJson = [] as unknown as BalanceJson;
+  @Mutation(AccountsMutationTypes.SET_CUSTOM_SORT) setCustomSorting!: TMutation<string>;
+
   price: PriceJson = {} as PriceJson;
 
   updateBalance(balanceData: BalanceJson): void {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    this.balance = balanceData.details;
-
     store.dispatch('SET_BALANCE', balanceData);
   }
 
@@ -207,13 +206,17 @@ export default class Wallet extends Vue {
   }
 
   getAssetPrice(assetKey: string) {
-    if (Object.keys(this.price).length) return this.price.tokenPriceMap[COINGECKO_TOKENS[assetKey]];
+    const key = COINGECKO_TOKENS[assetKey] ?? assetKey;
+
+    if (Object.keys(this.price).length) return this.price.tokenPriceMap[key];
 
     return 0;
   }
 
   getPriceChange(assetKey: string) {
-    if (Object.keys(this.price).length) return this.price.tokenPriceChange[COINGECKO_TOKENS[assetKey]];
+    const key = COINGECKO_TOKENS[assetKey] ?? assetKey;
+
+    if (Object.keys(this.price).length) return this.price.tokenPriceChange[key];
 
     return 0;
   }
@@ -221,7 +224,6 @@ export default class Wallet extends Vue {
   useSetupBalance(): void {
     subscribeBalance(null, this.updateBalance).then(this.updateBalance).catch(console.error);
   }
-  @Mutation(AccountsMutationTypes.SET_CUSTOM_SORT) setCustomSorting!: TMutation<string>;
 
   get showNetworkUnavailablePopup() {
     return this.networkUnavailable !== '';

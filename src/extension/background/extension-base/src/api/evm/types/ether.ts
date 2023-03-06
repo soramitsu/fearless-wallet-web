@@ -16,9 +16,11 @@ export interface BalanceChildItem {
 
 export interface BalanceItem {
   state: APIItemState;
-  symbol: string;
+  symbol?: string;
   name: string;
   free?: string;
+  isUtility?: boolean;
+  isNative?: boolean;
   icon?: string;
   reserved?: string;
   miscFrozen?: string;
@@ -109,18 +111,6 @@ export interface NetworkJson {
   apiStatus?: NETWORK_STATUS;
   requestId?: string;
 }
-
-export type TokenBalance = {
-  network: string;
-  state: APIItemState;
-  balance?: {
-    total?: string;
-    frozen?: string;
-    locked?: string;
-    reserved?: string;
-    transferable: string;
-  };
-};
 
 export type TokenInfo = {
   network: string;

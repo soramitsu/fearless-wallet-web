@@ -40,11 +40,12 @@ import {
   RequestAccountExportPrivateKey,
   ResponseAccountExportPrivateKey,
   ServiceInfo,
+  BalanceMap,
 } from '../types';
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';
-import { BalanceItem, CustomToken, CustomTokenJson, NETWORK_STATUS } from '../../api/evm/types/ether';
+import { APIItemState, BalanceItem, CustomToken, CustomTokenJson, NETWORK_STATUS } from '../../api/evm/types/ether';
 import CustomTokenStore from '../../stores/CustomEvmToken';
 import CurrentAccountStore, { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import { initEvmTokenState } from '../../api/evm/utils/eth';
@@ -56,14 +57,11 @@ import PriceStore from '../../stores/Price';
 import { getTokenPrice } from '../../utils/coingecko';
 import { getId } from '../../utils';
 import { initApi } from '../../api/substrate';
-import { getRegistry } from '../../api/substrate/registry';
-import { getTokensForChainRegistry } from '../../api/tokens';
 import { axios } from '../../utils/axios';
 import { CHAINS, ASSETS } from '../../const/networks';
 import { DEFAULT_EVM_TOKENS } from '../../api/tokens/evm/defaultEvmToken';
 import { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '../../types';
-import { getGenesisHashes } from '../../predefinedNetworks';
-import { getCurrentProvider, mergeNetworkProviders, stripUrl, withErrorLog } from './helpers';
+import { getCurrentProvider, stripUrl, withErrorLog } from './helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
@@ -150,7 +148,7 @@ export default class State {
   public networkMapSubject = new Subject<Record<string, NetworkJsonOld>>();
   public serviceInfoSubject = new Subject<ServiceInfo>();
   private readonly currentAccountStore = new CurrentAccountStore();
-  public balanceMap: Record<string, Record<string, Record<string, BalanceItem>>> = this.generateDefaultBalanceMap();
+  public balanceMap: BalanceMap = {};
   public balanceSubject = new Subject<BalanceJson>();
   public customTokenState: CustomTokenJson = { erc20: [] };
   public customTokenSubject = new Subject<CustomTokenJson>();
@@ -963,8 +961,8 @@ export default class State {
     return balances[address] || {};
   }
 
-  public async switchAccount(newAddress: string) {
-    await Promise.all([this.resetBalanceMap(newAddress)]);
+  public async switchAccount() {
+    await Promise.all([this.resetBalanceMap()]);
   }
 
   private async publishBalance(reset?: boolean) {
@@ -973,15 +971,7 @@ export default class State {
     this.balanceSubject.next(balance);
   }
 
-  public async resetBalanceMap(newAddress: string) {
-    const defaultData = this.generateDefaultBalanceMap();
-    let storedData = await this.getStoredBalance(newAddress);
-
-    storedData = this.removeInactiveNetworkData(storedData);
-
-    const merge = { ...defaultData, ...storedData } as Record<string, Record<string, Record<string, BalanceItem>>>;
-
-    this.balanceMap = merge;
+  public async resetBalanceMap() {
     this.publishBalance(true);
   }
 
@@ -1023,63 +1013,20 @@ export default class State {
       };
     });
 
-    return result;
+    this.networkMapStore.set('NetworkMap', result);
+    this.networkMap = result;
   }
 
-  public init() {
+  public async init() {
+    await this.prepNetworkJson();
+    await this.generateDefaultBalanceMap();
     this.initNetworkStates();
     this.updateServiceInfo();
   }
 
   public initNetworkStates() {
     this.networkMapStore.get('NetworkMap', async (storedNetworkMap) => {
-      const networks = await this.prepNetworkJson();
-
-      const hashes = getGenesisHashes(networks);
-
-      if (!storedNetworkMap) {
-        // first time init extension
-        this.networkMapStore.set('NetworkMap', networks);
-        this.networkMap = networks;
-      } else {
-        // merge custom providers in stored data with predefined data
-        const mergedNetworkMap: Record<string, NetworkJsonOld> = networks;
-
-        for (const [key, storedNetwork] of Object.entries(storedNetworkMap)) {
-          if (key in networks) {
-            if (key !== 'Polkadot' && key !== 'Kusama') {
-              mergedNetworkMap[key].active = storedNetwork.active;
-            }
-
-            mergedNetworkMap[key].blockExplorer = storedNetwork.blockExplorer;
-          } else {
-            if (Object.keys(networks).includes(storedNetwork.genesisHash)) {
-              // merge networks with same genesis hash
-
-              const targetKey = hashes[storedNetwork.genesisHash];
-
-              const { parsedCustomProviders, parsedProviderKey } = mergeNetworkProviders(
-                storedNetwork,
-                networks[targetKey]
-              );
-
-              mergedNetworkMap[targetKey].customProviders = parsedCustomProviders;
-              mergedNetworkMap[targetKey].currentProvider = parsedProviderKey;
-              mergedNetworkMap[targetKey].active = storedNetwork.active;
-            } else {
-              if (key.startsWith('custom')) {
-                // in case a predefined network is removed, it will be discarded
-                mergedNetworkMap[key] = storedNetwork;
-              }
-            }
-          }
-        }
-
-        this.networkMapStore.set('NetworkMap', mergedNetworkMap);
-        this.networkMap = mergedNetworkMap; // init networkMap state
-      }
-
-      for (const [key, network] of Object.entries(this.networkMap)) {
+      for (const [key, network] of Object.entries(storedNetworkMap)) {
         const currentProvider = getCurrentProvider(network);
 
         if (!currentProvider) continue;
@@ -1149,11 +1096,16 @@ export default class State {
 
   public setBalanceItem(networkKey: string, item: BalanceItem) {
     const itemData = { timestamp: +new Date(), ...item };
-    this.getCurrentAccount(({ address }) => {
-      if (!this.balanceMap[address]) this.balanceMap[address] = {};
-      if (!this.balanceMap[address][item.name]) this.balanceMap[address][item.name] = {};
 
-      this.balanceMap[address][item.name][item.chain as string] = itemData;
+    this.getCurrentAccount(({ address }) => {
+      const token = this.balanceMap[address][item.name];
+      const index = token.balances.findIndex((el) => el.chain === networkKey);
+      const balanceItem = this.balanceMap[address][item.name].balances[index];
+
+      this.balanceMap[address][item.name].balances[index] = {
+        ...balanceItem,
+        ...itemData,
+      };
     });
 
     chrome.storage.local.set({ balance: this.balanceMap });
@@ -1189,18 +1141,42 @@ export default class State {
     });
   }
 
+  private mapNetworksByToken(id: string): BalanceItem[] {
+    return Object.values(this.networkMap)
+      .filter((network) => {
+        return network.assets.some((asset) => asset.assetId === id);
+      })
+      .map((el) => {
+        const asset = el.assets.find((_asset) => _asset.assetId === id)!;
+
+        return {
+          state: APIItemState.PENDING,
+          name: el.name,
+          icon: el.icon,
+          isUtility: asset.isUtility,
+          isNative: asset.isNative,
+        };
+      });
+  }
+
   public generateDefaultBalanceMap() {
-    const balanceMap: Record<string, Record<string, Record<string, BalanceItem>>> = {};
+    const accounts = keyring.getAccounts();
 
-    // Object.values(this.networkMap).forEach((networkJson) => {
-    //   if (networkJson.active) {
-    //     balanceMap[networkJson.key] = {
-    //       state: APIItemState.PENDING,
-    //     };
-    //   }
-    // });
+    accounts.forEach(({ address }) => {
+      if (!this.balanceMap[address]) this.balanceMap[address] = {};
 
-    return balanceMap;
+      Object.values(this.tokenMap).forEach((token) => {
+        const networks = this.mapNetworksByToken(token.id);
+        const name = token.displayName ?? token.symbol;
+        const data = {
+          name: token.displayName ?? token.symbol,
+          icon: token.icon,
+          balances: networks,
+        };
+
+        this.balanceMap[address][name] = data;
+      });
+    });
   }
 
   private removeInactiveNetworkData<T>(data: Record<string, T>) {

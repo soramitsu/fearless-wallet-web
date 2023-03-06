@@ -99,7 +99,7 @@ const mutations: MutationTree<State> & Mutations = {
   },
 
   [MutationTypes.SET_BALANCE](state, payload) {
-    state.balance = payload.reset ? payload.details : { ...state.balance, ...payload.details };
+    state.balances = payload.details;
   },
 };
 

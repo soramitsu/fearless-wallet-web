@@ -5,7 +5,7 @@ import type { State } from './state';
 import type { FiatJson } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import store from '@/store';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types';
+import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
 
 export enum GettersTypes {
   getSelectedWallet = 'getSelectedWallet',
@@ -16,6 +16,7 @@ export enum GettersTypes {
   getFiatId = 'getFiatId',
   getAccounts = 'getAccounts',
   getAddresses = 'getAddresses',
+  getBalances = 'getBalances',
   getWallets = 'getWallets',
   getAutoSelectNodesValueByNetwork = 'getAutoSelectNodesValueByNetwork',
   GET_QR = 'getQR',
@@ -24,6 +25,7 @@ export enum GettersTypes {
 
 export type Getters = {
   [GettersTypes.getSelectedWallet](state: State, getters?: GetterTree<State, State> & Getters): SelectedWallet;
+  [GettersTypes.getBalances](state: State, getters?: GetterTree<State, State> & Getters): Record<string, TokenBalance>;
   [GettersTypes.getSelectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getSelectedNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getFiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
@@ -47,6 +49,9 @@ const getters: GetterTree<State, State> & Getters = {
     return selectedWallet;
   },
 
+  [GettersTypes.getBalances]({ balances }): Record<string, TokenBalance> {
+    return balances;
+  },
   [GettersTypes.getSelectedFiat]({ selectedFiat }): string {
     return selectedFiat;
   },

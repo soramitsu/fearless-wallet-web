@@ -89,7 +89,6 @@ export interface NetworkJsonOld extends NetworkJson {
   chainId: string;
   parentId?: string;
   name: string;
-
   externalApi?: ExternalApi;
   assets: NetworkAssets[];
   customNodes?: Record<string, string>;

@@ -4,7 +4,7 @@ import type { State } from '@/store/accounts/state';
 import type { SetSelectedFiat, SetSelectedWallet } from './types';
 import type { Currencies } from '@/interfaces';
 import { MutationTypes } from '@/store/accounts/mutations';
-import { AccountJson, BalanceJson } from '@/extension/background/extension-base/src/background/types';
+import { BalanceJson } from '@/extension/background/extension-base/src/background/types';
 
 export enum ActionTypes {
   SET_SELECTED_FIAT = 'SET_SELECTED_FIAT',

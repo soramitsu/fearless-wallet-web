@@ -307,7 +307,7 @@ export interface PriceJson {
 }
 export interface BalanceJson {
   reset?: boolean;
-  details: Record<string, Record<string, BalanceItem>>;
+  details: Record<string, TokenBalance>;
 }
 
 export enum TransferErrorCode {
@@ -909,3 +909,11 @@ export interface RequestAccountMeta {
 export interface ResponseAccountMeta {
   meta: KeyringPair$Meta;
 }
+
+export interface TokenBalance {
+  name: string;
+  icon: string;
+  balances: BalanceItem[];
+}
+
+export type BalanceMap = Record<string, Record<string, TokenBalance>>;

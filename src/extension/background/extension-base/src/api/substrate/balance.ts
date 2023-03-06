@@ -2,14 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { assetFromToken } from '@equilab/api';
-import { SignedBalance } from '@equilab/api/genshiro/interfaces';
 import { ApiPromise } from '@polkadot/api';
 import { BN } from '@polkadot/util';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { BigNumber, Contract } from 'ethers';
 import { DeriveBalancesAll } from '@polkadot/api-derive/types';
 import { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
-import { AccountData } from '@polkadot/types/interfaces';
 import { state } from '../../background/handlers';
 
 import { ApiProps } from '../../background/types';
@@ -23,7 +21,6 @@ import { getEVMBalance } from '../evm/balance';
 import EthProvider from '../evm/ethProvider';
 import { APIItemState, BalanceItem, TokenInfo } from '../evm/types/ether';
 import { getERC20Contract } from '../evm/utils/eth';
-import { IGNORE_GET_SUBSTRATE_FEATURES_LIST } from '../../const';
 import { getPSP22ContractPromise } from '../tokens/wasm';
 import { categoryAddresses } from '../../utils/utils';
 import { ORML_PALLETS_TYPES } from '../../const/networks';
@@ -241,252 +238,6 @@ export async function getFreeBalance(
   }
 }
 
-export async function subscribeFreeBalance(
-  networkKey: string,
-  address: string,
-  dotSamaApiMap: Record<string, ApiProps>,
-  web3ApiMap: Record<string, EthProvider>,
-  token: string | undefined,
-  update: (balance: BigNumber) => void
-): Promise<() => void> {
-  const apiProps = await dotSamaApiMap[networkKey].isReady;
-  const api = apiProps.api;
-  const web3Api = web3ApiMap[networkKey];
-  const tokenInfo = token ? await getTokenInfo(networkKey, api, token) : undefined;
-  const isMainToken = tokenInfo ? tokenInfo.isMainToken : true;
-
-  // Only EVM Address use with EVM network
-  if (Boolean(web3Api || apiProps.isEthereum) !== isEthereumAddress(address)) {
-    if (!isEthereumAddress(address)) {
-      update(BigNumber.from(0));
-
-      return () => undefined;
-    }
-  }
-
-  const responseIntervalSubscription = (method: () => void) => {
-    method();
-    const interval = setInterval(method, SUBSCRIBE_BALANCE_FAST_INTERVAL);
-
-    return () => {
-      clearInterval(interval);
-    };
-  };
-
-  // web3Api support mean isEthereum Network support
-  if (web3Api) {
-    if (isMainToken) {
-      const getEvmMainBalance = () => {
-        web3Api.provider.getBalance(address).then(update).catch(console.info);
-      };
-
-      return responseIntervalSubscription(getEvmMainBalance);
-    } else {
-      const getERC20FreeBalance = () => {
-        if (!tokenInfo?.contractAddress) {
-          return;
-        }
-
-        const contract = getERC20Contract(networkKey, tokenInfo.contractAddress, web3ApiMap);
-
-        contract.methods
-          .balanceOf(address)
-          .call()
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          //@ts-ignore
-          .then((free) => {
-            update(free?.toString() || '0');
-          });
-      };
-
-      return responseIntervalSubscription(getERC20FreeBalance);
-    }
-  } else {
-    // Handle WASM tokens
-    if (token) {
-      if (tokenInfo && tokenInfo.type) {
-        const getPSP22FreeBalance = () => {
-          if (!tokenInfo?.contractAddress) return;
-
-          const contractPromise = getPSP22ContractPromise(api, tokenInfo.contractAddress);
-
-          contractPromise.query['psp22::balanceOf'](address, { gasLimit: -1 }, address)
-            .then((balanceOf) => {
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              //@ts-ignore
-              update(balanceOf.output ? balanceOf.output.toString() : '0');
-            })
-            .catch(console.error);
-        };
-
-        return responseIntervalSubscription(getPSP22FreeBalance);
-      }
-
-      if (['genshiro_testnet', 'genshiro'].includes(networkKey)) {
-        const asset = assetFromToken(token);
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore
-        const unsub = await api.query.eqBalances.account(address, asset, (balance) => {
-          update(balance.asPositive.toString() || '0');
-        });
-
-        return () => {
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          //@ts-ignore
-          unsub && unsub();
-        };
-      }
-
-      if (['equilibrium_parachain'].includes(networkKey)) {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore
-        const unsub = await api.query.system.account(address, (balance) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-          const balancesData = JSON.parse(balance.data.toString()) as EqBalanceItem[];
-          let freeTokenBalance: EqBalanceItem | undefined;
-
-          if (tokenInfo && tokenInfo.specialOption) {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            //@ts-ignore
-            freeTokenBalance = balancesData.find((data: EqBalanceItem) => data[0] === tokenInfo.specialOption?.assetId);
-          } else {
-            freeTokenBalance = balancesData[0];
-          }
-
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          //@ts-ignore
-          update(freeTokenBalance ? freeTokenBalance[1].positive.toString() : '0');
-        });
-
-        return () => {
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          //@ts-ignore
-          unsub && unsub();
-        };
-      }
-
-      if (
-        tokenInfo &&
-        ((networkKey === 'crab' && tokenInfo.symbol === 'CKTON') ||
-          (networkKey === 'pangolin' && tokenInfo.symbol === 'PKTON'))
-      ) {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore
-        const unsub = await api.query.system.account(address, (balance: DeriveBalancesAll) => {
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          //@ts-ignore
-          update(balance.data?.freeKton?.toBn()?.toString() || '0');
-        });
-
-        return () => {
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          //@ts-ignore
-          unsub && unsub();
-        };
-      }
-
-      if (!isMainToken && ['astar', 'shiden', 'statemint', 'statemine'].includes(networkKey)) {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore
-        const unsub = await api.query.assets.account(tokenInfo?.assetIndex, address, (_balanceInfo) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-          const balanceInfo = _balanceInfo.toHuman() as Record<string, string>;
-
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          //@ts-ignore
-          update(balanceInfo?.balance?.replaceAll(',', '') || '0');
-        });
-
-        return () => {
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          //@ts-ignore
-          unsub && unsub();
-        };
-      }
-
-      if (!isMainToken || ['kintsugi', 'kintsugi_test', 'interlay'].includes(networkKey)) {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore
-        const unsub = await api.query.tokens.accounts(
-          address,
-          tokenInfo?.specialOption || { Token: token },
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          //@ts-ignore
-          (balance) => {
-            update(balance.free?.toString() || '0');
-          }
-        );
-
-        return () => {
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          //@ts-ignore
-          unsub && unsub();
-        };
-      }
-    }
-
-    if (
-      ['kusama', 'kintsugi', 'kintsugi_test', 'interlay', 'acala', 'statemint', 'karura', 'bifrost'].includes(
-        networkKey
-      )
-    ) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      //@ts-ignore
-      const unsub = await api.query.system.account(address, (_balance) => {
-        const balance = _balance.toHuman();
-        const freeBalance = new BN(balance.data?.free.replaceAll(',', ''));
-        const miscFrozen = new BN(balance.data?.miscFrozen.replaceAll(',', ''));
-        const transferable = freeBalance.sub(miscFrozen);
-
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore
-        update(transferable.toString() || '0');
-      });
-
-      return () => {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore
-        unsub && unsub();
-      };
-    }
-
-    const unsub = await api.derive.balances?.all(address, (balance: DeriveBalancesAll) => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      //@ts-ignore
-      update(balance.availableBalance?.toBn()?.toString() || '0');
-    });
-
-    return () => {
-      unsub && unsub();
-    };
-  }
-}
-
-async function subscribeWithAccountMulti(
-  addresses: string[],
-  networkKey: string,
-  networkAPI: ApiProps,
-  web3ApiMap: Record<string, EthProvider>,
-  callback: (networkKey: string, rs: BalanceItem) => void
-) {
-  //move elsewhere
-  function setBalance(item: BalanceItem) {
-    callback(networkKey, item);
-  }
-
-  let unsub: () => void;
-
-  try {
-    unsub = await subscribeTokensBalance(addresses, networkKey, networkAPI.api, setBalance);
-  } catch (err) {
-    console.warn(err);
-  }
-
-  return () => {
-    unsub && unsub();
-  };
-}
-
 async function subscribeTokensBalance(
   addresses: string[],
   networkKey: string,
@@ -495,12 +246,6 @@ async function subscribeTokensBalance(
 ) {
   const tokenList = state.networkMap[networkKey].assets.map((asset) => {
     const searchedAsset = state.tokenMap.find((token) => token.id === asset.assetId) as AssetJson;
-    setBalance({
-      state: APIItemState.PENDING,
-      chain: networkKey,
-      name: searchedAsset.displayName ?? searchedAsset.symbol,
-      symbol: searchedAsset.symbol,
-    });
 
     return {
       ...searchedAsset,
@@ -557,6 +302,31 @@ async function subscribeTokensBalance(
     unsubList.forEach((unsub) => {
       unsub;
     });
+  };
+}
+
+async function subscribeWithAccountMulti(
+  addresses: string[],
+  networkKey: string,
+  networkAPI: ApiProps,
+  web3ApiMap: Record<string, EthProvider>,
+  callback: (networkKey: string, rs: BalanceItem) => void
+) {
+  //move elsewhere
+  function setBalance(item: BalanceItem) {
+    callback(networkKey, item);
+  }
+
+  let unsub: () => void;
+
+  try {
+    unsub = await subscribeTokensBalance(addresses, networkKey, networkAPI.api, setBalance);
+  } catch (err) {
+    console.warn(err);
+  }
+
+  return () => {
+    unsub && unsub();
   };
 }
 

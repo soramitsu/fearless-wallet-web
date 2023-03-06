@@ -1,7 +1,7 @@
 import type { SelectedWallet, SelectedNetworks, AutoSelectNode } from './types';
 import { accountController } from '@/controllers/accountController';
-import { BalanceItem } from '@/extension/background/extension-base/src/api/evm/types/ether';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types';
+
+import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
 
 export type State = {
   selectedWallet: SelectedWallet;
@@ -9,7 +9,7 @@ export type State = {
   selectedNetworks: SelectedNetworks;
   accounts: AccountJson[];
   isOnline: boolean;
-  balance: Record<string, Record<string, BalanceItem>>;
+  balances: Record<string, TokenBalance>;
   autoSelectNode: AutoSelectNode;
   isCustomSort: Record<string, boolean>;
   qr: string | null;
@@ -21,7 +21,7 @@ const state = (): State => {
     selectedFiat: accountController.getSelectedFiat(),
     selectedNetworks: accountController.getSelectedNetwork(),
     isOnline: navigator.onLine,
-    balance: {},
+    balances: {},
     accounts: accountController.getAccounts(),
     isCustomSort: accountController.getCustomSort(),
     autoSelectNode: accountController.getAutoSelectNodesValue(),

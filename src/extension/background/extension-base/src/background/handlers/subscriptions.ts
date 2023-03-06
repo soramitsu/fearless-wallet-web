@@ -119,7 +119,7 @@ export class FWSubscription {
   ) {
     this.logger.log('Start balance sub');
     this.state
-      .switchAccount(address)
+      .switchAccount()
       .then(() => {
         this.state
           .getDecodedAddresses(address)

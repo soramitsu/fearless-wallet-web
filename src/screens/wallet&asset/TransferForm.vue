@@ -55,7 +55,7 @@
 
             <div class="transferrable row">
               <div class="transferrable-part">
-                <div class="transferrable-label">{{ $t('asset.transferrable') }}</div>
+                <div class="transferrable-label">{{ $t('assets.transferrable') }}</div>
 
                 <div class="transferrable-descriptions">
                   <div class="transferrable-amount">{{ $n(transferrableAmount, 'decimal') }}</div>
@@ -64,7 +64,7 @@
               </div>
 
               <div v-if="showTransferableValue" class="transferrable-part">
-                <div class="transferrable-label">{{ $t('asset.transferrable') }}</div>
+                <div class="transferrable-label">{{ $t('assets.transferrable') }}</div>
 
                 <div class="transferrable-descriptions">
                   <div class="transferrable-amount">{{ fiatSymbol }}{{ transferrableValue }}</div>
@@ -195,7 +195,7 @@ export default class SendForm extends Vue {
   }
 
   get placeholderNetwork() {
-    return this.extrinsicType === 'transfer' ? 'asset.network' : 'asset.originNet';
+    return this.extrinsicType === 'transfer' ? 'assets.network' : 'assets.originNet';
   }
 
   get showSelectPopup() {
@@ -245,17 +245,18 @@ export default class SendForm extends Vue {
 
     if (!this.currency) return '';
 
-    if (this.step === 2) return this.extrinsicType === 'transfer' ? 'asset.sendButtonText' : 'asset.teleportButtonText';
+    if (this.step === 2)
+      return this.extrinsicType === 'transfer' ? 'assets.sendButtonText' : 'assets.teleportButtonText';
 
     if (this.extrinsicType === 'transfer' && this.syncedRecipient !== '' && !this.isValidRecipientAddress) {
-      if (this.isSameAddress) return 'asset.isSameAddress';
+      if (this.isSameAddress) return 'assets.isSameAddress';
 
-      return 'asset.incorrectAddress';
+      return 'assets.incorrectAddress';
     } else if (this.extrinsicType === 'teleport' && this.syncedDestNet !== '' && !this.isValidDirection)
-      return 'asset.impossibleTeleport';
+      return 'assets.impossibleTeleport';
 
     if (!this.isValidCountAssets)
-      return { text: 'asset.insufficientBalance', localeProps: { asset: this.selectedAssetUpper } };
+      return { text: 'assets.insufficientBalance', localeProps: { asset: this.selectedAssetUpper } };
 
     return 'common.continue';
   }

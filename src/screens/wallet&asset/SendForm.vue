@@ -26,10 +26,10 @@
 
     <Corners size="big" class="row">
       <div class="summary">
-        <div class="summary-label">{{ $t('asset.summary') }}</div>
+        <div class="summary-label">{{ $t('assets.summary') }}</div>
 
         <div class="summary-row">
-          <div class="name">{{ $t('asset.assetsAmount') }}</div>
+          <div class="name">{{ $t('assets.assetsAmount') }}</div>
 
           <div class="column">
             <div>{{ amountString }}</div>
@@ -39,7 +39,7 @@
         </div>
 
         <div class="summary-row">
-          <div class="name">{{ $t('asset.fee') }}</div>
+          <div class="name">{{ $t('assets.fee') }}</div>
 
           <div class="column">
             <div>{{ partialFeeString }}</div>
@@ -47,7 +47,7 @@
         </div>
 
         <div v-if="isUtilityAsset" class="summary-row">
-          <div class="name">{{ $t('asset.total') }}</div>
+          <div class="name">{{ $t('assets.total') }}</div>
 
           <div class="column">
             <div>{{ totalString }}</div>

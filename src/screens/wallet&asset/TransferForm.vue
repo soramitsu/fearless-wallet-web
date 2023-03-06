@@ -13,7 +13,7 @@
             <RotateInput
               v-model="selectedAssetUpper"
               class="row"
-              placeholder="asset.currency"
+              placeholder="assets.currency"
               :isActiveRotate="showSelectedAssetPopup"
               @click="toggleSelectPopupVisible(true, false, false)"
             />
@@ -29,7 +29,7 @@
             <Input
               v-if="extrinsicType === 'transfer'"
               v-model="syncedRecipient"
-              placeholder="asset.sendTo"
+              placeholder="assets.sendTo"
               size="big"
               class="row"
             />
@@ -38,7 +38,7 @@
               v-else
               v-model="syncedDestNet"
               class="row"
-              placeholder="asset.destNet"
+              placeholder="assets.destNet"
               :isActiveRotate="showDestNetPopup"
               @click="toggleSelectPopupVisible(false, false, true)"
             />

@@ -1,7 +1,7 @@
 <template>
   <TransferForm
     extrinsicType="transfer"
-    header="asset.sendFunds"
+    header="assets.sendFunds"
     :selectedAssetId="selectedAssetId"
     :selectedNetwork="selectedNetwork"
     :amount="amount"
@@ -17,11 +17,11 @@
     @update:recipient="updateRecipient"
   >
     <div class="row direction-column">
-      <Input v-model="selectedWallet.name" placeholder="asset.from" size="big" :readonly="true" />
+      <Input v-model="selectedWallet.name" placeholder="assets.from" size="big" :readonly="true" />
 
       <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
 
-      <Input v-model="formattedAddressTo" placeholder="asset.to" size="big" :readonly="true" />
+      <Input v-model="formattedAddressTo" placeholder="assets.to" size="big" :readonly="true" />
     </div>
 
     <Corners size="big" class="row">

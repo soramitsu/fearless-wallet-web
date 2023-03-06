@@ -1,5 +1,5 @@
 <template>
-  <Popup headerText="asset.balanceDetails" :showBorder="true" :handlerClose="closePopup" sizeWidth="big">
+  <Popup headerText="assets.balanceDetails" :showBorder="true" :handlerClose="closePopup" sizeWidth="big">
     <div class="content">
       <div v-for="{ name, value, fiat } in balances" :key="name" class="balance-row">
         <div class="label">{{ name }}</div>

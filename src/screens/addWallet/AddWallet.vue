@@ -431,7 +431,7 @@ export default class AddWallet extends Vue {
   async changedCurrentStep(step: number) {
     if (step === 0) this.$router.back();
 
-    if (step === 2) {
+    if (step === 2 || step === 4) {
       this.selectedMnemonicElements = [];
 
       return;

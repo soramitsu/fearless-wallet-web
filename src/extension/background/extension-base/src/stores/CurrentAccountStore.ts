@@ -13,7 +13,7 @@ export interface CurrentAccountInfo {
   allGenesisHash?: string;
 }
 
-export default class CurrentAccountStore extends SubscribableStore<CurrentAccountInfo> {
+export default class CurrentAccountStore extends SubscribableStore<CurrentAccountInfo | undefined> {
   constructor() {
     super(EXTENSION_PREFIX ? `${EXTENSION_PREFIX}current_account` : null);
   }

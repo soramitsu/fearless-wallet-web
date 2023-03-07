@@ -124,7 +124,7 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
 async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
   const currentAccount = await new Promise<CurrentAccountInfo>((res) =>
     state.getCurrentAccount((value) => {
-      res(value);
+      if (value) res(value);
     })
   );
 
@@ -581,12 +581,13 @@ export default class Extension {
       seed,
     };
   }
-  private _saveCurrentAccountAddress(address: string, callback?: (data: CurrentAccountInfo) => void) {
+  private _saveCurrentAccountAddress(address: string, callback?: (data: CurrentAccountInfo | undefined) => void) {
     state.getCurrentAccount((accountInfo) => {
-      const isMobile = accountInfo.isMobile;
       const currentKeyPair = keyring.getAccount(address);
 
       if (!accountInfo) {
+        const isMobile = false;
+
         accountInfo = {
           address,
           isMobile,

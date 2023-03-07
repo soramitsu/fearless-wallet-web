@@ -33,6 +33,25 @@ class AccountController {
     this.lsAccount.set(this.langStorageName, lang);
   }
 
+  public getSelectedWallet(): { address: string; ethereumAddress: string; name: string } {
+    const lsFiat = this.lsAccount.get(this.selectedWalletStorageName);
+    const account = this.getAccounts().filter((el) => el.address == lsFiat.value);
+
+    if (account.length) {
+      return {
+        address: account[0].address,
+        ethereumAddress: account[0].ethereumAddress,
+        name: account[0].name ?? '',
+      };
+    }
+
+    return {
+      address: '',
+      ethereumAddress: '',
+      name: '',
+    };
+  }
+
   public getSelectedWalletAddress(): string {
     const lsFiat = this.lsAccount.get(this.selectedWalletStorageName);
 

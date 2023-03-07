@@ -398,15 +398,20 @@ export default class State {
   public async onInstall() {
     await this.prepNetworkJson();
     this.initNetworkStates();
-    this.setCurrentAccount({
-      address: ALL_ACCOUNT_KEY,
-      ethereumAddress: ALL_ACCOUNT_KEY,
-      name: '',
-      isMobile: false,
-      currentGenesisHash: null,
-    });
-  }
 
+    if (process.env.NODE_ENV === 'development') {
+      const accounts = keyring.getAccounts().filter((el) => !isEthereumAddress(el.address));
+
+      if (accounts.length)
+        this.setCurrentAccount({
+          address: accounts[0].address,
+          name: accounts[0].meta.name as string,
+          ethereumAddress: accounts[0].meta.ethereumAddress as string,
+          currentGenesisHash: null,
+          isMobile: accounts[0].meta.isMobile as boolean,
+        });
+    } else this.setCurrentAccount(undefined);
+  }
   public async upsertNetworkMap(data: NetworkJsonOld): Promise<boolean> {
     if (this.lockNetworkMap) {
       return false;
@@ -1111,19 +1116,37 @@ export default class State {
   }
 
   public setBalanceItem(networkKey: string, item: BalanceItem) {
-    const itemData = { timestamp: +new Date(), ...item };
+    const { reserved, feeFrozen, free, total } = item;
 
-    this.getCurrentAccount(({ address }) => {
-      const token = this.balanceMap[address][item.name];
-      const index = token.balances.findIndex((el) => el.name === networkKey);
-      const balanceItem = this.balanceMap[address][item.name].balances[index];
-      const searchedNetIndex = this.balanceMap[address][item.name].balances.findIndex(
-        (el) => el.name === itemData.name
-      )!;
-      this.balanceMap[address][item.name].balances[searchedNetIndex] = {
-        ...balanceItem,
-        ...itemData,
-      };
+    this.getCurrentAccount((account) => {
+      if (account) {
+        const { address } = account;
+        const token = this.balanceMap[address][item.name];
+        const index = token.balances.findIndex((el) => el.name === item.chain);
+        const balanceItem = this.balanceMap[address][item.name].balances[index];
+
+        if (index === -1) {
+          this.balanceMap[address][item.name].balances.push({
+            state: APIItemState.READY,
+            name: item.chain as string,
+            reserved,
+            free,
+            feeFrozen,
+            total,
+            timestamp: +new Date(),
+          });
+        } else {
+          this.balanceMap[address][item.name].balances[index] = {
+            ...balanceItem,
+            state: APIItemState.READY,
+            reserved,
+            free,
+            feeFrozen,
+            total,
+            timestamp: +new Date(),
+          };
+        }
+      }
     });
 
     this.updateBalanceStore(networkKey, item);
@@ -1139,11 +1162,11 @@ export default class State {
     return network && network.genesisHash;
   }
 
-  public getCurrentAccount(update: (value: CurrentAccountInfo) => void): void {
+  public getCurrentAccount(update: (value: CurrentAccountInfo | undefined) => void): void {
     this.currentAccountStore.get('CurrentAccountInfo', update);
   }
 
-  public setCurrentAccount(data: CurrentAccountInfo, callback?: () => void): void {
+  public setCurrentAccount(data: CurrentAccountInfo | undefined, callback?: () => void): void {
     this.currentAccountStore.set('CurrentAccountInfo', data, () => {
       this.updateServiceInfo();
       callback && callback();
@@ -1152,9 +1175,10 @@ export default class State {
 
   private updateBalanceStore(networkKey: string, item: BalanceItem) {
     this.getCurrentAccount(async (currentAccountInfo) => {
-      await this.balanceService
-        .updateBalanceStore(networkKey, currentAccountInfo.address, item)
-        .catch((e) => console.warn(e));
+      if (currentAccountInfo)
+        await this.balanceService
+          .updateBalanceStore(networkKey, currentAccountInfo.address, item)
+          .catch((e) => console.warn(e));
     });
   }
 
@@ -1225,8 +1249,8 @@ export default class State {
 
   public getBalance(reset?: boolean): Promise<BalanceJson> {
     return new Promise((resolve) => {
-      this.getCurrentAccount(({ address }) => {
-        resolve({ details: this.balanceMap[address], reset });
+      this.getCurrentAccount((account) => {
+        if (account) resolve({ details: this.balanceMap[account.address], reset });
       });
     });
   }

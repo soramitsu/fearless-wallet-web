@@ -166,7 +166,7 @@ export class FWSubscription {
 export function createSubscription<TMessageType extends MessageTypesWithSubscriptions>(
   id: string,
   port: Port
-): (data: SubscriptionMessageTypes[TMessageType]) => void {
+): (data: SubscriptionMessageTypes[TMessageType] | undefined) => void {
   subscriptions[id] = port;
 
   return (subscription: unknown): void => {

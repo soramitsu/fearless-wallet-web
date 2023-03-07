@@ -194,7 +194,6 @@ export default class Wallet extends Vue {
   price: PriceJson = {} as PriceJson;
 
   async mounted() {
-    const balance = await getBalance();
     subscribePrice(null, (prices) => {
       console.info(prices, 'prices');
     });

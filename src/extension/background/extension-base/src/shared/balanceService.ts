@@ -20,7 +20,7 @@ export default class BalanceService {
     if (item.state === APIItemState.READY) {
       this.logger.log(`Updating balance for [${chain}]`);
       const { balances } = await storage.get(['balances']);
-      const copyBalance = { ...balances };
+      const copyBalance = { ...(balances ?? {}) };
 
       if (!copyBalance[address]) copyBalance[address] = {};
       if (!copyBalance[address][item.name]) copyBalance[address][item.name] = {};

@@ -244,6 +244,7 @@ async function subscribeTokensBalance(
   api: ApiPromise,
   setBalance: (rs: BalanceItem) => void
 ) {
+  state.generateDefaultBalanceMap();
   const tokenList = state.networkMap[networkKey].assets.map((asset) => {
     const searchedAsset = state.tokenMap.find((token) => token.id === asset.assetId) as AssetJson;
 

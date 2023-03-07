@@ -36,7 +36,7 @@ import {
 } from '../types';
 import { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import { RequestTransactionHistoryAdd, RequestTransactionHistoryGet, TransactionHistoryItemType } from '../../types';
-import { ALL_GENESIS_HASH } from '../../const';
+import { ALL_ACCOUNT_KEY, ALL_GENESIS_HASH } from '../../const';
 import { fetchHistory } from '../../api/evm/history';
 import { TokenInfo } from '../../api/evm/types/ether';
 import {
@@ -198,6 +198,7 @@ export default class Extension {
 
     state.setCurrentAccount({
       address,
+      name: meta?.name as string,
       isMobile: (meta?.isMobile as boolean) ?? false,
       ethereumAddress: (meta?.ethereumAddress as string) ?? '',
       currentGenesisHash: genesisHash || null,
@@ -269,7 +270,33 @@ export default class Extension {
 
     state.updateDefaultAuthAccounts(newDefaultAuthAccounts);
 
-    type === 'native' ? keyring.forgetAccount(address) : keyring.forgetAddress(address);
+    if (type === 'native') {
+      const pair = keyring.getAccount(address);
+      const ethereumAddress = pair?.meta.ethereumAddress as string;
+      if (ethereumAddress !== '') keyring.forgetAccount(ethereumAddress);
+      keyring.forgetAccount(address);
+    } else keyring.forgetAddress(address);
+
+    const accounts = keyring.getAccounts();
+
+    if (accounts.length) {
+      const { address, meta } = accounts[0];
+
+      state.setCurrentAccount({
+        address,
+        name: meta.name as string,
+        ethereumAddress: meta.ethereumAddress as string,
+        currentGenesisHash: meta.genesisHash ?? null,
+        isMobile: (meta.isMobile as boolean) ?? false,
+      });
+    } else
+      state.setCurrentAccount({
+        address: ALL_ACCOUNT_KEY,
+        name: '',
+        ethereumAddress: ALL_ACCOUNT_KEY,
+        isMobile: false,
+        currentGenesisHash: null,
+      });
 
     return true;
   }
@@ -563,6 +590,7 @@ export default class Extension {
         accountInfo = {
           address,
           isMobile,
+          name: currentKeyPair?.meta.name as string,
           ethereumAddress: (currentKeyPair?.meta.ethereumAddress as string) ?? '',
           currentGenesisHash: ALL_GENESIS_HASH,
           allGenesisHash: ALL_GENESIS_HASH || undefined,

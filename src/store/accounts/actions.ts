@@ -42,11 +42,9 @@ const actions: ActionTree<State, State> & Actions = {
     if (!account) return;
 
     commit(MutationTypes.SET_SELECTED_WALLET, {
-      selectedWallet: {
-        address: account.address,
-        ethereumAddress: account.ethereumAddress,
-        name: account.name ?? '',
-      },
+      address: account.address,
+      ethereumAddress: account.ethereumAddress,
+      name: account.name ?? '',
     });
   },
 };

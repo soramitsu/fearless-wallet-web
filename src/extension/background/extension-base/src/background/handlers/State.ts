@@ -7,7 +7,7 @@ import { knownGenesis } from '@polkadot/networks/defaults';
 import { assert, u8aToHex } from '@polkadot/util';
 import { TypeRegistry } from '@polkadot/types';
 import { accounts } from '@polkadot/ui-keyring/observable/accounts';
-import { base64Decode } from '@polkadot/util-crypto';
+import { base64Decode, isEthereumAddress } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
 import {
@@ -61,6 +61,7 @@ import { axios } from '../../utils/axios';
 import { CHAINS, ASSETS } from '../../const/networks';
 import { DEFAULT_EVM_TOKENS } from '../../api/tokens/evm/defaultEvmToken';
 import { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '../../types';
+import { ALL_ACCOUNT_KEY } from '../../const';
 import { getCurrentProvider, stripUrl, withErrorLog } from './helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
@@ -174,6 +175,7 @@ export default class State {
   }
 
   constructor() {
+    this.authUrls = {};
     this.injectFromStorage();
     this.subscription = new FWSubscription(this);
     this.init();
@@ -298,8 +300,10 @@ export default class State {
       'authUrls',
       'defaultAuthAccountSelection',
     ]);
-    this.authUrls = authUrls;
-    this.defaultAuthAccountSelection = defaultAuthAccountSelection;
+    if (authUrls) this.authUrls = authUrls;
+
+    if (defaultAuthAccountSelection && defaultAuthAccountSelection.length)
+      this.defaultAuthAccountSelection = defaultAuthAccountSelection;
   }
 
   authComplete = (
@@ -365,7 +369,7 @@ export default class State {
     }
   }
 
-  async updateCurrentTabsUrl([tab]: chrome.tabs.Tab[]) {
+  public async updateCurrentTabsUrl([tab]: chrome.tabs.Tab[]) {
     if (!tab || !tab.url) {
       this.currentTabStatus = {
         isAuthorize: false,
@@ -390,6 +394,17 @@ export default class State {
       authorizeAccountsCount: isAuthorize ? this.authUrls[tabHostName].authorizedAccounts.length : 0,
       dAppName: tabHostName,
     };
+  }
+  public async onInstall() {
+    await this.prepNetworkJson();
+    this.initNetworkStates();
+    this.setCurrentAccount({
+      address: ALL_ACCOUNT_KEY,
+      ethereumAddress: ALL_ACCOUNT_KEY,
+      name: '',
+      isMobile: false,
+      currentGenesisHash: null,
+    });
   }
 
   public async upsertNetworkMap(data: NetworkJsonOld): Promise<boolean> {
@@ -994,8 +1009,8 @@ export default class State {
 
     networks.forEach((network) => {
       const prepCurrentProvider = network.nodes[0].name;
-
       const prepNodes: Record<string, string> = {};
+
       network.nodes.map((node) => {
         prepNodes[node.name] = node.url;
       });
@@ -1015,11 +1030,12 @@ export default class State {
 
     this.networkMapStore.set('NetworkMap', result);
     this.networkMap = result;
+
+    this.generateDefaultBalanceMap();
   }
 
   public async init() {
     await this.prepNetworkJson();
-    await this.generateDefaultBalanceMap();
     this.initNetworkStates();
     this.updateServiceInfo();
   }
@@ -1099,17 +1115,18 @@ export default class State {
 
     this.getCurrentAccount(({ address }) => {
       const token = this.balanceMap[address][item.name];
-      const index = token.balances.findIndex((el) => el.chain === networkKey);
+      const index = token.balances.findIndex((el) => el.name === networkKey);
       const balanceItem = this.balanceMap[address][item.name].balances[index];
-
-      this.balanceMap[address][item.name].balances[index] = {
+      const searchedNetIndex = this.balanceMap[address][item.name].balances.findIndex(
+        (el) => el.name === itemData.name
+      )!;
+      this.balanceMap[address][item.name].balances[searchedNetIndex] = {
         ...balanceItem,
         ...itemData,
       };
     });
 
-    chrome.storage.local.set({ balance: this.balanceMap });
-    // this.updateBalanceStore(networkKey, item);
+    this.updateBalanceStore(networkKey, item);
 
     this.lazyNext('setBalanceItem', () => {
       this.publishBalance();
@@ -1159,11 +1176,21 @@ export default class State {
       });
   }
 
+  public getSubstrateAccounts() {
+    return keyring.getAccounts().filter((el) => !isEthereumAddress(el.address));
+  }
+
+  public getEthereumAccounts() {
+    return keyring.getAccounts().filter((el) => isEthereumAddress(el.address));
+  }
+
   public generateDefaultBalanceMap() {
-    const accounts = keyring.getAccounts();
+    const accounts = this.getSubstrateAccounts();
 
     accounts.forEach(({ address }) => {
-      if (!this.balanceMap[address]) this.balanceMap[address] = {};
+      if (this.balanceMap[address] !== undefined) return;
+
+      this.balanceMap[address] = {};
 
       Object.values(this.tokenMap).forEach((token) => {
         const networks = this.mapNetworksByToken(token.id);
@@ -1177,18 +1204,6 @@ export default class State {
         this.balanceMap[address][name] = data;
       });
     });
-  }
-
-  private removeInactiveNetworkData<T>(data: Record<string, T>) {
-    const activeData: Record<string, T> = {};
-
-    Object.entries(data).forEach(([networkKey, items]) => {
-      if (this.networkMap[networkKey]?.active) {
-        activeData[networkKey] = items;
-      }
-    });
-
-    return activeData;
   }
 
   public accountExportPrivateKey({

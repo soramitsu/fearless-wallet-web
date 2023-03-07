@@ -1,6 +1,6 @@
 import { keyring } from '@polkadot/ui-keyring';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
-import handlers from '@extension-base/background/handlers';
+import handlers, { state } from '@extension-base/background/handlers';
 import { initState } from '@extension-base/background/handlers/State';
 import '@polkadot/extension-inject/crossenv';
 import AccountsStore from '../background/extension-base/src/stores/Accounts';
@@ -26,6 +26,7 @@ function getActiveTabs() {
 
 chrome.runtime.onInstalled.addListener(async () => {
   await initState();
+  state.onInstall();
   getActiveTabs();
 });
 

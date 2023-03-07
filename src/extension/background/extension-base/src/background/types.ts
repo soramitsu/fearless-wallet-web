@@ -516,7 +516,7 @@ export interface ServiceInfo {
   networkMap: Record<string, NetworkJson>;
   apiMap: ApiMap;
   isLock?: boolean;
-  currentAccountInfo: CurrentAccountInfo;
+  currentAccountInfo: CurrentAccountInfo | undefined;
   chainRegistry: Record<string, ChainRegistry>;
 }
 

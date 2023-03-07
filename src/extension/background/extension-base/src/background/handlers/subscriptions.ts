@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { ApiProps, MessageTypesWithSubscriptions, Port, SubscriptionMessageTypes } from '../types';
 import EthProvider from '../../api/evm/ethProvider';
 import { subscribeBalance } from '../../api/substrate/balance';
+import { ALL_ACCOUNT_KEY } from '../../const';
 import State from './State';
 
 type SubscriptionName = 'balance' | 'balanceEVM';
@@ -63,9 +64,10 @@ export class FWSubscription {
     !this.serviceSubscription &&
       (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
         next: (serviceInfo) => {
+          if (!serviceInfo.currentAccountInfo?.address || serviceInfo.currentAccountInfo?.address === 'All') return;
+
           const { address } = serviceInfo.currentAccountInfo;
 
-          this.state.initChainRegistry();
           this.subscribeBalances(address, serviceInfo.apiMap.substrate, serviceInfo.apiMap.evm);
         },
       }));
@@ -103,7 +105,11 @@ export class FWSubscription {
     });
 
     this.state.getCurrentAccount((currentAccountInfo) => {
-      if (currentAccountInfo) {
+      if (!currentAccountInfo?.address) {
+        return;
+      }
+
+      if (currentAccountInfo.address !== ALL_ACCOUNT_KEY) {
         const { address } = currentAccountInfo;
 
         this.subscribeBalances(address, this.state.getSubstrateApiMap, this.state.getEvmApiMap, true);

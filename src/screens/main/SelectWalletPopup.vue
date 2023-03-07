@@ -12,10 +12,10 @@
   >
     <div class="wallet-content">
       <WalletInfo
-        v-for="({ name, ethereumAddress, address }, index) in accounts"
+        v-for="({ name, ethereumAddress, address, isDefaultAuthSelected }, index) in accounts"
         :key="name + index"
         :name="name"
-        :isSelected="selectedWallet.address === address"
+        :isSelected="isDefaultAuthSelected"
         :isMobile="isMobile(address)"
         :balance="getBalance(address, ethereumAddress)"
         :changeWalletBalance="getChangeWalletBalance(address, ethereumAddress)"
@@ -33,7 +33,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import WalletInfo from './WalletInfo.vue';
-import type { SelectedWallet, SetSelectedWallet, SetSelectedWalletProps } from '@/store';
+import type { SelectedWallet } from '@/store';
 import type { Currencies, TMutation, CustomEvent } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -43,6 +43,7 @@ import { Components } from '@/router/routes';
 import { addNumbers, getChangeWalletBalance } from '@/helpers/numbers';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types';
 import { saveCurrentAccountAddress } from '@/extension/messaging';
+import { CurrentAccountInfo } from '@/extension/background/extension-base/src/stores/CurrentAccountStore';
 
 @Component({
   components: { WalletInfo },
@@ -53,8 +54,7 @@ export default class SelectWalletPopup extends Vue {
   // @Getter(AccountsGettersTypes.getAddresses) addresses!: Accounts;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
-  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWallet>;
-  accountsFromSub: AccountJson[] = [];
+  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<CurrentAccountInfo>;
 
   get wallets() {
     const accounts = Object.keys(this.accounts)
@@ -97,9 +97,10 @@ export default class SelectWalletPopup extends Vue {
   }
 
   updateSelectedWallet(address: string) {
-    saveCurrentAccountAddress({ address: address }, (data) => {
-      this.setSelectedWallet({ selectedWalletAddress: data.address });
+    saveCurrentAccountAddress({ address }, (data) => {
+      this.setSelectedWallet(data);
     });
+
     this.close();
   }
 

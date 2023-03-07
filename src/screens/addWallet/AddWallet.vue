@@ -438,24 +438,6 @@ export default class AddWallet extends Vue {
       return;
     }
 
-    if (step === 4) {
-      const {
-        substrate: { keypairType: substrateKeypairType },
-        ethereum: { keypairType: ethereumKeypairType },
-      } = this.derivationPaths;
-      const suri =
-        this.isEthereumReplacedNetwork || this.isOnlyEthereumAccountFlow ? this.suriEthereum : this.suriSubstrate;
-      const type =
-        this.isEthereumReplacedNetwork || this.isOnlyEthereumAccountFlow ? ethereumKeypairType : substrateKeypairType;
-
-      const { address } = BaseApi.createFromUri(suri, type);
-
-      if (BaseApi.isDuplicateReplacedKeypair(address)) this.showMockPassword = true;
-      else this.showMockPassword = false;
-
-      return;
-    }
-
     if (step === 5) {
       if (this.isReplaceAccountFlow) {
         try {
@@ -469,9 +451,7 @@ export default class AddWallet extends Vue {
         return;
       }
 
-      const address = await this.saveKeypair();
-
-      this.setSelectedWallet({ selectedWalletAddress: address || this.selectedWallet.address });
+      await this.saveKeypair();
 
       if (this.isOnlyEthereumAccountFlow) this.$router.push({ name: Components.Wallet });
 

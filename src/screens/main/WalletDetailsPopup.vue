@@ -28,7 +28,6 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import type { SetSelectedWallet } from '@/store';
 import type { TMutation } from '@/interfaces/common';
-import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -60,19 +59,10 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   async deleteWallet() {
-    forgetAccount(this.selectedWalletAddress, this.isMobileWallet ? 'mobile' : 'native');
+    await forgetAccount(this.selectedWalletAddress, this.isMobileWallet ? 'mobile' : 'native');
 
     if (this.accounts.length === 0) this.$router.push({ name: Components.Welcome });
-    else {
-      this.setWallet();
-      this.close();
-    }
-  }
-
-  setWallet() {
-    const selectedWalletAddress = BaseApi.getFirstSubstrateWalletAddress();
-
-    if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
+    else this.close();
   }
 
   exportToGoogleDrive() {

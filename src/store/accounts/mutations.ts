@@ -9,7 +9,7 @@ import type {
 } from './types';
 import type { State } from './state';
 import { accountController } from '@/controllers/accountController';
-import { BalanceJson } from '@/extension/background/extension-base/src/background/types';
+import { AccountJson, BalanceJson } from '@/extension/background/extension-base/src/background/types';
 
 export enum MutationTypes {
   SET_SELECTED_WALLET = 'SET_SELECTED_WALLET',
@@ -25,7 +25,7 @@ export enum MutationTypes {
 }
 
 export type Mutations = {
-  [MutationTypes.SET_SELECTED_WALLET](state: State, props: SetSelectedWalletProps): void;
+  [MutationTypes.SET_SELECTED_WALLET](state: State, props: AccountJson): void;
   [MutationTypes.SET_SELECTED_FIAT](state: State, props: SetSelectedFiatProps): void;
   [MutationTypes.SET_SELECTED_NETWORK](state: State, props: SetSelectedNetworkProps): void;
   [MutationTypes.SET_ACCOUNTS](state: State, props: setAccountsProps): void;
@@ -38,11 +38,11 @@ export type Mutations = {
 };
 
 const mutations: MutationTree<State> & Mutations = {
-  [MutationTypes.SET_SELECTED_WALLET](state, { selectedWallet }) {
+  [MutationTypes.SET_SELECTED_WALLET](state, account) {
     state.selectedWallet = {
-      address: selectedWallet.address,
-      ethereumAddress: selectedWallet.ethereumAddress ?? '',
-      name: selectedWallet.name ?? '',
+      address: account.address,
+      ethereumAddress: account.ethereumAddress,
+      name: account.name ?? '',
     };
   },
 

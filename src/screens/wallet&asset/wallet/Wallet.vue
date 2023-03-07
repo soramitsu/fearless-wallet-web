@@ -134,7 +134,7 @@ import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.v
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import Loading from '@/components/Loading.vue';
-import { tieAccount, subscribeBalance, subscribePrice } from '@/extension/messaging';
+import { tieAccount, subscribeBalance, subscribePrice, getBalance } from '@/extension/messaging';
 import store from '@/store';
 import { BalanceJson, PriceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { COINGECKO_TOKENS } from '@/consts/networks';
@@ -193,13 +193,8 @@ export default class Wallet extends Vue {
 
   price: PriceJson = {} as PriceJson;
 
-  updateBalance(balanceData: BalanceJson): void {
-    store.dispatch('SET_BALANCE', balanceData);
-  }
-
-  async activated() {
-    this.useSetupBalance();
-
+  async mounted() {
+    const balance = await getBalance();
     subscribePrice(null, (prices) => {
       console.info(prices, 'prices');
     });
@@ -219,10 +214,6 @@ export default class Wallet extends Vue {
     if (Object.keys(this.price).length) return this.price.tokenPriceChange[key];
 
     return 0;
-  }
-
-  useSetupBalance(): void {
-    subscribeBalance(null, this.updateBalance).then(this.updateBalance).catch(console.error);
   }
 
   get showNetworkUnavailablePopup() {

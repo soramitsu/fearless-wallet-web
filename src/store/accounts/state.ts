@@ -1,6 +1,5 @@
 import type { SelectedWallet, SelectedNetworks, AutoSelectNode } from './types';
 import { accountController } from '@/controllers/accountController';
-
 import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
 
 export type State = {

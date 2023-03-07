@@ -10,72 +10,40 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import { Components } from './router/routes';
-import type { setAccountsProps, Accounts, setOnlineStatus, SetSelectedWallet } from '@/store';
+import { AccountJson, BalanceJson } from './extension/background/extension-base/src/background/types';
+import type { setAccountsProps, Accounts, setOnlineStatus } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
-import type { BehaviorSubject } from 'rxjs';
-import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import BaseApi from '@/util/BaseApi';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import NetworksController from '@/controllers/networksController';
-import { subscribeAccounts } from '@/extension/messaging';
+import { subscribeAccounts, subscribeBalance, subscribePrice } from '@/extension/messaging';
+import store from '@/store';
 
 @Component
 export default class App extends Vue {
-  subscribeAccounts!: BehaviorSubject<SubjectInfo>;
-  subscribeAddresses!: BehaviorSubject<SubjectInfo>;
-
-  @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
-  @Getter(AccountsGettersTypes.getAddresses) addresses!: Accounts;
   @Getter(AccountsGettersTypes.getWallets) wallets!: Record<string, Accounts>;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
-  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWallet>;
+  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<AccountJson>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
   @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<setOnlineStatus>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
 
   created() {
-    if (BaseApi.isExtension()) {
-      this.extensionSubscribe();
-    }
+    if (BaseApi.isExtension()) this.extensionSubscribe();
 
     this.setWallet();
+    this.useSetupBalance();
+    subscribePrice(null, (prices) => {
+      console.info(prices, 'prices');
+    });
   }
 
-  subscribeToBalancesOfNetworks() {
-    if (!this.isOnline) return;
-
-    const { subscribeToBalancesOfNetworks } = NetworksController;
-
-    this.subscribeAccounts = BaseApi.getAccountsSubject();
-    this.subscribeAddresses = BaseApi.getAddressesSubject();
-    this.subscribeAccounts.subscribe(async (accounts) => {
-      const newAccounts = this.getNewAccounts(accounts, 'accounts');
-      const accountsCount = Object.keys(accounts).length;
-      const newAccountsCount = Object.keys(newAccounts).length;
-
-      // this.setAccounts({ accounts });
-
-      if (newAccountsCount === 0) return;
-
-      if (accountsCount === 1 || accountsCount !== newAccountsCount) subscribeToBalancesOfNetworks(newAccounts);
-    });
-
-    this.subscribeAddresses.subscribe(async (addresses) => {
-      const newAddresses = this.getNewAccounts(addresses, 'addresses');
-      const addressesCount = Object.keys(addresses).length;
-      const newAddressesCount = Object.keys(newAddresses).length;
-
-      // this.setAddresses({ addresses });
-
-      if (newAddressesCount === 0) return;
-
-      if (addressesCount === 1 || addressesCount !== newAddressesCount) subscribeToBalancesOfNetworks(newAddresses);
-    });
+  updateBalance(balanceData: BalanceJson): void {
+    store.dispatch('SET_BALANCE', balanceData);
   }
 
   addEventOnline() {
@@ -84,32 +52,26 @@ export default class App extends Vue {
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
   }
-
-  getNewAccounts(accounts: SubjectInfo, type: 'accounts' | 'addresses') {
-    const result: SubjectInfo = {};
-
-    for (const address in accounts) {
-      if (this[type][address] === undefined) result[address] = accounts[address];
-    }
-
-    console.info(type, result);
-
-    return result;
+  useSetupBalance(): void {
+    subscribeBalance(null, this.updateBalance).then(this.updateBalance).catch(console.error);
   }
 
   setWallet() {
     subscribeAccounts((accounts) => {
       this.setAccounts({ accounts });
 
-      this.$router.push(Components.Wallet);
+      const selectedAccount = accounts.find((el) => el.isDefaultAuthSelected);
+
+      this.setSelectedWallet(selectedAccount);
+
+      if (accounts.length === 0) {
+        this.$router.push(Components.Welcome);
+      }
     });
   }
 
   unsubscribe() {
     clearInterval(this.assetsPriceInterval!);
-
-    this.subscribeAccounts.unsubscribe();
-    this.subscribeAddresses.unsubscribe();
   }
 
   beforeUnmount() {

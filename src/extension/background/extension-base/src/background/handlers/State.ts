@@ -1211,6 +1211,7 @@ export default class State {
         const data = {
           name: token.displayName ?? token.symbol,
           icon: token.icon,
+          priceId: token.priceId,
           balances: networks,
         };
 

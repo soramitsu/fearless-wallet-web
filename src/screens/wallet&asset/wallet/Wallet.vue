@@ -62,8 +62,8 @@
             v-for="(asset, assetKey) in balances"
             :assetData="asset"
             :assetName="assetKey"
-            :price="getAssetPrice(assetKey)"
-            :priceChange="getPriceChange(assetKey)"
+            :price="getAssetPrice(asset.priceId)"
+            :priceChange="getPriceChange(asset.priceId)"
             :key="assetKey"
             :toggleVisibleActivityForm="toggleVisibleActivityForm"
           />
@@ -195,22 +195,21 @@ export default class Wallet extends Vue {
 
   async mounted() {
     subscribePrice(null, (prices) => {
-      console.info(prices, 'prices');
+      this.price = prices;
     });
   }
 
   getAssetPrice(assetKey: string) {
-    const key = COINGECKO_TOKENS[assetKey] ?? assetKey;
-
-    if (Object.keys(this.price).length) return this.price.tokenPriceMap[key];
+    if (Object.keys(this.price).length && this.price.tokenPriceMap[assetKey]) return this.price.tokenPriceMap[assetKey];
 
     return 0;
   }
 
   getPriceChange(assetKey: string) {
-    const key = COINGECKO_TOKENS[assetKey] ?? assetKey;
+    if (assetKey === undefined) return 0;
 
-    if (Object.keys(this.price).length) return this.price.tokenPriceChange[key];
+    if (Object.keys(this.price.tokenPriceChange).length && this.price.tokenPriceChange[assetKey])
+      return this.price.tokenPriceChange[assetKey];
 
     return 0;
   }

@@ -197,7 +197,8 @@
       "extrinsic": "Экстринсики"
     },
     "balance": "Баланс:",
-    "transactionFrontrun": "{value}% -  Ваша транзакция может не пройти",
+    "transactionMayFail": "{value}% -  Ваша транзакция может не пройти",
+    "transactionFrontrun": "{value}% - Ваша транзакция может быть осуществлена заранее",
     "market": "Маркет",
     "swapPreview": "Предпросмотр свопа",
     "slippage": "Допуск проскальзывания",
@@ -232,7 +233,7 @@
     "assetsAmount": "Сумма активов",
     "summary": "Итог",
     "currency": "ВАЛЮТА",
-    "transferrable": "Передаваемые",
+    "transferable": "Передаваемые",
     "fee": "Комиссия",
     "total": "Суммарно",
     "signTransaction": "Подпишите транзакцию",

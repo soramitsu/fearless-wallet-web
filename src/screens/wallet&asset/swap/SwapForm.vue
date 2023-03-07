@@ -730,7 +730,6 @@ export default class SwapForm extends Vue {
 
 .swap-content {
   color: $default-white;
-  min-height: 504px;
 
   .receive-input {
     margin: 7px 0 32px;

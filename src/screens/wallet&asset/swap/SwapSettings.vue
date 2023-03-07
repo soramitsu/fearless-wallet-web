@@ -40,13 +40,13 @@ import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 export default class SwapSettings extends Vue {
   readonly optionsSubstrateKeyPair = [{ label: 'SMART', value: 'smart' }];
   readonly slippageValues = [
-    { label: '0.1%', value: 0.1 },
+    { label: '0.1%', value: 0.1, warningText: 'assets.transactionMayFail' },
     { label: '0.5%', value: 0.5 },
     { label: '1%', value: 1 },
     { label: '2%', value: 2 },
     { label: '3%', value: 3 },
     { label: '4%', value: 4 },
-    { label: '5%', value: 5 },
+    { label: '5%', value: 5, warningText: 'assets.transactionFrontrun' },
   ];
 
   inputIsFocused = 'smart';
@@ -60,11 +60,16 @@ export default class SwapSettings extends Vue {
   }
 
   get isErrorSlippageInput() {
-    return [0.1].includes(this.syncedSlippage); // [0.1, 0.5]
+    return this.slippageValues
+      .filter(({ warningText }) => warningText)
+      .map(({ value }) => value)
+      .includes(this.syncedSlippage);
   }
 
   get warningMessage() {
-    return this.$t('assets.transactionFrontrun', { value: this.syncedSlippage });
+    const { warningText } = this.slippageValues.find(({ value }) => value === this.syncedSlippage)!;
+
+    return this.$t(warningText!, { value: this.syncedSlippage });
   }
 
   setSlippage(value: number) {

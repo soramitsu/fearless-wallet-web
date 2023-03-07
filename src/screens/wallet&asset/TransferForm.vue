@@ -53,21 +53,21 @@
               @update:value="updateValue"
             />
 
-            <div class="transferrable row">
-              <div class="transferrable-part">
-                <div class="transferrable-label">{{ $t('assets.transferrable') }}</div>
+            <div class="transferable row">
+              <div class="transferable-part">
+                <div class="transferable-label">{{ $t('assets.transferable') }}</div>
 
-                <div class="transferrable-descriptions">
-                  <div class="transferrable-amount">{{ $n(transferrableAmount, 'decimal') }}</div>
-                  <div class="transferrable-assets">{{ selectedAssetUpper }}</div>
+                <div class="transferable-descriptions">
+                  <div class="transferable-amount">{{ $n(transferrableAmount, 'decimal') }}</div>
+                  <div class="transferable-assets">{{ selectedAssetUpper }}</div>
                 </div>
               </div>
 
-              <div v-if="showTransferableValue" class="transferrable-part">
-                <div class="transferrable-label">{{ $t('assets.transferrable') }}</div>
+              <div v-if="showTransferableValue" class="transferable-part">
+                <div class="transferable-label">{{ $t('assets.transferable') }}</div>
 
-                <div class="transferrable-descriptions">
-                  <div class="transferrable-amount">{{ fiatSymbol }}{{ transferrableValue }}</div>
+                <div class="transferable-descriptions">
+                  <div class="transferable-amount">{{ fiatSymbol }}{{ transferrableValue }}</div>
                 </div>
               </div>
             </div>
@@ -329,9 +329,9 @@ export default class SendForm extends Vue {
   }
 
   get transferrableAmount() {
-    const count = +(this.currency?.getTransferableCountAssets(this.selectedWallet, this.syncedSelectedNetwork) ?? 0);
+    const count = this.currency?.getTransferableCountAssets(this.selectedWallet, this.syncedSelectedNetwork) ?? '0';
 
-    return this.$n(count, 'decimal');
+    return count;
   }
 
   get transferrableValue() {
@@ -603,31 +603,31 @@ export default class SendForm extends Vue {
   flex-direction: column;
   justify-content: space-between;
 
-  .transferrable {
+  .transferable {
     display: flex;
     justify-content: space-between;
 
-    .transferrable-part {
+    .transferable-part {
       width: 235px;
 
-      .transferrable-label {
+      .transferable-label {
         font-size: 14px;
         color: $default-white;
         text-align: left;
       }
 
-      .transferrable-descriptions {
+      .transferable-descriptions {
         display: flex;
         line-height: 25px;
       }
 
-      .transferrable-amount {
+      .transferable-amount {
         font-weight: 600;
         font-size: 16px;
         color: $pink-lavender-color;
       }
 
-      .transferrable-assets {
+      .transferable-assets {
         margin-left: 5px;
         color: rgba(255, 255, 255, 0.9);
       }

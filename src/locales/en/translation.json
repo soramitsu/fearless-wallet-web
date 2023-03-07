@@ -199,7 +199,8 @@
       "extrinsic": "Extrinsic"
     },
     "balance": "Balance:",
-    "transactionFrontrun": "{value}% - Your transaction may fail",
+    "transactionMayFail": "{value}% - Your transaction may fail",
+    "transactionFrontrun": "{value}% - Your transaction may frontrun",
     "market": "Market",
     "swapPreview": "Swap preview",
     "slippage": "Slippage Tolerance",
@@ -234,7 +235,7 @@
     "valueIn": "VALUE IN {asset}",
     "summary": "Summary",
     "currency": "CURRENCY",
-    "transferrable": "Transferrable",
+    "transferable": "Transferable",
     "fee": "Fee",
     "total": "Total",
     "signTransaction": "Sign the transaction",

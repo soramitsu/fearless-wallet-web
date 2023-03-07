@@ -58,7 +58,7 @@ import { getTokenPrice } from '../../utils/coingecko';
 import { getId } from '../../utils';
 import { initApi } from '../../api/substrate';
 import { axios } from '../../utils/axios';
-import { CHAINS, ASSETS } from '../../const/networks';
+import { CHAINS, ASSETS, prepNetworkNames } from '../../const/networks';
 import { DEFAULT_EVM_TOKENS } from '../../api/tokens/evm/defaultEvmToken';
 import { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '../../types';
 import { ALL_ACCOUNT_KEY } from '../../const';
@@ -396,9 +396,6 @@ export default class State {
     };
   }
   public async onInstall() {
-    await this.prepNetworkJson();
-    this.initNetworkStates();
-
     if (process.env.NODE_ENV === 'development') {
       const accounts = keyring.getAccounts().filter((el) => !isEthereumAddress(el.address));
 
@@ -987,7 +984,6 @@ export default class State {
 
   private async publishBalance(reset?: boolean) {
     const balance = await this.getBalance(reset);
-
     this.balanceSubject.next(balance);
   }
 
@@ -1122,30 +1118,22 @@ export default class State {
       if (account) {
         const { address } = account;
         const token = this.balanceMap[address][item.name];
-        const index = token.balances.findIndex((el) => el.name === item.chain);
+        const index = token.balances.findIndex((el) => {
+          const key = prepNetworkNames[el.key] ?? el.key;
+
+          return key === item.key;
+        });
         const balanceItem = this.balanceMap[address][item.name].balances[index];
 
-        if (index === -1) {
-          this.balanceMap[address][item.name].balances.push({
-            state: APIItemState.READY,
-            name: item.chain as string,
-            reserved,
-            free,
-            feeFrozen,
-            total,
-            timestamp: +new Date(),
-          });
-        } else {
-          this.balanceMap[address][item.name].balances[index] = {
-            ...balanceItem,
-            state: APIItemState.READY,
-            reserved,
-            free,
-            feeFrozen,
-            total,
-            timestamp: +new Date(),
-          };
-        }
+        this.balanceMap[address][item.name].balances[index] = {
+          ...balanceItem,
+          state: APIItemState.READY,
+          reserved,
+          free,
+          feeFrozen,
+          total,
+          timestamp: +new Date(),
+        };
       }
     });
 
@@ -1193,6 +1181,7 @@ export default class State {
         return {
           state: APIItemState.PENDING,
           name: el.name,
+          key: el.key,
           icon: el.icon,
           isUtility: asset.isUtility,
           isNative: asset.isNative,
@@ -1210,7 +1199,6 @@ export default class State {
 
   public generateDefaultBalanceMap() {
     const accounts = this.getSubstrateAccounts();
-
     accounts.forEach(({ address }) => {
       if (this.balanceMap[address] !== undefined) return;
 
@@ -1219,13 +1207,15 @@ export default class State {
       Object.values(this.tokenMap).forEach((token) => {
         const networks = this.mapNetworksByToken(token.id);
         const name = token.displayName ?? token.symbol;
+
         const data = {
           name: token.displayName ?? token.symbol,
           icon: token.icon,
           balances: networks,
         };
 
-        this.balanceMap[address][name] = data;
+        if (this.balanceMap[address][name]) this.balanceMap[address][name].balances.push(...networks);
+        else this.balanceMap[address][name] = data;
       });
     });
   }

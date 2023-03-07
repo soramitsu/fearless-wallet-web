@@ -18,6 +18,7 @@ export interface BalanceItem {
   state: APIItemState;
   symbol?: string;
   name: string;
+  key: string;
   free?: string;
   isUtility?: boolean;
   isNative?: boolean;

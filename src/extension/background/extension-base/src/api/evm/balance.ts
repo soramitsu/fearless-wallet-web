@@ -50,6 +50,7 @@ function subscribeERC20Interval(
         subCallback({
           state: APIItemState.READY,
           name,
+          key: name,
           symbol,
           reserved: '0',
           feeFrozen: '0',

@@ -1,35 +1,25 @@
 // Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { assetFromToken } from '@equilab/api';
 import { ApiPromise } from '@polkadot/api';
 import { BN } from '@polkadot/util';
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import { BigNumber, Contract } from 'ethers';
-import { DeriveBalancesAll } from '@polkadot/api-derive/types';
+import { Contract } from 'ethers';
 import { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
 import { state } from '../../background/handlers';
-
 import { ApiProps } from '../../background/types';
-import {
-  SUB_TOKEN_REFRESH_BALANCE_INTERVAL,
-  ASTAR_REFRESH_BALANCE_INTERVAL,
-  SUBSCRIBE_BALANCE_FAST_INTERVAL,
-} from '../../const/intervals';
+import { SUB_TOKEN_REFRESH_BALANCE_INTERVAL, ASTAR_REFRESH_BALANCE_INTERVAL } from '../../const/intervals';
 import { sumBN } from '../../utils';
 import { getEVMBalance } from '../evm/balance';
 import EthProvider from '../evm/ethProvider';
 import { APIItemState, BalanceItem, TokenInfo } from '../evm/types/ether';
 import { getERC20Contract } from '../evm/utils/eth';
-import { getPSP22ContractPromise } from '../tokens/wasm';
 import { categoryAddresses } from '../../utils/utils';
 import { ORML_PALLETS_TYPES } from '../../const/networks';
 import { getRegistry, getTokenInfo } from './registry';
 import { getAssetOptions } from './utils';
 import { AssetJson, TypeAsset } from '@/interfaces';
 import { formatBalance } from '@/util/balances';
-
-type EqBalanceItem = [number, { positive: number }];
 
 function subscribeERC20Interval(
   addresses: string[],
@@ -58,6 +48,7 @@ function subscribeERC20Interval(
         subCallback({
           state: APIItemState.READY,
           name,
+          key: networkKey,
           symbol,
           reserved: '0',
           feeFrozen: '0',
@@ -244,7 +235,6 @@ async function subscribeTokensBalance(
   api: ApiPromise,
   setBalance: (rs: BalanceItem) => void
 ) {
-  state.generateDefaultBalanceMap();
   const tokenList = state.networkMap[networkKey].assets.map((asset) => {
     const searchedAsset = state.tokenMap.find((token) => token.id === asset.assetId) as AssetJson;
 
@@ -279,6 +269,7 @@ async function subscribeTokensBalance(
           setBalance({
             state: APIItemState.READY,
             chain: networkKey,
+            key: networkKey,
             symbol,
             name: displayName ?? symbol,
             icon,

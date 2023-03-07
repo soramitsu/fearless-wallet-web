@@ -31,9 +31,9 @@
 
         <!-- <Shimmer v-if="showShimmers" height="23px" width="60px" /> -->
 
-        <!-- <div v-else-if="!showWarning" class="count-assets overflow">
-          {{ countAssetsString }}
-        </div> -->
+        <div v-if="!showWarning" class="count-assets overflow">
+          <!-- {{ countAssetsString }} -->
+        </div>
       </div>
       <div class="row third-row">
         <div class="price row">
@@ -42,17 +42,19 @@
           <div :class="changePriceClasses">{{ priceChange }}</div>
         </div>
 
-        <!-- <Shimmer v-if="showShimmers" height="14px" width="70px" /> -->
+        <Shimmer v-if="showShimmers" height="14px" width="70px" />
 
-        <div class="total-balance overflow">{{ free }}</div>
+        <div v-else-if="!showWarning" class="total-balance overflow">
+          {{ totalBalance }}
+        </div>
       </div>
     </div>
     <div class="activity">
-      <!-- <template v-if="showWarning">
+      <template v-if="showWarning">
         <Icon icon="info-triangle" className="warning-img" @click.native="$emit('toggleNetworkManagementVisible')" />
 
         <Tooltip text="common.networkDisconnected" target=".warning-img" placement="left" />
-      </template> -->
+      </template>
 
       <template>
         <CircleButton
@@ -108,6 +110,14 @@ export default class CurrencyItemStateLess extends Vue {
     return this.assetData.balances;
   }
 
+  get showShimmers() {
+    return !this.assetData.balances.some((el) => el.state === 'ready');
+  }
+
+  get showWarning() {
+    return this.assetData.balances.some((el) => el.state === 'error');
+  }
+
   get free() {
     const init = 0;
 
@@ -117,6 +127,16 @@ export default class CurrencyItemStateLess extends Vue {
       return 0;
     }, init);
   }
+
+  get totalBalance() {
+    let total = 0;
+    this.assetData.balances.forEach((el) => {
+      if (el.total) total += +el.total;
+    });
+
+    return total;
+  }
+
   get changePriceClasses() {
     const classes = ['price-change'];
 

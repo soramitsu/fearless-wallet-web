@@ -39,9 +39,7 @@ function getPrecisionValue(_amount: string, precision: number, returnFPNumber = 
   return returnFPNumber ? amountFP : amountFP.toCodecString();
 }
 
-function createExtrinsicTransfer(
-  props: ExtrinsicTransferProps
-): SubmittableExtrinsic<'promise', ISubmittableResult> | undefined {
+function createExtrinsicTransfer(props: ExtrinsicTransferProps): SubmittableExtrinsic<'promise', any> | undefined {
   const { amount, api, asset, networkProps, to } = props;
   const { precision, type, assetId } = networkProps;
   const ormlOptions = getAssetOptions(asset, type, assetId);

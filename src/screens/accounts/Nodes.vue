@@ -66,7 +66,7 @@ import { Getter, Mutation } from 'vuex-class';
 import NodeItem from './NodeItem.vue';
 import type {
   SelectedWallet,
-  setAutoSelectNode,
+  SetAutoSelectNode,
   GetAutoSelectNodesValueByNetwork,
   GetActiveNodesByNetwork,
 } from '@/store';
@@ -89,7 +89,7 @@ export default class Nodes extends Vue {
   getAutoSelectNodesValueByNetwork!: GetAutoSelectNodesValueByNetwork;
   @Getter(NetworksGettersTypes.getAllNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getActiveNodesByNetwork) getActiveNodesByNetwork!: GetActiveNodesByNetwork;
-  @Mutation(AccountsMutationTypes.SET_AUTO_SELECT_NODE) setAutoSelectNode!: TMutation<setAutoSelectNode>;
+  @Mutation(AccountsMutationTypes.SET_AUTO_SELECT_NODE) setAutoSelectNode!: TMutation<SetAutoSelectNode>;
 
   get autoSelectNode() {
     return this.getAutoSelectNodesValueByNetwork(this.selectedNetwork);

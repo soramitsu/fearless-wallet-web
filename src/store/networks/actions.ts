@@ -2,13 +2,13 @@ import axios from 'axios';
 import type { KeySettings } from '@/networks';
 import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
-import type { LoadJsons, LoadHistory, SubscribeToBalances, ToggleActiveNode, AugmentedActionContext } from '@/store';
-import type { FiatJson, AssetJson, NetworkJson, Networks, ApiOptions } from '@/interfaces';
+import type { FetchJsons, FetchHistory, SubscribeToBalances, ToggleActiveNode, AugmentedActionContext } from '@/store';
+import type { FiatJson, AssetJson, NetworkJson, Networks, ApiOptions, Network } from '@/interfaces';
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
-import { ETHEREUM_NETWORKS, NOT_SUPPORTED_SUBQUERY_NETWORKS } from '@/consts/networks';
-import { loadHistory } from '@/subquery/history';
+import { ETHEREUM_NETWORKS } from '@/consts/networks';
+import { fetchSubqueryHistory, fetchGiantsquidHistory } from '@/subquery/history';
 import { getAddressMetaTyped, getReplacedMetaTyped } from '@/helpers/common';
 import { getMockCurrencies } from '@/helpers/currencies';
 import { connectToApi, subscribeAssetsBalances } from '@/helpers/networksConnection';
@@ -17,27 +17,25 @@ import { AUTO_UPDATE_ASSETS_PRICE_MS } from '@/consts/global';
 import { getTokenPrice } from '@/helpers/coingecko';
 
 export enum ActionTypes {
-  LOAD_JSONS = 'LOAD_JSONS',
+  FETCH_JSONS = 'FETCH_JSONS',
   CONNECT_TO_NODES = 'CONNECT_TO_NODES',
-  LOAD_ASSETS_PRICE = 'LOAD_ASSETS_PRICE',
-  LOAD_HISTORY = 'LOAD_HISTORY',
+  FETCH_ASSETS_PRICE = 'FETCH_ASSETS_PRICE',
+  FETCH_HISTORY = 'FETCH_HISTORY',
   SUBSCRIBE_TO_BALANCES = 'SUBSCRIBE_TO_BALANCES',
   TOGGLE_ACTIVE_NODE = 'TOGGLE_ACTIVE_NODE',
 }
 
 export type Actions = {
-  [ActionTypes.LOAD_JSONS](store: AugmentedActionContext, props: LoadJsons): Promise<void>;
+  [ActionTypes.FETCH_JSONS](store: AugmentedActionContext, props: FetchJsons): Promise<void>;
   [ActionTypes.CONNECT_TO_NODES](store: AugmentedActionContext): Promise<void>;
-  [ActionTypes.LOAD_ASSETS_PRICE](store: AugmentedActionContext): Promise<void>;
-  [ActionTypes.LOAD_HISTORY](store: AugmentedActionContext, props: LoadHistory): Promise<void>;
+  [ActionTypes.FETCH_ASSETS_PRICE](store: AugmentedActionContext): Promise<void>;
+  [ActionTypes.FETCH_HISTORY](store: AugmentedActionContext, props: FetchHistory): Promise<void>;
   [ActionTypes.SUBSCRIBE_TO_BALANCES](store: AugmentedActionContext, props: SubscribeToBalances): Promise<void>;
   [ActionTypes.TOGGLE_ACTIVE_NODE](store: AugmentedActionContext, props: ToggleActiveNode): Promise<void>;
 };
 
-const PAGE_SIZE = 100;
-
 const actions: ActionTree<State, State> & Actions = {
-  async [ActionTypes.LOAD_JSONS](
+  async [ActionTypes.FETCH_JSONS](
     { commit, state: { assetsJson, fiats, networks } },
     { chainsUrl, assetsUrl, fiatsUrl }
   ) {
@@ -102,7 +100,7 @@ const actions: ActionTree<State, State> & Actions = {
     });
   },
 
-  async [ActionTypes.LOAD_ASSETS_PRICE]({ commit, state: { assetsJson } }) {
+  async [ActionTypes.FETCH_ASSETS_PRICE]({ commit, state: { assetsJson } }) {
     const urlsAssets = assetsJson.filter(({ priceId }) => !!priceId).map(({ priceId }) => priceId);
 
     const currency = accountController.getSelectedFiat();
@@ -124,45 +122,60 @@ const actions: ActionTree<State, State> & Actions = {
     loadAssetsPrice();
   },
 
-  async [ActionTypes.LOAD_HISTORY]({ commit, getters }, { networkName, walletAddress, pageSize = PAGE_SIZE, assetId }) {
-    if (NOT_SUPPORTED_SUBQUERY_NETWORKS.includes(networkName)) return; // Subquery does not work for these networks
-
+  async [ActionTypes.FETCH_HISTORY]({ commit, getters }, { networkName, wallet, pageSize = 100, assetId }) {
     const {
       externalApi: { history: historyApi },
-    } = getters.getNetwork(networkName);
+    } = getters.getNetwork(networkName) as Network;
 
     if (!historyApi) return;
 
-    const cursor = null;
     const { type, url } = historyApi;
-    const formattedAddress = BaseApi.formatAddress(
-      { address: walletAddress, ethereumAddress: walletAddress },
-      networkName
-    );
-
-    // const historyForNetwork = getters.getHistory(networkName);
-    // const cursor = historyForNetwork?.[walletAddress]?.pageInfo.endCursor ?? null;
-
-    if (type !== 'subquery' || url === '') return;
+    const formattedAddress = BaseApi.formatAddress(wallet, networkName);
 
     try {
-      const history = await loadHistory(url, formattedAddress, pageSize, cursor);
+      if (type === 'subquery') {
+        // const historyForNetwork = getters.getHistory(networkName);
+        // const cursor = historyForNetwork?.[walletAddress]?.pageInfo.endCursor ?? null;
+        const history = await fetchSubqueryHistory(url, formattedAddress, pageSize);
 
-      commit(MutationTypes.SET_HISTORY, {
-        networkName,
-        walletAddress,
-        history,
-        isPreviously: cursor === null,
-        assetId,
-      });
+        commit(MutationTypes.SET_HISTORY, {
+          networkName,
+          walletAddress: wallet.address,
+          history,
+          isPreviously: true,
+          assetId,
+          serviceType: 'subquery',
+        });
+
+        return;
+      }
+
+      if (type === 'giantsquid') {
+        const history = await fetchGiantsquidHistory(url, formattedAddress);
+
+        console.info('history', history);
+
+        commit(MutationTypes.SET_HISTORY, {
+          networkName,
+          walletAddress: wallet.address,
+          history,
+          isPreviously: true,
+          assetId,
+          serviceType: 'giantsquid',
+        });
+
+        return;
+      }
     } catch {
-      console.info(`%c failed to load history for ${networkName}`, 'background:orange;color:#fff');
+      console.info(
+        `%c failed to load history for [${networkName}]-[${formattedAddress}] `,
+        'background:orange;color:#fff'
+      );
     }
   },
 
   async [ActionTypes.SUBSCRIBE_TO_BALANCES]({ state }, { accounts, networksProps }) {
     // if the list of networks is not transferred, then we subscribe to all
-
     const networks = networksProps ?? state.networks;
     const promises = networks.map(async (network) => {
       const { isEthereumNetwork, name: networkName } = network;
@@ -170,6 +183,7 @@ const actions: ActionTree<State, State> & Actions = {
       Object.entries(accounts).forEach(([walletAddress, { type: accountType, json }]) => {
         const { isReplacedAccount, replacedSettings } = getReplacedMetaTyped(json.meta);
         const replacedNetworksList = Object.values(replacedSettings ?? []).flat();
+
         // if it is a replaced account and the iterated network is not in the networksList
         if (isReplacedAccount && !replacedNetworksList.includes(networkName)) return;
 

@@ -653,6 +653,7 @@ export default class CurrencyController {
       isPreviously: true,
       isMock: true,
       walletAddress: from,
+      serviceType: 'subquery',
       history: {
         nodes: [
           {

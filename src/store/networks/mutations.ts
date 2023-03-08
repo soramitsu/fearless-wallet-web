@@ -14,6 +14,7 @@ import type {
   SetAssetsPriceIntervalProps,
 } from './types';
 import { accountController } from '@/controllers/accountController';
+import { SubqueryHistoryItem } from '@/interfaces';
 
 export enum MutationTypes {
   SET_NETWORKS = 'SET_NETWORKS',
@@ -107,8 +108,13 @@ const mutations: MutationTree<State> & Mutations = {
     currentCurrency.updateCurrencyBalance({ walletAddress, network, balance });
   },
 
-  [MutationTypes.SET_HISTORY](state, { history, networkName, walletAddress, isPreviously, assetId, isMock }) {
-    const { nodes, pageInfo } = history;
+  [MutationTypes.SET_HISTORY](
+    state,
+    { history, networkName, walletAddress, isPreviously, assetId, serviceType, isMock }
+  ) {
+    if (serviceType !== 'subquery') return;
+
+    const { nodes, pageInfo } = history as SubqueryHistoryItem;
     const { startCursor: startCursorProp, endCursor: endCursorProp } = pageInfo;
     const oldHistory = state.history[assetId]?.[walletAddress]?.[networkName];
     const oldPageInfo = oldHistory?.pageInfo;

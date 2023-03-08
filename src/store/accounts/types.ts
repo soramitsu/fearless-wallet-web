@@ -33,20 +33,20 @@ export type SetSelectedNetworkProps = {
   network: string;
 };
 
-export type setAccountsProps = {
+export type SetAccountsProps = {
   accounts: Accounts;
 };
 
-export type setAddressesProps = {
+export type SetAddressesProps = {
   addresses: Accounts;
 };
 
-export type setAutoSelectNode = {
+export type SetAutoSelectNode = {
   network: string;
   value: boolean;
 };
 
-export type setOnlineStatus = {
+export type SetOnlineStatus = {
   isOnline: boolean;
 };
 

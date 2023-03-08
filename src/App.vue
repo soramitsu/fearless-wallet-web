@@ -9,7 +9,7 @@
 <script lang="ts">
 import { Watch, Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
-import type { SetSelectedWalletProps, setAccountsProps, Accounts, setAddressesProps, setOnlineStatus } from '@/store';
+import type { SetSelectedWalletProps, SetAccountsProps, Accounts, SetAddressesProps, SetOnlineStatus } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
@@ -33,9 +33,9 @@ export default class App extends Vue {
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
-  @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
-  @Mutation(AccountsMutationTypes.SET_ADDRESSES) setAddresses!: TMutation<setAddressesProps>;
-  @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<setOnlineStatus>;
+  @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<SetAccountsProps>;
+  @Mutation(AccountsMutationTypes.SET_ADDRESSES) setAddresses!: TMutation<SetAddressesProps>;
+  @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<SetOnlineStatus>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
 
   created() {
@@ -61,9 +61,9 @@ export default class App extends Vue {
   async connectToNodes() {
     if (!this.isOnline) return;
 
-    const { loadJsons, connectToNodes } = NetworksController;
+    const { fetchJsons, connectToNodes } = NetworksController;
 
-    await loadJsons();
+    await fetchJsons();
     await connectToNodes();
   }
 

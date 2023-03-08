@@ -1,22 +1,12 @@
 import axios from 'axios';
-import type { HistoryItem } from '@/interfaces/history';
+import type { SubqueryHistoryItem, GiantsquidHistoryItem } from '@/interfaces/history';
 
-// subscription: `{
-//   historyElements(
-//     mutation: [UPDATE, INSERT]
-//   ) {
-//     id
-//     mutation_type
-//     _entity
-//   }
-// }`
-
-async function loadHistory(
+async function fetchSubqueryHistory(
   url: string,
   address: string,
   pageSize: number,
-  cursor: string | null
-): Promise<HistoryItem> {
+  cursor: string | null = null
+): Promise<SubqueryHistoryItem> {
   const {
     data: { data },
   } = await axios.post(url, {
@@ -26,11 +16,13 @@ async function loadHistory(
         first: ${pageSize},
         orderBy: TIMESTAMP_DESC,
         filter: {
-          address:{equalTo:"${address}"}
+          address: {
+            equalTo: "${address}"
+          }
         }
       ) {
         pageInfo {
-          startCursor,
+          startCursor
           endCursor
         },
         nodes {
@@ -48,4 +40,39 @@ async function loadHistory(
   return data?.historyElements;
 }
 
-export { loadHistory };
+async function fetchGiantsquidHistory(url: string, address: string): Promise<GiantsquidHistoryItem> {
+  const {
+    data: { data },
+  } = await axios.post(url, {
+    query: `{
+      transfers(
+        where: {
+          account: {
+            id_eq: "${address}"
+          }
+        }
+      ) {
+        id
+        direction
+        transfer {
+          id
+          amount
+          blockNumber
+          extrinsicHash
+          timestamp
+          success
+          from {
+            id
+          }
+          to {
+            id
+          }
+        }
+      }
+    }`,
+  });
+
+  return data?.transfers;
+}
+
+export { fetchSubqueryHistory, fetchGiantsquidHistory };

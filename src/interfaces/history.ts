@@ -36,7 +36,26 @@ type HistoryNode = {
   isMock?: true;
 };
 
-interface HistoryItem {
+interface GiantsquidHistoryItem {
+  direction: 'To' | 'From';
+  id: string;
+  transfer: {
+    id: string;
+    amount: string;
+    blockNumber: number;
+    extrinsicHash: string;
+    timestamp: string;
+    success: boolean;
+    from: {
+      id: string;
+    };
+    to: {
+      id: string;
+    };
+  };
+}
+
+interface SubqueryHistoryItem {
   nodes: HistoryNode[];
   pageInfo: {
     startCursor: string;
@@ -44,13 +63,13 @@ interface HistoryItem {
   };
 }
 
-type HistoryForWalletAddress = Record<NetworkName, HistoryItem>;
+type HistoryForWalletAddress = Record<NetworkName, SubqueryHistoryItem>;
 
 type HistoryForAssetId = Record<WalletAddress, HistoryForWalletAddress>;
 
 type History = Record<AssetName, HistoryForAssetId>;
 
-type GetHistory = (assetId: AssetName, walletAddress: WalletAddress, networkName: NetworkName) => HistoryItem;
+type GetHistory = (assetId: AssetName, walletAddress: WalletAddress, networkName: NetworkName) => SubqueryHistoryItem;
 
 enum TransferType {
   incoming = 'Incoming',
@@ -70,7 +89,8 @@ export {
   History,
   HistoryForWalletAddress,
   Extrinsic,
-  HistoryItem,
+  SubqueryHistoryItem,
+  GiantsquidHistoryItem,
   Reward,
   HistoryNode,
   Transfer,

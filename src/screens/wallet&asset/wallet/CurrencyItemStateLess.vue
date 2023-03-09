@@ -32,20 +32,20 @@
         <!-- <Shimmer v-if="showShimmers" height="23px" width="60px" /> -->
 
         <div v-if="!showWarning" class="count-assets overflow">
-          <!-- {{ countAssetsString }} -->
+          {{ totalAssetBalance }}
         </div>
       </div>
       <div class="row third-row">
         <div class="price row">
-          {{ price }}
+          {{ assetPrice }}
 
-          <div :class="changePriceClasses">{{ priceChange }}</div>
+          <div :class="changePriceClasses">{{ assetPriceChange }}</div>
         </div>
 
         <Shimmer v-if="showShimmers" height="14px" width="70px" />
 
         <div v-else-if="!showWarning" class="total-balance overflow">
-          {{ totalBalance }}
+          {{ totalFiatBalance }}
         </div>
       </div>
     </div>
@@ -90,14 +90,16 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
-
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 @Component
 export default class CurrencyItemStateLess extends Vue {
   @Prop(Object) assetData!: TokenBalance;
   @Prop(String) assetName!: string;
   @Prop(Number) price!: number;
   @Prop(Number) priceChange!: number;
+  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
 
   get getMainNetwork() {
@@ -128,13 +130,33 @@ export default class CurrencyItemStateLess extends Vue {
     }, init);
   }
 
-  get totalBalance() {
+  get assetPrice() {
+    return `${this.fiatSymbol}${this.$n(this.price, 'decimal')}`;
+  }
+
+  get assetPriceChange() {
+    return this.$n(this.priceChange, 'percent');
+  }
+
+  get totalAssetBalance() {
     let total = 0;
     this.assetData.balances.forEach((el) => {
       if (el.total) total += +el.total;
     });
 
     return total;
+  }
+
+  get totalFiatBalance() {
+    return this.totalAssetBalance * this.price;
+  }
+
+  get totalFiatBalanceValue() {
+    return `${this.fiatSymbol}${this.$n(this.totalFiatBalance, 'decimal')}`;
+  }
+
+  get totalAssetBalanceValue() {
+    return `${this.fiatSymbol}${this.$n(this.totalAssetBalance, 'decimal')}`;
   }
 
   get changePriceClasses() {

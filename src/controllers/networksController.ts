@@ -32,8 +32,6 @@ export default class NetworksController {
 
   public static async loadJsons(): Promise<void> {
     await store.dispatch(NetworksActionTypes.LOAD_JSONS, {
-      chainsUrl: URLS.CHAINS,
-      assetsUrl: URLS.ASSETS,
       fiatsUrl: URLS.FIATS,
     });
 

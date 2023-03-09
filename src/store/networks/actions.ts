@@ -37,54 +37,11 @@ export type Actions = {
 const PAGE_SIZE = 100;
 
 const actions: ActionTree<State, State> & Actions = {
-  async [ActionTypes.LOAD_JSONS](
-    { commit, state: { assetsJson, fiats, networks } },
-    { chainsUrl, assetsUrl, fiatsUrl }
-  ) {
-    if (assetsJson.length === 0) {
-      const { data: assetsJson } = await axios.get<AssetJson[]>(assetsUrl);
-
-      commit(MutationTypes.SET_ASSETS_JSON, { assetsJson });
-    }
-
+  async [ActionTypes.LOAD_JSONS]({ commit, state: { fiats } }, { fiatsUrl }) {
     if (fiats.length === 0) {
       const { data: fiats } = await axios.get<FiatJson[]>(fiatsUrl);
 
       commit(MutationTypes.SET_FIATS_JSON, { fiats });
-    }
-
-    if (networks.length === 0) {
-      const { data: networksJson } = await axios.get<NetworkJson[]>(chainsUrl);
-
-      const networks: Networks = networksJson.map(
-        ({ nodes, name, assets, addressPrefix, icon, externalApi: originalExternalApi, chainId, parentId, paraId }) => {
-          const networkName = name.toLowerCase();
-          const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
-          const externalApi = originalExternalApi ?? {};
-          const settings = settingsNetworks[networkName as KeySettings] ?? {};
-
-          return {
-            name: networkName,
-            label: name,
-            icon,
-            nodes,
-            assets,
-            chainId,
-            parentId,
-            paraId,
-            addressPrefix,
-            isEthereumNetwork,
-            externalApi,
-            settings,
-            api: undefined,
-            provider: undefined,
-            status: 'pending',
-          };
-        }
-      );
-
-      commit(MutationTypes.SET_NETWORKS, { networks });
-      commit(MutationTypes.SET_CURRENCIES, { currencies: getMockCurrencies(networks) });
     }
   },
 

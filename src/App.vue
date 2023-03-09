@@ -11,6 +11,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import { Components } from './router/routes';
 import { AccountJson, BalanceJson } from './extension/background/extension-base/src/background/types';
+import NetworksController from './controllers/networksController';
 import type { setAccountsProps, Accounts, setOnlineStatus } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
@@ -33,6 +34,8 @@ export default class App extends Vue {
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
 
   created() {
+    NetworksController.loadJsons();
+
     if (BaseApi.isExtension()) this.extensionSubscribe();
 
     this.setWallet();

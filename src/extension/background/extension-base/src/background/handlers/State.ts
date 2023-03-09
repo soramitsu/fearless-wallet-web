@@ -61,7 +61,6 @@ import { axios } from '../../utils/axios';
 import { CHAINS, ASSETS, prepNetworkNames } from '../../const/networks';
 import { DEFAULT_EVM_TOKENS } from '../../api/tokens/evm/defaultEvmToken';
 import { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '../../types';
-import { ALL_ACCOUNT_KEY } from '../../const';
 import { getCurrentProvider, stripUrl, withErrorLog } from './helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';

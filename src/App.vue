@@ -12,15 +12,17 @@ import { Mutation, Getter, Action } from 'vuex-class';
 import { Components } from './router/routes';
 import { AccountJson, BalanceJson } from './extension/background/extension-base/src/background/types';
 import NetworksController from './controllers/networksController';
+import { NetworkJson } from './extension/background/extension-base/src/api/evm/types/ether';
 import type { setAccountsProps, Accounts, setOnlineStatus } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { subscribeAccounts, subscribeBalance, subscribePrice } from '@/extension/messaging';
+import { getNetworkMap, subscribeAccounts, subscribeBalance, subscribeNetworkMap } from '@/extension/messaging';
 import store from '@/store';
 
 @Component
@@ -28,21 +30,24 @@ export default class App extends Vue {
   @Getter(AccountsGettersTypes.getWallets) wallets!: Record<string, Accounts>;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
-  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<AccountJson>;
+  @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<AccountJson>;
+  @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: TMutation<Record<string, NetworkJson>>;
+
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
   @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<setOnlineStatus>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
 
-  created() {
+  async created() {
     NetworksController.loadJsons();
 
+    subscribeNetworkMap((nets) => {
+      //
+    });
+    // this.setNetworks(networks);
     if (BaseApi.isExtension()) this.extensionSubscribe();
 
     this.setWallet();
     this.useSetupBalance();
-    subscribePrice(null, (prices) => {
-      console.info(prices, 'prices');
-    });
   }
 
   updateBalance(balanceData: BalanceJson): void {

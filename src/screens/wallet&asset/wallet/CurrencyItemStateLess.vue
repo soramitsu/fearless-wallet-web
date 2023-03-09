@@ -29,10 +29,10 @@
       <div class="row second-row">
         <div class="currency-name overflow">{{ assetData.name.toUpperCase() }}</div>
 
-        <!-- <Shimmer v-if="showShimmers" height="23px" width="60px" /> -->
+        <Shimmer v-if="showShimmers" height="23px" width="60px" />
 
-        <div v-if="!showWarning" class="count-assets overflow">
-          {{ totalAssetBalance }}
+        <div v-else-if="!showWarning" class="count-assets overflow">
+          {{ totalAssetBalanceValue }}
         </div>
       </div>
       <div class="row third-row">
@@ -45,7 +45,7 @@
         <Shimmer v-if="showShimmers" height="14px" width="70px" />
 
         <div v-else-if="!showWarning" class="total-balance overflow">
-          {{ totalFiatBalance }}
+          {{ totalFiatBalanceValue }}
         </div>
       </div>
     </div>
@@ -109,7 +109,7 @@ export default class CurrencyItemStateLess extends Vue {
   }
 
   get networkBadges() {
-    return this.assetData.balances;
+    return this.assetData.balances.filter((el) => el.name.toLowerCase() !== this.getMainNetwork?.toLowerCase());
   }
 
   get showShimmers() {
@@ -120,22 +120,20 @@ export default class CurrencyItemStateLess extends Vue {
     return this.assetData.balances.some((el) => el.state === 'error');
   }
 
-  get free() {
-    const init = 0;
-
-    return this.assetData.balances.reduce((init, cur) => {
-      if (cur.free) return (init += +cur.free);
-
-      return 0;
-    }, init);
+  get assetPrice() {
+    return `${this.fiatSymbol}${this.$n(this.price, 'price')}`;
   }
 
-  get assetPrice() {
-    return `${this.fiatSymbol}${this.$n(this.price, 'decimal')}`;
+  get totalFiatBalanceValue() {
+    return `${this.fiatSymbol}${this.$n(this.totalFiatBalance, 'price')}`;
   }
 
   get assetPriceChange() {
     return this.$n(this.priceChange, 'percent');
+  }
+
+  get totalAssetBalanceValue() {
+    return this.$n(this.totalAssetBalance, 'decimal');
   }
 
   get totalAssetBalance() {
@@ -149,14 +147,6 @@ export default class CurrencyItemStateLess extends Vue {
 
   get totalFiatBalance() {
     return this.totalAssetBalance * this.price;
-  }
-
-  get totalFiatBalanceValue() {
-    return `${this.fiatSymbol}${this.$n(this.totalFiatBalance, 'decimal')}`;
-  }
-
-  get totalAssetBalanceValue() {
-    return `${this.fiatSymbol}${this.$n(this.totalAssetBalance, 'decimal')}`;
   }
 
   get changePriceClasses() {

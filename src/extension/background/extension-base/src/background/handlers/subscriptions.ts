@@ -6,10 +6,9 @@ import { Subscription } from 'rxjs';
 import { ApiProps, MessageTypesWithSubscriptions, Port, SubscriptionMessageTypes } from '../types';
 import EthProvider from '../../api/evm/ethProvider';
 import { subscribeBalance } from '../../api/substrate/balance';
-import { ALL_ACCOUNT_KEY } from '../../const';
 import State from './State';
 
-type SubscriptionName = 'balance' | 'balanceEVM';
+type SubscriptionName = 'balance';
 type Subscriptions = Record<string, Port>;
 
 const subscriptions: Subscriptions = {};
@@ -18,7 +17,6 @@ export class FWSubscription {
   private state: State;
   private subscriptionMap: Record<SubscriptionName, (() => void) | undefined> = {
     balance: undefined,
-    balanceEVM: undefined,
   };
 
   private logger: Logger;
@@ -54,17 +52,17 @@ export class FWSubscription {
   start() {
     this.logger.log('Starting subscription');
 
-    this.state.getCurrentAccount((currentAccountInfo) => {
-      if (currentAccountInfo) {
-        const { address } = currentAccountInfo;
-        this.subscribeBalances(address, this.state.getSubstrateApiMap, this.state.getEvmApiMap);
-      }
-    });
+    // this.state.getCurrentAccount((currentAccountInfo) => {
+    //   if (currentAccountInfo) {
+    //     const { address } = currentAccountInfo;
+    //     this.subscribeBalances(address, this.state.getSubstrateApiMap, this.state.getEvmApiMap);
+    //   }
+    // });
 
     !this.serviceSubscription &&
       (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
         next: (serviceInfo) => {
-          if (!serviceInfo.currentAccountInfo?.address || serviceInfo.currentAccountInfo?.address === 'All') return;
+          if (!serviceInfo.currentAccountInfo?.address || serviceInfo.currentAccountInfo === undefined) return;
 
           const { address } = serviceInfo.currentAccountInfo;
 
@@ -105,11 +103,9 @@ export class FWSubscription {
     });
 
     this.state.getCurrentAccount((currentAccountInfo) => {
-      if (!currentAccountInfo?.address) {
-        return;
-      }
+      if (!currentAccountInfo) return;
 
-      if (currentAccountInfo.address !== ALL_ACCOUNT_KEY) {
+      if (currentAccountInfo) {
         const { address } = currentAccountInfo;
 
         this.subscribeBalances(address, this.state.getSubstrateApiMap, this.state.getEvmApiMap, true);

@@ -8,6 +8,11 @@ import type { Port, RequestSignatures, TransportRequestMessage } from '@extensio
 interface ModifiedPort extends Port {
   timer?: NodeJS.Timeout;
 }
+const IDLE_TIME = 60000 * 2; // 2 minutes
+
+let idleTimer: NodeJS.Timeout;
+let waitingToStop = false;
+const openCount = 0;
 
 function getActiveTabs() {
   // queriing the current active tab in the current window should only ever return 1 tab
@@ -24,10 +29,33 @@ function getActiveTabs() {
   });
 }
 
+function handleExtensionIdling() {
+  // handle extension being idle since the init of the extension/browser
+  waitingToStop = true;
+  idleTimer = setTimeout(() => {
+    if (openCount <= 0) {
+      state
+        .sleep()
+        .then(() => {
+          waitingToStop = false;
+
+          console.info('Shut down due to popup never opened since init ---------------------------------');
+        })
+        .catch((err) => console.warn(err));
+    }
+  }, IDLE_TIME);
+}
+
 chrome.runtime.onInstalled.addListener(async () => {
   await initState();
   state.onInstall();
   getActiveTabs();
+
+  handleExtensionIdling();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  handleExtensionIdling();
 });
 
 chrome.alarms.create({ periodInMinutes: 0.4 });

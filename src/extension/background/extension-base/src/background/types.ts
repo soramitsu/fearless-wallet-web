@@ -154,6 +154,21 @@ export interface RequestSignatures {
   'pri(accounts.current.saveAddress)': [RequestCurrentAccountAddress, boolean, CurrentAccountInfo];
   'pri(accounts.update.current)': [string, boolean];
 
+  //App Managment - networks
+  // Network, APIs, Custom tokens functions
+  'pri(networkMap.recoverDotSama)': [string, boolean];
+  'pri(networkMap.disableAll)': [null, boolean];
+  'pri(networkMap.enableAll)': [null, boolean];
+  'pri(networkMap.resetDefault)': [null, boolean];
+  'pri(apiMap.validate)': [ValidateNetworkRequest, ValidateNetworkResponse];
+  'pri(networkMap.enableMany)': [string[], boolean];
+  'pri(networkMap.disableMany)': [string[], boolean];
+  'pri(networkMap.enableOne)': [string, boolean];
+  'pri(networkMap.disableOne)': [string, DisableNetworkResponse];
+  'pri(networkMap.removeOne)': [string, boolean];
+  'pri(networkMap.upsert)': [NetworkJson, boolean];
+  'pri(networkMap.getNetworkMap)': [null, Record<string, NetworkJson>];
+  'pri(networkMap.getSubscription)': [null, Record<string, NetworkJson>, Record<string, NetworkJson>];
   //Authorize
   'pri(authorize.approve)': [RequestAuthorizeApprove, boolean];
   'pri(authorize.list)': [null, ResponseAuthorizeList];
@@ -228,6 +243,50 @@ export interface RequestSignatures {
   'pub(rpc.subscribeConnected)': [null, boolean, boolean];
   'pub(rpc.unsubscribe)': [RequestRpcUnsubscribe, boolean];
 }
+export enum NETWORK_ERROR {
+  INVALID_INFO_TYPE = 'invalidInfoType',
+  INJECT_SCRIPT_DETECTED = 'injectScriptDetected',
+  EXISTED_NETWORK = 'existedNetwork',
+  EXISTED_PROVIDER = 'existedProvider',
+  INVALID_PROVIDER = 'invalidProvider',
+  NONE = 'none',
+  CONNECTION_FAILURE = 'connectionFailure',
+  PROVIDER_NOT_SAME_NETWORK = 'providerNotSameNetwork',
+}
+
+export type NetWorkGroup =
+  | 'RELAY_CHAIN'
+  | 'POLKADOT_PARACHAIN'
+  | 'KUSAMA_PARACHAIN'
+  | 'MAIN_NET'
+  | 'TEST_NET'
+  | 'UNKNOWN';
+
+export interface ValidateNetworkResponse {
+  success: boolean;
+  key: string;
+  genesisHash: string;
+  ss58Prefix: string;
+  // networkGroup: NetWorkGroup[];
+  chain: string;
+  evmChainId: number;
+  nativeToken?: string;
+  decimal?: number;
+  error?: NETWORK_ERROR;
+  conflictChain?: string;
+  conflictKey?: string;
+}
+
+export interface ValidateNetworkRequest {
+  provider: string;
+  isEthereum: boolean;
+  existedNetwork?: NetworkJson;
+}
+export interface DisableNetworkResponse {
+  success: boolean;
+  activeNetworkCount?: number;
+}
+
 export type RequestPrice = null;
 export type RequestSubscribePrice = null;
 export interface RequestCurrentAccountAddress {

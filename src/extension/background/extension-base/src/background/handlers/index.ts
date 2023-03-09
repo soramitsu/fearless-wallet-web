@@ -37,6 +37,8 @@ export default function handler<TMessageType extends MessageTypes>(
 
   console.info(` [in] ${source}`); // :: ${JSON.stringify(request)}`);
 
+  if (!port) return;
+
   const promise = isExtension
     ? extension.handle(id, message, request, port)
     : tabs.handle(id, message, request, from, port);

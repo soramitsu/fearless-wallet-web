@@ -38,7 +38,7 @@ import { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import { RequestTransactionHistoryAdd, RequestTransactionHistoryGet, TransactionHistoryItemType } from '../../types';
 import { ALL_ACCOUNT_KEY, ALL_GENESIS_HASH } from '../../const';
 import { fetchHistory } from '../../api/evm/history';
-import { TokenInfo } from '../../api/evm/types/ether';
+import { NetworkJson, TokenInfo } from '../../api/evm/types/ether';
 import {
   getERC20TransactionObject,
   getEVMTransactionObject,
@@ -1381,14 +1381,40 @@ export default class Extension {
 
     return txState;
   }
+  private getNetworkMap(): Record<string, NetworkJson> {
+    return state.getNetworkMap;
+  }
+
+  private subscribeNetworkMap(id: string, port: Port): Record<string, NetworkJson> {
+    const cb = createSubscription<'pri(networkMap.getSubscription)'>(id, port);
+    const networkMapSubscription = state.subscribeNetworkMap().subscribe({
+      next: (rs) => {
+        cb(rs);
+      },
+    });
+
+    this.createUnsubscriptionHandle(id, networkMapSubscription.unsubscribe);
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+    });
+
+    return this.getNetworkMap();
+  }
 
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
     request: RequestTypes[TMessageType],
-    port?: Port
+    port: Port
   ): Promise<ResponseType<TMessageType>> {
     switch (type) {
+      //App Managment, networks
+      case 'pri(networkMap.getSubscription)':
+        return this.subscribeNetworkMap(id, port);
+      case 'pri(networkMap.getNetworkMap)':
+        return this.getNetworkMap();
+
       case 'pri(authorize.approve)':
         return this.authorizeApprove(request as RequestAuthorizeApprove);
 
@@ -1438,7 +1464,7 @@ export default class Extension {
         return await this.getPrice();
 
       case 'pri(price.get.subscription)':
-        return await this.subscribePrice(id, port as Port);
+        return await this.subscribePrice(id, port);
 
       case 'pri(accounts.current.saveAddress)':
         return this.saveCurrentAccountAddress(request as RequestCurrentAccountAddress, id, port as Port);

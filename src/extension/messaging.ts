@@ -7,6 +7,7 @@ import { selectableNetworks } from '@polkadot/networks';
 import { getId } from './background/extension-base/src/utils';
 import { PORT_EXTENSION } from './background/extension-base/src/defaults';
 import { CurrentAccountInfo } from './background/extension-base/src/stores/CurrentAccountStore';
+import { NetworkJson } from './background/extension-base/src/api/evm/types/ether';
 import type { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
 import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
@@ -40,6 +41,8 @@ import type {
   RequestAccountMeta,
   ResponseAccountMeta,
   RequestCurrentAccountAddress,
+  DisableNetworkResponse,
+  ValidateNetworkResponse,
 } from '@extension-base/background/types';
 import type { Message, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
@@ -457,8 +460,8 @@ export async function getPrice(): Promise<PriceJson> {
 }
 
 export async function subscribePrice(
-  request: RequestSubscribePrice,
-  callback: (priceData: PriceJson) => void
+  callback: (priceData: PriceJson) => void,
+  request: RequestSubscribePrice = null
 ): Promise<PriceJson> {
   return sendMessage('pri(price.get.subscription)', request, callback);
 }
@@ -472,4 +475,58 @@ export async function makeTransfer(
 
 export async function checkTransfer(request: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
   return sendMessage('pri(accounts.checkTransfer)', request);
+}
+
+export async function subscribeNetworkMap(
+  callback: (data: Record<string, NetworkJson>) => void
+): Promise<Record<string, NetworkJson>> {
+  return sendMessage('pri(networkMap.getSubscription)', null, callback);
+}
+
+export async function upsertNetworkMap(data: NetworkJson): Promise<boolean> {
+  return sendMessage('pri(networkMap.upsert)', data);
+}
+
+export async function getNetworkMap(): Promise<Record<string, NetworkJson>> {
+  return sendMessage('pri(networkMap.getNetworkMap)');
+}
+
+export async function removeNetworkMap(networkKey: string): Promise<boolean> {
+  return sendMessage('pri(networkMap.removeOne)', networkKey);
+}
+
+export async function disableNetworkMap(networkKey: string): Promise<DisableNetworkResponse> {
+  return sendMessage('pri(networkMap.disableOne)', networkKey);
+}
+
+export async function enableNetworkMap(networkKey: string): Promise<boolean> {
+  return sendMessage('pri(networkMap.enableOne)', networkKey);
+}
+
+export async function enableNetworks(targetKeys: string[]): Promise<boolean> {
+  return sendMessage('pri(networkMap.enableMany)', targetKeys);
+}
+
+export async function disableNetworks(targetKeys: string[]): Promise<boolean> {
+  return sendMessage('pri(networkMap.disableMany)', targetKeys);
+}
+
+export async function validateNetwork(
+  provider: string,
+  isEthereum: boolean,
+  existedNetwork?: NetworkJson
+): Promise<ValidateNetworkResponse> {
+  return sendMessage('pri(apiMap.validate)', { provider, isEthereum, existedNetwork });
+}
+
+export async function disableAllNetwork(): Promise<boolean> {
+  return sendMessage('pri(networkMap.disableAll)', null);
+}
+
+export async function enableAllNetwork(): Promise<boolean> {
+  return sendMessage('pri(networkMap.enableAll)', null);
+}
+
+export async function resetDefaultNetwork(): Promise<boolean> {
+  return sendMessage('pri(networkMap.resetDefault)', null);
 }

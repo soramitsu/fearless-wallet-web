@@ -45,19 +45,6 @@
         />
 
         <Scroll>
-          <!-- <Currencies
-            v-if="showCurrencies"
-            :key="currenciesKey"
-            :currencies="filteredCurrencies"
-            :selectedNetwork="selectedNetwork"
-            :showAssetsManagementForm="showAssetsManagementForm"
-            :toggleVisibleActivityForm="toggleVisibleActivityForm"
-            :filterValue="filterValue"
-            @setCustomSort="setCustomSort"
-            @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
-          />
-          <NFTs v-else-if="showNfts" /> -->
-
           <CurrencyItemStateLess
             v-for="(asset, assetKey) in balances"
             :assetData="asset"
@@ -67,13 +54,6 @@
             :key="assetKey"
             :toggleVisibleActivityForm="toggleVisibleActivityForm"
           />
-
-          <!-- <CurrencyItemStateLess
-            v-for="(asset, assetKey) in evmCurrencies.details.ethereum.children"
-            :assetData="asset"
-            :assetName="assetKey"
-            :key="assetKey"
-          /> -->
         </Scroll>
       </div>
     </ContentForm>
@@ -134,7 +114,14 @@ import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.v
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import Loading from '@/components/Loading.vue';
-import { tieAccount, subscribeBalance, subscribePrice, getBalance } from '@/extension/messaging';
+import {
+  tieAccount,
+  subscribeBalance,
+  subscribePrice,
+  getBalance,
+  subscribeNetworkMap,
+  getNetworkMap,
+} from '@/extension/messaging';
 import store from '@/store';
 import { BalanceJson, PriceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { COINGECKO_TOKENS } from '@/consts/networks';
@@ -194,7 +181,7 @@ export default class Wallet extends Vue {
   price: PriceJson = {} as PriceJson;
 
   async mounted() {
-    subscribePrice(null, (prices) => {
+    subscribePrice((prices) => {
       this.price = prices;
     });
   }
@@ -206,10 +193,9 @@ export default class Wallet extends Vue {
   }
 
   getPriceChange(assetKey: string) {
-    if (assetKey === undefined) return 0;
+    if (this.price === undefined || this.price.tokenPriceChange === undefined || assetKey === undefined) return 0;
 
-    if (Object.keys(this.price.tokenPriceChange).length && this.price.tokenPriceChange[assetKey])
-      return this.price.tokenPriceChange[assetKey];
+    if (this.price.tokenPriceChange[assetKey]) return this.price.tokenPriceChange[assetKey] / 100;
 
     return 0;
   }

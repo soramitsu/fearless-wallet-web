@@ -61,6 +61,7 @@ import { axios } from '../../utils/axios';
 import { CHAINS, ASSETS, prepNetworkNames } from '../../const/networks';
 import { DEFAULT_EVM_TOKENS } from '../../api/tokens/evm/defaultEvmToken';
 import { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '../../types';
+import { FWCron } from '../cron';
 import { getCurrentProvider, stripUrl, withErrorLog } from './helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
@@ -123,6 +124,7 @@ export async function initState() {
 
 export default class State {
   public notification = 'popup';
+  private cron: FWCron;
   public windows: number[] = [];
   public subscription: FWSubscription;
   public chainRegistryMap: Record<string, ChainRegistry> = {};
@@ -177,6 +179,7 @@ export default class State {
     this.authUrls = {};
     this.injectFromStorage();
     this.subscription = new FWSubscription(this);
+    this.cron = new FWCron(this, this.subscription);
     this.init();
   }
 
@@ -646,6 +649,21 @@ export default class State {
     this.defaultAuthAccountSelection = newList;
 
     this.saveDefaultAuthAccounts();
+  }
+
+  public getAllAddresses(): string[] {
+    return Object.keys(accounts.subject.value);
+  }
+
+  public updateNetworkStatus(networkKey: string, status: NETWORK_STATUS) {
+    if (this.networkMap[networkKey].apiStatus === status) {
+      return;
+    }
+
+    this.networkMap[networkKey].apiStatus = status;
+
+    this.networkMapSubject.next(this.networkMap);
+    this.networkMapStore.set('NetworkMap', this.networkMap);
   }
 
   private metaComplete = (
@@ -1250,6 +1268,63 @@ export default class State {
       callback(data);
     });
   }
+  public pauseAllNetworks(code?: number, reason?: string) {
+    // Disconnect web3 networks
+    // Object.entries(this.apiMap.web3).forEach(([key, network]) => {
+    //   if (network.currentProvider instanceof Web3.providers.WebsocketProvider) {
+    //     if (network.currentProvider?.connected) {
+    //       console.log(`[Web3] ${key} is conected`);
+    //       network.currentProvider?.disconnect(code, reason);
+    //       console.log(`[Web3] ${key} is ${network.currentProvider.connected ? 'connected' : 'disconnected'} now`);
+    //     }
+    //   }
+    // });
+
+    // Disconnect dotsama networks
+    return Promise.all(
+      Object.values(this.apis.substrate).map(async (network) => {
+        if (network.api.isConnected) {
+          network.api?.disconnect && (await network.api?.disconnect());
+        }
+      })
+    );
+  }
+
+  async resumeAllNetworks() {
+    // Reconnect web3 networks
+    // Object.entries(this.apiMap.web3).forEach(([key, network]) => {
+    //   const currentProvider = network.currentProvider;
+
+    //   if (currentProvider instanceof Web3.providers.WebsocketProvider) {
+    //     if (!currentProvider.connected) {
+    //       console.log(`[Web3] ${key} is disconected`);
+    //       currentProvider?.connect();
+    //       setTimeout(() => console.log(`[Web3] ${key} is ${currentProvider.connected ? 'connected' : 'disconnected'} now`), 500);
+    //     }
+    //   }
+    // });
+
+    // Reconnect dotsama networks
+    return Promise.all(
+      Object.values(this.apis.substrate).map(async (network) => {
+        if (!network.api.isConnected && network.api.connect) {
+          await network.api.connect();
+        }
+      })
+    );
+  }
+
+  public async sleep() {
+    this.cron.stop();
+    this.subscription.stop();
+    await this.pauseAllNetworks(undefined, 'IDLE mode');
+  }
+
+  public async wakeup() {
+    await this.resumeAllNetworks();
+    this.cron.start();
+    this.subscription.start();
+  }
 
   private lazyNext = (key: string, callback: () => void) => {
     if (this.lazyMap[key]) {
@@ -1291,12 +1366,17 @@ export default class State {
 
   private onReady() {
     this.subscription.start();
+    this.cron.start();
 
     this.ready = true;
   }
 
   public getHistoryMap(): Record<string, TransactionHistoryItemType[]> {
     return this.historyMap;
+  }
+
+  public subscribeNetworkMap() {
+    return this.networkMapStore.getSubject();
   }
 
   public get getNetworkMap() {

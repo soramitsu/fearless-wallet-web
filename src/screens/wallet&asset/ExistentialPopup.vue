@@ -15,8 +15,8 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 @Component
 export default class ExistentialPopup extends Vue {
   readonly headers = {
-    text: 'asset.existentialDepositText',
-    subtext: 'asset.existentialDepositSubtext',
+    text: 'assets.existentialDepositText',
+    subtext: 'assets.existentialDepositSubtext',
   };
 
   @Prop(Function) handlerClose!: VoidFunction;

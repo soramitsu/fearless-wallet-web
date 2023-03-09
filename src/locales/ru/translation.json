@@ -147,7 +147,7 @@
         "socialMedia": "Социальные медиа",
         "communityWallet": "Сообщество кошелька",
         "officialWebsite": "Оффициальный сайт",
-        "followTwitter": "Плдписаться на Twitter",
+        "followTwitter": "Подписаться на Twitter",
         "joinTelegram": "Вступить в Telegram",
         "readMedium": "Читать на Medium",
         "learnWiki": "Узнать больше в Wiki",
@@ -187,7 +187,7 @@
     "nothingFound": "Ничего не найдено",
     "googleExportSuccess": "Ваши приватные данные были успешно сохранены в Google Drive"
   },
-  "asset": {
+  "assets": {
     "history": {
       "text": "История",
       "noHistory": "Здесь появится история",

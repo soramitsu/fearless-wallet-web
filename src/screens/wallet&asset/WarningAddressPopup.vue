@@ -1,7 +1,7 @@
 <template>
   <NotificationPopup
-    acceptButtonText="asset.changeAddress"
-    rejectButtonText="asset.switchNetwork"
+    acceptButtonText="assets.changeAddress"
+    rejectButtonText="assets.switchNetwork"
     sizeWidth="big"
     :showHeader="false"
     :showAcceptButton="true"
@@ -19,8 +19,8 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 @Component
 export default class WarningAddressPopup extends Vue {
   readonly headers = {
-    text: 'asset.invalidNetworkText',
-    subtext: 'asset.invalidNetworkSubtext',
+    text: 'assets.invalidNetworkText',
+    subtext: 'assets.invalidNetworkSubtext',
   };
 
   @Prop(Function) handlerClose!: VoidFunction;

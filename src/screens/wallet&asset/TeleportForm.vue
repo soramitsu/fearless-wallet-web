@@ -1,7 +1,7 @@
 <template>
   <TransferForm
     extrinsicType="teleport"
-    header="asset.teleportFunds"
+    header="assets.teleportFunds"
     :selectedAssetId="selectedAssetId"
     :selectedNetwork="originalNetwork"
     :amount="amount"
@@ -18,11 +18,11 @@
   >
     <Corners size="big" class="row">
       <div class="summary">
-        <div class="summary-label">{{ $t('asset.summary') }}</div>
+        <div class="summary-label">{{ $t('assets.summary') }}</div>
 
         <div class="summary-row">
           <div class="column column-left">
-            <div class="name">{{ $t('asset.from') }}</div>
+            <div class="name">{{ $t('assets.from') }}</div>
 
             <div class="network-name">{{ originalNetworkString }}</div>
           </div>
@@ -30,14 +30,14 @@
           <Icon icon="bold-arrow-right" class="arrow-right" />
 
           <div class="column">
-            <div class="name">{{ $t('asset.to') }}</div>
+            <div class="name">{{ $t('assets.to') }}</div>
 
             <div class="network-name">{{ destinationNetworkString }}</div>
           </div>
         </div>
 
         <div class="summary-row">
-          <div class="name">{{ $t('asset.assetsAmount') }}</div>
+          <div class="name">{{ $t('assets.assetsAmount') }}</div>
 
           <div class="column">
             <div>{{ amountString }}</div>
@@ -47,7 +47,7 @@
         </div>
 
         <div class="summary-row">
-          <div class="name">{{ originalNetworkString }} {{ $t('asset.fee') }}</div>
+          <div class="name">{{ originalNetworkString }} {{ $t('assets.fee') }}</div>
 
           <div>
             {{ originalNetworkPartialFeeString }}
@@ -55,13 +55,13 @@
         </div>
 
         <div class="summary-row">
-          <div class="name">{{ destinationNetworkString }} {{ $t('asset.fee') }}</div>
+          <div class="name">{{ destinationNetworkString }} {{ $t('assets.fee') }}</div>
 
           <div>{{ destinationNetworkPartialFeeString }}</div>
         </div>
 
         <div class="summary-row">
-          <div class="name">{{ $t('asset.total') }}</div>
+          <div class="name">{{ $t('assets.total') }}</div>
 
           <div>{{ totalString }}</div>
         </div>
@@ -80,7 +80,7 @@ import Select from '@/components/Select.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { firstCharToUp } from '@/helpers/common';
-import { addNumbers, formattedNumber, formattedPrice } from '@/helpers/numbers';
+import { addNumbers, formattedNumber } from '@/helpers/numbers';
 
 @Component({
   components: {
@@ -124,7 +124,7 @@ export default class TeleportForm extends Vue {
   }
 
   get valueString() {
-    return `${this.fiatSymbol}${formattedPrice(+this.value)}`;
+    return `${this.fiatSymbol}${this.$n(+this.value, 'price')}`;
   }
 
   get originalNetworkPartialFeeString() {

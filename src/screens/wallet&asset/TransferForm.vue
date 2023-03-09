@@ -13,7 +13,7 @@
             <RotateInput
               v-model="selectedAssetUpper"
               class="row"
-              placeholder="asset.currency"
+              placeholder="assets.currency"
               :isActiveRotate="showSelectedAssetPopup"
               @click="toggleSelectPopupVisible(true, false, false)"
             />
@@ -29,7 +29,7 @@
             <Input
               v-if="extrinsicType === 'transfer'"
               v-model="syncedRecipient"
-              placeholder="asset.sendTo"
+              placeholder="assets.sendTo"
               size="big"
               class="row"
             />
@@ -38,7 +38,7 @@
               v-else
               v-model="syncedDestNet"
               class="row"
-              placeholder="asset.destNet"
+              placeholder="assets.destNet"
               :isActiveRotate="showDestNetPopup"
               @click="toggleSelectPopupVisible(false, false, true)"
             />
@@ -55,16 +55,16 @@
 
             <div class="transferrable row">
               <div class="transferrable-part">
-                <div class="transferrable-label">{{ $t('asset.transferrable') }}</div>
+                <div class="transferrable-label">{{ $t('assets.transferrable') }}</div>
 
                 <div class="transferrable-descriptions">
-                  <div class="transferrable-amount">{{ transferrableAmount }}</div>
+                  <div class="transferrable-amount">{{ $n(transferrableAmount, 'decimal') }}</div>
                   <div class="transferrable-assets">{{ selectedAssetUpper }}</div>
                 </div>
               </div>
 
               <div v-if="showTransferableValue" class="transferrable-part">
-                <div class="transferrable-label">{{ $t('asset.transferrable') }}</div>
+                <div class="transferrable-label">{{ $t('assets.transferrable') }}</div>
 
                 <div class="transferrable-descriptions">
                   <div class="transferrable-amount">{{ fiatSymbol }}{{ transferrableValue }}</div>
@@ -144,7 +144,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 import { firstCharToUp } from '@/helpers/common';
-import { formattedNumber, formattedPrice } from '@/helpers/numbers';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';
@@ -196,7 +195,7 @@ export default class SendForm extends Vue {
   }
 
   get placeholderNetwork() {
-    return this.extrinsicType === 'transfer' ? 'asset.network' : 'asset.originNet';
+    return this.extrinsicType === 'transfer' ? 'assets.network' : 'assets.originNet';
   }
 
   get showSelectPopup() {
@@ -246,17 +245,18 @@ export default class SendForm extends Vue {
 
     if (!this.currency) return '';
 
-    if (this.step === 2) return this.extrinsicType === 'transfer' ? 'asset.sendButtonText' : 'asset.teleportButtonText';
+    if (this.step === 2)
+      return this.extrinsicType === 'transfer' ? 'assets.sendButtonText' : 'assets.teleportButtonText';
 
     if (this.extrinsicType === 'transfer' && this.syncedRecipient !== '' && !this.isValidRecipientAddress) {
-      if (this.isSameAddress) return 'asset.isSameAddress';
+      if (this.isSameAddress) return 'assets.isSameAddress';
 
-      return 'asset.incorrectAddress';
+      return 'assets.incorrectAddress';
     } else if (this.extrinsicType === 'teleport' && this.syncedDestNet !== '' && !this.isValidDirection)
-      return 'asset.impossibleTeleport';
+      return 'assets.impossibleTeleport';
 
     if (!this.isValidCountAssets)
-      return { text: 'asset.insufficientBalance', localeProps: { asset: this.selectedAssetUpper } };
+      return { text: 'assets.insufficientBalance', localeProps: { asset: this.selectedAssetUpper } };
 
     return 'common.continue';
   }
@@ -326,17 +326,13 @@ export default class SendForm extends Vue {
   get transferrableAmount() {
     const count = +(this.currency?.getTransferableCountAssets(this.selectedWallet, this.syncedSelectedNetwork) ?? 0);
 
-    return formattedNumber(count, {
-      decimalsValue: 4,
-      returnOriginNumber: false,
-      removeTrailingZeros: true,
-    });
+    return count.toString();
   }
 
   get transferrableValue() {
     const cost = +(this.currency?.getCostOfAssets(this.transferrableAmount) ?? 0);
 
-    return formattedPrice(cost);
+    return this.$n(cost, 'price');
   }
 
   get selectedAssetUpper() {

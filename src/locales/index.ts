@@ -29,6 +29,16 @@ export default new VueI18n({
         minimumFractionDigits: 4,
         maximumFractionDigits: 4,
       },
+      decimalPrecise: {
+        style: 'decimal',
+        minimumFractionDigits: 4,
+        maximumFractionDigits: 7,
+      },
+      price: {
+        style: 'decimal',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      },
       percent: {
         style: 'percent',
         minimumFractionDigits: 2,
@@ -45,6 +55,16 @@ export default new VueI18n({
         style: 'decimal',
         minimumFractionDigits: 4,
         maximumFractionDigits: 4,
+      },
+      decimalPrecise: {
+        style: 'decimal',
+        minimumFractionDigits: 4,
+        maximumFractionDigits: 7,
+      },
+      price: {
+        style: 'decimal',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
       },
       percent: {
         style: 'percent',

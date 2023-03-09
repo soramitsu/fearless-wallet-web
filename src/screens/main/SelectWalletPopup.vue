@@ -77,7 +77,7 @@ export default class SelectWalletPopup extends Vue {
   getBalance(address: string, ethereumAddress: string) {
     const arr = this.currencies.map((currency) => currency.getTotalBalance({ address, ethereumAddress }));
 
-    return addNumbers(arr);
+    return +addNumbers(arr);
   }
 
   getChangeWalletBalance(address: string, ethereumAddress: string) {

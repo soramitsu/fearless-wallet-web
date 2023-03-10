@@ -13,11 +13,11 @@
 
           <template v-else-if="!isEmptyHistory">
             <HistoryItem
-              v-for="(historyNode, index) in filteredHistory"
+              v-for="(historyElement, index) in filteredHistory"
               :key="index"
-              :historyNode="historyNode"
+              :historyElement="historyElement"
               :assetId="currency.assetId"
-              @click.native="$emit('openHistoryDetailsForm', historyNode)"
+              @click.native="$emit('openHistoryDetailsForm', historyElement)"
             />
           </template>
 
@@ -74,12 +74,14 @@ export default class History extends Vue {
     ];
   }
 
-  get addressByNetwork() {
-    return BaseApi.getDefaultAddressByNetworkIncludingReplacedAccount(this.selectedWallet, this.selectedNetwork);
+  get walletIncludingReplacedAccount() {
+    return BaseApi.getWalletIncludingReplacedAccount(this.selectedWallet, this.selectedNetwork);
   }
 
   get history() {
-    return this.getHistory(this.currency?.assetId, this.addressByNetwork, this.selectedNetwork)?.nodes ?? [];
+    const { address } = this.walletIncludingReplacedAccount;
+
+    return this.getHistory(this.currency?.assetId, address, this.selectedNetwork)?.nodes ?? [];
   }
 
   get filteredHistory() {
@@ -96,17 +98,22 @@ export default class History extends Vue {
   }
 
   @Watch('selectedNetwork')
+  @Watch('selectedWallet')
   @Watch('currency')
   async watchSelectedNetwork() {
     this.fetchHistory();
   }
 
   async fetchHistory() {
-    if (!this.currency?.assetId || this.history.length !== 0) return;
+    if (!this.currency?.assetId || this.history.length !== 0 || !this.currency.isUtility(this.selectedNetwork)) return;
 
     this.showLoader = true;
 
-    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.currency.assetId);
+    await NetworksController.fetchHistory(
+      this.selectedNetwork,
+      this.walletIncludingReplacedAccount,
+      this.currency.assetId
+    );
 
     this.showLoader = false;
   }

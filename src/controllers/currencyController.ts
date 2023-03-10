@@ -1,5 +1,4 @@
 import { isFunction } from '@polkadot/util';
-
 import { FPNumber } from '@sora-substrate/math';
 import type {
   Balances,
@@ -39,6 +38,7 @@ type ExtrinsicOptions = {
   transactionsOptions?: Partial<SignerOptions>;
   historyOptions?: { networkProps: WalletBalance; amount: string; to: string };
   api?: ApiPromise;
+  fee?: string;
 };
 
 type UpdateBalanceProps = {
@@ -469,6 +469,8 @@ export default class CurrencyController {
           api,
         }
       : {};
+
+    this.getPartialFee(wallet, networkName);
   }
 
   /**
@@ -495,13 +497,13 @@ export default class CurrencyController {
       // TODO: add case: Native ParaChain -> Nonnative ParaChain
       // TODO: add case: Native ParaChain -> Native ParaChain
       this.createNativeTeleportExtrinsic(originNet, destNet, toAddress, amount, networkProps);
-
-      return;
+    } else {
+      // Case Nonnative ParaChain -> Nonnative ParaChain (karura, etc -> bifrost, etc) paraId = 2000-2999
+      // Case Nonnative ParaChain -> RelayChain (karura, etc -> kusama, etc; acala, etc  -> polkadot)
+      this.createOrmlTeleportExtrinsic(originNet, destNet, toAddress, amount, networkProps);
     }
 
-    // Case Nonnative ParaChain -> Nonnative ParaChain (karura, etc -> bifrost, etc) paraId = 2000-2999
-    // Case Nonnative ParaChain -> RelayChain (karura, etc -> kusama, etc; acala, etc  -> polkadot)
-    this.createOrmlTeleportExtrinsic(originNet, destNet, toAddress, amount, networkProps);
+    this.getPartialFee(wallet, originNet);
   }
 
   /**
@@ -560,8 +562,12 @@ export default class CurrencyController {
     this.extrinsicOptions = { historyOptions: { networkProps, amount: precisionAmount, to: toAddress }, api };
   }
 
-  public async getPartialFee(wallet: Wallet, _network: NetworkName): Promise<string> {
-    if (!this.extrinsic) return '0';
+  public async getPartialFee(wallet: Wallet, _network: NetworkName): Promise<void> {
+    if (!this.extrinsic) {
+      this.extrinsicOptions.fee = '0';
+
+      return;
+    }
 
     const transactionAddress = this.getTransactionAddress(wallet, _network);
     const walletBalance = this.getWalletBalance(wallet) ?? [];
@@ -571,9 +577,9 @@ export default class CurrencyController {
       const { partialFee } = await this.extrinsic.paymentInfo(transactionAddress);
       const result = new FPNumber(partialFee as any, precision);
 
-      return result.toString();
+      this.extrinsicOptions.fee = result.toString();
     } catch {
-      return '0';
+      this.extrinsicOptions.fee = '0';
     }
   }
 
@@ -637,17 +643,15 @@ export default class CurrencyController {
    * @param {boolean} success
    */
   private async setMockHistory(from: string, success: boolean): Promise<void> {
+    const { historyOptions, fee } = this.extrinsicOptions;
     const {
       networkProps: { network, precision },
       amount,
       to,
-    } = this.extrinsicOptions.historyOptions!;
-
-    const paymentInfo = await this.extrinsic!.paymentInfo(from);
-    const fee = JSON.parse(paymentInfo.toString()).partialFee;
+    } = historyOptions!;
     const precisionAmount = this.getPrecisionValue(amount, precision) as string;
 
-    const historyOptions: SetHistoryProps = {
+    const historyMock: SetHistoryProps = {
       assetId: this.assetId,
       networkName: network,
       isPreviously: true,
@@ -660,15 +664,17 @@ export default class CurrencyController {
             address: '',
             id: '',
             timestamp: `${Date.now() / 1000}`,
+            isMock: true,
+            extrinsic: null,
+            reward: null,
             transfer: {
               from: BaseApi.getDisplayAddressByNetwork({ address: from, ethereumAddress: from }, network),
               success,
               amount: precisionAmount,
-              eventIdx: 0,
-              fee,
+              eventIdx: -1,
+              fee: fee!,
               to,
             },
-            isMock: true,
           },
         ],
         pageInfo: {
@@ -678,7 +684,7 @@ export default class CurrencyController {
       },
     };
 
-    store.commit(NetworksMutationTypes.SET_HISTORY, historyOptions);
+    store.commit(NetworksMutationTypes.SET_HISTORY, historyMock);
 
     this.extrinsicOptions = {};
   }

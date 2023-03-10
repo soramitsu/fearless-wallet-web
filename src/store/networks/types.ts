@@ -2,7 +2,7 @@ import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { HexString } from '@polkadot/util/types';
 import type {
   Currencies,
-  SubqueryHistoryItem,
+  SubqueryHistory,
   AccountBalance,
   Networks,
   Network,
@@ -22,20 +22,15 @@ import type { ActionContext } from 'vuex';
 import type { State } from '@/store/networks/state';
 import type { Mutations } from '@/store/networks/mutations';
 import type { Wallet } from '@/store';
-import { GiantsquidHistoryItem } from '@/interfaces/history';
+import { GiantsquidHistoryItem, HistoryElement } from '@/interfaces';
 
 // getters
 export type GetNetwork = (networkName: NetworkName) => Network;
-
 export type GetNetworkGenesisHash = (networkName: NetworkName) => HexString;
-
 export type GetAssetName = (assetId: string) => string;
 export type GetAssetIcon = (assetId: string) => string;
-
 export type GetAssetPrice = (assetId: string) => AssetPrice;
-
 export type GetNetworkStatus = (networkName: NetworkName) => NetworkStatus;
-
 export type GetActiveNodesByNetwork = (networkName: NetworkName) => Node;
 
 // Mutations
@@ -66,7 +61,7 @@ export type SetCurrenciesProps = {
 };
 
 export type SetHistoryProps = {
-  history: SubqueryHistoryItem | GiantsquidHistoryItem;
+  history: SubqueryHistory | GiantsquidHistoryItem[] | HistoryElement[];
   walletAddress: string;
   networkName: NetworkName;
   isPreviously: boolean;
@@ -112,7 +107,7 @@ export type FetchHistory = {
   networkName: NetworkName;
   wallet: Wallet;
   assetId: string;
-  pageSize: number;
+  isPreviously: boolean;
 };
 
 export type CustomAccounts = Record<string, { type?: KeypairType; json: KeyringJson }>;

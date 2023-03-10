@@ -174,9 +174,8 @@ export default class CurrencyItem extends Vue {
 
   get usd24HoursChangeString() {
     const { hours24Change } = this.currency;
-    const change = +formattedNumber(hours24Change, { returnOriginNumber: false }) / 100;
 
-    return this.$n(change, 'percent');
+    return hours24Change !== 0 ? this.$n(hours24Change / 100, 'percent') : '';
   }
 
   get assetString() {

@@ -7,8 +7,7 @@ import type { FiatJson, AssetJson, NetworkJson, Networks, ApiOptions, Network } 
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
-import { ETHEREUM_NETWORKS } from '@/consts/networks';
-import { fetchSubqueryHistory, fetchGiantsquidHistory } from '@/subquery/history';
+import { fetchHistory } from '@/subquery/fetchingHistory';
 import { getAddressMetaTyped, getReplacedMetaTyped } from '@/helpers/common';
 import { getMockCurrencies } from '@/helpers/currencies';
 import { connectToApi, subscribeAssetsBalances } from '@/helpers/networksConnection';
@@ -57,7 +56,7 @@ const actions: ActionTree<State, State> & Actions = {
       const networks: Networks = networksJson.map(
         ({ nodes, name, assets, addressPrefix, icon, externalApi: originalExternalApi, chainId, parentId, paraId }) => {
           const networkName = name.toLowerCase();
-          const isEthereumNetwork = ETHEREUM_NETWORKS.includes(networkName);
+          const isEthereumNetwork = BaseApi.isEthereumNetwork(networkName);
           const externalApi = originalExternalApi ?? {};
           const settings = settingsNetworks[networkName as KeySettings] ?? {};
 
@@ -105,7 +104,7 @@ const actions: ActionTree<State, State> & Actions = {
 
     const currency = accountController.getSelectedFiat();
 
-    const loadAssetsPrice = async () => {
+    const fetchAssetsPrice = async () => {
       try {
         const assetsPrice = await getTokenPrice([...new Set(urlsAssets as unknown as string)], currency, assetsJson);
 
@@ -115,14 +114,14 @@ const actions: ActionTree<State, State> & Actions = {
       }
     };
 
-    const interval = setInterval(loadAssetsPrice, AUTO_UPDATE_ASSETS_PRICE_MS);
+    const interval = setInterval(fetchAssetsPrice, AUTO_UPDATE_ASSETS_PRICE_MS);
 
     commit(MutationTypes.SET_ASSETS_PRICE_INTERVAL, { interval });
 
-    loadAssetsPrice();
+    fetchAssetsPrice();
   },
 
-  async [ActionTypes.FETCH_HISTORY]({ commit, getters }, { networkName, wallet, pageSize = 100, assetId }) {
+  async [ActionTypes.FETCH_HISTORY]({ commit, getters }, { networkName, wallet, assetId, isPreviously }) {
     const {
       externalApi: { history: historyApi },
     } = getters.getNetwork(networkName) as Network;
@@ -131,47 +130,17 @@ const actions: ActionTree<State, State> & Actions = {
 
     const { type, url } = historyApi;
     const formattedAddress = BaseApi.formatAddress(wallet, networkName);
+    const history = await fetchHistory(url, formattedAddress, type, networkName);
 
-    try {
-      if (type === 'subquery') {
-        // const historyForNetwork = getters.getHistory(networkName);
-        // const cursor = historyForNetwork?.[walletAddress]?.pageInfo.endCursor ?? null;
-        const history = await fetchSubqueryHistory(url, formattedAddress, pageSize);
-
-        commit(MutationTypes.SET_HISTORY, {
-          networkName,
-          walletAddress: wallet.address,
-          history,
-          isPreviously: true,
-          assetId,
-          serviceType: 'subquery',
-        });
-
-        return;
-      }
-
-      if (type === 'giantsquid') {
-        const history = await fetchGiantsquidHistory(url, formattedAddress);
-
-        console.info('history', history);
-
-        commit(MutationTypes.SET_HISTORY, {
-          networkName,
-          walletAddress: wallet.address,
-          history,
-          isPreviously: true,
-          assetId,
-          serviceType: 'giantsquid',
-        });
-
-        return;
-      }
-    } catch {
-      console.info(
-        `%c failed to load history for [${networkName}]-[${formattedAddress}] `,
-        'background:orange;color:#fff'
-      );
-    }
+    if (history)
+      commit(MutationTypes.SET_HISTORY, {
+        networkName,
+        walletAddress: wallet.address,
+        history,
+        isPreviously,
+        assetId,
+        serviceType: type,
+      });
   },
 
   async [ActionTypes.SUBSCRIBE_TO_BALANCES]({ state }, { accounts, networksProps }) {

@@ -45,19 +45,20 @@ export default class NetworksController {
     networkName: string,
     wallet: Wallet,
     assetId: string,
+    isPreviously = false,
     delay?: number
   ): Promise<void> {
     if (delay !== undefined) {
       const timeout = delay * 1000;
 
       setTimeout(() => {
-        store.dispatch(NetworksActionTypes.FETCH_HISTORY, { networkName, wallet, assetId });
+        store.dispatch(NetworksActionTypes.FETCH_HISTORY, { networkName, wallet, assetId, isPreviously });
       }, timeout);
 
       return;
     }
 
-    await store.dispatch(NetworksActionTypes.FETCH_HISTORY, { networkName, wallet, assetId });
+    await store.dispatch(NetworksActionTypes.FETCH_HISTORY, { networkName, wallet, assetId, isPreviously });
   }
 
   public static subscribeToBalancesOfNetworks(accounts: CustomAccounts, networksProps?: Networks): void {

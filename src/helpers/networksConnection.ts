@@ -128,7 +128,7 @@ async function subscribeUtilityAssetsBalances(address: string, network: Network)
     });
 
     if (historyForNetwork)
-      NetworksController.fetchHistory(networkName, { address, ethereumAddress: address }, assetId, 45);
+      NetworksController.fetchHistory(networkName, { address, ethereumAddress: address }, assetId, true, 45);
   });
 }
 

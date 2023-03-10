@@ -58,7 +58,7 @@
                 <div class="transferable-label">{{ $t('assets.transferable') }}</div>
 
                 <div class="transferable-descriptions">
-                  <div class="transferable-amount">{{ $n(transferrableAmount, 'decimal') }}</div>
+                  <div class="transferable-amount">{{ $n(transferableAmount, 'decimal') }}</div>
                   <div class="transferable-assets">{{ selectedAssetUpper }}</div>
                 </div>
               </div>
@@ -67,7 +67,7 @@
                 <div class="transferable-label">{{ $t('assets.transferable') }}</div>
 
                 <div class="transferable-descriptions">
-                  <div class="transferable-amount">{{ fiatSymbol }}{{ transferrableValue }}</div>
+                  <div class="transferable-amount">{{ fiatSymbol }}{{ transferableValue }}</div>
                 </div>
               </div>
             </div>
@@ -328,14 +328,14 @@ export default class SendForm extends Vue {
     return this.optionsNetworks.filter(({ value }) => value !== this.syncedSelectedNetwork);
   }
 
-  get transferrableAmount() {
+  get transferableAmount() {
     const count = this.currency?.getTransferableCountAssets(this.selectedWallet, this.syncedSelectedNetwork) ?? '0';
 
     return count;
   }
 
-  get transferrableValue() {
-    const cost = +(this.currency?.getCostOfAssets(this.transferrableAmount) ?? 0);
+  get transferableValue() {
+    const cost = +(this.currency?.getCostOfAssets(this.transferableAmount) ?? 0);
 
     return this.$n(cost, 'price');
   }

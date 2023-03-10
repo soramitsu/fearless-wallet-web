@@ -42,7 +42,7 @@
           <template v-else-if="step === 1">
             <SwapSelectInput
               text="assets.sendButtonText"
-              :balance="transferrableSendAmount"
+              :balance="transferableSendAmount"
               :value="sendValue"
               :asset="sendAsset"
               :assetId="sendAssetId"
@@ -56,7 +56,7 @@
             <SwapSelectInput
               class="receive-input"
               text="assets.receiveButtonText"
-              :balance="transferrableReceiveAmount"
+              :balance="transferableReceiveAmount"
               :value="receiveValue"
               :asset="receiveAsset"
               :assetId="receiveAssetId"
@@ -451,13 +451,13 @@ export default class SwapForm extends Vue {
     return this.receiveAsset.toUpperCase();
   }
 
-  get transferrableSendAmount() {
+  get transferableSendAmount() {
     const count = +(this.sendCurrency?.getTransferableCountAssets(this.selectedWallet, this.selectedNetwork) ?? 0);
 
     return this.$n(count, 'decimal');
   }
 
-  get transferrableReceiveAmount() {
+  get transferableReceiveAmount() {
     const count = +(this.receiveCurrency?.getTransferableCountAssets(this.selectedWallet, this.selectedNetwork) ?? 0);
 
     return this.$n(count, 'decimal');

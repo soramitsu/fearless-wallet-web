@@ -14,11 +14,11 @@ export function formatBalance(data: AccountData | OrmlAccountData, assetDecimals
   const freeAndReserved = free.add(reserved);
 
   return {
-    reserved: reserved.toCodecString(),
-    locked: locked.toCodecString(),
-    total: freeAndReserved.toCodecString(),
-    transferable: free.sub(locked).toCodecString(),
-    frozen: (frozen.isZero() ? locked.add(reserved) : frozen).toCodecString(),
+    reserved: reserved.toString(),
+    locked: locked.toString(),
+    total: freeAndReserved.toString(),
+    transferable: free.sub(locked).toString(),
+    frozen: (frozen.isZero() ? locked.add(reserved) : frozen).toString(),
   } as AccountBalance;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */

@@ -12,7 +12,7 @@
     :left="left"
     :showBlur="showBlur"
     :showBackground="showBackground"
-    :options="filteredOptionsNetworks"
+    :options="nets"
     :toggleValue="toggleSelectedNetwork"
     :handlerClose="handlerClose"
     :handlerFilter="handlerFilter"
@@ -25,6 +25,9 @@ import { Getter } from 'vuex-class';
 import type { Networks, RelayChainName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { getNetworkMap } from '@/extension/messaging';
+import { NetworkJson } from '@/extension/background/extension-base/src/api/evm/types/ether';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 interface Options {
   label: string;
@@ -53,6 +56,16 @@ export default class SelectNetworkButton extends Vue {
   @Prop(Function) toggleSelectedNetwork!: (value: string) => void;
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
+  nets: NetworkJsonOld[] = [];
+
+  async mounted() {
+    this.nets.push({
+      name: 'All Networks',
+      key: 'All',
+      icon: 'globus',
+    } as NetworkJsonOld);
+    this.nets.push(...Object.values(await getNetworkMap()));
+  }
 
   get optionsNetworks() {
     if (this._optionsNetworks !== undefined) return this._optionsNetworks;

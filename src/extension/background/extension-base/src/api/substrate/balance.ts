@@ -264,7 +264,6 @@ async function subscribeTokensBalance(
 
         const onBalanceFetch = (balances: any) => {
           const tokenBalance = formatBalance(balances as OrmlAccountData, precision);
-          // console.info(tokenBalance, networkKey, displayName, symbol);
 
           setBalance({
             state: APIItemState.READY,

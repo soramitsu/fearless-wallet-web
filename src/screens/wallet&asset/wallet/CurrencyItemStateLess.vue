@@ -63,7 +63,7 @@
           class="button send"
           tooltipText="asset.sendButtonText"
           target=".send"
-          @click="toggleVisibleActivityForm('showSendForm', true, { mainNetwork: 'ethereum', assetId: assetName })"
+          @click="toggleVisibleActivityForm('showSendForm', true, { mainNetwork: getMainNetwork, assetId: assetName })"
         />
 
         <CircleButton
@@ -72,7 +72,9 @@
           class="button receive"
           tooltipText="asset.receiveButtonText"
           target=".receive"
-          @click="toggleVisibleActivityForm('showReceiveForm', true, { mainNetwork: 'ethereum', assetId: assetName })"
+          @click="
+            toggleVisibleActivityForm('showReceiveForm', true, { mainNetwork: getMainNetwork, assetId: assetName })
+          "
         />
 
         <CircleButton

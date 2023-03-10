@@ -34,8 +34,6 @@ export default class NetworksController {
     await store.dispatch(NetworksActionTypes.LOAD_JSONS, {
       fiatsUrl: URLS.FIATS,
     });
-
-    await store.dispatch(NetworksActionTypes.LOAD_ASSETS_PRICE);
   }
 
   public static async loadHistory(

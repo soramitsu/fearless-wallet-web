@@ -44,7 +44,7 @@ import type {
   DisableNetworkResponse,
   ValidateNetworkResponse,
 } from '@extension-base/background/types';
-import type { Message, TransactionHistoryItemType } from '@extension-base/types';
+import type { Message, NetworkJsonOld, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
@@ -478,16 +478,16 @@ export async function checkTransfer(request: RequestCheckTransfer): Promise<Resp
 }
 
 export async function subscribeNetworkMap(
-  callback: (data: Record<string, NetworkJson>) => void
-): Promise<Record<string, NetworkJson>> {
+  callback: (data: Record<string, NetworkJsonOld>) => void
+): Promise<Record<string, NetworkJsonOld>> {
   return sendMessage('pri(networkMap.getSubscription)', null, callback);
 }
 
-export async function upsertNetworkMap(data: NetworkJson): Promise<boolean> {
+export async function upsertNetworkMap(data: NetworkJsonOld): Promise<boolean> {
   return sendMessage('pri(networkMap.upsert)', data);
 }
 
-export async function getNetworkMap(): Promise<Record<string, NetworkJson>> {
+export async function getNetworkMap(): Promise<Record<string, NetworkJsonOld>> {
   return sendMessage('pri(networkMap.getNetworkMap)');
 }
 

@@ -70,8 +70,6 @@ class AccountController {
 
   public setSelectedFiat(fiat: string): void {
     this.lsAccount.set(this.selectedFiatStorageName, fiat);
-
-    store.dispatch(NetworksActionTypes.LOAD_ASSETS_PRICE);
   }
 
   public getAccounts(): AccountJson[] {

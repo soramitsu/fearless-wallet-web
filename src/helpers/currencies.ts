@@ -8,6 +8,8 @@ import { MAIN_NETWORKS } from '@/consts/networks';
 import { mockFPBalance } from '@/consts/currencies';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { APIItemState } from '@/extension/background/extension-base/src/api/evm/types/ether';
 
 type CurrencyMock = {
   mainNetwork: string;
@@ -101,15 +103,27 @@ function getMockCurrencies(networks: Networks): Currencies {
   return currencies;
 }
 
-function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet, network?: NetworkName) {
+export function getTotalCountAssets(token: TokenBalance, network = 'ALL'): string {
+  if (network && network !== 'ALL') {
+    const balance = token.balances.find((el) => el.name === network)!.total;
+
+    return balance ?? '0';
+  }
+
+  return token.balances.find((balance) => balance.name === network)?.total ?? '0';
+}
+
+function defaultSortingCurrencies(currencies: TokenBalance[], wallet: Wallet, network?: NetworkName) {
   const relayChains = [];
-  const currenciesWithAssets = currencies.filter((currency) => currency.getTotalCountAssets(wallet, network) !== '0');
-  const currenciesWithoutAssets = currencies.filter(
-    (currency) => currency.getTotalCountAssets(wallet, network) === '0'
+  const currenciesWithAssets = currencies.filter((currency) =>
+    currency.balances.filter((balance) => balance.total !== '0')
+  );
+  const currenciesWithoutAssets = currencies.filter((currency) =>
+    currency.balances.filter((balance) => balance.total === '0')
   );
 
-  const dotIndex = currenciesWithoutAssets.findIndex(({ displayName }) => displayName === 'dot');
-  const ksmIndex = currenciesWithoutAssets.findIndex(({ displayName }) => displayName === 'ksm');
+  const dotIndex = currenciesWithoutAssets.findIndex(({ name }) => name === 'dot');
+  const ksmIndex = currenciesWithoutAssets.findIndex(({ name }) => name === 'ksm');
 
   if (dotIndex !== -1) {
     const dot = currenciesWithoutAssets.splice(dotIndex, 1)[0];
@@ -124,15 +138,32 @@ function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet, networ
   }
 
   currenciesWithAssets.sort((currency1, currency2) => {
-    const totalBalanceOne = +currency1.getTotalBalance(wallet, network);
-    const totalBalanceTwo = +currency2.getTotalBalance(wallet, network);
+    const totalBalanceOne = +getTotalBalance(currency1, network);
+    const totalBalanceTwo = +getTotalBalance(currency2, network);
 
     return totalBalanceTwo - totalBalanceOne;
   });
 
-  currenciesWithoutAssets.sort(({ asset: asset1 }, { asset: asset2 }) => asset1.localeCompare(asset2));
+  currenciesWithoutAssets.sort(({ name: asset1 }, { name: asset2 }) => asset1.localeCompare(asset2));
 
   return [...currenciesWithAssets, ...relayChains, ...currenciesWithoutAssets];
+}
+
+export function getTotalBalanceInNetwork(token: TokenBalance, network: string) {
+  return token.balances.find((el) => el.name === network)?.total ?? 0;
+}
+
+export function getTotalBalance(token: TokenBalance, network = 'ALL') {
+  if (network !== 'ALL') return getTotalBalanceInNetwork(token, network);
+  let balance = 0;
+
+  token.balances.forEach((el) => {
+    if (el.state === APIItemState.READY && el.total) {
+      balance += +el.total;
+    }
+  });
+
+  return balance;
 }
 
 function getProviderUrl(name: 'moonpay' | 'ramp', asset: string, address: string) {

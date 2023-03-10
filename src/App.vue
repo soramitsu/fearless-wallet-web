@@ -22,7 +22,7 @@ import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutatio
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { getNetworkMap, subscribeAccounts, subscribeBalance, subscribeNetworkMap } from '@/extension/messaging';
+import { subscribeAccounts, subscribeBalance, subscribeNetworkMap } from '@/extension/messaging';
 import store from '@/store';
 
 @Component
@@ -31,7 +31,7 @@ export default class App extends Vue {
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
   @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<AccountJson>;
-  @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: TMutation<Record<string, NetworkJson>>;
+  @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: TMutation<NetworkJson[]>;
 
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
   @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<setOnlineStatus>;
@@ -40,10 +40,10 @@ export default class App extends Vue {
   async created() {
     NetworksController.loadJsons();
 
-    subscribeNetworkMap((nets) => {
-      //
+    subscribeNetworkMap((networks) => {
+      this.setNetworks(Object.values(networks));
     });
-    // this.setNetworks(networks);
+
     if (BaseApi.isExtension()) this.extensionSubscribe();
 
     this.setWallet();

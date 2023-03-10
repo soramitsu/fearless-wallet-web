@@ -14,6 +14,7 @@ import MetadataStore from '../stores/Metadata';
 import { BalanceItem, NetworkJson } from '../api/evm/types/ether';
 import {
   ChainRegistry,
+  NetworkJsonOld,
   RequestTransactionHistoryAdd,
   RequestTransactionHistoryGet,
   TransactionHistoryItemType,
@@ -166,9 +167,9 @@ export interface RequestSignatures {
   'pri(networkMap.enableOne)': [string, boolean];
   'pri(networkMap.disableOne)': [string, DisableNetworkResponse];
   'pri(networkMap.removeOne)': [string, boolean];
-  'pri(networkMap.upsert)': [NetworkJson, boolean];
-  'pri(networkMap.getNetworkMap)': [null, Record<string, NetworkJson>];
-  'pri(networkMap.getSubscription)': [null, Record<string, NetworkJson>, Record<string, NetworkJson>];
+  'pri(networkMap.upsert)': [NetworkJsonOld, boolean];
+  'pri(networkMap.getNetworkMap)': [null, Record<string, NetworkJsonOld>];
+  'pri(networkMap.getSubscription)': [null, Record<string, NetworkJsonOld>, Record<string, NetworkJsonOld>];
   //Authorize
   'pri(authorize.approve)': [RequestAuthorizeApprove, boolean];
   'pri(authorize.list)': [null, ResponseAuthorizeList];

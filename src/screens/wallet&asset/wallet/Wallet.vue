@@ -125,7 +125,7 @@ import {
 import store from '@/store';
 import { BalanceJson, PriceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { COINGECKO_TOKENS } from '@/consts/networks';
-import { defaultSortingCurrencies } from '@/helpers/currencies';
+import { defaultSortingCurrencies, getTotalBalance } from '@/helpers/currencies';
 
 @Component({
   components: {
@@ -243,9 +243,9 @@ export default class Wallet extends Vue {
 
     const sequence = accountController.getSequenceAssetsByAddress(address, this.selectedNetwork);
 
-    return this.currencies.sort((currency1, currency2) => {
-      const { assetId: assetId1 } = currency1;
-      const { assetId: assetId2 } = currency2;
+    return Object.values(this.balances).sort((currency1, currency2) => {
+      const { name: assetId1 } = currency1;
+      const { name: assetId2 } = currency2;
       const index1 = sequence.indexOf(assetId1);
       const index2 = sequence.indexOf(assetId2);
 
@@ -257,14 +257,14 @@ export default class Wallet extends Vue {
     const filter = this.filterValue.trim().toLowerCase();
     const isAllNetworks = this.selectedNetwork === 'all';
 
-    const result: TCurrencies = this.sortedCurrencies.filter((currency) => {
-      const walletBalance = currency.getNetworkList().map(({ network }) => network);
+    const result = Object.values(this.sortedCurrencies).filter((currency) => {
+      const walletBalance = currency.balances.map(({ name }) => name);
       const isAvailableInSelectedNetwork = walletBalance.includes(this.selectedNetwork);
 
       if (!isAllNetworks && !isAvailableInSelectedNetwork) return false;
-      const { displayName } = currency;
+      const { name } = currency;
 
-      return displayName.includes(filter);
+      return name.includes(filter);
     });
 
     if (!this.isCustomSort(this.selectedWallet.address)) {
@@ -277,7 +277,7 @@ export default class Wallet extends Vue {
   }
 
   get totalBalance() {
-    const arr = this.sortedCurrencies.map((currency) => currency.getTotalBalance(this.selectedWallet));
+    const arr = this.sortedCurrencies.map((currency) => getTotalBalance(currency));
 
     return +addNumbers(arr);
   }

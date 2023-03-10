@@ -170,7 +170,7 @@ function getUtilityAsset(currencies: Currencies, _network: NetworkName): string 
 }
 
 function statusLogging(callback: () => void) {
-  return (result: any) => {
+  return (result: ISubmittableResult) => {
     const { status } = result;
 
     if (status.isBroadcast) {

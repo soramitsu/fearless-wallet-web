@@ -120,7 +120,7 @@
     <HistoryDetailsForm
       v-if="showHistoryDetailsForm"
       :handlerClose="closeHistoryDetailsForm"
-      :historyNode="historyNode"
+      :historyElement="historyElement"
       :assetId="selectedAssetId"
     />
 
@@ -140,7 +140,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import HistoryDetailsForm from './HistoryDetailsForm.vue';
 import History from './History.vue';
-import type { HistoryNode } from '@/interfaces/history';
+import type { HistoryElement } from '@/interfaces/history';
 import type { GetAssetName, SelectedWallet, GetNetworkStatus } from '@/store';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
@@ -179,7 +179,7 @@ type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'show
 export default class Asset extends Vue {
   readonly selectNetworkButtonRef = 'selectNetworkButton';
 
-  historyNode: HistoryNode | Record<string, string> = {};
+  historyElement: HistoryElement | Record<string, string> = {};
   showSendForm = false;
   showReceiveForm = false;
   showTeleportForm = false;
@@ -328,14 +328,14 @@ export default class Asset extends Vue {
     this.filterValue = value;
   }
 
-  openHistoryDetailsForm(historyNode: HistoryNode) {
+  openHistoryDetailsForm(historyElement: HistoryElement) {
     this.showHistoryDetailsForm = true;
-    this.historyNode = historyNode;
+    this.historyElement = historyElement;
   }
 
   closeHistoryDetailsForm() {
     this.showHistoryDetailsForm = false;
-    this.historyNode = {};
+    this.historyElement = {};
   }
 
   toggleBalanceDetailsPopup() {

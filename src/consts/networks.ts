@@ -7,29 +7,6 @@ const RELAY_CHAINS = ['polkadot', 'kusama', 'westend', 'rococo'];
 const NATIVE_PARACHAINS = ['statemint', 'statemine', 'encointer on kusama', 'westmint', 'rockmine'];
 const NATIVE_NETWORKS = [...RELAY_CHAINS, ...NATIVE_PARACHAINS];
 
-const NOT_SUPPORTED_SUBQUERY_NETWORKS = [
-  'kico',
-  'phala',
-  'khala',
-  'unique',
-  'quartz',
-  'kabocha',
-  'efinity',
-  'litentry',
-  'basilisk',
-  'parallel',
-  'moonriver',
-  'centrifuge',
-  'imbue kusama',
-  'parallel heiko',
-  'pichiu network',
-  'integritee shell',
-  'composable finance',
-  'dorafactory network',
-  'datahighway tanganika',
-  'invArch tinker network',
-];
-
 const MAIN_NETWORKS: Record<string, string> = {
   dot: 'polkadot',
   ksm: 'kusama',
@@ -58,7 +35,6 @@ export {
   ETHEREUM_ADDRESS_PREFIX,
   ETHEREUM_ADDRESS_LENGTH,
   MAX_CONTINUE_RETRY,
-  NOT_SUPPORTED_SUBQUERY_NETWORKS,
   NOT_SUPPORTED_ALL_TRANSFER_NETWORKS,
   WESTEND_GENESISHASH,
   MOONBEAM_GENESISHASH,

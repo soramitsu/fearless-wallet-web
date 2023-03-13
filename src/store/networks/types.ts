@@ -2,7 +2,7 @@ import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { HexString } from '@polkadot/util/types';
 import type {
   Currencies,
-  HistoryItem,
+  SubqueryHistory,
   AccountBalance,
   Networks,
   Network,
@@ -13,6 +13,7 @@ import type {
   NetworkStatus,
   Node,
   NetworkName,
+  HistoryServiceType,
 } from '@/interfaces';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { KeyringJson } from '@polkadot/ui-keyring/types';
@@ -20,19 +21,16 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ActionContext } from 'vuex';
 import type { State } from '@/store/networks/state';
 import type { Mutations } from '@/store/networks/mutations';
+import type { Wallet } from '@/store';
+import { GiantsquidHistoryItem, HistoryElement } from '@/interfaces';
 
 // getters
 export type GetNetwork = (networkName: NetworkName) => Network;
-
 export type GetNetworkGenesisHash = (networkName: NetworkName) => HexString;
-
 export type GetAssetName = (assetId: string) => string;
 export type GetAssetIcon = (assetId: string) => string;
-
 export type GetAssetPrice = (assetId: string) => AssetPrice;
-
 export type GetNetworkStatus = (networkName: NetworkName) => NetworkStatus;
-
 export type GetActiveNodesByNetwork = (networkName: NetworkName) => Node;
 
 // Mutations
@@ -63,12 +61,13 @@ export type SetCurrenciesProps = {
 };
 
 export type SetHistoryProps = {
-  history: HistoryItem;
+  history: SubqueryHistory | GiantsquidHistoryItem[] | HistoryElement[];
   walletAddress: string;
   networkName: NetworkName;
   isPreviously: boolean;
   assetId: string;
   isMock?: true;
+  serviceType: HistoryServiceType;
 };
 
 export type UpdateCurrencyBalanceProps = {
@@ -102,17 +101,17 @@ export type SetSoraFee = {
 };
 
 // Actions
-export type LoadJsons = {
+export type FetchJsons = {
   chainsUrl: string;
   assetsUrl: string;
   fiatsUrl: string;
 };
 
-export type LoadHistory = {
+export type FetchHistory = {
   networkName: NetworkName;
-  walletAddress: string;
+  wallet: Wallet;
   assetId: string;
-  pageSize: number;
+  isPreviously: boolean;
 };
 
 export type CustomAccounts = Record<string, { type?: KeypairType; json: KeyringJson }>;

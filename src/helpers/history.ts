@@ -1,24 +1,25 @@
 import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
 import { FPNumber } from '@sora-substrate/math';
-import type { HistoryNode, AssetJson } from '@/interfaces';
+import type {
+  HistoryElement,
+  AssetJson,
+  GiantsquidHistoryItem,
+  SubqueryHistory,
+  HistoryServiceType,
+} from '@/interfaces';
 import { TransactionType, TransferType } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
 import { formattedNumber } from '@/helpers/numbers';
 import NetworksController from '@/controllers/networksController';
 
-const HISTORY_VALUE_OPTIONS = {
-  decimalsValue: 4,
-  removeTrailingZeros: true,
-};
-
-export function cut(value: string, length = 7) {
+function cut(value: string, length = 7) {
   const endNumber = length + 1;
 
   return `${value.slice(0, length)}...${value.slice(-endNumber)}`;
 }
 
-export function getType(historyNode: HistoryNode): TransactionType {
-  const { reward, transfer } = historyNode;
+function getType(historyElement: HistoryElement): TransactionType {
+  const { reward, transfer } = historyElement;
 
   return transfer !== null
     ? TransactionType.transfer
@@ -27,9 +28,9 @@ export function getType(historyNode: HistoryNode): TransactionType {
     : TransactionType.extrinsic;
 }
 
-export function getSignTransfer(historyNode: HistoryNode) {
-  const { id } = historyNode;
-  const type = getType(historyNode);
+function getSignTransfer(historyElement: HistoryElement) {
+  const { id } = historyElement;
+  const type = getType(historyElement);
 
   if (type === TransactionType.transfer) {
     const splitId = id.split('-');
@@ -41,16 +42,16 @@ export function getSignTransfer(historyNode: HistoryNode) {
   return '';
 }
 
-export function getTypeFormatted(historyNode: HistoryNode) {
-  const type = getType(historyNode);
-  const signTransfer = getSignTransfer(historyNode);
+function getTypeFormatted(historyElement: HistoryElement) {
+  const type = getType(historyElement);
+  const signTransfer = getSignTransfer(historyElement);
 
   if (type === TransactionType.transfer) {
     return signTransfer === '+' ? TransferType.incoming : TransferType.outgoing;
   }
 
   if (type === TransactionType.extrinsic) {
-    const { call } = historyNode.extrinsic!;
+    const { call } = historyElement.extrinsic!;
 
     return `${firstCharToUp(call)}${call === 'transfer' ? ' fee' : ''}`;
   }
@@ -59,8 +60,8 @@ export function getTypeFormatted(historyNode: HistoryNode) {
   return firstCharToUp(type);
 }
 
-export function getFormattedDate(historyNode: HistoryNode) {
-  const date = new Date(secondsToMilliseconds(+historyNode.timestamp));
+function getFormattedDate({ timestamp }: HistoryElement) {
+  const date = new Date(secondsToMilliseconds(+timestamp));
 
   if (isToday(date)) {
     return format(date, 'HH:mm');
@@ -73,7 +74,7 @@ export function getFormattedDate(historyNode: HistoryNode) {
   return format(date, 'dd MMMM yyyy HH:mm');
 }
 
-export function getHumanValue(value: string, assetId: string) {
+function getHumanValue(value: string, assetId: string) {
   const assetsJson: AssetJson[] = NetworksController.getAssetsJson();
   const assetJson = assetsJson.find(({ id }) => id === assetId)!;
   const precision = assetJson?.precision ?? 0;
@@ -81,10 +82,10 @@ export function getHumanValue(value: string, assetId: string) {
   return +FPNumber.fromCodecValue(value, precision);
 }
 
-export function getHistoryValue(historyNode: HistoryNode, assetId: string) {
-  const { transfer, reward, extrinsic } = historyNode;
-  const type = getType(historyNode);
-  const signTransfer = getSignTransfer(historyNode);
+function getHistoryValue(historyElement: HistoryElement, assetId: string) {
+  const { transfer, reward, extrinsic } = historyElement;
+  const type = getType(historyElement);
+  const signTransfer = getSignTransfer(historyElement);
 
   if (type === TransactionType.transfer) {
     const { amount } = transfer!;
@@ -107,9 +108,9 @@ export function getHistoryValue(historyNode: HistoryNode, assetId: string) {
   return { signTransfer: '-', value };
 }
 
-export function getHumanTransferFee(historyNode: HistoryNode, assetId: string) {
-  const { transfer, extrinsic } = historyNode;
-  const type = getType(historyNode);
+function getHumanTransferFee(historyElement: HistoryElement, assetId: string) {
+  const { transfer, extrinsic } = historyElement;
+  const type = getType(historyElement);
 
   if (type === TransactionType.transfer) {
     const { fee } = transfer!;
@@ -129,3 +130,58 @@ export function getHumanTransferFee(historyNode: HistoryNode, assetId: string) {
 
   return '';
 }
+
+// temporary function, remove after complete transition to subsquid
+function getFormattedHistory(
+  history: GiantsquidHistoryItem[] | SubqueryHistory | HistoryElement[],
+  serviceType: HistoryServiceType
+): SubqueryHistory {
+  if (serviceType === 'giantsquid') {
+    const nodes: HistoryElement[] = (history as GiantsquidHistoryItem[]).map(({ id, transfer }) => {
+      const { amount, from, success, timestamp, to } = transfer;
+
+      return {
+        id,
+        timestamp: (new Date(timestamp).getTime() / 1000).toString(),
+        address: '',
+        extrinsic: null,
+        reward: null,
+        transfer: {
+          amount,
+          success,
+          from: from.id,
+          to: to.id,
+          eventIdx: -1,
+          fee: '0',
+        },
+      };
+    });
+
+    return { nodes, pageInfo: { endCursor: '', startCursor: '' } };
+  }
+
+  if (serviceType === 'subsquid') {
+    const nodes: HistoryElement[] = (history as HistoryElement[]).map((historyElement) => {
+      return {
+        ...historyElement,
+        timestamp: (+historyElement.timestamp / 1000).toString(),
+      };
+    });
+
+    return { nodes, pageInfo: { endCursor: '', startCursor: '' } };
+  }
+
+  return history as SubqueryHistory;
+}
+
+export {
+  cut,
+  getType,
+  getTypeFormatted,
+  getHumanTransferFee,
+  getHistoryValue,
+  getFormattedDate,
+  getHumanValue,
+  getSignTransfer,
+  getFormattedHistory,
+};

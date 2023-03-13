@@ -8,16 +8,16 @@
       </div>
 
       <Scroll>
-        <div :class="classes">
-          <Loader v-if="isFetchingHistory" />
+        <div :class="historyContainerClasses">
+          <Loader v-if="showLoader" />
 
           <template v-else-if="!isEmptyHistory">
             <HistoryItem
-              v-for="(historyNode, index) in filteredHistory"
+              v-for="(historyElement, index) in filteredHistory"
               :key="index"
-              :historyNode="historyNode"
+              :historyElement="historyElement"
               :assetId="currency.assetId"
-              @click.native="$emit('openHistoryDetailsForm', historyNode)"
+              @click.native="$emit('openHistoryDetailsForm', historyElement)"
             />
           </template>
 
@@ -38,7 +38,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Currency } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
-import networksController from '@/controllers/networksController';
+import NetworksController from '@/controllers/networksController';
 
 @Component({
   components: { HistoryItem },
@@ -51,7 +51,8 @@ export default class History extends Vue {
     { label: 'assets.history.extrinsic', value: 'extrinsic' },
   ];
   filterHistoryValue: FilterHistory = 'all';
-  isFetchingHistory = false;
+  showLoader = false;
+
   @Prop(Object) currency!: Currency;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -64,7 +65,7 @@ export default class History extends Vue {
     return this.filteredHistory?.length === 0;
   }
 
-  get classes() {
+  get historyContainerClasses() {
     return [
       'history-content',
       {
@@ -73,10 +74,14 @@ export default class History extends Vue {
     ];
   }
 
-  get history() {
-    const historyForWalletAddress = this.historyForNetwork?.nodes ?? [];
+  get walletIncludingReplacedAccount() {
+    return BaseApi.getWalletIncludingReplacedAccount(this.selectedWallet, this.selectedNetwork);
+  }
 
-    return historyForWalletAddress;
+  get history() {
+    const { address } = this.walletIncludingReplacedAccount;
+
+    return this.getHistory(this.currency?.assetId, address, this.selectedNetwork)?.nodes ?? [];
   }
 
   get filteredHistory() {
@@ -88,36 +93,29 @@ export default class History extends Vue {
     return filteredHistory;
   }
 
-  get historyForNetwork() {
-    const addressByNetwork = BaseApi.getDefaultAddressByNetworkIncludingReplacedAccount(
-      this.selectedWallet,
-      this.selectedNetwork
-    );
-
-    return this.getHistory(this.currency?.assetId, addressByNetwork, this.selectedNetwork);
-  }
-
+  @Watch('selectedNetwork')
+  @Watch('selectedWallet')
   @Watch('currency')
-  async watchCurrency() {
-    if (this.currency?.assetId) this.fetchHistory();
+  async watchSelectedNetwork() {
+    this.fetchHistory();
   }
 
   mounted() {
-    if (this.currency?.assetId) this.fetchHistory();
+    this.fetchHistory();
   }
 
   async fetchHistory() {
-    this.isFetchingHistory = true;
-    const delay = this.historyForNetwork ? 45 : 0;
+    if (!this.currency?.assetId || this.history.length !== 0 || !this.currency.isUtility(this.selectedNetwork)) return;
 
-    await networksController.loadHistory(
+    this.showLoader = true;
+
+    await NetworksController.fetchHistory(
       this.selectedNetwork,
-      this.selectedWallet.address,
-      this.currency.assetId,
-      delay
+      this.walletIncludingReplacedAccount,
+      this.currency.assetId
     );
 
-    this.isFetchingHistory = false;
+    this.showLoader = false;
   }
 
   filterHistoryValueUpdate(name: FilterHistory) {

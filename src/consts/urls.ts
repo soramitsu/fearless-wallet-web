@@ -1,11 +1,11 @@
 import { IS_PRODUCTION } from '@/consts/global';
 
 const CHAINS = IS_PRODUCTION
-  ? 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v3-jsonupd/chains/chains.json'
-  : 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v3-jsonupd/chains/chains_dev.json';
+  ? 'https://raw.githubusercontent.com/soramitsu/fearless-utils/v4/chains/chains.json'
+  : 'https://raw.githubusercontent.com/soramitsu/fearless-utils/v4/chains/chains_dev.json';
 const ASSETS = IS_PRODUCTION
-  ? 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v3-jsonupd/chains/assets.json'
-  : 'https://raw.githubusercontent.com/soramitsu/fearless-utils/ios/v3-jsonupd/chains/assets_dev.json';
+  ? 'https://raw.githubusercontent.com/soramitsu/fearless-utils/v4/chains/assets.json'
+  : 'https://raw.githubusercontent.com/soramitsu/fearless-utils/v4/chains/assets_dev.json';
 const FIATS = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';
 
 const TERMS = 'https://fearlesswallet.io/terms/';

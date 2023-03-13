@@ -1,5 +1,5 @@
-import { api as apiSora, FPNumber } from '@sora-substrate/util';
-import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import { api as apiSora } from '@sora-substrate/util';
+import type { Wallet, CustomAccounts } from '@/store';
 import type { AssetJson, Networks, Network, AssetPrice } from '@/interfaces';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
@@ -32,37 +32,38 @@ export default class NetworksController {
     await store.dispatch(NetworksActionTypes.CONNECT_TO_NODES);
   }
 
-  public static async loadJsons(): Promise<void> {
-    await store.dispatch(NetworksActionTypes.LOAD_JSONS, {
+  public static async fetchJsons(): Promise<void> {
+    await store.dispatch(NetworksActionTypes.FETCH_JSONS, {
       chainsUrl: URLS.CHAINS,
       assetsUrl: URLS.ASSETS,
       fiatsUrl: URLS.FIATS,
     });
 
-    await store.dispatch(NetworksActionTypes.LOAD_ASSETS_PRICE);
+    await store.dispatch(NetworksActionTypes.FETCH_ASSETS_PRICE);
   }
 
-  public static async loadHistory(
+  public static async fetchHistory(
     networkName: string,
-    walletAddress: string,
+    wallet: Wallet,
     assetId: string,
-    delay: number
+    isPreviously = false,
+    delay?: number
   ): Promise<void> {
-    if (delay !== 0) {
+    if (delay !== undefined) {
       const timeout = delay * 1000;
 
       setTimeout(() => {
-        store.dispatch(NetworksActionTypes.LOAD_HISTORY, { networkName, walletAddress, assetId });
+        store.dispatch(NetworksActionTypes.FETCH_HISTORY, { networkName, wallet, assetId, isPreviously });
       }, timeout);
 
       return;
     }
 
-    await store.dispatch(NetworksActionTypes.LOAD_HISTORY, { networkName, walletAddress, assetId });
+    await store.dispatch(NetworksActionTypes.FETCH_HISTORY, { networkName, wallet, assetId, isPreviously });
   }
 
-  public static subscribeToBalancesOfNetworks(accounts: SubjectInfo): void {
-    store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts });
+  public static subscribeToBalancesOfNetworks(accounts: CustomAccounts, networksProps?: Networks): void {
+    store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, networksProps });
   }
 
   public static async toggleActiveNode(

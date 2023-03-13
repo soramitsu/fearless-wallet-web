@@ -4,10 +4,10 @@ import type {
   SetSelectedWalletProps,
   SetSelectedFiatProps,
   SetSelectedNetworkProps,
-  setAccountsProps,
-  setAddressesProps,
-  setAutoSelectNode,
-  setOnlineStatus,
+  SetAccountsProps,
+  SetAddressesProps,
+  SetAutoSelectNode,
+  SetOnlineStatus,
 } from './types';
 import type { State } from './state';
 import type { KeyringPair$Meta } from '@polkadot/keyring/types';
@@ -32,10 +32,10 @@ export type Mutations = {
   [MutationTypes.SET_SELECTED_WALLET](state: State, props: SetSelectedWalletProps): void;
   [MutationTypes.SET_SELECTED_FIAT](state: State, props: SetSelectedFiatProps): void;
   [MutationTypes.SET_SELECTED_NETWORK](state: State, props: SetSelectedNetworkProps): void;
-  [MutationTypes.SET_ACCOUNTS](state: State, props: setAccountsProps): void;
-  [MutationTypes.SET_ONLINE_STATUS](state: State, props: setOnlineStatus): void;
-  [MutationTypes.SET_ADDRESSES](state: State, props: setAddressesProps): void;
-  [MutationTypes.SET_AUTO_SELECT_NODE](state: State, props: setAutoSelectNode): void;
+  [MutationTypes.SET_ACCOUNTS](state: State, props: SetAccountsProps): void;
+  [MutationTypes.SET_ONLINE_STATUS](state: State, props: SetOnlineStatus): void;
+  [MutationTypes.SET_ADDRESSES](state: State, props: SetAddressesProps): void;
+  [MutationTypes.SET_AUTO_SELECT_NODE](state: State, props: SetAutoSelectNode): void;
   [MutationTypes.SET_QR](state: State, props: string): void;
   [MutationTypes.DELETE_QR](state: State): void;
   [MutationTypes.SET_CUSTOM_SORT](state: State, props: string): void;

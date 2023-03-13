@@ -69,7 +69,7 @@ export default class BaseApi {
     return { replaced: false };
   }
 
-  private static getWalletIncludingReplacedAccount(wallet: Wallet, network: string): Wallet {
+  public static getWalletIncludingReplacedAccount(wallet: Wallet, network: string): Wallet {
     const replacedAccountByNetwork = BaseApi.getReplacedAccountByNetwork(wallet, network);
     const address = replacedAccountByNetwork?.address;
 
@@ -137,15 +137,6 @@ export default class BaseApi {
 
       return networksList.includes(network);
     });
-  }
-
-  public static getDefaultAddressByNetworkIncludingReplacedAccount(_wallet: Wallet, network: string): string {
-    const wallet = BaseApi.getWalletIncludingReplacedAccount(_wallet, network);
-    const { address, ethereumAddress } = wallet;
-    const isEthereumNetwork = BaseApi.isEthereumNetwork(network);
-    const addressByNetwork = isEthereumNetwork ? ethereumAddress : address;
-
-    return addressByNetwork;
   }
 
   /**

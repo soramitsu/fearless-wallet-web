@@ -105,7 +105,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Identicon } from '@polkadot/vue-identicon';
 import { Getter } from 'vuex-class';
-import type { HistoryNode } from '@/interfaces/history';
+import type { HistoryElement } from '@/interfaces/history';
 import type { SelectedWallet } from '@/store';
 import {
   cut,
@@ -125,7 +125,7 @@ import BaseApi from '@/util/BaseApi';
 })
 export default class HistoryDetailsForm extends Vue {
   @Prop(String) assetId!: string;
-  @Prop(Object) historyNode!: HistoryNode;
+  @Prop(Object) historyElement!: HistoryElement;
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
@@ -147,13 +147,13 @@ export default class HistoryDetailsForm extends Vue {
 
   get statusIsSuccess() {
     if (this.isTransfer) {
-      const { success } = this.historyNode.transfer!;
+      const { success } = this.historyElement.transfer!;
 
       return success;
     }
 
     if (this.isExtrinsic) {
-      const { success } = this.historyNode.extrinsic!;
+      const { success } = this.historyElement.extrinsic!;
 
       return success;
     }
@@ -162,7 +162,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get validator() {
-    return this.historyNode.reward!.validator;
+    return this.historyElement.reward!.validator;
   }
 
   get displayValidator() {
@@ -170,7 +170,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get era() {
-    return this.historyNode.reward!.era;
+    return this.historyElement.reward!.era;
   }
 
   get statusClasses() {
@@ -179,13 +179,13 @@ export default class HistoryDetailsForm extends Vue {
 
   get statusText() {
     if (this.isTransfer) {
-      const { success } = this.historyNode.transfer!;
+      const { success } = this.historyElement.transfer!;
 
       return success ? 'Completed' : 'Reject';
     }
 
     if (this.isExtrinsic) {
-      const { success } = this.historyNode.extrinsic!;
+      const { success } = this.historyElement.extrinsic!;
 
       return success ? 'Completed' : 'Reject';
     }
@@ -195,7 +195,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get fromAddress() {
-    return this.historyNode.transfer!.from;
+    return this.historyElement.transfer!.from;
   }
 
   get displayFromAddress() {
@@ -203,7 +203,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get toAddress() {
-    return this.historyNode.transfer!.to;
+    return this.historyElement.transfer!.to;
   }
 
   get displayToAddress() {
@@ -211,37 +211,37 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get moduleType() {
-    return this.historyNode.extrinsic!.module;
+    return this.historyElement.extrinsic!.module;
   }
 
   get call() {
-    return this.historyNode.extrinsic!.call;
+    return this.historyElement.extrinsic!.call;
   }
 
   get transferFee() {
-    return getHumanTransferFee(this.historyNode, this.assetId);
+    return getHumanTransferFee(this.historyElement, this.assetId);
   }
 
   get date() {
-    return getFormattedDate(this.historyNode);
+    return getFormattedDate(this.historyElement);
   }
 
   get value() {
-    const { signTransfer, value } = getHistoryValue(this.historyNode, this.assetId);
+    const { signTransfer, value } = getHistoryValue(this.historyElement, this.assetId);
 
     return `${signTransfer}${this.$n(value, 'decimalPrecise')}`;
   }
 
   get type() {
-    return getType(this.historyNode);
+    return getType(this.historyElement);
   }
 
   get signTransfer() {
-    return getSignTransfer(this.historyNode);
+    return getSignTransfer(this.historyElement);
   }
 
   get hash() {
-    return this.historyNode.extrinsic!.hash;
+    return this.historyElement.extrinsic!.hash;
   }
 
   get displayHash() {

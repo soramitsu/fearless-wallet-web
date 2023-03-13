@@ -12,6 +12,7 @@ import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 import { getAccounts } from '@/helpers/accounts';
 import store from '@/store';
 import { accountController } from '@/controllers/accountController';
+import NetworksController from '@/controllers/networksController';
 
 interface ISubscribeData {
   data: AccountData;
@@ -60,11 +61,7 @@ const disconnectHandler = (apiOptions: ApiOptions, network: Network, provider: W
 };
 
 const readyHandler = (network: Network) => {
-  store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, {
-    accounts: getAccounts(),
-    loadHistory: false,
-    networksProps: [network],
-  });
+  NetworksController.subscribeToBalancesOfNetworks(getAccounts(), [network]);
 
   store.commit(MutationTypes.SET_NETWORK_STATUS, {
     network: network.name,
@@ -120,6 +117,8 @@ async function subscribeUtilityAssetsBalances(address: string, network: Network)
   await api?.isReadyOrError;
 
   api!.rx.query.system.account<ISubscribeData>(address).subscribe(async ({ data }) => {
+    const historyForNetwork = store.getters[NetworksGettersTypes.getHistory](assetId, address, networkName);
+
     store.commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
       walletAddress: address,
       network: networkName,
@@ -127,6 +126,9 @@ async function subscribeUtilityAssetsBalances(address: string, network: Network)
       balance: formatBalance(data, precision),
       parentId,
     });
+
+    if (historyForNetwork)
+      NetworksController.fetchHistory(networkName, { address, ethereumAddress: address }, assetId, true, 45);
   });
 }
 

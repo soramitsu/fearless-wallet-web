@@ -149,18 +149,16 @@ export default class ReceiveForm extends Vue {
   }
 
   getNetworkNameByAsset(isNative = true) {
-    return this.optionsNetworks.find((el) => {
-      const network = NetworksController.getNetwork(el.value);
+    return this.optionsNetworks.find(({ value }) => {
+      const network = NetworksController.getNetwork(value);
 
-      const searchedAsset = network.assets.find((asset) => {
+      const assetIndex = network.assets.findIndex((asset) => {
         const key = isNative ? 'isNative' : 'isUtility';
 
         return asset.assetId === this.selectedAssetId && asset[key];
       });
 
-      if (searchedAsset) return true;
-
-      return false;
+      return assetIndex !== -1;
     });
   }
 

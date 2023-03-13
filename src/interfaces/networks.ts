@@ -8,13 +8,17 @@ type TypesForMobile = {
 
 type NetworkName = string;
 
+type HistoryServiceType = 'subsquid' | 'giantsquid' | 'subquery';
+
 interface ExternalApiElement {
   url: string;
-  type: string;
+  type: HistoryServiceType;
 }
 
-interface Explorer extends ExternalApiElement {
+interface Explorer {
   types: string[];
+  url: string;
+  type: 'subscan' | 'polkascan';
 }
 
 type ExternalApi = {
@@ -98,4 +102,5 @@ export {
   ExternalApi,
   ApiOptions,
   NetworkStatus,
+  HistoryServiceType,
 };

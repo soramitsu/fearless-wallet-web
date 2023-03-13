@@ -4,7 +4,6 @@
 
 <script lang="ts">
 import { Vue, Prop, Component } from 'vue-property-decorator';
-
 import NetworksController from '@/controllers/networksController';
 
 @Component

@@ -13,11 +13,8 @@ export interface SelectedWallet extends Wallet {
 }
 
 export type SelectedNetworks = Record<WalletAddress, string>;
-
 export type Accounts = SubjectInfo;
-
 export type AutoSelectNode = Record<NetworkName, boolean>;
-
 export type GetAutoSelectNodesValueByNetwork = (networkName: string) => boolean;
 
 // mutations
@@ -34,20 +31,20 @@ export type SetSelectedNetworkProps = {
   network: string;
 };
 
-export type setAccountsProps = {
+export type SetAccountsProps = {
   accounts: AccountJson[];
 };
 
-export type setAddressesProps = {
+export type SetAddressesProps = {
   addresses: Accounts;
 };
 
-export type setAutoSelectNode = {
+export type SetAutoSelectNode = {
   network: string;
   value: boolean;
 };
 
-export type setOnlineStatus = {
+export type SetOnlineStatus = {
   isOnline: boolean;
 };
 

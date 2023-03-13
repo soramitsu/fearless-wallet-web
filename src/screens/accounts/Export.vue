@@ -62,10 +62,7 @@ export default class Export extends Vue {
   }
 
   checkPassword() {
-    const addressByNetwork = BaseApi.getDefaultAddressByNetworkIncludingReplacedAccount(
-      this.selectedWallet,
-      this.network
-    );
+    const addressByNetwork = BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.network);
 
     this.isWrongPassword = !BaseApi.unlockPair(addressByNetwork, this.password);
 

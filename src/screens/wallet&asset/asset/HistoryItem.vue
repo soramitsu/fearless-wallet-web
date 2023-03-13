@@ -22,19 +22,19 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { GetAssetName } from '@/store';
-import type { HistoryNode } from '@/interfaces';
+import type { HistoryElement } from '@/interfaces';
 import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, getSignTransfer, cut } from '@/helpers/history';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { TransactionType } from '@/interfaces/history';
 
 @Component
 export default class HistoryItem extends Vue {
-  @Prop(Object) historyNode!: HistoryNode;
+  @Prop(Object) historyElement!: HistoryElement;
   @Prop(String) assetId!: string;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
 
   get signTransfer() {
-    return getSignTransfer(this.historyNode);
+    return getSignTransfer(this.historyElement);
   }
 
   get asset() {
@@ -42,7 +42,7 @@ export default class HistoryItem extends Vue {
   }
 
   get date() {
-    return getFormattedDate(this.historyNode);
+    return getFormattedDate(this.historyElement);
   }
 
   get assetToUpperCase() {
@@ -50,17 +50,17 @@ export default class HistoryItem extends Vue {
   }
 
   get type() {
-    return getType(this.historyNode);
+    return getType(this.historyElement);
   }
 
   get value() {
-    const { signTransfer, value } = getHistoryValue(this.historyNode, this.assetId);
+    const { signTransfer, value } = getHistoryValue(this.historyElement, this.assetId);
 
     return `${signTransfer}${this.$n(value, 'decimalPrecise')}`;
   }
 
   get hash() {
-    const { transfer, reward, extrinsic } = this.historyNode;
+    const { transfer, reward, extrinsic } = this.historyElement;
 
     if (this.type === TransactionType.transfer) {
       const value = this.typeFormatted === 'Incoming' ? transfer!.from : transfer!.to;
@@ -77,7 +77,7 @@ export default class HistoryItem extends Vue {
   }
 
   get typeFormatted() {
-    return getTypeFormatted(this.historyNode);
+    return getTypeFormatted(this.historyElement);
   }
 }
 </script>

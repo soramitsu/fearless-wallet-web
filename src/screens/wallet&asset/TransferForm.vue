@@ -474,7 +474,7 @@ export default class SendForm extends Vue {
       );
     }
 
-    return this.currency!.getPartialFee(this.selectedWallet, this.syncedSelectedNetwork);
+    return this.currency!.extrinsicOptions.fee!;
   }
 
   updateAmount(value: string) {

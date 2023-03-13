@@ -14,6 +14,7 @@ import type {
   SetAssetsPriceIntervalProps,
 } from './types';
 import { accountController } from '@/controllers/accountController';
+import { getFormattedHistory } from '@/helpers/history';
 
 export enum MutationTypes {
   SET_NETWORKS = 'SET_NETWORKS',
@@ -70,8 +71,31 @@ const mutations: MutationTree<State> & Mutations = {
     state.assetsPriceInterval = interval;
   },
 
-  [MutationTypes.SET_HISTORY](state, { history, networkName, walletAddress, isPreviously, assetId, isMock }) {
-    const { nodes, pageInfo } = history;
+  // [MutationTypes.UPDATE_CURRENCY_BALANCE](
+  //   { currencies, assetsJson, networks },
+  //   { walletAddress, network, assetId, balance, parentId }
+  // ) {
+  //   const { symbol, displayName } = assetsJson.find(({ id }) => id === assetId)!;
+  //   const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name ?? network;
+
+  //   const currentCurrency = currencies.find(
+  //     ({ assetId: _assetId, relayChain: _relayChain, displayName: _displayName }) => {
+  //       const isExistingAssetId = _assetId === assetId;
+  //       const isExistingDisplayName = _displayName === symbol || displayName === _displayName;
+  //       const isExistingAsset = isExistingDisplayName && _relayChain === relayChain;
+
+  //       return isExistingAssetId || isExistingAsset;
+  //     }
+  //   )!;
+
+  //   currentCurrency.updateCurrencyBalance({ walletAddress, network, balance });
+  // },
+
+  [MutationTypes.SET_HISTORY](
+    state,
+    { history, networkName, walletAddress, isPreviously, assetId, serviceType, isMock }
+  ) {
+    const { nodes, pageInfo } = getFormattedHistory(history, serviceType);
     const { startCursor: startCursorProp, endCursor: endCursorProp } = pageInfo;
     const oldHistory = state.history[assetId]?.[walletAddress]?.[networkName];
     const oldPageInfo = oldHistory?.pageInfo;
@@ -110,22 +134,18 @@ const mutations: MutationTree<State> & Mutations = {
 
       if (filteredNodes.length === 0) return;
 
-      const newHistoryForNetwork = {
-        nodes: [...(filteredNodes ?? []), ...oldHistoryNodesWithoutMock],
-        pageInfo: {
-          startCursor: startCursorProp,
-          endCursor: oldEndCursor,
-        },
-      };
-
-      const historyForWalletAddress = {
-        ...state.history[assetId]?.[walletAddress],
-        [networkName]: newHistoryForNetwork,
-      };
-
       const historyForAssetId = {
         ...(state.history[assetId] ?? []),
-        [walletAddress]: historyForWalletAddress,
+        [walletAddress]: {
+          ...state.history[assetId]?.[walletAddress],
+          [networkName]: {
+            nodes: [...(filteredNodes ?? []), ...oldHistoryNodesWithoutMock],
+            pageInfo: {
+              startCursor: startCursorProp,
+              endCursor: oldEndCursor,
+            },
+          },
+        },
       };
 
       state.history = { ...state.history, [assetId]: historyForAssetId };
@@ -133,23 +153,18 @@ const mutations: MutationTree<State> & Mutations = {
       return;
     }
 
-    const newHistoryForNetwork = {
-      nodes: [...(oldHistory?.nodes ?? []), ...(nodes ?? [])],
-      pageInfo: {
-        // if this is first load or following one already saved
-        startCursor: oldStartCursor ?? startCursorProp,
-        endCursor: endCursorProp,
-      },
-    };
-
-    const historyForWalletAddress = {
-      ...(state.history[assetId]?.[walletAddress] ?? []),
-      [networkName]: newHistoryForNetwork,
-    };
-
     const historyForAssetId = {
       ...(state.history[assetId] ?? []),
-      [walletAddress]: historyForWalletAddress,
+      [walletAddress]: {
+        ...(state.history[assetId]?.[walletAddress] ?? []),
+        [networkName]: {
+          nodes: [...(nodes ?? []), ...(oldHistory?.nodes ?? [])],
+          pageInfo: {
+            startCursor: oldStartCursor ?? startCursorProp,
+            endCursor: endCursorProp,
+          },
+        },
+      },
     };
 
     state.history = { ...state.history, [assetId]: historyForAssetId };

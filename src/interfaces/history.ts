@@ -26,31 +26,50 @@ type Extrinsic = {
   success: boolean;
 };
 
-type HistoryNode = {
+type HistoryElement = {
   id: string;
   address: string;
   timestamp: string;
-  extrinsic?: Extrinsic;
-  reward?: Reward;
-  transfer?: Transfer;
+  extrinsic: Extrinsic | null;
+  reward: Reward | null;
+  transfer: Transfer | null;
   isMock?: true;
 };
 
-interface HistoryItem {
-  nodes: HistoryNode[];
+interface GiantsquidHistoryItem {
+  direction: 'To' | 'From';
+  id: string;
+  transfer: {
+    id: string;
+    amount: string;
+    blockNumber: number;
+    extrinsicHash: string;
+    timestamp: string;
+    success: boolean;
+    from: {
+      id: string;
+    };
+    to: {
+      id: string;
+    };
+  };
+}
+
+interface SubqueryHistory {
+  nodes: HistoryElement[];
   pageInfo: {
     startCursor: string;
     endCursor: string;
   };
 }
 
-type HistoryForWalletAddress = Record<NetworkName, HistoryItem>;
+type HistoryForWalletAddress = Record<NetworkName, SubqueryHistory>;
 
 type HistoryForAssetId = Record<WalletAddress, HistoryForWalletAddress>;
 
 type History = Record<AssetName, HistoryForAssetId>;
 
-type GetHistory = (assetId: AssetName, walletAddress: WalletAddress, networkName: NetworkName) => HistoryItem;
+type GetHistory = (assetId: AssetName, walletAddress: WalletAddress, networkName: NetworkName) => SubqueryHistory;
 
 enum TransferType {
   incoming = 'Incoming',
@@ -70,8 +89,9 @@ export {
   History,
   HistoryForWalletAddress,
   Extrinsic,
-  HistoryItem,
+  SubqueryHistory,
+  GiantsquidHistoryItem,
   Reward,
-  HistoryNode,
+  HistoryElement,
   Transfer,
 };

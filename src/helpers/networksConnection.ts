@@ -11,6 +11,7 @@ import { ORML_PALLETS_TYPES, getAssetOptions } from '@/util/assets';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 import store from '@/store';
 import { accountController } from '@/controllers/accountController';
+import NetworksController from '@/controllers/networksController';
 
 interface ISubscribeData {
   data: AccountData;
@@ -49,7 +50,7 @@ const disconnectHandler = (apiOptions: ApiOptions, network: Network, provider: W
       apiOptions.api = undefined;
       apiOptions.provider = undefined;
 
-      if (navigator.onLine) connectToApi(network, apiOptions); // eslint-disable-line no-use-before-define
+      // if (navigator.onLine) connectToApi(network, apiOptions); // eslint-disable-line no-use-before-define
     } else
       store.commit(MutationTypes.SET_NETWORK_STATUS, {
         network: network.name,
@@ -64,11 +65,10 @@ const readyHandler = (network: Network) => {
   //   loadHistory: false,
   //   networksProps: [network],
   // });
-
-  store.commit(MutationTypes.SET_NETWORK_STATUS, {
-    network: network.name,
-    status: 'ready',
-  });
+  //   store.commit(MutationTypes.SET_NETWORK_STATUS, {
+  //     network: network.name,
+  //     status: 'ready',
+  //   });
 };
 
 function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): void {
@@ -100,7 +100,7 @@ function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): v
 
   api.on('connected', () => connectedHandler(apiOptions, network));
   api.on('disconnected', () => disconnectHandler(apiOptions, network, provider, _node === undefined));
-  api.on('ready', () => readyHandler(network));
+  // api.on('ready', () => readyHandler(network));
 }
 
 async function subscribeUtilityAssetsBalances(address: string, network: Network): Promise<void> {
@@ -126,6 +126,18 @@ async function subscribeUtilityAssetsBalances(address: string, network: Network)
     //   balance: formatBalance(data, precision),
     //   parentId,
     // });
+    const historyForNetwork = store.getters[NetworksGettersTypes.getHistory](assetId, address, networkName);
+
+    // store.commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
+    //   walletAddress: address,
+    //   network: networkName,
+    //   assetId,
+    //   balance: formatBalance(data, precision),
+    //   parentId,
+    // });
+
+    if (historyForNetwork)
+      NetworksController.fetchHistory(networkName, { address, ethereumAddress: address }, assetId, true, 45);
   });
 }
 

@@ -120,6 +120,7 @@ export default class Header extends Vue {
   get isExtension() {
     return BaseApi.isExtension();
   }
+
   @Watch('syncedShowSelectWalletPopup')
   updateZIndexSelectWalletPopup() {
     const targetElement = this.$refs[this.walletNameRef] as HTMLElement;

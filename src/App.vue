@@ -9,11 +9,10 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
-import { Components } from './router/routes';
 import { AccountJson, BalanceJson } from './extension/background/extension-base/src/background/types';
-import NetworksController from './controllers/networksController';
-import { NetworkJson } from './extension/background/extension-base/src/api/evm/types/ether';
-import type { setAccountsProps, Accounts, setOnlineStatus, SetSelectedFiat } from '@/store';
+import { Components } from './router/routes';
+import { NetworkJsonOld } from './extension/background/extension-base/src/types';
+import type { Accounts, SetOnlineStatus, SetAccountsProps, SetSelectedFiat } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
@@ -31,15 +30,13 @@ export default class App extends Vue {
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
   @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<AccountJson>;
-  @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: TMutation<NetworkJson[]>;
-  @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<setAccountsProps>;
-  @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<setOnlineStatus>;
+  @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: TMutation<NetworkJsonOld[]>;
+  @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<SetAccountsProps>;
+  @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<SetOnlineStatus>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
   @Action(AccountsActionTypes.SET_SELECTED_FIAT) setSelectedFiat!: TAction<SetSelectedFiat>;
 
   async created() {
-    NetworksController.loadJsons();
-
     if (BaseApi.isExtension()) {
       this.setupNetworks();
       this.extensionSubscribe();

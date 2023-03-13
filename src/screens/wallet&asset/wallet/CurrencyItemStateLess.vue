@@ -1,5 +1,5 @@
 <template>
-  <Lazy class="currency-item">
+  <Lazy class="currency-item" @click.native="openAssetPage">
     <div class="img-container">
       <ExternalLogo class="main-network-img" :name="assetData.icon" :width="42" />
     </div>
@@ -95,13 +95,18 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import type { CustomEvent } from '@/interfaces';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { Components } from '@/router/routes';
 @Component
 export default class CurrencyItemStateLess extends Vue {
   @Prop(Object) assetData!: TokenBalance;
   @Prop(Number) price!: number;
   @Prop(Number) priceChange!: number;
+  @Prop(String) selectedNetwork!: string;
+  @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
 
@@ -159,6 +164,42 @@ export default class CurrencyItemStateLess extends Vue {
     else if (this.priceChange < 0) classes.push('down-price');
 
     return classes;
+  }
+
+  get isCurrentNetwork() {
+    return this.selectedNetwork !== 'all';
+  }
+
+  get redirectNetwork(): string {
+    const network = this.assetData.balances[0];
+
+    return this.isCurrentNetwork
+      ? this.selectedNetwork
+      : this.getMainNetwork !== undefined
+      ? this.getMainNetwork
+      : network.name;
+  }
+
+  openAssetPage(event: CustomEvent) {
+    if (this.showWarning) return;
+
+    const classList = event.target?.classList;
+
+    if (
+      this.showAssetsManagementForm ||
+      classList.contains('button') ||
+      classList.contains('send-white') ||
+      classList.contains('receive-white')
+    )
+      return;
+
+    this.$router.push({
+      name: Components.Asset,
+      params: {
+        assetId: this.assetData.name,
+        network: this.redirectNetwork,
+      },
+    });
   }
 }
 </script>

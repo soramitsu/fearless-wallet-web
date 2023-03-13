@@ -50,6 +50,8 @@
             :price="getAssetPrice(asset.priceId)"
             :priceChange="getPriceChange(asset.priceId)"
             :key="assetKey"
+            :selectedNetwork="selectedNetwork"
+            :showAssetsManagementForm="showAssetsManagementForm"
             :toggleVisibleActivityForm="toggleVisibleActivityForm"
           />
         </Scroll>

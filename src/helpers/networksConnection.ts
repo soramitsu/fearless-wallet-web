@@ -59,11 +59,11 @@ const disconnectHandler = (apiOptions: ApiOptions, network: Network, provider: W
 };
 
 const readyHandler = (network: Network) => {
-  store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, {
-    accounts: store.getters.getAccounts,
-    loadHistory: false,
-    networksProps: [network],
-  });
+  // store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, {
+  //   accounts: store.getters.getAccounts,
+  //   loadHistory: false,
+  //   networksProps: [network],
+  // });
 
   store.commit(MutationTypes.SET_NETWORK_STATUS, {
     network: network.name,
@@ -119,13 +119,13 @@ async function subscribeUtilityAssetsBalances(address: string, network: Network)
   await api?.isReadyOrError;
 
   api!.rx.query.system.account<ISubscribeData>(address).subscribe(async ({ data }) => {
-    store.commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
-      walletAddress: address,
-      network: networkName,
-      assetId,
-      balance: formatBalance(data, precision),
-      parentId,
-    });
+    // store.commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
+    //   walletAddress: address,
+    //   network: networkName,
+    //   assetId,
+    //   balance: formatBalance(data, precision),
+    //   parentId,
+    // });
   });
 }
 
@@ -151,13 +151,13 @@ function subscribeOrmlAssetsBalances(address: string, network: Network): void {
         : query.tokens?.accounts<OrmlAccountData>(address, options);
 
     pallet.subscribe(async (data) => {
-      store.commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
-        walletAddress: address,
-        network: networkName,
-        assetId,
-        balance: formatBalance(data, precision),
-        parentId,
-      });
+      // store.commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
+      //   walletAddress: address,
+      //   network: networkName,
+      //   assetId,
+      //   balance: formatBalance(data, precision),
+      //   parentId,
+      // });
     });
   });
 }

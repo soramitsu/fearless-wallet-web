@@ -76,7 +76,7 @@
       :handlerAccept="handlerAccept"
     />
 
-    <ReplacePopup v-if="showReplacePopup" :selectedNetwork="selectedNetwork" :handlerClose="closeReplacePopup" />
+    <!-- <ReplacePopup v-if="showReplacePopup" :selectedNetwork="selectedNetwork" :handlerClose="closeReplacePopup" /> -->
 
     <SourceTypePopup v-if="showSourceTypePopup" :handlerClose="closeSourceTypePopup" />
 

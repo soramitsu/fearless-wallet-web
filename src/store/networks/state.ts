@@ -1,4 +1,5 @@
 import type { Networks, AssetsPrice, Currencies, History, FiatJson, AssetJson, ActiveNodes } from '@/interfaces';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 
 export type State = {
   networks: Networks;
@@ -6,7 +7,7 @@ export type State = {
   assetsJson: AssetJson[];
   fiats: FiatJson[];
   history: History;
-  currencies: Currencies;
+  currencies: TokenBalance[];
   activeNodes: ActiveNodes;
   assetsPriceInterval: NodeJS.Timer | null;
 };

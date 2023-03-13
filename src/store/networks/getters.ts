@@ -11,6 +11,7 @@ import type {
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 
 export enum GettersTypes {
   getNetworks = 'getNetworks',
@@ -40,7 +41,7 @@ export type Getters = {
   [GettersTypes.getAssetIcon](state: State, getters?: GetterTree<State, State> & Getters): GetAssetIcon;
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
-  [GettersTypes.getCurrencies](state: State, getters?: GetterTree<State, State> & Getters): Currencies;
+  [GettersTypes.getCurrencies](state: State, getters?: GetterTree<State, State> & Getters): TokenBalance[];
   [GettersTypes.getAssetsPriceInterval](
     state: State,
     getters?: GetterTree<State, State> & Getters
@@ -135,7 +136,7 @@ const getters: GetterTree<State, State> & Getters = {
       return history[assetId]?.[walletAddress]?.[networkName];
     },
 
-  [GettersTypes.getCurrencies]({ currencies }): Currencies {
+  [GettersTypes.getCurrencies]({ currencies }): TokenBalance[] {
     return currencies;
   },
 

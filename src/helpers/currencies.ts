@@ -103,52 +103,6 @@ function getMockCurrencies(networks: Networks): Currencies {
   return currencies;
 }
 
-export function getTotalCountAssets(token: TokenBalance, network = 'ALL'): string {
-  if (network && network !== 'ALL') {
-    const balance = token.balances.find((el) => el.name === network)!.total;
-
-    return balance ?? '0';
-  }
-
-  return token.balances.find((balance) => balance.name === network)?.total ?? '0';
-}
-
-function defaultSortingCurrencies(currencies: TokenBalance[], wallet: Wallet, network?: NetworkName) {
-  const relayChains = [];
-  const currenciesWithAssets = currencies.filter((currency) =>
-    currency.balances.filter((balance) => balance.total !== '0')
-  );
-  const currenciesWithoutAssets = currencies.filter((currency) =>
-    currency.balances.filter((balance) => balance.total === '0')
-  );
-
-  const dotIndex = currenciesWithoutAssets.findIndex(({ name }) => name === 'dot');
-  const ksmIndex = currenciesWithoutAssets.findIndex(({ name }) => name === 'ksm');
-
-  if (dotIndex !== -1) {
-    const dot = currenciesWithoutAssets.splice(dotIndex, 1)[0];
-
-    relayChains.push(dot);
-  }
-
-  if (ksmIndex !== -1) {
-    const ksm = currenciesWithoutAssets.splice(ksmIndex, 1)[0];
-
-    relayChains.push(ksm);
-  }
-
-  currenciesWithAssets.sort((currency1, currency2) => {
-    const totalBalanceOne = +getTotalBalance(currency1, network);
-    const totalBalanceTwo = +getTotalBalance(currency2, network);
-
-    return totalBalanceTwo - totalBalanceOne;
-  });
-
-  currenciesWithoutAssets.sort(({ name: asset1 }, { name: asset2 }) => asset1.localeCompare(asset2));
-
-  return [...currenciesWithAssets, ...relayChains, ...currenciesWithoutAssets];
-}
-
 export function getTotalBalanceInNetwork(token: TokenBalance, network: string) {
   return token.balances.find((el) => el.name === network)?.total ?? 0;
 }
@@ -164,6 +118,53 @@ export function getTotalBalance(token: TokenBalance, network = 'ALL') {
   });
 
   return balance;
+}
+
+export function getTotalCountAssets(token: TokenBalance, network = 'ALL'): string {
+  if (network && network !== 'ALL') {
+    const balance = token.balances.find((el) => el.name === network)!.total;
+
+    return balance ?? '0';
+  }
+
+  return token.balances.find((balance) => balance.name === network)?.total ?? '0';
+}
+
+function defaultSortingCurrencies(currencies: TokenBalance[], wallet: Wallet, network?: NetworkName) {
+  // const relayChains = [];
+  const currenciesWithAssets = currencies.filter((currency) =>
+    currency.balances.some((balance) => balance.total !== '0')
+  );
+
+  const currenciesWithoutAssets = currencies.filter((currency) =>
+    currency.balances.every((balance) => balance.total === '0')
+  );
+
+  // const dotIndex = currenciesWithoutAssets.findIndex(({ name }) => name === 'dot');
+  // const ksmIndex = currenciesWithoutAssets.findIndex(({ name }) => name === 'ksm');
+
+  // if (dotIndex !== -1) {
+  //   const dot = currenciesWithoutAssets.splice(dotIndex, 1)[0];
+
+  //   relayChains.push(dot);
+  // }
+
+  // if (ksmIndex !== -1) {
+  //   const ksm = currenciesWithoutAssets.splice(ksmIndex, 1)[0];
+
+  //   relayChains.push(ksm);
+  // }
+
+  currenciesWithAssets.sort((currency1, currency2) => {
+    const totalBalanceOne = +getTotalBalance(currency1, network);
+    const totalBalanceTwo = +getTotalBalance(currency2, network);
+
+    return totalBalanceTwo - totalBalanceOne;
+  });
+
+  currenciesWithoutAssets.sort(({ name: asset1 }, { name: asset2 }) => asset1.localeCompare(asset2));
+
+  return [...currenciesWithAssets, ...currenciesWithoutAssets];
 }
 
 export function getWalletTotalBalance(tokens: TokenBalance[]) {

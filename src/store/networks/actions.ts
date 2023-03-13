@@ -18,19 +18,13 @@ import { getTokenPrice } from '@/helpers/coingecko';
 
 export enum ActionTypes {
   LOAD_JSONS = 'LOAD_JSONS',
-  CONNECT_TO_NODES = 'CONNECT_TO_NODES',
-  LOAD_ASSETS_PRICE = 'LOAD_ASSETS_PRICE',
   LOAD_HISTORY = 'LOAD_HISTORY',
-  SUBSCRIBE_TO_BALANCES = 'SUBSCRIBE_TO_BALANCES',
   TOGGLE_ACTIVE_NODE = 'TOGGLE_ACTIVE_NODE',
 }
 
 export type Actions = {
   [ActionTypes.LOAD_JSONS](store: AugmentedActionContext, props: LoadJsons): Promise<void>;
-  [ActionTypes.CONNECT_TO_NODES](store: AugmentedActionContext): Promise<void>;
-  [ActionTypes.LOAD_ASSETS_PRICE](store: AugmentedActionContext): Promise<void>;
   [ActionTypes.LOAD_HISTORY](store: AugmentedActionContext, props: LoadHistory): Promise<void>;
-  [ActionTypes.SUBSCRIBE_TO_BALANCES](store: AugmentedActionContext, props: SubscribeToBalances): Promise<void>;
   [ActionTypes.TOGGLE_ACTIVE_NODE](store: AugmentedActionContext, props: ToggleActiveNode): Promise<void>;
 };
 
@@ -43,42 +37,6 @@ const actions: ActionTree<State, State> & Actions = {
 
       commit(MutationTypes.SET_FIATS_JSON, { fiats });
     }
-  },
-
-  async [ActionTypes.CONNECT_TO_NODES](context) {
-    context.state.networks.forEach((network, index) => {
-      if (network.api?.isConnected) return;
-
-      const timeout = (index / 5) * 1000;
-      const apiOptions: ApiOptions = {
-        apiRetry: 0,
-        nodeIndex: 0,
-      };
-
-      setTimeout(() => connectToApi(network, apiOptions), timeout);
-    });
-  },
-
-  async [ActionTypes.LOAD_ASSETS_PRICE]({ commit, state: { assetsJson } }) {
-    const urlsAssets = assetsJson.filter(({ priceId }) => !!priceId).map(({ priceId }) => priceId);
-
-    const currency = accountController.getSelectedFiat();
-
-    const loadAssetsPrice = async () => {
-      try {
-        const assetsPrice = await getTokenPrice([...new Set(urlsAssets as unknown as string)], currency, assetsJson);
-
-        commit(MutationTypes.SET_ASSETS_PRICE, { assetsPrice });
-      } catch {
-        console.info('%c Coingecko request failed', 'background:red;color:#fff');
-      }
-    };
-
-    const interval = setInterval(loadAssetsPrice, AUTO_UPDATE_ASSETS_PRICE_MS);
-
-    commit(MutationTypes.SET_ASSETS_PRICE_INTERVAL, { interval });
-
-    loadAssetsPrice();
   },
 
   async [ActionTypes.LOAD_HISTORY]({ commit, getters }, { networkName, walletAddress, pageSize = PAGE_SIZE, assetId }) {
@@ -115,43 +73,6 @@ const actions: ActionTree<State, State> & Actions = {
     } catch {
       console.info(`%c failed to load history for ${networkName}`, 'background:orange;color:#fff');
     }
-  },
-
-  async [ActionTypes.SUBSCRIBE_TO_BALANCES]({ state }, { accounts, networksProps }) {
-    // if the list of networks is not transferred, then we subscribe to all
-
-    const networks = networksProps ?? state.networks;
-    const promises = networks.map(async (network) => {
-      const { isEthereumNetwork, name: networkName } = network;
-
-      Object.entries(accounts).forEach(([walletAddress, { type: accountType, json }]) => {
-        const { isReplacedAccount, replacedSettings } = getReplacedMetaTyped(json.meta);
-        const replacedNetworksList = Object.values(replacedSettings ?? []).flat();
-        // if it is a replaced account and the iterated network is not in the networksList
-        if (isReplacedAccount && !replacedNetworksList.includes(networkName)) return;
-
-        const { isMobile, ethereumAddress } = getAddressMetaTyped(json.meta);
-
-        if (!isMobile) {
-          const isEthereumAccountType = accountType === 'ethereum';
-
-          // ethereum accounts only subscribe to the ethereum networks and
-          // substrate accounts only subscribe to the substrate network
-          if ((!isEthereumNetwork && isEthereumAccountType) || (isEthereumNetwork && !isEthereumAccountType)) return;
-        }
-
-        //subscribe only if mobile wallet have eth address and it's eth network
-        if (isMobile && ethereumAddress && isEthereumNetwork) {
-          subscribeAssetsBalances(ethereumAddress, network);
-
-          return;
-        }
-
-        subscribeAssetsBalances(walletAddress, network);
-      });
-    });
-
-    await Promise.allSettled(promises);
   },
 
   async [ActionTypes.TOGGLE_ACTIVE_NODE]({ state }, { network, nodeUrl, nodeName, oldNodeUrl }) {

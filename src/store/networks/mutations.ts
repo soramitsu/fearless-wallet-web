@@ -24,7 +24,6 @@ export enum MutationTypes {
   SET_CURRENCIES = 'SET_CURRENCIES',
   SORT_CURRENCIES = 'SORT_CURRENCIES',
   SET_HISTORY = 'SET_HISTORY',
-  UPDATE_CURRENCY_BALANCE = 'UPDATE_CURRENCY_BALANCE',
   SET_ACTIVE_NODE = 'SET_ACTIVE_NODE',
   SET_NETWORK_API = 'SET_NETWORK_API',
   SET_NETWORK_STATUS = 'SET_NETWORK_STATUS',
@@ -34,11 +33,9 @@ export type Mutations = {
   [MutationTypes.SET_NETWORKS](state: State, props: SetNetworksStatusProps): void;
   [MutationTypes.SET_ASSETS_JSON](state: State, props: SetAssetsJsonProps): void;
   [MutationTypes.SET_FIATS_JSON](state: State, props: SetFiatsJsonProps): void;
-  [MutationTypes.SET_ASSETS_PRICE](state: State, props: SetAssetsPriceProps): void;
   [MutationTypes.SET_ASSETS_PRICE_INTERVAL](state: State, props: SetAssetsPriceIntervalProps): void;
   [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
-  [MutationTypes.UPDATE_CURRENCY_BALANCE](state: State, props: UpdateCurrencyBalanceProps): void;
   [MutationTypes.SET_ACTIVE_NODE](state: State, props: SetActiveNodeProps): void;
   [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApiProps): void;
   [MutationTypes.SET_NETWORK_STATUS](state: State, props: SetNetworkStatusProps): void;
@@ -52,21 +49,13 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_CURRENCIES](state, { currencies, address, network }) {
     if (address && network) {
       if (Array.isArray(currencies)) {
-        const sequence = currencies.map(({ assetId }) => assetId);
+        const sequence = currencies.map(({ name }) => name);
 
         accountController.setSequenceAssets(sequence, address, network);
-      } else {
-        const entries = Object.entries(currencies).map(([network, currencies]) => {
-          const sequence = currencies.map(({ assetId }) => assetId).join();
-
-          return [network, sequence];
-        });
-
-        accountController.setSequenceAssets(Object.fromEntries(entries), address);
       }
     }
 
-    state.currencies = Array.isArray(currencies) ? currencies : currencies[network!];
+    state.currencies = currencies;
   },
 
   [MutationTypes.SET_ASSETS_JSON](state, { assetsJson }) {
@@ -77,34 +66,8 @@ const mutations: MutationTree<State> & Mutations = {
     state.fiats = fiats.map((fiat) => ({ ...fiat }));
   },
 
-  [MutationTypes.SET_ASSETS_PRICE](state, { assetsPrice }) {
-    state.assetsPrice = assetsPrice;
-
-    state.currencies.forEach((currency) => currency.updatePrice());
-  },
-
   [MutationTypes.SET_ASSETS_PRICE_INTERVAL](state, { interval }) {
     state.assetsPriceInterval = interval;
-  },
-
-  [MutationTypes.UPDATE_CURRENCY_BALANCE](
-    { currencies, assetsJson, networks },
-    { walletAddress, network, assetId, balance, parentId }
-  ) {
-    const { symbol, displayName } = assetsJson.find(({ id }) => id === assetId)!;
-    const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name ?? network;
-
-    const currentCurrency = currencies.find(
-      ({ assetId: _assetId, relayChain: _relayChain, displayName: _displayName }) => {
-        const isExistingAssetId = _assetId === assetId;
-        const isExistingDisplayName = _displayName === symbol || displayName === _displayName;
-        const isExistingAsset = isExistingDisplayName && _relayChain === relayChain;
-
-        return isExistingAssetId || isExistingAsset;
-      }
-    )!;
-
-    currentCurrency.updateCurrencyBalance({ walletAddress, network, balance });
   },
 
   [MutationTypes.SET_HISTORY](state, { history, networkName, walletAddress, isPreviously, assetId, isMock }) {

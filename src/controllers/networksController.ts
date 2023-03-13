@@ -27,7 +27,7 @@ export default class NetworksController {
   }
 
   public static async connectToNodes(): Promise<void> {
-    await store.dispatch(NetworksActionTypes.CONNECT_TO_NODES);
+    // await store.dispatch(NetworksActionTypes.CONNECT_TO_NODES);
   }
 
   public static async loadJsons(): Promise<void> {
@@ -56,7 +56,7 @@ export default class NetworksController {
   }
 
   public static subscribeToBalancesOfNetworks(accounts: SubjectInfo): void {
-    store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts });
+    // store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts });
   }
 
   public static async toggleActiveNode(

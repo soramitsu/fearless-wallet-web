@@ -1,15 +1,16 @@
 <template>
   <div v-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText) }}</div>
 
-  <Draggable v-else v-model="filteredCurrencies" handle=".handle" :key="selectedWallet.address">
-    <CurrencyItem
-      v-for="currency in filteredCurrencies"
-      :key="currency.assetId"
-      :currency="currency"
+  <Draggable v-else v-model="filteredBalances" handle=".handle" :key="selectedWallet.address">
+    <CurrencyItemStateLess
+      v-for="(asset, assetKey) in filteredBalances"
+      :assetData="asset"
+      :price="getAssetPrice(asset.priceId)"
+      :priceChange="getPriceChange(asset.priceId)"
+      :key="assetKey"
       :selectedNetwork="selectedNetwork"
       :showAssetsManagementForm="showAssetsManagementForm"
       :toggleVisibleActivityForm="toggleVisibleActivityForm"
-      :timeoutCallback="timeoutCallback"
       @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible')"
     />
   </Draggable>
@@ -19,28 +20,22 @@
 import Draggable from 'vuedraggable';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Mutation, Getter } from 'vuex-class';
-import CurrencyItem from './CurrencyItem.vue';
 import type { SelectedWallet, SetCurrenciesProps } from '@/store';
 import type { TMutation } from '@/interfaces/common';
-import type { Currency } from '@/interfaces/currencies';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-
-type TimeoutSubscription = {
-  subscription: NodeJS.Timeout;
-  fn: () => void;
-};
+import CurrencyItemStateLess from '@/screens/wallet&asset/wallet/CurrencyItemStateLess.vue';
+import { PriceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { subscribePrice } from '@/extension/messaging';
 
 @Component({
   components: {
     Draggable,
-    CurrencyItem,
+    CurrencyItemStateLess,
   },
 })
 export default class Currencies extends Vue {
-  timeoutSubscriptions: TimeoutSubscription[] = [];
-
-  @Prop(Array) currencies!: Currency[];
+  @Prop(Array) balances!: TokenBalance[];
   @Prop(String) selectedNetwork!: string;
   @Prop(String) filterValue!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
@@ -48,6 +43,13 @@ export default class Currencies extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
+  price: PriceJson = {} as PriceJson;
+
+  async mounted() {
+    subscribePrice((prices) => {
+      this.price = prices;
+    });
+  }
 
   get mainText() {
     if (!this.isOnline) return 'common.offlineStatus';
@@ -56,36 +58,34 @@ export default class Currencies extends Vue {
   }
 
   get showAllAssetsHiddenText() {
-    const visibleCurrencies = this.currencies.filter((currency) =>
-      currency.getCurrencyVisibility(this.selectedWallet.address)
-    );
-
-    return visibleCurrencies.length === 0 && !this.showAssetsManagementForm;
+    return this.balances.length === 0 && !this.showAssetsManagementForm;
   }
 
-  get filteredCurrencies() {
-    return this.currencies;
+  get filteredBalances() {
+    return this.balances;
   }
 
-  set filteredCurrencies(currencies) {
+  set filteredBalances(balances) {
     this.$emit('setCustomSort');
     this.setCurrencies({
-      currencies,
+      currencies: balances, //FIX
       address: this.selectedWallet.address,
       network: this.selectedNetwork,
     });
   }
 
-  timeoutCallback(fn: () => void) {
-    this.timeoutSubscriptions.forEach(({ subscription }) => {
-      clearTimeout(subscription);
-    });
+  getAssetPrice(assetKey: string) {
+    if (Object.keys(this.price).length && this.price.tokenPriceMap[assetKey]) return this.price.tokenPriceMap[assetKey];
 
-    this.timeoutSubscriptions = [...this.timeoutSubscriptions, { fn }].map(({ fn }) => {
-      const subscription = setTimeout(() => fn(), 300);
+    return 0;
+  }
 
-      return { subscription, fn };
-    });
+  getPriceChange(assetKey: string) {
+    if (this.price === undefined || this.price.tokenPriceChange === undefined || assetKey === undefined) return 0;
+
+    if (this.price.tokenPriceChange[assetKey]) return this.price.tokenPriceChange[assetKey] / 100;
+
+    return 0;
   }
 }
 </script>

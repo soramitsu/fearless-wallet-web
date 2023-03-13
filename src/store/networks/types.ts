@@ -20,6 +20,7 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ActionContext } from 'vuex';
 import type { State } from '@/store/networks/state';
 import type { Mutations } from '@/store/networks/mutations';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 
 // getters
 export type GetNetwork = (networkName: NetworkName) => Network;
@@ -57,7 +58,7 @@ export type SetAssetsPriceIntervalProps = {
 };
 
 export type SetCurrenciesProps = {
-  currencies: Currencies | Record<NetworkName, Currencies>;
+  currencies: TokenBalance[];
   address?: string;
   network?: NetworkName;
 };

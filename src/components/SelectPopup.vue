@@ -18,7 +18,7 @@
     :top="top"
     :left="left"
   >
-    <div v-for="{ name, key, icon } in options" :key="key" :class="rowClasses(value)" @click="toggle(value)">
+    <div v-for="{ name, value, icon } in options" :key="value" :class="rowClasses(value)" @click="toggle(value)">
       <div class="description">
         <Icon v-if="icon === 'globus' && showIcon" :icon="icon" className="img" />
         <Icon v-else-if="icon === '_default' && showIcon" :icon="icon" className="img" />

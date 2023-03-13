@@ -44,15 +44,16 @@
           @toggleCurrenciesVisible="toggleCurrenciesVisible"
         />
         <Scroll>
-          <CurrencyItemStateLess
-            v-for="(asset, assetKey) in balances"
-            :assetData="asset"
-            :price="getAssetPrice(asset.priceId)"
-            :priceChange="getPriceChange(asset.priceId)"
-            :key="assetKey"
+          <Currencies
+            v-if="showCurrencies"
+            :key="currenciesKey"
+            :balances="filteredCurrencies"
             :selectedNetwork="selectedNetwork"
             :showAssetsManagementForm="showAssetsManagementForm"
             :toggleVisibleActivityForm="toggleVisibleActivityForm"
+            :filterValue="filterValue"
+            @setCustomSort="setCustomSort"
+            @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
           />
         </Scroll>
       </div>
@@ -165,28 +166,6 @@ export default class Wallet extends Vue {
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
   @Mutation(AccountsMutationTypes.SET_CUSTOM_SORT) setCustomSorting!: TMutation<string>;
 
-  price: PriceJson = {} as PriceJson;
-
-  async mounted() {
-    subscribePrice((prices) => {
-      this.price = prices;
-    });
-  }
-
-  getAssetPrice(assetKey: string) {
-    if (Object.keys(this.price).length && this.price.tokenPriceMap[assetKey]) return this.price.tokenPriceMap[assetKey];
-
-    return 0;
-  }
-
-  getPriceChange(assetKey: string) {
-    if (this.price === undefined || this.price.tokenPriceChange === undefined || assetKey === undefined) return 0;
-
-    if (this.price.tokenPriceChange[assetKey]) return this.price.tokenPriceChange[assetKey] / 100;
-
-    return 0;
-  }
-
   get showNetworkUnavailablePopup() {
     return this.networkUnavailable !== '';
   }
@@ -205,11 +184,11 @@ export default class Wallet extends Vue {
     return Object.values(this.balances);
   }
 
-  get changeWalletBalance() {
-    if (Object.values(this.price).length || this.balancePrep.length === 0) return { totalBalance: 0, changeAmount: 0 };
+  // get changeWalletBalance() {
+  //   if (Object.values(this.price).length || this.balancePrep.length === 0) return { totalBalance: 0, changeAmount: 0 };
 
-    return getChangeWalletBalance(this.balancePrep, this.price);
-  }
+  //   return getChangeWalletBalance(this.balancePrep, this.price);
+  // }
 
   get sortedCurrencies() {
     const { address } = this.selectedWallet;
@@ -218,7 +197,7 @@ export default class Wallet extends Vue {
 
     const sequence = accountController.getSequenceAssetsByAddress(address, this.selectedNetwork);
 
-    return Object.values(this.balances).sort((currency1, currency2) => {
+    return this.balancePrep.sort((currency1, currency2) => {
       const { name: assetId1 } = currency1;
       const { name: assetId2 } = currency2;
       const index1 = sequence.indexOf(assetId1);
@@ -230,16 +209,16 @@ export default class Wallet extends Vue {
 
   get filteredCurrencies() {
     const filter = this.filterValue.trim().toLowerCase();
-    const isAllNetworks = this.selectedNetwork === 'all';
 
-    const result = Object.values(this.sortedCurrencies).filter((currency) => {
+    const isAllNetworks = this.selectedNetwork === 'All';
+
+    const result = this.sortedCurrencies.filter((currency) => {
       const walletBalance = currency.balances.map(({ name }) => name);
       const isAvailableInSelectedNetwork = walletBalance.includes(this.selectedNetwork);
 
       if (!isAllNetworks && !isAvailableInSelectedNetwork) return false;
-      const { name } = currency;
 
-      return name.includes(filter);
+      return currency.name.includes(filter);
     });
 
     if (!this.isCustomSort(this.selectedWallet.address)) {
@@ -349,10 +328,10 @@ export default class Wallet extends Vue {
   toggleSelectedNetwork(network: string) {
     if (this.selectedNetwork === network) return;
 
-    const prepNetwork = network === 'all' ? null : `0x${this.getNetwork(network).chainId}`;
+    // const prepNetwork = network === 'all' ? null : `0x${this.getNetwork(network).chainId}`;
 
     this.setSelectedNetwork({ network });
-    tieAccount(this.selectedWallet.address, prepNetwork);
+    // tieAccount(this.selectedWallet.address, prepNetwork);
     this.toggleSelectNetworkPopupVisible();
   }
 

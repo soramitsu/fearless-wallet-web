@@ -4,7 +4,7 @@ const NOT_SUPPORTED_ALL_TRANSFER_NETWORKS = ['karura', 'acala', 'acala_testnet']
 const RELAY_CHAINS = ['polkadot', 'kusama', 'westend', 'rococo'];
 const NATIVE_PARACHAINS = ['statemint', 'statemine', 'encointer on kusama', 'westmint', 'rockmine'];
 const NATIVE_NETWORKS = [...RELAY_CHAINS, ...NATIVE_PARACHAINS];
-
+const ALL_NETWORKS = 'All';
 const NOT_SUPPORTED_SUBQUERY_NETWORKS = [
   'kico',
   'phala',
@@ -290,6 +290,7 @@ export {
   UNIT,
   LIT,
   PHA,
+  ALL_NETWORKS,
   NETWORK_AND_ASSET,
   RELAY_CHAINS,
   MAIN_NETWORKS,

@@ -140,7 +140,7 @@ export default class ReceiveForm extends Vue {
 
       if (utilityNet !== undefined) this.selectedNetwork = utilityNet.value;
       else
-        this.selectedNetwork = this._selectedNetwork === 'all' ? this.optionsNetworks[0].value : this._selectedNetwork;
+        this.selectedNetwork = this._selectedNetwork === 'All' ? this.optionsNetworks[0].value : this._selectedNetwork;
 
       return;
     }

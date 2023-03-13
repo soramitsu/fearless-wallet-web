@@ -73,12 +73,6 @@ export default class ContentSettings extends Vue {
       classes: 'currencies-tab',
       target: '.currencies-tab',
     },
-    // {
-    //   tabName: 'wallet.nfts',
-    //   tooltipText: 'wallet.nonFungibleTokens',
-    //   classes: 'nft-tab',
-    //   target: '.nft-tab',
-    // },
   ];
 
   @PropSync('activeTabName', { type: String }) syncedActiveTabName!: TabWallet;

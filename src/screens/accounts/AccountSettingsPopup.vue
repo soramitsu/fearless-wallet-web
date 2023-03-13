@@ -16,11 +16,11 @@
         <div class="label">{{ $t('accounts.export') }}</div>
       </div>
 
-      <div v-if="showReplaceAccount" class="row" @click="openReplacePopup">
+      <!-- <div v-if="showReplaceAccount" class="row" @click="openReplacePopup">
         <Icon icon="account-switch" className="icon" />
 
         <div class="label">{{ $t('accounts.replace') }}</div>
-      </div>
+      </div> -->
 
       <div v-if="!isNodesRoute" class="row" @click="openNetwork">
         <Icon icon="currency-switch" className="icon" />

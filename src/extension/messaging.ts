@@ -310,6 +310,10 @@ export async function saveCurrentAccountAddress(
   return sendMessage('pri(accounts.current.saveAddress)', data, callback);
 }
 
+export async function updateCurrentAccountAddress(address: string): Promise<boolean> {
+  return sendMessage('pri(accounts.update.current)', address);
+}
+
 export async function subscribeAuthorizeRequests(cb: (accounts: AuthorizeRequest[]) => void): Promise<boolean> {
   return sendMessage('pri(authorize.requests)', null, cb);
 }

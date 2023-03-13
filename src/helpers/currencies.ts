@@ -166,6 +166,14 @@ export function getTotalBalance(token: TokenBalance, network = 'ALL') {
   return balance;
 }
 
+export function getWalletTotalBalance(tokens: TokenBalance[]) {
+  const balance = tokens.reduce((acc, curr) => {
+    return acc + +getTotalBalance(curr);
+  }, 0);
+
+  return balance;
+}
+
 function getProviderUrl(name: 'moonpay' | 'ramp', asset: string, address: string) {
   const { MOONPAY, RAMP } = BASE_URLS_PREFIX;
 
@@ -192,12 +200,12 @@ function getCurrencyOptions(currencies: Currencies) {
   });
 }
 
-function getUtilityAsset(currencies: Currencies, _network: NetworkName): string {
+function getUtilityAsset(currencies: TokenBalance[], _network: NetworkName): string {
   const currency = currencies.find(({ balances }) =>
-    balances.some(({ network, type }) => network === _network && (type === 'native' || type === 'equilibrium'))
+    balances.some(({ name, type }) => name === _network && (type === 'native' || type === 'equilibrium'))
   )!;
 
-  return currency.displayName;
+  return currency.name;
 }
 
 function statusLogging(callback: () => void) {

@@ -2,15 +2,15 @@
   <div class="wallet">
     <header class="wallet-header">
       <div class="wallet-balance__container">
-        <WalletBalance
+        <!-- <WalletBalance
           class="balance"
           :balance="totalBalance"
           :changeWalletBalance="changeWalletBalance"
           @click.native="$emit('openFiatsPopup', true)"
-        />
-        <div class="wallet-balance__loading">
+        /> -->
+        <!-- <div class="wallet-balance__loading">
           <Loading :width="28" v-if="showShimmers" />
-        </div>
+        </div> -->
       </div>
 
       <SelectNetworkButton
@@ -43,12 +43,10 @@
           @update:showAssetsManagementForm="toggleAssetsManagementFormVisible"
           @toggleCurrenciesVisible="toggleCurrenciesVisible"
         />
-
         <Scroll>
           <CurrencyItemStateLess
             v-for="(asset, assetKey) in balances"
             :assetData="asset"
-            :assetName="assetKey"
             :price="getAssetPrice(asset.priceId)"
             :priceChange="getPriceChange(asset.priceId)"
             :key="assetKey"
@@ -74,7 +72,7 @@
 
     <NetworkManagement
       v-if="showNetworkManagement"
-      :disconnectedNetworks="disconnectedNetworks"
+      :disconnectedNetworks="[]"
       :closeForm="toggleNetworkManagementVisible"
       @setNetworkUnavailable="setNetworkUnavailable"
     />
@@ -91,9 +89,8 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
-import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
 import type { TMutation, TabWallet } from '@/interfaces/common';
-import type { SetSelectedNetworkProps, SelectedWallet, SetCurrenciesProps, GetNetworkStatus } from '@/store';
+import type { SetSelectedNetworkProps, SelectedWallet, GetNetworkStatus } from '@/store';
 import type { Network, Networks } from '@/interfaces';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
@@ -106,7 +103,6 @@ import SendFormStateLess from '@/screens/wallet&asset/wallet/SendFormStateLess.v
 import { accountController } from '@/controllers/accountController';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { addNumbers, getChangeWalletBalance } from '@/helpers/numbers';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
@@ -114,17 +110,8 @@ import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.v
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import Loading from '@/components/Loading.vue';
-import {
-  tieAccount,
-  subscribeBalance,
-  subscribePrice,
-  getBalance,
-  subscribeNetworkMap,
-  getNetworkMap,
-} from '@/extension/messaging';
-import store from '@/store';
-import { BalanceJson, PriceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
-import { COINGECKO_TOKENS } from '@/consts/networks';
+import { tieAccount, subscribePrice } from '@/extension/messaging';
+import { PriceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { defaultSortingCurrencies, getTotalBalance } from '@/helpers/currencies';
 
 @Component({
@@ -167,14 +154,12 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
-  @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => Network;
 
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
 
-  @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
   @Mutation(AccountsMutationTypes.SET_CUSTOM_SORT) setCustomSorting!: TMutation<string>;
 
@@ -211,29 +196,17 @@ export default class Wallet extends Vue {
   }
 
   get disconnectedNetworks() {
-    return this.networks.filter(({ status }) => status === 'disconnected');
+    return Object.values(this.networks).filter(({ status }) => status === 'disconnected');
+  }
+
+  get balancePrep() {
+    return Object.values(this.balances);
   }
 
   get changeWalletBalance() {
-    const { address, ethereumAddress } = this.selectedWallet;
+    if (Object.values(this.price).length || this.balancePrep.length === 0) return { totalBalance: 0, changeAmount: 0 };
 
-    return getChangeWalletBalance(this.currencies, address, ethereumAddress);
-  }
-
-  get showShimmers() {
-    // TODO: подумать над тем, чтобы добавить лоадер на весь экстеншен, пока не загружены JSON файлы
-    if (this.currencies.length === 0) return true; // удалить если добавим лоадер
-
-    const index = this.currencies
-      .filter((currency) => currency.getCurrencyVisibility(this.selectedWallet.address))
-      .flatMap((currency) => currency.getNetworkList())
-      .findIndex(({ network }) => {
-        const status = this.getNetworkStatus(network);
-
-        return status === 'pending';
-      });
-
-    return !this.isOnline || index !== -1;
+    return getChangeWalletBalance(this.balancePrep, this.price);
   }
 
   get sortedCurrencies() {
@@ -326,62 +299,49 @@ export default class Wallet extends Vue {
   }
 
   toggleCurrenciesVisible(allCurrenciesHidden: boolean) {
-    if (allCurrenciesHidden) {
-      this.currencies.forEach((currency) => currency.setCurrencyVisibility(this.selectedWallet.address, true));
-
-      return;
-    }
-
-    this.currencies.forEach((currency) => {
-      const isZeroBalance = currency.getTotalCountAssets(this.selectedWallet) === '0';
-
-      if (isZeroBalance) currency.setCurrencyVisibility(this.selectedWallet.address, false);
-    });
-
-    const currenciesVisibleWithBalance = this.currencies.filter(
-      (currency) =>
-        currency.getCurrencyVisibility(this.selectedWallet.address) &&
-        currency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork) !== '0'
-    );
-
-    const currenciesInvisibleWithBalance = this.currencies.filter(
-      (currency) =>
-        !currency.getCurrencyVisibility(this.selectedWallet.address) &&
-        currency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork) !== '0'
-    );
-
-    const currenciesInvisibleWithoutBalance = this.currencies.filter(
-      (currency) =>
-        !currency.getCurrencyVisibility(this.selectedWallet.address) &&
-        currency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork) === '0'
-    );
-
-    this.setCurrencies({
-      currencies: [
-        ...currenciesVisibleWithBalance,
-        ...currenciesInvisibleWithBalance,
-        ...currenciesInvisibleWithoutBalance,
-      ],
-      address: this.selectedWallet.address,
-      network: this.selectedNetwork,
-    });
-
-    this.currenciesKey += 1;
+    // if (allCurrenciesHidden) {
+    //   this.currencies.forEach((currency) => currency.setCurrencyVisibility(this.selectedWallet.address, true));
+    //   return;
+    // }
+    // this.currencies.forEach((currency) => {
+    //   const isZeroBalance = currency.getTotalCountAssets(this.selectedWallet) === '0';
+    //   if (isZeroBalance) currency.setCurrencyVisibility(this.selectedWallet.address, false);
+    // });
+    // const currenciesVisibleWithBalance = this.currencies.filter(
+    //   (currency) =>
+    //     currency.getCurrencyVisibility(this.selectedWallet.address) &&
+    //     currency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork) !== '0'
+    // );
+    // const currenciesInvisibleWithBalance = this.currencies.filter(
+    //   (currency) =>
+    //     !currency.getCurrencyVisibility(this.selectedWallet.address) &&
+    //     currency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork) !== '0'
+    // );
+    // const currenciesInvisibleWithoutBalance = this.currencies.filter(
+    //   (currency) =>
+    //     !currency.getCurrencyVisibility(this.selectedWallet.address) &&
+    //     currency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork) === '0'
+    // );
+    // this.setCurrencies({
+    //   currencies: [
+    //     ...currenciesVisibleWithBalance,
+    //     ...currenciesInvisibleWithBalance,
+    //     ...currenciesInvisibleWithoutBalance,
+    //   ],
+    //   address: this.selectedWallet.address,
+    //   network: this.selectedNetwork,
+    // });
+    // this.currenciesKey += 1;
   }
 
   toggleVisibleActivityForm(
     field: 'showSendForm' | 'showReceiveForm',
     value = true,
-    currency: Currency | { mainNetwork: string; assetId: string }
+    currency: { mainNetwork: string; assetId: string }
   ) {
     this[field] = value;
 
-    this.selectedCurrency = value
-      ? {
-          mainNetwork: currency.mainNetwork,
-          assetId: currency.assetId,
-        }
-      : {};
+    this.selectedCurrency = currency;
   }
 
   toggleSelectedNetwork(network: string) {

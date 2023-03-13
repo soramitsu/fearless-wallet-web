@@ -55,7 +55,7 @@
       :top="148"
       :left="-160"
       :height="360"
-      :options="optionsNetworks"
+      :options="networks"
       :handlerFilter="handlerFilter"
       :toggleValue="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
@@ -72,6 +72,7 @@ import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 import { cut } from '@/helpers/history';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 
 @Component({
   components: { RotateInput },
@@ -87,9 +88,28 @@ export default class ReceiveFormStateLess extends Vue {
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get currency() {
     return this.selectedAssetId;
+  }
+
+  get networks() {
+    const networks = this.balances
+      .find((el) => el.name.toLowerCase() === this.selectedAssetId.toLowerCase())
+      ?.balances.map((el) => {
+        return {
+          name: el.name,
+          icon: el.icon,
+          decimals: el.decimals,
+        };
+      });
+
+    return networks;
+  }
+
+  get decimals() {
+    return this.networks?.find((network) => network.name === this.selectedNetwork)?.decimals;
   }
 
   get address() {
@@ -97,7 +117,7 @@ export default class ReceiveFormStateLess extends Vue {
     if (this._selectedNetwork === 'ethereum' || this._selectedNetwork === 'ethereum_goerli')
       return this.selectedWallet.ethereumAddress;
 
-    return BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.selectedNetwork);
+    return BaseApi.encodeAddress(this.selectedWallet.address, this.decimals);
   }
 
   get cutAddress() {
@@ -116,10 +136,6 @@ export default class ReceiveFormStateLess extends Vue {
     this.selectedNetwork = value;
 
     this.toggleSelectNetworkPopupVisible();
-  }
-
-  get optionsNetworks() {
-    return [];
   }
 
   handlerFilter(value: string) {

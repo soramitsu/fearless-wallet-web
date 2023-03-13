@@ -582,28 +582,18 @@ export default class Extension {
     };
   }
   private _saveCurrentAccountAddress(address: string, callback?: (data: CurrentAccountInfo | undefined) => void) {
-    state.getCurrentAccount((accountInfo) => {
-      const currentKeyPair = keyring.getAccount(address);
+    const currentKeyPair = keyring.getAccount(address);
 
-      if (!accountInfo) {
-        const isMobile = false;
-
-        accountInfo = {
-          address,
-          isMobile,
-          name: currentKeyPair?.meta.name as string,
-          ethereumAddress: (currentKeyPair?.meta.ethereumAddress as string) ?? '',
-          currentGenesisHash: ALL_GENESIS_HASH,
-          allGenesisHash: ALL_GENESIS_HASH || undefined,
-        };
-      } else {
-        accountInfo.isMobile = currentKeyPair?.meta.isMobile as boolean;
-        accountInfo.currentGenesisHash = (currentKeyPair?.meta.genesisHash as string) || ALL_GENESIS_HASH;
-      }
-
-      state.setCurrentAccount(accountInfo, () => {
-        callback && callback(accountInfo);
-      });
+    const accountInfo: CurrentAccountInfo = {
+      address,
+      isMobile: (currentKeyPair?.meta.isMobile as boolean) ?? false,
+      name: currentKeyPair?.meta.name as string,
+      ethereumAddress: (currentKeyPair?.meta.ethereumAddress as string) ?? '',
+      currentGenesisHash: ALL_GENESIS_HASH,
+      allGenesisHash: ALL_GENESIS_HASH || undefined,
+    };
+    state.setCurrentAccount(accountInfo, () => {
+      callback && callback(accountInfo);
     });
   }
 

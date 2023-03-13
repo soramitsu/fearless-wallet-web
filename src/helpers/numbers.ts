@@ -1,5 +1,8 @@
 import { FPNumber } from '@sora-substrate/math';
+import { Price } from '@equilab/api/genshiro/interfaces';
+import { getTotalBalance, getWalletTotalBalance } from './currencies';
 import type { Currencies, ChangeWalletBalance } from '@/interfaces';
+import { PriceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
 
 interface Options {
   decimalsValue?: number;
@@ -33,11 +36,11 @@ function addNumbers(values: (string | number)[]): string {
   return values.reduce((sum, number) => sum.add(new FPNumber(number)), FPNumber.ZERO).toString();
 }
 
-function getChangeWalletBalance(currencies: Currencies, address: string, ethereumAddress: string): ChangeWalletBalance {
-  const changeAssets = currencies.map((currency) => {
-    const { hours24Change } = currency;
-    const totalBalance = +currency.getTotalBalance({ address, ethereumAddress });
-    const currentPercent = 100 + (hours24Change ?? 0);
+function getChangeWalletBalance(tokens: TokenBalance[], price: PriceJson): ChangeWalletBalance {
+  const changeAssets = tokens.map((token) => {
+    const priceChange = price?.tokenPriceChange[token.priceId] ?? 0;
+    const totalBalance = +getTotalBalance(token);
+    const currentPercent = 100 + (priceChange ?? 0);
     const oldBalance = (totalBalance / currentPercent) * 100;
     const changeAmount = totalBalance - oldBalance;
 

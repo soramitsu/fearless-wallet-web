@@ -19,6 +19,8 @@ export interface BalanceItem {
   symbol?: string;
   name: string;
   key: string;
+  decimals?: number;
+  type?: string;
   free?: string;
   isUtility?: boolean;
   isNative?: boolean;

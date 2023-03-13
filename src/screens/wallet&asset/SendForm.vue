@@ -42,7 +42,7 @@
           <div class="name">{{ $t('assets.fee') }}</div>
 
           <div class="column">
-            <div>{{ partialFeeString }}</div>
+            <!-- <div>{{ partialFeeString }}</div> -->
           </div>
         </div>
 
@@ -62,12 +62,10 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import TransferForm from './TransferForm.vue';
-import type { Currencies } from '@/interfaces';
-import type { GetAssetName, SelectedWallet } from '@/store';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import type { SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { formattedNumber, addNumbers } from '@/helpers/numbers';
-import { getUtilityAsset } from '@/helpers/currencies';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 
 @Component({
   components: { TransferForm },
@@ -85,22 +83,23 @@ export default class SendForm extends Vue {
   @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
-  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
-  @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get currency() {
-    return this.currencies.find(({ assetId }) => assetId === this.selectedAssetId);
+    return this.balances.find(({ name }) => name === this.selectedAssetId)!;
   }
 
   get isUtilityAsset() {
-    return this.currency?.isUtility(this.selectedNetwork);
+    if (this.selectedNetwork === 'All') return false;
+
+    return this.currency?.balances.some((el) => el.name === this.selectedNetwork && el.isUtility);
   }
 
-  get partialFeeString() {
-    const utilityAsset = getUtilityAsset(this.currencies, this.selectedNetwork);
+  // get partialFeeString() {
+  //   const utilityAsset = getUtilityAsset(this.currencies, this.selectedNetwork);
 
-    return `${formattedNumber(+this.partialFee, { decimalsValue: 7 })} ${utilityAsset.toUpperCase()}`;
-  }
+  //   return `${formattedNumber(+this.partialFee, { decimalsValue: 7 })} ${utilityAsset.toUpperCase()}`;
+  // }
 
   get showValue() {
     return this.value !== '0';
@@ -119,11 +118,11 @@ export default class SendForm extends Vue {
   }
 
   get selectedAsset() {
-    return this.getAssetName(this.selectedAssetId);
+    return this.currency;
   }
 
   get selectedAssetUpper() {
-    return this.selectedAsset.toUpperCase();
+    return this.selectedAsset.name.toUpperCase();
   }
 
   get totalString() {

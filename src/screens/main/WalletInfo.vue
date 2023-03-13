@@ -37,7 +37,7 @@ export default class WalletInfo extends Vue {
   @Prop({ default: '' }) name!: string;
   @Prop(Number) balance!: number;
   @Prop(Boolean) isMobile!: boolean;
-  @Prop(Object) changeWalletBalance!: ChangeWalletBalance;
+  // @Prop(Object) changeWalletBalance!: ChangeWalletBalance;
   @Prop({ default: false }) isSelected!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 

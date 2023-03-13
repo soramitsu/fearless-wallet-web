@@ -12,13 +12,12 @@
   >
     <div class="wallet-content">
       <WalletInfo
-        v-for="({ name, ethereumAddress, address, isDefaultAuthSelected }, index) in accounts"
+        v-for="({ name, ethereumAddress, address, isDefaultAuthSelected }, index) in wallets"
         :key="name + index"
         :name="name"
         :isSelected="isDefaultAuthSelected"
         :isMobile="isMobile(address)"
         :balance="getBalance(address, ethereumAddress)"
-        :changeWalletBalance="getChangeWalletBalance(address, ethereumAddress)"
         class="total"
         @setShowWalletDetailsPopupVisible="toggleWalletDetailsPopupVisible(...arguments, address)"
         @updateSelectedWallet="updateSelectedWallet(address)"
@@ -42,7 +41,7 @@ import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { Components } from '@/router/routes';
 import { addNumbers, getChangeWalletBalance } from '@/helpers/numbers';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types';
-import { saveCurrentAccountAddress } from '@/extension/messaging';
+import { saveCurrentAccountAddress, updateCurrentAccountAddress } from '@/extension/messaging';
 import { CurrentAccountInfo } from '@/extension/background/extension-base/src/stores/CurrentAccountStore';
 
 @Component({
@@ -57,9 +56,7 @@ export default class SelectWalletPopup extends Vue {
   @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<CurrentAccountInfo>;
 
   get wallets() {
-    const accounts = Object.keys(this.accounts)
-      .map((address) => BaseApi.getPair(address))
-      .filter(({ type, meta }) => type !== 'ethereum' && !meta.isReplacedAccount);
+    const accounts = Object.keys(this.accounts);
 
     // const addresses = Object.keys(this.addresses).map((address) => BaseApi.getAddress(address));
 
@@ -75,14 +72,14 @@ export default class SelectWalletPopup extends Vue {
   }
 
   getBalance(address: string, ethereumAddress: string) {
-    const arr = this.currencies.map((currency) => currency.getTotalBalance({ address, ethereumAddress }));
+    // const arr = this.currencies.map((currency) => currency.getTotalBalance({ address, ethereumAddress }));
 
-    return +addNumbers(arr);
+    return 0;
   }
 
-  getChangeWalletBalance(address: string, ethereumAddress: string) {
-    return getChangeWalletBalance(this.currencies, address, ethereumAddress);
-  }
+  // getChangeWalletBalance(address: string, ethereumAddress: string) {
+  //   return getChangeWalletBalance(this.currencies);
+  // }
 
   walletPopupClick({ target: { classList } }: CustomEvent) {
     if (
@@ -97,9 +94,7 @@ export default class SelectWalletPopup extends Vue {
   }
 
   updateSelectedWallet(address: string) {
-    saveCurrentAccountAddress({ address }, (data) => {
-      this.setSelectedWallet(data);
-    });
+    updateCurrentAccountAddress(address);
 
     this.close();
   }

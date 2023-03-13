@@ -63,7 +63,9 @@
           class="button send"
           tooltipText="asset.sendButtonText"
           target=".send"
-          @click="toggleVisibleActivityForm('showSendForm', true, { mainNetwork: getMainNetwork, assetId: assetName })"
+          @click="
+            toggleVisibleActivityForm('showSendForm', true, { mainNetwork: getMainNetwork, assetId: assetData.name })
+          "
         />
 
         <CircleButton
@@ -73,7 +75,7 @@
           tooltipText="asset.receiveButtonText"
           target=".receive"
           @click="
-            toggleVisibleActivityForm('showReceiveForm', true, { mainNetwork: getMainNetwork, assetId: assetName })
+            toggleVisibleActivityForm('showReceiveForm', true, { mainNetwork: getMainNetwork, assetId: assetData.name })
           "
         />
 
@@ -98,7 +100,6 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 @Component
 export default class CurrencyItemStateLess extends Vue {
   @Prop(Object) assetData!: TokenBalance;
-  @Prop(String) assetName!: string;
   @Prop(Number) price!: number;
   @Prop(Number) priceChange!: number;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;

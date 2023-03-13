@@ -51,7 +51,7 @@ export default class Tabs {
     this.accountSubs = {};
   }
 
-  async filterForAuthorizedAccounts(accounts: InjectedAccount[], url: string): Promise<InjectedAccount[]> {
+  filterForAuthorizedAccounts(accounts: InjectedAccount[], url: string): InjectedAccount[] {
     const stripedUrl = stripUrl(url);
     const auth = this.state.authUrls[stripedUrl];
 
@@ -73,19 +73,19 @@ export default class Tabs {
     const transformedAddresses = transformAddresses(keyring.addresses.subject.getValue());
     const totalAccounts = [...transformedAccounts, ...transformedAddresses];
 
-    return await this.filterForAuthorizedAccounts(totalAccounts, url);
+    return this.filterForAuthorizedAccounts(totalAccounts, url);
   }
 
   async accountsSubscribeAuthorized(url: string, id: string, port: Port): Promise<string> {
     const cb = await createSubscription<'pub(accounts.subscribe)'>(id, port);
     this.accountSubs[id] = {
-      subscription: accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
+      subscription: accountsObservable.subject.subscribe((accounts: SubjectInfo): void => {
         const transformedAccounts = transformAccounts(accounts);
         const transformedMobileAccount = transformAddresses(keyring.addresses.subject.value);
         const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
-        await chrome.storage.local.set({ transformAccounts: allAccounts });
+        chrome.storage.local.set({ transformAccounts: allAccounts });
 
-        const auths = await this.filterForAuthorizedAccounts(allAccounts, url);
+        const auths = this.filterForAuthorizedAccounts(allAccounts, url);
 
         cb(auths);
       }),
@@ -237,7 +237,7 @@ export default class Tabs {
     type: TMessageType,
     request: RequestTypes[TMessageType],
     url: string,
-    port?: Port
+    port: Port
   ): Promise<ResponseTypes[keyof ResponseTypes]> {
     if (type === 'pub(phishing.redirectIfDenied)') return this.redirectIfPhishing(url);
 
@@ -251,7 +251,7 @@ export default class Tabs {
         return this.accountsListAuthorized(url, request as RequestAccountList);
 
       case 'pub(accounts.subscribe)':
-        return port && this.accountsSubscribeAuthorized(url, id, port);
+        return this.accountsSubscribeAuthorized(url, id, port);
 
       case 'pub(accounts.unsubscribe)':
         return this.accountsUnsubscribe(url, request as RequestAccountUnsubscribe);

@@ -867,6 +867,7 @@ export interface IState {
   providers: Providers;
   accountSubs: Record<string, AccountSub>;
   windows: number[];
+  fiatSymbol: string;
   cachedUnlocks: CachedUnlocks;
   balances: Record<string, Record<string, Record<string, BalanceItem>>>;
   connectedTabsUrl: string[];
@@ -973,6 +974,7 @@ export interface ResponseAccountMeta {
 export interface TokenBalance {
   name: string;
   icon: string;
+  priceId: string;
   balances: BalanceItem[];
 }
 

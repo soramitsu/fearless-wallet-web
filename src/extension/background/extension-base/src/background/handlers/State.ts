@@ -41,6 +41,7 @@ import {
   ResponseAccountExportPrivateKey,
   ServiceInfo,
   BalanceMap,
+  TokenBalance,
 } from '../types';
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
@@ -143,6 +144,7 @@ export default class State {
     evm: {},
   };
   private priceStoreReady = false;
+  private fiatSymbol = 'usd';
   public authorizeCached: AuthUrls | undefined = undefined;
   public tokenMap: AssetJson[] = [];
   public networkMap: Record<string, NetworkJsonOld> = {}; // mapping to networkMapStore, for uses in background
@@ -181,6 +183,15 @@ export default class State {
     this.subscription = new FWSubscription(this);
     this.cron = new FWCron(this, this.subscription);
     this.init();
+  }
+
+  setFiatSymbol(symbol: string) {
+    this.fiatSymbol = symbol;
+    chrome.storage.local.set({ fiatSymbol: this.fiatSymbol });
+  }
+
+  get getFiatSymbol() {
+    return this.fiatSymbol;
   }
 
   public get getSubstrateApiMap() {
@@ -298,11 +309,13 @@ export default class State {
   }
 
   async injectFromStorage() {
-    const { authUrls, defaultAuthAccountSelection } = await this.getFromStorage([
+    const { authUrls, defaultAuthAccountSelection, fiatSymbol } = await this.getFromStorage([
+      'fiatSymbol',
       'authUrls',
       'defaultAuthAccountSelection',
     ]);
     if (authUrls) this.authUrls = authUrls;
+    if (fiatSymbol) this.setFiatSymbol(fiatSymbol);
 
     if (defaultAuthAccountSelection && defaultAuthAccountSelection.length)
       this.defaultAuthAccountSelection = defaultAuthAccountSelection;
@@ -578,11 +591,11 @@ export default class State {
   }
 
   public updateServiceInfo() {
-    this.getCurrentAccount((value) => {
+    this.getCurrentAccount((accountInfo) => {
       this.serviceInfoSubject.next({
         networkMap: this.networkMap,
         apiMap: this.apis,
-        currentAccountInfo: value,
+        currentAccountInfo: accountInfo,
         chainRegistry: this.chainRegistryMap,
       });
     });
@@ -1112,7 +1125,7 @@ export default class State {
           .filter((el) => el.priceId)
           .map((asset) => asset.priceId as string);
 
-        getTokenPrice(activeNetworks)
+        getTokenPrice(activeNetworks, this.fiatSymbol)
           .then((rs) => {
             this.setPrice(rs);
             update(rs);
@@ -1225,10 +1238,10 @@ export default class State {
         const networks = this.mapNetworksByToken(token.id);
         const name = token.displayName ?? token.symbol;
 
-        const data = {
+        const data: TokenBalance = {
           name: token.displayName ?? token.symbol,
           icon: token.icon,
-          priceId: token.priceId,
+          priceId: token.priceId ?? '',
           balances: networks,
         };
 

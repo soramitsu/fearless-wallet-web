@@ -4,7 +4,7 @@ import type { State } from '@/store/accounts/state';
 import type { SetSelectedFiat, SetSelectedWallet } from './types';
 import type { Currencies } from '@/interfaces';
 import { MutationTypes } from '@/store/accounts/mutations';
-import { BalanceJson } from '@/extension/background/extension-base/src/background/types';
+import { AccountJson, BalanceJson } from '@/extension/background/extension-base/src/background/types';
 import { accountController } from '@/controllers/accountController';
 
 export enum ActionTypes {
@@ -20,7 +20,7 @@ type AugmentedActionContext = {
 export type Actions = {
   [ActionTypes.SET_SELECTED_FIAT](context: AugmentedActionContext, props: SetSelectedFiat): Promise<void>;
   [ActionTypes.SET_BALANCE](context: AugmentedActionContext, props: BalanceJson): Promise<void>;
-  [ActionTypes.SET_SELECTED_WALLET](context: AugmentedActionContext, props: SetSelectedWallet): Promise<void>;
+  [ActionTypes.SET_SELECTED_WALLET](context: AugmentedActionContext, props: AccountJson): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
@@ -37,11 +37,10 @@ const actions: ActionTree<State, State> & Actions = {
     });
   },
 
-  async [ActionTypes.SET_SELECTED_WALLET]({ commit, state }, { selectedWalletAddress }) {
-    const account = state.accounts.find((account) => account.address === selectedWalletAddress);
+  async [ActionTypes.SET_SELECTED_WALLET]({ commit }, account) {
     if (!account) return;
 
-    accountController.setSelectedWalletAddress(account?.address);
+    accountController.setSelectedWalletAddress(account.address);
 
     commit(MutationTypes.SET_SELECTED_WALLET, {
       address: account.address,

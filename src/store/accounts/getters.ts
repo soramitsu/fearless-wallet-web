@@ -25,7 +25,7 @@ export enum GettersTypes {
 
 export type Getters = {
   [GettersTypes.getSelectedWallet](state: State, getters?: GetterTree<State, State> & Getters): SelectedWallet;
-  [GettersTypes.getBalances](state: State, getters?: GetterTree<State, State> & Getters): Record<string, TokenBalance>;
+  [GettersTypes.getBalances](state: State, getters?: GetterTree<State, State> & Getters): TokenBalance[];
   [GettersTypes.getSelectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getSelectedNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getFiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
@@ -49,9 +49,10 @@ const getters: GetterTree<State, State> & Getters = {
     return selectedWallet;
   },
 
-  [GettersTypes.getBalances]({ balances }): Record<string, TokenBalance> {
-    return balances;
+  [GettersTypes.getBalances]({ balances }): TokenBalance[] {
+    return Object.values(balances);
   },
+
   [GettersTypes.getSelectedFiat]({ selectedFiat }): string {
     return selectedFiat;
   },

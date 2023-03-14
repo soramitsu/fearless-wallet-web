@@ -1,19 +1,21 @@
 <template>
-  <div v-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText) }}</div>
+  <Scroll>
+    <div v-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText) }}</div>
 
-  <Draggable v-else v-model="filteredBalances" handle=".handle" :key="selectedWallet.address">
-    <CurrencyItemStateLess
-      v-for="(asset, assetKey) in filteredBalances"
-      :assetData="asset"
-      :price="getAssetPrice(asset.priceId)"
-      :priceChange="getPriceChange(asset.priceId)"
-      :key="assetKey"
-      :selectedNetwork="selectedNetwork"
-      :showAssetsManagementForm="showAssetsManagementForm"
-      :toggleVisibleActivityForm="toggleVisibleActivityForm"
-      @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible')"
-    />
-  </Draggable>
+    <Draggable v-else v-model="filteredBalances" handle=".handle" :key="selectedWallet.address">
+      <CurrencyItemStateLess
+        v-for="(asset, assetKey) in filteredBalances"
+        :assetData="asset"
+        :price="getAssetPrice(asset.priceId)"
+        :priceChange="getPriceChange(asset.priceId)"
+        :key="assetKey"
+        :selectedNetwork="selectedNetwork"
+        :showAssetsManagementForm="showAssetsManagementForm"
+        :toggleVisibleActivityForm="toggleVisibleActivityForm"
+        @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible')"
+      />
+    </Draggable>
+  </Scroll>
 </template>
 
 <script lang="ts">

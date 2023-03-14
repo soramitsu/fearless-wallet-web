@@ -12,7 +12,7 @@ import { Mutation, Getter, Action } from 'vuex-class';
 import { AccountJson, BalanceJson } from './extension/background/extension-base/src/background/types';
 import { Components } from './router/routes';
 import { NetworkJsonOld } from './extension/background/extension-base/src/types';
-import type { Accounts, SetOnlineStatus, SetAccountsProps, SetSelectedFiat } from '@/store';
+import type { Accounts, SetOnlineStatus, SetAccountsProps, SetSelectedFiat, SetNetworksStatusProps } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
@@ -21,7 +21,13 @@ import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutatio
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { subscribeAccounts, subscribeBalance, subscribeNetworkMap, subscribePrice } from '@/extension/messaging';
+import {
+  getNetworkMap,
+  subscribeAccounts,
+  subscribeBalance,
+  subscribeNetworkMap,
+  subscribePrice,
+} from '@/extension/messaging';
 import store from '@/store';
 
 @Component
@@ -30,7 +36,7 @@ export default class App extends Vue {
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
   @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<AccountJson>;
-  @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: TMutation<NetworkJsonOld[]>;
+  @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: TMutation<SetNetworksStatusProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<SetAccountsProps>;
   @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<SetOnlineStatus>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
@@ -38,12 +44,12 @@ export default class App extends Vue {
 
   async created() {
     if (BaseApi.isExtension()) {
-      this.setupNetworks();
       this.extensionSubscribe();
     }
 
     this.setupWallet();
     this.setupPrice();
+    this.setupNetworks();
     this.setupBalance();
   }
 
@@ -62,9 +68,12 @@ export default class App extends Vue {
     subscribeBalance(null, this.updateBalance).then(this.updateBalance).catch(console.error);
   }
 
-  setupNetworks() {
+  async setupNetworks() {
+    const nets = await getNetworkMap();
+    this.setNetworks({ networks: Object.values(nets) });
+
     subscribeNetworkMap((networks) => {
-      this.setNetworks(Object.values(networks));
+      this.setNetworks({ networks: Object.values(networks) });
     });
   }
 
@@ -78,6 +87,7 @@ export default class App extends Vue {
   setupWallet() {
     subscribeAccounts((accounts) => {
       this.setAccounts({ accounts });
+
       const selectedAccount = accounts.find((el) => el.active);
 
       this.setSelectedWallet(selectedAccount);

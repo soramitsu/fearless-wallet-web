@@ -100,6 +100,7 @@ import { TokenBalance } from '@/extension/background/extension-base/src/backgrou
 
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
+import { ALL_NETWORKS } from '@/consts/networks';
 @Component
 export default class CurrencyItemStateLess extends Vue {
   @Prop(Object) assetData!: TokenBalance;
@@ -167,7 +168,7 @@ export default class CurrencyItemStateLess extends Vue {
   }
 
   get isCurrentNetwork() {
-    return this.selectedNetwork !== 'all';
+    return this.selectedNetwork !== ALL_NETWORKS;
   }
 
   get redirectNetwork(): string {

@@ -1,17 +1,19 @@
-import type { AssetJson, FiatJson, Networks, GetHistory, Currencies, KeysAssetPricesJson } from '@/interfaces';
+import type { AssetJson, FiatJson, GetHistory, KeysAssetPricesJson } from '@/interfaces';
 import type {
   GetNetwork,
   GetAssetName,
   GetAssetPrice,
   GetNetworkGenesisHash,
-  GetNetworkStatus,
   GetActiveNodesByNetwork,
   GetAssetIcon,
+  GetNetworkStatus,
 } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/evm/types/ether';
 
 export enum GettersTypes {
   getNetworks = 'getNetworks',
@@ -33,8 +35,16 @@ export enum GettersTypes {
 }
 
 export type Getters = {
-  [GettersTypes.getNetworks](state: State, getters?: GetterTree<State, State> & Getters, rootState?: any): Networks;
-  [GettersTypes.getAllNetworks](state: State, getters?: GetterTree<State, State> & Getters, rootState?: any): Networks;
+  [GettersTypes.getNetworks](
+    state: State,
+    getters?: GetterTree<State, State> & Getters,
+    rootState?: any
+  ): NetworkJsonOld[];
+  [GettersTypes.getAllNetworks](
+    state: State,
+    getters?: GetterTree<State, State> & Getters,
+    rootState?: any
+  ): NetworkJsonOld[];
   [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
   [GettersTypes.getAssetsJson](state: State, getters?: GetterTree<State, State> & Getters): AssetJson[];
   [GettersTypes.getAssetName](state: State, getters?: GetterTree<State, State> & Getters): GetAssetName;
@@ -65,20 +75,22 @@ export type Getters = {
 };
 
 const getters: GetterTree<State, State> & Getters = {
-  [GettersTypes.getNetworks]({ networks }, getters, rootState): Networks {
+  [GettersTypes.getNetworks](state, getters, rootState): NetworkJsonOld[] {
     const haveEthereumAccount = rootState.account.selectedWallet.ethereumAddress !== '';
 
-    return haveEthereumAccount ? networks : networks.filter(({ name }) => !ETHEREUM_NETWORKS.includes(name));
+    return haveEthereumAccount
+      ? state.networks
+      : state.networks.filter(({ name }) => !ETHEREUM_NETWORKS.includes(name));
   },
 
-  [GettersTypes.getAllNetworks]({ networks }): Networks {
+  [GettersTypes.getAllNetworks]({ networks }): NetworkJsonOld[] {
     return networks;
   },
 
   [GettersTypes.getNetwork]:
     ({ networks }) =>
     (networkName: string) => {
-      return networks.find(({ name }) => name === networkName)!;
+      return networks.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
     },
 
   [GettersTypes.getNetworkGenesisHash]:
@@ -151,7 +163,7 @@ const getters: GetterTree<State, State> & Getters = {
     },
 
   [GettersTypes.getAllNetworksIsReadyToUse]({ networks }): boolean {
-    return !networks.some(({ status }) => status === 'pending' || status === 'connected');
+    return !networks.some(({ apiStatus }) => apiStatus === 'pending' || apiStatus === 'connected');
   },
 
   [GettersTypes.getNetworkStatus]:
@@ -159,7 +171,7 @@ const getters: GetterTree<State, State> & Getters = {
     (networkName: string) => {
       const network = networks.find(({ name }) => name === networkName);
 
-      return network?.status ?? 'pending';
+      return network?.apiStatus ?? NETWORK_STATUS.PENDING;
     },
 };
 

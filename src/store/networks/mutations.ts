@@ -1,17 +1,13 @@
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
 import type {
-  SetNetworksStatusProps,
-  UpdateCurrencyBalanceProps,
   SetAssetsJsonProps,
   SetFiatsJsonProps,
-  SetAssetsPriceProps,
   SetCurrenciesProps,
   SetHistoryProps,
   SetActiveNodeProps,
-  SetNetworkApiProps,
-  SetNetworkStatusProps,
   SetAssetsPriceIntervalProps,
+  SetNetworksStatusProps,
 } from './types';
 import { accountController } from '@/controllers/accountController';
 import { getFormattedHistory } from '@/helpers/history';
@@ -38,8 +34,8 @@ export type Mutations = {
   [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
   [MutationTypes.SET_ACTIVE_NODE](state: State, props: SetActiveNodeProps): void;
-  [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApiProps): void;
-  [MutationTypes.SET_NETWORK_STATUS](state: State, props: SetNetworkStatusProps): void;
+  // [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApiProps): void;
+  // [MutationTypes.SET_NETWORK_STATUS](state: State, props: SetNetworkStatusProps): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -178,24 +174,24 @@ const mutations: MutationTree<State> & Mutations = {
     state.activeNodes = { ...oldActiveNodes, [network]: { name, url } };
   },
 
-  [MutationTypes.SET_NETWORK_API](state, { network, provider, api }) {
-    const networkIndex = state.networks.findIndex(({ name }) => name === network)!;
+  // [MutationTypes.SET_NETWORK_API](state, { network, provider, api }) {
+  //   const networkIndex = state.networks.findIndex(({ name }) => name === network)!;
 
-    state.networks[networkIndex].provider = provider;
-    state.networks[networkIndex].api = api;
-  },
+  //   state.networks[networkIndex].provider = provider;
+  //   state.networks[networkIndex].api = api;
+  // },
 
-  [MutationTypes.SET_NETWORK_STATUS](state, { network, status }) {
-    const networkIndex = state.networks.findIndex(({ name }) => name === network)!;
+  // [MutationTypes.SET_NETWORK_STATUS](state, { network, status }) {
+  //   const networkIndex = state.networks.findIndex(({ name }) => name === network)!;
 
-    if (status === 'connected' || status === 'ready') {
-      setTimeout(() => {
-        state.networks[networkIndex].status = status;
-      }, 3000);
-    } else {
-      state.networks[networkIndex].status = status;
-    }
-  },
+  //   if (status === 'connected' || status === 'ready') {
+  //     setTimeout(() => {
+  //       state.networks[networkIndex].apiStatus = status;
+  //     }, 3000);
+  //   } else {
+  //     state.networks[networkIndex].apiStatus = status;
+  //   }
+  // },
 };
 
 export default mutations;

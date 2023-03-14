@@ -5,7 +5,7 @@
         <Shimmer v-if="showShimmers" height="32px" width="140px" />
 
         <div v-else class="count-assets">
-          <div class="count-value">{{ countAssetsString }}</div>
+          <!-- <div class="count-value">{{ countAssetsString }}</div> -->
 
           <Icon icon="info" class="details-icon" />
         </div>
@@ -126,7 +126,7 @@ import { Getter } from 'vuex-class';
 import HistoryDetailsForm from './HistoryDetailsForm.vue';
 import History from './History.vue';
 import type { HistoryElement } from '@/interfaces/history';
-import type { GetAssetName, SelectedWallet, GetNetworkStatus } from '@/store';
+import type { GetAssetName, SelectedWallet } from '@/store';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
@@ -135,15 +135,14 @@ import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
 import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import BaseApi from '@/util/BaseApi';
-import { Currencies } from '@/interfaces/currencies';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { tieAccount } from '@/extension/messaging';
-import { Network } from '@/interfaces';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { firstCharToUp } from '@/helpers/common';
-import NetworksController from '@/controllers/networksController';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
 
@@ -172,35 +171,42 @@ export default class Asset extends Vue {
   showSelectNetworkPopup = false;
   showBalanceDetailsPopup = false;
   filterValue = '';
-  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
-  @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => Network;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJsonOld;
 
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
 
   get showShimmers() {
-    const status = this.getNetworkStatus(this.selectedNetwork);
-
-    return !this.isOnline || status === 'pending';
+    return !this.isOnline || !this.currentNetwork || this.currentNetwork.state === 'pending';
   }
 
   get providers() {
-    return this.currentCurrency?.providers ?? [];
+    return (
+      this.getNetwork(this.selectedNetwork).assets.find((el) => el.purchaseProviders?.length)?.purchaseProviders ?? []
+    );
   }
 
-  get relayChain() {
-    return this.currentCurrency?.relayChain;
+  // get relayChain() {
+  //   return this.currentCurrency?.relayChain;
+  // }
+
+  get currentNetwork() {
+    return this.currentCurrency.balances.find((el) => el.name.toLowerCase() === this.selectedNetwork.toLowerCase());
+  }
+
+  get mainNetwork() {
+    return this.currentCurrency.balances.find((network) => network.isUtility || network.isNative)!.name;
   }
 
   get showBuyButton() {
-    return this.providers.length !== 0 && this.currentCurrency?.mainNetwork === this.selectedNetwork;
+    return this.providers.length !== 0 && this.mainNetwork === this.selectedNetwork;
   }
 
   get currentCurrency() {
-    return this.currencies.find(({ assetId }) => assetId === this.selectedAssetId);
+    return this.balances.find(({ name }) => name.toLowerCase() === this.selectedAssetId.toLowerCase())!;
   }
 
   get displayAddressByNetwork() {
@@ -208,7 +214,7 @@ export default class Asset extends Vue {
   }
 
   get assetPriceString() {
-    return `1 ${this.selectedAssetUpper} = ${this.fiatSymbol}${this.$n(this.price ?? 0, 'price')}`;
+    return `1 ${this.selectedAssetUpper} = ${this.fiatSymbol}${this.$n(0, 'price')}`;
   }
 
   get selectedNetwork() {
@@ -223,47 +229,41 @@ export default class Asset extends Vue {
     return this.getAssetName(this.selectedAssetId).toUpperCase();
   }
 
-  get price() {
-    return this.currentCurrency?.price;
-  }
+  // get price() {
+  //   return this.currentCurrency?.price;
+  // }
 
-  get countAssetsString() {
-    if (!this.currentCurrency) return `${this.selectedAssetUpper} 0`;
+  // get countAssetsString() {
+  //   if (!this.currentCurrency) return `${this.selectedAssetUpper} 0`;
 
-    const totalCountAssets = +this.currentCurrency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork);
-    const total = this.$n(totalCountAssets, 'decimal');
+  //   const totalCountAssets = +this.currentCurrency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork);
+  //   const total = this.$n(totalCountAssets, 'decimal');
 
-    return `${this.selectedAssetUpper} ${total}`;
-  }
+  //   return `${this.selectedAssetUpper} ${total}`;
+  // }
 
   get balanceInNetworkString() {
     if (!this.currentCurrency) return `${this.fiatSymbol} 0`;
 
-    const total = this.currentCurrency.getTotalBalance(this.selectedWallet, this.selectedNetwork);
+    // const total = this.currentCurrency.getTotalBalance(this.selectedWallet, this.selectedNetwork);
 
-    return `${this.fiatSymbol} ${this.$n(+total, 'price')}`;
-  }
-  get currency() {
-    return this.currencies.find(({ assetId }) => assetId === this.selectedAssetId);
+    return `${this.fiatSymbol} ${this.$n(0, 'price')}`;
   }
 
   get optionsNetworks() {
     const haveEthereumAccount = this.selectedWallet.ethereumAddress !== '';
-    const walletBalance = (this.currency?.getNetworkList() ?? []).filter(({ network }) =>
-      ETHEREUM_NETWORKS.includes(network) ? haveEthereumAccount : true
+    const walletBalance = (this.currentCurrency?.balances ?? []).filter(({ name }) =>
+      ETHEREUM_NETWORKS.includes(name) ? haveEthereumAccount : true
     );
     const filter = this.filterValue.trim().toLowerCase();
 
     return walletBalance
-      .map(({ network, type }) => {
-        const icon = NetworksController.getNetwork(network).icon;
-
+      .map(({ name, type, icon }) => {
         return {
-          label: firstCharToUp(network),
-          value: network,
-          path: icon,
+          name: firstCharToUp(name),
+          value: name,
+          icon,
           type,
-          relayChain: this.currency?.relayChain,
         };
       })
       .filter(({ value }) => {

@@ -609,6 +609,7 @@ export default class Extension {
   private updateCurrentAccountAddress(address: string): boolean {
     this._saveCurrentAccountAddress(address, () => {
       this.triggerAccountsSubscription();
+      state.publishBalance();
     });
 
     return true;

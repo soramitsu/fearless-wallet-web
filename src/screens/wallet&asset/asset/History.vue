@@ -36,8 +36,8 @@ import type { FilterHistory, GetHistory } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { Currency } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import NetworksController from '@/controllers/networksController';
 
 @Component({
@@ -52,9 +52,10 @@ export default class History extends Vue {
   ];
   filterHistoryValue: FilterHistory = 'all';
   showLoader = false;
-
-  @Prop(Object) currency!: Currency;
-  @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
+  @Prop(Object) currency!: TokenBalance;
+  @Prop(String) assetId!: string;
+  @Getter(NetworksGettersTypes.getHistory)
+  getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get selectedNetwork() {
@@ -74,14 +75,14 @@ export default class History extends Vue {
     ];
   }
 
-  get walletIncludingReplacedAccount() {
-    return BaseApi.getWalletIncludingReplacedAccount(this.selectedWallet, this.selectedNetwork);
-  }
+  // get walletIncludingReplacedAccount() {
+  //   return BaseApi.getWalletIncludingReplacedAccount(this.selectedWallet, this.selectedNetwork);
+  // }
 
   get history() {
-    const { address } = this.walletIncludingReplacedAccount;
+    // const { address } = this.walletIncludingReplacedAccount;
 
-    return this.getHistory(this.currency?.assetId, address, this.selectedNetwork)?.nodes ?? [];
+    return this.getHistory(this.currency?.name, this.selectedWallet.address, this.selectedNetwork)?.nodes ?? [];
   }
 
   get filteredHistory() {
@@ -99,21 +100,18 @@ export default class History extends Vue {
 
   @Watch('selectedNetwork')
   @Watch('selectedWallet')
-  @Watch('currency')
   async watchSelectedNetwork() {
     this.fetchHistory();
   }
-
+  get isMainNetwork() {
+    return !!this.currency.balances.find((el) => el.name === this.selectedNetwork && (el.isUtility || el.isNative));
+  }
   async fetchHistory() {
-    if (!this.currency?.assetId || this.history.length !== 0 || !this.currency.isUtility(this.selectedNetwork)) return;
+    if (!this.currency?.name || this.history.length !== 0 || !this.isMainNetwork) return;
 
     this.showLoader = true;
 
-    await NetworksController.fetchHistory(
-      this.selectedNetwork,
-      this.walletIncludingReplacedAccount,
-      this.currency.assetId
-    );
+    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.currency.name);
 
     this.showLoader = false;
   }

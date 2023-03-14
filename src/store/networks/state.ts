@@ -1,8 +1,9 @@
-import type { Networks, AssetsPrice, Currencies, History, FiatJson, AssetJson, ActiveNodes } from '@/interfaces';
+import type { AssetsPrice, History, FiatJson, AssetJson, ActiveNodes } from '@/interfaces';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 export type State = {
-  networks: Networks;
+  networks: NetworkJsonOld[];
   assetsPrice: AssetsPrice;
   assetsJson: AssetJson[];
   fiats: FiatJson[];

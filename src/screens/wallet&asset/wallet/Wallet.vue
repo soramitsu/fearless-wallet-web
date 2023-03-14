@@ -43,19 +43,18 @@
           @update:showAssetsManagementForm="toggleAssetsManagementFormVisible"
           @toggleCurrenciesVisible="toggleCurrenciesVisible"
         />
-        <Scroll>
-          <Currencies
-            v-if="showCurrencies"
-            :key="currenciesKey"
-            :balances="filteredCurrencies"
-            :selectedNetwork="selectedNetwork"
-            :showAssetsManagementForm="showAssetsManagementForm"
-            :toggleVisibleActivityForm="toggleVisibleActivityForm"
-            :filterValue="filterValue"
-            @setCustomSort="setCustomSort"
-            @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
-          />
-        </Scroll>
+
+        <Currencies
+          v-if="showCurrencies"
+          :key="currenciesKey"
+          :balances="filteredCurrencies"
+          :selectedNetwork="selectedNetwork"
+          :showAssetsManagementForm="showAssetsManagementForm"
+          :toggleVisibleActivityForm="toggleVisibleActivityForm"
+          :filterValue="filterValue"
+          @setCustomSort="setCustomSort"
+          @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
+        />
       </div>
     </ContentForm>
 
@@ -107,15 +106,16 @@ import { accountController } from '@/controllers/accountController';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { addNumbers, getChangeWalletBalance } from '@/helpers/numbers';
+import { addNumbers } from '@/helpers/numbers';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import Loading from '@/components/Loading.vue';
-import { tieAccount, subscribePrice } from '@/extension/messaging';
-import { PriceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { defaultSortingCurrencies, getTotalBalance } from '@/helpers/currencies';
+import { ALL_NETWORKS } from '@/consts/networks';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 @Component({
   components: {
@@ -156,9 +156,8 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
+  @Getter(NetworksGettersTypes.getNetworks) networks!: NetworkJsonOld[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => Network;
-  @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
   @Mutation(AccountsMutationTypes.SET_CUSTOM_SORT) setCustomSorting!: TMutation<string>;
@@ -168,13 +167,21 @@ export default class Wallet extends Vue {
   }
 
   get showWarningIcon() {
-    if (this.selectedNetwork !== 'All') return this.getNetworkStatus(this.selectedNetwork) === 'disconnected';
+    if (this.selectedNetwork !== ALL_NETWORKS)
+      return (
+        this.networks.find((el) => el.name.toLowerCase() === this.selectedNetwork.toLowerCase())?.apiStatus ===
+        'disconnected'
+      );
 
     return this.disconnectedNetworks.length !== 0;
   }
 
+  get nets() {
+    return this.networks ? this.networks : [];
+  }
+
   get disconnectedNetworks() {
-    return Object.values(this.networks).filter(({ status }) => status === 'disconnected');
+    return this.networks.filter(({ apiStatus }) => apiStatus === 'disconnected');
   }
 
   get balancePrep() {
@@ -235,10 +242,6 @@ export default class Wallet extends Vue {
 
   get showCurrencies() {
     return this.activeTabName === 'Currencies';
-  }
-
-  get showNfts() {
-    return this.activeTabName === 'NFTs';
   }
 
   get showGoogleExportPopup() {

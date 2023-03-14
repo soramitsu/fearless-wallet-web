@@ -1012,12 +1012,13 @@ export default class State {
     await Promise.all([this.resetBalanceMap()]);
   }
 
-  private async publishBalance(reset?: boolean) {
+  public async publishBalance(reset?: boolean) {
     const balance = await this.getBalance(reset);
+
     this.balanceSubject.next(balance);
   }
 
-  public async resetBalanceMap() {
+  public resetBalanceMap() {
     this.publishBalance(true);
   }
 

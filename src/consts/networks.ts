@@ -1,4 +1,12 @@
-const ETHEREUM_NETWORKS = ['moonbeam', 'moonriver', 'moonbase alpha', 'astarEvm', 'shidenEvm'];
+const ETHEREUM_NETWORKS = [
+  'moonbeam',
+  'moonriver',
+  'moonbase alpha',
+  'astarEvm',
+  'shidenEvm',
+  'ethereum',
+  'ethereum_gorli',
+];
 const NOT_SUPPORTED_ALL_TRANSFER_NETWORKS = ['karura', 'acala', 'acala_testnet'];
 
 const RELAY_CHAINS = ['polkadot', 'kusama', 'westend', 'rococo'];

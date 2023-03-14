@@ -73,7 +73,6 @@ type ChainAccount = {
   network: string;
   networkIcon: string;
   address: string;
-  isReplaced: boolean;
 };
 
 type TextLocaleProps = Record<string, string> & {

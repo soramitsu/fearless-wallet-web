@@ -92,8 +92,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import type { TMutation, TabWallet } from '@/interfaces/common';
-import type { SetSelectedNetworkProps, SelectedWallet, GetNetworkStatus } from '@/store';
-import type { Network, Networks } from '@/interfaces';
+import type { SetSelectedNetworkProps, SelectedWallet } from '@/store';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import CurrencyItemStateLess from '@/screens/wallet&asset/wallet/CurrencyItemStateLess.vue';
@@ -157,7 +156,7 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getNetworks) networks!: NetworkJsonOld[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => Network;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJsonOld;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
   @Mutation(AccountsMutationTypes.SET_CUSTOM_SORT) setCustomSorting!: TMutation<string>;

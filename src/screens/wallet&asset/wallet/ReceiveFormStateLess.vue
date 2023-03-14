@@ -55,7 +55,7 @@
       :top="148"
       :left="-160"
       :height="360"
-      :options="networks"
+      :options="assetNetworks"
       :handlerFilter="handlerFilter"
       :toggleValue="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
@@ -73,6 +73,9 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 import { cut } from '@/helpers/history';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { ETHEREUM_NETWORKS } from '@/consts/networks';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 @Component({
   components: { RotateInput },
@@ -89,33 +92,26 @@ export default class ReceiveFormStateLess extends Vue {
   @Prop(String) selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(NetworksGettersTypes.getNetworks) networks!: NetworkJsonOld[];
 
   get currency() {
     return this.selectedAssetId;
   }
 
-  get networks() {
-    const networks = this.balances
-      .find((el) => el.name.toLowerCase() === this.selectedAssetId.toLowerCase())
-      ?.balances.map((el) => {
-        return {
-          name: el.name,
-          icon: el.icon,
-          decimals: el.decimals,
-        };
-      });
-
-    return networks;
+  get assetNetworks() {
+    return this.balances
+      .find((el) => el.name.toLowerCase() === this.currency.toLowerCase())
+      ?.balances.map(({ name, icon }) => ({ name, icon, value: name }));
   }
 
   get decimals() {
-    return this.networks?.find((network) => network.name === this.selectedNetwork)?.decimals;
+    return this.networks?.find((network) => network.name.toLowerCase() === this.selectedNetwork.toLowerCase())
+      ?.addressPrefix;
   }
 
   get address() {
     if (this.selectedWallet.address === '') return '';
-    if (this._selectedNetwork === 'ethereum' || this._selectedNetwork === 'ethereum_goerli')
-      return this.selectedWallet.ethereumAddress;
+    if (ETHEREUM_NETWORKS.includes(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
 
     return BaseApi.encodeAddress(this.selectedWallet.address, this.decimals);
   }

@@ -2,11 +2,11 @@
   <div class="accounts">
     <Input v-model="newName" placeholder="accounts.walletName" size="big" :maxlength="35" @blur="blurInputName" />
 
-    <template v-if="showReplacedAccounts">
+    <template>
       <div class="row label">{{ $t('accounts.accountsUniquesSecrets') }}</div>
 
       <AccountsItem
-        v-for="{ network, address, networkIcon } in replacedAccountsItems"
+        v-for="{ network, address, networkIcon } in chainAccounts"
         :key="network"
         :network="network"
         :icon="networkIcon"
@@ -15,7 +15,7 @@
       />
     </template>
 
-    <template v-if="showSharedSecretAccounts">
+    <!-- <template v-if="showSharedSecretAccounts">
       <div class="row label">{{ $t('accounts.accountsDefaultSecrets') }}</div>
 
       <AccountsItem
@@ -28,7 +28,7 @@
         @openSourceTypePopup="$emit('openSourceTypePopup')"
         @openAccountSettingsPopup="openAccountSettingsPopup"
       />
-    </template>
+    </template> -->
   </div>
 </template>
 
@@ -57,33 +57,33 @@ export default class Account extends Vue {
   @Getter(NetworksGettersTypes.getAllNetworks) networks!: Networks;
   @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWallet>;
 
-  get showReplacedAccounts() {
-    return this.replacedAccountsItems.length > 0;
-  }
+  // get showReplacedAccounts() {
+  //   return this.replacedAccountsItems.length > 0;
+  // }
 
   get isMobileWallet() {
     return BaseApi.isMobileWallet(this.selectedWallet.address);
   }
 
-  get showSharedSecretAccounts() {
-    return this.sharedAccountsItems.length > 0;
-  }
+  // get showSharedSecretAccounts() {
+  //   return this.sharedAccountsItems.length > 0;
+  // }
 
   get chainAccounts() {
     return getChainAccounts(this.networks, this.selectedWallet);
   }
 
-  get replacedAccountsItems() {
-    if (this.selectedWallet.address === '') return [];
+  // get replacedAccountsItems() {
+  //   if (this.selectedWallet.address === '') return [];
 
-    return this.chainAccounts.filter(({ isReplaced }) => isReplaced);
-  }
+  //   return this.chainAccounts.filter(({ isReplaced }) => isReplaced);
+  // }
 
-  get sharedAccountsItems() {
-    if (this.selectedWallet.address === '') return [];
+  // get sharedAccountsItems() {
+  //   if (this.selectedWallet.address === '') return [];
 
-    return this.chainAccounts.filter(({ isReplaced }) => !isReplaced);
-  }
+  //   return this.chainAccounts.filter(({ isReplaced }) => !isReplaced);
+  // }
 
   @Watch('selectedWallet')
   ethereumJsonChanged({ name }: SelectedWallet) {

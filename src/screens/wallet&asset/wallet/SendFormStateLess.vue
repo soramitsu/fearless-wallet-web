@@ -32,7 +32,7 @@
           <div class="name">{{ $t('asset.assetsAmount') }}</div>
 
           <div class="column">
-            <div>{{ amountString }}</div>
+            <!-- <div>{{ amountString }}</div> -->
 
             <div v-if="showValue" class="value">{{ valueString }}</div>
           </div>
@@ -42,7 +42,7 @@
           <div class="name">{{ $t('asset.fee') }}</div>
 
           <div class="column">
-            <div>{{ partialFeeString }}</div>
+            <!-- <div>{{ partialFeeString }}</div> -->
           </div>
         </div>
 
@@ -50,7 +50,7 @@
           <div class="name">{{ $t('asset.total') }}</div>
 
           <div class="column">
-            <div>{{ totalString }}</div>
+            <!-- <div>{{ totalString }}</div> -->
           </div>
         </div>
       </div>
@@ -89,18 +89,18 @@ export default class SendFormStateLess extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get currency() {
-    return this.balances.find(({ name }) => name === this.selectedAssetId);
+    return this.balances.find(({ name }) => name.toLowerCase() === this.selectedAssetId.toLowerCase());
   }
 
   get isUtilityAsset() {
-    return this.currency?.balances.find((el) => el.isUtility);
+    return this.currency?.balances.find((el) => el.isUtility || el.isNative);
   }
 
-  get partialFeeString() {
-    const utilityAsset = getUtilityAsset(this.balances, this.selectedNetwork);
+  // get partialFeeString() {
+  //   const utilityAsset = getUtilityAsset(this.balances, this.selectedNetwork);
 
-    return `${formattedNumber(+this.partialFee, { decimalsValue: 7 })} ${utilityAsset.toUpperCase()}`;
-  }
+  //   return `${formattedNumber(+this.partialFee, { decimalsValue: 7 })} ${utilityAsset.toUpperCase()}`;
+  // }
 
   get showValue() {
     return this.value !== '0';

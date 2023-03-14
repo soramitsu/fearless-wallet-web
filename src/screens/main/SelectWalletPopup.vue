@@ -12,12 +12,12 @@
   >
     <div class="wallet-content">
       <WalletInfo
-        v-for="({ name, ethereumAddress, address, isDefaultAuthSelected }, index) in wallets"
+        v-for="({ name, address, active }, index) in wallets"
         :key="name + index"
         :name="name"
-        :isSelected="isDefaultAuthSelected"
+        :isSelected="active"
         :isMobile="isMobile(address)"
-        :balance="getBalance(address, ethereumAddress)"
+        :balance="0"
         class="total"
         @setShowWalletDetailsPopupVisible="toggleWalletDetailsPopupVisible(...arguments, address)"
         @updateSelectedWallet="updateSelectedWallet(address)"
@@ -49,33 +49,25 @@ import { CurrentAccountInfo } from '@/extension/background/extension-base/src/st
 })
 export default class SelectWalletPopup extends Vue {
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
-  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
+  @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   // @Getter(AccountsGettersTypes.getAddresses) addresses!: Accounts;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<CurrentAccountInfo>;
-
-  get wallets() {
-    const accounts = Object.keys(this.accounts);
-
-    // const addresses = Object.keys(this.addresses).map((address) => BaseApi.getAddress(address));
-
-    return [...accounts];
-  }
 
   addWallet() {
     this.$router.push({ name: Components.Welcome });
   }
 
   isMobile(address: string) {
-    return BaseApi.getWalletType(address) === 'mobile';
+    return this.selectedWallet.isMobile ?? false;
   }
 
-  getBalance(address: string, ethereumAddress: string) {
-    // const arr = this.currencies.map((currency) => currency.getTotalBalance({ address, ethereumAddress }));
+  // getBalance(address: string, ethereumAddress: string) {
+  //   // const arr = this.currencies.map((currency) => currency.getTotalBalance({ address, ethereumAddress }));
 
-    return 0;
-  }
+  //   return 0;
+  // }
 
   // getChangeWalletBalance(address: string, ethereumAddress: string) {
   //   return getChangeWalletBalance(this.currencies);

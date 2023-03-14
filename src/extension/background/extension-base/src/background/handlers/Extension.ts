@@ -134,7 +134,7 @@ async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> 
         address,
         ethereumAddress: meta.ethereumAddress as string,
         ...meta,
-        isDefaultAuthSelected: address === currentAccount.address ?? false,
+        active: address === currentAccount.address ?? false,
         type,
       })
     )
@@ -592,6 +592,7 @@ export default class Extension {
       currentGenesisHash: ALL_GENESIS_HASH,
       allGenesisHash: ALL_GENESIS_HASH || undefined,
     };
+
     state.setCurrentAccount(accountInfo, () => {
       callback && callback(accountInfo);
     });
@@ -605,7 +606,7 @@ export default class Extension {
     return true;
   }
 
-  private updateCurrentAccountAddress({ address }: RequestCurrentAccountAddress): boolean {
+  private updateCurrentAccountAddress(address: string): boolean {
     this._saveCurrentAccountAddress(address, () => {
       this.triggerAccountsSubscription();
     });
@@ -1460,7 +1461,7 @@ export default class Extension {
         return this.saveCurrentAccountAddress(request as RequestCurrentAccountAddress, id, port as Port);
 
       case 'pri(accounts.update.current)':
-        return this.updateCurrentAccountAddress(request as RequestCurrentAccountAddress);
+        return this.updateCurrentAccountAddress(request as string);
 
       case 'pri(accounts.export)':
         return this.accountsExport(request as RequestAccountExport);

@@ -6,6 +6,7 @@ import { AccountJson } from '@/extension/background/extension-base/src/backgroun
 export interface Wallet {
   address: string;
   ethereumAddress: string;
+  isMobile?: boolean;
 }
 
 export interface SelectedWallet extends Wallet {

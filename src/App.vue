@@ -78,7 +78,7 @@ export default class App extends Vue {
   setupWallet() {
     subscribeAccounts((accounts) => {
       this.setAccounts({ accounts });
-      const selectedAccount = accounts.find((el) => el.isDefaultAuthSelected);
+      const selectedAccount = accounts.find((el) => el.active);
 
       this.setSelectedWallet(selectedAccount);
 

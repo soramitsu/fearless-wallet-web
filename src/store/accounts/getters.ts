@@ -15,6 +15,7 @@ export enum GettersTypes {
   getOnlineStatus = 'getOnlineStatus',
   getFiatId = 'getFiatId',
   getAccounts = 'getAccounts',
+
   getAddresses = 'getAddresses',
   getBalances = 'getBalances',
   getWallets = 'getWallets',

@@ -1,4 +1,4 @@
-import { FPNumber } from '@sora-substrate/math';
+import { FPNumber } from '@sora-substrate/util';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { Node } from '@/interfaces';
 

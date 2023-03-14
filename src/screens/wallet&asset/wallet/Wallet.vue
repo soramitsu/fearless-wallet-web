@@ -228,8 +228,14 @@ export default class Wallet extends Vue {
   get filteredCurrencies() {
     const filter = this.filterValue.trim().toLowerCase();
     const isAllNetworks = this.selectedNetwork === 'all';
+    const network = isAllNetworks ? undefined : this.selectedNetwork;
+    const currencies = this.isCustomSort(this.selectedWallet.address)
+      ? this.sortedCurrencies
+      : defaultSortingCurrencies(this.currencies, this.selectedWallet, network);
 
-    const result: TCurrencies = this.sortedCurrencies.filter((currency) => {
+    if (this.showAssetsManagementForm) return currencies;
+
+    const result: TCurrencies = currencies.filter((currency) => {
       const walletBalance = currency.getNetworkList().map(({ network }) => network);
       const isAvailableInSelectedNetwork = walletBalance.includes(this.selectedNetwork);
 
@@ -238,12 +244,6 @@ export default class Wallet extends Vue {
 
       return displayName.includes(filter);
     });
-
-    if (!this.isCustomSort(this.selectedWallet.address)) {
-      const network = isAllNetworks ? undefined : this.selectedNetwork;
-
-      return defaultSortingCurrencies(result, this.selectedWallet, network);
-    }
 
     return result;
   }

@@ -190,8 +190,8 @@ export async function resetTimeouts(): Promise<boolean> {
   return sendMessage('pri(signing.resetTimeouts)');
 }
 
-export async function saveTimeoutCache(address: string): Promise<boolean> {
-  return sendMessage('pri(signing.saveTimeoutCache)', address);
+export async function saveTimeoutCache(address: string, isSavePass: boolean): Promise<boolean> {
+  return sendMessage('pri(signing.saveTimeoutCache)', { address, isSavePass });
 }
 
 export async function createAccountHardware(

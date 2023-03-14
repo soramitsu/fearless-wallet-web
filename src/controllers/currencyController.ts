@@ -444,7 +444,12 @@ export default class CurrencyController {
    * @param {string} amount
    * @param {NetworkName} networkName
    */
-  public createTransferExtrinsic(wallet: Wallet, to: string, amount: string, networkName: NetworkName): void {
+  public async createTransferExtrinsic(
+    wallet: Wallet,
+    to: string,
+    amount: string,
+    networkName: NetworkName
+  ): Promise<void> {
     const network = NetworksController.getNetwork(networkName);
     const {
       api,
@@ -465,7 +470,7 @@ export default class CurrencyController {
         }
       : {};
 
-    this.getPartialFee(wallet, networkName);
+    await this.getPartialFee(wallet, networkName);
   }
 
   /**
@@ -498,7 +503,7 @@ export default class CurrencyController {
       this.createOrmlTeleportExtrinsic(originNet, destNet, toAddress, amount, networkProps);
     }
 
-    this.getPartialFee(wallet, originNet);
+    await this.getPartialFee(wallet, originNet);
   }
 
   /**
@@ -566,7 +571,6 @@ export default class CurrencyController {
     const { assetAId, assetBId, isExchangeB, amountA, amountB, symbolA, symbolB, slippage } = options;
     const assetAAddress = getAssetOptions('', 'soraAsset', assetAId!) as string;
     const assetBAddress = getAssetOptions('', 'soraAsset', assetBId!) as string;
-
     const amountWithDirection = (isExchangeB ? amountB : amountA) as string;
     const assetA: Asset = { address: assetAAddress, decimals: 18, name: symbolA!, symbol: symbolA! };
     const assetB: Asset = {
@@ -671,12 +675,14 @@ export default class CurrencyController {
 
   /**
    * Create swap extrinsic
-   * @param {string} transactionAddress
+   * @param {string} from
    */
-  public async sendSwap(transactionAddress: string): Promise<void> {
+  public async sendSwap(from: string, isSavePass: boolean): Promise<void> {
+    if (BaseApi.isExtension()) await saveTimeoutCache(from, isSavePass);
+
     const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB } = this.extrinsicOptions.swapOptions!;
 
-    const pair = BaseApi.getPair(transactionAddress);
+    const pair = BaseApi.getPair(from);
 
     apiSora.account = { json: null as any, pair };
 
@@ -737,7 +743,7 @@ export default class CurrencyController {
    * @returns {Promise<boolean>}
    */
   public async send(from: string, isMobile = false, isSavePass = false): Promise<boolean> {
-    if (isSavePass) await saveTimeoutCache(from);
+    if (BaseApi.isExtension()) await saveTimeoutCache(from, isSavePass);
 
     const account = isMobile ? from : BaseApi.getPair(from);
 

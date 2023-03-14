@@ -43,6 +43,7 @@ import type {
   RequestSeedValidate,
   RequestSigningApprovePassword,
   RequestSigningApproveSignature,
+  RequestSaveTimeoutCache,
   RequestSigningCancel,
   RequestSigningIsLocked,
   RequestTypes,
@@ -466,8 +467,8 @@ export default class Extension {
     return true;
   }
 
-  static async saveTimeoutCache(address: string): Promise<boolean> {
-    Extension.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
+  static async saveTimeoutCache({ address, isSavePass }: RequestSaveTimeoutCache): Promise<boolean> {
+    Extension.cachedUnlocks[address] = isSavePass ? Date.now() + PASSWORD_EXPIRY_MS : 0;
 
     return true;
   }
@@ -791,7 +792,7 @@ export default class Extension {
         return Extension.resetTimeouts();
 
       case 'pri(signing.saveTimeoutCache)':
-        return Extension.saveTimeoutCache(request as string);
+        return Extension.saveTimeoutCache(request as RequestSaveTimeoutCache);
 
       case 'pri(google.get.files)':
         return Extension.getFiles(request as { token: string });

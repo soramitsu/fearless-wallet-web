@@ -15,7 +15,11 @@
     </div>
 
     <div class="row">
-      {{ $t(minMaxLabel) }}
+      <div class="label">
+        {{ $t(minMaxLabel) }}
+
+        <Icon icon="info" class="icon-info min-max" />
+      </div>
 
       <div class="value">
         <div>{{ minMaxAmount }}</div>
@@ -24,18 +28,21 @@
     </div>
 
     <div class="row">
-      {{ $t('assets.liquidityProvideFeer') }}
+      <div class="label">
+        {{ $t('assets.liquidityProvideFee') }}
 
-      <div class="value">
-        <div>{{ providerFeeCut }} {{ soraMainAsset }}</div>
-
-        <!-- Бесполезная информация, в полькасвопе не показывается, обсудить -->
-        <!-- <div class="price">{{ fiatSymbol }} {{ liquidityProviderFeePrice }}</div> -->
+        <Icon icon="info" class="icon-info provider-fee" />
       </div>
+
+      <div class="value">{{ providerFeeCut }} {{ soraMainAsset }}</div>
     </div>
 
     <div class="row">
-      {{ $t('assets.networkFee') }}
+      <div class="label">
+        {{ $t('assets.networkFee') }}
+
+        <Icon icon="info" class="icon-info network-fee" />
+      </div>
 
       <div v-if="fee" class="value">
         <div>{{ fee }} {{ soraMainAsset }}</div>
@@ -44,6 +51,10 @@
       </div>
       <div v-else>-</div>
     </div>
+
+    <Tooltip text="assets.minMaxReceiveInfo" target=".min-max" placement="right" />
+    <Tooltip text="assets.liquidityProvideFeeInfo" target=".provider-fee" placement="right" />
+    <Tooltip text="assets.networkFeeInfo" target=".network-fee" placement="right" />
   </div>
 </template>
 
@@ -125,6 +136,22 @@ export default class SwapPreview extends Vue {
 
   &:last-child {
     border: none;
+  }
+
+  .label {
+    display: flex;
+
+    .icon-info {
+      margin-left: 13px;
+      width: 18px;
+      height: 18px;
+      color: $grayish-white;
+      cursor: pointer;
+
+      &:hover {
+        color: $default-white;
+      }
+    }
   }
 }
 </style>

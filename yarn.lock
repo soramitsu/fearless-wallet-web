@@ -10858,7 +10858,6 @@ __metadata:
     "@polkadot/ui-keyring": ^2.9.6
     "@polkadot/vue-identicon": ^2.9.8
     "@rushstack/eslint-patch": ^1.1.4
-    "@sora-substrate/math": 1.14.11
     "@sora-substrate/util": 1.14.11
     "@soramitsu/soramitsu-js-ui": ^1.0.42
     "@types/chrome": ^0.0.200

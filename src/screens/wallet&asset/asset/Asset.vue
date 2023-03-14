@@ -395,7 +395,11 @@ export default class Asset extends Vue {
           min-height: 18px;
           min-width: 18px;
           margin-left: 10px;
-          opacity: 0.5;
+          color: $grayish-white;
+
+          &:hover {
+            color: $default-white;
+          }
         }
       }
 

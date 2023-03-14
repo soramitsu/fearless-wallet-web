@@ -1,5 +1,4 @@
-import { FPNumber } from '@sora-substrate/math';
-import { CodecString } from '@sora-substrate/util';
+import { FPNumber, CodecString } from '@sora-substrate/util';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
 import type { WalletAddress, NetworkAssetsType, NetworkName, AccountBalance } from '@/interfaces';
 import type CurrencyController from '@/controllers/currencyController';
@@ -61,6 +60,7 @@ type ExtrinsicOptions = {
   historyOptions?: { networkProps: WalletBalance; amount: string; to: string };
   api?: ApiPromise;
   swapOptions?: SwapOptions;
+  fee?: string;
 };
 
 type UpdateBalanceProps = {

@@ -1,4 +1,4 @@
-import { FPNumber } from '@sora-substrate/math';
+import { FPNumber } from '@sora-substrate/util';
 import type { Currencies, ChangeWalletBalance } from '@/interfaces';
 
 interface Options {

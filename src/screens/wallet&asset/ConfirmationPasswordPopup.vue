@@ -11,7 +11,7 @@
           v-model="password"
           placeholder="common.password"
           size="big"
-          class="password-input row"
+          :class="classesInput"
           errorDescriptions="common.invalidPassword"
           :readonly="!isLocked"
           :isError="isErrorPassword"
@@ -19,7 +19,7 @@
           @keydown.native.enter="sendExtrinsic"
         />
 
-        <div v-if="show15MinCheckbox" class="remember__checkbox">
+        <div v-if="show15MinCheckbox" class="remember-checkbox">
           <Checkbox v-model="isSavePass" size="medium" :label="$t(min15Label)" />
         </div>
 
@@ -102,6 +102,16 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   get show15MinCheckbox() {
     return BaseApi.isExtension();
+  }
+
+  get classesInput() {
+    return [
+      'row',
+      'password-input',
+      {
+        'password-input-margin': !this.show15MinCheckbox,
+      },
+    ];
   }
 
   get transactionAddress() {
@@ -216,7 +226,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   async onSignMobile() {
     if (!this.transactionId && this.currency?.extrinsic) {
       if (this.extrinsicType === 'default') await this.currency.send(this.transactionAddress, true, false);
-      else if (this.extrinsicType === 'swap') await this.currency.sendSwap(this.transactionAddress);
+      else if (this.extrinsicType === 'swap') await this.currency.sendSwap(this.transactionAddress, false);
     } else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
   }
 
@@ -241,6 +251,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   async sendExtrinsic() {
     if (this.isLocked) {
       const address = this.transactionId && this.payload?.address ? this.payload.address : this.transactionAddress;
+
       this.isErrorPassword = !BaseApi.unlockPair(address, this.password);
 
       if (this.isErrorPassword) return;
@@ -257,7 +268,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     if (this.extrinsicType === 'default') await this.currency?.send(this.transactionAddress, false, this.isSavePass);
-    else if (this.extrinsicType === 'swap') await this.currency?.sendSwap(this.transactionAddress);
+    else if (this.extrinsicType === 'swap') await this.currency?.sendSwap(this.transactionAddress, this.isSavePass);
   }
 }
 </script>
@@ -273,6 +284,9 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   .password-input {
     width: 100%;
+  }
+
+  .password-input-margin {
     margin-bottom: 15px;
   }
 
@@ -317,7 +331,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     color: $gray-color;
   }
 
-  .remember__checkbox {
+  .remember-checkbox {
     width: 100%;
     display: flex;
     align-items: flex-start;

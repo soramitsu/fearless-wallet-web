@@ -44,9 +44,12 @@ export default class Button extends Vue {
     if (typeof this.text === 'string') return this.$t(this.text);
 
     const { text, localeProps } = this.text;
-    const { tc } = localeProps;
 
-    if (tc) return this.$tc(text, tc, localeProps);
+    if (localeProps) {
+      const { tc } = localeProps;
+
+      if (tc) return this.$tc(text, tc, localeProps);
+    }
 
     return this.$t(text, localeProps);
   }

@@ -282,31 +282,25 @@ export default class SwapForm extends Vue {
   }
 
   get AToBCut() {
-    const value = this.sendAmount === '' || this.receiveAmount === '' ? '0' : this.$n(+this.AToB, 'decimal');
+    const value = +this.$n(+this.AToB, 'decimal') || '0';
 
     return `${value} ${this.receiveAssetUP}`;
   }
 
   get BToACut() {
-    const value = this.sendAmount === '' || this.receiveAmount === '' ? '0' : this.$n(+this.BToA, 'decimal');
+    const value = +this.$n(+this.BToA, 'decimal') || '0';
 
     return `${value} ${this.sendAssetUP}`;
   }
 
   get AToBValueCut() {
-    const value =
-      this.sendAmount === '' || this.receiveAmount === ''
-        ? '0'
-        : this.$n(+this.sendCurrency!.getCostOfAssets(this.AToB), 'price');
+    const value = +this.$n(+this.sendCurrency!.getCostOfAssets(this.AToB), 'price') || '0';
 
     return `${this.fiatSymbol} ${value}`;
   }
 
   get BToAValueCut() {
-    const value =
-      this.sendAmount === '' || this.receiveAmount === ''
-        ? '0'
-        : this.$n(+this.sendCurrency!.getCostOfAssets(this.BToA), 'price');
+    const value = +this.$n(+this.sendCurrency!.getCostOfAssets(this.BToA), 'price') || '0';
 
     return `${this.fiatSymbol} ${value}`;
   }
@@ -414,13 +408,22 @@ export default class SwapForm extends Vue {
     if (!this.isValidCountXOR)
       return { text: 'assets.insufficientBalance', localeProps: { asset: this.soraMainAssetUpper } };
 
+    if (this.sendAmount === '0' || this.receiveAmount === '0') return { text: 'assets.unableSwap' };
+
     return this.step === 1 ? 'assets.preview' : 'common.confirm';
   }
 
   get buttonPreviewDisabled() {
     if (this.step === 2 || this.showSettings) return false;
 
-    if (this.fee === '' || !this.isValidSendAsset || !this.isValidCountXOR) return true;
+    if (
+      this.fee === '' ||
+      !this.isValidSendAsset ||
+      !this.isValidCountXOR ||
+      this.sendAmount === '0' ||
+      this.receiveAmount === '0'
+    )
+      return true;
 
     return this.sendAssetId === '' || this.receiveAssetId === '' || this.sendAmount === '';
   }

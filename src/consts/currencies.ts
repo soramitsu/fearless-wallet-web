@@ -1,4 +1,4 @@
-import { FPNumber } from '@sora-substrate/math';
+import { FPNumber } from '@sora-substrate/util';
 
 const MOCK_FP_BALANCE = {
   frozen: FPNumber.ZERO,

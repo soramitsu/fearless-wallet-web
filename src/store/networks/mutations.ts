@@ -93,10 +93,9 @@ const mutations: MutationTree<State> & Mutations = {
     state.assetsPriceInterval = interval;
   },
 
-  [MutationTypes.UPDATE_CURRENCY_BALANCE](
-    { currencies, assetsJson, networks },
-    { walletAddress, network, assetId, balance, parentId }
-  ) {
+  [MutationTypes.UPDATE_CURRENCY_BALANCE]({ currencies, assetsJson, networks }, props) {
+    const { walletAddress, network, assetId, balance, parentId } = props;
+
     const { symbol, displayName } = assetsJson.find(({ id }) => id === assetId)!;
     const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name ?? network;
 
@@ -113,10 +112,8 @@ const mutations: MutationTree<State> & Mutations = {
     currentCurrency.updateCurrencyBalance({ walletAddress, network, balance });
   },
 
-  [MutationTypes.SET_HISTORY](
-    state,
-    { history, networkName, walletAddress, isPreviously, assetId, serviceType, isMock }
-  ) {
+  [MutationTypes.SET_HISTORY](state, props) {
+    const { history, networkName, walletAddress, isPreviously, assetId, serviceType, isMock } = props;
     const { nodes, pageInfo } = getFormattedHistory(history, serviceType);
     const { startCursor: startCursorProp, endCursor: endCursorProp } = pageInfo;
     const oldHistory = state.history[assetId]?.[walletAddress]?.[networkName];

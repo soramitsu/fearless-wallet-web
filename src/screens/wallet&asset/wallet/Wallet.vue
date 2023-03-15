@@ -4,10 +4,11 @@
       <div class="wallet-balance__container">
         <WalletBalance
           class="balance"
-          :balance="totalBalance"
+          :balance="summaryTransferableBalance"
           :changeWalletBalance="changeWalletBalance"
           @click.native="$emit('openFiatsPopup', true)"
         />
+
         <div class="wallet-balance__loading">
           <Loading :width="28" v-if="showShimmers" />
         </div>
@@ -244,8 +245,8 @@ export default class Wallet extends Vue {
     return result;
   }
 
-  get totalBalance() {
-    const arr = this.sortedCurrencies.map((currency) => currency.getTotalBalance(this.selectedWallet));
+  get summaryTransferableBalance() {
+    const arr = this.currencies.map((currency) => currency.getTransferableFiatBalance(this.selectedWallet));
 
     return +addNumbers(arr);
   }

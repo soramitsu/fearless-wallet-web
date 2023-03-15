@@ -9,7 +9,7 @@
 
           <Icon icon="info" class="details-icon" />
         </div>
-        <div class="balance-in-network">{{ balanceInNetworkString }}</div>
+        <div class="balance-in-network">{{ transferableFiatBalanceInNetworkString }}</div>
 
         <div class="price">{{ assetPriceString }}</div>
       </div>
@@ -230,19 +230,25 @@ export default class Asset extends Vue {
   get countAssetsString() {
     if (!this.currentCurrency) return `${this.selectedAssetUpper} 0`;
 
-    const totalCountAssets = +this.currentCurrency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork);
-    const total = this.$n(totalCountAssets, 'decimal');
+    const transferableCountAsset = +this.currentCurrency.getTransferableCountAssets(
+      this.selectedWallet,
+      this.selectedNetwork
+    );
 
-    return `${this.selectedAssetUpper} ${total}`;
+    return `${this.selectedAssetUpper} ${this.$n(transferableCountAsset, 'decimal')}`;
   }
 
-  get balanceInNetworkString() {
+  get transferableFiatBalanceInNetworkString() {
     if (!this.currentCurrency) return `${this.fiatSymbol} 0`;
 
-    const total = this.currentCurrency.getTotalBalance(this.selectedWallet, this.selectedNetwork);
+    const transferableFiatBalance = this.currentCurrency.getTransferableFiatBalance(
+      this.selectedWallet,
+      this.selectedNetwork
+    );
 
-    return `${this.fiatSymbol} ${this.$n(+total, 'price')}`;
+    return `${this.fiatSymbol} ${this.$n(+transferableFiatBalance, 'price')}`;
   }
+
   get currency() {
     return this.currencies.find(({ assetId }) => assetId === this.selectedAssetId);
   }

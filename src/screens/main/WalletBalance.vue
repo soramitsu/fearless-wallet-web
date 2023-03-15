@@ -1,6 +1,6 @@
 <template>
   <div class="wallet-balance">
-    <div class="fiat-balance">{{ fiatSymbol }}{{ $n(balanceString, 'price') }}</div>
+    <div class="fiat-balance">{{ fiatSymbol }}{{ $n(balance, 'price') }}</div>
 
     <div :class="percentClasses">{{ percentString }}</div>
   </div>
@@ -10,7 +10,6 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { ChangeWalletBalance } from '@/interfaces';
-import { formattedNumber } from '@/helpers/numbers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component
@@ -18,10 +17,6 @@ export default class WalletBalance extends Vue {
   @Prop(Object) changeWalletBalance!: ChangeWalletBalance;
   @Prop(Number) balance!: number;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
-
-  get balanceString() {
-    return formattedNumber(+this.balance);
-  }
 
   get percentString() {
     const { percent, amount } = this.changeWalletBalance;

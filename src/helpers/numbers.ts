@@ -36,7 +36,7 @@ function addNumbers(values: (string | number)[]): string {
 function getChangeWalletBalance(currencies: Currencies, address: string, ethereumAddress: string): ChangeWalletBalance {
   const changeAssets = currencies.map((currency) => {
     const { hours24Change } = currency;
-    const totalBalance = +currency.getTotalBalance({ address, ethereumAddress });
+    const totalBalance = +currency.getTransferableFiatBalance({ address, ethereumAddress });
     const currentPercent = 100 + (hours24Change ?? 0);
     const oldBalance = (totalBalance / currentPercent) * 100;
     const changeAmount = totalBalance - oldBalance;

@@ -6,7 +6,6 @@ import type { Node } from '@/interfaces/nodes';
 import { formatBalance } from '@/util/balances';
 import { MutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { ORML_PALLETS_TYPES, getAssetOptions } from '@/util/assets';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 import { getAccounts } from '@/helpers/accounts';

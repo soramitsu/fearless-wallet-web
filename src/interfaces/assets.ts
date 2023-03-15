@@ -2,6 +2,7 @@ import type { NetworkName } from './networks';
 
 type AssetJson = {
   id: string;
+  name: string;
   symbol: string;
   displayName?: string;
   chainId: string;

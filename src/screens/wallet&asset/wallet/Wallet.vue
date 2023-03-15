@@ -151,7 +151,7 @@ export default class Wallet extends Vue {
   };
   evmCurrencies = {};
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getBalances) balances!: Record<string, TokenBalance>;
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
@@ -185,14 +185,10 @@ export default class Wallet extends Vue {
     return this.networks.filter(({ apiStatus }) => apiStatus === 'disconnected');
   }
 
-  get balancePrep() {
-    return Object.values(this.balances);
-  }
-
   get changeWalletBalance() {
-    if (this.balancePrep.length === 0) return { totalBalance: 0, changeAmount: 0 };
+    if (this.balances.length === 0) return { totalBalance: 0, changeAmount: 0 };
 
-    return getChangeWalletBalance(this.balancePrep, this.prices);
+    return getChangeWalletBalance(this.balances, this.prices);
   }
 
   get sortedCurrencies() {
@@ -202,7 +198,7 @@ export default class Wallet extends Vue {
 
     const sequence = accountController.getSequenceAssetsByAddress(address, this.selectedNetwork);
 
-    return this.balancePrep.sort((currency1, currency2) => {
+    return this.balances.sort((currency1, currency2) => {
       const { name: assetId1 } = currency1;
       const { name: assetId2 } = currency2;
       const index1 = sequence.indexOf(assetId1);
@@ -237,7 +233,7 @@ export default class Wallet extends Vue {
     if (!this.isCustomSort(this.selectedWallet.address)) {
       const network = isAllNetworks ? undefined : this.selectedNetwork;
 
-      return defaultSortingCurrencies(result, this.selectedWallet, network);
+      return defaultSortingCurrencies(result, network);
     }
 
     return result;

@@ -121,7 +121,7 @@ export default class App extends Vue {
       const selectedAccount = accounts.length === 0 ? undefined : accounts.find((el) => el.active);
       this.setSelectedWallet(selectedAccount);
 
-      if (accounts.length === 0) {
+      if (accounts.length === 0 && this.$route.name !== Components.Welcome) {
         this.$router.push(Components.Welcome);
       }
     });

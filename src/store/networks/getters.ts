@@ -1,5 +1,5 @@
 import type { AssetsPrice, FiatJson, GetHistory } from '@/interfaces';
-import type { GetNetwork, GetAssetPrice, GetNetworkGenesisHash, GetNetworkStatus } from './types';
+import type { GetNetwork, GetAssetPrice, GetNetworkGenesisHash, GetNetworkStatus, GetAssetName } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
@@ -119,7 +119,7 @@ const getters: GetterTree<State, State> & Getters = {
     },
 
   // [GettersTypes.getAssetName]:
-  //   ({ assetsJson }) =>
+  //   ({  }) =>
   //   (assetId: string) => {
   //     const asset = assetsJson.find(({ id }) => id === assetId);
 
@@ -143,7 +143,7 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getHistory]:
     ({ history }) =>
     (assetId: string, walletAddress: string, networkName: string) => {
-      return history[assetId]?.[walletAddress]?.[networkName];
+      return history[assetId]?.[walletAddress]?.[networkName.toLowerCase()];
     },
 
   [GettersTypes.getCurrencies]({ currencies }): TokenBalance[] {

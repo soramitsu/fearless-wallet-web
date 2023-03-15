@@ -132,12 +132,12 @@ async function fetchSubsquidHistory(url: string, address: string): Promise<Histo
 
 async function fetchHistory(url: string, address: string, type: HistoryServiceType, networkName: NetworkName) {
   try {
-    if (type === 'subquery') return await fetchSubqueryHistory(url, address);
-    else if (type === 'subsquid') return await fetchSubsquidHistory(url, address);
+    if (type === 'subquery') return fetchSubqueryHistory(url, address);
+    else if (type === 'subsquid') return fetchSubsquidHistory(url, address);
     else if (type === 'giantsquid') {
       const formattedAddress = BaseApi.isEthereumNetwork(networkName) ? address.toLowerCase() : address;
 
-      return await fetchGiantsquidHistory(url, formattedAddress);
+      return fetchGiantsquidHistory(url, formattedAddress);
     }
   } catch {
     console.info(`%c failed to load history for [[${networkName}]]-[[${address}]] `, 'background:orange;color:#fff');

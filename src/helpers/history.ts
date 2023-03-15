@@ -11,6 +11,8 @@ import { TransactionType, TransferType } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
 import { formattedNumber } from '@/helpers/numbers';
 import NetworksController from '@/controllers/networksController';
+import store from '@/store';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 
 function cut(value: string, length = 7) {
   const endNumber = length + 1;
@@ -75,7 +77,7 @@ function getFormattedDate({ timestamp }: HistoryElement) {
 }
 
 function getHumanValue(value: string, assetId: string) {
-  const assetsJson: AssetJson[] = NetworksController.getAssetsJson();
+  const assetsJson: TokenBalance[] = store.getters.getBalances;
   const assetJson = assetsJson.find(({ id }) => id === assetId)!;
   const precision = assetJson?.precision ?? 0;
 

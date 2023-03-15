@@ -150,7 +150,7 @@ export default class Nodes extends Vue {
   changeNode(name?: string, url?: string) {
     if (url) this.autoSelectNode = false;
 
-    NetworksController.toggleActiveNode(this.selectedNetwork, name, url, this.activeNode.url);
+    // NetworksController.toggleActiveNode(this.selectedNetwork, name, url, this.activeNode.url);
   }
 
   copyAddress() {

@@ -48,25 +48,35 @@ export default class NetworksController {
       const timeout = delay * 1000;
 
       setTimeout(() => {
-        store.dispatch(NetworksActionTypes.FETCH_HISTORY, { networkName, wallet, assetId, isPreviously });
+        store.dispatch(NetworksActionTypes.FETCH_HISTORY, {
+          networkName,
+          wallet,
+          assetId,
+          isPreviously,
+        });
       }, timeout);
 
       return;
     }
 
-    await store.dispatch(NetworksActionTypes.FETCH_HISTORY, { networkName, wallet, assetId, isPreviously });
+    await store.dispatch(NetworksActionTypes.FETCH_HISTORY, {
+      networkName,
+      wallet,
+      assetId,
+      isPreviously,
+    });
   }
 
-  public static subscribeToBalancesOfNetworks(accounts: CustomAccounts, networksProps?: Networks): void {
-    // store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, networksProps });
-  }
-
-  public static async toggleActiveNode(
-    network: string,
-    nodeName?: string,
-    nodeUrl?: string,
-    oldNodeUrl?: string
-  ): Promise<void> {
-    await store.dispatch(NetworksActionTypes.TOGGLE_ACTIVE_NODE, { network, nodeName, nodeUrl, oldNodeUrl });
-  }
+  // public static subscribeToBalancesOfNetworks(accounts: CustomAccounts, networksProps?: Networks): void {
+  // store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, networksProps });
+  // }
+  //
+  // public static async toggleActiveNode(
+  //   network: string,
+  //   nodeName?: string,
+  //   nodeUrl?: string,
+  //   oldNodeUrl?: string
+  // ): Promise<void> {
+  //   await store.dispatch(NetworksActionTypes.TOGGLE_ACTIVE_NODE, { network, nodeName, nodeUrl, oldNodeUrl });
+  // }
 }

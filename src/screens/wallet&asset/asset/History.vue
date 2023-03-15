@@ -16,7 +16,7 @@
               v-for="(historyElement, index) in filteredHistory"
               :key="index"
               :historyElement="historyElement"
-              :assetId="currency.assetId"
+              :token="currency"
               @click.native="$emit('openHistoryDetailsForm', historyElement)"
             />
           </template>
@@ -53,8 +53,7 @@ export default class History extends Vue {
   showLoader = false;
   @Prop(Object) currency!: TokenBalance;
   @Prop(String) assetId!: string;
-  @Getter(NetworksGettersTypes.getHistory)
-  getHistory!: GetHistory;
+  @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get selectedNetwork() {
@@ -79,9 +78,9 @@ export default class History extends Vue {
   // }
 
   get history() {
-    // const { address } = this.walletIncludingReplacedAccount;
-
-    return this.getHistory(this.currency?.name, this.selectedWallet.address, this.selectedNetwork)?.nodes ?? [];
+    return (
+      this.getHistory(this.currency?.id, this.selectedWallet.address, this.selectedNetwork.toLowerCase())?.nodes ?? []
+    );
   }
 
   get filteredHistory() {
@@ -102,15 +101,19 @@ export default class History extends Vue {
   async watchSelectedNetwork() {
     this.fetchHistory();
   }
+
   get isMainNetwork() {
-    return !!this.currency.balances.find((el) => el.name === this.selectedNetwork && (el.isUtility || el.isNative));
+    return !!this.currency.balances.find(
+      (el) => el.name.toLowerCase() === this.selectedNetwork.toLowerCase() && (el.isUtility || el.isNative)
+    );
   }
+
   async fetchHistory() {
-    if (!this.currency?.name || this.history.length !== 0 || !this.isMainNetwork) return;
+    if (this.history.length !== 0 || !this.isMainNetwork) return;
 
     this.showLoader = true;
 
-    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.currency.name);
+    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.currency.id);
 
     this.showLoader = false;
   }

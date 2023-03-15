@@ -60,7 +60,7 @@ import { getTokenPrice } from '../../utils/coingecko';
 import { getId } from '../../utils';
 import { initApi } from '../../api/substrate';
 import { axios } from '../../utils/axios';
-import { CHAINS, ASSETS, prepNetworkNames } from '../../const/networks';
+import { ASSETS, CHAINS, prepNetworkNames } from '../../const/networks';
 import { DEFAULT_EVM_TOKENS } from '../../api/tokens/evm/defaultEvmToken';
 import { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '../../types';
 import { FWCron } from '../cron';
@@ -1238,6 +1238,8 @@ export default class State {
       const data: TokenBalance = {
         name: token.displayName ?? token.symbol,
         icon: token.icon,
+        id: token.id,
+        precision: token.precision,
         priceId: token.priceId ?? '',
         balances: networks,
       };

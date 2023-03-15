@@ -5,7 +5,7 @@
         <Shimmer v-if="showShimmers" height="32px" width="140px" />
 
         <div v-else class="count-assets">
-          <!-- <div class="count-value">{{ countAssetsString }}</div> -->
+          <div class="count-value">{{ countAssetsString }}</div>
 
           <Icon icon="info" class="details-icon" />
         </div>
@@ -126,7 +126,7 @@ import { Getter } from 'vuex-class';
 import HistoryDetailsForm from './HistoryDetailsForm.vue';
 import History from './History.vue';
 import type { HistoryElement } from '@/interfaces/history';
-import type { GetAssetName, SelectedWallet } from '@/store';
+import type { GetAssetName, GetAssetPrice, SelectedWallet } from '@/store';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
@@ -143,6 +143,8 @@ import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { firstCharToUp } from '@/helpers/common';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { getTotalBalance, getTotalCountAssets } from '@/helpers/currencies';
+import { AssetPrice } from '@/interfaces';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
 
@@ -176,6 +178,7 @@ export default class Asset extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJsonOld;
+  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
 
@@ -214,7 +217,7 @@ export default class Asset extends Vue {
   }
 
   get assetPriceString() {
-    return `1 ${this.selectedAssetUpper} = ${this.fiatSymbol}${this.$n(0, 'price')}`;
+    return `1 ${this.selectedAssetUpper} = ${this.fiatSymbol}${this.$n(this.assetPrice.price, 'price')}`;
   }
 
   get selectedNetwork() {
@@ -226,28 +229,28 @@ export default class Asset extends Vue {
   }
 
   get selectedAssetUpper() {
-    return this.getAssetName(this.selectedAssetId).toUpperCase();
+    return this.selectedAssetId.toUpperCase();
   }
 
-  // get price() {
-  //   return this.currentCurrency?.price;
-  // }
+  get assetPrice(): AssetPrice {
+    return this.getAssetPrice(this.currentCurrency.priceId);
+  }
 
-  // get countAssetsString() {
-  //   if (!this.currentCurrency) return `${this.selectedAssetUpper} 0`;
+  get countAssetsString() {
+    if (!this.currentCurrency) return `${this.selectedAssetUpper} 0`;
 
-  //   const totalCountAssets = +this.currentCurrency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork);
-  //   const total = this.$n(totalCountAssets, 'decimal');
+    const totalCountAssets = +getTotalCountAssets(this.currentCurrency, this.selectedNetwork);
+    const total = this.$n(totalCountAssets, 'decimal');
 
-  //   return `${this.selectedAssetUpper} ${total}`;
-  // }
+    return `${this.selectedAssetUpper} ${total}`;
+  }
 
   get balanceInNetworkString() {
     if (!this.currentCurrency) return `${this.fiatSymbol} 0`;
 
-    // const total = this.currentCurrency.getTotalBalance(this.selectedWallet, this.selectedNetwork);
+    const total = +getTotalBalance(this.currentCurrency, this.selectedNetwork);
 
-    return `${this.fiatSymbol} ${this.$n(0, 'price')}`;
+    return `${this.fiatSymbol} ${this.$n(total, 'price')}`;
   }
 
   get optionsNetworks() {

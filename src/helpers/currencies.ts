@@ -1,10 +1,10 @@
 import { ISubmittableResult } from '@polkadot/types/types';
-import type { Currencies, Currency, Networks, RelayChainName, Balances, NetworkName } from '@/interfaces';
+import type { Currencies, Networks, RelayChainName, Balances, NetworkName } from '@/interfaces';
 import type { Wallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import CurrencyController from '@/controllers/currencyController';
 import NetworksController from '@/controllers/networksController';
-import { MAIN_NETWORKS } from '@/consts/networks';
+import { ALL_NETWORKS, MAIN_NETWORKS } from '@/consts/networks';
 import { mockFPBalance } from '@/consts/currencies';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
@@ -104,34 +104,33 @@ function getMockCurrencies(networks: Networks): Currencies {
 }
 
 export function getTotalBalanceInNetwork(token: TokenBalance, network: string) {
-  return token.balances.find((el) => el.name === network)?.total ?? 0;
+  return token.balances.find((el) => el.name.toLowerCase() === network.toLowerCase())?.total ?? 0;
 }
 
-export function getTotalBalance(token: TokenBalance, network = 'ALL') {
-  if (network !== 'ALL') return getTotalBalanceInNetwork(token, network);
+export function getTotalBalance(token: TokenBalance, network = ALL_NETWORKS) {
+  if (network !== ALL_NETWORKS) return getTotalBalanceInNetwork(token, network);
   let balance = 0;
 
-  token.balances.forEach((el) => {
-    if (el.state === APIItemState.READY && el.total) {
-      balance += +el.total;
+  token.balances.forEach((network) => {
+    if (network.state === APIItemState.READY && network.total) {
+      balance += +network.total;
     }
   });
 
   return balance;
 }
 
-export function getTotalCountAssets(token: TokenBalance, network = 'ALL'): string {
-  if (network && network !== 'ALL') {
-    const balance = token.balances.find((el) => el.name === network)!.total;
+export function getTotalCountAssets(token: TokenBalance, network = ALL_NETWORKS): string {
+  if (network && network !== ALL_NETWORKS) {
+    const balance = token.balances.find((el) => el.name.toLowerCase() === network.toLowerCase())?.total ?? '0';
 
     return balance ?? '0';
   }
 
-  return token.balances.find((balance) => balance.name === network)?.total ?? '0';
+  return token.balances.find((balance) => balance.name.toLowerCase() === network.toLowerCase())?.total ?? '0';
 }
 
-function defaultSortingCurrencies(currencies: TokenBalance[], wallet: Wallet, network?: NetworkName) {
-  // const relayChains = [];
+function defaultSortingCurrencies(currencies: TokenBalance[], network?: NetworkName) {
   const currenciesWithAssets = currencies.filter((currency) =>
     currency.balances.some((balance) => balance.total !== '0')
   );
@@ -139,21 +138,6 @@ function defaultSortingCurrencies(currencies: TokenBalance[], wallet: Wallet, ne
   const currenciesWithoutAssets = currencies.filter((currency) =>
     currency.balances.every((balance) => balance.total === '0')
   );
-
-  // const dotIndex = currenciesWithoutAssets.findIndex(({ name }) => name === 'dot');
-  // const ksmIndex = currenciesWithoutAssets.findIndex(({ name }) => name === 'ksm');
-
-  // if (dotIndex !== -1) {
-  //   const dot = currenciesWithoutAssets.splice(dotIndex, 1)[0];
-
-  //   relayChains.push(dot);
-  // }
-
-  // if (ksmIndex !== -1) {
-  //   const ksm = currenciesWithoutAssets.splice(ksmIndex, 1)[0];
-
-  //   relayChains.push(ksm);
-  // }
 
   currenciesWithAssets.sort((currency1, currency2) => {
     const totalBalanceOne = +getTotalBalance(currency1, network);

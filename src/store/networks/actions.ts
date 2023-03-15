@@ -2,7 +2,7 @@ import axios from 'axios';
 
 import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
-import type { FetchJsons, FetchHistory, ToggleActiveNode, AugmentedActionContext } from '@/store';
+import type { FetchJsons, FetchHistory, AugmentedActionContext } from '@/store';
 import type { FiatJson, Network } from '@/interfaces';
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
@@ -37,16 +37,14 @@ const actions: ActionTree<State, State> & Actions = {
     const {
       externalApi: { history: historyApi },
     } = getters.getNetwork(networkName) as Network;
-
     if (!historyApi) return;
 
     const { type, url } = historyApi;
     const formattedAddress = BaseApi.formatAddress(wallet, networkName);
     const history = await fetchHistory(url, formattedAddress, type, networkName);
-
     if (history)
       commit(MutationTypes.SET_HISTORY, {
-        networkName,
+        networkName: networkName.toLowerCase(),
         walletAddress: wallet.address,
         history,
         isPreviously,

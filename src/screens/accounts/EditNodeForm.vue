@@ -85,7 +85,7 @@ export default class EditNodeForm extends Vue {
       url: this._url,
     });
 
-    if (this.isActive) NetworksController.toggleActiveNode(this.network, this.name, this.url);
+    // if (this.isActive) NetworksController.toggleActiveNode(this.network, this.name, this.url);
 
     this.closeForm(true);
   }

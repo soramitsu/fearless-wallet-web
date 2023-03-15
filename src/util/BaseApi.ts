@@ -298,7 +298,7 @@ export default class BaseApi {
   }
 
   public static isEthereumNetwork(network: string): boolean {
-    return ETHEREUM_NETWORKS.includes(network);
+    return ETHEREUM_NETWORKS.includes(network.toLowerCase());
   }
 
   public static parseJson(jsonString: string): KeyringPair$Json {
@@ -370,8 +370,7 @@ export default class BaseApi {
 
     if (isEthereumNetwork) return ethereumAddress;
 
-    const networks = NetworksController.getNetworks();
-    const network = networks.find(({ name }) => name === networkName);
+    const network = NetworksController.getNetwork(networkName);
     const prefix = network?.addressPrefix;
 
     // the only case for try/catch

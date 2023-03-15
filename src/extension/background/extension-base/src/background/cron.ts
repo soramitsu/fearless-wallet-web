@@ -138,14 +138,14 @@ export class FWCron {
         //   })
         //   .catch((err) => this.logger.warn(err));
 
-        this.removeCron('refreshPrice');
+        // this.removeCron('refreshPrice');
         this.removeCron('checkStatusApiMap');
         this.removeCron('recoverApiMap');
 
         if (this.checkNetworkAvailable(serviceInfo)) {
           // only add cron job if there's at least 1 active network
 
-          this.addCron('refreshPrice', this.refreshPrice, CRON_REFRESH_PRICE_INTERVAL);
+          // this.addCron('refreshPrice', this.refreshPrice, CRON_REFRESH_PRICE_INTERVAL);
           this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
           this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
         }

@@ -974,7 +974,9 @@ export interface ResponseAccountMeta {
 export interface TokenBalance {
   name: string;
   icon: string;
+  id: string;
   priceId: string;
+  precision: number;
   balances: BalanceItem[];
 }
 

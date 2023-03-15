@@ -1,5 +1,8 @@
 <template>
-  <Lazy class="currency-item" @click.native="openAssetPage">
+  <Lazy v-if="showCurrencyItem" class="currency-item" @click.native="openAssetPage">
+    <div v-if="showAssetsManagementForm" class="drag-icon">
+      <SIcon name="basic-menu-24" class="handle" />
+    </div>
     <div class="img-container">
       <ExternalLogo class="main-network-img" :name="assetData.icon" :width="42" />
     </div>
@@ -56,7 +59,7 @@
         <Tooltip text="common.networkDisconnected" target=".warning-img" placement="left" />
       </template>
 
-      <template>
+      <template v-else-if="!showAssetsManagementForm">
         <CircleButton
           iconName="send-white"
           backgroundColor="black"
@@ -88,18 +91,19 @@
           target=".details"
         />
       </template>
+      <Switcher v-else v-model="currencyVisible" />
     </div>
   </Lazy>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { CustomEvent } from '@/interfaces';
+import { Getter, Mutation } from 'vuex-class';
+import type { CustomEvent, TMutation } from '@/interfaces';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { GetAssetPrice } from '@/store/networks/types';
@@ -110,6 +114,9 @@ export default class CurrencyItemStateLess extends Vue {
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
+  @Getter(AccountsGettersTypes.getHiddenAssets) hiddenAssets!: string[];
+  @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: TMutation<string>;
+  @Mutation(AccountsMutationTypes.DELETE_HIDDEN_ASSET) deleteHiddenAssets!: TMutation<string>;
 
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
 
@@ -121,6 +128,18 @@ export default class CurrencyItemStateLess extends Vue {
 
   get tokenPrice() {
     return this.getTokenPrice(this.assetData.priceId);
+  }
+
+  get currencyVisible(): boolean {
+    return !this.hiddenAssets.find((el) => el === this.assetData.name);
+  }
+
+  set currencyVisible(value: boolean) {
+    value ? this.deleteHiddenAssets(this.assetData.name) : this.setHiddenAssets(this.assetData.name);
+  }
+
+  get showCurrencyItem() {
+    return this.showAssetsManagementForm || this.currencyVisible;
   }
 
   get networkBadges() {

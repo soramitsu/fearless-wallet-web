@@ -21,6 +21,8 @@ export enum MutationTypes {
   SET_AUTO_SELECT_NODE = 'SET_AUTO_SELECT_NODE',
   SET_QR = 'SET_QR',
   SET_BALANCE = 'SET_BALANCE',
+  SET_HIDDEN_ASSET = 'SET_HIDDEN_ASSET',
+  DELETE_HIDDEN_ASSET = 'DELETE_HIDDEN_ASSET',
   DELETE_QR = 'DELETE_QR',
 }
 
@@ -35,6 +37,8 @@ export type Mutations = {
   [MutationTypes.SET_AUTO_SELECT_NODE](state: State, props: SetAutoSelectNode): void;
   [MutationTypes.SET_QR](state: State, props: string): void;
   [MutationTypes.DELETE_QR](state: State): void;
+  [MutationTypes.SET_HIDDEN_ASSET](state: State, props: string): void;
+  [MutationTypes.DELETE_HIDDEN_ASSET](state: State, props: string): void;
   [MutationTypes.SET_CUSTOM_SORT](state: State, props: string): void;
 };
 
@@ -101,6 +105,17 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.SET_BALANCE](state, payload) {
     state.balances = payload.details;
+  },
+
+  [MutationTypes.SET_HIDDEN_ASSET](state, payload) {
+    if (state.hiddenAssets.find((el) => el === payload)) return;
+    state.hiddenAssets.push(payload);
+  },
+
+  [MutationTypes.DELETE_HIDDEN_ASSET](state, payload) {
+    const index = state.hiddenAssets.findIndex((el) => el === payload);
+
+    if (index >= 0) state.hiddenAssets.splice(index, 1);
   },
 };
 

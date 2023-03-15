@@ -80,17 +80,14 @@ export default class ContentSettings extends Vue {
   @PropSync('showAssetsManagementForm', { type: Boolean }) syncedShowAssetsManagementForm!: boolean;
   @Prop(Array) currencies!: Currency[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getHiddenAssets) hiddenAssets!: Set<string>;
 
   get target() {
     return `.${this.iconName}`;
   }
 
   get allCurrenciesHidden() {
-    const visibleCurrencies = this.currencies.filter((currency) =>
-      currency.getCurrencyVisibility(this.selectedWallet.address)
-    );
-
-    return visibleCurrencies.length === 0;
+    return this.hiddenAssets.size === 0;
   }
 
   get toggleButtonText() {

@@ -9,6 +9,7 @@ export type State = {
   accounts: AccountJson[];
   isOnline: boolean;
   balances: Record<string, TokenBalance>;
+  hiddenAssets: string[];
   autoSelectNode: AutoSelectNode;
   isCustomSort: Record<string, boolean>;
   qr: string | null;
@@ -21,6 +22,7 @@ const state = (): State => {
     selectedNetworks: accountController.getSelectedNetwork(),
     isOnline: navigator.onLine,
     balances: {},
+    hiddenAssets: [],
     accounts: accountController.getAccounts(),
     isCustomSort: accountController.getCustomSort(),
     autoSelectNode: accountController.getAutoSelectNodesValue(),

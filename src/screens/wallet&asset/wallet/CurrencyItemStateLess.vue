@@ -95,26 +95,32 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { CustomEvent } from '@/interfaces';
+import type { AssetPrice, CustomEvent } from '@/interfaces';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
 import { ALL_NETWORKS } from '@/consts/networks';
+import { GetAssetPrice } from '@/store/networks/types';
 @Component
 export default class CurrencyItemStateLess extends Vue {
   @Prop(Object) assetData!: TokenBalance;
-  @Prop(Number) price!: number;
-  @Prop(Number) priceChange!: number;
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
+
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
 
   get getMainNetwork() {
     const network = this.assetData.balances.find((el) => el.isNative || el.isUtility);
 
     return network?.name.toUpperCase();
+  }
+
+  get tokenPrice() {
+    return this.getTokenPrice(this.assetData.priceId);
   }
 
   get networkBadges() {
@@ -130,7 +136,7 @@ export default class CurrencyItemStateLess extends Vue {
   }
 
   get assetPrice() {
-    return `${this.fiatSymbol}${this.$n(this.price, 'price')}`;
+    return `${this.fiatSymbol}${this.$n(this.tokenPrice.price, 'price')}`;
   }
 
   get totalFiatBalanceValue() {
@@ -138,7 +144,7 @@ export default class CurrencyItemStateLess extends Vue {
   }
 
   get assetPriceChange() {
-    return this.$n(this.priceChange, 'percent');
+    return this.$n(this.tokenPrice.priceChange, 'percent');
   }
 
   get totalAssetBalanceValue() {
@@ -155,14 +161,14 @@ export default class CurrencyItemStateLess extends Vue {
   }
 
   get totalFiatBalance() {
-    return this.totalAssetBalance * this.price;
+    return this.totalAssetBalance * this.tokenPrice.price;
   }
 
   get changePriceClasses() {
     const classes = ['price-change'];
 
-    if (this.priceChange > 0) classes.push('up-price');
-    else if (this.priceChange < 0) classes.push('down-price');
+    if (this.tokenPrice.priceChange > 0) classes.push('up-price');
+    else if (this.tokenPrice.priceChange < 0) classes.push('down-price');
 
     return classes;
   }

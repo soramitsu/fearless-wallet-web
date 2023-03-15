@@ -84,12 +84,12 @@ export default class CurrencyController {
   /**
    * Update fiat price
    */
-  public updatePrice() {
-    const { price, hours24Change } = NetworksController.getAssetPrice(this.displayName);
+  // public updatePrice() {
+  //   const { price, hours24Change } = NetworksController.getAssetPrice(this.displayName);
 
-    this.price = price ?? 0;
-    this.hours24Change = hours24Change ?? 0;
-  }
+  //   this.price = price ?? 0;
+  //   this.hours24Change = hours24Change ?? 0;
+  // }
 
   /**
    * Calculate cost by quantity

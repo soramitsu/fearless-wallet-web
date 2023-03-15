@@ -12,7 +12,14 @@ import { Mutation, Getter, Action } from 'vuex-class';
 import { AccountJson, BalanceJson } from './extension/background/extension-base/src/background/types';
 import { Components } from './router/routes';
 import { NetworkJsonOld } from './extension/background/extension-base/src/types';
-import type { Accounts, SetOnlineStatus, SetAccountsProps, SetSelectedFiat, SetNetworksStatusProps } from '@/store';
+import type {
+  Accounts,
+  SetOnlineStatus,
+  SetAccountsProps,
+  SetSelectedFiat,
+  SetNetworksStatusProps,
+  SetAssetsPriceProps,
+} from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
@@ -23,6 +30,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import {
   getNetworkMap,
+  getPrice,
   subscribeAccounts,
   subscribeBalance,
   subscribeNetworkMap,
@@ -38,6 +46,7 @@ export default class App extends Vue {
   @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<AccountJson>;
   @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: TMutation<SetNetworksStatusProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<SetAccountsProps>;
+  @Mutation(NetworksMutationTypes.SET_ASSETS_PRICE) setPrices!: TMutation<SetAssetsPriceProps>;
   @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<SetOnlineStatus>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
   @Action(AccountsActionTypes.SET_SELECTED_FIAT) setSelectedFiat!: TAction<SetSelectedFiat>;
@@ -77,10 +86,15 @@ export default class App extends Vue {
     });
   }
 
-  setupPrice() {
+  async setupPrice() {
+    const { currency, tokenPriceMap: priceMap, tokenPriceChange: priceChange } = await getPrice();
+    this.setSelectedFiat({ fiatName: currency });
+    this.setPrices({ tokenPriceMap: priceMap, tokenPriceChange: priceChange });
+
     subscribePrice((info) => {
       const { currency, tokenPriceMap, tokenPriceChange } = info;
       this.setSelectedFiat({ fiatName: currency });
+      this.setPrices({ tokenPriceMap, tokenPriceChange });
     });
   }
 

@@ -8,6 +8,7 @@ import type {
   SetActiveNodeProps,
   SetAssetsPriceIntervalProps,
   SetNetworksStatusProps,
+  SetAssetsPriceProps,
 } from './types';
 import { accountController } from '@/controllers/accountController';
 import { getFormattedHistory } from '@/helpers/history';
@@ -28,12 +29,12 @@ export enum MutationTypes {
 
 export type Mutations = {
   [MutationTypes.SET_NETWORKS](state: State, props: SetNetworksStatusProps): void;
-  [MutationTypes.SET_ASSETS_JSON](state: State, props: SetAssetsJsonProps): void;
   [MutationTypes.SET_FIATS_JSON](state: State, props: SetFiatsJsonProps): void;
-  [MutationTypes.SET_ASSETS_PRICE_INTERVAL](state: State, props: SetAssetsPriceIntervalProps): void;
-  [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
+  [MutationTypes.SET_ASSETS_PRICE](state: State, props: SetAssetsPriceProps): void;
+
+  // [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
-  [MutationTypes.SET_ACTIVE_NODE](state: State, props: SetActiveNodeProps): void;
+  // [MutationTypes.SET_ACTIVE_NODE](state: State, props: SetActiveNodeProps): void;
   // [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApiProps): void;
   // [MutationTypes.SET_NETWORK_STATUS](state: State, props: SetNetworkStatusProps): void;
 };
@@ -42,30 +43,32 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_NETWORKS](state, { networks }) {
     state.networks = networks;
   },
-
-  [MutationTypes.SET_CURRENCIES](state, { currencies, address, network }) {
-    if (address && network) {
-      if (Array.isArray(currencies)) {
-        const sequence = currencies.map(({ name }) => name);
-
-        accountController.setSequenceAssets(sequence, address, network);
-      }
-    }
-
-    state.currencies = currencies;
+  [MutationTypes.SET_ASSETS_PRICE](state, price) {
+    state.assetsPrice = { ...price };
   },
+  // [MutationTypes.SET_CURRENCIES](state, { currencies, address, network }) {
+  //   if (address && network) {
+  //     if (Array.isArray(currencies)) {
+  //       const sequence = currencies.map(({ name }) => name);
 
-  [MutationTypes.SET_ASSETS_JSON](state, { assetsJson }) {
-    state.assetsJson = assetsJson;
-  },
+  //       accountController.setSequenceAssets(sequence, address, network);
+  //     }
+  //   }
+
+  //   state.currencies = currencies;
+  // },
+
+  // [MutationTypes.SET_ASSETS_JSON](state, { assetsJson }) {
+  //   state.assetsJson = assetsJson;
+  // },
 
   [MutationTypes.SET_FIATS_JSON](state, { fiats }) {
     state.fiats = fiats.map((fiat) => ({ ...fiat }));
   },
 
-  [MutationTypes.SET_ASSETS_PRICE_INTERVAL](state, { interval }) {
-    state.assetsPriceInterval = interval;
-  },
+  // [MutationTypes.SET_ASSETS_PRICE_INTERVAL](state, { interval }) {
+  //   state.assetsPriceInterval = interval;
+  // },
 
   // [MutationTypes.UPDATE_CURRENCY_BALANCE](
   //   { currencies, assetsJson, networks },
@@ -166,13 +169,13 @@ const mutations: MutationTree<State> & Mutations = {
     state.history = { ...state.history, [assetId]: historyForAssetId };
   },
 
-  [MutationTypes.SET_ACTIVE_NODE](state, { network, name, url, saveNode }) {
-    const oldActiveNodes = state.activeNodes;
+  // [MutationTypes.SET_ACTIVE_NODE](state, { network, name, url, saveNode }) {
+  //   const oldActiveNodes = state.activeNodes;
 
-    if (saveNode) accountController.setActiveNode({ name, url }, network);
+  //   if (saveNode) accountController.setActiveNode({ name, url }, network);
 
-    state.activeNodes = { ...oldActiveNodes, [network]: { name, url } };
-  },
+  //   state.activeNodes = { ...oldActiveNodes, [network]: { name, url } };
+  // },
 
   // [MutationTypes.SET_NETWORK_API](state, { network, provider, api }) {
   //   const networkIndex = state.networks.findIndex(({ name }) => name === network)!;

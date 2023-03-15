@@ -1,13 +1,5 @@
-import type { AssetJson, FiatJson, GetHistory, KeysAssetPricesJson } from '@/interfaces';
-import type {
-  GetNetwork,
-  GetAssetName,
-  GetAssetPrice,
-  GetNetworkGenesisHash,
-  GetActiveNodesByNetwork,
-  GetAssetIcon,
-  GetNetworkStatus,
-} from './types';
+import type { AssetsPrice, FiatJson, GetHistory } from '@/interfaces';
+import type { GetNetwork, GetAssetPrice, GetNetworkGenesisHash, GetNetworkStatus } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
@@ -22,6 +14,7 @@ export enum GettersTypes {
   getNetwork = 'getNetwork',
   getNetworkGenesisHash = 'getNetworkGenesisHash',
   getAssetsJson = 'getAssetsJson',
+  getPrice = 'getPrice',
   getAssetPrice = 'getAssetPrice',
   getAssetName = 'getAssetName',
   getAssetIcon = 'getAssetIcon',
@@ -46,20 +39,20 @@ export type Getters = {
     rootState?: any
   ): NetworkJsonOld[];
   [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
-  [GettersTypes.getAssetsJson](state: State, getters?: GetterTree<State, State> & Getters): AssetJson[];
-  [GettersTypes.getAssetName](state: State, getters?: GetterTree<State, State> & Getters): GetAssetName;
-  [GettersTypes.getAssetIcon](state: State, getters?: GetterTree<State, State> & Getters): GetAssetIcon;
+  // [GettersTypes.getAssetsJson](state: State, getters?: GetterTree<State, State> & Getters): AssetJson[];
+  // [GettersTypes.getAssetName](state: State, getters?: GetterTree<State, State> & Getters): GetAssetName;
+  // [GettersTypes.getAssetIcon](state: State, getters?: GetterTree<State, State> & Getters): GetAssetIcon;
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
   [GettersTypes.getCurrencies](state: State, getters?: GetterTree<State, State> & Getters): TokenBalance[];
-  [GettersTypes.getAssetsPriceInterval](
-    state: State,
-    getters?: GetterTree<State, State> & Getters
-  ): NodeJS.Timer | null;
-  [GettersTypes.getActiveNodesByNetwork](
-    state: State,
-    getters?: GetterTree<State, State> & Getters
-  ): GetActiveNodesByNetwork;
+  // [GettersTypes.getAssetsPriceInterval](
+  //   state: State,
+  //   getters?: GetterTree<State, State> & Getters
+  // ): NodeJS.Timer | null;
+  // [GettersTypes.getActiveNodesByNetwork](
+  //   state: State,
+  //   getters?: GetterTree<State, State> & Getters
+  // ): GetActiveNodesByNetwork;
   [GettersTypes.getAllNetworksIsReadyToUse](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getNetworkStatus](state: State, getters?: GetterTree<State, State> & Getters): GetNetworkStatus;
   [GettersTypes.getNetworkGenesisHash](
@@ -72,6 +65,7 @@ export type Getters = {
     getters?: GetterTree<State, State> & Getters,
     rootState?: any
   ): GetAssetPrice;
+  [GettersTypes.getPrice](state: State): AssetsPrice;
 };
 
 const getters: GetterTree<State, State> & Getters = {
@@ -101,46 +95,50 @@ const getters: GetterTree<State, State> & Getters = {
       return `0x${network.chainId}`;
     },
 
-  [GettersTypes.getAssetsJson]({ assetsJson }): AssetJson[] {
-    return assetsJson;
-  },
+  // [GettersTypes.getAssetsJson]({ assetsJson }): AssetJson[] {
+  //   return assetsJson;
+  // },
 
   [GettersTypes.getFiats]({ fiats }): FiatJson[] {
     return fiats;
   },
 
+  [GettersTypes.getPrice]: ({ assetsPrice }) => {
+    return assetsPrice;
+  },
+
   [GettersTypes.getAssetPrice]:
-    ({ assetsPrice }, getters, rootState) =>
+    ({ assetsPrice }) =>
     (assetId: string) => {
-      const selectedFiat = rootState.account.selectedFiat;
-      const hours24ChangeField = `${selectedFiat}_24h_change` as KeysAssetPricesJson;
-      const price = assetsPrice[assetId]?.[selectedFiat as KeysAssetPricesJson];
-      const hours24Change = assetsPrice[assetId]?.[hours24ChangeField];
+      if (assetsPrice.tokenPriceMap[assetId] === undefined) return { price: 0, priceChange: 0 };
 
-      return { price, hours24Change };
+      const price = assetsPrice.tokenPriceMap[assetId] / 100;
+      const priceChange = assetsPrice.tokenPriceChange[assetId] / 100;
+
+      return { price, priceChange };
     },
 
-  [GettersTypes.getAssetName]:
-    ({ assetsJson }) =>
-    (assetId: string) => {
-      const asset = assetsJson.find(({ id }) => id === assetId);
+  // [GettersTypes.getAssetName]:
+  //   ({ assetsJson }) =>
+  //   (assetId: string) => {
+  //     const asset = assetsJson.find(({ id }) => id === assetId);
 
-      if (!asset) return '';
+  //     if (!asset) return '';
 
-      const { symbol, displayName } = asset;
+  //     const { symbol, displayName } = asset;
 
-      return displayName ?? symbol;
-    },
+  //     return displayName ?? symbol;
+  //   },
 
-  [GettersTypes.getAssetIcon]:
-    ({ assetsJson }) =>
-    (assetId: string) => {
-      const asset = assetsJson.find(({ id }) => id === assetId);
+  // [GettersTypes.getAssetIcon]:
+  //   ({ assetsJson }) =>
+  //   (assetId: string) => {
+  //     const asset = assetsJson.find(({ id }) => id === assetId);
 
-      if (!asset) return '';
+  //     if (!asset) return '';
 
-      return asset.icon;
-    },
+  //     return asset.icon;
+  //   },
 
   [GettersTypes.getHistory]:
     ({ history }) =>
@@ -152,15 +150,15 @@ const getters: GetterTree<State, State> & Getters = {
     return currencies;
   },
 
-  [GettersTypes.getAssetsPriceInterval]({ assetsPriceInterval }): NodeJS.Timer | null {
-    return assetsPriceInterval;
-  },
+  // [GettersTypes.getAssetsPriceInterval]({ assetsPriceInterval }): NodeJS.Timer | null {
+  //   return assetsPriceInterval;
+  // },
 
-  [GettersTypes.getActiveNodesByNetwork]:
-    ({ activeNodes }) =>
-    (networkName: string) => {
-      return activeNodes[networkName] ?? { name: '', url: '' };
-    },
+  // [GettersTypes.getActiveNodesByNetwork]:
+  //   ({ activeNodes }) =>
+  //   (networkName: string) => {
+  //     return activeNodes[networkName] ?? { name: '', url: '' };
+  //   },
 
   [GettersTypes.getAllNetworksIsReadyToUse]({ networks }): boolean {
     return !networks.some(({ apiStatus }) => apiStatus === 'pending' || apiStatus === 'connected');

@@ -2,15 +2,15 @@
   <div class="wallet">
     <header class="wallet-header">
       <div class="wallet-balance__container">
-        <!-- <WalletBalance
+        <WalletBalance
           class="balance"
           :balance="totalBalance"
           :changeWalletBalance="changeWalletBalance"
           @click.native="$emit('openFiatsPopup', true)"
-        /> -->
-        <!-- <div class="wallet-balance__loading">
+        />
+        <div class="wallet-balance__loading">
           <Loading :width="28" v-if="showShimmers" />
-        </div> -->
+        </div>
       </div>
 
       <SelectNetworkButton
@@ -92,7 +92,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import type { TMutation, TabWallet } from '@/interfaces/common';
-import type { SetSelectedNetworkProps, SelectedWallet } from '@/store';
+import type { SetSelectedNetworkProps, SelectedWallet, SetAssetsPriceProps } from '@/store';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import CurrencyItemStateLess from '@/screens/wallet&asset/wallet/CurrencyItemStateLess.vue';
@@ -105,7 +105,7 @@ import { accountController } from '@/controllers/accountController';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { addNumbers } from '@/helpers/numbers';
+import { addNumbers, getChangeWalletBalance } from '@/helpers/numbers';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
@@ -115,6 +115,7 @@ import { TokenBalance } from '@/extension/background/extension-base/src/backgrou
 import { defaultSortingCurrencies, getTotalBalance } from '@/helpers/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { AssetsPrice } from '@/interfaces';
 
 @Component({
   components: {
@@ -156,6 +157,8 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getNetworks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
+
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJsonOld;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
@@ -187,11 +190,11 @@ export default class Wallet extends Vue {
     return Object.values(this.balances);
   }
 
-  // get changeWalletBalance() {
-  //   if (Object.values(this.price).length || this.balancePrep.length === 0) return { totalBalance: 0, changeAmount: 0 };
+  get changeWalletBalance() {
+    if (this.balancePrep.length === 0) return { totalBalance: 0, changeAmount: 0 };
 
-  //   return getChangeWalletBalance(this.balancePrep, this.price);
-  // }
+    return getChangeWalletBalance(this.balancePrep, this.prices);
+  }
 
   get sortedCurrencies() {
     const { address } = this.selectedWallet;

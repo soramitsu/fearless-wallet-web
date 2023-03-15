@@ -243,8 +243,8 @@ export class FWCron {
 
   refreshPrice = () => {
     // Update for tokens price
-    const coinGeckoKeys = Object.values(this.state.getNetworkMap)
-      .map((network) => network.coinGeckoKey)
+    const coinGeckoKeys = Object.values(this.state.tokenMap)
+      .map((network) => network.priceId)
       .filter((key) => key) as string[];
 
     getTokenPrice(coinGeckoKeys)

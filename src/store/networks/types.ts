@@ -33,6 +33,7 @@ export type GetNetworkGenesisHash = (networkName: NetworkName) => HexString;
 export type GetAssetName = (assetId: string) => string;
 export type GetAssetIcon = (assetId: string) => string;
 export type GetAssetPrice = (assetId: string) => AssetPrice;
+
 export type GetNetworkStatus = (networkName: NetworkName) => NETWORK_STATUS;
 export type GetActiveNodesByNetwork = (networkName: NetworkName) => Node;
 
@@ -50,7 +51,8 @@ export type SetFiatsJsonProps = {
 };
 
 export type SetAssetsPriceProps = {
-  assetsPrice: AssetsPrice;
+  tokenPriceMap: Record<string, number>;
+  tokenPriceChange: Record<string, number>;
 };
 
 export type SetAssetsPriceIntervalProps = {

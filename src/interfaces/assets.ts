@@ -14,7 +14,7 @@ type AssetJson = {
 };
 
 type AssetPrices = {
-/* eslint-disable */
+  /* eslint-disable */
   aed: number;
   aed_24h_change: number;
   ars: number;
@@ -112,12 +112,15 @@ type AssetPrices = {
 
 interface AssetPrice {
   price: number;
-  hours24Change: number;
+  priceChange: number;
 }
 
 type AssetName = string;
 
-type AssetsPrice = Record<NetworkName | AssetName, AssetPrices>;
+type AssetsPrice = {
+  tokenPriceMap: Record<string, number>;
+  tokenPriceChange: Record<string, number>;
+};
 
 type KeysAssetPricesJson = keyof AssetPrices;
 

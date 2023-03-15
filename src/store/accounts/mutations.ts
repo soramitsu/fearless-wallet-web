@@ -53,7 +53,7 @@ const mutations: MutationTree<State> & Mutations = {
 
     state.selectedFiat = fiatName;
 
-    currencies.forEach((currency) => currency.updatePrice());
+    // currencies.forEach((currency) => currency.updatePrice());
   },
 
   [MutationTypes.SET_SELECTED_NETWORK](state, { network }) {

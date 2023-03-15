@@ -5,24 +5,6 @@ import { axios } from './axios';
 
 export const getTokenPrice = async (chains: Array<string>, currency = 'usd'): Promise<PriceJson> => {
   try {
-    // const inverseMap: Record<string, string> = {};
-    chains.push(
-      ...[
-        'ethereum',
-        'tether',
-        'usd-coin',
-        'binancecoin',
-        'binance-usd',
-        'dai',
-        'link',
-        '1inch',
-        'ape',
-        'uniswap',
-        'shiba-inu',
-        'near',
-      ]
-    );
-
     const chainsStr = chains.join(',');
     const res = await axios.get(
       `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${currency}&include_24hr_change=true&ids=${chainsStr}`

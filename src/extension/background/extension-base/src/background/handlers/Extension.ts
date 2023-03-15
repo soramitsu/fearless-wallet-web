@@ -196,6 +196,7 @@ export default class Extension {
       return address;
     }
 
+    state.generateDefaultBalance(pair);
     state.setCurrentAccount({
       address,
       name: meta?.name as string,
@@ -289,14 +290,7 @@ export default class Extension {
         currentGenesisHash: meta.genesisHash ?? null,
         isMobile: (meta.isMobile as boolean) ?? false,
       });
-    } else
-      state.setCurrentAccount({
-        address: ALL_ACCOUNT_KEY,
-        name: '',
-        ethereumAddress: ALL_ACCOUNT_KEY,
-        isMobile: false,
-        currentGenesisHash: null,
-      });
+    } else state.setCurrentAccount(undefined);
 
     return true;
   }
@@ -1585,7 +1579,10 @@ export default class Extension {
         return this.getBalance();
 
       case 'pri(balance.get.subscription)':
-        return this.subscribeBalance(id, port as Port);
+        return this.subscribeBalance(id, port);
+
+      case 'pri(app.port.ping)':
+        return true;
       /// Transfer
       case 'pri(accounts.checkTransfer)':
         return await this.checkTransfer(request as RequestCheckTransfer);

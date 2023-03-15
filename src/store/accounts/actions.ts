@@ -38,7 +38,16 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.SET_SELECTED_WALLET]({ commit }, account) {
-    if (!account) return;
+    if (!account) {
+      accountController.setSelectedWalletAddress(undefined);
+      commit(MutationTypes.SET_SELECTED_WALLET, {
+        address: '',
+        ethereumAddress: '',
+        name: '',
+      });
+
+      return;
+    }
 
     accountController.setSelectedWalletAddress(account.address);
 

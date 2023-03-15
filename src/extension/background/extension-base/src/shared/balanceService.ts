@@ -18,7 +18,7 @@ export default class BalanceService {
   // Balance
   async updateBalanceStore(chain: string, address: string, item: BalanceItem) {
     if (item.state === APIItemState.READY) {
-      this.logger.log(`Updating balance for [${chain}]`);
+      // this.logger.log(`Updating balance for [${chain}]`);
       const { balances } = await storage.get(['balances']);
       const copyBalance = { ...(balances ?? {}) };
 
@@ -29,12 +29,6 @@ export default class BalanceService {
 
       await storage.set({ balances: copyBalance });
     }
-  }
-
-  public async getBalanceObservable(address: string) {
-    const { balances } = await chrome.storage.local.get(['balances']);
-
-    return balances[address];
   }
 
   // Transaction history

@@ -1,16 +1,15 @@
 import type { MutationTree } from 'vuex';
 import type {
-  SetSelectedWalletProps,
   SetSelectedFiatProps,
   SetSelectedNetworkProps,
   SetAccountsProps,
-  SetAddressesProps,
   SetAutoSelectNode,
   SetOnlineStatus,
+  SelectedWallet,
 } from './types';
 import type { State } from './state';
 import { accountController } from '@/controllers/accountController';
-import { AccountJson, BalanceJson } from '@/extension/background/extension-base/src/background/types';
+import { BalanceJson } from '@/extension/background/extension-base/src/background/types';
 
 export enum MutationTypes {
   SET_SELECTED_WALLET = 'SET_SELECTED_WALLET',
@@ -26,7 +25,7 @@ export enum MutationTypes {
 }
 
 export type Mutations = {
-  [MutationTypes.SET_SELECTED_WALLET](state: State, props: AccountJson): void;
+  [MutationTypes.SET_SELECTED_WALLET](state: State, props: SelectedWallet): void;
   [MutationTypes.SET_SELECTED_FIAT](state: State, props: SetSelectedFiatProps): void;
   [MutationTypes.SET_SELECTED_NETWORK](state: State, props: SetSelectedNetworkProps): void;
   [MutationTypes.SET_BALANCE](state: State, props: BalanceJson): void;
@@ -48,7 +47,7 @@ const mutations: MutationTree<State> & Mutations = {
     };
   },
 
-  [MutationTypes.SET_SELECTED_FIAT](state, { fiatName, currencies }) {
+  [MutationTypes.SET_SELECTED_FIAT](state, { fiatName }) {
     accountController.setSelectedFiat(fiatName);
 
     state.selectedFiat = fiatName;

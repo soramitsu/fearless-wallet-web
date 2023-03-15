@@ -95,7 +95,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { AssetPrice, CustomEvent } from '@/interfaces';
+import type { CustomEvent } from '@/interfaces';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 

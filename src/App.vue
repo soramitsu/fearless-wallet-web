@@ -11,7 +11,6 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import { AccountJson, BalanceJson } from './extension/background/extension-base/src/background/types';
 import { Components } from './router/routes';
-import { NetworkJsonOld } from './extension/background/extension-base/src/types';
 import type {
   Accounts,
   SetOnlineStatus,
@@ -29,8 +28,10 @@ import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import {
+  getBalance,
   getNetworkMap,
   getPrice,
+  pingServiceWorker,
   subscribeAccounts,
   subscribeBalance,
   subscribeNetworkMap,
@@ -56,14 +57,21 @@ export default class App extends Vue {
       this.extensionSubscribe();
     }
 
+    this.setupSWPing();
     this.setupWallet();
     this.setupPrice();
     this.setupNetworks();
     this.setupBalance();
   }
 
-  updateBalance(balanceData: BalanceJson): void {
-    store.dispatch('SET_BALANCE', balanceData);
+  setupSWPing() {
+    setInterval(() => {
+      try {
+        pingServiceWorker();
+      } catch (error) {
+        window.close();
+      }
+    }, 24000);
   }
 
   addEventOnline() {
@@ -73,8 +81,16 @@ export default class App extends Vue {
     window.addEventListener('offline', updateOnlineStatus);
   }
 
-  setupBalance(): void {
-    subscribeBalance(null, this.updateBalance).then(this.updateBalance).catch(console.error);
+  async setupBalance() {
+    const balance = await getBalance();
+    this.updateBalance(balance);
+    subscribeBalance((data) => {
+      this.updateBalance(data);
+    }).catch(console.error);
+  }
+
+  updateBalance(balanceData: BalanceJson): void {
+    store.dispatch('SET_BALANCE', balanceData);
   }
 
   async setupNetworks() {
@@ -102,8 +118,7 @@ export default class App extends Vue {
     subscribeAccounts((accounts) => {
       this.setAccounts({ accounts });
 
-      const selectedAccount = accounts.find((el) => el.active);
-
+      const selectedAccount = accounts.length === 0 ? undefined : accounts.find((el) => el.active);
       this.setSelectedWallet(selectedAccount);
 
       if (accounts.length === 0) {

@@ -10,6 +10,7 @@ import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { base64Decode, isEthereumAddress } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
+import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import {
   AuthorizeRequest,
   AuthRequest,
@@ -130,11 +131,12 @@ export default class State {
   public subscription: FWSubscription;
   public chainRegistryMap: Record<string, ChainRegistry> = {};
   public chainRegistrySubject = new Subject<Record<string, ChainRegistry>>();
-  readonly unsubscriptionMap: Record<string, () => void> = {};
+  public readonly unsubscriptionMap: Record<string, () => void> = {};
   private readonly authorizeStore = new AuthorizeStore();
   private readonly priceStore = new PriceStore();
   private readonly evmChainSubject = new Subject<AuthUrls>();
   private readonly authorizeUrlSubject = new Subject<AuthUrls>();
+  private readonly currentAccountStore = new CurrentAccountStore();
   public authUrls: AuthUrls = {};
   public static signature: HexString | null = null;
   public defaultAuthAccountSelection: string[] = [];
@@ -151,7 +153,6 @@ export default class State {
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJsonOld>>();
   public serviceInfoSubject = new Subject<ServiceInfo>();
-  private readonly currentAccountStore = new CurrentAccountStore();
   public balanceMap: BalanceMap = {};
   public balanceSubject = new Subject<BalanceJson>();
   public customTokenState: CustomTokenJson = { erc20: [] };
@@ -162,9 +163,9 @@ export default class State {
   public signRequests: Record<string, SignRequest> = {};
   private historyMap: Record<string, TransactionHistoryItemType[]> = {};
   private historySubject = new Subject<Record<string, TransactionHistoryItemType[]>>();
-  public readonly authSubject: BehaviorSubject<AuthorizeRequest[]> = new BehaviorSubject<AuthorizeRequest[]>([]);
-  public readonly metaSubject: BehaviorSubject<MetadataRequest[]> = new BehaviorSubject<MetadataRequest[]>([]);
-  public readonly signSubject: BehaviorSubject<SigningRequest[]> = new BehaviorSubject<SigningRequest[]>([]);
+  public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
+  public readonly metaSubject = new BehaviorSubject<MetadataRequest[]>([]);
+  public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
   public balanceService = new BalanceService();
   public lazyMap: Record<string, unknown> = {};
   public ready = false;
@@ -596,7 +597,6 @@ export default class State {
         networkMap: this.networkMap,
         apiMap: this.apis,
         currentAccountInfo: accountInfo,
-        chainRegistry: this.chainRegistryMap,
       });
     });
   }
@@ -985,8 +985,6 @@ export default class State {
 
     if (!checkingAddress) return [];
 
-    if (checkingAddress === 'ALL') return Object.keys(accounts.subject.value);
-
     return [checkingAddress];
   }
 
@@ -1013,9 +1011,9 @@ export default class State {
   }
 
   public async publishBalance(reset?: boolean) {
-    const balance = await this.getBalance(reset);
-
-    this.balanceSubject.next(balance);
+    this.getBalance(reset).then((balance) => {
+      this.balanceSubject.next(balance);
+    });
   }
 
   public resetBalanceMap() {
@@ -1105,7 +1103,7 @@ export default class State {
       this.customTokenSubject.next(this.customTokenState);
     });
 
-    this.initChainRegistry();
+    this.onReady();
   }
 
   public setPrice(priceData: PriceJson, callback?: (priceData: PriceJson) => void): void {
@@ -1228,27 +1226,32 @@ export default class State {
     return keyring.getAccounts().filter((el) => isEthereumAddress(el.address));
   }
 
+  public generateDefaultBalance({ address }: KeyringAddress) {
+    if (this.balanceMap && this.balanceMap[address] !== undefined) return;
+
+    this.balanceMap[address] = {};
+
+    Object.values(this.tokenMap).forEach((token) => {
+      const networks = this.mapNetworksByToken(token.id);
+      const name = token.displayName ?? token.symbol;
+
+      const data: TokenBalance = {
+        name: token.displayName ?? token.symbol,
+        icon: token.icon,
+        priceId: token.priceId ?? '',
+        balances: networks,
+      };
+
+      if (this.balanceMap[address][name]) this.balanceMap[address][name].balances.push(...networks);
+      else this.balanceMap[address][name] = data;
+    });
+  }
+
   public generateDefaultBalanceMap() {
     const accounts = this.getSubstrateAccounts();
-    accounts.forEach(({ address }) => {
-      if (this.balanceMap[address] !== undefined) return;
 
-      this.balanceMap[address] = {};
-
-      Object.values(this.tokenMap).forEach((token) => {
-        const networks = this.mapNetworksByToken(token.id);
-        const name = token.displayName ?? token.symbol;
-
-        const data: TokenBalance = {
-          name: token.displayName ?? token.symbol,
-          icon: token.icon,
-          priceId: token.priceId ?? '',
-          balances: networks,
-        };
-
-        if (this.balanceMap[address][name]) this.balanceMap[address][name].balances.push(...networks);
-        else this.balanceMap[address][name] = data;
-      });
+    accounts.forEach((account) => {
+      this.generateDefaultBalance(account);
     });
   }
 
@@ -1282,6 +1285,7 @@ export default class State {
       callback(data);
     });
   }
+
   public pauseAllNetworks(code?: number, reason?: string) {
     // Disconnect web3 networks
     // Object.entries(this.apiMap.web3).forEach(([key, network]) => {
@@ -1370,12 +1374,6 @@ export default class State {
     this.lazyNext('setChainRegistry', () => {
       this.chainRegistrySubject.next(this.getChainRegistryMap());
     });
-  }
-
-  public initChainRegistry() {
-    //INIT TOKEN MAP THERE
-
-    this.onReady();
   }
 
   private onReady() {

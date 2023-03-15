@@ -14,14 +14,15 @@ export const getTokenPrice = async (chains: Array<string>, currency = 'usd'): Pr
       console.warn('Failed to get token price');
     }
 
-    const responseData = res.data as Record<string, any>;
+    const responseData = res.data as Record<string, Record<string, number>>;
     const priceMap: Record<string, number> = {};
     const tokenPriceMap: Record<string, number> = {};
     const tokenPriceChange: Record<string, number> = {};
 
-    Object.keys(responseData).forEach((key) => {
-      tokenPriceChange[key] = responseData[key].usd_24h_change;
-      tokenPriceMap[key] = responseData[key][currency];
+    Object.keys(responseData).forEach((token) => {
+      const key = `${currency}_24h_change`;
+      tokenPriceChange[token] = responseData[token][key];
+      tokenPriceMap[token] = responseData[token][currency];
     });
 
     return {

@@ -6,6 +6,7 @@ import type { FiatJson } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import store from '@/store';
 import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { ALL_NETWORKS } from '@/consts/networks';
 
 export enum GettersTypes {
   getSelectedWallet = 'getSelectedWallet',
@@ -59,7 +60,7 @@ const getters: GetterTree<State, State> & Getters = {
   },
 
   [GettersTypes.getSelectedNetwork]({ selectedNetworks, selectedWallet: { address } }): string {
-    return selectedNetworks[address] ?? 'all';
+    return selectedNetworks[address] ?? ALL_NETWORKS;
   },
 
   [GettersTypes.getOnlineStatus]({ isOnline }): boolean {

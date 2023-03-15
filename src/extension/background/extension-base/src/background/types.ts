@@ -157,6 +157,7 @@ export interface RequestSignatures {
 
   //App Managment - networks
   // Network, APIs, Custom tokens functions
+  'pri(app.port.ping)': [null, boolean];
   'pri(networkMap.recoverDotSama)': [string, boolean];
   'pri(networkMap.disableAll)': [null, boolean];
   'pri(networkMap.enableAll)': [null, boolean];
@@ -577,7 +578,6 @@ export interface ServiceInfo {
   apiMap: ApiMap;
   isLock?: boolean;
   currentAccountInfo: CurrentAccountInfo | undefined;
-  chainRegistry: Record<string, ChainRegistry>;
 }
 
 export interface RequestAccountBatchExport {

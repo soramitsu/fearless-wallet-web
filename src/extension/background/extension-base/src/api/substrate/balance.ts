@@ -248,7 +248,7 @@ async function subscribeTokensBalance(
 
   await api.isReady;
 
-  if (tokenList.length > 0) console.info('Get tokens balance of', networkKey, tokenList);
+  // if (tokenList.length > 0) console.info('Get tokens balance of', networkKey, tokenList);
 
   const unsubList = await Promise.all(
     tokenList.map(async ({ precision, symbol, id, type, isUtility, icon, displayName }) => {
@@ -333,9 +333,9 @@ export function subscribeBalance(
     const networkAPI = await apiProps.isReady;
     const useAddresses = apiProps.isEthereum ? evmAddresses : substrateAddresses;
 
-    if (['ethereum', 'ethereum_goerli'].includes(networkKey)) {
-      return subscribeEVMBalance(networkKey, networkAPI.api, useAddresses, web3ApiMap, callback);
-    }
+    // if (['ethereum', 'ethereum_goerli'].includes(networkKey)) {
+    //   return subscribeEVMBalance(networkKey, networkAPI.api, useAddresses, web3ApiMap, callback);
+    // }
 
     // if (!useAddresses || useAddresses.length === 0 || IGNORE_GET_SUBSTRATE_FEATURES_LIST.indexOf(networkKey) > -1) {
     //   // Return zero balance if not have any address

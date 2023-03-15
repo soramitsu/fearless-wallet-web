@@ -92,7 +92,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import type { TMutation, TabWallet } from '@/interfaces/common';
-import type { SetSelectedNetworkProps, SelectedWallet, SetAssetsPriceProps } from '@/store';
+import type { SetSelectedNetworkProps, SelectedWallet } from '@/store';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import CurrencyItemStateLess from '@/screens/wallet&asset/wallet/CurrencyItemStateLess.vue';
@@ -158,7 +158,6 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getNetworks) networks!: NetworkJsonOld[];
   @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
-
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJsonOld;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
@@ -213,10 +212,18 @@ export default class Wallet extends Vue {
     });
   }
 
+  get showShimmers() {
+    const index = this.networks.findIndex(({ apiStatus }) => {
+      return apiStatus === 'pending';
+    });
+
+    return !this.isOnline || index !== -1;
+  }
+
   get filteredCurrencies() {
     const filter = this.filterValue.trim().toLowerCase();
 
-    const isAllNetworks = this.selectedNetwork === 'All';
+    const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
 
     const result = this.sortedCurrencies.filter((currency) => {
       const walletBalance = currency.balances.map(({ name }) => name);

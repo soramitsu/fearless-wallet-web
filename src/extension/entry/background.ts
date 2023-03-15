@@ -51,12 +51,12 @@ chrome.runtime.onInstalled.addListener(async () => {
   state.onInstall();
   getActiveTabs();
 
-  handleExtensionIdling();
+  // handleExtensionIdling();
 });
 
-chrome.runtime.onStartup.addListener(() => {
-  handleExtensionIdling();
-});
+// chrome.runtime.onStartup.addListener(() => {
+//   handleExtensionIdling();
+// });
 
 chrome.alarms.create({ periodInMinutes: 0.4 });
 chrome.alarms.onAlarm.addListener(() => {

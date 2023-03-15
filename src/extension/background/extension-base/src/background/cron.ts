@@ -24,16 +24,14 @@ export class FWCron {
   private serviceSubscription: Subscription | undefined;
   private state: FWState;
   private logger: Logger;
+  private cronMap: Record<string, any> = {};
+  private subjectMap: Record<string, Subject<any>> = {};
 
   constructor(state: FWState, subscriptions: FWSubscription) {
     this.subscriptions = subscriptions;
     this.state = state;
     this.logger = createLogger('Cron');
-    // this.init();
   }
-
-  private cronMap: Record<string, any> = {};
-  private subjectMap: Record<string, Subject<any>> = {};
 
   getCron = (name: string): any => {
     return this.cronMap[name];
@@ -77,15 +75,13 @@ export class FWCron {
 
   init = () => {
     this.state.getCurrentAccount((currentAccountInfo) => {
-      if (!currentAccountInfo?.address) {
-        return;
-      }
+      if (!currentAccountInfo?.address) return;
 
       if (
         Object.keys(this.state.getSubstrateApiMap).length !== 0 ||
         Object.keys(this.state.getEvmApiMap).length !== 0
       ) {
-        this.refreshPrice();
+        // this.refreshPrice();
         this.updateApiMapStatus();
         // this.resetHistory(currentAccountInfo.address)
         // .then(() => {
@@ -97,9 +93,7 @@ export class FWCron {
   };
 
   start = () => {
-    if (this.status === 'running') {
-      return;
-    }
+    if (this.status === 'running') return;
 
     this.logger.log('Stating cron jobs');
     this.state.getCurrentAccount((currentAccountInfo) => {
@@ -111,7 +105,7 @@ export class FWCron {
         Object.keys(this.state.getSubstrateApiMap).length !== 0 ||
         Object.keys(this.state.getEvmApiMap).length !== 0
       ) {
-        this.addCron('refreshPrice', this.refreshPrice, CRON_REFRESH_PRICE_INTERVAL);
+        // this.addCron('refreshPrice', this.refreshPrice, CRON_REFRESH_PRICE_INTERVAL);
         this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
         this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
 

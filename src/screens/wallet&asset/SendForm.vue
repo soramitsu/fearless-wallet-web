@@ -66,6 +66,7 @@ import type { SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { formattedNumber, addNumbers } from '@/helpers/numbers';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { ALL_NETWORKS } from '@/consts/networks';
 
 @Component({
   components: { TransferForm },
@@ -90,7 +91,7 @@ export default class SendForm extends Vue {
   }
 
   get isUtilityAsset() {
-    if (this.selectedNetwork === 'All') return false;
+    if (this.selectedNetwork === ALL_NETWORKS) return false;
 
     return this.currency?.balances.some((el) => el.name === this.selectedNetwork && el.isUtility);
   }

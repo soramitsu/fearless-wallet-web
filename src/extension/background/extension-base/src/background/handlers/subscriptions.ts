@@ -127,6 +127,7 @@ export class FWSubscription {
           .getDecodedAddresses(address)
           .then((addresses) => {
             if (!addresses.length) return;
+
             this.updateSubscription(
               'balance',
               this.initBalanceSubscription(addresses, dotSamaApiMap, web3ApiMap, onlyRunOnFirstTime)

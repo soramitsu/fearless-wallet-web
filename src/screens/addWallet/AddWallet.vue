@@ -145,10 +145,10 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
-import type { DerivationPaths, ImportType, ValidateJsonResult, MnemonicConfirmation, TAction } from '@/interfaces';
+import { Getter, Mutation } from 'vuex-class';
+import type { DerivationPaths, ImportType, ValidateJsonResult, MnemonicConfirmation, TMutation } from '@/interfaces';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import type { SelectedWallet, SetSelectedWallet } from '@/store';
+import type { SelectedWallet } from '@/store';
 import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
 import PasswordForm from '@/screens/addWallet/PasswordForm.vue';
@@ -158,7 +158,7 @@ import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
 import AddEthereumAccountPopup from '@/screens/addWallet/AddEthereumAccountPopup.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
+import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutations';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { WarningValueName } from '@/consts/messages';
@@ -201,7 +201,7 @@ export default class AddWallet extends Vue {
   address: string | null = null;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
+  @Mutation(AccountMutationsTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SelectedWallet>;
 
   get replacedNetwork() {
     return this.$route.params.network ?? '';
@@ -751,6 +751,13 @@ export default class AddWallet extends Vue {
       undefined,
       meta
     ); // for proper work of extension
+
+    this.setSelectedWallet({
+      name: this.nickname,
+      address,
+      ethereumAddress: meta.ethereumAddress as string,
+    });
+    this.$router.push(Components.Wallet);
 
     return address;
   }

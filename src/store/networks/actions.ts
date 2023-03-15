@@ -3,12 +3,10 @@ import axios from 'axios';
 import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
 import type { FetchJsons, FetchHistory, ToggleActiveNode, AugmentedActionContext } from '@/store';
-import type { FiatJson, ApiOptions, Network } from '@/interfaces';
+import type { FiatJson, Network } from '@/interfaces';
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
 import { fetchHistory } from '@/subquery/fetchingHistory';
-import { connectToApi } from '@/helpers/networksConnection';
-import { accountController } from '@/controllers/accountController';
 
 export enum ActionTypes {
   FETCH_JSONS = 'FETCH_JSONS',

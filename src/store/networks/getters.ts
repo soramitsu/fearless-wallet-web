@@ -112,7 +112,7 @@ const getters: GetterTree<State, State> & Getters = {
     (assetId: string) => {
       if (assetsPrice.tokenPriceMap[assetId] === undefined) return { price: 0, priceChange: 0 };
 
-      const price = assetsPrice.tokenPriceMap[assetId] / 100;
+      const price = assetsPrice.tokenPriceMap[assetId];
       const priceChange = assetsPrice.tokenPriceChange[assetId] / 100;
 
       return { price, priceChange };

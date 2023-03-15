@@ -433,11 +433,8 @@ export async function getBalance(): Promise<BalanceJson> {
   return sendMessage('pri(balance.get.balance)');
 }
 
-export async function subscribeBalance(
-  request: null,
-  callback: (balanceData: BalanceJson) => void
-): Promise<BalanceJson> {
-  return sendMessage('pri(balance.get.subscription)', request, callback);
+export async function subscribeBalance(callback: (balanceData: BalanceJson) => void): Promise<BalanceJson> {
+  return sendMessage('pri(balance.get.subscription)', null, callback);
 }
 
 export async function subscribeHistory(
@@ -533,4 +530,8 @@ export async function enableAllNetwork(): Promise<boolean> {
 
 export async function resetDefaultNetwork(): Promise<boolean> {
   return sendMessage('pri(networkMap.resetDefault)', null);
+}
+
+export async function pingServiceWorker(): Promise<boolean> {
+  return sendMessage('pri(app.port.ping)');
 }

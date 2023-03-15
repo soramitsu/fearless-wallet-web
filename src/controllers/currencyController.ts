@@ -283,23 +283,6 @@ export default class CurrencyController {
   }
 
   /**
-   * Get total fiat balance by network
-   * @param {Wallet} wallet
-   * @param {NetworkName} network
-   * @returns {string}
-   */
-  // TODO: функция сейчас не используется, удалить если не начнем использовать
-  public getTotalFiatBalance(wallet: Wallet, network?: NetworkName): string {
-    if (network && network !== 'all') {
-      return this.getFiatBalanceInNetwork(wallet, network, 'total');
-    }
-
-    const totalCountAssets = this.calculateCountAssets(wallet).total;
-
-    return this.calculateCost(totalCountAssets).toString();
-  }
-
-  /**
    * Get transferable fiat balance by network
    * @param {Wallet} wallet
    * @param {NetworkName} network

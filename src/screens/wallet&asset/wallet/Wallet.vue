@@ -287,7 +287,8 @@ export default class Wallet extends Vue {
 
   toggleNetworkManagementVisible() {
     this.showNetworkManagement = !this.showNetworkManagement;
-    this.showSelectNetworkPopup = false;
+
+    this.toggleSelectNetworkPopupVisible(false);
   }
 
   toggleAssetsManagementFormVisible(value = true) {
@@ -359,10 +360,10 @@ export default class Wallet extends Vue {
     this.toggleSelectNetworkPopupVisible();
   }
 
-  toggleSelectNetworkPopupVisible() {
+  toggleSelectNetworkPopupVisible(value?: boolean) {
     const targetElement = (this.$refs[this.selectNetworkButtonRef] as Vue).$el as HTMLElement;
 
-    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
+    this.showSelectNetworkPopup = value ?? !this.showSelectNetworkPopup;
 
     targetElement.style.zIndex = this.showSelectNetworkPopup ? '400' : '0';
   }

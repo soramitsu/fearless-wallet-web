@@ -36,7 +36,7 @@
           @click="openFullScreen"
         />
 
-        <div v-if="isExtension" class="background-ellipse button-margin" @click="toggleConnectionPopup">
+        <div v-if="useIsPopup" class="background-ellipse button-margin" @click="toggleConnectionPopup">
           <Loading v-if="!tabStatus" />
 
           <template v-else>
@@ -117,8 +117,8 @@ export default class Header extends Vue {
     return !this.tabStatus || !this.tabStatus.isAuthorize ? 'header.notConnected' : 'header.connected';
   }
 
-  get isExtension() {
-    return BaseApi.isExtension();
+  get useIsPopup() {
+    return BaseApi.useIsPopup();
   }
 
   @Watch('syncedShowSelectWalletPopup')

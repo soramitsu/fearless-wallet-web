@@ -1,5 +1,10 @@
 <template>
-  <Lazy v-if="showCurrencyItem" :timeoutCallback="timeoutCallback" class="currency-item" @click.native="openAssetPage">
+  <Lazy
+    v-if="showCurrencyItem"
+    :timeoutCallback="timeoutCallback"
+    :class="currencyClasses"
+    @click.native="openAssetPage"
+  >
     <div v-if="showAssetsManagementForm" class="drag-icon">
       <SIcon name="basic-menu-24" class="handle" />
     </div>
@@ -123,6 +128,15 @@ export default class CurrencyItem extends Vue {
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
 
+  get currencyClasses() {
+    return [
+      'currency-item',
+      {
+        'currency-item-management': this.showAssetsManagementForm,
+      },
+    ];
+  }
+
   get showShimmers() {
     if (this.isCurrentNetwork) return !this.isOnline || this.getNetworkStatus(this.selectedNetwork) === 'pending';
 
@@ -136,6 +150,8 @@ export default class CurrencyItem extends Vue {
   }
 
   get showWarning() {
+    if (this.showAssetsManagementForm) return false;
+
     if (this.isCurrentNetwork) return this.getNetworkStatus(this.selectedNetwork) === 'disconnected';
 
     return this.currency.getNetworkList().every(({ network }) => {
@@ -262,10 +278,7 @@ export default class CurrencyItem extends Vue {
   margin-right: 16px;
   align-items: center;
   height: 80px;
-
-  &:hover {
-    cursor: pointer;
-  }
+  cursor: pointer;
 
   &:last-child {
     border-bottom: none;
@@ -273,10 +286,7 @@ export default class CurrencyItem extends Vue {
 
   .drag-icon {
     margin: auto 20px auto 0;
-
-    &:hover {
-      cursor: pointer;
-    }
+    cursor: pointer;
 
     i {
       color: #fff;
@@ -303,10 +313,7 @@ export default class CurrencyItem extends Vue {
 
       .additional {
         border-radius: 50%;
-
-        &:hover {
-          cursor: pointer;
-        }
+        cursor: pointer;
       }
     }
 
@@ -404,5 +411,9 @@ export default class CurrencyItem extends Vue {
       margin-right: 0;
     }
   }
+}
+
+.currency-item-management {
+  cursor: default;
 }
 </style>

@@ -136,8 +136,8 @@ import MaxButton from './MaxButton.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
 import RotateInput from './RotateInput.vue';
-import type { Currencies, Networks } from '@/interfaces';
-import type { GetAssetName } from '@/store';
+import type { Networks } from '@/interfaces';
+import type { GetAssetPrice } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import FloatInput from '@/components/FloatInput.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -146,7 +146,10 @@ import { SelectedWallet } from '@/store';
 import { firstCharToUp } from '@/helpers/common';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
-import NetworksController from '@/controllers/networksController';
+import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { checkTransfer } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -183,15 +186,20 @@ export default class SendForm extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) onlineStatus!: string;
-  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
-  @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
+  @Getter(AccountsGettersTypes.getBalances) currencies!: TokenBalance[];
+  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
+  @Getter(NetworksGettersTypes.getNetworks) getNetworks!: NetworkJsonOld[];
+
+  // @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
 
   get placeholderSelectPopup() {
     return this.showSelectedAssetPopup ? 'common.searchAmongAssets' : 'common.searchNetwork';
   }
 
-  get showTransferableValue() {
-    return this.currency?.price !== 0;
+  get assetPrice() {
+    if (this.currency?.id) return this.getAssetPrice(this.currency.id).price;
+
+    return 0;
   }
 
   get placeholderNetwork() {
@@ -288,7 +296,9 @@ export default class SendForm extends Vue {
   }
 
   get currency() {
-    return this.currencies.find(({ assetId }) => assetId === this.syncedSelectedAssetId);
+    // console.log(this.syncedSelectedAssetId);
+
+    return this.currencies.find(({ name }) => name === this.syncedSelectedAssetId);
   }
 
   get options() {
@@ -299,22 +309,19 @@ export default class SendForm extends Vue {
     else if (this.showSelectNetworkPopup) options = this.optionsNetworks;
     else if (this.showDestNetPopup) options = this.optionsDestNet;
 
-    return options.filter(({ label }) => {
-      return label.toLowerCase().includes(filter);
+    return options.filter(({ name }) => {
+      return name.toLowerCase().includes(filter);
     });
   }
 
   get optionsNetworks() {
-    const walletBalance = this.currency?.getNetworkList() ?? [];
+    const walletBalance = this.currency?.balances ?? [];
 
-    return walletBalance.map(({ network }) => {
-      const { icon } = NetworksController.getNetwork(network);
-
+    return walletBalance.map(({ name, icon }) => {
       return {
-        label: firstCharToUp(network),
-        value: `${network}`,
-        path: icon,
-        relayChain: this.currency?.relayChain,
+        name: firstCharToUp(name),
+        value: name,
+        icon,
       };
     });
   }
@@ -324,21 +331,22 @@ export default class SendForm extends Vue {
   }
 
   get transferrableAmount() {
-    const count = +(this.currency?.getTransferableCountAssets(this.selectedWallet, this.syncedSelectedNetwork) ?? 0);
+    const count = +(
+      this.currency?.balances.find((network) => network.name.toLowerCase() === this.syncedSelectedNetwork.toLowerCase())
+        ?.total ?? 0
+    );
 
     return count.toString();
   }
 
   get transferrableValue() {
-    const cost = +(this.currency?.getCostOfAssets(this.transferrableAmount) ?? 0);
+    const cost = getCostOfAssets(this.transferrableAmount, this.assetPrice) ?? 0;
 
     return this.$n(cost, 'price');
   }
 
   get selectedAssetUpper() {
-    const assetName = this.getAssetName(this.syncedSelectedAssetId);
-
-    return assetName.toUpperCase();
+    return this.currency!.name.toUpperCase();
   }
 
   get optionsCurrency() {
@@ -391,22 +399,30 @@ export default class SendForm extends Vue {
   @Watch('syncedAmount')
   async createSendTransfer() {
     this.syncedPartialFee = '';
-
+    const isValid = checkTransfer({
+      networkKey: this.syncedSelectedNetwork,
+      from: this.selectedWallet.address,
+      to: this.syncedRecipient,
+      value: this.syncedAmount,
+      transferAll: false,
+      token: this.syncedSelectedAssetId,
+    });
+    // console.log(isValid, 'check tx');
     if (
       (this.extrinsicType === 'transfer' && (!this.isValidRecipientAddress || this.syncedSelectedNetwork === '')) ||
       (this.extrinsicType === 'teleport' && (!this.isValidDirection || this.syncedSelectedNetwork === ''))
     )
       return;
 
-    const partialFee = await this.createTransferAndGetFee();
+    // const partialFee = await this.createTransferAndGetFee();
 
-    this.syncedPartialFee = partialFee;
-    this.isValidCountAssets = this.currency!.validateCountAssets(
-      this.syncedAmount,
-      partialFee,
-      this.syncedSelectedNetwork,
-      this.selectedWallet
-    );
+    // this.syncedPartialFee = partialFee;
+    // this.isValidCountAssets = this.currency!.validateCountAssets(
+    //   this.syncedAmount,
+    //   partialFee,
+    //   this.syncedSelectedNetwork,
+    //   this.selectedWallet
+    // );
   }
 
   mounted() {
@@ -433,7 +449,7 @@ export default class SendForm extends Vue {
 
   toggleSelectedNetwork(value: string) {
     if (this.showSelectedAssetPopup) {
-      this.syncedSelectedAssetId = value;
+      this.syncedSelectedAssetId = value.toLowerCase();
 
       this.toggleSelectPopupVisible(true, false, false);
 
@@ -457,24 +473,24 @@ export default class SendForm extends Vue {
     if (this.extrinsicType === 'transfer') {
       if (!this.isValidRecipientAddress || this.syncedSelectedNetwork === '') return '0';
 
-      this.currency!.createTransferExtrinsic(
-        this.selectedWallet,
-        this.syncedRecipient,
-        amount ?? this.syncedAmount,
-        this.syncedSelectedNetwork
-      );
+      // this.currency!.createTransferExtrinsic(
+      //   this.selectedWallet,
+      //   this.syncedRecipient,
+      //   amount ?? this.syncedAmount,
+      //   this.syncedSelectedNetwork
+      // );
     } else {
       if (!this.isValidDirection || this.syncedSelectedNetwork === '') return '0';
 
-      this.currency!.createTeleportExtrinsic(
-        this.selectedWallet,
-        this.syncedSelectedNetwork,
-        this.syncedDestNet,
-        amount ?? this.syncedAmount
-      );
+      // this.currency!.createTeleportExtrinsic(
+      //   this.selectedWallet,
+      //   this.syncedSelectedNetwork,
+      //   this.syncedDestNet,
+      //   amount ?? this.syncedAmount
+      // );
     }
 
-    return this.currency!.extrinsicOptions.fee!;
+    // return this.currency!.extrinsicOptions.fee!;
   }
 
   updateAmount(value: string) {
@@ -502,29 +518,37 @@ export default class SendForm extends Vue {
   async setMaxValue() {
     if (!this.currency) return;
 
-    const maxTransferableCountAssets = this.currency?.getTransferableCountAssets(
-      this.selectedWallet,
-      this.syncedSelectedNetwork
-    );
-    const partialFee = await this.createTransferAndGetFee(maxTransferableCountAssets);
-    const transferableCountAssets = this.currency
-      .getTransferableCountAssetsMinusFee(partialFee, this.syncedSelectedNetwork, this.selectedWallet)
-      .toString();
+    // const maxTransferableCountAssets = this.currency?.getTransferableCountAssets(
+    //   this.selectedWallet,
+    //   this.syncedSelectedNetwork
+    // );
+    // const partialFee = await this.createTransferAndGetFee(maxTransferableCountAssets);
+    // const transferableCountAssets = this.currency
+    //   .getTransferableCountAssetsMinusFee(partialFee, this.syncedSelectedNetwork, this.selectedWallet)
+    //   .toString();
 
-    this.syncedAmount = transferableCountAssets;
-    this.syncedValue = this.currency.getCostOfAssets(transferableCountAssets).toString();
+    // this.syncedAmount = transferableCountAssets;
+    // this.syncedValue = getCostOfAssets(transferableCountAssets, this.assetPrice).toString();
   }
 
   handlerContinueButton(skipWarning = false) {
     if (!skipWarning && this.step === 1) {
-      this.showExistentialPopup = !this.currency!.validateExistentialDeposit(
-        this.selectedWallet,
-        this.syncedSelectedNetwork,
-        this.syncedAmount,
-        this.syncedPartialFee
-      );
+      const isValid = checkTransfer({
+        networkKey: this.syncedSelectedNetwork,
+        from: this.syncedRecipient,
+        to: this.syncedRecipient,
+        value: this.syncedAmount,
+        transferAll: false,
+        token: this.syncedSelectedAssetId,
+      });
+      // this.showExistentialPopup = !this.currency!.validateExistentialDeposit(
+      //   this.selectedWallet,
+      //   this.syncedSelectedNetwork,
+      //   this.syncedAmount,
+      //   this.syncedPartialFee
+      // );
 
-      if (this.showExistentialPopup) return;
+      // if (this.showExistentialPopup) return;
     }
 
     if (this.step === 2) {

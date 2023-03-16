@@ -72,10 +72,11 @@ export default class BaseApi {
   }
 
   public static getWalletIncludingReplacedAccount(wallet: Wallet, network: string): Wallet {
-    const replacedAccountByNetwork = BaseApi.getReplacedAccountByNetwork(wallet, network);
-    const address = replacedAccountByNetwork?.address;
+    // const replacedAccountByNetwork = BaseApi.getReplacedAccountByNetwork(wallet, network);
+    // const address = replacedAccountByNetwork?.address;
 
-    return address ? ({ address, ethereumAddress: address } as Wallet) : wallet;
+    // return address ? ({ address, ethereumAddress: address } as Wallet) : wallet;
+    return wallet;
   }
 
   public static saveAddress(address: string, meta: KeyringPair$Meta) {
@@ -115,32 +116,32 @@ export default class BaseApi {
     return pair;
   }
 
-  public static getReplacedAccounts({ address, ethereumAddress }: Wallet): KeyringPair[] {
-    return BaseApi.getAccounts()
-      .filter(async (account) => {
-        const { meta } = await getAccountMeta({ address: account.address });
-        const { isReplacedAccount, replacedSettings } = getReplacedMetaTyped(meta);
+  // public static getReplacedAccounts({ address, ethereumAddress }: Wallet): KeyringPair[] {
+  //   return BaseApi.getAccounts()
+  //     .filter(async (account) => {
+  //       const { meta } = await getAccountMeta({ address: account.address });
+  //       const { isReplacedAccount, replacedSettings } = getReplacedMetaTyped(meta);
 
-        if (!isReplacedAccount) return false;
+  //       if (!isReplacedAccount) return false;
 
-        const hasAddress = Object.prototype.hasOwnProperty.call(replacedSettings, address);
-        const hasEthereumAddress = Object.prototype.hasOwnProperty.call(replacedSettings, ethereumAddress);
+  //       const hasAddress = Object.prototype.hasOwnProperty.call(replacedSettings, address);
+  //       const hasEthereumAddress = Object.prototype.hasOwnProperty.call(replacedSettings, ethereumAddress);
 
-        return hasAddress || hasEthereumAddress;
-      })
-      .map(({ address }) => BaseApi.getPair(address));
-  }
+  //       return hasAddress || hasEthereumAddress;
+  //     })
+  //     .map(({ address }) => BaseApi.getPair(address));
+  // }
 
-  public static getReplacedAccountByNetwork(wallet: Wallet, network: string): KeyringPair | undefined {
-    const { address, ethereumAddress } = wallet;
+  // public static getReplacedAccountByNetwork(wallet: Wallet, network: string): KeyringPair | undefined {
+  //   const { address, ethereumAddress } = wallet;
 
-    return BaseApi.getReplacedAccounts(wallet).find(({ meta }) => {
-      const { replacedSettings } = getReplacedMetaTyped(meta);
-      const networksList = replacedSettings[address] ?? replacedSettings[ethereumAddress];
+  //   return BaseApi.getReplacedAccounts(wallet).find(({ meta }) => {
+  //     const { replacedSettings } = getReplacedMetaTyped(meta);
+  //     const networksList = replacedSettings[address] ?? replacedSettings[ethereumAddress];
 
-      return networksList.includes(network);
-    });
-  }
+  //     return networksList.includes(network);
+  //   });
+  // }
 
   /**
    * Get the address to display to the user, taking into account the network and replaced the account
@@ -425,15 +426,15 @@ export default class BaseApi {
 
     if (ethereumAddress !== '') BaseApi.deleteAccount(ethereumAddress);
 
-    // delete replaced accounts
-    BaseApi.getReplacedAccounts({ address, ethereumAddress })
-      .filter(({ meta }) => {
-        const { replacedSettings } = getReplacedMetaTyped(meta);
+    // // delete replaced accounts
+    // BaseApi.getReplacedAccounts({ address, ethereumAddress })
+    //   .filter(({ meta }) => {
+    //     const { replacedSettings } = getReplacedMetaTyped(meta);
 
-        // if replaced account are used only for this main wallet
-        return Object.keys(replacedSettings).length === 1;
-      })
-      .forEach(({ address }) => BaseApi.deleteAccount(address));
+    //     // if replaced account are used only for this main wallet
+    //     return Object.keys(replacedSettings).length === 1;
+    //   })
+    //   .forEach(({ address }) => BaseApi.deleteAccount(address));
 
     forgetAccount(address, 'native');
 

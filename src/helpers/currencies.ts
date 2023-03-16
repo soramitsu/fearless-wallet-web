@@ -170,17 +170,16 @@ function getProviderUrl(name: 'moonpay' | 'ramp', asset: string, address: string
   return provider[name];
 }
 
-function getCurrencyOptions(currencies: Currencies) {
-  return currencies.map(({ assetId, relayChain, displayName }) => {
-    const assetUpper = displayName.toUpperCase();
-    const filteredOptions = currencies.filter(({ displayName: _displayName }) => _displayName === displayName);
-    const label = filteredOptions.length > 1 ? `${assetUpper} (${relayChain.toUpperCase()})` : assetUpper;
+function getCurrencyOptions(currencies: TokenBalance[]) {
+  return currencies.map(({ id, name: _name, icon }) => {
+    const assetUpper = _name.toUpperCase();
+    const filteredOptions = currencies.filter(({ name }) => name === _name);
+    const label = filteredOptions.length > 1 ? `${assetUpper} (${'test'.toUpperCase()})` : assetUpper;
 
     return {
-      label,
-      value: assetId,
-      path: assetId,
-      relayChain,
+      name: label,
+      value: id,
+      icon,
     };
   });
 }

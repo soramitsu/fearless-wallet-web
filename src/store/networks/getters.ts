@@ -119,7 +119,7 @@ const getters: GetterTree<State, State> & Getters = {
     },
 
   // [GettersTypes.getAssetName]:
-  //   ({  }) =>
+  //   ({}) =>
   //   (assetId: string) => {
   //     const asset = assetsJson.find(({ id }) => id === assetId);
 

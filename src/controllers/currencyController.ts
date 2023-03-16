@@ -110,32 +110,33 @@ export default class CurrencyController {
   private getWalletBalance(wallet: Wallet): WalletBalance[] {
     const { address, ethereumAddress } = wallet;
 
-    const replacedAccounts = BaseApi.getReplacedAccounts(wallet);
-    const replacedNetworks = replacedAccounts.reduce((result, { address: _address, meta }) => {
-      const { replacedSettings } = getReplacedMetaTyped(meta);
-      const replacedNetworks = replacedSettings[address] ?? replacedSettings[ethereumAddress];
+    // const replacedAccounts = BaseApi.getReplacedAccounts(wallet);
+    // const replacedNetworks = replacedAccounts.reduce((result, { address: _address, meta }) => {
+    //   const { replacedSettings } = getReplacedMetaTyped(meta);
+    //   const replacedNetworks = replacedSettings[address] ?? replacedSettings[ethereumAddress];
 
-      replacedNetworks.forEach((network) => (result[network] = _address));
+    //   replacedNetworks.forEach((network) => (result[network] = _address));
 
-      return result;
-    }, {} as Record<string, string>);
+    //   return result;
+    // }, {} as Record<string, string>);
 
     return this.balances.map((item) => {
       const { network, type, precision, existentialDeposit, balance, assetId } = item;
       const isEthereumNetwork = BaseApi.isEthereumNetwork(network);
-      const replacedAddress = replacedNetworks[network];
-      const walletBalance = replacedAddress
-        ? balance[replacedAddress]
-        : isEthereumNetwork
-        ? balance[ethereumAddress]
-        : balance[address];
+      // const replacedAddress = replacedNetworks[network];
+      // const walletBalance = replacedAddress
+      //   ? balance[replacedAddress]
+      //   : isEthereumNetwork
+      //   ? balance[ethereumAddress]
+      //   : balance[address];
 
       return {
         network,
         type,
         precision,
         existentialDeposit,
-        balance: walletBalance ?? mockFPBalance,
+        // balance: walletBalance ?? mockFPBalance,
+        balance: mockFPBalance,
         assetId,
       };
     });
@@ -219,13 +220,13 @@ export default class CurrencyController {
    */
   public getTransactionAddress(wallet: Wallet, network: NetworkName): string {
     const { address, ethereumAddress } = wallet;
-    const replacedAccount = BaseApi.getReplacedAccountByNetwork(wallet, network);
+    // const replacedAccount = BaseApi.getReplacedAccountByNetwork(wallet, network);
 
-    if (replacedAccount) {
-      const { address } = replacedAccount;
+    // if (replacedAccount) {
+    //   const { address } = replacedAccount;
 
-      return address;
-    }
+    //   return address;
+    // }
 
     return BaseApi.isEthereumNetwork(network) ? ethereumAddress : address;
   }

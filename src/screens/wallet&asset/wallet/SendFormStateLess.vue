@@ -1,7 +1,7 @@
 <template>
   <TransferForm
     extrinsicType="transfer"
-    header="asset.sendFunds"
+    header="assets.sendFunds"
     :selectedAssetId="selectedAssetId"
     :selectedNetwork="selectedNetwork"
     :amount="amount"
@@ -119,7 +119,7 @@ export default class SendFormStateLess extends Vue {
   }
 
   get selectedAsset() {
-    return this.balances.find((el) => el.name === this.selectedAssetId)!;
+    return this.balances.find((el) => el.name.toLowerCase() === this.selectedAssetId.toLowerCase())!;
     // return this.getAssetName(this.selectedAssetId);
   }
 
@@ -128,9 +128,9 @@ export default class SendFormStateLess extends Vue {
   }
 
   get totalString() {
-    const total = addNumbers([this.amount, this.partialFee]);
+    const total = +addNumbers([this.amount, this.partialFee]);
 
-    return `${formattedNumber(+total, { decimalsValue: 7 })} ${this.selectedAssetUpper}`;
+    return `${formattedNumber(total, { decimalsValue: 7 })} ${this.selectedAssetUpper}`;
   }
 
   created() {

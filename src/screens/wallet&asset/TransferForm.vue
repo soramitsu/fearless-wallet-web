@@ -453,11 +453,11 @@ export default class SendForm extends Vue {
     this.toggleSelectPopupVisible(false, false, true);
   }
 
-  createTransferAndGetFee(amount?: string) {
+  async createTransferAndGetFee(amount?: string) {
     if (this.extrinsicType === 'transfer') {
       if (!this.isValidRecipientAddress || this.syncedSelectedNetwork === '') return '0';
 
-      this.currency!.createTransferExtrinsic(
+      await this.currency!.createTransferExtrinsic(
         this.selectedWallet,
         this.syncedRecipient,
         amount ?? this.syncedAmount,
@@ -466,7 +466,7 @@ export default class SendForm extends Vue {
     } else {
       if (!this.isValidDirection || this.syncedSelectedNetwork === '') return '0';
 
-      this.currency!.createTeleportExtrinsic(
+      await this.currency!.createTeleportExtrinsic(
         this.selectedWallet,
         this.syncedSelectedNetwork,
         this.syncedDestNet,

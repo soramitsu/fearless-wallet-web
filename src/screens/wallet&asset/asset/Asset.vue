@@ -218,7 +218,7 @@ export default class Asset extends Vue {
   }
 
   get showSwapButton() {
-    return isSora(this.selectedNetwork);
+    return isSora(this.selectedNetwork) && BaseApi.getWalletType(this.selectedWallet.address) === 'native';
   }
 
   get currentCurrency() {

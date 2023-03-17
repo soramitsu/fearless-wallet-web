@@ -92,6 +92,7 @@ export default class BaseApi {
 
   public static getWalletType(address: string): WalletTypes | null {
     const substrateAddress = BaseApi.encodeAddress(address);
+
     if (BaseApi.getAccount(substrateAddress)) return 'native';
     if (BaseApi.getAddress(substrateAddress)?.meta.isMobile) return 'mobile';
 

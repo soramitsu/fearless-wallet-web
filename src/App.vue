@@ -9,8 +9,9 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
-import { AccountJson, BalanceJson } from './extension/background/extension-base/src/background/types';
+import { AccountJson, BalanceJson, PriceJson } from './extension/background/extension-base/src/background/types';
 import { Components } from './router/routes';
+import NetworksController from './controllers/networksController';
 import type {
   Accounts,
   SetOnlineStatus,
@@ -25,6 +26,7 @@ import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
+import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import {
@@ -57,6 +59,7 @@ export default class App extends Vue {
       this.extensionSubscribe();
     }
 
+    await NetworksController.loadJsons();
     this.setupSWPing();
     this.setupWallet();
     this.setupPrice();
@@ -84,6 +87,7 @@ export default class App extends Vue {
   async setupBalance() {
     const balance = await getBalance();
     this.updateBalance(balance);
+
     subscribeBalance((data) => {
       this.updateBalance(data);
     }).catch(console.error);
@@ -103,15 +107,17 @@ export default class App extends Vue {
   }
 
   async setupPrice() {
-    const { currency, tokenPriceMap: priceMap, tokenPriceChange: priceChange } = await getPrice();
-    this.setSelectedFiat({ fiatName: currency });
-    this.setPrices({ tokenPriceMap: priceMap, tokenPriceChange: priceChange });
+    const priceJson = await getPrice();
+    this.updatePrice(priceJson);
 
-    subscribePrice((info) => {
-      const { currency, tokenPriceMap, tokenPriceChange } = info;
-      this.setSelectedFiat({ fiatName: currency });
-      this.setPrices({ tokenPriceMap, tokenPriceChange });
-    });
+    subscribePrice((priceUpdates) => {
+      this.updatePrice(priceUpdates);
+    }).catch(console.error);
+  }
+
+  updatePrice({ currency, tokenPriceMap, tokenPriceChange }: PriceJson) {
+    this.setSelectedFiat({ fiatName: currency });
+    this.setPrices({ tokenPriceMap, tokenPriceChange });
   }
 
   setupWallet() {

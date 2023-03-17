@@ -125,7 +125,7 @@ const getters: GetterTree<State, State> & Getters = {
 
       if (!asset) return '';
 
-      return asset.icon;
+      return asset?.icon ?? '';
     },
 
   [GettersTypes.getHistory]:

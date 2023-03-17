@@ -84,7 +84,7 @@ type ComponentText =
   | string
   | {
       text: string;
-      localeProps: TextLocaleProps;
+      localeProps?: TextLocaleProps;
     };
 
 interface ChangeWalletBalance {

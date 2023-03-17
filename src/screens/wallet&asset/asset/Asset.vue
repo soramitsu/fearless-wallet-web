@@ -51,6 +51,14 @@
         iconName="plus-pink"
         @click="toggleVisible('showBuyPopup', true)"
       />
+
+      <BorderButton
+        v-if="showSwapButton"
+        class="activity-button"
+        text="assets.swap"
+        iconName="swap"
+        @click="toggleVisible('showSwapForm', true)"
+      />
     </div>
 
     <History :currency="currentCurrency" @openHistoryDetailsForm="openHistoryDetailsForm" />
@@ -74,6 +82,13 @@
       :_originalNetwork="selectedNetwork"
       :_selectedAssetId="selectedAssetId"
       :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
+    />
+
+    <SwapForm
+      v-if="showSwapForm"
+      :selectedNetwork="selectedNetwork"
+      :_selectedAssetId="selectedAssetId"
+      :closeForm="toggleVisible.bind(null, 'showSwapForm', false)"
     />
 
     <BuyPopup
@@ -131,6 +146,7 @@ import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue'
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import TeleportForm from '@/screens/wallet&asset/TeleportForm.vue';
+import SwapForm from '@/screens/wallet&asset/swap/SwapForm.vue';
 import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
 import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
@@ -141,16 +157,16 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { tieAccount } from '@/extension/messaging';
 import { Network } from '@/interfaces';
+import { isSora, firstCharToUp } from '@/helpers/common';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
-import { firstCharToUp } from '@/helpers/common';
-import NetworksController from '@/controllers/networksController';
 
-type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
+type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup' | 'showSwapForm';
 
 @Component({
   components: {
     History,
     SendForm,
+    SwapForm,
     BuyPopup,
     ReceiveForm,
     TeleportForm,
@@ -167,11 +183,13 @@ export default class Asset extends Vue {
   showSendForm = false;
   showReceiveForm = false;
   showTeleportForm = false;
+  showSwapForm = false;
   showBuyPopup = false;
   showHistoryDetailsForm = false;
   showSelectNetworkPopup = false;
   showBalanceDetailsPopup = false;
   filterValue = '';
+
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -197,6 +215,10 @@ export default class Asset extends Vue {
 
   get showBuyButton() {
     return this.providers.length !== 0 && this.currentCurrency?.mainNetwork === this.selectedNetwork;
+  }
+
+  get showSwapButton() {
+    return isSora(this.selectedNetwork) && BaseApi.getWalletType(this.selectedWallet.address) === 'native';
   }
 
   get currentCurrency() {
@@ -262,7 +284,7 @@ export default class Asset extends Vue {
 
     return walletBalance
       .map(({ network, type }) => {
-        const icon = NetworksController.getNetwork(network).icon;
+        const icon = this.getNetwork(network).icon;
 
         return {
           label: firstCharToUp(network),
@@ -378,7 +400,11 @@ export default class Asset extends Vue {
           min-height: 18px;
           min-width: 18px;
           margin-left: 10px;
-          opacity: 0.5;
+          color: $grayish-white;
+
+          &:hover {
+            color: $default-white;
+          }
         }
       }
 

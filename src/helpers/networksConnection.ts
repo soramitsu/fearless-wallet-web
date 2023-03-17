@@ -1,8 +1,10 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
+import { connection as soraConnection } from '@sora-substrate/util';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { Network, ApiOptions, AssetJson } from '@/interfaces';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
 import type { Node } from '@/interfaces/nodes';
+import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
 import { formatBalance } from '@/util/balances';
 import { MutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -11,6 +13,7 @@ import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 import { getAccounts } from '@/helpers/accounts';
 import store from '@/store';
 import { accountController } from '@/controllers/accountController';
+import { isSora } from '@/helpers/common';
 import NetworksController from '@/controllers/networksController';
 
 interface ISubscribeData {
@@ -18,11 +21,11 @@ interface ISubscribeData {
 }
 
 const connectedHandler = (apiOptions: ApiOptions, network: Network) => {
-  apiOptions.apiRetry = 0;
+  const api = isSora(network.name) ? soraConnection.api : apiOptions.api;
 
   store.commit(MutationTypes.SET_NETWORK_API, {
     network: network.name,
-    api: apiOptions.api,
+    api,
     provider: apiOptions.provider,
   });
 
@@ -32,7 +35,12 @@ const connectedHandler = (apiOptions: ApiOptions, network: Network) => {
   });
 };
 
-const disconnectHandler = (apiOptions: ApiOptions, network: Network, provider: WsProvider, tryAnotherNode: boolean) => {
+const disconnectHandler = (
+  apiOptions: ApiOptions,
+  network: Network,
+  tryAnotherNode: boolean,
+  currentProvider?: WsProvider
+) => {
   apiOptions.apiRetry += 1;
 
   store.commit(MutationTypes.SET_NETWORK_API, {
@@ -42,7 +50,7 @@ const disconnectHandler = (apiOptions: ApiOptions, network: Network, provider: W
   });
 
   if (apiOptions.apiRetry >= MAX_CONTINUE_RETRY) {
-    provider.disconnect();
+    currentProvider?.disconnect();
 
     if (tryAnotherNode) {
       apiOptions.apiRetry = 0;
@@ -68,12 +76,16 @@ const readyHandler = (network: Network) => {
   });
 };
 
-function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): void {
+async function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): Promise<void> {
   const { name: networkName, nodes } = network;
   const activeNodes = accountController.getActiveNodes();
   const autoSelectNode = store.getters.getAutoSelectNodesValueByNetwork(networkName);
   const nodesList = autoSelectNode ? nodes : [activeNodes[networkName]];
   const node = _node ?? nodesList[apiOptions.nodeIndex];
+  const eventListeners: Array<['connected' | 'disconnected' | 'ready', ProviderInterfaceEmitCb]> = [
+    ['connected', () => connectedHandler(apiOptions, network)],
+    ['ready', () => readyHandler(network)],
+  ];
 
   store.commit(MutationTypes.SET_NETWORK_STATUS, {
     network: networkName,
@@ -89,15 +101,23 @@ function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): v
     saveNode: _node !== undefined,
   });
 
-  const provider = new WsProvider(node.url, AUTO_CONNECT_MS);
-  const api = new ApiPromise({ provider, noInitWarn: true });
+  if (isSora(network.name)) {
+    eventListeners.push(['disconnected', () => disconnectHandler(apiOptions, network, _node === undefined)]);
 
-  apiOptions.api = api;
-  apiOptions.provider = provider;
+    await soraConnection.open(node.url, {
+      autoConnectMs: AUTO_CONNECT_MS,
+      eventListeners,
+    });
+  } else {
+    const provider = new WsProvider(node.url, AUTO_CONNECT_MS);
+    const api = new ApiPromise({ provider, noInitWarn: true });
 
-  api.on('connected', () => connectedHandler(apiOptions, network));
-  api.on('disconnected', () => disconnectHandler(apiOptions, network, provider, _node === undefined));
-  api.on('ready', () => readyHandler(network));
+    apiOptions.api = api;
+    apiOptions.provider = provider;
+
+    eventListeners.push(['disconnected', () => disconnectHandler(apiOptions, network, _node === undefined, provider)]);
+    eventListeners.forEach(([eventName, callback]) => api.on(eventName, callback));
+  }
 }
 
 async function subscribeUtilityAssetsBalances(address: string, network: Network): Promise<void> {

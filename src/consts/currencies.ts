@@ -1,6 +1,6 @@
-import { FPNumber } from '@sora-substrate/math';
+import { FPNumber } from '@sora-substrate/util';
 
-const mockFPBalance = {
+const MOCK_FP_BALANCE = {
   frozen: FPNumber.ZERO,
   locked: FPNumber.ZERO,
   reserved: FPNumber.ZERO,
@@ -8,7 +8,7 @@ const mockFPBalance = {
   transferable: FPNumber.ZERO,
 };
 
-const mockBalance = {
+const MOCK_BALANCE = {
   frozen: {
     value: '0',
     fiat: '0',
@@ -31,4 +31,4 @@ const mockBalance = {
   },
 };
 
-export { mockBalance, mockFPBalance };
+export { MOCK_BALANCE, MOCK_FP_BALANCE };

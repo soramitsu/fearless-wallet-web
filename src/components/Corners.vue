@@ -17,6 +17,7 @@ type Size = 'mini' | 'small' | 'medium' | 'big';
 @Component
 export default class Corners extends Vue {
   @Prop({ default: false }) isError!: boolean;
+  @Prop({ default: false }) isSelected!: boolean;
   @Prop({ default: false }) hover!: boolean;
   @Prop({ default: true }) topLeftCorner!: boolean;
   @Prop({ default: true }) bottomRightCorner!: boolean;
@@ -42,7 +43,14 @@ export default class Corners extends Vue {
     // for "small" and "mini" sizes also medium
     const sizeName = this.size === 'big' ? 'big' : 'medium';
 
-    const classes = [`corner-size-${sizeName}`, this.isError ? 'corner-border-error' : 'corner-border'];
+    const classes = [
+      `corner-size-${sizeName}`,
+      {
+        'corner-border-error': this.isError,
+        'corner-border-selected': this.isSelected && !this.isError,
+        'corner-border': !this.isError && !this.isSelected,
+      },
+    ];
 
     return classes;
   }
@@ -79,6 +87,10 @@ export default class Corners extends Vue {
 
 .corner-border-error {
   border-top: 1px solid $error-color;
+}
+
+.corner-border-selected {
+  border-top: 1px solid #7700ee;
 }
 
 .top-left[class~='corner-size-big'] {

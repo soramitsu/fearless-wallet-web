@@ -76,7 +76,7 @@ export default class ReplacePopup extends Vue {
       height: 135px;
       border: 1px solid $secondary-background-color;
       color: $default-white;
-      border-radius: 8px;
+      border-radius: $default-border-radius;
       font-weight: 500;
       font-size: 14px;
       margin-right: 10px;

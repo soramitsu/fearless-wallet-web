@@ -96,6 +96,10 @@ export type SetNetworkStatusProps = {
   status: NetworkStatus;
 };
 
+export type SetSoraFee = {
+  fee: string;
+};
+
 // Actions
 export type FetchJsons = {
   chainsUrl: string;

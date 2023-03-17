@@ -1,8 +1,9 @@
+import { api as apiSora } from '@sora-substrate/util';
 import type { Wallet, CustomAccounts } from '@/store';
-import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { AssetJson, Networks, Network, AssetPrice } from '@/interfaces';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
+import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import URLS from '@/consts/urls';
 
@@ -72,5 +73,17 @@ export default class NetworksController {
     oldNodeUrl?: string
   ): Promise<void> {
     await store.dispatch(NetworksActionTypes.TOGGLE_ACTIVE_NODE, { network, nodeName, nodeUrl, oldNodeUrl });
+  }
+
+  public static async initializeSora() {
+    await apiSora.initialize(false);
+  }
+
+  public static async calcSoraFee() {
+    await apiSora.calcStaticNetworkFees();
+
+    store.commit(NetworksMutationTypes.SET_SORA_FEE, {
+      fee: apiSora.NetworkFee.Swap,
+    });
   }
 }

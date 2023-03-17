@@ -16,6 +16,7 @@ export default class Tooltip extends Vue {
   @Prop({ default: '' }) text!: ComponentText;
   @Prop(String) target!: string;
   @Prop({ default: 'top' }) placement!: Placement;
+  @Prop({ default: 250 }) maxWidth!: number;
   @Prop(String) trigger?: string;
 
   get language() {
@@ -41,6 +42,7 @@ export default class Tooltip extends Vue {
       animation: 'shift-toward-extreme',
       delay: [1500, 0],
       duration: 0,
+      maxWidth: this.maxWidth,
     };
 
     if (this.trigger) {

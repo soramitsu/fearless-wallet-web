@@ -1,7 +1,9 @@
 <template>
   <div :class="backgroundClasses">
     <div :class="aboveFormClasses">
-      <div class="header-content">
+      <slot v-if="$slots.header" name="header"></slot>
+
+      <div v-else class="header-content">
         <div v-if="showBackIcon" class="icon icon-back" @click="handlerBack">
           <Icon icon="chevron-left" />
         </div>
@@ -146,6 +148,10 @@ export default class AboveForm extends Vue {
       justify-content: center;
       user-select: none;
       width: 45px;
+
+      &:last-child {
+        margin-left: 15px;
+      }
     }
 
     .icon-back {
@@ -168,16 +174,6 @@ export default class AboveForm extends Vue {
       display: flex;
       justify-content: right;
       min-width: 45px;
-    }
-
-    .icon {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-
-      &:last-child {
-        margin-left: 15px;
-      }
     }
 
     .logo {

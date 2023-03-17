@@ -105,7 +105,7 @@ export default class NodeItem extends Vue {
 
 .node-active {
   background-color: #7700ee;
-  border-radius: 8px;
+  border-radius: $default-border-radius;
   padding: 10px 20px;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-bottom: 1px solid #7700ee;

@@ -67,7 +67,7 @@ let port: Port | undefined;
 const handlers: Handlers = {};
 
 function connect() {
-  port = chrome.runtime ? chrome.runtime.connect({ name: PORT_EXTENSION }) : undefined;
+  port = chrome.runtime?.connect({ name: PORT_EXTENSION });
   port?.onDisconnect.addListener(connect);
 
   port?.onMessage.addListener((data: Message['data']): void => {
@@ -190,8 +190,8 @@ export async function resetTimeouts(): Promise<boolean> {
   return sendMessage('pri(signing.resetTimeouts)');
 }
 
-export async function saveTimeoutCache(address: string): Promise<boolean> {
-  return sendMessage('pri(signing.saveTimeoutCache)', address);
+export async function saveTimeoutCache(address: string, isSavePass: boolean): Promise<boolean> {
+  return sendMessage('pri(signing.saveTimeoutCache)', { address, isSavePass });
 }
 
 export async function createAccountHardware(

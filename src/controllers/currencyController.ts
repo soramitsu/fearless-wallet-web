@@ -1,17 +1,21 @@
 import { isFunction } from '@polkadot/util';
-import { FPNumber } from '@sora-substrate/math';
+import { api as apiSora, FPNumber } from '@sora-substrate/util';
+import { LiquiditySourceTypes } from '@sora-substrate/liquidity-proxy';
+import { DexId } from '@sora-substrate/util/build/dex/consts';
 import type {
   Balances,
   BalanceFP,
   WalletBalance,
   RelayChainName,
-  WalletAddress,
-  AccountBalance,
   NetworkName,
+  SwapOptions,
+  ExtrinsicOptions,
+  UpdateBalanceProps,
+  CreateSwapResult,
 } from '@/interfaces';
-import type { SubmittableExtrinsic, SignerOptions } from '@polkadot/api/submittable/types';
+import type { SubmittableExtrinsic } from '@polkadot/api/submittable/types';
 import type { Wallet, SetHistoryProps } from '@/store';
-import type { ApiPromise } from '@polkadot/api';
+import type { Asset } from '@sora-substrate/util/build/assets/types';
 import BaseApi from '@/util/BaseApi';
 import LocalStorageController from '@/controllers/localStorageController';
 import NetworksController from '@/controllers/networksController';
@@ -25,27 +29,14 @@ import {
 } from '@/util/teleport';
 import { getReplacedMetaTyped } from '@/helpers/common';
 import { statusLogging } from '@/helpers/currencies';
-import { createExtrinsicTransfer } from '@/util/assets';
+import { createExtrinsicTransfer, getAssetOptions } from '@/util/assets';
 import { BeaconSigner } from '@/extension/background/extension-base/src/background/BeaconSigner';
 import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
-import { mockBalance, mockFPBalance } from '@/consts/currencies';
+import { MOCK_BALANCE, MOCK_FP_BALANCE } from '@/consts/currencies';
 import { saveTimeoutCache } from '@/extension/messaging';
 
 type TransactionStatus = 'success' | 'failed' | 'pending';
-
-type ExtrinsicOptions = {
-  transactionsOptions?: Partial<SignerOptions>;
-  historyOptions?: { networkProps: WalletBalance; amount: string; to: string };
-  api?: ApiPromise;
-  fee?: string;
-};
-
-type UpdateBalanceProps = {
-  walletAddress: WalletAddress;
-  network: NetworkName;
-  balance: AccountBalance;
-};
 
 export default class CurrencyController {
   private readonly lsCurrency = new LocalStorageController('currency');
@@ -137,7 +128,7 @@ export default class CurrencyController {
         type,
         precision,
         existentialDeposit,
-        balance: walletBalance ?? mockFPBalance,
+        balance: walletBalance ?? MOCK_FP_BALANCE,
         assetId,
       };
     });
@@ -159,7 +150,7 @@ export default class CurrencyController {
         reserved: obj.reserved.add(reserved),
         transferable: obj.transferable.add(transferable),
       };
-    }, mockFPBalance);
+    }, MOCK_FP_BALANCE);
   }
 
   /**
@@ -184,7 +175,7 @@ export default class CurrencyController {
     const walletBalance = this.getWalletBalance(wallet);
     const balance = walletBalance.find(({ network }) => network === _network)?.balance;
 
-    if (balance === undefined) return mockBalance;
+    if (balance === undefined) return MOCK_BALANCE;
 
     const { frozen, locked, reserved, total, transferable } = balance;
 
@@ -320,12 +311,16 @@ export default class CurrencyController {
   /**
    * Validate count assets
    * @param {string} count
+   * @param {string} fee
    * @param {NetworkName} network
    * @param {Wallet} wallet
    * @returns {boolean}
    */
-  public validateCountAssets(count: string, fee: string, network: NetworkName, wallet: Wallet): boolean {
+  public validateCountAssets(_count: string, fee: string, network: NetworkName, wallet: Wallet): boolean {
+    const count = _count === '' ? '0' : _count;
     const transferableCountAssetsMinusFee = this.getTransferableCountAssetsMinusFee(fee, network, wallet);
+
+    if (FPNumber.isEqualTo(transferableCountAssetsMinusFee, FPNumber.ZERO)) return false;
 
     return FPNumber.lte(new FPNumber(count), transferableCountAssetsMinusFee);
   }
@@ -486,14 +481,14 @@ export default class CurrencyController {
   /**
    * Create teleport extrinsic
    * @param {Wallet} wallet
-   * @param {string} originNet
-   * @param {string} destNet
+   * @param {NetworkName} originNet
+   * @param {NetworkName} destNet
    * @param {string} amount
    */
   public async createTeleportExtrinsic(
     wallet: Wallet,
-    originNet: string,
-    destNet: string,
+    originNet: NetworkName,
+    destNet: NetworkName,
     amount: string
   ): Promise<void> {
     const walletBalance = this.getWalletBalance(wallet) ?? [];
@@ -518,15 +513,15 @@ export default class CurrencyController {
 
   /**
    * Create native teleport extrinsic
-   * @param {string} originNet
-   * @param {string} destNet
+   * @param {NetworkName} originNet
+   * @param {NetworkName} destNet
    * @param {string} toAddress
    * @param {string} amount
    * @param {WalletBalance} networkProps
    */
   public async createNativeTeleportExtrinsic(
-    originNet: string,
-    destNet: string,
+    originNet: NetworkName,
+    destNet: NetworkName,
     toAddress: string,
     amount: string,
     networkProps: WalletBalance
@@ -572,6 +567,158 @@ export default class CurrencyController {
     this.extrinsicOptions = { historyOptions: { networkProps, amount: precisionAmount, to: toAddress }, api };
   }
 
+  /**
+   * Create swap extrinsic
+   * @param {Partial<SwapOptions>} options
+   * @returns {Promise<CreateSwapResult>}
+   */
+  public async createSwap(options: Partial<SwapOptions>): Promise<CreateSwapResult> {
+    const { assetAId, assetBId, isExchangeB, amountA, amountB, symbolA, symbolB, slippage } = options;
+    const assetAAddress = getAssetOptions('', 'soraAsset', assetAId!) as string;
+    const assetBAddress = getAssetOptions('', 'soraAsset', assetBId!) as string;
+    const amountWithDirection = (isExchangeB ? amountB : amountA) as string;
+    const assetA: Asset = { address: assetAAddress, decimals: 18, name: symbolA!, symbol: symbolA! };
+    const assetB: Asset = {
+      address: assetBAddress,
+      decimals: 18,
+      name: symbolB!,
+      symbol: symbolB!,
+    };
+
+    const { amount: amountDexIdXOR, fee: providerFeeDexIdXOR } = await apiSora.swap.getResultFromBackend(
+      assetAAddress,
+      assetBAddress,
+      amountWithDirection,
+      isExchangeB,
+      LiquiditySourceTypes.Default,
+      DexId.XOR
+    );
+
+    const { amount: amountDexIdXSTUSD, fee: providerFeeDexIdXSTUSD } = await apiSora.swap.getResultFromBackend(
+      assetAAddress,
+      assetBAddress,
+      amountWithDirection,
+      isExchangeB,
+      LiquiditySourceTypes.Default,
+      DexId.XSTUSD
+    );
+
+    const swapOptions = { ...options, assetA, assetB } as SwapOptions;
+    const amountDexIdXORFP = FPNumber.fromCodecValue(amountDexIdXOR);
+    const amountDexIdXSTUSDFP = FPNumber.fromCodecValue(amountDexIdXSTUSD);
+
+    if (isExchangeB) {
+      const isDexXor = FPNumber.lt(amountDexIdXORFP, amountDexIdXSTUSDFP);
+      const expectedAmountA = amountDexIdXORFP.isZero()
+        ? amountDexIdXSTUSDFP
+        : amountDexIdXSTUSDFP.isZero()
+        ? amountDexIdXORFP
+        : isDexXor
+        ? amountDexIdXORFP
+        : amountDexIdXSTUSDFP;
+
+      const minMaxValue = apiSora.swap.getMinMaxValue(
+        assetA,
+        assetB,
+        expectedAmountA.toString(),
+        amountB!,
+        isExchangeB,
+        slippage!
+      );
+
+      this.extrinsicOptions.swapOptions = {
+        ...swapOptions,
+        amountA: expectedAmountA.toString(),
+        amountB: amountB!,
+        swapDexId: isDexXor ? DexId.XOR : DexId.XSTUSD,
+      };
+
+      return {
+        amountA: expectedAmountA.toString(),
+        amountB: amountB!,
+        AToB: expectedAmountA.div(new FPNumber(amountB!)).toString(),
+        BToA: new FPNumber(amountB!).div(expectedAmountA).toString(),
+        minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
+        providerFee: FPNumber.fromCodecValue(providerFeeDexIdXSTUSD).toString(),
+      };
+    } else {
+      const isDexXor = FPNumber.gt(amountDexIdXORFP, amountDexIdXSTUSDFP);
+      const expectedAmountB = amountDexIdXORFP.isZero()
+        ? amountDexIdXSTUSDFP
+        : amountDexIdXSTUSDFP.isZero()
+        ? amountDexIdXORFP
+        : isDexXor
+        ? amountDexIdXORFP
+        : amountDexIdXSTUSDFP;
+
+      const minMaxValue = apiSora.swap.getMinMaxValue(
+        assetA,
+        assetB,
+        amountA!,
+        expectedAmountB.toString(),
+        isExchangeB!,
+        slippage!
+      );
+
+      this.extrinsicOptions.swapOptions = {
+        ...swapOptions,
+        amountA: amountA!,
+        amountB: expectedAmountB.toString(),
+        swapDexId: isDexXor ? DexId.XOR : DexId.XSTUSD,
+      };
+
+      return {
+        amountA: amountA!,
+        amountB: expectedAmountB.toString(),
+        AToB: new FPNumber(amountA!).div(expectedAmountB).toString(),
+        BToA: expectedAmountB.div(new FPNumber(amountA!)).toString(),
+        minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
+        providerFee: FPNumber.fromCodecValue(providerFeeDexIdXOR).toString(),
+      };
+    }
+  }
+
+  /**
+   * Create swap extrinsic
+   * @param {string} from
+   */
+  public async sendSwap(from: string, isSavePass: boolean): Promise<void> {
+    if (BaseApi.isExtension()) await saveTimeoutCache(from, isSavePass);
+
+    const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB } = this.extrinsicOptions.swapOptions!;
+
+    const pair = BaseApi.getPair(from);
+
+    apiSora.account = { json: null as any, pair };
+
+    this.setTransactionStatus('pending');
+
+    try {
+      await apiSora.swap.execute(
+        assetA,
+        assetB,
+        amountA,
+        amountB,
+        slippage,
+        isExchangeB,
+        LiquiditySourceTypes.Default,
+        swapDexId
+      );
+    } catch (ex) {
+      this.setTransactionStatus('failed');
+
+      console.info(`Swap transaction failed ${ex}`);
+    }
+
+    this.setTransactionStatus('success');
+  }
+
+  /**
+   * Get extrinsic fee
+   * @param {Wallet} wallet
+   * @param {NetworkName} _network
+   * @returns {Promise<string>}
+   */
   public async getPartialFee(wallet: Wallet, _network: NetworkName): Promise<void> {
     if (!this.extrinsic) {
       this.extrinsicOptions.fee = '0';
@@ -601,17 +748,19 @@ export default class CurrencyController {
    * @returns {Promise<boolean>}
    */
   public async send(from: string, isMobile = false, isSavePass = false): Promise<boolean> {
-    if (isSavePass) await saveTimeoutCache(from);
+    if (BaseApi.isExtension()) await saveTimeoutCache(from, isSavePass);
 
     const account = isMobile ? from : BaseApi.getPair(from);
+
+    const nonce = (await this.extrinsicOptions.api?.rpc.system.accountNextIndex(from)) as unknown as number;
 
     const options = {
       ...(this.extrinsicOptions.transactionsOptions ?? {}),
       signer: isMobile ? new BeaconSigner() : undefined,
-      nonce: await this.extrinsicOptions.api?.rpc.system.accountNextIndex(from),
+      nonce,
     };
 
-    this.transactionStatus = 'pending';
+    this.setTransactionStatus('pending');
 
     try {
       await this.extrinsic!.signAndSend(

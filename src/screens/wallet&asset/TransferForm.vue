@@ -53,21 +53,21 @@
               @update:value="updateValue"
             />
 
-            <div class="transferrable row">
-              <div class="transferrable-part">
-                <div class="transferrable-label">{{ $t('assets.transferrable') }}</div>
+            <div class="transferable row">
+              <div class="transferable-part">
+                <div class="transferable-label">{{ $t('assets.transferable') }}</div>
 
-                <div class="transferrable-descriptions">
-                  <div class="transferrable-amount">{{ $n(transferrableAmount, 'decimal') }}</div>
-                  <div class="transferrable-assets">{{ selectedAssetUpper }}</div>
+                <div class="transferable-descriptions">
+                  <div class="transferable-amount">{{ $n(transferableAmount, 'decimal') }}</div>
+                  <div class="transferable-assets">{{ selectedAssetUpper }}</div>
                 </div>
               </div>
 
-              <div v-if="showTransferableValue" class="transferrable-part">
-                <div class="transferrable-label">{{ $t('assets.transferrable') }}</div>
+              <div v-if="showTransferableValue" class="transferable-part">
+                <div class="transferable-label">{{ $t('assets.transferable') }}</div>
 
-                <div class="transferrable-descriptions">
-                  <div class="transferrable-amount">{{ fiatSymbol }}{{ transferrableValue }}</div>
+                <div class="transferable-descriptions">
+                  <div class="transferable-amount">{{ fiatSymbol }}{{ transferableValue }}</div>
                 </div>
               </div>
             </div>
@@ -108,8 +108,9 @@
       :currency="currency"
       :amount="syncedAmount"
       :value="syncedValue"
-      :firstNetwork="syncedSelectedNetwork"
-      :secondNetwork="syncedDestNet"
+      :network="syncedSelectedNetwork"
+      :firstIcon="firstIcon"
+      :secondIcon="syncedDestNet"
       @close="confirmationPasswordPopupClose"
     />
 
@@ -185,6 +186,10 @@ export default class SendForm extends Vue {
   @Getter(AccountsGettersTypes.getOnlineStatus) onlineStatus!: string;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
+
+  get firstIcon() {
+    return this.extrinsicType === 'transfer' ? this.syncedSelectedAssetId : this.syncedSelectedNetwork;
+  }
 
   get placeholderSelectPopup() {
     return this.showSelectedAssetPopup ? 'common.searchAmongAssets' : 'common.searchNetwork';
@@ -323,22 +328,24 @@ export default class SendForm extends Vue {
     return this.optionsNetworks.filter(({ value }) => value !== this.syncedSelectedNetwork);
   }
 
-  get transferrableAmount() {
-    const count = +(this.currency?.getTransferableCountAssets(this.selectedWallet, this.syncedSelectedNetwork) ?? 0);
+  get transferableAmount() {
+    const count = this.currency?.getTransferableCountAssets(this.selectedWallet, this.syncedSelectedNetwork) ?? '0';
 
-    return count.toString();
+    return count;
   }
 
-  get transferrableValue() {
-    const cost = +(this.currency?.getCostOfAssets(this.transferrableAmount) ?? 0);
+  get transferableValue() {
+    const cost = +(this.currency?.getCostOfAssets(this.transferableAmount) ?? 0);
 
     return this.$n(cost, 'price');
   }
 
-  get selectedAssetUpper() {
-    const assetName = this.getAssetName(this.syncedSelectedAssetId);
+  get selectedAsset() {
+    return this.getAssetName(this.syncedSelectedAssetId);
+  }
 
-    return assetName.toUpperCase();
+  get selectedAssetUpper() {
+    return this.selectedAsset.toUpperCase();
   }
 
   get optionsCurrency() {
@@ -389,7 +396,7 @@ export default class SendForm extends Vue {
   @Watch('syncedDestNet')
   @Watch('syncedRecipient')
   @Watch('syncedAmount')
-  async createSendTransfer() {
+  async createTransfer() {
     this.syncedPartialFee = '';
 
     if (
@@ -596,31 +603,31 @@ export default class SendForm extends Vue {
   flex-direction: column;
   justify-content: space-between;
 
-  .transferrable {
+  .transferable {
     display: flex;
     justify-content: space-between;
 
-    .transferrable-part {
+    .transferable-part {
       width: 235px;
 
-      .transferrable-label {
+      .transferable-label {
         font-size: 14px;
         color: $default-white;
         text-align: left;
       }
 
-      .transferrable-descriptions {
+      .transferable-descriptions {
         display: flex;
         line-height: 25px;
       }
 
-      .transferrable-amount {
+      .transferable-amount {
         font-weight: 600;
         font-size: 16px;
         color: $pink-lavender-color;
       }
 
-      .transferrable-assets {
+      .transferable-assets {
         margin-left: 5px;
         color: rgba(255, 255, 255, 0.9);
       }

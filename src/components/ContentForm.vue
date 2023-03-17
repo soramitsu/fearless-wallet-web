@@ -8,7 +8,7 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import { EXTENSION_HEIGHT } from '@/consts/extensionInformation';
+import { APP_HEIGHT } from '@/consts/global';
 
 @Component
 export default class ContentForm extends Vue {
@@ -16,7 +16,7 @@ export default class ContentForm extends Vue {
 
   get contentFormStyle() {
     const styles: Record<string, string> = {};
-    const subtractionNumber = EXTENSION_HEIGHT - this.height;
+    const subtractionNumber = APP_HEIGHT - this.height;
 
     styles.height = `calc(100vh - ${subtractionNumber}px)`;
     styles.minHeight = `${this.height}px`;

@@ -52,7 +52,8 @@ export default class CurrencyController {
    * Create a currency item.
    * @param {string} mainNetwork - the network in which the asset is a utility
    * @param {string} assetId - asset id
-   * @param {string} asset - asset name (same symbol)
+   * @param {string} assetFullName - asset full name
+   * @param {string} asset - asset ticker (same symbol)
    * @param {string[]} providers - list of providers
    * @param {string} relayChain - relay chain name (polkadot | kusama)
    * @param {Balances} balances - asset balance
@@ -62,6 +63,7 @@ export default class CurrencyController {
   constructor(
     public mainNetwork: string,
     public assetId: string,
+    public assetFullName: string,
     public asset: string,
     public providers: string[],
     public relayChain: RelayChainName,
@@ -157,11 +159,11 @@ export default class CurrencyController {
    * @param {NetworkName} _network
    * @returns {string}
    */
-  private getTotalBalanceInNetwork(wallet: Wallet, _network: NetworkName): string {
+  private getFiatBalanceInNetwork(wallet: Wallet, _network: NetworkName, type: keyof BalanceFP): string {
     const walletBalance = this.getWalletBalance(wallet);
-    const total = walletBalance.find(({ network }) => network === _network)?.balance.total ?? FPNumber.ZERO;
+    const balance = walletBalance.find(({ network }) => network === _network)?.balance[type] ?? FPNumber.ZERO;
 
-    return this.calculateCost(total).toString();
+    return this.calculateCost(balance).toString();
   }
 
   /**
@@ -171,7 +173,6 @@ export default class CurrencyController {
    */
   public getBalanceInNetwork(wallet: Wallet, _network: string) {
     const walletBalance = this.getWalletBalance(wallet);
-
     const balance = walletBalance.find(({ network }) => network === _network)?.balance;
 
     if (balance === undefined) return MOCK_BALANCE;
@@ -259,29 +260,33 @@ export default class CurrencyController {
   }
 
   /**
-   * Get total fiat balance by network
+   * Get transferable count assets by network
    * @param {Wallet} wallet
    * @param {NetworkName} network
    * @returns {string}
    */
-  public getTotalBalance(wallet: Wallet, network?: NetworkName): string {
+  public getTransferableCountAssets(wallet: Wallet, network: NetworkName): string {
     if (network && network !== 'all') {
-      return this.getTotalBalanceInNetwork(wallet, network);
+      return this.getBalanceInNetwork(wallet, network).transferable.value;
     }
 
-    const countAssets = this.calculateCountAssets(wallet).total;
-
-    return this.calculateCost(countAssets).toString();
+    return this.calculateCountAssets(wallet).transferable.toString();
   }
 
   /**
-   * Get transferable count assets by network
+   * Get transferable fiat balance by network
    * @param {Wallet} wallet
-   * @param {NetworkName} _network
+   * @param {NetworkName} network
    * @returns {string}
    */
-  public getTransferableCountAssets(wallet: Wallet, _network: NetworkName): string {
-    return this.getBalanceInNetwork(wallet, _network).transferable.value;
+  public getTransferableFiatBalance(wallet: Wallet, network?: NetworkName): string {
+    if (network && network !== 'all') {
+      return this.getFiatBalanceInNetwork(wallet, network, 'transferable');
+    }
+
+    const transferableCountAssets = this.calculateCountAssets(wallet).transferable;
+
+    return this.calculateCost(transferableCountAssets).toString();
   }
 
   /**
@@ -730,7 +735,7 @@ export default class CurrencyController {
       const result = new FPNumber(partialFee as any, precision);
 
       this.extrinsicOptions.fee = result.toString();
-    } catch {
+    } catch (ex) {
       this.extrinsicOptions.fee = '0';
     }
   }

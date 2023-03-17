@@ -4,10 +4,11 @@
       <div class="wallet-balance__container">
         <WalletBalance
           class="balance"
-          :balance="totalBalance"
+          :balance="summaryTransferableBalance"
           :changeWalletBalance="changeWalletBalance"
           @click.native="$emit('openFiatsPopup', true)"
         />
+
         <div class="wallet-balance__loading">
           <Loading :width="28" v-if="showShimmers" />
         </div>
@@ -248,8 +249,8 @@ export default class Wallet extends Vue {
     return result;
   }
 
-  get totalBalance() {
-    const arr = this.sortedCurrencies.map((currency) => currency.getTotalBalance(this.selectedWallet));
+  get summaryTransferableBalance() {
+    const arr = this.currencies.map((currency) => currency.getTransferableFiatBalance(this.selectedWallet));
 
     return +addNumbers(arr);
   }
@@ -290,7 +291,8 @@ export default class Wallet extends Vue {
 
   toggleNetworkManagementVisible() {
     this.showNetworkManagement = !this.showNetworkManagement;
-    this.showSelectNetworkPopup = false;
+
+    this.toggleSelectNetworkPopupVisible(false);
   }
 
   toggleAssetsManagementFormVisible(value = true) {
@@ -362,10 +364,10 @@ export default class Wallet extends Vue {
     this.toggleSelectNetworkPopupVisible();
   }
 
-  toggleSelectNetworkPopupVisible() {
+  toggleSelectNetworkPopupVisible(value?: boolean) {
     const targetElement = (this.$refs[this.selectNetworkButtonRef] as Vue).$el as HTMLElement;
 
-    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
+    this.showSelectNetworkPopup = value ?? !this.showSelectNetworkPopup;
 
     targetElement.style.zIndex = this.showSelectNetworkPopup ? '400' : '0';
   }

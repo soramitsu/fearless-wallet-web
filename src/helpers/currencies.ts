@@ -12,6 +12,7 @@ import { BASE_URLS_PREFIX } from '@/consts/urls';
 type CurrencyMock = {
   mainNetwork: string;
   assetId: string;
+  assetFullName: string;
   symbol: string;
   displayName: string;
   relayChain: RelayChainName;
@@ -31,6 +32,7 @@ function getMockCurrencies(networks: Networks): Currencies {
       networkAssets.forEach(({ assetId, purchaseProviders, isUtility, isNative, type }) => {
         const {
           symbol,
+          name,
           displayName: _displayName,
           precision,
           existentialDeposit,
@@ -51,6 +53,7 @@ function getMockCurrencies(networks: Networks): Currencies {
           const newCurrency = {
             mainNetwork,
             assetId,
+            assetFullName: name,
             symbol,
             displayName,
             relayChain,
@@ -94,8 +97,18 @@ function getMockCurrencies(networks: Networks): Currencies {
       return result;
     }, [])
     .map(
-      ({ mainNetwork, assetId, symbol, relayChain, providers, displayName, balances, icon }) =>
-        new CurrencyController(mainNetwork, assetId, symbol, providers, relayChain, balances, icon, displayName)
+      ({ mainNetwork, assetId, symbol, relayChain, providers, displayName, balances, icon, assetFullName }) =>
+        new CurrencyController(
+          mainNetwork,
+          assetId,
+          assetFullName,
+          symbol,
+          providers,
+          relayChain,
+          balances,
+          icon,
+          displayName
+        )
     );
 
   return currencies;
@@ -124,8 +137,8 @@ function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet, networ
   }
 
   currenciesWithAssets.sort((currency1, currency2) => {
-    const totalBalanceOne = +currency1.getTotalBalance(wallet, network);
-    const totalBalanceTwo = +currency2.getTotalBalance(wallet, network);
+    const totalBalanceOne = +currency1.getTransferableFiatBalance(wallet, network);
+    const totalBalanceTwo = +currency2.getTransferableFiatBalance(wallet, network);
 
     return totalBalanceTwo - totalBalanceOne;
   });

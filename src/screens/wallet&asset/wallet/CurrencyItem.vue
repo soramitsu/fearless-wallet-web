@@ -1,5 +1,10 @@
 <template>
-  <Lazy v-if="showCurrencyItem" :timeoutCallback="timeoutCallback" class="currency-item" @click.native="openAssetPage">
+  <Lazy
+    v-if="showCurrencyItem"
+    :timeoutCallback="timeoutCallback"
+    :class="currencyClasses"
+    @click.native="openAssetPage"
+  >
     <div v-if="showAssetsManagementForm" class="drag-icon">
       <SIcon name="basic-menu-24" class="handle" />
     </div>
@@ -11,7 +16,7 @@
     <div class="descriptions-column">
       <div class="row first-row">
         <div>
-          {{ upperNetworkName }}
+          {{ assetFullName }}
         </div>
 
         <template v-if="!isCurrentNetwork">
@@ -40,7 +45,7 @@
         <Shimmer v-if="showShimmers" height="23px" width="60px" />
 
         <div v-else-if="!showWarning" class="count-assets overflow">
-          {{ countAssetsString }}
+          {{ transferableCountAssetString }}
         </div>
       </div>
       <div class="row third-row">
@@ -53,7 +58,7 @@
         <Shimmer v-if="showShimmers" height="14px" width="70px" />
 
         <div v-else-if="!showWarning" class="total-balance overflow">
-          {{ totalBalanceString }}
+          {{ transferableFiatBalanceString }}
         </div>
       </div>
     </div>
@@ -105,7 +110,6 @@ import type { Currency } from '@/interfaces/currencies';
 import type { SelectedWallet } from '@/store';
 import type { CustomEvent } from '@/interfaces';
 import { Components } from '@/router/routes';
-import { formattedNumber } from '@/helpers/numbers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GetNetworkStatus } from '@/store';
@@ -124,6 +128,15 @@ export default class CurrencyItem extends Vue {
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
 
+  get currencyClasses() {
+    return [
+      'currency-item',
+      {
+        'currency-item-management': this.showAssetsManagementForm,
+      },
+    ];
+  }
+
   get showShimmers() {
     if (this.isCurrentNetwork) return !this.isOnline || this.getNetworkStatus(this.selectedNetwork) === 'pending';
 
@@ -137,6 +150,8 @@ export default class CurrencyItem extends Vue {
   }
 
   get showWarning() {
+    if (this.showAssetsManagementForm) return false;
+
     if (this.isCurrentNetwork) return this.getNetworkStatus(this.selectedNetwork) === 'disconnected';
 
     return this.currency.getNetworkList().every(({ network }) => {
@@ -182,14 +197,14 @@ export default class CurrencyItem extends Vue {
     return this.currency?.displayName.toUpperCase();
   }
 
-  get countAssetsString() {
-    const totalCountAssets = +this.currency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork);
+  get transferableCountAssetString() {
+    const totalCountAssets = +this.currency.getTransferableCountAssets(this.selectedWallet, this.selectedNetwork);
 
     return this.$n(totalCountAssets, 'decimal');
   }
 
-  get totalBalanceString() {
-    const balance = +this.currency.getTotalBalance(this.selectedWallet, this.selectedNetwork);
+  get transferableFiatBalanceString() {
+    const balance = +this.currency.getTransferableFiatBalance(this.selectedWallet, this.selectedNetwork);
 
     return `${this.fiatSymbol}${this.$n(balance, 'price')}`;
   }
@@ -198,10 +213,8 @@ export default class CurrencyItem extends Vue {
     return `${this.fiatSymbol}${this.$n(this.currency.price, 'price')}`;
   }
 
-  get upperNetworkName() {
-    if (this.isCurrentNetwork) return this.selectedNetwork.toUpperCase();
-
-    return this.currency.mainNetwork.toUpperCase() ?? '';
+  get assetFullName() {
+    return this.currency.assetFullName.toUpperCase() ?? '';
   }
 
   get walletBalance() {
@@ -220,16 +233,6 @@ export default class CurrencyItem extends Vue {
     if (this.isCurrentNetwork) return [{ network: this.selectedNetwork }];
 
     if (this.isAdditional) return [...this.walletBalance].splice(0, this.countDisplayedNetworks - 1);
-
-    const isIncludeMainNet = this.walletBalance.findIndex((el) => el.network.toUpperCase() === this.upperNetworkName);
-
-    if (isIncludeMainNet !== -1) {
-      const array = [...this.walletBalance];
-
-      array.splice(isIncludeMainNet, 1);
-
-      return array;
-    }
 
     return this.walletBalance;
   }
@@ -275,10 +278,7 @@ export default class CurrencyItem extends Vue {
   margin-right: 16px;
   align-items: center;
   height: 80px;
-
-  &:hover {
-    cursor: pointer;
-  }
+  cursor: pointer;
 
   &:last-child {
     border-bottom: none;
@@ -286,10 +286,7 @@ export default class CurrencyItem extends Vue {
 
   .drag-icon {
     margin: auto 20px auto 0;
-
-    &:hover {
-      cursor: pointer;
-    }
+    cursor: pointer;
 
     i {
       color: #fff;
@@ -316,10 +313,7 @@ export default class CurrencyItem extends Vue {
 
       .additional {
         border-radius: 50%;
-
-        &:hover {
-          cursor: pointer;
-        }
+        cursor: pointer;
       }
     }
 
@@ -417,5 +411,9 @@ export default class CurrencyItem extends Vue {
       margin-right: 0;
     }
   }
+}
+
+.currency-item-management {
+  cursor: default;
 }
 </style>

@@ -60,9 +60,4 @@ export default class Icon extends Vue {
 .icon--default {
   color: #ffffff;
 }
-
-.settings {
-  width: 18px;
-  height: 18px;
-}
 </style>

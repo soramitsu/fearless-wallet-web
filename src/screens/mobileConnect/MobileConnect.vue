@@ -36,17 +36,15 @@ import type {
 import BaseApi from '@/util/BaseApi';
 import { createAddress } from '@/extension/messaging';
 import { beaconController } from '@/controllers/beaconController';
-import { ActionTypes as AccountActionTypes } from '@/store/accounts/actions';
+import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as NetworkGettersTypes } from '@/store/networks/getters';
-import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutations';
 import PermissionRequestPopup from '@/screens/mobileConnect/PermissionRequestPopup.vue';
 import { MOONBEAM_GENESISHASH } from '@/consts/networks';
 
 @Component({
-  components: {
-    PermissionRequestPopup,
-  },
+  components: { PermissionRequestPopup },
 })
 export default class MobileConnect extends Vue {
   requestInfo: RequestSentInfo | null = null;
@@ -60,9 +58,9 @@ export default class MobileConnect extends Vue {
   isPossibleConnectionProblem = false;
   permissionRequestDenied = false;
 
-  @Action(AccountActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
   @Getter(NetworkGettersTypes.getAllNetworks) getNetworks!: Networks;
-  @Getter(AccountGettersTypes.GET_QR) getQR!: Nullable<string>;
+  @Getter(AccountsGettersTypes.getQR) getQR!: Nullable<string>;
+  @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
   @Mutation(AccountMutationsTypes.SET_QR) setQR!: TMutation<string>;
 
   async mounted() {

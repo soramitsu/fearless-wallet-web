@@ -16,8 +16,9 @@ export enum GettersTypes {
   getAccounts = 'getAccounts',
   getAddresses = 'getAddresses',
   getWallets = 'getWallets',
+  getShowSoraCardBanner = 'getShowSoraCardBanner',
+  getQR = 'getQR',
   getAutoSelectNodesValueByNetwork = 'getAutoSelectNodesValueByNetwork',
-  GET_QR = 'getQR',
   getIsCustomSort = 'getIsCustomSort',
 }
 
@@ -31,11 +32,12 @@ export type Getters = {
   [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
   [GettersTypes.getAddresses](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
   [GettersTypes.getWallets](state: State, getters?: GetterTree<State, State> & Getters): WalletInfo[];
+  [GettersTypes.getShowSoraCardBanner](state: State, getters?: GetterTree<State, State> & Getters): boolean;
+  [GettersTypes.getQR](state: State, getters?: GetterTree<State, State> & Getters): Nullable<string>;
   [GettersTypes.getAutoSelectNodesValueByNetwork](
     state: State,
     getters?: GetterTree<State, State> & Getters
   ): GetAutoSelectNodesValueByNetwork;
-  [GettersTypes.GET_QR](state: State, getters?: GetterTree<State, State> & Getters): Nullable<string>;
   [GettersTypes.getIsCustomSort](
     state: State,
     getters?: GetterTree<State, State> & Getters
@@ -102,8 +104,13 @@ const getters: GetterTree<State, State> & Getters = {
 
     return wallets;
   },
-  [GettersTypes.GET_QR]({ qr }): Nullable<string> {
+
+  [GettersTypes.getQR]({ qr }): Nullable<string> {
     return qr;
+  },
+
+  [GettersTypes.getShowSoraCardBanner]({ showSoraCardBanner }): boolean {
+    return showSoraCardBanner;
   },
 
   [GettersTypes.getIsCustomSort]:

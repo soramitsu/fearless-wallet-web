@@ -9,7 +9,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { MenuItems } from '@/interfaces/common';
 
 @Component
-export default class Crowdloans extends Vue {
+export default class History extends Vue {
   get name() {
     return MenuItems.history;
   }

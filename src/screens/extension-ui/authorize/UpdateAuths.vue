@@ -12,7 +12,7 @@ import { Getter, Action } from 'vuex-class';
 import { AuthUrlInfo } from '@extension-base/background/types';
 import { updateAuthorization } from '@/extension/messaging';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
-import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { WalletInfo } from '@/store';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { TAction } from '@/interfaces';
@@ -28,7 +28,7 @@ export default class Authorize extends Vue {
   state: Record<string, WalletInfo> = {};
 
   @Prop(String) url!: string;
-  @Getter(AccountGettersTypes.getWallets) wallets!: WalletInfo[];
+  @Getter(AccountsGettersTypes.getWallets) wallets!: WalletInfo[];
   @Getter(ExtensionGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
   @Action(ExtensionActionTypes.GET_AUTHLIST) fetchAuthList!: TAction<void>;
 

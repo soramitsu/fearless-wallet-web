@@ -47,6 +47,10 @@ export type SetOnlineStatus = {
   isOnline: boolean;
 };
 
+export type SetSoraCardBannerVisibility = {
+  value: boolean;
+};
+
 // actions
 export type SetSelectedFiat = {
   fiatName: string;

@@ -8,6 +8,7 @@ import type {
   SetAddressesProps,
   SetAutoSelectNode,
   SetOnlineStatus,
+  SetSoraCardBannerVisibility,
 } from './types';
 import type { State } from './state';
 import type { KeyringPair$Meta } from '@polkadot/keyring/types';
@@ -24,6 +25,7 @@ export enum MutationTypes {
   SET_ADDRESSES = 'SET_ADDRESSES',
   SET_CUSTOM_SORT = 'SET_CUSTOM_SORT',
   SET_AUTO_SELECT_NODE = 'SET_AUTO_SELECT_NODE',
+  SET_SORA_CARD_BANNER_VISIBILITY = 'SET_SORA_CARD_BANNER_VISIBILITY',
   SET_QR = 'SET_QR',
   DELETE_QR = 'DELETE_QR',
 }
@@ -36,6 +38,7 @@ export type Mutations = {
   [MutationTypes.SET_ONLINE_STATUS](state: State, props: SetOnlineStatus): void;
   [MutationTypes.SET_ADDRESSES](state: State, props: SetAddressesProps): void;
   [MutationTypes.SET_AUTO_SELECT_NODE](state: State, props: SetAutoSelectNode): void;
+  [MutationTypes.SET_SORA_CARD_BANNER_VISIBILITY](state: State, props: SetSoraCardBannerVisibility): void;
   [MutationTypes.SET_QR](state: State, props: string): void;
   [MutationTypes.DELETE_QR](state: State): void;
   [MutationTypes.SET_CUSTOM_SORT](state: State, props: string): void;
@@ -99,6 +102,12 @@ const mutations: MutationTree<State> & Mutations = {
     accountController.setAutoSelectNodes(value, network);
 
     state.autoSelectNode = { ...state.autoSelectNode, [network]: value };
+  },
+
+  [MutationTypes.SET_SORA_CARD_BANNER_VISIBILITY](state, { value }) {
+    accountController.setHidingSoraBannerTime(Date.now());
+
+    state.showSoraCardBanner = value;
   },
 
   [MutationTypes.SET_QR](state, payload) {

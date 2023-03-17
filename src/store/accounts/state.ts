@@ -25,7 +25,7 @@ const state = (): State => {
     addresses: {},
     isCustomSort: accountController.getCustomSort(),
     autoSelectNode: accountController.getAutoSelectNodesValue(),
-    showSoraCardBanner: Date.now() - accountController.getHidingSoraBannerTime() >= SORA_CARD_BANNER_RERUN,
+    showSoraCardBanner: Date.now() - accountController.getHidingSoraCardBannerTime() >= SORA_CARD_BANNER_RERUN,
     qr: null,
   };
 };

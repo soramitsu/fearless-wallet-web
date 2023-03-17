@@ -105,7 +105,7 @@ const mutations: MutationTree<State> & Mutations = {
   },
 
   [MutationTypes.SET_SORA_CARD_BANNER_VISIBILITY](state, { value }) {
-    accountController.setHidingSoraBannerTime(Date.now());
+    accountController.setHidingSoraCardBannerTime(Date.now());
 
     state.showSoraCardBanner = value;
   },

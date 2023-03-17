@@ -21,6 +21,7 @@ const AddWallet = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/a
 const Export = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/accounts/Export.vue');
 const AddFromGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/AddFromGoogle.vue');
 const CreateGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/CreateGoogle.vue');
+const SoraCard = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/soraCard/SoraCardForm.vue');
 
 export enum Components {
   Welcome = 'Welcome',
@@ -42,6 +43,7 @@ export enum Components {
   Transaction = 'Transaction',
   CreateGoogle = 'CreateGoogle',
   AddFromGoogle = 'AddFromGoogle',
+  SoraCard = 'SoraCard',
 }
 
 const haveAccounts = () => BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
@@ -89,6 +91,11 @@ const routes: Array<RouteConfig> = [
     path: '/transaction',
     name: Components.Transaction,
     component: Transaction,
+  },
+  {
+    path: '/sora-card',
+    name: Components.SoraCard,
+    component: SoraCard,
   },
   {
     path: '/main',

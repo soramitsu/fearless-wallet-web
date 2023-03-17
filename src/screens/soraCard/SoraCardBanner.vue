@@ -22,9 +22,11 @@ import type { SetSoraCardBannerVisibility } from '@/store';
 import { SORA_CARD_BANNER_HEIGHT } from '@/consts/global';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { Components } from '@/router/routes';
+import BaseApi from '@/util/BaseApi';
 
 @Component
-export default class SoraBanner extends Vue {
+export default class SoraCardBanner extends Vue {
   @Getter(AccountsGettersTypes.getShowSoraCardBanner) getShowSoraCardBanner!: boolean;
   @Mutation(AccountsMutationTypes.SET_SORA_CARD_BANNER_VISIBILITY)
   setSoraCardBannerVisibility!: TMutation<SetSoraCardBannerVisibility>;
@@ -50,7 +52,9 @@ export default class SoraBanner extends Vue {
   }
 
   openSoraCardForm() {
-    console.info('openSoraCardForm');
+    if (BaseApi.useIsPopup()) BaseApi.windowOpen('/sora-card');
+
+    this.$router.push({ name: Components.SoraCard });
   }
 }
 </script>

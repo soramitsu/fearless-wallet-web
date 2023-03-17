@@ -285,6 +285,14 @@
   "auth": {
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
   },
+  "soraCard": {
+    "title": "SORA Card",
+    "topUpCard": "Top up SORA Card with fiat or crypto and pay online, in-store or withdraw in ATM",
+    "euroIban": "Get Euro IBAN account and Mastercard Debit Card connected to your SORA Wallet",
+    "holdXor": "If you hold at least €100 worth of XOR in your SORA account",
+    "haveCard": "I already have a card",
+    "startCard": "Issue card for 12 €"
+  },
   "common": {
     "fearlessWallet": "Fearless Wallet",
     "comingSoon": "Coming Soon",

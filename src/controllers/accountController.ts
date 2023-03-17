@@ -14,7 +14,7 @@ class AccountController {
   private readonly selectedWalletStorageName = 'selected-wallet';
   private readonly selectedNetworkStorageName = 'selected-network';
   private readonly customSort = 'customSort';
-  private readonly hidingSoraBannerTime = 'hiding-sora-banner-time';
+  private readonly hidingSoraCardBannerTime = 'hiding-sora-card-banner-time';
 
   private getSequenceAssets(): Record<string, Record<NetworkName, string>> {
     const sequencesAssets = this.lsAccount.get(this.sequenceAssetsStorageName);
@@ -119,12 +119,12 @@ class AccountController {
     this.lsAccount.set(this.customSort, { [address]: true });
   }
 
-  public getHidingSoraBannerTime(): number {
-    return +(this.lsAccount.get(this.hidingSoraBannerTime).value ?? 0);
+  public getHidingSoraCardBannerTime(): number {
+    return +(this.lsAccount.get(this.hidingSoraCardBannerTime).value ?? 0);
   }
 
-  public setHidingSoraBannerTime(time: number) {
-    this.lsAccount.set(this.hidingSoraBannerTime, time);
+  public setHidingSoraCardBannerTime(time: number) {
+    this.lsAccount.set(this.hidingSoraCardBannerTime, time);
   }
 
   public setAutoSelectNodes(value: boolean, network: string): void {

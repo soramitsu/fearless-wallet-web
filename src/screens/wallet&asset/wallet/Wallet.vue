@@ -32,7 +32,7 @@
       :handlerClose="toggleSelectNetworkPopupVisible"
     />
 
-    <SoraBanner />
+    <SoraCardBanner />
 
     <ContentForm :height="contentFormHeight">
       <div class="content">
@@ -119,7 +119,7 @@ import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
-import SoraBanner from '@/screens/soraCard/SoraBanner.vue';
+import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
 import { tieAccount } from '@/extension/messaging';
 import { defaultSortingCurrencies } from '@/helpers/currencies';
 import { SORA_CARD_BANNER_HEIGHT } from '@/consts/global';
@@ -129,9 +129,9 @@ import { SORA_CARD_BANNER_HEIGHT } from '@/consts/global';
     NFTs,
     SendForm,
     Currencies,
-    SoraBanner,
     ReceiveForm,
     WalletBalance,
+    SoraCardBanner,
     ContentSettings,
     GoogleExportPopup,
     NetworkManagement,

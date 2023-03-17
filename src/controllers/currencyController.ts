@@ -454,7 +454,12 @@ export default class CurrencyController {
    * @param {string} amount
    * @param {NetworkName} networkName
    */
-  public createTransferExtrinsic(wallet: Wallet, to: string, amount: string, networkName: NetworkName): void {
+  public async createTransferExtrinsic(
+    wallet: Wallet,
+    to: string,
+    amount: string,
+    networkName: NetworkName
+  ): Promise<void> {
     const network = NetworksController.getNetwork(networkName);
     const {
       api,
@@ -475,7 +480,7 @@ export default class CurrencyController {
         }
       : {};
 
-    this.getPartialFee(wallet, networkName);
+    await this.getPartialFee(wallet, networkName);
   }
 
   /**
@@ -508,7 +513,7 @@ export default class CurrencyController {
       this.createOrmlTeleportExtrinsic(originNet, destNet, toAddress, amount, networkProps);
     }
 
-    this.getPartialFee(wallet, originNet);
+    await this.getPartialFee(wallet, originNet);
   }
 
   /**
@@ -583,7 +588,7 @@ export default class CurrencyController {
       const result = new FPNumber(partialFee as any, precision);
 
       this.extrinsicOptions.fee = result.toString();
-    } catch {
+    } catch (ex) {
       this.extrinsicOptions.fee = '0';
     }
   }

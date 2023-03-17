@@ -36,6 +36,7 @@ import type { SelectedWallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
+import { validateAccount } from '@/extension/messaging';
 
 @Component
 export default class Export extends Vue {
@@ -61,10 +62,11 @@ export default class Export extends Vue {
     this.isWrongPassword = false;
   }
 
-  checkPassword() {
+  async checkPassword() {
     const addressByNetwork = BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.network);
+    const validatePass = await validateAccount(addressByNetwork, this.password);
 
-    this.isWrongPassword = !BaseApi.unlockPair(addressByNetwork, this.password);
+    this.isWrongPassword = !validatePass;
 
     if (this.isWrongPassword) return;
 

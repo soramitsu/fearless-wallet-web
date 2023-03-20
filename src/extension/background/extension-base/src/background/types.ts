@@ -150,7 +150,7 @@ export interface RequestSignatures {
   'pri(window.open)': [AllowedPath, boolean];
   'pri(signing.refreshPasswordTimeout)': [string, number];
   'pri(signing.resetTimeouts)': [null, boolean];
-  'pri(signing.saveTimeoutCache)': [string, boolean];
+  'pri(signing.saveTimeoutCache)': [RequestSaveTimeoutCache, boolean];
   'pri(google.auth)': [GoogleAuthTypes, void];
   'pri(google.verify.token)': [{ token: string }, VerifyTokenResponse];
   'pri(google.get.files)': [{ token: string }, IGetFilesResponse];
@@ -353,6 +353,8 @@ export interface ResponseSigningIsLocked {
 }
 
 export type RequestSigningSubscribe = null;
+
+export type RequestSaveTimeoutCache = { address: string; isSavePass: boolean };
 
 export interface RequestSeedCreate {
   length?: SeedLengths;

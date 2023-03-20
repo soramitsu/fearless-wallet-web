@@ -1,3 +1,4 @@
+import { FPNumber } from '@sora-substrate/util';
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
 import type {
@@ -12,8 +13,10 @@ import type {
   SetNetworkApiProps,
   SetNetworkStatusProps,
   SetAssetsPriceIntervalProps,
+  SetSoraFee,
 } from './types';
 import { accountController } from '@/controllers/accountController';
+import { isSora } from '@/helpers/common';
 import { getFormattedHistory } from '@/helpers/history';
 
 export enum MutationTypes {
@@ -29,6 +32,7 @@ export enum MutationTypes {
   SET_ACTIVE_NODE = 'SET_ACTIVE_NODE',
   SET_NETWORK_API = 'SET_NETWORK_API',
   SET_NETWORK_STATUS = 'SET_NETWORK_STATUS',
+  SET_SORA_FEE = 'SET_SORA_FEE',
 }
 
 export type Mutations = {
@@ -43,6 +47,7 @@ export type Mutations = {
   [MutationTypes.SET_ACTIVE_NODE](state: State, props: SetActiveNodeProps): void;
   [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApiProps): void;
   [MutationTypes.SET_NETWORK_STATUS](state: State, props: SetNetworkStatusProps): void;
+  [MutationTypes.SET_SORA_FEE](state: State, props: SetSoraFee): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -88,10 +93,9 @@ const mutations: MutationTree<State> & Mutations = {
     state.assetsPriceInterval = interval;
   },
 
-  [MutationTypes.UPDATE_CURRENCY_BALANCE](
-    { currencies, assetsJson, networks },
-    { walletAddress, network, assetId, balance, parentId }
-  ) {
+  [MutationTypes.UPDATE_CURRENCY_BALANCE]({ currencies, assetsJson, networks }, props) {
+    const { walletAddress, network, assetId, balance, parentId } = props;
+
     const { symbol, displayName } = assetsJson.find(({ id }) => id === assetId)!;
     const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name ?? network;
 
@@ -108,10 +112,8 @@ const mutations: MutationTree<State> & Mutations = {
     currentCurrency.updateCurrencyBalance({ walletAddress, network, balance });
   },
 
-  [MutationTypes.SET_HISTORY](
-    state,
-    { history, networkName, walletAddress, isPreviously, assetId, serviceType, isMock }
-  ) {
+  [MutationTypes.SET_HISTORY](state, props) {
+    const { history, networkName, walletAddress, isPreviously, assetId, serviceType, isMock } = props;
     const { nodes, pageInfo } = getFormattedHistory(history, serviceType);
     const { startCursor: startCursorProp, endCursor: endCursorProp } = pageInfo;
     const oldHistory = state.history[assetId]?.[walletAddress]?.[networkName];
@@ -212,6 +214,13 @@ const mutations: MutationTree<State> & Mutations = {
     } else {
       state.networks[networkIndex].status = status;
     }
+  },
+
+  [MutationTypes.SET_SORA_FEE](state, { fee }) {
+    const soraIndex = state.networks.findIndex(({ name }) => isSora(name))!;
+    const newSoraItem = { ...state.networks[soraIndex], fee: FPNumber.fromCodecValue(fee) };
+
+    state.networks.splice(soraIndex, 1, newSoraItem);
   },
 };
 

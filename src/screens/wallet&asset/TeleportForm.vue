@@ -85,7 +85,6 @@ import { addNumbers, formattedNumber } from '@/helpers/numbers';
 @Component({
   components: {
     Select,
-
     TransferForm,
   },
 })

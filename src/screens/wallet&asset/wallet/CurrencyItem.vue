@@ -190,7 +190,7 @@ export default class CurrencyItem extends Vue {
   get usd24HoursChangeString() {
     const { hours24Change } = this.currency;
 
-    return hours24Change !== 0 ? this.$n(hours24Change / 100, 'percent') : '';
+    return hours24Change !== 0 ? `${hours24Change > 0 ? '+' : ''}${this.$n(hours24Change / 100, 'percent')}` : '';
   }
 
   get assetString() {

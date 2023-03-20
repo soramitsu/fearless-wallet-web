@@ -8,7 +8,7 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import { EXTENSION_HEIGHT } from '@/consts/extensionInformation';
+import { APP_HEIGHT } from '@/consts/global';
 
 type BackgroundType = 'black' | 'light-black';
 
@@ -24,7 +24,7 @@ export default class ContentForm extends Vue {
 
     if (this.isStaticHeight) styles.height = `${this.height}px`;
     else {
-      const subtractionNumber = EXTENSION_HEIGHT - this.height;
+      const subtractionNumber = APP_HEIGHT - this.height;
 
       styles.height = `calc(100vh - ${subtractionNumber}px)`;
       styles.minHeight = `${this.height}px`;
@@ -48,7 +48,7 @@ export default class ContentForm extends Vue {
   display: flex;
   flex-direction: column;
   border: 1px solid $default-background-color;
-  border-radius: 8px;
+  border-radius: $default-border-radius;
   z-index: 1;
 }
 

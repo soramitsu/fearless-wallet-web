@@ -93,14 +93,14 @@ export default class History extends Vue {
     return filteredHistory;
   }
 
-  mounted() {
-    this.fetchHistory();
-  }
-
   @Watch('selectedNetwork')
   @Watch('selectedWallet')
   @Watch('currency')
   async watchSelectedNetwork() {
+    this.fetchHistory();
+  }
+
+  mounted() {
     this.fetchHistory();
   }
 

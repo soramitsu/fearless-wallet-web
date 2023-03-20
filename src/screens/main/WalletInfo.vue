@@ -78,7 +78,7 @@ export default class WalletInfo extends Vue {
   padding: 10px $default-padding;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border: 1px solid $default-background-color;
-  border-radius: 8px;
+  border-radius: $default-border-radius;
   background: $secondary-background-color;
   user-select: none;
 

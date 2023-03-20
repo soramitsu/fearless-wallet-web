@@ -1,11 +1,11 @@
-import { ISubmittableResult } from '@polkadot/types/types';
+import type { ISubmittableResult } from '@polkadot/api/node_modules/@polkadot/types/types/extrinsic';
 import type { Currencies, Currency, Networks, RelayChainName, Balances, NetworkName } from '@/interfaces';
 import type { Wallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import CurrencyController from '@/controllers/currencyController';
 import NetworksController from '@/controllers/networksController';
 import { MAIN_NETWORKS } from '@/consts/networks';
-import { mockFPBalance } from '@/consts/currencies';
+import { MOCK_FP_BALANCE } from '@/consts/currencies';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
 
@@ -87,7 +87,7 @@ function getMockCurrencies(networks: Networks): Currencies {
             const isEthereumAccountType = BaseApi.getPair(address).type === 'ethereum';
 
             if ((isEthereumNetwork && isEthereumAccountType) || (!isEthereumNetwork && !isEthereumAccountType))
-              balance[address] = mockFPBalance;
+              balance[address] = MOCK_FP_BALANCE;
           });
         });
 

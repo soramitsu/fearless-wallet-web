@@ -1,5 +1,5 @@
 import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
-import { FPNumber } from '@sora-substrate/math';
+import { FPNumber } from '@sora-substrate/util';
 import type {
   HistoryElement,
   AssetJson,

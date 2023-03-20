@@ -62,22 +62,30 @@ export default class SoraCardBanner extends Vue {
 <style scoped lang="scss">
 .sora-banner {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 130px;
 
   .banner {
     width: calc($extension-width - $default-padding - $default-padding);
+    min-height: 130px;
   }
 
   .close-button {
-    margin: 20px 0 0 -24px;
+    position: relative;
+    top: -110px;
+    left: 250px;
   }
 
   .status-card-button {
-    margin: 80px 0 0 -322px;
+    position: relative;
+    top: -65px;
     background: #131313;
     border-radius: 16px;
     border: none;
-    height: 33px;
-    width: 130px;
+    flex: 0 0 33px;
+    min-width: 130px;
+    max-width: 250px;
     font-weight: 700;
     font-size: 12px;
     color: $plain-white;

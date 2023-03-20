@@ -287,11 +287,21 @@
   },
   "soraCard": {
     "title": "SORA Card",
-    "topUpCard": "Top up SORA Card with fiat or crypto and pay online, in-store or withdraw in ATM",
-    "euroIban": "Get Euro IBAN account and Mastercard Debit Card connected to your SORA Wallet",
+    "cardDescriptions": "Top up SORA Card with fiat or crypto and pay online, in-store or withdraw in ATM",
+    "cardGet": "Get Euro IBAN account and Mastercard Debit Card connected to your SORA Wallet",
     "holdXor": "If you hold at least €100 worth of XOR in your SORA account",
     "haveCard": "I already have a card",
-    "startCard": "Issue card for 12 €"
+    "issueCardFee": "Issue card for 12 €",
+    "issueCardFree": "Issue card for free",
+    "serviceFee": "annual service fee",
+    "cardIssuance": "card issuance",
+    "free": "Free",
+    "getXOR": "Get more XOR",
+    "hold€100": "If you hold at least €100 worth of XOR in your SORA account",
+    "applicationFee": "or €12 application fee",
+    "haveXOR": "You have enough XOR for a FREE card",
+    "leftXORForFreeCard": "left for a FREE card",
+    "noHaveFreeTry": "You already used your free try"
   },
   "common": {
     "fearlessWallet": "Fearless Wallet",

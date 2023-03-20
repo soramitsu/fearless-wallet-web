@@ -120,7 +120,7 @@ export default class WalletDetailsPopup extends Vue {
     }
 
     .delete {
-      color: $delete-color;
+      color: $orange-color;
       opacity: 0.8;
     }
   }

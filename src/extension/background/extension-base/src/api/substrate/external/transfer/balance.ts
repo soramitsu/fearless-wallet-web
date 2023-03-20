@@ -12,7 +12,7 @@ import { AssetJson } from '@/interfaces';
 interface MakeTransferExternalProps extends ExternalProps {
   recipientAddress: string;
   senderAddress: string;
-  tokenInfo: undefined | AssetJson;
+  tokenInfo: AssetJson;
   transferAll: boolean;
   value: string;
 }

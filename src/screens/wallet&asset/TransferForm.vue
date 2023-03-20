@@ -400,7 +400,6 @@ export default class SendForm extends Vue {
   async createSendTransfer() {
     this.syncedPartialFee = '';
 
-    // console.log(isValid, 'check tx');
     if (
       (this.extrinsicType === 'transfer' && (!this.isValidRecipientAddress || this.syncedSelectedNetwork === '')) ||
       (this.extrinsicType === 'teleport' && (!this.isValidDirection || this.syncedSelectedNetwork === ''))
@@ -545,6 +544,7 @@ export default class SendForm extends Vue {
         transferAll: false,
         token: this.syncedSelectedAssetId,
       });
+
       console.info(isValid);
       // this.showExistentialPopup = !this.currency!.validateExistentialDeposit(
       //   this.selectedWallet,

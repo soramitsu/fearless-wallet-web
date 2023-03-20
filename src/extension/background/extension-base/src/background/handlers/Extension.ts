@@ -320,7 +320,7 @@ export default class Extension {
     return remainingTime;
   }
 
-  public encodeAddress = (key: string | Uint8Array, ss58Format?: number): string => {
+  public encodeAddress = (key: string | Uint8Array, ss58Format = 42): string => {
     return keyring.encodeAddress(key, ss58Format);
   };
 
@@ -1040,13 +1040,13 @@ export default class Extension {
 
   private async validateTransfer(
     networkKey: string,
-    token: string | undefined,
+    token: string,
     from: string,
     to: string,
     password: string | undefined,
     value: string | undefined,
     transferAll: boolean | undefined
-  ): Promise<[Array<BasicTxError>, KeyringPair | undefined, BN | undefined, AssetJson | undefined]> {
+  ): Promise<[Array<BasicTxError>, KeyringPair | undefined, BN | undefined, AssetJson]> {
     const dotSamaApiMap = state.getSubstrateApiMap;
     const errors = [] as Array<BasicTxError>;
     let keypair: KeyringPair | undefined;
@@ -1072,45 +1072,36 @@ export default class Extension {
       }
     }
 
-    try {
-      keypair = keyring.getPair(from);
+    if (password) {
+      try {
+        keypair = keyring.getPair(from);
 
-      if (password) keypair.unlock(password);
-    } catch (e) {
-      errors.push({
-        code: BasicTxErrorCode.KEYRING_ERROR,
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        message: String(e.message),
-      });
-    }
-
-    let tokenInfo: AssetJson | undefined;
-
-    if (token) {
-      tokenInfo = await getTokenInfo(networkKey, dotSamaApiMap[networkKey].api, token);
-      console.info(tokenInfo, 'tokenInfo', networkKey, dotSamaApiMap[networkKey].api, token);
-
-      if (!tokenInfo) {
+        keypair.unlock(password);
+      } catch (e: any) {
         errors.push({
-          code: TransferErrorCode.INVALID_TOKEN,
-          message: 'Not found token from registry',
-        });
-      }
-
-      if (
-        isEthereumAddress(from) &&
-        isEthereumAddress(to) &&
-        tokenInfo &&
-        !checkMainToken(networkKey, tokenInfo?.id) &&
-        !tokenInfo?.contractAddress
-      ) {
-        errors.push({
-          code: TransferErrorCode.INVALID_TOKEN,
-          message: 'Not found ERC20 address for this token',
+          code: BasicTxErrorCode.KEYRING_ERROR,
+          message: String(e.message),
         });
       }
     }
+
+    const tokenInfo = await getTokenInfo(networkKey, dotSamaApiMap[networkKey].api, token);
+
+    // if (!tokenInfo) {
+    //   errors.push({
+    //     code: TransferErrorCode.INVALID_TOKEN,
+    //     message: 'Not found token from registry',
+    //   });
+    // }
+
+    // const isMainToken = await checkMainToken(networkKey, tokenInfo?.id);
+
+    // if (isEthereumAddress(from) && isEthereumAddress(to) && tokenInfo && !isMainToken && !tokenInfo?.contractAddress) {
+    //   errors.push({
+    //     code: TransferErrorCode.INVALID_TOKEN,
+    //     message: 'Not found ERC20 address for this token',
+    //   });
+    // }
 
     return [errors, keypair, transferValue, tokenInfo];
   }
@@ -1132,49 +1123,39 @@ export default class Extension {
       value,
       transferAll
     );
+
     const dotSamaApiMap = state.getSubstrateApiMap;
     const web3ApiMap = state.getApiMap.evm;
     let mainToken: string | undefined;
     let mainTokenDecimals: number | undefined;
     const warnings: BasicTxWarning[] = [];
-    const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo?.id) : false;
+    const isMainToken = checkMainToken(networkKey, tokenInfo.id);
 
-    if (tokenInfo && !isMainToken) {
+    if (!isMainToken) {
       const mainNetwork = state.getNetworkMapByKey(networkKey);
 
       mainToken = mainNetwork.nativeToken as string;
       mainTokenDecimals = mainNetwork.decimals;
     }
 
-    const address = this.encodeAddress(from, 42);
+    const address = this.encodeAddress(from);
+    const existentialDeposit = await getExistentialDeposit(networkKey, token, state.getSubstrateApiMap);
 
-    const existentialDeposit = await getExistentialDeposit(
-      networkKey,
-      tokenInfo && !isMainToken ? mainToken || '' : token || '',
-      state.getSubstrateApiMap
-    );
-
-    let fee = '0';
+    let fee = 0;
     let feeSymbol;
     let fromAccountFreeBalance = '0';
     const toAccountFreeBalance = '0';
-    const fromAccountNativeBalance = '0';
+    // const fromAccountNativeBalance = '0';
 
     const tokenBalance = state.balanceMap[address][token];
 
     if (isEthereumAddress(from) && isEthereumAddress(to)) {
-      // [fromAccountFreeBalance, toAccountFreeBalance, fromAccountNativeBalance] = await Promise.all([
-      //   getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, token),
-      //   getFreeBalance(networkKey, to, dotSamaApiMap, web3ApiMap, token),
-      //   getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, mainToken),
-      // ]);
-
       const fromAccountFreeBalance =
         tokenBalance.balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())?.total ?? '0';
       const txVal: string = transferAll ? fromAccountFreeBalance : value || '0';
 
       // Estimate with EVM API
-      if (tokenInfo && !isMainToken && tokenInfo.contractAddress) {
+      if (!isMainToken && tokenInfo.contractAddress) {
         [, , fee] = await getERC20TransactionObject(
           tokenInfo.contractAddress,
           networkKey,
@@ -1189,38 +1170,20 @@ export default class Extension {
       }
     } else {
       // Estimate with DotSama API
-      // if (tokenInfo && !isMainToken) {
-      // [[fee, feeSymbol], fromAccountFreeBalance, toAccountFreeBalance, fromAccountNativeBalance] = await Promise.all([
-      //   estimateFee(networkKey, fromKeyPair, to, value, !!transferAll, dotSamaApiMap, tokenInfo),
-      //   getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, token),
-      //   getFreeBalance(networkKey, to, dotSamaApiMap, web3ApiMap, token),
-      //   getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, mainToken),
-      // ]);
-      const fee = await estimateFee(networkKey, fromKeyPair, to, value, !!transferAll, dotSamaApiMap, tokenBalance);
+
+      fee = await estimateFee(networkKey, fromKeyPair, to, value, !!transferAll, dotSamaApiMap, tokenBalance);
       fromAccountFreeBalance =
         tokenBalance.balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())?.total ?? '0';
-
-      console.info(fee, fromAccountFreeBalance);
-      // }
-      // else {
-      //   [[fee, feeSymbol], fromAccountFreeBalance, toAccountFreeBalance] = await Promise.all([
-      //     estimateFee(networkKey, fromKeyPair, to, value, !!transferAll, dotSamaApiMap, tokenInfo),
-      //     getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, token),
-      //     getFreeBalance(networkKey, to, dotSamaApiMap, web3ApiMap, token),
-      //   ]);
-      //   console.info(fee, feeSymbol, fromAccountFreeBalance, toAccountFreeBalance, fromAccountNativeBalance);
-      // }
     }
 
-    const fromAccountFreeNumber = new BN(fromAccountFreeBalance);
-    const feeNumber = fee ? new BN(fee) : undefined;
-    const fromAccountNativeBalanceNumber = new BN(fromAccountNativeBalance);
+    const fromAccountFreeNumber = new BN(Number(fromAccountFreeBalance));
+    const feeNumber = new BN(fee);
+    // const fromAccountNativeBalanceNumber = new BN(fromAccountNativeBalance);
     const existentialDepositNumber = new BN(existentialDeposit);
-    const rawExistentialDeposit =
-      Number(existentialDeposit) / Math.pow(10, mainTokenDecimals || tokenInfo?.precision || 0);
+    const rawExistentialDeposit = Number(existentialDeposit) / Math.pow(10, tokenInfo.precision);
 
     if (!transferAll && value && feeNumber && valueNumber && valueNumber.gt(BN_ZERO)) {
-      if (tokenInfo && isMainToken) {
+      if (isMainToken) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         if (fromAccountFreeNumber.gt(valueNumber)) {
           if (!fromAccountFreeNumber.gte(valueNumber.add(feeNumber).add(existentialDepositNumber))) {
@@ -1250,8 +1213,9 @@ export default class Extension {
         }
       } else {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+
         if (fromAccountFreeNumber.gte(valueNumber)) {
-          if (!fromAccountNativeBalanceNumber.gte(existentialDepositNumber.add(feeNumber))) {
+          if (!fromAccountFreeNumber.gte(existentialDepositNumber.add(feeNumber))) {
             if (existentialDepositNumber.gt(BN_ZERO)) {
               warnings.push({
                 code: BasicTxWarningCode.NOT_ENOUGH_EXISTENTIAL_DEPOSIT,
@@ -1261,7 +1225,7 @@ export default class Extension {
               });
             }
 
-            if (!fromAccountNativeBalanceNumber.gte(feeNumber)) {
+            if (!fromAccountFreeNumber.gte(feeNumber)) {
               errors.push({
                 code: TransferErrorCode.NOT_ENOUGH_FEE,
                 message: `Not enough ${mainToken || ''} to pay the network fee`,
@@ -1283,7 +1247,7 @@ export default class Extension {
       warnings,
       fromAccountFree: fromAccountFreeBalance,
       toAccountFree: toAccountFreeBalance,
-      estimateFee: fee,
+      estimateFee: fee.toString(),
       feeSymbol,
     } as ResponseCheckTransfer;
   }

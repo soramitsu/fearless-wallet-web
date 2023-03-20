@@ -35,11 +35,11 @@ export async function getExistentialDeposit(
 ): Promise<string> {
   const apiProps = await dotSamaApiMap[networkKey].isReady;
   const api = apiProps.api;
-
   const tokenInfo = await getTokenInfo(networkKey, api, token);
-  const isMainToken = await checkMainToken(networkKey, tokenInfo.id);
 
-  if (tokenInfo && isMainToken) {
+  const isMainToken = checkMainToken(networkKey, tokenInfo.id);
+
+  if (isMainToken) {
     //asset json
 
     if (api?.consts?.balances?.existentialDeposit) {
@@ -128,7 +128,7 @@ export async function getEVMTransactionObject(
   value: string,
   transferAll: boolean,
   web3ApiMap: Record<string, EthProvider>
-): Promise<[ethers.providers.TransactionRequest, string, string]> {
+): Promise<[ethers.providers.TransactionRequest, string, number]> {
   const web3Api = web3ApiMap[networkKey];
   const feeData = await web3Api.provider.getFeeData();
   const gasPrice = feeData.gasPrice;
@@ -147,7 +147,7 @@ export async function getEVMTransactionObject(
     ? ethers.BigNumber.from(value).add(estimateFee)
     : ethers.utils.parseEther(value);
 
-  return [transactionObject, transactionObject.value.toString(), estimateFee.toString()];
+  return [transactionObject, transactionObject.value.toString(), estimateFee];
 }
 
 export async function makeEVMTransfer(
@@ -177,7 +177,7 @@ export async function getERC20TransactionObject(
   value: string,
   transferAll: boolean,
   web3ApiMap: Record<string, EthProvider>
-): Promise<[ethers.providers.TransactionRequest, string, string]> {
+): Promise<[ethers.providers.TransactionRequest, string, number]> {
   const web3Api = web3ApiMap[networkKey];
   const erc20Contract = getERC20Contract(networkKey, assetAddress, web3ApiMap);
 
@@ -217,7 +217,7 @@ export async function getERC20TransactionObject(
     transactionObject.data = generateTransferData(to, transferValue);
   }
 
-  return [transactionObject, transferValue, estimateFee.toString()];
+  return [transactionObject, transferValue, estimateFee];
 }
 
 export async function makeERC20Transfer(

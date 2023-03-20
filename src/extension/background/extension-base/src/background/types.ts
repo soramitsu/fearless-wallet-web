@@ -475,7 +475,7 @@ export interface RequestCheckTransfer extends BaseRequestSign {
   to: string;
   value?: string;
   transferAll?: boolean;
-  token?: string;
+  token: string;
 }
 
 export interface ResponseCheckTransfer {

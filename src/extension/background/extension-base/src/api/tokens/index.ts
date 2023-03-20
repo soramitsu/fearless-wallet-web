@@ -149,15 +149,15 @@ export function deleteCustomTokens(
         for (const [key, token] of Object.entries(chainRegistry.tokenMap)) {
           if (
             token.contractAddress &&
-            isEqualContractAddress(token.contractAddress, targetToken.smartContract) &&
-            token.type === targetToken.type
+            isEqualContractAddress(token.contractAddress, targetToken.smartContract)
+            // &&token.type === targetToken.type
           ) {
             deleteKey = key;
             break;
           }
         }
 
-        delete chainRegistry.tokenMap[deleteKey];
+        // delete chainRegistry.tokenMap[deleteKey];
         chainRegistryMap[targetToken.chain] = chainRegistry;
       }
     }

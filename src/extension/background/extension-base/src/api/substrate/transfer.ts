@@ -7,6 +7,7 @@ import { SubmittableExtrinsic } from '@polkadot/api/promise/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { AccountInfoWithProviders, AccountInfoWithRefCount, EventRecord } from '@polkadot/types/interfaces';
 import { BN } from '@polkadot/util';
+import { FPNumber } from '@sora-substrate/math';
 import {
   ApiProps,
   BasicTxResponse,
@@ -15,10 +16,17 @@ import {
   ExternalRequestPromiseStatus,
   SignerType,
   SupportTransferResponse,
+  TokenBalance,
 } from '../../background/types';
-import { TokenInfo, CustomTokenType } from '../evm/types/ether';
+import { TokenInfo } from '../evm/types/ether';
+import { state } from '../../background/handlers';
 import { getTokenInfo } from './registry';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
+import { checkMainToken } from './balance';
+import { createExtrinsicTransfer } from './utils';
+import { AssetJson } from '@/interfaces';
+
+// import { FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT, getOrmlOptions } from '@/util/teleport';
 
 export async function getExistentialDeposit(
   networkKey: string,
@@ -29,8 +37,9 @@ export async function getExistentialDeposit(
   const api = apiProps.api;
 
   const tokenInfo = await getTokenInfo(networkKey, api, token);
+  const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
 
-  if (tokenInfo && tokenInfo.isMainToken) {
+  if (tokenInfo && isMainToken) {
     if (api?.consts?.balances?.existentialDeposit) {
       return api.consts.balances.existentialDeposit.toString();
     } else if (api?.consts?.eqBalances?.existentialDeposit) {
@@ -110,8 +119,10 @@ export async function checkSupportTransfer(
   }
 
   const tokenInfo = await getTokenInfo(networkKey, api, token);
+  const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
+  const type = state.networkMap[networkKey].assets.find((asset) => asset.assetId === tokenInfo?.id)?.type;
 
-  if (tokenInfo && tokenInfo.type && !apiProps.isEthereum && api.query.contracts) {
+  if (tokenInfo && type && !apiProps.isEthereum && api.query.contracts) {
     // for PSP tokens
     return {
       supportTransfer: true,
@@ -122,7 +133,7 @@ export async function checkSupportTransfer(
   if (
     ['karura', 'acala', 'acala_testnet'].includes(networkKey) &&
     tokenInfo &&
-    !tokenInfo.isMainToken &&
+    !isMainToken &&
     isTxCurrenciesSupported
   ) {
     result.supportTransfer = true;
@@ -144,7 +155,7 @@ export async function checkSupportTransfer(
   ) {
     result.supportTransfer = true;
     result.supportTransferAll = true;
-  } else if (isTxBalancesSupported && (!tokenInfo || tokenInfo.isMainToken)) {
+  } else if (isTxBalancesSupported && (!tokenInfo || isMainToken)) {
     result.supportTransfer = true;
     result.supportTransferAll = true;
   } else if (['pioneer', 'bitcountry'].includes(networkKey) && tokenInfo && tokenInfo.symbol === 'BIT') {
@@ -165,104 +176,130 @@ export async function estimateFee(
   value: string | undefined,
   transferAll: boolean,
   dotSamaApiMap: Record<string, ApiProps>,
-  tokenInfo?: TokenInfo
-): Promise<[string, string | undefined]> {
-  let fee = '0';
+  tokenInfo: TokenBalance
+): Promise<string> {
+  const fee = '0';
   // eslint-disable-next-line
   let feeSymbol = undefined;
 
   if (fromKeypair === undefined) {
-    return [fee, feeSymbol];
+    return fee;
   }
 
   const apiProps = await dotSamaApiMap[networkKey].isReady;
   const api = apiProps.api;
-  const isTxCurrenciesSupported = !!api && !!api.tx && !!api.tx.currencies;
-  const isTxBalancesSupported = !!api && !!api.tx && !!api.tx.balances;
-  const isTxTokensSupported = !!api && !!api.tx && !!api.tx.tokens;
-  const isTxEqBalancesSupported = !!api && !!api.tx && !!api.tx.eqBalances;
+  // const isTxCurrenciesSupported = !!api && !!api.tx && !!api.tx.currencies;
+  // const isTxBalancesSupported = !!api && !!api.tx && !!api.tx.balances;
+  // const isTxTokensSupported = !!api && !!api.tx && !!api.tx.tokens;
+  // const isTxEqBalancesSupported = !!api && !!api.tx && !!api.tx.eqBalances;
+  // const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
 
-  if (
-    ['karura', 'acala', 'acala_testnet'].includes(networkKey) &&
-    tokenInfo &&
-    !tokenInfo.isMainToken &&
-    isTxCurrenciesSupported
-  ) {
-    // Note: currently 'karura', 'acala', 'acala_testnet' do not support transfer all
-    // if (transferAll) {
-    //   const freeBalanceString = await getFreeBalance(networkKey, fromKeypair.address, tokenInfo.symbol);
-    //
-    //   const paymentInfo = await api.tx.currencies
-    //     .transfer(to, tokenInfo.specialOption || { Token: tokenInfo.symbol }, freeBalanceString)
-    //     .paymentInfo(fromKeypair);
-    //
-    //   return paymentInfo.partialFee.toString();
-    if (value) {
-      const paymentInfo = await api.tx.currencies
-        .transfer(to, tokenInfo.specialOption || { Token: tokenInfo.symbol }, value)
-        .paymentInfo(fromKeypair);
+  // const precisionAmount = this.getPrecisionValue(amount, networkProps.precision) as string;
 
-      fee = paymentInfo.partialFee.toString();
-    }
-  } else if (['kintsugi', 'kintsugi_test', 'interlay'].includes(networkKey) && tokenInfo && isTxTokensSupported) {
-    if (transferAll) {
-      const paymentInfo = await api.tx.tokens
-        .transferAll(to, tokenInfo.specialOption || { Token: tokenInfo.symbol }, false)
-        .paymentInfo(fromKeypair);
+  function getOrmlOptions(symbol: string, originNet: string) {
+    if (originNet === 'bit.country pioneer' && symbol === 'neer') return { NativeToken: 0 };
 
-      fee = paymentInfo.partialFee.toString();
-    } else if (value) {
-      const paymentInfo = await api.tx.tokens
-        .transfer(to, tokenInfo.specialOption || { Token: tokenInfo.symbol }, new BN(value))
-        .paymentInfo(fromKeypair);
-
-      fee = paymentInfo.partialFee.toString();
-    }
-  } else if (
-    ['genshiro_testnet', 'genshiro', 'equilibrium_parachain'].includes(networkKey) &&
-    tokenInfo &&
-    isTxEqBalancesSupported
-  ) {
-    if (transferAll) {
-      // currently genshiro_testnet, genshiro, equilibrium_parachain do not have transfer all method for tokens
-    } else if (value) {
-      const asset =
-        networkKey === 'equilibrium_parachain' ? assetFromToken(tokenInfo.symbol)[0] : assetFromToken(tokenInfo.symbol);
-      const paymentInfo = await api.tx.eqBalances
-        .transfer(asset, to, value)
-        .paymentInfo(fromKeypair.address, { nonce: -1 });
-
-      fee = paymentInfo.partialFee.toString();
-    }
-  } else if (['pioneer', 'bitcountry'].includes(networkKey) && tokenInfo && tokenInfo.symbol === 'BIT') {
-    const paymentInfo = await api.tx.currencies.transfer(to, tokenInfo.specialOption, value).paymentInfo(fromKeypair);
-
-    fee = paymentInfo.partialFee.toString();
-  } else if (['statemint', 'statemine'].includes(networkKey) && tokenInfo && !tokenInfo.isMainToken) {
-    const paymentInfo = await api.tx.assets.transfer(tokenInfo.assetIndex, to, value).paymentInfo(fromKeypair);
-
-    fee = paymentInfo.partialFee.toString();
-  } else if (
-    isTxBalancesSupported &&
-    (!tokenInfo ||
-      tokenInfo.isMainToken ||
-      (tokenInfo &&
-        ((networkKey === 'crab' && tokenInfo.symbol === 'CKTON') ||
-          (networkKey === 'pangolin' && tokenInfo.symbol === 'PKTON'))))
-  ) {
-    if (transferAll) {
-      const paymentInfo = await api.tx.balances.transferAll(to, false).paymentInfo(fromKeypair);
-
-      fee = paymentInfo.partialFee.toString();
-    } else if (value) {
-      const paymentInfo = await api.tx.balances.transfer(to, new BN(value)).paymentInfo(fromKeypair);
-
-      fee = paymentInfo.partialFee.toString();
-    }
+    return { Token: symbol.toUpperCase() };
   }
 
-  return [fee, feeSymbol];
+  const ormlOptions = getOrmlOptions(tokenInfo.name, networkKey);
+  // const params = getOrmlTeleportParams(originNet, destNet, toAddress);
+  const extrinsic = createExtrinsicTransfer({
+    amount: value,
+    api,
+    asset: tokenInfo.name,
+    networkProps: tokenInfo,
+    to,
+    networkKey,
+  });
+  // const extrinsicOptions = {
+  //   historyOptions: { networkProps: tokenInfo, amount: value, to },
+  //   api,
+  // }!;
+  const paymentInfo = await extrinsic?.paymentInfo(to);
+  const partialFee = paymentInfo ? paymentInfo.partialFee : 0;
+  const result = new FPNumber(partialFee, tokenInfo?.precision);
+
+  return result.toString();
 }
+// if (
+//   ['karura', 'acala', 'acala_testnet'].includes(networkKey) &&
+//   tokenInfo &&
+//   !isMainToken &&
+//   isTxCurrenciesSupported
+// ) {
+// Note: currently 'karura', 'acala', 'acala_testnet' do not support transfer all
+// if (transferAll) {
+//   const freeBalanceString = await getFreeBalance(networkKey, fromKeypair.address, tokenInfo.symbol);
+//
+//   const paymentInfo = await api.tx.currencies
+//     .transfer(to, tokenInfo.specialOption || { Token: tokenInfo.symbol }, freeBalanceString)
+//     .paymentInfo(fromKeypair);
+//
+//   return paymentInfo.partialFee.toString();
+// if (value) {
+// const paymentInfo = await api.tx.currencies
+//   .transfer(to, tokenInfo.specialOption || { Token: tokenInfo.symbol }, value)
+//   .paymentInfo(fromKeypair);
+// fee = paymentInfo.partialFee.toString();
+// }
+//   } else if (['kintsugi', 'kintsugi_test', 'interlay'].includes(networkKey) && tokenInfo && isTxTokensSupported) {
+//     if (transferAll) {
+//       const paymentInfo = await api.tx.tokens;
+//       // .transferAll(to, tokenInfo.specialOption || { Token: tokenInfo.symbol }, false)
+//       // .paymentInfo(fromKeypair);
+
+//       fee = paymentInfo.partialFee.toString();
+//     } else if (value) {
+//       const paymentInfo = await api.tx.tokens;
+//       // .transfer(to, tokenInfo.specialOption || { Token: tokenInfo.symbol }, new BN(value))
+//       // .paymentInfo(fromKeypair);
+
+//       // fee = paymentInfo.partialFee.toString();
+//     }
+//   } else if (
+//     ['genshiro_testnet', 'genshiro', 'equilibrium_parachain'].includes(networkKey) &&
+//     tokenInfo &&
+//     isTxEqBalancesSupported
+//   ) {
+//     if (transferAll) {
+//       // currently genshiro_testnet, genshiro, equilibrium_parachain do not have transfer all method for tokens
+//     } else if (value) {
+//       const asset =
+//         networkKey === 'equilibrium_parachain' ? assetFromToken(tokenInfo.symbol)[0] : assetFromToken(tokenInfo.symbol);
+//       const paymentInfo = await api.tx.eqBalances
+//         .transfer(asset, to, value)
+//         .paymentInfo(fromKeypair.address, { nonce: -1 });
+
+//       fee = paymentInfo.partialFee.toString();
+//     }
+//   } else if (['pioneer', 'bitcountry'].includes(networkKey) && tokenInfo && tokenInfo.symbol === 'BIT') {
+//     // const paymentInfo = await api.tx.currencies.transfer(to, tokenInfo.specialOption, value).paymentInfo(fromKeypair);
+//     // fee = paymentInfo.partialFee.toString();
+//   } else if (['statemint', 'statemine'].includes(networkKey) && tokenInfo && !isMainToken) {
+//     // const paymentInfo = await api.tx.assets.transfer(tokenInfo.assetIndex, to, value).paymentInfo(fromKeypair);
+//     // fee = paymentInfo.partialFee.toString();
+//   } else if (
+//     isTxBalancesSupported &&
+//     (!tokenInfo ||
+//       isMainToken ||
+//       (tokenInfo &&
+//         ((networkKey === 'crab' && tokenInfo.symbol === 'CKTON') ||
+//           (networkKey === 'pangolin' && tokenInfo.symbol === 'PKTON'))))
+//   ) {
+//     if (transferAll) {
+//       const paymentInfo = await api.tx.balances.transferAll(to, false).paymentInfo(fromKeypair);
+
+//       fee = paymentInfo.partialFee.toString();
+//     } else if (value) {
+//       const paymentInfo = await api.tx.balances.transfer(to, new BN(value)).paymentInfo(fromKeypair);
+
+//       fee = paymentInfo.partialFee.toString();
+//     }
+//   }
+
+//   return [fee, feeSymbol];
+// }
 
 export function getUnsupportedResponse(): BasicTxResponse {
   return {
@@ -278,7 +315,7 @@ export function getUnsupportedResponse(): BasicTxResponse {
 
 export function updateTransferResponseTxResult(
   networkKey: string,
-  tokenInfo: undefined | TokenInfo,
+  tokenInfo: undefined | AssetJson,
   response: BasicTxResponse,
   records: EventRecord[],
   transferAmount?: string
@@ -292,11 +329,12 @@ export function updateTransferResponseTxResult(
   }
 
   let isFeeUseMainTokenSymbol = true;
+  const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
 
   for (let index = 0; index < records.length; index++) {
     const record = records[index];
 
-    if (['karura', 'acala', 'acala_testnet'].includes(networkKey) && tokenInfo && !tokenInfo.isMainToken) {
+    if (['karura', 'acala', 'acala_testnet'].includes(networkKey) && tokenInfo && !isMainToken) {
       if (record.event.section === 'currencies' && record.event.method.toLowerCase() === 'transferred') {
         if (index === 0) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -319,12 +357,12 @@ export function updateTransferResponseTxResult(
         response.txResult.change = record.event.data[3]?.toString() || '0';
         response.txResult.changeSymbol = tokenInfo.symbol;
       }
-    } else if (['pioneer', 'bitcountry'].includes(networkKey) && tokenInfo && !tokenInfo.isMainToken) {
+    } else if (['pioneer', 'bitcountry'].includes(networkKey) && tokenInfo && !isMainToken) {
       if (record.event.section === 'tokens' && record.event.method.toLowerCase() === 'transfer') {
         response.txResult.change = record.event.data[3]?.toString() || '0';
         response.txResult.changeSymbol = tokenInfo.symbol;
       }
-    } else if (['statemint', 'statemine'].includes(networkKey) && tokenInfo && !tokenInfo.isMainToken) {
+    } else if (['statemint', 'statemine'].includes(networkKey) && tokenInfo && !isMainToken) {
       if (record.event.section === 'assets' && record.event.method.toLowerCase() === 'transferred') {
         response.txResult.change = record.event.data[3]?.toString() || '0';
         response.txResult.changeSymbol = tokenInfo.symbol;
@@ -481,7 +519,7 @@ interface CreateTransferExtrinsicProps {
   from: string;
   value: string;
   transferAll: boolean;
-  tokenInfo: undefined | TokenInfo;
+  tokenInfo: undefined | AssetJson;
 }
 
 export const createTransferExtrinsic = async ({
@@ -503,23 +541,24 @@ export const createTransferExtrinsic = async ({
   const isTxTokensSupported = !!api && !!api.tx && !!api.tx.tokens;
   const isTxEqBalancesSupported = !!api && !!api.tx && !!api.tx.eqBalances;
   let transferAmount; // for PSP-22 tokens, might be deprecated in the future
+  const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
 
   if (
     ['karura', 'acala', 'acala_testnet'].includes(networkKey) &&
     tokenInfo &&
-    !tokenInfo.isMainToken &&
+    !checkMainToken(networkKey, tokenInfo.id) &&
     isTxCurrenciesSupported
   ) {
     if (transferAll) {
       // currently Acala, Karura, Acala testnet do not have transfer all method for sub token
     } else if (value) {
-      transfer = api.tx.currencies.transfer(to, tokenInfo.specialOption || { Token: tokenInfo.symbol }, value);
+      // transfer = api.tx.currencies.transfer(to, tokenInfo.specialOption || { Token: tokenInfo.symbol }, value);
     }
   } else if (['kintsugi', 'kintsugi_test', 'interlay'].includes(networkKey) && tokenInfo && isTxTokensSupported) {
     if (transferAll) {
-      transfer = api.tx.tokens.transferAll(to, tokenInfo.specialOption || { Token: tokenInfo.symbol }, false);
+      // transfer = api.tx.tokens.transferAll(to, tokenInfo.specialOption || { Token: tokenInfo.symbol }, false);
     } else if (value) {
-      transfer = api.tx.tokens.transfer(to, tokenInfo.specialOption || { Token: tokenInfo.symbol }, new BN(value));
+      // transfer = api.tx.tokens.transfer(to, tokenInfo.specialOption || { Token: tokenInfo.symbol }, new BN(value));
     }
   } else if (
     ['genshiro_testnet', 'genshiro', 'equilibrium_parachain'].includes(networkKey) &&
@@ -545,10 +584,10 @@ export const createTransferExtrinsic = async ({
       transfer = api.tx.kton.transfer(to, new BN(value));
     }
   } else if (['pioneer', 'bitcountry'].includes(networkKey) && tokenInfo && tokenInfo.symbol === 'BIT') {
-    transfer = api.tx.currencies.transfer(to, tokenInfo.specialOption, value);
-  } else if (['statemint', 'statemine'].includes(networkKey) && tokenInfo && !tokenInfo.isMainToken) {
-    transfer = api.tx.assets.transfer(tokenInfo.assetIndex, to, value);
-  } else if (isTxBalancesSupported && (!tokenInfo || tokenInfo.isMainToken)) {
+    // transfer = api.tx.currencies.transfer(to, tokenInfo.specialOption, value);
+  } else if (['statemint', 'statemine'].includes(networkKey) && tokenInfo && !isMainToken) {
+    // transfer = api.tx.assets.transfer(tokenInfo.assetIndex, to, value);
+  } else if (isTxBalancesSupported && (!tokenInfo || isMainToken)) {
     if (transferAll) {
       transfer = api.tx.balances.transferAll(to, false);
     } else if (value) {
@@ -566,7 +605,7 @@ export interface MakeTransferProps {
   value: string;
   transferAll: boolean;
   dotSamaApiMap: Record<string, ApiProps>;
-  tokenInfo: undefined | TokenInfo;
+  tokenInfo: undefined | AssetJson;
   callback: (data: BasicTxResponse) => void;
 }
 

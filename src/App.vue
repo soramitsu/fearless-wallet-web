@@ -26,7 +26,6 @@ import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
-import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import {

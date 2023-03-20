@@ -9,6 +9,7 @@ import { getRegistry } from '../substrate/registry';
 import { APIItemState, BalanceChildItem, BalanceItem, TokenInfo } from './types/ether';
 import EthProvider from './ethProvider';
 import { getERC20Contract } from './utils/eth';
+import { AssetJson } from '@/interfaces';
 
 export async function getEVMBalance(
   networkKey: string,
@@ -31,12 +32,13 @@ function subscribeERC20Interval(
   web3ApiMap: Record<string, EthProvider>,
   subCallback: (rs: BalanceItem) => void
 ): () => void {
-  let tokenList = {} as TokenInfo[];
+  let tokenList: AssetJson[] = [];
   const ERC20ContractMap = {} as Record<string, ethers.Contract>;
 
   const getTokenBalances = () => {
-    Object.values(tokenList).map(async ({ decimals, symbol, name }) => {
+    tokenList.map(async ({ precision, symbol, displayName }) => {
       try {
+        const name = displayName ?? symbol;
         const contract = ERC20ContractMap[symbol];
         const bals = await Promise.all(
           addresses.map((address): Promise<string> => {
@@ -45,7 +47,7 @@ function subscribeERC20Interval(
           })
         );
 
-        const free = bals.map((bal) => ethers.utils.formatUnits(bal, decimals));
+        const free = bals.map((bal) => ethers.utils.formatUnits(bal, precision));
 
         subCallback({
           state: APIItemState.READY,
@@ -64,7 +66,7 @@ function subscribeERC20Interval(
 
   getRegistry(networkKey, api)
     .then(({ tokenMap }) => {
-      tokenList = Object.values(tokenMap).filter(({ contractAddress }) => !!contractAddress);
+      tokenList = tokenMap.filter(({ contractAddress }) => !!contractAddress);
       tokenList.forEach(({ contractAddress, symbol }) => {
         if (contractAddress) {
           ERC20ContractMap[symbol] = getERC20Contract(networkKey, contractAddress, web3ApiMap);

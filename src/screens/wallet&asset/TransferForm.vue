@@ -63,7 +63,7 @@
                 </div>
               </div>
 
-              <div v-if="showTransferableValue" class="transferrable-part">
+              <div v-if="assetPrice" class="transferrable-part">
                 <div class="transferrable-label">{{ $t('assets.transferrable') }}</div>
 
                 <div class="transferrable-descriptions">
@@ -108,6 +108,7 @@
       :currency="currency"
       :amount="syncedAmount"
       :value="syncedValue"
+      :tx="tx"
       :firstNetwork="syncedSelectedNetwork"
       :secondNetwork="syncedDestNet"
       @close="confirmationPasswordPopupClose"
@@ -136,7 +137,6 @@ import MaxButton from './MaxButton.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
 import RotateInput from './RotateInput.vue';
-import type { Networks } from '@/interfaces';
 import type { GetAssetPrice } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import FloatInput from '@/components/FloatInput.vue';
@@ -147,7 +147,7 @@ import { firstCharToUp } from '@/helpers/common';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { RequestCheckTransfer, TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 import { checkTransfer } from '@/extension/messaging';
 
@@ -182,7 +182,6 @@ export default class SendForm extends Vue {
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('value', { type: String }) syncedValue!: string;
   @PropSync('partialFee', { type: String }) syncedPartialFee!: string;
-  @Getter(NetworksGettersTypes.getAllNetworks) networks!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) onlineStatus!: string;
@@ -273,7 +272,8 @@ export default class SendForm extends Vue {
     if (!this.onlineStatus) return true;
     if (this.step === 2) return false;
 
-    return !this.isAllFieldsCorrect || +this.syncedAmount === 0 || this.syncedPartialFee === '';
+    return false;
+    // return !this.isAllFieldsCorrect || +this.syncedAmount === 0 || this.syncedPartialFee === '';
   }
 
   get isAllFieldsCorrect() {
@@ -296,9 +296,9 @@ export default class SendForm extends Vue {
   }
 
   get currency() {
-    // console.log(this.syncedSelectedAssetId);
-
-    return this.currencies.find(({ name }) => name === this.syncedSelectedAssetId);
+    return this.currencies.find(
+      ({ name, id }) => name === this.syncedSelectedAssetId || id === this.syncedSelectedAssetId
+    );
   }
 
   get options() {
@@ -399,14 +399,7 @@ export default class SendForm extends Vue {
   @Watch('syncedAmount')
   async createSendTransfer() {
     this.syncedPartialFee = '';
-    const isValid = checkTransfer({
-      networkKey: this.syncedSelectedNetwork,
-      from: this.selectedWallet.address,
-      to: this.syncedRecipient,
-      value: this.syncedAmount,
-      transferAll: false,
-      token: this.syncedSelectedAssetId,
-    });
+
     // console.log(isValid, 'check tx');
     if (
       (this.extrinsicType === 'transfer' && (!this.isValidRecipientAddress || this.syncedSelectedNetwork === '')) ||
@@ -531,6 +524,17 @@ export default class SendForm extends Vue {
     // this.syncedValue = getCostOfAssets(transferableCountAssets, this.assetPrice).toString();
   }
 
+  get tx(): RequestCheckTransfer {
+    return {
+      networkKey: this.syncedSelectedNetwork,
+      from: this.syncedRecipient,
+      to: this.syncedRecipient,
+      value: this.syncedAmount,
+      transferAll: false,
+      token: this.syncedSelectedAssetId,
+    };
+  }
+
   handlerContinueButton(skipWarning = false) {
     if (!skipWarning && this.step === 1) {
       const isValid = checkTransfer({
@@ -541,6 +545,7 @@ export default class SendForm extends Vue {
         transferAll: false,
         token: this.syncedSelectedAssetId,
       });
+      console.info(isValid);
       // this.showExistentialPopup = !this.currency!.validateExistentialDeposit(
       //   this.selectedWallet,
       //   this.syncedSelectedNetwork,
@@ -574,7 +579,7 @@ export default class SendForm extends Vue {
   }
 
   handlerCloseWarningAddressPopup() {
-    const network = this.networks.find(({ name }) => BaseApi.validateAddressByNetwork(this.syncedRecipient, name));
+    const network = this.getNetworks.find(({ name }) => BaseApi.validateAddressByNetwork(this.syncedRecipient, name));
 
     this.syncedSelectedAssetId = network?.assets[0].assetId ?? ''; // [0] - is utility asset
 

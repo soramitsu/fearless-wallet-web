@@ -1,3 +1,6 @@
+import { NetworkName } from '@/interfaces';
+import { Wallet } from '@/store';
+import BaseApi from '@/util/BaseApi';
 import { FPNumber } from '@/util/fp';
 
 export function calculateCost(count: FPNumber, price: number): FPNumber {
@@ -8,6 +11,19 @@ export function calculateCost(count: FPNumber, price: number): FPNumber {
 
 export function getCostOfAssets(count: string, price: number): number {
   return calculateCost(new FPNumber(count), price).toNumber();
+}
+
+export function getTransactionAddress(wallet: Wallet, network: NetworkName): string {
+  const { address, ethereumAddress } = wallet;
+  // const replacedAccount = BaseApi.getReplacedAccountByNetwork(wallet, network);
+
+  // if (replacedAccount) {
+  //   const { address } = replacedAccount;
+
+  //   return address;
+  // }
+
+  return BaseApi.isEthereumNetwork(network) ? ethereumAddress : address;
 }
 
 // public getBalanceInNetwork( _network: string) {

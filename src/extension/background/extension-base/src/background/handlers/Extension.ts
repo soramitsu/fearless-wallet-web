@@ -36,9 +36,9 @@ import {
 } from '../types';
 import { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import { RequestTransactionHistoryAdd, RequestTransactionHistoryGet, TransactionHistoryItemType } from '../../types';
-import { ALL_ACCOUNT_KEY, ALL_GENESIS_HASH } from '../../const';
+import { ALL_GENESIS_HASH } from '../../const';
 import { fetchHistory } from '../../api/evm/history';
-import { NetworkJson, TokenInfo } from '../../api/evm/types/ether';
+import { NetworkJson } from '../../api/evm/types/ether';
 import {
   getERC20TransactionObject,
   getEVMTransactionObject,
@@ -46,7 +46,7 @@ import {
   makeERC20Transfer,
   makeEVMTransfer,
 } from '../../api/evm/transfer';
-import { getFreeBalance } from '../../api/substrate/balance';
+import { checkMainToken } from '../../api/substrate/balance';
 import { estimateFee, makeTransfer } from '../../api/substrate/transfer';
 import { getTokenInfo } from '../../api/substrate/registry';
 import { withErrorLog } from './helpers';
@@ -106,7 +106,14 @@ import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { googleManage } from '@/controllers/googleController';
-import { FilesResponse, GoogleAuthTypes, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
+import {
+  AssetJson,
+  FilesResponse,
+  GoogleAuthTypes,
+  ICreateFile,
+  IGetFilesResponse,
+  VerifyTokenResponse,
+} from '@/interfaces';
 import { getMetaTyped } from '@/helpers/common';
 
 const SEED_DEFAULT_LENGTH = 12;
@@ -352,6 +359,8 @@ export default class Extension {
   }
 
   accountsValidate({ address, password }: RequestAccountValidate): boolean {
+    console.info(address, password);
+
     try {
       keyring.backupAccount(keyring.getPair(address), password);
 
@@ -505,7 +514,7 @@ export default class Extension {
 
   jsonRestore({ file, password }: RequestJsonRestore): Promise<string> {
     const isPasswordValidated = this.validatePassword(file, password);
-    const { address, ethereumAddress } = this.jsonGetAccountInfo(file);
+    const { address } = this.jsonGetAccountInfo(file);
 
     if (isPasswordValidated) {
       return new Promise((resolve, reject) => {
@@ -643,7 +652,6 @@ export default class Extension {
 
   async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
     const queued = await state.getSignRequest(id);
-    const { cachedUnlocks } = await state.getFromStorage(['cachedUnlocks']);
 
     assert(queued, 'Unable to find request');
 
@@ -1038,7 +1046,7 @@ export default class Extension {
     password: string | undefined,
     value: string | undefined,
     transferAll: boolean | undefined
-  ): Promise<[Array<BasicTxError>, KeyringPair | undefined, BN | undefined, TokenInfo | undefined]> {
+  ): Promise<[Array<BasicTxError>, KeyringPair | undefined, BN | undefined, AssetJson | undefined]> {
     const dotSamaApiMap = state.getSubstrateApiMap;
     const errors = [] as Array<BasicTxError>;
     let keypair: KeyringPair | undefined;
@@ -1077,10 +1085,11 @@ export default class Extension {
       });
     }
 
-    let tokenInfo: TokenInfo | undefined;
+    let tokenInfo: AssetJson | undefined;
 
     if (token) {
       tokenInfo = await getTokenInfo(networkKey, dotSamaApiMap[networkKey].api, token);
+      console.info(tokenInfo, 'tokenInfo', networkKey, dotSamaApiMap[networkKey].api, token);
 
       if (!tokenInfo) {
         errors.push({
@@ -1089,7 +1098,13 @@ export default class Extension {
         });
       }
 
-      if (isEthereumAddress(from) && isEthereumAddress(to) && !tokenInfo?.isMainToken && !tokenInfo?.contractAddress) {
+      if (
+        isEthereumAddress(from) &&
+        isEthereumAddress(to) &&
+        tokenInfo &&
+        !checkMainToken(networkKey, tokenInfo?.id) &&
+        !tokenInfo?.contractAddress
+      ) {
         errors.push({
           code: TransferErrorCode.INVALID_TOKEN,
           message: 'Not found ERC20 address for this token',
@@ -1122,37 +1137,44 @@ export default class Extension {
     let mainToken: string | undefined;
     let mainTokenDecimals: number | undefined;
     const warnings: BasicTxWarning[] = [];
+    const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo?.id) : false;
 
-    if (tokenInfo && !tokenInfo.isMainToken) {
+    if (tokenInfo && !isMainToken) {
       const mainNetwork = state.getNetworkMapByKey(networkKey);
 
       mainToken = mainNetwork.nativeToken as string;
       mainTokenDecimals = mainNetwork.decimals;
     }
 
+    const address = this.encodeAddress(from, 42);
+
     const existentialDeposit = await getExistentialDeposit(
       networkKey,
-      tokenInfo && !tokenInfo.isMainToken ? mainToken || '' : token || '',
+      tokenInfo && !isMainToken ? mainToken || '' : token || '',
       state.getSubstrateApiMap
     );
 
     let fee = '0';
     let feeSymbol;
     let fromAccountFreeBalance = '0';
-    let toAccountFreeBalance = '0';
-    let fromAccountNativeBalance = '0';
+    const toAccountFreeBalance = '0';
+    const fromAccountNativeBalance = '0';
 
-    if (isEthereumAddress(to)) {
-      [fromAccountFreeBalance, toAccountFreeBalance, fromAccountNativeBalance] = await Promise.all([
-        getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, token),
-        getFreeBalance(networkKey, to, dotSamaApiMap, web3ApiMap, token),
-        getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, mainToken),
-      ]);
+    const tokenBalance = state.balanceMap[address][token];
 
+    if (isEthereumAddress(from) && isEthereumAddress(to)) {
+      // [fromAccountFreeBalance, toAccountFreeBalance, fromAccountNativeBalance] = await Promise.all([
+      //   getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, token),
+      //   getFreeBalance(networkKey, to, dotSamaApiMap, web3ApiMap, token),
+      //   getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, mainToken),
+      // ]);
+
+      const fromAccountFreeBalance =
+        tokenBalance.balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())?.total ?? '0';
       const txVal: string = transferAll ? fromAccountFreeBalance : value || '0';
 
       // Estimate with EVM API
-      if (tokenInfo && !tokenInfo.isMainToken && tokenInfo.contractAddress) {
+      if (tokenInfo && !isMainToken && tokenInfo.contractAddress) {
         [, , fee] = await getERC20TransactionObject(
           tokenInfo.contractAddress,
           networkKey,
@@ -1167,20 +1189,27 @@ export default class Extension {
       }
     } else {
       // Estimate with DotSama API
-      if (tokenInfo && !tokenInfo.isMainToken) {
-        [[fee, feeSymbol], fromAccountFreeBalance, toAccountFreeBalance, fromAccountNativeBalance] = await Promise.all([
-          estimateFee(networkKey, fromKeyPair, to, value, !!transferAll, dotSamaApiMap, tokenInfo),
-          getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, token),
-          getFreeBalance(networkKey, to, dotSamaApiMap, web3ApiMap, token),
-          getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, mainToken),
-        ]);
-      } else {
-        [[fee, feeSymbol], fromAccountFreeBalance, toAccountFreeBalance] = await Promise.all([
-          estimateFee(networkKey, fromKeyPair, to, value, !!transferAll, dotSamaApiMap, tokenInfo),
-          getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, token),
-          getFreeBalance(networkKey, to, dotSamaApiMap, web3ApiMap, token),
-        ]);
-      }
+      // if (tokenInfo && !isMainToken) {
+      // [[fee, feeSymbol], fromAccountFreeBalance, toAccountFreeBalance, fromAccountNativeBalance] = await Promise.all([
+      //   estimateFee(networkKey, fromKeyPair, to, value, !!transferAll, dotSamaApiMap, tokenInfo),
+      //   getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, token),
+      //   getFreeBalance(networkKey, to, dotSamaApiMap, web3ApiMap, token),
+      //   getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, mainToken),
+      // ]);
+      const fee = await estimateFee(networkKey, fromKeyPair, to, value, !!transferAll, dotSamaApiMap, tokenBalance);
+      fromAccountFreeBalance =
+        tokenBalance.balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())?.total ?? '0';
+
+      console.info(fee, fromAccountFreeBalance);
+      // }
+      // else {
+      //   [[fee, feeSymbol], fromAccountFreeBalance, toAccountFreeBalance] = await Promise.all([
+      //     estimateFee(networkKey, fromKeyPair, to, value, !!transferAll, dotSamaApiMap, tokenInfo),
+      //     getFreeBalance(networkKey, from, dotSamaApiMap, web3ApiMap, token),
+      //     getFreeBalance(networkKey, to, dotSamaApiMap, web3ApiMap, token),
+      //   ]);
+      //   console.info(fee, feeSymbol, fromAccountFreeBalance, toAccountFreeBalance, fromAccountNativeBalance);
+      // }
     }
 
     const fromAccountFreeNumber = new BN(fromAccountFreeBalance);
@@ -1188,10 +1217,10 @@ export default class Extension {
     const fromAccountNativeBalanceNumber = new BN(fromAccountNativeBalance);
     const existentialDepositNumber = new BN(existentialDeposit);
     const rawExistentialDeposit =
-      Number(existentialDeposit) / Math.pow(10, mainTokenDecimals || tokenInfo?.decimals || 0);
+      Number(existentialDeposit) / Math.pow(10, mainTokenDecimals || tokenInfo?.precision || 0);
 
     if (!transferAll && value && feeNumber && valueNumber && valueNumber.gt(BN_ZERO)) {
-      if (tokenInfo && tokenInfo.isMainToken) {
+      if (tokenInfo && isMainToken) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         if (fromAccountFreeNumber.gt(valueNumber)) {
           if (!fromAccountFreeNumber.gte(valueNumber.add(feeNumber).add(existentialDepositNumber))) {
@@ -1203,6 +1232,7 @@ export default class Extension {
             }
 
             const isEnoughBalanceToSend = fromAccountFreeNumber.gte(valueNumber.add(feeNumber));
+            console.info(isEnoughBalanceToSend, valueNumber, feeNumber);
 
             if (!isEnoughBalanceToSend) {
               errors.push({
@@ -1305,8 +1335,9 @@ export default class Extension {
         // Make transfer with EVM API
         const { privateKey } = this.accountExportPrivateKey({ address: from, password });
         const web3ApiMap = state.getApiMap.evm;
+        const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
 
-        if (tokenInfo && !tokenInfo.isMainToken && tokenInfo.contractAddress) {
+        if (tokenInfo && !isMainToken && tokenInfo.contractAddress) {
           transferProm = makeERC20Transfer(
             tokenInfo.contractAddress,
             networkKey,
@@ -1586,8 +1617,10 @@ export default class Extension {
       /// Transfer
       case 'pri(accounts.checkTransfer)':
         return await this.checkTransfer(request as RequestCheckTransfer);
+
       case 'pri(accounts.transfer)':
         return await this.makeTransfer(id, port as Port, request as RequestTransfer);
+
       case 'pri(accounts.checkCrossChainTransfer)':
       case 'pri(transaction.history.add)':
         return this.updateTransactionHistory(request as RequestTransactionHistoryAdd, id, port as Port);

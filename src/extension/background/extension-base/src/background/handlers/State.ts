@@ -1120,7 +1120,7 @@ export default class State {
       if (this.priceStoreReady) {
         update(rs);
       } else {
-        const activeNetworks: string[] = Object.values(this.tokenMap)
+        const activeNetworks: string[] = this.tokenMap
           .filter((el) => el.priceId)
           .map((asset) => asset.priceId as string);
 
@@ -1212,6 +1212,7 @@ export default class State {
           name: el.name,
           key: el.key,
           icon: el.icon,
+          type: asset.type,
           isUtility: asset.isUtility,
           isNative: asset.isNative,
         };

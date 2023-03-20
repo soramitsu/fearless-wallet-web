@@ -61,16 +61,22 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import type { Currencies, Currency, RequestSentInfo, TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
+import type { RequestSentInfo, TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
 import type { GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import { beaconController } from '@/controllers/beaconController';
-import { isSignLocked, refreshPasswordTimeout } from '@/extension/messaging';
+import { isSignLocked, makeTransfer, refreshPasswordTimeout } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/extension/actions';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import ExtensionController from '@/controllers/extensionController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import {
+  RequestCheckTransfer,
+  RequestTransfer,
+  TokenBalance,
+} from '@/extension/background/extension-base/src/background/types';
+import { getTransactionAddress } from '@/controllers/transferHelpers';
 
 @Component({
   components: { SignMobile },
@@ -89,10 +95,12 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(String) firstNetwork!: string;
   @Prop(String) secondNetwork!: string;
   @Prop(String) transactionId?: string;
-  @Prop(Object) currency?: Currency;
+  @Prop(Object) currency?: TokenBalance;
+  @Prop({ required: true, type: Object }) tx!: RequestCheckTransfer;
+
   @Prop(Object) payload?: SignerPayloadJSON;
 
-  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
+  @Getter(NetworksGettersTypes.getBalance) currencies!: TokenBalance;
   @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: TAction<ApprovePayload>;
   @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
@@ -102,8 +110,15 @@ export default class ConfirmationPasswordPopup extends Vue {
     return BaseApi.isExtension();
   }
 
+  get requestTransfer(): RequestTransfer {
+    return {
+      ...this.tx,
+      password: this.password,
+    };
+  }
+
   get transactionAddress() {
-    return this.currency?.getTransactionAddress(this.selectedWallet, this.firstNetwork) ?? '';
+    return getTransactionAddress(this.selectedWallet, this.firstNetwork) ?? '';
   }
 
   get disabledButton() {
@@ -119,7 +134,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transactionStatus() {
-    return this.currency?.transactionStatus ?? this.transactionState;
+    return this.transactionState;
   }
 
   get min15Label() {
@@ -145,7 +160,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transferAmountString() {
-    return `-${this.amount} ${this.currency?.displayName.toUpperCase()}`;
+    return `-${this.amount} ${this.currency?.name.toUpperCase()}`;
   }
 
   get transferValueString() {
@@ -199,7 +214,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   resetTxStatus() {
-    this.currency?.setTransactionStatus();
+    // this.currency?.setTransactionStatus();
     this.transactionState = undefined;
   }
 
@@ -212,8 +227,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async onSignMobile() {
-    if (!this.transactionId && this.currency?.extrinsic) await this.currency.send(this.transactionAddress, true, false);
-    else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
+    // if (!this.transactionId && this.currency?.extrinsic) await this.currency.send(this.transactionAddress, true, false);
+    // else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
   }
 
   async signTransactionJSON(id: string) {
@@ -252,7 +267,10 @@ export default class ConfirmationPasswordPopup extends Vue {
       return;
     }
 
-    this.currency?.send(this.transactionAddress, false, this.isSavePass);
+    makeTransfer(this.requestTransfer, (data) => {
+      console.info(data, 'tx data');
+    });
+    // this.currency?.send(this.transactionAddress, false, this.isSavePass);
   }
 }
 </script>

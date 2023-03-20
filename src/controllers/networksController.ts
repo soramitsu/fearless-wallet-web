@@ -1,5 +1,4 @@
-import type { Wallet, CustomAccounts } from '@/store';
-import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
+import type { Wallet } from '@/store';
 import type { AssetJson, Networks, Network, AssetPrice } from '@/interfaces';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
@@ -31,11 +30,11 @@ export default class NetworksController {
     // await store.dispatch(NetworksActionTypes.CONNECT_TO_NODES);
   }
 
-  // public static async loadJsons(): Promise<void> {
-  //   await store.dispatch(NetworksActionTypes.LOAD_JSONS, {
-  //     fiatsUrl: URLS.FIATS,
-  //   });
-  // }
+  public static async loadJsons(): Promise<void> {
+    await store.dispatch(NetworksActionTypes.FETCH_JSONS, {
+      fiatsUrl: URLS.FIATS,
+    });
+  }
 
   public static async fetchHistory(
     networkName: string,

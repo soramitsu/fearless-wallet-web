@@ -1,6 +1,5 @@
 import { RouteConfig } from 'vue-router';
 import store from '@/store';
-import BaseApi from '@/util/BaseApi';
 import Welcome from '@/screens/welcome/Welcome.vue';
 import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
@@ -44,10 +43,7 @@ export enum Components {
   AddFromGoogle = 'AddFromGoogle',
 }
 
-const haveSelectedWallet = () => {
-  return !store.getters.getSelectedWallet.address.length;
-};
-
+const haveSelectedWallet = () => store.getters.getSelectedWallet.address.length;
 const haveAuthRequests = () => store.getters.getAuthList.length;
 const haveSignRequests = () => store.getters.getSignList.length;
 const haveMetaRequests = () => store.getters.getMetaRequests.length;

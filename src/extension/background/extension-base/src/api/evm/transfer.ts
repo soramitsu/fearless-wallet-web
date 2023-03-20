@@ -10,6 +10,7 @@ import {
   ExternalRequestPromiseStatus,
   TransferErrorCode,
 } from '../../background/types';
+import { checkMainToken } from '../substrate/balance';
 import { getTokenInfo } from '../substrate/registry';
 
 import EthProvider from './ethProvider';
@@ -36,8 +37,11 @@ export async function getExistentialDeposit(
   const api = apiProps.api;
 
   const tokenInfo = await getTokenInfo(networkKey, api, token);
+  const isMainToken = await checkMainToken(networkKey, tokenInfo.id);
 
-  if (tokenInfo && tokenInfo.isMainToken) {
+  if (tokenInfo && isMainToken) {
+    //asset json
+
     if (api?.consts?.balances?.existentialDeposit) {
       return api.consts.balances.existentialDeposit.toString();
     } else if (api?.consts?.eqBalances?.existentialDeposit) {

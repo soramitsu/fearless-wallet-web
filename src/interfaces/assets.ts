@@ -4,6 +4,7 @@ type AssetJson = {
   id: string;
   symbol: string;
   displayName?: string;
+  contractAddress?: string;
   chainId: string;
   precision: number;
   priceId?: string;

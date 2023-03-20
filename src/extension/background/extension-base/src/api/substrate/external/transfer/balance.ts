@@ -7,11 +7,12 @@ import { TokenInfo } from '../../../evm/types/ether';
 import { signAndSendExtrinsic } from '../../shared/signAndSendExtrinsic';
 import { createTransferExtrinsic, getUnsupportedResponse, updateTransferResponseTxResult } from '../../transfer';
 import { ExternalProps } from '../shared';
+import { AssetJson } from '@/interfaces';
 
 interface MakeTransferExternalProps extends ExternalProps {
   recipientAddress: string;
   senderAddress: string;
-  tokenInfo: undefined | TokenInfo;
+  tokenInfo: undefined | AssetJson;
   transferAll: boolean;
   value: string;
 }

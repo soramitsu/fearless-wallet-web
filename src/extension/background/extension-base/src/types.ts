@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { CustomTokenType, NetworkJson, TokenInfo } from './api/evm/types/ether';
-import { ExternalApi, NetworkAssets } from '@/interfaces';
+import { AssetJson, ExternalApi, NetworkAssets } from '@/interfaces';
 
 export interface Message extends MessageEvent {
   data: {
@@ -102,5 +102,5 @@ export interface NetworkJsonOld extends NetworkJson {
 export interface ChainRegistry {
   chainDecimals: number[];
   chainTokens: string[];
-  tokenMap: Record<string, TokenInfo>;
+  tokenMap: AssetJson[];
 }

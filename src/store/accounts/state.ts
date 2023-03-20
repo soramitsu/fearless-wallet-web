@@ -17,7 +17,7 @@ export type State = {
 
 const state = (): State => {
   return {
-    selectedWallet: { address: '', ethereumAddress: '', name: '' },
+    selectedWallet: accountController.getSelectedWallet(),
     selectedFiat: accountController.getSelectedFiat(),
     selectedNetworks: accountController.getSelectedNetwork(),
     isOnline: navigator.onLine,

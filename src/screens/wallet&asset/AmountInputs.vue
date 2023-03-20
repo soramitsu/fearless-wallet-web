@@ -36,8 +36,11 @@
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import MaxButton from './MaxButton.vue';
-import type { Currency } from '@/interfaces/currencies';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GetAssetPrice } from '@/store';
 
 @Component({
   components: {
@@ -45,11 +48,12 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
   },
 })
 export default class TeleportForm extends Vue {
-  @Prop(Object) currency!: Currency;
+  @Prop(Object) currency!: TokenBalance;
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('value', { type: String }) syncedValue!: string;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getFiatId) fiatId!: string;
+  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   get amountPlaceholder() {
     if (this.syncedAmount === '') return 'assets.amount';
@@ -58,7 +62,7 @@ export default class TeleportForm extends Vue {
   }
 
   get amountPlaceholderProps() {
-    return { asset: this.currency?.displayName.toUpperCase() };
+    return { asset: this.currency?.name.toUpperCase() };
   }
 
   get valuePlaceholder() {
@@ -74,20 +78,22 @@ export default class TeleportForm extends Vue {
   get showFiatSymbol() {
     return this.syncedValue !== '';
   }
-
+  get assetPrice() {
+    return this.getAssetPrice(this.currency.priceId).price;
+  }
   get showValueInput() {
-    return this.currency?.price !== 0;
+    return this.getAssetPrice(this.currency.priceId).price !== 0;
   }
 
   changeAmount(amount: string) {
-    const value = this.currency?.getCostOfAssets(amount).toString() ?? '';
+    const value = getCostOfAssets(amount, this.assetPrice).toString() ?? '';
 
     this.syncedValue = value !== '0' ? value : '';
   }
 
   changeValue(value: string) {
-    const amount = this.currency?.getCountAssetsByPrice(value).toString() ?? '';
-
+    // const amount = getCountAssetsByPrice(value, this.assetPrice).toString() ?? '';
+    const amount = value;
     this.syncedAmount = amount !== '0' ? amount : '';
   }
 }

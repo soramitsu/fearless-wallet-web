@@ -6,6 +6,7 @@ import { BN, bnToHex } from '@polkadot/util';
 import { state } from '../../background/handlers';
 import { ChainRegistry } from '../../types';
 import { TokenInfo } from '../evm/types/ether';
+import { AssetJson } from '@/interfaces';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -86,13 +87,10 @@ export const getRegistry = async (networkKey: string, api: ApiPromise) => {
   const { chainDecimals, chainTokens } = api.registry ||
     DEFAULT_TOKEN_REGISTRY[networkKey] || { chainDecimals: [], chainTokens: [] };
 
-  // Build token map
-  const tokenMap = {} as Record<string, TokenInfo>;
-
   const chainRegistry = {
     chainDecimals,
     chainTokens,
-    tokenMap,
+    tokenMap: state.tokenMap,
   } as ChainRegistry;
 
   cacheRegistryMap[networkKey] = chainRegistry;
@@ -100,8 +98,8 @@ export const getRegistry = async (networkKey: string, api: ApiPromise) => {
   return chainRegistry;
 };
 
-export async function getTokenInfo(networkKey: string, api: ApiPromise, token: string): Promise<TokenInfo | undefined> {
+export async function getTokenInfo(networkKey: string, api: ApiPromise, token: string): Promise<AssetJson> {
   const { tokenMap } = await getRegistry(networkKey, api);
 
-  return tokenMap[token];
+  return tokenMap.find((el) => el.displayName === token || el.symbol === token)!;
 }

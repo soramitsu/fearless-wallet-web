@@ -251,11 +251,11 @@ async function subscribeTokensBalance(
   setBalance: (rs: BalanceItem) => void
 ) {
   const tokenList = state.networkMap[networkKey].assets.map((asset) => {
-    const searchedAsset = state.tokenMap.find((token) => token.id === asset.assetId) as AssetJson;
+    const searchedAsset = state.tokenMap.find((token) => token.id === asset.assetId)! as AssetJson;
 
     return {
       ...searchedAsset,
-      type: asset.type ?? ('native' as TypeAsset),
+      type: asset.type ?? 'native',
       isNative: asset.isNative,
       isUtility: asset.isUtility,
     };
@@ -271,14 +271,16 @@ async function subscribeTokensBalance(
         const options = getAssetOptions(symbol, type, id);
         const assetType = type === 'equilibrium' ? 'eqBalances' : 'tokens';
         const assetFetchField = assetType === 'tokens' ? 'accounts' : 'account';
-
         const pallet =
           isUtility && !ORML_PALLETS_TYPES.includes(type)
             ? api.rx.query.system.account(addresses[0])
             : api.rx.query[assetType][assetFetchField](addresses[0], options);
 
         const onBalanceFetch = (balances: any) => {
-          const tokenBalance = formatBalance(balances as OrmlAccountData, precision);
+          const tokenBalance = formatBalance(
+            balances.data ? (balances as any).data : (balances as OrmlAccountData),
+            precision
+          );
 
           setBalance({
             state: APIItemState.READY,
@@ -348,9 +350,9 @@ export function subscribeBalance(
     const networkAPI = await apiProps.isReady;
     const useAddresses = apiProps.isEthereum ? evmAddresses : substrateAddresses;
 
-    // if (['ethereum', 'ethereum_goerli'].includes(networkKey)) {
-    //   return subscribeEVMBalance(networkKey, networkAPI.api, useAddresses, web3ApiMap, callback);
-    // }
+    if (['ethereum', 'ethereum_goerli'].includes(networkKey)) {
+      return subscribeEVMBalance(networkKey, networkAPI.api, useAddresses, web3ApiMap, callback);
+    }
 
     // if (!useAddresses || useAddresses.length === 0 || IGNORE_GET_SUBSTRATE_FEATURES_LIST.indexOf(networkKey) > -1) {
     //   // Return zero balance if not have any address

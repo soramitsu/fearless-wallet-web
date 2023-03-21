@@ -33,10 +33,6 @@ function addNumbers(values: (string | number)[]): string {
   return values.reduce((sum, number) => sum.add(new FPNumber(number)), FPNumber.ZERO).toString();
 }
 
-function addN1umbers(values: (string | number)[]): string {
-  return values.reduce((sum, number) => sum.add(new FPNumber(number)), FPNumber.ZERO).toString();
-}
-
 function getChangeWalletBalance(currencies: Currencies, address: string, ethereumAddress: string): ChangeWalletBalance {
   const changeAssets = currencies.map((currency) => {
     const { hours24Change } = currency;

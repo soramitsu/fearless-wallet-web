@@ -5,8 +5,8 @@ import type { AccountBalance } from '@/interfaces/balances';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export function formatBalance(data: AccountData | OrmlAccountData, assetDecimals?: number): AccountBalance {
-  const free = new FPNumber((data.free || 0) as any, assetDecimals);
-  const reserved = new FPNumber((data.reserved || 0) as any, assetDecimals);
+  const free = new FPNumber((data?.free || 0) as any, assetDecimals);
+  const reserved = new FPNumber((data?.reserved || 0) as any, assetDecimals);
   const miscFrozen = new FPNumber(((data as AccountData).miscFrozen || 0) as any, assetDecimals);
   const feeFrozen = new FPNumber(((data as AccountData).feeFrozen || 0) as any, assetDecimals);
   const frozen = new FPNumber(((data as OrmlAccountData).frozen || 0) as any, assetDecimals);

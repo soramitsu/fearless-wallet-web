@@ -630,7 +630,7 @@ export interface RequestSigningCancel {
 }
 
 export interface RequestSigningIsLocked {
-  id: string;
+  address: string;
 }
 
 export interface ResponseSigningIsLocked {

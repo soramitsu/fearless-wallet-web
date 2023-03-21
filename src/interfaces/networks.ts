@@ -1,5 +1,5 @@
 import type { ApiPromise, WsProvider } from '@polkadot/api';
-import type { Node } from '@/interfaces';
+import type { Node, TypeAsset } from '@/interfaces';
 
 type TypesForMobile = {
   url: string;
@@ -46,7 +46,7 @@ type NetworkAssets = {
   purchaseProviders?: string[];
   isUtility?: true;
   isNative?: true;
-  type?: NetworkAssetsType;
+  type?: TypeAsset;
 };
 
 type NetworkStatus = 'pending' | 'disconnected' | 'connected' | 'ready';

@@ -302,11 +302,10 @@ export default class Extension {
     return true;
   }
 
-  async refreshAccountPasswordCache(_pair: KeyringPair | string): Promise<number> {
-    const pair = typeof _pair === 'string' ? keyring.getPair(_pair) : _pair;
+  async refreshAccountPasswordCache(pair: KeyringPair): Promise<number> {
     const { address } = pair;
-    const { cachedUnlocks } = await state.getFromStorage(['cachedUnlocks']);
-    const savedExpiry = cachedUnlocks[address] || 0;
+    // const { cachedUnlocks } = await state.getFromStorage(['cachedUnlocks']);
+    const savedExpiry = this.cachedUnlocks[address] || 0;
     const remainingTime = savedExpiry - Date.now();
 
     if (remainingTime < 0) {
@@ -735,10 +734,10 @@ export default class Extension {
     return true;
   }
 
-  async signingIsLocked({ id }: RequestSigningIsLocked): Promise<ResponseSigningIsLocked> {
-    const queued = await state.getSignRequest(id);
-    assert(queued, 'Unable to find request');
-    const address = queued.request.payload.address;
+  async signingIsLocked({ address }: RequestSigningIsLocked): Promise<ResponseSigningIsLocked> {
+    // const queued = await state.getSignRequest(id);
+    // assert(queued, 'Unable to find request');
+    // const address = queued.request.payload.address;
 
     const pair = keyring.getPair(address);
 
@@ -1072,17 +1071,15 @@ export default class Extension {
       }
     }
 
-    if (password) {
-      try {
-        keypair = keyring.getPair(from);
+    try {
+      keypair = keyring.getPair(from);
 
-        keypair.unlock(password);
-      } catch (e: any) {
-        errors.push({
-          code: BasicTxErrorCode.KEYRING_ERROR,
-          message: String(e.message),
-        });
-      }
+      keypair.unlock(password);
+    } catch (e: any) {
+      errors.push({
+        code: BasicTxErrorCode.KEYRING_ERROR,
+        message: String(e.message),
+      });
     }
 
     const tokenInfo = await getTokenInfo(networkKey, dotSamaApiMap[networkKey].api, token);
@@ -1172,6 +1169,7 @@ export default class Extension {
       // Estimate with DotSama API
 
       fee = await estimateFee(networkKey, fromKeyPair, to, value, !!transferAll, dotSamaApiMap, tokenBalance);
+
       fromAccountFreeBalance =
         tokenBalance.balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())?.total ?? '0';
     }
@@ -1323,12 +1321,12 @@ export default class Extension {
         transferProm = makeTransfer({
           networkKey: networkKey,
           tokenInfo: tokenInfo,
-          value: value || '0',
+          value: value!,
+          from: fromKeyPair.address,
           to: to,
           dotSamaApiMap: dotSamaApiMap,
           transferAll: !!transferAll,
           callback: callback,
-          from: fromKeyPair.address,
         });
       }
 
@@ -1338,7 +1336,7 @@ export default class Extension {
           console.info(`Start transfer ${transferAll ? 'all' : value} from ${from} to ${to}`);
 
           // todo: add condition to lock KeyPair
-          fromKeyPair.lock();
+          //fromKeyPair.lock();
         })
         .catch((e) => {
           cb({
@@ -1539,9 +1537,6 @@ export default class Extension {
 
       case 'pri(window.open)':
         return this.windowOpen(request as AllowedPath);
-
-      case 'pri(signing.refreshPasswordTimeout)':
-        return this.refreshAccountPasswordCache(request as string);
 
       case 'pri(signing.resetTimeouts)':
         return this.resetTimeouts();

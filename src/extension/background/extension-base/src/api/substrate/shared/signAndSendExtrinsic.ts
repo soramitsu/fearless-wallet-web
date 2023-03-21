@@ -57,26 +57,14 @@ export const signAndSendExtrinsic = async ({
 }: SignAndSendExtrinsicProps) => {
   if (extrinsic !== null) {
     try {
-      const passwordError = await signExtrinsic(
-        type === SignerType.PASSWORD
-          ? {
-              address: address,
-              apiProps: apiProps,
-              callback: callback,
-              extrinsic: extrinsic,
-              password: password,
-              type: type,
-            }
-          : {
-              address: address,
-              apiProps: apiProps,
-              callback: callback,
-              extrinsic: extrinsic,
-              id: id,
-              setState: setState,
-              type: type,
-            }
-      );
+      const passwordError = await signExtrinsic({
+        address,
+        apiProps,
+        callback,
+        extrinsic,
+        password,
+        type,
+      });
 
       if (passwordError) {
         txState.passwordError = passwordError;
@@ -84,7 +72,7 @@ export const signAndSendExtrinsic = async ({
 
         return;
       }
-    } catch (e) {
+    } catch (e: unknown) {
       if (e) {
         console.error(errorMessage, e);
         txState.errors = [{ code: BasicTxErrorCode.KEYRING_ERROR, message: (e as Error).message }];
@@ -106,9 +94,7 @@ export const signAndSendExtrinsic = async ({
         updateState: updateState,
       });
 
-      if (type === SignerType.PASSWORD) {
-        lockAccount(address);
-      }
+      if (type === SignerType.PASSWORD) lockAccount(address);
     } catch (e) {
       console.error(errorMessage, e);
 

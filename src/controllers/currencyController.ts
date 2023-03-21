@@ -25,7 +25,6 @@ import {
 } from '@/util/teleport';
 import { getReplacedMetaTyped } from '@/helpers/common';
 import { statusLogging } from '@/helpers/currencies';
-import { createExtrinsicTransfer } from '@/util/assets';
 import { BeaconSigner } from '@/extension/background/extension-base/src/background/BeaconSigner';
 import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
@@ -462,7 +461,7 @@ export default class CurrencyController {
     const walletBalance = this.getWalletBalance(wallet) ?? [];
     const networkProps = walletBalance.find(({ network }) => network === networkName)!;
 
-    this.extrinsic = createExtrinsicTransfer({ api, to, amount, asset: this.asset, networkProps });
+    // this.extrinsic = createExtrinsicTransfer({ api, to, amount, asset: this.asset, networkProps });
     this.extrinsicOptions = this.extrinsic
       ? {
           transactionsOptions: { tip: DefaultTip },

@@ -1432,14 +1432,14 @@ export default class State {
           const oldItems = this.historyMap[network] || [];
 
           this.historyMap[network] = this.combineHistories(oldItems, items);
-          this.saveHistoryToStorage(address, network, this.historyMap[network]);
+          // this.saveHistoryToStorage(address, network, this.historyMap[network]);
           callback && callback(this.historyMap[network]);
 
           this.lazyNext('setHistory', () => {
             this.publishHistory();
           });
         } else {
-          this.saveHistoryToStorage(address, network, items);
+          // this.saveHistoryToStorage(address, network, items);
           callback && callback(this.historyMap[network]);
         }
       });

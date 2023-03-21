@@ -7,6 +7,7 @@ import { TokenInfo } from '../../../evm/types/ether';
 import { signAndSendExtrinsic } from '../../shared/signAndSendExtrinsic';
 import { createTransferExtrinsic, getUnsupportedResponse, updateTransferResponseTxResult } from '../../transfer';
 import { ExternalProps } from '../shared';
+import { state } from '../../../../background/handlers';
 import { AssetJson } from '@/interfaces';
 
 interface MakeTransferExternalProps extends ExternalProps {
@@ -33,22 +34,24 @@ export const makeTransferExternal = async ({
 }: MakeTransferExternalProps): Promise<void> => {
   const networkKey = network.key;
   const txState: BasicTxResponse = {};
-
-  const [extrinsic, transferAmount] = await createTransferExtrinsic({
+  const name = tokenInfo.displayName ?? tokenInfo.symbol;
+  const tokenBalance = state.balanceMap[senderAddress][name];
+  const transferAmount = value;
+  const extrinsic = await createTransferExtrinsic({
     apiProp: apiProps,
     from: senderAddress,
     networkKey: networkKey,
     to: recipientAddress,
-    tokenInfo: tokenInfo,
+    tokenInfo: tokenBalance,
     transferAll: transferAll,
     value: value,
   });
 
-  if (!extrinsic) {
-    callback(getUnsupportedResponse());
+  // if (!extrinsic) {
+  //   callback(getUnsupportedResponse());
 
-    return;
-  }
+  //   return;
+  // }
 
   const updateResponseTxResult = (response: BasicTxResponse, records: EventRecord[]) => {
     updateTransferResponseTxResult(networkKey, tokenInfo, response, records, transferAmount);

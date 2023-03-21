@@ -89,57 +89,7 @@ async function loadOnReady(registry: Registry, api: ApiPromise): Promise<ApiStat
   };
 }
 
-function generateEvmHttpApi(apiUrl: string): ApiProps {
-  const registry = new TypeRegistry();
-
-  return {
-    api: new Proxy(
-      {},
-      {
-        get(target, prop, receiver) {
-          console.info('Access virtual API', target, prop, receiver);
-        },
-      }
-    ),
-    apiDefaultTx: undefined,
-    apiDefaultTxSudo: undefined,
-    apiError: undefined,
-    apiUrl,
-    defaultFormatBalance: undefined,
-    isApiConnected: true,
-    isApiReady: true,
-    isApiInitialized: true,
-    isEthereum: true,
-    isEthereumOnly: true,
-    registry,
-    specName: '',
-    specVersion: '',
-    systemChain: '',
-    systemName: '',
-    systemVersion: '',
-    apiRetry: 0,
-    recoverConnect: () => {
-      // console.info('Reconnect http API', apiUrl);
-    },
-    get isReady() {
-      return Promise.resolve(this);
-    },
-  } as unknown as ApiProps;
-}
-
-export function initApi(networkKey: string, apiUrl: string, isEthereum?: boolean): ApiProps {
-  if (isEthereum && apiUrl.startsWith('http')) {
-    // return EVM HTTP Placeholder
-    return generateEvmHttpApi(apiUrl);
-  }
-
-  const registry = new TypeRegistry();
-  const provider = new WsProvider(apiUrl, DOTSAMA_AUTO_CONNECT_MS);
-
-  // Init ApiPromise with selected provider
-  const api = new ApiPromise({ provider, noInitWarn: true });
-
-  // Create APIProps Object
+function createApiObject(api: ApiPromise, apiUrl: string, isEthereum: boolean, registry: TypeRegistry) {
   const result: ApiProps = {
     api,
     apiDefaultTx: undefined,
@@ -182,6 +132,62 @@ export function initApi(networkKey: string, apiUrl: string, isEthereum?: boolean
       })();
     },
   } as unknown as ApiProps;
+
+  return result;
+}
+
+function generateEvmHttpApi(apiUrl: string): ApiProps {
+  const registry = new TypeRegistry();
+
+  return {
+    api: new Proxy(
+      {},
+      {
+        get(target, prop, receiver) {
+          console.info('Access virtual API', target, prop, receiver);
+        },
+      }
+    ),
+    apiDefaultTx: undefined,
+    apiDefaultTxSudo: undefined,
+    apiError: undefined,
+    apiUrl,
+    defaultFormatBalance: undefined,
+    isApiConnected: true,
+    isApiReady: true,
+    isApiInitialized: true,
+    isEthereum: true,
+    isEthereumOnly: true,
+    registry,
+    specName: '',
+    specVersion: '',
+    systemChain: '',
+    systemName: '',
+    systemVersion: '',
+    apiRetry: 0,
+    recoverConnect: () => {
+      // console.info('Reconnect http API', apiUrl);
+    },
+    get isReady() {
+      return Promise.resolve(this);
+    },
+  } as unknown as ApiProps;
+}
+
+export function initApi(networkKey: string, apiUrl: string, isEthereum = false): ApiProps {
+  if (isEthereum && apiUrl.startsWith('http')) {
+    // return EVM HTTP Placeholder
+    return generateEvmHttpApi(apiUrl);
+  }
+
+  const registry = new TypeRegistry();
+  const provider = new WsProvider(apiUrl, DOTSAMA_AUTO_CONNECT_MS);
+
+  // Init ApiPromise with selected provider
+  const api = new ApiPromise({ provider, noInitWarn: true });
+
+  // Create APIProps Object
+  const result: ApiProps = createApiObject(api, apiUrl, isEthereum, registry);
 
   // Listen ApiPromise events
   // On connected: provider is connected

@@ -146,7 +146,7 @@ import { SelectedWallet } from '@/store';
 import { firstCharToUp } from '@/helpers/common';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
-import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHelpers';
 import { RequestCheckTransfer, TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 import { checkTransfer } from '@/extension/messaging';
@@ -272,8 +272,8 @@ export default class SendForm extends Vue {
     if (!this.onlineStatus) return true;
     if (this.step === 2) return false;
 
-    return false;
-    // return !this.isAllFieldsCorrect || +this.syncedAmount === 0 || this.syncedPartialFee === '';
+    // return false;
+    return !this.isAllFieldsCorrect || +this.syncedAmount === 0 || this.syncedPartialFee === '';
   }
 
   get isAllFieldsCorrect() {
@@ -401,14 +401,24 @@ export default class SendForm extends Vue {
     this.syncedPartialFee = '';
 
     if (
-      (this.extrinsicType === 'transfer' && (!this.isValidRecipientAddress || this.syncedSelectedNetwork === '')) ||
-      (this.extrinsicType === 'teleport' && (!this.isValidDirection || this.syncedSelectedNetwork === ''))
-    )
+      this.extrinsicType === 'transfer' &&
+      (!this.isValidRecipientAddress || this.syncedSelectedNetwork === '')
+      // ||  (this.extrinsicType === 'teleport' && (!this.isValidDirection || this.syncedSelectedNetwork === ''))
+    ) {
       return;
+    }
 
     // const partialFee = await this.createTransferAndGetFee();
+    const checkResponse = await checkTransfer({
+      networkKey: this.syncedSelectedNetwork,
+      from: this.syncedRecipient,
+      to: this.syncedRecipient,
+      value: this.syncedAmount,
+      transferAll: false,
+      token: this.syncedSelectedAssetId,
+    });
 
-    // this.syncedPartialFee = partialFee;
+    this.syncedPartialFee = checkResponse.estimateFee ?? '0';
     // this.isValidCountAssets = this.currency!.validateCountAssets(
     //   this.syncedAmount,
     //   partialFee,
@@ -522,11 +532,14 @@ export default class SendForm extends Vue {
     // this.syncedAmount = transferableCountAssets;
     // this.syncedValue = getCostOfAssets(transferableCountAssets, this.assetPrice).toString();
   }
+  get transactionAddress() {
+    return getTransactionAddress(this.selectedWallet, this.syncedSelectedNetwork);
+  }
 
   get tx(): RequestCheckTransfer {
     return {
       networkKey: this.syncedSelectedNetwork,
-      from: this.syncedRecipient,
+      from: this.transactionAddress,
       to: this.syncedRecipient,
       value: this.syncedAmount,
       transferAll: false,
@@ -534,9 +547,9 @@ export default class SendForm extends Vue {
     };
   }
 
-  handlerContinueButton(skipWarning = false) {
+  async handlerContinueButton(skipWarning = false) {
     if (!skipWarning && this.step === 1) {
-      const isValid = checkTransfer({
+      const checkResponse = await checkTransfer({
         networkKey: this.syncedSelectedNetwork,
         from: this.syncedRecipient,
         to: this.syncedRecipient,
@@ -545,15 +558,12 @@ export default class SendForm extends Vue {
         token: this.syncedSelectedAssetId,
       });
 
-      console.info(isValid);
-      // this.showExistentialPopup = !this.currency!.validateExistentialDeposit(
-      //   this.selectedWallet,
-      //   this.syncedSelectedNetwork,
-      //   this.syncedAmount,
-      //   this.syncedPartialFee
-      // );
+      if (checkResponse.errors?.length) {
+        this.showExistentialPopup = checkResponse.errors.some((error) => error.code === 'notEnoughValue');
+        this.syncedPartialFee = checkResponse.estimateFee || '0';
+      }
 
-      // if (this.showExistentialPopup) return;
+      if (this.showExistentialPopup) return;
     }
 
     if (this.step === 2) {

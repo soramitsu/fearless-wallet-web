@@ -72,6 +72,7 @@ import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import ExtensionController from '@/controllers/extensionController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import {
+  AccountJson,
   RequestCheckTransfer,
   RequestTransfer,
   TokenBalance,
@@ -97,14 +98,14 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(String) transactionId?: string;
   @Prop(Object) currency?: TokenBalance;
   @Prop({ required: true, type: Object }) tx!: RequestCheckTransfer;
-
   @Prop(Object) payload?: SignerPayloadJSON;
 
-  @Getter(NetworksGettersTypes.getBalance) currencies!: TokenBalance;
+  @Getter(NetworksGettersTypes.getBalance) currencies!: TokenBalance[];
   @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: TAction<ApprovePayload>;
   @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
   get show15MinCheckbox() {
     return BaseApi.isExtension();
@@ -128,9 +129,10 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get isSignMobile() {
-    if (this.transactionId && this.payload?.address) return BaseApi.isMobileWallet(this.payload.address);
+    const prepAddress = this.transactionId && this.payload?.address ? this.payload.address : this.transactionAddress;
+    const encodedAddress = BaseApi.encodeAddress(prepAddress);
 
-    return BaseApi.isMobileWallet(this.transactionAddress);
+    return this.accounts.some((account) => account.address === encodedAddress && account.isMobile);
   }
 
   get transactionStatus() {
@@ -195,22 +197,14 @@ export default class ConfirmationPasswordPopup extends Vue {
   async mounted() {
     if (!BaseApi.isExtension() || this.isSignMobile) return;
 
-    if (this.transactionId !== undefined) {
-      const { isLocked } = await isSignLocked(this.transactionId);
+    // const address = this.transactionId ? this.transactionAddress : this.selectedWallet.address;
 
-      this.isLocked = isLocked;
-      this.isSavePass = !this.isLocked;
-    } else {
-      const remainingTime = await refreshPasswordTimeout(this.transactionAddress);
+    const { isLocked, remainingTime } = await isSignLocked(this.selectedWallet.address);
 
-      this.isLocked = remainingTime <= 0;
+    this.isLocked = isLocked;
+    this.isSavePass = !this.isLocked;
 
-      if (this.isLocked) BaseApi.lockPair(this.transactionAddress);
-      else {
-        this.password = '00000';
-        this.isSavePass = true;
-      }
-    }
+    this.isLocked = remainingTime <= 0;
   }
 
   resetTxStatus() {
@@ -227,8 +221,15 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async onSignMobile() {
-    // if (!this.transactionId && this.currency?.extrinsic) await this.currency.send(this.transactionAddress, true, false);
-    // else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
+    if (!this.transactionId)
+      makeTransfer(this.requestTransfer, (data) => {
+        if (data.status === true) {
+          this.transactionState = 'success';
+        } else if (data === false) {
+          this.transactionState = 'failed';
+        }
+      });
+    else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
   }
 
   async signTransactionJSON(id: string) {
@@ -250,13 +251,6 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async send() {
-    if (this.isLocked) {
-      const address = this.transactionId && this.payload?.address ? this.payload.address : this.transactionAddress;
-      this.isErrorPassword = !BaseApi.unlockPair(address, this.password);
-
-      if (this.isErrorPassword) return;
-    }
-
     if (this.transactionId) {
       this.onSignApprove({
         id: this.transactionId,
@@ -268,9 +262,12 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     makeTransfer(this.requestTransfer, (data) => {
-      console.info(data, 'tx data');
+      if (data.status === true) {
+        this.transactionState = 'success';
+      } else if (data === false) {
+        this.transactionState = 'failed';
+      }
     });
-    // this.currency?.send(this.transactionAddress, false, this.isSavePass);
   }
 }
 </script>

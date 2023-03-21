@@ -181,8 +181,8 @@ export async function cancelSignRequest(id: string): Promise<boolean> {
   return sendMessage('pri(signing.cancel)', { id });
 }
 
-export async function isSignLocked(id: string): Promise<ResponseSigningIsLocked> {
-  return sendMessage('pri(signing.isLocked)', { id });
+export async function isSignLocked(address: string): Promise<ResponseSigningIsLocked> {
+  return sendMessage('pri(signing.isLocked)', { address });
 }
 
 export async function approveSignPassword(id: string, savePass: boolean, password?: string): Promise<boolean> {

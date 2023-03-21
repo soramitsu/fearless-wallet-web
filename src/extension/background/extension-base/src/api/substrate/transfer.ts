@@ -188,6 +188,7 @@ export async function estimateFee(
 
   const apiProps = await dotSamaApiMap[networkKey].isReady;
   const api = apiProps.api;
+
   // const isTxCurrenciesSupported = !!api && !!api.tx && !!api.tx.currencies;
   // const isTxBalancesSupported = !!api && !!api.tx && !!api.tx.balances;
   // const isTxTokensSupported = !!api && !!api.tx && !!api.tx.tokens;
@@ -216,7 +217,6 @@ export async function estimateFee(
   //   historyOptions: { networkProps: tokenInfo, amount: value, to },
   //   api,
   // }!;
-
   const paymentInfo = await extrinsic?.paymentInfo(to);
   const partialFee = paymentInfo ? paymentInfo.partialFee : 0;
   const result = new FPNumber(partialFee, tokenInfo?.precision);
@@ -442,7 +442,7 @@ interface CreateTransferExtrinsicProps {
   from: string;
   value: string;
   transferAll: boolean;
-  tokenInfo: AssetJson;
+  tokenInfo: TokenBalance;
 }
 
 export const createTransferExtrinsic = async ({
@@ -453,72 +453,20 @@ export const createTransferExtrinsic = async ({
   tokenInfo,
   transferAll,
   value,
-}: CreateTransferExtrinsicProps): Promise<[SubmittableExtrinsic | null, string?]> => {
+}: CreateTransferExtrinsicProps): Promise<SubmittableExtrinsic | null> => {
   const api = apiProp.api;
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  let transfer: SubmittableExtrinsic<'promise'> | null = null;
-  const isTxCurrenciesSupported = !!api && !!api.tx && !!api.tx.currencies;
-  const isTxBalancesSupported = !!api && !!api.tx && !!api.tx.balances;
-  const isTxTokensSupported = !!api && !!api.tx && !!api.tx.tokens;
-  const isTxEqBalancesSupported = !!api && !!api.tx && !!api.tx.eqBalances;
-  let transferAmount; // for PSP-22 tokens, might be deprecated in the future
-  const isMainToken = checkMainToken(networkKey, tokenInfo.id);
+  // const isMainToken = checkMainToken(networkKey, tokenInfo.id);
+  const transfer = createExtrinsicTransfer({
+    amount: value,
+    api,
+    asset: tokenInfo.name,
+    networkProps: tokenInfo,
+    to,
+    networkKey,
+  });
 
-  if (
-    ['karura', 'acala', 'acala_testnet'].includes(networkKey) &&
-    tokenInfo &&
-    !checkMainToken(networkKey, tokenInfo.id) &&
-    isTxCurrenciesSupported
-  ) {
-    if (transferAll) {
-      // currently Acala, Karura, Acala testnet do not have transfer all method for sub token
-    } else if (value) {
-      // transfer = api.tx.currencies.transfer(to, tokenInfo.specialOption || { Token: tokenInfo.symbol }, value);
-    }
-  } else if (['kintsugi', 'kintsugi_test', 'interlay'].includes(networkKey) && tokenInfo && isTxTokensSupported) {
-    if (transferAll) {
-      // transfer = api.tx.tokens.transferAll(to, tokenInfo.specialOption || { Token: tokenInfo.symbol }, false);
-    } else if (value) {
-      // transfer = api.tx.tokens.transfer(to, tokenInfo.specialOption || { Token: tokenInfo.symbol }, new BN(value));
-    }
-  } else if (
-    ['genshiro_testnet', 'genshiro', 'equilibrium_parachain'].includes(networkKey) &&
-    tokenInfo &&
-    isTxEqBalancesSupported
-  ) {
-    if (transferAll) {
-      // currently genshiro_testnet, genshiro, equilibrium_parachain do not have transfer all method for tokens
-    } else if (value) {
-      const asset =
-        networkKey === 'equilibrium_parachain' ? assetFromToken(tokenInfo.symbol)[0] : assetFromToken(tokenInfo.symbol);
-
-      transfer = api.tx.eqBalances.transfer(asset, to, value);
-    }
-  } else if (
-    tokenInfo &&
-    ((networkKey === 'crab' && tokenInfo.symbol === 'CKTON') ||
-      (networkKey === 'pangolin' && tokenInfo.symbol === 'PKTON'))
-  ) {
-    if (transferAll) {
-      transfer = api.tx.kton.transferAll(to, false);
-    } else if (value) {
-      transfer = api.tx.kton.transfer(to, new BN(value));
-    }
-  } else if (['pioneer', 'bitcountry'].includes(networkKey) && tokenInfo && tokenInfo.symbol === 'BIT') {
-    // transfer = api.tx.currencies.transfer(to, tokenInfo.specialOption, value);
-  } else if (['statemint', 'statemine'].includes(networkKey) && tokenInfo && !isMainToken) {
-    // transfer = api.tx.assets.transfer(tokenInfo.assetIndex, to, value);
-  } else if (isTxBalancesSupported && (!tokenInfo || isMainToken)) {
-    if (transferAll) {
-      transfer = api.tx.balances.transferAll(to, false);
-    } else if (value) {
-      transfer = api.tx.balances.transfer(to, new BN(value));
-    }
-  }
-
-  return [transfer, transferAmount];
+  return transfer;
 };
 
 export interface MakeTransferProps {
@@ -544,22 +492,24 @@ export async function makeTransfer({
 }: MakeTransferProps): Promise<void> {
   const txState: BasicTxResponse = {};
   const apiProps = await dotSamaApiMap[networkKey].isReady;
-
-  const [extrinsic, transferAmount] = await createTransferExtrinsic({
+  const transferAmount = value;
+  const name = tokenInfo.displayName ?? tokenInfo.symbol;
+  const tokenBalance = state.balanceMap[from][name];
+  const extrinsic = await createTransferExtrinsic({
     transferAll: transferAll,
     value: value,
     from: from,
     networkKey: networkKey,
-    tokenInfo: tokenInfo,
+    tokenInfo: tokenBalance,
     to: to,
     apiProp: apiProps,
   });
 
-  if (!extrinsic) {
-    callback(getUnsupportedResponse());
+  // if (!extrinsic) {
+  //   callback(getUnsupportedResponse());
 
-    return;
-  }
+  //   return;
+  // }
 
   const updateResponseTxResult = (response: BasicTxResponse, records: EventRecord[]) => {
     updateTransferResponseTxResult(networkKey, tokenInfo, response, records, transferAmount);

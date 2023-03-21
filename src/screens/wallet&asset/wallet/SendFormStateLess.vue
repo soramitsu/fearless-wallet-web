@@ -42,7 +42,7 @@
           <div class="name">{{ $t('assets.fee') }}</div>
 
           <div class="column">
-            <!-- <div>{{ partialFeeString }}</div> -->
+            <div>{{ partialFeeString }}</div>
           </div>
         </div>
 
@@ -66,6 +66,7 @@ import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { formattedNumber, addNumbers } from '@/helpers/numbers';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { getUtilityAsset } from '@/helpers/currencies';
 
 @Component({
   components: { TransferForm },
@@ -93,11 +94,12 @@ export default class SendFormStateLess extends Vue {
     return this.currency?.balances.find((el) => el.isUtility || el.isNative);
   }
 
-  // get partialFeeString() {
-  //   const utilityAsset = getUtilityAsset(this.balances, this.selectedNetwork);
+  get partialFeeString() {
+    // const utilityAsset = getUtilityAsset(this.balances, this.selectedNetwork);
 
-  //   return `${formattedNumber(+this.partialFee, { decimalsValue: 7 })} ${utilityAsset.toUpperCase()}`;
-  // }
+    // return `${formattedNumber(+this.partialFee, { decimalsValue: 7 })} ${utilityAsset.toUpperCase()}`;
+    return this.partialFee;
+  }
 
   get showValue() {
     return this.value !== '0';

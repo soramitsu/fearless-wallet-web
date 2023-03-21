@@ -35,6 +35,8 @@ import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { MOCK_BALANCE, MOCK_FP_BALANCE } from '@/consts/currencies';
 import { saveTimeoutCache } from '@/extension/messaging';
+import { SORA_NETWORK_NAME } from '@/consts/networks';
+import { addNumbers } from '@/helpers/numbers';
 
 type TransactionStatus = 'success' | 'failed' | 'pending';
 
@@ -568,6 +570,20 @@ export default class CurrencyController {
   }
 
   /**
+   * Validate swap to XOR
+   * @param {Wallet} wallet
+   * @param {string} receiveAmount
+   * @param {string} receiveAmount
+   * @returns {boolean}
+   */
+  public validateSwapToXOR(wallet: Wallet, receiveAmount: string, fee: string): boolean {
+    const transferableXOR = this.getTransferableCountAssets(wallet, SORA_NETWORK_NAME);
+    const transferableXORAfterSending = addNumbers([transferableXOR, receiveAmount]);
+
+    return FPNumber.gt(new FPNumber(transferableXORAfterSending), new FPNumber(fee));
+  }
+
+  /**
    * Create swap extrinsic
    * @param {Partial<SwapOptions>} options
    * @returns {Promise<CreateSwapResult>}
@@ -608,7 +624,12 @@ export default class CurrencyController {
     const amountDexIdXSTUSDFP = FPNumber.fromCodecValue(amountDexIdXSTUSD);
 
     if (isExchangeB) {
-      const isDexXor = FPNumber.lt(amountDexIdXORFP, amountDexIdXSTUSDFP);
+      const isDexXor = amountDexIdXORFP.isZero()
+        ? false
+        : amountDexIdXSTUSDFP.isZero()
+        ? true
+        : FPNumber.lt(amountDexIdXORFP, amountDexIdXSTUSDFP);
+
       const expectedAmountA = amountDexIdXORFP.isZero()
         ? amountDexIdXSTUSDFP
         : amountDexIdXSTUSDFP.isZero()
@@ -642,7 +663,12 @@ export default class CurrencyController {
         providerFee: FPNumber.fromCodecValue(providerFeeDexIdXSTUSD).toString(),
       };
     } else {
-      const isDexXor = FPNumber.gt(amountDexIdXORFP, amountDexIdXSTUSDFP);
+      const isDexXor = amountDexIdXORFP.isZero()
+        ? false
+        : amountDexIdXSTUSDFP.isZero()
+        ? true
+        : FPNumber.gt(amountDexIdXORFP, amountDexIdXSTUSDFP);
+
       const expectedAmountB = amountDexIdXORFP.isZero()
         ? amountDexIdXSTUSDFP
         : amountDexIdXSTUSDFP.isZero()

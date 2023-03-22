@@ -34,10 +34,14 @@ export const sendExtrinsic = async ({
       return;
     }
 
-    if (result.status.isInBlock || result.status.isFinalized) {
+    if (result.status.isBroadcast) {
+      updateResponseTxResult && updateResponseTxResult(txState, result.events);
+    }
+
+    if (result.status.asInBlock || result.status.isFinalized) {
       txState.isFinalized = result.status.isFinalized;
 
-      if (result.status.isInBlock) {
+      if (result.status.isBroadcast) {
         updateResponseTxResult && updateResponseTxResult(txState, result.events);
       }
 

@@ -1022,15 +1022,15 @@ export default class Extension {
 
         state.setHistory(address, networkKey, { ...transaction, action: 'send' });
 
-        this.isInWalletAccount(recipientAddress)
-          .then((isValid) => {
-            if (isValid) {
-              state.setHistory(recipientAddress, networkKey, { ...transaction, action: 'received' });
-            } else {
-              console.info(`The recipient address [${recipientAddress}] is not in wallet.`);
-            }
-          })
-          .catch((err) => console.warn(err));
+        // this.isInWalletAccount(recipientAddress)
+        //   .then((isValid) => {
+        //     if (isValid) {
+        //       state.setHistory(recipientAddress, networkKey, { ...transaction, action: 'received' });
+        //     } else {
+        //       console.info(`The recipient address [${recipientAddress}] is not in wallet.`);
+        //     }
+        //   })
+        //   .catch((err) => console.warn(err));
       }
 
       portCallback(res);
@@ -1110,13 +1110,14 @@ export default class Extension {
     token,
     transferAll,
     value,
+    password,
   }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
     const [errors, fromKeyPair, valueNumber, tokenInfo] = await this.validateTransfer(
       networkKey,
       token,
       from,
       to,
-      undefined,
+      password,
       value,
       transferAll
     );
@@ -1260,7 +1261,7 @@ export default class Extension {
   private async makeTransfer(
     id: string,
     port: Port,
-    { from, networkKey, password, to, token, transferAll, value }: RequestTransfer
+    { from, networkKey, password, to, token, transferAll, value, isSavePass }: RequestTransfer
   ): Promise<BasicTxResponse | undefined> {
     const txState: BasicTxResponse = {};
 
@@ -1282,6 +1283,7 @@ export default class Extension {
       }, 500);
 
       // todo: add condition to lock KeyPair (for example: not remember password)
+
       fromKeyPair && fromKeyPair.lock();
 
       return txState;
@@ -1326,6 +1328,7 @@ export default class Extension {
           to: to,
           dotSamaApiMap: dotSamaApiMap,
           transferAll: !!transferAll,
+          isSavePass: isSavePass ?? false,
           callback: callback,
         });
       }
@@ -1575,10 +1578,10 @@ export default class Extension {
         return true;
       /// Transfer
       case 'pri(accounts.checkTransfer)':
-        return await this.checkTransfer(request as RequestCheckTransfer);
+        return this.checkTransfer(request as RequestCheckTransfer);
 
       case 'pri(accounts.transfer)':
-        return await this.makeTransfer(id, port as Port, request as RequestTransfer);
+        return this.makeTransfer(id, port as Port, request as RequestTransfer);
 
       case 'pri(accounts.checkCrossChainTransfer)':
       case 'pri(transaction.history.add)':

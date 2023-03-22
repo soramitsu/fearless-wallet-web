@@ -1,5 +1,3 @@
-import type { NetworkName } from './networks';
-
 type AssetJson = {
   id: string;
   symbol: string;

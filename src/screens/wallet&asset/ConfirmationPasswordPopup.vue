@@ -1,7 +1,7 @@
 <template>
   <Popup :headerType="headerType" sizeWidth="big" :headerText="popupHeader" :handlerClose="close" :zIndex="399">
     <div class="popup-content">
-      <template v-if="isTransactionNotInit && !isSignMobile">
+      <template v-if="!txStatus && !isSignMobile">
         <Icon icon="lock-green" className="icon__lock-green" iconColor="success" />
 
         <div class="text row">{{ $t('assets.passwordTransaction') }}</div>
@@ -35,18 +35,18 @@
         />
       </template>
 
-      <SignMobile v-else-if="isTransactionNotInit" @onSign="onSignMobile" @onCancel="close" />
+      <SignMobile v-else-if="!txStatus" @onSign="onSignMobile" @onCancel="close" />
 
       <Loader v-if="isTransactionPending" />
 
       <template v-else-if="isTransactionFinished">
         <div class="descriptions">
-          <ExternalLogo :name="firstNetwork" :width="30" />
+          <ExternalLogo :name="firstNetworkIcon" :width="30" />
 
           <template v-if="secondNetwork">
             <SIcon name="arrows-arrow-right-24" />
 
-            <ExternalLogo :name="secondNetwork" :width="30" />
+            <ExternalLogo :name="secondNetworkIcon" :width="30" />
           </template>
         </div>
 
@@ -64,7 +64,7 @@ import { Getter, Action } from 'vuex-class';
 import type { RequestSentInfo, TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
 import type { GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import { beaconController } from '@/controllers/beaconController';
-import { isSignLocked, makeTransfer, refreshPasswordTimeout } from '@/extension/messaging';
+import { isSignLocked, makeTransfer } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/extension/actions';
@@ -88,7 +88,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   isLocked = true;
   isSavePass = false;
   signedPayload: RequestSentInfo | null = null;
-  transactionState: 'pending' | 'success' | 'failed' | undefined = undefined;
+  transactionState: 'pending' | 'success' | 'failed' | null = null;
   showUnknownErrorPopup = false;
 
   @Prop(String) amount!: string;
@@ -118,6 +118,14 @@ export default class ConfirmationPasswordPopup extends Vue {
     };
   }
 
+  get firstNetworkIcon() {
+    return this.currency?.balances.find((net) => net.name === this.firstNetwork)?.icon;
+  }
+
+  get secondNetworkIcon() {
+    return this.currency?.balances.find((net) => net.name === this.secondNetwork)?.icon;
+  }
+
   get transactionAddress() {
     return getTransactionAddress(this.selectedWallet, this.firstNetwork) ?? '';
   }
@@ -135,26 +143,26 @@ export default class ConfirmationPasswordPopup extends Vue {
     return this.accounts.some((account) => account.address === encodedAddress && account.isMobile);
   }
 
-  get transactionStatus() {
-    return this.transactionState;
-  }
-
   get min15Label() {
     return this.isLocked ? 'assets.15min' : 'assets.15minExtend';
   }
 
   get headerType() {
-    if (this.transactionStatus === 'success') return 'success';
+    if (this.transactionState === 'success') return 'success';
 
-    if (this.transactionStatus === 'failed') return 'failed';
+    if (this.transactionState === 'failed') return 'failed';
 
     return 'pending';
   }
 
-  get popupHeader() {
-    if (this.transactionStatus === 'success') return 'assets.transactionDone';
+  get txStatus() {
+    return this.transactionState;
+  }
 
-    if (this.transactionStatus === 'failed') return 'assets.transactionError';
+  get popupHeader() {
+    if (this.txStatus === 'success') return 'assets.transactionDone';
+
+    if (this.txStatus === 'failed') return 'assets.transactionError';
 
     if (this.isTransactionPending) return 'assets.transactionPending';
 
@@ -170,23 +178,19 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get isTransactionNotInit() {
-    return this.transactionStatus === undefined;
+    return this.txStatus === undefined;
   }
 
   get isTransactionPending() {
-    if (this.isTransactionNotInit) return false;
-
-    return this.transactionStatus === 'pending';
+    return this.txStatus === 'pending';
   }
 
   get isTransactionFinished() {
-    if (this.isTransactionNotInit) return false;
-
-    return this.transactionStatus !== 'pending';
+    return this.txStatus === 'success' || this.txStatus === 'failed';
   }
 
   @Watch('password')
-  resetStatusError() {
+  async resetStatusError() {
     this.isErrorPassword = false;
   }
 
@@ -208,8 +212,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   resetTxStatus() {
-    // this.currency?.setTransactionStatus();
-    this.transactionState = undefined;
+    this.transactionState = null;
   }
 
   close() {
@@ -251,6 +254,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async send() {
+    this.transactionState = 'pending';
+
     if (this.transactionId) {
       this.onSignApprove({
         id: this.transactionId,
@@ -261,13 +266,14 @@ export default class ConfirmationPasswordPopup extends Vue {
       return;
     }
 
-    makeTransfer(this.requestTransfer, (data) => {
-      if (data.status === true) {
-        this.transactionState = 'success';
-      } else if (data === false) {
-        this.transactionState = 'failed';
-      }
+    const results = await makeTransfer(this.requestTransfer, (data) => {
+      this.transactionState = data.status ? 'success' : 'failed';
     });
+
+    if (results.errors?.length) {
+      this.isErrorPassword = true;
+      this.resetTxStatus();
+    }
   }
 }
 </script>

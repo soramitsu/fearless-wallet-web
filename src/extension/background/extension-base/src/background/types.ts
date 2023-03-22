@@ -473,9 +473,10 @@ export interface RequestCheckTransfer extends BaseRequestSign {
   networkKey: string;
   from: string;
   to: string;
+  token: string;
   value?: string;
   transferAll?: boolean;
-  token: string;
+  password?: string;
 }
 
 export interface ResponseCheckTransfer {
@@ -487,7 +488,7 @@ export interface ResponseCheckTransfer {
   feeSymbol?: string; // if undefined => use main token
 }
 
-export type PasswordRequestSign<T extends BaseRequestSign> = T & { password: string };
+export type PasswordRequestSign<T extends BaseRequestSign> = T & { password: string; isSavePass?: boolean };
 
 export type ExternalRequestSign<T extends BaseRequestSign> = Omit<T, 'password'>;
 

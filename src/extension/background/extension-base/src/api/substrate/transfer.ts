@@ -477,6 +477,7 @@ export interface MakeTransferProps {
   transferAll: boolean;
   dotSamaApiMap: Record<string, ApiProps>;
   tokenInfo: AssetJson;
+  isSavePass: boolean;
   callback: (data: BasicTxResponse) => void;
 }
 

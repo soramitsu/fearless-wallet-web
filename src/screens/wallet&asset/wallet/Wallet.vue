@@ -111,11 +111,13 @@ import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.v
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import Loading from '@/components/Loading.vue';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { BalanceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { defaultSortingCurrencies, getTotalBalance } from '@/helpers/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 import { AssetsPrice } from '@/interfaces';
+import { getBalance, subscribeBalance } from '@/extension/messaging';
+import store from '@/store';
 
 @Component({
   components: {
@@ -165,6 +167,17 @@ export default class Wallet extends Vue {
 
   get showNetworkUnavailablePopup() {
     return this.networkUnavailable !== '';
+  }
+  async mounted() {
+    const subBalance = await subscribeBalance((balances) => {
+      this.updateBalance(balances);
+    }).catch(console.error);
+
+    return subBalance;
+  }
+
+  updateBalance(balanceData: BalanceJson): void {
+    store.dispatch('SET_BALANCE', balanceData);
   }
 
   get showWarningIcon() {

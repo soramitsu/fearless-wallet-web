@@ -439,17 +439,17 @@ export default class AddWallet extends Vue {
     }
 
     if (step === 5) {
-      if (this.isReplaceAccountFlow) {
-        try {
-          this.replaceAccount();
-        } catch {
-          return;
-        }
+      // if (this.isReplaceAccountFlow) {
+      //   try {
+      //     this.replaceAccount();
+      //   } catch {
+      //     return;
+      //   }
 
-        this.$router.push({ name: Components.Accounts });
+      //   this.$router.push({ name: Components.Accounts });
 
-        return;
-      }
+      //   return;
+      // }
 
       await this.saveKeypair();
 

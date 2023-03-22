@@ -136,18 +136,16 @@ async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> 
   );
 
   return Object.values(accounts)
+    .filter((el) => !isEthereumAddress(el.json.address))
     .map(
       ({ json: { address, meta }, type }): AccountJson => ({
         address,
         ethereumAddress: meta.ethereumAddress as string,
-        ...meta,
         active: address === currentAccount.address ?? false,
         type,
+        ...meta,
       })
-    )
-    .filter((el) => {
-      return !isEthereumAddress(el.address);
-    });
+    );
 }
 
 export default class Extension {
@@ -198,13 +196,13 @@ export default class Extension {
     if (isEthereumAddress(address)) {
       const metaData = getMetaTyped(pair.meta);
       metaData.ethereumAddress = address;
+
       keyring.saveAccountMeta(pair, metaData as any);
 
       return address;
     }
 
-    state.generateDefaultBalance(pair);
-    state.setCurrentAccount({
+    await state.setCurrentAccount({
       address,
       name: meta?.name as string,
       isMobile: (meta?.isMobile as boolean) ?? false,

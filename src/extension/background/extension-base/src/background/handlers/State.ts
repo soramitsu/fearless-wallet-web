@@ -153,6 +153,7 @@ export default class State {
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJsonOld>>();
   public serviceInfoSubject = new Subject<ServiceInfo>();
+  public defaultBalanceMap: Record<string, TokenBalance> = {};
   public balanceMap: BalanceMap = {};
   public balanceSubject = new Subject<BalanceJson>();
   public customTokenState: CustomTokenJson = { erc20: [] };
@@ -1202,19 +1203,20 @@ export default class State {
   private mapNetworksByToken(id: string): BalanceItem[] {
     return Object.values(this.networkMap)
       .filter((network) => {
-        return network.assets.some((asset) => asset.assetId === id);
+        return network.assets.some(({ assetId }) => assetId === id);
       })
-      .map((el) => {
-        const asset = el.assets.find((_asset) => _asset.assetId === id)!;
+      .map(({ name, assets, icon, key }) => {
+        const { isNative, isUtility, type, purchaseProviders } = assets.find(({ assetId }) => assetId === id)!;
 
         return {
           state: APIItemState.PENDING,
-          name: el.name,
-          key: el.key,
-          icon: el.icon,
-          type: asset.type,
-          isUtility: asset.isUtility,
-          isNative: asset.isNative,
+          name,
+          key,
+          icon,
+          type: type ?? 'native',
+          purchaseProviders: purchaseProviders ?? [],
+          isUtility: isUtility ?? false,
+          isNative: isNative ?? false,
         };
       });
   }
@@ -1227,27 +1229,37 @@ export default class State {
     return keyring.getAccounts().filter((el) => isEthereumAddress(el.address));
   }
 
-  public generateDefaultBalance({ address }: KeyringAddress) {
+  public generateDefaultBalance({ address }: Partial<KeyringAddress>) {
+    if (!address) return;
+
     if (this.balanceMap && this.balanceMap[address] !== undefined) return;
 
     this.balanceMap[address] = {};
 
-    Object.values(this.tokenMap).forEach((token) => {
+    if (Object.values(this.defaultBalanceMap).length) {
+      this.balanceMap[address] = { ...this.defaultBalanceMap };
+
+      return;
+    }
+
+    this.tokenMap.forEach((token) => {
       const networks = this.mapNetworksByToken(token.id);
       const name = token.displayName ?? token.symbol;
 
       const data: TokenBalance = {
-        name: token.displayName ?? token.symbol,
+        name,
         icon: token.icon,
         id: token.id,
         precision: token.precision,
         priceId: token.priceId ?? '',
         balances: networks,
       };
-
-      if (this.balanceMap[address][name]) this.balanceMap[address][name].balances.push(...networks);
-      else this.balanceMap[address][name] = data;
+      if (this.defaultBalanceMap[name]) this.defaultBalanceMap[name].balances.push(...networks);
+      else this.defaultBalanceMap[name] = data;
     });
+
+    this.balanceMap[address] = this.defaultBalanceMap;
+    this.publishBalance();
   }
 
   public generateDefaultBalanceMap() {

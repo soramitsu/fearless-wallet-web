@@ -250,6 +250,8 @@ async function subscribeTokensBalance(
   api: ApiPromise,
   setBalance: (rs: BalanceItem) => void
 ) {
+  state.generateDefaultBalance({ address: addresses[0] });
+
   const tokenList = state.networkMap[networkKey].assets.map((asset) => {
     const searchedAsset = state.tokenMap.find((token) => token.id === asset.assetId)! as AssetJson;
 
@@ -266,7 +268,7 @@ async function subscribeTokensBalance(
   // if (tokenList.length > 0) console.info('Get tokens balance of', networkKey, tokenList);
 
   const unsubList = await Promise.all(
-    tokenList.map(async ({ precision, symbol, id, type, isUtility, icon, displayName }) => {
+    tokenList.map(({ precision, symbol, id, type, isUtility, icon, displayName }) => {
       try {
         const options = getAssetOptions(symbol, type, id);
         const assetType = type === 'equilibrium' ? 'eqBalances' : 'tokens';
@@ -353,21 +355,6 @@ export function subscribeBalance(
     if (['ethereum', 'ethereum_goerli'].includes(networkKey)) {
       return subscribeEVMBalance(networkKey, networkAPI.api, useAddresses, web3ApiMap, callback);
     }
-
-    // if (!useAddresses || useAddresses.length === 0 || IGNORE_GET_SUBSTRATE_FEATURES_LIST.indexOf(networkKey) > -1) {
-    //   // Return zero balance if not have any address
-    //   const zeroBalance = {
-    //     state: APIItemState.READY,
-    //     free: '0',
-    //     reserved: '0',
-    //     miscFrozen: '0',
-    //     feeFrozen: '0',
-    //   } as BalanceItem;
-
-    //   callback(networkKey, zeroBalance);
-
-    //   return undefined;
-    // }
 
     return subscribeWithAccountMulti(useAddresses, networkKey, networkAPI, web3ApiMap, callback);
   });

@@ -87,8 +87,8 @@ export default class App extends Vue {
     const balance = await getBalance();
     this.updateBalance(balance);
 
-    subscribeBalance((data) => {
-      this.updateBalance(data);
+    subscribeBalance((balances) => {
+      this.updateBalance(balances);
     }).catch(console.error);
   }
 
@@ -119,10 +119,9 @@ export default class App extends Vue {
     this.setPrices({ tokenPriceMap, tokenPriceChange });
   }
 
-  setupWallet() {
-    subscribeAccounts((accounts) => {
+  async setupWallet() {
+    const accounts = await subscribeAccounts((accounts) => {
       this.setAccounts({ accounts });
-
       const selectedAccount = accounts.length === 0 ? undefined : accounts.find((el) => el.active);
       this.setSelectedWallet(selectedAccount);
 
@@ -130,6 +129,8 @@ export default class App extends Vue {
         this.$router.push(Components.Welcome);
       }
     });
+
+    return accounts;
   }
 
   unsubscribe() {

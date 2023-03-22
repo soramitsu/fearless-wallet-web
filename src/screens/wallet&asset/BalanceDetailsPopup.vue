@@ -20,34 +20,44 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type CurrencyController from '@/controllers/currencyController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SelectedWallet } from '@/store';
+import { GetAssetPrice, SelectedWallet } from '@/store';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
 export default class BalanceDetailsPopup extends Vue {
   @Prop(String) network!: string;
-  @Prop(Object) currency!: CurrencyController;
+  @Prop(Object) currency!: TokenBalance;
   @Prop(Function) closePopup!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
 
   get assetNameUpper() {
-    return this.currency.displayName.toUpperCase();
+    return this.currency.name.toUpperCase();
   }
 
   get balances() {
-    const balances = this.currency.getBalanceInNetwork(this.selectedWallet, this.network);
+    const balances = this.currency.balances.filter((net) => {
+      if (net.total) return +net.total > 0;
 
-    return Object.entries(balances).map(([name, { value, fiat }]) => ({
-      name,
-      value,
-      fiat,
+      return false;
+    });
+
+    return balances.map((el) => ({
+      name: el.name,
+      value: el.total,
+      fiat: this.fiatPrice,
     }));
   }
 
   get showFiatValue() {
-    return this.currency.price !== 0;
+    return this.fiatPrice !== 0;
+  }
+
+  get fiatPrice() {
+    return this.getTokenPrice(this.currency.priceId).price ?? 0;
   }
 
   getFiatValueVisible(value: string) {

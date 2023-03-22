@@ -14,8 +14,6 @@ type ExtrinsicTransferProps = {
   networkProps: WalletBalance;
 };
 
-const ORML_PALLETS_TYPES = ['ormlChain', 'equilibrium'];
-
 function getAssetOptions(symbol: string, type: TypeAsset, assetId: string) {
   const assetsJson: AssetJson[] = NetworksController.getAssetsJson();
   const { currencyId } = assetsJson.find(({ id }) => id === assetId)!;
@@ -65,4 +63,4 @@ function createExtrinsicTransfer(
   }
 }
 
-export { ORML_PALLETS_TYPES, getAssetOptions, createExtrinsicTransfer };
+export { getAssetOptions, createExtrinsicTransfer };

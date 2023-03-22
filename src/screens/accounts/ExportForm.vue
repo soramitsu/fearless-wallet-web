@@ -27,7 +27,6 @@ import type { Networks } from '@/interfaces/networks';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import NetworksController from '@/controllers/networksController';
 
 @Component
 export default class ExportForm extends Vue {

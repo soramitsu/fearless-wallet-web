@@ -118,8 +118,10 @@ interface AssetPrice {
 
 type AssetName = string;
 
+type AssetId = string;
+
 type AssetsPrice = Record<NetworkName | AssetName, AssetPrices>;
 
 type KeysAssetPricesJson = keyof AssetPrices;
 
-export { KeysAssetPricesJson, AssetsPrice, AssetName, AssetPrices, AssetPrice, AssetJson };
+export { KeysAssetPricesJson, AssetsPrice, AssetName, AssetPrices, AssetPrice, AssetJson, AssetId };

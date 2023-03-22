@@ -237,8 +237,8 @@ export default class Wallet extends Vue {
     if (this.showAssetsManagementForm) return currencies;
 
     const result: TCurrencies = currencies.filter((currency) => {
-      const walletBalance = currency.getNetworkList().map(({ network }) => network);
-      const isAvailableInSelectedNetwork = walletBalance.includes(this.selectedNetwork);
+      const networkList = currency.getNetworkList().map(({ network }) => network);
+      const isAvailableInSelectedNetwork = networkList.includes(this.selectedNetwork);
 
       if (!isAllNetworks && !isAvailableInSelectedNetwork) return false;
       const { displayName } = currency;

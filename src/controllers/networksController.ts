@@ -1,13 +1,58 @@
 import { api as apiSora } from '@sora-substrate/util';
 import type { Wallet, CustomAccounts } from '@/store';
-import type { AssetJson, Networks, Network, AssetPrice } from '@/interfaces';
+import type { AssetJson, Networks, Network, AssetPrice, NetworkName, WalletAddress, AssetId } from '@/interfaces';
+import BaseApi from '@/util/BaseApi';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import URLS from '@/consts/urls';
+import LocalStorageController from '@/controllers/localStorageController';
+
+const lsNetworks = new LocalStorageController('networks');
+const notZeroBalance = 'not-zero-balance';
+
+type NetworksZeroBalance = Record<WalletAddress, Record<NetworkName, Record<AssetId, string>>>;
 
 export default class NetworksController {
+  private static getNetworksZeroBalances(): NetworksZeroBalance {
+    const balances = lsNetworks.get(notZeroBalance);
+
+    return balances.value ?? {};
+  }
+
+  public static isNotZeroBalanceNetwork({ address, ethereumAddress }: Wallet, networkName: NetworkName): boolean {
+    const addressByNetwork = BaseApi.isEthereumNetwork(networkName) ? ethereumAddress : address;
+    const balances = this.getNetworksZeroBalances();
+    const balancesForNetwork = balances?.[addressByNetwork]?.[networkName] ?? {};
+
+    return Object.values(balancesForNetwork).includes('false');
+  }
+
+  public static setNetworkZeroBalance(
+    address: WalletAddress,
+    networkName: NetworkName,
+    assetId: string,
+    izZeroBalance: boolean
+  ): void {
+    const balances = this.getNetworksZeroBalances();
+    const balancesForAddress = balances[address] ?? {};
+    const balancesForNetwork = balancesForAddress[networkName] ?? {};
+
+    const newValue: NetworksZeroBalance = {
+      ...balances,
+      [address]: {
+        ...balancesForAddress,
+        [networkName]: {
+          ...balancesForNetwork,
+          [assetId]: `${!izZeroBalance}`,
+        },
+      },
+    };
+
+    lsNetworks.set(notZeroBalance, newValue);
+  }
+
   static getNetworks(): Networks {
     return store.getters[NetworksGettersTypes.getNetworks];
   }

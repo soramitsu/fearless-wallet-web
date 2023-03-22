@@ -245,6 +245,8 @@ export default class CurrencyController {
     balancesForNetwork.balance[walletAddress] = newBalance;
 
     this.balances.splice(indexNetwork, 1, balancesForNetwork);
+
+    NetworksController.setNetworkZeroBalance(walletAddress, network, this.assetId, newBalance.total.isZero());
   }
 
   /**

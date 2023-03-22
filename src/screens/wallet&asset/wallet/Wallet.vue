@@ -113,7 +113,7 @@ import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
-import { accountController } from '@/controllers/accountController';
+import { accountController } from '@/controllers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';

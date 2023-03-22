@@ -4,7 +4,7 @@
 import { BeaconMessageType, SubstrateMessageType, SubstratePermissionScope } from '@airgap/beacon-sdk';
 import type { Signer } from '@polkadot/api/types';
 import type { SignerPayloadRaw, SignerResult } from '@polkadot/types/types/extrinsic';
-import { beaconController } from '@/controllers/beaconController';
+import { beaconController } from '@/controllers';
 
 export class BeaconSigner implements Signer {
   async signRaw(raw: SignerPayloadRaw): Promise<SignerResult> {

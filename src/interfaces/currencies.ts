@@ -1,7 +1,7 @@
 import { FPNumber, CodecString } from '@sora-substrate/util';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
 import type { WalletAddress, NetworkAssetsType, NetworkName, AccountBalance } from '@/interfaces';
-import type CurrencyController from '@/controllers/currencyController';
+import type { CurrencyController } from '@/controllers';
 import type { ApiPromise } from '@polkadot/api';
 import type { SignerOptions } from '@polkadot/api/submittable/types';
 import type { Asset } from '@sora-substrate/util/build/assets/types';

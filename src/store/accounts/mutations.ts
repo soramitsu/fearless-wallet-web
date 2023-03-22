@@ -12,7 +12,7 @@ import type {
 import type { State } from './state';
 import type { KeyringPair$Meta } from '@polkadot/keyring/types';
 import BaseApi from '@/util/BaseApi';
-import { accountController } from '@/controllers/accountController';
+import { accountController } from '@/controllers';
 import { getMetaTyped } from '@/helpers/common';
 
 export enum MutationTypes {

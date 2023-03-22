@@ -147,7 +147,7 @@ import { SelectedWallet } from '@/store';
 import { firstCharToUp } from '@/helpers/common';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
-import NetworksController from '@/controllers/networksController';
+import { NetworksController } from '@/controllers';
 
 @Component({
   components: {

@@ -12,9 +12,8 @@ import { getAssetOptions } from '@/util/assets';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 import { getAccounts } from '@/helpers/accounts';
 import store from '@/store';
-import { accountController } from '@/controllers/accountController';
+import { accountController, NetworksController } from '@/controllers';
 import { isSora } from '@/helpers/common';
-import NetworksController from '@/controllers/networksController';
 
 interface ISubscribeData {
   data: AccountData;

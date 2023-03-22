@@ -192,7 +192,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
-import NetworksController from '@/controllers/networksController';
+import { NetworksController } from '@/controllers';
 import { SORA_UTILITY_ASSET } from '@/consts/networks';
 
 @Component({

@@ -7,14 +7,14 @@ import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import URLS from '@/consts/urls';
-import LocalStorageController from '@/controllers/localStorageController';
+import { LocalStorage } from '@/controllers';
 
-const lsNetworks = new LocalStorageController('networks');
+const lsNetworks = new LocalStorage('networks');
 const notZeroBalance = 'not-zero-balance';
 
 type NetworksZeroBalance = Record<WalletAddress, Record<NetworkName, Record<AssetId, string>>>;
 
-export default class NetworksController {
+export class NetworksController {
   private static getNetworksZeroBalances(): NetworksZeroBalance {
     const balances = lsNetworks.get(notZeroBalance);
 

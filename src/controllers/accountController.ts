@@ -1,10 +1,10 @@
 import type { Node, NetworkName } from '@/interfaces';
 import type { Lang } from '@/locales';
-import LocalStorageController from '@/controllers/localStorageController';
+import { LocalStorage } from '@/controllers';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 class AccountController {
-  private readonly lsAccount = new LocalStorageController('account');
+  private readonly lsAccount = new LocalStorage('account');
   private readonly langStorageName = 'lang';
   private readonly sequenceAssetsStorageName = 'sequence-assets';
   private readonly autoSelectNodesStorageName = 'auto-select-nodes';

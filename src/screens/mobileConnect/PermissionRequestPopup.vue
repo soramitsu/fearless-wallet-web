@@ -36,7 +36,7 @@
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { PermissionResponseOutput } from '@airgap/beacon-sdk';
 import ConnectionStatus from './ConnectionStatus.vue';
-import { beaconController } from '@/controllers/beaconController';
+import { beaconController } from '@/controllers';
 import { PermissionErrorPayload, RequestSentInfo } from '@/interfaces';
 import { Components } from '@/router/routes';
 

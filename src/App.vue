@@ -18,8 +18,7 @@ import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import NetworksController from '@/controllers/networksController';
-import { accountController } from '@/controllers/accountController';
+import { NetworksController, accountController } from '@/controllers';
 import { resetTimeouts } from '@/extension/messaging';
 
 @Component

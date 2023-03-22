@@ -17,8 +17,7 @@ import type { SubmittableExtrinsic } from '@polkadot/api/submittable/types';
 import type { Wallet, SetHistoryProps } from '@/store';
 import type { Asset } from '@sora-substrate/util/build/assets/types';
 import BaseApi from '@/util/BaseApi';
-import LocalStorageController from '@/controllers/localStorageController';
-import NetworksController from '@/controllers/networksController';
+import { LocalStorage, NetworksController } from '@/controllers';
 import {
   XCM_NATIVE_PALLETS,
   FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT,
@@ -40,8 +39,8 @@ import { addNumbers } from '@/helpers/numbers';
 
 type TransactionStatus = 'success' | 'failed' | 'pending';
 
-export default class CurrencyController {
-  private readonly lsCurrency = new LocalStorageController('currency');
+export class CurrencyController {
+  private readonly lsCurrency = new LocalStorage('currency');
   private readonly visibleStorageName = 'visible';
   public extrinsic!: SubmittableExtrinsic<'promise'> | undefined;
   public extrinsicOptions: ExtrinsicOptions = {};

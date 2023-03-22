@@ -1,5 +1,5 @@
 import type { SelectedWallet, Accounts, SelectedNetworks, AutoSelectNode } from './types';
-import { accountController } from '@/controllers/accountController';
+import { accountController } from '@/controllers';
 
 export type State = {
   selectedWallet: SelectedWallet;

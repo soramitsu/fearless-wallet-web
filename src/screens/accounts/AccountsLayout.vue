@@ -95,7 +95,7 @@ import SourceTypePopup from './SourceTypePopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
 import Nodes from './Nodes.vue';
 import type { SelectedWallet } from '@/store';
-import { accountController } from '@/controllers/accountController';
+import { accountController } from '@/controllers';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';

@@ -15,7 +15,7 @@ import type {
   SetAssetsPriceIntervalProps,
   SetSoraFee,
 } from './types';
-import { accountController } from '@/controllers/accountController';
+import { accountController } from '@/controllers';
 import { isSora } from '@/helpers/common';
 import { getFormattedHistory } from '@/helpers/history';
 

@@ -2,8 +2,7 @@ import type { ISubmittableResult } from '@polkadot/api/node_modules/@polkadot/ty
 import type { Currencies, Currency, Networks, RelayChainName, Balances, NetworkName } from '@/interfaces';
 import type { Wallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
-import CurrencyController from '@/controllers/currencyController';
-import NetworksController from '@/controllers/networksController';
+import { CurrencyController, NetworksController } from '@/controllers';
 import { MAIN_NETWORKS } from '@/consts/networks';
 import { MOCK_FP_BALANCE } from '@/consts/currencies';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';

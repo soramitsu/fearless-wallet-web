@@ -405,7 +405,7 @@ export default class SwapForm extends Vue {
 
     if (!this.isValidSendAsset) return { text: 'assets.insufficientBalance', localeProps: { asset: this.sendAssetUP } };
 
-    if (!this.isValidCountXOR)
+    if (!this.isValidTransferByXOR)
       return { text: 'assets.insufficientBalance', localeProps: { asset: this.soraMainAssetUpper } };
 
     if (+this.sendAmount === 0 || +this.receiveAmount === 0) return { text: 'assets.unableSwap' };
@@ -419,7 +419,7 @@ export default class SwapForm extends Vue {
     if (
       this.fee === '' ||
       !this.isValidSendAsset ||
-      !this.isValidCountXOR ||
+      !this.isValidTransferByXOR ||
       +this.sendAmount === 0 ||
       +this.receiveAmount === 0
     )
@@ -432,12 +432,18 @@ export default class SwapForm extends Vue {
     return this.sendCurrency!.validateCountAssets(this.sendAmount, this.fee, this.selectedNetwork, this.selectedWallet);
   }
 
-  get isValidCountXOR() {
-    const xorAmount = this.sendAsset === SORA_UTILITY_ASSET ? this.sendAmount : '0';
-
-    if (this.receiveAsset === SORA_UTILITY_ASSET) return true;
-
+  get isValidTransferByXOR() {
     if (this.fee === '') return false;
+
+    if (this.receiveAsset === SORA_UTILITY_ASSET) {
+      return this.currencyXOR!.validateSwapToXOR(
+        this.selectedWallet,
+        this.isExchangeB ? this.receiveAmount : this.minMaxAmount,
+        this.fee
+      );
+    }
+
+    const xorAmount = this.sendAsset === SORA_UTILITY_ASSET ? this.sendAmount : '0';
 
     return this.currencyXOR!.validateCountAssets(xorAmount, this.fee, this.selectedNetwork, this.selectedWallet);
   }

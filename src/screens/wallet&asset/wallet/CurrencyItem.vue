@@ -153,12 +153,18 @@ export default class CurrencyItem extends Vue {
   get showWarning() {
     if (this.showAssetsManagementForm) return false;
 
-    if (this.isCurrentNetwork) return this.getNetworkStatus(this.selectedNetwork) === 'disconnected';
+    if (this.isCurrentNetwork) {
+      const status = this.getNetworkStatus(this.selectedNetwork);
+      const isZeroBalanceNetwork = NetworksController.isZeroBalanceNetwork(this.selectedWallet, this.selectedNetwork);
+
+      return isZeroBalanceNetwork ? status === 'disconnected' : false;
+    }
 
     return this.currency.getNetworkList().every(({ network }) => {
       const status = this.getNetworkStatus(network);
+      const isZeroBalanceNetwork = NetworksController.isZeroBalanceNetwork(this.selectedWallet, network);
 
-      return status === 'disconnected';
+      return isZeroBalanceNetwork ? status === 'disconnected' : false;
     });
   }
 

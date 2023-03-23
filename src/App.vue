@@ -9,7 +9,7 @@
 <script lang="ts">
 import { Watch, Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
-import type { SetSelectedWalletProps, SetAccountsProps, Accounts, SetAddressesProps, SetOnlineStatus } from '@/store';
+import type { SetAccountsProps, Accounts, SetAddressesProps } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
@@ -31,10 +31,10 @@ export default class App extends Vue {
   @Getter(AccountsGettersTypes.getWallets) wallets!: Record<string, Accounts>;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<string>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<SetAccountsProps>;
   @Mutation(AccountsMutationTypes.SET_ADDRESSES) setAddresses!: TMutation<SetAddressesProps>;
-  @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<SetOnlineStatus>;
+  @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<boolean>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
 
   created() {
@@ -99,7 +99,7 @@ export default class App extends Vue {
   }
 
   addEventOnline() {
-    const updateOnlineStatus = () => this.setOnlineStatus({ isOnline: navigator.onLine });
+    const updateOnlineStatus = () => this.setOnlineStatus(navigator.onLine);
 
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
@@ -124,7 +124,7 @@ export default class App extends Vue {
     if (selectedWalletAddress) {
       const selectedSubstrateAddress = BaseApi.encodeAddress(selectedWalletAddress);
 
-      this.setSelectedWallet({ selectedWalletAddress: selectedSubstrateAddress });
+      this.setSelectedWallet(selectedSubstrateAddress);
     }
   }
 

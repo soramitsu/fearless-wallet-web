@@ -7,26 +7,27 @@ import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import URLS from '@/consts/urls';
-import { LocalStorage } from '@/controllers';
+import { LocalStorage } from '@/controllers/localStorageController';
 
 const lsNetworks = new LocalStorage('networks');
-const notZeroBalance = 'not-zero-balance';
+const zeroBalance = 'zero-balance';
 
 type NetworksZeroBalance = Record<WalletAddress, Record<NetworkName, Record<AssetId, string>>>;
 
 export class NetworksController {
   private static getNetworksZeroBalances(): NetworksZeroBalance {
-    const balances = lsNetworks.get(notZeroBalance);
+    const balances = lsNetworks.get(zeroBalance);
 
     return balances.value ?? {};
   }
 
-  public static isNotZeroBalanceNetwork({ address, ethereumAddress }: Wallet, networkName: NetworkName): boolean {
+  public static isZeroBalanceNetwork({ address, ethereumAddress }: Wallet, networkName: NetworkName): boolean {
     const addressByNetwork = BaseApi.isEthereumNetwork(networkName) ? ethereumAddress : address;
     const balances = this.getNetworksZeroBalances();
     const balancesForNetwork = balances?.[addressByNetwork]?.[networkName] ?? {};
+    const values = Object.values(balancesForNetwork);
 
-    return Object.values(balancesForNetwork).includes('false');
+    return values.length === 0 ? true : values.every((value) => value === 'true');
   }
 
   public static setNetworkZeroBalance(
@@ -45,12 +46,12 @@ export class NetworksController {
         ...balancesForAddress,
         [networkName]: {
           ...balancesForNetwork,
-          [assetId]: `${!izZeroBalance}`,
+          [assetId]: `${izZeroBalance}`,
         },
       },
     };
 
-    lsNetworks.set(notZeroBalance, newValue);
+    lsNetworks.set(zeroBalance, newValue);
   }
 
   static getNetworks(): Networks {

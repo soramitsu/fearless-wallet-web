@@ -340,6 +340,9 @@
     "sourceType": "Source Type",
     "allNetworks": "All networks",
     "offlineStatus": "No Internet connection",
-    "networkDisconnected": "Network disconnected"
+    "networkDisconnected": "Network disconnected",
+    "resolve": "Resolve",
+    "resolveOption": "Resolve Option",
+    "dontShowAgain": "Don't show me again"
   }
 }

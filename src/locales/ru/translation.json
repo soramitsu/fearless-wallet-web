@@ -338,6 +338,9 @@
     "sourceType": "Тип источника",
     "allNetworks": "Все сети",
     "offlineStatus": "Отсутствует интернет",
-    "networkDisconnected": "Сеть отключена"
+    "networkDisconnected": "Сеть отключена",
+    "resolve": "Разрешить",
+    "Resolve Option": "Варианты решения",
+    "dontShowAgain": "не показывать снова"
   }
 }

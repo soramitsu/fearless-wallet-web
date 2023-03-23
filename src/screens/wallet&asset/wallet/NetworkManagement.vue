@@ -1,8 +1,8 @@
 <template>
-  <AboveForm header="assets.networkIssues" class="network-management" :blur="true" :closeHandler="closeForm">
+  <AboveForm header="assets.networkIssues" class="network-management" :fullScreen="true" :closeHandler="closeForm">
     <div class="management-content">
       <Scroll>
-        <Corners v-for="{ name, icon } in disconnectedNetworks" :key="name" size="big" class="network-corners">
+        <Corners v-for="{ name, icon } in networks" :key="name" size="big" class="network-corners">
           <div class="network-item">
             <ExternalLogo class="network-img" :name="icon" />
 
@@ -13,18 +13,10 @@
             </div>
 
             <Button
-              v-if="getSwitchNodeButtonVisible(name)"
               size="mini"
               class="switch-button"
-              text="accounts.switchNode"
-              @click="openSwitchNode(name)"
-            />
-
-            <Icon
-              v-else
-              icon="info-triangle"
-              className="warning-img"
-              @click.native="$emit('setNetworkUnavailable', name)"
+              text="common.resolve"
+              @click="$emit('setNetworkUnavailable', name)"
             />
           </div>
         </Corners>
@@ -39,24 +31,12 @@ import { Getter } from 'vuex-class';
 import type { Networks } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { Components } from '@/router/routes';
 
 @Component
 export default class ReceiveForm extends Vue {
-  @Prop(Array) disconnectedNetworks!: Networks;
+  @Prop(Array) networks!: Networks;
   @Prop(Function) closeForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-
-  getSwitchNodeButtonVisible(network: string) {
-    return this.disconnectedNetworks.find(({ name }) => name === network)!.nodes.length > 1;
-  }
-
-  openSwitchNode(network: string) {
-    this.$router.push({
-      name: Components.Nodes,
-      params: { network },
-    });
-  }
 }
 </script>
 
@@ -110,18 +90,6 @@ export default class ReceiveForm extends Vue {
             color: $gray-color;
             font-size: 12px;
             line-height: 18px;
-          }
-        }
-
-        .warning-img {
-          width: 28px;
-          height: 28px;
-          opacity: 0.9;
-          margin-right: 16px;
-
-          &:hover {
-            cursor: pointer;
-            opacity: 1;
           }
         }
       }

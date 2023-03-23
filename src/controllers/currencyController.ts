@@ -17,7 +17,8 @@ import type { SubmittableExtrinsic } from '@polkadot/api/submittable/types';
 import type { Wallet, SetHistoryProps } from '@/store';
 import type { Asset } from '@sora-substrate/util/build/assets/types';
 import BaseApi from '@/util/BaseApi';
-import { LocalStorage, NetworksController } from '@/controllers';
+import { NetworksController } from '@/controllers';
+import { LocalStorage } from '@/controllers/localStorageController';
 import {
   XCM_NATIVE_PALLETS,
   FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT,

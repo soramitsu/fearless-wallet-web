@@ -481,7 +481,7 @@ export default class SendForm extends Vue {
       );
     }
 
-    return this.currency!.extrinsicOptions.fee!;
+    return this.currency!.extrinsicOptions.fee ?? '0';
   }
 
   updateAmount(value: string) {

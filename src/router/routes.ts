@@ -43,7 +43,10 @@ export enum Components {
   AddFromGoogle = 'AddFromGoogle',
 }
 
-const haveSelectedWallet = store.getters.getSelectedWallet.address.length;
+const haveSelectedWallet = () => {
+  return store.getters.getSelectedWallet.address.length;
+};
+
 const haveAuthRequests = () => store.getters.getAuthList.length;
 const haveSignRequests = () => store.getters.getSignList.length;
 const haveMetaRequests = () => store.getters.getMetaRequests.length;
@@ -159,14 +162,14 @@ const routes: Array<RouteConfig> = [
       },
     ],
     beforeEnter: (to, from, next) => {
-      if (!haveSelectedWallet) next({ name: Components.Welcome });
+      if (!haveSelectedWallet()) next({ name: Components.Welcome });
       else next();
     },
   },
   {
     path: '/*',
     redirect: () => {
-      return { name: haveSelectedWallet ? Components.Wallet : Components.Welcome };
+      return { name: haveSelectedWallet() ? Components.Wallet : Components.Welcome };
     },
   },
 ];

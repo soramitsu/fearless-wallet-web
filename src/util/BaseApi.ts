@@ -192,58 +192,58 @@ export default class BaseApi {
     return json.encoding.content.includes('batch-pkcs8');
   }
 
-  public static addKeypair(suri: string, password: string, meta: KeyringPair$Meta, type: KeypairType): KeyringPair {
-    const { pair } = keyring.addUri(suri, password, meta, type);
+  // public static addKeypair(suri: string, password: string, meta: KeyringPair$Meta, type: KeypairType): KeyringPair {
+  //   const { pair } = keyring.addUri(suri, password, meta, type);
 
-    createAccountSuri(password, suri, type, undefined, meta); // for proper work of extension
+  //   createAccountSuri(password, suri, type, undefined, meta); // for proper work of extension
 
-    return pair;
-  }
+  //   return pair;
+  // }
 
   public static async addKeypairFromJson(json: KeyringPair$Json, password: string): Promise<string> {
     return jsonRestore(json, password); // for proper work of extension
   }
 
-  public static replaceAccountFromSeed(
-    suri: string,
-    password: string,
-    type: KeypairType,
-    parentAddress: string,
-    network: string
-  ): void {
-    const meta: Record<string, unknown> = {};
-    const { address } = BaseApi.createFromUri(suri, type);
-    const { replaced } = BaseApi.checkAndReplaceDuplicateAccount(address, parentAddress, network);
+  // public static replaceAccountFromSeed(
+  //   suri: string,
+  //   password: string,
+  //   type: KeypairType,
+  //   parentAddress: string,
+  //   network: string
+  // ): void {
+  //   const meta: Record<string, unknown> = {};
+  //   const { address } = BaseApi.createFromUri(suri, type);
+  //   const { replaced } = BaseApi.checkAndReplaceDuplicateAccount(address, parentAddress, network);
 
-    if (replaced) return;
+  //   if (replaced) return;
 
-    meta.isReplacedAccount = true;
-    meta.replacedSettings = {
-      [parentAddress]: [network],
-    };
+  //   meta.isReplacedAccount = true;
+  //   meta.replacedSettings = {
+  //     [parentAddress]: [network],
+  //   };
 
-    BaseApi.addKeypair(suri, password, meta, type);
-  }
+  //   BaseApi.addKeypair(suri, password, meta, type);
+  // }
 
-  public static replaceAccountFromJson(
-    json: KeyringPair$Json,
-    password: string,
-    parentAddress: string,
-    network: string
-  ): void {
-    const { address } = BaseApi.createFromJson(json);
-    const { replaced } = BaseApi.checkAndReplaceDuplicateAccount(address, parentAddress, network);
+  // public static replaceAccountFromJson(
+  //   json: KeyringPair$Json,
+  //   password: string,
+  //   parentAddress: string,
+  //   network: string
+  // ): void {
+  //   const { address } = BaseApi.createFromJson(json);
+  //   const { replaced } = BaseApi.checkAndReplaceDuplicateAccount(address, parentAddress, network);
 
-    if (replaced) return;
+  //   if (replaced) return;
 
-    json.meta.isReplacedAccount = true;
-    json.meta.replacedSettings = {
-      [parentAddress]: [network],
-    };
+  //   json.meta.isReplacedAccount = true;
+  //   json.meta.replacedSettings = {
+  //     [parentAddress]: [network],
+  //   };
 
-    keyring.restoreAccount(json, password);
-    jsonRestore(json, password); //for proper work of extension
-  }
+  //   keyring.restoreAccount(json, password);
+  //   jsonRestore(json, password); //for proper work of extension
+  // }
 
   public static isDuplicateKeypair(address: string): boolean {
     const accounts = BaseApi.getAccounts();

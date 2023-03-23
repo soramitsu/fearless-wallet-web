@@ -14,6 +14,7 @@ interface CustomEvent extends Event {
 interface Meta {
   name: string;
   ethereumAddress: string;
+  isMobile: boolean;
 }
 
 interface AddressMeta extends Meta {

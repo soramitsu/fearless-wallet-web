@@ -52,12 +52,12 @@ export class FWSubscription {
   start() {
     this.logger.log('Starting subscription');
 
-    this.state.getCurrentAccount((currentAccountInfo) => {
-      if (currentAccountInfo) {
-        const { address } = currentAccountInfo;
-        this.subscribeBalances(address, this.state.getSubstrateApiMap, this.state.getEvmApiMap);
-      }
-    });
+    // this.state.getCurrentAccount((currentAccountInfo) => {
+    //   if (currentAccountInfo) {
+    //     const { address } = currentAccountInfo;
+    //     this.subscribeBalances(address, this.state.getSubstrateApiMap, this.state.getEvmApiMap);
+    //   }
+    // });
 
     !this.serviceSubscription &&
       (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
@@ -100,16 +100,6 @@ export class FWSubscription {
       const migrateValue = { ...previousAuth, ...value };
 
       this.state.setAuthorize(migrateValue);
-    });
-
-    this.state.getCurrentAccount((currentAccountInfo) => {
-      if (!currentAccountInfo) return;
-
-      if (currentAccountInfo) {
-        const { address } = currentAccountInfo;
-
-        this.subscribeBalances(address, this.state.getSubstrateApiMap, this.state.getEvmApiMap, true);
-      }
     });
   }
 

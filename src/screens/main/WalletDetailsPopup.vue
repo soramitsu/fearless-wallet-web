@@ -42,6 +42,10 @@ export default class WalletDetailsPopup extends Vue {
   @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWallet>;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
+  get selectedWallet() {
+    return this.accounts.find((account) => account.active);
+  }
+
   get isMobileWallet() {
     return this.accounts.find((el) => el.address === this.selectedWalletAddress && el.isMobile);
   }
@@ -59,7 +63,7 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   async deleteWallet() {
-    await forgetAccount(this.selectedWalletAddress, this.isMobileWallet ? 'mobile' : 'native');
+    forgetAccount(this.selectedWalletAddress, this.isMobileWallet ? 'mobile' : 'native');
 
     if (this.accounts.length === 0) this.$router.push({ name: Components.Welcome });
     else this.close();

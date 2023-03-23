@@ -43,6 +43,7 @@ import type {
   RequestCurrentAccountAddress,
   DisableNetworkResponse,
   ValidateNetworkResponse,
+  ResponseCreateAccountSuri,
 } from '@extension-base/background/types';
 import type { Message, NetworkJsonOld, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
@@ -233,7 +234,7 @@ export async function createAccountSuri(
   type?: KeypairType,
   genesisHash?: string,
   meta?: Record<string, unknown>
-): Promise<string> {
+): Promise<ResponseCreateAccountSuri> {
   return sendMessage('pri(accounts.create.suri)', { genesisHash, password, suri, type, meta });
 }
 

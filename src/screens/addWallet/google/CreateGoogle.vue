@@ -336,17 +336,18 @@ export default class CreateGoogle extends Vue {
     } = this.derivationPaths;
 
     if (this.suriEthereum !== '') {
-      const { address: ethereumAddress } = BaseApi.addKeypair(
-        this.suriEthereum,
-        this.walletPassword,
-        meta,
-        ethereumKeypairType
-      );
-
+      // const { address: ethereumAddress } = BaseApi.addKeypair(
+      //   this.suriEthereum,
+      //   this.walletPassword,
+      //   meta,
+      //   ethereumKeypairType
+      // );
+      const ethereumAddress = '';
       meta.ethereumAddress = ethereumAddress;
     }
 
-    const { address } = BaseApi.addKeypair(this.suriSubstrate, this.walletPassword, meta, substrateKeypairType);
+    // const { address } = BaseApi.addKeypair(this.suriSubstrate, this.walletPassword, meta, substrateKeypairType);
+    const address = '';
 
     return address;
   }

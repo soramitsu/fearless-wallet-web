@@ -120,17 +120,20 @@ export default class App extends Vue {
   }
 
   async setupWallet() {
-    const accounts = await subscribeAccounts((accounts) => {
-      this.setAccounts({ accounts });
-      const selectedAccount = accounts.length === 0 ? undefined : accounts.find((el) => el.active);
-      this.setSelectedWallet(selectedAccount);
+    subscribeAccounts((accounts) => {
+      console.info(accounts, 'accounts');
+      const isAccountsExists = accounts.length === 0;
+      const selectedAccount = isAccountsExists ? undefined : accounts.find((el) => el.active);
 
-      if (accounts.length === 0 && this.$route.name !== Components.Welcome) {
+      this.setSelectedWallet(selectedAccount);
+      this.setAccounts({ accounts });
+
+      if (isAccountsExists && this.$route.name !== Components.Welcome) {
         this.$router.push(Components.Welcome);
+      } else {
+        this.$router.push(Components.Wallet);
       }
     });
-
-    return accounts;
   }
 
   unsubscribe() {

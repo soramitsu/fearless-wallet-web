@@ -60,7 +60,7 @@ import BaseApi from '@/util/BaseApi';
 import { SelectedWallet, SetSelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
-import { isJsonValid } from '@/extension/messaging';
+import { isJsonValid, jsonRestore } from '@/extension/messaging';
 
 @Component
 export default class GoogleWalletsList extends Vue {
@@ -89,9 +89,9 @@ export default class GoogleWalletsList extends Vue {
 
     if (this.items[index].isError) this.setItemValue(index, { isError: false });
 
-    BaseApi.addKeypairFromJson(ethJson, password);
+    jsonRestore(ethJson, password);
 
-    const address = await BaseApi.addKeypairFromJson(json, password);
+    const address = await jsonRestore(json, password);
 
     this.setItemValue(index, { isComplete: true, isLoading: false });
     this.setSelectedWallet({ selectedWalletAddress: address || this.selectedWallet.address });

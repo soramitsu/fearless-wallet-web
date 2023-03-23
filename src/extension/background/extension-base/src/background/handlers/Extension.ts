@@ -31,6 +31,7 @@ import {
   RequestTransfer,
   ResponseAccountExportPrivateKey,
   ResponseCheckTransfer,
+  ResponseCreateAccountSuri,
   TransferErrorCode,
   ValidateJsonResult,
 } from '../types';
@@ -63,7 +64,6 @@ import type {
   MessageTypes,
   MetadataRequest,
   RequestAccountBatchExport,
-  RequestAccountChangePassword,
   RequestAccountCreateExternal,
   RequestAccountCreateHardware,
   RequestAccountCreateSuri,
@@ -129,23 +129,25 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
 }
 
 async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
-  const currentAccount = await new Promise<CurrentAccountInfo>((res) =>
+  const currentAccount = await new Promise<CurrentAccountInfo | undefined>((res) => {
     state.getCurrentAccount((value) => {
-      if (value) res(value);
-    })
-  );
+      res(value);
+    });
+  });
 
-  return Object.values(accounts)
+  const transformedAccounts = Object.values(accounts)
     .filter((el) => !isEthereumAddress(el.json.address))
     .map(
       ({ json: { address, meta }, type }): AccountJson => ({
         address,
         ethereumAddress: meta.ethereumAddress as string,
-        active: address === currentAccount.address ?? false,
+        active: address === currentAccount?.address ? true : false,
         type,
         ...meta,
       })
     );
+
+  return transformedAccounts;
 }
 
 export default class Extension {
@@ -185,51 +187,36 @@ export default class Extension {
     //crate ethereum pair
   }
 
-  async accountsCreateSuri({ genesisHash, password, suri, type, meta }: RequestAccountCreateSuri): Promise<string> {
-    const currentAccount = await new Promise<CurrentAccountInfo | void>((resolve) => {
-      state.getCurrentAccount(resolve);
-    });
-    const allGenesisHash = currentAccount?.allGenesisHash || undefined;
+  async accountsCreateSuri({
+    password,
+    suri,
+    type,
+    meta,
+  }: RequestAccountCreateSuri): Promise<ResponseCreateAccountSuri> {
     const { pair } = keyring.addUri(suri, password, meta, type);
     const { address } = pair;
+    const metaData = getMetaTyped(pair.meta);
 
     if (isEthereumAddress(address)) {
-      const metaData = getMetaTyped(pair.meta);
       metaData.ethereumAddress = address;
-
       keyring.saveAccountMeta(pair, metaData as any);
 
-      return address;
+      return {
+        name: metaData.name,
+        address: address,
+        ethereumAddress: metaData.ethereumAddress,
+        isMobile: metaData.isMobile,
+      };
     }
 
-    await state.setCurrentAccount({
+    await this.updateCurrentAccountAddress(address);
+
+    return {
+      name: metaData.name,
       address,
-      name: meta?.name as string,
-      isMobile: (meta?.isMobile as boolean) ?? false,
-      ethereumAddress: (meta?.ethereumAddress as string) ?? '',
-      currentGenesisHash: genesisHash || null,
-      allGenesisHash,
-    });
-
-    return address;
-  }
-
-  accountsChangePassword({ address, newPass, oldPass }: RequestAccountChangePassword): boolean {
-    const pair = keyring.getPair(address);
-
-    assert(pair, 'Unable to find pair');
-
-    try {
-      if (!pair.isLocked) pair.lock();
-
-      pair.decodePkcs8(oldPass);
-    } catch (error) {
-      throw new Error('oldPass is invalid');
-    }
-
-    keyring.encryptAccount(pair, newPass);
-
-    return true;
+      ethereumAddress: metaData.ethereumAddress,
+      isMobile: metaData.isMobile,
+    };
   }
 
   accountsEdit({ address, name }: RequestAccountEdit): boolean {
@@ -269,33 +256,46 @@ export default class Extension {
 
     state.updateAuthorizedAccounts(authorizedAccountsDiff);
 
-    // cycle through default account selection for auth and remove any occurence of the account
-    const newDefaultAuthAccounts = state.defaultAuthAccountSelection.filter(
-      (defaultSelectionAddress) => defaultSelectionAddress !== address
-    );
-
-    state.updateDefaultAuthAccounts(newDefaultAuthAccounts);
+    //  cycle through default account selection for auth and remove any occurence of the account
+    if (!isEthereumAddress(address)) {
+      const newDefaultAuthAccounts = state.defaultAuthAccountSelection.filter(
+        (defaultSelectionAddress) => defaultSelectionAddress !== address
+      );
+      state.updateDefaultAuthAccounts(newDefaultAuthAccounts);
+    }
 
     if (type === 'native') {
       const pair = keyring.getAccount(address);
       const ethereumAddress = pair?.meta.ethereumAddress as string;
+
       if (ethereumAddress !== '') keyring.forgetAccount(ethereumAddress);
+
       keyring.forgetAccount(address);
     } else keyring.forgetAddress(address);
 
     const accounts = keyring.getAccounts();
-
-    if (accounts.length) {
-      const { address, meta } = accounts[0];
-
-      state.setCurrentAccount({
-        address,
-        name: meta.name as string,
-        ethereumAddress: meta.ethereumAddress as string,
-        currentGenesisHash: meta.genesisHash ?? null,
-        isMobile: (meta.isMobile as boolean) ?? false,
+    const currentAcc = await new Promise<CurrentAccountInfo | undefined>((res) => {
+      state.getCurrentAccount((value) => {
+        res(value);
       });
-    } else state.setCurrentAccount(undefined);
+    });
+
+    const shouldUpdate = !accounts.some((el) => el.address === currentAcc?.address);
+
+    if (shouldUpdate) {
+      const account = accounts.find((el) => !isEthereumAddress(el.address));
+      const currentAccount = account
+        ? {
+            address,
+            name: account.meta.name as string,
+            ethereumAddress: account.meta.ethereumAddress as string,
+            currentGenesisHash: account.meta.genesisHash ?? null,
+            isMobile: (account.meta.isMobile as boolean) ?? false,
+          }
+        : undefined;
+
+      this.updateCurrentAccountAddress(currentAccount ? currentAccount.address : '');
+    }
 
     return true;
   }
@@ -369,8 +369,8 @@ export default class Extension {
 
   accountsSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(accounts.subscribe)'>(id, port);
-    const subscription = accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
-      cb(await transformAccounts(accounts));
+    const subscription = accountsObservable.subject.subscribe((accounts: SubjectInfo): void => {
+      if (Object.values(accounts).length % 2 === 0) transformAccounts(accounts).then(cb);
     });
 
     port.onDisconnect.addListener((): void => {
@@ -1433,9 +1433,6 @@ export default class Extension {
 
       case 'pri(accounts.create.suri)':
         return this.accountsCreateSuri(request as RequestAccountCreateSuri);
-
-      case 'pri(accounts.changePassword)':
-        return this.accountsChangePassword(request as RequestAccountChangePassword);
 
       case 'pri(accounts.edit)':
         return this.accountsEdit(request as RequestAccountEdit);

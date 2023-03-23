@@ -129,15 +129,21 @@ export interface SubscribeBalanceRequest {
   id: string;
   port: Port;
 }
-export type ConnectedTabsUrlResponse = string[];
 
+export type ConnectedTabsUrlResponse = string[];
+export interface ResponseCreateAccountSuri {
+  name: string;
+  address: string;
+  ethereumAddress: string;
+  isMobile: boolean;
+}
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
 export interface RequestSignatures {
   // private/internal requests, i.e. from a popup
   //Account Managment
   'pri(accounts.create.external)': [RequestAccountCreateExternal, boolean];
   'pri(accounts.create.hardware)': [RequestAccountCreateHardware, boolean];
-  'pri(accounts.create.suri)': [RequestAccountCreateSuri, string];
+  'pri(accounts.create.suri)': [RequestAccountCreateSuri, ResponseCreateAccountSuri];
   'pri(addresses.create)': [RequestAddressCreate, boolean];
   'pri(addresses.remove)': [RequestAddressRemove, boolean];
   'pri(addresses.get)': [null, KeyringAddress[]];

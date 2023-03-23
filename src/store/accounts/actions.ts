@@ -20,7 +20,7 @@ type AugmentedActionContext = {
 export type Actions = {
   [ActionTypes.SET_SELECTED_FIAT](context: AugmentedActionContext, props: SetSelectedFiat): Promise<void>;
   [ActionTypes.SET_BALANCE](context: AugmentedActionContext, props: BalanceJson): Promise<void>;
-  [ActionTypes.SET_SELECTED_WALLET](context: AugmentedActionContext, props: AccountJson): Promise<void>;
+  [ActionTypes.SET_SELECTED_WALLET](context: AugmentedActionContext, props: AccountJson | undefined): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
@@ -38,23 +38,12 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.SET_SELECTED_WALLET]({ commit }, account) {
-    if (!account) {
-      accountController.setSelectedWalletAddress(undefined);
-      commit(MutationTypes.SET_SELECTED_WALLET, {
-        address: '',
-        ethereumAddress: '',
-        name: '',
-      });
-
-      return;
-    }
-
-    accountController.setSelectedWalletAddress(account.address);
+    accountController.setSelectedWalletAddress(account?.address);
 
     commit(MutationTypes.SET_SELECTED_WALLET, {
-      address: account.address,
-      ethereumAddress: account.ethereumAddress,
-      name: account.name ?? '',
+      address: account?.address ?? '',
+      ethereumAddress: account?.ethereumAddress ?? '',
+      name: account?.name ?? '',
     });
   },
 };

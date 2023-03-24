@@ -11,7 +11,9 @@
       <Icon v-if="showWarningIcon" icon="info-triangle" className="img" />
 
       <div class="text">{{ $t(text) }}</div>
-      <div :class="classesSubtext">{{ $t(subtext) }}</div>
+      <div v-if="subtext" :class="classesSubtext">{{ $t(subtext) }}</div>
+
+      <slot></slot>
 
       <Button v-if="showAcceptButton" class="button" size="medium" :text="acceptButtonText" @click="handlerAccept" />
 
@@ -73,7 +75,7 @@ export default class NotificationPopup extends Vue {
   padding: 0 10px;
 
   .img {
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     width: 42px;
     height: 42px;
   }
@@ -106,6 +108,6 @@ export default class NotificationPopup extends Vue {
 }
 
 .subtext-big {
-  width: 300px;
+  width: 325px;
 }
 </style>

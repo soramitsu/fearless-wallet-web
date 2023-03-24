@@ -356,6 +356,9 @@
     "likeInstagram": "Like on Instagram",
     "subscribeYouTube": "Subscribe on YouTube",
     "receiveAnnouncements": "Receive Announcements",
-    "readPolkaswapDisclaimer": "Please read before continuing to use Polkaswap"
+    "readPolkaswapDisclaimer": "Please read before continuing to use Polkaswap",
+    "resolve": "Resolve",
+    "resolveOption": "Resolve Option",
+    "dontShowAgain": "Don't show me again"
   }
 }

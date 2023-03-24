@@ -4,7 +4,7 @@
 
 <script lang="ts">
 import { Vue, Prop, Component } from 'vue-property-decorator';
-import NetworksController from '@/controllers/networksController';
+import { NetworksController } from '@/controllers';
 
 @Component
 export default class ExternalLogo extends Vue {

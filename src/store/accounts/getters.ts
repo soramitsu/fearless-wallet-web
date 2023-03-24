@@ -1,6 +1,12 @@
 import { IWallet } from './types';
 import type { GetterTree } from 'vuex';
-import type { SelectedWallet, Accounts, WalletInfo, GetAutoSelectNodesValueByNetwork } from './types';
+import type {
+  SelectedWallet,
+  Accounts,
+  WalletInfo,
+  GetAutoSelectNodesValueByNetwork,
+  GetShowWarningNetworks,
+} from './types';
 import type { State } from './state';
 import type { FiatJson } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -20,6 +26,7 @@ export enum GettersTypes {
   GET_QR = 'getQR',
   getIsCustomSort = 'getIsCustomSort',
   getPolkaswapAlertVisibility = 'getPolkaswapAlertVisibility',
+  getShowWarningNetworks = 'getShowWarningNetworks',
 }
 
 export type Getters = {
@@ -33,6 +40,10 @@ export type Getters = {
   [GettersTypes.getAddresses](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
   [GettersTypes.getWallets](state: State, getters?: GetterTree<State, State> & Getters): WalletInfo[];
   [GettersTypes.getPolkaswapAlertVisibility](state: State, getters?: GetterTree<State, State> & Getters): boolean;
+  [GettersTypes.getShowWarningNetworks](
+    state: State,
+    getters?: GetterTree<State, State> & Getters
+  ): GetShowWarningNetworks;
   [GettersTypes.getAutoSelectNodesValueByNetwork](
     state: State,
     getters?: GetterTree<State, State> & Getters
@@ -108,9 +119,16 @@ const getters: GetterTree<State, State> & Getters = {
 
     return wallets;
   },
+
   [GettersTypes.GET_QR]({ qr }): Nullable<string> {
     return qr;
   },
+
+  [GettersTypes.getShowWarningNetworks]:
+    ({ hideWarningNetworks }) =>
+    (networkName: string) => {
+      return hideWarningNetworks.includes(networkName);
+    },
 
   [GettersTypes.getIsCustomSort]:
     ({ isCustomSort }) =>

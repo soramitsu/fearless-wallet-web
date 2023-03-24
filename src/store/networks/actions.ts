@@ -11,7 +11,7 @@ import { fetchHistory } from '@/subquery/fetchingHistory';
 import { getAddressMetaTyped, getReplacedMetaTyped } from '@/helpers/common';
 import { getMockCurrencies } from '@/helpers/currencies';
 import { connectToApi, subscribeAssetsBalances } from '@/helpers/networksConnection';
-import { accountController } from '@/controllers/accountController';
+import { accountController } from '@/controllers';
 import { AUTO_UPDATE_ASSETS_PRICE_MS } from '@/consts/global';
 import { getTokenPrice } from '@/helpers/coingecko';
 

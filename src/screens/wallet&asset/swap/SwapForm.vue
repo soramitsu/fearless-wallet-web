@@ -211,7 +211,7 @@ import { getCurrencyOptions } from '@/helpers/currencies';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import Disclaimer from '@/screens/wallet&asset/swap/Disclaimer.vue';
-import NetworksController from '@/controllers/networksController';
+import { NetworksController } from '@/controllers';
 import { SORA_UTILITY_ASSET } from '@/consts/networks';
 import { Components } from '@/router/routes';
 

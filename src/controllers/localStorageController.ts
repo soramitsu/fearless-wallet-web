@@ -8,7 +8,7 @@ interface OptionsProps {
   saveDateCreated?: boolean;
 }
 
-export default class LocalStorage {
+export class LocalStorage {
   private prefix;
 
   constructor(prefix: string) {

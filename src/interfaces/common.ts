@@ -4,7 +4,6 @@ import { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 
 type TMutation<T> = (props?: T) => void;
 type TAction<T> = (props?: T) => Promise<void>;
-
 type TCallback<T> = (payload: T) => void;
 
 interface CustomEvent extends Event {

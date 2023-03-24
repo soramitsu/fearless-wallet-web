@@ -352,8 +352,8 @@ export default class AddWallet extends Vue {
   }
 
   get buttonText() {
-    if (this.isCreateWallet && this.step === 2) return 'haveWrittenPassphrase';
-    if (this.showFinishForm) return 'usingFearless';
+    if (this.isCreateWallet && this.step === 2) return this.t('haveWrittenPassphrase');
+    if (this.showFinishForm) return this.t('usingFearless');
 
     return 'common.continue';
   }

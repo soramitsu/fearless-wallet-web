@@ -62,7 +62,7 @@ export default class Account extends Vue {
   // }
 
   get isMobileWallet() {
-    return BaseApi.isMobileWallet(this.selectedWallet.address);
+    return this.selectedWallet.isMobile;
   }
 
   // get showSharedSecretAccounts() {
@@ -111,7 +111,7 @@ export default class Account extends Vue {
       return;
     }
 
-    BaseApi.updateWalletName(address, this.newName);
+    // BaseApi.updateWalletName(address, this.newName);
 
     this.setSelectedWallet({ selectedWalletAddress: address });
   }

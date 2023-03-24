@@ -50,7 +50,14 @@ import type { Chain } from '@polkadot/extension-chains/types';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import type { FilesResponse, GoogleAuthTypes, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
+import type {
+  DerivationPath,
+  FilesResponse,
+  GoogleAuthTypes,
+  ICreateFile,
+  IGetFilesResponse,
+  VerifyTokenResponse,
+} from '@/interfaces';
 
 const metadataGets = new Map<string, Promise<MetadataDef | null>>();
 
@@ -137,10 +144,6 @@ function sendMessage<TMessageType extends MessageTypes>(
     handlers[id] = { reject, resolve, subscriber };
     port?.postMessage({ id, message, request: request || {} });
   });
-}
-
-export async function editAccount(address: string, name: string): Promise<boolean> {
-  return sendMessage('pri(accounts.edit)', { address, name });
 }
 
 export async function showAccount(address: string, isShowing: boolean): Promise<boolean> {
@@ -372,6 +375,10 @@ export async function deriveAccount(
   genesisHash: string | null
 ): Promise<boolean> {
   return sendMessage('pri(derivation.create)', { genesisHash, name, parentAddress, parentPassword, password, suri });
+}
+
+export async function isDerivationPathValid(request: DerivationPath): Promise<boolean> {
+  return sendMessage('pri(accounts.validate.path)', request);
 }
 
 export async function windowOpen(path: AllowedPath): Promise<boolean> {

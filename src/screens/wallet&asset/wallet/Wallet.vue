@@ -116,7 +116,7 @@ import { defaultSortingCurrencies, getTotalBalance } from '@/helpers/currencies'
 import { ALL_NETWORKS } from '@/consts/networks';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 import { AssetsPrice } from '@/interfaces';
-import { getBalance, subscribeBalance } from '@/extension/messaging';
+import { subscribeBalance } from '@/extension/messaging';
 import store from '@/store';
 
 @Component({

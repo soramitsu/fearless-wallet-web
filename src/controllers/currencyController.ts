@@ -23,8 +23,6 @@ import {
   isNativeNetwork,
   getOrmlOptions,
 } from '@/util/teleport';
-import { getReplacedMetaTyped } from '@/helpers/common';
-import { statusLogging } from '@/helpers/currencies';
 import { BeaconSigner } from '@/extension/background/extension-base/src/background/BeaconSigner';
 import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
@@ -593,7 +591,7 @@ export default class CurrencyController {
   public async send(from: string, isMobile = false, isSavePass = false): Promise<boolean> {
     if (isSavePass) await saveTimeoutCache(from);
 
-    const account = isMobile ? from : BaseApi.getPair(from);
+    // const account = isMobile ? from : BaseApi.getPair(from);
 
     const options = {
       ...(this.extrinsicOptions.transactionsOptions ?? {}),
@@ -604,13 +602,12 @@ export default class CurrencyController {
     this.transactionStatus = 'pending';
 
     try {
-      await this.extrinsic!.signAndSend(
-        account,
-        options,
-        statusLogging(() => this.statusCallback(from, 'success'))
-      );
-
-      if (typeof account !== 'string' && !isSavePass) account.lock();
+      // await this.extrinsic!.signAndSend(
+      //   account,
+      //   options,
+      //   statusLogging(() => this.statusCallback(from, 'success'))
+      // );
+      // if (typeof account !== 'string' && !isSavePass) account.lock();
     } catch (ex) {
       this.statusCallback(from, 'failed');
 

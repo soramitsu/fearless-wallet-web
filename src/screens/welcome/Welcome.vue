@@ -81,20 +81,24 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
 import URLS from '@/consts/urls';
 import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
 import { initGoogleAuth } from '@/extension/messaging';
+import { AccountJson } from '@/extension/background/extension-base/src/background/types';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({
   components: { MobileConnect },
 })
 export default class Welcome extends Vue {
   showGoogleAuthPopup = false;
+  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
   get showBackWalletIcon() {
-    return BaseApi.getAccounts().length !== 0 || BaseApi.getAddresses().length !== 0;
+    return this.accounts.length !== 0;
   }
 
   get accessToken() {

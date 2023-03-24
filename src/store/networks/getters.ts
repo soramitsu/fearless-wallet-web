@@ -1,5 +1,12 @@
 import type { AssetsPrice, FiatJson, GetHistory } from '@/interfaces';
-import type { GetNetwork, GetAssetPrice, GetNetworkGenesisHash, GetNetworkStatus, GetAssetName } from './types';
+import type {
+  GetNetwork,
+  GetAssetPrice,
+  GetNetworkGenesisHash,
+  GetNetworkStatus,
+  GetAssetName,
+  GetActiveNodesByNetwork,
+} from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
@@ -49,10 +56,10 @@ export type Getters = {
   //   state: State,
   //   getters?: GetterTree<State, State> & Getters
   // ): NodeJS.Timer | null;
-  // [GettersTypes.getActiveNodesByNetwork](
-  //   state: State,
-  //   getters?: GetterTree<State, State> & Getters
-  // ): GetActiveNodesByNetwork;
+  [GettersTypes.getActiveNodesByNetwork](
+    state: State,
+    getters?: GetterTree<State, State> & Getters
+  ): GetActiveNodesByNetwork;
   [GettersTypes.getAllNetworksIsReadyToUse](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getNetworkStatus](state: State, getters?: GetterTree<State, State> & Getters): GetNetworkStatus;
   [GettersTypes.getNetworkGenesisHash](
@@ -154,11 +161,11 @@ const getters: GetterTree<State, State> & Getters = {
   //   return assetsPriceInterval;
   // },
 
-  // [GettersTypes.getActiveNodesByNetwork]:
-  //   ({ activeNodes }) =>
-  //   (networkName: string) => {
-  //     return activeNodes[networkName] ?? { name: '', url: '' };
-  //   },
+  [GettersTypes.getActiveNodesByNetwork]:
+    ({ networks }) =>
+    (networkName: string) => {
+      return networks.find((net) => net.name === networkName)!.nodes[0];
+    },
 
   [GettersTypes.getAllNetworksIsReadyToUse]({ networks }): boolean {
     return !networks.some(({ apiStatus }) => apiStatus === 'pending' || apiStatus === 'connected');

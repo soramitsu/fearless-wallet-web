@@ -98,7 +98,7 @@ import { DerivationPaths, MnemonicConfirmation, TAction } from '@/interfaces';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH, INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import BaseApi from '@/util/BaseApi';
-import { createGoogleFile } from '@/extension/messaging';
+import { createGoogleFile, exportAccount } from '@/extension/messaging';
 import { SelectedWallet, SetSelectedWallet } from '@/store/accounts/types';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -310,20 +310,23 @@ export default class CreateGoogle extends Vue {
   }
 
   async backupWallet(address: string) {
-    const json = BaseApi.getPair(address).toJson(this.walletPassword);
+    const { exportedJson: json } = await exportAccount(address, this.walletPassword);
     const ethAddress = json.meta.ethereumAddress as string;
-    const ethJson = BaseApi.getPair(ethAddress).toJson(this.walletPassword);
+    let ethRes;
     const token = this.$route.params.access_token;
 
-    const ethRes = await createGoogleFile({
-      json: JSON.stringify(ethJson),
-      options: { name: this.nickname, address: ethAddress },
-      token,
-    });
+    if (ethAddress) {
+      const ethJson = await exportAccount(ethAddress, this.walletPassword);
+      ethRes = await createGoogleFile({
+        json: JSON.stringify(ethJson),
+        options: { name: this.nickname, address: ethAddress },
+        token,
+      });
+    }
 
     createGoogleFile({
       json: JSON.stringify(json),
-      options: { name: this.nickname, address: `${address}/${ethRes.id}` },
+      options: { name: this.nickname, address: `${address}/${ethRes ? ethRes.id : ''}` },
       token,
     });
   }

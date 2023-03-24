@@ -49,15 +49,18 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import type { KeyringPair } from '@polkadot/keyring/types';
+import { Getter } from 'vuex-class';
+import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import { createGoogleFile, exportAccount, validateAccount } from '@/extension/messaging';
-import BaseApi from '@/util/BaseApi';
 import { ICreateFile } from '@/interfaces';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { AccountJson } from '@/extension/background/extension-base/src/background/types';
 
 @Component
 export default class GoogleExportPopup extends Vue {
   password = '';
   isErrorPassword = false;
+  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
   status: 'prepare' | 'upload' | 'uploaded' | 'await' = 'await';
   @Prop(Function) closePopup!: VoidFunction;
@@ -123,23 +126,27 @@ export default class GoogleExportPopup extends Vue {
       return;
     }
 
-    const pair = BaseApi.getPair(this.selectedWallet);
-
-    const ethPair = BaseApi.getPair(pair.meta.ethereumAddress as string);
-    const ethJson = ethPair.toJson(this.password);
-    const substrateJson = (await exportAccount(pair.address, this.password)).exportedJson;
-    const ethOptions = this.prepUploadMeta(ethPair);
-
+    let ethWalletId;
+    let substrateWalletId;
+    const { exportedJson: substrateJson } = await exportAccount(this.selectedWallet, this.password);
+    const isEthereumAddress = substrateJson.meta.ethereumAddress;
     this.status = 'upload';
 
-    const ethWalletId = await this.createFile(JSON.stringify(ethJson), ethOptions);
+    if (isEthereumAddress) {
+      const { exportedJson: ethereumJson } = await exportAccount(
+        substrateJson.meta.ethereumAddress as string,
+        this.password
+      );
+      const ethOptions = this.prepUploadMeta(substrateJson);
+      ethWalletId = await this.createFile(JSON.stringify(ethereumJson), ethOptions);
+      const substrateOptions = this.prepUploadMeta(ethereumJson, ethWalletId);
+      substrateWalletId = await this.createFile(JSON.stringify(substrateJson), substrateOptions);
+    } else {
+      const substrateOptions = this.prepUploadMeta(substrateJson);
+      substrateWalletId = await this.createFile(JSON.stringify(substrateJson), substrateOptions);
+    }
 
-    if (!ethWalletId) return;
-
-    const substrateOptions = this.prepUploadMeta(pair, ethWalletId);
-    const substrateWalletId = await this.createFile(JSON.stringify(substrateJson), substrateOptions);
-
-    if (ethWalletId && substrateWalletId) this.status = 'uploaded';
+    this.status = substrateWalletId ? 'uploaded' : 'await';
   }
 
   get statusMessagesHeader() {
@@ -149,10 +156,10 @@ export default class GoogleExportPopup extends Vue {
     return '';
   }
 
-  prepUploadMeta(pair: KeyringPair, ethWalletId?: string): ICreateFile['options'] {
+  prepUploadMeta(json: KeyringPair$Json, ethWalletId?: string): ICreateFile['options'] {
     return {
-      name: pair.meta.name as string,
-      address: ethWalletId ? `${pair.address}/${ethWalletId}` : (pair.meta.ethereumAddress as string),
+      name: json.meta.name as string,
+      address: ethWalletId ? `${json.address}/${ethWalletId}` : (json.meta.ethereumAddress as string),
       password: this.password,
     };
   }

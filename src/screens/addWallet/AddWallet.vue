@@ -175,7 +175,7 @@ import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
-import { createAccountSuri } from '@/extension/messaging';
+import { createAccountSuri, forgetAccount, validateAccount } from '@/extension/messaging';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 
@@ -586,7 +586,7 @@ export default class AddWallet extends Vue {
   }
 
   async handlerAcceptAddWallet() {
-    if (this.address) await BaseApi.deleteMobileWallet(this.address);
+    if (this.address) await forgetAccount(this.address, 'mobile');
 
     this.warningValueName = '';
 
@@ -620,19 +620,20 @@ export default class AddWallet extends Vue {
     this.step += this.showNotificationPopup || this.showAddEthereumAccountPopup ? 0 : 1;
   }
 
-  checkPassword(): boolean {
-    const isPasswordMatch = BaseApi.isSameWalletPassword(this.selectedWallet.address, this.walletPassword);
+  async checkPassword(): Promise<boolean> {
+    const isPasswordMatch = await validateAccount(this.selectedWallet.address, this.walletPassword);
 
     if (!isPasswordMatch) this.warningValueName = 'isNotSamePassword';
 
     return isPasswordMatch;
   }
 
-  createFlow() {
+  async createFlow() {
     if (this.step === 1 && !this.mnemonic.length) this.mnemonic = BaseApi.generateMnemonic();
     else if (this.step === 2) this.validateSuri();
     else if (this.step === 3) this.validateSequenceMnemonic();
-    else if (this.step === 4 && (this.isOnlyEthereumAccountFlow || this.isReplaceAccountFlow)) this.checkPassword();
+    else if (this.step === 4 && (this.isOnlyEthereumAccountFlow || this.isReplaceAccountFlow))
+      await this.checkPassword();
   }
 
   async importFlow() {
@@ -654,19 +655,20 @@ export default class AddWallet extends Vue {
       else this.showAddEthereumAccountPopup = true;
     } else if (this.step === 2) this.validateSuri();
     else if (this.step === 3 && this.typeImport === 'json') this.step += 1;
-    else if (this.step === 4 && (this.isOnlyEthereumAccountFlow || this.isReplaceAccountFlow)) this.checkPassword();
+    else if (this.step === 4 && (this.isOnlyEthereumAccountFlow || this.isReplaceAccountFlow))
+      await this.checkPassword();
   }
 
   validateAddressForDubMobileWallet(address: string) {
     const substrate = BaseApi.encodeAddress(address);
 
-    if (BaseApi.getAddress(substrate)?.meta.isMobile) {
+    if (BaseApi.isMobileWallet(substrate)) {
       this.warningValueName = 'duplicateMobileWallet';
       this.address = substrate;
     }
   }
 
-  validateMobileDubs() {
+  async validateMobileDubs() {
     if (this.isEthereumReplacedNetwork || this.isOnlyEthereumAccountFlow) return;
 
     if (this.typeImport === 'json') {
@@ -680,7 +682,7 @@ export default class AddWallet extends Vue {
       substrate: { keypairType: substrateKeypairType },
     } = this.derivationPaths;
 
-    const { address } = BaseApi.createFromUri(this.suriSubstrate, substrateKeypairType);
+    const { address } = await createAccountSuri(this.suriSubstrate, substrateKeypairType);
 
     this.validateAddressForDubMobileWallet(address);
   }
@@ -784,7 +786,7 @@ export default class AddWallet extends Vue {
       const ethereumAddress = await BaseApi.addKeypairFromJson(this.ethereumJSON, this.passwordEthereumJson);
 
       if (this.isOnlyEthereumAccountFlow) {
-        BaseApi.saveEthereumAddress(this.selectedWallet.address, ethereumAddress);
+        // BaseApi.saveEthereumAddress(this.selectedWallet.address, ethereumAddress);
 
         return '';
       }

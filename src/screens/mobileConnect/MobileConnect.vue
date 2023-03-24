@@ -172,7 +172,7 @@ export default class MobileConnect extends Vue {
 
     if (BaseApi.isExtension()) await createAddress(substrateAccount, meta); //extenstion service worker
 
-    BaseApi.saveAddress(substrateAccount, meta);
+    // BaseApi.saveAddress(substrateAccount, meta);
     await this.setSelectedWallet({ selectedWalletAddress: substrateAccount });
   }
 

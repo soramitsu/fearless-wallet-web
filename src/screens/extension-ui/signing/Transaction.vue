@@ -40,7 +40,7 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { SigningRequest } from '@extension-base/background/types';
+import { AccountJson, SigningRequest } from '@extension-base/background/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { registry } from '@/extension/background/extension-base/src/background/handlers/State';
 import BaseApi from '@/util/BaseApi';
@@ -55,6 +55,7 @@ import { TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
 import { beaconController } from '@/controllers/beaconController';
 import { Components } from '@/router/routes';
 import ExtensionController from '@/controllers/extensionController';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({
   components: {
@@ -72,6 +73,7 @@ export default class Auth extends Vue {
   @Getter(ExtensionGettersTypes.getSignRequestPayload) payload!: SignerPayloadJSON;
   @Getter(ExtensionGettersTypes.getSignList) requests!: SigningRequest[];
   @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
+  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
   get request() {
     return this.requests[0];
@@ -95,9 +97,11 @@ export default class Auth extends Vue {
   }
 
   get isMobileSignRequired() {
-    const substrateAddress = BaseApi.encodeAddress(this.payload.address as string, 42);
+    if (!this.payload.address) return false;
 
-    return BaseApi.getAddress(substrateAddress);
+    const substrateAddress = BaseApi.encodeAddress(this.payload.address, 42);
+
+    return this.accounts.some((account) => account.address === substrateAddress && account.isMobile);
   }
 
   get specVersion() {

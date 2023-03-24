@@ -41,6 +41,7 @@ import {
   IGetFilesResponse,
   VerifyTokenResponse,
 } from '@/interfaces/google';
+import { DerivationPath, DerivationPaths } from '@/interfaces';
 
 export interface PrepareExternalRequest {
   id: string;
@@ -142,12 +143,13 @@ export interface RequestSignatures {
   // private/internal requests, i.e. from a popup
   //Account Managment
   'pri(accounts.create.external)': [RequestAccountCreateExternal, boolean];
+  'pri(accounts.validate.path)': [DerivationPath, boolean];
+
   'pri(accounts.create.hardware)': [RequestAccountCreateHardware, boolean];
   'pri(accounts.create.suri)': [RequestAccountCreateSuri, ResponseCreateAccountSuri];
   'pri(addresses.create)': [RequestAddressCreate, boolean];
   'pri(addresses.remove)': [RequestAddressRemove, boolean];
   'pri(addresses.get)': [null, KeyringAddress[]];
-  'pri(accounts.edit)': [RequestAccountEdit, boolean];
   'pri(accounts.get.meta)': [RequestAccountMeta, ResponseAccountMeta];
   'pri(accounts.export)': [RequestAccountExport, ResponseAccountExport];
   'pri(accounts.batchExport)': [RequestAccountBatchExport, ResponseAccountsExport];

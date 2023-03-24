@@ -105,9 +105,11 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
+import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { googleManage } from '@/controllers/googleController';
 import {
   AssetJson,
+  DerivationPath,
   FilesResponse,
   GoogleAuthTypes,
   ICreateFile,
@@ -182,9 +184,14 @@ export default class Extension {
     return true;
   }
 
-  createAccountsFromSuri() {
-    //create substrate pair
-    //crate ethereum pair
+  validateDerivationPath({ value, keypairType }: DerivationPath): boolean {
+    try {
+      keyring.createFromUri(`${VALID_MNEMONIC}${value}`, {}, keypairType);
+
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async accountsCreateSuri({
@@ -217,16 +224,6 @@ export default class Extension {
       ethereumAddress: metaData.ethereumAddress,
       isMobile: metaData.isMobile,
     };
-  }
-
-  accountsEdit({ address, name }: RequestAccountEdit): boolean {
-    const pair = keyring.getPair(address);
-
-    assert(pair, 'Unable to find pair');
-
-    keyring.saveAccountMeta(pair, { ...pair.meta, name });
-
-    return true;
   }
 
   accountsExport({ address, password }: RequestAccountExport): ResponseAccountExport {
@@ -356,8 +353,6 @@ export default class Extension {
   }
 
   accountsValidate({ address, password }: RequestAccountValidate): boolean {
-    console.info(address, password);
-
     try {
       keyring.backupAccount(keyring.getPair(address), password);
 
@@ -1392,6 +1387,7 @@ export default class Extension {
       //App Managment, networks
       case 'pri(networkMap.getSubscription)':
         return this.subscribeNetworkMap(id, port);
+
       case 'pri(networkMap.getNetworkMap)':
         return this.getNetworkMap();
 
@@ -1428,14 +1424,14 @@ export default class Extension {
       case 'pri(accounts.create.external)':
         return this.accountsCreateExternal(request as RequestAccountCreateExternal);
 
+      case 'pri(accounts.validate.path)':
+        return this.validateDerivationPath(request as DerivationPath);
+
       case 'pri(accounts.create.hardware)':
         return this.accountsCreateHardware(request as RequestAccountCreateHardware);
 
       case 'pri(accounts.create.suri)':
         return this.accountsCreateSuri(request as RequestAccountCreateSuri);
-
-      case 'pri(accounts.edit)':
-        return this.accountsEdit(request as RequestAccountEdit);
 
       case 'pri(price.get.price)':
         return await this.getPrice();

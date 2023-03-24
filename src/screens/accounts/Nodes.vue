@@ -70,13 +70,14 @@ import type {
   GetAutoSelectNodesValueByNetwork,
   GetActiveNodesByNetwork,
 } from '@/store';
-import type { Node, Networks, TMutation } from '@/interfaces';
-import NetworksController from '@/controllers/networksController';
+import type { Node, TMutation } from '@/interfaces';
+
 import BaseApi from '@/util/BaseApi';
 import { accountController } from '@/controllers/accountController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 @Component({
   components: { NodeItem },
@@ -87,7 +88,7 @@ export default class Nodes extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getAutoSelectNodesValueByNetwork)
   getAutoSelectNodesValueByNetwork!: GetAutoSelectNodesValueByNetwork;
-  @Getter(NetworksGettersTypes.getAllNetworks) networks!: Networks;
+  @Getter(NetworksGettersTypes.getAllNetworks) networks!: NetworkJsonOld[];
   @Getter(NetworksGettersTypes.getActiveNodesByNetwork) getActiveNodesByNetwork!: GetActiveNodesByNetwork;
   @Mutation(AccountsMutationTypes.SET_AUTO_SELECT_NODE) setAutoSelectNode!: TMutation<SetAutoSelectNode>;
 

@@ -83,10 +83,9 @@ function getMockCurrencies(networks: Networks): Currencies {
 
         balances.forEach(({ balance }) => {
           BaseApi.getAccounts().forEach(({ address }) => {
-            const isEthereumAccountType = BaseApi.getPair(address).type === 'ethereum';
-
-            if ((isEthereumNetwork && isEthereumAccountType) || (!isEthereumNetwork && !isEthereumAccountType))
-              balance[address] = mockFPBalance;
+            // const isEthereumAccountType = BaseApi.getPair(address).type === 'ethereum';
+            // if ((isEthereumNetwork && isEthereumAccountType) || (!isEthereumNetwork && !isEthereumAccountType))
+            //   balance[address] = mockFPBalance;
           });
         });
 

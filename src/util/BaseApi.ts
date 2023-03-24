@@ -1,4 +1,3 @@
-import { keyring } from '@polkadot/ui-keyring';
 import {
   decodeAddress,
   encodeAddress,
@@ -17,7 +16,16 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
 import type { Wallet } from '@/store';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
-import { createAccountSuri, forgetAccount, getAccountMeta, isJsonValid, jsonRestore } from '@/extension/messaging';
+import {
+  createAccountSuri,
+  forgetAccount,
+  getAccountMeta,
+  isDerivationPathValid,
+  isJsonValid,
+  jsonRestore,
+  validateAccount,
+  validateDerivationPath,
+} from '@/extension/messaging';
 import { getReplacedMetaTyped, getMetaTyped } from '@/helpers/common';
 import { ETHEREUM_NETWORKS, ETHEREUM_ADDRESS_LENGTH, ETHEREUM_ADDRESS_PREFIX } from '@/consts/networks';
 import NetworksController from '@/controllers/networksController';
@@ -30,46 +38,46 @@ type WordCount = 12 | 15 | 18 | 21 | 24;
 type WalletTypes = 'mobile' | 'native';
 
 export default class BaseApi {
-  private static createFromJson(json: KeyringPair$Json): KeyringPair {
-    const pair = keyring.createFromJson(json);
+  // private static createFromJson(json: KeyringPair$Json): KeyringPair {
+  //   const pair = keyring.createFromJson(json);
 
-    return pair;
-  }
+  //   return pair;
+  // }
 
-  private static updateReplacedMetaData(address: string, parentAddressProp: string, network: string): void {
-    const pair = BaseApi.getKeyringPair(address);
-    const meta = getReplacedMetaTyped(pair.meta);
-    const oldReplacedSettings = meta.replacedSettings;
-    const oldNetworksList = oldReplacedSettings[parentAddressProp];
-    const newNetworksList = [...oldNetworksList, network];
+  // private static updateReplacedMetaData(address: string, parentAddressProp: string, network: string): void {
+  //   const pair = BaseApi.getKeyringPair(address);
+  //   const meta = getReplacedMetaTyped(pair.meta);
+  //   const oldReplacedSettings = meta.replacedSettings;
+  //   const oldNetworksList = oldReplacedSettings[parentAddressProp];
+  //   const newNetworksList = [...oldNetworksList, network];
 
-    meta.replacedSettings[parentAddressProp] = newNetworksList;
+  //   meta.replacedSettings[parentAddressProp] = newNetworksList;
 
-    keyring.saveAccountMeta(pair, meta as any);
-  }
+  //   keyring.saveAccountMeta(pair, meta as any);
+  // }
 
-  private static checkAndReplaceDuplicateAccount(
-    address: string,
-    parentAddress: string,
-    network: string
-  ): Record<'replaced', boolean> {
-    const isDuplicateReplacedKeypair = BaseApi.isDuplicateReplacedKeypair(address);
-    const isDuplicateKeypair = BaseApi.isDuplicateKeypair(address);
+  // private static checkAndReplaceDuplicateAccount(
+  //   address: string,
+  //   parentAddress: string,
+  //   network: string
+  // ): Record<'replaced', boolean> {
+  //   const isDuplicateReplacedKeypair = BaseApi.isDuplicateReplacedKeypair(address);
+  //   const isDuplicateKeypair = BaseApi.isDuplicateKeypair(address);
 
-    if (isDuplicateReplacedKeypair) {
-      BaseApi.updateReplacedMetaData(address, parentAddress, network);
+  //   if (isDuplicateReplacedKeypair) {
+  //     BaseApi.updateReplacedMetaData(address, parentAddress, network);
 
-      return { replaced: true };
-    }
+  //     return { replaced: true };
+  //   }
 
-    // when a user tries to replace an account with the same account
-    // this is wrong, it is not necessary to do so to avoid mistakes
-    if (isDuplicateKeypair) {
-      throw new Error('Such an account already exists');
-    }
+  //   // when a user tries to replace an account with the same account
+  //   // this is wrong, it is not necessary to do so to avoid mistakes
+  //   if (isDuplicateKeypair) {
+  //     throw new Error('Such an account already exists');
+  //   }
 
-    return { replaced: false };
-  }
+  //   return { replaced: false };
+  // }
 
   public static getWalletIncludingReplacedAccount(wallet: Wallet, network: string): Wallet {
     // const replacedAccountByNetwork = BaseApi.getReplacedAccountByNetwork(wallet, network);
@@ -79,26 +87,27 @@ export default class BaseApi {
     return wallet;
   }
 
-  public static saveAddress(address: string, meta: KeyringPair$Meta) {
-    return keyring.saveAddress(address, meta, 'address');
-  }
+  // public static saveAddress(address: string, meta: KeyringPair$Meta) {
+  //   return keyring.saveAddress(address, meta, 'address');
+  // }
 
-  public static forgetAddress(address: string) {
-    keyring.forgetAddress(address);
-  }
+  // public static forgetAddress(address: string) {
+  //   keyring.forgetAddress(address);
+  // }
 
-  public static isMobileWallet(address: string): boolean {
-    const substrateAddress = BaseApi.encodeAddress(address);
+  // public static isMobileWallet(address: string): boolean {
+  //   const substrateAddress = BaseApi.encodeAddress(address);
 
-    return !!BaseApi.getAddress(substrateAddress)?.meta.isMobile;
-  }
+  //   return !!BaseApi.getAddress(substrateAddress)?.meta.isMobile;
+  // }
 
   public static getWalletType(address: string): WalletTypes | null {
     const substrateAddress = BaseApi.encodeAddress(address);
-    if (BaseApi.getAccount(substrateAddress)) return 'native';
-    if (BaseApi.getAddress(substrateAddress)?.meta.isMobile) return 'mobile';
+    const accounts = store.getters.getAccounts as AccountJson[];
+    const account = accounts.find((account) => account.address === substrateAddress);
+    if (!account) null;
 
-    return null;
+    return account?.isMobile ? 'mobile' : 'native';
   }
 
   public static mortalityDecode(era: ExtrinsicEra, hexBlockNumber: string) {
@@ -110,11 +119,11 @@ export default class BaseApi {
     return { birth, death };
   }
 
-  public static createFromUri(suri: string, type: KeypairType): KeyringPair {
-    const pair = keyring.createFromUri(suri, {}, type);
+  // public static createFromUri(suri: string, type: KeypairType): KeyringPair {
+  //   const pair = keyring.createFromUri(suri, {}, type);
 
-    return pair;
-  }
+  //   return pair;
+  // }
 
   // public static getReplacedAccounts({ address, ethereumAddress }: Wallet): KeyringPair[] {
   //   return BaseApi.getAccounts()
@@ -167,14 +176,8 @@ export default class BaseApi {
     return mnemonicValidate(value);
   }
 
-  public static isValidSubstrateDerivationPath({ value, keypairType }: DerivationPath): boolean {
-    try {
-      BaseApi.createFromUri(`${VALID_MNEMONIC}${value}`, keypairType);
-
-      return true;
-    } catch {
-      return false;
-    }
+  public static async isValidSubstrateDerivationPath({ value, keypairType }: DerivationPath): Promise<boolean> {
+    return isDerivationPathValid({ value: `${VALID_MNEMONIC}${value}`, keypairType });
   }
 
   public static isValidEthereumDerivationPath(value: string): boolean {
@@ -251,39 +254,43 @@ export default class BaseApi {
     return accounts.map(({ address }) => address).includes(address);
   }
 
-  public static getAccount(address: string): KeyringAddress | undefined {
-    return keyring.getAccount(address);
-  }
+  // public static getAccount(address: string): KeyringAddress | undefined {
+  //   return keyring.getAccount(address);
+  // }
   //TEMP FOR TESTING
   public static getAccounts(): { address: string }[] {
     return (store.getters.getAccounts as AccountJson[]).map(({ address }) => {
       return { address };
     });
   }
-
-  public static getAddress(address: string): KeyringAddress | undefined {
-    return keyring.getAddress(address, 'address');
+  public static isMobileWallet(address: string) {
+    return (store.getters.getAccounts as AccountJson[]).some(
+      (account) => account.address === address && account.isMobile
+    );
   }
+  // public static getAddress(address: string): KeyringAddress | undefined {
+  //   return keyring.getAddress(address, 'address');
+  // }
 
-  public static getAddresses(): KeyringAddress[] {
-    return keyring.getAddresses();
-  }
+  // public static getAddresses(): KeyringAddress[] {
+  //   return keyring.getAddresses();
+  // }
 
-  public static getMobileAddresses(): KeyringAddress[] {
-    return BaseApi.getAddresses().filter(({ meta }) => meta.isMobile);
-  }
+  // public static getMobileAddresses(): KeyringAddress[] {
+  //   return BaseApi.getAddresses().filter(({ meta }) => meta.isMobile);
+  // }
 
-  public static getAccountsSubject(): BehaviorSubject<SubjectInfo> {
-    return keyring.accounts.subject;
-  }
+  // public static getAccountsSubject(): BehaviorSubject<SubjectInfo> {
+  //   return keyring.accounts.subject;
+  // }
 
-  public static getAddressesSubject(): BehaviorSubject<SubjectInfo> {
-    return keyring.addresses.subject;
-  }
+  // public static getAddressesSubject(): BehaviorSubject<SubjectInfo> {
+  //   return keyring.addresses.subject;
+  // }
 
-  public static getPair(address: string): KeyringPair {
-    return keyring.getPair(address);
-  }
+  // public static getPair(address: string): KeyringPair {
+  //   return keyring.getPair(address);
+  // }
 
   public static isDuplicateReplacedKeypair(addressProp: string): boolean {
     const accounts = BaseApi.getAccounts();
@@ -294,9 +301,9 @@ export default class BaseApi {
     return index !== -1;
   }
 
-  public static getKeyringPair(address: string): KeyringPair {
-    return keyring.getPair(address);
-  }
+  // public static getKeyringPair(address: string): KeyringPair {
+  //   return keyring.getPair(address);
+  // }
 
   public static isEthereumNetwork(network: string): boolean {
     return ETHEREUM_NETWORKS.includes(network.toLowerCase());
@@ -387,69 +394,61 @@ export default class BaseApi {
     return encodeAddress(publicKey, prefix);
   }
 
-  public static unlockPair(address: string, password: string): boolean {
-    const pair = keyring.getPair(address);
+  // public static unlockPair(address: string, password: string): boolean {
+  //   const pair = keyring.getPair(address);
 
-    try {
-      pair.unlock(password);
+  //   try {
+  //     pair.unlock(password);
 
-      return true;
-    } catch {
-      return false;
-    }
+  //     return true;
+  //   } catch {
+  //     return false;
+  //   }
+  // }
+
+  // public static lockPair(address: string): void {
+  //   const pair = keyring.getPair(address);
+
+  //   pair.lock();
+  // }
+
+  public static isSameWalletPassword(address: string, password: string): Promise<boolean> {
+    return validateAccount(address, password);
   }
 
-  public static lockPair(address: string): void {
-    const pair = keyring.getPair(address);
+  // static deleteNativeWallet(address: string) {
+  //   //DELETE WALLET IN FRONTEND KEYRING ONLY
+  //   const { meta } = BaseApi.getPair(address);
+  //   const { ethereumAddress } = getMetaTyped(meta);
 
-    pair.lock();
-  }
+  //   BaseApi.deleteAccount(address);
 
-  public static isSameWalletPassword(address: string, password: string): boolean {
-    const isUnlock = BaseApi.unlockPair(address, password);
+  //   if (ethereumAddress !== '') BaseApi.deleteAccount(ethereumAddress);
 
-    BaseApi.lockPair(address);
+  // // delete replaced accounts
+  // BaseApi.getReplacedAccounts({ address, ethereumAddress })
+  //   .filter(({ meta }) => {
+  //     const { replacedSettings } = getReplacedMetaTyped(meta);
 
-    return isUnlock;
-  }
+  //     // if replaced account are used only for this main wallet
+  //     return Object.keys(replacedSettings).length === 1;
+  //   })
+  //   .forEach(({ address }) => BaseApi.deleteAccount(address));
 
-  public static deleteAccount(address: string): void {
-    keyring.forgetAccount(address);
-  }
+  //   forgetAccount(address, 'native');
 
-  static deleteNativeWallet(address: string) {
-    //DELETE WALLET IN FRONTEND KEYRING ONLY
-    const { meta } = BaseApi.getPair(address);
-    const { ethereumAddress } = getMetaTyped(meta);
+  //   return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
+  // }
 
-    BaseApi.deleteAccount(address);
+  // static async deleteMobileWallet(address: string): Promise<number> {
+  //   BaseApi.forgetAddress(address);
 
-    if (ethereumAddress !== '') BaseApi.deleteAccount(ethereumAddress);
+  //   beaconController.resetConnection();
 
-    // // delete replaced accounts
-    // BaseApi.getReplacedAccounts({ address, ethereumAddress })
-    //   .filter(({ meta }) => {
-    //     const { replacedSettings } = getReplacedMetaTyped(meta);
+  //   forgetAccount(address, 'mobile');
 
-    //     // if replaced account are used only for this main wallet
-    //     return Object.keys(replacedSettings).length === 1;
-    //   })
-    //   .forEach(({ address }) => BaseApi.deleteAccount(address));
-
-    forgetAccount(address, 'native');
-
-    return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
-  }
-
-  static async deleteMobileWallet(address: string): Promise<number> {
-    BaseApi.forgetAddress(address);
-
-    beaconController.resetConnection();
-
-    forgetAccount(address, 'mobile');
-
-    return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
-  }
+  //   return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
+  // }
 
   public static isExtension(): boolean {
     return chrome.extension !== undefined;
@@ -467,51 +466,51 @@ export default class BaseApi {
     return window.innerWidth <= 561 && BaseApi.isExtension();
   }
 
-  public static getFirstSubstrateWalletAddress(): string {
-    const accounts = BaseApi.getAccounts().map(({ address }) => BaseApi.getPair(address));
-    const addresses = BaseApi.getAddresses();
+  // public static getFirstSubstrateWalletAddress(): string {
+  //   const accounts = BaseApi.getAccounts().map(({ address }) => BaseApi.getPair(address));
+  //   const addresses = BaseApi.getAddresses();
 
-    if (accounts.length) {
-      const address = accounts.find(({ type, meta }) => type !== 'ethereum' && !meta.isReplacedAccount)?.address;
+  //   if (accounts.length) {
+  //     const address = accounts.find(({ type, meta }) => type !== 'ethereum' && !meta.isReplacedAccount)?.address;
 
-      return address ?? '';
-    }
+  //     return address ?? '';
+  //   }
 
-    if (addresses.length) return addresses[0].address;
+  //   if (addresses.length) return addresses[0].address;
 
-    return '';
-  }
+  //   return '';
+  // }
 
   public static getEquilibriumAssetId(symbol: string): number {
     return assetFromToken(symbol)[0];
   }
 
-  static updateWalletName(address: string, name: string): void {
-    if (BaseApi.isMobileWallet(address)) {
-      const substrateAddress = BaseApi.encodeAddress(address);
-      const { meta } = BaseApi.getAddress(substrateAddress)!;
+  // static updateWalletName(address: string, name: string): void {
+  //   if (BaseApi.isMobileWallet(address)) {
+  //     const substrateAddress = BaseApi.encodeAddress(address);
+  //     const { meta } = BaseApi.getAddress(substrateAddress)!;
 
-      meta.name = name;
+  //     meta.name = name;
 
-      BaseApi.saveAddress(substrateAddress, meta);
+  //     BaseApi.saveAddress(substrateAddress, meta);
 
-      return;
-    }
+  //     return;
+  //   }
 
-    const pair = BaseApi.getKeyringPair(address);
-    const meta = getMetaTyped(pair.meta);
+  //   const pair = BaseApi.getKeyringPair(address);
+  //   const meta = getMetaTyped(pair.meta);
 
-    meta.name = name;
+  //   meta.name = name;
 
-    keyring.saveAccountMeta(pair, meta as any);
-  }
+  //   keyring.saveAccountMeta(pair, meta as any);
+  // }
 
-  static saveEthereumAddress(substrateAddress: string, ethereumAddress: string): void {
-    const pair = BaseApi.getKeyringPair(substrateAddress);
-    const meta = getMetaTyped(pair.meta);
+  // static saveEthereumAddress(substrateAddress: string, ethereumAddress: string): void {
+  //   const pair = BaseApi.getKeyringPair(substrateAddress);
+  //   const meta = getMetaTyped(pair.meta);
 
-    meta.ethereumAddress = ethereumAddress;
+  //   meta.ethereumAddress = ethereumAddress;
 
-    keyring.saveAccountMeta(pair, meta as any);
-  }
+  //   keyring.saveAccountMeta(pair, meta as any);
+  // }
 }

@@ -16,7 +16,6 @@ class Content {
     port.onMessage.addListener((data): void => {
       window.postMessage({ ...data, origin: MESSAGE_ORIGIN_CONTENT }, '*');
     });
-    port.onDisconnect.addListener(this.setListeners);
 
     port.onDisconnect.addListener(this.setListeners);
 

@@ -164,6 +164,7 @@ import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
+import { windowOpen } from '@/extension/messaging';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
 
@@ -352,8 +353,8 @@ export default class AddWallet extends Vue {
   }
 
   get buttonText() {
-    if (this.isCreateWallet && this.step === 2) return 'haveWrittenPassphrase';
-    if (this.showFinishForm) return 'usingFearless';
+    if (this.isCreateWallet && this.step === 2) return this.t('haveWrittenPassphrase');
+    if (this.showFinishForm) return this.t('usingFearless');
 
     return 'common.continue';
   }
@@ -820,7 +821,7 @@ export default class AddWallet extends Vue {
   }
 
   openFullScreen() {
-    BaseApi.windowOpen('/');
+    windowOpen('/');
     window.close();
   }
 

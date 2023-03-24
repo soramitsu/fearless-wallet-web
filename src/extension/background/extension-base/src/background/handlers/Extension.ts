@@ -63,7 +63,7 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
-import { googleManage } from '@/controllers';
+import { googleManage } from '@/controllers/googleController';
 import { FilesResponse, GoogleAuthTypes, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
 
 const SEED_DEFAULT_LENGTH = 12;

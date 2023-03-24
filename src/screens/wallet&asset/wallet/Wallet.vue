@@ -79,14 +79,14 @@
 
     <NetworkManagement
       v-if="showNetworkManagement"
-      :networks="networksWitchWarning"
+      :networks="networksWithWarning"
       :closeForm="toggleNetworkManagementVisible"
       @setNetworkUnavailable="setNetworkUnavailable"
     />
 
     <NetworkUnavailablePopup
       v-if="showNetworkUnavailablePopup"
-      :networks="networksWitchWarning"
+      :networks="networksWithWarning"
       :network="networkUnavailable"
       :closePopup="setNetworkUnavailable"
     />
@@ -180,10 +180,10 @@ export default class Wallet extends Vue {
   get showWarningIcon() {
     if (this.selectedNetwork !== 'all') return this.getNetworkStatus(this.selectedNetwork) === 'disconnected';
 
-    return this.networksWitchWarning.length !== 0;
+    return this.networksWithWarning.length !== 0;
   }
 
-  get networksWitchWarning() {
+  get networksWithWarning() {
     return this.networks.filter(({ name, status }) => status === 'disconnected' && !this.getShowWarningNetworks(name));
   }
 
@@ -267,7 +267,7 @@ export default class Wallet extends Vue {
     return this.$route.params.access_token && this.$route.params.access_token !== 'null';
   }
 
-  @Watch('networksWitchWarning')
+  @Watch('networksWithWarning')
   connect(value: string[]) {
     if (value.length === 0) this.showNetworkManagement = false;
   }

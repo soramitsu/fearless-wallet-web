@@ -86,7 +86,7 @@ export default class Corners extends Vue {
 }
 
 .corner-border-error {
-  border-top: 1px solid $error-color;
+  border-top: 1px solid $orange-color;
 }
 
 .corner-border-selected {

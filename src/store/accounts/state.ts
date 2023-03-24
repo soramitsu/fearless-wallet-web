@@ -13,6 +13,7 @@ export type State = {
   isCustomSort: Record<string, boolean>;
   hideWarningNetworks: NetworkName[];
   qr: string | null;
+  showPolkaswapAlert: boolean;
 };
 
 const state = (): State => {
@@ -25,6 +26,7 @@ const state = (): State => {
     addresses: {},
     isCustomSort: accountController.getCustomSort(),
     autoSelectNode: accountController.getAutoSelectNodesValue(),
+    showPolkaswapAlert: !accountController.getAgreeSwapDisclaimer(),
     hideWarningNetworks: accountController.getHideWarningNetworks(),
     qr: null,
   };

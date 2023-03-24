@@ -18,6 +18,7 @@ export enum MutationTypes {
   SET_AUTO_SELECT_NODE = 'SET_AUTO_SELECT_NODE',
   SET_QR = 'SET_QR',
   DELETE_QR = 'DELETE_QR',
+  HIDE_POLKASWAP_ALERT = 'HIDE_POLKASWAP_ALERT',
   HIDE_NETWORK_WARNING = 'HIDE_NETWORK_WARNING',
 }
 
@@ -31,8 +32,9 @@ export type Mutations = {
   [MutationTypes.SET_AUTO_SELECT_NODE](state: State, props: SetAutoSelectNode): void;
   [MutationTypes.SET_QR](state: State, props: string): void;
   [MutationTypes.DELETE_QR](state: State): void;
+  [MutationTypes.SET_CUSTOM_SORT](state: State, props: string): void;
+  [MutationTypes.HIDE_POLKASWAP_ALERT](state: State, value: boolean): void;
   [MutationTypes.HIDE_NETWORK_WARNING](state: State, network: string): void;
-  [MutationTypes.SET_CUSTOM_SORT](state: State, address: string): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -83,6 +85,12 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.SET_ACCOUNTS](state, { accounts }) {
     state.accounts = accounts;
+  },
+
+  [MutationTypes.HIDE_POLKASWAP_ALERT](state) {
+    state.showPolkaswapAlert = false;
+
+    accountController.setAgreeSwapDisclaimer();
   },
 
   [MutationTypes.SET_ADDRESSES](state, { addresses }) {

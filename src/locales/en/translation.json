@@ -5,8 +5,7 @@
     "connectMobile": "Connect mobile",
     "manageGoogle": "Connect Google Drive",
     "deFiWallet": "The DeFi Wallet From The Future",
-    "agreeWith": "By continuing you agree with",
-    "and": "and"
+    "agreeWith": "By continuing you agree with"
   },
   "addWallet": {
     "createWallet": "Create a new wallet",
@@ -139,28 +138,10 @@
     "settings": {
       "accounts": "Accounts",
       "currency": "Currency",
+      "polkaswapDisclaimer": "Polkaswap disclaimer",
       "language": {
         "text": "Language",
         "translated": "Translated by the team"
-      },
-      "about": {
-        "text": "About",
-        "supportFeedback": "Support & Feedback",
-        "socialMedia": "Social Media",
-        "communityWallet": "Community wallet",
-        "officialWebsite": "Official Website",
-        "followTwitter": "Follow on Twitter",
-        "joinTelegram": "Join on Telegram",
-        "readMedium": "Read on Medium",
-        "learnWiki": "Learn on Wiki",
-        "githubCode": "Github Source Code",
-        "termsConditions": "Terms and Conditions",
-        "privacyPolicy": "Privacy Policy",
-        "contactEmail": "Contact Email",
-        "askSupport": "Ask for Support",
-        "likeInstagram": "Like on Instagram",
-        "subscribeYouTube": "Subscribe on YouTube",
-        "receiveAnnouncements": "Receive Announcements"
       }
     }
   },
@@ -270,7 +251,7 @@
     "minMaxReceiveInfo": "Your transaction will revert if there is a large, unfavorable price movement before it is confirmed.",
     "liquidityProvideFeeInfo": "A portion of each trade (0.3%) goes to liquidity providers as a protocol incentive.",
     "existentialDepositSubtext": "This transaction will result in the account going below the Existential Deposit, which will cause it to be reaped (the account will be wiped from the blockchain’s state to conserve space). If you choose to continue you will lose any funds that are below the existential deposit amount set by the network. For detailed information please refer to the official network documentation (e.g., the Polkadot Wiki). Fearless Wallet is a fully non-custodial application and has no control or knowledge of any of your actions on the network itself. ONLY CONTINUE IF YOU FULLY AGREE TO AND UNDERSTAND THE IMPLICATIONS;"
-  },
+   },
   "accounts": {
     "walletName": "Wallet name",
     "createNewAccount": "Create a new account",
@@ -309,6 +290,20 @@
   "auth": {
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
   },
+  "disclaimers": {
+    "swapDisclaimer1": "Polkaswap is maintained by the SORA community. Before continuing to use Polkaswap, please review the",
+    "swapDisclaimer2": "and documentation, which includes a detailed explanation on how Polkaswap works, as well as the",
+    "swapDisclaimer3": "These documents are crucial to a secure and positive user experience. By using Polkaswap, you acknowledge that you have read and understand these documents.",
+    "swapDisclaimer4": "You also acknowledge the following:",
+    "swapDisclaimer5": "Your sole responsibility for compliance with all laws that may apply to your particular use of Polkaswap in your legal jurisdiction;",
+    "swapDisclaimer6": "Your understanding that the current version of Polkaswap is an alpha version: it has not been fully tested, and some functions may not perform as designed;",
+    "swapDisclaimer7": "Your understanding and voluntary acceptance of the risks involved in using Polkaswap, including, but not limited to, the risk of losing tokens.",
+    "swapDisclaimer8": "Once more, please do not continue without reading the",
+    "polkaswapFAQ": "Polkaswap FAQ",
+    "important": "IMPORTANT:",
+    "polkaswapMemorandum": "Polkaswap Memorandum and Terms of Services",
+    "importantText": "I confirm that I have read all of the documents mentioned and pressing 'Сontinue' I accept them."
+  },
   "common": {
     "fearlessWallet": "Fearless Wallet",
     "comingSoon": "Coming Soon",
@@ -341,8 +336,29 @@
     "allNetworks": "All networks",
     "offlineStatus": "No Internet connection",
     "networkDisconnected": "Network disconnected",
+    "disclaimer": "Disclaimer",
+    "and": "and",
+    "read": "Read",
+    "aboutApp": "About",
+    "supportFeedback": "Support & Feedback",
+    "socialMedia": "Social Media",
+    "communityWallet": "Community wallet",
+    "officialWebsite": "Official Website",
+    "followTwitter": "Follow on Twitter",
+    "joinTelegram": "Join on Telegram",
+    "readMedium": "Read on Medium",
+    "learnWiki": "Learn on Wiki",
+    "githubCode": "Github Source Code",
+    "termsConditions": "Terms and Conditions",
+    "contactEmail": "Contact Email",
+    "askSupport": "Ask for Support",
+    "likeInstagram": "Like on Instagram",
+    "subscribeYouTube": "Subscribe on YouTube",
+    "receiveAnnouncements": "Receive Announcements",
+    "readPolkaswapDisclaimer": "Please read before continuing to use Polkaswap",
     "resolve": "Resolve",
     "resolveOption": "Resolve Option",
-    "dontShowAgain": "Don't show me again"
+    "dontShowAgain": "Don't show me again",
+    "privacyPolicy": "Privacy Policy"
   }
 }

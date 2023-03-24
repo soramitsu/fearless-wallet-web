@@ -15,6 +15,7 @@ class AccountController {
   private readonly selectedWalletStorageName = 'selected-wallet';
   private readonly selectedNetworkStorageName = 'selected-network';
   private readonly customSort = 'customSort';
+  private readonly agreeSwapDisclaimer = 'agree-swap-disclaimer';
   private readonly hideWarningNetworks = 'hide-warning-networks';
 
   private getSequenceAssets(): Record<string, Record<NetworkName, string>> {
@@ -33,6 +34,16 @@ class AccountController {
     const array = this.getHideWarningNetworks();
 
     this.lsAccount.set(this.hideWarningNetworks, [...array, networkName]);
+  }
+
+  public getAgreeSwapDisclaimer(): boolean {
+    const { value } = this.lsAccount.get(this.agreeSwapDisclaimer);
+
+    return value !== undefined;
+  }
+
+  public setAgreeSwapDisclaimer(): void {
+    this.lsAccount.set(this.agreeSwapDisclaimer, true);
   }
 
   public getLang(): Lang {

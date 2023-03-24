@@ -14,11 +14,22 @@ class AccountController {
   private readonly selectedWalletStorageName = 'selected-wallet';
   private readonly selectedNetworkStorageName = 'selected-network';
   private readonly customSort = 'customSort';
+  private readonly agreeSwapDisclaimer = 'agree-swap-disclaimer';
 
   private getSequenceAssets(): Record<string, Record<NetworkName, string>> {
     const sequencesAssets = this.lsAccount.get(this.sequenceAssetsStorageName);
 
     return sequencesAssets.value ?? {};
+  }
+
+  public getAgreeSwapDisclaimer(): boolean {
+    const { value } = this.lsAccount.get(this.agreeSwapDisclaimer);
+
+    return value !== undefined;
+  }
+
+  public setAgreeSwapDisclaimer(): void {
+    this.lsAccount.set(this.agreeSwapDisclaimer, true);
   }
 
   public getLang(): Lang {

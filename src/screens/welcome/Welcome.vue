@@ -68,12 +68,12 @@
         {{ $t('welcome.agreeWith') }}
 
         <span class="important-text" @click="openTermsAndConditions">
-          {{ $t('header.settings.about.termsConditions') }}
+          {{ $t('common.termsConditions') }}
         </span>
 
-        {{ $t('welcome.and') }}
+        {{ $t('common.and') }}
 
-        <span class="important-text" @click="openPrivacyPolicy"> {{ $t('header.settings.about.privacyPolicy') }}</span>
+        <span class="important-text" @click="openPrivacyPolicy"> {{ $t('common.privacyPolicy') }}</span>
       </div>
     </div>
   </div>

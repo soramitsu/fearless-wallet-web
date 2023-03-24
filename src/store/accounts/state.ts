@@ -11,6 +11,7 @@ export type State = {
   autoSelectNode: AutoSelectNode;
   isCustomSort: Record<string, boolean>;
   qr: string | null;
+  showPolkaswapAlert: boolean;
 };
 
 const state = (): State => {
@@ -23,6 +24,7 @@ const state = (): State => {
     addresses: {},
     isCustomSort: accountController.getCustomSort(),
     autoSelectNode: accountController.getAutoSelectNodesValue(),
+    showPolkaswapAlert: !accountController.getAgreeSwapDisclaimer(),
     qr: null,
   };
 };

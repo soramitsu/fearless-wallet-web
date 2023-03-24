@@ -109,7 +109,7 @@
           width="100%"
           type="secondary"
           :border="false"
-          :text="$t('addWallet.skipConfirmation')"
+          text="addWallet.skipConfirmation"
           @click="skipStep"
         />
 
@@ -352,10 +352,10 @@ export default class AddWallet extends Vue {
   }
 
   get buttonText() {
-    if (this.isCreateWallet && this.step === 2) return this.t('haveWrittenPassphrase');
-    if (this.showFinishForm) return this.t('usingFearless');
+    if (this.isCreateWallet && this.step === 2) return 'haveWrittenPassphrase';
+    if (this.showFinishForm) return 'usingFearless';
 
-    return this.$t('common.continue');
+    return 'common.continue';
   }
 
   get disabledProceed() {

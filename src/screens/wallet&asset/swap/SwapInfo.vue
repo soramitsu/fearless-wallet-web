@@ -14,7 +14,7 @@
       <div class="value">{{ slippage }}%</div>
     </div>
 
-    <div class="row">
+    <div v-if="showSwapInfo" class="row">
       <div class="label">
         {{ $t(minMaxLabel) }}
 
@@ -27,7 +27,7 @@
       </div>
     </div>
 
-    <div class="row">
+    <div v-if="showSwapInfo" class="row">
       <div class="label">
         {{ $t('assets.liquidityProvideFee') }}
 
@@ -82,6 +82,10 @@ export default class SwapPreview extends Vue {
   @Prop({ default: '' }) receiveAssetUP!: string;
   @Prop(Boolean) isExchangeB!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+
+  get showSwapInfo() {
+    return this.sendAmount !== '' && this.receiveAmount !== '';
+  }
 
   get soraMainAsset() {
     return SORA_UTILITY_ASSET.toUpperCase();

@@ -2,7 +2,7 @@
   <Corners :isError="true" size="big">
     <div class="alert-container">
       <div class="alert__content">
-        <Hint class="alert__header" size="big" iconName="warning" :text="$t('common.attention')" />
+        <Hint class="alert__header" size="big" iconName="warning" :text="$t(headerMessage)" />
 
         <p class="alert__message">
           <slot>{{ $t(message) }}</slot>
@@ -18,6 +18,7 @@ import { Vue, Component, Prop } from 'vue-property-decorator';
 @Component
 export default class Container extends Vue {
   @Prop(String) message!: string;
+  @Prop({ default: 'common.attention' }) headerMessage!: string;
 }
 </script>
 

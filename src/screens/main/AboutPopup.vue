@@ -120,7 +120,7 @@ export default class AboutPopup extends Vue {
   }
 
   t(value: string) {
-    return this.$t(`header.settings.about.${value}`);
+    return this.$t(`common.${value}`);
   }
 }
 </script>

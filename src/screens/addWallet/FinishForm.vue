@@ -29,7 +29,7 @@
         @click="openPage(URLS.MEDIUM)"
       />
 
-      <BorderButton text="commonlearnWiki" iconName="file-dock" width="256px" @click="openPage(URLS.WIKI)" />
+      <BorderButton text="common.learnWiki" iconName="file-dock" width="256px" @click="openPage(URLS.WIKI)" />
     </div>
   </div>
 </template>

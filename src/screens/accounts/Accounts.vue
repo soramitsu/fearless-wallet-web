@@ -25,7 +25,7 @@
         :icon="networkIcon"
         :address="address"
         :isMobile="isMobileWallet"
-        @openSourceTypePopup="$emit('openSourceTypePopup')"
+        @openAddEthereumAccountPopup="$emit('openAddEthereumAccountPopup')"
         @openAccountSettingsPopup="openAccountSettingsPopup"
       />
     </template>
@@ -36,7 +36,7 @@
 import { Getter, Mutation } from 'vuex-class';
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import AccountsItem from './AccountsItem.vue';
-import type { SelectedWallet, SetSelectedWalletProps } from '@/store';
+import type { SelectedWallet } from '@/store';
 import type { Networks, TMutation } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -55,7 +55,7 @@ export default class Account extends Vue {
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getAllNetworks) networks!: Networks;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<string>;
 
   get showReplacedAccounts() {
     return this.replacedAccountsItems.length > 0;
@@ -113,7 +113,7 @@ export default class Account extends Vue {
 
     BaseApi.updateWalletName(address, this.newName);
 
-    this.setSelectedWallet({ selectedWalletAddress: address });
+    this.setSelectedWallet(address);
   }
 }
 </script>

@@ -41,11 +41,11 @@ export default class MenuItem extends Vue {
 
   &:hover {
     cursor: pointer;
-    color: #fff;
+    color: $plain-white;
     transition: 300ms ease-out;
 
     .menu-icon {
-      filter: invert(0);
+      color: $plain-white;
       transition: 300ms ease-out;
     }
   }
@@ -59,15 +59,15 @@ export default class MenuItem extends Vue {
   .menu-icon {
     height: 24px;
     width: 24px;
-    filter: invert(0.45);
+    color: $gray-color;
   }
 }
 
 .active {
-  color: #fff;
+  color: $plain-white;
 
   .menu-icon {
-    filter: invert(0);
+    color: $plain-white;
   }
 }
 </style>

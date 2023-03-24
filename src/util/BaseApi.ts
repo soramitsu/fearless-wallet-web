@@ -20,9 +20,8 @@ import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { createAccountSuri, forgetAccount, jsonRestore } from '@/extension/messaging';
 import { getReplacedMetaTyped, getMetaTyped } from '@/helpers/common';
 import { ETHEREUM_NETWORKS, ETHEREUM_ADDRESS_LENGTH, ETHEREUM_ADDRESS_PREFIX } from '@/consts/networks';
-import NetworksController from '@/controllers/networksController';
+import { NetworksController, beaconController } from '@/controllers';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
-import { beaconController } from '@/controllers/beaconController';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;
 type WalletTypes = 'mobile' | 'native';

@@ -1,5 +1,6 @@
 import type { SelectedWallet, Accounts, SelectedNetworks, AutoSelectNode } from './types';
-import { accountController } from '@/controllers/accountController';
+import type { NetworkName } from '@/interfaces';
+import { accountController } from '@/controllers';
 
 export type State = {
   selectedWallet: SelectedWallet;
@@ -10,6 +11,7 @@ export type State = {
   addresses: Accounts;
   autoSelectNode: AutoSelectNode;
   isCustomSort: Record<string, boolean>;
+  hideWarningNetworks: NetworkName[];
   qr: string | null;
 };
 
@@ -23,6 +25,7 @@ const state = (): State => {
     addresses: {},
     isCustomSort: accountController.getCustomSort(),
     autoSelectNode: accountController.getAutoSelectNodesValue(),
+    hideWarningNetworks: accountController.getHideWarningNetworks(),
     qr: null,
   };
 };

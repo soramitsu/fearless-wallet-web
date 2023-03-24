@@ -20,7 +20,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type CurrencyController from '@/controllers/currencyController';
+import type { CurrencyController } from '@/controllers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 

@@ -38,7 +38,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Currency } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
-import NetworksController from '@/controllers/networksController';
+import { NetworksController } from '@/controllers';
 
 @Component({
   components: { HistoryItem },

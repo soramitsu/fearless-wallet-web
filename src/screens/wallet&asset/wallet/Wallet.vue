@@ -79,12 +79,17 @@
 
     <NetworkManagement
       v-if="showNetworkManagement"
-      :disconnectedNetworks="disconnectedNetworks"
+      :networks="networksWitchWarning"
       :closeForm="toggleNetworkManagementVisible"
       @setNetworkUnavailable="setNetworkUnavailable"
     />
 
-    <NetworkUnavailablePopup v-if="showNetworkUnavailablePopup" :closePopup="setNetworkUnavailable" />
+    <NetworkUnavailablePopup
+      v-if="showNetworkUnavailablePopup"
+      :networks="networksWitchWarning"
+      :network="networkUnavailable"
+      :closePopup="setNetworkUnavailable"
+    />
 
     <GoogleExportPopup v-if="showGoogleExportPopup" :closePopup="closeGoogleExportPopup" />
 
@@ -94,17 +99,11 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
 import type { TMutation, TabWallet } from '@/interfaces/common';
-import type {
-  SetSelectedNetworkProps,
-  SelectedWallet,
-  SetCurrenciesProps,
-  GetNetworkStatus,
-  GetNetwork,
-} from '@/store';
+import type { SelectedWallet, SetCurrenciesProps, GetNetworkStatus, GetNetwork, GetShowWarningNetworks } from '@/store';
 import type { Networks } from '@/interfaces';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
@@ -113,7 +112,7 @@ import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
-import { accountController } from '@/controllers/accountController';
+import { accountController } from '@/controllers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
@@ -164,13 +163,14 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
+  @Getter(AccountsGettersTypes.getShowWarningNetworks) getShowWarningNetworks!: GetShowWarningNetworks;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<string>;
   @Mutation(AccountsMutationTypes.SET_CUSTOM_SORT) setCustomSorting!: TMutation<string>;
 
   get showNetworkUnavailablePopup() {
@@ -180,11 +180,11 @@ export default class Wallet extends Vue {
   get showWarningIcon() {
     if (this.selectedNetwork !== 'all') return this.getNetworkStatus(this.selectedNetwork) === 'disconnected';
 
-    return this.disconnectedNetworks.length !== 0;
+    return this.networksWitchWarning.length !== 0;
   }
 
-  get disconnectedNetworks() {
-    return this.networks.filter(({ status }) => status === 'disconnected');
+  get networksWitchWarning() {
+    return this.networks.filter(({ name, status }) => status === 'disconnected' && !this.getShowWarningNetworks(name));
   }
 
   get changeWalletBalance() {
@@ -237,8 +237,8 @@ export default class Wallet extends Vue {
     if (this.showAssetsManagementForm) return currencies;
 
     const result: TCurrencies = currencies.filter((currency) => {
-      const walletBalance = currency.getNetworkList().map(({ network }) => network);
-      const isAvailableInSelectedNetwork = walletBalance.includes(this.selectedNetwork);
+      const networkList = currency.getNetworkList().map(({ network }) => network);
+      const isAvailableInSelectedNetwork = networkList.includes(this.selectedNetwork);
 
       if (!isAllNetworks && !isAvailableInSelectedNetwork) return false;
       const { displayName } = currency;
@@ -265,6 +265,11 @@ export default class Wallet extends Vue {
 
   get showGoogleExportPopup() {
     return this.$route.params.access_token && this.$route.params.access_token !== 'null';
+  }
+
+  @Watch('networksWitchWarning')
+  connect(value: string[]) {
+    if (value.length === 0) this.showNetworkManagement = false;
   }
 
   setCustomSort() {
@@ -359,7 +364,7 @@ export default class Wallet extends Vue {
 
     const prepNetwork = network === 'all' ? null : `0x${this.getNetwork(network).chainId}`;
 
-    this.setSelectedNetwork({ network });
+    this.setSelectedNetwork(network);
     tieAccount(this.selectedWallet.address, prepNetwork);
     this.toggleSelectNetworkPopupVisible();
   }

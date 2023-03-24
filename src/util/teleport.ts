@@ -1,6 +1,6 @@
 import { BN } from '@polkadot/util';
 import { RELAY_CHAINS, NATIVE_NETWORKS } from '@/consts/networks';
-import NetworksController from '@/controllers/networksController';
+import { NetworksController } from '@/controllers';
 import BaseApi from '@/util/BaseApi';
 
 const XCM_NATIVE_PALLETS = ['xcm', 'xcmPallet', 'polkadotXcm'];

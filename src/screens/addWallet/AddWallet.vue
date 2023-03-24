@@ -149,7 +149,7 @@ import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { DerivationPaths, ImportType, ValidateJsonResult, MnemonicConfirmation, TAction } from '@/interfaces';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import type { SelectedWallet, SetSelectedWallet } from '@/store';
+import type { SelectedWallet } from '@/store';
 import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
 import PasswordForm from '@/screens/addWallet/PasswordForm.vue';
@@ -201,7 +201,7 @@ export default class AddWallet extends Vue {
   address: string | null = null;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
+  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<string>;
 
   get replacedNetwork() {
     return this.$route.params.network ?? '';
@@ -471,7 +471,7 @@ export default class AddWallet extends Vue {
 
       const address = this.saveKeypair();
 
-      this.setSelectedWallet({ selectedWalletAddress: address || this.selectedWallet.address });
+      this.setSelectedWallet(address || this.selectedWallet.address);
 
       if (this.isOnlyEthereumAccountFlow) this.$router.push({ name: Components.Wallet });
 

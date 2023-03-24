@@ -12,7 +12,7 @@ import {
 } from '@/extension/messaging';
 import { TCallback } from '@/interfaces';
 
-export default class ExtensionController {
+export class ExtensionController {
   static async subscribeToAuths(setAuths: TCallback<AuthorizeRequest[]>) {
     await subscribeAuthorizeRequests(setAuths);
   }

@@ -6,7 +6,7 @@
     :showAnimation="false"
     :handlerClose="handlerClose"
   >
-    <div class="source-type-popup">
+    <div class="add-ethereum-account">
       <BorderButton
         borderRadius="mini"
         text="accounts.createNewAccount"
@@ -31,7 +31,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Components } from '@/router/routes';
 
 @Component
-export default class ReplacePopup extends Vue {
+export default class AddEthereumAccountPopup extends Vue {
   @Prop(Function) handlerClose!: VoidFunction;
 
   openAddWalletPage(type: string) {
@@ -47,7 +47,7 @@ export default class ReplacePopup extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.source-type-popup {
+.add-ethereum-account {
   padding: 0 16px;
 
   .button {

@@ -73,7 +73,7 @@
 
         {{ $t('common.and') }}
 
-        <span class="important-text" @click="openPrivacyPolicy"> {{ $t('disclaimers.privacyPolicy') }}</span>
+        <span class="important-text" @click="openPrivacyPolicy"> {{ $t('common.privacyPolicy') }}</span>
       </div>
     </div>
   </div>

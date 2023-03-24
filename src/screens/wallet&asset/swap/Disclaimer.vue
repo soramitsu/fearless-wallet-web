@@ -15,7 +15,7 @@
 
           <span> {{ $t('common.and') }} </span>
 
-          <span class="highlight" @click="open(urls.POLKASWAP_POLICY)">{{ $t('disclaimers.privacyPolicy') }}.</span>
+          <span class="highlight" @click="open(urls.POLKASWAP_POLICY)">{{ $t('common.privacyPolicy') }}.</span>
         </div>
 
         <div class="row">
@@ -42,7 +42,7 @@
 
           <span> {{ $t('common.and') }} </span>
 
-          <span class="highlight" @click="open(urls.POLKASWAP_POLICY)">{{ $t('disclaimers.privacyPolicy') }}!</span>
+          <span class="highlight" @click="open(urls.POLKASWAP_POLICY)">{{ $t('common.privacyPolicy') }}!</span>
         </div>
 
         <div v-if="showSwitcher" class="important-wrapper">

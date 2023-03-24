@@ -716,7 +716,7 @@ export class CurrencyController {
    * @param {string} from
    */
   public async sendSwap(from: string, isSavePass: boolean): Promise<void> {
-    if (BaseApi.isExtension()) await saveTimeoutCache(from, isSavePass);
+    if (BaseApi.isExtension()) saveTimeoutCache(from, isSavePass);
 
     const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB } = this.extrinsicOptions.swapOptions!;
 
@@ -781,7 +781,7 @@ export class CurrencyController {
    * @returns {Promise<boolean>}
    */
   public async send(from: string, isMobile = false, isSavePass = false): Promise<boolean> {
-    if (BaseApi.isExtension()) await saveTimeoutCache(from, isSavePass);
+    if (BaseApi.isExtension()) saveTimeoutCache(from, isSavePass);
 
     const account = isMobile ? from : BaseApi.getPair(from);
 

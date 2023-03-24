@@ -171,7 +171,7 @@ export default class Button extends Vue {
 
 .button-warning {
   .el-button {
-    background-color: $error-color;
+    background-color: $orange-color;
     border: none;
     color: $plain-white;
   }

@@ -91,6 +91,7 @@
             </template>
 
             <SwapInfo
+              :showSwapInfo="showSwapInfo"
               :marketType="marketType"
               :slippage="slippage"
               :sendAmount="sendAmount"
@@ -284,7 +285,9 @@ export default class SwapForm extends Vue {
   }
 
   get feePrice() {
-    return this.$n(+this.currencyXOR!.getCostOfAssets(this.fee), 'price');
+    const value = this.currencyXOR?.getCostOfAssets(this.fee) ?? '0';
+
+    return this.$n(+value, 'price');
   }
 
   get soraMainAssetUpper() {
@@ -459,7 +462,7 @@ export default class SwapForm extends Vue {
   }
 
   get isValidSendAsset() {
-    return this.sendCurrency!.validateCountAssets(this.sendAmount, this.fee, this.selectedNetwork, this.selectedWallet);
+    return this.sendCurrency?.validateCountAssets(this.sendAmount, this.fee, this.selectedNetwork, this.selectedWallet);
   }
 
   get isValidTransferByXOR() {
@@ -475,7 +478,7 @@ export default class SwapForm extends Vue {
 
     const xorAmount = this.sendAsset === SORA_UTILITY_ASSET ? this.sendAmount : '0';
 
-    return this.currencyXOR!.validateCountAssets(xorAmount, this.fee, this.selectedNetwork, this.selectedWallet);
+    return this.currencyXOR?.validateCountAssets(xorAmount, this.fee, this.selectedNetwork, this.selectedWallet);
   }
 
   get marketTypeUP() {

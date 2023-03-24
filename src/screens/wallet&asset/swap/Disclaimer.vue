@@ -15,7 +15,7 @@
 
           <span> {{ $t('common.and') }} </span>
 
-          <span class="highlight" @click="open(urls.POLKASWAP_POLICY)">{{ $t('disclaimers.swapDisclaimer6') }}.</span>
+          <span class="highlight" @click="open(urls.POLKASWAP_POLICY)">{{ $t('disclaimers.privacyPolicy') }}.</span>
         </div>
 
         <div class="row">
@@ -26,14 +26,14 @@
           {{ $t('disclaimers.swapDisclaimer4') }}
         </div>
 
-        <div class="row">1. {{ $t('disclaimers.swapDisclaimer8') }}</div>
+        <div class="row">1. {{ $t('disclaimers.swapDisclaimer5') }}</div>
 
-        <div class="row">2. {{ $t('disclaimers.swapDisclaimer9') }}</div>
+        <div class="row">2. {{ $t('disclaimers.swapDisclaimer6') }}</div>
 
-        <div class="row">3. {{ $t('disclaimers.swapDisclaimer10') }}</div>
+        <div class="row">3. {{ $t('disclaimers.swapDisclaimer7') }}</div>
 
         <div class="row all-rules">
-          {{ $t('disclaimers.swapDisclaimer7') }}
+          {{ $t('disclaimers.swapDisclaimer8') }}
           <span class="highlight" @click="open(urls.POLKASWAP_FAQ)">{{ $t('disclaimers.polkaswapFAQ') }}, </span>
 
           <span class="highlight" @click="open(urls.POLKASWAP_MEMORANDUM)">
@@ -42,7 +42,7 @@
 
           <span> {{ $t('common.and') }} </span>
 
-          <span class="highlight" @click="open(urls.POLKASWAP_POLICY)">{{ $t('disclaimers.swapDisclaimer6') }}!</span>
+          <span class="highlight" @click="open(urls.POLKASWAP_POLICY)">{{ $t('disclaimers.privacyPolicy') }}!</span>
         </div>
 
         <div v-if="showSwitcher" class="important-wrapper">
@@ -130,7 +130,7 @@ export default class Disclaimer extends Vue {
     margin-bottom: 16px;
 
     .important {
-      color: $error-color;
+      color: $orange-color;
       font-weight: 600;
     }
   }

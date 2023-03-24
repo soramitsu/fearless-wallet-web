@@ -45,7 +45,7 @@ export default class Hint extends Vue {
   text-align: left;
 
   .warning--orange {
-    color: $error-color;
+    color: $orange-color;
   }
 
   .notifications-icon {

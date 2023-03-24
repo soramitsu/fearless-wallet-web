@@ -295,14 +295,13 @@
     "swapDisclaimer2": "and documentation, which includes a detailed explanation on how Polkaswap works, as well as the",
     "swapDisclaimer3": "These documents are crucial to a secure and positive user experience. By using Polkaswap, you acknowledge that you have read and understand these documents.",
     "swapDisclaimer4": "You also acknowledge the following:",
-    "polkaswapMemorandum": "Polkaswap Memorandum and Terms of Services",
-    "swapDisclaimer6": "Privacy Policy",
-    "swapDisclaimer7": "Once more, please do not continue without reading the",
-    "swapDisclaimer8": "Your sole responsibility for compliance with all laws that may apply to your particular use of Polkaswap in your legal jurisdiction;",
-    "swapDisclaimer9": "Your understanding that the current version of Polkaswap is an alpha version: it has not been fully tested, and some functions may not perform as designed;",
-    "swapDisclaimer10": "Your understanding and voluntary acceptance of the risks involved in using Polkaswap, including, but not limited to, the risk of losing tokens.",
+    "swapDisclaimer5": "Your sole responsibility for compliance with all laws that may apply to your particular use of Polkaswap in your legal jurisdiction;",
+    "swapDisclaimer6": "Your understanding that the current version of Polkaswap is an alpha version: it has not been fully tested, and some functions may not perform as designed;",
+    "swapDisclaimer7": "Your understanding and voluntary acceptance of the risks involved in using Polkaswap, including, but not limited to, the risk of losing tokens.",
+    "swapDisclaimer8": "Once more, please do not continue without reading the",
     "polkaswapFAQ": "Polkaswap FAQ",
     "important": "IMPORTANT:",
+    "polkaswapMemorandum": "Polkaswap Memorandum and Terms of Services",
     "importantText": "I confirm that I have read all of the documents mentioned and pressing 'Сontinue' I accept them."
   },
   "common": {
@@ -359,6 +358,7 @@
     "readPolkaswapDisclaimer": "Please read before continuing to use Polkaswap",
     "resolve": "Resolve",
     "resolveOption": "Resolve Option",
-    "dontShowAgain": "Don't show me again"
+    "dontShowAgain": "Don't show me again",
+    "privacyPolicy": "Privacy Policy"
   }
 }

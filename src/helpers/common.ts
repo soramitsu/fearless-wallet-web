@@ -3,6 +3,8 @@ import type { KeyringPair$Meta } from '@polkadot/keyring/types';
 import { SORA_NETWORK_NAME } from '@/consts/networks';
 
 function firstCharToUp(string: string) {
+  if (!string) return '';
+
   return `${string.charAt(0).toUpperCase()}${string.slice(1)}`;
 }
 

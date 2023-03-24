@@ -321,12 +321,17 @@ export class CurrencyController {
    * @returns {boolean}
    */
   public validateCountAssets(_count: string, fee: string, network: NetworkName, wallet: Wallet): boolean {
-    const count = _count === '' ? '0' : _count;
-    const transferableCountAssetsMinusFee = this.getTransferableCountAssetsMinusFee(fee, network, wallet);
+    try {
+      const count = _count === '' ? '0' : _count;
 
-    if (FPNumber.isEqualTo(transferableCountAssetsMinusFee, FPNumber.ZERO)) return false;
+      const transferableCountAssetsMinusFee = this.getTransferableCountAssetsMinusFee(fee, network, wallet);
 
-    return FPNumber.lte(new FPNumber(count), transferableCountAssetsMinusFee);
+      if (FPNumber.isEqualTo(transferableCountAssetsMinusFee, FPNumber.ZERO)) return false;
+
+      return FPNumber.lte(new FPNumber(count), transferableCountAssetsMinusFee);
+    } catch {
+      return false;
+    }
   }
 
   /**

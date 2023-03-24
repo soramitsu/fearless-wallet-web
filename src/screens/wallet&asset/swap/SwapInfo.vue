@@ -66,7 +66,7 @@ import { firstCharToUp } from '@/helpers/common';
 import { SORA_UTILITY_ASSET } from '@/consts/networks';
 
 @Component
-export default class SwapPreview extends Vue {
+export default class SwapInfo extends Vue {
   @Prop({ default: '' }) marketType!: string;
   @Prop({ default: '' }) slippage!: string;
   @Prop({ default: '' }) sendAmount!: string;
@@ -80,12 +80,9 @@ export default class SwapPreview extends Vue {
   @Prop({ default: '' }) providerFee!: string;
   @Prop({ default: '' }) sendAssetUP!: string;
   @Prop({ default: '' }) receiveAssetUP!: string;
+  @Prop({ default: true }) showSwapInfo!: boolean;
   @Prop(Boolean) isExchangeB!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
-
-  get showSwapInfo() {
-    return this.sendAmount !== '' && this.receiveAmount !== '';
-  }
 
   get soraMainAsset() {
     return SORA_UTILITY_ASSET.toUpperCase();

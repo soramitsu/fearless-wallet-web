@@ -37,7 +37,7 @@ import { Getter, Mutation } from 'vuex-class';
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import AccountsItem from './AccountsItem.vue';
 import type { SelectedWallet } from '@/store';
-import type { Networks, TMutation } from '@/interfaces';
+import type { Networks, TMutation, ChainAccount } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
@@ -52,6 +52,7 @@ export default class Account extends Vue {
   selectedNetwork = '';
   selectedAddress = '';
   newName = '';
+  chainAccounts: ChainAccount[] = [];
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getAllNetworks) networks!: Networks;
@@ -67,10 +68,6 @@ export default class Account extends Vue {
 
   get showSharedSecretAccounts() {
     return this.sharedAccountsItems.length > 0;
-  }
-
-  get chainAccounts() {
-    return getChainAccounts(this.networks, this.selectedWallet);
   }
 
   get replacedAccountsItems() {
@@ -90,8 +87,23 @@ export default class Account extends Vue {
     this.newName = name;
   }
 
+  @Watch('networks')
+  networksWatcher() {
+    this.updatedAccounts();
+  }
+
+  activated() {
+    this.updatedAccounts();
+  }
+
   mounted() {
+    this.updatedAccounts();
+
     this.newName = this.selectedWallet.name;
+  }
+
+  updatedAccounts() {
+    this.chainAccounts = getChainAccounts(this.networks, this.selectedWallet);
   }
 
   back() {

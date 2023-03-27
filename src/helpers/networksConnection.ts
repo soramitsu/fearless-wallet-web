@@ -179,8 +179,12 @@ async function subscribeAssetsBalances(address: string, network: Network): Promi
       ({ id }) => id === assetId
     )!;
 
-    if (type === undefined) subscribeNativeAssetsBalances(address, network, assetJson);
-    else subscribeOrmlAssetsBalances(address, network, assetJson, type);
+    try {
+      if (type === undefined) subscribeNativeAssetsBalances(address, network, assetJson);
+      else subscribeOrmlAssetsBalances(address, network, assetJson, type);
+    } catch (ex) {
+      console.info(ex);
+    }
   });
 }
 

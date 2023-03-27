@@ -14,28 +14,33 @@
       <div class="value">{{ slippage }}%</div>
     </div>
 
-    <div v-if="showSwapInfo" class="row">
-      <div class="label">
-        {{ $t(minMaxLabel) }}
+    <template v-if="showSwapInfo">
+      <div class="row">
+        <div class="label">
+          {{ $t(minMaxLabel) }}
 
-        <Icon icon="info" class="icon-info min-max" />
+          <Icon icon="info" class="icon-info min-max" />
+        </div>
+
+        <div class="value">
+          <div>{{ minMaxAmount }}</div>
+          <div class="price">{{ minMaxAmountPrice }}</div>
+        </div>
       </div>
 
-      <div class="value">
-        <div>{{ minMaxAmount }}</div>
-        <div class="price">{{ minMaxAmountPrice }}</div>
-      </div>
-    </div>
+      <div class="row">
+        <div class="label">
+          {{ $t('assets.liquidityProvideFee') }}
 
-    <div v-if="showSwapInfo" class="row">
-      <div class="label">
-        {{ $t('assets.liquidityProvideFee') }}
+          <Icon icon="info" class="icon-info provider-fee" />
+        </div>
 
-        <Icon icon="info" class="icon-info provider-fee" />
+        <div class="value">{{ providerFeeCut }} {{ soraMainAsset }}</div>
       </div>
 
-      <div class="value">{{ providerFeeCut }} {{ soraMainAsset }}</div>
-    </div>
+      <Tooltip text="assets.minMaxReceiveInfo" target=".min-max" placement="right" />
+      <Tooltip text="assets.liquidityProvideFeeInfo" target=".provider-fee" placement="right" />
+    </template>
 
     <div class="row">
       <div class="label">
@@ -52,8 +57,6 @@
       <div v-else>-</div>
     </div>
 
-    <Tooltip text="assets.minMaxReceiveInfo" target=".min-max" placement="right" />
-    <Tooltip text="assets.liquidityProvideFeeInfo" target=".provider-fee" placement="right" />
     <Tooltip text="assets.networkFeeInfo" target=".network-fee" placement="right" />
   </div>
 </template>

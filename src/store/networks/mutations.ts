@@ -32,7 +32,7 @@ export type Mutations = {
   [MutationTypes.SET_FIATS_JSON](state: State, props: SetFiatsJsonProps): void;
   [MutationTypes.SET_ASSETS_PRICE](state: State, props: SetAssetsPriceProps): void;
 
-  // [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
+  [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
   // [MutationTypes.SET_ACTIVE_NODE](state: State, props: SetActiveNodeProps): void;
   // [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApiProps): void;
@@ -46,17 +46,17 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_ASSETS_PRICE](state, price) {
     state.assetsPrice = { ...price };
   },
-  // [MutationTypes.SET_CURRENCIES](state, { currencies, address, network }) {
-  //   if (address && network) {
-  //     if (Array.isArray(currencies)) {
-  //       const sequence = currencies.map(({ name }) => name);
+  [MutationTypes.SET_CURRENCIES](state, { currencies, address, network }) {
+    if (address && network) {
+      if (Array.isArray(currencies)) {
+        const sequence = currencies.map(({ name }) => name);
 
-  //       accountController.setSequenceAssets(sequence, address, network);
-  //     }
-  //   }
+        accountController.setSequenceAssets(sequence, address, network);
+      }
+    }
 
-  //   state.currencies = currencies;
-  // },
+    state.currencies = currencies;
+  },
 
   // [MutationTypes.SET_ASSETS_JSON](state, { assetsJson }) {
   //   state.assetsJson = assetsJson;

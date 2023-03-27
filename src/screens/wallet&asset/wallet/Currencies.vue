@@ -27,8 +27,9 @@ import type { TMutation } from '@/interfaces/common';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import CurrencyItemStateLess from '@/screens/wallet&asset/wallet/CurrencyItemStateLess.vue';
-import { PriceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
-import { subscribePrice } from '@/extension/messaging';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { AssetsPrice } from '@/interfaces';
 
 @Component({
   components: {
@@ -42,16 +43,10 @@ export default class Currencies extends Vue {
   @Prop(String) filterValue!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
+  @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
-  price: PriceJson = {} as PriceJson;
-
-  async mounted() {
-    subscribePrice((prices) => {
-      this.price = prices;
-    });
-  }
 
   get mainText() {
     if (!this.isOnline) return 'common.offlineStatus';
@@ -77,15 +72,16 @@ export default class Currencies extends Vue {
   }
 
   getAssetPrice(assetKey: string) {
-    if (Object.keys(this.price).length && this.price.tokenPriceMap[assetKey]) return this.price.tokenPriceMap[assetKey];
+    if (Object.keys(this.prices).length && this.prices.tokenPriceMap[assetKey])
+      return this.prices.tokenPriceMap[assetKey];
 
     return 0;
   }
 
   getPriceChange(assetKey: string) {
-    if (this.price === undefined || this.price.tokenPriceChange === undefined || assetKey === undefined) return 0;
+    if (this.prices === undefined || this.prices.tokenPriceChange === undefined || assetKey === undefined) return 0;
 
-    if (this.price.tokenPriceChange[assetKey]) return this.price.tokenPriceChange[assetKey] / 100;
+    if (this.prices.tokenPriceChange[assetKey]) return this.prices.tokenPriceChange[assetKey] / 100;
 
     return 0;
   }

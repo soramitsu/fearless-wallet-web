@@ -12,7 +12,7 @@
     :left="left"
     :showBlur="showBlur"
     :showBackground="showBackground"
-    :options="nets"
+    :options="filteredOptionsNetworks"
     :toggleValue="toggleSelectedNetwork"
     :handlerClose="handlerClose"
     :handlerFilter="handlerFilter"
@@ -21,14 +21,16 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
 import type { RelayChainName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
-import { getNetworkMap } from '@/extension/messaging';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 interface Options {
-  label: string;
+  name: string;
   value: string;
-  path: string;
+  icon: string;
   relayChain?: RelayChainName;
   isAll?: true;
 }
@@ -51,57 +53,42 @@ export default class SelectNetworkButton extends Vue {
   @Prop(Array) _optionsNetworks!: Options[];
   @Prop(Function) toggleSelectedNetwork!: (value: string) => void;
   @Prop(Function) handlerClose!: VoidFunction;
-  nets: any[] = [];
+  @Getter(NetworksGettersTypes.getNetworks) networks!: NetworkJsonOld[];
 
-  async mounted() {
-    this.nets.push({
-      name: 'All Networks',
-      value: 'All',
-      icon: 'globus',
-    });
-    const networks = Object.values(await getNetworkMap()).map((el) => ({
-      name: firstCharToUp(el.name),
-      value: el.name,
-      icon: el.icon,
-    }));
+  get optionsNetworks() {
+    if (this._optionsNetworks !== undefined) return this._optionsNetworks;
 
-    this.nets.push(...networks);
+    let options: Options[] = [
+      ...this.networks.map(({ name, parentId, icon }) => {
+        const relayChain = this.networks.find(({ chainId }) => chainId === parentId)?.name ?? name;
+
+        return {
+          name: firstCharToUp(name),
+          value: name,
+          icon: icon,
+          relayChain: relayChain as RelayChainName,
+        };
+      }),
+    ];
+
+    if (this.relayChain) options = options.filter(({ relayChain }) => relayChain === this.relayChain);
+
+    if (this.allNetworksItem)
+      options.unshift({
+        name: this.$t('common.allNetworks') as string,
+        value: 'All',
+        icon: 'globus',
+        isAll: true,
+      });
+
+    return options;
   }
-
-  // get optionsNetworks() {
-  //   if (this._optionsNetworks !== undefined) return this._optionsNetworks;
-
-  //   let options: Options[] = [
-  //     ...this.networks.map(({ name, label, parentId, icon }) => {
-  //       const relayChain = this.networks.find(({ chainId }) => chainId === parentId)?.name ?? name;
-
-  //       return {
-  //         label: firstCharToUp(label),
-  //         value: name,
-  //         path: icon,
-  //         relayChain: relayChain as RelayChainName,
-  //       };
-  //     }),
-  //   ];
-
-  //   if (this.relayChain) options = options.filter(({ relayChain }) => relayChain === this.relayChain);
-
-  //   if (this.allNetworksItem)
-  //     options.unshift({
-  //       label: this.$t('common.allNetworks') as string,
-  //       value: 'all',
-  //       path: 'globus',
-  //       isAll: true,
-  //     });
-
-  //   return options;
-  // }
 
   get filteredOptionsNetworks() {
     const filter = this.filterValue.trim().toLowerCase();
 
-    return this.nets.filter(({ value }) => {
-      return value.includes(filter);
+    return this.optionsNetworks.filter(({ value }) => {
+      return value.toLowerCase().includes(filter);
     });
   }
 

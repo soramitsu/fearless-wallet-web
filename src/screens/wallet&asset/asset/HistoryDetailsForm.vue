@@ -94,7 +94,7 @@
         </div>
       </div>
 
-      <Button size="big" text="View in Subscan" @click="openSubscan" />
+      <Button size="big" :text="$t('accounts.subscan')" @click="openSubscan" />
     </div>
 
     <Tooltip text="common.copied" target=".copy" placement="bottom" trigger="click" />

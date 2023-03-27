@@ -222,7 +222,7 @@ export default class CurrencyItemStateLess extends Vue {
     this.$router.push({
       name: Components.Asset,
       params: {
-        assetId: this.assetData.name,
+        assetId: this.assetData.id,
         network: this.redirectNetwork,
       },
     });

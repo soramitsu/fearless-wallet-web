@@ -112,12 +112,12 @@ import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavai
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
 import Loading from '@/components/Loading.vue';
 import { BalanceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
-import { defaultSortingCurrencies, getTotalBalance } from '@/helpers/currencies';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 import { AssetsPrice } from '@/interfaces';
 import { subscribeBalance } from '@/extension/messaging';
 import store from '@/store';
+import { defaultSortingCurrencies, getTotalBalance } from '@/helpers/currencies';
 
 @Component({
   components: {

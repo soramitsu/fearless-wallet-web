@@ -127,6 +127,7 @@ export default class Tabs {
     return this.state.sign(url, new RequestBytesSign(request), {
       address: pair.address,
       ethereumAddress: pair.meta.ethereumAddress as string,
+      name: (pair.meta.name as string) ?? '',
       ...pair.meta,
     });
   }
@@ -142,12 +143,14 @@ export default class Tabs {
       return this.state.sign(url, new BeaconSignerJSON(request), {
         address: pair.address,
         ethereumAddress: pair.meta.ethereumAddress as string,
+        name: (pair.meta.name as string) ?? '',
         ...meta,
       });
 
     return this.state.sign(url, new RequestExtrinsicSign(request), {
       address: pair.address,
       ethereumAddress: pair.meta.ethereumAddress as string,
+      name: (pair.meta.name as string) ?? '',
       ...meta,
     });
   }

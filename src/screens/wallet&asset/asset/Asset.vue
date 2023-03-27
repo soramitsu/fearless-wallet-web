@@ -139,7 +139,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { tieAccount } from '@/extension/messaging';
-import { ETHEREUM_NETWORKS } from '@/consts/networks';
+import { ALL_NETWORKS, ETHEREUM_NETWORKS } from '@/consts/networks';
 import { firstCharToUp } from '@/helpers/common';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
@@ -174,7 +174,6 @@ export default class Asset extends Vue {
   showBalanceDetailsPopup = false;
   filterValue = '';
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
-  @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJsonOld;
@@ -205,11 +204,11 @@ export default class Asset extends Vue {
   }
 
   get showBuyButton() {
-    return this.providers.length !== 0 && this.mainNetwork === this.selectedNetwork;
+    return this.providers.length !== 0 && this.mainNetwork.toLowerCase() === this.selectedNetwork.toLowerCase();
   }
 
   get currentCurrency() {
-    return this.balances.find(({ name }) => name.toLowerCase() === this.selectedAssetId.toLowerCase())!;
+    return this.balances.find(({ id }) => id === this.selectedAssetId)!;
   }
 
   get displayAddressByNetwork() {
@@ -229,7 +228,7 @@ export default class Asset extends Vue {
   }
 
   get selectedAssetUpper() {
-    return this.selectedAssetId.toUpperCase();
+    return this.currentCurrency.name.toUpperCase();
   }
 
   get assetPrice(): AssetPrice {
@@ -277,7 +276,7 @@ export default class Asset extends Vue {
   toggleSelectedNetwork(network: string) {
     if (this.selectedNetwork === network) return;
 
-    const prepNetwork = network === 'all' ? null : `0x${this.getNetwork(network).chainId}`;
+    const prepNetwork = network === ALL_NETWORKS ? null : `0x${this.getNetwork(network).chainId}`;
 
     tieAccount(this.selectedWallet.address, prepNetwork);
 

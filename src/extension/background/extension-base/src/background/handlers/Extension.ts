@@ -144,6 +144,7 @@ async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> 
         address,
         ethereumAddress: meta.ethereumAddress as string,
         active: address === currentAccount?.address ? true : false,
+        name: meta.name ?? '',
         type,
         ...meta,
       })

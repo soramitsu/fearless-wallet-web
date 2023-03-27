@@ -167,10 +167,7 @@ import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import AdvancedButton from '@/screens/addWallet/AdvancedButton.vue';
 import AddEthereumAccountPopup from '@/screens/addWallet/AddEthereumAccountPopup.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import {
-  MutationTypes as AccountMutationsTypes,
-  MutationTypes as AccountsMutationTypes,
-} from '@/store/accounts/mutations';
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { WarningValueName } from '@/consts/messages';
@@ -682,9 +679,10 @@ export default class AddWallet extends Vue {
       substrate: { keypairType: substrateKeypairType },
     } = this.derivationPaths;
 
-    const { address } = await createAccountSuri(this.suriSubstrate, substrateKeypairType);
+    // const { address } = await createAccountSuri(this.suriSubstrate, substrateKeypairType);
 
-    this.validateAddressForDubMobileWallet(address);
+    // this.validateAddressForDubMobileWallet(address);
+    return true;
   }
 
   validateSequenceMnemonic() {

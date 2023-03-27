@@ -128,11 +128,11 @@ export default class App extends Vue {
       this.setSelectedWallet(selectedAccount);
       this.setAccounts({ accounts });
 
-      if (isAccountsExists && this.$route.name !== Components.Welcome) {
-        this.$router.push(Components.Welcome);
-      } else {
-        this.$router.push(Components.Wallet);
-      }
+      // if (isAccountsExists && this.$route.name !== Components.Welcome) {
+      //   this.$router.push(Components.Welcome);
+      // } else {
+      //   this.$router.push(Components.Wallet);
+      // }
     });
   }
 

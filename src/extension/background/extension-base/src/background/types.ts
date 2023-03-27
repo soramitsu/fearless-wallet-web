@@ -75,7 +75,7 @@ export interface AccountJson extends KeyringPair$Meta {
   isMobile?: boolean;
   isHidden?: boolean;
   active?: boolean;
-  name?: string;
+  name: string;
   parentAddress?: string;
   suri?: string;
   type?: KeypairType;

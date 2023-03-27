@@ -34,14 +34,15 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.FETCH_HISTORY]({ commit, getters }, { networkName, wallet, assetId, isPreviously }) {
-    const {
-      externalApi: { history: historyApi },
-    } = getters.getNetwork(networkName) as Network;
-    if (!historyApi) return;
+    const { externalApi } = getters.getNetwork(networkName) as Network;
 
-    const { type, url } = historyApi;
+    if (!externalApi || !externalApi.history) return;
+
+    const { type, url } = externalApi.history;
     const formattedAddress = BaseApi.formatAddress(wallet, networkName);
+
     const history = await fetchHistory(url, formattedAddress, type, networkName);
+
     if (history)
       commit(MutationTypes.SET_HISTORY, {
         networkName: networkName.toLowerCase(),

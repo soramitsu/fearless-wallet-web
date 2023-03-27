@@ -569,6 +569,16 @@ export default class Extension {
     }
   }
 
+  private enableNetworkMap(networkKey: string): boolean {
+    const networkMap = this.getNetworkMap();
+
+    if (!(networkKey in networkMap)) {
+      return false;
+    }
+
+    return state.enableNetworkMap(networkKey);
+  }
+
   seedCreate({ length = SEED_DEFAULT_LENGTH, seed: _seed, type }: RequestSeedCreate): ResponseSeedCreate {
     const seed = _seed || mnemonicGenerate(length);
 
@@ -1386,6 +1396,12 @@ export default class Extension {
   ): Promise<ResponseType<TMessageType>> {
     switch (type) {
       //App Managment, networks
+      case 'pri(app.port.ping)':
+        return true;
+
+      case 'pri(networkMap.enableOne)':
+        return this.enableNetworkMap(request as string);
+
       case 'pri(networkMap.getSubscription)':
         return this.subscribeNetworkMap(id, port);
 
@@ -1566,8 +1582,6 @@ export default class Extension {
       case 'pri(balance.get.subscription)':
         return this.subscribeBalance(id, port);
 
-      case 'pri(app.port.ping)':
-        return true;
       /// Transfer
       case 'pri(accounts.checkTransfer)':
         return this.checkTransfer(request as RequestCheckTransfer);

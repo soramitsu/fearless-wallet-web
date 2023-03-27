@@ -177,6 +177,7 @@ export interface RequestSignatures {
   'pri(networkMap.disableOne)': [string, DisableNetworkResponse];
   'pri(networkMap.removeOne)': [string, boolean];
   'pri(networkMap.upsert)': [NetworkJsonOld, boolean];
+  'pri(networkMap.addCustomNode)': [string, boolean];
   'pri(networkMap.getNetworkMap)': [null, Record<string, NetworkJsonOld>];
   'pri(networkMap.getSubscription)': [null, Record<string, NetworkJsonOld>, Record<string, NetworkJsonOld>];
   //Authorize

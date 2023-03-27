@@ -145,7 +145,7 @@ export default class Nodes extends Vue {
   }
 
   updatedCustomNodes() {
-    this.customNodes = accountController.getCustomNodesByNetwork(this.selectedNetwork);
+    // this.customNodes = accountController.getCustomNodesByNetwork(this.selectedNetwork);
   }
 
   changeNode(name?: string, url?: string) {

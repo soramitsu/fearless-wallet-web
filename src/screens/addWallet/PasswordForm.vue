@@ -2,8 +2,8 @@
   <div class="password-form">
     <ValidatedInput
       v-model="pass1"
-      :errorDescriptions="t('shortPassword')"
-      :placeholder="t('enterPassword')"
+      errorDescriptions="addWallet.shortPassword"
+      placeholder="addWallet.enterPassword"
       :isError="isShortPassword"
       :showPassword="true"
       :readonly="showMockPassword"
@@ -13,8 +13,8 @@
     <ValidatedInput
       v-show="showPasswordConfirmation"
       v-model="pass2"
-      :errorDescriptions="t('notMatchPassword')"
-      :placeholder="t('reEnterPassword')"
+      errorDescriptions="addWallet.notMatchPassword"
+      placeholder="addWallet.reEnterPassword"
       :isError="isWrongPassword"
       :showPassword="true"
       class="row"
@@ -50,15 +50,15 @@ export default class PasswordForm extends Vue {
   }
 
   get hintGoogleDriveText() {
-    return this.t('google.dataWillStoreOnGDrive');
+    return this.$t('addWallet.google.dataWillStoreOnGDrive');
   }
 
   get hintText() {
-    if (this.showMockPassword) return this.t('mockPassword');
+    if (this.showMockPassword) return this.$t('addWallet.mockPassword');
 
-    if (this.showSamePasswordText) return this.t('samePassword');
+    if (this.showSamePasswordText) return this.$t('addWallet.samePassword');
 
-    return this.t('passwordInfo');
+    return this.$t('addWallet.passwordInfo');
   }
 
   mounted() {
@@ -84,10 +84,6 @@ export default class PasswordForm extends Vue {
 
   setPassword(password: string) {
     this.$emit('updateWalletPassword', password);
-  }
-
-  t(value: string, obj: Record<string, string> = {}) {
-    return this.$t(`addWallet.${value}`, obj);
   }
 }
 </script>

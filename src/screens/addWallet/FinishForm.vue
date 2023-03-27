@@ -41,7 +41,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import URLS from '@/consts/urls';
+import { URLS } from '@/consts/urls';
 
 @Component
 export default class FinishForm extends Vue {

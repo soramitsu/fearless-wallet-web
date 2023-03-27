@@ -16,7 +16,6 @@
         <ValidatedInput
           v-model="url"
           :placeholder="getPath('urlAddress')"
-          typeText="uppercase"
           class="row"
           errorDescriptions="accounts.invalidNodeAddress"
           :isError="isErrorUrlNode"

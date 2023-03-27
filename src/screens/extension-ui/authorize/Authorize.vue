@@ -3,7 +3,7 @@
     <div class="authorize">
       <template v-if="isAccountsExists">
         <div>
-          <Alert>
+          <Alert headerText="soraCard.attention">
             <p class="authorize__content">
               {{ $t('authorize.selfIdentifyOne') }}
               <span class="authorize__content--name">{{ request.request.origin }}</span>
@@ -28,7 +28,7 @@
       </template>
 
       <template v-else>
-        <Alert :message="noAccountsMessage" />
+        <Alert headerText="soraCard.attention" message="auth.noAccounts" />
 
         <Button width="100%" text="common.understood" size="big" fontSize="big" @click="onReject" />
       </template>
@@ -59,7 +59,6 @@ import { cancelAuthRequest } from '@/extension/messaging';
   },
 })
 export default class Authorize extends Vue {
-  readonly noAccountsMessage = 'auth.noAccounts';
   state: Record<string, WalletInfo> = {};
   selectAll = true;
 

@@ -2,7 +2,7 @@
   <div class="validate-input">
     <Input
       v-model="vModel"
-      size="big"
+      :size="size"
       :placeholder="placeholder"
       :maxlength="maxlength"
       :showPassword="showPassword"
@@ -30,7 +30,8 @@ export default class ValidatedInput extends Vue {
   @Prop({ default: 50 }) maxlength!: number;
   @Prop({ default: false }) showPassword!: boolean;
   @Prop({ default: false }) readonly!: boolean;
-  @Prop({ default: 'none' }) typeText!: string;
+  @Prop({ default: 'uppercase' }) typeText!: string;
+  @Prop({ default: 'big' }) size!: string;
 
   get showErrorText() {
     return this.isError && this.errorDescriptions;

@@ -11,7 +11,6 @@
     <ValidatedInput
       v-model="slippagePercent"
       placeholder="assets.slippage"
-      typeText="uppercase"
       class="row"
       :errorDescriptions="warningMessage"
       :isError="isErrorSlippageInput"
@@ -128,7 +127,7 @@ export default class SwapSettings extends Vue {
 }
 
 .transaction-warning {
-  color: $error-color !important;
+  color: $simple-orange-color !important;
   font-size: 14px;
   margin-left: 16px;
 }

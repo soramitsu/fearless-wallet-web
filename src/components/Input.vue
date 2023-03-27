@@ -113,7 +113,7 @@ export default class Input extends Vue {
   }
 
   .error-input {
-    border: 1px solid $error-color !important;
+    border: 1px solid $simple-orange-color !important;
   }
 }
 

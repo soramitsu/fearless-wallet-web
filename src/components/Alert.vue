@@ -2,9 +2,9 @@
   <Corners :isError="true" size="big">
     <div class="alert-container">
       <div class="alert__content">
-        <Hint class="alert__header" size="big" iconName="warning" :text="$t('common.attention')" />
+        <Hint class="alert__header" size="big" iconName="warning" :text="headerText" />
 
-        <p class="alert__message">
+        <p :class="messageClasses">
           <slot>{{ $t(message) }}</slot>
         </p>
       </div>
@@ -15,9 +15,21 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 
+type SizeTextType = 'small' | 'medium' | 'big';
+
 @Component
 export default class Container extends Vue {
   @Prop(String) message!: string;
+  @Prop(String) headerText!: string;
+  @Prop({ default: 'medium' }) sizeText!: SizeTextType;
+
+  get messageClasses() {
+    const classes = ['alert__message'];
+
+    if (this.sizeText !== 'medium') classes.push(`text-${this.sizeText}`);
+
+    return classes;
+  }
 }
 </script>
 
@@ -25,7 +37,7 @@ export default class Container extends Vue {
 .alert-container {
   background: $secondary-background-color;
   padding: $default-padding;
-  border: 1px solid $error-color;
+  border: 1px solid $simple-orange-color;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-radius: $default-border-radius;
   width: 100%;
@@ -47,5 +59,13 @@ export default class Container extends Vue {
   line-height: 150%;
   color: $default-white;
   text-align: left;
+}
+
+.text-small {
+  font-size: 14px;
+}
+
+.text-big {
+  font-size: 18px;
 }
 </style>

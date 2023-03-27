@@ -9,8 +9,7 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const RAMP_API_KEY = IS_PRODUCTION ? process.env.RAMP_PROD_API_KEY : process.env.RAMP_TEST_API_KEY;
 const MOONPAY_API_KEY = IS_PRODUCTION ? process.env.MOONPAY_PROD_API_KEY : process.env.MOONPAY_TEST_API_KEY;
 const SORA_CARD_BANNER_HEIGHT = 130;
-// const SORA_CARD_BANNER_RERUN = 1000 * 60 * 60 * 24 * 7;
-const SORA_CARD_BANNER_RERUN = 1000 * 3; // TODO revert
+const SORA_CARD_BANNER_RERUN = 1000 * 60 * 60 * 24 * 7;
 
 export {
   APP_WIDTH,

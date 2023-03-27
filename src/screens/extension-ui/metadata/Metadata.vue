@@ -15,7 +15,7 @@
     </InfoList>
 
     <div class="alert">
-      <Alert message="metadata.alertMessage" />
+      <Alert headerText="soraCard.attention" message="metadata.alertMessage" />
     </div>
 
     <Button width="100%" text="metadata.appAccess" size="big" fontSize="big" @click="onApprove" />

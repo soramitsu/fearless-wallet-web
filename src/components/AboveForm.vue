@@ -4,16 +4,19 @@
       <slot v-if="$slots.header" name="header"></slot>
 
       <div v-else class="header-content">
-        <div v-if="showBackIcon" class="icon icon-back" @click="handlerBack">
-          <Icon icon="chevron-left" />
-        </div>
-        <div v-else class="icon">
-          <Icon icon="fw-logo" className="logo" />
+        <div class="activity align-left">
+          <div v-if="showBackIcon" class="icon icon-back" @click="handlerBack">
+            <Icon icon="chevron-left" />
+          </div>
+
+          <div v-else class="icon">
+            <Icon icon="fw-logo" className="logo" />
+          </div>
         </div>
 
         <div class="header">{{ tHeader }}</div>
 
-        <div class="activity">
+        <div class="activity align-right">
           <div v-if="showCloseIcon" class="icon" @click="closeHandler">
             <SIcon name="basic-close-24" />
           </div>
@@ -147,7 +150,6 @@ export default class AboveForm extends Vue {
       flex-direction: column;
       justify-content: center;
       user-select: none;
-      width: 45px;
 
       &:last-child {
         margin-left: 15px;
@@ -172,8 +174,15 @@ export default class AboveForm extends Vue {
 
     .activity {
       display: flex;
+      width: 80px;
+    }
+
+    .align-left {
+      justify-content: left;
+    }
+
+    .align-right {
       justify-content: right;
-      min-width: 45px;
     }
 
     .logo {

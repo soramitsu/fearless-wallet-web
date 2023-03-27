@@ -1,7 +1,7 @@
 <template>
   <div class="mnemonic-columns">
     <div>
-      <div v-for="(mnemonicElement, index) in mnemonicOne" :key="index" class="mnemonic-element">
+      <div v-for="(mnemonicElement, index) in mnemonicPartOne" :key="index" class="mnemonic-element">
         <div class="mnemonic-number">
           {{ getNumberString(index + 1) }}
         </div>
@@ -12,7 +12,7 @@
     </div>
 
     <div>
-      <div v-for="(mnemonicElement, index) in mnemonicTwo" :key="index" class="mnemonic-element">
+      <div v-for="(mnemonicElement, index) in mnemonicPartTwo" :key="index" class="mnemonic-element">
         <div class="mnemonic-number">
           {{ getNumberString(midpoint + index + 1) }}
         </div>
@@ -44,11 +44,11 @@ export default class MnemonicColumns extends Vue {
     return array.fill('', this.mnemonicArray.length, this.mnemonicLength);
   }
 
-  get mnemonicOne() {
+  get mnemonicPartOne() {
     return this.mnemonicArrayValidLength.slice(0, this.midpoint);
   }
 
-  get mnemonicTwo() {
+  get mnemonicPartTwo() {
     return this.mnemonicArrayValidLength.slice(this.midpoint, this.mnemonicLength);
   }
 

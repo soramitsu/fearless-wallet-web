@@ -24,11 +24,11 @@
                   v-model="file.password"
                   class="input__validate-pass"
                   typeText="text"
-                  :placeholder="$t('addWallet.enterPassword')"
+                  placeholder="addWallet.enterPassword"
+                  errorDescriptions="common.invalidPassword"
                   :showPassword="true"
                   :readonly="file.isComplete || file.isLoading"
                   :isError="file.isError"
-                  :errorDescriptions="$t('common.invalidPassword')"
                 />
 
                 <Button
@@ -39,7 +39,7 @@
                   :iconName="file.isComplete ? 'check' : file.isLoading ? 'loader' : ''"
                   :iconType="file.isLoading ? 'loading' : ''"
                   :disabled="!file.password.length || file.isLoading || file.isComplete"
-                  :text="file.isLoading || file.isComplete ? '' : $t('common.confirm')"
+                  :text="file.isLoading || file.isComplete ? '' : 'common.confirm'"
                   @click="onConfirm(index)"
                 />
               </div>

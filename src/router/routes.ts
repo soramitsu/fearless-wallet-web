@@ -21,7 +21,7 @@ const AddWallet = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/a
 const Export = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/accounts/Export.vue');
 const AddFromGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/AddFromGoogle.vue');
 const CreateGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/CreateGoogle.vue');
-const SoraCard = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/soraCard/SoraCardForm.vue');
+const SoraCard = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/soraCard/SoraCardPage.vue');
 
 export enum Components {
   Welcome = 'Welcome',

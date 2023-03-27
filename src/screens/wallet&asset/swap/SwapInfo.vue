@@ -37,6 +37,9 @@
 
         <div class="value">{{ providerFeeCut }} {{ soraMainAsset }}</div>
       </div>
+
+      <Tooltip text="assets.minMaxReceiveInfo" target=".min-max" placement="right" />
+      <Tooltip text="assets.liquidityProvideFeeInfo" target=".provider-fee" placement="right" />
     </template>
 
     <div class="row">
@@ -54,8 +57,6 @@
       <div v-else>-</div>
     </div>
 
-    <Tooltip v-if="showSwapInfo" text="assets.minMaxReceiveInfo" target=".min-max" placement="right" />
-    <Tooltip v-if="showSwapInfo" text="assets.liquidityProvideFeeInfo" target=".provider-fee" placement="right" />
     <Tooltip text="assets.networkFeeInfo" target=".network-fee" placement="right" />
   </div>
 </template>

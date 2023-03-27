@@ -1,7 +1,3 @@
-<template>
-  <div class="tooltip"></div>
-</template>
-
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import tippy from 'tippy.js';

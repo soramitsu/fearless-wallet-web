@@ -36,7 +36,12 @@ import {
   ValidateJsonResult,
 } from '../types';
 import { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
-import { RequestTransactionHistoryAdd, RequestTransactionHistoryGet, TransactionHistoryItemType } from '../../types';
+import {
+  NetworkJsonOld,
+  RequestTransactionHistoryAdd,
+  RequestTransactionHistoryGet,
+  TransactionHistoryItemType,
+} from '../../types';
 import { ALL_GENESIS_HASH } from '../../const';
 import { fetchHistory } from '../../api/evm/history';
 import { NetworkJson } from '../../api/evm/types/ether';
@@ -533,8 +538,9 @@ export default class Extension {
       if (isSubstrate) keyring.encodeAddress(pair.address);
 
       return { value: true };
-    } catch ({ message }) {
-      const errorType = message === 'Unable to decode using the supplied passphrase' ? 'jsonPassword' : 'jsonInvalid';
+    } catch (error: any) {
+      const errorType =
+        error.message === 'Unable to decode using the supplied passphrase' ? 'jsonPassword' : 'jsonInvalid';
 
       return { value: false, errorType };
     }
@@ -577,6 +583,16 @@ export default class Extension {
     }
 
     return state.enableNetworkMap(networkKey);
+  }
+
+  private async upsertNetworkMap(data: NetworkJsonOld): Promise<boolean> {
+    try {
+      return await state.upsertNetworkMap(data);
+    } catch (e) {
+      console.error(e);
+
+      return false;
+    }
   }
 
   seedCreate({ length = SEED_DEFAULT_LENGTH, seed: _seed, type }: RequestSeedCreate): ResponseSeedCreate {
@@ -1402,6 +1418,9 @@ export default class Extension {
       case 'pri(networkMap.enableOne)':
         return this.enableNetworkMap(request as string);
 
+      case 'pri(networkMap.upsert)':
+        return this.upsertNetworkMap(request as NetworkJsonOld);
+
       case 'pri(networkMap.getSubscription)':
         return this.subscribeNetworkMap(id, port);
 
@@ -1589,13 +1608,15 @@ export default class Extension {
       case 'pri(accounts.transfer)':
         return this.makeTransfer(id, port as Port, request as RequestTransfer);
 
-      case 'pri(accounts.checkCrossChainTransfer)':
       case 'pri(transaction.history.add)':
         return this.updateTransactionHistory(request as RequestTransactionHistoryAdd, id, port as Port);
+
       case 'pri(transaction.history.get)':
         return this.getHistory(request as RequestTransactionHistoryGet);
+
       case 'pri(transaction.history.get.subscription)':
         return this.subscribeHistory(id, port as Port);
+
       default:
         throw new Error(`Unable to handle message of type ${type}`);
     }

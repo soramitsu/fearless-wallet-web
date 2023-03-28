@@ -4,7 +4,6 @@ import type {
   GetAssetPrice,
   GetNetworkGenesisHash,
   GetNetworkStatus,
-  GetAssetName,
   GetActiveNodesByNetwork,
 } from './types';
 import type { GetterTree } from 'vuex';
@@ -164,7 +163,9 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getActiveNodesByNetwork]:
     ({ networks }) =>
     (networkName: string) => {
-      return networks.find((net) => net.name === networkName)!.nodes[0];
+      const { currentProvider, nodes } = networks.find((net) => net.name.toLowerCase() === networkName.toLowerCase())!;
+
+      return nodes.find((node) => node.name === currentProvider)!;
     },
 
   [GettersTypes.getAllNetworksIsReadyToUse]({ networks }): boolean {

@@ -5,12 +5,12 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { TypeRegistry } from '@polkadot/types/create';
 import { ChainProperties, ChainType } from '@polkadot/types/interfaces';
 import { Registry } from '@polkadot/types/types';
-import { formatBalance, isTestChain, objectSpread, stringify } from '@polkadot/util';
+import { formatBalance, isTestChain, objectSpread } from '@polkadot/util';
 import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defaults';
 import { ApiState, ApiProps } from '../../background/types';
 import { DOTSAMA_AUTO_CONNECT_MS, DOTSAMA_MAX_CONTINUE_RETRY } from '../../const/intervals';
-
 export const DEFAULT_AUX = ['Aux1', 'Aux2', 'Aux3', 'Aux4', 'Aux5', 'Aux6', 'Aux7', 'Aux8', 'Aux9'];
+const registry = new TypeRegistry();
 
 interface ChainData {
   properties: ChainProperties;
@@ -137,8 +137,6 @@ function createApiObject(api: ApiPromise, apiUrl: string, isEthereum: boolean, r
 }
 
 function generateEvmHttpApi(apiUrl: string): ApiProps {
-  const registry = new TypeRegistry();
-
   return {
     api: new Proxy(
       {},
@@ -174,60 +172,67 @@ function generateEvmHttpApi(apiUrl: string): ApiProps {
   } as unknown as ApiProps;
 }
 
+function onDisconnect(apiObject: ApiProps, provider: WsProvider) {
+  apiObject.apiRetry = (apiObject.apiRetry || 0) + 1;
+  apiObject.isApiConnected = false;
+  apiObject.isApiReady = false; // result.isApiInitialized && result.isApiConnected
+
+  // console.info(`DotSamaAPI disconnected from ${JSON.stringify(apiUrl)} ${JSON.stringify(result.apiRetry)} times`);
+
+  if (apiObject.apiRetry > DOTSAMA_MAX_CONTINUE_RETRY) {
+    // console.info(`Discontinue to use ${JSON.stringify(apiUrl)} because max retry`);
+    provider.disconnect().then(console.info).catch(console.error);
+  } else {
+    // Todo: Implement reconnect api here
+  }
+}
+
+function onConnected(apiObject: ApiProps) {
+  apiObject.apiRetry = 0;
+  apiObject.isApiConnected = true;
+  apiObject.isApiReady = apiObject.isApiInitialized; // result.isApiInitialized && result.isApiConnected
+}
+
+function onReady(apiObject: ApiProps, api: ApiPromise) {
+  loadOnReady(registry, api)
+    .then((rs) => {
+      objectSpread(apiObject, rs);
+    })
+    .catch((error): void => {
+      apiObject.apiError = (error as Error).message;
+    });
+}
+
 export function initApi(networkKey: string, apiUrl: string, isEthereum = false): ApiProps {
-  if (isEthereum && apiUrl.startsWith('http')) {
+  if (isEthereum) {
     // return EVM HTTP Placeholder
     return generateEvmHttpApi(apiUrl);
   }
 
-  const registry = new TypeRegistry();
   const provider = new WsProvider(apiUrl, DOTSAMA_AUTO_CONNECT_MS);
 
   // Init ApiPromise with selected provider
   const api = new ApiPromise({ provider, noInitWarn: true });
 
   // Create APIProps Object
-  const result: ApiProps = createApiObject(api, apiUrl, isEthereum, registry);
+  const apiObject: ApiProps = createApiObject(api, apiUrl, isEthereum, registry);
 
   // Listen ApiPromise events
   // On connected: provider is connected
-  api.on('connected', () => {
-    // console.info('DotSamaAPI connected to', apiUrl);
-    result.apiRetry = 0;
-    result.isApiConnected = true;
-    result.isApiReady = result.isApiInitialized; // result.isApiInitialized && result.isApiConnected
-  });
+  api
+    .on('connected', () => {
+      onConnected(apiObject);
+    })
+    // On disconnected: provider is disconnected
+    .on('disconnected', () => {
+      onDisconnect(apiObject, provider);
+    })
+    // On ready: Load all metadata and ready to init data
+    .on('ready', () => {
+      onReady(apiObject, api);
+    })
+    // On ready: Load all metadata and ready to init data
+    .on('error', console.error);
 
-  // On disconnected: provider is disconnected
-  api.on('disconnected', () => {
-    result.apiRetry = (result.apiRetry || 0) + 1;
-    result.isApiConnected = false;
-    result.isApiReady = false; // result.isApiInitialized && result.isApiConnected
-
-    // console.info(`DotSamaAPI disconnected from ${JSON.stringify(apiUrl)} ${JSON.stringify(result.apiRetry)} times`);
-
-    if (result.apiRetry > DOTSAMA_MAX_CONTINUE_RETRY) {
-      // console.info(`Discontinue to use ${JSON.stringify(apiUrl)} because max retry`);
-      provider.disconnect().then(console.info).catch(console.error);
-    } else {
-      // Todo: Implement reconnect api here
-    }
-  });
-
-  // On ready: Load all metadata and ready to init data
-  api.on('ready', () => {
-    // console.info('DotSamaAPI ready with', apiUrl);
-    loadOnReady(registry, api)
-      .then((rs) => {
-        objectSpread(result, rs);
-      })
-      .catch((error): void => {
-        result.apiError = (error as Error).message;
-      });
-  });
-
-  // On ready: Load all metadata and ready to init data
-  api.on('error', console.error);
-
-  return result;
+  return apiObject;
 }

@@ -28,7 +28,7 @@
     <div class="row">
       <NodeItem
         v-for="({ url, name }, index) in defaultNodes"
-        :key="name"
+        :key="name + index"
         :name="name"
         :url="url"
         :isActive="getActiveStatus(name, url)"
@@ -48,7 +48,7 @@
 
     <NodeItem
       v-for="({ url, name }, index) in customNodes"
-      :key="name"
+      :key="name + index"
       :name="name"
       :url="url"
       :isCustomNode="true"
@@ -73,11 +73,11 @@ import type {
 import type { Node, TMutation } from '@/interfaces';
 
 import BaseApi from '@/util/BaseApi';
-import { accountController } from '@/controllers/accountController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { upsertNetworkMap } from '@/extension/messaging';
 
 @Component({
   components: { NodeItem },
@@ -111,7 +111,7 @@ export default class Nodes extends Vue {
   }
 
   get defaultNodes() {
-    return this.networks.find(({ name }) => name === this.selectedNetwork)?.nodes ?? [];
+    return this.networkJson?.nodes ?? [];
   }
 
   get route() {
@@ -131,26 +131,27 @@ export default class Nodes extends Vue {
   }
 
   @Watch('autoSelectNode')
-  toggleAutoSelectNodesValue(value: boolean) {
-    if (value) this.changeNode();
-    else {
-      const [{ name, url }] = this.defaultNodes;
+  toggleAutoSelectNodesValue() {
+    const [{ name }] = this.defaultNodes;
 
-      this.changeNode(name, url);
-    }
+    this.changeNode(name);
   }
 
   openNodeSettingsPopup(name: string, url: string, buttonTop: number, isActive: boolean) {
     this.$emit('openNodeSettingsPopup', this.selectedNetwork, name, url, buttonTop, isActive);
   }
 
+  get networkJson() {
+    return this.networks.find(({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase())!;
+  }
+
   updatedCustomNodes() {
     // this.customNodes = accountController.getCustomNodesByNetwork(this.selectedNetwork);
   }
 
-  changeNode(name?: string, url?: string) {
+  async changeNode(url: string) {
     if (url) this.autoSelectNode = false;
-
+    await upsertNetworkMap({ ...this.networkJson, currentProvider: url });
     // NetworksController.toggleActiveNode(this.selectedNetwork, name, url, this.activeNode.url);
   }
 

@@ -361,10 +361,35 @@ export interface ResponseCheckTransfer {
   estimateFee?: string;
   feeSymbol?: string; // if undefined => use main token
 }
+export interface RequestCheckSwap extends BaseRequestSign {
+  network: string;
+  amountA: string;
+  amountB: string;
+  assetAId: string;
+  assetBId: string;
+  slippage: number;
+  symbolA: string;
+  symbolB: string;
+  isExchangeB: boolean;
+}
+export interface ResponseCheckSwap {
+  amountA: string;
+  amountB: string;
+  AToB: string;
+  BToA: string;
+  providerFee: string;
+  minMaxValue: string;
+}
 
 export type PasswordRequestSign<T extends BaseRequestSign> = T & { password: string; isSavePass?: boolean };
 
 export type ExternalRequestSign<T extends BaseRequestSign> = Omit<T, 'password'>;
+export interface RequestSwap extends PasswordRequestSign<RequestCheckSwap> {
+  feeSymbol?: string;
+}
+export interface BasicSwapResponse {
+  feeSymbol?: string;
+}
 
 export type RequestTransfer = PasswordRequestSign<RequestCheckTransfer>;
 export interface RequestAccountExportPrivateKey {

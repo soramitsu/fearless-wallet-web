@@ -2,8 +2,109 @@ import { Api, FPNumber } from '@sora-substrate/util';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
 import { Asset } from '@sora-substrate/util/build/assets/types';
 import { LiquiditySourceTypes } from '@sora-substrate/liquidity-proxy';
+import {
+  CreateExchangeBOptions,
+  ExtrinsicSwapOptions,
+  CreateExchangeAOptions,
+  CreateSwapResult,
+  BaseExchangeProps,
+} from '../types/swaps';
 import { getAssetOptions } from './utils';
-import { SwapOptions, CreateSwapResult } from '@/interfaces';
+import { SwapOptions } from '@/interfaces';
+
+async function createExchangeB(
+  {
+    amountDexIdXORFP,
+    amountDexIdXSTUSDFP,
+    assetA,
+    assetB,
+    amountB,
+    slippage,
+    swapOptions,
+    providerFeeDexIdXSTUSD,
+  }: CreateExchangeBOptions,
+  api: Api<void>
+): Promise<CreateSwapResult> {
+  const isDexXor = amountDexIdXORFP.isZero()
+    ? false
+    : amountDexIdXSTUSDFP.isZero()
+    ? true
+    : FPNumber.lt(amountDexIdXORFP, amountDexIdXSTUSDFP);
+
+  const expectedAmountA = amountDexIdXORFP.isZero()
+    ? amountDexIdXSTUSDFP
+    : amountDexIdXSTUSDFP.isZero()
+    ? amountDexIdXORFP
+    : isDexXor
+    ? amountDexIdXORFP
+    : amountDexIdXSTUSDFP;
+
+  const minMaxValue = api.swap.getMinMaxValue(assetA, assetB, expectedAmountA.toString(), amountB!, true, slippage!);
+
+  const extrinsicOptions: ExtrinsicSwapOptions = {
+    ...swapOptions,
+    amountA: expectedAmountA.toString(),
+    amountB: amountB!,
+    swapDexId: isDexXor ? DexId.XOR : DexId.XSTUSD,
+  };
+
+  return {
+    amountA: expectedAmountA.toString(),
+    amountB: amountB!,
+    AToB: expectedAmountA.div(new FPNumber(amountB!)).toString(),
+    BToA: new FPNumber(amountB!).div(expectedAmountA).toString(),
+    minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
+    providerFee: FPNumber.fromCodecValue(providerFeeDexIdXSTUSD).toString(),
+    extrinsicOptions,
+  };
+}
+
+async function createExchangeA(
+  {
+    amountDexIdXORFP,
+    amountDexIdXSTUSDFP,
+    assetA,
+    assetB,
+    amountA,
+    slippage,
+    swapOptions,
+    providerFeeDexIdXOR,
+  }: CreateExchangeAOptions,
+  api: Api<void>
+): Promise<CreateSwapResult> {
+  const isDexXor = amountDexIdXORFP.isZero()
+    ? false
+    : amountDexIdXSTUSDFP.isZero()
+    ? true
+    : FPNumber.gt(amountDexIdXORFP, amountDexIdXSTUSDFP);
+
+  const expectedAmountB = amountDexIdXORFP.isZero()
+    ? amountDexIdXSTUSDFP
+    : amountDexIdXSTUSDFP.isZero()
+    ? amountDexIdXORFP
+    : isDexXor
+    ? amountDexIdXORFP
+    : amountDexIdXSTUSDFP;
+
+  const minMaxValue = api.swap.getMinMaxValue(assetA, assetB, amountA!, expectedAmountB.toString(), false, slippage!);
+
+  const extrinsicOptions: ExtrinsicSwapOptions = {
+    ...swapOptions,
+    amountA: amountA!,
+    amountB: expectedAmountB.toString(),
+    swapDexId: isDexXor ? DexId.XOR : DexId.XSTUSD,
+  };
+
+  return {
+    amountA,
+    amountB: expectedAmountB.toString(),
+    AToB: new FPNumber(amountA!).div(expectedAmountB).toString(),
+    BToA: expectedAmountB.div(new FPNumber(amountA!)).toString(),
+    minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
+    providerFee: FPNumber.fromCodecValue(providerFeeDexIdXOR).toString(),
+    extrinsicOptions,
+  };
+}
 
 /**
  * Create swap extrinsic
@@ -40,88 +141,34 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
     LiquiditySourceTypes.Default,
     DexId.XSTUSD
   );
-  let extrinsicOptions;
+
   const swapOptions = { ...options, assetA, assetB } as SwapOptions;
   const amountDexIdXORFP = FPNumber.fromCodecValue(amountDexIdXOR);
   const amountDexIdXSTUSDFP = FPNumber.fromCodecValue(amountDexIdXSTUSD);
-
-  if (isExchangeB) {
-    const isDexXor = amountDexIdXORFP.isZero()
-      ? false
-      : amountDexIdXSTUSDFP.isZero()
-      ? true
-      : FPNumber.lt(amountDexIdXORFP, amountDexIdXSTUSDFP);
-
-    const expectedAmountA = amountDexIdXORFP.isZero()
-      ? amountDexIdXSTUSDFP
-      : amountDexIdXSTUSDFP.isZero()
-      ? amountDexIdXORFP
-      : isDexXor
-      ? amountDexIdXORFP
-      : amountDexIdXSTUSDFP;
-
-    const minMaxValue = api.swap.getMinMaxValue(
-      assetA,
-      assetB,
-      expectedAmountA.toString(),
-      amountB!,
-      isExchangeB,
-      slippage!
+  const baseOptions: BaseExchangeProps = {
+    swapOptions,
+    amountDexIdXORFP,
+    amountDexIdXSTUSDFP,
+    assetA,
+    assetB,
+    slippage,
+  };
+  if (isExchangeB)
+    return createExchangeB(
+      {
+        ...baseOptions,
+        amountB,
+        providerFeeDexIdXSTUSD,
+      },
+      api
     );
 
-    extrinsicOptions = {
-      ...swapOptions,
-      amountA: expectedAmountA.toString(),
-      amountB: amountB!,
-      swapDexId: isDexXor ? DexId.XOR : DexId.XSTUSD,
-    };
-
-    return {
-      amountA: expectedAmountA.toString(),
-      amountB: amountB!,
-      AToB: expectedAmountA.div(new FPNumber(amountB!)).toString(),
-      BToA: new FPNumber(amountB!).div(expectedAmountA).toString(),
-      minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
-      providerFee: FPNumber.fromCodecValue(providerFeeDexIdXSTUSD).toString(),
-    };
-  } else {
-    const isDexXor = amountDexIdXORFP.isZero()
-      ? false
-      : amountDexIdXSTUSDFP.isZero()
-      ? true
-      : FPNumber.gt(amountDexIdXORFP, amountDexIdXSTUSDFP);
-
-    const expectedAmountB = amountDexIdXORFP.isZero()
-      ? amountDexIdXSTUSDFP
-      : amountDexIdXSTUSDFP.isZero()
-      ? amountDexIdXORFP
-      : isDexXor
-      ? amountDexIdXORFP
-      : amountDexIdXSTUSDFP;
-
-    const minMaxValue = api.swap.getMinMaxValue(
-      assetA,
-      assetB,
-      amountA!,
-      expectedAmountB.toString(),
-      isExchangeB!,
-      slippage!
-    );
-
-    extrinsicOptions = {
-      ...swapOptions,
-      amountA: amountA!,
-      amountB: expectedAmountB.toString(),
-      swapDexId: isDexXor ? DexId.XOR : DexId.XSTUSD,
-    };
-
-    return {
-      amountA: amountA!,
-      amountB: expectedAmountB.toString(),
-      AToB: new FPNumber(amountA!).div(expectedAmountB).toString(),
-      BToA: expectedAmountB.div(new FPNumber(amountA!)).toString(),
-      minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
-      providerFee: FPNumber.fromCodecValue(providerFeeDexIdXOR).toString(),
-    };
-  }
+  return createExchangeA(
+    {
+      ...baseOptions,
+      amountA: amountA ?? '0',
+      providerFeeDexIdXOR,
+    },
+    api
+  );
 }

@@ -217,6 +217,7 @@ import { SORA_UTILITY_ASSET } from '@/consts/networks';
 import { Components } from '@/router/routes';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { isSora } from '@/helpers/common';
+import { checkSwap } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -558,7 +559,7 @@ export default class SwapForm extends Vue {
       return;
     }
 
-    const { amountA, amountB, AToB, BToA, providerFee, minMaxValue } = await this.sendCurrency!.createSwap({
+    const { amountA, amountB, AToB, BToA, providerFee, minMaxValue } = await checkSwap({
       network: this.selectedNetwork,
       amountA: this.sendAmount,
       amountB: this.receiveAmount,

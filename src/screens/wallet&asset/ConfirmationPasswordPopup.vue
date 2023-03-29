@@ -101,7 +101,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(Object) payload?: SignerPayloadJSON;
   @Prop({ default: 'default' }) extrinsicType!: 'default' | 'swap';
 
-  @Getter(NetworksGettersTypes.getBalance) currencies!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) currencies!: TokenBalance[];
   @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: TAction<ApprovePayload>;
   @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;

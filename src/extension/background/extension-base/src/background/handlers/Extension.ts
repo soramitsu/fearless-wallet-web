@@ -25,9 +25,11 @@ import {
   Port,
   PriceJson,
   RequestAccountExportPrivateKey,
+  RequestCheckSwap,
   RequestCheckTransfer,
   RequestCurrentAccountAddress,
   RequestJsonValidate,
+  RequestSwap,
   RequestTransfer,
   ResponseAccountExportPrivateKey,
   ResponseCheckTransfer,
@@ -1058,6 +1060,14 @@ export default class Extension {
     };
   }
 
+  private async validateSwap(request: RequestCheckSwap) {
+    //
+  }
+
+  private async makeSwap(id: string, port: Port, { isSavePass }: RequestSwap) {
+    //
+  }
+
   private async validateTransfer(
     networkKey: string,
     token: string,
@@ -1608,6 +1618,12 @@ export default class Extension {
 
       case 'pri(accounts.transfer)':
         return this.makeTransfer(id, port as Port, request as RequestTransfer);
+
+      case 'pri(accounts.checkSwap)':
+        return this.validateSwap(request as RequestCheckSwap);
+
+      case 'pri(accounts.swap)':
+        return this.makeSwap(id, port as Port, request as RequestSwap);
 
       case 'pri(transaction.history.add)':
         return this.updateTransactionHistory(request as RequestTransactionHistoryAdd, id, port as Port);

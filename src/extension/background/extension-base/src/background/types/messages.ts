@@ -83,6 +83,9 @@ import {
   RequestRpcSend,
   RequestRpcSubscribe,
   RequestRpcUnsubscribe,
+  RequestCheckSwap,
+  ResponseCheckSwap,
+  RequestSwap,
 } from './types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import {
@@ -182,6 +185,8 @@ export interface RequestSignatures {
   //Transfer
   'pri(accounts.checkTransfer)': [RequestCheckTransfer, ResponseCheckTransfer];
   'pri(accounts.transfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
+  'pri(accounts.checkSwap)': [RequestCheckSwap, ResponseCheckSwap];
+  'pri(accounts.swap)': [RequestSwap, BasicTxResponse, BasicTxResponse];
 
   //ether
   'pri(balance.get.balance)': [null, BalanceJson];

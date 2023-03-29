@@ -44,6 +44,9 @@ import type {
   DisableNetworkResponse,
   ValidateNetworkResponse,
   ResponseCreateAccountSuri,
+  RequestCheckSwap,
+  ResponseCheckSwap,
+  RequestSwap,
 } from '@/extension/background/extension-base/src/background/types/types';
 import type { Message, NetworkJsonOld, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
@@ -484,6 +487,17 @@ export async function makeTransfer(
 
 export async function checkTransfer(request: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
   return sendMessage('pri(accounts.checkTransfer)', request);
+}
+
+export async function makeSwap(
+  request: RequestSwap,
+  callback: (data: BasicTxResponse) => void
+): Promise<BasicTxResponse> {
+  return sendMessage('pri(accounts.swap)', request, callback);
+}
+
+export async function checkSwap(request: RequestCheckSwap): Promise<ResponseCheckSwap> {
+  return sendMessage('pri(accounts.checkSwap)', request);
 }
 
 export async function subscribeNetworkMap(

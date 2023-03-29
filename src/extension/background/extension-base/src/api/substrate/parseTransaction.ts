@@ -4,7 +4,7 @@
 import { ApiPromise } from '@polkadot/api';
 import { Call } from '@polkadot/types/interfaces';
 import { hexToU8a } from '@polkadot/util';
-import { ArgInfo, EraInfo, FormattedMethod, ResponseParseTransactionSubstrate } from '../../background/types';
+import { ArgInfo, EraInfo, FormattedMethod, ResponseParseTransactionSubstrate } from '../../background/types/types';
 
 const formatArgs = (callInstance: Call): ArgInfo[] => {
   const paramArgKvArray: ArgInfo[] = [];

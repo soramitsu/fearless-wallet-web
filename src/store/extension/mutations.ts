@@ -1,13 +1,13 @@
+import Vue from 'vue';
+import type { MutationTree } from 'vuex';
+import type { State } from './state';
 import {
   ActiveTabAuthorizeStatus,
   AuthorizeRequest,
   MetadataRequest,
   ResponseAuthorizeList,
   SigningRequest,
-} from '@extension-base/background/types';
-import Vue from 'vue';
-import type { MutationTree } from 'vuex';
-import type { State } from './state';
+} from '@/extension/background/extension-base/src/background/types/types';
 
 export enum MutationTypes {
   SET_AUTHLIST = 'SET_AUTHLIST',

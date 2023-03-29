@@ -65,7 +65,7 @@ import type { SelectedWallet } from '@/store';
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { formattedNumber, addNumbers } from '@/helpers/numbers';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { getUtilityAsset } from '@/helpers/currencies';
 
 @Component({

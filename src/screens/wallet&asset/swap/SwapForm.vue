@@ -215,6 +215,8 @@ import Disclaimer from '@/screens/wallet&asset/swap/Disclaimer.vue';
 import { NetworksController } from '@/controllers';
 import { SORA_UTILITY_ASSET } from '@/consts/networks';
 import { Components } from '@/router/routes';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import { isSora } from '@/helpers/common';
 
 @Component({
   components: {
@@ -249,7 +251,7 @@ export default class SwapForm extends Vue {
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) selectedNetwork!: string;
   @Prop(String) _selectedAssetId!: string;
-  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
@@ -279,8 +281,8 @@ export default class SwapForm extends Vue {
   }
 
   get currencyXOR() {
-    return this.currencies.find(({ displayName, relayChain }) => {
-      return displayName === SORA_UTILITY_ASSET && relayChain === this.selectedNetwork;
+    return this.balances.find(({ name }) => {
+      return name === SORA_UTILITY_ASSET && isSora(this.selectedNetwork);
     });
   }
 
@@ -387,7 +389,7 @@ export default class SwapForm extends Vue {
 
   get optionsCurrency() {
     const filter = this.filterValue.toLowerCase();
-    const currenciesFilteredByNetwork = this.currencies.filter(({ relayChain }) => relayChain === this.selectedNetwork);
+    const currenciesFilteredByNetwork = this.balances.filter(({ relayChain }) => relayChain === this.selectedNetwork);
 
     // return getCurrencyOptions(currenciesFilteredByNetwork).filter(({ name, value }) => {
     //   if (!name.toLowerCase().includes(filter)) return false;
@@ -400,11 +402,11 @@ export default class SwapForm extends Vue {
   }
 
   get sendCurrency() {
-    return this.currencies.find(({ assetId }) => assetId === this.sendAssetId);
+    return this.balances.find(({ id }) => id === this.sendAssetId);
   }
 
   get receiveCurrency() {
-    return this.currencies.find(({ assetId }) => assetId === this.receiveAssetId);
+    return this.balances.find(({ id }) => id === this.receiveAssetId);
   }
 
   get top() {

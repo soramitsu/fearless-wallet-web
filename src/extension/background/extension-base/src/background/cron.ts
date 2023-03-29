@@ -16,7 +16,7 @@ import { NetworkJson, NETWORK_STATUS } from '../api/evm/types/ether';
 import { getTokenPrice } from '../utils/coingecko';
 import FWState from './handlers/State';
 import { FWSubscription } from './handlers/subscriptions';
-import { ServiceInfo } from './types';
+import { ServiceInfo } from './types/types';
 
 export class FWCron {
   subscriptions: FWSubscription;

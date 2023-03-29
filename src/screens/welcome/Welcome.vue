@@ -87,7 +87,7 @@ import BaseApi from '@/util/BaseApi';
 import URLS from '@/consts/urls';
 import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
 import { initGoogleAuth } from '@/extension/messaging';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types';
+import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({

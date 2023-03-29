@@ -75,7 +75,7 @@ import {
   RequestCheckTransfer,
   RequestTransfer,
   TokenBalance,
-} from '@/extension/background/extension-base/src/background/types';
+} from '@/extension/background/extension-base/src/background/types/types';
 import { getTransactionAddress } from '@/controllers/transferHelpers';
 
 @Component({

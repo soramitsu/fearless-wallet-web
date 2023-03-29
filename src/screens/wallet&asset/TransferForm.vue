@@ -147,7 +147,7 @@ import { firstCharToUp } from '@/helpers/common';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { NATIVE_PARACHAINS, RELAY_CHAINS } from '@/consts/networks';
 import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHelpers';
-import { RequestCheckTransfer, TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { RequestCheckTransfer, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 import { checkTransfer } from '@/extension/messaging';
 

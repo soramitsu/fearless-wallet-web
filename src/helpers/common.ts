@@ -21,7 +21,7 @@ function getReplacedMetaTyped(meta: KeyringPair$Meta) {
 }
 
 function isSora(network: string) {
-  return network === SORA_NETWORK_NAME;
+  return network.toLowerCase() === SORA_NETWORK_NAME;
 }
 
 export { getReplacedMetaTyped, getAddressMetaTyped, getMetaTyped, firstCharToUp, isSora };

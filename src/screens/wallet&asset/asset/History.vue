@@ -36,7 +36,7 @@ import type { FilterHistory, GetHistory } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworksController } from '@/controllers';
 
 @Component({

@@ -4,7 +4,7 @@
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import { keyring } from '@polkadot/ui-keyring';
 import { assert } from '@polkadot/util';
-import { ApiProps, ExternalRequestPromise, SignerType } from '../../../background/types';
+import { ApiProps, ExternalRequestPromise, SignerType } from '../../../background/types/types';
 import KeyringSigner from '../../../signers/KeyringSigner';
 import { unlockAccount } from '../../../utils/keyring';
 import { HandleBasicTx } from '../../evm/transfer';

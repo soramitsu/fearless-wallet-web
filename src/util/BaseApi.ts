@@ -18,7 +18,7 @@ import { ETHEREUM_NETWORKS, ETHEREUM_ADDRESS_LENGTH, ETHEREUM_ADDRESS_PREFIX } f
 import { NetworksController, beaconController } from '@/controllers';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import store from '@/store';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types';
+import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;
 type WalletTypes = 'mobile' | 'native';

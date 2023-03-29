@@ -32,7 +32,7 @@ import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 import { forgetAccount, initGoogleAuth } from '@/extension/messaging';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types';
+import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 
 @Component
 export default class WalletDetailsPopup extends Vue {

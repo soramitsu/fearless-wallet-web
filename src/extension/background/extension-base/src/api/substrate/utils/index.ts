@@ -3,7 +3,7 @@ import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { ISubmittableResult } from '@polkadot/types/types';
 import { FPNumber } from '@sora-substrate/math';
 import { state } from '../../../background/handlers';
-import { TokenBalance } from '../../../background/types';
+import { TokenBalance } from '../../../background/types/types';
 import { AssetJson, TypeAsset } from '@/interfaces';
 type ExtrinsicTransferProps = {
   api: ApiPromise;

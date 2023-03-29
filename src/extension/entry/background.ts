@@ -4,7 +4,11 @@ import handlers, { state } from '@extension-base/background/handlers';
 import { initState } from '@extension-base/background/handlers/State';
 import '@polkadot/extension-inject/crossenv';
 import AccountsStore from '../background/extension-base/src/stores/Accounts';
-import type { Port, RequestSignatures, TransportRequestMessage } from '@extension-base/background/types';
+import type {
+  Port,
+  RequestSignatures,
+  TransportRequestMessage,
+} from '@/extension/background/extension-base/src/background/types/types';
 interface ModifiedPort extends Port {
   timer?: NodeJS.Timeout;
 }

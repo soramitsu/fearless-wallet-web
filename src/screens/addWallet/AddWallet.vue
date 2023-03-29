@@ -174,7 +174,7 @@ import { Components } from '@/router/routes';
 import { WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
 import { createAccountSuri, forgetAccount, validateAccount, windowOpen } from '@/extension/messaging';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types';
+import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';

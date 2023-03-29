@@ -4,7 +4,7 @@ import {
   AuthUrlInfo,
   MetadataRequest,
   SigningRequest,
-} from '@extension-base/background/types';
+} from '@/extension/background/extension-base/src/background/types/types';
 
 export type State = {
   requests: {

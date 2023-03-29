@@ -1,11 +1,11 @@
+import type { ActionTree, ActionContext } from 'vuex';
+import type { State } from '@/store/extension/state';
 import {
   AuthorizeRequest,
   ApproveAuthRequest,
   MetadataRequest,
   SigningRequest,
-} from '@extension-base/background/types';
-import type { ActionTree, ActionContext } from 'vuex';
-import type { State } from '@/store/extension/state';
+} from '@/extension/background/extension-base/src/background/types/types';
 import { Mutations, MutationTypes } from '@/store/extension/mutations';
 import {
   subscribeAuthorizeRequests,

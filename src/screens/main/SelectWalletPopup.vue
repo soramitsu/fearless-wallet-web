@@ -40,7 +40,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { Components } from '@/router/routes';
 import { addNumbers, getChangeWalletBalance } from '@/helpers/numbers';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types';
+import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 import { saveCurrentAccountAddress, updateCurrentAccountAddress } from '@/extension/messaging';
 import { CurrentAccountInfo } from '@/extension/background/extension-base/src/stores/CurrentAccountStore';
 

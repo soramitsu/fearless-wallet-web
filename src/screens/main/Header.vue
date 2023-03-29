@@ -74,7 +74,7 @@ import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
 import { windowOpen } from '@/extension/messaging';
-import { ActiveTabAuthorizeStatus } from '@/extension/background/extension-base/src/background/types';
+import { ActiveTabAuthorizeStatus } from '@/extension/background/extension-base/src/background/types/types';
 import Loading from '@/components/Loading.vue';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
 import { TAction } from '@/interfaces';

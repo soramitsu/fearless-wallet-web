@@ -3,7 +3,7 @@
 import { logger as createLogger } from '@polkadot/util';
 import { Logger } from '@polkadot/util/types';
 import { Subscription } from 'rxjs';
-import { ApiProps, MessageTypesWithSubscriptions, Port, SubscriptionMessageTypes } from '../types';
+import { ApiProps, MessageTypesWithSubscriptions, Port, SubscriptionMessageTypes } from '../types/types';
 import EthProvider from '../../api/evm/ethProvider';
 import { subscribeBalance } from '../../api/substrate/balance';
 import State from './State';

@@ -1,7 +1,7 @@
 import { FPNumber } from '@sora-substrate/util';
 import { getTotalBalance } from './currencies';
 import type { ChangeWalletBalance, AssetsPrice } from '@/interfaces';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
 interface Options {
   decimalsValue?: number;

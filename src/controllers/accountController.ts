@@ -3,7 +3,7 @@ import type { Lang } from '@/locales';
 import { LocalStorage } from '@/controllers/localStorageController';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types';
+import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 
 class AccountController {
   private readonly lsAccount = new LocalStorage('account');

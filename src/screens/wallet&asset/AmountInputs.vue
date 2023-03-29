@@ -37,7 +37,7 @@ import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import MaxButton from './MaxButton.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GetAssetPrice } from '@/store';

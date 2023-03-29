@@ -17,7 +17,7 @@ import {
   SignerType,
   SupportTransferResponse,
   TokenBalance,
-} from '../../background/types';
+} from '../../background/types/types';
 import { TokenInfo } from '../evm/types/ether';
 import { state } from '../../background/handlers';
 import { getTokenInfo } from './registry';

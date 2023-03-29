@@ -10,7 +10,7 @@ import {
   ExternalRequestPromise,
   PrepareExternalRequest,
   SignerType,
-} from '../../../background/types';
+} from '../../../background/types/types';
 import { lockAccount } from '../../../utils/keyring';
 import { HandleBasicTx } from '../../evm/transfer';
 import { sendExtrinsic } from './sendExtrinsic';

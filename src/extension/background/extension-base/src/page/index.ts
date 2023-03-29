@@ -15,7 +15,7 @@ import type {
   SubscriptionMessageTypes,
   TransportRequestMessage,
   TransportResponseMessage,
-} from '../background/types';
+} from '../background/types/types';
 
 // when sending a message from the injector to the extension, we
 //  - create an event - this we send to the loader

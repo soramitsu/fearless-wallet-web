@@ -1,5 +1,5 @@
 import type { AssetsPrice, History, FiatJson } from '@/interfaces';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 export type State = {

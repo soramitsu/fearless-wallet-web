@@ -1,7 +1,7 @@
 import type { SelectedWallet, SelectedNetworks, AutoSelectNode } from './types';
 import type { NetworkName } from '@/interfaces';
 import { accountController } from '@/controllers';
-import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
 export type State = {
   selectedWallet: SelectedWallet;

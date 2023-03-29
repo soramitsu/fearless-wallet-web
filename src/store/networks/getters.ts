@@ -10,17 +10,15 @@ import type {
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/evm/types/ether';
 
 export enum GettersTypes {
   getNetworks = 'getNetworks',
-  getBalance = 'getBalance',
   getAllNetworks = 'getAllNetworks',
   getNetwork = 'getNetwork',
   getNetworkGenesisHash = 'getNetworkGenesisHash',
-  getAssetsJson = 'getAssetsJson',
   getPrice = 'getPrice',
   getAssetPrice = 'getAssetPrice',
   getAssetName = 'getAssetName',
@@ -46,7 +44,6 @@ export type Getters = {
     rootState?: any
   ): NetworkJsonOld[];
   [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
-  // [GettersTypes.getAssetsJson](state: State, getters?: GetterTree<State, State> & Getters): AssetJson[];
   [GettersTypes.getAssetName](state: State, getters?: GetterTree<State, State> & Getters): GetAssetName;
   // [GettersTypes.getAssetIcon](state: State, getters?: GetterTree<State, State> & Getters): GetAssetIcon;
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
@@ -101,10 +98,6 @@ const getters: GetterTree<State, State> & Getters = {
 
       return `0x${network.chainId}`;
     },
-
-  // [GettersTypes.getAssetsJson]({ assetsJson }): AssetJson[] {
-  //   return assetsJson;
-  // },
 
   [GettersTypes.getFiats]({ fiats }): FiatJson[] {
     return fiats;

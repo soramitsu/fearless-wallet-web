@@ -39,7 +39,11 @@
 <script lang="ts">
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { AuthorizeRequest, ApproveAuthRequest, AccountJson } from '@extension-base/background/types';
+import {
+  AuthorizeRequest,
+  ApproveAuthRequest,
+  AccountJson,
+} from '@/extension/background/extension-base/src/background/types/types';
 import { TAction } from '@/interfaces';
 import Hint from '@/components/Hint.vue';
 import { Components } from '@/router/routes';

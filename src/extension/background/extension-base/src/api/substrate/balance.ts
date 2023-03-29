@@ -6,7 +6,7 @@ import { BN } from '@polkadot/util';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { Contract } from 'ethers';
 import { state } from '../../background/handlers';
-import { ApiProps } from '../../background/types';
+import { ApiProps } from '../../background/types/types';
 import { SUB_TOKEN_REFRESH_BALANCE_INTERVAL, ASTAR_REFRESH_BALANCE_INTERVAL } from '../../const/intervals';
 import { sumBN } from '../../utils';
 import { getEVMBalance } from '../evm/balance';

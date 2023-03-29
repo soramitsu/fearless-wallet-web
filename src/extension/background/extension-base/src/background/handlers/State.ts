@@ -43,7 +43,7 @@ import {
   ServiceInfo,
   BalanceMap,
   TokenBalance,
-} from '../types';
+} from '../types/types';
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';

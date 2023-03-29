@@ -6,7 +6,7 @@ import { PORT_EXTENSION } from '../../defaults';
 import Extension from './Extension';
 import Tabs from './Tabs';
 import State from './State';
-import type { MessageTypes, Port, TransportRequestMessage } from '../types';
+import type { MessageTypes, Port, TransportRequestMessage } from '../types/types';
 export const state = new State();
 export const extension = new Extension();
 export const tabs = new Tabs(state);

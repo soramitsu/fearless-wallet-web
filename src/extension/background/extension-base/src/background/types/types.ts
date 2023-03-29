@@ -9,39 +9,19 @@ import { SubmittableExtrinsicFunction } from '@polkadot/api/promise/types';
 import { BN } from '@polkadot/util';
 import { Subscription } from 'rxjs';
 import { ApiPromise } from '@polkadot/api';
-import { ALLOWED_PATH } from '../defaults';
-import MetadataStore from '../stores/Metadata';
-import { BalanceItem, NetworkJson } from '../api/evm/types/ether';
-import {
-  ChainRegistry,
-  NetworkJsonOld,
-  RequestTransactionHistoryAdd,
-  RequestTransactionHistoryGet,
-  TransactionHistoryItemType,
-} from '../types';
-import { CurrentAccountInfo } from '../stores/CurrentAccountStore';
-import EthProvider from '../api/evm/ethProvider';
-import type {
-  InjectedAccount,
-  InjectedMetadataKnown,
-  MetadataDef,
-  ProviderList,
-  ProviderMeta,
-} from '@polkadot/extension-inject/types';
+import { ALLOWED_PATH } from '../../defaults';
+import MetadataStore from '../../stores/Metadata';
+import { BalanceItem, NetworkJson } from '../../api/evm/types/ether';
+import { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
+import EthProvider from '../../api/evm/ethProvider';
+import { RequestSignatures } from './messages';
+import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
-import type { JsonRpcResponse, ProviderInterface } from '@polkadot/rpc-provider/types';
+import type { ProviderInterface } from '@polkadot/rpc-provider/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
+import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import {
-  FilesResponse,
-  GoogleAuthTypes,
-  ICreateFile,
-  IGetFilesResponse,
-  VerifyTokenResponse,
-} from '@/interfaces/google';
-import { DerivationPath, DerivationPaths } from '@/interfaces';
 
 export interface PrepareExternalRequest {
   id: string;
@@ -139,121 +119,7 @@ export interface ResponseCreateAccountSuri {
   isMobile: boolean;
 }
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
-export interface RequestSignatures {
-  // private/internal requests, i.e. from a popup
-  //Account Managment
-  'pri(accounts.create.external)': [RequestAccountCreateExternal, boolean];
-  'pri(accounts.validate.path)': [DerivationPath, boolean];
 
-  'pri(accounts.create.hardware)': [RequestAccountCreateHardware, boolean];
-  'pri(accounts.create.suri)': [RequestAccountCreateSuri, ResponseCreateAccountSuri];
-  'pri(addresses.create)': [RequestAddressCreate, boolean];
-  'pri(addresses.remove)': [RequestAddressRemove, boolean];
-  'pri(addresses.get)': [null, KeyringAddress[]];
-  'pri(accounts.get.meta)': [RequestAccountMeta, ResponseAccountMeta];
-  'pri(accounts.export)': [RequestAccountExport, ResponseAccountExport];
-  'pri(accounts.batchExport)': [RequestAccountBatchExport, ResponseAccountsExport];
-  'pri(accounts.forget)': [RequestAccountForget, boolean];
-  'pri(accounts.list)': [RequestAccountList, InjectedAccount[]];
-  'pri(accounts.show)': [RequestAccountShow, boolean];
-  'pri(accounts.tie)': [RequestAccountTie, boolean];
-  'pri(accounts.subscribe)': [RequestAccountSubscribe, boolean, AccountJson[]];
-  'pri(accounts.validate)': [RequestAccountValidate, boolean];
-  'pri(accounts.changePassword)': [RequestAccountChangePassword, boolean];
-  'pri(accounts.current.saveAddress)': [RequestCurrentAccountAddress, boolean, CurrentAccountInfo];
-  'pri(accounts.update.current)': [string, boolean];
-
-  //App Managment - networks
-  // Network, APIs, Custom tokens functions
-  'pri(app.port.ping)': [null, boolean];
-  'pri(networkMap.recoverDotSama)': [string, boolean];
-  'pri(networkMap.disableAll)': [null, boolean];
-  'pri(networkMap.enableAll)': [null, boolean];
-  'pri(networkMap.resetDefault)': [null, boolean];
-  'pri(apiMap.validate)': [ValidateNetworkRequest, ValidateNetworkResponse];
-  'pri(networkMap.enableMany)': [string[], boolean];
-  'pri(networkMap.disableMany)': [string[], boolean];
-  'pri(networkMap.enableOne)': [string, boolean];
-  'pri(networkMap.disableOne)': [string, DisableNetworkResponse];
-  'pri(networkMap.removeOne)': [string, boolean];
-  'pri(networkMap.upsert)': [NetworkJsonOld, boolean];
-  'pri(networkMap.addCustomNode)': [string, boolean];
-  'pri(networkMap.getNetworkMap)': [null, Record<string, NetworkJsonOld>];
-  'pri(networkMap.getSubscription)': [null, Record<string, NetworkJsonOld>, Record<string, NetworkJsonOld>];
-  //Authorize
-  'pri(authorize.approve)': [RequestAuthorizeApprove, boolean];
-  'pri(authorize.list)': [null, ResponseAuthorizeList];
-  'pri(authorize.requests)': [RequestAuthorizeSubscribe, boolean, AuthorizeRequest[]];
-  'pri(authorize.remove)': [string, ResponseAuthorizeList];
-  'pri(authorize.delete.request)': [string, void];
-  'pri(authorize.cancel)': [string, boolean];
-  'pri(authorize.update)': [RequestUpdateAuthorizedAccounts, void];
-  'pri(activeTabsUrl.update)': [RequestActiveTabsUrlUpdate, void];
-  'pri(connectedTabsUrl.get)': [null, ConnectedTabsUrlResponse];
-  'pri(derivation.create)': [RequestDeriveCreate, boolean];
-  'pri(derivation.validate)': [RequestDeriveValidate, ResponseDeriveValidate];
-  'pri(json.restore)': [RequestJsonRestore, string];
-  'pri(json.valid)': [RequestJsonValidate, ValidateJsonResult];
-  'pri(json.batchRestore)': [RequestBatchRestore, void];
-  'pri(json.account.info)': [KeyringPair$Json, ResponseJsonGetAccountInfo];
-  'pri(metadata.approve)': [RequestMetadataApprove, boolean];
-  'pri(metadata.get)': [string | null, MetadataDef | null];
-  'pri(metadata.reject)': [RequestMetadataReject, boolean];
-  'pri(metadata.requests)': [RequestMetadataSubscribe, boolean, MetadataRequest[]];
-  'pri(metadata.list)': [null, MetadataDef[]];
-  'pri(seed.create)': [RequestSeedCreate, ResponseSeedCreate];
-  'pri(seed.validate)': [RequestSeedValidate, ResponseSeedValidate];
-  'pri(settings.notification)': [string, boolean];
-  'pri(signing.approve.password)': [RequestSigningApprovePassword, boolean];
-  'pri(signing.approve.signature)': [RequestSigningApproveSignature, boolean];
-  'pri(signing.cancel)': [RequestSigningCancel, boolean];
-  'pri(signing.isLocked)': [RequestSigningIsLocked, ResponseSigningIsLocked];
-  'pri(signing.requests)': [RequestSigningSubscribe, boolean, SigningRequest[]];
-  'pri(window.open)': [AllowedPath, boolean];
-  'pri(signing.refreshPasswordTimeout)': [string, number];
-  'pri(signing.resetTimeouts)': [null, boolean];
-  'pri(signing.saveTimeoutCache)': [RequestSaveTimeoutCache, boolean];
-  'pri(google.auth)': [GoogleAuthTypes, void];
-  'pri(google.verify.token)': [{ token: string }, VerifyTokenResponse];
-  'pri(google.get.files)': [{ token: string }, IGetFilesResponse];
-  'pri(google.get.file)': [GoogleFileId, KeyringPair$Json];
-  'pri(google.create.file)': [ICreateFile, FilesResponse];
-  'pri(google.delete.file)': [GoogleFileId, void];
-  'pri(tab.status)': [null, ActiveTabAuthorizeStatus];
-  //Transfer
-  'pri(accounts.checkTransfer)': [RequestCheckTransfer, ResponseCheckTransfer];
-  'pri(accounts.transfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
-
-  //ether
-  'pri(balance.get.balance)': [null, BalanceJson];
-  'pri(balance.get.subscription)': [null, BalanceJson, BalanceJson];
-  'pri(transaction.history.get.subscription)': [
-    null,
-    Record<string, TransactionHistoryItemType[]>,
-    Record<string, TransactionHistoryItemType[]>
-  ];
-  'pri(transaction.history.add)': [RequestTransactionHistoryAdd, boolean, TransactionHistoryItemType[]];
-  'pri(transaction.history.get)': [RequestTransactionHistoryGet, any];
-  'pri(price.get.price)': [RequestPrice, PriceJson];
-  'pri(price.get.subscription)': [RequestSubscribePrice, PriceJson, PriceJson];
-
-  // public/external requests, i.e. from a page
-  'pub(accounts.list)': [RequestAccountList, InjectedAccount[]];
-  'pub(accounts.subscribe)': [RequestAccountSubscribe, string, InjectedAccount[]];
-  'pub(accounts.unsubscribe)': [RequestAccountUnsubscribe, boolean];
-  'pub(authorize.tab)': [RequestAuthorizeTab, Promise<AuthResponse>];
-  'pub(bytes.sign)': [SignerPayloadRaw, ResponseSigning];
-  'pub(extrinsic.sign)': [SignerPayloadJSON, ResponseSigning];
-  'pub(metadata.list)': [null, InjectedMetadataKnown[]];
-  'pub(metadata.provide)': [MetadataDef, boolean];
-  'pub(phishing.redirectIfDenied)': [null, boolean];
-  'pub(rpc.listProviders)': [void, ResponseRpcListProviders];
-  'pub(rpc.send)': [RequestRpcSend, JsonRpcResponse];
-  'pub(rpc.startProvider)': [string, ProviderMeta];
-  'pub(rpc.subscribe)': [RequestRpcSubscribe, number, JsonRpcResponse];
-  'pub(rpc.subscribeConnected)': [null, boolean, boolean];
-  'pub(rpc.unsubscribe)': [RequestRpcUnsubscribe, boolean];
-}
 export enum NETWORK_ERROR {
   INVALID_INFO_TYPE = 'invalidInfoType',
   INJECT_SCRIPT_DETECTED = 'injectScriptDetected',
@@ -306,7 +172,6 @@ export interface RequestCurrentAccountAddress {
 export type MessageTypes = keyof RequestSignatures;
 
 // Requests
-
 export type RequestTypes = {
   [MessageType in keyof RequestSignatures]: RequestSignatures[MessageType][0];
 };

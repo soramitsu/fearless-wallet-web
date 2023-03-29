@@ -9,7 +9,7 @@ import {
   ExternalRequestPromise,
   ExternalRequestPromiseStatus,
   TransferErrorCode,
-} from '../../background/types';
+} from '../../background/types/types';
 import { checkMainToken } from '../substrate/balance';
 import { getTokenInfo } from '../substrate/registry';
 

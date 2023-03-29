@@ -1,7 +1,7 @@
 // Copyright 2019-2022 @subwallet/extension-koni authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 import { state } from '../background/handlers';
-import { PriceJson } from '../background/types';
+import { PriceJson } from '../background/types/types';
 import { REFRESH_PRICE_INTERVAL } from '../const/intervals';
 import { axios } from './axios';
 

@@ -40,8 +40,8 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { AccountJson, SigningRequest } from '@extension-base/background/types';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
+import { AccountJson, SigningRequest } from '@/extension/background/extension-base/src/background/types/types';
 import { registry } from '@/extension/background/extension-base/src/background/handlers/State';
 import BaseApi from '@/util/BaseApi';
 import Checkbox from '@/components/Checkbox.vue';

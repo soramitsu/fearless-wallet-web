@@ -6,7 +6,7 @@ import BigNumber from 'bignumber.js';
 import { BN, hexToU8a, isHex } from '@polkadot/util';
 import { decodeAddress, encodeAddress, ethereumEncode, isEthereumAddress } from '@polkadot/util-crypto';
 import { NetworkJson } from '../api/evm/types/ether';
-import { AccountJson, AccountAuthType } from '../background/types';
+import { AccountJson, AccountAuthType } from '../background/types/types';
 import { ALL_ACCOUNT_KEY } from '../const';
 
 export const notDef = (x: any) => x === null || typeof x === 'undefined';

@@ -34,7 +34,7 @@ import {
   ResponseCreateAccountSuri,
   TransferErrorCode,
   ValidateJsonResult,
-} from '../types';
+} from '../types/types';
 import { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import {
   NetworkJsonOld,
@@ -106,7 +106,7 @@ import type {
   ResponseSigningIsLocked,
   ResponseType,
   SigningRequest,
-} from '../types';
+} from '../types/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';

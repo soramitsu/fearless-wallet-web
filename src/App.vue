@@ -9,7 +9,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
-import { AccountJson, BalanceJson, PriceJson } from './extension/background/extension-base/src/background/types';
+import { AccountJson, BalanceJson, PriceJson } from './extension/background/extension-base/src/background/types/types';
 import { NetworksController } from './controllers';
 import type {
   Accounts,

@@ -5,7 +5,7 @@ import type { State } from './state';
 import type { FiatJson } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import store from '@/store';
-import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { ALL_NETWORKS } from '@/consts/networks';
 
 export enum GettersTypes {

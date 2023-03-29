@@ -9,7 +9,7 @@ import {
   ApiProps,
   BasicTxErrorCode,
   ExternalRequestPromiseStatus,
-} from '../../../background/types';
+} from '../../../background/types/types';
 import { HandleBasicTx } from '../../evm/transfer';
 
 interface SendExtrinsicProps {

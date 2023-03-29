@@ -30,7 +30,7 @@ import type {
   ResponseSigning,
   ResponseTypes,
   SubscriptionMessageTypes,
-} from '../types';
+} from '../types/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';

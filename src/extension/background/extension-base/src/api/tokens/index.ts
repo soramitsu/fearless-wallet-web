@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import { ApiProps } from '../../background/types';
+import { ApiProps } from '../../background/types/types';
 import { ChainRegistry, DeleteCustomTokenParams } from '../../types';
 import EthProvider from '../evm/ethProvider';
 import { CustomTokenType, CustomTokenJson, CustomToken } from '../evm/types/ether';

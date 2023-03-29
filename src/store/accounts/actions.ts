@@ -3,7 +3,7 @@ import type { ActionTree, ActionContext } from 'vuex';
 import type { Mutations } from '@/store/accounts/mutations';
 import type { State } from '@/store/accounts/state';
 import { MutationTypes } from '@/store/accounts/mutations';
-import { AccountJson, BalanceJson } from '@/extension/background/extension-base/src/background/types';
+import { AccountJson, BalanceJson } from '@/extension/background/extension-base/src/background/types/types';
 import { accountController } from '@/controllers/accountController';
 
 export enum ActionTypes {

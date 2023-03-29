@@ -23,7 +23,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { HistoryElement } from '@/interfaces';
 import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, getSignTransfer, cut } from '@/helpers/history';
 import { TransactionType } from '@/interfaces/history';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
 @Component
 export default class HistoryItem extends Vue {

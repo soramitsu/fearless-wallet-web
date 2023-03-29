@@ -2,12 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { EventRecord } from '@polkadot/types/interfaces';
-import { BasicTxResponse } from '../../../../background/types';
-import { TokenInfo } from '../../../evm/types/ether';
-import { signAndSendExtrinsic } from '../../shared/signAndSendExtrinsic';
-import { createTransferExtrinsic, getUnsupportedResponse, updateTransferResponseTxResult } from '../../transfer';
-import { ExternalProps } from '../shared';
-import { state } from '../../../../background/handlers';
+import { BasicTxResponse } from '../../../background/types/types';
+import { signAndSendExtrinsic } from '../shared/signAndSendExtrinsic';
+import { createTransferExtrinsic, updateTransferResponseTxResult } from '../transfer';
+import { state } from '../../../background/handlers';
+import { ExternalProps } from './shared';
 import { AssetJson } from '@/interfaces';
 
 interface MakeTransferExternalProps extends ExternalProps {

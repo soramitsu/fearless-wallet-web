@@ -54,7 +54,7 @@ import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import { createGoogleFile, exportAccount, validateAccount } from '@/extension/messaging';
 import { ICreateFile } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types';
+import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 
 @Component
 export default class GoogleExportPopup extends Vue {

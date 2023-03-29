@@ -44,7 +44,7 @@ import type {
   DisableNetworkResponse,
   ValidateNetworkResponse,
   ResponseCreateAccountSuri,
-} from '@extension-base/background/types';
+} from '@/extension/background/extension-base/src/background/types/types';
 import type { Message, NetworkJsonOld, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';

@@ -2,28 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ApiPromise } from '@polkadot/api';
-import { BN, bnToHex } from '@polkadot/util';
 import { state } from '../../background/handlers';
 import { ChainRegistry } from '../../types';
-import { TokenInfo } from '../evm/types/ether';
 import { AssetJson } from '@/interfaces';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
-
-// temporary fix for token symbols, need a better fix later
-function formatTokenSymbol(rawSymbol: string) {
-  if (rawSymbol === 'xcKBTC') {
-    return 'xckBTC';
-  } else if (rawSymbol === 'xcIBTC') {
-    return 'xciBTC';
-  } else if (rawSymbol === 'KBTC') {
-    return 'kBTC';
-  } else if (rawSymbol === 'IBTC') {
-    return 'iBTC';
-  }
-
-  return rawSymbol;
-}
 
 const DEFAULT_TOKEN_REGISTRY: Record<string, { chainDecimals: number[]; chainTokens: string[] }> = {
   ethereum: { chainDecimals: [18], chainTokens: ['ETH'] },

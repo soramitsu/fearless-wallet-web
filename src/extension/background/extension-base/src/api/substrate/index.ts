@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { getCurrentProvider } from '../../background/handlers/helpers';
-import { ApiProps } from '../../background/types';
+import { ApiProps } from '../../background/types/types';
 import { NetworkJsonOld } from '../../types';
 import { initApi } from './api';
 

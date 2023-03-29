@@ -1,6 +1,6 @@
 import { MESSAGE_ORIGIN_CONTENT, MESSAGE_ORIGIN_PAGE, PORT_CONTENT } from '@extension-base/defaults';
 import { chrome } from '@polkadot/extension-inject/chrome';
-import { Port } from '../background/extension-base/src/background/types';
+import { Port } from '../background/extension-base/src/background/types/types';
 import type { Message } from '@extension-base/types';
 let port: Port;
 class Content {

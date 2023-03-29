@@ -141,7 +141,7 @@ import { Getter } from 'vuex-class';
 import HistoryDetailsForm from './HistoryDetailsForm.vue';
 import History from './History.vue';
 import type { HistoryElement } from '@/interfaces/history';
-import type { GetAssetName, GetAssetPrice, SelectedWallet } from '@/store';
+import type { GetAssetPrice, SelectedWallet } from '@/store';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
@@ -156,8 +156,8 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { tieAccount } from '@/extension/messaging';
 import { ALL_NETWORKS, ETHEREUM_NETWORKS } from '@/consts/networks';
-import { firstCharToUp } from '@/helpers/common';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { firstCharToUp, isSora } from '@/helpers/common';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 import { getTotalBalance, getTotalCountAssets } from '@/helpers/currencies';
 import { AssetPrice } from '@/interfaces';
@@ -209,9 +209,9 @@ export default class Asset extends Vue {
     );
   }
 
-  // get relayChain() {
-  //   return this.currentCurrency?.relayChain;
-  // }
+  get showSwapButton() {
+    return isSora(this.selectedNetwork) && !this.selectedWallet.isMobile;
+  }
 
   get currentNetwork() {
     return this.currentCurrency.balances.find((el) => el.name.toLowerCase() === this.selectedNetwork.toLowerCase());

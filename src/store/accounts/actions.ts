@@ -1,8 +1,7 @@
+import { SetSelectedFiatProps } from '..';
 import type { ActionTree, ActionContext } from 'vuex';
 import type { Mutations } from '@/store/accounts/mutations';
 import type { State } from '@/store/accounts/state';
-import type { SetSelectedFiat, SetSelectedWallet } from './types';
-import type { Currencies } from '@/interfaces';
 import { MutationTypes } from '@/store/accounts/mutations';
 import { AccountJson, BalanceJson } from '@/extension/background/extension-base/src/background/types';
 import { accountController } from '@/controllers/accountController';
@@ -18,7 +17,7 @@ type AugmentedActionContext = {
 } & Omit<ActionContext<State, any>, 'commit'>;
 
 export type Actions = {
-  [ActionTypes.SET_SELECTED_FIAT](context: AugmentedActionContext, props: SetSelectedFiat): Promise<void>;
+  [ActionTypes.SET_SELECTED_FIAT](context: AugmentedActionContext, props: SetSelectedFiatProps): Promise<void>;
   [ActionTypes.SET_BALANCE](context: AugmentedActionContext, props: BalanceJson): Promise<void>;
   [ActionTypes.SET_SELECTED_WALLET](context: AugmentedActionContext, props: AccountJson | undefined): Promise<void>;
 };
@@ -28,12 +27,9 @@ const actions: ActionTree<State, State> & Actions = {
     commit(MutationTypes.SET_BALANCE, payload);
   },
 
-  async [ActionTypes.SET_SELECTED_FIAT]({ rootState, commit }, { fiatName }) {
-    const currencies: Currencies = rootState.networks.currencies;
-
+  async [ActionTypes.SET_SELECTED_FIAT]({ commit }, { fiatName }) {
     commit(MutationTypes.SET_SELECTED_FIAT, {
       fiatName,
-      currencies,
     });
   },
 

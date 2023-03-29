@@ -1,5 +1,6 @@
 import type { SelectedWallet, SelectedNetworks, AutoSelectNode } from './types';
-import { accountController } from '@/controllers/accountController';
+import type { NetworkName } from '@/interfaces';
+import { accountController } from '@/controllers';
 import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
 
 export type State = {
@@ -12,7 +13,9 @@ export type State = {
   hiddenAssets: string[];
   autoSelectNode: AutoSelectNode;
   isCustomSort: Record<string, boolean>;
+  hideWarningNetworks: NetworkName[];
   qr: string | null;
+  showPolkaswapAlert: boolean;
 };
 
 const state = (): State => {
@@ -26,6 +29,8 @@ const state = (): State => {
     accounts: accountController.getAccounts(),
     isCustomSort: accountController.getCustomSort(),
     autoSelectNode: accountController.getAutoSelectNodesValue(),
+    showPolkaswapAlert: !accountController.getAgreeSwapDisclaimer(),
+    hideWarningNetworks: accountController.getHideWarningNetworks(),
     qr: null,
   };
 };

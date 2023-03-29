@@ -218,7 +218,7 @@ export async function estimateFee(
   //   api,
   // }!;
   const paymentInfo = await extrinsic?.paymentInfo(to);
-  const partialFee = paymentInfo ? paymentInfo.partialFee : 0;
+  const partialFee = paymentInfo ? +paymentInfo.partialFee : 0;
   const result = new FPNumber(partialFee, tokenInfo?.precision);
 
   return result.toNumber();

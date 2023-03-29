@@ -8,29 +8,15 @@ import {
 } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import { assetFromToken } from '@equilab/api';
-import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
-import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-import type { BehaviorSubject } from 'rxjs';
-import type { KeyringPair$Json, KeyringPair$Meta, KeyringPair } from '@polkadot/keyring/types';
-import type { KeypairType } from '@polkadot/util-crypto/types';
+import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
+import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
 import type { Wallet } from '@/store';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
-import {
-  createAccountSuri,
-  forgetAccount,
-  getAccountMeta,
-  isDerivationPathValid,
-  isJsonValid,
-  jsonRestore,
-  validateAccount,
-  validateDerivationPath,
-} from '@/extension/messaging';
-import { getReplacedMetaTyped, getMetaTyped } from '@/helpers/common';
+import { isDerivationPathValid, isJsonValid, jsonRestore, validateAccount } from '@/extension/messaging';
 import { ETHEREUM_NETWORKS, ETHEREUM_ADDRESS_LENGTH, ETHEREUM_ADDRESS_PREFIX } from '@/consts/networks';
-import NetworksController from '@/controllers/networksController';
+import { NetworksController, beaconController } from '@/controllers';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
-import { beaconController } from '@/controllers/beaconController';
 import store from '@/store';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types';
 
@@ -416,39 +402,32 @@ export default class BaseApi {
     return validateAccount(address, password);
   }
 
-  // static deleteNativeWallet(address: string) {
-  //   //DELETE WALLET IN FRONTEND KEYRING ONLY
-  //   const { meta } = BaseApi.getPair(address);
-  //   const { ethereumAddress } = getMetaTyped(meta);
+  static deleteNativeWallet(address: string) {
+    //   //DELETE WALLET IN FRONTEND KEYRING ONLY
 
-  //   BaseApi.deleteAccount(address);
+    //   const { meta } = BaseApi.getPair(address);
+    //   const { ethereumAddress } = getMetaTyped(meta);
+    //   BaseApi.deleteAccount(address);
+    //   if (ethereumAddress !== '') BaseApi.deleteAccount(ethereumAddress);
+    // // delete replaced accounts
+    // BaseApi.getReplacedAccounts({ address, ethereumAddress })
+    //   .filter(({ meta }) => {
+    //     const { replacedSettings } = getReplacedMetaTyped(meta);
+    //     // if replaced account are used only for this main wallet
+    //     return Object.keys(replacedSettings).length === 1;
+    //   })
+    //   .forEach(({ address }) => BaseApi.deleteAccount(address));
+    //   forgetAccount(address, 'native');
+    //   return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
+    // }
+    // static async deleteMobileWallet(address: string): Promise<number> {
+    //   BaseApi.forgetAddress(address);
 
-  //   if (ethereumAddress !== '') BaseApi.deleteAccount(ethereumAddress);
+    beaconController.resetConnection();
 
-  // // delete replaced accounts
-  // BaseApi.getReplacedAccounts({ address, ethereumAddress })
-  //   .filter(({ meta }) => {
-  //     const { replacedSettings } = getReplacedMetaTyped(meta);
-
-  //     // if replaced account are used only for this main wallet
-  //     return Object.keys(replacedSettings).length === 1;
-  //   })
-  //   .forEach(({ address }) => BaseApi.deleteAccount(address));
-
-  //   forgetAccount(address, 'native');
-
-  //   return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
-  // }
-
-  // static async deleteMobileWallet(address: string): Promise<number> {
-  //   BaseApi.forgetAddress(address);
-
-  //   beaconController.resetConnection();
-
-  //   forgetAccount(address, 'mobile');
-
-  //   return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
-  // }
+    //   forgetAccount(address, 'mobile');
+    //   return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
+  }
 
   public static isExtension(): boolean {
     return chrome.extension !== undefined;

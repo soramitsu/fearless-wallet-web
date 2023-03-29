@@ -26,7 +26,6 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
-import type { SetSelectedWallet } from '@/store';
 import type { TMutation } from '@/interfaces/common';
 import { Components } from '@/router/routes';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
@@ -39,7 +38,7 @@ import { AccountJson } from '@/extension/background/extension-base/src/backgroun
 export default class WalletDetailsPopup extends Vue {
   @Prop(Number) buttonTopClick!: number;
   @Prop(String) selectedWalletAddress!: string;
-  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWallet>;
+  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<string>;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
   get selectedWallet() {
@@ -74,7 +73,7 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   openWalletDetails() {
-    this.setSelectedWallet({ selectedWalletAddress: this.selectedWalletAddress });
+    this.setSelectedWallet(this.selectedWalletAddress);
 
     this.$router.push({ name: Components.Accounts });
 

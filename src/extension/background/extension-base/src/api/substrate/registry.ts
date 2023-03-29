@@ -37,44 +37,6 @@ const DEFAULT_TOKEN_REGISTRY: Record<string, { chainDecimals: number[]; chainTok
   watr_network_evm: { chainDecimals: [18], chainTokens: ['WATRD'] },
 };
 
-export async function getMoonAssets(api: ApiPromise) {
-  await api.isReady;
-  const assets = await api.query.assets.metadata.entries();
-  const assetRecord = {} as Record<string, TokenInfo>;
-
-  assets.forEach(([assetKey, value]) => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-    const keyString = assetKey.toHuman()[0].toString().replace(/,/g, '');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    const hexAddress = bnToHex(new BN(keyString)).slice(2).toUpperCase();
-    const address = '0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'.slice(0, -hexAddress.length) + hexAddress;
-
-    const valueData = value!.toHuman();
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    const info = {
-      isMainToken: false,
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      name: valueData.name,
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      symbol: formatTokenSymbol(valueData.symbol),
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      decimals: parseInt(valueData.decimals || ' 0'),
-      contractAddress: address,
-      assetId: keyString,
-    } as TokenInfo;
-
-    assetRecord[info.symbol] = info;
-  });
-
-  return assetRecord;
-}
-
 export const getRegistry = async (networkKey: string, api: ApiPromise) => {
   const cached = cacheRegistryMap[networkKey];
 

@@ -1,4 +1,4 @@
-import { IWallet } from './types';
+import { GetShowWarningNetworks, IWallet } from './types';
 import type { GetterTree } from 'vuex';
 import type { SelectedWallet, WalletInfo, GetAutoSelectNodesValueByNetwork } from './types';
 import type { State } from './state';
@@ -23,6 +23,8 @@ export enum GettersTypes {
   getAutoSelectNodesValueByNetwork = 'getAutoSelectNodesValueByNetwork',
   GET_QR = 'getQR',
   getIsCustomSort = 'getIsCustomSort',
+  getPolkaswapAlertVisibility = 'getPolkaswapAlertVisibility',
+  getShowWarningNetworks = 'getShowWarningNetworks',
 }
 
 export type Getters = {
@@ -36,6 +38,11 @@ export type Getters = {
   [GettersTypes.getHiddenAssets](state: State, getters?: GetterTree<State, State> & Getters): string[];
   [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): AccountJson[];
   [GettersTypes.getWallets](state: State, getters?: GetterTree<State, State> & Getters): WalletInfo[];
+  [GettersTypes.getPolkaswapAlertVisibility](state: State, getters?: GetterTree<State, State> & Getters): boolean;
+  [GettersTypes.getShowWarningNetworks](
+    state: State,
+    getters?: GetterTree<State, State> & Getters
+  ): GetShowWarningNetworks;
   [GettersTypes.getAutoSelectNodesValueByNetwork](
     state: State,
     getters?: GetterTree<State, State> & Getters
@@ -70,6 +77,10 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.getOnlineStatus]({ isOnline }): boolean {
     return isOnline;
+  },
+
+  [GettersTypes.getPolkaswapAlertVisibility]({ showPolkaswapAlert }): boolean {
+    return showPolkaswapAlert;
   },
 
   [GettersTypes.getFiatSymbol]({ selectedFiat }): string {
@@ -115,6 +126,12 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.GET_QR]({ qr }): Nullable<string> {
     return qr;
   },
+
+  [GettersTypes.getShowWarningNetworks]:
+    ({ hideWarningNetworks }) =>
+    (networkName: string) => {
+      return hideWarningNetworks.includes(networkName);
+    },
 
   [GettersTypes.getIsCustomSort]:
     ({ isCustomSort }) =>

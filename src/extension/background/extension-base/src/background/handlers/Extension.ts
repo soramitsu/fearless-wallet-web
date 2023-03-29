@@ -91,6 +91,7 @@ import type {
   RequestSeedValidate,
   RequestSigningApprovePassword,
   RequestSigningApproveSignature,
+  RequestSaveTimeoutCache,
   RequestSigningCancel,
   RequestSigningIsLocked,
   RequestTypes,

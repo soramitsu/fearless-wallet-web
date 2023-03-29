@@ -5,7 +5,6 @@ import { ApiPromise } from '@polkadot/api';
 import { BN } from '@polkadot/util';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import { Contract } from 'ethers';
-import { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
 import { state } from '../../background/handlers';
 import { ApiProps } from '../../background/types';
 import { SUB_TOKEN_REFRESH_BALANCE_INTERVAL, ASTAR_REFRESH_BALANCE_INTERVAL } from '../../const/intervals';
@@ -18,7 +17,8 @@ import { categoryAddresses } from '../../utils/utils';
 import { ORML_PALLETS_TYPES } from '../../const/networks';
 import { getRegistry, getTokenInfo } from './registry';
 import { getAssetOptions } from './utils';
-import { AssetJson } from '@/interfaces';
+import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
+import { AssetJson, TypeAsset } from '@/interfaces';
 import { formatBalance } from '@/util/balances';
 
 function subscribeERC20Interval(
@@ -188,7 +188,7 @@ async function subscribeTokensBalance(
 
     return {
       ...searchedAsset,
-      type: asset.type ?? 'native',
+      type: asset.type ?? ('native' as TypeAsset),
       isNative: asset.isNative,
       isUtility: asset.isUtility,
     };
@@ -200,12 +200,13 @@ async function subscribeTokensBalance(
     tokenList.map(({ precision, symbol, id, type, isUtility, icon, displayName }) => {
       try {
         const options = getAssetOptions(symbol, type, id);
-        const assetType = type === 'equilibrium' ? 'eqBalances' : 'tokens';
-        const assetFetchField = assetType === 'tokens' ? 'accounts' : 'account';
+
         const pallet =
           isUtility && !ORML_PALLETS_TYPES.includes(type)
             ? api.rx.query.system.account(addresses[0])
-            : api.rx.query[assetType][assetFetchField](addresses[0], options);
+            : type === 'equilibrium'
+            ? api.rx.query.eqBalances.account(addresses[0], options)
+            : api.rx.query.tokes?.accounts(addresses[0], options);
 
         const onBalanceFetch = (balances: any) => {
           const tokenBalance = formatBalance(

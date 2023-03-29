@@ -4,10 +4,11 @@
       <div class="wallet-balance__container">
         <WalletBalance
           class="balance"
-          :balance="totalBalance"
+          :balance="summaryTransferableBalance"
           :changeWalletBalance="changeWalletBalance"
           @click.native="$emit('openFiatsPopup', true)"
         />
+
         <div class="wallet-balance__loading">
           <Loading :width="28" v-if="showShimmers" />
         </div>
@@ -79,7 +80,12 @@
       @setNetworkUnavailable="setNetworkUnavailable"
     />
 
-    <NetworkUnavailablePopup v-if="showNetworkUnavailablePopup" :closePopup="setNetworkUnavailable" />
+    <NetworkUnavailablePopup
+      v-if="showNetworkUnavailablePopup"
+      :networks="networksWithWarning"
+      :network="networkUnavailable"
+      :closePopup="setNetworkUnavailable"
+    />
 
     <GoogleExportPopup v-if="showGoogleExportPopup" :closePopup="closeGoogleExportPopup" />
 
@@ -89,10 +95,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import type { TMutation, TabWallet } from '@/interfaces/common';
-import type { SetSelectedNetworkProps, SelectedWallet } from '@/store';
+import type { SelectedWallet } from '@/store';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import CurrencyItemStateLess from '@/screens/wallet&asset/wallet/CurrencyItemStateLess.vue';
@@ -162,7 +168,7 @@ export default class Wallet extends Vue {
   @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJsonOld;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<SetSelectedNetworkProps>;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<string>;
   @Mutation(AccountsMutationTypes.SET_CUSTOM_SORT) setCustomSorting!: TMutation<string>;
 
   get showNetworkUnavailablePopup() {
@@ -197,7 +203,9 @@ export default class Wallet extends Vue {
   get disconnectedNetworks() {
     return this.networks.filter(({ apiStatus }) => apiStatus === 'disconnected');
   }
-
+  get summaryTransferableBalance() {
+    return 0;
+  }
   get changeWalletBalance() {
     if (this.balances.length === 0) return { totalBalance: 0, changeAmount: 0 };
 
@@ -266,6 +274,11 @@ export default class Wallet extends Vue {
     return this.$route.params.access_token && this.$route.params.access_token !== 'null';
   }
 
+  @Watch('networksWithWarning')
+  connect(value: string[]) {
+    if (value.length === 0) this.showNetworkManagement = false;
+  }
+
   setCustomSort() {
     this.setCustomSorting(this.selectedWallet.address);
   }
@@ -290,7 +303,8 @@ export default class Wallet extends Vue {
 
   toggleNetworkManagementVisible() {
     this.showNetworkManagement = !this.showNetworkManagement;
-    this.showSelectNetworkPopup = false;
+
+    this.toggleSelectNetworkPopupVisible(false);
   }
 
   toggleAssetsManagementFormVisible(value = true) {
@@ -348,15 +362,15 @@ export default class Wallet extends Vue {
 
     // const prepNetwork = network === 'all' ? null : `0x${this.getNetwork(network).chainId}`;
 
-    this.setSelectedNetwork({ network });
+    this.setSelectedNetwork(network);
     // tieAccount(this.selectedWallet.address, prepNetwork);
     this.toggleSelectNetworkPopupVisible();
   }
 
-  toggleSelectNetworkPopupVisible() {
+  toggleSelectNetworkPopupVisible(value?: boolean) {
     const targetElement = (this.$refs[this.selectNetworkButtonRef] as Vue).$el as HTMLElement;
 
-    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
+    this.showSelectNetworkPopup = value ?? !this.showSelectNetworkPopup;
 
     targetElement.style.zIndex = this.showSelectNetworkPopup ? '400' : '0';
   }

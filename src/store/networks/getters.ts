@@ -5,6 +5,7 @@ import type {
   GetNetworkGenesisHash,
   GetNetworkStatus,
   GetActiveNodesByNetwork,
+  GetAssetName,
 } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
@@ -46,7 +47,7 @@ export type Getters = {
   ): NetworkJsonOld[];
   [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
   // [GettersTypes.getAssetsJson](state: State, getters?: GetterTree<State, State> & Getters): AssetJson[];
-  // [GettersTypes.getAssetName](state: State, getters?: GetterTree<State, State> & Getters): GetAssetName;
+  [GettersTypes.getAssetName](state: State, getters?: GetterTree<State, State> & Getters): GetAssetName;
   // [GettersTypes.getAssetIcon](state: State, getters?: GetterTree<State, State> & Getters): GetAssetIcon;
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
@@ -124,17 +125,15 @@ const getters: GetterTree<State, State> & Getters = {
       return { price, priceChange };
     },
 
-  // [GettersTypes.getAssetName]:
-  //   ({}) =>
-  //   (assetId: string) => {
-  //     const asset = assetsJson.find(({ id }) => id === assetId);
+  [GettersTypes.getAssetName]:
+    ({ currencies }) =>
+    (assetId: string) => {
+      const asset = currencies.find(({ id }) => id === assetId);
 
-  //     if (!asset) return '';
+      if (!asset) return '';
 
-  //     const { symbol, displayName } = asset;
-
-  //     return displayName ?? symbol;
-  //   },
+      return asset.name;
+    },
 
   // [GettersTypes.getAssetIcon]:
   //   ({ assetsJson }) =>

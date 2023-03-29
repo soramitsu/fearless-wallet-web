@@ -2,7 +2,7 @@ import Vue from 'vue';
 import VueI18n from 'vue-i18n';
 import * as en from './en/translation.json';
 import * as ru from './ru/translation.json';
-import { accountController } from '@/controllers/accountController';
+import { accountController } from '@/controllers';
 
 Vue.use(VueI18n);
 

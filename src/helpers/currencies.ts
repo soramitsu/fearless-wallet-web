@@ -1,8 +1,7 @@
 import { ISubmittableResult } from '@polkadot/types/types';
 import type { Currencies, Networks, RelayChainName, Balances, NetworkName } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
-import CurrencyController from '@/controllers/currencyController';
-import NetworksController from '@/controllers/networksController';
+import { CurrencyController, NetworksController } from '@/controllers';
 import { ALL_NETWORKS, MAIN_NETWORKS } from '@/consts/networks';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
@@ -12,6 +11,7 @@ import { APIItemState } from '@/extension/background/extension-base/src/api/evm/
 type CurrencyMock = {
   mainNetwork: string;
   assetId: string;
+  assetFullName: string;
   symbol: string;
   displayName: string;
   relayChain: RelayChainName;
@@ -25,12 +25,13 @@ function getMockCurrencies(networks: Networks): Currencies {
 
   const currencies = networks
     .reduce<CurrencyMock[]>((result, network) => {
-      const { assets: networkAssets, name: mainNet, parentId, isEthereumNetwork, icon } = network;
+      const { assets: networkAssets, name: mainNet, parentId, icon } = network;
       const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNet) as RelayChainName;
 
       networkAssets.forEach(({ assetId, purchaseProviders, isUtility, isNative, type }) => {
         const {
           symbol,
+          name,
           displayName: _displayName,
           precision,
           existentialDeposit,
@@ -51,6 +52,7 @@ function getMockCurrencies(networks: Networks): Currencies {
           const newCurrency = {
             mainNetwork,
             assetId,
+            assetFullName: name,
             symbol,
             displayName,
             relayChain,
@@ -93,8 +95,18 @@ function getMockCurrencies(networks: Networks): Currencies {
       return result;
     }, [])
     .map(
-      ({ mainNetwork, assetId, symbol, relayChain, providers, displayName, balances, icon }) =>
-        new CurrencyController(mainNetwork, assetId, symbol, providers, relayChain, balances, icon, displayName)
+      ({ mainNetwork, assetId, symbol, relayChain, providers, displayName, balances, icon, assetFullName }) =>
+        new CurrencyController(
+          mainNetwork,
+          assetId,
+          assetFullName,
+          symbol,
+          providers,
+          relayChain,
+          balances,
+          icon,
+          displayName
+        )
     );
 
   return currencies;

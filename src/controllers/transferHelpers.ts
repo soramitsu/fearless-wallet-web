@@ -1,7 +1,7 @@
+import { FPNumber } from '@sora-substrate/util';
 import { NetworkName } from '@/interfaces';
 import { Wallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
-import { FPNumber } from '@/util/fp';
 
 export function calculateCost(count: FPNumber, price: number): FPNumber {
   const FPPrice = new FPNumber(price);
@@ -9,7 +9,7 @@ export function calculateCost(count: FPNumber, price: number): FPNumber {
   return count.mul(FPPrice);
 }
 
-export function getCostOfAssets(count: string, price: number): number {
+export function getCostOfAssets(count: number, price: number): number {
   return calculateCost(new FPNumber(count), price).toNumber();
 }
 

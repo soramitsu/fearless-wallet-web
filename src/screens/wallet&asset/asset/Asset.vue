@@ -9,7 +9,7 @@
 
           <Icon icon="info" class="details-icon" />
         </div>
-        <div class="balance-in-network">{{ balanceInNetworkString }}</div>
+        <div class="balance-in-network">{{ transferableFiatBalanceInNetworkString }}</div>
 
         <div class="price">{{ assetPriceString }}</div>
       </div>
@@ -51,6 +51,14 @@
         iconName="plus-pink"
         @click="toggleVisible('showBuyPopup', true)"
       />
+
+      <BorderButton
+        v-if="showSwapButton"
+        class="activity-button"
+        text="assets.swap"
+        iconName="swap"
+        @click="toggleVisible('showSwapForm', true)"
+      />
     </div>
 
     <History :currency="currentCurrency" @openHistoryDetailsForm="openHistoryDetailsForm" />
@@ -74,6 +82,13 @@
       :_originalNetwork="selectedNetwork"
       :_selectedAssetId="selectedAssetId"
       :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
+    />
+
+    <SwapForm
+      v-if="showSwapForm"
+      :selectedNetwork="selectedNetwork"
+      :_selectedAssetId="selectedAssetId"
+      :closeForm="toggleVisible.bind(null, 'showSwapForm', false)"
     />
 
     <BuyPopup
@@ -131,6 +146,7 @@ import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue'
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import TeleportForm from '@/screens/wallet&asset/TeleportForm.vue';
+import SwapForm from '@/screens/wallet&asset/swap/SwapForm.vue';
 import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
 import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
@@ -146,12 +162,13 @@ import { NetworkJsonOld } from '@/extension/background/extension-base/src/types'
 import { getTotalBalance, getTotalCountAssets } from '@/helpers/currencies';
 import { AssetPrice } from '@/interfaces';
 
-type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
+type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup' | 'showSwapForm';
 
 @Component({
   components: {
     History,
     SendForm,
+    SwapForm,
     BuyPopup,
     ReceiveForm,
     TeleportForm,
@@ -168,6 +185,7 @@ export default class Asset extends Vue {
   showSendForm = false;
   showReceiveForm = false;
   showTeleportForm = false;
+  showSwapForm = false;
   showBuyPopup = false;
   showHistoryDetailsForm = false;
   showSelectNetworkPopup = false;
@@ -244,7 +262,7 @@ export default class Asset extends Vue {
     return `${this.selectedAssetUpper} ${total}`;
   }
 
-  get balanceInNetworkString() {
+  get transferableFiatBalanceInNetworkString() {
     if (!this.currentCurrency) return `${this.fiatSymbol} 0`;
 
     const total = +getTotalBalance(this.currentCurrency, this.selectedNetwork);
@@ -374,7 +392,11 @@ export default class Asset extends Vue {
           min-height: 18px;
           min-width: 18px;
           margin-left: 10px;
-          opacity: 0.5;
+          color: $grayish-white;
+
+          &:hover {
+            color: $default-white;
+          }
         }
       }
 

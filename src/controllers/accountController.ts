@@ -1,11 +1,12 @@
 import type { Node, NetworkName } from '@/interfaces';
 import type { Lang } from '@/locales';
-import LocalStorageController from '@/controllers/localStorageController';
+import { LocalStorage } from '@/controllers/localStorageController';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types';
+
 class AccountController {
-  private readonly lsAccount = new LocalStorageController('account');
+  private readonly lsAccount = new LocalStorage('account');
   private readonly langStorageName = 'lang';
   private readonly sequenceAssetsStorageName = 'sequence-assets';
   private readonly autoSelectNodesStorageName = 'auto-select-nodes';
@@ -16,11 +17,35 @@ class AccountController {
   private readonly selectedNetworkStorageName = 'selected-network';
   private readonly customSort = 'customSort';
   private readonly accounts = 'accounts';
+  private readonly agreeSwapDisclaimer = 'agree-swap-disclaimer';
+  private readonly hideWarningNetworks = 'hide-warning-networks';
 
   private getSequenceAssets(): Record<string, Record<NetworkName, string>> {
     const sequencesAssets = this.lsAccount.get(this.sequenceAssetsStorageName);
 
     return sequencesAssets.value ?? {};
+  }
+
+  public getHideWarningNetworks(): string[] {
+    const array = this.lsAccount.get(this.hideWarningNetworks);
+
+    return array.value ?? [];
+  }
+
+  public setHideWarningNetwork(networkName: NetworkName): void {
+    const array = this.getHideWarningNetworks();
+
+    this.lsAccount.set(this.hideWarningNetworks, [...array, networkName]);
+  }
+
+  public getAgreeSwapDisclaimer(): boolean {
+    const { value } = this.lsAccount.get(this.agreeSwapDisclaimer);
+
+    return value !== undefined;
+  }
+
+  public setAgreeSwapDisclaimer(): void {
+    this.lsAccount.set(this.agreeSwapDisclaimer, true);
   }
 
   public getLang(): Lang {

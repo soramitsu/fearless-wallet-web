@@ -1,63 +1,68 @@
-import { ApiPromise, WsProvider } from '@polkadot/api';
+// import { ApiPromise, WsProvider } from '@polkadot/api';
+// import { connection as soraConnection } from '@sora-substrate/util';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
-import type { Network, ApiOptions, AssetJson } from '@/interfaces';
-import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
+import type { Network, ApiOptions, AssetJson, NetworkAssetsType } from '@/interfaces';
 import type { Node } from '@/interfaces/nodes';
-import { formatBalance } from '@/util/balances';
-import { MutationTypes } from '@/store/networks/mutations';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
-import { ORML_PALLETS_TYPES, getAssetOptions } from '@/util/assets';
-import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
-import store from '@/store';
-import { accountController } from '@/controllers/accountController';
-import NetworksController from '@/controllers/networksController';
+// import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
+// import { formatBalance } from '@/util/balances';
+// import { MutationTypes } from '@/store/networks/mutations';
+// import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+// import { getAssetOptions } from '@/util/assets';
+// import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
+// import store from '@/store';
+// import { accountController, NetworksController } from '@/controllers';
+// import { isSora } from '@/helpers/common';
 
 interface ISubscribeData {
   data: AccountData;
 }
 
-const connectedHandler = (apiOptions: ApiOptions, network: Network) => {
-  apiOptions.apiRetry = 0;
+// const connectedHandler = (apiOptions: ApiOptions, network: Network) => {
+//   const api = isSora(network.name) ? soraConnection.api : apiOptions.api;
 
-  store.commit(MutationTypes.SET_NETWORK_API, {
-    network: network.name,
-    api: apiOptions.api,
-    provider: apiOptions.provider,
-  });
+//   store.commit(MutationTypes.SET_NETWORK_API, {
+//     network: network.name,
+//     api,
+//     provider: apiOptions.provider,
+//   });
 
-  store.commit(MutationTypes.SET_NETWORK_STATUS, {
-    network: network.name,
-    status: 'connected',
-  });
-};
+//   store.commit(MutationTypes.SET_NETWORK_STATUS, {
+//     network: network.name,
+//     status: 'connected',
+//   });
+// };
 
-const disconnectHandler = (apiOptions: ApiOptions, network: Network, provider: WsProvider, tryAnotherNode: boolean) => {
-  apiOptions.apiRetry += 1;
+// const disconnectHandler = (
+//   apiOptions: ApiOptions,
+//   network: Network,
+//   tryAnotherNode: boolean,
+//   currentProvider?: WsProvider
+// ) => {
+//   apiOptions.apiRetry += 1;
 
-  store.commit(MutationTypes.SET_NETWORK_API, {
-    network: network.name,
-    api: undefined,
-    provider: undefined,
-  });
+//   store.commit(MutationTypes.SET_NETWORK_API, {
+//     network: network.name,
+//     api: undefined,
+//     provider: undefined,
+//   });
 
-  if (apiOptions.apiRetry >= MAX_CONTINUE_RETRY) {
-    provider.disconnect();
+//   if (apiOptions.apiRetry >= MAX_CONTINUE_RETRY) {
+//     currentProvider?.disconnect();
 
-    if (tryAnotherNode) {
-      apiOptions.apiRetry = 0;
-      apiOptions.nodeIndex += 1;
-      apiOptions.api = undefined;
-      apiOptions.provider = undefined;
+//     if (tryAnotherNode) {
+//       apiOptions.apiRetry = 0;
+//       apiOptions.nodeIndex += 1;
+//       apiOptions.api = undefined;
+//       apiOptions.provider = undefined;
 
-      // if (navigator.onLine) connectToApi(network, apiOptions); // eslint-disable-line no-use-before-define
-    } else
-      store.commit(MutationTypes.SET_NETWORK_STATUS, {
-        network: network.name,
-        status: 'disconnected',
-      });
-  }
-};
+//       // if (navigator.onLine) connectToApi(network, apiOptions); // eslint-disable-line no-use-before-define
+//     } else
+//       store.commit(MutationTypes.SET_NETWORK_STATUS, {
+//         network: network.name,
+//         status: 'disconnected',
+//       });
+//   }
+// };
 
 const readyHandler = (network: Network) => {
   // store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, {
@@ -71,116 +76,117 @@ const readyHandler = (network: Network) => {
   //   });
 };
 
-function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): void {
-  const { name: networkName, nodes } = network;
-  const activeNodes = accountController.getActiveNodes();
-  const autoSelectNode = store.getters.getAutoSelectNodesValueByNetwork(networkName);
-  const nodesList = autoSelectNode ? nodes : [activeNodes[networkName]];
-  const node = _node ?? nodesList[apiOptions.nodeIndex];
-
-  store.commit(MutationTypes.SET_NETWORK_STATUS, {
-    network: networkName,
-    status: node === undefined ? 'disconnected' : 'pending',
-  });
-
-  if (node === undefined) return;
-
-  store.commit(MutationTypes.SET_ACTIVE_NODE, {
-    network: network.name,
-    name: node.name,
-    url: node.url,
-    saveNode: _node !== undefined,
-  });
-
-  const provider = new WsProvider(node.url, AUTO_CONNECT_MS);
-  const api = new ApiPromise({ provider, noInitWarn: true });
-
-  apiOptions.api = api;
-  apiOptions.provider = provider;
-
-  api.on('connected', () => connectedHandler(apiOptions, network));
-  api.on('disconnected', () => disconnectHandler(apiOptions, network, provider, _node === undefined));
+async function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): Promise<void> {
+  // const { name: networkName, nodes } = network;
+  // const activeNodes = accountController.getActiveNodes();
+  // const autoSelectNode = store.getters.getAutoSelectNodesValueByNetwork(networkName);
+  // const nodesList = autoSelectNode ? nodes : [activeNodes[networkName]];
+  // const node = _node ?? nodesList[apiOptions.nodeIndex];
+  // const eventListeners: Array<['connected' | 'disconnected' | 'ready', ProviderInterfaceEmitCb]> = [
+  //   ['connected', () => connectedHandler(apiOptions, network)],
+  //   ['ready', () => readyHandler(network)],
+  // ];
+  // store.commit(MutationTypes.SET_NETWORK_STATUS, {
+  //   network: networkName,
+  //   status: node === undefined ? 'disconnected' : 'pending',
+  // });
+  // if (node === undefined) return;
+  // store.commit(MutationTypes.SET_ACTIVE_NODE, {
+  //   network: network.name,
+  //   name: node.name,
+  //   url: node.url,
+  //   saveNode: _node !== undefined,
+  // });
+  // if (isSora(network.name)) {
+  //   eventListeners.push(['disconnected', () => disconnectHandler(apiOptions, network, _node === undefined)]);
+  //   await soraConnection.open(node.url, {
+  //     autoConnectMs: AUTO_CONNECT_MS,
+  //     eventListeners,
+  //   });
+  // } else {
+  //   const provider = new WsProvider(node.url, AUTO_CONNECT_MS);
+  //   const api = new ApiPromise({ provider, noInitWarn: true });
+  //   apiOptions.api = api;
+  //   apiOptions.provider = provider;
+  //   eventListeners.push(['disconnected', () => disconnectHandler(apiOptions, network, _node === undefined, provider)]);
+  //   eventListeners.forEach(([eventName, callback]) => api.on(eventName, callback));
+  // }
+  // api.on('connected', () => connectedHandler(apiOptions, network));
+  // api.on('disconnected', () => disconnectHandler(apiOptions, network, provider, _node === undefined));
   // api.on('ready', () => readyHandler(network));
 }
 
-async function subscribeUtilityAssetsBalances(address: string, network: Network): Promise<void> {
-  const { name: networkName, parentId, api, assets } = network;
-  const networkUtilityAsset = assets.find(
-    ({ isUtility, type }) => isUtility && !ORML_PALLETS_TYPES.includes(type as string)
-  )!;
+// function subscribeNativeAssetsBalances(address: string, network: Network, assetJson: AssetJson): void {
+//   const { name: networkName, api, parentId } = network;
+//   const { precision, id: assetId } = assetJson;
 
-  if (!networkUtilityAsset) return;
+//   api!.rx.query.system.account<ISubscribeData>(address).subscribe(async ({ data }) => {
+//     // store.commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
+//     //   walletAddress: address,
+//     //   network: networkName,
+//     //   assetId,
+//     //   balance: formatBalance(data, precision),
+//     //   parentId,
+//     // });
+//     const historyForNetwork = store.getters[NetworksGettersTypes.getHistory](assetId, address, networkName);
 
-  const { assetId } = networkUtilityAsset;
-  const { precision } = (store.getters[NetworksGettersTypes.getAssetsJson] as AssetJson[]).find(
-    ({ id }) => id === assetId
-  )!;
+//     // store.commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
+//     //   walletAddress: address,
+//     //   network: networkName,
+//     //   assetId,
+//     //   balance: formatBalance(data, precision),
+//     //   parentId,
+//     // });
 
-  await api?.isReadyOrError;
+//     if (historyForNetwork)
+//       NetworksController.fetchHistory(networkName, { address, ethereumAddress: address }, assetId, true, 45);
+//   });
+// }
 
-  api!.rx.query.system.account<ISubscribeData>(address).subscribe(async ({ data }) => {
-    // store.commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
-    //   walletAddress: address,
-    //   network: networkName,
-    //   assetId,
-    //   balance: formatBalance(data, precision),
-    //   parentId,
-    // });
-    const historyForNetwork = store.getters[NetworksGettersTypes.getHistory](assetId, address, networkName);
+// async function subscribeOrmlAssetsBalances(
+//   address: string,
+//   network: Network,
+//   asset: AssetJson,
+//   type: NetworkAssetsType
+// ): Promise<void> {
+//   const { name: networkName, api, parentId } = network;
+//   const { precision, id: assetId, symbol } = asset;
 
-    // store.commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
-    //   walletAddress: address,
-    //   network: networkName,
-    //   assetId,
-    //   balance: formatBalance(data, precision),
-    //   parentId,
-    // });
+//   const options = getAssetOptions(symbol, type, assetId);
+//   const query = api!.rx.query;
+//   const pallet =
+//     type === 'equilibrium'
+//       ? query.eqBalances.account<OrmlAccountData>(address, options)
+//       : query.tokens?.accounts<OrmlAccountData>(address, options);
 
-    if (historyForNetwork)
-      NetworksController.fetchHistory(networkName, { address, ethereumAddress: address }, assetId, true, 45);
-  });
-}
+//     pallet.subscribe(async (data) => {
+//       // store.commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
+//       //   walletAddress: address,
+//       //   network: networkName,
+//       //   assetId,
+//       //   balance: formatBalance(data, precision),
+//       //   parentId,
+//       // });
+//     });
+//   });
+// }
 
-function subscribeOrmlAssetsBalances(address: string, network: Network): void {
-  const { name: networkName, api, assets, parentId } = network;
+// async function subscribeAssetsBalances(address: string, network: Network): Promise<void> {
+//   const { api, assets } = network;
 
-  assets.forEach(async ({ assetId, type }) => {
-    if (type === undefined) return; // is utility Asset
+//   if (api === undefined) return;
 
-    const { symbol, precision } = (store.getters[NetworksGettersTypes.getAssetsJson] as AssetJson[]).find(
-      ({ id }) => id === assetId
-    )!;
+//   await api?.isReadyOrError;
 
-    if (symbol === 'csm') return; // TODO: fix
+//   assets.forEach((networkAsset) => {
+//     const { assetId, type } = networkAsset;
+//     const assetJson = (store.getters[NetworksGettersTypes.getAssetsJson] as AssetJson[]).find(
+//       ({ id }) => id === assetId
+//     )!;
 
-    await api?.isReadyOrError;
+//     if (type === undefined) subscribeNativeAssetsBalances(address, network, assetJson);
+//     else subscribeOrmlAssetsBalances(address, network, assetJson, type);
+//   });
+// }
 
-    const options = getAssetOptions(symbol, type, assetId);
-    const query = api!.rx.query;
-    const pallet =
-      type === 'equilibrium'
-        ? query.eqBalances.account<OrmlAccountData>(address, options)
-        : query.tokens?.accounts<OrmlAccountData>(address, options);
-
-    pallet.subscribe(async (data) => {
-      // store.commit(MutationTypes.UPDATE_CURRENCY_BALANCE, {
-      //   walletAddress: address,
-      //   network: networkName,
-      //   assetId,
-      //   balance: formatBalance(data, precision),
-      //   parentId,
-      // });
-    });
-  });
-}
-
-async function subscribeAssetsBalances(address: string, network: Network): Promise<void> {
-  const { api } = network;
-
-  if (api === undefined) return;
-
-  subscribeUtilityAssetsBalances(address, network);
-  subscribeOrmlAssetsBalances(address, network);
-}
-
-export { connectToApi, subscribeAssetsBalances };
+// export { connectToApi, subscribeAssetsBalances };

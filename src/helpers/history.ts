@@ -1,16 +1,9 @@
 import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
-import { FPNumber } from '@sora-substrate/math';
-import type {
-  HistoryElement,
-  AssetJson,
-  GiantsquidHistoryItem,
-  SubqueryHistory,
-  HistoryServiceType,
-} from '@/interfaces';
+import { FPNumber } from '@sora-substrate/util';
+import type { HistoryElement, GiantsquidHistoryItem, SubqueryHistory, HistoryServiceType } from '@/interfaces';
 import { TransactionType, TransferType } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
 import { formattedNumber } from '@/helpers/numbers';
-import NetworksController from '@/controllers/networksController';
 import store from '@/store';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 

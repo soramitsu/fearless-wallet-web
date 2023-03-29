@@ -1,4 +1,4 @@
-import type { AssetsPrice, History, FiatJson, AssetJson, ActiveNodes } from '@/interfaces';
+import type { AssetsPrice, History, FiatJson } from '@/interfaces';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 

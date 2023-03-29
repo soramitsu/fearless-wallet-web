@@ -1,3 +1,4 @@
+import { FPNumber } from '@sora-substrate/util';
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
 import type {
@@ -9,8 +10,10 @@ import type {
   SetAssetsPriceIntervalProps,
   SetNetworksStatusProps,
   SetAssetsPriceProps,
+  SetSoraFee,
 } from './types';
-import { accountController } from '@/controllers/accountController';
+import { accountController } from '@/controllers';
+import { isSora } from '@/helpers/common';
 import { getFormattedHistory } from '@/helpers/history';
 
 export enum MutationTypes {
@@ -25,6 +28,7 @@ export enum MutationTypes {
   SET_ACTIVE_NODE = 'SET_ACTIVE_NODE',
   SET_NETWORK_API = 'SET_NETWORK_API',
   SET_NETWORK_STATUS = 'SET_NETWORK_STATUS',
+  SET_SORA_FEE = 'SET_SORA_FEE',
 }
 
 export type Mutations = {

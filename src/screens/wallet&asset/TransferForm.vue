@@ -53,21 +53,21 @@
               @update:value="updateValue"
             />
 
-            <div class="transferrable row">
-              <div class="transferrable-part">
-                <div class="transferrable-label">{{ $t('assets.transferrable') }}</div>
+            <div class="transferable row">
+              <div class="transferable-part">
+                <div class="transferable-label">{{ $t('assets.transferable') }}</div>
 
-                <div class="transferrable-descriptions">
-                  <div class="transferrable-amount">{{ $n(transferrableAmount, 'decimal') }}</div>
-                  <div class="transferrable-assets">{{ selectedAssetUpper }}</div>
+                <div class="transferable-descriptions">
+                  <div class="transferable-amount">{{ $n(transferableAmount, 'decimal') }}</div>
+                  <div class="transferable-assets">{{ selectedAssetUpper }}</div>
                 </div>
               </div>
 
               <div v-if="assetPrice" class="transferrable-part">
                 <div class="transferrable-label">{{ $t('assets.transferrable') }}</div>
 
-                <div class="transferrable-descriptions">
-                  <div class="transferrable-amount">{{ fiatSymbol }}{{ transferrableValue }}</div>
+                <div class="transferable-descriptions">
+                  <div class="transferable-amount">{{ fiatSymbol }}{{ transferableValue }}</div>
                 </div>
               </div>
             </div>
@@ -137,7 +137,7 @@ import MaxButton from './MaxButton.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
 import RotateInput from './RotateInput.vue';
-import type { GetAssetPrice } from '@/store';
+import type { GetAssetName, GetAssetPrice } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import FloatInput from '@/components/FloatInput.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -188,8 +188,7 @@ export default class SendForm extends Vue {
   @Getter(AccountsGettersTypes.getBalances) currencies!: TokenBalance[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.getNetworks) getNetworks!: NetworkJsonOld[];
-
-  // @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
+  @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
 
   get placeholderSelectPopup() {
     return this.showSelectedAssetPopup ? 'common.searchAmongAssets' : 'common.searchNetwork';
@@ -336,13 +335,17 @@ export default class SendForm extends Vue {
         ?.total ?? 0
     );
 
-    return count.toString();
+    return count;
   }
 
   get transferrableValue() {
     const cost = getCostOfAssets(this.transferrableAmount, this.assetPrice) ?? 0;
 
     return this.$n(cost, 'price');
+  }
+
+  get selectedAsset() {
+    return this.getAssetName(this.syncedSelectedAssetId);
   }
 
   get selectedAssetUpper() {
@@ -397,7 +400,7 @@ export default class SendForm extends Vue {
   @Watch('syncedDestNet')
   @Watch('syncedRecipient')
   @Watch('syncedAmount')
-  async createSendTransfer() {
+  async createTransfer() {
     this.syncedPartialFee = '';
 
     if (
@@ -471,7 +474,7 @@ export default class SendForm extends Vue {
     this.toggleSelectPopupVisible(false, false, true);
   }
 
-  createTransferAndGetFee(amount?: string) {
+  async createTransferAndGetFee(amount?: string) {
     if (this.extrinsicType === 'transfer') {
       if (!this.isValidRecipientAddress || this.syncedSelectedNetwork === '') return '0';
 
@@ -635,31 +638,31 @@ export default class SendForm extends Vue {
   flex-direction: column;
   justify-content: space-between;
 
-  .transferrable {
+  .transferable {
     display: flex;
     justify-content: space-between;
 
-    .transferrable-part {
+    .transferable-part {
       width: 235px;
 
-      .transferrable-label {
+      .transferable-label {
         font-size: 14px;
         color: $default-white;
         text-align: left;
       }
 
-      .transferrable-descriptions {
+      .transferable-descriptions {
         display: flex;
         line-height: 25px;
       }
 
-      .transferrable-amount {
+      .transferable-amount {
         font-weight: 600;
         font-size: 16px;
         color: $pink-lavender-color;
       }
 
-      .transferrable-assets {
+      .transferable-assets {
         margin-left: 5px;
         color: rgba(255, 255, 255, 0.9);
       }

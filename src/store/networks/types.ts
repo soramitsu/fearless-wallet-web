@@ -2,13 +2,10 @@ import { Wallet } from '../accounts/types';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { HexString } from '@polkadot/util/types';
 import type {
-  Currencies,
   SubqueryHistory,
   AccountBalance,
   Networks,
-  Network,
   AssetJson,
-  AssetsPrice,
   AssetPrice,
   FiatJson,
   NetworkStatus,
@@ -99,6 +96,10 @@ export type SetNetworkApiProps = {
 export type SetNetworkStatusProps = {
   network: NetworkName;
   status: NetworkStatus;
+};
+
+export type SetSoraFee = {
+  fee: string;
 };
 
 // Actions

@@ -1,6 +1,14 @@
 import type { AssetJson, TypeAsset } from '@/interfaces';
-import NetworksController from '@/controllers/networksController';
+import { NetworksController } from '@/controllers';
 import BaseApi from '@/util/BaseApi';
+
+// type ExtrinsicTransferProps = {
+//   api: ApiPromise;
+//   to: string;
+//   amount: string;
+//   asset: string;
+//   networkProps: WalletBalance;
+// };
 
 const ORML_PALLETS_TYPES = ['ormlChain', 'equilibrium'];
 

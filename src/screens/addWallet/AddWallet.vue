@@ -101,6 +101,7 @@
           :iconName="'reload'"
           @click="resetAll"
         />
+
         <Button
           v-if="confirmMnemonicStep"
           size="big"
@@ -108,7 +109,7 @@
           width="100%"
           type="secondary"
           :border="false"
-          :text="$t('addWallet.skipConfirmation')"
+          text="addWallet.skipConfirmation"
           @click="skipStep"
         />
 
@@ -172,7 +173,7 @@ import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
-import { createAccountSuri, forgetAccount, validateAccount } from '@/extension/messaging';
+import { createAccountSuri, forgetAccount, validateAccount, windowOpen } from '@/extension/messaging';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 
@@ -368,7 +369,7 @@ export default class AddWallet extends Vue {
     if (this.isCreateWallet && this.step === 2) return this.t('haveWrittenPassphrase');
     if (this.showFinishForm) return this.t('usingFearless');
 
-    return this.$t('common.continue');
+    return 'common.continue';
   }
 
   get disabledProceed() {
@@ -732,10 +733,10 @@ export default class AddWallet extends Vue {
     try {
       if (this.substrateJson || this.ethereumJson) this.replaceAccountFromJson();
       else this.replaceAccountFromSeed();
-    } catch ({ message }) {
+    } catch (error: any) {
       this.step = 1;
 
-      alert(message);
+      alert(error.message);
 
       throw Error;
     }
@@ -823,7 +824,7 @@ export default class AddWallet extends Vue {
   }
 
   openFullScreen() {
-    BaseApi.windowOpen('/');
+    windowOpen('/');
     window.close();
   }
 

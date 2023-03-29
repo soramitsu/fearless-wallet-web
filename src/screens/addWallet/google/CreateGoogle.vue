@@ -99,7 +99,7 @@ import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH, INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import BaseApi from '@/util/BaseApi';
 import { createGoogleFile, exportAccount } from '@/extension/messaging';
-import { SelectedWallet, SetSelectedWallet } from '@/store/accounts/types';
+import { SelectedWallet } from '@/store/accounts/types';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { WarningValueName } from '@/consts/messages';
@@ -136,7 +136,7 @@ export default class CreateGoogle extends Vue {
   warningValueName: WarningValueName = '';
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
+  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<string>;
 
   get invalidMessages() {
     if (!this.warningValueName) return {};
@@ -223,7 +223,7 @@ export default class CreateGoogle extends Vue {
     if (this.step === 5) {
       const address = this.saveKeypairFromSeed();
 
-      this.setSelectedWallet({ selectedWalletAddress: address || this.selectedWallet.address });
+      this.setSelectedWallet(address || this.selectedWallet.address);
 
       this.backupWallet(address);
     }

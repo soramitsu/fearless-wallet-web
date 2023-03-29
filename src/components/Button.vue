@@ -21,7 +21,7 @@ import type { ComponentText } from '@/interfaces';
 
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type FontSize = 'small' | 'medium' | 'big';
-type Type = 'primary' | 'secondary' | 'link' | 'google';
+type Type = 'primary' | 'secondary' | 'link' | 'google' | 'warning';
 
 @Component
 export default class Button extends Vue {
@@ -44,9 +44,12 @@ export default class Button extends Vue {
     if (typeof this.text === 'string') return this.$t(this.text);
 
     const { text, localeProps } = this.text;
-    const { tc } = localeProps;
 
-    if (tc) return this.$tc(text, tc, localeProps);
+    if (localeProps) {
+      const { tc } = localeProps;
+
+      if (tc) return this.$tc(text, tc, localeProps);
+    }
 
     return this.$t(text, localeProps);
   }
@@ -75,7 +78,12 @@ export default class Button extends Vue {
     // for "small" and "mini" sizes also medium
     const sizeName = this.size === 'big' ? 'big' : 'medium';
 
-    return [`button-size-${sizeName}`];
+    return [
+      `button-size-${sizeName}`,
+      {
+        'button-warning': this.type === 'warning',
+      },
+    ];
   }
 
   get containerButtonStyle() {
@@ -158,6 +166,14 @@ export default class Button extends Vue {
   .button {
     width: 100%;
     padding: 10px 10px;
+  }
+}
+
+.button-warning {
+  .el-button {
+    background-color: $orange-color;
+    border: none;
+    color: $plain-white;
   }
 }
 

@@ -10,15 +10,13 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import { AccountJson, BalanceJson, PriceJson } from './extension/background/extension-base/src/background/types';
-import { Components } from './router/routes';
-import NetworksController from './controllers/networksController';
+import { NetworksController } from './controllers';
 import type {
   Accounts,
-  SetOnlineStatus,
   SetAccountsProps,
-  SetSelectedFiat,
   SetNetworksStatusProps,
   SetAssetsPriceProps,
+  SetSelectedFiatProps,
 } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
@@ -49,9 +47,9 @@ export default class App extends Vue {
   @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: TMutation<SetNetworksStatusProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<SetAccountsProps>;
   @Mutation(NetworksMutationTypes.SET_ASSETS_PRICE) setPrices!: TMutation<SetAssetsPriceProps>;
-  @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<SetOnlineStatus>;
+  @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<boolean>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
-  @Action(AccountsActionTypes.SET_SELECTED_FIAT) setSelectedFiat!: TAction<SetSelectedFiat>;
+  @Action(AccountsActionTypes.SET_SELECTED_FIAT) setSelectedFiat!: TAction<SetSelectedFiatProps>;
 
   async created() {
     if (BaseApi.isExtension()) {
@@ -77,7 +75,7 @@ export default class App extends Vue {
   }
 
   addEventOnline() {
-    const updateOnlineStatus = () => this.setOnlineStatus({ isOnline: navigator.onLine });
+    const updateOnlineStatus = () => this.setOnlineStatus(navigator.onLine);
 
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);

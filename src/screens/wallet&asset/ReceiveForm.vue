@@ -76,7 +76,7 @@ import { SelectedWallet } from '@/store';
 import { firstCharToUp } from '@/helpers/common';
 import { cut } from '@/helpers/history';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
-import NetworksController from '@/controllers/networksController';
+import { NetworksController } from '@/controllers';
 
 @Component({
   components: { RotateInput },

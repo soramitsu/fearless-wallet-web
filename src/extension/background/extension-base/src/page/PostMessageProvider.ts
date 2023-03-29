@@ -27,7 +27,7 @@ let sendRequest: SendRequest;
  */
 export default class PostMessageProvider implements InjectedProvider {
   readonly #eventemitter: EventEmitter;
-
+  isClonable = true;
   // Whether or not the actual extension background provider is connected
   #isConnected = false;
 

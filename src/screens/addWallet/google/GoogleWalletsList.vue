@@ -57,7 +57,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { FilesState, TAction } from '@/interfaces';
 import { cut } from '@/helpers/history';
 import BaseApi from '@/util/BaseApi';
-import { SelectedWallet, SetSelectedWallet } from '@/store/accounts/types';
+import { SelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 import { isJsonValid, jsonRestore } from '@/extension/messaging';
@@ -66,7 +66,7 @@ import { isJsonValid, jsonRestore } from '@/extension/messaging';
 export default class GoogleWalletsList extends Vue {
   @Prop(Array) items!: FilesState[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
+  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<string>;
 
   setItemValue(index: number, data: Record<string, string | boolean>) {
     this.items.splice(index, 1, { ...this.items[index], ...data });
@@ -94,7 +94,7 @@ export default class GoogleWalletsList extends Vue {
     const address = await jsonRestore(json, password);
 
     this.setItemValue(index, { isComplete: true, isLoading: false });
-    this.setSelectedWallet({ selectedWalletAddress: address || this.selectedWallet.address });
+    this.setSelectedWallet(address || this.selectedWallet.address);
 
     return true;
   }
@@ -149,7 +149,7 @@ export default class GoogleWalletsList extends Vue {
     background-color: $default-background-color;
     clip-path: $big-clip-path-left-top-and-right-bottom;
     padding: 10px;
-    border-radius: 8px;
+    border-radius: $default-border-radius;
     z-index: 1;
 
     .json__info {

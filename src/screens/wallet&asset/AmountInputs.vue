@@ -86,7 +86,7 @@ export default class TeleportForm extends Vue {
   }
 
   changeAmount(amount: string) {
-    const value = getCostOfAssets(amount, this.assetPrice).toString() ?? '';
+    const value = getCostOfAssets(+amount, this.assetPrice).toString() ?? '';
 
     this.syncedValue = value !== '0' ? value : '';
   }

@@ -1,5 +1,6 @@
 type AssetJson = {
   id: string;
+  name: string;
   symbol: string;
   displayName?: string;
   contractAddress?: string;
@@ -116,11 +117,12 @@ interface AssetPrice {
 
 type AssetName = string;
 
+type AssetId = string;
+
 type AssetsPrice = {
   tokenPriceMap: Record<string, number>;
   tokenPriceChange: Record<string, number>;
 };
-
 type KeysAssetPricesJson = keyof AssetPrices;
 
-export { KeysAssetPricesJson, AssetsPrice, AssetName, AssetPrices, AssetPrice, AssetJson };
+export { KeysAssetPricesJson, AssetsPrice, AssetName, AssetPrices, AssetPrice, AssetJson, AssetId };

@@ -10,7 +10,6 @@ import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defau
 import { ApiState, ApiProps } from '../../background/types';
 import { DOTSAMA_AUTO_CONNECT_MS, DOTSAMA_MAX_CONTINUE_RETRY } from '../../const/intervals';
 export const DEFAULT_AUX = ['Aux1', 'Aux2', 'Aux3', 'Aux4', 'Aux5', 'Aux6', 'Aux7', 'Aux8', 'Aux9'];
-const registry = new TypeRegistry();
 
 interface ChainData {
   properties: ChainProperties;
@@ -136,7 +135,7 @@ function createApiObject(api: ApiPromise, apiUrl: string, isEthereum: boolean, r
   return result;
 }
 
-function generateEvmHttpApi(apiUrl: string): ApiProps {
+function generateEvmHttpApi(apiUrl: string, registry: Registry): ApiProps {
   return {
     api: new Proxy(
       {},
@@ -193,7 +192,7 @@ function onConnected(apiObject: ApiProps) {
   apiObject.isApiReady = apiObject.isApiInitialized; // result.isApiInitialized && result.isApiConnected
 }
 
-function onReady(apiObject: ApiProps, api: ApiPromise) {
+function onReady(apiObject: ApiProps, api: ApiPromise, registry: Registry) {
   loadOnReady(registry, api)
     .then((rs) => {
       objectSpread(apiObject, rs);
@@ -204,9 +203,11 @@ function onReady(apiObject: ApiProps, api: ApiPromise) {
 }
 
 export function initApi(networkKey: string, apiUrl: string, isEthereum = false): ApiProps {
+  const registry = new TypeRegistry();
+
   if (isEthereum) {
     // return EVM HTTP Placeholder
-    return generateEvmHttpApi(apiUrl);
+    return generateEvmHttpApi(apiUrl, registry);
   }
 
   const provider = new WsProvider(apiUrl, DOTSAMA_AUTO_CONNECT_MS);
@@ -229,7 +230,7 @@ export function initApi(networkKey: string, apiUrl: string, isEthereum = false):
     })
     // On ready: Load all metadata and ready to init data
     .on('ready', () => {
-      onReady(apiObject, api);
+      onReady(apiObject, api, registry);
     })
     // On ready: Load all metadata and ready to init data
     .on('error', console.error);

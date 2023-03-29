@@ -1,12 +1,5 @@
 import type { MutationTree } from 'vuex';
-import type {
-  SetSelectedFiatProps,
-  SetSelectedNetworkProps,
-  SetAccountsProps,
-  SetAutoSelectNode,
-  SetOnlineStatus,
-  SelectedWallet,
-} from './types';
+import type { SetSelectedFiatProps, SetAccountsProps, SetAutoSelectNode, SelectedWallet } from './types';
 import type { State } from './state';
 import { accountController } from '@/controllers/accountController';
 import { BalanceJson } from '@/extension/background/extension-base/src/background/types';
@@ -24,15 +17,17 @@ export enum MutationTypes {
   SET_HIDDEN_ASSET = 'SET_HIDDEN_ASSET',
   DELETE_HIDDEN_ASSET = 'DELETE_HIDDEN_ASSET',
   DELETE_QR = 'DELETE_QR',
+  HIDE_POLKASWAP_ALERT = 'HIDE_POLKASWAP_ALERT',
+  HIDE_NETWORK_WARNING = 'HIDE_NETWORK_WARNING',
 }
 
 export type Mutations = {
   [MutationTypes.SET_SELECTED_WALLET](state: State, props: SelectedWallet): void;
-  [MutationTypes.SET_SELECTED_FIAT](state: State, props: SetSelectedFiatProps): void;
-  [MutationTypes.SET_SELECTED_NETWORK](state: State, props: SetSelectedNetworkProps): void;
   [MutationTypes.SET_BALANCE](state: State, props: BalanceJson): void;
+  [MutationTypes.SET_SELECTED_FIAT](state: State, props: SetSelectedFiatProps): void;
+  [MutationTypes.SET_SELECTED_NETWORK](state: State, network: string): void;
   [MutationTypes.SET_ACCOUNTS](state: State, props: SetAccountsProps): void;
-  [MutationTypes.SET_ONLINE_STATUS](state: State, props: SetOnlineStatus): void;
+  [MutationTypes.SET_ONLINE_STATUS](state: State, isOnline: boolean): void;
   // [MutationTypes.SET_ADDRESSES](state: State, props: SetAddressesProps): void;
   [MutationTypes.SET_AUTO_SELECT_NODE](state: State, props: SetAutoSelectNode): void;
   [MutationTypes.SET_QR](state: State, props: string): void;
@@ -40,6 +35,8 @@ export type Mutations = {
   [MutationTypes.SET_HIDDEN_ASSET](state: State, props: string): void;
   [MutationTypes.DELETE_HIDDEN_ASSET](state: State, props: string): void;
   [MutationTypes.SET_CUSTOM_SORT](state: State, props: string): void;
+  [MutationTypes.HIDE_POLKASWAP_ALERT](state: State, value: boolean): void;
+  [MutationTypes.HIDE_NETWORK_WARNING](state: State, network: string): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -59,7 +56,7 @@ const mutations: MutationTree<State> & Mutations = {
     // currencies.forEach((currency) => currency.updatePrice());
   },
 
-  [MutationTypes.SET_SELECTED_NETWORK](state, { network }) {
+  [MutationTypes.SET_SELECTED_NETWORK](state, network) {
     const {
       selectedWallet: { address },
       selectedNetworks,
@@ -70,7 +67,7 @@ const mutations: MutationTree<State> & Mutations = {
     state.selectedNetworks = { ...selectedNetworks, [address]: network };
   },
 
-  [MutationTypes.SET_ONLINE_STATUS](state, { isOnline }) {
+  [MutationTypes.SET_ONLINE_STATUS](state, isOnline) {
     state.isOnline = isOnline;
   },
 
@@ -79,6 +76,16 @@ const mutations: MutationTree<State> & Mutations = {
 
     accountController.setAccounts(accounts);
   },
+
+  [MutationTypes.HIDE_POLKASWAP_ALERT](state) {
+    state.showPolkaswapAlert = false;
+
+    accountController.setAgreeSwapDisclaimer();
+  },
+
+  // [MutationTypes.SET_ADDRESSES](state, { addresses }) {
+  //   state.addresses = addresses;
+  // },
 
   [MutationTypes.SET_AUTO_SELECT_NODE](state, { network, value }) {
     accountController.setAutoSelectNodes(value, network);
@@ -92,6 +99,14 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.DELETE_QR](state) {
     state.qr = null;
+  },
+
+  [MutationTypes.HIDE_NETWORK_WARNING](state, network) {
+    const { hideWarningNetworks } = state;
+
+    accountController.setHideWarningNetwork(network);
+
+    state.hideWarningNetworks = [...hideWarningNetworks, network];
   },
 
   [MutationTypes.SET_CUSTOM_SORT](state, address: string) {

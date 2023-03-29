@@ -37,7 +37,7 @@ import type { SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
-import NetworksController from '@/controllers/networksController';
+import { NetworksController } from '@/controllers';
 
 @Component({
   components: { HistoryItem },
@@ -90,10 +90,6 @@ export default class History extends Vue {
     const filteredHistory = this.history.filter((historyItem) => historyItem[field] !== null);
 
     return filteredHistory;
-  }
-
-  mounted() {
-    this.fetchHistory();
   }
 
   @Watch('selectedNetwork')

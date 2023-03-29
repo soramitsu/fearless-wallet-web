@@ -1,10 +1,26 @@
 // Copyright 2019-2022 @subwallet/extension-koni authors & contributors
 // SPDX-License-Identifier: Apache-2.0
+import { state } from '../background/handlers';
 import { PriceJson } from '../background/types';
+import { REFRESH_PRICE_INTERVAL } from '../const/intervals';
 import { axios } from './axios';
 
 export const getTokenPrice = async (chains: Array<string>, currency = 'usd'): Promise<PriceJson> => {
   try {
+    const now = new Date().getTime();
+
+    if (Math.abs(state.prices.timestamp - now) <= REFRESH_PRICE_INTERVAL) {
+      console.info(
+        'Return prices from cache',
+        state.prices,
+        Math.abs(now - state.prices.timestamp) >= REFRESH_PRICE_INTERVAL,
+        REFRESH_PRICE_INTERVAL,
+        now
+      );
+
+      return state.prices.json;
+    }
+
     const chainsStr = chains.join(',');
     const res = await axios.get(
       `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${currency}&include_24hr_change=true&ids=${chainsStr}`
@@ -12,6 +28,13 @@ export const getTokenPrice = async (chains: Array<string>, currency = 'usd'): Pr
 
     if (res.status !== 200) {
       console.warn('Failed to get token price');
+
+      return {
+        currency,
+        priceMap: {},
+        tokenPriceMap: {},
+        tokenPriceChange: {},
+      };
     }
 
     const responseData = res.data as Record<string, Record<string, number>>;
@@ -24,6 +47,16 @@ export const getTokenPrice = async (chains: Array<string>, currency = 'usd'): Pr
       tokenPriceChange[token] = responseData[token][key];
       tokenPriceMap[token] = responseData[token][currency];
     });
+
+    state.prices = {
+      json: {
+        currency,
+        tokenPriceChange,
+        priceMap,
+        tokenPriceMap,
+      },
+      timestamp: new Date().getTime(),
+    };
 
     return {
       currency,

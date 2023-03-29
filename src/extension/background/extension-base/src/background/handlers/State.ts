@@ -128,6 +128,18 @@ export default class State {
   public notification = 'popup';
   private cron: FWCron;
   public windows: number[] = [];
+  public prices: {
+    json: PriceJson;
+    timestamp: number;
+  } = {
+    json: {
+      tokenPriceMap: {},
+      currency: 'usd',
+      priceMap: {},
+      tokenPriceChange: {},
+    },
+    timestamp: 0,
+  };
   public subscription: FWSubscription;
   public chainRegistryMap: Record<string, ChainRegistry> = {};
   public chainRegistrySubject = new Subject<Record<string, ChainRegistry>>();

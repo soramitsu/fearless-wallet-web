@@ -4,7 +4,7 @@
 
     <div class="row">
       <BorderButton
-        text="header.settings.about.followTwitter"
+        text="common.followTwitter"
         iconName="twitter"
         iconColor="pink"
         class="follow-button"
@@ -13,7 +13,7 @@
       />
 
       <BorderButton
-        text="header.settings.about.joinTelegram"
+        text="common.joinTelegram"
         iconName="telegram"
         iconColor="pink"
         width="256px"
@@ -22,19 +22,14 @@
     </div>
     <div class="row">
       <BorderButton
-        text="header.settings.about.readMedium"
+        text="common.readMedium"
         iconName="medium"
         iconColor="pink"
         width="256px"
         @click="openPage(URLS.MEDIUM)"
       />
 
-      <BorderButton
-        text="header.settings.about.learnWiki"
-        iconName="file-dock"
-        width="256px"
-        @click="openPage(URLS.WIKI)"
-      />
+      <BorderButton text="common.learnWiki" iconName="file-dock" width="256px" @click="openPage(URLS.WIKI)" />
     </div>
   </div>
 </template>

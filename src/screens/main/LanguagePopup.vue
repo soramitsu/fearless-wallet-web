@@ -17,10 +17,10 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { Lang } from '@/locales';
-import { accountController } from '@/controllers/accountController';
+import { accountController } from '@/controllers';
 
 @Component
-export default class AboutPopup extends Vue {
+export default class LanguagePopup extends Vue {
   readonly options = [
     { name: 'English', value: 'en-EN' },
     { name: 'Русский', value: 'ru-RU' },

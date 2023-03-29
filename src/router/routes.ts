@@ -16,8 +16,10 @@ const MobileConnect = () => import('@/screens/mobileConnect/MobileConnect.vue');
 const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue');
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
+const Export = () => import('@/screens/accounts/Export.vue');
+const PolkaswapDisclaimer = () => import('@/screens/wallet&asset/swap/Disclaimer.vue');
+
 const AddWallet = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/AddWallet.vue');
-const Export = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/accounts/Export.vue');
 const AddFromGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/AddFromGoogle.vue');
 const CreateGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/CreateGoogle.vue');
 
@@ -41,6 +43,7 @@ export enum Components {
   Transaction = 'Transaction',
   CreateGoogle = 'CreateGoogle',
   AddFromGoogle = 'AddFromGoogle',
+  PolkaswapDisclaimer = 'PolkaswapDisclaimer',
 }
 
 const haveSelectedWallet = () => {
@@ -91,6 +94,11 @@ const routes: Array<RouteConfig> = [
     path: '/transaction',
     name: Components.Transaction,
     component: Transaction,
+  },
+  {
+    path: '/polkaswap-disclaimer',
+    name: Components.PolkaswapDisclaimer,
+    component: PolkaswapDisclaimer,
   },
   {
     path: '/main',

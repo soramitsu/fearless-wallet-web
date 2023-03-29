@@ -52,9 +52,8 @@ import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswo
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
-import { beaconController } from '@/controllers/beaconController';
+import { beaconController, ExtensionController } from '@/controllers';
 import { Components } from '@/router/routes';
-import ExtensionController from '@/controllers/extensionController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({

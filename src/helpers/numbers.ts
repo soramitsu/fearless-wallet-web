@@ -1,8 +1,7 @@
-import { FPNumber } from '@sora-substrate/math';
-import { Price } from '@equilab/api/genshiro/interfaces';
-import { getTotalBalance, getWalletTotalBalance } from './currencies';
-import type { Currencies, ChangeWalletBalance, AssetsPrice } from '@/interfaces';
-import { PriceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types';
+import { FPNumber } from '@sora-substrate/util';
+import { getTotalBalance } from './currencies';
+import type { ChangeWalletBalance, AssetsPrice } from '@/interfaces';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types';
 
 interface Options {
   decimalsValue?: number;

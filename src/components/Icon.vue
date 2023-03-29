@@ -20,7 +20,7 @@ export default class Icon extends Vue {
   }
 
   get styles() {
-    return `${this.width}: 32px; ${this.height}: 32px`;
+    return `width:${this.width}; height:${this.height};`;
   }
 
   get getSvgClasses() {

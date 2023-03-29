@@ -57,12 +57,12 @@ class BeaconController {
     this.addSubstrateBlockchain();
   }
 
-  addSubstrateBlockchain() {
+  private addSubstrateBlockchain() {
     this.app.addBlockchain(new SubstrateBlockchain());
   }
 
-  public static create() {
-    return new BeaconController();
+  private getTzip10Link(url: string, payload: string) {
+    return `${url}?type=tzip10&data=${payload}`;
   }
 
   public getAccounts() {
@@ -98,10 +98,6 @@ class BeaconController {
     };
 
     await this.app.permissionRequest(config);
-  }
-
-  private getTzip10Link(url: string, payload: string) {
-    return `${url}?type=tzip10&data=${payload}`;
   }
 
   public async onPairingRequest(callback: (payload: string) => void) {
@@ -160,4 +156,4 @@ class BeaconController {
   }
 }
 
-export const beaconController = BeaconController.create();
+export const beaconController = new BeaconController();

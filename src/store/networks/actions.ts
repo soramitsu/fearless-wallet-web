@@ -27,7 +27,7 @@ export enum ActionTypes {
 export type Actions = {
   [ActionTypes.FETCH_JSONS](store: AugmentedActionContext, props: FetchJsons): Promise<void>;
   [ActionTypes.CONNECT_TO_NODES](store: AugmentedActionContext): Promise<void>;
-  [ActionTypes.FETCH_ASSETS_PRICE](store: AugmentedActionContext): Promise<void>;
+  [ActionTypes.FETCH_ASSETS_PRICE](store: AugmentedActionContext, fiatName: string): Promise<void>;
   [ActionTypes.FETCH_HISTORY](store: AugmentedActionContext, props: FetchHistory): Promise<void>;
   [ActionTypes.SUBSCRIBE_TO_BALANCES](store: AugmentedActionContext, props: SubscribeToBalances): Promise<void>;
   [ActionTypes.TOGGLE_ACTIVE_NODE](store: AugmentedActionContext, props: ToggleActiveNode): Promise<void>;
@@ -99,14 +99,13 @@ const actions: ActionTree<State, State> & Actions = {
     });
   },
 
-  async [ActionTypes.FETCH_ASSETS_PRICE]({ commit, state: { assetsJson } }) {
+  async [ActionTypes.FETCH_ASSETS_PRICE]({ commit, state: { assetsJson }, rootState }, _fiatName) {
     const urlsAssets = assetsJson.filter(({ priceId }) => !!priceId).map(({ priceId }) => priceId);
-
-    const currency = accountController.getSelectedFiat();
+    const fiatName = _fiatName ?? rootState.account.selectedFiat;
 
     const fetchAssetsPrice = async () => {
       try {
-        const assetsPrice = await getTokenPrice([...new Set(urlsAssets as unknown as string)], currency, assetsJson);
+        const assetsPrice = await getTokenPrice([...new Set(urlsAssets as unknown as string)], fiatName, assetsJson);
 
         commit(MutationTypes.SET_ASSETS_PRICE, { assetsPrice });
       } catch {
@@ -118,7 +117,7 @@ const actions: ActionTree<State, State> & Actions = {
 
     commit(MutationTypes.SET_ASSETS_PRICE_INTERVAL, { interval });
 
-    fetchAssetsPrice();
+    await fetchAssetsPrice();
   },
 
   async [ActionTypes.FETCH_HISTORY]({ commit, getters }, { networkName, wallet, assetId, isPreviously }) {

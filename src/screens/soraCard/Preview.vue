@@ -1,6 +1,6 @@
 <template>
   <div>
-    <ContentForm :height="mainContentFormHeight">
+    <ContentForm :height="430">
       <Scroll>
         <div class="card-content">
           <Icon icon="sora-card" class="banner" />
@@ -46,7 +46,7 @@
 
                   <ProgressBar :fillFactor="fillFactorBar" class="progress-bar" />
 
-                  <div class="status-xor">
+                  <div :class="classesStatusXOR">
                     {{ statusXORText }}
                   </div>
 
@@ -61,19 +61,12 @@
               </div>
             </div>
           </ContentForm>
+
+          <div class="residents-countries">{{ $t('soraCard.residentsCountries') }}</div>
+          <div class="show-list" @click="$emit('toggleCountriesFormVisibility')">{{ $t('soraCard.seeList') }}</div>
         </div>
       </Scroll>
     </ContentForm>
-
-    <Button
-      v-if="showGetXORButton"
-      text="soraCard.getXOR"
-      width="100%"
-      size="big"
-      fontSize="big"
-      class="get-xor-button"
-      @click="getXOR"
-    />
 
     <div class="buttons">
       <Button
@@ -92,9 +85,9 @@
         width="49%"
         size="big"
         fontSize="big"
-        :type="typeStartCardButton"
+        type="primary"
         :border="false"
-        @click="$emit('proceed')"
+        @click="proceed"
       />
     </div>
   </div>
@@ -135,16 +128,12 @@ export default class Preview extends Vue {
     return true;
   }
 
+  get classesStatusXOR() {
+    return ['status-xor', this.isValidXorBalance ? 'status-xor-success' : 'status-xor-reject '];
+  }
+
   get issuanceContentFormHeight() {
     return this.haveFreePassKYS ? 270 : 105;
-  }
-
-  get mainContentFormHeight() {
-    return this.isValidXorBalance ? 430 : 356;
-  }
-
-  get showGetXORButton() {
-    return this.haveFreePassKYS && !this.isValidXorBalance;
   }
 
   get cardIssuanceText() {
@@ -154,7 +143,7 @@ export default class Preview extends Vue {
   }
 
   get statusXORText() {
-    if (this.isValidXorBalance) return this.$t('soraCard.haveXOR');
+    if (this.isValidXorBalance) return this.$t('soraCard.haveXORForFreeCard');
 
     // TODO mock
     const left = 3;
@@ -174,13 +163,9 @@ export default class Preview extends Vue {
   }
 
   get textIssueCardButton() {
-    const value = this.isValidXorBalance && this.haveFreePassKYS ? 'soraCard.issueCardFree' : 'soraCard.issueCardFee';
+    const value = this.isValidXorBalance && this.haveFreePassKYS ? 'common.continue' : 'soraCard.getXOR';
 
     return this.$t(value);
-  }
-
-  get typeStartCardButton() {
-    return this.isValidXorBalance ? 'primary' : 'secondary';
   }
 
   getXOR() {
@@ -195,6 +180,13 @@ export default class Preview extends Vue {
 
   haveCard() {
     console.info('haveCard');
+  }
+
+  proceed() {
+    if (this.isValidXorBalance) this.$emit('proceed');
+    else {
+      this.$emit('openGetXORPopup');
+    }
   }
 }
 </script>
@@ -251,12 +243,31 @@ export default class Preview extends Vue {
 
     .status-xor {
       font-weight: 600;
+    }
+
+    .status-xor-reject {
       color: $pink-color;
+    }
+
+    .status-xor-success {
+      color: $success-color;
     }
   }
 
   .free-card-form {
     margin-top: 10px;
+  }
+
+  .residents-countries {
+    margin-top: 32px;
+    color: $default-white;
+  }
+
+  .show-list {
+    color: $pink-lavender-color;
+    text-decoration: underline;
+    cursor: pointer;
+    margin: 5px 0 16px;
   }
 }
 
@@ -271,10 +282,6 @@ export default class Preview extends Vue {
   .application-fee {
     margin-top: 10px;
   }
-}
-
-.get-xor-button {
-  margin-top: 10px;
 }
 
 .buttons {

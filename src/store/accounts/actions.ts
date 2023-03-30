@@ -4,6 +4,7 @@ import type { State } from '@/store/accounts/state';
 import type { SetSelectedFiat, SetSelectedWallet } from './types';
 import type { Currencies } from '@/interfaces';
 import { MutationTypes } from '@/store/accounts/mutations';
+import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 
 export enum ActionTypes {
   SET_SELECTED_FIAT = 'SET_SELECTED_FIAT',
@@ -20,8 +21,10 @@ export type Actions = {
 };
 
 const actions: ActionTree<State, State> & Actions = {
-  async [ActionTypes.SET_SELECTED_FIAT]({ rootState, commit }, { fiatName }) {
+  async [ActionTypes.SET_SELECTED_FIAT]({ rootState, commit, dispatch }, { fiatName }) {
     const currencies: Currencies = rootState.networks.currencies;
+
+    await dispatch(NetworksActionTypes.FETCH_ASSETS_PRICE, fiatName);
 
     commit(MutationTypes.SET_SELECTED_FIAT, {
       fiatName,

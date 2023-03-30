@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="bar full" :style="fullBarStyle"></div>
-    <div class="bar progress" :style="progressStyle"></div>
+    <div :class="classesProgress" :style="progressStyle"></div>
   </div>
 </template>
 
@@ -22,6 +22,16 @@ export default class ProgressBar extends Vue {
 
     return `width:${width}`;
   }
+
+  get classesProgress() {
+    return [
+      'bar',
+      'progress',
+      {
+        'progress-100': this.fillFactor === 1,
+      },
+    ];
+  }
 }
 </script>
 
@@ -39,5 +49,9 @@ export default class ProgressBar extends Vue {
   background-color: $pink-color;
   position: relative;
   top: -5px;
+}
+
+.progress-100 {
+  background-color: $success-color;
 }
 </style>

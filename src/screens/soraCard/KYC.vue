@@ -1,6 +1,6 @@
 <template>
   <div>
-    <DisclaimerPage v-if="step === 2" @toggleCountriesFormVisibility="$emit('toggleCountriesFormVisibility')" />
+    <DisclaimerForm v-if="step === 2" @toggleCountriesFormVisibility="$emit('toggleCountriesFormVisibility')" />
 
     <PhoneConfirmation v-if="step === 3" @toggleIsValidSmsCode="$emit('toggleIsValidSmsCode', $event)" />
 
@@ -16,13 +16,13 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import DisclaimerPage from '@/screens/soraCard/DisclaimerPage.vue';
+import DisclaimerForm from '@/screens/soraCard/DisclaimerForm.vue';
 import PhoneConfirmation from '@/screens/soraCard/PhoneConfirmation.vue';
 import EmailConfirmation from '@/screens/soraCard/EmailConfirmation.vue';
 
 @Component({
   components: {
-    DisclaimerPage,
+    DisclaimerForm,
     PhoneConfirmation,
     EmailConfirmation,
   },

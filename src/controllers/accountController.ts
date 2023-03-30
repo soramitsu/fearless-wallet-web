@@ -1,8 +1,7 @@
 import type { Node, NetworkName } from '@/interfaces';
 import type { Lang } from '@/locales';
 import LocalStorageController from '@/controllers/localStorageController';
-import store from '@/store';
-import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
+
 class AccountController {
   private readonly lsAccount = new LocalStorageController('account');
   private readonly langStorageName = 'lang';
@@ -50,8 +49,6 @@ class AccountController {
 
   public setSelectedFiat(fiat: string): void {
     this.lsAccount.set(this.selectedFiatStorageName, fiat);
-
-    store.dispatch(NetworksActionTypes.FETCH_ASSETS_PRICE);
   }
 
   public getSelectedNetwork(): Record<string, string> {

@@ -11,6 +11,8 @@
     <div class="settings">
       <SettingMenuItem title="header.settings.accounts" icon="account" @onOpen="open('Accounts')" />
 
+      <SettingMenuItem title="soraCard.title" icon="card" @onOpen="open('SoraCard')" />
+
       <SettingMenuItem title="header.settings.currency" icon="dollar-circle" @onOpen="openPopup('openFiatsPopup')" />
 
       <SettingMenuItem title="header.settings.language.text" icon="language" @onOpen="openPopup('openLanguagePopup')" />

@@ -27,7 +27,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { URLS } from '@/consts/urls';
 
 @Component
-export default class DisclaimerPage extends Vue {
+export default class DisclaimerForm extends Vue {
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
   openDoc(value: 'terms' | 'privacy' | 'unsupportedCountries') {

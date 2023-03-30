@@ -48,7 +48,6 @@ export default class FiatsPopup extends Vue {
 
   toggleSelectedFiat(fiatName: string) {
     this.setSelectedFiat({ fiatName });
-
     this.handlerClose();
   }
 }

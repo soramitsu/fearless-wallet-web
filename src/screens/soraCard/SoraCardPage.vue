@@ -4,12 +4,17 @@
     :fullScreen="true"
     :showBackIcon="showBackIcon"
     :handlerBack="handlerBack"
-    :closeHandler="closeHandler"
+    :closeHandler="closeForm"
   >
     <div class="container">
-      <Preview v-if="step === 1" @proceed="proceed" />
+      <UnsupportedCountries v-if="showCountriesForm" />
 
-      <UnsupportedCountries v-else-if="showCountriesForm" />
+      <Preview
+        v-else-if="step === 1"
+        @proceed="proceed"
+        @openGetXORPopup="toggleGetXORPopup"
+        @toggleCountriesFormVisibility="toggleCountriesFormVisibility"
+      />
 
       <template v-else>
         <KYC
@@ -30,6 +35,10 @@
         />
       </template>
     </div>
+
+    <StepsKYCPopup v-if="showStepsKYCPopup" :fillSteps="[1]" :handlerClose="toggleGetXORPopup" :proceed="proceed" />
+
+    <GetXORPopup v-if="showGetXORPopup" :handlerClose="closeGetXORPopup" />
   </AboveForm>
 </template>
 
@@ -41,11 +50,15 @@ import { Components } from '@/router/routes';
 import KYC from '@/screens/soraCard/KYC.vue';
 import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
 import Preview from '@/screens/soraCard/Preview.vue';
+import StepsKYCPopup from '@/screens/soraCard/StepsKYCPopup.vue';
+import GetXORPopup from '@/screens/soraCard/GetXORPopup.vue';
 
 @Component({
   components: {
     KYC,
     Preview,
+    GetXORPopup,
+    StepsKYCPopup,
     UnsupportedCountries,
   },
 })
@@ -53,6 +66,8 @@ export default class SoraCardPage extends Vue {
   showCountriesForm = false;
   isValidSmsCode = false;
   isValidEmailForm = false;
+  showStepsKYCPopup = false;
+  showGetXORPopup = true; // TODO revert
   step = 1; // TODO revert to 1
 
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
@@ -66,7 +81,7 @@ export default class SoraCardPage extends Vue {
   }
 
   get showBackIcon() {
-    return this.step !== 1;
+    return this.showCountriesForm || this.step > 1;
   }
 
   get headerForm() {
@@ -102,13 +117,25 @@ export default class SoraCardPage extends Vue {
     else this.step -= 1;
   }
 
-  closeHandler() {
+  closeForm() {
     if (window.history.length === 1) this.$router.push({ name: Components.Wallet });
     else this.$router.back();
   }
 
+  closeGetXORPopup() {
+    this.showGetXORPopup = false;
+  }
+
   proceed() {
-    this.step += 1;
+    if (this.step === 2 && !this.showStepsKYCPopup) this.showStepsKYCPopup = true;
+    else {
+      this.step += 1;
+      this.showStepsKYCPopup = false;
+    }
+  }
+
+  toggleGetXORPopup() {
+    this.showGetXORPopup = true;
   }
 
   toggleCountriesFormVisibility() {

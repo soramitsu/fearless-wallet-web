@@ -79,7 +79,8 @@ export default class History extends Vue {
 
   get history() {
     return (
-      this.getHistory(this.currency?.id, this.selectedWallet.address, this.selectedNetwork.toLowerCase())?.nodes ?? []
+      this.getHistory(this.currency?.assetId, this.selectedWallet.address, this.selectedNetwork.toLowerCase())?.nodes ??
+      []
     );
   }
 
@@ -109,7 +110,7 @@ export default class History extends Vue {
 
     this.showLoader = true;
 
-    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.currency.id);
+    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.currency.assetId);
 
     this.showLoader = false;
   }

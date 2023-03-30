@@ -216,6 +216,7 @@ import { Components } from '@/router/routes';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { isSora } from '@/helpers/common';
 import { checkSwap } from '@/extension/messaging';
+import { getCurrencyOptions } from '@/helpers/currencies';
 
 @Component({
   components: {
@@ -393,24 +394,23 @@ export default class SwapForm extends Vue {
 
   get optionsCurrency() {
     const filter = this.filterValue.toLowerCase();
-    // const currenciesFilteredByNetwork = this.balances.filter(({ relayChain }) => relayChain === this.selectedNetwork);
+    const currenciesFilteredByNetwork = this.balances.filter(({ relayChain }) => relayChain === this.selectedNetwork);
 
-    // return getCurrencyOptions(currenciesFilteredByNetwork).filter(({ name, value }) => {
-    //   if (!name.toLowerCase().includes(filter)) return false;
+    return getCurrencyOptions(currenciesFilteredByNetwork).filter(({ name, value }) => {
+      if (!name.toLowerCase().includes(filter)) return false;
 
-    //   const id = this.isSendAssetType ? this.receiveAssetId : this.sendAssetId;
+      const id = this.isSendAssetType ? this.receiveAssetId : this.sendAssetId;
 
-    //   return value !== id;
-    // });
-    return [];
+      return value !== id;
+    });
   }
 
   get sendCurrency() {
-    return this.balances.find(({ id }) => id === this.sendAssetId);
+    return this.balances.find(({ assetId: id }) => id === this.sendAssetId);
   }
 
   get receiveCurrency() {
-    return this.balances.find(({ id }) => id === this.receiveAssetId);
+    return this.balances.find(({ assetId: id }) => id === this.receiveAssetId);
   }
 
   get top() {

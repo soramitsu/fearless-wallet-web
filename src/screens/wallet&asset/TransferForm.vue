@@ -195,7 +195,7 @@ export default class SendForm extends Vue {
   }
 
   get assetPrice() {
-    if (this.currency?.id) return this.getAssetPrice(this.currency.id).price;
+    if (this.currency?.assetId) return this.getAssetPrice(this.currency.assetId).price;
 
     return 0;
   }
@@ -296,7 +296,7 @@ export default class SendForm extends Vue {
 
   get currency() {
     return this.currencies.find(
-      ({ name, id }) => name === this.syncedSelectedAssetId || id === this.syncedSelectedAssetId
+      ({ name, assetId: id }) => name === this.syncedSelectedAssetId || id === this.syncedSelectedAssetId
     );
   }
 

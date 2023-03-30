@@ -121,7 +121,7 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getAssetName]:
     ({ currencies }) =>
     (assetId: string) => {
-      const asset = currencies.find(({ id }) => id === assetId);
+      const asset = currencies.find(({ assetId: id }) => id === assetId);
 
       if (!asset) return '';
 

@@ -5,6 +5,7 @@ import type { CurrencyController } from '@/controllers';
 import type { ApiPromise } from '@polkadot/api';
 import type { SignerOptions } from '@polkadot/api/submittable/types';
 import type { Asset } from '@sora-substrate/util/build/assets/types';
+import { BalanceItem } from '@/extension/background/extension-base/src/api/evm/types/ether';
 
 type TypeAsset = NetworkAssetsType | 'native';
 
@@ -32,6 +33,11 @@ type AssetsBalances = AssetBalance & {
   balance: Record<WalletAddress, BalanceFP>;
 };
 
+type AssetsBalancesNew = AssetBalance & {
+  balance: Record<WalletAddress, BalanceItem>;
+};
+
+export type BalancesNew = AssetsBalancesNew[];
 type Balances = AssetsBalances[];
 
 type Currency = CurrencyController;

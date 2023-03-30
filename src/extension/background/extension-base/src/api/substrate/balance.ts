@@ -20,6 +20,7 @@ import { getAssetOptions } from './utils';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
 import { AssetJson, TypeAsset } from '@/interfaces';
 import { formatBalance } from '@/util/balances';
+import { MAIN_NETWORKS } from '@/consts/networks';
 
 function subscribeERC20Interval(
   addresses: string[],
@@ -209,7 +210,7 @@ async function subscribeTokensBalance(
             : api.rx.query.tokes?.accounts(addresses[0], options);
 
         const onBalanceFetch = (balances: any) => {
-          const tokenBalance = formatBalance(
+          const { frozen, locked, reserved, total, transferable } = formatBalance(
             balances.data ? (balances as any).data : (balances as OrmlAccountData),
             precision
           );
@@ -219,11 +220,13 @@ async function subscribeTokensBalance(
             chain: networkKey,
             key: networkKey,
             symbol,
+            relayChain: MAIN_NETWORKS[networkKey] ?? networkKey,
             name: displayName ?? symbol,
             icon,
-            reserved: tokenBalance.reserved,
-            feeFrozen: tokenBalance.frozen,
-            total: tokenBalance.total,
+            reserved,
+            feeFrozen: frozen,
+            transferable,
+            total,
           });
         };
 

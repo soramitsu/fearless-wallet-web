@@ -127,7 +127,7 @@ export default class CurrencyItemStateLess extends Vue {
   }
 
   get tokenPrice() {
-    return this.getTokenPrice(this.assetData.priceId);
+    return this.getTokenPrice(this.assetData.priceId ?? '');
   }
 
   get currencyVisible(): boolean {
@@ -222,7 +222,7 @@ export default class CurrencyItemStateLess extends Vue {
     this.$router.push({
       name: Components.Asset,
       params: {
-        assetId: this.assetData.id,
+        assetId: this.assetData.assetId,
         network: this.redirectNetwork,
       },
     });

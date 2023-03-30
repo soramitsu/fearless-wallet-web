@@ -51,7 +51,7 @@ export default class HistoryItem extends Vue {
   }
 
   get value() {
-    const { signTransfer, value } = getHistoryValue(this.historyElement, this.token.id);
+    const { signTransfer, value } = getHistoryValue(this.historyElement, this.token.assetId);
 
     return `${signTransfer}${this.$n(value, 'decimalPrecise')}`;
   }

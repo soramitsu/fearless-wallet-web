@@ -37,7 +37,7 @@ function addNumbers(values: (string | number)[]): string {
 
 function getChangeWalletBalance(tokens: TokenBalance[], price: AssetsPrice): ChangeWalletBalance {
   const changeAssets = tokens.map((token) => {
-    const priceChange = price?.tokenPriceChange[token.priceId] ?? 0;
+    const priceChange = price?.tokenPriceChange[token.priceId ?? ''] ?? 0;
     const totalBalance = +getTotalBalance(token);
     const currentPercent = 100 + (priceChange ?? 0);
     const oldBalance = (totalBalance / currentPercent) * 100;

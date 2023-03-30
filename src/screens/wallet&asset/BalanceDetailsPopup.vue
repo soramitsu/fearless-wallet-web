@@ -57,7 +57,7 @@ export default class BalanceDetailsPopup extends Vue {
   }
 
   get fiatPrice() {
-    return this.getTokenPrice(this.currency.priceId).price ?? 0;
+    return this.getTokenPrice(this.currency.priceId ?? '').price ?? 0;
   }
 
   getFiatValueVisible(value: string) {

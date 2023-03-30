@@ -121,7 +121,7 @@ export default class SendFormStateLess extends Vue {
     return this.balances.find(
       (el) =>
         el.name.toLowerCase() === this.selectedAssetId.toLowerCase() ||
-        el.id.toLowerCase() === this.selectedAssetId.toLowerCase()
+        el.assetId.toLowerCase() === this.selectedAssetId.toLowerCase()
     )!;
   }
 

@@ -10,6 +10,9 @@ import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defau
 import { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
 import { ApiState, ApiProps } from '../../background/types/types';
 import { DOTSAMA_AUTO_CONNECT_MS, DOTSAMA_MAX_CONTINUE_RETRY } from '../../const/intervals';
+import { state } from '../../background/handlers';
+import { NetworkJsonOld } from '../../types';
+import { getCurrentProvider } from '../../utils';
 import { isSora } from '@/helpers/common';
 import { AUTO_CONNECT_MS } from '@/consts/networks';
 export const DEFAULT_AUX = ['Aux1', 'Aux2', 'Aux3', 'Aux4', 'Aux5', 'Aux6', 'Aux7', 'Aux8', 'Aux9'];
@@ -45,49 +48,6 @@ async function retrieve(registry: Registry, api: ApiPromise): Promise<ChainData>
     systemChainType,
     systemName: systemName.toString(),
     systemVersion: systemVersion.toString(),
-  };
-}
-
-async function loadOnReady(registry: Registry, api: ApiPromise): Promise<ApiState> {
-  const DEFAULT_DECIMALS = registry.createType('u32', 12);
-  const DEFAULT_SS58 = registry.createType('u32', addressDefaults.prefix);
-  const { properties, systemChain, systemChainType, systemName, systemVersion } = await retrieve(registry, api);
-  const ss58Format = properties.ss58Format.unwrapOr(DEFAULT_SS58).toNumber();
-  const tokenSymbol = properties.tokenSymbol.unwrapOr([formatBalance.getDefaults().unit, ...DEFAULT_AUX]);
-  const tokenDecimals = properties.tokenDecimals.unwrapOr([DEFAULT_DECIMALS]);
-  const isDevelopment = systemChainType.isDevelopment || systemChainType.isLocal || isTestChain(systemChain);
-
-  // console.info(`chain: ${systemChain} (${systemChainType.toString()}), ${stringify(properties)}`);
-
-  // explicitly override the ss58Format as specified
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  registry.setChainProperties(registry.createType('ChainProperties', { ss58Format, tokenDecimals, tokenSymbol }));
-
-  // first setup the UI helpers
-  const defaultFormatBalance = {
-    decimals: tokenDecimals.map((b) => b.toNumber()),
-    unit: tokenSymbol[0].toString(),
-  };
-
-  const defaultSection = Object.keys(api.tx)[0];
-  const defaultMethod = Object.keys(api.tx[defaultSection])[0];
-  const apiDefaultTx = api.tx[defaultSection][defaultMethod];
-  const apiDefaultTxSudo = (api.tx.system && api.tx.system.setCode) || apiDefaultTx;
-
-  return {
-    defaultFormatBalance,
-    registry,
-    apiDefaultTx,
-    apiDefaultTxSudo,
-    isApiReady: true,
-    isApiInitialized: true,
-    isDevelopment: isDevelopment,
-    specName: api.runtimeVersion.specName.toString(),
-    specVersion: api.runtimeVersion.specVersion.toString(),
-    systemChain,
-    systemName,
-    systemVersion,
   };
 }
 
@@ -149,6 +109,7 @@ function generateEvmHttpApi(apiUrl: string, registry: Registry): ApiProps {
 function onDisconnect(apiObject: ApiProps, network: string, tryAnotherNode: boolean) {
   apiObject.apiRetry += 1;
   apiObject.isApiConnected = false;
+  apiObject.provider = undefined;
   apiObject.isApiReady = false; // result.isApiInitialized && result.isApiConnected
 
   // console.info(`DotSamaAPI disconnected from ${JSON.stringify(apiUrl)} ${JSON.stringify(result.apiRetry)} times`);
@@ -160,63 +121,67 @@ function onDisconnect(apiObject: ApiProps, network: string, tryAnotherNode: bool
       apiObject.apiRetry = 0;
       apiObject.nodeIndex += 1;
       apiObject.provider = undefined;
-    }
+      const networkObj = state.networkMap[network];
+      if (navigator.onLine) initApi(networkObj);
+    } else {
+      // console.info(`Discontinue to use ${JSON.stringify(apiUrl)} because max retry`);
+      apiObject.api.disconnect().then(console.info).catch(console.error);
 
-    // console.info(`Discontinue to use ${JSON.stringify(apiUrl)} because max retry`);
-    apiObject.api.disconnect().then(console.info).catch(console.error);
+      state.disableNetworkMap(network);
+    }
   } else {
     // Todo: Implement reconnect api here
   }
 }
 
 function onConnected(apiObject: ApiProps, network: string) {
-  const api = isSora(network) ? soraConnection.api : apiObject.api;
-  api;
+  const api = isSora(network) ? soraConnection.api! : apiObject.api!;
+  apiObject.api = api;
   apiObject.apiRetry = 0;
   apiObject.isApiConnected = true;
-  apiObject.isApiReady = apiObject.isApiInitialized; // result.isApiInitialized && result.isApiConnected
+  apiObject.isApiReady = apiObject.isApiInitialized;
 }
 
-function onReady(apiObject: Partial<ApiProps>, api: ApiPromise, registry: Registry) {
-  loadOnReady(registry, api)
-    .then((rs) => {
-      objectSpread(apiObject, rs);
-    })
-    .catch((error): void => {
-      apiObject.apiError = (error as Error).message;
-    });
+function onReady(apiObject: Partial<ApiProps>, api: ApiPromise) {
+  apiObject.isApiReady = true;
 }
 
-export async function initApi(networkKey: string, apiUrl: string, isEthereum = false): Promise<ApiProps> {
+export async function initApi(network: NetworkJsonOld): Promise<ApiProps> {
   const registry = new TypeRegistry();
   const tryAnotherNode = true;
-  const apiObject: ApiProps = createApiObject(apiUrl, isEthereum, registry);
+  const { name: networkName, providers, isEthereum } = network;
+
+  const autoSelectNode = network.isManual ? getCurrentProvider(network) : null;
+
+  const currentProvider = autoSelectNode ?? Object.values(providers)[0];
+
+  const apiObject: ApiProps = createApiObject(currentProvider, !!isEthereum, registry);
   const eventListeners: Array<['connected' | 'disconnected' | 'ready', ProviderInterfaceEmitCb]> = [
-    ['connected', () => onConnected(apiObject, networkKey)],
+    ['connected', () => onConnected(apiObject, networkName)],
     [
       'ready',
       () => {
         const api = soraConnection.api;
-        if (api) return onReady(apiObject, api, registry);
+        if (api) return onReady(apiObject, api);
       },
     ],
   ];
 
   if (isEthereum) {
     // return EVM HTTP Placeholder
-    return generateEvmHttpApi(apiUrl, registry);
+    return generateEvmHttpApi(currentProvider, registry);
   }
 
-  if (isSora(networkKey)) {
-    eventListeners.push(['disconnected', () => onDisconnect(apiObject, networkKey, tryAnotherNode)]);
+  if (isSora(networkName)) {
+    eventListeners.push(['disconnected', () => onDisconnect(apiObject, networkName, tryAnotherNode)]);
 
-    await soraConnection.open(apiUrl, {
+    await soraConnection.open(currentProvider, {
       autoConnectMs: AUTO_CONNECT_MS,
       eventListeners,
     });
   }
 
-  const provider = new WsProvider(apiUrl, DOTSAMA_AUTO_CONNECT_MS);
+  const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS);
 
   // Init ApiPromise with selected provider
   const api = new ApiPromise({ provider, noInitWarn: true });
@@ -227,15 +192,15 @@ export async function initApi(networkKey: string, apiUrl: string, isEthereum = f
   // On connected: provider is connected
   api
     .on('connected', () => {
-      onConnected(apiObject, networkKey);
+      onConnected(apiObject, networkName);
     })
     // On disconnected: provider is disconnected
     .on('disconnected', () => {
-      onDisconnect(apiObject, networkKey, tryAnotherNode);
+      onDisconnect(apiObject, networkName, tryAnotherNode);
     })
     // On ready: Load all metadata and ready to init data
     .on('ready', () => {
-      onReady(apiObject, api, registry);
+      onReady(apiObject, api);
     })
     // On ready: Load all metadata and ready to init data
     .on('error', console.error);

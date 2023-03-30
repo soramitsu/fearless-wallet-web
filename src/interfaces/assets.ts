@@ -3,6 +3,7 @@ type AssetJson = {
   name: string;
   symbol: string;
   displayName?: string;
+  relayChain?: string;
   contractAddress?: string;
   chainId: string;
   precision: number;

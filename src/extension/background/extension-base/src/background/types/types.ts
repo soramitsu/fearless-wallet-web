@@ -22,6 +22,7 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
+import { Balances, RelayChainName } from '@/interfaces';
 
 export interface PrepareExternalRequest {
   id: string;
@@ -242,7 +243,7 @@ export interface PriceJson {
 }
 export interface BalanceJson {
   reset?: boolean;
-  details: Record<string, TokenBalance>;
+  details: TokenBalance[];
 }
 
 export enum TransferErrorCode {
@@ -349,6 +350,7 @@ export interface RequestCheckTransfer extends BaseRequestSign {
   from: string;
   to: string;
   token: string;
+  relayChain?: string;
   value?: string;
   transferAll?: boolean;
   password?: string;
@@ -875,13 +877,16 @@ export interface ResponseAccountMeta {
 }
 
 export interface TokenBalance {
-  name: string;
-  icon: string;
-  id: string;
-  priceId: string;
+  mainNetwork: string;
+  assetId: string;
+  priceId?: string;
   precision: number;
-  mainNetwork?: string;
+  name: string;
+  symbol: string;
+  relayChain: RelayChainName;
+  icon: string;
+  providers: string[];
   balances: BalanceItem[];
 }
 
-export type BalanceMap = Record<string, Record<string, TokenBalance>>;
+export type BalanceMap = Record<string, TokenBalance[]>;

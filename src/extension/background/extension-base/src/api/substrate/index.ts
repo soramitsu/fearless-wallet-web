@@ -39,7 +39,7 @@ export function connectDotSamaApis(
     const currentProvider = getCurrentProvider(network);
 
     if (currentProvider) {
-      apisMap[networkKey] = await initApi(networkKey, currentProvider, networkMap[networkKey].isEthereum);
+      apisMap[networkKey] = await initApi(networkMap[networkKey]);
     }
   });
 

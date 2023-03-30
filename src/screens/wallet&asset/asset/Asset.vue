@@ -226,7 +226,7 @@ export default class Asset extends Vue {
   }
 
   get currentCurrency() {
-    return this.balances.find(({ id }) => id === this.selectedAssetId)!;
+    return this.balances.find(({ assetId: id }) => id === this.selectedAssetId)!;
   }
 
   get displayAddressByNetwork() {
@@ -250,7 +250,7 @@ export default class Asset extends Vue {
   }
 
   get assetPrice(): AssetPrice {
-    return this.getAssetPrice(this.currentCurrency.priceId);
+    return this.getAssetPrice(this.currentCurrency.priceId ?? '');
   }
 
   get countAssetsString() {

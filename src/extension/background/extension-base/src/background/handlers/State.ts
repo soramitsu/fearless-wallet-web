@@ -63,13 +63,13 @@ import { ASSETS, CHAINS, prepNetworkNames } from '../../const/networks';
 import { DEFAULT_EVM_TOKENS } from '../../api/tokens/evm/defaultEvmToken';
 import { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '../../types';
 import { FWCron } from '../cron';
+import { getMockCurrencies } from '../utils/utils';
 import { getCurrentProvider, stripUrl, withErrorLog } from './helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
 import { AssetJson } from '@/interfaces';
-import { isSora } from '@/helpers/common';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -162,10 +162,11 @@ export default class State {
   public authorizeCached: AuthUrls | undefined = undefined;
   public tokenMap: AssetJson[] = [];
   public networkMap: Record<string, NetworkJsonOld> = {}; // mapping to networkMapStore, for uses in background
+  public networkJson: NetworkJsonOld[] = [];
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJsonOld>>();
   public serviceInfoSubject = new Subject<ServiceInfo>();
-  public defaultBalanceMap: Record<string, TokenBalance> = {};
+  public defaultBalanceMap: TokenBalance[] = [];
   public balanceMap: BalanceMap = {};
   public balanceSubject = new Subject<BalanceJson>();
   public customTokenState: CustomTokenJson = { erc20: [] };
@@ -206,6 +207,10 @@ export default class State {
 
   get getFiatSymbol() {
     return this.fiatSymbol;
+  }
+
+  public getAssetBalance(address: string, name: string, relayChain?: string) {
+    return this.balanceMap[address].find((balance) => balance.name === name && balance.relayChain === relayChain)!;
   }
 
   public get getSubstrateApiMap() {
@@ -481,7 +486,7 @@ export default class State {
       const currentProvider = getCurrentProvider(data);
 
       if (currentProvider) {
-        this.apis.substrate[data.key] = await initApi(data.key, currentProvider, data.isEthereum);
+        this.apis.substrate[data.key] = await initApi(data);
 
         if (data.isEthereum && data.isEthereum) {
           this.apis.evm[data.key] = initWeb3Api(currentProvider);
@@ -539,7 +544,7 @@ export default class State {
     const currentProvider = getCurrentProvider(networkData);
 
     if (currentProvider) {
-      this.apis.substrate[networkKey] = await initApi(networkKey, currentProvider, networkData.isEthereum);
+      this.apis.substrate[networkKey] = await initApi(networkData);
 
       if (networkData.isEthereum && networkData.isEthereum) {
         this.apis.evm[networkKey] = initWeb3Api(currentProvider);
@@ -585,7 +590,7 @@ export default class State {
       const currentProvider = getCurrentProvider(this.networkMap[key]);
 
       if (currentProvider) {
-        this.apis.substrate[key] = await initApi(key, currentProvider, this.networkMap[key].isEthereum);
+        this.apis.substrate[key] = await initApi(this.networkMap[key]);
 
         if (this.networkMap[key].isEthereum && this.networkMap[key].isEthereum) {
           this.apis.evm[key] = initWeb3Api(currentProvider);
@@ -1047,8 +1052,9 @@ export default class State {
     const result: Record<string, NetworkJsonOld> = {};
     const { data: networks } = await axios.get<NetworkJsonOld[]>(CHAINS);
     const { data: assets } = await axios.get<AssetJson[]>(ASSETS);
-
+    this.networkJson = networks;
     this.tokenMap = assets;
+    this.defaultBalanceMap = getMockCurrencies(networks, assets);
 
     networks.forEach((network) => {
       const prepCurrentProvider = network.nodes[0].name;
@@ -1086,12 +1092,8 @@ export default class State {
   public initNetworkStates() {
     this.networkMapStore.get('NetworkMap', async (storedNetworkMap) => {
       for (const [key, network] of Object.entries(storedNetworkMap)) {
-        const currentProvider = getCurrentProvider(network);
-
-        if (!currentProvider) continue;
-
         if (network.active) {
-          this.apis.substrate[key] = await initApi(key, currentProvider, network.isEthereum);
+          this.apis.substrate[key] = await initApi(network);
 
           if (network.isEthereum) {
             this.apis.evm[key] = initWeb3Api(key === 'ethereum' ? 'ethereum' : 'ethereum_goerli');
@@ -1159,15 +1161,27 @@ export default class State {
     this.getCurrentAccount((account) => {
       if (account) {
         const { address } = account;
-        const token = this.balanceMap[address][item.name];
+
+        const currencyIndex = this.balanceMap[address].findIndex(
+          ({ assetId: _assetId, relayChain: _relayChain, name }) => {
+            const isExistingAssetId = _assetId === item.id;
+            const isExistingDisplayName = name === item.name;
+            const isExistingAsset = isExistingDisplayName && _relayChain === item.relayChain;
+
+            return isExistingAssetId || isExistingAsset;
+          }
+        );
+        const token = this.balanceMap[address][currencyIndex];
+
         const index = token.balances.findIndex((el) => {
-          const key = prepNetworkNames[el.key] ?? el.key;
+          const key = prepNetworkNames[el.name] ?? el.name;
 
           return key === item.key;
         });
-        const balanceItem = this.balanceMap[address][item.name].balances[index];
 
-        this.balanceMap[address][item.name].balances[index] = {
+        const balanceItem = this.balanceMap[address][currencyIndex].balances[index];
+
+        this.balanceMap[address][currencyIndex].balances[index] = {
           ...balanceItem,
           state: APIItemState.READY,
           reserved,
@@ -1246,31 +1260,16 @@ export default class State {
 
     if (this.balanceMap && this.balanceMap[address] !== undefined) return;
 
-    this.balanceMap[address] = {};
-
     if (Object.values(this.defaultBalanceMap).length) {
-      this.balanceMap[address] = { ...this.defaultBalanceMap };
+      this.balanceMap[address] = [...this.defaultBalanceMap];
 
       return;
     }
 
-    this.tokenMap.forEach((token) => {
-      const networks = this.mapNetworksByToken(token.id);
-      const name = token.displayName ?? token.symbol;
+    const mocks = getMockCurrencies(this.networkJson, this.tokenMap);
+    this.balanceMap[address] = mocks;
+    this.defaultBalanceMap = mocks;
 
-      const data: TokenBalance = {
-        name,
-        icon: token.icon,
-        id: token.id,
-        precision: token.precision,
-        priceId: token.priceId ?? '',
-        balances: networks,
-      };
-      if (this.defaultBalanceMap[name]) this.defaultBalanceMap[name].balances.push(...networks);
-      else this.defaultBalanceMap[name] = data;
-    });
-
-    this.balanceMap[address] = this.defaultBalanceMap;
     this.publishBalance();
   }
 
@@ -1314,17 +1313,6 @@ export default class State {
   }
 
   public pauseAllNetworks(code?: number, reason?: string) {
-    // Disconnect web3 networks
-    // Object.entries(this.apiMap.web3).forEach(([key, network]) => {
-    //   if (network.currentProvider instanceof Web3.providers.WebsocketProvider) {
-    //     if (network.currentProvider?.connected) {
-    //       console.log(`[Web3] ${key} is conected`);
-    //       network.currentProvider?.disconnect(code, reason);
-    //       console.log(`[Web3] ${key} is ${network.currentProvider.connected ? 'connected' : 'disconnected'} now`);
-    //     }
-    //   }
-    // });
-
     // Disconnect dotsama networks
     return Promise.all(
       Object.values(this.apis.substrate).map(async (network) => {

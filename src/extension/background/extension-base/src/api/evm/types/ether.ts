@@ -19,8 +19,9 @@ export interface BalanceItem {
   symbol?: string;
   name: string;
   id?: string;
+  relayChain?: string;
   existentialDeposit?: string;
-  key: string;
+  key?: string;
   decimals?: number;
   type?: string;
   free?: string;
@@ -31,6 +32,7 @@ export interface BalanceItem {
   miscFrozen?: string;
   feeFrozen?: string;
   total?: string;
+  transferable?: string;
   timestamp?: number;
   chain?: string;
   chainHash?: string;
@@ -84,6 +86,7 @@ export interface NetworkJson {
   icon?: string; // Icon name, available with known network
   active: boolean; // Network is active or not
   // Provider Information
+  isManual?: boolean;
   providers: Record<string, string>; // Predefined provider map
   currentProvider: string | null; // Current provider key
   // currentProviderMode: 'http' | 'ws'; // Current provider mode, compute depend on provider protocol. the feature need to know this to decide use subscribe or cronjob to use this features.

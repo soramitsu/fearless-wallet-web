@@ -494,8 +494,10 @@ export async function makeTransfer({
   const txState: BasicTxResponse = {};
   const apiProps = await dotSamaApiMap[networkKey].isReady;
   const transferAmount = value;
-  const name = tokenInfo.displayName ?? tokenInfo.symbol;
-  const tokenBalance = state.balanceMap[from][name];
+
+  const tokenBalance = state.balanceMap[from].find(
+    (balance) => balance.name === tokenInfo.name && balance.relayChain === tokenInfo.relayChain
+  )!;
   const extrinsic = await createTransferExtrinsic({
     transferAll: transferAll,
     value: value,

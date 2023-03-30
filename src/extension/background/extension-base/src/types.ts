@@ -1,8 +1,8 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { CustomTokenType, NetworkJson, TokenInfo } from './api/evm/types/ether';
-import { AssetJson, ExternalApi, NetworkAssets } from '@/interfaces';
+import { BalanceItem, CustomTokenType, NetworkJson, TokenInfo } from './api/evm/types/ether';
+import { AssetJson, Balances, BalancesNew, ExternalApi, NetworkAssets, RelayChainName } from '@/interfaces';
 
 export interface Message extends MessageEvent {
   data: {
@@ -85,12 +85,25 @@ type Node = {
   name: string;
 };
 
+export type CurrencyMock = {
+  mainNetwork: string;
+  assetId: string;
+  name: string;
+  symbol: string;
+  displayName: string;
+  relayChain: RelayChainName;
+  icon: string;
+  providers: string[];
+  balances: BalanceItem[];
+};
 export interface NetworkJsonOld extends NetworkJson {
   chainId: string;
   parentId?: string;
   name: string;
   externalApi?: ExternalApi;
   assets: NetworkAssets[];
+  isEthereumNetwork?: boolean;
+
   customNodes?: Record<string, string>;
   nodes: Node[];
   icon: string;

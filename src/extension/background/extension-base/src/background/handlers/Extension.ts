@@ -1139,6 +1139,7 @@ export default class Extension {
     networkKey,
     to,
     token,
+    relayChain,
     transferAll,
     value,
     password,
@@ -1176,7 +1177,9 @@ export default class Extension {
     const toAccountFreeBalance = '0';
     // const fromAccountNativeBalance = '0';
 
-    const tokenBalance = state.balanceMap[address][token];
+    const tokenBalance = state.balanceMap[address].find(
+      (balance) => balance.name === token && balance.relayChain === relayChain
+    )!;
 
     if (isEthereumAddress(from) && isEthereumAddress(to)) {
       const fromAccountFreeBalance =

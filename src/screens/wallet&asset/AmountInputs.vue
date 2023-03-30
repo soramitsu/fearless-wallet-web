@@ -78,11 +78,12 @@ export default class TeleportForm extends Vue {
   get showFiatSymbol() {
     return this.syncedValue !== '';
   }
+
   get assetPrice() {
-    return this.getAssetPrice(this.currency.priceId).price;
+    return this.getAssetPrice(this.currency.priceId ?? '').price;
   }
   get showValueInput() {
-    return this.getAssetPrice(this.currency.priceId).price !== 0;
+    return this.getAssetPrice(this.currency.priceId ?? '').price !== 0;
   }
 
   changeAmount(amount: string) {

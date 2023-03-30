@@ -34,7 +34,8 @@ export const makeTransferExternal = async ({
   const networkKey = network.key;
   const txState: BasicTxResponse = {};
   const name = tokenInfo.displayName ?? tokenInfo.symbol;
-  const tokenBalance = state.balanceMap[senderAddress][name];
+
+  const tokenBalance = state.getAssetBalance(senderAddress, name, tokenInfo.relayChain);
   const transferAmount = value;
   const extrinsic = await createTransferExtrinsic({
     apiProp: apiProps,

@@ -1,5 +1,6 @@
 // import { ApiPromise, WsProvider } from '@polkadot/api';
 // import { connection as soraConnection } from '@sora-substrate/util';
+import { WsProvider } from '@polkadot/rpc-provider';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { Network, ApiOptions, AssetJson, NetworkAssetsType } from '@/interfaces';
 import type { Node } from '@/interfaces/nodes';
@@ -17,52 +18,46 @@ interface ISubscribeData {
   data: AccountData;
 }
 
-// const connectedHandler = (apiOptions: ApiOptions, network: Network) => {
-//   const api = isSora(network.name) ? soraConnection.api : apiOptions.api;
+const connectedHandler = (apiOptions: ApiOptions, network: Network) => {
+  // const api = isSora(network.name) ? soraConnection.api : apiOptions.api;
+  // store.commit(MutationTypes.SET_NETWORK_API, {
+  //   network: network.name,
+  //   api,
+  //   provider: apiOptions.provider,
+  // });
+  // store.commit(MutationTypes.SET_NETWORK_STATUS, {
+  //   network: network.name,
+  //   status: 'connected',
+  // });
+};
 
-//   store.commit(MutationTypes.SET_NETWORK_API, {
-//     network: network.name,
-//     api,
-//     provider: apiOptions.provider,
-//   });
-
-//   store.commit(MutationTypes.SET_NETWORK_STATUS, {
-//     network: network.name,
-//     status: 'connected',
-//   });
-// };
-
-// const disconnectHandler = (
-//   apiOptions: ApiOptions,
-//   network: Network,
-//   tryAnotherNode: boolean,
-//   currentProvider?: WsProvider
-// ) => {
-//   apiOptions.apiRetry += 1;
-
-//   store.commit(MutationTypes.SET_NETWORK_API, {
-//     network: network.name,
-//     api: undefined,
-//     provider: undefined,
-//   });
-
-//   if (apiOptions.apiRetry >= MAX_CONTINUE_RETRY) {
-//     currentProvider?.disconnect();
-
-//     if (tryAnotherNode) {
-//       apiOptions.apiRetry = 0;
-//       apiOptions.nodeIndex += 1;
-//       apiOptions.api = undefined;
-//       apiOptions.provider = undefined;
-
-//       // if (navigator.onLine) connectToApi(network, apiOptions); // eslint-disable-line no-use-before-define
-//     } else
-//       store.commit(MutationTypes.SET_NETWORK_STATUS, {
-//         network: network.name,
-//         status: 'disconnected',
-//       });
-//   }
-// };
+const disconnectHandler = (
+  apiOptions: ApiOptions,
+  network: Network,
+  tryAnotherNode: boolean,
+  currentProvider?: WsProvider
+) => {
+  // apiOptions.apiRetry += 1;
+  // store.commit(MutationTypes.SET_NETWORK_API, {
+  //   network: network.name,
+  //   api: undefined,
+  //   provider: undefined,
+  // });
+  // if (apiOptions.apiRetry >= MAX_CONTINUE_RETRY) {
+  //   currentProvider?.disconnect();
+  //   if (tryAnotherNode) {
+  //     apiOptions.apiRetry = 0;
+  //     apiOptions.nodeIndex += 1;
+  //     apiOptions.api = undefined;
+  //     apiOptions.provider = undefined;
+  //     if (navigator.onLine) connectToApi(network, apiOptions); // eslint-disable-line no-use-before-define
+  //   } else
+  //     store.commit(MutationTypes.SET_NETWORK_STATUS, {
+  //       network: network.name,
+  //       status: 'disconnected',
+  //     });
+  // }
+};
 
 const readyHandler = (network: Network) => {
   // store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, {

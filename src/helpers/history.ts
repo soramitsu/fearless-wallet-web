@@ -71,7 +71,7 @@ function getFormattedDate({ timestamp }: HistoryElement) {
 
 function getHumanValue(value: string, assetId: string) {
   const assetsJson: TokenBalance[] = store.getters.getBalances;
-  const assetJson = assetsJson.find(({ id }) => id === assetId)!;
+  const assetJson = assetsJson.find(({ assetId: id }) => id === assetId)!;
   const precision = assetJson?.precision ?? 0;
 
   return +FPNumber.fromCodecValue(value, precision);

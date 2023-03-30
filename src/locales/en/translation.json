@@ -344,7 +344,8 @@
     "resend": "RESEND IN",
     "sendCode": "SEND CODE",
     "invalidPhone": "Invalid phone number",
-    "invalidEmail": "Invalid email"
+    "invalidEmail": "Invalid email",
+    "countriesLabel": "Unfortunately, at this moment we are not able to support the following countries:"
   },
   "common": {
     "privacyPolicy": "Privacy Policy",

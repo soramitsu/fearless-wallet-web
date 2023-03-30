@@ -1,23 +1,29 @@
 <template>
-  <Scroll>
-    <div class="countries-list">
-      <div class="countries-column">
-        <div v-for="{ name, icon } in countriesPartOne" :key="name" class="country">
-          <Icon v-if="icon" :icon="icon" class="flag" />
-
-          {{ name }}
-        </div>
-      </div>
-
-      <div class="countries-column">
-        <div v-for="{ name, icon } in countriesPartTwo" :key="name" class="country">
-          <Icon v-if="icon" :icon="icon" class="flag" />
-
-          {{ name }}
-        </div>
-      </div>
+  <div class="countries">
+    <div class="label">
+      {{ $t('soraCard.countriesLabel') }}
     </div>
-  </Scroll>
+
+    <Scroll>
+      <div class="countries-list">
+        <div class="countries-column">
+          <div v-for="{ name, icon } in countriesPartOne" :key="name" class="country">
+            <Icon :icon="icon" class="flag" />
+
+            {{ name }}
+          </div>
+        </div>
+
+        <div class="countries-column">
+          <div v-for="{ name, icon } in countriesPartTwo" :key="name" class="country">
+            <Icon :icon="icon" class="flag" />
+
+            {{ name }}
+          </div>
+        </div>
+      </div>
+    </Scroll>
+  </div>
 </template>
 
 <script lang="ts">
@@ -47,24 +53,35 @@ export default class UnsupportedCountries extends Vue {
 </script>
 
 <style scoped lang="scss">
-.countries-list {
-  display: flex;
-  justify-content: space-around;
+.countries {
+  color: $default-white;
 
-  .countries-column {
+  .label {
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .countries-list {
     display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: flex-start;
 
-    .flag {
-      height: 15px;
-      width: 15px;
-    }
+    .countries-column {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: flex-start;
+      min-width: 250px;
 
-    .country {
-      padding: 8px;
-      color: $default-white;
+      .flag {
+        height: 18px;
+        width: 18px;
+        margin-right: 10px;
+      }
+
+      .country {
+        display: flex;
+        align-items: center;
+        padding: 8px 8px 8px 0;
+      }
     }
   }
 }

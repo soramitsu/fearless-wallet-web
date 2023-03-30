@@ -1,83 +1,83 @@
 const UNSUPPORTED_COUNTRIES = [
   {
     name: 'Algeria',
-    icon: '',
+    icon: 'algeria',
   },
   {
     name: 'Belarus',
-    icon: '',
+    icon: 'belarus',
   },
   {
     name: 'Cambodia',
-    icon: '',
+    icon: 'cambodia',
   },
   {
     name: 'Cuba',
-    icon: '',
+    icon: 'cuba',
   },
   {
     name: 'Iran',
-    icon: '',
+    icon: 'iran',
   },
   {
     name: 'Korea',
-    icon: '',
+    icon: 'south-korea',
   },
   {
     name: 'Macedonia',
-    icon: '',
+    icon: 'macedonia',
   },
   {
     name: 'Nigeria',
-    icon: '',
+    icon: 'nigeria',
   },
   {
     name: 'Sudan',
-    icon: '',
+    icon: 'sudan',
   },
   {
     name: 'Thailand',
-    icon: '',
+    icon: 'thailand',
   },
   {
     name: 'Bangladesh',
-    icon: '',
+    icon: 'bangladesh',
   },
   {
     name: 'Bolivia',
-    icon: '',
+    icon: 'bolivia',
   },
   {
     name: 'China',
-    icon: '',
+    icon: 'china',
   },
   {
     name: 'Ghana',
-    icon: '',
+    icon: 'ghana',
   },
   {
     name: 'Jordan',
-    icon: '',
+    icon: 'jordan',
   },
   {
     name: 'Kyrgyzstan',
-    icon: '',
+    icon: 'kyrgyzstan',
   },
   {
     name: 'Nepal',
-    icon: '',
+    icon: 'nepal',
   },
   {
     name: 'Russian Federation',
-    icon: '',
+    icon: 'russia',
   },
   {
     name: 'Syria',
-    icon: '',
+    icon: 'syria',
   },
   {
     name: 'United States',
-    icon: '',
+    icon: 'usa',
   },
 ];
 

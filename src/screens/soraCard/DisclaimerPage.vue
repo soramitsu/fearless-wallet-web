@@ -33,8 +33,7 @@ export default class DisclaimerPage extends Vue {
   openDoc(value: 'terms' | 'privacy' | 'unsupportedCountries') {
     if (value === 'terms') window.open(URLS.SORA_CARD_TERMS);
     else if (value === 'privacy') window.open(URLS.SORA_CARD_PRIVACY);
-
-    this.$emit('toggleCountriesFormVisibility');
+    else this.$emit('toggleCountriesFormVisibility');
   }
 }
 </script>

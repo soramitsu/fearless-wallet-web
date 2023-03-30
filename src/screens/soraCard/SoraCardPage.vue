@@ -9,7 +9,7 @@
     <div class="container">
       <Preview v-if="step === 1" @proceed="proceed" />
 
-      <UnsupportedCountries v-if="showCountriesForm" />
+      <UnsupportedCountries v-else-if="showCountriesForm" />
 
       <template v-else>
         <KYC
@@ -53,7 +53,7 @@ export default class SoraCardPage extends Vue {
   showCountriesForm = false;
   isValidSmsCode = false;
   isValidEmailForm = false;
-  step = 2; // TODO revert to 1
+  step = 1; // TODO revert to 1
 
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 

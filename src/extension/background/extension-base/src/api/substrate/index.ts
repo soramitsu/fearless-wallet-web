@@ -24,7 +24,7 @@ export function connectDotSamaApis(
 ): Record<string, ApiProps> {
   const apisMap: Record<string, ApiProps> = {};
 
-  Object.keys(networks).forEach((networkKey) => {
+  Object.keys(networks).forEach(async (networkKey) => {
     const network = networks[networkKey];
 
     if (
@@ -39,7 +39,7 @@ export function connectDotSamaApis(
     const currentProvider = getCurrentProvider(network);
 
     if (currentProvider) {
-      apisMap[networkKey] = initApi(networkKey, currentProvider, networkMap[networkKey].isEthereum);
+      apisMap[networkKey] = await initApi(networkKey, currentProvider, networkMap[networkKey].isEthereum);
     }
   });
 

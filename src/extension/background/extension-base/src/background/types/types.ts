@@ -8,7 +8,7 @@ import { Registry } from '@polkadot/types/types';
 import { SubmittableExtrinsicFunction } from '@polkadot/api/promise/types';
 import { BN } from '@polkadot/util';
 import { Subscription } from 'rxjs';
-import { ApiPromise } from '@polkadot/api';
+import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ALLOWED_PATH } from '../../defaults';
 import MetadataStore from '../../stores/Metadata';
 import { BalanceItem, NetworkJson } from '../../api/evm/types/ether';
@@ -324,6 +324,7 @@ export interface ApiState {
 }
 export interface ApiProps extends ApiState {
   api: ApiPromise;
+  provider?: WsProvider;
   apiError?: string;
   apiUrl: string;
   isNotSupport?: boolean;
@@ -332,8 +333,8 @@ export interface ApiProps extends ApiState {
   isEthereumOnly: boolean;
   isApiInitialized: boolean;
   isReady: Promise<ApiProps>;
-  apiRetry?: number;
-  recoverConnect?: () => void;
+  apiRetry: number;
+  nodeIndex: number;
   useEvmAddress?: boolean;
 }
 export type BasicTxWarning = {
@@ -879,6 +880,7 @@ export interface TokenBalance {
   id: string;
   priceId: string;
   precision: number;
+  mainNetwork?: string;
   balances: BalanceItem[];
 }
 

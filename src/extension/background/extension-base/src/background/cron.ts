@@ -175,9 +175,9 @@ export class FWCron {
     const apiMap = this.state.getApiMap;
 
     for (const apiProp of Object.values(apiMap.substrate)) {
-      if (!apiProp.isApiConnected) {
-        apiProp.recoverConnect && apiProp.recoverConnect();
-      }
+      // if (!apiProp.isApiConnected) {
+      //   apiProp.recoverConnect && apiProp.recoverConnect();
+      // }
     }
 
     for (const [key, evm] of Object.entries(apiMap.evm)) {

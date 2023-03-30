@@ -1,6 +1,6 @@
 // import { api as apiSora } from '@sora-substrate/util';
 import type { Wallet } from '@/store';
-import type { NetworkName, WalletAddress, AssetId, AssetJson, Networks, Network, AssetPrice } from '@/interfaces';
+import type { NetworkName, WalletAddress, AssetId, Networks, Network, AssetPrice } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
@@ -59,10 +59,6 @@ export class NetworksController {
 
   static getNetwork(networkName: string): Network {
     return store.getters[NetworksGettersTypes.getNetwork](networkName);
-  }
-
-  public static getAssetsJson(): AssetJson[] {
-    return store.getters[NetworksGettersTypes.getAssetsJson];
   }
 
   public static getAssetIcon(assetId: string): string {

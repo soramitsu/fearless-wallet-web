@@ -1,6 +1,5 @@
 // Copyright 2019-2022 @polkadot/extension-bg authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-
 import { BehaviorSubject, Subject } from 'rxjs';
 import { addMetadata, knownMetadata } from '@polkadot/extension-chains';
 import { knownGenesis } from '@polkadot/networks/defaults';
@@ -70,6 +69,7 @@ import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-p
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
 import { AssetJson } from '@/interfaces';
+import { isSora } from '@/helpers/common';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -481,7 +481,7 @@ export default class State {
       const currentProvider = getCurrentProvider(data);
 
       if (currentProvider) {
-        this.apis.substrate[data.key] = initApi(data.key, currentProvider, data.isEthereum);
+        this.apis.substrate[data.key] = await initApi(data.key, currentProvider, data.isEthereum);
 
         if (data.isEthereum && data.isEthereum) {
           this.apis.evm[data.key] = initWeb3Api(currentProvider);
@@ -528,7 +528,7 @@ export default class State {
     return true;
   }
 
-  public enableNetworkMap(networkKey: string) {
+  public async enableNetworkMap(networkKey: string) {
     if (this.lockNetworkMap) {
       return false;
     }
@@ -539,7 +539,7 @@ export default class State {
     const currentProvider = getCurrentProvider(networkData);
 
     if (currentProvider) {
-      this.apis.substrate[networkKey] = initApi(networkKey, currentProvider, networkData.isEthereum);
+      this.apis.substrate[networkKey] = await initApi(networkKey, currentProvider, networkData.isEthereum);
 
       if (networkData.isEthereum && networkData.isEthereum) {
         this.apis.evm[networkKey] = initWeb3Api(currentProvider);
@@ -563,7 +563,7 @@ export default class State {
     return true;
   }
 
-  public enableAllNetworks() {
+  public async enableAllNetworks() {
     if (this.lockNetworkMap) {
       return false;
     }
@@ -585,7 +585,7 @@ export default class State {
       const currentProvider = getCurrentProvider(this.networkMap[key]);
 
       if (currentProvider) {
-        this.apis.substrate[key] = initApi(key, currentProvider, this.networkMap[key].isEthereum);
+        this.apis.substrate[key] = await initApi(key, currentProvider, this.networkMap[key].isEthereum);
 
         if (this.networkMap[key].isEthereum && this.networkMap[key].isEthereum) {
           this.apis.evm[key] = initWeb3Api(currentProvider);
@@ -614,13 +614,13 @@ export default class State {
     });
   }
 
-  public refreshSubstrateApi(key: string) {
+  public async refreshSubstrateApi(key: string) {
     const apiProps = this.apis.substrate[key];
 
     if (key in this.apis.substrate) {
-      if (!apiProps.isApiConnected) {
-        apiProps.recoverConnect && apiProps.recoverConnect();
-      }
+      // if (!apiProps.isApiConnected) {
+      //   apiProps.recoverConnect && apiProps.recoverConnect();
+      // }
     }
 
     return true;
@@ -1091,7 +1091,7 @@ export default class State {
         if (!currentProvider) continue;
 
         if (network.active) {
-          this.apis.substrate[key] = initApi(key, currentProvider, network.isEthereum);
+          this.apis.substrate[key] = await initApi(key, currentProvider, network.isEthereum);
 
           if (network.isEthereum) {
             this.apis.evm[key] = initWeb3Api(key === 'ethereum' ? 'ethereum' : 'ethereum_goerli');

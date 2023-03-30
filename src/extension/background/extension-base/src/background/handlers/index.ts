@@ -11,20 +11,6 @@ export const state = new State();
 export const extension = new Extension();
 export const tabs = new Tabs(state);
 
-// Migration
-async function makeSureStateReady() {
-  const poll = (resolve: (value: unknown) => void) => {
-    if (state.isReady()) {
-      resolve(true);
-    } else {
-      console.info('Waiting for State is ready...');
-      setTimeout(() => poll(resolve), 400);
-    }
-  };
-
-  return new Promise(poll);
-}
-
 export default function handler<TMessageType extends MessageTypes>(
   { id, message, request }: TransportRequestMessage<TMessageType>,
   port?: Port,

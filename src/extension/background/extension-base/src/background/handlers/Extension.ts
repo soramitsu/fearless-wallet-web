@@ -578,7 +578,7 @@ export default class Extension {
     }
   }
 
-  private enableNetworkMap(networkKey: string): boolean {
+  private async enableNetworkMap(networkKey: string): Promise<boolean> {
     const networkMap = this.getNetworkMap();
 
     if (!(networkKey in networkMap)) {

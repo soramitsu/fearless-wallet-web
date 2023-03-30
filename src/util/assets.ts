@@ -1,5 +1,4 @@
-import type { AssetJson, TypeAsset } from '@/interfaces';
-import { NetworksController } from '@/controllers';
+import type { TypeAsset } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 
 // type ExtrinsicTransferProps = {
@@ -13,9 +12,9 @@ import BaseApi from '@/util/BaseApi';
 const ORML_PALLETS_TYPES = ['ormlChain', 'equilibrium'];
 
 function getAssetOptions(symbol: string, type: TypeAsset, assetId: string) {
-  const assetsJson: AssetJson[] = NetworksController.getAssetsJson();
-  const { currencyId } = assetsJson.find(({ id }) => id === assetId)!;
-
+  // const assetsJson: AssetJson[] = NetworksController.getAssetsJson();
+  // const { currencyId } = assetsJson.find(({ id }) => id === assetId)!;
+  const currencyId = '';
   if (type === 'stable') return { Stable: symbol.toUpperCase() };
   if (type === 'vToken') return { VToken: symbol.toUpperCase() };
   if (type === 'vsToken') return { VSToken: symbol.toUpperCase() };

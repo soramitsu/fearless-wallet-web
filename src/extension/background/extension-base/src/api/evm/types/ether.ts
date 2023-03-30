@@ -18,6 +18,8 @@ export interface BalanceItem {
   state: APIItemState;
   symbol?: string;
   name: string;
+  id?: string;
+  existentialDeposit?: string;
   key: string;
   decimals?: number;
   type?: string;

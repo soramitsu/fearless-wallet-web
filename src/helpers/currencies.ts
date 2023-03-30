@@ -21,76 +21,74 @@ type CurrencyMock = {
 };
 
 function getMockCurrencies(networks: Networks): Currencies {
-  const assetsJson = NetworksController.getAssetsJson();
-
   const currencies = networks
     .reduce<CurrencyMock[]>((result, network) => {
       const { assets: networkAssets, name: mainNet, parentId, icon } = network;
       const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNet) as RelayChainName;
 
-      networkAssets.forEach(({ assetId, purchaseProviders, isUtility, isNative, type }) => {
-        const {
-          symbol,
-          name,
-          displayName: _displayName,
-          precision,
-          existentialDeposit,
-        } = assetsJson.find(({ id }) => id === assetId)!;
-        const displayName = _displayName ?? symbol;
-        const mainNetwork = MAIN_NETWORKS[displayName] ?? mainNet;
-        const currencyIndex = result.findIndex(
-          ({ assetId: _assetId, relayChain: _relayChain, displayName: _displayName }) => {
-            const isExistingAssetId = _assetId === assetId;
-            const isExistingDisplayName = _displayName === displayName;
-            const isExistingAsset = isExistingDisplayName && _relayChain === relayChain;
+      // networkAssets.forEach(({ assetId, purchaseProviders, isUtility, isNative, type }) => {
+      //   const {
+      //     symbol,
+      //     name,
+      //     displayName: _displayName,
+      //     precision,
+      //     existentialDeposit,
+      //   } = assetsJson.find(({ id }) => id === assetId)!;
+      //   const displayName = _displayName ?? symbol;
+      //   const mainNetwork = MAIN_NETWORKS[displayName] ?? mainNet;
+      //   const currencyIndex = result.findIndex(
+      //     ({ assetId: _assetId, relayChain: _relayChain, displayName: _displayName }) => {
+      //       const isExistingAssetId = _assetId === assetId;
+      //       const isExistingDisplayName = _displayName === displayName;
+      //       const isExistingAsset = isExistingDisplayName && _relayChain === relayChain;
 
-            return isExistingAssetId || isExistingAsset;
-          }
-        );
+      //       return isExistingAssetId || isExistingAsset;
+      //     }
+      //   );
 
-        if (currencyIndex === -1) {
-          const newCurrency = {
-            mainNetwork,
-            assetId,
-            assetFullName: name,
-            symbol,
-            displayName,
-            relayChain,
-            icon,
-            providers: purchaseProviders ?? [],
-            balances: [],
-          };
+      //   if (currencyIndex === -1) {
+      //     const newCurrency = {
+      //       mainNetwork,
+      //       assetId,
+      //       assetFullName: name,
+      //       symbol,
+      //       displayName,
+      //       relayChain,
+      //       icon,
+      //       providers: purchaseProviders ?? [],
+      //       balances: [],
+      //     };
 
-          result.push(newCurrency);
-        } else if (isUtility || isNative) {
-          result[currencyIndex].mainNetwork = mainNetwork;
-          result[currencyIndex].assetId = assetId;
-        }
+      //     result.push(newCurrency);
+      //   } else if (isUtility || isNative) {
+      //     result[currencyIndex].mainNetwork = mainNetwork;
+      //     result[currencyIndex].assetId = assetId;
+      //   }
 
-        // Add mock balances
-        const index = currencyIndex === -1 ? result.length - 1 : currencyIndex;
-        const balances: Balances = [
-          ...result[index].balances,
-          {
-            network: mainNet,
-            existentialDeposit,
-            type: type ?? 'native',
-            precision,
-            balance: {},
-            assetId,
-          },
-        ];
+      //   // Add mock balances
+      //   const index = currencyIndex === -1 ? result.length - 1 : currencyIndex;
+      //   const balances: Balances = [
+      //     ...result[index].balances,
+      //     {
+      //       network: mainNet,
+      //       existentialDeposit,
+      //       type: type ?? 'native',
+      //       precision,
+      //       balance: {},
+      //       assetId,
+      //     },
+      //   ];
 
-        balances.forEach(({ balance }) => {
-          BaseApi.getAccounts().forEach(({ address }) => {
-            // const isEthereumAccountType = BaseApi.getPair(address).type === 'ethereum';
-            // if ((isEthereumNetwork && isEthereumAccountType) || (!isEthereumNetwork && !isEthereumAccountType))
-            //   balance[address] = mockFPBalance;
-          });
-        });
+      //   balances.forEach(({ balance }) => {
+      //     BaseApi.getAccounts().forEach(({ address }) => {
+      //       // const isEthereumAccountType = BaseApi.getPair(address).type === 'ethereum';
+      //       // if ((isEthereumNetwork && isEthereumAccountType) || (!isEthereumNetwork && !isEthereumAccountType))
+      //       //   balance[address] = mockFPBalance;
+      //     });
+      //   });
 
-        result[index].balances = balances;
-      });
+      //   result[index].balances = balances;
+      // });
 
       return result;
     }, [])

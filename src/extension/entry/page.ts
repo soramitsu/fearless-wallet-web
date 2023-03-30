@@ -1,11 +1,9 @@
 import { MESSAGE_ORIGIN_CONTENT } from '@extension-base/defaults';
 import { injectExtension } from '@polkadot/extension-inject';
 import { enable, handleResponse, redirectIfPhishing } from '@extension-base/page';
+import { RequestSignatures } from '../background/extension-base/src/background/types/messages';
 import type { Message } from '@extension-base/types';
-import type {
-  RequestSignatures,
-  TransportRequestMessage,
-} from '@/extension/background/extension-base/src/background/types/types';
+import type { TransportRequestMessage } from '@/extension/background/extension-base/src/background/types/types';
 
 class Page {
   private inject() {

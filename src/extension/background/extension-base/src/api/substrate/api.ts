@@ -1,14 +1,17 @@
 // Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-
+import { connection as soraConnection } from '@sora-substrate/util';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { TypeRegistry } from '@polkadot/types/create';
 import { ChainProperties, ChainType } from '@polkadot/types/interfaces';
 import { Registry } from '@polkadot/types/types';
 import { formatBalance, isTestChain, objectSpread } from '@polkadot/util';
 import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defaults';
+import { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
 import { ApiState, ApiProps } from '../../background/types/types';
 import { DOTSAMA_AUTO_CONNECT_MS, DOTSAMA_MAX_CONTINUE_RETRY } from '../../const/intervals';
+import { isSora } from '@/helpers/common';
+import { AUTO_CONNECT_MS } from '@/consts/networks';
 export const DEFAULT_AUX = ['Aux1', 'Aux2', 'Aux3', 'Aux4', 'Aux5', 'Aux6', 'Aux7', 'Aux8', 'Aux9'];
 
 interface ChainData {
@@ -88,9 +91,8 @@ async function loadOnReady(registry: Registry, api: ApiPromise): Promise<ApiStat
   };
 }
 
-function createApiObject(api: ApiPromise, apiUrl: string, isEthereum: boolean, registry: TypeRegistry) {
+function createApiObject(apiUrl: string, isEthereum: boolean, registry: TypeRegistry) {
   const result: ApiProps = {
-    api,
     apiDefaultTx: undefined,
     apiDefaultTxSudo: undefined,
     apiError: undefined,
@@ -108,28 +110,6 @@ function createApiObject(api: ApiPromise, apiUrl: string, isEthereum: boolean, r
     systemName: '',
     systemVersion: '',
     apiRetry: 0,
-    recoverConnect: async () => {
-      result.apiRetry = 0;
-    },
-    get isReady() {
-      const self = this as ApiProps;
-
-      return (async function (): Promise<ApiProps> {
-        if (!result.isApiInitialized) {
-          await self.api.isReady;
-        }
-
-        return new Promise<ApiProps>((resolve) => {
-          (function wait() {
-            if (self.isApiReady) {
-              return resolve(self);
-            }
-
-            setTimeout(wait, 33);
-          })();
-        });
-      })();
-    },
   } as unknown as ApiProps;
 
   return result;
@@ -137,18 +117,13 @@ function createApiObject(api: ApiPromise, apiUrl: string, isEthereum: boolean, r
 
 function generateEvmHttpApi(apiUrl: string, registry: Registry): ApiProps {
   return {
-    api: new Proxy(
-      {},
-      {
-        get(target, prop, receiver) {
-          console.info('Access virtual API', target, prop, receiver);
-        },
-      }
-    ),
+    api: undefined,
+    provider: undefined,
     apiDefaultTx: undefined,
     apiDefaultTxSudo: undefined,
     apiError: undefined,
     apiUrl,
+    nodeIndex: 0,
     defaultFormatBalance: undefined,
     isApiConnected: true,
     isApiReady: true,
@@ -171,28 +146,38 @@ function generateEvmHttpApi(apiUrl: string, registry: Registry): ApiProps {
   } as unknown as ApiProps;
 }
 
-function onDisconnect(apiObject: ApiProps, provider: WsProvider) {
-  apiObject.apiRetry = (apiObject.apiRetry || 0) + 1;
+function onDisconnect(apiObject: ApiProps, network: string, tryAnotherNode: boolean) {
+  apiObject.apiRetry += 1;
   apiObject.isApiConnected = false;
   apiObject.isApiReady = false; // result.isApiInitialized && result.isApiConnected
 
   // console.info(`DotSamaAPI disconnected from ${JSON.stringify(apiUrl)} ${JSON.stringify(result.apiRetry)} times`);
 
   if (apiObject.apiRetry > DOTSAMA_MAX_CONTINUE_RETRY) {
+    apiObject.api.disconnect();
+
+    if (tryAnotherNode) {
+      apiObject.apiRetry = 0;
+      apiObject.nodeIndex += 1;
+      apiObject.provider = undefined;
+    }
+
     // console.info(`Discontinue to use ${JSON.stringify(apiUrl)} because max retry`);
-    provider.disconnect().then(console.info).catch(console.error);
+    apiObject.api.disconnect().then(console.info).catch(console.error);
   } else {
     // Todo: Implement reconnect api here
   }
 }
 
-function onConnected(apiObject: ApiProps) {
+function onConnected(apiObject: ApiProps, network: string) {
+  const api = isSora(network) ? soraConnection.api : apiObject.api;
+  api;
   apiObject.apiRetry = 0;
   apiObject.isApiConnected = true;
   apiObject.isApiReady = apiObject.isApiInitialized; // result.isApiInitialized && result.isApiConnected
 }
 
-function onReady(apiObject: ApiProps, api: ApiPromise, registry: Registry) {
+function onReady(apiObject: Partial<ApiProps>, api: ApiPromise, registry: Registry) {
   loadOnReady(registry, api)
     .then((rs) => {
       objectSpread(apiObject, rs);
@@ -202,12 +187,33 @@ function onReady(apiObject: ApiProps, api: ApiPromise, registry: Registry) {
     });
 }
 
-export function initApi(networkKey: string, apiUrl: string, isEthereum = false): ApiProps {
+export async function initApi(networkKey: string, apiUrl: string, isEthereum = false): Promise<ApiProps> {
   const registry = new TypeRegistry();
+  const tryAnotherNode = true;
+  const apiObject: ApiProps = createApiObject(apiUrl, isEthereum, registry);
+  const eventListeners: Array<['connected' | 'disconnected' | 'ready', ProviderInterfaceEmitCb]> = [
+    ['connected', () => onConnected(apiObject, networkKey)],
+    [
+      'ready',
+      () => {
+        const api = soraConnection.api;
+        if (api) return onReady(apiObject, api, registry);
+      },
+    ],
+  ];
 
   if (isEthereum) {
     // return EVM HTTP Placeholder
     return generateEvmHttpApi(apiUrl, registry);
+  }
+
+  if (isSora(networkKey)) {
+    eventListeners.push(['disconnected', () => onDisconnect(apiObject, networkKey, tryAnotherNode)]);
+
+    await soraConnection.open(apiUrl, {
+      autoConnectMs: AUTO_CONNECT_MS,
+      eventListeners,
+    });
   }
 
   const provider = new WsProvider(apiUrl, DOTSAMA_AUTO_CONNECT_MS);
@@ -216,17 +222,16 @@ export function initApi(networkKey: string, apiUrl: string, isEthereum = false):
   const api = new ApiPromise({ provider, noInitWarn: true });
 
   // Create APIProps Object
-  const apiObject: ApiProps = createApiObject(api, apiUrl, isEthereum, registry);
 
   // Listen ApiPromise events
   // On connected: provider is connected
   api
     .on('connected', () => {
-      onConnected(apiObject);
+      onConnected(apiObject, networkKey);
     })
     // On disconnected: provider is disconnected
     .on('disconnected', () => {
-      onDisconnect(apiObject, provider);
+      onDisconnect(apiObject, networkKey, tryAnotherNode);
     })
     // On ready: Load all metadata and ready to init data
     .on('ready', () => {

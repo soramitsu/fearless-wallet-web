@@ -180,20 +180,20 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Currencies, NetworkStatus } from '@/interfaces';
 import type { GetAssetName, SelectedWallet, GetNetworkStatus, GetNetwork } from '@/store';
-import SwapSelectInput from '@/screens/wallet&asset/swap/SwapSelectInput.vue';
-import SwapPreview from '@/screens/wallet&asset/swap/SwapPreview.vue';
-import SwapInfo from '@/screens/wallet&asset/swap/SwapInfo.vue';
-import SwapSettings from '@/screens/wallet&asset/swap/SwapSettings.vue';
+import SwapSelectInput from '@/screens/polkaswap/swap/SwapSelectInput.vue';
+import SwapPreview from '@/screens/polkaswap/swap/SwapPreview.vue';
+import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
+import SwapSettings from '@/screens/polkaswap/swap/SwapSettings.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import NetworksController from '@/controllers/networksController';
-import { SORA_UTILITY_ASSET } from '@/consts/networks';
+import { SORA_UTILITY_ASSET, SORA_XOR_ASSET_ID, SORA_NETWORK_NAME } from '@/consts/networks';
 
 @Component({
   components: {
@@ -224,15 +224,16 @@ export default class SwapForm extends Vue {
   showConfirmationPasswordPopup = false;
   isExchangeB = false;
 
-  @Prop(Function) closeForm!: VoidFunction;
-  @Prop(String) selectedNetwork!: string;
-  @Prop(String) _selectedAssetId!: string;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get selectedNetwork() {
+    return SORA_NETWORK_NAME as string;
+  }
 
   get showPolkaswapIcon() {
     return this.step === 1 && !this.showSettings;
@@ -242,7 +243,7 @@ export default class SwapForm extends Vue {
     return [
       'swap-icon',
       {
-        'swap-icon-disable': this.receiveAssetId === '',
+        'swap-icon-disable': this.receiveAssetId === '' || this.sendAssetId === '',
       },
     ];
   }
@@ -429,7 +430,7 @@ export default class SwapForm extends Vue {
   }
 
   get isValidSendAsset() {
-    return this.sendCurrency!.validateCountAssets(this.sendAmount, this.fee, this.selectedNetwork, this.selectedWallet);
+    return this.sendCurrency?.validateCountAssets(this.sendAmount, this.fee, this.selectedNetwork, this.selectedWallet);
   }
 
   get isValidCountXOR() {
@@ -439,7 +440,7 @@ export default class SwapForm extends Vue {
 
     if (this.fee === '') return false;
 
-    return this.currencyXOR!.validateCountAssets(xorAmount, this.fee, this.selectedNetwork, this.selectedWallet);
+    return this.currencyXOR?.validateCountAssets(xorAmount, this.fee, this.selectedNetwork, this.selectedWallet);
   }
 
   get marketTypeUP() {
@@ -484,7 +485,13 @@ export default class SwapForm extends Vue {
   }
 
   async created() {
-    this.sendAssetId = this._selectedAssetId;
+    const { assetId, leftXORAmount } = this.$route.params;
+
+    if (leftXORAmount) {
+      this.receiveAssetId = SORA_XOR_ASSET_ID;
+      this.receiveAmount = leftXORAmount;
+      this.isExchangeB = true;
+    } else this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
 
     if (this.networkStatus === 'ready') this.initializeSora();
   }
@@ -564,6 +571,10 @@ export default class SwapForm extends Vue {
     if (closeForm) this.closeForm();
   }
 
+  closeForm() {
+    this.$router.back();
+  }
+
   handlerFilter(value: string) {
     this.filterValue = value;
   }
@@ -600,7 +611,7 @@ export default class SwapForm extends Vue {
   }
 
   swapAssets() {
-    if (this.receiveAssetId === '') return;
+    if (this.receiveAssetId === '' || this.sendAssetId === '') return;
 
     const sendAssetId = this.sendAssetId;
 
@@ -615,7 +626,7 @@ export default class SwapForm extends Vue {
   }
 
   back() {
-    if (this.step === 1) this.closeForm();
+    if (this.step === 1) this.$router.back();
     else this.step -= 1;
   }
 

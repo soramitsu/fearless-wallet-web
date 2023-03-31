@@ -17,11 +17,14 @@ const MobileConnect = () => import('@/screens/mobileConnect/MobileConnect.vue');
 const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue');
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
+const Export = () => import('@/screens/accounts/Export.vue');
+
+const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
+const SoraSwap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/SwapForm.vue');
+
 const AddWallet = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/AddWallet.vue');
-const Export = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/accounts/Export.vue');
 const AddFromGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/AddFromGoogle.vue');
 const CreateGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/CreateGoogle.vue');
-const SoraCard = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/soraCard/SoraCardPage.vue');
 
 export enum Components {
   Welcome = 'Welcome',
@@ -44,6 +47,7 @@ export enum Components {
   CreateGoogle = 'CreateGoogle',
   AddFromGoogle = 'AddFromGoogle',
   SoraCard = 'SoraCard',
+  SoraSwap = 'SoraSwap',
 }
 
 const haveAccounts = () => BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
@@ -98,7 +102,12 @@ const routes: Array<RouteConfig> = [
     component: SoraCard,
   },
   {
-    path: '/main',
+    path: '/sora-swap',
+    name: Components.SoraSwap,
+    component: SoraSwap,
+  },
+  {
+    path: '/fearless',
     component: Main,
     children: [
       {

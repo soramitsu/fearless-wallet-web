@@ -46,6 +46,7 @@ export default class AboveForm extends Vue {
   @Prop({ default: false }) showBackIcon!: boolean;
   @Prop({ default: false }) fullScreen!: boolean;
   @Prop({ default: true }) showCloseIcon!: boolean;
+  @Prop({ default: true }) showAnimation!: boolean;
   @Prop({ default: () => () => null }) saveChanges!: VoidFunction;
   @Prop({ default: () => () => null }) handlerBack!: VoidFunction;
   @Prop(Function) closeHandler!: VoidFunction;
@@ -58,18 +59,19 @@ export default class AboveForm extends Vue {
 
   get backgroundClasses() {
     return [
-      'above-form-background',
+      'form-background',
       {
-        'above-form-background-blur': this.blur,
+        'background-blur': this.blur,
+        'form-animation': this.showAnimation,
       },
     ];
   }
 
   get aboveFormClasses() {
     return [
-      'above-form',
+      'form',
       {
-        'above-form-full': this.fullScreen,
+        fullscreen: this.fullScreen,
       },
     ];
   }
@@ -77,9 +79,7 @@ export default class AboveForm extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.above-form-background {
-  @include opacity;
-
+.form-background {
   height: 100%;
   width: $extension-width;
   position: absolute;
@@ -90,7 +90,7 @@ export default class AboveForm extends Vue {
   margin: 0 auto;
   z-index: 299;
 
-  .above-form {
+  .form {
     position: relative;
     top: 80px;
     width: $extension-width;
@@ -191,15 +191,19 @@ export default class AboveForm extends Vue {
     }
   }
 
-  .above-form-full {
+  .fullscreen {
     height: 100%;
     top: 0;
     clip-path: none;
   }
 }
 
-.above-form-background-blur {
+.background-blur {
   background: rgba(51, 51, 51, 0.5);
   backdrop-filter: blur(5px);
+}
+
+.form-animation {
+  @include opacity;
 }
 </style>

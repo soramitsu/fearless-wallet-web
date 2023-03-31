@@ -45,7 +45,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import SwapInfo from '@/screens/wallet&asset/swap/SwapInfo.vue';
+import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
 
 @Component({
   components: { SwapInfo },

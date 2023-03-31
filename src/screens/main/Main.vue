@@ -1,5 +1,5 @@
 <template>
-  <div class="main">
+  <div class="main-layout">
     <Header
       :showSelectWalletPopup="showSelectWalletPopup"
       :highlightSettingsIcon="highlightSettingsIcon"
@@ -147,7 +147,7 @@ export default class Main extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.main {
+.main-layout {
   display: flex;
   flex-direction: column;
   justify-content: space-between;

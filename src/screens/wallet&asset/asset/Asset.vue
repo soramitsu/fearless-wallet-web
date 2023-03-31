@@ -57,7 +57,7 @@
         class="activity-button"
         text="assets.swap"
         iconName="swap"
-        @click="toggleVisible('showSwapForm', true)"
+        @click="openSoraSwap"
       />
     </div>
 
@@ -82,13 +82,6 @@
       :_originalNetwork="selectedNetwork"
       :_selectedAssetId="selectedAssetId"
       :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
-    />
-
-    <SwapForm
-      v-if="showSwapForm"
-      :selectedNetwork="selectedNetwork"
-      :_selectedAssetId="selectedAssetId"
-      :closeForm="toggleVisible.bind(null, 'showSwapForm', false)"
     />
 
     <BuyPopup
@@ -146,7 +139,7 @@ import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue'
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import TeleportForm from '@/screens/wallet&asset/TeleportForm.vue';
-import SwapForm from '@/screens/wallet&asset/swap/SwapForm.vue';
+import SwapForm from '@/screens/polkaswap/swap/SwapForm.vue';
 import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
 import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
@@ -160,7 +153,7 @@ import { Network } from '@/interfaces';
 import { isSora, firstCharToUp } from '@/helpers/common';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 
-type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup' | 'showSwapForm';
+type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
 
 @Component({
   components: {
@@ -183,7 +176,6 @@ export default class Asset extends Vue {
   showSendForm = false;
   showReceiveForm = false;
   showTeleportForm = false;
-  showSwapForm = false;
   showBuyPopup = false;
   showHistoryDetailsForm = false;
   showSelectNetworkPopup = false;
@@ -351,6 +343,15 @@ export default class Asset extends Vue {
     }
 
     this.showBalanceDetailsPopup = !this.showBalanceDetailsPopup;
+  }
+
+  openSoraSwap() {
+    this.$router.push({
+      name: Components.SoraSwap,
+      params: {
+        assetId: this.selectedAssetId,
+      },
+    });
   }
 }
 </script>

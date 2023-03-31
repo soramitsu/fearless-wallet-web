@@ -94,13 +94,15 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import type { Currencies } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
-import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/networks';
+import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID, SORA_UTILITY_ASSET } from '@/consts/networks';
 import KYC from '@/screens/soraCard/KYC.vue';
 import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component({
   components: {
@@ -109,7 +111,9 @@ import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
   },
 })
 export default class Preview extends Vue {
+  @Prop(String) leftXORAmount!: string;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
 
   // TODO mock
   get fillFactorBar() {
@@ -128,6 +132,10 @@ export default class Preview extends Vue {
     return true;
   }
 
+  get selectedNetwork() {
+    return SORA_NETWORK_NAME as string;
+  }
+
   get classesStatusXOR() {
     return ['status-xor', this.isValidXorBalance ? 'status-xor-success' : 'status-xor-reject '];
   }
@@ -142,14 +150,18 @@ export default class Preview extends Vue {
     return this.$t(value);
   }
 
+  get currencyXOR() {
+    return this.currencies.find(({ displayName, relayChain }) => {
+      return displayName === SORA_UTILITY_ASSET && relayChain === this.selectedNetwork;
+    });
+  }
+
   get statusXORText() {
     if (this.isValidXorBalance) return this.$t('soraCard.haveXORForFreeCard');
 
-    // TODO mock
-    const left = 3;
-    const fiatValue = 123;
+    const fiatValue = this.currencyXOR?.getCostOfAssets(this.leftXORAmount);
 
-    return `${left} XOR (${this.fiatSymbol}${fiatValue}) ${this.$t('soraCard.leftXORForFreeCard')}`;
+    return `${this.leftXORAmount} XOR (${this.fiatSymbol}${fiatValue}) ${this.$t('soraCard.leftXORForFreeCard')}`;
   }
 
   get iconFreeCard() {

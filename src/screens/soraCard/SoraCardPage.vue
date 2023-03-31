@@ -1,6 +1,7 @@
 <template>
   <AboveForm
     :header="headerForm"
+    :showAnimation="false"
     :fullScreen="true"
     :showBackIcon="showBackIcon"
     :handlerBack="handlerBack"
@@ -11,6 +12,7 @@
 
       <Preview
         v-else-if="step === 1"
+        :leftXORAmount="leftXORAmount"
         @proceed="proceed"
         @openGetXORPopup="toggleGetXORPopup"
         @toggleCountriesFormVisibility="toggleCountriesFormVisibility"
@@ -38,7 +40,7 @@
 
     <StepsKYCPopup v-if="showStepsKYCPopup" :fillSteps="[1]" :handlerClose="toggleGetXORPopup" :proceed="proceed" />
 
-    <GetXORPopup v-if="showGetXORPopup" :handlerClose="closeGetXORPopup" />
+    <GetXORPopup v-if="showGetXORPopup" :leftXORAmount="leftXORAmount" :handlerClose="closeGetXORPopup" />
   </AboveForm>
 </template>
 
@@ -67,7 +69,8 @@ export default class SoraCardPage extends Vue {
   isValidSmsCode = false;
   isValidEmailForm = false;
   showStepsKYCPopup = false;
-  showGetXORPopup = true; // TODO revert
+  showGetXORPopup = false;
+  leftXORAmount = '3.2';
   step = 1; // TODO revert to 1
 
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;

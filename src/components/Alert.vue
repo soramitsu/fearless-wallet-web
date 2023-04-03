@@ -20,8 +20,8 @@ type SizeTextType = 'small' | 'medium' | 'big';
 @Component
 export default class Container extends Vue {
   @Prop(String) message!: string;
-  @Prop(String) headerText!: string;
   @Prop({ default: 'medium' }) sizeText!: SizeTextType;
+  @Prop({ default: 'common.attention' }) headerText!: string;
 
   get messageClasses() {
     const classes = ['alert__message'];

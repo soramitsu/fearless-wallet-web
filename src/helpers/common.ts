@@ -6,6 +6,8 @@ const EMAIL_REGEXP =
   /^(([^<>()[\].,;:\s@"]+(\.[^<>()[\].,;:\s@"]+)*)|(".+"))@(([^<>()[\].,;:\s@"]+\.)+[^<>()[\].,;:\s@"]{2,})$/iu;
 
 function firstCharToUp(string: string) {
+  if (!string) return '';
+
   return `${string.charAt(0).toUpperCase()}${string.slice(1)}`;
 }
 

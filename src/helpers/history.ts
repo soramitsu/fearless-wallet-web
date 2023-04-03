@@ -10,7 +10,7 @@ import type {
 import { TransactionType, TransferType } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
 import { formattedNumber } from '@/helpers/numbers';
-import NetworksController from '@/controllers/networksController';
+import { NetworksController } from '@/controllers';
 
 function cut(value: string, length = 7) {
   const endNumber = length + 1;

@@ -30,9 +30,8 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 
-import { accountController } from '@/controllers/accountController';
+import { accountController, NetworksController } from '@/controllers';
 import { firstCharToUp } from '@/helpers/common';
-import NetworksController from '@/controllers/networksController';
 
 @Component
 export default class EditNodeForm extends Vue {

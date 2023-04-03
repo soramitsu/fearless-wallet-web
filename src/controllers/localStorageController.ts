@@ -1,6 +1,6 @@
 type Value = number | string | boolean | Record<string, any> | any[];
 
-export default class LocalStorage {
+export class LocalStorage {
   private prefix;
 
   constructor(prefix: string) {

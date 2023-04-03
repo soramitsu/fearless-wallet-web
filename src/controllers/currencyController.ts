@@ -17,8 +17,8 @@ import type { SubmittableExtrinsic } from '@polkadot/api/submittable/types';
 import type { Wallet, SetHistoryProps } from '@/store';
 import type { Asset } from '@sora-substrate/util/build/assets/types';
 import BaseApi from '@/util/BaseApi';
-import LocalStorageController from '@/controllers/localStorageController';
-import NetworksController from '@/controllers/networksController';
+import { NetworksController } from '@/controllers';
+import { LocalStorage } from '@/controllers/localStorageController';
 import {
   XCM_NATIVE_PALLETS,
   FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT,
@@ -35,11 +35,13 @@ import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { MOCK_BALANCE, MOCK_FP_BALANCE } from '@/consts/currencies';
 import { saveTimeoutCache } from '@/extension/messaging';
+import { SORA_NETWORK_NAME } from '@/consts/networks';
+import { addNumbers } from '@/helpers/numbers';
 
 type TransactionStatus = 'success' | 'failed' | 'pending';
 
-export default class CurrencyController {
-  private readonly lsCurrency = new LocalStorageController('currency');
+export class CurrencyController {
+  private readonly lsCurrency = new LocalStorage('currency');
   private readonly visibleStorageName = 'visible';
   public extrinsic!: SubmittableExtrinsic<'promise'> | undefined;
   public extrinsicOptions: ExtrinsicOptions = {};
@@ -243,6 +245,8 @@ export default class CurrencyController {
     balancesForNetwork.balance[walletAddress] = newBalance;
 
     this.balances.splice(indexNetwork, 1, balancesForNetwork);
+
+    NetworksController.setNetworkZeroBalance(walletAddress, network, this.assetId, newBalance.total.isZero());
   }
 
   /**
@@ -317,12 +321,17 @@ export default class CurrencyController {
    * @returns {boolean}
    */
   public validateCountAssets(_count: string, fee: string, network: NetworkName, wallet: Wallet): boolean {
-    const count = _count === '' ? '0' : _count;
-    const transferableCountAssetsMinusFee = this.getTransferableCountAssetsMinusFee(fee, network, wallet);
+    try {
+      const count = _count === '' ? '0' : _count;
 
-    if (FPNumber.isEqualTo(transferableCountAssetsMinusFee, FPNumber.ZERO)) return false;
+      const transferableCountAssetsMinusFee = this.getTransferableCountAssetsMinusFee(fee, network, wallet);
 
-    return FPNumber.lte(new FPNumber(count), transferableCountAssetsMinusFee);
+      if (FPNumber.isEqualTo(transferableCountAssetsMinusFee, FPNumber.ZERO)) return false;
+
+      return FPNumber.lte(new FPNumber(count), transferableCountAssetsMinusFee);
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -568,6 +577,20 @@ export default class CurrencyController {
   }
 
   /**
+   * Validate swap to XOR
+   * @param {Wallet} wallet
+   * @param {string} receiveAmount
+   * @param {string} receiveAmount
+   * @returns {boolean}
+   */
+  public validateSwapToXOR(wallet: Wallet, receiveAmount: string, fee: string): boolean {
+    const transferableXOR = this.getTransferableCountAssets(wallet, SORA_NETWORK_NAME);
+    const transferableXORAfterSending = addNumbers([transferableXOR, receiveAmount]);
+
+    return FPNumber.gt(new FPNumber(transferableXORAfterSending), new FPNumber(fee));
+  }
+
+  /**
    * Create swap extrinsic
    * @param {Partial<SwapOptions>} options
    * @returns {Promise<CreateSwapResult>}
@@ -608,7 +631,12 @@ export default class CurrencyController {
     const amountDexIdXSTUSDFP = FPNumber.fromCodecValue(amountDexIdXSTUSD);
 
     if (isExchangeB) {
-      const isDexXor = FPNumber.lt(amountDexIdXORFP, amountDexIdXSTUSDFP);
+      const isDexXor = amountDexIdXORFP.isZero()
+        ? false
+        : amountDexIdXSTUSDFP.isZero()
+        ? true
+        : FPNumber.lt(amountDexIdXORFP, amountDexIdXSTUSDFP);
+
       const expectedAmountA = amountDexIdXORFP.isZero()
         ? amountDexIdXSTUSDFP
         : amountDexIdXSTUSDFP.isZero()
@@ -642,7 +670,12 @@ export default class CurrencyController {
         providerFee: FPNumber.fromCodecValue(providerFeeDexIdXSTUSD).toString(),
       };
     } else {
-      const isDexXor = FPNumber.gt(amountDexIdXORFP, amountDexIdXSTUSDFP);
+      const isDexXor = amountDexIdXORFP.isZero()
+        ? false
+        : amountDexIdXSTUSDFP.isZero()
+        ? true
+        : FPNumber.gt(amountDexIdXORFP, amountDexIdXSTUSDFP);
+
       const expectedAmountB = amountDexIdXORFP.isZero()
         ? amountDexIdXSTUSDFP
         : amountDexIdXSTUSDFP.isZero()
@@ -683,7 +716,7 @@ export default class CurrencyController {
    * @param {string} from
    */
   public async sendSwap(from: string, isSavePass: boolean): Promise<void> {
-    if (BaseApi.isExtension()) await saveTimeoutCache(from, isSavePass);
+    if (BaseApi.isExtension()) saveTimeoutCache(from, isSavePass);
 
     const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB } = this.extrinsicOptions.swapOptions!;
 
@@ -748,7 +781,7 @@ export default class CurrencyController {
    * @returns {Promise<boolean>}
    */
   public async send(from: string, isMobile = false, isSavePass = false): Promise<boolean> {
-    if (BaseApi.isExtension()) await saveTimeoutCache(from, isSavePass);
+    if (BaseApi.isExtension()) saveTimeoutCache(from, isSavePass);
 
     const account = isMobile ? from : BaseApi.getPair(from);
 

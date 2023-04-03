@@ -21,6 +21,7 @@ const Export = () => import('@/screens/accounts/Export.vue');
 
 const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
 const SoraSwap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/SwapForm.vue');
+const PolkaswapDisclaimer = () => import(/* webpackChunkName: "sora" */ '@/screens/wallet&asset/swap/Disclaimer.vue');
 
 const AddWallet = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/AddWallet.vue');
 const AddFromGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/AddFromGoogle.vue');
@@ -48,6 +49,7 @@ export enum Components {
   AddFromGoogle = 'AddFromGoogle',
   SoraCard = 'SoraCard',
   SoraSwap = 'SoraSwap',
+  PolkaswapDisclaimer = 'PolkaswapDisclaimer',
 }
 
 const haveAccounts = () => BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
@@ -105,6 +107,11 @@ const routes: Array<RouteConfig> = [
     path: '/sora-swap',
     name: Components.SoraSwap,
     component: SoraSwap,
+  },
+  {
+    path: '/polkaswap-disclaimer',
+    name: Components.PolkaswapDisclaimer,
+    component: PolkaswapDisclaimer,
   },
   {
     path: '/fearless',

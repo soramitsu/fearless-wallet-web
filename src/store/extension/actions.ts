@@ -22,7 +22,7 @@ import {
 } from '@/extension/messaging';
 import router from '@/router';
 import { Components } from '@/router/routes';
-import ExtensionController from '@/controllers/extensionController';
+import { ExtensionController } from '@/controllers';
 import { SubstrateSignPayloadResponse } from '@/interfaces';
 
 export enum ActionTypes {

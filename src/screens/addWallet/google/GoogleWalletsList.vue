@@ -57,7 +57,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { FilesState, TAction } from '@/interfaces';
 import { cut } from '@/helpers/history';
 import BaseApi from '@/util/BaseApi';
-import { SelectedWallet, SetSelectedWallet } from '@/store/accounts/types';
+import { SelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 import { isJsonValid } from '@/extension/messaging';
@@ -66,7 +66,7 @@ import { isJsonValid } from '@/extension/messaging';
 export default class GoogleWalletsList extends Vue {
   @Prop(Array) items!: FilesState[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
+  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<string>;
 
   setItemValue(index: number, data: Record<string, string | boolean>) {
     this.items.splice(index, 1, { ...this.items[index], ...data });
@@ -94,7 +94,7 @@ export default class GoogleWalletsList extends Vue {
     const pair = BaseApi.addKeypairFromJson(json, password);
 
     this.setItemValue(index, { isComplete: true, isLoading: false });
-    this.setSelectedWallet({ selectedWalletAddress: pair.address || this.selectedWallet.address });
+    this.setSelectedWallet(pair.address || this.selectedWallet.address);
 
     return true;
   }

@@ -109,7 +109,7 @@
           width="100%"
           type="secondary"
           :border="false"
-          :text="$t('addWallet.skipConfirmation')"
+          text="addWallet.skipConfirmation"
           @click="skipStep"
         />
 
@@ -149,7 +149,7 @@ import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { DerivationPaths, ImportType, ValidateJsonResult, MnemonicConfirmation, TAction } from '@/interfaces';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import type { SelectedWallet, SetSelectedWallet } from '@/store';
+import type { SelectedWallet } from '@/store';
 import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FinishForm from '@/screens/addWallet/FinishForm.vue';
 import PasswordForm from '@/screens/addWallet/PasswordForm.vue';
@@ -164,6 +164,7 @@ import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
+import { windowOpen } from '@/extension/messaging';
 
 type AddWalletField = 'mnemonic' | 'ethereumRawSeed' | 'substrateRawSeed' | 'substrateJson' | 'ethereumJson';
 
@@ -201,7 +202,7 @@ export default class AddWallet extends Vue {
   address: string | null = null;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
+  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<string>;
 
   get replacedNetwork() {
     return this.$route.params.network ?? '';
@@ -355,7 +356,7 @@ export default class AddWallet extends Vue {
     if (this.isCreateWallet && this.step === 2) return this.t('haveWrittenPassphrase');
     if (this.showFinishForm) return this.t('usingFearless');
 
-    return this.$t('common.continue');
+    return 'common.continue';
   }
 
   get disabledProceed() {
@@ -471,7 +472,7 @@ export default class AddWallet extends Vue {
 
       const address = this.saveKeypair();
 
-      this.setSelectedWallet({ selectedWalletAddress: address || this.selectedWallet.address });
+      this.setSelectedWallet(address || this.selectedWallet.address);
 
       if (this.isOnlyEthereumAccountFlow) this.$router.push({ name: Components.Wallet });
 
@@ -820,7 +821,7 @@ export default class AddWallet extends Vue {
   }
 
   openFullScreen() {
-    BaseApi.windowOpen('/');
+    windowOpen('/');
     window.close();
   }
 

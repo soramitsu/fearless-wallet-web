@@ -15,9 +15,15 @@
 
       <SettingMenuItem title="header.settings.currency" icon="dollar-circle" @onOpen="openPopup('openFiatsPopup')" />
 
+      <SettingMenuItem
+        title="header.settings.polkaswapDisclaimer"
+        icon="polkaswap"
+        @onOpen="open('PolkaswapDisclaimer')"
+      />
+
       <SettingMenuItem title="header.settings.language.text" icon="language" @onOpen="openPopup('openLanguagePopup')" />
 
-      <SettingMenuItem title="header.settings.about.text" icon="info" @onOpen="openPopup('openAboutPopup')" />
+      <SettingMenuItem title="common.aboutApp" icon="info" @onOpen="openPopup('openAboutPopup')" />
 
       <SettingMenuItem
         v-if="isExtension"

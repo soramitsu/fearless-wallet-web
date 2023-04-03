@@ -3,7 +3,7 @@ import type { ISubmittableResult } from '@polkadot/api/node_modules/@polkadot/ty
 import type { AssetJson, TypeAsset, WalletBalance } from '@/interfaces';
 import type { SubmittableExtrinsic } from '@polkadot/api/submittable/types';
 import type { ApiPromise } from '@polkadot/api';
-import NetworksController from '@/controllers/networksController';
+import { NetworksController } from '@/controllers';
 import BaseApi from '@/util/BaseApi';
 
 type ExtrinsicTransferProps = {
@@ -13,8 +13,6 @@ type ExtrinsicTransferProps = {
   asset: string;
   networkProps: WalletBalance;
 };
-
-const ORML_PALLETS_TYPES = ['ormlChain', 'equilibrium'];
 
 function getAssetOptions(symbol: string, type: TypeAsset, assetId: string) {
   const assetsJson: AssetJson[] = NetworksController.getAssetsJson();
@@ -65,4 +63,4 @@ function createExtrinsicTransfer(
   }
 }
 
-export { ORML_PALLETS_TYPES, getAssetOptions, createExtrinsicTransfer };
+export { getAssetOptions, createExtrinsicTransfer };

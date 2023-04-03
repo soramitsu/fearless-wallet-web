@@ -1,6 +1,12 @@
 import { IWallet } from './types';
 import type { GetterTree } from 'vuex';
-import type { SelectedWallet, Accounts, WalletInfo, GetAutoSelectNodesValueByNetwork } from './types';
+import type {
+  SelectedWallet,
+  Accounts,
+  WalletInfo,
+  GetAutoSelectNodesValueByNetwork,
+  GetShowWarningNetworks,
+} from './types';
 import type { State } from './state';
 import type { FiatJson } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -20,6 +26,8 @@ export enum GettersTypes {
   getQR = 'getQR',
   getAutoSelectNodesValueByNetwork = 'getAutoSelectNodesValueByNetwork',
   getIsCustomSort = 'getIsCustomSort',
+  getPolkaswapAlertVisibility = 'getPolkaswapAlertVisibility',
+  getShowWarningNetworks = 'getShowWarningNetworks',
 }
 
 export type Getters = {
@@ -34,6 +42,11 @@ export type Getters = {
   [GettersTypes.getWallets](state: State, getters?: GetterTree<State, State> & Getters): WalletInfo[];
   [GettersTypes.getShowSoraCardBanner](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getQR](state: State, getters?: GetterTree<State, State> & Getters): Nullable<string>;
+  [GettersTypes.getPolkaswapAlertVisibility](state: State, getters?: GetterTree<State, State> & Getters): boolean;
+  [GettersTypes.getShowWarningNetworks](
+    state: State,
+    getters?: GetterTree<State, State> & Getters
+  ): GetShowWarningNetworks;
   [GettersTypes.getAutoSelectNodesValueByNetwork](
     state: State,
     getters?: GetterTree<State, State> & Getters
@@ -59,6 +72,10 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.getOnlineStatus]({ isOnline }): boolean {
     return isOnline;
+  },
+
+  [GettersTypes.getPolkaswapAlertVisibility]({ showPolkaswapAlert }): boolean {
+    return showPolkaswapAlert;
   },
 
   [GettersTypes.getFiatSymbol]({ selectedFiat }): string {
@@ -112,6 +129,12 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getShowSoraCardBanner]({ showSoraCardBanner }): boolean {
     return showSoraCardBanner;
   },
+
+  [GettersTypes.getShowWarningNetworks]:
+    ({ hideWarningNetworks }) =>
+    (networkName: string) => {
+      return hideWarningNetworks.includes(networkName);
+    },
 
   [GettersTypes.getIsCustomSort]:
     ({ isCustomSort }) =>

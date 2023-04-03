@@ -26,7 +26,6 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Mutation } from 'vuex-class';
-import type { SetSelectedWalletProps } from '@/store';
 import type { TMutation } from '@/interfaces/common';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
@@ -37,7 +36,7 @@ import { initGoogleAuth } from '@/extension/messaging';
 export default class WalletDetailsPopup extends Vue {
   @Prop(Number) buttonTopClick!: number;
   @Prop(String) selectedWalletAddress!: string;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SetSelectedWalletProps>;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<string>;
 
   get isMobileWallet() {
     return BaseApi.isMobileWallet(this.selectedWalletAddress);
@@ -70,7 +69,7 @@ export default class WalletDetailsPopup extends Vue {
   setWallet() {
     const selectedWalletAddress = BaseApi.getFirstSubstrateWalletAddress();
 
-    if (selectedWalletAddress) this.setSelectedWallet({ selectedWalletAddress });
+    if (selectedWalletAddress) this.setSelectedWallet(selectedWalletAddress);
   }
 
   exportToGoogleDrive() {
@@ -78,7 +77,7 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   openWalletDetails() {
-    this.setSelectedWallet({ selectedWalletAddress: this.selectedWalletAddress });
+    this.setSelectedWallet(this.selectedWalletAddress);
 
     this.$router.push({ name: Components.Accounts });
 

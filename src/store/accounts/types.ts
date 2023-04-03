@@ -15,19 +15,12 @@ export type SelectedNetworks = Record<WalletAddress, string>;
 export type Accounts = SubjectInfo;
 export type AutoSelectNode = Record<NetworkName, boolean>;
 export type GetAutoSelectNodesValueByNetwork = (networkName: string) => boolean;
+export type GetShowWarningNetworks = (assetId: string) => boolean;
 
 // mutations
-export type SetSelectedWalletProps = {
-  selectedWalletAddress: string;
-};
-
 export type SetSelectedFiatProps = {
   fiatName: string;
   currencies: Currencies;
-};
-
-export type SetSelectedNetworkProps = {
-  network: string;
 };
 
 export type SetAccountsProps = {
@@ -43,23 +36,7 @@ export type SetAutoSelectNode = {
   value: boolean;
 };
 
-export type SetOnlineStatus = {
-  isOnline: boolean;
-};
-
-export type SetSoraCardBannerVisibility = {
-  value: boolean;
-};
-
 // actions
-export type SetSelectedFiat = {
-  fiatName: string;
-};
-
-export type SetSelectedWallet = {
-  selectedWalletAddress: string;
-};
-
 export interface WalletInfo {
   name: string;
   address: string;

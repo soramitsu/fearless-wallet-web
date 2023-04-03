@@ -1,9 +1,9 @@
 <template>
-  <AboveForm header="assets.polkaswap" :fullScreen="true" :closeHandler="closeForm">
+  <AboveForm :fullScreen="true" :closeHandler="closeForm">
     <template v-slot:header>
       <div class="header-content">
         <div :class="classesBackIcon">
-          <Icon v-show="!showSettings" icon="chevron-left" class="img" @click="back" />
+          <Icon v-show="showBackIcon" icon="chevron-left" class="img" @click="back" />
         </div>
 
         <div class="header">
@@ -12,7 +12,7 @@
           <Icon v-if="showPolkaswapIcon" icon="polkaswap" class="polkaswap" />
         </div>
 
-        <Icon v-if="showSettings" icon="close" class="img close" @click="toggleSettingsVisibility" />
+        <Icon v-if="showCloseIcon" icon="close" class="img close" @click="toggleSettingsVisibility" />
 
         <div v-else :class="classesSettings" @click="toggleSettingsVisibility">
           <template v-if="step === 1">
@@ -91,6 +91,7 @@
             </template>
 
             <SwapInfo
+              :showSwapInfo="showSwapInfo"
               :marketType="marketType"
               :slippage="slippage"
               :sendAmount="sendAmount"
@@ -127,24 +128,42 @@
           />
         </div>
 
-        <div class="buttons">
-          <Button
-            v-if="showSettings"
-            size="big"
-            text="assets.resetToDefault"
-            type="secondary"
-            width="49%"
-            :border="false"
-            @click="resetSettings"
-          />
+        <div>
+          <Alert v-if="showPolkaswapAlert" message="common.readPolkaswapDisclaimer" headerMessage="common.disclaimer">
+            <div class="alert-content">
+              {{ $t('common.readPolkaswapDisclaimer') }}
 
-          <Button
-            size="big"
-            :text="buttonText"
-            :disabled="buttonPreviewDisabled"
-            :width="widthButton"
-            @click="proceed"
-          />
+              <Button
+                width="85px"
+                size="mini"
+                fontSize="small"
+                type="warning"
+                text="common.read"
+                :border="false"
+                @click="openPolkaswapDisclaimer"
+              />
+            </div>
+          </Alert>
+
+          <div class="buttons">
+            <Button
+              v-if="showSettings"
+              size="big"
+              text="assets.resetToDefault"
+              type="secondary"
+              width="49%"
+              :border="false"
+              @click="resetSettings"
+            />
+
+            <Button
+              size="big"
+              :text="buttonText"
+              :disabled="buttonPreviewDisabled"
+              :width="widthButton"
+              @click="proceed"
+            />
+          </div>
         </div>
       </div>
     </Scroll>
@@ -192,12 +211,15 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
-import NetworksController from '@/controllers/networksController';
 import { SORA_UTILITY_ASSET, SORA_XOR_ASSET_ID, SORA_NETWORK_NAME } from '@/consts/networks';
+import Disclaimer from '@/screens/wallet&asset/swap/Disclaimer.vue';
+import { NetworksController } from '@/controllers';
+import { Components } from '@/router/routes';
 
 @Component({
   components: {
     SwapInfo,
+    Disclaimer,
     SwapPreview,
     SwapSettings,
     SwapSelectInput,
@@ -230,6 +252,15 @@ export default class SwapForm extends Vue {
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getPolkaswapAlertVisibility) showPolkaswapAlert!: boolean;
+
+  get showCloseIcon() {
+    return this.showSettings;
+  }
+
+  get showBackIcon() {
+    return !this.showSettings;
+  }
 
   get selectedNetwork() {
     return SORA_NETWORK_NAME as string;
@@ -255,7 +286,9 @@ export default class SwapForm extends Vue {
   }
 
   get feePrice() {
-    return this.$n(+this.currencyXOR!.getCostOfAssets(this.fee), 'price');
+    const value = this.currencyXOR?.getCostOfAssets(this.fee) ?? '0';
+
+    return this.$n(+value, 'price');
   }
 
   get soraMainAssetUpper() {
@@ -406,10 +439,10 @@ export default class SwapForm extends Vue {
 
     if (!this.isValidSendAsset) return { text: 'assets.insufficientBalance', localeProps: { asset: this.sendAssetUP } };
 
-    if (!this.isValidCountXOR)
+    if (!this.isValidTransferByXOR)
       return { text: 'assets.insufficientBalance', localeProps: { asset: this.soraMainAssetUpper } };
 
-    if (this.sendAmount === '0' || this.receiveAmount === '0') return { text: 'assets.unableSwap' };
+    if (+this.sendAmount === 0 || +this.receiveAmount === 0) return { text: 'assets.unableSwap' };
 
     return this.step === 1 ? 'assets.preview' : 'common.confirm';
   }
@@ -420,9 +453,9 @@ export default class SwapForm extends Vue {
     if (
       this.fee === '' ||
       !this.isValidSendAsset ||
-      !this.isValidCountXOR ||
-      this.sendAmount === '0' ||
-      this.receiveAmount === '0'
+      !this.isValidTransferByXOR ||
+      +this.sendAmount === 0 ||
+      +this.receiveAmount === 0
     )
       return true;
 
@@ -433,12 +466,18 @@ export default class SwapForm extends Vue {
     return this.sendCurrency?.validateCountAssets(this.sendAmount, this.fee, this.selectedNetwork, this.selectedWallet);
   }
 
-  get isValidCountXOR() {
-    const xorAmount = this.sendAsset === SORA_UTILITY_ASSET ? this.sendAmount : '0';
-
-    if (this.receiveAsset === SORA_UTILITY_ASSET) return true;
-
+  get isValidTransferByXOR() {
     if (this.fee === '') return false;
+
+    if (this.receiveAsset === SORA_UTILITY_ASSET) {
+      return this.currencyXOR!.validateSwapToXOR(
+        this.selectedWallet,
+        this.isExchangeB ? this.receiveAmount : this.minMaxAmount,
+        this.fee
+      );
+    }
+
+    const xorAmount = this.sendAsset === SORA_UTILITY_ASSET ? this.sendAmount : '0';
 
     return this.currencyXOR?.validateCountAssets(xorAmount, this.fee, this.selectedNetwork, this.selectedWallet);
   }
@@ -541,6 +580,13 @@ export default class SwapForm extends Vue {
     this.providerFee = providerFee;
     this.AToB = AToB;
     this.BToA = BToA;
+  }
+
+  openPolkaswapDisclaimer() {
+    this.$router.push({
+      name: Components.PolkaswapDisclaimer,
+      params: { showSwitcher: '1' },
+    });
   }
 
   updateSendAmount(value: string) {
@@ -674,9 +720,16 @@ export default class SwapForm extends Vue {
   }
 }
 
+.alert-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .buttons {
   display: flex;
   justify-content: space-between;
+  margin-top: 10px;
 }
 
 .header-content {

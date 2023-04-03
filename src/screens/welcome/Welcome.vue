@@ -71,7 +71,7 @@
           {{ $t('common.termsConditions') }}
         </span>
 
-        {{ $t('welcome.and') }}
+        {{ $t('common.and') }}
 
         <span class="important-text" @click="openPrivacyPolicy"> {{ $t('common.privacyPolicy') }}</span>
       </div>

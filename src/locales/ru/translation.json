@@ -5,8 +5,7 @@
     "connectMobile": "Подключить мобильный кошелек",
     "manageGoogle": "Подключить к Google Drive",
     "deFiWallet": "Децентрализованный кошелек из будущего",
-    "agreeWith": "Продолжая, вы принимаете",
-    "and": "и"
+    "agreeWith": "Продолжая, вы принимаете"
   },
   "addWallet": {
     "createWallet": "Создать новый кошелек",
@@ -137,26 +136,10 @@
     "settings": {
       "accounts": "Аккаунты",
       "currency": "Валюты",
+      "polkaswapDisclaimer": "Polkaswap disclaimer",
       "language": {
         "text": "Язык",
         "translated": "Переведено командой"
-      },
-      "about": {
-        "text": "О приложении",
-        "supportFeedback": "Поддержка & Фидбек",
-        "socialMedia": "Социальные медиа",
-        "communityWallet": "Сообщество кошелька",
-        "officialWebsite": "Оффициальный сайт",
-        "followTwitter": "Подписаться на Twitter",
-        "joinTelegram": "Вступить в Telegram",
-        "readMedium": "Читать на Medium",
-        "learnWiki": "Узнать больше в Wiki",
-        "githubCode": "Github исходный код",
-        "contactEmail": "Контактный Email",
-        "askSupport": "Написать в поддержку",
-        "likeInstagram": "Перейти в Instagram",
-        "subscribeYouTube": "Подписатсья на YouTube",
-        "receiveAnnouncements": "Получать новости"
       }
     }
   },
@@ -356,6 +339,20 @@
     "buyXORWithEUR": "Купить XOR за EUR",
     "swapXOR": "Обмен криптовалюты на XOR"
   },
+  "disclaimers": {
+    "swapDisclaimer1": "Polkaswap is maintained by the SORA community. Before continuing to use Polkaswap, please review the",
+    "swapDisclaimer2": "and documentation, which includes a detailed explanation on how Polkaswap works, as well as the",
+    "swapDisclaimer3": "These documents are crucial to a secure and positive user experience. By using Polkaswap, you acknowledge that you have read and understand these documents.",
+    "swapDisclaimer4": "You also acknowledge the following:",
+    "swapDisclaimer5": "Your sole responsibility for compliance with all laws that may apply to your particular use of Polkaswap in your legal jurisdiction;",
+    "swapDisclaimer6": "Your understanding that the current version of Polkaswap is an alpha version: it has not been fully tested, and some functions may not perform as designed;",
+    "swapDisclaimer7": "Your understanding and voluntary acceptance of the risks involved in using Polkaswap, including, but not limited to, the risk of losing tokens.",
+    "swapDisclaimer8": "Once more, please do not continue without reading the",
+    "polkaswapFAQ": "Polkaswap FAQ",
+    "important": "IMPORTANT:",
+    "polkaswapMemorandum": "Polkaswap Memorandum and Terms of Services",
+    "importantText": "I confirm that I have read all of the documents mentioned and pressing 'Сontinue' I accept them."
+  },
   "common": {
     "privacyPolicy": "Политика Конфиденциальности",
     "termsConditions": "Условия и положения",
@@ -393,6 +390,27 @@
     "networkDisconnected": "Сеть отключена",
     "acceptContinue": "Принять и продолжить",
     "email": "Email",
-    "start": "Начать"
+    "start": "Начать",
+    "and": "и",
+    "read": "Читать",
+    "aboutApp": "О приложении",
+    "supportFeedback": "Поддержка & Фидбек",
+    "socialMedia": "Социальные медиа",
+    "communityWallet": "Сообщество кошелька",
+    "officialWebsite": "Оффициальный сайт",
+    "followTwitter": "Подписаться на Twitter",
+    "joinTelegram": "Вступить в Telegram",
+    "readMedium": "Читать на Medium",
+    "learnWiki": "Узнать больше в Wiki",
+    "githubCode": "Github исходный код",
+    "contactEmail": "Контактный Email",
+    "askSupport": "Написать в поддержку",
+    "likeInstagram": "Перейти в Instagram",
+    "subscribeYouTube": "Подписатсья на YouTube",
+    "receiveAnnouncements": "Получать новости",
+    "readPolkaswapDisclaimer": "Пожалуйста, прочтите, прежде чем продолжать использовать Polkaswap",
+    "resolve": "Разрешить",
+    "Resolve Option": "Варианты решения",
+    "dontShowAgain": "не показывать снова"
   }
 }

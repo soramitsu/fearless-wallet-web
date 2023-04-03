@@ -1,19 +1,10 @@
 import { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import type { MutationTree } from 'vuex';
-import type {
-  SetSelectedWalletProps,
-  SetSelectedFiatProps,
-  SetSelectedNetworkProps,
-  SetAccountsProps,
-  SetAddressesProps,
-  SetAutoSelectNode,
-  SetOnlineStatus,
-  SetSoraCardBannerVisibility,
-} from './types';
+import type { SetSelectedFiatProps, SetAccountsProps, SetAddressesProps, SetAutoSelectNode } from './types';
 import type { State } from './state';
 import type { KeyringPair$Meta } from '@polkadot/keyring/types';
 import BaseApi from '@/util/BaseApi';
-import { accountController } from '@/controllers/accountController';
+import { accountController } from '@/controllers';
 import { getMetaTyped } from '@/helpers/common';
 
 export enum MutationTypes {
@@ -28,24 +19,28 @@ export enum MutationTypes {
   SET_SORA_CARD_BANNER_VISIBILITY = 'SET_SORA_CARD_BANNER_VISIBILITY',
   SET_QR = 'SET_QR',
   DELETE_QR = 'DELETE_QR',
+  HIDE_POLKASWAP_ALERT = 'HIDE_POLKASWAP_ALERT',
+  HIDE_NETWORK_WARNING = 'HIDE_NETWORK_WARNING',
 }
 
 export type Mutations = {
-  [MutationTypes.SET_SELECTED_WALLET](state: State, props: SetSelectedWalletProps): void;
+  [MutationTypes.SET_SELECTED_WALLET](state: State, selectedWalletAddress: string): void;
   [MutationTypes.SET_SELECTED_FIAT](state: State, props: SetSelectedFiatProps): void;
-  [MutationTypes.SET_SELECTED_NETWORK](state: State, props: SetSelectedNetworkProps): void;
+  [MutationTypes.SET_SELECTED_NETWORK](state: State, network: string): void;
   [MutationTypes.SET_ACCOUNTS](state: State, props: SetAccountsProps): void;
-  [MutationTypes.SET_ONLINE_STATUS](state: State, props: SetOnlineStatus): void;
+  [MutationTypes.SET_ONLINE_STATUS](state: State, isOnline: boolean): void;
   [MutationTypes.SET_ADDRESSES](state: State, props: SetAddressesProps): void;
   [MutationTypes.SET_AUTO_SELECT_NODE](state: State, props: SetAutoSelectNode): void;
-  [MutationTypes.SET_SORA_CARD_BANNER_VISIBILITY](state: State, props: SetSoraCardBannerVisibility): void;
+  [MutationTypes.SET_SORA_CARD_BANNER_VISIBILITY](state: State, value: boolean): void;
   [MutationTypes.SET_QR](state: State, props: string): void;
   [MutationTypes.DELETE_QR](state: State): void;
   [MutationTypes.SET_CUSTOM_SORT](state: State, props: string): void;
+  [MutationTypes.HIDE_POLKASWAP_ALERT](state: State, value: boolean): void;
+  [MutationTypes.HIDE_NETWORK_WARNING](state: State, network: string): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
-  [MutationTypes.SET_SELECTED_WALLET](state, { selectedWalletAddress }) {
+  [MutationTypes.SET_SELECTED_WALLET](state, selectedWalletAddress) {
     let meta: KeyringPair$Meta | KeyringJson$Meta;
 
     if (BaseApi.getWalletType(selectedWalletAddress) === 'native') meta = BaseApi.getPair(selectedWalletAddress).meta;
@@ -75,7 +70,7 @@ const mutations: MutationTree<State> & Mutations = {
     currencies.forEach((currency) => currency.updatePrice());
   },
 
-  [MutationTypes.SET_SELECTED_NETWORK](state, { network }) {
+  [MutationTypes.SET_SELECTED_NETWORK](state, network) {
     const {
       selectedWallet: { address },
       selectedNetworks,
@@ -86,12 +81,18 @@ const mutations: MutationTree<State> & Mutations = {
     state.selectedNetworks = { ...selectedNetworks, [address]: network };
   },
 
-  [MutationTypes.SET_ONLINE_STATUS](state, { isOnline }) {
+  [MutationTypes.SET_ONLINE_STATUS](state, isOnline) {
     state.isOnline = isOnline;
   },
 
   [MutationTypes.SET_ACCOUNTS](state, { accounts }) {
     state.accounts = accounts;
+  },
+
+  [MutationTypes.HIDE_POLKASWAP_ALERT](state) {
+    state.showPolkaswapAlert = false;
+
+    accountController.setAgreeSwapDisclaimer();
   },
 
   [MutationTypes.SET_ADDRESSES](state, { addresses }) {
@@ -104,7 +105,7 @@ const mutations: MutationTree<State> & Mutations = {
     state.autoSelectNode = { ...state.autoSelectNode, [network]: value };
   },
 
-  [MutationTypes.SET_SORA_CARD_BANNER_VISIBILITY](state, { value }) {
+  [MutationTypes.SET_SORA_CARD_BANNER_VISIBILITY](state, value) {
     accountController.setHidingSoraCardBannerTime(Date.now());
 
     state.showSoraCardBanner = value;
@@ -116,6 +117,14 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.DELETE_QR](state) {
     state.qr = null;
+  },
+
+  [MutationTypes.HIDE_NETWORK_WARNING](state, network) {
+    const { hideWarningNetworks } = state;
+
+    accountController.setHideWarningNetwork(network);
+
+    state.hideWarningNetworks = [...hideWarningNetworks, network];
   },
 
   [MutationTypes.SET_CUSTOM_SORT](state, address: string) {

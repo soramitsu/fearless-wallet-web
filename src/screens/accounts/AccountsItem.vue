@@ -18,7 +18,12 @@
       @click="openAccountSettingsPopup(network)"
     />
 
-    <Icon v-else-if="!isMobile" icon="circle-plus" :className="['plus-icon']" @click="$emit('openSourceTypePopup')" />
+    <Icon
+      v-else-if="!isMobile"
+      icon="circle-plus"
+      :className="['plus-icon']"
+      @click="$emit('openAddEthereumAccountPopup')"
+    />
   </div>
 </template>
 

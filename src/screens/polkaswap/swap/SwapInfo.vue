@@ -14,28 +14,33 @@
       <div class="value">{{ slippage }}%</div>
     </div>
 
-    <div class="row">
-      <div class="label">
-        {{ $t(minMaxLabel) }}
+    <template v-if="showSwapInfo">
+      <div class="row">
+        <div class="label">
+          {{ $t(minMaxLabel) }}
 
-        <Icon icon="info" class="icon-info min-max" />
+          <Icon icon="info" class="icon-info min-max" />
+        </div>
+
+        <div class="value">
+          <div>{{ minMaxAmount }}</div>
+          <div class="price">{{ minMaxAmountPrice }}</div>
+        </div>
       </div>
 
-      <div class="value">
-        <div>{{ minMaxAmount }}</div>
-        <div class="price">{{ minMaxAmountPrice }}</div>
-      </div>
-    </div>
+      <div class="row">
+        <div class="label">
+          {{ $t('assets.liquidityProvideFee') }}
 
-    <div class="row">
-      <div class="label">
-        {{ $t('assets.liquidityProvideFee') }}
+          <Icon icon="info" class="icon-info provider-fee" />
+        </div>
 
-        <Icon icon="info" class="icon-info provider-fee" />
+        <div class="value">{{ providerFeeCut }} {{ soraMainAsset }}</div>
       </div>
 
-      <div class="value">{{ providerFeeCut }} {{ soraMainAsset }}</div>
-    </div>
+      <Tooltip text="assets.minMaxReceiveInfo" target=".min-max" placement="right" />
+      <Tooltip text="assets.liquidityProvideFeeInfo" target=".provider-fee" placement="right" />
+    </template>
 
     <div class="row">
       <div class="label">
@@ -52,8 +57,6 @@
       <div v-else>-</div>
     </div>
 
-    <Tooltip text="assets.minMaxReceiveInfo" target=".min-max" placement="right" />
-    <Tooltip text="assets.liquidityProvideFeeInfo" target=".provider-fee" placement="right" />
     <Tooltip text="assets.networkFeeInfo" target=".network-fee" placement="right" />
   </div>
 </template>
@@ -66,7 +69,7 @@ import { firstCharToUp } from '@/helpers/common';
 import { SORA_UTILITY_ASSET } from '@/consts/networks';
 
 @Component
-export default class SwapPreview extends Vue {
+export default class SwapInfo extends Vue {
   @Prop({ default: '' }) marketType!: string;
   @Prop({ default: '' }) slippage!: string;
   @Prop({ default: '' }) sendAmount!: string;
@@ -80,6 +83,7 @@ export default class SwapPreview extends Vue {
   @Prop({ default: '' }) providerFee!: string;
   @Prop({ default: '' }) sendAssetUP!: string;
   @Prop({ default: '' }) receiveAssetUP!: string;
+  @Prop({ default: true }) showSwapInfo!: boolean;
   @Prop(Boolean) isExchangeB!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 

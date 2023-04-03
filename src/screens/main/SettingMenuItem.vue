@@ -37,15 +37,16 @@ export default class SettingsMenuItem extends Vue {
     color: rgba(255, 255, 255, 0.9);
 
     .icon {
-      filter: invert(0.1);
+      color: rgba(255, 255, 255, 0.9);
     }
+
     .chevron-right {
-      filter: invert(0.25);
+      color: $grayish-white;
     }
   }
 
   .icon {
-    filter: invert(0.25);
+    color: $grayish-white;
   }
 
   .icon--width {
@@ -56,7 +57,7 @@ export default class SettingsMenuItem extends Vue {
   .chevron-right {
     width: 20px;
     height: 20px;
-    filter: invert(0.5);
+    color: $gray-color;
   }
 
   .description {

@@ -125,10 +125,4 @@ export default class SwapSettings extends Vue {
   width: 370px;
   margin: 0 auto;
 }
-
-.transaction-warning {
-  color: $simple-orange-color !important;
-  font-size: 14px;
-  margin-left: 16px;
-}
 </style>

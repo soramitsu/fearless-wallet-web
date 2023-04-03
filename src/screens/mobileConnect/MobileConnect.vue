@@ -24,7 +24,6 @@ import { Vue, Component } from 'vue-property-decorator';
 import { Action, Getter, Mutation } from 'vuex-class';
 import type { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import type { PermissionResponseOutput } from '@airgap/beacon-sdk';
-import type { SetSelectedWallet } from '@/store';
 import type {
   PermissionSuccess,
   TAction,
@@ -58,9 +57,9 @@ export default class MobileConnect extends Vue {
   isPossibleConnectionProblem = false;
   permissionRequestDenied = false;
 
+  @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<string>;
   @Getter(NetworkGettersTypes.getAllNetworks) getNetworks!: Networks;
   @Getter(AccountsGettersTypes.getQR) getQR!: Nullable<string>;
-  @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<SetSelectedWallet>;
   @Mutation(AccountMutationsTypes.SET_QR) setQR!: TMutation<string>;
 
   async mounted() {
@@ -171,7 +170,8 @@ export default class MobileConnect extends Vue {
     if (BaseApi.isExtension()) await createAddress(substrateAccount, meta); //extenstion service worker
 
     BaseApi.saveAddress(substrateAccount, meta);
-    await this.setSelectedWallet({ selectedWalletAddress: substrateAccount });
+
+    await this.setSelectedWallet(substrateAccount);
   }
 
   getEthereumAccount(account: PermissionResponsePayload): string {

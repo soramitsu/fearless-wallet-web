@@ -20,7 +20,7 @@
         />
 
         <div v-if="show15MinCheckbox" class="remember-checkbox">
-          <Checkbox v-model="isSavePass" size="medium" :label="$t(min15Label)" />
+          <Checkbox v-model="isSavePass" size="medium" :label="min15Label" />
         </div>
 
         <Button
@@ -63,13 +63,12 @@ import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { Currencies, Currency, RequestSentInfo, TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
 import type { GetNetworkGenesisHash, SelectedWallet } from '@/store';
-import { beaconController } from '@/controllers/beaconController';
+import { beaconController, ExtensionController } from '@/controllers';
 import { isSignLocked, refreshPasswordTimeout } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/extension/actions';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
-import ExtensionController from '@/controllers/extensionController';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component({

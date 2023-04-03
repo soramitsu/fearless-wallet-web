@@ -16,6 +16,7 @@ import type {
 import type { SubmittableExtrinsic } from '@polkadot/api/submittable/types';
 import type { Wallet, SetHistoryProps } from '@/store';
 import type { Asset } from '@sora-substrate/util/build/assets/types';
+import type { XorRestPrice } from '@/util/soraCard';
 import BaseApi from '@/util/BaseApi';
 import { NetworksController } from '@/controllers';
 import { LocalStorage } from '@/controllers/localStorageController';
@@ -35,8 +36,9 @@ import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { MOCK_BALANCE, MOCK_FP_BALANCE } from '@/consts/currencies';
 import { saveTimeoutCache } from '@/extension/messaging';
-import { SORA_NETWORK_NAME } from '@/consts/networks';
+import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/networks';
 import { addNumbers } from '@/helpers/numbers';
+import { getXorPerEuroRatio, calculateXorBalanceInEuros, calculateXorRestPrice } from '@/util/soraCard';
 
 type TransactionStatus = 'success' | 'failed' | 'pending';
 
@@ -45,6 +47,7 @@ export class CurrencyController {
   private readonly visibleStorageName = 'visible';
   public extrinsic!: SubmittableExtrinsic<'promise'> | undefined;
   public extrinsicOptions: ExtrinsicOptions = {};
+  public xorPerEuroRatio!: FPNumber;
   public price = 0;
   public hours24Change = 0;
   public currenciesVisible!: Record<string, Record<string, boolean>>;
@@ -588,6 +591,55 @@ export class CurrencyController {
     const transferableXORAfterSending = addNumbers([transferableXOR, receiveAmount]);
 
     return FPNumber.gt(new FPNumber(transferableXORAfterSending), new FPNumber(fee));
+  }
+
+  /**
+   * Get XOR per Euro ratio
+   * @returns {Promise<void>}
+   */
+  public async getXorPerEuroRatio(): Promise<void> {
+    if (this.asset !== SORA_UTILITY_ASSET) throw Error('');
+
+    const xorPerEuro = await getXorPerEuroRatio();
+
+    this.xorPerEuroRatio = FPNumber.fromNatural(xorPerEuro);
+  }
+
+  /**
+   * Calculate euro balance, only for XOR
+   * @param {Wallet} wallet
+   * @param {NetworkName} network
+   * @returns {Promise<number>}
+   */
+  public calculateEuroBalance(wallet: Wallet, network: NetworkName): number {
+    if (this.asset !== SORA_UTILITY_ASSET) throw Error('');
+
+    const xorTotalBalance = new FPNumber(this.getTotalCountAssets(wallet, network));
+    const xorBalanceInEuros = calculateXorBalanceInEuros(this.xorPerEuroRatio, xorTotalBalance);
+
+    return xorBalanceInEuros;
+  }
+
+  /**
+   * Calculate XOR rest price
+   * @param {Wallet} wallet
+   * @param {NetworkName} network
+   * @returns {XorRestPrice}
+   */
+  public calculateXorRestPrice(wallet: Wallet, network: NetworkName): XorRestPrice {
+    const xorTotalBalance = new FPNumber(this.getTotalCountAssets(wallet, network));
+    const xorRestPrice = calculateXorRestPrice(this.xorPerEuroRatio, xorTotalBalance);
+
+    return xorRestPrice;
+  }
+
+  /**
+   * Validate XOR balance for Sora Card(100 euro)
+   * @param {number} xorBalanceInEuros
+   * @returns {number}
+   */
+  public isValidXorBalanceForSoraCard(xorBalanceInEuros: number): boolean {
+    return FPNumber.gte(new FPNumber(xorBalanceInEuros), FPNumber.HUNDRED);
   }
 
   /**

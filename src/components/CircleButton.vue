@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="circle-button" :class="backgroundClass" @click="click($event)">
+    <div :class="backgroundClass" @click="click($event)">
       <Icon :icon="iconName" :className="imageClasses" />
     </div>
 
@@ -13,29 +13,35 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { Placement } from '@/interfaces';
 
 type BackgroundType = 'none' | 'black' | 'light-black';
+type Size = 'small' | 'medium';
+type IconColor = 'gray' | 'white';
 
 @Component
 export default class CircleButton extends Vue {
   @Prop(String) iconName!: string;
+  @Prop({ default: 'gray' }) iconColor!: IconColor;
   @Prop(String) backgroundColor!: BackgroundType;
   @Prop(String) backgroundColorHover!: BackgroundType;
   @Prop(String) target!: string;
   @Prop({ default: '' }) tooltipText!: string;
   @Prop({ default: 'top' }) placement!: Placement;
   @Prop({ default: false }) disabled!: boolean;
+  @Prop({ default: 'medium' }) size!: Size;
 
   get showTooltip() {
     return this.tooltipText !== '';
   }
 
   get backgroundClass() {
-    const _class = `background-${this.backgroundColor}`;
+    const backgroundClass = `background-${this.backgroundColor}`;
 
     return [
-      _class,
+      'circle-button',
+      `circle-button-${this.size}`,
+      backgroundClass,
       this.iconName,
       {
-        [`${_class}-hover-${this.backgroundColorHover}`]: this.backgroundColor === 'none',
+        [`${backgroundClass}-hover-${this.backgroundColorHover}`]: this.backgroundColor === 'none',
       },
     ];
   }
@@ -46,7 +52,7 @@ export default class CircleButton extends Vue {
 
     return [
       'image',
-      this.disabled ? 'image-disabled' : 'image-enabled',
+      this.disabled ? 'image-disabled' : this.iconColor,
       this.iconName,
       {
         'image-shift-left': shiftLeft,
@@ -63,8 +69,6 @@ export default class CircleButton extends Vue {
 
 <style lang="scss" scoped>
 .circle-button {
-  width: 32px;
-  height: 32px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -73,8 +77,6 @@ export default class CircleButton extends Vue {
   user-select: none;
 
   .image {
-    width: 16px;
-    height: 16px;
     outline: none;
   }
 
@@ -102,6 +104,26 @@ export default class CircleButton extends Vue {
     .image-enabled {
       filter: invert(0.2);
     }
+  }
+}
+
+.circle-button-small {
+  width: 16px;
+  height: 16px;
+
+  .image {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+.circle-button-medium {
+  width: 32px;
+  height: 32px;
+
+  .image {
+    width: 16px;
+    height: 16px;
   }
 }
 

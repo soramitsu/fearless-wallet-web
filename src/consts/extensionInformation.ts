@@ -1,5 +1,5 @@
 import pkg from '../../package.json';
-import URLS from '@/consts/urls';
+import { URLS } from '@/consts/urls';
 
 const MAIN_ITEMS = [
   {
@@ -23,12 +23,12 @@ const MAIN_ITEMS = [
   {
     icon: 'terms_conditions',
     label: 'termsConditions',
-    url: URLS.TERMS,
+    url: URLS.FEARLESS_TERMS,
   },
   {
     icon: 'terms_conditions',
     label: 'privacyPolicy',
-    url: URLS.PRIVACY,
+    url: URLS.FEARLESS_PRIVACY,
   },
 ];
 

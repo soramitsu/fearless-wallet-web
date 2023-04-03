@@ -17,22 +17,6 @@ import MnemonicColumns from './MnemonicColumns.vue';
 })
 export default class MnemonicBackupForm extends Vue {
   @Prop(Array) mnemonicArray!: string[];
-
-  get mnemonicLength() {
-    return this.mnemonicArray.length;
-  }
-
-  get midpoint() {
-    return Math.ceil(this.mnemonicLength / 2);
-  }
-
-  get mnemonicOne() {
-    return this.mnemonicArray.slice(0, this.midpoint);
-  }
-
-  get mnemonicTwo() {
-    return this.mnemonicArray.slice(this.midpoint, this.mnemonicLength);
-  }
 }
 </script>
 

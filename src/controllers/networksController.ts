@@ -6,7 +6,7 @@ import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import URLS from '@/consts/urls';
+import { URLS } from '@/consts/urls';
 import { LocalStorage } from '@/controllers/localStorageController';
 
 const lsNetworks = new LocalStorage('networks');

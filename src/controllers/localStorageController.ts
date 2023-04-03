@@ -1,13 +1,5 @@
 type Value = number | string | boolean | Record<string, any> | any[];
 
-interface Options {
-  dateCreated?: string;
-}
-
-interface OptionsProps {
-  saveDateCreated?: boolean;
-}
-
 export class LocalStorage {
   private prefix;
 
@@ -21,24 +13,10 @@ export class LocalStorage {
     return item ? JSON.parse(item) : {};
   }
 
-  public set(key: string, _value: Value, _options: Options = {}, _optionsProp: OptionsProps = {}) {
-    const { saveDateCreated } = _optionsProp;
-    const options: Options = { ..._options };
-
-    if (saveDateCreated) {
-      const dateCreated = Date.now().toString();
-
-      options.dateCreated = dateCreated;
-    }
-
-    const value = Object.keys(options).length
-      ? {
-          value: _value,
-          options,
-        }
-      : {
-          value: _value,
-        };
+  public set(key: string, _value: Value) {
+    const value = {
+      value: _value,
+    };
 
     localStorage.setItem(`${this.prefix}${key}`, JSON.stringify(value));
   }

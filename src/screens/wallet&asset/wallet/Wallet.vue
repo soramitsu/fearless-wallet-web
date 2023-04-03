@@ -122,7 +122,6 @@ import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
-import Loading from '@/components/Loading.vue';
 import { tieAccount } from '@/extension/messaging';
 import { defaultSortingCurrencies } from '@/helpers/currencies';
 
@@ -133,7 +132,6 @@ import { defaultSortingCurrencies } from '@/helpers/currencies';
     Currencies,
     ReceiveForm,
     WalletBalance,
-    Loading,
     ContentSettings,
     NetworkManagement,
     SelectNetworkPopup,

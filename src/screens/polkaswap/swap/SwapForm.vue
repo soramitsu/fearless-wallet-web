@@ -211,9 +211,9 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
-import { SORA_UTILITY_ASSET, SORA_XOR_ASSET_ID, SORA_NETWORK_NAME } from '@/consts/networks';
-import Disclaimer from '@/screens/wallet&asset/swap/Disclaimer.vue';
 import { NetworksController } from '@/controllers';
+import Disclaimer from '@/screens/polkaswap/swap/Disclaimer.vue';
+import { SORA_UTILITY_ASSET, SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/networks';
 import { Components } from '@/router/routes';
 
 @Component({
@@ -254,16 +254,16 @@ export default class SwapForm extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getPolkaswapAlertVisibility) showPolkaswapAlert!: boolean;
 
+  get selectedNetwork() {
+    return SORA_NETWORK_NAME as string;
+  }
+
   get showCloseIcon() {
     return this.showSettings;
   }
 
   get showBackIcon() {
     return !this.showSettings;
-  }
-
-  get selectedNetwork() {
-    return SORA_NETWORK_NAME as string;
   }
 
   get showPolkaswapIcon() {

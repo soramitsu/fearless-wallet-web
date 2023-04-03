@@ -11,9 +11,11 @@ export const getTokenPrice = async (
 ): Promise<AssetsPrice> => {
   try {
     const chainsStr = chains.join(',');
-    const { data } = await axios.get<AssetsPrice>(
+    const { data, status } = await axios.get<AssetsPrice>(
       `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${fiatName}&include_24hr_change=true&ids=${chainsStr}`
     );
+
+    if (status !== 200) console.warn('Failed to get token price');
 
     const assetsPrice: AssetsPrice = {};
 

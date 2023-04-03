@@ -1,4 +1,5 @@
 import { FPNumber } from '@sora-substrate/util';
+import axios from 'axios';
 
 type XorRestPrice = {
   euroToPay: string;
@@ -7,10 +8,9 @@ type XorRestPrice = {
 
 const getXorPerEuroRatio = async () => {
   try {
-    const priceResult = await fetch('https://backend.dev.sora-card.tachi.soramitsu.co.jp/prices/xor_euro');
-    const parsedData = await priceResult.json();
+    const { data } = await axios.get('https://backend.dev.sora-card.tachi.soramitsu.co.jp/prices/xor_euro');
 
-    return parsedData.price;
+    return data.price;
   } catch (error) {
     console.error(error);
   }

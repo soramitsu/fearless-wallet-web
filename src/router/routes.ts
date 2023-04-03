@@ -50,6 +50,7 @@ export enum Components {
   SoraCard = 'SoraCard',
   SoraSwap = 'SoraSwap',
   PolkaswapDisclaimer = 'PolkaswapDisclaimer',
+  SoraSwap = 'SoraSwap',
 }
 
 const haveAccounts = () => BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;

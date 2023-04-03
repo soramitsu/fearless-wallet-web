@@ -316,25 +316,25 @@ export default class SwapForm extends Vue {
   }
 
   get AToBCut() {
-    const value = +this.$n(+this.AToB, 'decimal') || '0';
+    const value = this.$n(+this.AToB, 'decimal') || '0';
 
     return `${value} ${this.receiveAssetUP}`;
   }
 
   get BToACut() {
-    const value = +this.$n(+this.BToA, 'decimal') || '0';
+    const value = this.$n(+this.BToA, 'decimal') || '0';
 
     return `${value} ${this.sendAssetUP}`;
   }
 
   get AToBValueCut() {
-    const value = +this.$n(+this.sendCurrency!.getCostOfAssets(this.AToB), 'price') || '0';
+    const value = this.$n(+this.sendCurrency!.getCostOfAssets(this.AToB), 'price') || '0';
 
     return `${this.fiatSymbol} ${value}`;
   }
 
   get BToAValueCut() {
-    const value = +this.$n(+this.sendCurrency!.getCostOfAssets(this.BToA), 'price') || '0';
+    const value = this.$n(+this.sendCurrency!.getCostOfAssets(this.BToA), 'price') || '0';
 
     return `${this.fiatSymbol} ${value}`;
   }
@@ -524,11 +524,11 @@ export default class SwapForm extends Vue {
   }
 
   async created() {
-    const { assetId, leftXORAmount } = this.$route.params;
+    const { assetId, restPriceXOR } = this.$route.params;
 
-    if (leftXORAmount) {
+    if (restPriceXOR) {
       this.receiveAssetId = SORA_XOR_ASSET_ID;
-      this.receiveAmount = leftXORAmount;
+      this.receiveAmount = restPriceXOR;
       this.isExchangeB = true;
     } else this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
 

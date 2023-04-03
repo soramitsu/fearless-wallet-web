@@ -14,23 +14,44 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import type { Currencies } from '@/interfaces';
+import type { SelectedWallet } from '@/store';
 import { Components } from '@/router/routes';
+import { SORA_UTILITY_ASSET, SORA_NETWORK_NAME } from '@/consts/networks';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component
 export default class GetXORPopup extends Vue {
-  @Prop(String) leftXORAmount!: string;
   @Prop(Function) handlerClose!: VoidFunction;
+  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   // TODO mock
   buyXORwithEUR() {
     alert('buyXORWithEUR');
   }
 
+  get selectedNetwork() {
+    return SORA_NETWORK_NAME as string;
+  }
+
+  get currencyXOR() {
+    return this.currencies.find(({ displayName, relayChain }) => {
+      return displayName === SORA_UTILITY_ASSET && relayChain === this.selectedNetwork;
+    });
+  }
+
+  get restPriceXOR() {
+    return this.currencyXOR?.calculateXorRestPrice(this.selectedWallet, this.selectedNetwork).euroToPayInXor ?? '';
+  }
+
   openSoraSwap() {
     this.$router.push({
       name: Components.SoraSwap,
       params: {
-        leftXORAmount: this.leftXORAmount,
+        restPriceXOR: this.restPriceXOR,
       },
     });
   }

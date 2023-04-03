@@ -25,40 +25,44 @@
             class="free-card-form"
           >
             <div class="form-layout">
-              <div class="free-card-status">
-                <Icon :icon="iconFreeCard" :class="freeCardIcon" />
+              <template v-if="networkIsReady">
+                <div class="free-card-status">
+                  <Icon :icon="iconFreeCard" :class="freeCardIcon" />
 
-                <span class="bold">{{ cardIssuanceText }}&nbsp;</span>
-                {{ $t('soraCard.cardIssuance') }}
-              </div>
-
-              <ContentForm
-                v-if="haveFreePassKYS"
-                :height="175"
-                :isStaticHeight="true"
-                :bottomRightCorner="true"
-                backgroundColor="black"
-              >
-                <div class="form-layout hold-layout">
-                  <div>
-                    {{ $t('soraCard.hold€100') }}
-                  </div>
-
-                  <ProgressBar :fillFactor="fillFactorBar" class="progress-bar" />
-
-                  <div :class="classesStatusXOR">
-                    {{ statusXORText }}
-                  </div>
-
-                  <div class="application-fee">
-                    {{ $t('soraCard.applicationFee') }}
-                  </div>
+                  <span class="bold">{{ cardIssuanceText }}&nbsp;</span>
+                  {{ $t('soraCard.cardIssuance') }}
                 </div>
-              </ContentForm>
 
-              <div v-else>
-                {{ $t('soraCard.noHaveFreeTry') }}
-              </div>
+                <ContentForm
+                  v-if="haveFreePassKYS"
+                  :height="175"
+                  :isStaticHeight="true"
+                  :bottomRightCorner="true"
+                  backgroundColor="black"
+                >
+                  <div class="form-layout hold-layout">
+                    <div>
+                      {{ $t('soraCard.hold€100') }}
+                    </div>
+
+                    <ProgressBar :fillFactor="fillFactorBar" class="progress-bar" />
+
+                    <div :class="classesStatusXOR">
+                      {{ statusXORText }}
+                    </div>
+
+                    <div class="application-fee">
+                      {{ $t('soraCard.applicationFee') }}
+                    </div>
+                  </div>
+                </ContentForm>
+
+                <div v-else>
+                  {{ $t('soraCard.noHaveFreeTry') }}
+                </div>
+              </template>
+
+              <Loader v-else />
             </div>
           </ContentForm>
 
@@ -87,6 +91,7 @@
         fontSize="big"
         type="primary"
         :border="false"
+        :disabled="!networkIsReady"
         @click="proceed"
       />
     </div>
@@ -94,33 +99,37 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { Currencies } from '@/interfaces';
+import type { SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { Components } from '@/router/routes';
-import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID, SORA_UTILITY_ASSET } from '@/consts/networks';
+import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/networks';
 import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GetNetworkStatus } from '@/store';
 
 @Component({
   components: { UnsupportedCountries },
 })
 export default class Preview extends Vue {
-  @Prop(String) leftXORAmount!: string;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
 
-  // TODO mock
+  get selectedNetwork() {
+    return SORA_NETWORK_NAME as string;
+  }
+
+  get networkIsReady() {
+    return this.getNetworkStatus(this.selectedNetwork) === 'ready';
+  }
+
   get fillFactorBar() {
     if (this.isValidXorBalance) return 1;
 
-    return 0.7;
-  }
-
-  // TODO mock
-  get isValidXorBalance() {
-    return false;
+    return this.euroBalanceXOR / 100;
   }
 
   // TODO mock
@@ -128,8 +137,22 @@ export default class Preview extends Vue {
     return true;
   }
 
-  get selectedNetwork() {
-    return SORA_NETWORK_NAME as string;
+  get currencyXOR() {
+    return this.currencies.find(({ displayName, relayChain }) => {
+      return displayName === SORA_UTILITY_ASSET && relayChain === this.selectedNetwork;
+    });
+  }
+
+  get isValidXorBalance() {
+    return this.currencyXOR?.isValidXorBalanceForSoraCard(this.euroBalanceXOR) ?? false;
+  }
+
+  get euroBalanceXOR() {
+    return this.currencyXOR?.calculateEuroBalance(this.selectedWallet, this.selectedNetwork) ?? 0;
+  }
+
+  get restPriceXOR() {
+    return this.currencyXOR?.calculateXorRestPrice(this.selectedWallet, this.selectedNetwork);
   }
 
   get classesStatusXOR() {
@@ -146,18 +169,15 @@ export default class Preview extends Vue {
     return this.$t(value);
   }
 
-  get currencyXOR() {
-    return this.currencies.find(({ displayName, relayChain }) => {
-      return displayName === SORA_UTILITY_ASSET && relayChain === this.selectedNetwork;
-    });
-  }
-
   get statusXORText() {
     if (this.isValidXorBalance) return this.$t('soraCard.haveXORForFreeCard');
 
-    const fiatValue = this.currencyXOR?.getCostOfAssets(this.leftXORAmount);
+    const euroToPay = +(this.restPriceXOR?.euroToPay ?? 0);
+    const euroToPayInXor = +(this.restPriceXOR?.euroToPayInXor ?? 0);
 
-    return `${this.leftXORAmount} XOR (${this.fiatSymbol}${fiatValue}) ${this.$t('soraCard.leftXORForFreeCard')}`;
+    return `${this.$n(euroToPayInXor, 'decimal')} XOR (${this.fiatSymbol}${this.$n(euroToPay, 'price')}) ${this.$t(
+      'soraCard.leftXORForFreeCard'
+    )}`;
   }
 
   get iconFreeCard() {
@@ -171,19 +191,19 @@ export default class Preview extends Vue {
   }
 
   get textIssueCardButton() {
-    const value = this.isValidXorBalance && this.haveFreePassKYS ? 'common.continue' : 'soraCard.getXOR';
+    const value =
+      (this.isValidXorBalance && this.haveFreePassKYS) || !this.networkIsReady ? 'common.continue' : 'soraCard.getXOR';
 
     return this.$t(value);
   }
 
-  getXOR() {
-    this.$router.push({
-      name: Components.Asset,
-      params: {
-        network: SORA_NETWORK_NAME,
-        assetId: SORA_XOR_ASSET_ID,
-      },
-    });
+  created() {
+    this.currencyXOR?.getXorPerEuroRatio();
+  }
+
+  @Watch('currencyXOR')
+  filter() {
+    this.currencyXOR?.getXorPerEuroRatio();
   }
 
   haveCard() {

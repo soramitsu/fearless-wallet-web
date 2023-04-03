@@ -53,7 +53,7 @@ export function getMockCurrencies(networks: NetworkJsonOld[], tokens: AssetJson[
       const balances: BalanceItem[] = [
         ...result[index].balances,
         {
-          state: APIItemState.READY,
+          state: APIItemState.PENDING,
           name: mainNet,
           existentialDeposit,
           type: type ?? 'native',

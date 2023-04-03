@@ -29,6 +29,7 @@ export interface BalanceItem {
   isNative?: boolean;
   icon?: string;
   reserved?: string;
+  locked?: string;
   miscFrozen?: string;
   feeFrozen?: string;
   total?: string;

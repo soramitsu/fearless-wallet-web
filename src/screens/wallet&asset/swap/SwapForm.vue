@@ -264,6 +264,10 @@ export default class SwapForm extends Vue {
     return this.showSettings;
   }
 
+  get price() {
+    return this.getAssetPrice(this._selectedAssetId).price;
+  }
+
   get showBackIcon() {
     return !this.showSettings;
   }
@@ -522,35 +526,19 @@ export default class SwapForm extends Vue {
   }
 
   get sendValue() {
-    return '0';
-    // return this.sendCurrency?.getCostOfAssets(this.sendAmount);
+    const amoutPrep = +this.sendAmount ?? 0;
+
+    return this.price * amoutPrep;
   }
 
   get receiveValue() {
-    return '0';
-    // return this.receiveCurrency?.getCostOfAssets(this.receiveAmount);
-  }
+    const amoutPrep = +this.receiveAmount ?? 0;
 
-  @Watch('networkStatus')
-  connect(status: NetworkStatus) {
-    if (status === 'ready') this.initializeSora();
+    return this.price * amoutPrep;
   }
 
   async created() {
     this.sendAssetId = this._selectedAssetId;
-
-    // if (this.networkStatus === 'ready') this.initializeSora();
-  }
-
-  async initializeSora() {
-    if (this.fee !== '') return;
-
-    try {
-      // await NetworksController.initializeSora();
-      // await NetworksController.calcSoraFee();
-    } catch (ex) {
-      console.info('initializeSora', ex);
-    }
   }
 
   async createSwap() {

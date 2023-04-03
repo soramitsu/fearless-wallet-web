@@ -486,7 +486,7 @@ export default class State {
       const currentProvider = getCurrentProvider(data);
 
       if (currentProvider) {
-        this.apis.substrate[data.key] = await initApi(data);
+        await initApi(data);
 
         if (data.isEthereum && data.isEthereum) {
           this.apis.evm[data.key] = initWeb3Api(currentProvider);
@@ -544,7 +544,7 @@ export default class State {
     const currentProvider = getCurrentProvider(networkData);
 
     if (currentProvider) {
-      this.apis.substrate[networkKey] = await initApi(networkData);
+      await initApi(networkData);
 
       if (networkData.isEthereum && networkData.isEthereum) {
         this.apis.evm[networkKey] = initWeb3Api(currentProvider);
@@ -590,7 +590,7 @@ export default class State {
       const currentProvider = getCurrentProvider(this.networkMap[key]);
 
       if (currentProvider) {
-        this.apis.substrate[key] = await initApi(this.networkMap[key]);
+        initApi(this.networkMap[key]);
 
         if (this.networkMap[key].isEthereum && this.networkMap[key].isEthereum) {
           this.apis.evm[key] = initWeb3Api(currentProvider);
@@ -1093,11 +1093,9 @@ export default class State {
     this.networkMapStore.get('NetworkMap', async (storedNetworkMap) => {
       for (const [key, network] of Object.entries(storedNetworkMap)) {
         if (network.active) {
-          this.apis.substrate[key] = await initApi(network);
-
           if (network.isEthereum) {
             this.apis.evm[key] = initWeb3Api(key === 'ethereum' ? 'ethereum' : 'ethereum_goerli');
-          }
+          } else initApi(network);
         }
       }
 
@@ -1156,8 +1154,6 @@ export default class State {
   }
 
   public setBalanceItem(networkKey: string, item: BalanceItem) {
-    const { reserved, feeFrozen, free, total } = item;
-
     this.getCurrentAccount((account) => {
       if (account) {
         const { address } = account;
@@ -1165,12 +1161,14 @@ export default class State {
         const currencyIndex = this.balanceMap[address].findIndex(
           ({ assetId: _assetId, relayChain: _relayChain, name }) => {
             const isExistingAssetId = _assetId === item.id;
-            const isExistingDisplayName = name === item.name;
+            const isExistingDisplayName = name.toLowerCase() === item.name.toLowerCase();
+
             const isExistingAsset = isExistingDisplayName && _relayChain === item.relayChain;
 
-            return isExistingAssetId || isExistingAsset;
+            return isExistingAssetId || isExistingAsset || isExistingDisplayName;
           }
         );
+
         const token = this.balanceMap[address][currencyIndex];
 
         const index = token.balances.findIndex((el) => {
@@ -1180,14 +1178,15 @@ export default class State {
         });
 
         const balanceItem = this.balanceMap[address][currencyIndex].balances[index];
-
+        const { reserved, free, feeFrozen, total, transferable } = item;
         this.balanceMap[address][currencyIndex].balances[index] = {
           ...balanceItem,
-          state: APIItemState.READY,
           reserved,
           free,
           feeFrozen,
           total,
+          transferable,
+          state: APIItemState.READY,
           timestamp: +new Date(),
         };
       }
@@ -1226,26 +1225,26 @@ export default class State {
     });
   }
 
-  private mapNetworksByToken(id: string): BalanceItem[] {
-    return Object.values(this.networkMap)
-      .filter((network) => {
-        return network.assets.some(({ assetId }) => assetId === id);
-      })
-      .map(({ name, assets, icon, key }) => {
-        const { isNative, isUtility, type, purchaseProviders } = assets.find(({ assetId }) => assetId === id)!;
+  // private mapNetworksByToken(id: string): BalanceItem[] {
+  //   return Object.values(this.networkMap)
+  //     .filter((network) => {
+  //       return network.assets.some(({ assetId }) => assetId === id);
+  //     })
+  //     .map(({ name, assets, icon, key }) => {
+  //       const { isNative, isUtility, type, purchaseProviders } = assets.find(({ assetId }) => assetId === id)!;
 
-        return {
-          state: APIItemState.PENDING,
-          name,
-          key,
-          icon,
-          type: type ?? 'native',
-          purchaseProviders: purchaseProviders ?? [],
-          isUtility: isUtility ?? false,
-          isNative: isNative ?? false,
-        };
-      });
-  }
+  //       return {
+  //         state: APIItemState.PENDING,
+  //         name,
+  //         key,
+  //         icon,
+  //         type: type ?? 'native',
+  //         purchaseProviders: purchaseProviders ?? [],
+  //         isUtility: isUtility ?? false,
+  //         isNative: isNative ?? false,
+  //       };
+  //     });
+  // }
 
   public getSubstrateAccounts() {
     return keyring.getAccounts().filter((el) => !isEthereumAddress(el.address));
@@ -1470,21 +1469,6 @@ export default class State {
     const { transaction } = await storage.get(['transaction']);
 
     return transaction[address] || {};
-  }
-
-  private async saveHistoryToStorage(address: string, network: string, items: TransactionHistoryItemType[]) {
-    const { transaction } = await storage.get(['transaction']);
-    const historyByAddress = transaction[address];
-    storage.set({
-      transaction: {
-        [address]: {
-          ...historyByAddress,
-          [network]: {
-            ...items,
-          },
-        },
-      },
-    });
   }
 
   private combineHistories(

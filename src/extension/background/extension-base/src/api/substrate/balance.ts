@@ -184,30 +184,34 @@ async function subscribeTokensBalance(
 ) {
   state.generateDefaultBalance({ address: addresses[0] });
 
-  const tokenList = state.networkMap[networkKey].assets.map((asset) => {
-    const searchedAsset = state.tokenMap.find((token) => token.id === asset.assetId)! as AssetJson;
+  const tokenList = state.networkMap[networkKey].assets.map(({ assetId, type, isNative, isUtility }) => {
+    const searchedAsset = state.tokenMap.find((token) => token.id === assetId)! as AssetJson;
 
     return {
       ...searchedAsset,
-      type: asset.type ?? ('native' as TypeAsset),
-      isNative: asset.isNative,
-      isUtility: asset.isUtility,
+      type: type ?? ('native' as TypeAsset),
+      isNative,
+      isUtility,
     };
   });
 
-  await api.isReady;
+  await api.isReadyOrError;
 
   const unsubList = await Promise.all(
-    tokenList.map(({ precision, symbol, id, type, isUtility, icon, displayName }) => {
+    tokenList.map(({ precision, symbol, id, type, isUtility, isNative, icon, displayName, relayChain, name }) => {
       try {
         const options = getAssetOptions(symbol, type, id);
 
-        const pallet =
-          isUtility && !ORML_PALLETS_TYPES.includes(type)
-            ? api.rx.query.system.account(addresses[0])
-            : type === 'equilibrium'
-            ? api.rx.query.eqBalances.account(addresses[0], options)
-            : api.rx.query.tokes?.accounts(addresses[0], options);
+        const query = api!.rx.query;
+        let pallet;
+
+        if (type === 'native' || isUtility || isNative || type === 'ormlAsset') {
+          pallet = query.system.account(addresses[0]);
+        } else if (type === 'equilibrium') {
+          pallet = query.eqBalances.reserved(addresses[0], options);
+        } else {
+          pallet = query.tokens.accounts(addresses[0], options);
+        }
 
         const onBalanceFetch = (balances: any) => {
           const { frozen, locked, reserved, total, transferable } = formatBalance(
@@ -220,10 +224,11 @@ async function subscribeTokensBalance(
             chain: networkKey,
             key: networkKey,
             symbol,
-            relayChain: MAIN_NETWORKS[networkKey] ?? networkKey,
+            relayChain,
             name: displayName ?? symbol,
             icon,
             reserved,
+            locked,
             feeFrozen: frozen,
             transferable,
             total,
@@ -233,8 +238,8 @@ async function subscribeTokensBalance(
         pallet.subscribe(onBalanceFetch);
 
         return pallet;
-      } catch (err) {
-        console.warn(err);
+      } catch (err: any) {
+        console.warn(err.message, networkKey, `type: ${type}`);
       }
 
       return undefined;
@@ -282,14 +287,15 @@ export function subscribeBalance(
   const [substrateAddresses, evmAddresses] = categoryAddresses(addresses);
 
   const unsubList = Object.entries(dotSamaApiMap).map(async ([networkKey, apiProps]) => {
-    const networkAPI = await apiProps.isReady;
+    await apiProps.api.isReadyOrError;
+
     const useAddresses = apiProps.isEthereum ? evmAddresses : substrateAddresses;
 
     if (['ethereum', 'ethereum_goerli'].includes(networkKey)) {
-      return subscribeEVMBalance(networkKey, networkAPI.api, useAddresses, web3ApiMap, callback);
+      return subscribeEVMBalance(networkKey, apiProps.api, useAddresses, web3ApiMap, callback);
     }
 
-    return subscribeWithAccount(useAddresses, networkKey, networkAPI, web3ApiMap, callback);
+    return subscribeWithAccount(useAddresses, networkKey, apiProps, web3ApiMap, callback);
   });
 
   return () => {

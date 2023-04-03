@@ -196,7 +196,6 @@ export default class Asset extends Vue {
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJsonOld;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
 
   get showShimmers() {

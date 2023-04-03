@@ -1,6 +1,6 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-
+import { api as apiSora } from '@sora-substrate/util';
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { hexToU8a, isHex, assert, BN, BN_ZERO } from '@polkadot/util';
@@ -125,6 +125,7 @@ import {
   VerifyTokenResponse,
 } from '@/interfaces';
 import { getMetaTyped } from '@/helpers/common';
+import { addNumbers } from '@/helpers/numbers';
 
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
@@ -1060,8 +1061,14 @@ export default class Extension {
     };
   }
 
-  private async validateSwap(request: RequestCheckSwap) {
-    //
+  public async calcSoraFee() {
+    await apiSora.calcStaticNetworkFees();
+  }
+
+  private async validateSwap({ network }: RequestCheckSwap) {
+    await apiSora.calcStaticNetworkFees();
+
+    const swapFee = apiSora.NetworkFee.Swap;
   }
 
   private async makeSwap(id: string, port: Port, { isSavePass }: RequestSwap) {

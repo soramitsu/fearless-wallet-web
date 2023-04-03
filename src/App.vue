@@ -91,6 +91,7 @@ export default class App extends Vue {
   }
 
   updateBalance(balanceData: BalanceJson): void {
+    console.info(balanceData, 'balances');
     store.dispatch('SET_BALANCE', balanceData);
   }
 

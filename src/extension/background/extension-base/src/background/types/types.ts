@@ -330,6 +330,7 @@ export interface ApiProps extends ApiState {
   apiUrl: string;
   isNotSupport?: boolean;
   isApiConnected: boolean;
+  tryAnotherNode: boolean;
   isEthereum: boolean;
   isEthereumOnly: boolean;
   isApiInitialized: boolean;

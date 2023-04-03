@@ -38,9 +38,7 @@ export function connectDotSamaApis(
 
     const currentProvider = getCurrentProvider(network);
 
-    if (currentProvider) {
-      apisMap[networkKey] = await initApi(networkMap[networkKey]);
-    }
+    if (currentProvider) initApi(networkMap[networkKey]);
   });
 
   return apisMap;

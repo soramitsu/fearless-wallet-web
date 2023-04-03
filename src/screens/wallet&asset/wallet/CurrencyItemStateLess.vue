@@ -112,13 +112,12 @@ export default class CurrencyItemStateLess extends Vue {
   @Prop(Object) assetData!: TokenBalance;
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
+  @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.getHiddenAssets) hiddenAssets!: string[];
   @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: TMutation<string>;
   @Mutation(AccountsMutationTypes.DELETE_HIDDEN_ASSET) deleteHiddenAssets!: TMutation<string>;
-
-  @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
 
   get getMainNetwork() {
     const network = this.assetData.balances.find((el) => el.isNative || el.isUtility);
@@ -147,7 +146,7 @@ export default class CurrencyItemStateLess extends Vue {
   }
 
   get showShimmers() {
-    return !this.assetData.balances.some((el) => el.state === 'ready');
+    return this.assetData.balances.every((el) => el.state !== 'ready');
   }
 
   get showWarning() {

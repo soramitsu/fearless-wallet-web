@@ -189,22 +189,6 @@ export async function estimateFee(
   const apiProps = await dotSamaApiMap[networkKey].isReady;
   const api = apiProps.api;
 
-  // const isTxCurrenciesSupported = !!api && !!api.tx && !!api.tx.currencies;
-  // const isTxBalancesSupported = !!api && !!api.tx && !!api.tx.balances;
-  // const isTxTokensSupported = !!api && !!api.tx && !!api.tx.tokens;
-  // const isTxEqBalancesSupported = !!api && !!api.tx && !!api.tx.eqBalances;
-  // const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
-
-  // const precisionAmount = this.getPrecisionValue(amount, networkProps.precision) as string;
-
-  // function getOrmlOptions(symbol: string, originNet: string) {
-  //   if (originNet === 'bit.country pioneer' && symbol === 'neer') return { NativeToken: 0 };
-
-  //   return { Token: symbol.toUpperCase() };
-  // }
-
-  // const ormlOptions = getOrmlOptions(tokenInfo.name, networkKey);
-  // const params = getOrmlTeleportParams(originNet, destNet, toAddress);
   const extrinsic = createExtrinsicTransfer({
     amount: value,
     api,
@@ -213,10 +197,7 @@ export async function estimateFee(
     to,
     networkKey,
   });
-  // const extrinsicOptions = {
-  //   historyOptions: { networkProps: tokenInfo, amount: value, to },
-  //   api,
-  // }!;
+
   const paymentInfo = await extrinsic?.paymentInfo(to);
   const partialFee = paymentInfo ? +paymentInfo.partialFee : 0;
   const result = new FPNumber(partialFee, tokenInfo?.precision);

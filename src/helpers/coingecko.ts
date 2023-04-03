@@ -6,13 +6,13 @@ import { AssetJson, AssetsPrice } from '@/interfaces';
 
 export const getTokenPrice = async (
   chains: Array<string>,
-  currency = 'usd',
+  fiatName = 'usd',
   assetsJson: AssetJson[]
 ): Promise<AssetsPrice> => {
   try {
     const chainsStr = chains.join(',');
     const { data, status } = await axios.get<AssetsPrice>(
-      `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${currency}&include_24hr_change=true&ids=${chainsStr}`
+      `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${fiatName}&include_24hr_change=true&ids=${chainsStr}`
     );
 
     if (status !== 200) console.warn('Failed to get token price');

@@ -75,15 +75,11 @@ import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
 import { windowOpen } from '@/extension/messaging';
 import { ActiveTabAuthorizeStatus } from '@/extension/background/extension-base/src/background/types';
-import Loading from '@/components/Loading.vue';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
 import { TAction } from '@/interfaces';
 
 @Component({
-  components: {
-    ConnectionPopup,
-    Loading,
-  },
+  components: { ConnectionPopup },
 })
 export default class Header extends Vue {
   readonly walletNameRef = 'walletName';

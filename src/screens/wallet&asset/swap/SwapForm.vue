@@ -199,9 +199,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { NetworkStatus } from '@/interfaces';
+
 import type { GetAssetName, SelectedWallet, GetNetworkStatus, GetNetwork, GetAssetPrice } from '@/store';
 import SwapSelectInput from '@/screens/wallet&asset/swap/SwapSelectInput.vue';
 import SwapPreview from '@/screens/wallet&asset/swap/SwapPreview.vue';
@@ -255,7 +255,7 @@ export default class SwapForm extends Vue {
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
-  @Getter(NetworksGettersTypes.getPrice) getAssetPrice!: GetAssetPrice;
+  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getPolkaswapAlertVisibility) showPolkaswapAlert!: boolean;
@@ -398,7 +398,9 @@ export default class SwapForm extends Vue {
 
   get optionsCurrency() {
     const filter = this.filterValue.toLowerCase();
-    const currenciesFilteredByNetwork = this.balances.filter(({ relayChain }) => relayChain === this.selectedNetwork);
+    const currenciesFilteredByNetwork = this.balances.filter(
+      ({ mainNetwork }) => mainNetwork.toLowerCase() === this.selectedNetwork.toLowerCase()
+    );
 
     return getCurrencyOptions(currenciesFilteredByNetwork).filter(({ name, value }) => {
       if (!name.toLowerCase().includes(filter)) return false;

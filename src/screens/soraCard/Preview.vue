@@ -100,15 +100,11 @@ import type { Currencies } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
 import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID, SORA_UTILITY_ASSET } from '@/consts/networks';
-import KYC from '@/screens/soraCard/KYC.vue';
 import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component({
-  components: {
-    KYC,
-    UnsupportedCountries,
-  },
+  components: { UnsupportedCountries },
 })
 export default class Preview extends Vue {
   @Prop(String) leftXORAmount!: string;

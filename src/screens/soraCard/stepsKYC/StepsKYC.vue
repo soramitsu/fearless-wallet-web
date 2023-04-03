@@ -16,9 +16,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import DisclaimerForm from '@/screens/soraCard/DisclaimerForm.vue';
-import PhoneConfirmation from '@/screens/soraCard/PhoneConfirmation.vue';
-import EmailConfirmation from '@/screens/soraCard/EmailConfirmation.vue';
+import DisclaimerForm from '@/screens/soraCard/stepsKYC/DisclaimerForm.vue';
+import PhoneConfirmation from '@/screens/soraCard/stepsKYC/PhoneConfirmation.vue';
+import EmailConfirmation from '@/screens/soraCard/stepsKYC/EmailConfirmation.vue';
 
 @Component({
   components: {
@@ -27,7 +27,7 @@ import EmailConfirmation from '@/screens/soraCard/EmailConfirmation.vue';
     EmailConfirmation,
   },
 })
-export default class KYC extends Vue {
+export default class StepsKYC extends Vue {
   @Prop(Number) step!: number;
 }
 </script>

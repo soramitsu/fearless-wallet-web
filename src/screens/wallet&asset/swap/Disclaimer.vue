@@ -130,7 +130,7 @@ export default class Disclaimer extends Vue {
     margin-bottom: 16px;
 
     .important {
-      color: $orange-color;
+      color: $simple-orange-color;
       font-weight: 600;
     }
   }

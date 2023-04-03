@@ -8576,6 +8576,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"country-code-emoji@npm:^2.3.0":
+  version: 2.3.0
+  resolution: "country-code-emoji@npm:2.3.0"
+  checksum: 6b61e13787c9133526ac45758775e3566869c0de4ee3fa4c3eac85e6077e57faf1f98173ccdb07440994c2cb1ac2757e4585cb40a64059b3ec725c5edef6f657
+  languageName: node
+  linkType: hard
+
 "crc@npm:^3.8.0":
   version: 3.8.0
   resolution: "crc@npm:3.8.0"
@@ -11200,6 +11207,7 @@ __metadata:
     axios: ^0.27.2
     bignumber.js: ^9.0.2
     core-js: ^3.6.5
+    country-code-emoji: ^2.3.0
     css-unicode-loader: ^1.0.3
     cypress: ^9.7.0
     date-fns: ^2.28.0

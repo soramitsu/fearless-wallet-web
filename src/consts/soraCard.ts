@@ -1,85 +1,25 @@
-const UNSUPPORTED_COUNTRIES = [
-  {
-    name: 'Algeria',
-    icon: 'algeria',
-  },
-  {
-    name: 'Belarus',
-    icon: 'belarus',
-  },
-  {
-    name: 'Cambodia',
-    icon: 'cambodia',
-  },
-  {
-    name: 'Cuba',
-    icon: 'cuba',
-  },
-  {
-    name: 'Iran',
-    icon: 'iran',
-  },
-  {
-    name: 'Korea',
-    icon: 'south-korea',
-  },
-  {
-    name: 'Macedonia',
-    icon: 'macedonia',
-  },
-  {
-    name: 'Nigeria',
-    icon: 'nigeria',
-  },
-  {
-    name: 'Sudan',
-    icon: 'sudan',
-  },
-  {
-    name: 'Thailand',
-    icon: 'thailand',
-  },
-  {
-    name: 'Bangladesh',
-    icon: 'bangladesh',
-  },
-  {
-    name: 'Bolivia',
-    icon: 'bolivia',
-  },
-  {
-    name: 'China',
-    icon: 'china',
-  },
-  {
-    name: 'Ghana',
-    icon: 'ghana',
-  },
-  {
-    name: 'Jordan',
-    icon: 'jordan',
-  },
-  {
-    name: 'Kyrgyzstan',
-    icon: 'kyrgyzstan',
-  },
-  {
-    name: 'Nepal',
-    icon: 'nepal',
-  },
-  {
-    name: 'Russian Federation',
-    icon: 'russia',
-  },
-  {
-    name: 'Syria',
-    icon: 'syria',
-  },
-  {
-    name: 'United States',
-    icon: 'usa',
-  },
-];
+const UNSUPPORTED_COUNTRIES = {
+  dz: 'Algeria',
+  bd: 'Bangladesh',
+  by: 'Belarus',
+  bo: 'Bolivia',
+  kh: 'Cambodia',
+  cn: 'China',
+  cu: 'Cuba',
+  gh: 'Ghana',
+  ir: 'Iran',
+  jo: 'Jordan',
+  kp: 'Korea',
+  kg: 'Kyrgyzstan',
+  mk: 'Macedonia',
+  np: 'Nepal',
+  ng: 'Nigeria',
+  ru: 'Russian Federation',
+  sd: 'Sudan',
+  sy: 'Syria',
+  th: 'Thailand',
+  us: 'United States',
+} as const;
 
 const RESEND_CODE_S = 60;
 

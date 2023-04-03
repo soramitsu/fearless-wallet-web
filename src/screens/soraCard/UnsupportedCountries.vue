@@ -5,34 +5,28 @@
     </div>
 
     <Scroll>
-      <div class="countries-list">
-        <div class="countries-column">
-          <div v-for="{ name, icon } in countriesPartOne" :key="name" class="country">
-            <Icon :icon="icon" class="flag" />
+      <ul class="countries-list">
+        <li v-for="{ name, icon } in unsupportedCountries" :key="name" class="country">
+          <span class="flag">{{ icon }}</span>
 
-            {{ name }}
-          </div>
-        </div>
-
-        <div class="countries-column">
-          <div v-for="{ name, icon } in countriesPartTwo" :key="name" class="country">
-            <Icon :icon="icon" class="flag" />
-
-            {{ name }}
-          </div>
-        </div>
-      </div>
+          {{ name }}
+        </li>
+      </ul>
     </Scroll>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import { countryCodeEmoji } from 'country-code-emoji';
 import { UNSUPPORTED_COUNTRIES } from '@/consts/soraCard';
 
 @Component
 export default class UnsupportedCountries extends Vue {
-  readonly unsupportedCountries = UNSUPPORTED_COUNTRIES;
+  readonly unsupportedCountries = Object.entries(UNSUPPORTED_COUNTRIES).map(([key, name]) => ({
+    name,
+    icon: countryCodeEmoji(key),
+  }));
 
   get countriesLength() {
     return this.unsupportedCountries.length;
@@ -62,25 +56,18 @@ export default class UnsupportedCountries extends Vue {
   }
 
   .countries-list {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 0;
 
-    .countries-column {
+    .country {
       display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      align-items: flex-start;
-      min-width: 250px;
+      align-items: center;
+      padding: 8px 8px 8px 0;
 
       .flag {
-        height: 18px;
-        width: 18px;
         margin-right: 10px;
-      }
-
-      .country {
-        display: flex;
-        align-items: center;
-        padding: 8px 8px 8px 0;
+        font-family: 'Twemoji Country Flags';
       }
     }
   }

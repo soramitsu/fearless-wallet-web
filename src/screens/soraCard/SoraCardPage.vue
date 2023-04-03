@@ -19,7 +19,7 @@
       />
 
       <template v-else>
-        <KYC
+        <StepsKYC
           :step="step"
           @toggleCountriesFormVisibility="toggleCountriesFormVisibility"
           @toggleIsValidSmsCode="toggleIsValidSmsCode"
@@ -49,16 +49,16 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
-import KYC from '@/screens/soraCard/KYC.vue';
+import StepsKYC from '@/screens/soraCard/stepsKYC/StepsKYC.vue';
 import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
 import Preview from '@/screens/soraCard/Preview.vue';
-import StepsKYCPopup from '@/screens/soraCard/StepsKYCPopup.vue';
+import StepsKYCPopup from '@/screens/soraCard/stepsKYC/StepsKYCPopup.vue';
 import GetXORPopup from '@/screens/soraCard/GetXORPopup.vue';
 
 @Component({
   components: {
-    KYC,
     Preview,
+    StepsKYC,
     GetXORPopup,
     StepsKYCPopup,
     UnsupportedCountries,

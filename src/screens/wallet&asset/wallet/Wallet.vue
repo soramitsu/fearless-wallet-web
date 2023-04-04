@@ -111,7 +111,7 @@ import { accountController } from '@/controllers/accountController';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { addNumbers, getChangeWalletBalance } from '@/helpers/numbers';
+import { addNumbers, getChangeWalletBalance, getTotalWalletBalance } from '@/helpers/numbers';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
@@ -204,8 +204,9 @@ export default class Wallet extends Vue {
     return this.networks.filter(({ apiStatus }) => apiStatus === 'disconnected');
   }
   get summaryTransferableBalance() {
-    return 0;
+    return getTotalWalletBalance(this.balances, this.prices);
   }
+
   get changeWalletBalance() {
     if (this.balances.length === 0) return { totalBalance: 0, changeAmount: 0 };
 

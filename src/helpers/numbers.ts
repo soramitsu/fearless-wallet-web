@@ -2,6 +2,7 @@ import { FPNumber } from '@sora-substrate/util';
 import { getTotalBalance } from './currencies';
 import type { ChangeWalletBalance, AssetsPrice } from '@/interfaces';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import { APIItemState } from '@/extension/background/extension-base/src/api/evm/types/ether';
 
 interface Options {
   decimalsValue?: number;
@@ -35,6 +36,24 @@ function addNumbers(values: (string | number)[]): string {
   return values.reduce((sum, number) => sum.add(new FPNumber(number)), FPNumber.ZERO).toString();
 }
 
+function getTotalWalletBalance(tokens: TokenBalance[], price: AssetsPrice): number {
+  let walletBalance = 0;
+
+  tokens.forEach((token) => {
+    token.balances.forEach((balance) => {
+      if (balance.state === APIItemState.READY) {
+        const tokenPrice = price.tokenPriceMap[token.priceId ?? ''] ?? 0;
+        const assetCount = balance.total ? +balance.total : 0;
+        const assetValue = assetCount * tokenPrice;
+
+        walletBalance += assetValue;
+      }
+    });
+  });
+
+  return walletBalance;
+}
+
 function getChangeWalletBalance(tokens: TokenBalance[], price: AssetsPrice): ChangeWalletBalance {
   const changeAssets = tokens.map((token) => {
     const priceChange = price?.tokenPriceChange[token.priceId ?? ''] ?? 0;
@@ -56,4 +75,4 @@ function getChangeWalletBalance(tokens: TokenBalance[], price: AssetsPrice): Cha
   };
 }
 
-export { formattedNumber, addNumbers, getChangeWalletBalance };
+export { formattedNumber, addNumbers, getChangeWalletBalance, getTotalWalletBalance };

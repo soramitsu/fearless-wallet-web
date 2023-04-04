@@ -10,7 +10,6 @@ import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Staking = () => import('@/screens/staking/Staking.vue');
 const History = () => import('@/screens/history/History.vue');
-const Polkaswap = () => import('@/screens/polkaswap/Polkaswap.vue');
 const Accounts = () => import('@/screens/accounts/Accounts.vue');
 const Nodes = () => import('@/screens/accounts/Nodes.vue');
 const MobileConnect = () => import('@/screens/mobileConnect/MobileConnect.vue');
@@ -21,7 +20,8 @@ const Export = () => import('@/screens/accounts/Export.vue');
 
 const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
 const SoraSwap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/SwapForm.vue');
-const PolkaswapDisclaimer = () => import(/* webpackChunkName: "sora" */ '@/screens/wallet&asset/swap/Disclaimer.vue');
+const PolkaswapDisclaimer = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/Disclaimer.vue');
+const Polkaswap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/Polkaswap.vue');
 
 const AddWallet = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/AddWallet.vue');
 const AddFromGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/AddFromGoogle.vue');
@@ -50,7 +50,6 @@ export enum Components {
   SoraCard = 'SoraCard',
   SoraSwap = 'SoraSwap',
   PolkaswapDisclaimer = 'PolkaswapDisclaimer',
-  SoraSwap = 'SoraSwap',
 }
 
 const haveAccounts = () => BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;

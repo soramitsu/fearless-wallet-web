@@ -2,6 +2,8 @@ import type { Meta, ReplacedMeta, AddressMeta } from '@/interfaces/common';
 import type { KeyringPair$Meta } from '@polkadot/keyring/types';
 import { SORA_NETWORK_NAME } from '@/consts/networks';
 
+const MIN_PHONE_LENGTH_WITH_CODE = 8;
+
 const EMAIL_REGEXP =
   /^(([^<>()[\].,;:\s@"]+(\.[^<>()[\].,;:\s@"]+)*)|(".+"))@(([^<>()[\].,;:\s@"]+\.)+[^<>()[\].,;:\s@"]{2,})$/iu;
 
@@ -27,8 +29,10 @@ function isSora(network: string) {
   return network === SORA_NETWORK_NAME;
 }
 
-function validatePhoneNumber(phoneNumber: string) {
-  return phoneNumber.length === 10;
+function validatePhoneNumber(countryCode: string, phoneNumber: string) {
+  const code = countryCode.replace('+', '');
+
+  return !!(+code && phoneNumber && `${code}${phoneNumber}`.length >= MIN_PHONE_LENGTH_WITH_CODE);
 }
 
 function validateEmail(email: string) {

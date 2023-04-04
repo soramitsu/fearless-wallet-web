@@ -22,14 +22,14 @@
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { AuthUrlInfo } from '@extension-base/background/types';
 import { Action } from 'vuex-class';
-import type { TAction } from '@/interfaces';
+import type { AsyncFn } from '@/interfaces';
 import { stripUrl } from '@/extension/background/extension-base/src/background/handlers/helpers';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 
 @Component
 export default class AuthItem extends Vue {
   @Prop(Object) request!: AuthUrlInfo;
-  @Action(ExtensionActionTypes.DELETE_AUTH_CONNECTION) deleteAuthConnection!: TAction<string>;
+  @Action(ExtensionActionTypes.DELETE_AUTH_CONNECTION) deleteAuthConnection!: AsyncFn<string>;
 
   get stripUrl() {
     return stripUrl(this.request.url);

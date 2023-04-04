@@ -2,20 +2,20 @@
   <div class="introduction">
     <Alert headerText="common.disclaimer" message="soraCard.warningKYC" sizeText="small" />
 
-    <div class="row">
+    <div class="row" @click="openDoc('terms')">
       {{ $t('common.termsConditions') }}
 
-      <CircleButton iconName="chevron-right" backgroundColor="none" @click="openDoc('terms')" />
+      <CircleButton iconName="chevron-right" backgroundColor="none" />
     </div>
-    <div class="row">
+    <div class="row" @click="openDoc('privacy')">
       {{ $t('common.privacyPolicy') }}
 
-      <CircleButton iconName="chevron-right" backgroundColor="none" @click="openDoc('privacy')" />
+      <CircleButton iconName="chevron-right" backgroundColor="none" />
     </div>
-    <div class="row">
+    <div class="row" @click="openDoc('unsupportedCountries')">
       {{ $t('soraCard.unsupportedCountries') }}
 
-      <CircleButton iconName="chevron-right" backgroundColor="none" @click="openDoc('unsupportedCountries')" />
+      <CircleButton iconName="chevron-right" backgroundColor="none" />
     </div>
   </div>
 </template>
@@ -52,6 +52,11 @@ export default class DisclaimerForm extends Vue {
     margin: 0 16px;
     border-bottom: 1px solid $default-background-color;
     color: $default-white;
+    cursor: pointer;
+
+    &:hover {
+      color: $plain-white;
+    }
   }
 
   .chevron-right {

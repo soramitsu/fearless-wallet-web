@@ -10,7 +10,7 @@
 import { Watch, Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import type { SetAccountsProps, Accounts, SetAddressesProps } from '@/store';
-import type { TAction, TMutation } from '@/interfaces';
+import type { fn, AsyncFn } from '@/interfaces';
 import type { BehaviorSubject } from 'rxjs';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import BaseApi from '@/util/BaseApi';
@@ -31,11 +31,11 @@ export default class App extends Vue {
   @Getter(AccountsGettersTypes.getWallets) wallets!: Record<string, Accounts>;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<string>;
-  @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<SetAccountsProps>;
-  @Mutation(AccountsMutationTypes.SET_ADDRESSES) setAddresses!: TMutation<SetAddressesProps>;
-  @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<boolean>;
-  @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: fn<string>;
+  @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: fn<SetAccountsProps>;
+  @Mutation(AccountsMutationTypes.SET_ADDRESSES) setAddresses!: fn<SetAddressesProps>;
+  @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: fn<boolean>;
+  @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: AsyncFn;
 
   created() {
     if (BaseApi.isExtension()) {

@@ -197,8 +197,8 @@ export default class Preview extends Vue {
     return this.$t(value);
   }
 
-  created() {
-    this.currencyXOR?.getXorPerEuroRatio();
+  async created() {
+    await this.currencyXOR?.getXorPerEuroRatio();
   }
 
   @Watch('currencyXOR')

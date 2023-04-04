@@ -319,7 +319,7 @@
     "yourTestCode": "Your code for testing purposes: 123456",
     "confirmSMScode": "Confirm SMS code",
     "sendVerificationEmail": "Send verification email",
-    "invalidCode": "Invalid code",
+    "codeLength": "Code length 6 characters",
     "wellSendEmail": "We’ll send you a verification email",
     "firstName": "First Name",
     "lastName": "Last Name",

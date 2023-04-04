@@ -61,7 +61,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import type { Currencies, Currency, RequestSentInfo, TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
+import type { Currencies, Currency, RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
 import type { GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import { beaconController, ExtensionController } from '@/controllers';
 import { isSignLocked, refreshPasswordTimeout } from '@/extension/messaging';
@@ -94,8 +94,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop({ default: 'default' }) extrinsicType!: 'default' | 'swap';
 
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
-  @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: TAction<ApprovePayload>;
-  @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
+  @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: AsyncFn<ApprovePayload>;
+  @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: AsyncFn<string>;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 

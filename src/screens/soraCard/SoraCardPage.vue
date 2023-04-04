@@ -17,27 +17,13 @@
         @toggleCountriesFormVisibility="toggleCountriesFormVisibility"
       />
 
-      <template v-else>
-        <StepsKYC
-          :step="step"
-          @toggleCountriesFormVisibility="toggleCountriesFormVisibility"
-          @toggleIsValidSmsCode="toggleIsValidSmsCode"
-          @toggleIsValidEmailForm="toggleIsValidEmailForm"
-        />
-
-        <Button
-          :text="textIssueCardButton"
-          width="100%"
-          size="big"
-          fontSize="big"
-          :border="false"
-          :disabled="disabledProceedButton"
-          @click="proceed"
-        />
-      </template>
+      <StepsKYC
+        v-else
+        :step="step"
+        @toggleCountriesFormVisibility="toggleCountriesFormVisibility"
+        @update:step="proceed"
+      />
     </div>
-
-    <StepsKYCPopup v-if="showStepsKYCPopup" :fillSteps="[1]" :handlerClose="toggleGetXORPopup" :proceed="proceed" />
 
     <GetXORPopup v-if="showGetXORPopup" :handlerClose="closeGetXORPopup" />
   </AboveForm>
@@ -51,7 +37,6 @@ import { Components } from '@/router/routes';
 import StepsKYC from '@/screens/soraCard/stepsKYC/StepsKYC.vue';
 import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
 import Preview from '@/screens/soraCard/Preview.vue';
-import StepsKYCPopup from '@/screens/soraCard/stepsKYC/StepsKYCPopup.vue';
 import GetXORPopup from '@/screens/soraCard/GetXORPopup.vue';
 
 @Component({
@@ -59,30 +44,18 @@ import GetXORPopup from '@/screens/soraCard/GetXORPopup.vue';
     Preview,
     StepsKYC,
     GetXORPopup,
-    StepsKYCPopup,
     UnsupportedCountries,
   },
 })
 export default class SoraCardPage extends Vue {
   showCountriesForm = false;
-  isValidSmsCode = false;
-  isValidEmailForm = false;
-  showStepsKYCPopup = false;
   showGetXORPopup = false;
-  step = 1;
+  step = 4;
 
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
   get showBackIcon() {
     return this.showCountriesForm || this.step > 1;
-  }
-
-  get disabledProceedButton() {
-    if (this.step === 3) return !this.isValidSmsCode;
-
-    if (this.step === 4) return !this.isValidEmailForm;
-
-    return false;
   }
 
   get headerForm() {
@@ -103,16 +76,6 @@ export default class SoraCardPage extends Vue {
     return '';
   }
 
-  get textIssueCardButton() {
-    if (this.step === 2) return 'common.acceptContinue';
-
-    if (this.step === 3) return 'soraCard.confirmSMScode';
-
-    if (this.step === 4) return 'soraCard.sendVerificationEmail';
-
-    return '';
-  }
-
   handlerBack() {
     if (this.showCountriesForm) this.toggleCountriesFormVisibility();
     else this.step -= 1;
@@ -128,11 +91,7 @@ export default class SoraCardPage extends Vue {
   }
 
   proceed() {
-    if (this.step === 2 && !this.showStepsKYCPopup) this.showStepsKYCPopup = true;
-    else {
-      this.step += 1;
-      this.showStepsKYCPopup = false;
-    }
+    this.step += 1;
   }
 
   toggleGetXORPopup() {
@@ -141,14 +100,6 @@ export default class SoraCardPage extends Vue {
 
   toggleCountriesFormVisibility() {
     this.showCountriesForm = !this.showCountriesForm;
-  }
-
-  toggleIsValidSmsCode(value: boolean) {
-    this.isValidSmsCode = value;
-  }
-
-  toggleIsValidEmailForm(value: boolean) {
-    this.isValidEmailForm = value;
   }
 }
 </script>

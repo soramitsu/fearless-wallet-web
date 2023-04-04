@@ -26,10 +26,10 @@ import type { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import type { PermissionResponseOutput } from '@airgap/beacon-sdk';
 import type {
   PermissionSuccess,
-  TAction,
+  AsyncFn,
   RequestSentInfo,
   Networks,
-  TMutation,
+  fn,
   PermissionResponsePayload,
 } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
@@ -57,10 +57,10 @@ export default class MobileConnect extends Vue {
   isPossibleConnectionProblem = false;
   permissionRequestDenied = false;
 
-  @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<string>;
+  @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<string>;
   @Getter(NetworkGettersTypes.getAllNetworks) getNetworks!: Networks;
   @Getter(AccountsGettersTypes.getQR) getQR!: Nullable<string>;
-  @Mutation(AccountMutationsTypes.SET_QR) setQR!: TMutation<string>;
+  @Mutation(AccountMutationsTypes.SET_QR) setQR!: fn<string>;
 
   async mounted() {
     this.isLoading = !this.getQR;

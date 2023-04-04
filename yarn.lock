@@ -11244,6 +11244,7 @@ __metadata:
     vue-cli-plugin-electron-builder: ^3.0.0-alpha.4
     vue-fragment: ^1.6.0
     vue-i18n: 8
+    vue-plugin-load-script: 2.1.1
     vue-property-decorator: ^9.1.2
     vue-router: ^3.2.0
     vue-template-compiler: 2.6.14
@@ -20523,6 +20524,13 @@ __metadata:
   peerDependencies:
     webpack: ^4.1.0 || ^5.0.0-0
   checksum: a6eb675f07357a7d7181b78549e342c444b4e28896f84444506f940c14bdd7833276f50d645efcdc742ba987218745f965361921f99012fecf184e0aae67a4a0
+  languageName: node
+  linkType: hard
+
+"vue-plugin-load-script@npm:2.1.1":
+  version: 2.1.1
+  resolution: "vue-plugin-load-script@npm:2.1.1"
+  checksum: 64c88dc1d565ceac2d1a784742d3c44e0806185432092172eac8d263909d74ddb15e0136bb529d91259a9a25f1d14712b244a3330ccdb38c43df26606487cb35
   languageName: node
   linkType: hard
 

@@ -1,17 +1,19 @@
 <template>
-  <div class="phone-confirmation">
+  <div class="email-confirmation">
     <ValidatedInput
       v-model="email"
       placeholder="common.email"
       errorDescriptions="soraCard.invalidEmail"
+      type="email"
       :isError="isErrorEmail"
+      :maxlength="320"
     />
 
     <Hint iconName="notification" text="soraCard.wellSendEmail" class="hint" />
 
-    <Input v-model="firstName" placeholder="soraCard.firstName" size="big" />
+    <Input v-model="firstName" placeholder="soraCard.firstName" size="big" :maxlength="50" />
 
-    <Input v-model="lastName" placeholder="soraCard.lastName" size="big" class="last-name" />
+    <Input v-model="lastName" placeholder="soraCard.lastName" size="big" class="last-name" :maxlength="50" />
 
     <Hint iconName="notification" text="soraCard.useRealName" class="hint" />
   </div>
@@ -22,7 +24,7 @@ import { Component, Vue, Watch } from 'vue-property-decorator';
 import { validateEmail } from '@/helpers/common';
 
 @Component
-export default class EmailConfirmation extends Vue {
+export default class Email extends Vue {
   email = '';
   firstName = '';
   lastName = '';
@@ -47,7 +49,7 @@ export default class EmailConfirmation extends Vue {
 </script>
 
 <style scoped lang="scss">
-.phone-confirmation {
+.email-confirmation {
   display: flex;
   flex-direction: column;
 

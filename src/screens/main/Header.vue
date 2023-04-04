@@ -68,6 +68,7 @@
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { SelectedWallet } from '@/store';
+import type { AsyncFn } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
@@ -76,7 +77,6 @@ import BaseApi from '@/util/BaseApi';
 import { windowOpen } from '@/extension/messaging';
 import { ActiveTabAuthorizeStatus } from '@/extension/background/extension-base/src/background/types';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
-import { TAction } from '@/interfaces';
 
 @Component({
   components: { ConnectionPopup },
@@ -91,7 +91,7 @@ export default class Header extends Vue {
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(ExtensionGettersTypes.getTabStatus) tabStatus!: ActiveTabAuthorizeStatus;
-  @Action(ExtensionActionTypes.FETCH_TAB_STATUS) fetchTabStatus!: TAction<ActiveTabAuthorizeStatus>;
+  @Action(ExtensionActionTypes.FETCH_TAB_STATUS) fetchTabStatus!: AsyncFn<ActiveTabAuthorizeStatus>;
 
   get showFullScreenIcon() {
     return BaseApi.useIsPopup();

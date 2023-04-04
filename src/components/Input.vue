@@ -3,6 +3,7 @@
     <div :class="containerInputClasses" spellcheck="false">
       <SInput
         v-model="vModel"
+        ref="input"
         :class="inputClasses"
         :type="type"
         :accept="accept"
@@ -10,6 +11,7 @@
         :size="size"
         :maxlength="maxlength"
         :readonly="readonly"
+        :disabled="disabled"
         :show-password="showPassword"
         :style="inputStyle"
         @blur="$emit('blur', $event)"
@@ -20,10 +22,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
+import { Component, Vue, Prop, VModel, Ref } from 'vue-property-decorator';
 
 type Size = 'small' | 'medium' | 'big';
-type Type = 'text' | 'textarea' | 'text-file' | 'number';
+type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
 type Style = 'default' | 'pink';
 type TypeText = 'none' | 'uppercase';
 
@@ -38,10 +40,13 @@ export default class Input extends Vue {
   @Prop({ default: 'none' }) typeText!: TypeText;
   @Prop({ default: 999 }) maxlength!: number;
   @Prop({ default: false }) readonly!: boolean;
+  @Prop({ default: false }) disabled!: boolean;
   @Prop({ default: false }) showPassword!: boolean;
   @Prop({ default: 'default' }) styleInput!: Style;
   @Prop({ default: false }) isError!: boolean;
   @Prop({ default: false }) cursorPointer!: boolean;
+
+  @Ref('input') readonly input!: HTMLInputElement;
 
   get wrapperClasses() {
     return [

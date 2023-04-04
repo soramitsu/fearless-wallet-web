@@ -40,7 +40,7 @@
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { AuthorizeRequest, ApproveAuthRequest } from '@extension-base/background/types';
-import { TAction } from '@/interfaces';
+import type { AsyncFn } from '@/interfaces';
 import Hint from '@/components/Hint.vue';
 import { Components } from '@/router/routes';
 import { Accounts, WalletInfo } from '@/store';
@@ -65,8 +65,8 @@ export default class Authorize extends Vue {
   @Getter(ExtensionGettersTypes.getAuthRequests) requests!: AuthorizeRequest[];
   @Getter(AccountsGettersTypes.getWallets) wallets!: WalletInfo[];
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
-  @Action(ExtensionActionTypes.APPROVE_AUTH_REQUEST) onApproveAuthRequest!: TAction<ApproveAuthRequest>;
-  @Action(ExtensionActionTypes.REJECT_AUTH_REQUEST) onRejectAuthRequest!: TAction<AuthorizeRequest>;
+  @Action(ExtensionActionTypes.APPROVE_AUTH_REQUEST) onApproveAuthRequest!: AsyncFn<ApproveAuthRequest>;
+  @Action(ExtensionActionTypes.REJECT_AUTH_REQUEST) onRejectAuthRequest!: AsyncFn<AuthorizeRequest>;
 
   get isAccountsExists() {
     return BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;

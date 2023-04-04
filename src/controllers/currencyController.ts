@@ -16,7 +16,6 @@ import type {
 import type { SubmittableExtrinsic } from '@polkadot/api/submittable/types';
 import type { Wallet, SetHistoryProps } from '@/store';
 import type { Asset } from '@sora-substrate/util/build/assets/types';
-import type { XorRestPrice } from '@/util/soraCard';
 import BaseApi from '@/util/BaseApi';
 import { NetworksController } from '@/controllers';
 import { LocalStorage } from '@/controllers/localStorageController';
@@ -38,7 +37,12 @@ import { MOCK_BALANCE, MOCK_FP_BALANCE } from '@/consts/currencies';
 import { saveTimeoutCache } from '@/extension/messaging';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/networks';
 import { addNumbers } from '@/helpers/numbers';
-import { getXorPerEuroRatio, calculateXorBalanceInEuros, calculateXorRestPrice } from '@/util/soraCard';
+import { getXorPerEuroRatio } from '@/util/soraCard';
+
+type XorRestPrice = {
+  euroToPay: string;
+  euroToPayInXor: string;
+};
 
 type TransactionStatus = 'success' | 'failed' | 'pending';
 
@@ -594,11 +598,11 @@ export class CurrencyController {
   }
 
   /**
-   * Get XOR per Euro ratio
+   * Get XOR per Euro ratio, only for XOR
    * @returns {Promise<void>}
    */
   public async getXorPerEuroRatio(): Promise<void> {
-    if (this.asset !== SORA_UTILITY_ASSET) throw Error('');
+    if (this.asset !== SORA_UTILITY_ASSET) throw Error('Asset is not XOR');
 
     const xorPerEuro = await getXorPerEuroRatio();
 
@@ -612,34 +616,45 @@ export class CurrencyController {
    * @returns {Promise<number>}
    */
   public calculateEuroBalance(wallet: Wallet, network: NetworkName): number {
-    if (this.asset !== SORA_UTILITY_ASSET) throw Error('');
+    if (this.asset !== SORA_UTILITY_ASSET) throw Error('Asset is not XOR');
+
+    if (this.xorPerEuroRatio === undefined) return 0;
 
     const xorTotalBalance = new FPNumber(this.getTotalCountAssets(wallet, network));
-    const xorBalanceInEuros = calculateXorBalanceInEuros(this.xorPerEuroRatio, xorTotalBalance);
+    const xorBalanceInEuros = new FPNumber(xorTotalBalance).mul(this.xorPerEuroRatio).toNumber();
 
     return xorBalanceInEuros;
   }
 
   /**
-   * Calculate XOR rest price
+   * Calculate XOR rest price, only for XOR
    * @param {Wallet} wallet
    * @param {NetworkName} network
    * @returns {XorRestPrice}
    */
   public calculateXorRestPrice(wallet: Wallet, network: NetworkName): XorRestPrice {
-    const xorTotalBalance = new FPNumber(this.getTotalCountAssets(wallet, network));
-    const xorRestPrice = calculateXorRestPrice(this.xorPerEuroRatio, xorTotalBalance);
+    if (this.xorPerEuroRatio === undefined) return { euroToPay: '0', euroToPayInXor: '0' };
 
-    return xorRestPrice;
+    const xorTotalBalance = new FPNumber(this.getTotalCountAssets(wallet, network));
+
+    const euroToPay = FPNumber.HUNDRED.add(FPNumber.ONE).sub(xorTotalBalance.mul(this.xorPerEuroRatio));
+    const euroToPayInXor = euroToPay.div(this.xorPerEuroRatio);
+
+    return {
+      euroToPay: euroToPay.toString(),
+      euroToPayInXor: euroToPayInXor.toString(),
+    };
   }
 
   /**
-   * Validate XOR balance for Sora Card(100 euro)
+   * Validate XOR balance for Sora Card(100 euro), only for XOR
    * @param {number} xorBalanceInEuros
    * @returns {number}
    */
   public isValidXorBalanceForSoraCard(xorBalanceInEuros: number): boolean {
-    return FPNumber.gte(new FPNumber(xorBalanceInEuros), FPNumber.HUNDRED);
+    if (this.asset !== SORA_UTILITY_ASSET) throw Error('Asset is not XOR');
+
+    return FPNumber.gte(new FPNumber(xorBalanceInEuros), new FPNumber(95));
   }
 
   /**

@@ -16,7 +16,7 @@
 <script lang="ts">
 import { Getter, Action } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { FiatJson, TAction } from '@/interfaces/common';
+import type { FiatJson, AsyncFn } from '@/interfaces/common';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -29,7 +29,7 @@ export default class FiatsPopup extends Vue {
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(NetworksGettersTypes.getFiats) fiats!: FiatJson[];
   @Getter(AccountsGettersTypes.getSelectedFiat) selectedFiat!: string;
-  @Action(AccountsActionTypes.SET_SELECTED_FIAT) setSelectedFiat!: TAction<string>;
+  @Action(AccountsActionTypes.SET_SELECTED_FIAT) setSelectedFiat!: AsyncFn<string>;
 
   get filteredOptionsFiats() {
     const filter = this.filterValue.trim().toLowerCase();

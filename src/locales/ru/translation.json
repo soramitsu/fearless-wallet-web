@@ -317,7 +317,7 @@
     "yourTestCode": "Ваш код для тестирования: 123456",
     "confirmSMScode": "Подтвердить СМС-код",
     "sendVerificationEmail": "Отправить письмо с подтверждением",
-    "invalidCode": "Неверный код",
+    "codeLength": "Длина кода 6 символов",
     "wellSendEmail": "Мы отправим вам письмо с подтверждением",
     "firstName": "Имя",
     "lastName": "Фамилия",

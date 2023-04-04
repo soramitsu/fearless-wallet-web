@@ -16,18 +16,6 @@ const getXorPerEuroRatio = async () => {
   }
 };
 
-const calculateXorBalanceInEuros = (xorPerEuroFP: FPNumber, xorTotalBalance: FPNumber): number => {
-  try {
-    const euroBalance = new FPNumber(xorTotalBalance).mul(xorPerEuroFP).toNumber();
-
-    return euroBalance;
-  } catch (error) {
-    console.error(error);
-
-    return 0;
-  }
-};
-
 const calculateXorRestPrice = (xorPerEuroFP: FPNumber, xorTotalBalance: FPNumber): XorRestPrice => {
   const euroToPay = FPNumber.HUNDRED.add(FPNumber.ONE).sub(xorTotalBalance.mul(xorPerEuroFP));
   const euroToPayInXor = euroToPay.div(xorPerEuroFP);
@@ -38,4 +26,4 @@ const calculateXorRestPrice = (xorPerEuroFP: FPNumber, xorTotalBalance: FPNumber
   };
 };
 
-export { getXorPerEuroRatio, calculateXorBalanceInEuros, calculateXorRestPrice, XorRestPrice };
+export { getXorPerEuroRatio, calculateXorRestPrice, XorRestPrice };

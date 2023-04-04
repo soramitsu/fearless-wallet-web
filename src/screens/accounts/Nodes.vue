@@ -70,7 +70,7 @@ import type {
   GetAutoSelectNodesValueByNetwork,
   GetActiveNodesByNetwork,
 } from '@/store';
-import type { Node, Networks, TMutation } from '@/interfaces';
+import type { Node, Networks, fn } from '@/interfaces';
 import { NetworksController, accountController } from '@/controllers';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -88,7 +88,7 @@ export default class Nodes extends Vue {
   getAutoSelectNodesValueByNetwork!: GetAutoSelectNodesValueByNetwork;
   @Getter(NetworksGettersTypes.getAllNetworks) networks!: Networks;
   @Getter(NetworksGettersTypes.getActiveNodesByNetwork) getActiveNodesByNetwork!: GetActiveNodesByNetwork;
-  @Mutation(AccountsMutationTypes.SET_AUTO_SELECT_NODE) setAutoSelectNode!: TMutation<SetAutoSelectNode>;
+  @Mutation(AccountsMutationTypes.SET_AUTO_SELECT_NODE) setAutoSelectNode!: fn<SetAutoSelectNode>;
 
   get autoSelectNode() {
     return this.getAutoSelectNodesValueByNetwork(this.selectedNetwork);

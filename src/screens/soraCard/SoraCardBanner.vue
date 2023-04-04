@@ -17,7 +17,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
-import type { TMutation } from '@/interfaces';
+import type { fn } from '@/interfaces';
 import { SORA_CARD_BANNER_HEIGHT } from '@/consts/global';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
@@ -28,7 +28,7 @@ import BaseApi from '@/util/BaseApi';
 export default class SoraCardBanner extends Vue {
   @Getter(AccountsGettersTypes.getShowSoraCardBanner) getShowSoraCardBanner!: boolean;
   @Mutation(AccountsMutationTypes.SET_SORA_CARD_BANNER_VISIBILITY)
-  setSoraCardBannerVisibility!: TMutation<boolean>;
+  setSoraCardBannerVisibility!: fn<boolean>;
 
   get statusText() {
     return 'Get SORA Card';

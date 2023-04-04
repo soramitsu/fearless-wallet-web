@@ -88,7 +88,6 @@ export default class WalletInfo extends Vue {
   }
 
   .content {
-    min-height: 45px; // TODO: delete after adding percent
     flex-grow: 1;
   }
 

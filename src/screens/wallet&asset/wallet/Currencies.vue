@@ -21,7 +21,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Mutation, Getter } from 'vuex-class';
 import CurrencyItem from './CurrencyItem.vue';
 import type { SelectedWallet, SetCurrenciesProps } from '@/store';
-import type { TMutation } from '@/interfaces/common';
+import type { fn } from '@/interfaces/common';
 import type { Currency } from '@/interfaces/currencies';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -47,7 +47,7 @@ export default class Currencies extends Vue {
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
-  @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
+  @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: fn<SetCurrenciesProps>;
 
   get mainText() {
     if (!this.isOnline) return 'common.offlineStatus';

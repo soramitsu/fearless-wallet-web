@@ -10,12 +10,12 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { AuthUrlInfo } from '@extension-base/background/types';
+import type { AsyncFn } from '@/interfaces';
 import { updateAuthorization } from '@/extension/messaging';
 import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccount.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { WalletInfo } from '@/store';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
-import { TAction } from '@/interfaces';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
 @Component({
@@ -30,7 +30,7 @@ export default class Authorize extends Vue {
   @Prop(String) url!: string;
   @Getter(AccountsGettersTypes.getWallets) wallets!: WalletInfo[];
   @Getter(ExtensionGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
-  @Action(ExtensionActionTypes.GET_AUTHLIST) fetchAuthList!: TAction<void>;
+  @Action(ExtensionActionTypes.GET_AUTHLIST) fetchAuthList!: AsyncFn<void>;
 
   get buttonText() {
     const count = Object.values(this.state).filter((el) => el.active).length;

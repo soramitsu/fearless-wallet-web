@@ -1,6 +1,6 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-import { api as apiSora } from '@sora-substrate/util';
+import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { hexToU8a, isHex, assert, BN, BN_ZERO } from '@polkadot/util';
@@ -13,6 +13,7 @@ import {
 } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
 import { keyring } from '@polkadot/ui-keyring';
+import { LiquiditySourceTypes } from '@sora-substrate/liquidity-proxy';
 import {
   ActiveTabAuthorizeStatus,
   BalanceJson,
@@ -32,8 +33,10 @@ import {
   RequestSwap,
   RequestTransfer,
   ResponseAccountExportPrivateKey,
+  ResponseCheckSwap,
   ResponseCheckTransfer,
   ResponseCreateAccountSuri,
+  ResponseMakeSwap,
   TransferErrorCode,
   ValidateJsonResult,
 } from '../types/types';
@@ -57,6 +60,7 @@ import {
 import { checkMainToken } from '../../api/substrate/balance';
 import { estimateFee, makeTransfer } from '../../api/substrate/transfer';
 import { getTokenInfo } from '../../api/substrate/registry';
+import { createSwap } from '../../api/substrate/swaps';
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
@@ -74,7 +78,6 @@ import type {
   RequestAccountCreateExternal,
   RequestAccountCreateHardware,
   RequestAccountCreateSuri,
-  RequestAccountEdit,
   RequestAccountExport,
   RequestAccountForget,
   RequestAccountShow,
@@ -93,7 +96,6 @@ import type {
   RequestSeedValidate,
   RequestSigningApprovePassword,
   RequestSigningApproveSignature,
-  RequestSaveTimeoutCache,
   RequestSigningCancel,
   RequestSigningIsLocked,
   RequestTypes,
@@ -125,8 +127,6 @@ import {
   VerifyTokenResponse,
 } from '@/interfaces';
 import { getMetaTyped } from '@/helpers/common';
-import { addNumbers } from '@/helpers/numbers';
-
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
 const ETH_DERIVE_DEFAULT = "/m/44'/60'/0'/0/0";
@@ -168,6 +168,7 @@ export default class Extension {
 
   constructor() {
     this.cachedUnlocks = {};
+
     this.token = '';
   }
 
@@ -1023,39 +1024,9 @@ export default class Extension {
     });
   }
 
-  private makeTransferCallback(
-    address: string,
-    recipientAddress: string,
-    networkKey: string,
-    token: string | undefined,
-    portCallback: (res: BasicTxResponse) => void
-  ): (res: BasicTxResponse) => void {
+  private makeTransferCallback(portCallback: (res: BasicTxResponse) => void): (res: BasicTxResponse) => void {
     return (res: BasicTxResponse) => {
       // !res.isFinalized to prevent duplicate action
-      if (!res.isFinalized && res.txResult && res.extrinsicHash) {
-        const transaction = {
-          time: Date.now(),
-          networkKey,
-          change: res.txResult.change,
-          changeSymbol: res.txResult.changeSymbol || token,
-          fee: res.txResult.fee,
-          feeSymbol: res.txResult.feeSymbol,
-          isSuccess: !!res.status,
-          extrinsicHash: res.extrinsicHash,
-        } as TransactionHistoryItemType;
-
-        state.setHistory(address, networkKey, { ...transaction, action: 'send' });
-
-        // this.isInWalletAccount(recipientAddress)
-        //   .then((isValid) => {
-        //     if (isValid) {
-        //       state.setHistory(recipientAddress, networkKey, { ...transaction, action: 'received' });
-        //     } else {
-        //       console.info(`The recipient address [${recipientAddress}] is not in wallet.`);
-        //     }
-        //   })
-        //   .catch((err) => console.warn(err));
-      }
 
       portCallback(res);
     };
@@ -1065,14 +1036,97 @@ export default class Extension {
     await apiSora.calcStaticNetworkFees();
   }
 
-  private async validateSwap({ network }: RequestCheckSwap) {
+  public async getSoraFee() {
     await apiSora.calcStaticNetworkFees();
+    state.soraFee = FPNumber.fromCodecValue(apiSora.NetworkFee.Swap).toString();
 
-    const swapFee = apiSora.NetworkFee.Swap;
+    return state.soraFee;
   }
 
-  private async makeSwap(id: string, port: Port, { isSavePass }: RequestSwap) {
-    //
+  private async validateSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
+    // if (!state.soraFee) await this.getSoraFee();
+
+    const { AToB, BToA, amountA, amountB, minMaxValue, extrinsicOptions, providerFee } = await createSwap(
+      options,
+      apiSora
+    );
+
+    return {
+      swapOptions: extrinsicOptions.swapOptions,
+      fee: providerFee,
+      // networkFee: state.soraFee,
+      AToB,
+      BToA,
+      amountA,
+      amountB,
+      minMaxValue,
+    };
+  }
+
+  private async makeSwap(options: RequestSwap): Promise<ResponseMakeSwap> {
+    const { extrinsicOptions } = await createSwap(options, apiSora);
+    const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB } = extrinsicOptions;
+    let status = false;
+    const errors: Array<BasicTxError> = [];
+    const address = await state.getAccountAddress();
+
+    if (!address) {
+      errors.push({
+        code: BasicTxErrorCode.KEYRING_ERROR,
+        message: 'Something went wrong',
+      });
+
+      return {
+        errors,
+        status,
+      };
+    }
+
+    const pair = keyring.getPair(address);
+
+    try {
+      pair.unlock(options.password);
+    } catch (e: any) {
+      errors.push({
+        code: BasicTxErrorCode.KEYRING_ERROR,
+        message: String(e.message),
+      });
+    }
+
+    if (errors.length)
+      return {
+        status,
+        errors,
+      };
+
+    apiSora.account = { json: null as any, pair };
+
+    try {
+      await apiSora.swap.execute(
+        assetA,
+        assetB,
+        amountA,
+        amountB,
+        slippage,
+        isExchangeB,
+        LiquiditySourceTypes.Default,
+        swapDexId
+      );
+
+      status = true;
+    } catch (ex) {
+      errors.push({
+        code: TransferErrorCode.TRANSFER_ERROR,
+        message: '',
+      });
+
+      console.info(`Swap transaction failed ${ex}`);
+    }
+
+    return {
+      status,
+      errors,
+    };
   }
 
   private async validateTransfer(
@@ -1332,7 +1386,7 @@ export default class Extension {
 
     if (fromKeyPair) {
       const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
-      const callback = this.makeTransferCallback(from, to, networkKey, token, cb);
+      const callback = this.makeTransferCallback(cb);
 
       let transferProm: Promise<void> | undefined;
 
@@ -1629,11 +1683,14 @@ export default class Extension {
       case 'pri(accounts.transfer)':
         return this.makeTransfer(id, port as Port, request as RequestTransfer);
 
+      case 'pri(accounts.get.soraFee)':
+        return this.getSoraFee();
+
       case 'pri(accounts.checkSwap)':
         return this.validateSwap(request as RequestCheckSwap);
 
       case 'pri(accounts.swap)':
-        return this.makeSwap(id, port as Port, request as RequestSwap);
+        return this.makeSwap(request as RequestSwap);
 
       case 'pri(transaction.history.add)':
         return this.updateTransactionHistory(request as RequestTransactionHistoryAdd, id, port as Port);

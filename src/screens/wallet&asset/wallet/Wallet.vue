@@ -203,6 +203,7 @@ export default class Wallet extends Vue {
   get disconnectedNetworks() {
     return this.networks.filter(({ apiStatus }) => apiStatus === 'disconnected');
   }
+
   get summaryTransferableBalance() {
     return getTotalWalletBalance(this.balances, this.prices);
   }

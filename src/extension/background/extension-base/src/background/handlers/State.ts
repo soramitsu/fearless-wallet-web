@@ -182,6 +182,7 @@ export default class State {
   public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
   public balanceService = new BalanceService();
   public lazyMap: Record<string, unknown> = {};
+  public soraFee = '';
   public ready = false;
   public currentTabStatus: ActiveTabAuthorizeStatus = {
     isAuthorize: false,

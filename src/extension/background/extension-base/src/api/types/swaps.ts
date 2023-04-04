@@ -24,6 +24,7 @@ export interface CreateExchangeAOptions extends BaseExchangeProps {
 export interface ExtrinsicSwapOptions {
   amountA: string;
   amountB: string;
+  swapOptions: SwapOptions;
   swapDexId: DexId;
   isExchangeB: boolean;
   network: string;

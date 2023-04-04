@@ -45,6 +45,7 @@ async function createExchangeB(
     ...swapOptions,
     amountA: expectedAmountA.toString(),
     amountB: amountB!,
+    swapOptions,
     swapDexId: isDexXor ? DexId.XOR : DexId.XSTUSD,
   };
 
@@ -90,6 +91,7 @@ async function createExchangeA(
 
   const extrinsicOptions: ExtrinsicSwapOptions = {
     ...swapOptions,
+    swapOptions,
     amountA: amountA!,
     amountB: expectedAmountB.toString(),
     swapDexId: isDexXor ? DexId.XOR : DexId.XSTUSD,

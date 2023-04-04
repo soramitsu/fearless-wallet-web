@@ -238,8 +238,6 @@ async function subscribeTokensBalance(
             transferable,
             total,
           });
-
-          // console.log(networkKey, relayChain, transferable, name);
         };
 
         pallet.subscribe(onBalanceFetch);

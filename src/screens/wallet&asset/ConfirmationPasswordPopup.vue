@@ -61,10 +61,10 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import type { RequestSentInfo, TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
+import type { RequestSentInfo, TAction, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
 import type { GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import { beaconController } from '@/controllers/beaconController';
-import { isSignLocked, makeTransfer } from '@/extension/messaging';
+import { isSignLocked, makeSwap, makeTransfer } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/extension/actions';
@@ -77,6 +77,7 @@ import {
   TokenBalance,
 } from '@/extension/background/extension-base/src/background/types/types';
 import { getTransactionAddress } from '@/controllers/transferHelpers';
+import { ExtensionController } from '@/controllers';
 
 @Component({
   components: { SignMobile },
@@ -97,8 +98,9 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(String) secondIcon!: string;
   @Prop(String) transactionId?: string;
   @Prop(Object) currency?: TokenBalance;
-  @Prop({ required: true, type: Object }) tx!: RequestCheckTransfer;
+  @Prop(Object) tx!: RequestCheckTransfer;
   @Prop(Object) payload?: SignerPayloadJSON;
+  @Prop(Object) swapOptions?: SwapOptions;
   @Prop({ default: 'default' }) extrinsicType!: 'default' | 'swap';
 
   @Getter(AccountsGettersTypes.getBalances) currencies!: TokenBalance[];
@@ -110,6 +112,16 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   get show15MinCheckbox() {
     return BaseApi.isExtension();
+  }
+
+  get classesInput() {
+    return [
+      'row',
+      'password-input',
+      {
+        'password-input-margin': !this.show15MinCheckbox,
+      },
+    ];
   }
 
   get requestTransfer(): RequestTransfer {
@@ -219,12 +231,10 @@ export default class ConfirmationPasswordPopup extends Vue {
   async onSignMobile() {
     if (!this.transactionId)
       makeTransfer(this.requestTransfer, (data) => {
-        if (data.status === true) {
-          this.transactionState = 'success';
-        } else {
-          this.transactionState = 'failed';
-        }
+        this.transactionState = data.status === true ? 'success' : 'failed';
       });
+    else if (this.extrinsicType === 'swap' && this.swapOptions)
+      await makeSwap({ ...this.swapOptions, password: this.password });
     else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
   }
 
@@ -238,16 +248,31 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (blockchainData.signature.length === 0) {
       this.transactionState = 'failed';
 
-      // ExtensionController.cancelSign(id);
+      ExtensionController.cancelSign(id);
 
       return;
     }
 
-    // ExtensionController.approveSignSignature(id, blockchainData.signature);
+    ExtensionController.approveSignSignature(id, blockchainData.signature);
   }
 
-  async send() {
+  async sendExtrinsic() {
     this.transactionState = 'pending';
+
+    if (this.extrinsicType === 'swap' && this.swapOptions) {
+      const res = await makeSwap({ ...this.swapOptions, password: this.password });
+
+      if (res.errors?.length) {
+        this.resetTxStatus();
+        this.isErrorPassword = true;
+
+        return;
+      }
+
+      this.transactionState = res.status ? 'success' : 'failed';
+
+      return;
+    }
 
     if (this.transactionId) {
       this.onSignApprove({

@@ -247,7 +247,10 @@ export default class SwapForm extends Vue {
   showSettings = false;
   showConfirmationPasswordPopup = false;
   isExchangeB = false;
-
+  validateInfo = {
+    fee: '',
+    minRecieve: '',
+  };
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) selectedNetwork!: string;
   @Prop(String) _selectedAssetId!: string;
@@ -385,11 +388,11 @@ export default class SwapForm extends Vue {
   }
 
   get sendAsset() {
-    return this.getAssetName(this.sendAssetId);
+    return this.balances.find((token) => token.assetId === this.sendAssetId)?.name ?? '';
   }
 
   get receiveAsset() {
-    return this.getAssetName(this.receiveAssetId);
+    return this.balances.find((token) => token.assetId === this.receiveAssetId)?.name ?? '';
   }
 
   get showSelectPopup() {
@@ -475,6 +478,14 @@ export default class SwapForm extends Vue {
     return this.sendAssetId === '' || this.receiveAssetId === '' || this.sendAmount === '';
   }
 
+  get getAssetRecieve() {
+    return this.balances.find((token) => token.assetId === this.receiveAssetId);
+  }
+
+  get getAssetSend() {
+    return this.balances.find((token) => token.assetId === this.sendAssetId);
+  }
+
   get isValidSendAsset() {
     return true;
     // return this.sendCurrency?.validateCountAssets(this.sendAmount, this.fee, this.selectedNetwork, this.selectedWallet);
@@ -510,17 +521,17 @@ export default class SwapForm extends Vue {
   }
 
   get transferableSendAmount() {
-    // const count = +(this.sendCurrency?.getTransferableCountAssets(this.selectedWallet, this.selectedNetwork) ?? 0);
-    const count = 0;
+    const count =
+      this.sendCurrency?.balances.find((balance) => balance.name === this.selectedNetwork)?.transferable ?? 0;
 
-    return this.$n(count, 'decimal');
+    return this.$n(+count, 'decimal');
   }
 
   get transferableReceiveAmount() {
-    // const count = +(this.receiveCurrency?.getTransferableCountAssets(this.selectedWallet, this.selectedNetwork) ?? 0);
-    const count = 0;
+    const count =
+      this.receiveCurrency?.balances.find((balance) => balance.name === this.selectedNetwork)?.transferable ?? 0;
 
-    return this.$n(count, 'decimal');
+    return this.$n(+count, 'decimal');
   }
 
   get networkStatus() {
@@ -604,7 +615,7 @@ export default class SwapForm extends Vue {
     if (this.isSendAssetType) this.sendAssetId = value;
     else this.receiveAssetId = value;
 
-    this.createSwap();
+    // this.createSwap();
     this.toggleSelectAssetPopupVisibility('');
   }
 

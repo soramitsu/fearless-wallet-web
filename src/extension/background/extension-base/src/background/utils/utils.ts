@@ -6,7 +6,7 @@ import { RelayChainName, AssetJson } from '@/interfaces';
 
 export function getMockCurrencies(networks: NetworkJsonOld[], tokens: AssetJson[]) {
   const currencies = networks.reduce<TokenBalance[]>((result, network) => {
-    const { assets: networkAssets, name: mainNet, parentId, isEthereumNetwork, icon } = network;
+    const { assets: networkAssets, name: mainNet, parentId, icon } = network;
     const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNet) as RelayChainName;
 
     networkAssets.forEach(({ assetId, purchaseProviders, isUtility, isNative, type }) => {

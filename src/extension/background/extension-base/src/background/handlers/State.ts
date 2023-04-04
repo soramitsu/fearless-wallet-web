@@ -1157,17 +1157,13 @@ export default class State {
     this.getCurrentAccount((account) => {
       if (account) {
         const { address } = account;
+        const currencyIndex = this.balanceMap[address].findIndex(({ assetId: _assetId, name, relayChain }) => {
+          const isExistingAssetId = _assetId === item.id;
+          const isExistingDisplayName = name.toLowerCase() === item.name.toLowerCase();
+          const isExistingAsset = isExistingDisplayName && relayChain.toLowerCase() === item.relayChain?.toLowerCase();
 
-        const currencyIndex = this.balanceMap[address].findIndex(
-          ({ assetId: _assetId, relayChain: _relayChain, name }) => {
-            const isExistingAssetId = _assetId === item.id;
-            const isExistingDisplayName = name.toLowerCase() === item.name.toLowerCase();
-
-            const isExistingAsset = isExistingDisplayName && _relayChain === item.relayChain;
-
-            return isExistingAssetId || isExistingAsset || isExistingDisplayName;
-          }
-        );
+          return isExistingAssetId || isExistingAsset;
+        });
 
         const token = this.balanceMap[address][currencyIndex];
 
@@ -1178,7 +1174,8 @@ export default class State {
         });
 
         const balanceItem = this.balanceMap[address][currencyIndex].balances[index];
-        const { reserved, free, feeFrozen, total, transferable } = item;
+        const { reserved, free, feeFrozen, total, transferable, state } = item;
+
         this.balanceMap[address][currencyIndex].balances[index] = {
           ...balanceItem,
           reserved,
@@ -1186,7 +1183,7 @@ export default class State {
           feeFrozen,
           total,
           transferable,
-          state: APIItemState.READY,
+          state,
           timestamp: +new Date(),
         };
       }
@@ -1268,7 +1265,6 @@ export default class State {
     const mocks = getMockCurrencies(this.networkJson, this.tokenMap);
     this.balanceMap[address] = mocks;
     this.defaultBalanceMap = mocks;
-
     this.publishBalance();
   }
 

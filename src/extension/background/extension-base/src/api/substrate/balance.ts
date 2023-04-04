@@ -18,7 +18,7 @@ import { ORML_PALLETS_TYPES } from '../../const/networks';
 import { getRegistry, getTokenInfo } from './registry';
 import { getAssetOptions } from './utils';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
-import { AssetJson, TypeAsset } from '@/interfaces';
+import { AssetJson, RelayChainName, TypeAsset } from '@/interfaces';
 import { formatBalance } from '@/util/balances';
 import { MAIN_NETWORKS } from '@/consts/networks';
 
@@ -183,12 +183,17 @@ async function subscribeTokensBalance(
   setBalance: (rs: BalanceItem) => void
 ) {
   state.generateDefaultBalance({ address: addresses[0] });
-
-  const tokenList = state.networkMap[networkKey].assets.map(({ assetId, type, isNative, isUtility }) => {
+  const network = state.networkMap[networkKey];
+  const tokenList = network.assets.map(({ assetId, type, isNative, isUtility, purchaseProviders, staking }) => {
     const searchedAsset = state.tokenMap.find((token) => token.id === assetId)! as AssetJson;
+    const relayChain = (Object.values(state.networkMap).find(({ chainId }) => chainId === network.parentId)?.name ??
+      network.name) as RelayChainName;
 
     return {
       ...searchedAsset,
+      purchaseProviders,
+      staking,
+      relayChain: relayChain,
       type: type ?? ('native' as TypeAsset),
       isNative,
       isUtility,
@@ -198,7 +203,7 @@ async function subscribeTokensBalance(
   await api.isReadyOrError;
 
   const unsubList = await Promise.all(
-    tokenList.map(({ precision, symbol, id, type, isUtility, isNative, icon, displayName, relayChain, name }) => {
+    tokenList.map(({ precision, symbol, id, type, isUtility, isNative, icon, relayChain, displayName, name }) => {
       try {
         const options = getAssetOptions(symbol, type, id);
 
@@ -233,6 +238,8 @@ async function subscribeTokensBalance(
             transferable,
             total,
           });
+
+          // console.log(networkKey, relayChain, transferable, name);
         };
 
         pallet.subscribe(onBalanceFetch);

@@ -458,7 +458,7 @@ export interface MakeTransferProps {
   transferAll: boolean;
   dotSamaApiMap: Record<string, ApiProps>;
   tokenInfo: AssetJson;
-  isSavePass: boolean;
+  isSavePass?: boolean;
   callback: (data: BasicTxResponse) => void;
 }
 
@@ -488,12 +488,6 @@ export async function makeTransfer({
     to: to,
     apiProp: apiProps,
   });
-
-  // if (!extrinsic) {
-  //   callback(getUnsupportedResponse());
-
-  //   return;
-  // }
 
   const updateResponseTxResult = (response: BasicTxResponse, records: EventRecord[]) => {
     updateTransferResponseTxResult(networkKey, tokenInfo, response, records, transferAmount);

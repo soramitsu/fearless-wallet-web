@@ -260,7 +260,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     this.transactionState = 'pending';
 
     if (this.extrinsicType === 'swap' && this.swapOptions) {
-      const res = await makeSwap({ ...this.swapOptions, password: this.password });
+      const res = await makeSwap({ ...this.swapOptions, password: this.password, isSavePass: this.isSavePass });
 
       if (res.errors?.length) {
         this.resetTxStatus();

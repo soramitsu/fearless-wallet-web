@@ -441,14 +441,6 @@ export default class SwapForm extends Vue {
     return this.selectAssetType === 'receive';
   }
 
-  get showSelectSendAsset() {
-    return false;
-  }
-
-  get showReceiveAsset() {
-    return false;
-  }
-
   get buttonText() {
     if (this.showSettings) return 'common.save';
 

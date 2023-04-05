@@ -174,7 +174,6 @@ export interface RequestSignatures {
   'pri(signing.requests)': [RequestSigningSubscribe, boolean, SigningRequest[]];
   'pri(window.open)': [AllowedPath, boolean];
   'pri(signing.refreshPasswordTimeout)': [string, number];
-  'pri(signing.resetTimeouts)': [null, boolean];
   'pri(signing.saveTimeoutCache)': [RequestSaveTimeoutCache, boolean];
   'pri(google.auth)': [GoogleAuthTypes, void];
   'pri(google.verify.token)': [{ token: string }, VerifyTokenResponse];

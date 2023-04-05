@@ -30,20 +30,14 @@ export const sendExtrinsic = async ({
   updateState,
 }: SendExtrinsicProps) => {
   const unsubscribe = await extrinsic.send((result) => {
-    if (!result || !result.status) {
-      return;
-    }
+    if (!result || !result.status) return;
 
-    if (result.status.isBroadcast) {
-      updateResponseTxResult && updateResponseTxResult(txState, result.events);
-    }
+    if (result.status.isBroadcast) updateResponseTxResult && updateResponseTxResult(txState, result.events);
 
     if (result.status.asInBlock || result.status.isFinalized) {
       txState.isFinalized = result.status.isFinalized;
 
-      if (result.status.isBroadcast) {
-        updateResponseTxResult && updateResponseTxResult(txState, result.events);
-      }
+      if (result.status.isBroadcast) updateResponseTxResult && updateResponseTxResult(txState, result.events);
 
       result.events
         .filter(({ event: { section } }) => section === 'system')
@@ -55,7 +49,6 @@ export const sendExtrinsic = async ({
             },
           }): void => {
             txState.extrinsicHash = extrinsic.hash.toHex();
-            // callback(txState);
 
             if (method === 'ExtrinsicFailed') {
               txState.status = false;
@@ -114,8 +107,6 @@ export const sendExtrinsic = async ({
       callback(txState);
     }
 
-    if (result.isCompleted) {
-      unsubscribe();
-    }
+    if (result.isInBlock) unsubscribe();
   });
 };

@@ -308,16 +308,26 @@ export default class Extension {
     return true;
   }
 
-  async refreshAccountPasswordCache(pair: KeyringPair): Promise<number> {
-    const { address } = pair;
+  refreshAccountPasswordCache(pair: KeyringPair): number {
+    const { address, meta } = pair;
+    const ethereumAddress = meta.ethereumAddress as string;
+
     // const { cachedUnlocks } = await state.getFromStorage(['cachedUnlocks']);
     const savedExpiry = this.cachedUnlocks[address] || 0;
+
     const remainingTime = savedExpiry - Date.now();
 
     if (remainingTime < 0) {
       this.cachedUnlocks[address] = 0;
+      if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = 0;
 
       pair.lock();
+
+      if (ethereumAddress) {
+        const ethereumPair = keyring.getPair(ethereumAddress);
+
+        ethereumPair.lock();
+      }
 
       return 0;
     }
@@ -332,16 +342,6 @@ export default class Extension {
   public decodeAddress = (key: string | Uint8Array, ignoreChecksum?: boolean, ss58Format?: number): Uint8Array => {
     return keyring.decodeAddress(key, ignoreChecksum, ss58Format);
   };
-
-  resetTimeouts(): boolean {
-    const newCachedUnlocks: CachedUnlocks = {};
-
-    Object.keys(this.cachedUnlocks).forEach((address) => (newCachedUnlocks[address] = 0));
-
-    this.cachedUnlocks = newCachedUnlocks;
-
-    return true;
-  }
 
   accountsShow({ address, isShowing }: RequestAccountShow): boolean {
     const pair = keyring.getPair(address);
@@ -690,7 +690,7 @@ export default class Extension {
 
     const { address } = pair;
 
-    await this.refreshAccountPasswordCache(pair);
+    const remainTime = this.refreshAccountPasswordCache(pair);
 
     // if the keyring pair is locked, the password is needed
     if (pair.isLocked && !password) reject(new Error('Password needed to unlock the account'));
@@ -706,9 +706,7 @@ export default class Extension {
       // set the registry before calling the sign function
       registry.setSignedExtensions(payload.signedExtensions, currentMetadata?.userExtensions);
 
-      if (currentMetadata) {
-        registry.register(currentMetadata?.types);
-      }
+      if (currentMetadata) registry.register(currentMetadata?.types);
     }
 
     const result = request.sign(registry, pair);
@@ -759,7 +757,7 @@ export default class Extension {
     return true;
   }
 
-  async signingIsLocked({ address }: RequestSigningIsLocked): Promise<ResponseSigningIsLocked> {
+  signingIsLocked({ address }: RequestSigningIsLocked): ResponseSigningIsLocked {
     // const queued = await state.getSignRequest(id);
     // assert(queued, 'Unable to find request');
     // const address = queued.request.payload.address;
@@ -768,7 +766,7 @@ export default class Extension {
 
     assert(pair, 'Unable to find pair');
 
-    const remainingTime = await this.refreshAccountPasswordCache(pair);
+    const remainingTime = this.refreshAccountPasswordCache(pair);
 
     return {
       isLocked: pair.isLocked,
@@ -1008,22 +1006,6 @@ export default class Extension {
     return this.getPrice();
   }
 
-  private async isInWalletAccount(address?: string) {
-    return new Promise((resolve) => {
-      if (address) {
-        accountsObservable.subject.subscribe((storedAccounts: SubjectInfo): void => {
-          if (storedAccounts[address]) {
-            resolve(true);
-          }
-
-          resolve(false);
-        });
-      } else {
-        resolve(false);
-      }
-    });
-  }
-
   private makeTransferCallback(portCallback: (res: BasicTxResponse) => void): (res: BasicTxResponse) => void {
     return (res: BasicTxResponse) => {
       // !res.isFinalized to prevent duplicate action
@@ -1065,6 +1047,7 @@ export default class Extension {
 
   private async makeSwap(options: RequestSwap): Promise<ResponseMakeSwap> {
     const { extrinsicOptions } = await createSwap(options, apiSora);
+    const { password, isSavePass } = options;
     const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB } = extrinsicOptions;
     let status = false;
     const errors: Array<BasicTxError> = [];
@@ -1084,9 +1067,26 @@ export default class Extension {
 
     const pair = keyring.getPair(address);
 
+    const remainTime = this.refreshAccountPasswordCache(pair);
+
+    // if the keyring pair is locked, the password is needed
+    if (pair.isLocked && !password) {
+      errors.push({
+        code: BasicTxErrorCode.KEYRING_ERROR,
+        message: 'Password needed to unlock the account',
+      });
+
+      return {
+        errors,
+        status,
+      };
+    }
+
     try {
-      pair.unlock(options.password);
+      if (pair.isLocked && password) pair.unlock(password);
     } catch (e: any) {
+      pair.lock();
+
       errors.push({
         code: BasicTxErrorCode.KEYRING_ERROR,
         message: String(e.message),
@@ -1123,6 +1123,9 @@ export default class Extension {
       console.info(`Swap transaction failed ${ex}`);
     }
 
+    if (isSavePass) this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
+    else if (remainTime) pair.lock();
+
     return {
       status,
       errors,
@@ -1133,7 +1136,6 @@ export default class Extension {
     networkKey: string,
     token: string,
     from: string,
-    to: string,
     password: string | undefined,
     value: string | undefined,
     transferAll: boolean | undefined
@@ -1176,22 +1178,6 @@ export default class Extension {
 
     const tokenInfo = await getTokenInfo(networkKey, dotSamaApiMap[networkKey].api, token);
 
-    // if (!tokenInfo) {
-    //   errors.push({
-    //     code: TransferErrorCode.INVALID_TOKEN,
-    //     message: 'Not found token from registry',
-    //   });
-    // }
-
-    // const isMainToken = await checkMainToken(networkKey, tokenInfo?.id);
-
-    // if (isEthereumAddress(from) && isEthereumAddress(to) && tokenInfo && !isMainToken && !tokenInfo?.contractAddress) {
-    //   errors.push({
-    //     code: TransferErrorCode.INVALID_TOKEN,
-    //     message: 'Not found ERC20 address for this token',
-    //   });
-    // }
-
     return [errors, keypair, transferValue, tokenInfo];
   }
 
@@ -1209,7 +1195,6 @@ export default class Extension {
       networkKey,
       token,
       from,
-      to,
       password,
       value,
       transferAll
@@ -1364,7 +1349,6 @@ export default class Extension {
       networkKey,
       token,
       from,
-      to,
       password,
       value,
       transferAll
@@ -1423,7 +1407,7 @@ export default class Extension {
           to: to,
           dotSamaApiMap: dotSamaApiMap,
           transferAll: !!transferAll,
-          isSavePass: isSavePass ?? false,
+          isSavePass,
           callback: callback,
         });
       }
@@ -1455,6 +1439,13 @@ export default class Extension {
     port.onDisconnect.addListener((): void => {
       this.cancelSubscription(id);
     });
+
+    if (isSavePass && fromKeyPair) {
+      const ethereumAddress = fromKeyPair.meta.ethereumAddress as string;
+      this.cachedUnlocks[from] = Date.now() + PASSWORD_EXPIRY_MS;
+
+      if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
+    } else fromKeyPair && fromKeyPair.lock();
 
     return txState;
   }
@@ -1642,9 +1633,6 @@ export default class Extension {
 
       case 'pri(window.open)':
         return this.windowOpen(request as AllowedPath);
-
-      case 'pri(signing.resetTimeouts)':
-        return this.resetTimeouts();
 
       case 'pri(signing.saveTimeoutCache)':
         return this.saveTimeoutCache(request as string);

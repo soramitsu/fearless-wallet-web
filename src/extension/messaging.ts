@@ -209,10 +209,6 @@ export async function refreshPasswordTimeout(address: string): Promise<number> {
   return sendMessage('pri(signing.refreshPasswordTimeout)', address);
 }
 
-export async function resetTimeouts(): Promise<boolean> {
-  return sendMessage('pri(signing.resetTimeouts)');
-}
-
 export async function saveTimeoutCache(address: string, isSavePass: boolean): Promise<boolean> {
   return sendMessage('pri(signing.saveTimeoutCache)', { address, isSavePass });
 }

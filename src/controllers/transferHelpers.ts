@@ -1,7 +1,8 @@
 import { FPNumber } from '@sora-substrate/util';
 import { NetworkName } from '@/interfaces';
-import { Wallet } from '@/store';
+import store, { Wallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
 export function calculateCost(count: FPNumber, price: number): FPNumber {
   const FPPrice = new FPNumber(price);

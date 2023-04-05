@@ -273,6 +273,18 @@ export default class SwapForm extends Vue {
     return this.getAssetPrice(this._selectedAssetId).price;
   }
 
+  get sendAssetPrice() {
+    const priceId = this.sendCurrency?.priceId ?? '';
+
+    return this.getAssetPrice(priceId).price;
+  }
+
+  get recieveAssetPrice() {
+    const priceId = this.receiveCurrency?.priceId ?? '';
+
+    return this.getAssetPrice(priceId).price;
+  }
+
   get showBackIcon() {
     return !this.showSettings;
   }
@@ -282,12 +294,7 @@ export default class SwapForm extends Vue {
   }
 
   get classesSwapIcon() {
-    return [
-      'swap-icon',
-      {
-        'swap-icon-disable': this.receiveAssetId === '',
-      },
-    ];
+    return ['swap-icon', { 'swap-icon-disable': this.receiveAssetId === '' }];
   }
 
   get currencyXOR() {
@@ -336,14 +343,14 @@ export default class SwapForm extends Vue {
   }
 
   get AToBValueCut() {
-    const cost = getCostOfAssets(+this.transferableSendAmount, this.price) ?? 0;
+    const cost = getCostOfAssets(+this.transferableSendAmount, this.sendAssetPrice) ?? 0;
     const value = +this.$n(cost, 'price') || '0';
 
     return `${this.fiatSymbol} ${value}`;
   }
 
   get BToAValueCut() {
-    const cost = getCostOfAssets(+this.transferableReceiveAmount, this.price) ?? 0;
+    const cost = getCostOfAssets(+this.transferableReceiveAmount, this.recieveAssetPrice) ?? 0;
     const value = +this.$n(cost, 'price') || '0';
 
     return `${this.fiatSymbol} ${value}`;
@@ -538,13 +545,13 @@ export default class SwapForm extends Vue {
   get sendValue() {
     const amoutPrep = +this.sendAmount ?? 0;
 
-    return (this.price * amoutPrep).toString();
+    return (this.sendAssetPrice * amoutPrep).toString();
   }
 
   get receiveValue() {
     const amoutPrep = +this.receiveAmount ?? 0;
 
-    return this.price * amoutPrep;
+    return this.recieveAssetPrice * amoutPrep;
   }
 
   async created() {

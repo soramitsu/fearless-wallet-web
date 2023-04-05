@@ -203,20 +203,16 @@ async function subscribeTokensBalance(
   await api.isReadyOrError;
 
   const unsubList = await Promise.all(
-    tokenList.map(({ precision, symbol, id, type, isUtility, isNative, icon, relayChain, displayName, name }) => {
+    tokenList.map(({ precision, symbol, id, type, isUtility, isNative, icon, relayChain, displayName }) => {
       try {
         const options = getAssetOptions(symbol, type, id);
 
         const query = api!.rx.query;
         let pallet;
 
-        if (type === 'native' || isUtility || isNative || type === 'ormlAsset') {
-          pallet = query.system.account(addresses[0]);
-        } else if (type === 'equilibrium') {
-          pallet = query.eqBalances.reserved(addresses[0], options);
-        } else {
-          pallet = query.tokens.accounts(addresses[0], options);
-        }
+        if (type === 'native') pallet = query.system.account(addresses[0]);
+        else if (type === 'equilibrium') pallet = query.eqBalances.reserved(addresses[0], options);
+        else pallet = query.tokens.accounts(addresses[0], options);
 
         const onBalanceFetch = (balances: any) => {
           const { frozen, locked, reserved, total, transferable } = formatBalance(

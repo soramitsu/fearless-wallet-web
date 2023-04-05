@@ -75,7 +75,7 @@
 
     <NetworkManagement
       v-if="showNetworkManagement"
-      :disconnectedNetworks="[]"
+      :disconnectedNetworks="disconnectedNetworks"
       :closeForm="toggleNetworkManagementVisible"
       @setNetworkUnavailable="setNetworkUnavailable"
     />
@@ -124,6 +124,7 @@ import { AssetsPrice } from '@/interfaces';
 import { subscribeBalance } from '@/extension/messaging';
 import store from '@/store';
 import { defaultSortingCurrencies, getTotalBalance } from '@/helpers/currencies';
+import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/evm/types/ether';
 
 @Component({
   components: {
@@ -196,12 +197,8 @@ export default class Wallet extends Vue {
     return this.disconnectedNetworks.length !== 0;
   }
 
-  get nets() {
-    return this.networks ? this.networks : [];
-  }
-
   get disconnectedNetworks() {
-    return this.networks.filter(({ apiStatus }) => apiStatus === 'disconnected');
+    return this.networks.filter(({ apiStatus }) => apiStatus === NETWORK_STATUS.DISCONNECTED);
   }
 
   get summaryTransferableBalance() {

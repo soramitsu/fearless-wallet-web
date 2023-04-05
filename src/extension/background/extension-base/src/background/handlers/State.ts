@@ -1160,18 +1160,17 @@ export default class State {
         const { address } = account;
         const currencyIndex = this.balanceMap[address].findIndex(({ assetId: _assetId, name, relayChain }) => {
           const isExistingAssetId = _assetId === item.id;
-          const isExistingDisplayName = name.toLowerCase() === item.name.toLowerCase();
-          const isExistingAsset = isExistingDisplayName && relayChain.toLowerCase() === item.relayChain?.toLowerCase();
+          const isExistingDisplayName = name === item.name;
+          const isExistingAsset = isExistingDisplayName && relayChain === item.relayChain;
 
           return isExistingAssetId || isExistingAsset;
         });
-
         const token = this.balanceMap[address][currencyIndex];
 
         const index = token.balances.findIndex((el) => {
           const key = prepNetworkNames[el.name] ?? el.name;
 
-          return key === item.key;
+          return key === item.chain;
         });
 
         const balanceItem = this.balanceMap[address][currencyIndex].balances[index];

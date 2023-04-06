@@ -120,9 +120,7 @@ export default class CurrencyItemStateLess extends Vue {
   @Mutation(AccountsMutationTypes.DELETE_HIDDEN_ASSET) deleteHiddenAssets!: TMutation<string>;
 
   get getMainNetwork() {
-    const network = this.assetData.balances.find((el) => el.isNative || el.isUtility);
-
-    return network?.name.toUpperCase();
+    return this.assetData.mainNetwork.toUpperCase();
   }
 
   get tokenPrice() {

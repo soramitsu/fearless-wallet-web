@@ -246,7 +246,6 @@ export default class SwapForm extends Vue {
   showSettings = false;
   showConfirmationPasswordPopup = false;
   isExchangeB = false;
-  fromRoute = '';
   swapInterval!: NodeJS.Timer;
 
   @Prop(String) _selectedAssetId!: string;

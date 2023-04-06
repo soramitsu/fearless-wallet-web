@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <keep-alive include="Main">
+    <keep-alive :include="['Main', 'SwapForm']">
       <router-view />
     </keep-alive>
   </div>

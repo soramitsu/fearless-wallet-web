@@ -66,13 +66,18 @@ const disconnectHandler = (
   }
 };
 
-const readyHandler = (network: Network) => {
+const readyHandler = async (network: Network) => {
   NetworksController.subscribeToBalancesOfNetworks(getAccounts(), [network]);
 
   store.commit(MutationTypes.SET_NETWORK_STATUS, {
     network: network.name,
     status: 'ready',
   });
+
+  if (isSora(network.name)) {
+    await NetworksController.initializeSora();
+    await NetworksController.calcSoraFee();
+  }
 };
 
 async function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): Promise<void> {

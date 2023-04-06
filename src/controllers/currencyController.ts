@@ -697,6 +697,14 @@ export class CurrencyController {
         ? amountDexIdXORFP
         : amountDexIdXSTUSDFP;
 
+      const providerFee = amountDexIdXORFP.isZero()
+        ? providerFeeDexIdXSTUSD
+        : amountDexIdXSTUSDFP.isZero()
+        ? providerFeeDexIdXOR
+        : isDexXor
+        ? providerFeeDexIdXOR
+        : providerFeeDexIdXSTUSD;
+
       const minMaxValue = apiSora.swap.getMinMaxValue(
         assetA,
         assetB,
@@ -719,7 +727,7 @@ export class CurrencyController {
         AToB: expectedAmountA.div(new FPNumber(amountB!)).toString(),
         BToA: new FPNumber(amountB!).div(expectedAmountA).toString(),
         minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
-        providerFee: FPNumber.fromCodecValue(providerFeeDexIdXSTUSD).toString(),
+        providerFee: FPNumber.fromCodecValue(providerFee).toString(),
       };
     } else {
       const isDexXor = amountDexIdXORFP.isZero()
@@ -735,6 +743,14 @@ export class CurrencyController {
         : isDexXor
         ? amountDexIdXORFP
         : amountDexIdXSTUSDFP;
+
+      const providerFee = amountDexIdXORFP.isZero()
+        ? providerFeeDexIdXSTUSD
+        : amountDexIdXSTUSDFP.isZero()
+        ? providerFeeDexIdXOR
+        : isDexXor
+        ? providerFeeDexIdXOR
+        : providerFeeDexIdXSTUSD;
 
       const minMaxValue = apiSora.swap.getMinMaxValue(
         assetA,
@@ -758,7 +774,7 @@ export class CurrencyController {
         AToB: new FPNumber(amountA!).div(expectedAmountB).toString(),
         BToA: expectedAmountB.div(new FPNumber(amountA!)).toString(),
         minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
-        providerFee: FPNumber.fromCodecValue(providerFeeDexIdXOR).toString(),
+        providerFee: FPNumber.fromCodecValue(providerFee).toString(),
       };
     }
   }

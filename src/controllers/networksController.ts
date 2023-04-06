@@ -122,14 +122,20 @@ export class NetworksController {
   }
 
   public static async initializeSora() {
-    await apiSora.initialize(false);
+    try {
+      await apiSora.initialize(false);
+    } catch (ex) {
+      console.info('[Sora]', ex);
+    }
   }
 
   public static async calcSoraFee() {
-    await apiSora.calcStaticNetworkFees();
+    try {
+      await apiSora.calcStaticNetworkFees();
+    } catch (ex) {
+      console.info('[Sora]', ex);
+    }
 
-    store.commit(NetworksMutationTypes.SET_SORA_FEE, {
-      fee: apiSora.NetworkFee.Swap,
-    });
+    store.commit(NetworksMutationTypes.SET_SORA_FEE);
   }
 }

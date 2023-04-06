@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <keep-alive include="Main">
+    <keep-alive :include="includeKeepAlive">
       <router-view />
     </keep-alive>
   </div>
@@ -26,6 +26,7 @@ export default class App extends Vue {
   subscribeAccounts!: BehaviorSubject<SubjectInfo>;
   subscribeAddresses!: BehaviorSubject<SubjectInfo>;
 
+  @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
   @Getter(AccountsGettersTypes.getAddresses) addresses!: Accounts;
   @Getter(AccountsGettersTypes.getWallets) wallets!: Record<string, Accounts>;
@@ -36,6 +37,14 @@ export default class App extends Vue {
   @Mutation(AccountsMutationTypes.SET_ADDRESSES) setAddresses!: TMutation<SetAddressesProps>;
   @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<boolean>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
+
+  get includeKeepAlive() {
+    const components = ['Main'];
+
+    if (this.showPolkaswapAlert) components.push('SwapForm');
+
+    return components;
+  }
 
   created() {
     if (BaseApi.isExtension()) {

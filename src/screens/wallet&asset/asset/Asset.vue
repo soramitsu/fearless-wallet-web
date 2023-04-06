@@ -348,6 +348,7 @@ export default class Asset extends Vue {
       name: Components.SoraSwap,
       params: {
         assetId: this.selectedAssetId,
+        reset: '1',
       },
     });
   }

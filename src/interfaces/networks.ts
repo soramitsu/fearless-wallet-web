@@ -1,6 +1,11 @@
 import { FPNumber } from '@sora-substrate/util';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { Node } from '@/interfaces';
+import type { NetworkFeesObject } from '@sora-substrate/util';
+
+type SoraFees = {
+  [key in keyof NetworkFeesObject]: FPNumber;
+};
 
 type TypesForMobile = {
   url: string;
@@ -82,7 +87,7 @@ type Network = {
   settings: Record<string, any>;
   externalApi: ExternalApi;
   status: NetworkStatus;
-  fee?: FPNumber; // only Sora network
+  fees?: SoraFees; // only Sora network
 };
 
 type Networks = Network[];
@@ -105,4 +110,5 @@ export {
   ApiOptions,
   NetworkStatus,
   HistoryServiceType,
+  SoraFees,
 };

@@ -68,7 +68,6 @@ export default class Authorize extends Vue {
   selectAll = true;
 
   @Getter(ExtensionGettersTypes.getAuthRequests) requests!: AuthorizeRequest[];
-  @Getter(AccountsGettersTypes.getWallets) wallets!: WalletInfo[];
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
   @Action(ExtensionActionTypes.APPROVE_AUTH_REQUEST) onApproveAuthRequest!: TAction<ApproveAuthRequest>;
   @Action(ExtensionActionTypes.REJECT_AUTH_REQUEST) onRejectAuthRequest!: TAction<AuthorizeRequest>;
@@ -87,7 +86,7 @@ export default class Authorize extends Vue {
   }
 
   mounted() {
-    this.wallets.forEach(({ name, address, isMobile }) =>
+    this.accounts.forEach(({ name, address, isMobile }) =>
       Vue.set(this.state, name, {
         name: name,
         address: address,

@@ -76,8 +76,6 @@
       :handlerAccept="handlerAccept"
     />
 
-    <!-- <ReplacePopup v-if="showReplacePopup" :selectedNetwork="selectedNetwork" :handlerClose="closeReplacePopup" /> -->
-
     <AddEthereumAccountPopup v-if="showAddEthereumAccountPopup" :handlerClose="closeAddEthereumAccountPopup" />
 
     <ExportForm v-if="showExportForm" :password="password" :closeHandler="setPassword" />
@@ -221,12 +219,9 @@ export default class AccountsLayout extends Vue {
   }
 
   openAccountSettingsPopup(network = '', buttonTop: number) {
-    // const replacedAccount = BaseApi.getReplacedAccountByNetwork(this.selectedWallet, network);
-
     this.showAccountSettingsPopup = true;
     this.selectedNetwork = network;
     this.buttonTopClick = buttonTop;
-    // this.showReplaceAccount = replacedAccount === undefined;
   }
 
   closeAccountSettings(isReset = true) {

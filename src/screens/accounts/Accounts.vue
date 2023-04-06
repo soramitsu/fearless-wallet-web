@@ -36,9 +36,8 @@
 import { Getter, Mutation } from 'vuex-class';
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import AccountsItem from './AccountsItem.vue';
-import type { SelectedWallet } from '@/store';
+import type { SelectedWallet, Wallet } from '@/store';
 import type { Networks, TMutation } from '@/interfaces';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { getChainAccounts } from '@/helpers/accounts';
@@ -52,37 +51,28 @@ export default class Account extends Vue {
   selectedAddress = '';
   newName = '';
 
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getAllNetworks) networks!: Networks;
   @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<string>;
 
-  // get showReplacedAccounts() {
-  //   return this.replacedAccountsItems.length > 0;
-  // }
+  get accountName() {
+    return this.$route.params.name;
+  }
+
+  get accountAddress(): Wallet {
+    return {
+      address: this.$route.params.address,
+      ethereumAddress: this.$route.params.ethereumAddress,
+      isMobile: !!this.$route.params.isMobile,
+    };
+  }
 
   get isMobileWallet() {
-    return this.selectedWallet.isMobile;
+    return this.accountAddress.isMobile;
   }
-
-  // get showSharedSecretAccounts() {
-  //   return this.sharedAccountsItems.length > 0;
-  // }
 
   get chainAccounts() {
-    return getChainAccounts(this.networks, this.selectedWallet);
+    return getChainAccounts(this.networks, this.accountAddress);
   }
-
-  // get replacedAccountsItems() {
-  //   if (this.selectedWallet.address === '') return [];
-
-  //   return this.chainAccounts.filter(({ isReplaced }) => isReplaced);
-  // }
-
-  // get sharedAccountsItems() {
-  //   if (this.selectedWallet.address === '') return [];
-
-  //   return this.chainAccounts.filter(({ isReplaced }) => !isReplaced);
-  // }
 
   @Watch('selectedWallet')
   ethereumJsonChanged({ name }: SelectedWallet) {
@@ -90,7 +80,7 @@ export default class Account extends Vue {
   }
 
   mounted() {
-    this.newName = this.selectedWallet.name;
+    this.newName = this.accountName;
   }
 
   back() {
@@ -102,10 +92,10 @@ export default class Account extends Vue {
   }
 
   blurInputName() {
-    const { address, name } = this.selectedWallet;
+    const { address } = this.accountAddress;
 
     if (this.newName === '') {
-      this.newName = name;
+      this.newName = this.accountName;
 
       return;
     }

@@ -11,6 +11,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import { AccountJson, BalanceJson, PriceJson } from './extension/background/extension-base/src/background/types/types';
 import { NetworksController } from './controllers';
+import { Components } from './router/routes';
 import type {
   Accounts,
   SetAccountsProps,
@@ -127,11 +128,9 @@ export default class App extends Vue {
       this.setSelectedWallet(selectedAccount);
       this.setAccounts({ accounts });
 
-      // if (isAccountsExists && this.$route.name !== Components.Welcome) {
-      //   this.$router.push(Components.Welcome);
-      // } else {
-      //   this.$router.push(Components.Wallet);
-      // }
+      if (isAccountsExists && this.$route.name === Components.Welcome) {
+        this.$router.push(Components.Wallet);
+      }
     });
   }
 

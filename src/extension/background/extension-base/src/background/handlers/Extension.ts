@@ -145,19 +145,26 @@ async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> 
       res(value);
     });
   });
+  let isAccountDefaultSetup = false;
 
   const transformedAccounts = Object.values(accounts)
     .filter((el) => !isEthereumAddress(el.json.address))
-    .map(
-      ({ json: { address, meta }, type }): AccountJson => ({
+    .map(({ json: { address, meta }, type }): AccountJson => {
+      const isDefault = address === currentAccount?.address;
+      if (isDefault) isAccountDefaultSetup = true;
+
+      return {
         address,
         ethereumAddress: meta.ethereumAddress as string,
-        active: address === currentAccount?.address ? true : false,
+        active: isDefault,
         name: meta.name ?? '',
         type,
         ...meta,
-      })
-    );
+      };
+    });
+
+  //if no active account make active first one
+  if (!isAccountDefaultSetup) transformedAccounts[0].active = true;
 
   return transformedAccounts;
 }

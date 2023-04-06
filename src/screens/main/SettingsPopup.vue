@@ -36,9 +36,12 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 
+import { Getter } from 'vuex-class';
 import { Components } from '@/router/routes';
 import SettingMenuItem from '@/screens/main/SettingMenuItem.vue';
 import BaseApi from '@/util/BaseApi';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { SelectedWallet } from '@/store';
 
 type SettingsItemType = 'Accounts';
 
@@ -47,6 +50,7 @@ type SettingsItemType = 'Accounts';
 })
 export default class SettingsPopup extends Vue {
   @Prop(Function) handlerClose!: VoidFunction;
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get routeName() {
     return this.$route.name;
@@ -62,7 +66,19 @@ export default class SettingsPopup extends Vue {
 
   open(name: SettingsItemType) {
     if (this.routeName !== name) {
-      this.$router.push({ name: Components[name] });
+      const accountParams = {
+        address: this.selectedWallet.address,
+        name: this.selectedWallet.name,
+        ethereumAddress: this.selectedWallet.ethereumAddress,
+        isMobile: this.selectedWallet.isMobile ? 'mobile' : '',
+      };
+
+      this.$router.push({
+        name: Components[name],
+        params: {
+          ...(name === Components.Accounts ? accountParams : {}),
+        },
+      });
     }
 
     this.handlerClose();

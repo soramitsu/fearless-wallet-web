@@ -31,7 +31,7 @@ import { Components } from '@/router/routes';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
-import { forgetAccount, initGoogleAuth } from '@/extension/messaging';
+import { forgetAccount, initGoogleAuth, updateCurrentAccountAddress } from '@/extension/messaging';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 
 @Component
@@ -42,7 +42,7 @@ export default class WalletDetailsPopup extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
   get selectedWallet() {
-    return this.accounts.find((account) => account.active);
+    return this.accounts.find((account) => account.active)!;
   }
 
   get isMobileWallet() {
@@ -75,7 +75,15 @@ export default class WalletDetailsPopup extends Vue {
   openWalletDetails() {
     this.setSelectedWallet(this.selectedWalletAddress);
 
-    this.$router.push({ name: Components.Accounts });
+    this.$router.push({
+      name: Components.Accounts,
+      params: {
+        address: this.selectedWallet.address,
+        name: this.selectedWallet.name,
+        ethereumAddress: this.selectedWallet.ethereumAddress,
+        isMobile: this.selectedWallet.isMobile ? 'mobile' : '',
+      },
+    });
 
     this.$emit('closeSelectWalletPopup');
   }

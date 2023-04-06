@@ -11,7 +11,7 @@ interface ModifiedPort extends Port {
 }
 
 async function getActiveTabs() {
-  // queriing the current active tab in the current window should only ever return 1 tab
+  // quering the current active tab in the current window should only ever return 1 tab
   // although an array is specified here
 
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -31,13 +31,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   state.onInstall();
 
   getActiveTabs();
-
-  // handleExtensionIdling();
 });
-
-// chrome.runtime.onStartup.addListener(() => {
-//   handleExtensionIdling();
-// });
 
 chrome.alarms.create({ periodInMinutes: 0.4 });
 chrome.alarms.onAlarm.addListener(() => {

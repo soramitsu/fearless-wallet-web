@@ -66,8 +66,10 @@
           width="100%"
           type="primary"
           :border="false"
+          :iconName="isLoading ? 'loader' : ''"
+          :iconType="isLoading ? 'loading' : ''"
           :disabled="disabledProceed"
-          :text="buttonText"
+          :text="isLoading ? '' : buttonText"
           @click="proceed"
         />
       </div>
@@ -98,7 +100,7 @@ import { DerivationPaths, MnemonicConfirmation, TAction } from '@/interfaces';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH, INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import BaseApi from '@/util/BaseApi';
-import { createGoogleFile, exportAccount } from '@/extension/messaging';
+import { createAccountSuri, createGoogleFile, exportAccount } from '@/extension/messaging';
 import { SelectedWallet } from '@/store/accounts/types';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -134,6 +136,7 @@ export default class CreateGoogle extends Vue {
   derivationPaths = INITIAL_DERIVATION_PATHS;
   showNotificationPopup = false;
   warningValueName: WarningValueName = '';
+  isLoading = false;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<string>;
@@ -179,6 +182,7 @@ export default class CreateGoogle extends Vue {
 
   get disabledProceed() {
     if (this.nickNameStep) return !this.nickname;
+    if (this.isLoading) return true;
     if (this.step === 3) return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
 
     if (this.passwordStep) return !this.walletPassword;
@@ -219,13 +223,14 @@ export default class CreateGoogle extends Vue {
   }
 
   @Watch('step')
-  watchStep() {
+  async watchStep() {
     if (this.step === 5) {
-      const address = this.saveKeypairFromSeed();
-
-      this.setSelectedWallet(address || this.selectedWallet.address);
+      this.isLoading = false;
+      const { address } = await this.saveKeypairFromSeed();
 
       this.backupWallet(address);
+
+      this.isLoading = true;
     }
   }
 
@@ -331,7 +336,7 @@ export default class CreateGoogle extends Vue {
     });
   }
 
-  saveKeypairFromSeed() {
+  async saveKeypairFromSeed() {
     const meta: Record<string, unknown> = { name: this.nickname.trim(), ethereumAddress: '' };
     const {
       substrate: { keypairType: substrateKeypairType },
@@ -339,18 +344,24 @@ export default class CreateGoogle extends Vue {
     } = this.derivationPaths;
 
     if (this.suriEthereum !== '') {
-      // const { address: ethereumAddress } = BaseApi.addKeypair(
-      //   this.suriEthereum,
-      //   this.walletPassword,
-      //   meta,
-      //   ethereumKeypairType
-      // );
-      const ethereumAddress = '';
+      const { ethereumAddress } = await createAccountSuri(
+        this.walletPassword,
+        this.suriEthereum,
+        ethereumKeypairType,
+        undefined,
+        meta
+      ); // for proper work of extension
+
       meta.ethereumAddress = ethereumAddress;
     }
 
-    // const { address } = BaseApi.addKeypair(this.suriSubstrate, this.walletPassword, meta, substrateKeypairType);
-    const address = '';
+    const address = await createAccountSuri(
+      this.walletPassword,
+      this.suriSubstrate,
+      substrateKeypairType,
+      undefined,
+      meta
+    ); // for proper work of extension
 
     return address;
   }

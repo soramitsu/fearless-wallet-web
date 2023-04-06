@@ -1,3 +1,4 @@
+is
 <template>
   <div class="add-wallet">
     <div class="header">
@@ -466,7 +467,9 @@ export default class AddWallet extends Vue {
       //   return;
       // }
       this.isLoading = true;
+
       await this.saveKeypair();
+
       this.isLoading = false;
 
       // this.setSelectedWallet(newAccount as AccountJson);

@@ -88,9 +88,11 @@ const mutations: MutationTree<State> & Mutations = {
   },
 
   [MutationTypes.HIDE_POLKASWAP_ALERT](state) {
-    state.showPolkaswapAlert = false;
+    setTimeout(() => {
+      state.showPolkaswapAlert = false;
 
-    accountController.setAgreeSwapDisclaimer();
+      accountController.setAgreeSwapDisclaimer();
+    }, 100);
   },
 
   [MutationTypes.SET_ADDRESSES](state, { addresses }) {

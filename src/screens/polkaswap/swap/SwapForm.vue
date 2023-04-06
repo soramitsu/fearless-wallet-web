@@ -254,7 +254,7 @@ export default class SwapForm extends Vue {
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getPolkaswapAlertVisibility) showPolkaswapAlert!: boolean;
+  @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
 
   get selectedNetwork() {
     return SORA_NETWORK_NAME as string;

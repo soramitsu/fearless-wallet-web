@@ -1,6 +1,9 @@
 import type { Currencies } from '@/interfaces/currencies';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { WalletAddress, NetworkName } from '@/interfaces';
+import type { ActionContext } from 'vuex';
+import type { Mutations } from '@/store/accounts/mutations';
+import type { State } from '@/store/accounts/state';
 
 export interface Wallet {
   address: string;
@@ -18,20 +21,20 @@ export type GetAutoSelectNodesValueByNetwork = (networkName: string) => boolean;
 export type GetShowWarningNetworks = (assetId: string) => boolean;
 
 // mutations
-export type SetSelectedFiatProps = {
+type SetSelectedFiatProps = {
   fiatName: string;
   currencies: Currencies;
 };
 
-export type SetAccountsProps = {
+type SetAccountsProps = {
   accounts: Accounts;
 };
 
-export type SetAddressesProps = {
+type SetAddressesProps = {
   addresses: Accounts;
 };
 
-export type SetAutoSelectNode = {
+type SetAutoSelectNode = {
   network: string;
   value: boolean;
 };
@@ -44,7 +47,7 @@ export interface WalletInfo {
   active: boolean;
 }
 
-export interface IWallet {
+interface IWallet {
   type: string;
   json: {
     address: string;
@@ -53,3 +56,16 @@ export interface IWallet {
     };
   };
 }
+
+type AugmentedAccountContext = {
+  commit<K extends keyof Mutations>(key: K, payload: Parameters<Mutations[K]>[1]): ReturnType<Mutations[K]>;
+} & Omit<ActionContext<State, any>, 'commit'>;
+
+export {
+  AugmentedAccountContext,
+  IWallet,
+  SetAddressesProps,
+  SetAutoSelectNode,
+  SetSelectedFiatProps,
+  SetAccountsProps,
+};

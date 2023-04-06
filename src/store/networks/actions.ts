@@ -2,8 +2,9 @@ import axios from 'axios';
 import type { KeySettings } from '@/networks';
 import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
-import type { FetchJsons, FetchHistory, SubscribeToBalances, ToggleActiveNode, AugmentedActionContext } from '@/store';
+import type { FetchJsons, FetchHistory, SubscribeToBalances, ToggleActiveNode } from '@/store';
 import type { FiatJson, AssetJson, NetworkJson, Networks, ApiOptions, Network } from '@/interfaces';
+import type { AugmentedNetworksContext } from './types';
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
 import settingsNetworks from '@/networks';
@@ -25,12 +26,12 @@ export enum ActionTypes {
 }
 
 export type Actions = {
-  [ActionTypes.FETCH_JSONS](store: AugmentedActionContext, props: FetchJsons): Promise<void>;
-  [ActionTypes.CONNECT_TO_NODES](store: AugmentedActionContext): Promise<void>;
-  [ActionTypes.FETCH_ASSETS_PRICE](store: AugmentedActionContext, fiatName: string): Promise<void>;
-  [ActionTypes.FETCH_HISTORY](store: AugmentedActionContext, props: FetchHistory): Promise<void>;
-  [ActionTypes.SUBSCRIBE_TO_BALANCES](store: AugmentedActionContext, props: SubscribeToBalances): Promise<void>;
-  [ActionTypes.TOGGLE_ACTIVE_NODE](store: AugmentedActionContext, props: ToggleActiveNode): Promise<void>;
+  [ActionTypes.FETCH_JSONS](store: AugmentedNetworksContext, props: FetchJsons): Promise<void>;
+  [ActionTypes.CONNECT_TO_NODES](store: AugmentedNetworksContext): Promise<void>;
+  [ActionTypes.FETCH_ASSETS_PRICE](store: AugmentedNetworksContext, fiatName: string): Promise<void>;
+  [ActionTypes.FETCH_HISTORY](store: AugmentedNetworksContext, props: FetchHistory): Promise<void>;
+  [ActionTypes.SUBSCRIBE_TO_BALANCES](store: AugmentedNetworksContext, props: SubscribeToBalances): Promise<void>;
+  [ActionTypes.TOGGLE_ACTIVE_NODE](store: AugmentedNetworksContext, props: ToggleActiveNode): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {

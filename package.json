@@ -59,6 +59,7 @@
     "vue-class-component": "^7.2.6",
     "vue-fragment": "^1.6.0",
     "vue-i18n": "8",
+    "vue-plugin-load-script": "2.1.1",
     "vue-property-decorator": "^9.1.2",
     "vue-router": "^3.2.0",
     "vuedraggable": "^2.24.3",

@@ -1,7 +1,7 @@
-import type { ActionTree, ActionContext } from 'vuex';
-import type { Mutations } from '@/store/accounts/mutations';
+import type { ActionTree } from 'vuex';
 import type { State } from '@/store/accounts/state';
 import type { Currencies } from '@/interfaces';
+import type { AugmentedAccountContext } from './types';
 import { MutationTypes } from '@/store/accounts/mutations';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 
@@ -10,13 +10,9 @@ export enum ActionTypes {
   SET_SELECTED_WALLET = 'SET_SELECTED_WALLET',
 }
 
-type AugmentedActionContext = {
-  commit<K extends keyof Mutations>(key: K, payload: Parameters<Mutations[K]>[1]): ReturnType<Mutations[K]>;
-} & Omit<ActionContext<State, any>, 'commit'>;
-
 export type Actions = {
-  [ActionTypes.SET_SELECTED_FIAT](context: AugmentedActionContext, fiatName: string): Promise<void>;
-  [ActionTypes.SET_SELECTED_WALLET](context: AugmentedActionContext, address: string): Promise<void>;
+  [ActionTypes.SET_SELECTED_FIAT](context: AugmentedAccountContext, fiatName: string): Promise<void>;
+  [ActionTypes.SET_SELECTED_WALLET](context: AugmentedAccountContext, address: string): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {

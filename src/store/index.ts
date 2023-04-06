@@ -3,6 +3,7 @@ import Vuex, { Store } from 'vuex';
 import networks from './networks';
 import account from './accounts';
 import extension from './extension';
+import soraCard from './soraCard';
 import type Modules from './types';
 
 const files = require.context('.', false, /\.ts$/);
@@ -11,6 +12,7 @@ const modules: Modules = {
   networks,
   account,
   extension,
+  soraCard,
 };
 
 files.keys().forEach((key) => {
@@ -29,6 +31,6 @@ const store = new Store({
 });
 
 export default store;
-
 export * from './accounts/types';
 export * from './networks/types';
+export * from './soraCard/types';

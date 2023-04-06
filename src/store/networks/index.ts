@@ -1,7 +1,7 @@
-import actions from '@/store/networks/actions';
-import getters from '@/store/networks/getters';
-import mutations from '@/store/networks/mutations';
-import state from '@/store/networks/state';
+import actions from './actions';
+import getters from './getters';
+import mutations from './mutations';
+import state from './state';
 
 export default {
   state,

@@ -12,12 +12,9 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 export enum GettersTypes {
   getAuthRequests = 'getAuthRequests',
   getAuthList = 'getAuthList',
-
   getMetaRequests = 'getMetaRequests',
-
   getSignRequestPayload = 'getSignRequestPayload',
   getSignList = 'getSignList',
-
   getTabStatus = 'getTabStatus',
 }
 

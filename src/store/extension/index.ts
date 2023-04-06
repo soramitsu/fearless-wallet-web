@@ -1,7 +1,7 @@
-import mutations from '@/store/extension/mutations';
-import getters from '@/store/extension/getters';
-import state from '@/store/extension/state';
-import actions from '@/store/extension/actions';
+import actions from './actions';
+import getters from './getters';
+import mutations from './mutations';
+import state from './state';
 
 export default {
   state,

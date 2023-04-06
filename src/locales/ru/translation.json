@@ -314,7 +314,6 @@
     "phoneNumber": "номер телефона",
     "code": "Код",
     "verificationCode": "Код верефикации",
-    "yourTestCode": "Ваш код для тестирования: 123456",
     "confirmSMScode": "Подтвердить СМС-код",
     "sendVerificationEmail": "Отправить письмо с подтверждением",
     "codeLength": "Длина кода 6 символов",
@@ -337,7 +336,8 @@
     "seeList": "Посмотреть список",
     "getXORLabel": "Вы можете обменять токены на XOR или купить XOR за евро",
     "buyXORWithEUR": "Купить XOR за EUR",
-    "swapXOR": "Обмен криптовалюты на XOR"
+    "swapXOR": "Обмен криптовалюты на XOR",
+    "invalidCode": "Неверный код"
   },
   "disclaimers": {
     "swapDisclaimer1": "Polkaswap is maintained by the SORA community. Before continuing to use Polkaswap, please review the",

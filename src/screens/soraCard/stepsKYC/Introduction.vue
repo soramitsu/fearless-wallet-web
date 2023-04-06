@@ -1,22 +1,35 @@
 <template>
   <div class="introduction">
-    <Alert headerText="common.disclaimer" message="soraCard.warningKYC" sizeText="small" />
+    <div>
+      <Alert headerText="common.disclaimer" message="soraCard.warningKYC" sizeText="small" />
 
-    <div class="row" @click="openDoc('terms')">
-      {{ $t('common.termsConditions') }}
+      <div class="row" @click="openDoc('terms')">
+        {{ $t('common.termsConditions') }}
 
-      <CircleButton iconName="chevron-right" backgroundColor="none" />
+        <CircleButton iconName="chevron-right" backgroundColor="none" />
+      </div>
+      <div class="row" @click="openDoc('privacy')">
+        {{ $t('common.privacyPolicy') }}
+
+        <CircleButton iconName="chevron-right" backgroundColor="none" />
+      </div>
+      <div class="row" @click="openDoc('unsupportedCountries')">
+        {{ $t('soraCard.unsupportedCountries') }}
+
+        <CircleButton iconName="chevron-right" backgroundColor="none" />
+      </div>
+
+      <Disclaimer />
     </div>
-    <div class="row" @click="openDoc('privacy')">
-      {{ $t('common.privacyPolicy') }}
 
-      <CircleButton iconName="chevron-right" backgroundColor="none" />
-    </div>
-    <div class="row" @click="openDoc('unsupportedCountries')">
-      {{ $t('soraCard.unsupportedCountries') }}
-
-      <CircleButton iconName="chevron-right" backgroundColor="none" />
-    </div>
+    <Button
+      text="common.acceptContinue"
+      width="100%"
+      size="big"
+      fontSize="big"
+      :border="false"
+      @click="$emit('proceed')"
+    />
   </div>
 </template>
 
@@ -25,9 +38,12 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { URLS } from '@/consts/urls';
+import Disclaimer from '@/screens/soraCard/stepsKYC/Disclaimer.vue';
 
-@Component
-export default class DisclaimerForm extends Vue {
+@Component({
+  components: { Disclaimer },
+})
+export default class Introduction extends Vue {
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
   openDoc(value: 'terms' | 'privacy' | 'unsupportedCountries') {
@@ -43,6 +59,7 @@ export default class DisclaimerForm extends Vue {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  height: 100%;
 
   .row {
     display: flex;

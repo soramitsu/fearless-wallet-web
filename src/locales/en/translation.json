@@ -316,7 +316,6 @@
     "phoneNumber": "Phone number",
     "code": "Code",
     "verificationCode": "Verification code",
-    "yourTestCode": "Your code for testing purposes: 123456",
     "confirmSMScode": "Confirm SMS code",
     "sendVerificationEmail": "Send verification email",
     "codeLength": "Code length 6 characters",
@@ -339,7 +338,8 @@
     "seeList": "See the list",
     "getXORLabel": "You can swap for XOR or buy with Euro",
     "buyXORWithEUR": "Buy XOR with EUR",
-    "swapXOR": "Swap crypto for XOR"
+    "swapXOR": "Swap crypto for XOR",
+    "invalidCode": "Code incorrect"
   },
   "disclaimers": {
     "swapDisclaimer1": "Polkaswap is maintained by the SORA community. Before continuing to use Polkaswap, please review the",

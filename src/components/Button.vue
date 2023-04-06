@@ -6,6 +6,7 @@
       :size="size"
       :disabled="disabled"
       :class="buttonClasses"
+      :loading="loading"
       @click="$emit('click')"
     >
       <Icon v-if="shouldBeWithIcon" :icon="prepIconName" :className="prepIconClass" :iconColor="iconColor" />
@@ -37,6 +38,7 @@ export default class Button extends Vue {
   @Prop({ default: 'medium' }) fontSize!: FontSize;
   @Prop({ default: 'medium' }) borderRadius!: Size;
   @Prop({ default: false }) disabled!: boolean;
+  @Prop({ default: false }) loading!: boolean;
   @Prop({ default: true }) hover!: boolean;
   @Prop({ default: true }) border!: boolean;
 

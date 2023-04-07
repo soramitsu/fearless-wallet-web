@@ -22,23 +22,18 @@ import {
   BasicTxResponse,
   BasicTxWarning,
   BasicTxWarningCode,
-  CachedUnlocks,
   Port,
   PriceJson,
-  RequestAccountExportPrivateKey,
   RequestCheckSwap,
   RequestCheckTransfer,
   RequestCurrentAccountAddress,
-  RequestJsonValidate,
   RequestSwap,
   RequestTransfer,
-  ResponseAccountExportPrivateKey,
   ResponseCheckSwap,
   ResponseCheckTransfer,
   ResponseCreateAccountSuri,
   ResponseMakeSwap,
   TransferErrorCode,
-  ValidateJsonResult,
 } from '../types/types';
 import { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import {
@@ -62,8 +57,10 @@ import { estimateFee, makeTransfer } from '../../api/substrate/transfer';
 import { getTokenInfo } from '../../api/substrate/registry';
 import { createSwap } from '../../api/substrate/swaps';
 import { withErrorLog } from './helpers';
-import State, { registry } from './State';
+import { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
+import FWExtensionBase from './ExtensionBase';
+
 import { state } from '.';
 import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type {
@@ -100,14 +97,10 @@ import type {
   RequestSigningIsLocked,
   RequestTypes,
   RequestUpdateAuthorizedAccounts,
-  ResponseAccountExport,
-  ResponseAccountsExport,
   ResponseAuthorizeList,
   ResponseDeriveValidate,
-  ResponseJsonGetAccountInfo,
   ResponseSeedCreate,
   ResponseSeedValidate,
-  ResponseSigningIsLocked,
   ResponseType,
   SigningRequest,
 } from '../types/types';
@@ -115,7 +108,6 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
-import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { googleManage } from '@/controllers/googleController';
 import {
   AssetJson,
@@ -169,24 +161,9 @@ async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> 
   return transformedAccounts;
 }
 
-export default class Extension {
-  private token: string;
-  protected cachedUnlocks: CachedUnlocks;
-
-  constructor() {
-    this.cachedUnlocks = {};
-
-    this.token = '';
-  }
-
+export default class Extension extends FWExtensionBase {
   private cancelSubscription(id: string): boolean {
-    return state.cancelSubscription(id);
-  }
-
-  accountsCreateExternal({ address, genesisHash, name }: RequestAccountCreateExternal): boolean {
-    keyring.addExternal(address, { genesisHash, name });
-
-    return true;
+    return this.state.cancelSubscription(id);
   }
 
   accountsCreateHardware({
@@ -200,16 +177,6 @@ export default class Extension {
     keyring.addHardware(address, hardwareType, { accountIndex, addressOffset, genesisHash, name });
 
     return true;
-  }
-
-  validateDerivationPath({ value, keypairType }: DerivationPath): boolean {
-    try {
-      keyring.createFromUri(`${VALID_MNEMONIC}${value}`, {}, keypairType);
-
-      return true;
-    } catch {
-      return false;
-    }
   }
 
   async accountsCreateSuri({
@@ -244,21 +211,11 @@ export default class Extension {
     };
   }
 
-  accountsExport({ address, password }: RequestAccountExport): ResponseAccountExport {
-    return { exportedJson: keyring.backupAccount(keyring.getPair(address), password) };
-  }
-
-  async accountsBatchExport({ addresses, password }: RequestAccountBatchExport): Promise<ResponseAccountsExport> {
-    return {
-      exportedJson: await keyring.backupAccounts(addresses, password),
-    };
-  }
-
   async accountsForget({ address, type }: RequestAccountForget): Promise<boolean> {
     const authorizedAccountsDiff: AuthorizedAccountsDiff = [];
 
     // cycle through authUrls and prepare the array of diff
-    Object.entries(state.authUrls).forEach(([url, urlInfo]) => {
+    Object.entries(this.state.authUrls).forEach(([url, urlInfo]) => {
       if (!urlInfo.authorizedAccounts.includes(address)) {
         return;
       }
@@ -269,14 +226,14 @@ export default class Extension {
       ]);
     });
 
-    state.updateAuthorizedAccounts(authorizedAccountsDiff);
+    this.state.updateAuthorizedAccounts(authorizedAccountsDiff);
 
     //  cycle through default account selection for auth and remove any occurence of the account
     if (!isEthereumAddress(address)) {
-      const newDefaultAuthAccounts = state.defaultAuthAccountSelection.filter(
+      const newDefaultAuthAccounts = this.state.defaultAuthAccountSelection.filter(
         (defaultSelectionAddress) => defaultSelectionAddress !== address
       );
-      state.updateDefaultAuthAccounts(newDefaultAuthAccounts);
+      this.state.updateDefaultAuthAccounts(newDefaultAuthAccounts);
     }
 
     if (type === 'native') {
@@ -290,7 +247,7 @@ export default class Extension {
 
     const accounts = keyring.getAccounts();
     const currentAcc = await new Promise<CurrentAccountInfo | undefined>((res) => {
-      state.getCurrentAccount((value) => {
+      this.state.getCurrentAccount((value) => {
         res(value);
       });
     });
@@ -311,61 +268,6 @@ export default class Extension {
 
       this.updateCurrentAccountAddress(currentAccount ? currentAccount.address : '');
     }
-
-    return true;
-  }
-
-  refreshAccountPasswordCache(pair: KeyringPair): number {
-    const { address, meta } = pair;
-    const ethereumAddress = meta.ethereumAddress as string;
-
-    // const { cachedUnlocks } = await state.getFromStorage(['cachedUnlocks']);
-    const savedExpiry = this.cachedUnlocks[address] || 0;
-
-    const remainingTime = savedExpiry - Date.now();
-
-    if (remainingTime < 0) {
-      this.cachedUnlocks[address] = 0;
-      if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = 0;
-
-      pair.lock();
-
-      if (ethereumAddress) {
-        const ethereumPair = keyring.getPair(ethereumAddress);
-
-        ethereumPair.lock();
-      }
-
-      return 0;
-    }
-
-    return remainingTime;
-  }
-
-  public encodeAddress = (key: string | Uint8Array, ss58Format = 42): string => {
-    return keyring.encodeAddress(key, ss58Format);
-  };
-
-  public decodeAddress = (key: string | Uint8Array, ignoreChecksum?: boolean, ss58Format?: number): Uint8Array => {
-    return keyring.decodeAddress(key, ignoreChecksum, ss58Format);
-  };
-
-  accountsShow({ address, isShowing }: RequestAccountShow): boolean {
-    const pair = keyring.getPair(address);
-
-    assert(pair, 'Unable to find pair');
-
-    keyring.saveAccountMeta(pair, { ...pair.meta, isHidden: !isShowing });
-
-    return true;
-  }
-
-  accountsTie({ address, genesisHash }: RequestAccountTie): boolean {
-    const pair = keyring.getPair(address);
-
-    assert(pair, 'Unable to find pair');
-
-    keyring.saveAccountMeta(pair, { ...pair.meta, genesisHash });
 
     return true;
   }
@@ -395,7 +297,7 @@ export default class Extension {
   }
 
   async authorizeApprove({ authorizedAccounts, id }: RequestAuthorizeApprove): Promise<boolean> {
-    const queued = await state.getAuthRequest(id);
+    const queued = await this.state.getAuthRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -406,11 +308,11 @@ export default class Extension {
   }
 
   async authorizeUpdate({ authorizedAccounts, url }: RequestUpdateAuthorizedAccounts): Promise<void> {
-    return state.updateAuthorizedAccounts([[url, authorizedAccounts]]);
+    return this.state.updateAuthorizedAccounts([[url, authorizedAccounts]]);
   }
 
   async getAuthList(): Promise<ResponseAuthorizeList> {
-    return { list: state.authUrls };
+    return { list: this.state.authUrls };
   }
 
   async isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
@@ -425,12 +327,12 @@ export default class Extension {
         }
 
         const tabHostName = new URL(tab.url).hostname;
-        const authorizeUrl = Object.keys(state.authUrls).filter((url) => url === tabHostName);
+        const authorizeUrl = Object.keys(this.state.authUrls).filter((url) => url === tabHostName);
         const isAuthorize = authorizeUrl.length !== 0;
 
         resolve({
           isAuthorize,
-          authorizeAccountsCount: isAuthorize ? state.authUrls[tabHostName].authorizedAccounts.length : 0,
+          authorizeAccountsCount: isAuthorize ? this.state.authUrls[tabHostName].authorizedAccounts.length : 0,
           dAppName: tabHostName,
         });
       });
@@ -440,7 +342,7 @@ export default class Extension {
   authorizeSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(authorize.requests)'>(id, port);
 
-    const subscription = state.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
+    const subscription = this.state.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -451,29 +353,20 @@ export default class Extension {
   }
 
   async metadataApprove({ id }: RequestMetadataApprove): Promise<boolean> {
-    const queued = state.getMetaRequest(id);
+    const queued = this.state.getMetaRequest(id);
 
     assert(queued, 'Unable to find request');
 
     const { request, resolve } = await queued;
 
-    state.saveMetadata(request);
+    this.state.saveMetadata(request);
 
     resolve(true);
 
     return true;
   }
-
-  metadataGet(genesisHash: string | null): MetadataDef | null {
-    return state.knownMetadata.find((result) => result.genesisHash === genesisHash) || null;
-  }
-
-  metadataList(): MetadataDef[] {
-    return state.knownMetadata;
-  }
-
   async metadataReject({ id }: RequestMetadataReject): Promise<boolean> {
-    const queued = await state.getMetaRequest(id);
+    const queued = await this.state.getMetaRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -486,9 +379,9 @@ export default class Extension {
 
   metadataSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(metadata.requests)'>(id, port);
-    // const { metaSubject } = await state.getFromStorage(['metaSubject']);
+    // const { metaSubject } = await this.state.getFromStorage(['metaSubject']);
 
-    const subscription = state.metaSubject.subscribe((requests: MetadataRequest[]): void => cb(requests));
+    const subscription = this.state.metaSubject.subscribe((requests: MetadataRequest[]): void => cb(requests));
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -543,50 +436,6 @@ export default class Extension {
     }
   }
 
-  jsonValid({ file, password, isSubstrate }: RequestJsonValidate): ValidateJsonResult {
-    try {
-      const pair = keyring.restoreAccount(file, password);
-      pair.decodePkcs8(password);
-      if (isSubstrate) keyring.encodeAddress(pair.address);
-
-      return { value: true };
-    } catch (error: any) {
-      const errorType =
-        error.message === 'Unable to decode using the supplied passphrase' ? 'jsonPassword' : 'jsonInvalid';
-
-      return { value: false, errorType };
-    }
-  }
-
-  batchRestore({ file, password }: RequestBatchRestore): void {
-    try {
-      keyring.restoreAccounts(file, password);
-    } catch (error) {
-      throw new Error((error as Error).message);
-    }
-  }
-
-  jsonGetAccountInfo(json: KeyringPair$Json): ResponseJsonGetAccountInfo {
-    try {
-      const {
-        address,
-        meta: { genesisHash, name, ethereumAddress },
-        type,
-      } = keyring.createFromJson(json);
-
-      return {
-        address,
-        ethereumAddress,
-        genesisHash,
-        name,
-        type,
-      } as ResponseJsonGetAccountInfo;
-    } catch (e) {
-      console.error(e);
-      throw new Error((e as Error).message);
-    }
-  }
-
   private async enableNetworkMap(networkKey: string): Promise<boolean> {
     const networkMap = this.getNetworkMap();
 
@@ -594,12 +443,12 @@ export default class Extension {
       return false;
     }
 
-    return state.enableNetworkMap(networkKey);
+    return this.state.enableNetworkMap(networkKey);
   }
 
   private async upsertNetworkMap(data: NetworkJsonOld): Promise<boolean> {
     try {
-      return await state.upsertNetworkMap(data);
+      return await this.state.upsertNetworkMap(data);
     } catch (e) {
       console.error(e);
 
@@ -627,7 +476,7 @@ export default class Extension {
       allGenesisHash: ALL_GENESIS_HASH || undefined,
     };
 
-    state.setCurrentAccount(accountInfo, () => {
+    this.state.setCurrentAccount(accountInfo, () => {
       callback && callback(accountInfo);
     });
   }
@@ -643,7 +492,7 @@ export default class Extension {
   private updateCurrentAccountAddress(address: string): boolean {
     this._saveCurrentAccountAddress(address, () => {
       this.triggerAccountsSubscription();
-      state.publishBalance();
+      this.state.publishBalance();
     });
 
     return true;
@@ -682,7 +531,7 @@ export default class Extension {
   }
 
   async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
-    const queued = await state.getSignRequest(id);
+    const queued = await this.state.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -708,7 +557,9 @@ export default class Extension {
 
     if (isJsonPayload(payload)) {
       // Get the metadata for the genesisHash
-      const currentMetadata = state.knownMetadata.find((meta: MetadataDef) => meta.genesisHash === payload.genesisHash);
+      const currentMetadata = this.state.knownMetadata.find(
+        (meta: MetadataDef) => meta.genesisHash === payload.genesisHash
+      );
 
       // set the registry before calling the sign function
       registry.setSignedExtensions(payload.signedExtensions, currentMetadata?.userExtensions);
@@ -730,7 +581,7 @@ export default class Extension {
   }
 
   async saveTimeoutCache(address: string): Promise<boolean> {
-    const { cachedUnlocks } = await state.getFromStorage(['cachedUnlocks']);
+    const { cachedUnlocks } = await this.state.getFromStorage(['cachedUnlocks']);
 
     cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
 
@@ -740,52 +591,32 @@ export default class Extension {
   }
 
   async signingApproveSignature({ id, signature }: RequestSigningApproveSignature): Promise<boolean> {
-    State.signature = signature;
-    const queued = await state.getSignRequest(id);
+    this.state.signature = signature;
+
+    const queued = await this.state.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
-    const { resolve } = queued;
-
-    resolve({ id, signature });
+    queued.resolve({ id, signature });
 
     return true;
   }
 
   async signingCancel({ id }: RequestSigningCancel): Promise<boolean> {
-    const queued = await state.getSignRequest(id);
+    const queued = await this.state.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
-    const { reject } = queued;
-
-    reject(new Error('Cancelled'));
+    queued.reject(new Error('Cancelled'));
 
     return true;
   }
 
-  signingIsLocked({ address }: RequestSigningIsLocked): ResponseSigningIsLocked {
-    // const queued = await state.getSignRequest(id);
-    // assert(queued, 'Unable to find request');
-    // const address = queued.request.payload.address;
-
-    const pair = keyring.getPair(address);
-
-    assert(pair, 'Unable to find pair');
-
-    const remainingTime = this.refreshAccountPasswordCache(pair);
-
-    return {
-      isLocked: pair.isLocked,
-      remainingTime,
-    };
-  }
-
   signingSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(signing.requests)'>(id, port);
-    // const { signSubject } = await state.getFromStorage(['signSubject']);
+    // const { signSubject } = await this.state.getFromStorage(['signSubject']);
 
-    const subscription = state.signSubject.subscribe((requests: SigningRequest[]): void => cb(requests));
+    const subscription = this.state.signSubject.subscribe((requests: SigningRequest[]): void => cb(requests));
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -856,21 +687,17 @@ export default class Extension {
   }
 
   async removeAuthorization(url: string): Promise<ResponseAuthorizeList> {
-    const list = await state.removeAuthorization(url);
+    const list = await this.state.removeAuthorization(url);
 
     return { list };
   }
 
   async deleteAuthRequest(requestId: string): Promise<void> {
-    return state.deleteAuthRequest(requestId);
+    return this.state.deleteAuthRequest(requestId);
   }
 
   updateCurrentTabs({ tabs }: RequestActiveTabsUrlUpdate) {
-    state.updateCurrentTabsUrl(tabs);
-  }
-
-  getConnectedTabsUrl() {
-    return state.getConnectedTabsUrl();
+    this.state.updateCurrentTabsUrl(tabs);
   }
 
   createAddress({ address, meta }: RequestAddressCreate) {
@@ -918,21 +745,21 @@ export default class Extension {
   }
 
   cancelAuthRequest(id: string) {
-    state.authorizeCancel({ id });
+    this.state.authorizeCancel({ id });
   }
 
   private createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
-    state.createUnsubscriptionHandle(id, unsubscribe);
+    this.state.createUnsubscriptionHandle(id, unsubscribe);
   }
 
   private getBalance(reset?: boolean): Promise<BalanceJson> {
-    return state.getBalance(reset);
+    return this.state.getBalance(reset);
   }
 
   private subscribeBalance(id: string, port: Port): Promise<BalanceJson> {
     const cb = createSubscription<'pri(balance.get.subscription)'>(id, port);
 
-    const balanceSubscription = state.subscribeBalance().subscribe({
+    const balanceSubscription = this.state.subscribeBalance().subscribe({
       next: (rs) => {
         cb(rs);
       },
@@ -950,7 +777,7 @@ export default class Extension {
   private subscribeHistory(id: string, port: chrome.runtime.Port): Record<string, TransactionHistoryItemType[]> {
     const cb = createSubscription<'pri(transaction.history.get.subscription)'>(id, port);
 
-    const historySubscription = state.subscribeHistory().subscribe({
+    const historySubscription = this.state.subscribeHistory().subscribe({
       next: (rs) => {
         cb(rs);
       },
@@ -962,7 +789,7 @@ export default class Extension {
       this.cancelSubscription(id);
     });
 
-    return state.getHistoryMap();
+    return this.state.getHistoryMap();
   }
 
   private getHistory({ address, networkKey, token }: RequestTransactionHistoryGet) {
@@ -976,7 +803,7 @@ export default class Extension {
   ): boolean {
     const cb = createSubscription<'pri(transaction.history.add)'>(id, port);
 
-    state.setHistory(address, networkKey, item, (items) => {
+    this.state.setHistory(address, networkKey, item, (items) => {
       cb(items);
     });
 
@@ -989,7 +816,7 @@ export default class Extension {
 
   private getPrice(): Promise<PriceJson> {
     return new Promise<PriceJson>((resolve) => {
-      state.getPrice((rs: PriceJson) => {
+      this.state.getPrice((rs: PriceJson) => {
         resolve(rs);
       });
     });
@@ -998,7 +825,7 @@ export default class Extension {
   private subscribePrice(id: string, port: chrome.runtime.Port): Promise<PriceJson> {
     const cb = createSubscription<'pri(price.get.subscription)'>(id, port);
 
-    const priceSubscription = state.subscribePrice().subscribe({
+    const priceSubscription = this.state.subscribePrice().subscribe({
       next: (rs) => {
         cb(rs);
       },
@@ -1027,13 +854,13 @@ export default class Extension {
 
   public async getSoraFee() {
     await apiSora.calcStaticNetworkFees();
-    state.soraFee = FPNumber.fromCodecValue(apiSora.NetworkFee.Swap).toString();
+    this.state.soraFee = FPNumber.fromCodecValue(apiSora.NetworkFee.Swap).toString();
 
-    return state.soraFee;
+    return this.state.soraFee;
   }
 
   private async validateSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
-    // if (!state.soraFee) await this.getSoraFee();
+    // if (!this.state.soraFee) await this.getSoraFee();
 
     const { AToB, BToA, amountA, amountB, minMaxValue, extrinsicOptions, providerFee } = await createSwap(
       options,
@@ -1043,7 +870,7 @@ export default class Extension {
     return {
       swapOptions: extrinsicOptions.swapOptions,
       fee: providerFee,
-      // networkFee: state.soraFee,
+      // networkFee: this.state.soraFee,
       AToB,
       BToA,
       amountA,
@@ -1058,7 +885,7 @@ export default class Extension {
     const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB } = extrinsicOptions;
     let status = false;
     const errors: Array<BasicTxError> = [];
-    const address = await state.getAccountAddress();
+    const address = await this.state.getAccountAddress();
 
     if (!address) {
       errors.push({
@@ -1147,7 +974,7 @@ export default class Extension {
     value: string | undefined,
     transferAll: boolean | undefined
   ): Promise<[Array<BasicTxError>, KeyringPair | undefined, BN | undefined, AssetJson]> {
-    const dotSamaApiMap = state.getSubstrateApiMap;
+    const dotSamaApiMap = this.state.getSubstrateApiMap;
     const errors = [] as Array<BasicTxError>;
     let keypair: KeyringPair | undefined;
     let transferValue;
@@ -1207,22 +1034,18 @@ export default class Extension {
       transferAll
     );
 
-    const dotSamaApiMap = state.getSubstrateApiMap;
-    const web3ApiMap = state.getApiMap.evm;
+    const dotSamaApiMap = this.state.getSubstrateApiMap;
+    const web3ApiMap = this.state.getApiMap.evm;
     let mainToken: string | undefined;
-    let mainTokenDecimals: number | undefined;
     const warnings: BasicTxWarning[] = [];
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
 
     if (!isMainToken) {
-      const mainNetwork = state.getNetworkMapByKey(networkKey);
-
-      mainToken = mainNetwork.nativeToken as string;
-      mainTokenDecimals = mainNetwork.decimals;
+      mainToken = this.state.getNetworkMapByKey(networkKey).nativeToken as string;
     }
 
     const address = this.encodeAddress(from);
-    const existentialDeposit = await getExistentialDeposit(networkKey, token, state.getSubstrateApiMap);
+    const existentialDeposit = await getExistentialDeposit(networkKey, token, this.state.getSubstrateApiMap);
 
     let fee = 0;
     let feeSymbol;
@@ -1230,7 +1053,7 @@ export default class Extension {
     const toAccountFreeBalance = '0';
     // const fromAccountNativeBalance = '0';
 
-    const tokenBalance = state.balanceMap[address].find(
+    const tokenBalance = this.state.balanceMap[address].find(
       (balance) => balance.name === token && balance.relayChain === relayChain
     )!;
 
@@ -1338,13 +1161,6 @@ export default class Extension {
     } as ResponseCheckTransfer;
   }
 
-  private accountExportPrivateKey({
-    address,
-    password,
-  }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
-    return state.accountExportPrivateKey({ address, password });
-  }
-
   private async makeTransfer(
     id: string,
     port: Port,
@@ -1364,6 +1180,7 @@ export default class Extension {
     if (errors.length) {
       txState.txError = true;
       txState.errors = errors;
+
       setTimeout(() => {
         this.cancelSubscription(id);
       }, 500);
@@ -1384,7 +1201,7 @@ export default class Extension {
       if (isEthereumAddress(from) && isEthereumAddress(to)) {
         // Make transfer with EVM API
         const { privateKey } = this.accountExportPrivateKey({ address: from, password });
-        const web3ApiMap = state.getApiMap.evm;
+        const web3ApiMap = this.state.getApiMap.evm;
         const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
 
         if (tokenInfo && !isMainToken && tokenInfo.contractAddress) {
@@ -1403,7 +1220,7 @@ export default class Extension {
           transferProm = makeEVMTransfer(networkKey, to, privateKey, value || '0', !!transferAll, web3ApiMap, callback);
         }
       } else {
-        const dotSamaApiMap = state.getSubstrateApiMap;
+        const dotSamaApiMap = this.state.getSubstrateApiMap;
 
         // Make transfer with Dotsama API
         transferProm = makeTransfer({
@@ -1457,12 +1274,12 @@ export default class Extension {
     return txState;
   }
   private getNetworkMap(): Record<string, NetworkJson> {
-    return state.getNetworkMap;
+    return this.state.getNetworkMap;
   }
 
   private subscribeNetworkMap(id: string, port: Port): Record<string, NetworkJson> {
     const cb = createSubscription<'pri(networkMap.getSubscription)'>(id, port);
-    const networkMapSubscription = state.subscribeNetworkMap().subscribe({
+    const networkMapSubscription = this.state.subscribeNetworkMap().subscribe({
       next: (rs) => {
         cb(rs);
       },
@@ -1593,9 +1410,6 @@ export default class Extension {
       case 'pri(activeTabsUrl.update)':
         return this.updateCurrentTabs(request as RequestActiveTabsUrlUpdate);
 
-      case 'pri(connectedTabsUrl.get)':
-        return this.getConnectedTabsUrl();
-
       case 'pri(derivation.create)':
         return this.derivationCreate(request as RequestDeriveCreate);
 
@@ -1621,7 +1435,7 @@ export default class Extension {
         return this.seedValidate(request as RequestSeedValidate);
 
       case 'pri(settings.notification)':
-        return state.setNotification(request as string);
+        return this.state.setNotification(request as string);
 
       case 'pri(signing.approve.password)':
         return this.signingApprovePassword(request as RequestSigningApprovePassword);

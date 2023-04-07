@@ -152,7 +152,6 @@ export interface RequestSignatures {
   'pri(authorize.cancel)': [string, boolean];
   'pri(authorize.update)': [RequestUpdateAuthorizedAccounts, void];
   'pri(activeTabsUrl.update)': [RequestActiveTabsUrlUpdate, void];
-  'pri(connectedTabsUrl.get)': [null, ConnectedTabsUrlResponse];
   'pri(derivation.create)': [RequestDeriveCreate, boolean];
   'pri(derivation.validate)': [RequestDeriveValidate, ResponseDeriveValidate];
   'pri(json.restore)': [RequestJsonRestore, string];

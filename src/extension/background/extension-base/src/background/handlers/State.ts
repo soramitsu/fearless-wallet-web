@@ -150,7 +150,7 @@ export default class State {
   private readonly authorizeUrlSubject = new Subject<AuthUrls>();
   private readonly currentAccountStore = new CurrentAccountStore();
   public authUrls: AuthUrls = {};
-  public static signature: HexString | null = null;
+  public signature: HexString | null = null;
   public defaultAuthAccountSelection: string[] = [];
   private lockNetworkMap = false;
   public apis: { evm: Record<string, EthProvider>; substrate: Record<string, ApiProps> } = {
@@ -445,29 +445,27 @@ export default class State {
     } else this.setCurrentAccount(undefined);
   }
   public async upsertNetworkMap(data: NetworkJsonOld): Promise<boolean> {
-    if (this.lockNetworkMap) {
-      return false;
-    }
-
+    if (this.lockNetworkMap) return false;
     this.lockNetworkMap = true;
     const { key, currentProvider, chain, blockExplorer, paraId, nativeToken, decimals } = data;
 
     if (key in this.networkMap) {
+      const network = this.networkMap[key];
       // update provider for existed network
-      if (data.customProviders) this.networkMap[data.key].customProviders = data.customProviders;
+      if (data.customProviders) network.customProviders = data.customProviders;
 
-      if (currentProvider !== this.networkMap[key].currentProvider && currentProvider) {
-        this.networkMap[key].currentProvider = currentProvider;
+      if (currentProvider !== network.currentProvider && currentProvider) {
+        network.currentProvider = currentProvider;
       }
 
-      this.networkMap[key].chain = chain;
+      network.chain = chain;
 
-      if (nativeToken) this.networkMap[key].nativeToken = nativeToken;
+      if (nativeToken) network.nativeToken = nativeToken;
 
-      if (decimals) this.networkMap[key].decimals = decimals;
+      if (decimals) network.decimals = decimals;
 
-      this.networkMap[key].paraId = paraId;
-      this.networkMap[key].blockExplorer = blockExplorer;
+      network.paraId = paraId;
+      network.blockExplorer = blockExplorer;
     } else {
       // insert
       this.networkMap[key] = data;
@@ -476,13 +474,11 @@ export default class State {
     if (this.networkMap[key].active) {
       // update API map if network is active
       if (data.key in this.apis.substrate) {
-        this.apis.substrate[data.key].api?.disconnect && (await this.apis.substrate[data.key].api.disconnect());
-        delete this.apis.substrate[data.key];
+        this.apis.substrate[key].api?.disconnect && (await this.apis.substrate[key].api.disconnect());
+        delete this.apis.substrate[key];
       }
 
-      if (data.isEthereum && data.key in this.apis.evm) {
-        delete this.apis.evm[data.key];
-      }
+      if (data.isEthereum && key in this.apis.evm) delete this.apis.evm[key];
 
       const currentProvider = getCurrentProvider(data);
 
@@ -504,9 +500,7 @@ export default class State {
   }
 
   public async disableNetworkMap(networkKey: string): Promise<boolean> {
-    if (this.lockNetworkMap) {
-      return false;
-    }
+    if (this.lockNetworkMap) return false;
 
     this.lockNetworkMap = true;
     this.apis.substrate[networkKey].api.disconnect && (await this.apis.substrate[networkKey].api.disconnect());
@@ -535,9 +529,7 @@ export default class State {
   }
 
   public async enableNetworkMap(networkKey: string) {
-    if (this.lockNetworkMap) {
-      return false;
-    }
+    if (this.lockNetworkMap) return false;
 
     const networkData = this.networkMap[networkKey];
 
@@ -570,9 +562,7 @@ export default class State {
   }
 
   public async enableAllNetworks() {
-    if (this.lockNetworkMap) {
-      return false;
-    }
+    if (this.lockNetworkMap) return false;
 
     this.lockNetworkMap = true;
     const targetNetworkKeys: string[] = [];
@@ -623,11 +613,11 @@ export default class State {
   public async refreshSubstrateApi(key: string) {
     const apiProps = this.apis.substrate[key];
 
-    if (key in this.apis.substrate) {
-      // if (!apiProps.isApiConnected) {
-      //   apiProps.recoverConnect && apiProps.recoverConnect();
-      // }
-    }
+    // if (key in this.apis.substrate) {
+    //   if (!apiProps.isApiConnected) {
+    //     apiProps.recoverConnect && apiProps.recoverConnect();
+    //   }
+    // }
 
     return true;
   }
@@ -635,15 +625,7 @@ export default class State {
   public refreshWeb3Api(key: string) {
     const currentProvider = getCurrentProvider(this.networkMap[key]);
 
-    if (currentProvider) {
-      this.apis.evm[key] = initWeb3Api(currentProvider);
-    }
-  }
-
-  async getConnectedTabsUrl() {
-    const { connectedTabsUrl } = await this.getFromStorage(['connectedTabsUrl']);
-
-    return connectedTabsUrl;
+    if (currentProvider) this.apis.evm[key] = initWeb3Api(currentProvider);
   }
 
   getCurrentTabStatus() {

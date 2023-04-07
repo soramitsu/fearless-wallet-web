@@ -273,6 +273,10 @@ export default class Wallet extends Vue {
     return this.$route.params.access_token && this.$route.params.access_token !== 'null';
   }
 
+  get networksWithWarning() {
+    return this.networks.filter(({ apiStatus }) => apiStatus === 'disconnected');
+  }
+
   @Watch('networksWithWarning')
   connect(value: string[]) {
     if (value.length === 0) this.showNetworkManagement = false;

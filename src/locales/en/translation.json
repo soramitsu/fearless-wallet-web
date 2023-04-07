@@ -323,8 +323,9 @@
     "firstName": "First Name",
     "lastName": "Last Name",
     "useRealName": "Use you real name",
-    "resend": "RESEND IN",
-    "sendCode": "SEND CODE",
+    "resend": "Resend in",
+    "sendCode": "Send code",
+    "sendIn": "Send in",
     "invalidPhone": "Invalid phone number",
     "invalidEmail": "Invalid email",
     "countriesLabel": "Unfortunately, at this moment we are not able to support the following countries:",
@@ -339,7 +340,9 @@
     "getXORLabel": "You can swap for XOR or buy with Euro",
     "buyXORWithEUR": "Buy XOR with EUR",
     "swapXOR": "Swap crypto for XOR",
-    "invalidCode": "Code incorrect"
+    "invalidCode": "Code incorrect",
+    "emailSent": "Follow the magic link that has been sent to",
+    "useAnotherEmail": "Use another email"
   },
   "disclaimers": {
     "swapDisclaimer1": "Polkaswap is maintained by the SORA community. Before continuing to use Polkaswap, please review the",

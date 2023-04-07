@@ -47,7 +47,7 @@ type XorRestPrice = {
 type TransactionStatus = 'success' | 'failed' | 'pending';
 
 export class CurrencyController {
-  private readonly lsCurrency = new LocalStorage('currency');
+  private readonly lsCurrency = new LocalStorage('currency_');
   private readonly visibleStorageName = 'visible';
   public extrinsic!: SubmittableExtrinsic<'promise'> | undefined;
   public extrinsicOptions: ExtrinsicOptions = {};

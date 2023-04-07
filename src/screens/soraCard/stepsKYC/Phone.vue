@@ -65,6 +65,7 @@ import { RESEND_INTERVAL, OTP_CODE_LENGTH } from '@/consts/soraCard';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import Disclaimer from '@/screens/soraCard/stepsKYC/Disclaimer.vue';
+import { soraCardController } from '@/controllers';
 
 @Component({
   components: { Disclaimer },
@@ -139,7 +140,9 @@ export default class Phone extends Vue {
   }
 
   get sendButtontext() {
-    return this.smsSent ? `${this.$t('soraCard.resend')} 0:${this.leftTimeForResend}` : this.$t('soraCard.sendCode');
+    return this.smsSent
+      ? `${this.$t('soraCard.resend')} 0:${this.leftTimeForResend < 10 ? '0' : ''}${this.leftTimeForResend}`
+      : this.$t('soraCard.sendCode');
   }
 
   get sendButtonClasses() {
@@ -158,6 +161,8 @@ export default class Phone extends Vue {
 
   async mounted() {
     this.countryCodeComponent.input.focus();
+
+    soraCardController.removePWEmail();
 
     await this.initAuthLogin();
 
@@ -188,20 +193,24 @@ export default class Phone extends Vue {
         console.error('[SoraCard]: Auth', error);
       });
 
+    this.startInterval();
+
+    this.smsSent = true;
+    this.$nextTick(() => this.otpComponent.input.focus());
+  }
+
+  startInterval() {
     this.leftTimeForResend = RESEND_INTERVAL;
 
     const interval = setInterval(() => {
       this.leftTimeForResend -= 1;
 
       if (this.leftTimeForResend === 0) {
-        clearInterval(interval!);
-
         this.smsSent = false;
+
+        clearInterval(interval!);
       }
     }, 1000);
-
-    this.smsSent = true;
-    this.$nextTick(() => this.otpComponent.input.focus());
   }
 }
 </script>
@@ -240,6 +249,7 @@ export default class Phone extends Vue {
       position: absolute;
       right: 20px;
       top: 15px;
+      text-transform: uppercase;
 
       &:hover {
         background: rgba(108, 22, 195, 0.25);

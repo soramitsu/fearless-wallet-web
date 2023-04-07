@@ -321,8 +321,9 @@
     "firstName": "Имя",
     "lastName": "Фамилия",
     "useRealName": "Используйте свое настоящее имя",
-    "resend": "ОТПРАВИТЬ ПОВТОРНО",
-    "sendCode": "ОТПРАВИТЬ КОД",
+    "resend": "Отправить повторно через",
+    "sendCode": "Отправить код",
+    "sendIn": "Отправить через",
     "invalidPhone": "Недопустимый номер телефона",
     "invalidEmail": "Недопустимый email",
     "countriesLabel": "К сожалению, в данный момент мы не можем поддерживать следующие страны:",
@@ -337,7 +338,9 @@
     "getXORLabel": "Вы можете обменять токены на XOR или купить XOR за евро",
     "buyXORWithEUR": "Купить XOR за EUR",
     "swapXOR": "Обмен криптовалюты на XOR",
-    "invalidCode": "Неверный код"
+    "invalidCode": "Неверный код",
+    "emailSent": "Перейдите по волшебной ссылке, которая была отправлена",
+    "useAnotherEmail": "Использовать другой адрес электронной почты"
   },
   "disclaimers": {
     "swapDisclaimer1": "Polkaswap is maintained by the SORA community. Before continuing to use Polkaswap, please review the",

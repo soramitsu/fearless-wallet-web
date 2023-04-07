@@ -16,7 +16,7 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.INIT_AUTH_LOGIN]({ commit }) {
     const setAuthLogin = (login: any) => commit(MutationTypes.SET_AUTH_LOGIN, login);
 
-    initPayWingsAuthSdk(setAuthLogin);
+    await initPayWingsAuthSdk(setAuthLogin);
   },
 };
 

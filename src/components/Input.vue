@@ -45,7 +45,6 @@ export default class Input extends Vue {
   @Prop({ default: 'default' }) styleInput!: Style;
   @Prop({ default: false }) isError!: boolean;
   @Prop({ default: false }) cursorPointer!: boolean;
-
   @Ref('input') readonly input!: HTMLInputElement;
 
   get wrapperClasses() {

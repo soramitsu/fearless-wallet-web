@@ -1,6 +1,6 @@
 <template>
   <div class="steps">
-    <Introduction
+    <TermsAndConditions
       v-if="syncedStep === 2"
       @proceed="proceed"
       @toggleCountriesFormVisibility="$emit('toggleCountriesFormVisibility')"
@@ -16,7 +16,7 @@
 
 <script lang="ts">
 import { Component, Vue, PropSync } from 'vue-property-decorator';
-import Introduction from '@/screens/soraCard/stepsKYC/Introduction.vue';
+import TermsAndConditions from '@/screens/soraCard/stepsKYC/TermsAndConditions.vue';
 import Phone from '@/screens/soraCard/stepsKYC/Phone.vue';
 import Email from '@/screens/soraCard/stepsKYC/Email.vue';
 import StepsKYCPopup from '@/screens/soraCard/stepsKYC/StepsKYCPopup.vue';
@@ -25,8 +25,8 @@ import StepsKYCPopup from '@/screens/soraCard/stepsKYC/StepsKYCPopup.vue';
   components: {
     Phone,
     Email,
-    Introduction,
     StepsKYCPopup,
+    TermsAndConditions,
   },
 })
 export default class StepsKYC extends Vue {

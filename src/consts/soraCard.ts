@@ -1,3 +1,5 @@
+import { IS_PRODUCTION } from './global';
+
 const UNSUPPORTED_COUNTRIES = {
   dz: 'Algeria',
   bd: 'Bangladesh',
@@ -22,6 +24,6 @@ const UNSUPPORTED_COUNTRIES = {
 } as const;
 
 const OTP_CODE_LENGTH = 6;
-const RESEND_INTERVAL = 59;
+const RESEND_INTERVAL = IS_PRODUCTION ? 59 : 5;
 
 export { UNSUPPORTED_COUNTRIES, RESEND_INTERVAL, OTP_CODE_LENGTH };

@@ -50,7 +50,7 @@ import GetXORPopup from '@/screens/soraCard/GetXORPopup.vue';
 export default class SoraCardPage extends Vue {
   showCountriesForm = false;
   showGetXORPopup = false;
-  step = 3;
+  step = 3; // TODO revert
 
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 

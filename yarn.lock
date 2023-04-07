@@ -10021,6 +10021,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"email-validator@npm:^2.0.4":
+  version: 2.0.4
+  resolution: "email-validator@npm:2.0.4"
+  checksum: e702fee24e1b9efb7e6a84abb309bebdb4ddde137fdb99a61e24bd82ac0b605be34e191b1c4d04fbc855be7b94cad967f932a456c0def2240303881f4e388f2d
+  languageName: node
+  linkType: hard
+
 "emittery@npm:^0.8.1":
   version: 0.8.1
   resolution: "emittery@npm:0.8.1"
@@ -11215,6 +11222,7 @@ __metadata:
     electron-builder: 23.0.2
     electron-debug: ^3.2.0
     electron-devtools-installer: ^3.2.0
+    email-validator: ^2.0.4
     env-cmd: ^10.1.0
     eslint: ^7.29.0
     eslint-plugin-import: ^2.25.2

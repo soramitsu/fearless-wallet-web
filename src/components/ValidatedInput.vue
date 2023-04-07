@@ -38,9 +38,7 @@ export default class ValidatedInput extends Vue {
   @Prop({ default: false }) disabled!: boolean;
   @Prop({ default: 'uppercase' }) typeText!: string;
   @Prop({ default: 'big' }) size!: string;
-  @Prop({ default: '' }) refName!: string;
   @Prop({ default: 'text' }) type!: Type;
-
   @Ref('input') readonly inputComponent!: Input;
 
   get input() {

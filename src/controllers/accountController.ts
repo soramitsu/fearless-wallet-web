@@ -3,7 +3,7 @@ import type { Lang } from '@/locales';
 import { LocalStorage } from '@/controllers/localStorageController';
 
 class AccountController {
-  private readonly lsAccount = new LocalStorage('account');
+  private readonly lsAccount = new LocalStorage('account_');
   private readonly langStorageName = 'lang';
   private readonly sequenceAssetsStorageName = 'sequence-assets';
   private readonly autoSelectNodesStorageName = 'auto-select-nodes';

@@ -1,5 +1,4 @@
 import type { TypeAsset } from '@/interfaces';
-import BaseApi from '@/util/BaseApi';
 
 // type ExtrinsicTransferProps = {
 //   api: ApiPromise;
@@ -22,7 +21,7 @@ function getAssetOptions(symbol: string, type: TypeAsset, assetId: string) {
   if (type === 'liquidCrowdloan') return { LiquidCrowdloan: currencyId };
   if (type === 'stableAssetPoolToken') return { StableAssetPoolToken: currencyId };
   if (type === 'soraAsset') return currencyId;
-  if (type === 'equilibrium') return BaseApi.getEquilibriumAssetId(symbol);
+  // if (type === 'equilibrium') return BaseApi.getEquilibriumAssetId(symbol);
 
   return { Token: symbol.toUpperCase() };
 }

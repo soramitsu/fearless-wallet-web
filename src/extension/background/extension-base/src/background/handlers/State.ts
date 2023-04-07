@@ -46,7 +46,7 @@ import {
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';
-import { APIItemState, BalanceItem, CustomToken, CustomTokenJson, NETWORK_STATUS } from '../../api/evm/types/ether';
+import { BalanceItem, CustomToken, CustomTokenJson, NETWORK_STATUS } from '../../api/evm/types/ether';
 import CustomTokenStore from '../../stores/CustomEvmToken';
 import CurrentAccountStore, { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import { initEvmTokenState } from '../../api/evm/utils/eth';

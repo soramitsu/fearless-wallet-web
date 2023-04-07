@@ -7,7 +7,6 @@ import {
   evmToAddress,
 } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
-import { assetFromToken } from '@equilab/api';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
@@ -460,9 +459,9 @@ export default class BaseApi {
   //   return '';
   // }
 
-  public static getEquilibriumAssetId(symbol: string): number {
-    return assetFromToken(symbol)[0];
-  }
+  // public static getEquilibriumAssetId(symbol: string): number {
+  //   return assetFromToken(symbol)[0];
+  // }
 
   // static updateWalletName(address: string, name: string): void {
   //   if (BaseApi.isMobileWallet(address)) {

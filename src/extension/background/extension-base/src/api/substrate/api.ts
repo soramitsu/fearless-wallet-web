@@ -1,28 +1,18 @@
 // Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-import { connection as soraConnection } from '@sora-substrate/util';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { TypeRegistry } from '@polkadot/types/create';
-import { ChainProperties, ChainType } from '@polkadot/types/interfaces';
 import { Registry } from '@polkadot/types/types';
-import { api as apiSora } from '@sora-substrate/util';
+import { api as apiSora, connection as soraConnection } from '@sora-substrate/util';
 import { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
 import { ApiProps } from '../../background/types/types';
-import { DOTSAMA_AUTO_CONNECT_MS, DOTSAMA_MAX_CONTINUE_RETRY } from '../../const/intervals';
+import { DOTSAMA_AUTO_CONNECT_MS } from '../../const/intervals';
 import { state } from '../../background/handlers';
 import { NetworkJsonOld } from '../../types';
 import { getCurrentProvider } from '../../utils';
 import { isSora } from '@/helpers/common';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
 export const DEFAULT_AUX = ['Aux1', 'Aux2', 'Aux3', 'Aux4', 'Aux5', 'Aux6', 'Aux7', 'Aux8', 'Aux9'];
-
-interface ChainData {
-  properties: ChainProperties;
-  systemChain: string;
-  systemChainType: ChainType;
-  systemName: string;
-  systemVersion: string;
-}
 
 function createApiObject(apiUrl: string, isEthereum: boolean, registry: TypeRegistry) {
   const result: ApiProps = {
@@ -176,7 +166,9 @@ export async function initApi(network: NetworkJsonOld): Promise<void> {
         onReady(apiObject, networkName);
       })
       // On ready: Load all metadata and ready to init data
-      .on('error', console.error);
+      .on('error', () => {
+        //
+      });
   }
 
   state.apis.substrate[networkName] = apiObject;

@@ -70,8 +70,7 @@ import type {
   GetAutoSelectNodesValueByNetwork,
   GetActiveNodesByNetwork,
 } from '@/store';
-import type { Node, Networks, TMutation } from '@/interfaces';
-import { NetworksController, accountController } from '@/controllers';
+import type { Node, TMutation } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';

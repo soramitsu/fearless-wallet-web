@@ -1,13 +1,10 @@
 // Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { assetFromToken } from '@equilab/api';
-
 import { SubmittableExtrinsic } from '@polkadot/api/promise/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { AccountInfoWithProviders, AccountInfoWithRefCount, EventRecord } from '@polkadot/types/interfaces';
-import { BN } from '@polkadot/util';
-import { FPNumber } from '@sora-substrate/math';
+import { FPNumber } from '@sora-substrate/util';
 import {
   ApiProps,
   BasicTxResponse,

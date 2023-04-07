@@ -118,6 +118,7 @@ export default class App extends Vue {
   }
 
   async setupWallet() {
+    let isFirstTime = true;
     await subscribeAccounts((accounts) => {
       console.info(accounts, 'accounts');
       const isAccountsExists = accounts.length === 0;
@@ -126,7 +127,8 @@ export default class App extends Vue {
       this.setSelectedWallet(selectedAccount);
       this.setAccounts({ accounts });
 
-      if (isAccountsExists && this.$route.name === Components.Welcome) {
+      if (isAccountsExists && isFirstTime) {
+        isFirstTime = false;
         this.$router.push(Components.Wallet);
       }
     });

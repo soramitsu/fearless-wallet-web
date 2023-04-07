@@ -439,9 +439,7 @@ export default class Extension extends FWExtensionBase {
   private async enableNetworkMap(networkKey: string): Promise<boolean> {
     const networkMap = this.getNetworkMap();
 
-    if (!(networkKey in networkMap)) {
-      return false;
-    }
+    if (!(networkKey in networkMap)) return false;
 
     return this.state.enableNetworkMap(networkKey);
   }
@@ -464,6 +462,7 @@ export default class Extension extends FWExtensionBase {
       seed,
     };
   }
+
   private _saveCurrentAccountAddress(address: string, callback?: (data: CurrentAccountInfo | undefined) => void) {
     const currentKeyPair = keyring.getAccount(address);
 
@@ -546,7 +545,7 @@ export default class Extension extends FWExtensionBase {
 
     const { address } = pair;
 
-    const remainTime = this.refreshAccountPasswordCache(pair);
+    this.refreshAccountPasswordCache(pair);
 
     // if the keyring pair is locked, the password is needed
     if (pair.isLocked && !password) reject(new Error('Password needed to unlock the account'));

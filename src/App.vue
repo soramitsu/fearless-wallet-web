@@ -53,13 +53,11 @@ export default class App extends Vue {
   @Action(AccountsActionTypes.SET_SELECTED_FIAT) setSelectedFiat!: TAction<SetSelectedFiatProps>;
 
   async created() {
-    if (BaseApi.isExtension()) {
-      this.extensionSubscribe();
-    }
+    if (BaseApi.isExtension()) this.extensionSubscribe();
 
     await NetworksController.loadJsons();
+    await this.setupWallet();
     this.setupSWPing();
-    this.setupWallet();
     this.setupPrice();
     this.setupNetworks();
     this.setupBalance();
@@ -120,7 +118,7 @@ export default class App extends Vue {
   }
 
   async setupWallet() {
-    subscribeAccounts((accounts) => {
+    await subscribeAccounts((accounts) => {
       console.info(accounts, 'accounts');
       const isAccountsExists = accounts.length === 0;
       const selectedAccount = isAccountsExists ? undefined : accounts.find((el) => el.active);

@@ -430,20 +430,29 @@ export default class State {
       dAppName: tabHostName,
     };
   }
+
   public async onInstall() {
-    if (process.env.NODE_ENV === 'development') {
+    await this.getCurrentAccount((account) => {
       const accounts = keyring.getAccounts().filter((el) => !isEthereumAddress(el.address));
 
-      if (accounts.length)
+      if (accounts.length && !account) {
+        const [{ address, meta }] = accounts;
+
         this.setCurrentAccount({
-          address: accounts[0].address,
-          name: accounts[0].meta.name as string,
-          ethereumAddress: accounts[0].meta.ethereumAddress as string,
+          address,
+          name: meta.name as string,
+          ethereumAddress: meta.ethereumAddress as string,
           currentGenesisHash: null,
-          isMobile: accounts[0].meta.isMobile as boolean,
+          isMobile: meta.isMobile as boolean,
         });
-    } else this.setCurrentAccount(undefined);
+
+        return;
+      }
+
+      this.setCurrentAccount(undefined);
+    });
   }
+
   public async upsertNetworkMap(data: NetworkJsonOld): Promise<boolean> {
     if (this.lockNetworkMap) return false;
     this.lockNetworkMap = true;

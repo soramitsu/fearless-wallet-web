@@ -5,9 +5,9 @@
         <Input
           v-model="countryCode"
           ref="countryCode"
-          placeholder="soraCard.code"
           size="big"
           class="phone-code"
+          :placeholder="countryCodePlaceholder"
           :disabled="phoneInputDisabled"
         />
 
@@ -16,8 +16,8 @@
           ref="phoneNumber"
           placeholder="soraCard.phoneNumber"
           size="big"
-          class="phone"
           errorDescriptions="soraCard.invalidPhone"
+          class="phone"
           :maxlength="10"
           :isError="isErrorPhoneNumber"
           :disabled="phoneInputDisabled"
@@ -66,6 +66,7 @@ import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import Disclaimer from '@/screens/soraCard/stepsKYC/Disclaimer.vue';
 import { soraCardController } from '@/controllers';
+import { isNumber } from '@/helpers/numbers';
 
 @Component({
   components: { Disclaimer },
@@ -86,6 +87,10 @@ export default class Phone extends Vue {
 
   @Action(SoraCardActionTypes.INIT_AUTH_LOGIN) initAuthLogin!: AsyncFn;
   @Getter(SoraCardGettersTypes.authLogin) authLogin!: any;
+
+  get countryCodePlaceholder(): string {
+    return this.countryCode ? 'soraCard.code' : '+44';
+  }
 
   get errorDescriptionsOtp() {
     return this.enteredOTpCodeIsIncorrect ? 'soraCard.invalidCode' : 'soraCard.codeLength';
@@ -116,7 +121,13 @@ export default class Phone extends Vue {
       this.phoneNumberComponent.input.focus();
     }
 
-    this.countryCodeInternal = value;
+    const isDeleteSymbol = value.length < this.countryCodeInternal.length;
+
+    if (isNumber(value[value.length - 1]) || isDeleteSymbol) {
+      if (value.length === 1) {
+        this.countryCodeInternal = isDeleteSymbol ? '' : `+${value}`;
+      } else this.countryCodeInternal = value;
+    }
   }
 
   get phoneNumber() {
@@ -128,7 +139,8 @@ export default class Phone extends Vue {
       this.countryCodeComponent.input.focus();
     }
 
-    this.phoneNumberInternal = value;
+    if (isNumber(value[value.length - 1]) || value.length < this.phoneNumberInternal.length)
+      this.phoneNumberInternal = value;
   }
 
   get isPhoneNumberValid() {

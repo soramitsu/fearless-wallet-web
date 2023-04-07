@@ -636,7 +636,6 @@ export class CurrencyController {
     if (this.xorPerEuroRatio === undefined) return { euroToPay: '0', euroToPayInXor: '0' };
 
     const xorTotalBalance = new FPNumber(this.getTotalCountAssets(wallet, network));
-
     const euroToPay = FPNumber.HUNDRED.add(FPNumber.ONE).sub(xorTotalBalance.mul(this.xorPerEuroRatio));
     const euroToPayInXor = euroToPay.div(this.xorPerEuroRatio);
 

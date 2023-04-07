@@ -54,4 +54,8 @@ function getChangeWalletBalance(currencies: Currencies, address: string, ethereu
   };
 }
 
-export { formattedNumber, addNumbers, getChangeWalletBalance };
+function isNumber(value: any) {
+  return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].includes(+value);
+}
+
+export { formattedNumber, addNumbers, getChangeWalletBalance, isNumber };

@@ -126,6 +126,8 @@ export default class Email extends Vue {
     if (!this.authLogin) return;
 
     this.authLogin.on('Email-verified', () => {
+      alert('Email-verified');
+
       this.unconfirmedEmail = '';
       this.$emit('proceed');
     });

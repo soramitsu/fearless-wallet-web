@@ -197,7 +197,7 @@ export default class Preview extends Vue {
   }
 
   @Watch('currencyXOR')
-  filter() {
+  currencyXORWatcher() {
     this.currencyXOR?.getXorPerEuroRatio();
   }
 

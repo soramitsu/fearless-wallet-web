@@ -1,5 +1,7 @@
 <template>
-  <div class="introduction">
+  <ExternalWidget v-if="link" :src="link" backgroundColor="polkaswap" withBorder />
+
+  <div v-else class="terms-conditions">
     <div>
       <Alert headerText="common.disclaimer" message="soraCard.warningKYC" sizeText="small" />
 
@@ -44,18 +46,20 @@ import Disclaimer from '@/screens/soraCard/stepsKYC/Disclaimer.vue';
   components: { Disclaimer },
 })
 export default class TermsAndConditions extends Vue {
+  link = '';
+
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 
   openDoc(value: 'terms' | 'privacy' | 'unsupportedCountries') {
-    if (value === 'terms') window.open(URLS.SORA_CARD_TERMS);
-    else if (value === 'privacy') window.open(URLS.SORA_CARD_PRIVACY);
+    if (value === 'terms') this.link = URLS.SORA_CARD_TERMS;
+    else if (value === 'privacy') this.link = URLS.SORA_CARD_PRIVACY;
     else this.$emit('toggleCountriesFormVisibility');
   }
 }
 </script>
 
 <style scoped lang="scss">
-.introduction {
+.terms-conditions {
   display: flex;
   flex-direction: column;
   justify-content: space-between;

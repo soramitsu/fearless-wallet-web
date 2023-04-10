@@ -10,8 +10,8 @@ const FIATS = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/androi
 
 const FEARLESS_TERMS = 'https://fearlesswallet.io/terms/';
 const FEARLESS_PRIVACY = 'https://fearlesswallet.io/privacy/';
-const SORA_CARD_PRIVACY = 'https://soracard.com/privacy/';
-const SORA_CARD_TERMS = 'https://soracard.com/terms/';
+const SORA_CARD_PRIVACY = 'https://soracard.com/terms/en/polkaswap/';
+const SORA_CARD_TERMS = 'https://soracard.com/privacy/en/polkaswap/';
 const FEARLESS_WALLET = 'https://fearlesswallet.io/';
 const WIKI = 'https://wiki.fearlesswallet.io/';
 const GITHUB = 'https://github.com/soramitsu/fearless-wallet-web';

@@ -19,19 +19,19 @@
 
       <StepsKYC
         v-else
+        ref="stepsKYC"
         :step="step"
         @toggleCountriesFormVisibility="toggleCountriesFormVisibility"
         @update:step="proceed"
       />
     </div>
-
-    <GetXORPopup v-if="showGetXORPopup" :handlerClose="closeGetXORPopup" />
   </AboveForm>
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Ref } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import type TermsAndConditions from '@/screens/soraCard/stepsKYC/TermsAndConditions.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
 import StepsKYC from '@/screens/soraCard/stepsKYC/StepsKYC.vue';
@@ -50,9 +50,10 @@ import GetXORPopup from '@/screens/soraCard/GetXORPopup.vue';
 export default class SoraCardPage extends Vue {
   showCountriesForm = false;
   showGetXORPopup = false;
-  step = 1;
+  step = 2;
 
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Ref('stepsKYC') readonly stepsKYC!: StepsKYC;
 
   get showBackIcon() {
     return this.showCountriesForm || this.step > 1;
@@ -77,7 +78,10 @@ export default class SoraCardPage extends Vue {
   }
 
   handlerBack() {
-    if (this.showCountriesForm) this.toggleCountriesFormVisibility();
+    const link = (this.stepsKYC.$refs.termsAndConditions as TermsAndConditions).link;
+
+    if (this.step === 2 && link) (this.stepsKYC.$refs.termsAndConditions as TermsAndConditions).link = '';
+    else if (this.showCountriesForm) this.toggleCountriesFormVisibility();
     else this.step -= 1;
   }
 

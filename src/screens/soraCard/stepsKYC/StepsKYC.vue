@@ -2,6 +2,7 @@
   <div class="steps">
     <TermsAndConditions
       v-if="syncedStep === 2"
+      ref="termsAndConditions"
       @proceed="proceed"
       @toggleCountriesFormVisibility="$emit('toggleCountriesFormVisibility')"
     />
@@ -15,7 +16,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, PropSync } from 'vue-property-decorator';
+import { Component, Vue, PropSync, Ref } from 'vue-property-decorator';
 import TermsAndConditions from '@/screens/soraCard/stepsKYC/TermsAndConditions.vue';
 import Phone from '@/screens/soraCard/stepsKYC/Phone.vue';
 import Email from '@/screens/soraCard/stepsKYC/Email.vue';
@@ -33,6 +34,7 @@ export default class StepsKYC extends Vue {
   showStepsKYCPopup = false;
 
   @PropSync('step', { type: Number }) syncedStep!: number;
+  @Ref('termsAndConditions') readonly termsAndConditions!: TermsAndConditions;
 
   proceed() {
     if (this.syncedStep === 2 && !this.showStepsKYCPopup) this.showStepsKYCPopup = true;

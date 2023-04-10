@@ -22,6 +22,7 @@ interface BalanceFP {
   locked: FPNumber;
   reserved: FPNumber;
   transferable: FPNumber;
+  muchTotal?: FPNumber; // only for XOR
 }
 
 type WalletBalance = AssetBalance & {

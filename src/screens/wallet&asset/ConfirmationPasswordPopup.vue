@@ -114,7 +114,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transactionAddress() {
-    return this.currency?.getTransactionAddress(this.selectedWallet, this.network) ?? '';
+    return BaseApi.getTransactionAddress(this.selectedWallet, this.network) ?? '';
   }
 
   get disabledButton() {

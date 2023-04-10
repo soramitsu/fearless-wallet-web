@@ -18,9 +18,10 @@ import { Getter } from 'vuex-class';
 import type { Currencies } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
 import { Components } from '@/router/routes';
-import { SORA_UTILITY_ASSET, SORA_NETWORK_NAME } from '@/consts/networks';
+import { SORA_NETWORK_NAME } from '@/consts/networks';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { getXORCurrency } from '@/helpers/currencies';
 
 @Component
 export default class GetXORPopup extends Vue {
@@ -38,13 +39,11 @@ export default class GetXORPopup extends Vue {
   }
 
   get currencyXOR() {
-    return this.currencies.find(({ displayName, relayChain }) => {
-      return displayName === SORA_UTILITY_ASSET && relayChain === this.selectedNetwork;
-    });
+    return getXORCurrency(this.currencies);
   }
 
   get restPriceXOR() {
-    return this.currencyXOR?.calculateXorRestPrice(this.selectedWallet, this.selectedNetwork).euroToPayInXor ?? '';
+    return this.currencyXOR?.calculateXorRestPrice(this.selectedWallet).euroToPayInXor;
   }
 
   openSoraSwap() {

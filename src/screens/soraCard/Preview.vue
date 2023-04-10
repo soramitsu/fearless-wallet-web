@@ -104,10 +104,11 @@ import { Getter } from 'vuex-class';
 import type { Currencies } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/networks';
+import { SORA_NETWORK_NAME } from '@/consts/networks';
 import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GetNetworkStatus } from '@/store';
+import { getXORCurrency } from '@/helpers/currencies';
 
 @Component({
   components: { UnsupportedCountries },
@@ -118,12 +119,8 @@ export default class Preview extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
 
-  get selectedNetwork() {
-    return SORA_NETWORK_NAME as string;
-  }
-
   get networkIsReady() {
-    return this.getNetworkStatus(this.selectedNetwork) === 'ready';
+    return this.getNetworkStatus(SORA_NETWORK_NAME) === 'ready';
   }
 
   get fillFactorBar() {
@@ -138,9 +135,7 @@ export default class Preview extends Vue {
   }
 
   get currencyXOR() {
-    return this.currencies.find(({ displayName, relayChain }) => {
-      return displayName === SORA_UTILITY_ASSET && relayChain === this.selectedNetwork;
-    });
+    return getXORCurrency(this.currencies);
   }
 
   get isValidXorBalance() {
@@ -148,11 +143,11 @@ export default class Preview extends Vue {
   }
 
   get euroBalanceXOR() {
-    return this.currencyXOR?.calculateEuroBalance(this.selectedWallet, this.selectedNetwork) ?? 0;
+    return this.currencyXOR?.calculateXOREuroBalance(this.selectedWallet) ?? 0;
   }
 
   get restPriceXOR() {
-    return this.currencyXOR?.calculateXorRestPrice(this.selectedWallet, this.selectedNetwork);
+    return this.currencyXOR?.calculateXorRestPrice(this.selectedWallet);
   }
 
   get classesStatusXOR() {

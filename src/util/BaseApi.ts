@@ -14,7 +14,7 @@ import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { BehaviorSubject } from 'rxjs';
 import type { KeyringPair$Json, KeyringPair$Meta, KeyringPair } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
+import type { ValidateJsonResult, DerivationPath, NetworkName } from '@/interfaces';
 import type { Wallet } from '@/store';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { createAccountSuri, forgetAccount, jsonRestore } from '@/extension/messaging';
@@ -384,6 +384,19 @@ export default class BaseApi {
     } catch {
       return ethereumAddress;
     }
+  }
+
+  public static getTransactionAddress(wallet: Wallet, network: NetworkName): string {
+    const { address, ethereumAddress } = wallet;
+    const replacedAccount = BaseApi.getReplacedAccountByNetwork(wallet, network);
+
+    if (replacedAccount) {
+      const { address } = replacedAccount;
+
+      return address;
+    }
+
+    return BaseApi.isEthereumNetwork(network) ? ethereumAddress : address;
   }
 
   public static encodeAddress(publicKey: string | Uint8Array, prefix = 42) {

@@ -213,25 +213,6 @@ export class CurrencyController {
   }
 
   /**
-   * Get transaction address for wallet(taking network and replaced wallet)
-   * @param {Wallet} wallet
-   * @param {NetworkName} network
-   * @returns {string}
-   */
-  public getTransactionAddress(wallet: Wallet, network: NetworkName): string {
-    const { address, ethereumAddress } = wallet;
-    const replacedAccount = BaseApi.getReplacedAccountByNetwork(wallet, network);
-
-    if (replacedAccount) {
-      const { address } = replacedAccount;
-
-      return address;
-    }
-
-    return BaseApi.isEthereumNetwork(network) ? ethereumAddress : address;
-  }
-
-  /**
    * Update asset balance
    * @param {UpdateBalanceProps} props
    */
@@ -247,6 +228,7 @@ export class CurrencyController {
       reserved: FPNumber.fromCodecValue(reserved, balancesForNetwork.precision),
       total: FPNumber.fromCodecValue(total, balancesForNetwork.precision),
       transferable: FPNumber.fromCodecValue(transferable, balancesForNetwork.precision),
+      muchTotal: balancesForNetwork.balance[walletAddress].muchTotal,
     };
 
     balancesForNetwork.balance[walletAddress] = newBalance;
@@ -254,6 +236,20 @@ export class CurrencyController {
     this.balances.splice(indexNetwork, 1, balancesForNetwork);
 
     NetworksController.setNetworkZeroBalance(walletAddress, network, this.assetId, newBalance.total.isZero());
+  }
+
+  /**
+   * Update xor total balance
+   * @param {string} walletAddress
+   * @param {FPNumber} muchTotal
+   */
+  public updateXorTotalBalance(walletAddress: string, muchTotal: FPNumber): void {
+    const indexNetwork = this.balances.findIndex(({ network }) => network === SORA_NETWORK_NAME);
+    const balancesForNetwork = this.balances[indexNetwork];
+
+    balancesForNetwork.balance[walletAddress] = { ...balancesForNetwork.balance[walletAddress], muchTotal };
+
+    this.balances.splice(indexNetwork, 1, balancesForNetwork);
   }
 
   /**
@@ -509,7 +505,7 @@ export class CurrencyController {
   ): Promise<void> {
     const walletBalance = this.getWalletBalance(wallet) ?? [];
     const networkProps = walletBalance.find(({ network }) => network === originNet)!;
-    const toAddress = this.getTransactionAddress(wallet, destNet);
+    const toAddress = BaseApi.getTransactionAddress(wallet, destNet);
 
     if (isNativeNetwork(originNet)) {
       // Case RelayChain -> Nonnative ParaChain (polkadot -> acala, etc; kusama -> bifrost, etc) paraId = 2000-2999, pallet = xcmPallet, module = reserveTransferAssets
@@ -615,12 +611,15 @@ export class CurrencyController {
    * @param {NetworkName} network
    * @returns {Promise<number>}
    */
-  public calculateEuroBalance(wallet: Wallet, network: NetworkName): number {
+  public calculateXOREuroBalance(wallet: Wallet): number {
     if (this.asset !== SORA_UTILITY_ASSET) throw Error('Asset is not XOR');
 
     if (this.xorPerEuroRatio === undefined) return 0;
 
-    const xorTotalBalance = new FPNumber(this.getTotalCountAssets(wallet, network));
+    const walletBalance = this.getWalletBalance(wallet);
+    const balance = walletBalance.find(({ network }) => network === SORA_NETWORK_NAME)?.balance;
+
+    const xorTotalBalance = balance?.muchTotal ?? FPNumber.ZERO;
     const xorBalanceInEuros = new FPNumber(xorTotalBalance).mul(this.xorPerEuroRatio).toNumber();
 
     return xorBalanceInEuros;
@@ -632,10 +631,10 @@ export class CurrencyController {
    * @param {NetworkName} network
    * @returns {XorRestPrice}
    */
-  public calculateXorRestPrice(wallet: Wallet, network: NetworkName): XorRestPrice {
+  public calculateXorRestPrice(wallet: Wallet): XorRestPrice {
     if (this.xorPerEuroRatio === undefined) return { euroToPay: '0', euroToPayInXor: '0' };
 
-    const xorTotalBalance = new FPNumber(this.getTotalCountAssets(wallet, network));
+    const xorTotalBalance = new FPNumber(this.getTotalCountAssets(wallet, SORA_NETWORK_NAME));
     const euroToPay = FPNumber.HUNDRED.add(FPNumber.ONE).sub(xorTotalBalance.mul(this.xorPerEuroRatio));
     const euroToPayInXor = euroToPay.div(this.xorPerEuroRatio);
 
@@ -786,10 +785,6 @@ export class CurrencyController {
 
     const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB } = this.extrinsicOptions.swapOptions!;
 
-    const pair = BaseApi.getPair(from);
-
-    apiSora.account = { json: null as any, pair };
-
     this.setTransactionStatus('pending');
 
     try {
@@ -825,7 +820,7 @@ export class CurrencyController {
       return;
     }
 
-    const transactionAddress = this.getTransactionAddress(wallet, _network);
+    const transactionAddress = BaseApi.getTransactionAddress(wallet, _network);
     const walletBalance = this.getWalletBalance(wallet) ?? [];
     const { precision } = walletBalance.find(({ network }) => network === _network)!;
 

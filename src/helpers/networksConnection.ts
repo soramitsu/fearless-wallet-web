@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { connection as soraConnection } from '@sora-substrate/util';
+import { connection as soraConnection, FPNumber, api as apiSora } from '@sora-substrate/util';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { Network, ApiOptions, AssetJson, NetworkAssetsType } from '@/interfaces';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
@@ -73,6 +73,15 @@ const readyHandler = (network: Network) => {
     network: network.name,
     status: 'ready',
   });
+
+  if (isSora(network.name)) {
+    apiSora.assets.getTotalXorBalanceObservable().subscribe(async (xorTotalBalance: FPNumber) => {
+      store.commit(MutationTypes.UPDATE_XOR_TOTAL_BALANCE, {
+        walletAddress: store.getters.getSelectedWallet.address,
+        xorTotalBalance: xorTotalBalance,
+      });
+    });
+  }
 };
 
 async function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): Promise<void> {

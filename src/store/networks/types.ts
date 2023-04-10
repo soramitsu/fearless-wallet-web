@@ -1,3 +1,4 @@
+import { FPNumber } from '@sora-substrate/util';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { HexString } from '@polkadot/util/types';
 import type {
@@ -94,6 +95,11 @@ export type SetNetworkApiProps = {
 export type SetNetworkStatusProps = {
   network: NetworkName;
   status: NetworkStatus;
+};
+
+export type UpdateXorTotalBalanceProps = {
+  xorTotalBalance: FPNumber;
+  walletAddress: string;
 };
 
 export type SetSoraFee = {

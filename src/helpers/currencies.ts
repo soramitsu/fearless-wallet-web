@@ -1,13 +1,14 @@
 import type { ISubmittableResult } from '@polkadot/api/node_modules/@polkadot/types/types/extrinsic';
 import type { Currencies, Currency, Networks, RelayChainName, Balances, NetworkName } from '@/interfaces';
 import type { Wallet } from '@/store';
+import type { UpdateCurrencyBalanceProps } from '@/store/networks/types';
+import type { State as StateNetworks } from '@/store/networks/state';
 import BaseApi from '@/util/BaseApi';
 import { CurrencyController, NetworksController } from '@/controllers';
-import { MAIN_NETWORKS } from '@/consts/networks';
+import { MAIN_NETWORKS, SORA_UTILITY_ASSET, SORA_NETWORK_NAME } from '@/consts/networks';
 import { MOCK_FP_BALANCE } from '@/consts/currencies';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
-
 type CurrencyMock = {
   mainNetwork: string;
   assetId: string;
@@ -173,6 +174,27 @@ function getCurrencyOptions(currencies: Currencies) {
   });
 }
 
+const getCurrency = ({ currencies, assetsJson, networks }: StateNetworks, props: UpdateCurrencyBalanceProps) => {
+  const { network, assetId, parentId } = props;
+
+  const { symbol, displayName } = assetsJson.find(({ id }) => id === assetId)!;
+  const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name ?? network;
+
+  return currencies.find(({ assetId: _assetId, relayChain: _relayChain, displayName: _displayName }) => {
+    const isExistingAssetId = _assetId === assetId;
+    const isExistingDisplayName = _displayName === symbol || displayName === _displayName;
+    const isExistingAsset = isExistingDisplayName && _relayChain === relayChain;
+
+    return isExistingAssetId || isExistingAsset;
+  })!;
+};
+
+const getXORCurrency = (currencies: Currencies) => {
+  return currencies.find(({ displayName, relayChain }) => {
+    return displayName === SORA_UTILITY_ASSET && relayChain === (SORA_NETWORK_NAME as string);
+  })!;
+};
+
 function getUtilityAsset(currencies: Currencies, _network: NetworkName): string {
   const currency = currencies.find(({ balances }) =>
     balances.some(({ network, type }) => network === _network && (type === 'native' || type === 'equilibrium'))
@@ -200,4 +222,6 @@ export {
   getMockCurrencies,
   getUtilityAsset,
   statusLogging,
+  getCurrency,
+  getXORCurrency,
 };

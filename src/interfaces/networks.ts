@@ -83,6 +83,7 @@ type Network = {
   externalApi: ExternalApi;
   status: NetworkStatus;
   fee?: FPNumber; // only Sora network
+  xorTotalBalance?: FPNumber; // only Sora network
 };
 
 type Networks = Network[];

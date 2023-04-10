@@ -1,4 +1,5 @@
 import { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
+import { api as apiSora } from '@sora-substrate/util';
 import type { MutationTree } from 'vuex';
 import type { SetSelectedFiatProps, SetAccountsProps, SetAddressesProps, SetAutoSelectNode } from './types';
 import type { State } from './state';
@@ -6,6 +7,7 @@ import type { KeyringPair$Meta } from '@polkadot/keyring/types';
 import BaseApi from '@/util/BaseApi';
 import { accountController } from '@/controllers';
 import { getMetaTyped } from '@/helpers/common';
+import { SORA_NETWORK_NAME } from '@/consts/networks';
 
 export enum MutationTypes {
   SET_SELECTED_WALLET = 'SET_SELECTED_WALLET',
@@ -60,6 +62,12 @@ const mutations: MutationTree<State> & Mutations = {
       ethereumAddress: ethereumAddress ?? '',
       name,
     };
+
+    // logic for Sora library
+    const transactionAddress = BaseApi.getTransactionAddress(state.selectedWallet, SORA_NETWORK_NAME);
+    const pair = BaseApi.getPair(transactionAddress);
+
+    apiSora.account = { json: null as any, pair };
   },
 
   [MutationTypes.SET_SELECTED_FIAT](state, { fiatName, currencies }) {

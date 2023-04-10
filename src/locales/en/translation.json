@@ -238,7 +238,7 @@
     "incorrectAddress": "Incorrect address",
     "impossibleTeleport": "Impossible to teleport",
     "insufficientBalance": "Insufficient balance {asset}",
-    "unableSwap": "Unable to swap",
+    "insufficientLiquidity": "Insufficient Liquidity",
     "isSameAddress": "Transfers to your own account are prohibited",
     "minReceived": "Min received",
     "maxSales": "Max sales ",

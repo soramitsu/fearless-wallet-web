@@ -648,10 +648,12 @@ export class CurrencyController {
    * @returns {Promise<CreateSwapResult>}
    */
   public async createSwap(options: Partial<SwapOptions>): Promise<CreateSwapResult> {
-    const { assetAId, assetBId, isExchangeB, amountA, amountB, symbolA, symbolB, slippage } = options;
+    const { assetAId, assetBId, isExchangeB, amountA, amountB, symbolA, symbolB, slippage, marketType } = options;
     const assetAAddress = getAssetOptions('', 'soraAsset', assetAId!) as string;
     const assetBAddress = getAssetOptions('', 'soraAsset', assetBId!) as string;
     const amountWithDirection = (isExchangeB ? amountB : amountA) as string;
+    const liquiditySource =
+      marketType === 'smart' ? LiquiditySourceTypes.Default : LiquiditySourceTypes.MulticollateralBondingCurvePool;
     const assetA: Asset = { address: assetAAddress, decimals: 18, name: symbolA!, symbol: symbolA! };
     const assetB: Asset = {
       address: assetBAddress,
@@ -665,7 +667,7 @@ export class CurrencyController {
       assetBAddress,
       amountWithDirection,
       isExchangeB,
-      LiquiditySourceTypes.Default,
+      liquiditySource,
       DexId.XOR
     );
 
@@ -674,7 +676,7 @@ export class CurrencyController {
       assetBAddress,
       amountWithDirection,
       isExchangeB,
-      LiquiditySourceTypes.Default,
+      liquiditySource,
       DexId.XSTUSD
     );
 

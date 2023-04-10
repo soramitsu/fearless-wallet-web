@@ -38,8 +38,11 @@ type Currency = CurrencyController;
 
 type Currencies = Currency[];
 
+type MarketType = 'smart' | 'tbc';
+
 type SwapOptions = {
   isExchangeB: boolean;
+  marketType: MarketType;
   network: string;
   slippage: number;
   swapDexId: DexId;
@@ -89,4 +92,5 @@ export {
   ExtrinsicOptions,
   UpdateBalanceProps,
   CreateSwapResult,
+  MarketType,
 };

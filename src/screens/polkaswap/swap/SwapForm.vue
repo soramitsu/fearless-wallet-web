@@ -201,7 +201,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { Currencies } from '@/interfaces';
+import type { Currencies, MarketType } from '@/interfaces';
 import type { GetAssetName, SelectedWallet, GetNetwork } from '@/store';
 import SwapSelectInput from '@/screens/polkaswap/swap/SwapSelectInput.vue';
 import SwapPreview from '@/screens/polkaswap/swap/SwapPreview.vue';
@@ -231,8 +231,8 @@ export default class SwapForm extends Vue {
   step = 1;
   slippage = 0.5;
   temporarySlippage = 0.5;
-  marketType = 'smart';
-  temporaryMarketType = 'smart';
+  marketType: MarketType = 'smart';
+  temporaryMarketType: MarketType = 'smart';
   sendAssetId = '';
   receiveAssetId = '';
   sendAmount = '';
@@ -446,7 +446,7 @@ export default class SwapForm extends Vue {
       if (!this.isValidTransferByXOR)
         return { text: 'assets.insufficientBalance', localeProps: { asset: this.soraMainAssetUpper } };
 
-      if (+this.sendAmount === 0 || +this.receiveAmount === 0) return { text: 'assets.unableSwap' };
+      if (+this.sendAmount === 0 || +this.receiveAmount === 0) return { text: 'assets.insufficientLiquidity' };
     }
 
     return this.step === 1 ? 'assets.preview' : 'common.confirm';
@@ -531,6 +531,7 @@ export default class SwapForm extends Vue {
 
   deactivated() {
     this.selectAssetType = '';
+    this.step === 1;
   }
 
   async created() {
@@ -562,6 +563,7 @@ export default class SwapForm extends Vue {
     const createSwap = async () => {
       const { amountA, amountB, AToB, BToA, providerFee, minMaxValue } = await this.sendCurrency!.createSwap({
         network: this.selectedNetwork,
+        marketType: this.marketType,
         amountA: this.sendAmount,
         amountB: this.receiveAmount,
         assetAId: this.sendAssetId,
@@ -685,7 +687,7 @@ export default class SwapForm extends Vue {
     else this.step -= 1;
   }
 
-  updateMarketType(value: string) {
+  updateMarketType(value: MarketType) {
     this.temporaryMarketType = value;
   }
 

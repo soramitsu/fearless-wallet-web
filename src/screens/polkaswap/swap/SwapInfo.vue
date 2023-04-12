@@ -16,6 +16,12 @@
 
     <template v-if="showSwapInfo">
       <div class="row">
+        {{ $t('assets.route') }}
+
+        <div class="value">{{ route }}</div>
+      </div>
+
+      <div class="row">
         <div class="label">
           {{ $t(minMaxLabel) }}
 
@@ -83,6 +89,7 @@ export default class SwapInfo extends Vue {
   @Prop({ default: '' }) providerFee!: string;
   @Prop({ default: '' }) sendAssetUP!: string;
   @Prop({ default: '' }) receiveAssetUP!: string;
+  @Prop({ default: '' }) route!: string;
   @Prop({ default: true }) showSwapInfo!: boolean;
   @Prop(Boolean) isExchangeB!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;

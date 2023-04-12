@@ -236,7 +236,7 @@
     "incorrectAddress": "Некорректный адрес",
     "impossibleTeleport": "Невозможно телепортировать",
     "insufficientBalance": "Недостаточный баланс {asset}",
-    "unableSwap": "Невозможно выполнить Swap",
+    "insufficientLiquidity": "Недостаточно ликвидности",
     "isSameAddress": "Переводы на свой адрес запрещены",
     "minReceived": "Минимум получено",
     "maxSales": "Максимум продано",

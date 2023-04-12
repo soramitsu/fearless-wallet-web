@@ -106,6 +106,7 @@
               :sendAssetUP="sendAssetUP"
               :receiveAssetUP="receiveAssetUP"
               :isExchangeB="isExchangeB"
+              :route="route"
             />
           </template>
 
@@ -242,6 +243,7 @@ export default class SwapForm extends Vue {
   selectAssetType = '';
   AToB = '';
   BToA = '';
+  route = '';
   filterValue = '';
   showSettings = false;
   showConfirmationPasswordPopup = false;
@@ -531,7 +533,7 @@ export default class SwapForm extends Vue {
 
   deactivated() {
     this.selectAssetType = '';
-    this.step === 1;
+    this.step = 1;
   }
 
   async created() {
@@ -561,7 +563,7 @@ export default class SwapForm extends Vue {
     this.clearSwapInterval();
 
     const createSwap = async () => {
-      const { amountA, amountB, AToB, BToA, providerFee, minMaxValue } = await this.sendCurrency!.createSwap({
+      const { amountA, amountB, AToB, BToA, providerFee, minMaxValue, route } = await this.sendCurrency!.createSwap({
         network: this.selectedNetwork,
         marketType: this.marketType,
         amountA: this.sendAmount,
@@ -581,6 +583,7 @@ export default class SwapForm extends Vue {
       this.providerFee = providerFee;
       this.AToB = AToB;
       this.BToA = BToA;
+      this.route = route;
     };
 
     this.swapInterval = setInterval(createSwap, SWAP_INTERVAL_RECALCULATE);

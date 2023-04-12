@@ -79,6 +79,7 @@ type CreateSwapResult = {
   providerFee: string;
   AToB: string;
   BToA: string;
+  route: string;
 };
 
 export {

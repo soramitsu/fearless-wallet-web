@@ -2,14 +2,16 @@
   <div class="sora-card sora-card-kyc-wrapper">
     <Loader v-if="loading" />
 
-    <div v-else class="sora-card-kyc-view">
-      <SScrollbar>
-        <div id="kyc"></div>
+    <div v-else>
+      <div class="sora-card-kyc-view">
+        <SScrollbar>
+          <div id="kyc"></div>
 
-        <div id="finish" style="display: none">
-          <div class="alert alert-success">Kyc was successfull, sample integrator response displayed here</div>
-        </div>
-      </SScrollbar>
+          <div id="finish" style="display: none">
+            <div class="alert alert-success">Kyc was successfull, sample integrator response displayed here</div>
+          </div>
+        </SScrollbar>
+      </div>
     </div>
   </div>
 </template>

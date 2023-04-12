@@ -8,13 +8,15 @@
     :closeHandler="closeForm"
   >
     <div class="container">
-      <UnsupportedCountries v-if="showCountriesForm" />
+      <X1Form v-if="showX1Form" :handlerClose="closeX1Form" />
+
+      <UnsupportedCountries v-else-if="showCountriesForm" />
 
       <Preview
         v-else-if="showPreview"
-        @openGetXORPopup="toggleGetXORPopup"
-        @toggleCountriesFormVisibility="toggleCountriesFormVisibility"
+        @openGetXORPopup="openGetXORPopup"
         @confirmApply="confirmApply"
+        @toggleCountriesFormVisibility="toggleCountriesFormVisibility"
       />
 
       <TermsAndConditions
@@ -36,6 +38,8 @@
         :handlerClose="closeStepsKYCPopup"
         :proceed="proceedStepsPopup"
       />
+
+      <GetXORPopup v-if="showGetXORPopup" @openX1Form="openX1Form" :handlerClose="closeGetXORPopup" />
     </div>
   </AboveForm>
 </template>
@@ -59,11 +63,13 @@ import StepsKYCPopup from '@/screens/soraCard/stepsKYC/StepsKYCPopup.vue';
 import TermsAndConditions from '@/screens/soraCard/stepsKYC/TermsAndConditions.vue';
 import Phone from '@/screens/soraCard/stepsKYC/Phone.vue';
 import Email from '@/screens/soraCard/stepsKYC/Email.vue';
+import X1Form from '@/screens/X1/X1Form.vue';
 
 @Component({
   components: {
     Phone,
     Email,
+    X1Form,
     KycView,
     Preview,
     GetXORPopup,
@@ -77,7 +83,8 @@ export default class SoraCardPage extends Vue {
   showGetXORPopup = false;
   userApplied = false;
   showStepsKYCPopup = false;
-  step = StepsKyc.KycView;
+  showX1Form = false;
+  step = StepsKyc.Preview;
 
   @Ref('termsAndConditions') readonly termsAndConditions!: TermsAndConditions;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
@@ -113,7 +120,7 @@ export default class SoraCardPage extends Vue {
   }
 
   get showBackIcon() {
-    return [StepsKyc.TermsAndConditions, StepsKyc.Phone, StepsKyc.Email].includes(this.step);
+    return [StepsKyc.TermsAndConditions, StepsKyc.Phone, StepsKyc.Email].includes(this.step) || this.showX1Form;
   }
 
   get headerForm() {
@@ -175,7 +182,10 @@ export default class SoraCardPage extends Vue {
 
   redirectToView(success: boolean) {
     if (success) this.openStartPage(success);
-    else this.showStepsKYCPopup = true;
+    else {
+      this.step = StepsKyc.Preview;
+      // this.showStepsKYCPopup = true; TODO??????
+    }
   }
 
   openStartPage(withoutCheck: boolean) {
@@ -191,7 +201,8 @@ export default class SoraCardPage extends Vue {
   }
 
   handlerBack() {
-    if (this.showCountriesForm) this.toggleCountriesFormVisibility();
+    if (this.showX1Form) this.closeX1Form();
+    else if (this.showCountriesForm) this.toggleCountriesFormVisibility();
     else if (this.step === StepsKyc.Phone && this.userApplied) this.step = StepsKyc.Preview;
     else if (this.step === StepsKyc.TermsAndConditions && this.termsAndConditions?.link)
       this.termsAndConditions.link = '';
@@ -203,17 +214,13 @@ export default class SoraCardPage extends Vue {
     else this.$router.back();
   }
 
-  closeGetXORPopup() {
-    this.showGetXORPopup = false;
-  }
-
   proceedStepsPopup() {
     this.step = StepsKyc.Phone;
     this.showStepsKYCPopup = false;
   }
 
-  confirmPhone(step: StepsKyc) {
-    if (step === StepsKyc.Preview) this.openStartPage(false);
+  confirmPhone(step?: StepsKyc) {
+    if (step === undefined) this.openStartPage(false);
     else this.step = step;
   }
 
@@ -228,8 +235,12 @@ export default class SoraCardPage extends Vue {
     else this.step = StepsKyc.TermsAndConditions;
   }
 
-  toggleGetXORPopup() {
+  openGetXORPopup() {
     this.showGetXORPopup = true;
+  }
+
+  closeGetXORPopup() {
+    this.showGetXORPopup = false;
   }
 
   toggleCountriesFormVisibility() {
@@ -242,6 +253,16 @@ export default class SoraCardPage extends Vue {
 
   closeStepsKYCPopup() {
     this.showStepsKYCPopup = false;
+  }
+
+  openX1Form() {
+    this.showX1Form = true;
+
+    this.closeGetXORPopup();
+  }
+
+  closeX1Form() {
+    this.showX1Form = false;
   }
 }
 </script>

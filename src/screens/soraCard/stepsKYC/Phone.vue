@@ -16,8 +16,8 @@
           ref="phoneNumber"
           placeholder="soraCard.phoneNumber"
           size="big"
-          errorDescriptions="soraCard.invalidPhone"
           class="phone"
+          :errorDescriptions="errorDescriptionsPhone"
           :maxlength="10"
           :isError="isErrorPhoneNumber"
           :disabled="phoneInputDisabled"
@@ -42,7 +42,7 @@
     </div>
 
     <Button
-      :text="buttonText"
+      text="soraCard.confirmSMScode"
       width="100%"
       size="big"
       fontSize="big"
@@ -96,8 +96,8 @@ export default class Phone extends Vue {
   @Action(SoraCardActionTypes.GET_USER_KYC_ATTEMPT) getUserKycAttempt!: AsyncFn;
   @Mutation(SoraCardMutationTypes.SET_WILL_TO_KYC_PASS_KYC_AGAIN) setWillToPassKycAgain!: Fn<boolean>;
 
-  get buttonText(): string {
-    return this.notFoundPhoneWhenUserApplied ? 'soraCard.numberNotFound' : 'soraCard.confirmSMScode';
+  get errorDescriptionsPhone(): string {
+    return this.notFoundPhoneWhenUserApplied ? 'soraCard.numberNotFound' : 'soraCard.invalidPhone';
   }
 
   get countryCodePlaceholder(): string {
@@ -163,7 +163,7 @@ export default class Phone extends Vue {
   }
 
   get isErrorPhoneNumber() {
-    return this.phoneNumber !== '' && !this.isPhoneNumberValid;
+    return (this.phoneNumber !== '' && !this.isPhoneNumberValid) || this.notFoundPhoneWhenUserApplied;
   }
 
   get sendButtontext() {
@@ -233,7 +233,8 @@ export default class Phone extends Vue {
           }
         }
 
-        if (!this.currentStatus) {
+        if (this.currentStatus) this.$emit('confirm');
+        else {
           // if (!this.isEuroBalanceEnough) {
           //   this.notPassedKycAndNotHasXorEnough = true;
           //   this.verifyOtpBtnLoading = false;
@@ -242,7 +243,7 @@ export default class Phone extends Vue {
           // }
 
           this.$emit('confirm', StepsKyc.KycView);
-        } else this.$emit('confirm', StepsKyc.Preview);
+        }
       })
       .on('Verification-Email-Sent-Success', () => {
         this.verifyOtpBtnLoading = false;

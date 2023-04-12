@@ -235,12 +235,12 @@ const initPayWingsAuthSdk = async (setAuthLogin: (login: any) => void) => {
 
 async function getReferenceNumber(URL: string, confirmKyc: (value: boolean) => void): Promise<string | undefined> {
   const { kycService } = getSoraCardService();
-  const token = soraCardController.getPWEmail();
+  const token = soraCardController.getPWToken();
 
   try {
-    const { data } = await axios.post(URL, {
-      method: 'POST',
-      body: JSON.stringify({
+    const { data } = await axios.post(
+      URL,
+      {
         ReferenceID: uuidv4(),
         MobileNumber: '',
         Email: '',
@@ -249,18 +249,19 @@ async function getReferenceNumber(URL: string, confirmKyc: (value: boolean) => v
         IbanTypeID: null,
         CardTypeID: null,
         AdditionalData: '',
-      }),
-      headers: {
-        Authorization: `Bearer ${token}`,
       },
-    });
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
     return data.ReferenceNumber;
   } catch (data) {
     console.error('[SoraCard]: Error while initiating KYC', data);
 
     confirmKyc(false);
-
     unloadScript(kycService.sdkURL);
   }
 }

@@ -29,9 +29,8 @@ export default class GetXORPopup extends Vue {
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
-  // TODO mock
   buyXORwithEUR() {
-    alert('buyXORWithEUR');
+    this.$emit('openX1Form');
   }
 
   get selectedNetwork() {

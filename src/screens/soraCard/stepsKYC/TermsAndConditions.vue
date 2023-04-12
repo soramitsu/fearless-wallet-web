@@ -30,7 +30,7 @@
       size="big"
       fontSize="big"
       :border="false"
-      @click="$emit('proceed')"
+      @click="$emit('openStepsKYCPopup')"
     />
   </div>
 </template>

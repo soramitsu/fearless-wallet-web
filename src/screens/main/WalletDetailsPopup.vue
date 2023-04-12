@@ -26,7 +26,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Mutation } from 'vuex-class';
-import type { fn } from '@/interfaces/common';
+import type { Fn } from '@/interfaces/common';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
@@ -36,7 +36,7 @@ import { initGoogleAuth } from '@/extension/messaging';
 export default class WalletDetailsPopup extends Vue {
   @Prop(Number) buttonTopClick!: number;
   @Prop(String) selectedWalletAddress!: string;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: fn<string>;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: Fn<string>;
 
   get isMobileWallet() {
     return BaseApi.isMobileWallet(this.selectedWalletAddress);

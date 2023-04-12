@@ -342,7 +342,8 @@
     "swapXOR": "Swap crypto for XOR",
     "invalidCode": "Code incorrect",
     "emailSent": "Follow the magic link that has been sent to",
-    "useAnotherEmail": "Use another email"
+    "useAnotherEmail": "Use another email",
+    "numberNotFound": "Number not found"
   },
   "disclaimers": {
     "swapDisclaimer1": "Polkaswap is maintained by the SORA community. Before continuing to use Polkaswap, please review the",

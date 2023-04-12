@@ -29,7 +29,7 @@ import type {
   AsyncFn,
   RequestSentInfo,
   Networks,
-  fn,
+  Fn,
   PermissionResponsePayload,
 } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
@@ -60,7 +60,7 @@ export default class MobileConnect extends Vue {
   @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<string>;
   @Getter(NetworkGettersTypes.getAllNetworks) getNetworks!: Networks;
   @Getter(AccountsGettersTypes.getQR) getQR!: Nullable<string>;
-  @Mutation(AccountMutationsTypes.SET_QR) setQR!: fn<string>;
+  @Mutation(AccountMutationsTypes.SET_QR) setQR!: Fn<string>;
 
   async mounted() {
     this.isLoading = !this.getQR;

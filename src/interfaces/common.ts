@@ -2,7 +2,7 @@ import type { WarningValueName } from '@/consts/messages';
 import type { AssetName } from './assets';
 import { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 
-type fn<T = null, R = void> = (props?: T) => R;
+type Fn<T = null, R = void> = (props?: T) => R;
 type AsyncFn<T = null, R = void> = (props?: T) => Promise<R>;
 type TCallback<T> = (payload: T) => void;
 
@@ -116,7 +116,7 @@ export {
   MenuItems,
   ParentAddress,
   AsyncFn,
-  fn,
+  Fn,
   TabWallet,
   ValidateJsonResult,
   WalletAddress,

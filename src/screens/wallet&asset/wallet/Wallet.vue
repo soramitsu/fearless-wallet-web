@@ -104,7 +104,7 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import type { Currencies as TCurrencies, Currency } from '@/interfaces/currencies';
-import type { fn, TabWallet } from '@/interfaces/common';
+import type { Fn, TabWallet } from '@/interfaces/common';
 import type { SelectedWallet, SetCurrenciesProps, GetNetworkStatus, GetNetwork, GetShowWarningNetworks } from '@/store';
 import type { Networks } from '@/interfaces';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
@@ -173,9 +173,9 @@ export default class Wallet extends Vue {
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
-  @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: fn<SetCurrenciesProps>;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: fn<string>;
-  @Mutation(AccountsMutationTypes.SET_CUSTOM_SORT) setCustomSorting!: fn<string>;
+  @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: Fn<SetCurrenciesProps>;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
+  @Mutation(AccountsMutationTypes.SET_CUSTOM_SORT) setCustomSorting!: Fn<string>;
 
   get contentFormHeight() {
     const subtractionNumber = this.getShowSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;

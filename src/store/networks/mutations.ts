@@ -20,7 +20,6 @@ import { accountController } from '@/controllers';
 import { isSora } from '@/helpers/common';
 import { getFormattedHistory } from '@/helpers/history';
 import { getCurrency, getXORCurrency } from '@/helpers/currencies';
-import { SORA_NETWORK_NAME } from '@/consts/networks';
 
 export enum MutationTypes {
   SET_NETWORKS = 'SET_NETWORKS',

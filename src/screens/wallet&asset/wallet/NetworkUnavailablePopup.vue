@@ -18,7 +18,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Mutation } from 'vuex-class';
-import type { Networks, fn } from '@/interfaces';
+import type { Networks, Fn } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 
@@ -29,7 +29,7 @@ export default class NetworkUnavailablePopup extends Vue {
   @Prop(Function) closePopup!: VoidFunction;
   @Prop(Array) networks!: Networks;
   @Prop(String) network!: string;
-  @Mutation(AccountsMutationTypes.HIDE_NETWORK_WARNING) hideNetworkWarning!: fn<string>;
+  @Mutation(AccountsMutationTypes.HIDE_NETWORK_WARNING) hideNetworkWarning!: Fn<string>;
 
   get headers() {
     return this.haveMoreOneNodes

@@ -29,8 +29,8 @@
       </div>
 
       <ValidatedInput
-        v-model="otpCode"
-        ref="otpCode"
+        v-model="verificationCode"
+        ref="verificationCode"
         placeholder="soraCard.verificationCode"
         :errorDescriptions="errorDescriptionsOtp"
         :isError="isErrorCode"
@@ -42,7 +42,7 @@
     </div>
 
     <Button
-      text="soraCard.confirmSMScode"
+      :text="buttonText"
       width="100%"
       size="big"
       fontSize="big"
@@ -55,18 +55,19 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Ref, Watch } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
+import { Component, Vue, Ref, Watch, Prop } from 'vue-property-decorator';
+import { Getter, Action, Mutation } from 'vuex-class';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
 import type Input from '@/components/Input.vue';
-import type { AsyncFn } from '@/interfaces';
+import type { AsyncFn, Fn } from '@/interfaces';
 import { validatePhoneNumber } from '@/helpers/common';
-import { RESEND_INTERVAL, OTP_CODE_LENGTH } from '@/consts/soraCard';
+import { RESEND_INTERVAL, OTP_CODE_LENGTH, VerificationStatus, StepsKyc } from '@/consts/soraCard';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import Disclaimer from '@/screens/soraCard/stepsKYC/Disclaimer.vue';
 import { soraCardController } from '@/controllers';
 import { isNumber } from '@/helpers/numbers';
+import { MutationTypes as SoraCardMutationTypes } from '@/store/soraCard/mutations';
 
 @Component({
   components: { Disclaimer },
@@ -75,18 +76,29 @@ export default class Phone extends Vue {
   readonly otpCodeLength = OTP_CODE_LENGTH;
   countryCodeInternal = '';
   phoneNumberInternal = '';
-  otpCode = '';
+  verificationCode = '';
   leftTimeForResend = 0;
   smsSent = false;
   verifyOtpBtnLoading = false;
   enteredOTpCodeIsIncorrect = false;
+  notFoundPhoneWhenUserApplied = false;
 
+  @Prop({ default: false, type: Boolean }) userApplied!: boolean;
   @Ref('countryCode') readonly countryCodeComponent!: Input;
   @Ref('phoneNumber') readonly phoneNumberComponent!: ValidatedInput;
-  @Ref('otpCode') private readonly otpComponent!: ValidatedInput;
-
-  @Action(SoraCardActionTypes.INIT_AUTH_LOGIN) initAuthLogin!: AsyncFn;
+  @Ref('verificationCode') private readonly otpComponent!: ValidatedInput;
   @Getter(SoraCardGettersTypes.authLogin) authLogin!: any;
+  @Getter(SoraCardGettersTypes.currentStatus) currentStatus!: VerificationStatus;
+  @Getter(SoraCardGettersTypes.wantsToPassKycAgain) wantsToPassKycAgain!: boolean;
+  @Getter(SoraCardGettersTypes.hasFreeAttempts) hasFreeAttempts!: boolean;
+  @Action(SoraCardActionTypes.INIT_AUTH_LOGIN) initAuthLogin!: AsyncFn;
+  @Action(SoraCardActionTypes.GET_USER_STATUS) getUserStatus!: AsyncFn;
+  @Action(SoraCardActionTypes.GET_USER_KYC_ATTEMPT) getUserKycAttempt!: AsyncFn;
+  @Mutation(SoraCardMutationTypes.SET_WILL_TO_KYC_PASS_KYC_AGAIN) setWillToPassKycAgain!: Fn<boolean>;
+
+  get buttonText(): string {
+    return this.notFoundPhoneWhenUserApplied ? 'soraCard.numberNotFound' : 'soraCard.confirmSMScode';
+  }
 
   get countryCodePlaceholder(): string {
     return this.countryCode ? 'soraCard.code' : '+44';
@@ -97,15 +109,18 @@ export default class Phone extends Vue {
   }
 
   get disabledProceedButton() {
-    return this.otpCode.length !== OTP_CODE_LENGTH || this.verifyOtpBtnLoading;
+    return this.verificationCode.length !== OTP_CODE_LENGTH || this.verifyOtpBtnLoading;
   }
 
   get isErrorCode() {
-    return (this.otpCode !== '' && this.otpCode.length !== this.otpCodeLength) || this.enteredOTpCodeIsIncorrect;
+    return (
+      (this.verificationCode !== '' && this.verificationCode.length !== this.otpCodeLength) ||
+      this.enteredOTpCodeIsIncorrect
+    );
   }
 
   get otpInputDisabled() {
-    return !this.smsSent;
+    return !this.smsSent || this.notFoundPhoneWhenUserApplied;
   }
 
   get phoneInputDisabled() {
@@ -166,7 +181,7 @@ export default class Phone extends Vue {
     ];
   }
 
-  @Watch('otpCode')
+  @Watch('verificationCode')
   otpCodeWatcher(value: string) {
     if (value !== '') this.enteredOTpCodeIsIncorrect = false;
   }
@@ -179,21 +194,79 @@ export default class Phone extends Vue {
     await this.initAuthLogin();
 
     if (!this.authLogin) return;
+
+    this.authLogin
+      .on('SendOtp-Success', () => {
+        this.smsSent = true;
+
+        this.$nextTick(() => this.otpComponent.input.focus());
+      })
+      .on('MinimalRegistrationReq', () => {
+        this.verifyOtpBtnLoading = false;
+
+        if (this.userApplied) {
+          this.notFoundPhoneWhenUserApplied = true;
+          this.verificationCode = '';
+
+          return;
+        }
+
+        // if (!this.isEuroBalanceEnough) {
+        //   this.notPassedKycAndNotHasXorEnough = true;
+
+        //   return;
+        // }
+
+        this.$emit('confirm', StepsKyc.Email);
+      })
+      .on('Otp-Verification-Success', async () => {
+        await this.getUserStatus();
+
+        if (this.currentStatus === VerificationStatus.Rejected) {
+          await this.getUserKycAttempt();
+
+          if (this.wantsToPassKycAgain && this.hasFreeAttempts) {
+            this.$emit('confirm', StepsKyc.KycView);
+            this.setWillToPassKycAgain(false);
+
+            return;
+          }
+        }
+
+        if (!this.currentStatus) {
+          // if (!this.isEuroBalanceEnough) {
+          //   this.notPassedKycAndNotHasXorEnough = true;
+          //   this.verifyOtpBtnLoading = false;
+
+          //   return;
+          // }
+
+          this.$emit('confirm', StepsKyc.KycView);
+        } else this.$emit('confirm', StepsKyc.Preview);
+      })
+      .on('Verification-Email-Sent-Success', () => {
+        this.verifyOtpBtnLoading = false;
+
+        // if (!this.isEuroBalanceEnough) {
+        //   this.notPassedKycAndNotHasXorEnough = true;
+
+        //   return;
+        // }
+
+        this.$emit('confirm', StepsKyc.Email);
+      });
   }
 
   verifyCode(): void {
     this.verifyOtpBtnLoading = true;
 
-    this.authLogin
-      .PayWingsOtpCredentialVerification(this.otpCode)
-      .then(() => this.$emit('proceed'))
-      .catch((error: string) => {
-        this.verifyOtpBtnLoading = false;
-        this.otpCode = '';
-        this.enteredOTpCodeIsIncorrect = true;
+    this.authLogin.PayWingsOtpCredentialVerification(this.verificationCode).catch((error: string) => {
+      this.verifyOtpBtnLoading = false;
+      this.verificationCode = '';
+      this.enteredOTpCodeIsIncorrect = true;
 
-        console.error('[SoraCard]: Auth', error);
-      });
+      console.error('[SoraCard]: Auth', error);
+    });
   }
 
   sendCode() {
@@ -208,7 +281,6 @@ export default class Phone extends Vue {
     this.startInterval();
 
     this.smsSent = true;
-    this.$nextTick(() => this.otpComponent.input.focus());
   }
 
   startInterval() {
@@ -219,6 +291,8 @@ export default class Phone extends Vue {
 
       if (this.leftTimeForResend === 0) {
         this.smsSent = false;
+        this.notFoundPhoneWhenUserApplied = false;
+        this.verificationCode = '';
 
         clearInterval(interval!);
       }

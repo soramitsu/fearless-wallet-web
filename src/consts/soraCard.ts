@@ -1,5 +1,34 @@
 import { IS_PRODUCTION } from './global';
 
+enum StepsKyc {
+  Preview = 1,
+  TermsAndConditions,
+  Phone,
+  Email,
+  KycView,
+}
+
+enum KycStatus {
+  Started = 'Started',
+  Completed = 'Completed',
+  Failed = 'Failed',
+  Rejected = 'Rejected',
+  Successful = 'Successful',
+}
+
+enum VerificationStatus {
+  Pending = 'Pending',
+  Accepted = 'Accepted',
+  Rejected = 'Rejected',
+  None = 'None',
+}
+
+interface Status {
+  verificationStatus: Nullable<VerificationStatus>;
+  kycStatus: Nullable<KycStatus>;
+  rejectReason?: Nullable<string>;
+}
+
 const UNSUPPORTED_COUNTRIES = {
   dz: 'Algeria',
   bd: 'Bangladesh',
@@ -26,4 +55,4 @@ const UNSUPPORTED_COUNTRIES = {
 const OTP_CODE_LENGTH = 6;
 const RESEND_INTERVAL = IS_PRODUCTION ? 59 : 10;
 
-export { UNSUPPORTED_COUNTRIES, RESEND_INTERVAL, OTP_CODE_LENGTH };
+export { UNSUPPORTED_COUNTRIES, RESEND_INTERVAL, OTP_CODE_LENGTH, StepsKyc, VerificationStatus, Status, KycStatus };

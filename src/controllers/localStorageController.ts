@@ -7,6 +7,10 @@ export class LocalStorage {
     return localStorage.getItem(`${this.prefix}${key}`);
   }
 
+  public setDefault(key: string, value: string) {
+    localStorage.setItem(`${this.prefix}${key}`, value);
+  }
+
   public get(key: string): Record<string, any> {
     const item = localStorage.getItem(`${this.prefix}${key}`);
 

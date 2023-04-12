@@ -109,6 +109,7 @@ import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GetNetworkStatus } from '@/store';
 import { getXORCurrency } from '@/helpers/currencies';
+import { soraCardController } from '@/controllers';
 
 @Component({
   components: { UnsupportedCountries },
@@ -202,14 +203,14 @@ export default class Preview extends Vue {
   }
 
   haveCard() {
-    console.info('haveCard');
+    soraCardController.clearTokensFromLocalStorage();
+
+    this.$emit('confirmApply', true);
   }
 
   proceed() {
-    if (this.isValidXorBalance) this.$emit('proceed');
-    else {
-      this.$emit('openGetXORPopup');
-    }
+    if (this.isValidXorBalance) this.$emit('confirmApply');
+    else this.$emit('openGetXORPopup');
   }
 }
 </script>

@@ -340,7 +340,8 @@
     "swapXOR": "Обмен криптовалюты на XOR",
     "invalidCode": "Неверный код",
     "emailSent": "Перейдите по волшебной ссылке, которая была отправлена",
-    "useAnotherEmail": "Использовать другой адрес электронной почты"
+    "useAnotherEmail": "Использовать другой адрес электронной почты",
+    "numberNotFound": "Номер не найден"
   },
   "disclaimers": {
     "swapDisclaimer1": "Polkaswap is maintained by the SORA community. Before continuing to use Polkaswap, please review the",

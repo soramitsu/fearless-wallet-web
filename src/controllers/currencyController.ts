@@ -228,7 +228,7 @@ export class CurrencyController {
       reserved: FPNumber.fromCodecValue(reserved, balancesForNetwork.precision),
       total: FPNumber.fromCodecValue(total, balancesForNetwork.precision),
       transferable: FPNumber.fromCodecValue(transferable, balancesForNetwork.precision),
-      muchTotal: balancesForNetwork.balance[walletAddress].muchTotal,
+      muchTotal: balancesForNetwork.balance[walletAddress]?.muchTotal,
     };
 
     balancesForNetwork.balance[walletAddress] = newBalance;

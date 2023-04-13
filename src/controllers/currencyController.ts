@@ -687,24 +687,6 @@ export class CurrencyController {
       DexId.XSTUSD
     );
 
-    const { amount: AToBDexIdXOR } = await apiSora.swap.getResultFromBackend(
-      assetAAddress,
-      assetBAddress,
-      1,
-      isExchangeB,
-      liquiditySource,
-      DexId.XOR
-    );
-
-    const { amount: BToADexIdXOR } = await apiSora.swap.getResultFromBackend(
-      assetBAddress,
-      assetAAddress,
-      1,
-      isExchangeB,
-      liquiditySource,
-      DexId.XOR
-    );
-
     const swapOptions = { ...options, assetA, assetB } as SwapOptions;
     const amountDexIdXORFP = FPNumber.fromCodecValue(amountDexIdXOR);
     const amountDexIdXSTUSDFP = FPNumber.fromCodecValue(amountDexIdXSTUSD);
@@ -766,8 +748,8 @@ export class CurrencyController {
       return {
         amountA: expectedAmount.toString(),
         amountB: amountB!,
-        AToB: isFinite(AToB) && !isNaN(AToB) ? AToB.toString() : '0',
-        BToA: isFinite(BToA) && !isNaN(BToA) ? BToA.toString() : '0',
+        AToB: isFinite(AToB) ? AToB.toString() : '0',
+        BToA: isFinite(BToA) ? BToA.toString() : '0',
         minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
         providerFee: FPNumber.fromCodecValue(providerFee).toString(),
         route,
@@ -795,8 +777,8 @@ export class CurrencyController {
       return {
         amountA: amountA!,
         amountB: expectedAmount.toString(),
-        AToB: isFinite(AToB) && !isNaN(AToB) ? AToB.toString() : '0',
-        BToA: isFinite(BToA) && !isNaN(BToA) ? BToA.toString() : '0',
+        AToB: isFinite(AToB) ? AToB.toString() : '0',
+        BToA: isFinite(BToA) ? BToA.toString() : '0',
         minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
         providerFee: FPNumber.fromCodecValue(providerFee).toString(),
         route,

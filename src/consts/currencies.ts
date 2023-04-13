@@ -1,4 +1,6 @@
 import { FPNumber } from '@sora-substrate/util';
+import { LiquiditySourceTypes } from '@sora-substrate/liquidity-proxy';
+import { MarketType } from '@/interfaces';
 
 const MOCK_FP_BALANCE = {
   frozen: FPNumber.ZERO,
@@ -31,4 +33,9 @@ const MOCK_BALANCE = {
   },
 };
 
-export { MOCK_BALANCE, MOCK_FP_BALANCE };
+const LIQUID_SOURCE_FOR_MARKET = {
+  [MarketType.SMART]: LiquiditySourceTypes.Default,
+  [MarketType.TBC]: LiquiditySourceTypes.MulticollateralBondingCurvePool,
+};
+
+export { MOCK_BALANCE, MOCK_FP_BALANCE, LIQUID_SOURCE_FOR_MARKET };

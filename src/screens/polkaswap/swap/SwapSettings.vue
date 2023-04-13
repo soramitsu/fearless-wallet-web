@@ -35,12 +35,13 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
+import { MarketType } from '@/interfaces';
 
 @Component
 export default class SwapSettings extends Vue {
   readonly optionsSubstrateKeyPair = [
-    { label: 'SMART', value: 'smart' },
-    { label: 'TBC', value: 'tbc' },
+    { label: MarketType.SMART, value: MarketType.SMART },
+    { label: MarketType.TBC, value: MarketType.TBC },
   ];
 
   readonly slippageValues = [

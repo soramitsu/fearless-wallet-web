@@ -38,7 +38,10 @@ type Currency = CurrencyController;
 
 type Currencies = Currency[];
 
-type MarketType = 'smart' | 'tbc';
+enum MarketType {
+  SMART = 'SMART',
+  TBC = 'TBC',
+}
 
 type SwapOptions = {
   isExchangeB: boolean;

@@ -34,7 +34,7 @@ import { createExtrinsicTransfer, getAssetOptions } from '@/util/assets';
 import { BeaconSigner } from '@/extension/background/extension-base/src/background/BeaconSigner';
 import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
-import { MOCK_BALANCE, MOCK_FP_BALANCE } from '@/consts/currencies';
+import { MOCK_BALANCE, MOCK_FP_BALANCE, LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { saveTimeoutCache } from '@/extension/messaging';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/networks';
 import { addNumbers } from '@/helpers/numbers';
@@ -652,8 +652,7 @@ export class CurrencyController {
     const assetAAddress = getAssetOptions('', 'soraAsset', assetAId!) as string;
     const assetBAddress = getAssetOptions('', 'soraAsset', assetBId!) as string;
     const amountWithDirection = (isExchangeB ? amountB : amountA) as string;
-    const liquiditySource =
-      marketType === 'smart' ? LiquiditySourceTypes.Default : LiquiditySourceTypes.MulticollateralBondingCurvePool;
+    const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
     const assetA: Asset = { address: assetAAddress, decimals: 18, name: symbolA!, symbol: symbolA! };
     const assetB: Asset = {
       address: assetBAddress,
@@ -736,6 +735,9 @@ export class CurrencyController {
         slippage!
       );
 
+      const AToB = expectedAmount.div(new FPNumber(amountB!)).toNumber();
+      const BToA = new FPNumber(amountB!).div(expectedAmount).toNumber();
+
       this.extrinsicOptions.swapOptions = {
         ...swapOptions,
         amountA: expectedAmount.toString(),
@@ -746,8 +748,8 @@ export class CurrencyController {
       return {
         amountA: expectedAmount.toString(),
         amountB: amountB!,
-        AToB: expectedAmount.div(new FPNumber(amountB!)).toString(),
-        BToA: new FPNumber(amountB!).div(expectedAmount).toString(),
+        AToB: isFinite(AToB) ? AToB.toString() : '0',
+        BToA: isFinite(BToA) ? BToA.toString() : '0',
         minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
         providerFee: FPNumber.fromCodecValue(providerFee).toString(),
         route,
@@ -762,6 +764,9 @@ export class CurrencyController {
         slippage!
       );
 
+      const AToB = new FPNumber(amountA!).div(expectedAmount).toNumber();
+      const BToA = expectedAmount.div(new FPNumber(amountA!)).toNumber();
+
       this.extrinsicOptions.swapOptions = {
         ...swapOptions,
         amountA: amountA!,
@@ -772,8 +777,8 @@ export class CurrencyController {
       return {
         amountA: amountA!,
         amountB: expectedAmount.toString(),
-        AToB: new FPNumber(amountA!).div(expectedAmount).toString(),
-        BToA: expectedAmount.div(new FPNumber(amountA!)).toString(),
+        AToB: isFinite(AToB) ? AToB.toString() : '0',
+        BToA: isFinite(BToA) ? BToA.toString() : '0',
         minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
         providerFee: FPNumber.fromCodecValue(providerFee).toString(),
         route,
@@ -788,7 +793,9 @@ export class CurrencyController {
   public async sendSwap(from: string, isSavePass: boolean): Promise<void> {
     if (BaseApi.isExtension()) saveTimeoutCache(from, isSavePass);
 
-    const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB } = this.extrinsicOptions.swapOptions!;
+    const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } =
+      this.extrinsicOptions.swapOptions!;
+    const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
 
     const pair = BaseApi.getPair(from);
 
@@ -797,16 +804,7 @@ export class CurrencyController {
     this.setTransactionStatus('pending');
 
     try {
-      await apiSora.swap.execute(
-        assetA,
-        assetB,
-        amountA,
-        amountB,
-        slippage,
-        isExchangeB,
-        LiquiditySourceTypes.Default,
-        swapDexId
-      );
+      await apiSora.swap.execute(assetA, assetB, amountA, amountB, slippage, isExchangeB, liquiditySource, swapDexId);
     } catch (ex) {
       this.setTransactionStatus('failed');
 

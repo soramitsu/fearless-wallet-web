@@ -202,8 +202,8 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { Currencies, MarketType } from '@/interfaces';
 import type { GetAssetName, SelectedWallet, GetNetwork } from '@/store';
+import { Currencies, MarketType } from '@/interfaces';
 import SwapSelectInput from '@/screens/polkaswap/swap/SwapSelectInput.vue';
 import SwapPreview from '@/screens/polkaswap/swap/SwapPreview.vue';
 import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
@@ -232,8 +232,8 @@ export default class SwapForm extends Vue {
   step = 1;
   slippage = 0.5;
   temporarySlippage = 0.5;
-  marketType: MarketType = 'smart';
-  temporaryMarketType: MarketType = 'smart';
+  marketType = MarketType.SMART;
+  temporaryMarketType = MarketType.SMART;
   sendAssetId = '';
   receiveAssetId = '';
   sendAmount = '';
@@ -320,13 +320,13 @@ export default class SwapForm extends Vue {
   }
 
   get AToBCut() {
-    const value = +this.$n(+this.AToB, 'decimal') || '0';
+    const value = this.$n(+this.AToB, 'decimal') || '0';
 
     return `${value} ${this.receiveAssetUP}`;
   }
 
   get BToACut() {
-    const value = +this.$n(+this.BToA, 'decimal') || '0';
+    const value = this.$n(+this.BToA, 'decimal') || '0';
 
     return `${value} ${this.sendAssetUP}`;
   }
@@ -374,7 +374,14 @@ export default class SwapForm extends Vue {
   }
 
   get showSwapInfo() {
-    return this.sendAssetId !== '' && this.receiveAssetId !== '' && this.sendAmount !== '' && this.receiveAmount !== '';
+    return (
+      this.sendAssetId !== '' &&
+      this.receiveAssetId !== '' &&
+      this.sendAmount !== '' &&
+      this.receiveAmount !== '' &&
+      +this.sendAmount !== 0 &&
+      +this.receiveAmount !== 0
+    );
   }
 
   get sendAsset() {
@@ -658,7 +665,7 @@ export default class SwapForm extends Vue {
   }
 
   resetSettings() {
-    this.temporaryMarketType = 'smart';
+    this.temporaryMarketType = MarketType.SMART;
     this.temporarySlippage = 0.5;
   }
 
@@ -668,6 +675,7 @@ export default class SwapForm extends Vue {
     this.showSettings = !this.showSettings;
     this.temporaryMarketType = this.marketType;
     this.temporarySlippage = this.slippage;
+    this.selectAssetType = '';
   }
 
   swapAssets() {
@@ -807,6 +815,7 @@ export default class SwapForm extends Vue {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  margin-right: 4px;
 }
 
 .swap-content {

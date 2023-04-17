@@ -649,7 +649,7 @@ export class CurrencyController {
    * @param {number} xorBalanceInEuros
    * @returns {number}
    */
-  public isValidXorBalanceForSoraCard(xorBalanceInEuros: number): boolean {
+  public isValidEuroBalanceXor(xorBalanceInEuros: number): boolean {
     if (this.asset !== SORA_UTILITY_ASSET) throw Error('Asset is not XOR');
 
     return FPNumber.gte(new FPNumber(xorBalanceInEuros), new FPNumber(95));

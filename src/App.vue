@@ -20,6 +20,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NetworksController, accountController } from '@/controllers';
 import { resetTimeouts } from '@/extension/messaging';
+import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 
 @Component
 export default class App extends Vue {
@@ -36,6 +37,7 @@ export default class App extends Vue {
   @Mutation(AccountsMutationTypes.SET_ADDRESSES) setAddresses!: Fn<SetAddressesProps>;
   @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: Fn<boolean>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: AsyncFn;
+  @Action(SoraCardActionTypes.GET_USER_STATUS) getUserStatus!: AsyncFn;
 
   created() {
     if (BaseApi.isExtension()) {
@@ -47,6 +49,7 @@ export default class App extends Vue {
     this.addEventOnline();
     this.connectToNodes();
     this.subscribeToBalancesOfNetworks();
+    this.getUserStatus(); // SORA Card
   }
 
   @Watch('isOnline')

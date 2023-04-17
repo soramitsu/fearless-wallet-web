@@ -289,6 +289,7 @@
     "noAccounts": "У вас нет аккаунта. Пожалуйста, создайте учетную запись и обновите страницу приложения."
   },
   "soraCard": {
+    "getCard": "Получить карту СОРА",
     "title": "SORA Карта",
     "cardDescriptions": "Пополняйте карту SORA с помощью фиата или криптовалюты и оплачивайте онлайн, в магазине или в банкомате.",
     "cardGet": "Получите счет Euro IBAN и дебетовую карту Mastercard, подключенную к вашему кошельку SORA",
@@ -341,7 +342,36 @@
     "invalidCode": "Неверный код",
     "emailSent": "Перейдите по волшебной ссылке, которая была отправлена",
     "useAnotherEmail": "Использовать другой адрес электронной почты",
-    "numberNotFound": "Номер не найден"
+    "numberNotFound": "Номер не найден",
+    "tryAgain": "Попробовать еще раз",
+    "support": "Поддержка",
+    "cardDetails": "Детали карты",
+    "statuses" : {
+      "pending": {
+        "statusText": "Выполняется проверка",
+        "text1": "Ваш KYC завершен. В ожидании результатов",
+        "text2": "Вы успешно заполнили заявку на KYC. Проверка ожидает решения, и вы можете ожидать решения в ближайшее время",
+        "text3": "Обычно решение принимается в тот же день. В некоторых случаях может занять до 3 дней."
+      },
+      "rejected": {
+        "statusText": "Верицикация отклонена",
+        "text1": "Верицикация отклонена",
+        "text2": "Ваша заявка отклонена.",
+        "text3": "PLACEHOLDER TEXT: *Display 'additional description' provided in the answer* (done by devs. We should check the format of the answer, to be sure it's human-readable)"
+      },
+      "accepted": {
+        "statusText": "Карта в пути",
+        "text1": "Проверка прошла успешно!",
+        "text2": "Ваша проверка KYC прошла успешно. Мы уже начали подготовку к отправке вашей карты SORA.",
+        "text3": ""
+      },
+      "noFreeAttempts": {
+        "statusText": "Нет бесплатных попыток",
+        "text1": "Нет бесплатных попыток",
+        "text2": "Вы использовали свои бесплатные попытки для прохождения процесса KYC.",
+        "text3": "Убедительно просим вас дождаться следующего обновления приложения, чтобы продолжить платные попытки."
+      }
+    }
   },
   "disclaimers": {
     "swapDisclaimer1": "Polkaswap is maintained by the SORA community. Before continuing to use Polkaswap, please review the",
@@ -374,6 +404,7 @@
     "copiedValue": "Скопировано {value}",
     "understood": "Понятно",
     "cancel": "Отмена",
+    "close": "Закрыть",
     "save": "Сохранить",
     "yes": "Да",
     "no": "Нет",

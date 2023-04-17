@@ -1,5 +1,5 @@
 <template>
-  <div v-if="showBanner" class="sora-banner">
+  <div v-if="showSoraCardBanner" class="sora-banner">
     <Icon icon="sora-card-banner" class="banner" :style="iconStyle" />
 
     <CircleButton
@@ -10,7 +10,7 @@
       @click="hideBanner"
     />
 
-    <button class="status-card-button" @click="openSoraCardForm">{{ statusText }}</button>
+    <button class="status-card-button" @click="openSoraCardForm">{{ $t(statusText) }}</button>
   </div>
 </template>
 
@@ -23,19 +23,21 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
+import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
+import { VerificationStatus } from '@/consts/soraCard';
 
 @Component
 export default class SoraCardBanner extends Vue {
-  @Getter(AccountsGettersTypes.getShowSoraCardBanner) getShowSoraCardBanner!: boolean;
+  @Getter(AccountsGettersTypes.showSoraCardBanner) showSoraCardBanner!: boolean;
   @Mutation(AccountsMutationTypes.SET_SORA_CARD_BANNER_VISIBILITY)
   setSoraCardBannerVisibility!: Fn<boolean>;
+  @Getter(SoraCardGettersTypes.currentStatus) currentStatus!: VerificationStatus;
 
   get statusText() {
-    return 'Get SORA Card';
-  }
+    if (this.currentStatus !== null && this.currentStatus !== VerificationStatus.None)
+      return `soraCard.statuses.${this.currentStatus.toLowerCase()}.statusText`;
 
-  get showBanner() {
-    return this.getShowSoraCardBanner;
+    return 'soraCard.getCard';
   }
 
   get iconStyle() {
@@ -84,9 +86,11 @@ export default class SoraCardBanner extends Vue {
     border: none;
     flex: 0 0 33px;
     min-width: 130px;
-    max-width: 250px;
+    max-width: 280px;
     font-weight: 700;
     font-size: 12px;
+    padding: 0 10px;
+    white-space: nowrap;
     color: $plain-white;
     cursor: pointer;
 

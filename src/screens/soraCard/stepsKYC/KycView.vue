@@ -1,17 +1,15 @@
 <template>
-  <div class="sora-card sora-card-kyc-wrapper">
+  <div :class="wrapperClasses">
     <Loader v-if="loading" />
 
-    <div v-else>
-      <div class="sora-card-kyc-view">
-        <SScrollbar>
-          <div id="kyc"></div>
+    <div v-show="!loading" class="sora-card-kyc-view">
+      <Scroll>
+        <div id="kyc"></div>
 
-          <div id="finish" style="display: none">
-            <div class="alert alert-success">Kyc was successfull, sample integrator response displayed here</div>
-          </div>
-        </SScrollbar>
-      </div>
+        <div id="finish" style="display: none">
+          <div class="alert alert-success">Kyc was successfull, sample integrator response displayed here</div>
+        </div>
+      </Scroll>
     </div>
   </div>
 </template>
@@ -26,8 +24,19 @@ export default class KycView extends Vue {
 
   @Prop({ default: '', type: String }) readonly accessToken!: string;
 
+  get wrapperClasses() {
+    return [
+      'sora-card',
+      'sora-card-kyc-wrapper',
+      {
+        loading: this.loading,
+      },
+    ];
+  }
+
   async mounted(): Promise<void> {
     const confirmKyc = (value: boolean) => this.$emit('confirmKyc', value);
+    // const confirmKyc = (value: boolean) => null;
 
     initWebKyc(confirmKyc);
 
@@ -40,39 +49,35 @@ export default class KycView extends Vue {
 
 <style lang="scss">
 .sora-card-kyc-wrapper {
-  height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  height: 100%;
 
   .container {
     padding: 0;
   }
-}
 
-.sora-card-kyc-view {
-  height: 800px;
+  .sora-card-kyc-view {
+    height: 900px;
 
-  .el-scrollbar {
-    height: 800px;
+    .container {
+      margin: 0;
+    }
   }
 
-  .container {
-    margin: 0;
+  #VideoKycFrame {
+    iframe {
+      background-color: #fff;
+      border-radius: 8px !important;
+    }
   }
 
-  .el-scrollbar__wrap {
-    border-radius: var(--s-border-radius-medium) !important;
+  section.content {
+    min-height: 800px;
   }
-}
 
-#VideoKycFrame {
-  iframe {
-    background-color: #fff;
+  .loading {
+    justify-content: center;
   }
-}
-
-section.content {
-  min-height: 800px;
 }
 </style>

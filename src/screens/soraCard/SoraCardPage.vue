@@ -32,6 +32,10 @@
 
       <KycView v-else-if="showKycView" @confirmKyc="redirectToView" />
 
+      <Status v-else-if="showStatus" @openStartPage="openStartPage" />
+
+      <Loader v-else />
+
       <StepsKYCPopup
         v-if="showStepsKYCPopup"
         :fillSteps="fillSteps"
@@ -52,6 +56,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
 import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
 import Preview from '@/screens/soraCard/Preview.vue';
+import Status from '@/screens/soraCard/Status.vue';
 import GetXORPopup from '@/screens/soraCard/GetXORPopup.vue';
 import { StepsKyc, VerificationStatus, KycStatus } from '@/consts/soraCard';
 import KycView from '@/screens/soraCard/stepsKYC/KycView.vue';
@@ -70,6 +75,7 @@ import X1Form from '@/screens/X1/X1Form.vue';
     Phone,
     Email,
     X1Form,
+    Status,
     KycView,
     Preview,
     GetXORPopup,
@@ -84,7 +90,7 @@ export default class SoraCardPage extends Vue {
   userApplied = false;
   showStepsKYCPopup = false;
   showX1Form = false;
-  step = StepsKyc.Preview;
+  step: StepsKyc | -1 = -1;
 
   @Ref('termsAndConditions') readonly termsAndConditions!: TermsAndConditions;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
@@ -92,6 +98,7 @@ export default class SoraCardPage extends Vue {
   @Getter(SoraCardGettersTypes.wantsToPassKycAgain) wantsToPassKycAgain!: boolean;
   @Getter(SoraCardGettersTypes.hasFreeAttempts) hasFreeAttempts!: boolean;
   @Action(SoraCardActionTypes.GET_USER_STATUS) getUserStatus!: AsyncFn;
+  @Action(SoraCardActionTypes.GET_USER_KYC_ATTEMPT) getUserKycAttempt!: AsyncFn;
   @Mutation(SoraCardMutationTypes.SET_KYC_STATUS) setKycStatus!: Fn<KycStatus>;
   @Mutation(SoraCardMutationTypes.SET_VERIFICATION_STATUS) setVerificationStatus!: Fn<VerificationStatus>;
 
@@ -119,6 +126,10 @@ export default class SoraCardPage extends Vue {
     return this.step === StepsKyc.KycView;
   }
 
+  get showStatus() {
+    return this.step === StepsKyc.Status;
+  }
+
   get showBackIcon() {
     return [StepsKyc.TermsAndConditions, StepsKyc.Phone, StepsKyc.Email].includes(this.step) || this.showX1Form;
   }
@@ -138,6 +149,8 @@ export default class SoraCardPage extends Vue {
 
     if (this.step === StepsKyc.KycView) return 'soraCard.completeKYC';
 
+    if (this.step === StepsKyc.Status) return 'soraCard.cardDetails';
+
     return '';
   }
 
@@ -153,6 +166,7 @@ export default class SoraCardPage extends Vue {
   mounted() {
     soraCardController.clearPayWingsKeysFromLocalStorage();
 
+    this.getUserKycAttempt();
     this.checkKyc();
   }
 
@@ -166,7 +180,7 @@ export default class SoraCardPage extends Vue {
     }
 
     if (this.currentStatus) {
-      // this.step = Step.ConfirmationInfo;
+      this.step = StepsKyc.Status;
 
       return;
     }
@@ -184,7 +198,9 @@ export default class SoraCardPage extends Vue {
     if (success) this.openStartPage(success);
     else {
       this.step = StepsKyc.Preview;
-      // this.showStepsKYCPopup = true; TODO??????
+
+      alert('[SoraCard]: Error while initiating KYC');
+      // this.showStepsKYCPopup = true; TODO ??????
     }
   }
 
@@ -192,7 +208,8 @@ export default class SoraCardPage extends Vue {
     if (withoutCheck) {
       this.setKycStatus(KycStatus.Completed);
       this.setVerificationStatus(VerificationStatus.Pending);
-      // this.step = Step.ConfirmationInfo;
+
+      this.step = StepsKyc.Status;
 
       return;
     }

@@ -61,10 +61,10 @@ function getSoraCardService() {
   };
 }
 
-const emptyStatusFields = (): Status => ({
+const emptyStatusFields: Status = {
   verificationStatus: undefined,
   kycStatus: undefined,
-});
+};
 
 const isAccessTokenExpired = (accessToken: string): boolean => {
   try {
@@ -112,7 +112,7 @@ async function getUpdatedJwtPair(refreshToken: string): Promise<Nullable<string>
 }
 
 async function getUserStatus(accessToken: string): Promise<Status> {
-  if (!accessToken) return emptyStatusFields();
+  if (!accessToken) return emptyStatusFields;
 
   try {
     const {
@@ -128,7 +128,7 @@ async function getUserStatus(accessToken: string): Promise<Status> {
 
     const lastRecord = await result.json();
 
-    if (!lastRecord) return emptyStatusFields();
+    if (!lastRecord) return emptyStatusFields;
 
     const verificationStatus: VerificationStatus = lastRecord.verification_status;
     const kycStatus: KycStatus = lastRecord.kyc_status;
@@ -138,11 +138,11 @@ async function getUserStatus(accessToken: string): Promise<Status> {
       return { verificationStatus, kycStatus, rejectReason };
     }
 
-    return emptyStatusFields();
+    return emptyStatusFields;
   } catch (error) {
     console.error('[SoraCard]: Error while getting KYC and verification statuses', error);
 
-    return emptyStatusFields();
+    return emptyStatusFields;
   }
 }
 
@@ -192,7 +192,7 @@ async function defineUserStatus(): Promise<Status> {
   let sessionAccessToken = soraCardController.getPWToken();
 
   if (!(sessionAccessToken && sessionRefreshToken)) {
-    return emptyStatusFields();
+    return emptyStatusFields;
   }
 
   if (isAccessTokenExpired(sessionAccessToken)) {
@@ -201,7 +201,7 @@ async function defineUserStatus(): Promise<Status> {
     if (accessToken) {
       sessionAccessToken = accessToken;
     } else {
-      return emptyStatusFields();
+      return emptyStatusFields;
     }
   }
 

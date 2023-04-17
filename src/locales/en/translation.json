@@ -291,6 +291,7 @@
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
   },
   "soraCard": {
+    "getCard": "Get SORA Card",
     "title": "SORA Card",
     "cardDescriptions": "Top up SORA Card with fiat or crypto and pay online, in-store or withdraw in ATM",
     "cardGet": "Get Euro IBAN account and Mastercard Debit Card connected to your SORA Wallet",
@@ -343,7 +344,36 @@
     "invalidCode": "Code incorrect",
     "emailSent": "Follow the magic link that has been sent to",
     "useAnotherEmail": "Use another email",
-    "numberNotFound": "Number not found"
+    "numberNotFound": "Number not found",
+    "tryAgain": "Try again",
+    "support": "Support",
+    "cardDetails": "Card details",
+    "statuses" : {
+      "pending": {
+        "statusText": "Verification in progress",
+        "text1": "Your KYC is completed. Waiting for the results",
+        "text2": "You have successfully completed your KYC application. The review is pending and you can expect a decision shortly.",
+        "text3": "Usually the decision is made the same day. In some cases can take up to 3 days."
+      },
+      "rejected": {
+        "statusText": "Verification rejected",
+        "text1": "Verification rejected",
+        "text2": "Your application has been rejected.",
+        "text3": "PLACEHOLDER TEXT: *Display 'additional description' provided in the answer* (done by devs. We should check the format of the answer, to be sure it's human-readable)"
+      },
+      "accepted": {
+        "statusText": "Card is on the way",
+        "text1": "Verification is successful!",
+        "text2": "Your KYC verification has been successful. We already started the preparation to send your SORA Card.",
+        "text3": ""
+      },
+      "noFreeAttempts": {
+        "statusText": "No more free attempts",
+        "text1": "No more free attempts",
+        "text2": "You have used your free attempts to pass the KYC process.",
+        "text3": "We kindly ask you to wait until the next update of the application to proceed with paid attempts."
+      }
+    }
   },
   "disclaimers": {
     "swapDisclaimer1": "Polkaswap is maintained by the SORA community. Before continuing to use Polkaswap, please review the",
@@ -376,6 +406,7 @@
     "copiedValue": "Сopied {value}",
     "understood": "Understood",
     "cancel": "Cancel",
+    "close": "Close",
     "save": "Save",
     "yes": "Yes",
     "no": "No",

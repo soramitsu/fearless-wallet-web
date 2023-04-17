@@ -22,7 +22,7 @@ export enum GettersTypes {
   getAccounts = 'getAccounts',
   getAddresses = 'getAddresses',
   getWallets = 'getWallets',
-  getShowSoraCardBanner = 'getShowSoraCardBanner',
+  showSoraCardBanner = 'showSoraCardBanner',
   getQR = 'getQR',
   getAutoSelectNodesValueByNetwork = 'getAutoSelectNodesValueByNetwork',
   getIsCustomSort = 'getIsCustomSort',
@@ -40,7 +40,7 @@ export type Getters = {
   [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
   [GettersTypes.getAddresses](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
   [GettersTypes.getWallets](state: State, getters?: GetterTree<State, State> & Getters): WalletInfo[];
-  [GettersTypes.getShowSoraCardBanner](state: State, getters?: GetterTree<State, State> & Getters): boolean;
+  [GettersTypes.showSoraCardBanner](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getQR](state: State, getters?: GetterTree<State, State> & Getters): Nullable<string>;
   [GettersTypes.getPolkaswapAlertVisibility](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getShowWarningNetworks](
@@ -126,7 +126,7 @@ const getters: GetterTree<State, State> & Getters = {
     return qr;
   },
 
-  [GettersTypes.getShowSoraCardBanner]({ showSoraCardBanner }): boolean {
+  [GettersTypes.showSoraCardBanner]({ showSoraCardBanner }): boolean {
     return showSoraCardBanner;
   },
 

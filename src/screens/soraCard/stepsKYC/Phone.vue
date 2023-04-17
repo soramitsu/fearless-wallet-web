@@ -23,7 +23,7 @@
           :disabled="phoneInputDisabled"
         />
 
-        <button :class="sendButtonClasses" :disabled="isErrorPhoneNumber" @click="sendCode">
+        <button :class="sendButtonClasses" :disabled="disabledSendOtpButton" @click="sendCode">
           {{ sendButtontext }}
         </button>
       </div>
@@ -42,7 +42,7 @@
     </div>
 
     <Button
-      text="soraCard.confirmSMScode"
+      :text="verifyBtnText"
       width="100%"
       size="big"
       fontSize="big"
@@ -59,7 +59,8 @@ import { Component, Vue, Ref, Watch, Prop } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
 import type Input from '@/components/Input.vue';
-import type { AsyncFn, Fn } from '@/interfaces';
+import type { AsyncFn, Fn, Currencies } from '@/interfaces';
+import type { SelectedWallet } from '@/store';
 import { validatePhoneNumber } from '@/helpers/common';
 import { RESEND_INTERVAL, OTP_CODE_LENGTH, VerificationStatus, StepsKyc } from '@/consts/soraCard';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
@@ -68,6 +69,10 @@ import Disclaimer from '@/screens/soraCard/stepsKYC/Disclaimer.vue';
 import { soraCardController } from '@/controllers';
 import { isNumber } from '@/helpers/numbers';
 import { MutationTypes as SoraCardMutationTypes } from '@/store/soraCard/mutations';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { getXORCurrency } from '@/helpers/currencies';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { SORA_UTILITY_ASSET } from '@/consts/networks';
 
 @Component({
   components: { Disclaimer },
@@ -82,11 +87,14 @@ export default class Phone extends Vue {
   verifyOtpBtnLoading = false;
   enteredOTpCodeIsIncorrect = false;
   notFoundPhoneWhenUserApplied = false;
+  notPassedKycAndNotHasXorEnough = false;
 
   @Prop({ default: false, type: Boolean }) userApplied!: boolean;
   @Ref('countryCode') readonly countryCodeComponent!: Input;
   @Ref('phoneNumber') readonly phoneNumberComponent!: ValidatedInput;
   @Ref('verificationCode') private readonly otpComponent!: ValidatedInput;
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(SoraCardGettersTypes.authLogin) authLogin!: any;
   @Getter(SoraCardGettersTypes.currentStatus) currentStatus!: VerificationStatus;
   @Getter(SoraCardGettersTypes.wantsToPassKycAgain) wantsToPassKycAgain!: boolean;
@@ -95,6 +103,18 @@ export default class Phone extends Vue {
   @Action(SoraCardActionTypes.GET_USER_STATUS) getUserStatus!: AsyncFn;
   @Action(SoraCardActionTypes.GET_USER_KYC_ATTEMPT) getUserKycAttempt!: AsyncFn;
   @Mutation(SoraCardMutationTypes.SET_WILL_TO_KYC_PASS_KYC_AGAIN) setWillToPassKycAgain!: Fn<boolean>;
+
+  get currencyXOR() {
+    return getXORCurrency(this.currencies);
+  }
+
+  get euroBalanceXOR() {
+    return this.currencyXOR?.calculateXOREuroBalance(this.selectedWallet) ?? 0;
+  }
+
+  get isValidEuroBalanceXor() {
+    return this.currencyXOR?.isValidEuroBalanceXor(this.euroBalanceXOR) ?? false;
+  }
 
   get errorDescriptionsPhone(): string {
     return this.notFoundPhoneWhenUserApplied ? 'soraCard.numberNotFound' : 'soraCard.invalidPhone';
@@ -108,8 +128,16 @@ export default class Phone extends Vue {
     return this.enteredOTpCodeIsIncorrect ? 'soraCard.invalidCode' : 'soraCard.codeLength';
   }
 
+  get disabledSendOtpButton() {
+    return this.isErrorPhoneNumber || this.notPassedKycAndNotHasXorEnough;
+  }
+
   get disabledProceedButton() {
-    return this.verificationCode.length !== OTP_CODE_LENGTH || this.verifyOtpBtnLoading;
+    return (
+      this.verificationCode.length !== OTP_CODE_LENGTH ||
+      this.verifyOtpBtnLoading ||
+      this.notPassedKycAndNotHasXorEnough
+    );
   }
 
   get isErrorCode() {
@@ -166,17 +194,27 @@ export default class Phone extends Vue {
     return (this.phoneNumber !== '' && !this.isPhoneNumberValid) || this.notFoundPhoneWhenUserApplied;
   }
 
+  get verifyBtnText() {
+    if (this.notPassedKycAndNotHasXorEnough) {
+      return { text: 'assets.insufficientBalance', localeProps: { asset: SORA_UTILITY_ASSET.toUpperCase() } };
+    }
+
+    return 'soraCard.confirmSMScode';
+  }
+
   get sendButtontext() {
-    return this.smsSent
-      ? `${this.$t('soraCard.resend')} 0:${this.leftTimeForResend < 10 ? '0' : ''}${this.leftTimeForResend}`
-      : this.$t('soraCard.sendCode');
+    if (this.smsSent) {
+      return `${this.$t('soraCard.resend')} 0:${this.leftTimeForResend < 10 ? '0' : ''}${this.leftTimeForResend}`;
+    }
+
+    return this.$t('soraCard.sendCode');
   }
 
   get sendButtonClasses() {
     return [
       'send-button',
       {
-        'send-button-disabled': !this.isPhoneNumberValid || this.smsSent,
+        'send-button-disabled': !this.isPhoneNumberValid || this.smsSent || this.notPassedKycAndNotHasXorEnough,
       },
     ];
   }
@@ -186,9 +224,17 @@ export default class Phone extends Vue {
     if (value !== '') this.enteredOTpCodeIsIncorrect = false;
   }
 
+  @Watch('isValidEuroBalanceXor')
+  isValidEuroBalanceXorWatcher(isEnough: boolean) {
+    if (isEnough) {
+      this.notPassedKycAndNotHasXorEnough = false;
+      this.verificationCode = '';
+      this.smsSent = false;
+    }
+  }
+
   async mounted() {
     this.countryCodeComponent.input.focus();
-
     soraCardController.removePWEmail();
 
     await this.initAuthLogin();
@@ -211,11 +257,11 @@ export default class Phone extends Vue {
           return;
         }
 
-        // if (!this.isEuroBalanceEnough) {
-        //   this.notPassedKycAndNotHasXorEnough = true;
+        if (!this.isValidEuroBalanceXor) {
+          this.notPassedKycAndNotHasXorEnough = true;
 
-        //   return;
-        // }
+          return;
+        }
 
         this.$emit('confirm', StepsKyc.Email);
       })
@@ -235,12 +281,12 @@ export default class Phone extends Vue {
 
         if (this.currentStatus) this.$emit('confirm');
         else {
-          // if (!this.isEuroBalanceEnough) {
-          //   this.notPassedKycAndNotHasXorEnough = true;
-          //   this.verifyOtpBtnLoading = false;
+          if (!this.isValidEuroBalanceXor) {
+            this.notPassedKycAndNotHasXorEnough = true;
+            this.verifyOtpBtnLoading = false;
 
-          //   return;
-          // }
+            return;
+          }
 
           this.$emit('confirm', StepsKyc.KycView);
         }
@@ -248,11 +294,11 @@ export default class Phone extends Vue {
       .on('Verification-Email-Sent-Success', () => {
         this.verifyOtpBtnLoading = false;
 
-        // if (!this.isEuroBalanceEnough) {
-        //   this.notPassedKycAndNotHasXorEnough = true;
+        if (!this.isValidEuroBalanceXor) {
+          this.notPassedKycAndNotHasXorEnough = true;
 
-        //   return;
-        // }
+          return;
+        }
 
         this.$emit('confirm', StepsKyc.Email);
       });

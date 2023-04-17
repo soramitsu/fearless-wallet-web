@@ -34,7 +34,7 @@
                 </div>
 
                 <ContentForm
-                  v-if="haveFreePassKYS"
+                  v-if="haveFreePass"
                   :height="175"
                   :isStaticHeight="true"
                   :bottomRightCorner="true"
@@ -110,6 +110,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GetNetworkStatus } from '@/store';
 import { getXORCurrency } from '@/helpers/currencies';
 import { soraCardController } from '@/controllers';
+import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 
 @Component({
   components: { UnsupportedCountries },
@@ -119,28 +120,30 @@ export default class Preview extends Vue {
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
+  @Getter(SoraCardGettersTypes.hasFreeAttempts) hasFreeAttempts!: boolean;
 
   get networkIsReady() {
     return this.getNetworkStatus(SORA_NETWORK_NAME) === 'ready';
   }
 
   get fillFactorBar() {
-    if (this.isValidXorBalance) return 1;
+    if (this.isValidEuroBalanceXor) return 1;
 
     return this.euroBalanceXOR / 100;
   }
 
-  // TODO mock
-  get haveFreePassKYS() {
-    return true;
+  get haveFreePass() {
+    if (this.hasFreeAttempts == null) return true;
+
+    return this.hasFreeAttempts;
   }
 
   get currencyXOR() {
     return getXORCurrency(this.currencies);
   }
 
-  get isValidXorBalance() {
-    return this.currencyXOR?.isValidXorBalanceForSoraCard(this.euroBalanceXOR) ?? false;
+  get isValidEuroBalanceXor() {
+    return this.currencyXOR?.isValidEuroBalanceXor(this.euroBalanceXOR) ?? false;
   }
 
   get euroBalanceXOR() {
@@ -152,21 +155,21 @@ export default class Preview extends Vue {
   }
 
   get classesStatusXOR() {
-    return ['status-xor', this.isValidXorBalance ? 'status-xor-success' : 'status-xor-reject '];
+    return ['status-xor', this.isValidEuroBalanceXor ? 'status-xor-success' : 'status-xor-reject '];
   }
 
   get issuanceContentFormHeight() {
-    return this.haveFreePassKYS ? 270 : 105;
+    return this.haveFreePass ? 270 : 105;
   }
 
   get cardIssuanceText() {
-    const value = this.haveFreePassKYS ? 'soraCard.free' : '12 €';
+    const value = this.haveFreePass ? 'soraCard.free' : '12 €';
 
     return this.$t(value);
   }
 
   get statusXORText() {
-    if (this.isValidXorBalance) return this.$t('soraCard.haveXORForFreeCard');
+    if (this.isValidEuroBalanceXor) return this.$t('soraCard.haveXORForFreeCard');
 
     const euroToPay = +(this.restPriceXOR?.euroToPay ?? 0);
     const euroToPayInXor = +(this.restPriceXOR?.euroToPayInXor ?? 0);
@@ -177,20 +180,19 @@ export default class Preview extends Vue {
   }
 
   get iconFreeCard() {
-    if (!this.haveFreePassKYS) return 'exclamation';
+    if (!this.haveFreePass) return 'exclamation';
 
-    return this.isValidXorBalance ? 'check' : 'close';
+    return this.isValidEuroBalanceXor ? 'check' : 'close';
   }
 
   get freeCardIcon() {
-    return ['icon', `${this.isValidXorBalance ? 'check' : 'reject'}-icon`];
+    return ['icon', `${this.isValidEuroBalanceXor ? 'check' : 'reject'}-icon`];
   }
 
   get textIssueCardButton() {
-    const value =
-      (this.isValidXorBalance && this.haveFreePassKYS) || !this.networkIsReady ? 'common.continue' : 'soraCard.getXOR';
-
-    return this.$t(value);
+    return (this.isValidEuroBalanceXor && this.haveFreePass) || !this.networkIsReady
+      ? 'common.continue'
+      : 'soraCard.getXOR';
   }
 
   async created() {
@@ -209,7 +211,7 @@ export default class Preview extends Vue {
   }
 
   proceed() {
-    if (this.isValidXorBalance) this.$emit('confirmApply');
+    if (this.isValidEuroBalanceXor) this.$emit('confirmApply');
     else this.$emit('openGetXORPopup');
   }
 }

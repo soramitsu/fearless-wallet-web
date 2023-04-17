@@ -166,7 +166,7 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
-  @Getter(AccountsGettersTypes.getShowSoraCardBanner) getShowSoraCardBanner!: boolean;
+  @Getter(AccountsGettersTypes.showSoraCardBanner) showSoraCardBanner!: boolean;
   @Getter(AccountsGettersTypes.getShowWarningNetworks) getShowWarningNetworks!: GetShowWarningNetworks;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: TCurrencies;
   @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
@@ -178,7 +178,7 @@ export default class Wallet extends Vue {
   @Mutation(AccountsMutationTypes.SET_CUSTOM_SORT) setCustomSorting!: Fn<string>;
 
   get contentFormHeight() {
-    const subtractionNumber = this.getShowSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;
+    const subtractionNumber = this.showSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;
 
     return 397 - subtractionNumber;
   }

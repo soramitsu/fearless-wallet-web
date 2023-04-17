@@ -36,7 +36,6 @@ export default class KycView extends Vue {
 
   async mounted(): Promise<void> {
     const confirmKyc = (value: boolean) => this.$emit('confirmKyc', value);
-    // const confirmKyc = (value: boolean) => null;
 
     initWebKyc(confirmKyc);
 

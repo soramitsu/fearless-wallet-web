@@ -30,6 +30,8 @@
 
       <Email v-else-if="showEmail" @confirmEmail="confirmEmail" />
 
+      <KycPrepare v-else-if="showKycPrepare" @openKycVieW="openKycVieW" />
+
       <KycView v-else-if="showKycView" @confirmKyc="redirectToView" />
 
       <Status v-else-if="showStatus" @openStartPage="openStartPage" />
@@ -66,6 +68,7 @@ import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import { MutationTypes as SoraCardMutationTypes } from '@/store/soraCard/mutations';
 import StepsKYCPopup from '@/screens/soraCard/stepsKYC/StepsKYCPopup.vue';
 import TermsAndConditions from '@/screens/soraCard/stepsKYC/TermsAndConditions.vue';
+import KycPrepare from '@/screens/soraCard/stepsKYC/KycPrepare.vue';
 import Phone from '@/screens/soraCard/stepsKYC/Phone.vue';
 import Email from '@/screens/soraCard/stepsKYC/Email.vue';
 import X1Form from '@/screens/X1/X1Form.vue';
@@ -78,6 +81,7 @@ import X1Form from '@/screens/X1/X1Form.vue';
     Status,
     KycView,
     Preview,
+    KycPrepare,
     GetXORPopup,
     StepsKYCPopup,
     TermsAndConditions,
@@ -122,6 +126,10 @@ export default class SoraCardPage extends Vue {
     return this.step === StepsKyc.Email;
   }
 
+  get showKycPrepare() {
+    return this.step === StepsKyc.KycPrepare;
+  }
+
   get showKycView() {
     return this.step === StepsKyc.KycView;
   }
@@ -150,6 +158,8 @@ export default class SoraCardPage extends Vue {
     if (this.step === StepsKyc.KycView) return 'soraCard.completeKYC';
 
     if (this.step === StepsKyc.Status) return 'soraCard.cardDetails';
+
+    if (this.step === StepsKyc.KycPrepare) return 'soraCard.getPrepared';
 
     return '';
   }
@@ -199,7 +209,6 @@ export default class SoraCardPage extends Vue {
     else {
       this.step = StepsKyc.Preview;
 
-      alert('[SoraCard]: Error while initiating KYC');
       // this.showStepsKYCPopup = true; TODO ??????
     }
   }
@@ -242,6 +251,10 @@ export default class SoraCardPage extends Vue {
   }
 
   confirmEmail() {
+    this.step = StepsKyc.KycPrepare;
+  }
+
+  openKycVieW() {
     this.step = StepsKyc.KycView;
   }
 

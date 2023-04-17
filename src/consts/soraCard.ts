@@ -6,6 +6,7 @@ enum StepsKyc {
   Phone,
   Email,
   KycView,
+  KycPrepare,
   Status,
 }
 

@@ -126,6 +126,7 @@
             :sendAssetUP="sendAssetUP"
             :receiveAssetUP="receiveAssetUP"
             :isExchangeB="isExchangeB"
+            :route="route"
           />
         </div>
 

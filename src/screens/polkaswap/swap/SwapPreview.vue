@@ -36,6 +36,7 @@
         :sendAssetUP="sendAssetUP"
         :receiveAssetUP="receiveAssetUP"
         :isExchangeB="isExchangeB"
+        :route="route"
       />
     </ContentForm>
   </div>
@@ -64,6 +65,7 @@ export default class SwapPreview extends Vue {
   @Prop({ default: '' }) providerFee!: string;
   @Prop({ default: '' }) sendAssetUP!: string;
   @Prop({ default: '' }) receiveAssetUP!: string;
+  @Prop({ default: '' }) route!: string;
   @Prop(Boolean) isExchangeB!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 

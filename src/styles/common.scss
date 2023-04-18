@@ -1,0 +1,30 @@
+$extension-width: 561px;
+$extension-height: 600px;
+$default-height-page: 100%;
+
+$header-height: 48px;
+$default-padding: 16px;
+$default-border-radius: 8px;
+
+$pink-lavender-color: #bb77ff;
+$purple-color: rgba(119, 0, 238, 1);
+$pink-purple-color: rgba(119, 0, 238, 0.25);
+$default-white: rgba(255, 255, 255, 0.75);
+$plain-white: rgba(255, 255, 255, 1);
+$gray-color: rgba(255, 255, 255, 0.5);
+$grayish-white: rgba(255, 255, 255, 0.65);
+$pink-color: #EE0077;
+$delete-color: #FC3317;
+$orange-color: #ee7700;
+$success-color: #00ee77;
+$reject-color: #ed0e0e;
+$default-background-color: rgba(255, 255, 255, 0.1);
+$secondary-background-color: rgba(255, 255, 255, 0.05);
+
+$big-clip-path-left-top-and-right-bottom: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+$big-clip-path-left-top: polygon(20px 0, 100% 0, 100% calc(100% - 20px), 100% 100%, 0 100%, 0 20px);
+
+$medium-clip-path-left-top-and-right-bottom: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+$medium-clip-path-left-top: polygon(8px 0, 100% 0, 100% calc(100% - 8px), 100% 100%, 0 100%, 0 8px);
+
+

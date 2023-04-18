@@ -1,0 +1,29 @@
+<template>
+  <NotificationPopup
+    acceptButtonText="assets.changeAddress"
+    rejectButtonText="assets.switchNetwork"
+    sizeWidth="big"
+    :showHeader="false"
+    :showAcceptButton="true"
+    :showRejectButton="true"
+    :closeBuBackground="false"
+    :headers="headers"
+    :handlerClose="handlerClose"
+    :handlerAccept="handlerAccept"
+  />
+</template>
+
+<script lang="ts">
+import { Component, Vue, Prop } from 'vue-property-decorator';
+
+@Component
+export default class WarningAddressPopup extends Vue {
+  readonly headers = {
+    text: 'assets.invalidNetworkText',
+    subtext: 'assets.invalidNetworkSubtext',
+  };
+
+  @Prop(Function) handlerClose!: VoidFunction;
+  @Prop(Function) handlerAccept!: VoidFunction;
+}
+</script>

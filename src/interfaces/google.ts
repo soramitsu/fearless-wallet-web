@@ -57,7 +57,9 @@ interface VerifyTokenResponse {
   expires_in: number;
   access_type: 'online' | 'offline';
 }
+
 type GoogleResponse<T> = Promise<AxiosResponse<T>>;
+
 interface GoogleAuthTypes {
   type: 'main' | 'export';
   wallet?: string;

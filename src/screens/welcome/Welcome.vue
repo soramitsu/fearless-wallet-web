@@ -86,11 +86,13 @@ import BaseApi from '@/util/BaseApi';
 import { URLS } from '@/consts/urls';
 import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
 import { initGoogleAuth } from '@/extension/messaging';
+import { IS_EXTENSION } from '@/consts/global';
 
 @Component({
   components: { MobileConnect },
 })
 export default class Welcome extends Vue {
+  readonly isExtension = IS_EXTENSION;
   showGoogleAuthPopup = false;
 
   get showBackWalletIcon() {
@@ -106,7 +108,7 @@ export default class Welcome extends Vue {
   }
 
   manageGoogle() {
-    if (BaseApi.isExtension()) initGoogleAuth();
+    if (this.isExtension) initGoogleAuth();
   }
 
   closeGooglePopup() {

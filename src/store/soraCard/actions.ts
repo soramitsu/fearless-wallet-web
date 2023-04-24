@@ -1,7 +1,6 @@
 import type { State } from '@/store/soraCard/state';
 import type { ActionTree } from 'vuex';
 import type { AugmentedSoraCardContext } from './types';
-import type { Status } from '@/consts/soraCard';
 import { initPayWingsAuthSdk, defineUserStatus, getFreeKycAttemptCount } from '@/util/soraCard';
 import { MutationTypes } from '@/store/soraCard/mutations';
 
@@ -25,7 +24,7 @@ const actions: ActionTree<State, State> & Actions = {
   },
 
   async [ActionTypes.GET_USER_STATUS]({ commit }) {
-    const { kycStatus, verificationStatus, rejectReason }: Status = await defineUserStatus();
+    const { kycStatus, verificationStatus, rejectReason } = await defineUserStatus();
 
     commit(MutationTypes.SET_KYC_STATUS, kycStatus);
     commit(MutationTypes.SET_VERIFICATION_STATUS, verificationStatus);

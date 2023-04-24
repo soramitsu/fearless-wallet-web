@@ -23,6 +23,7 @@ import type { ActionContext } from 'vuex';
 import type { State } from '@/store/networks/state';
 import type { Mutations } from '@/store/networks/mutations';
 import type { Wallet } from '@/store';
+import type { Subscription } from 'rxjs';
 import { GiantsquidHistoryItem, HistoryElement } from '@/interfaces';
 
 // getters
@@ -100,6 +101,10 @@ export type SetNetworkStatusProps = {
 export type UpdateXorTotalBalanceProps = {
   xorTotalBalance: FPNumber;
   walletAddress: string;
+};
+
+export type SetTotalXorSubscribeProps = {
+  subscription: Subscription;
 };
 
 export type SetSoraFee = {

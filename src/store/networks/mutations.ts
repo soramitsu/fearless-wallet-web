@@ -15,6 +15,7 @@ import type {
   SetAssetsPriceIntervalProps,
   SetSoraFee,
   UpdateXorTotalBalanceProps,
+  SetTotalXorSubscribeProps,
 } from './types';
 import { accountController } from '@/controllers';
 import { isSora } from '@/helpers/common';
@@ -32,6 +33,7 @@ export enum MutationTypes {
   SET_HISTORY = 'SET_HISTORY',
   UPDATE_CURRENCY_BALANCE = 'UPDATE_CURRENCY_BALANCE',
   UPDATE_XOR_TOTAL_BALANCE = 'UPDATE_XOR_TOTAL_BALANCE',
+  SET_TOTAL_XOR_SUBSCRIBE = 'SET_TOTAL_XOR_SUBSCRIBE',
   SET_ACTIVE_NODE = 'SET_ACTIVE_NODE',
   SET_NETWORK_API = 'SET_NETWORK_API',
   SET_NETWORK_STATUS = 'SET_NETWORK_STATUS',
@@ -48,6 +50,7 @@ export type Mutations = {
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
   [MutationTypes.UPDATE_CURRENCY_BALANCE](state: State, props: UpdateCurrencyBalanceProps): void;
   [MutationTypes.UPDATE_XOR_TOTAL_BALANCE](state: State, props: UpdateXorTotalBalanceProps): void;
+  [MutationTypes.SET_TOTAL_XOR_SUBSCRIBE](state: State, props: SetTotalXorSubscribeProps): void;
   [MutationTypes.SET_ACTIVE_NODE](state: State, props: SetActiveNodeProps): void;
   [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApiProps): void;
   [MutationTypes.SET_NETWORK_STATUS](state: State, props: SetNetworkStatusProps): void;
@@ -109,6 +112,11 @@ const mutations: MutationTree<State> & Mutations = {
     const currencyXOR = getXORCurrency(currencies);
 
     currencyXOR.updateXorTotalBalance(walletAddress, xorTotalBalance);
+  },
+
+  [MutationTypes.SET_TOTAL_XOR_SUBSCRIBE](state, { subscription }) {
+    state.totalXorSubscription?.unsubscribe();
+    state.totalXorSubscription = subscription;
   },
 
   [MutationTypes.SET_HISTORY](state, props) {

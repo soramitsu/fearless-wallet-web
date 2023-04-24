@@ -213,6 +213,10 @@ export default class Tabs {
     return false;
   }
 
+  static async saveSoraCardRefreshToken(token: string): Promise<void> {
+    chrome.storage.local.set({ soraCardRefreshToken: token });
+  }
+
   static async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -227,6 +231,9 @@ export default class Tabs {
     switch (type) {
       case 'pub(authorize.tab)':
         return Tabs.authorize(url, request as RequestAuthorizeTab);
+
+      case 'pub(soraCard.token)':
+        return Tabs.saveSoraCardRefreshToken(request as string);
 
       case 'pub(accounts.list)':
         return Tabs.accountsListAuthorized(url, request as RequestAccountList);

@@ -53,9 +53,9 @@ export enum Components {
 }
 
 const haveAccounts = () => BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
-const haveAuthRequests = () => store.getters.getAuthList.length;
-const haveSignRequests = () => store.getters.getSignList.length;
-const haveMetaRequests = () => store.getters.getMetaRequests.length;
+const haveAuthRequests = () => store.getters.authList.length;
+const haveSignRequests = () => store.getters.signList.length;
+const haveMetaRequests = () => store.getters.metaRequests.length;
 
 const routes: Array<RouteConfig> = [
   {

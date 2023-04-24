@@ -349,7 +349,7 @@
     "support": "Support",
     "getPrepared": "Get prepared",
     "cardDetails": "Card details",
-    "prepareAttention": "You have only 2 free attempts to pass the KYC process. Every other attempt after that will cost €3.8. Paid attempts will be available after the next update of the app.",
+    "prepareAttention": "You have only 2 free attempts to pass the KYC process. Every other attempt after that will cost €3.80. Paid attempts will be available after the next update of the app.",
     "prepare": "To complete the KYC you will need to:",
     "prepareSteps": {
       "step1": "Submit a photo of your ID document",

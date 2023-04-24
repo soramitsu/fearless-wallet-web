@@ -38,6 +38,7 @@ import { stripUrl, withErrorLog } from './helpers';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
+import { URLS } from '@/consts/urls';
 
 function extractMetadata(store: MetadataStore): void {
   store.allMap((map): void => {
@@ -101,6 +102,7 @@ export default class State {
   static readonly metaSubject: BehaviorSubject<MetadataRequest[]> = new BehaviorSubject<MetadataRequest[]>([]);
   static readonly signSubject: BehaviorSubject<SigningRequest[]> = new BehaviorSubject<SigningRequest[]>([]);
   static currentTabStatus: ActiveTabAuthorizeStatus;
+
   static get knownMetadata(): MetadataDef[] {
     return knownMetadata();
   }
@@ -159,6 +161,22 @@ export default class State {
       });
     }
   }
+
+  static approvePolkaswap = async (authorizedAccounts: string[]): Promise<void> => {
+    const { POLKASWAP } = URLS;
+    const stripedUrl = stripUrl(POLKASWAP);
+
+    State.authUrls[stripedUrl] = {
+      authorizedAccounts,
+      count: 0,
+      id: getId(),
+      origin: 'SubWallet Connect',
+      url: POLKASWAP,
+    };
+
+    await State.saveCurrentAuthList();
+    await State.updateDefaultAuthAccounts(authorizedAccounts);
+  };
 
   static authComplete = (
     id: string,

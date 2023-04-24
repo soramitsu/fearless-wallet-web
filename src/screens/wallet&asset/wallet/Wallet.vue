@@ -127,7 +127,7 @@ import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.v
 import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
 import { tieAccount } from '@/extension/messaging';
 import { defaultSortingCurrencies } from '@/helpers/currencies';
-import { SORA_CARD_BANNER_HEIGHT } from '@/consts/global';
+import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
 
 @Component({
   components: {

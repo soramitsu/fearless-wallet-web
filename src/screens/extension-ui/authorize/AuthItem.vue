@@ -48,17 +48,12 @@ export default class AuthItem extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.divider {
-  background-color: $default-background-color;
-  margin: 17px 0;
-}
-
 .auth-item-name {
   font-size: 16px;
 }
 
 .auth-content {
-  padding-bottom: 12px;
+  padding: 16px 0;
   border-bottom: 1px solid $default-background-color;
 }
 

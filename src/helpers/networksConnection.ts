@@ -19,6 +19,21 @@ interface ISubscribeData {
   data: AccountData;
 }
 
+const subscribeTotalXorBalance = (walletAddress: string) => {
+  try {
+    const subscription = apiSora.assets.getTotalXorBalanceObservable().subscribe(async (xorTotalBalance: FPNumber) => {
+      store.commit(MutationTypes.UPDATE_XOR_TOTAL_BALANCE, {
+        walletAddress,
+        xorTotalBalance: xorTotalBalance,
+      });
+    });
+
+    store.commit(MutationTypes.SET_TOTAL_XOR_SUBSCRIBE, { subscription });
+  } catch {
+    console.error('failed subscribe to XOR balance');
+  }
+};
+
 const connectedHandler = (apiOptions: ApiOptions, network: Network) => {
   const api = isSora(network.name) ? soraConnection.api : apiOptions.api;
 
@@ -74,14 +89,7 @@ const readyHandler = (network: Network) => {
     status: 'ready',
   });
 
-  if (isSora(network.name)) {
-    apiSora.assets.getTotalXorBalanceObservable().subscribe(async (xorTotalBalance: FPNumber) => {
-      store.commit(MutationTypes.UPDATE_XOR_TOTAL_BALANCE, {
-        walletAddress: store.getters.getSelectedWallet.address,
-        xorTotalBalance: xorTotalBalance,
-      });
-    });
-  }
+  if (isSora(network.name)) subscribeTotalXorBalance(store.getters.getSelectedWallet.address);
 };
 
 async function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): Promise<void> {
@@ -197,4 +205,4 @@ async function subscribeAssetsBalances(address: string, network: Network): Promi
   });
 }
 
-export { connectToApi, subscribeAssetsBalances };
+export { connectToApi, subscribeAssetsBalances, subscribeTotalXorBalance };

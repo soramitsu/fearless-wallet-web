@@ -21,6 +21,8 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NetworksController, accountController } from '@/controllers';
 import { resetTimeouts } from '@/extension/messaging';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
+import { IS_EXTENSION } from '@/consts/global';
+import { saveSoraCardRefreshToken } from '@/util/soraCard';
 
 @Component
 export default class App extends Vue {
@@ -29,7 +31,6 @@ export default class App extends Vue {
 
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
   @Getter(AccountsGettersTypes.getAddresses) addresses!: Accounts;
-  @Getter(AccountsGettersTypes.getWallets) wallets!: Record<string, Accounts>;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
   @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: Fn<string>;
@@ -40,9 +41,11 @@ export default class App extends Vue {
   @Action(SoraCardActionTypes.GET_USER_STATUS) getUserStatus!: AsyncFn;
 
   created() {
-    if (BaseApi.isExtension()) {
+    if (IS_EXTENSION) {
       this.extensionSubscribe();
+
       resetTimeouts();
+      saveSoraCardRefreshToken();
     }
 
     this.setWallet();

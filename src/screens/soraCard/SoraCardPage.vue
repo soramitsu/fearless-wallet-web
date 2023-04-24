@@ -22,7 +22,7 @@
       <TermsAndConditions
         v-else-if="showTermsAndConditions"
         ref="termsAndConditions"
-        @openStepsKYCPopup="openStepsKYCPopup"
+        @termsProceed="termsProceed"
         @toggleCountriesFormVisibility="toggleCountriesFormVisibility"
       />
 
@@ -36,6 +36,8 @@
 
       <Status v-else-if="showStatus" @openStartPage="openStartPage" />
 
+      <div v-else-if="polkaswapIsOpened">Redirect to Polkaswap</div>
+
       <Loader v-else />
 
       <StepsKYCPopup
@@ -45,7 +47,7 @@
         :proceed="proceedStepsPopup"
       />
 
-      <GetXORPopup v-if="showGetXORPopup" @openX1Form="openX1Form" :handlerClose="closeGetXORPopup" />
+      <GetXORPopup v-if="showGetXORPopup" :handlerClose="closeGetXORPopup" @openX1Form="openX1Form" />
     </div>
   </AboveForm>
 </template>
@@ -53,7 +55,9 @@
 <script lang="ts">
 import { Component, Vue, Ref } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
+import { AuthUrlInfo } from '@extension-base/background/types';
 import type { AsyncFn, Fn } from '@/interfaces';
+import type { SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { Components } from '@/router/routes';
 import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
@@ -61,7 +65,6 @@ import Preview from '@/screens/soraCard/Preview.vue';
 import Status from '@/screens/soraCard/Status.vue';
 import GetXORPopup from '@/screens/soraCard/GetXORPopup.vue';
 import { StepsKyc, VerificationStatus, KycStatus } from '@/consts/soraCard';
-import KycView from '@/screens/soraCard/stepsKYC/KycView.vue';
 import { soraCardController } from '@/controllers';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
@@ -72,6 +75,14 @@ import KycPrepare from '@/screens/soraCard/stepsKYC/KycPrepare.vue';
 import Phone from '@/screens/soraCard/stepsKYC/Phone.vue';
 import Email from '@/screens/soraCard/stepsKYC/Email.vue';
 import X1Form from '@/screens/X1/X1Form.vue';
+import KycView from '@/screens/soraCard/stepsKYC/KycView.vue';
+import { URLS } from '@/consts/urls';
+import { IS_EXTENSION } from '@/consts/global';
+import { updateAuthorization, approvePolkaswapAuthRequest } from '@/extension/messaging';
+import { WalletInfo } from '@/store';
+import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
+import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
+import { stripUrl } from '@/extension/background/extension-base/src/background/handlers/helpers';
 
 @Component({
   components: {
@@ -89,20 +100,27 @@ import X1Form from '@/screens/X1/X1Form.vue';
   },
 })
 export default class SoraCardPage extends Vue {
+  readonly isExtension = IS_EXTENSION;
+
   showCountriesForm = false;
   showGetXORPopup = false;
   userApplied = false;
   showStepsKYCPopup = false;
   showX1Form = false;
+  polkaswapIsOpened = false;
   step: StepsKyc | -1 = -1;
 
   @Ref('termsAndConditions') readonly termsAndConditions!: TermsAndConditions;
+  @Getter(ExtensionGettersTypes.authList) authlist!: Record<string, AuthUrlInfo>;
+  @Getter(AccountsGettersTypes.getWallets) wallets!: WalletInfo[];
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(SoraCardGettersTypes.currentStatus) currentStatus!: VerificationStatus;
   @Getter(SoraCardGettersTypes.wantsToPassKycAgain) wantsToPassKycAgain!: boolean;
   @Getter(SoraCardGettersTypes.hasFreeAttempts) hasFreeAttempts!: boolean;
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Action(SoraCardActionTypes.GET_USER_STATUS) getUserStatus!: AsyncFn;
   @Action(SoraCardActionTypes.GET_USER_KYC_ATTEMPT) getUserKycAttempt!: AsyncFn;
+  @Action(ExtensionActionTypes.GET_AUTHLIST) getAuthList!: AsyncFn<void>;
   @Mutation(SoraCardMutationTypes.SET_KYC_STATUS) setKycStatus!: Fn<KycStatus>;
   @Mutation(SoraCardMutationTypes.SET_VERIFICATION_STATUS) setVerificationStatus!: Fn<VerificationStatus>;
 
@@ -174,6 +192,8 @@ export default class SoraCardPage extends Vue {
   }
 
   mounted() {
+    if (this.isExtension) this.getAuthList();
+
     soraCardController.clearPayWingsKeysFromLocalStorage();
 
     this.getUserKycAttempt();
@@ -184,7 +204,9 @@ export default class SoraCardPage extends Vue {
     await this.getUserStatus();
 
     if (this.currentStatus === VerificationStatus.Rejected && this.wantsToPassKycAgain && this.hasFreeAttempts) {
-      this.step = StepsKyc.KycView;
+      // TODO openPolkaswap??????
+      if (this.isExtension) this.openPolkaswap(false);
+      else this.step = StepsKyc.KycView;
 
       return;
     }
@@ -196,7 +218,9 @@ export default class SoraCardPage extends Vue {
     }
 
     if (this.hasTokens) {
-      this.step = StepsKyc.KycView;
+      // TODO openPolkaswap??????
+      if (this.isExtension) this.openPolkaswap(false);
+      else this.step = StepsKyc.KycView;
 
       return;
     }
@@ -206,11 +230,7 @@ export default class SoraCardPage extends Vue {
 
   redirectToView(success: boolean) {
     if (success) this.openStartPage(success);
-    else {
-      this.step = StepsKyc.Preview;
-
-      // this.showStepsKYCPopup = true; TODO ??????
-    }
+    else this.step = StepsKyc.Preview;
   }
 
   openStartPage(withoutCheck: boolean) {
@@ -261,8 +281,20 @@ export default class SoraCardPage extends Vue {
   confirmApply(userApplied: boolean) {
     this.userApplied = userApplied;
 
-    if (userApplied) this.showStepsKYCPopup = true;
-    else this.step = StepsKyc.TermsAndConditions;
+    if (userApplied) {
+      if (this.isExtension) {
+        this.openPolkaswap();
+
+        return;
+      } else this.showStepsKYCPopup = true;
+    }
+
+    this.step = StepsKyc.TermsAndConditions;
+  }
+
+  termsProceed() {
+    if (this.isExtension) this.openPolkaswap();
+    else this.openStepsKYCPopup();
   }
 
   openGetXORPopup() {
@@ -293,6 +325,35 @@ export default class SoraCardPage extends Vue {
 
   closeX1Form() {
     this.showX1Form = false;
+  }
+
+  async openPolkaswap(check = true) {
+    const { POLKASWAP } = URLS;
+    const selectedAddress = this.selectedWallet.address;
+
+    if (check) {
+      const stripPolkaswap = stripUrl(POLKASWAP);
+      const polkaswapAuth = this.authlist[stripPolkaswap];
+
+      // polkaswap authorized
+      if (polkaswapAuth) {
+        const { authorizedAccounts } = polkaswapAuth;
+
+        // but no current account
+        if (!authorizedAccounts.includes(selectedAddress)) {
+          const activeAccounts = [
+            selectedAddress,
+            ...this.wallets.filter(({ address }) => authorizedAccounts.includes(address)).map(({ address }) => address),
+          ];
+
+          await updateAuthorization(activeAccounts, stripPolkaswap);
+        }
+      } else approvePolkaswapAuthRequest([selectedAddress]);
+    }
+
+    window.open(`${POLKASWAP}/#/card?fearless=${selectedAddress}&userApplied=${this.userApplied}`);
+
+    this.polkaswapIsOpened = true;
   }
 }
 </script>

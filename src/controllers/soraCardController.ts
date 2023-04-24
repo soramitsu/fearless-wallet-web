@@ -15,12 +15,18 @@ class SoraCardController {
     return this.ls.getWithoutParse(this.PWToken)!;
   }
 
-  setPWToken(value: string): string {
-    return this.ls.setDefault(this.PWToken, value)!;
+  setPWToken(value: string): void {
+    this.ls.setDefault(this.PWToken, value)!;
   }
 
   getPWRefreshToken(): string {
     return this.ls.getWithoutParse(this.PWRefreshToken)!;
+  }
+
+  // extension only function for integration with polkaswap
+  setPWRefreshToken(value: string): void {
+    this.ls.setDefault(this.PWRefreshToken, value)!;
+    this.setPWToken('1');
   }
 
   removePWEmail(): void {

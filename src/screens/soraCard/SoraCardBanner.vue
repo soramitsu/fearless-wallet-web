@@ -18,13 +18,12 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import type { Fn } from '@/interfaces';
-import { SORA_CARD_BANNER_HEIGHT } from '@/consts/global';
+import { SORA_CARD_BANNER_HEIGHT, VerificationStatus } from '@/consts/soraCard';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
-import { VerificationStatus } from '@/consts/soraCard';
 
 @Component
 export default class SoraCardBanner extends Vue {

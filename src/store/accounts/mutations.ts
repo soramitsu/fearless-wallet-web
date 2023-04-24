@@ -8,6 +8,7 @@ import BaseApi from '@/util/BaseApi';
 import { accountController } from '@/controllers';
 import { getMetaTyped } from '@/helpers/common';
 import { SORA_NETWORK_NAME } from '@/consts/networks';
+import { subscribeTotalXorBalance } from '@/helpers/networksConnection';
 
 export enum MutationTypes {
   SET_SELECTED_WALLET = 'SET_SELECTED_WALLET',
@@ -68,6 +69,8 @@ const mutations: MutationTree<State> & Mutations = {
     const pair = BaseApi.getPair(transactionAddress);
 
     apiSora.account = { json: null as any, pair };
+
+    subscribeTotalXorBalance(transactionAddress);
   },
 
   [MutationTypes.SET_SELECTED_FIAT](state, { fiatName, currencies }) {

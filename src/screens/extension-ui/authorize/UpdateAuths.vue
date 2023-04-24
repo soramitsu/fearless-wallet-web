@@ -23,14 +23,14 @@ import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters
     SelectAuthAccount,
   },
 })
-export default class Authorize extends Vue {
+export default class UpdateAuths extends Vue {
   selectAll = false;
   state: Record<string, WalletInfo> = {};
 
   @Prop(String) url!: string;
   @Getter(AccountsGettersTypes.getWallets) wallets!: WalletInfo[];
-  @Getter(ExtensionGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
-  @Action(ExtensionActionTypes.GET_AUTHLIST) fetchAuthList!: AsyncFn<void>;
+  @Getter(ExtensionGettersTypes.authList) authlist!: Record<string, AuthUrlInfo>;
+  @Action(ExtensionActionTypes.GET_AUTHLIST) getAuthList!: AsyncFn<void>;
 
   get buttonText() {
     const count = Object.values(this.state).filter((el) => el.active).length;
@@ -42,25 +42,17 @@ export default class Authorize extends Vue {
     };
   }
 
-  get prepAccounts() {
-    return Object.values(this.state)
-      .filter(({ active }) => active)
-      .map(({ address }) => address);
-  }
-
   async mounted() {
     const { authorizedAccounts } = this.authlist[this.url];
 
-    this.wallets.forEach(({ name, address, isMobile }) => {
-      const isAuthorized = authorizedAccounts.some((el: string) => el === address);
-
+    this.wallets.forEach(({ name, address, isMobile }) =>
       Vue.set(this.state, name, {
         name: name,
         address: address,
         isMobile: isMobile,
-        active: isAuthorized,
-      });
-    });
+        active: authorizedAccounts.includes(address),
+      })
+    );
 
     this.selectAll = this.isAllSelected();
   }
@@ -86,8 +78,12 @@ export default class Authorize extends Vue {
   }
 
   async updateAuths() {
-    await updateAuthorization(this.prepAccounts, this.url);
-    await this.fetchAuthList();
+    const activeAccounts = Object.values(this.state)
+      .filter(({ active }) => active)
+      .map(({ address }) => address);
+
+    await updateAuthorization(activeAccounts, this.url);
+    await this.getAuthList();
 
     this.$emit('updateUrl');
   }

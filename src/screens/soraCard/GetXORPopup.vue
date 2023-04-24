@@ -3,7 +3,7 @@
     <div class="content">
       <div>{{ $t('soraCard.getXORLabel') }}</div>
 
-      <Button width="100%" text="soraCard.buyXORWithEUR" class="button" @click="buyXORwithEUR" />
+      <Button v-if="isExtension" width="100%" text="soraCard.buyXORWithEUR" class="button" @click="buyXORwithEUR" />
 
       <Button width="100%" text="soraCard.swapXOR" class="button" @click="openSoraSwap" />
 
@@ -22,16 +22,15 @@ import { SORA_NETWORK_NAME } from '@/consts/networks';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getXORCurrency } from '@/helpers/currencies';
+import { IS_EXTENSION } from '@/consts/global';
 
 @Component
 export default class GetXORPopup extends Vue {
+  readonly isExtension = IS_EXTENSION;
+
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-
-  buyXORwithEUR() {
-    this.$emit('openX1Form');
-  }
 
   get selectedNetwork() {
     return SORA_NETWORK_NAME as string;
@@ -52,6 +51,10 @@ export default class GetXORPopup extends Vue {
         restPriceXOR: this.restPriceXOR,
       },
     });
+  }
+
+  buyXORwithEUR() {
+    this.$emit('openX1Form');
   }
 }
 </script>

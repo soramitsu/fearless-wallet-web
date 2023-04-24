@@ -32,7 +32,7 @@ export default class ConnectionPopup extends Vue {
     }
 
     return this.$t('header.connectionStatusMessage', {
-      not: this.tabStatus.isAuthorize ? '' : 'not',
+      not: 'not',
     });
   }
 

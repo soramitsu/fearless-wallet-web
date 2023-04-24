@@ -173,8 +173,9 @@ export default class Preview extends Vue {
 
     const euroToPay = +(this.restPriceXOR?.euroToPay ?? 0);
     const euroToPayInXor = +(this.restPriceXOR?.euroToPayInXor ?? 0);
+    const euro = euroToPay > 100 ? 100 : euroToPay;
 
-    return `${this.$n(euroToPayInXor, 'decimal')} XOR (${this.fiatSymbol}${this.$n(euroToPay, 'price')}) ${this.$t(
+    return `${this.$n(euroToPayInXor, 'decimal')} XOR (${this.fiatSymbol}${this.$n(euro, 'price')}) ${this.$t(
       'soraCard.leftXORForFreeCard'
     )}`;
   }

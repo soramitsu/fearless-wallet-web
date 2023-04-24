@@ -22,6 +22,7 @@ import { getReplacedMetaTyped, getMetaTyped } from '@/helpers/common';
 import { ETHEREUM_NETWORKS, ETHEREUM_ADDRESS_LENGTH, ETHEREUM_ADDRESS_PREFIX } from '@/consts/networks';
 import { NetworksController, beaconController } from '@/controllers';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
+import { IS_EXTENSION } from '@/consts/global';
 
 type WordCount = 12 | 15 | 18 | 21 | 24;
 type WalletTypes = 'mobile' | 'native';
@@ -467,12 +468,8 @@ export default class BaseApi {
     return [...BaseApi.getAddresses(), ...BaseApi.getAccounts()].length;
   }
 
-  public static isExtension(): boolean {
-    return chrome.extension !== undefined;
-  }
-
   public static windowOpen(path: string): void {
-    if (!BaseApi.isExtension()) return;
+    if (!IS_EXTENSION) return;
 
     const url = `${chrome.runtime.getURL('popup.html')}#${path}`;
 
@@ -480,7 +477,7 @@ export default class BaseApi {
   }
 
   public static useIsPopup(): boolean {
-    return window.innerWidth <= 561 && BaseApi.isExtension();
+    return window.innerWidth <= 561 && IS_EXTENSION;
   }
 
   public static getFirstSubstrateWalletAddress(): string {

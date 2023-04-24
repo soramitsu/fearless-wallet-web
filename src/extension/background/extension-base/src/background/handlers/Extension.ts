@@ -270,6 +270,10 @@ export default class Extension {
     return true;
   }
 
+  static async authorizeApprovePolkaswap(authorizedAccounts: string[]): Promise<void> {
+    State.approvePolkaswap(authorizedAccounts);
+  }
+
   static async authorizeUpdate({ authorizedAccounts, url }: RequestUpdateAuthorizedAccounts): Promise<void> {
     return State.updateAuthorizedAccounts([[url, authorizedAccounts]]);
   }
@@ -649,6 +653,13 @@ export default class Extension {
   static cancelAuthRequest(id: string) {
     State.authorizeCancel({ id });
   }
+
+  static async getSoraCardRefreshToken(): Promise<string> {
+    const { soraCardRefreshToken } = await chrome.storage.local.get(['soraCardRefreshToken']);
+
+    return soraCardRefreshToken as string;
+  }
+
   static async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -658,6 +669,9 @@ export default class Extension {
     switch (type) {
       case 'pri(authorize.approve)':
         return Extension.authorizeApprove(request as RequestAuthorizeApprove);
+
+      case 'pri(authorize.approve.polkaswap)':
+        return Extension.authorizeApprovePolkaswap(request as string[]);
 
       case 'pri(authorize.list)':
         return Extension.getAuthList();
@@ -814,6 +828,9 @@ export default class Extension {
 
       case 'pri(tab.status)':
         return Extension.isTabAuthorize();
+
+      case 'pri(soraCard.token)':
+        return Extension.getSoraCardRefreshToken();
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

@@ -38,6 +38,7 @@ import { saveTimeoutCache } from '@/extension/messaging';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/networks';
 import { addNumbers } from '@/helpers/numbers';
 import { getXorPerEuroRatio } from '@/util/soraCard';
+import { IS_EXTENSION } from '@/consts/global';
 
 type XorRestPrice = {
   euroToPay: string;
@@ -781,7 +782,7 @@ export class CurrencyController {
    * @param {string} from
    */
   public async sendSwap(from: string, isSavePass: boolean): Promise<void> {
-    if (BaseApi.isExtension()) saveTimeoutCache(from, isSavePass);
+    if (IS_EXTENSION) saveTimeoutCache(from, isSavePass);
 
     const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB } = this.extrinsicOptions.swapOptions!;
 
@@ -842,7 +843,7 @@ export class CurrencyController {
    * @returns {Promise<boolean>}
    */
   public async send(from: string, isMobile = false, isSavePass = false): Promise<boolean> {
-    if (BaseApi.isExtension()) saveTimeoutCache(from, isSavePass);
+    if (IS_EXTENSION) saveTimeoutCache(from, isSavePass);
 
     const account = isMobile ? from : BaseApi.getPair(from);
 

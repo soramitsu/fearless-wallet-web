@@ -109,6 +109,7 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getWallets]({ addresses, accounts }): WalletInfo[] {
     const wallets: WalletInfo[] = [];
     const prepAccounts = { ...addresses, ...accounts };
+
     (Object.values(prepAccounts) as any).forEach((wallet: IWallet) => {
       if (wallet.type !== 'ethereum')
         wallets.push({

@@ -39,7 +39,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Components } from '@/router/routes';
 import SettingMenuItem from '@/screens/main/SettingMenuItem.vue';
-import BaseApi from '@/util/BaseApi';
+import { IS_EXTENSION } from '@/consts/global';
 
 type SettingsItemType = 'Accounts';
 
@@ -47,14 +47,12 @@ type SettingsItemType = 'Accounts';
   components: { SettingMenuItem },
 })
 export default class SettingsPopup extends Vue {
+  readonly isExtension = IS_EXTENSION;
+
   @Prop(Function) handlerClose!: VoidFunction;
 
   get routeName() {
     return this.$route.name;
-  }
-
-  get isExtension() {
-    return BaseApi.isExtension();
   }
 
   openPopup(value: string) {

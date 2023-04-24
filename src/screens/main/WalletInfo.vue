@@ -29,6 +29,7 @@ import WalletBalance from '@/screens/main/WalletBalance.vue';
 })
 export default class WalletInfo extends Vue {
   readonly dotsHorizontalRef = 'dotsHorizontal';
+
   showWalletMenu = false;
   $refs!: {
     dotsHorizontal: HTMLDivElement;
@@ -49,6 +50,7 @@ export default class WalletInfo extends Vue {
       },
     ];
   }
+
   updateSelectedWallet({ target: { classList } }: CustomEvent) {
     const shouldUpdateSelectedWallet = !(
       classList.contains('dots-container') ||

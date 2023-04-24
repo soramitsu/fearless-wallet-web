@@ -56,5 +56,17 @@ const UNSUPPORTED_COUNTRIES = {
 
 const OTP_CODE_LENGTH = 6;
 const RESEND_INTERVAL = IS_PRODUCTION ? 59 : 10;
+const SORA_CARD_BANNER_HEIGHT = 130;
+const SORA_CARD_BANNER_RERUN = 1000 * 60 * 60 * 24 * 7;
 
-export { UNSUPPORTED_COUNTRIES, RESEND_INTERVAL, OTP_CODE_LENGTH, StepsKyc, VerificationStatus, Status, KycStatus };
+export {
+  UNSUPPORTED_COUNTRIES,
+  RESEND_INTERVAL,
+  OTP_CODE_LENGTH,
+  SORA_CARD_BANNER_HEIGHT,
+  SORA_CARD_BANNER_RERUN,
+  StepsKyc,
+  VerificationStatus,
+  Status,
+  KycStatus,
+};

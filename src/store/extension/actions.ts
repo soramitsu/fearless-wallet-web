@@ -204,7 +204,7 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.FETCH_TAB_STATUS]({ commit }) {
     const tabStatus = await isTabAuthorize();
 
-    commit(MutationTypes.SET_TABSTATUS, tabStatus);
+    commit(MutationTypes.SET_TAB_STATUS, tabStatus);
   },
 };
 

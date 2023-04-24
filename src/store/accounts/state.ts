@@ -1,6 +1,6 @@
 import type { SelectedWallet, Accounts, SelectedNetworks, AutoSelectNode } from './types';
 import type { NetworkName } from '@/interfaces';
-import { SORA_CARD_BANNER_RERUN } from '@/consts/global';
+import { SORA_CARD_BANNER_RERUN } from '@/consts/soraCard';
 import { accountController } from '@/controllers';
 
 export type State = {

@@ -19,7 +19,7 @@
           @keydown.native.enter="sendExtrinsic"
         />
 
-        <div v-if="show15MinCheckbox" class="remember-checkbox">
+        <div v-if="isExtension" class="remember-checkbox">
           <Checkbox v-model="isSavePass" size="medium" :label="min15Label" />
         </div>
 
@@ -70,11 +70,14 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/extension/actions';
 import SignMobile from '@/screens/wallet&asset/SignMobile.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { IS_EXTENSION } from '@/consts/global';
 
 @Component({
   components: { SignMobile },
 })
 export default class ConfirmationPasswordPopup extends Vue {
+  readonly isExtension = IS_EXTENSION;
+
   password = '';
   isErrorPassword = false;
   isLocked = true;
@@ -99,16 +102,12 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
-  get show15MinCheckbox() {
-    return BaseApi.isExtension();
-  }
-
   get classesInput() {
     return [
       'row',
       'password-input',
       {
-        'password-input-margin': !this.show15MinCheckbox,
+        'password-input-margin': !this.isExtension,
       },
     ];
   }
@@ -189,7 +188,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async mounted() {
-    if (!BaseApi.isExtension() || this.isSignMobile) return;
+    if (!this.isExtension || this.isSignMobile) return;
 
     if (this.transactionId !== undefined) {
       const { isLocked } = await isSignLocked(this.transactionId);

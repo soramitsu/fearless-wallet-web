@@ -3,7 +3,7 @@
     <div class="authorize">
       <template v-if="isAccountsExists">
         <div>
-          <Alert headerText="soraCard.attention">
+          <Alert headerText="common.attention">
             <p class="authorize__content">
               {{ $t('authorize.selfIdentifyOne') }}
               <span class="authorize__content--name">{{ request.request.origin }}</span>
@@ -28,7 +28,7 @@
       </template>
 
       <template v-else>
-        <Alert headerText="soraCard.attention" message="auth.noAccounts" />
+        <Alert headerText="common.attention" message="auth.noAccounts" />
 
         <Button width="100%" text="common.understood" size="big" fontSize="big" @click="onReject" />
       </template>
@@ -54,7 +54,6 @@ import { cancelAuthRequest } from '@/extension/messaging';
 @Component({
   components: {
     Hint,
-
     SelectAuthAccount,
   },
 })
@@ -62,7 +61,7 @@ export default class Authorize extends Vue {
   state: Record<string, WalletInfo> = {};
   selectAll = true;
 
-  @Getter(ExtensionGettersTypes.getAuthRequests) requests!: AuthorizeRequest[];
+  @Getter(ExtensionGettersTypes.authRequests) requests!: AuthorizeRequest[];
   @Getter(AccountsGettersTypes.getWallets) wallets!: WalletInfo[];
   @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
   @Action(ExtensionActionTypes.APPROVE_AUTH_REQUEST) onApproveAuthRequest!: AsyncFn<ApproveAuthRequest>;
@@ -72,12 +71,12 @@ export default class Authorize extends Vue {
     return BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
   }
 
-  get request(): AuthorizeRequest {
+  get request() {
     return this.requests[0];
   }
 
   @Watch('requests')
-  updateRoute(value: AuthorizeRequest[]) {
+  requestsWatcher(value: AuthorizeRequest[]) {
     if (value.length === 0) this.$router.push({ name: Components.Wallet });
   }
 
@@ -108,16 +107,14 @@ export default class Authorize extends Vue {
     this.selectAll = value;
   }
 
-  get prepAccounts() {
-    return Object.values(this.state)
+  onApprove() {
+    const accounts = Object.values(this.state)
       .filter(({ active }) => active)
       .map(({ address }) => address);
-  }
 
-  onApprove() {
     this.onApproveAuthRequest({
       request: this.request,
-      accounts: this.prepAccounts,
+      accounts,
     });
 
     this.redirect();

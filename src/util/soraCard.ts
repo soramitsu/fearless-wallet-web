@@ -7,6 +7,7 @@ import type { Status } from '@/consts/soraCard';
 import { IS_PRODUCTION } from '@/consts/global';
 import { soraCardController } from '@/controllers';
 import { VerificationStatus, KycStatus } from '@/consts/soraCard';
+import { getSoraCardRefreshToken } from '@/extension/messaging';
 
 const getXorPerEuroRatio = async () => {
   try {
@@ -328,6 +329,12 @@ const initWebKyc = async (confirmKyc: (value: boolean) => void) => {
     .catch(() => null);
 };
 
+const saveSoraCardRefreshToken = async () => {
+  const token = await getSoraCardRefreshToken();
+
+  soraCardController.setPWRefreshToken(token);
+};
+
 export {
   getXorPerEuroRatio,
   initPayWingsAuthSdk,
@@ -335,4 +342,5 @@ export {
   initWebKyc,
   defineUserStatus,
   getFreeKycAttemptCount,
+  saveSoraCardRefreshToken,
 };

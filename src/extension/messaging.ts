@@ -158,6 +158,10 @@ export async function approveAuthRequest(id: string, authorizedAccounts: string[
   return sendMessage('pri(authorize.approve)', { id, authorizedAccounts });
 }
 
+export async function approvePolkaswapAuthRequest(authorizedAccounts: string[]) {
+  return sendMessage('pri(authorize.approve.polkaswap)', authorizedAccounts);
+}
+
 export async function approveMetaRequest(id: string): Promise<boolean> {
   return sendMessage('pri(metadata.approve)', { id });
 }
@@ -287,7 +291,7 @@ export async function subscribeAccounts(cb: (accounts: AccountJson[]) => void): 
   return sendMessage('pri(accounts.subscribe)', null, cb);
 }
 
-export async function subscribeAuthorizeRequests(cb: (accounts: AuthorizeRequest[]) => void): Promise<boolean> {
+export async function subscribeAuthorizeRequests(cb: (requests: AuthorizeRequest[]) => void): Promise<boolean> {
   return sendMessage('pri(authorize.requests)', null, cb);
 }
 
@@ -392,4 +396,8 @@ export async function deleteGoogleFile(id: string, token: string): Promise<void>
 
 export function isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
   return sendMessage('pri(tab.status)');
+}
+
+export function getSoraCardRefreshToken(): Promise<string> {
+  return sendMessage('pri(soraCard.token)');
 }

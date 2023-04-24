@@ -1,4 +1,5 @@
 import type { Networks, AssetsPrice, Currencies, History, FiatJson, AssetJson, ActiveNodes } from '@/interfaces';
+import type { Subscription } from 'rxjs';
 
 export type State = {
   networks: Networks;
@@ -9,6 +10,7 @@ export type State = {
   currencies: Currencies;
   activeNodes: ActiveNodes;
   assetsPriceInterval: NodeJS.Timer | null;
+  totalXorSubscription: Subscription | null;
 };
 
 const state = (): State => {
@@ -21,6 +23,7 @@ const state = (): State => {
     history: {},
     activeNodes: {},
     assetsPriceInterval: null,
+    totalXorSubscription: null,
   };
 };
 

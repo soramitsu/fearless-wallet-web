@@ -8,6 +8,16 @@ const ASSETS = IS_PRODUCTION
   : 'https://raw.githubusercontent.com/soramitsu/fearless-utils/v4/chains/assets_dev.json';
 const FIATS = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';
 
+const BASE_URLS_PREFIX = {
+  MOONPAY: 'https://buy.moonpay.com',
+  RAMP: 'https://buy.ramp.network',
+  GOOGLE: 'https://accounts.google.com',
+};
+
+const BASE_URLS_SUFFIX = {
+  SUBSCAN: 'subscan.io',
+};
+
 const FEARLESS_TERMS = 'https://fearlesswallet.io/terms/';
 const FEARLESS_PRIVACY = 'https://fearlesswallet.io/privacy/';
 const SORA_CARD_PRIVACY = 'https://soracard.com/terms/en/polkaswap/';
@@ -26,6 +36,7 @@ const EMAIL = 'fearless@soramitsu.co.jp';
 const POLKASWAP_FAQ = 'https://wiki.sora.org/ecosystem/what-is-polkaswap/polkaswap-faq';
 const POLKASWAP_MEMORANDUM = 'https://wiki.sora.org/ecosystem/what-is-polkaswap/terms';
 const POLKASWAP_POLICY = 'https://wiki.sora.org/ecosystem/what-is-polkaswap/privacy';
+const POLKASWAP = IS_PRODUCTION ? 'https://polkaswap.io' : 'https://test.polkaswap.io';
 
 const URLS = {
   ASSETS,
@@ -49,16 +60,7 @@ const URLS = {
   POLKASWAP_FAQ,
   POLKASWAP_MEMORANDUM,
   POLKASWAP_POLICY,
-};
-
-const BASE_URLS_PREFIX = {
-  MOONPAY: 'https://buy.moonpay.com',
-  RAMP: 'https://buy.ramp.network',
-  GOOGLE: 'https://accounts.google.com',
-};
-
-const BASE_URLS_SUFFIX = {
-  SUBSCAN: 'subscan.io',
+  POLKASWAP,
 };
 
 function isSafeForExternalOpen(url: string): boolean {

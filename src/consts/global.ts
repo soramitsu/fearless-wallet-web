@@ -8,8 +8,7 @@ const AUTO_UPDATE_ASSETS_PRICE_MS = 1000 * 60 * 5;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const RAMP_API_KEY = IS_PRODUCTION ? process.env.RAMP_PROD_API_KEY : process.env.RAMP_TEST_API_KEY;
 const MOONPAY_API_KEY = IS_PRODUCTION ? process.env.MOONPAY_PROD_API_KEY : process.env.MOONPAY_TEST_API_KEY;
-const SORA_CARD_BANNER_HEIGHT = 130;
-const SORA_CARD_BANNER_RERUN = 1000 * 60 * 60 * 24 * 7;
+const IS_EXTENSION = chrome.extension !== undefined;
 
 export {
   APP_WIDTH,
@@ -22,6 +21,5 @@ export {
   IS_PRODUCTION,
   RAMP_API_KEY,
   MOONPAY_API_KEY,
-  SORA_CARD_BANNER_HEIGHT,
-  SORA_CARD_BANNER_RERUN,
+  IS_EXTENSION,
 };

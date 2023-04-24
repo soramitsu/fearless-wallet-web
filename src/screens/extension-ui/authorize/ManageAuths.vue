@@ -6,22 +6,22 @@
     :closeHandler="handlerClose"
     :handlerBack="updateUrl.bind(null, '')"
   >
-    <template v-if="!showUpdateAuths">
-      <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
+    <UpdateAuths v-if="showUpdateAuths" :url="url" @updateUrl="updateUrl" />
+
+    <template v-else>
+      <SearchInput v-model="filterValue" placeholder="common.searchNetwork" width="100%" />
 
       <div class="auth-items">
         <Scroll>
-          <AuthItem v-for="el in filteredList" v-bind:key="el.id" :request="el" @openUpdateAuths="updateUrl" />
+          <AuthItem v-for="el in requests" v-bind:key="el.id" :request="el" @openUpdateAuths="updateUrl" />
         </Scroll>
       </div>
     </template>
-
-    <UpdateAuths v-else :url="url" @updateUrl="updateUrl" />
   </AboveForm>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { AuthUrlInfo } from '@extension-base/background/types';
 import UpdateAuths from './UpdateAuths.vue';
@@ -37,12 +37,11 @@ import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
   },
 })
 export default class ManageAuths extends Vue {
-  filteredList: Record<string, AuthUrlInfo> = {};
   filterValue = '';
   url = '';
 
   @Prop(Function) handlerClose!: VoidFunction;
-  @Getter(ExtensionGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
+  @Getter(ExtensionGettersTypes.authList) authlist!: Record<string, AuthUrlInfo>;
   @Action(ExtensionActionTypes.GET_AUTHLIST) getAuthList!: AsyncFn<void>;
 
   get showUpdateAuths() {
@@ -55,23 +54,15 @@ export default class ManageAuths extends Vue {
     return 'common.manageDApp';
   }
 
-  async mounted() {
-    await this.getAuthList();
-
-    this.filteredList = this.authlist;
-  }
-
-  @Watch('filterValue')
-  filter(value: string) {
-    this.filteredList = this.filteredData(value);
-  }
-
-  filteredData(value: string) {
-    const filtered = Object.entries<AuthUrlInfo>(this.authlist).filter(([, { origin }]) => {
-      return origin.includes(value);
-    });
+  get requests() {
+    const filter = this.filterValue.trim().toLowerCase();
+    const filtered = Object.entries(this.authlist).filter(([, { origin }]) => origin.toLowerCase().includes(filter));
 
     return Object.fromEntries(filtered);
+  }
+
+  mounted() {
+    this.getAuthList();
   }
 
   updateUrl(url = '') {
@@ -81,10 +72,6 @@ export default class ManageAuths extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.search-input {
-  margin-bottom: 16px;
-}
-
 .auth-items {
   height: calc(100% - 60px);
 }

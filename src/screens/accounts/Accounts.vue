@@ -37,7 +37,7 @@ import { Getter, Mutation } from 'vuex-class';
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import AccountsItem from './AccountsItem.vue';
 import type { SelectedWallet, Wallet } from '@/store';
-import type { Networks, TMutation } from '@/interfaces';
+import type { ChainAccount, Networks, TMutation } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { getChainAccounts } from '@/helpers/accounts';
@@ -71,10 +71,6 @@ export default class Account extends Vue {
     return this.accountAddress.isMobile;
   }
 
-  get chainAccounts() {
-    return getChainAccounts(this.networks, this.accountAddress);
-  }
-
   @Watch('selectedWallet')
   ethereumJsonChanged({ name }: SelectedWallet) {
     this.newName = name;
@@ -94,7 +90,7 @@ export default class Account extends Vue {
   }
 
   updatedAccounts() {
-    this.chainAccounts = getChainAccounts(this.networks, this.selectedWallet);
+    this.chainAccounts = getChainAccounts(this.networks, this.accountAddress);
   }
 
   back() {

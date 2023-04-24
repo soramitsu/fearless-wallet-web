@@ -114,6 +114,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GetNetworkStatus } from '@/store';
 import { NetworksController } from '@/controllers';
+import BaseApi from '@/util/BaseApi';
 
 @Component
 export default class CurrencyItem extends Vue {

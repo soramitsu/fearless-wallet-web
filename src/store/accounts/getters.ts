@@ -1,12 +1,5 @@
-import { GetShowWarningNetworks, IWallet } from './types';
 import type { GetterTree } from 'vuex';
-import type {
-  SelectedWallet,
-  Accounts,
-  WalletInfo,
-  GetAutoSelectNodesValueByNetwork,
-  GetShowWarningNetworks,
-} from './types';
+import type { SelectedWallet, WalletInfo, GetAutoSelectNodesValueByNetwork, GetShowWarningNetworks } from './types';
 import type { State } from './state';
 import type { FiatJson } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';

@@ -1,7 +1,7 @@
 import { isFunction } from '@polkadot/util';
-import { api as apiSora, FPNumber, api as apiSora, FPNumber } from '@sora-substrate/util';
-import { LiquiditySourceTypes, LiquiditySourceTypes } from '@sora-substrate/liquidity-proxy';
-import { DexId, DexId } from '@sora-substrate/util/build/dex/consts';
+import { api as apiSora, FPNumber } from '@sora-substrate/util';
+import { LiquiditySourceTypes } from '@sora-substrate/liquidity-proxy';
+import { DexId } from '@sora-substrate/util/build/dex/consts';
 import type {
   Balances,
   BalanceFP,
@@ -30,7 +30,7 @@ import {
 import { getAssetOptions } from '@/util/assets';
 import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
-import { MOCK_BALANCE, MOCK_FP_BALANCE, LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
+import { MOCK_BALANCE, MOCK_FP_BALANCE } from '@/consts/currencies';
 import { saveTimeoutCache } from '@/extension/messaging';
 import { SORA_NETWORK_NAME } from '@/consts/networks';
 import { addNumbers } from '@/helpers/numbers';
@@ -664,6 +664,7 @@ export class CurrencyController {
         amountA: expectedAmountA.toString(),
         amountB: amountB!,
         AToB: expectedAmountA.div(new FPNumber(amountB!)).toString(),
+        route: '',
         BToA: new FPNumber(amountB!).div(expectedAmountA).toString(),
         minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
         providerFee: FPNumber.fromCodecValue(providerFeeDexIdXSTUSD).toString(),
@@ -702,6 +703,7 @@ export class CurrencyController {
       return {
         amountA: amountA!,
         amountB: expectedAmountB.toString(),
+        route: '',
         AToB: new FPNumber(amountA!).div(expectedAmountB).toString(),
         BToA: expectedAmountB.div(new FPNumber(amountA!)).toString(),
         minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),

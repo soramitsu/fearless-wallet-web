@@ -2,14 +2,15 @@ import axios from 'axios';
 
 import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
-import type { FetchJsons, FetchHistory, AugmentedActionContext } from '@/store';
+import type { FetchHistory, AugmentedActionContext } from '@/store';
 import type { FiatJson, Network } from '@/interfaces';
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
 import { fetchHistory } from '@/subquery/fetchingHistory';
+import { URLS } from '@/consts/urls';
 
 export enum ActionTypes {
-  FETCH_JSONS = 'FETCH_JSONS',
+  FETCH_FIATS = 'FETCH_FIATS',
   CONNECT_TO_NODES = 'CONNECT_TO_NODES',
   FETCH_ASSETS_PRICE = 'FETCH_ASSETS_PRICE',
   FETCH_HISTORY = 'FETCH_HISTORY',
@@ -18,16 +19,16 @@ export enum ActionTypes {
 }
 
 export type Actions = {
-  [ActionTypes.FETCH_JSONS](store: AugmentedActionContext, props: FetchJsons): Promise<void>;
+  [ActionTypes.FETCH_FIATS](store: AugmentedActionContext): Promise<void>;
   // [ActionTypes.FETCH_ASSETS_PRICE](store: AugmentedActionContext): Promise<void>;
   [ActionTypes.FETCH_HISTORY](store: AugmentedActionContext, props: FetchHistory): Promise<void>;
   // [ActionTypes.TOGGLE_ACTIVE_NODE](store: AugmentedActionContext, props: ToggleActiveNode): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
-  async [ActionTypes.FETCH_JSONS]({ commit, state: { fiats } }, { fiatsUrl }) {
+  async [ActionTypes.FETCH_FIATS]({ commit, state: { fiats } }) {
     if (fiats.length === 0) {
-      const { data: fiats } = await axios.get<FiatJson[]>(fiatsUrl);
+      const { data: fiats } = await axios.get<FiatJson[]>(URLS.FIATS);
 
       commit(MutationTypes.SET_FIATS_JSON, { fiats });
     }

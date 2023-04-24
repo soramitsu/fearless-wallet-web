@@ -160,6 +160,8 @@ export default class CurrencyItemStateLess extends Vue {
   }
 
   get assetPriceChange() {
+    if (this.tokenPrice.priceChange === 0) return '';
+
     return this.$n(this.tokenPrice.priceChange, 'percent');
   }
 

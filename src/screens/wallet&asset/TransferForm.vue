@@ -185,7 +185,7 @@ export default class SendForm extends Vue {
   @PropSync('partialFee', { type: String }) syncedPartialFee!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getOnlineStatus) onlineStatus!: string;
+  @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(AccountsGettersTypes.getBalances) currencies!: TokenBalance[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.getNetworks) getNetworks!: NetworkJsonOld[];
@@ -252,7 +252,7 @@ export default class SendForm extends Vue {
   }
 
   get buttonText() {
-    if (!this.onlineStatus) return 'common.offlineStatus';
+    if (!this.isOnline) return 'common.offlineStatus';
 
     if (!this.currency) return '';
 
@@ -273,10 +273,10 @@ export default class SendForm extends Vue {
   }
 
   get buttonDisabled() {
-    if (!this.onlineStatus) return true;
+    if (!this.isOnline) return true;
+
     if (this.step === 2) return false;
 
-    // return false;
     return !this.isAllFieldsCorrect || +this.syncedAmount === 0 || this.syncedPartialFee === '';
   }
 
@@ -313,9 +313,7 @@ export default class SendForm extends Vue {
     else if (this.showSelectNetworkPopup) options = this.optionsNetworks;
     else if (this.showDestNetPopup) options = this.optionsDestNet;
 
-    return options.filter(({ name }) => {
-      return name.toLowerCase().includes(filter);
-    });
+    return options.filter(({ name }) => name.toLowerCase().includes(filter));
   }
 
   get optionsNetworks() {

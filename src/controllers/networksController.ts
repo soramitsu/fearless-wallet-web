@@ -5,7 +5,6 @@ import BaseApi from '@/util/BaseApi';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { URLS } from '@/consts/urls';
 import { LocalStorage } from '@/controllers/localStorageController';
 
 const lsNetworks = new LocalStorage('networks');
@@ -73,10 +72,8 @@ export class NetworksController {
     // await store.dispatch(NetworksActionTypes.CONNECT_TO_NODES);
   }
 
-  public static async loadJsons(): Promise<void> {
-    await store.dispatch(NetworksActionTypes.FETCH_JSONS, {
-      fiatsUrl: URLS.FIATS,
-    });
+  public static async fetchFiats(): Promise<void> {
+    await store.dispatch(NetworksActionTypes.FETCH_FIATS);
   }
 
   public static async fetchHistory(

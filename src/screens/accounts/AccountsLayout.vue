@@ -76,6 +76,8 @@
       :handlerAccept="handlerAccept"
     />
 
+    <ReplacePopup v-if="showReplacePopup" :selectedNetwork="selectedNetwork" :handlerClose="closeReplacePopup" />
+
     <AddEthereumAccountPopup v-if="showAddEthereumAccountPopup" :handlerClose="closeAddEthereumAccountPopup" />
 
     <ExportForm v-if="showExportForm" :password="password" :closeHandler="setPassword" />

@@ -84,7 +84,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
-import URLS from '@/consts/urls';
+import { URLS } from '@/consts/urls';
 import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
 import { initGoogleAuth } from '@/extension/messaging';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
@@ -118,11 +118,11 @@ export default class Welcome extends Vue {
   }
 
   openTermsAndConditions() {
-    window.open(URLS.TERMS);
+    window.open(URLS.FEARLESS_TERMS);
   }
 
   openPrivacyPolicy() {
-    window.open(URLS.PRIVACY);
+    window.open(URLS.FEARLESS_PRIVACY);
   }
 
   backWallet() {

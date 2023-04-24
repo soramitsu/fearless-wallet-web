@@ -1,6 +1,12 @@
 import { GetShowWarningNetworks, IWallet } from './types';
 import type { GetterTree } from 'vuex';
-import type { SelectedWallet, WalletInfo, GetAutoSelectNodesValueByNetwork } from './types';
+import type {
+  SelectedWallet,
+  Accounts,
+  WalletInfo,
+  GetAutoSelectNodesValueByNetwork,
+  GetShowWarningNetworks,
+} from './types';
 import type { State } from './state';
 import type { FiatJson } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -23,7 +29,7 @@ export enum GettersTypes {
   getAutoSelectNodesValueByNetwork = 'getAutoSelectNodesValueByNetwork',
   GET_QR = 'getQR',
   getIsCustomSort = 'getIsCustomSort',
-  getPolkaswapAlertVisibility = 'getPolkaswapAlertVisibility',
+  showPolkaswapAlert = 'showPolkaswapAlert',
   getShowWarningNetworks = 'getShowWarningNetworks',
 }
 
@@ -38,7 +44,7 @@ export type Getters = {
   [GettersTypes.getHiddenAssets](state: State, getters?: GetterTree<State, State> & Getters): string[];
   [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): AccountJson[];
   [GettersTypes.getWallets](state: State, getters?: GetterTree<State, State> & Getters): WalletInfo[];
-  [GettersTypes.getPolkaswapAlertVisibility](state: State, getters?: GetterTree<State, State> & Getters): boolean;
+  [GettersTypes.showPolkaswapAlert](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getShowWarningNetworks](
     state: State,
     getters?: GetterTree<State, State> & Getters
@@ -79,7 +85,7 @@ const getters: GetterTree<State, State> & Getters = {
     return isOnline;
   },
 
-  [GettersTypes.getPolkaswapAlertVisibility]({ showPolkaswapAlert }): boolean {
+  [GettersTypes.showPolkaswapAlert]({ showPolkaswapAlert }): boolean {
     return showPolkaswapAlert;
   },
 

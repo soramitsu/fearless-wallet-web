@@ -247,8 +247,14 @@ export default class CurrencyItem extends Vue {
   get redirectNetwork() {
     const { mainNetwork } = this.currency;
     const [{ network: firstNetwork }] = this.currency.getNetworkList();
+    const isEthereumMainNetwork = BaseApi.isEthereumNetwork(mainNetwork);
 
-    return this.isCurrentNetwork ? this.selectedNetwork : mainNetwork !== '' ? mainNetwork : firstNetwork;
+    if (this.isCurrentNetwork) return this.selectedNetwork;
+
+    if ((this.selectedWallet.ethereumAddress === '' && isEthereumMainNetwork) || mainNetwork === '')
+      return firstNetwork;
+
+    return mainNetwork;
   }
 
   openAssetPage(event: CustomEvent) {

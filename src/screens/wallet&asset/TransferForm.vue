@@ -109,8 +109,9 @@
       :amount="syncedAmount"
       :value="syncedValue"
       :tx="tx"
-      :firstNetwork="syncedSelectedNetwork"
-      :secondNetwork="syncedDestNet"
+      :network="syncedSelectedNetwork"
+      :firstIcon="firstIcon"
+      :secondIcon="syncedDestNet"
       @close="confirmationPasswordPopupClose"
     />
 
@@ -189,6 +190,10 @@ export default class SendForm extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.getNetworks) getNetworks!: NetworkJsonOld[];
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
+
+  get firstIcon() {
+    return this.extrinsicType === 'transfer' ? this.syncedSelectedAssetId : this.syncedSelectedNetwork;
+  }
 
   get placeholderSelectPopup() {
     return this.showSelectedAssetPopup ? 'common.searchAmongAssets' : 'common.searchNetwork';

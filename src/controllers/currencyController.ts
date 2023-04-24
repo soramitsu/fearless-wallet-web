@@ -1,7 +1,7 @@
 import { isFunction } from '@polkadot/util';
-import { api as apiSora, FPNumber } from '@sora-substrate/util';
-import { LiquiditySourceTypes } from '@sora-substrate/liquidity-proxy';
-import { DexId } from '@sora-substrate/util/build/dex/consts';
+import { api as apiSora, FPNumber, api as apiSora, FPNumber } from '@sora-substrate/util';
+import { LiquiditySourceTypes, LiquiditySourceTypes } from '@sora-substrate/liquidity-proxy';
+import { DexId, DexId } from '@sora-substrate/util/build/dex/consts';
 import type {
   Balances,
   BalanceFP,
@@ -30,7 +30,7 @@ import {
 import { getAssetOptions } from '@/util/assets';
 import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
-import { MOCK_BALANCE, MOCK_FP_BALANCE } from '@/consts/currencies';
+import { MOCK_BALANCE, MOCK_FP_BALANCE, LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { saveTimeoutCache } from '@/extension/messaging';
 import { SORA_NETWORK_NAME } from '@/consts/networks';
 import { addNumbers } from '@/helpers/numbers';
@@ -42,6 +42,7 @@ export class CurrencyController {
   private readonly visibleStorageName = 'visible';
   public extrinsic!: SubmittableExtrinsic<'promise'> | undefined;
   public extrinsicOptions: ExtrinsicOptions = {};
+  public xorPerEuroRatio!: FPNumber;
   public price = 0;
   public hours24Change = 0;
   public currenciesVisible!: Record<string, Record<string, boolean>>;

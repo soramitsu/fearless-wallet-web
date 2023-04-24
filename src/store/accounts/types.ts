@@ -19,12 +19,9 @@ export type GetAutoSelectNodesValueByNetwork = (networkName: string) => boolean;
 export type GetShowWarningNetworks = (assetId: string) => boolean;
 
 // mutations
-export type SetSelectedWalletProps = {
-  selectedWallet: SelectedWallet;
-};
-
 export type SetSelectedFiatProps = {
   fiatName: string;
+  currencies: Currencies;
 };
 
 export type SetAccountsProps = {

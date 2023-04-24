@@ -75,7 +75,7 @@
 
     <NetworkManagement
       v-if="showNetworkManagement"
-      :disconnectedNetworks="disconnectedNetworks"
+      :networks="networksWithWarning"
       :closeForm="toggleNetworkManagementVisible"
       @setNetworkUnavailable="setNetworkUnavailable"
     />
@@ -134,7 +134,6 @@ import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/ev
     CurrencyItemStateLess,
     ReceiveFormStateLess,
     WalletBalance,
-    Loading,
     ContentSettings,
     NetworkManagement,
     SelectNetworkPopup,
@@ -194,7 +193,7 @@ export default class Wallet extends Vue {
         'disconnected'
       );
 
-    return this.disconnectedNetworks.length !== 0;
+    return this.networksWithWarning.length !== 0;
   }
 
   get disconnectedNetworks() {

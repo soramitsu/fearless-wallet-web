@@ -8,8 +8,10 @@ const ASSETS = IS_PRODUCTION
   : 'https://raw.githubusercontent.com/soramitsu/fearless-utils/v4/chains/assets_dev.json';
 const FIATS = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';
 
-const TERMS = 'https://fearlesswallet.io/terms/';
-const PRIVACY = 'https://fearlesswallet.io/privacy/';
+const FEARLESS_TERMS = 'https://fearlesswallet.io/terms/';
+const FEARLESS_PRIVACY = 'https://fearlesswallet.io/privacy/';
+const SORA_CARD_PRIVACY = 'https://soracard.com/privacy/';
+const SORA_CARD_TERMS = 'https://soracard.com/terms/';
 const FEARLESS_WALLET = 'https://fearlesswallet.io/';
 const WIKI = 'https://wiki.fearlesswallet.io/';
 const GITHUB = 'https://github.com/soramitsu/fearless-wallet-web';
@@ -29,8 +31,8 @@ const URLS = {
   ASSETS,
   FIATS,
   CHAINS,
-  TERMS,
-  PRIVACY,
+  FEARLESS_TERMS,
+  FEARLESS_PRIVACY,
   FEARLESS_WALLET,
   GITHUB,
   WIKI,
@@ -45,6 +47,8 @@ const URLS = {
   POLKASWAP_FAQ,
   POLKASWAP_MEMORANDUM,
   POLKASWAP_POLICY,
+  SORA_CARD_PRIVACY,
+  SORA_CARD_TERMS,
 };
 
 const BASE_URLS_PREFIX = {
@@ -77,5 +81,4 @@ function isSafeForExternalOpen(url: string): boolean {
   return false;
 }
 
-export default URLS;
-export { isSafeForExternalOpen, BASE_URLS_PREFIX };
+export { isSafeForExternalOpen, BASE_URLS_PREFIX, URLS };

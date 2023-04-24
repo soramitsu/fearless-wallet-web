@@ -80,10 +80,7 @@ import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
 import { TAction } from '@/interfaces';
 
 @Component({
-  components: {
-    ConnectionPopup,
-    Loading,
-  },
+  components: { ConnectionPopup },
 })
 export default class Header extends Vue {
   readonly walletNameRef = 'walletName';

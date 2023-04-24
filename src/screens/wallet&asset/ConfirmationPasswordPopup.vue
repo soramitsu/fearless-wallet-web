@@ -221,11 +221,11 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   close() {
+    this.$emit('close', !this.isTransactionNotInit);
+
     if (this.isTransactionPending || this.isTransactionFinished) {
       this.resetTxStatus();
     }
-
-    this.$emit('close', true);
   }
 
   async onSignMobile() {

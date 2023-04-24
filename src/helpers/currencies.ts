@@ -1,8 +1,7 @@
 import { ISubmittableResult } from '@polkadot/types/types';
 import type { Currencies, Networks, RelayChainName, Balances, NetworkName } from '@/interfaces';
-import BaseApi from '@/util/BaseApi';
-import { CurrencyController, NetworksController } from '@/controllers';
-import { ALL_NETWORKS, MAIN_NETWORKS } from '@/consts/networks';
+import { CurrencyController } from '@/controllers';
+import { ALL_NETWORKS } from '@/consts/networks';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';

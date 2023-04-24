@@ -1,7 +1,7 @@
 import type { MutationTree } from 'vuex';
-import type { SetSelectedFiatProps, SetAccountsProps, SetAutoSelectNode, SelectedWallet } from './types';
+import type { SelectedWallet, SetAccountsProps, SetAutoSelectNode } from './types';
 import type { State } from './state';
-import { accountController } from '@/controllers/accountController';
+import { accountController } from '@/controllers';
 import { BalanceJson } from '@/extension/background/extension-base/src/background/types/types';
 
 export enum MutationTypes {
@@ -17,6 +17,7 @@ export enum MutationTypes {
   SET_HIDDEN_ASSET = 'SET_HIDDEN_ASSET',
   DELETE_HIDDEN_ASSET = 'DELETE_HIDDEN_ASSET',
   DELETE_QR = 'DELETE_QR',
+
   HIDE_POLKASWAP_ALERT = 'HIDE_POLKASWAP_ALERT',
   HIDE_NETWORK_WARNING = 'HIDE_NETWORK_WARNING',
 }
@@ -24,7 +25,7 @@ export enum MutationTypes {
 export type Mutations = {
   [MutationTypes.SET_SELECTED_WALLET](state: State, props: SelectedWallet): void;
   [MutationTypes.SET_BALANCE](state: State, props: BalanceJson): void;
-  [MutationTypes.SET_SELECTED_FIAT](state: State, props: SetSelectedFiatProps): void;
+  [MutationTypes.SET_SELECTED_FIAT](state: State, props: string): void;
   [MutationTypes.SET_SELECTED_NETWORK](state: State, network: string): void;
   [MutationTypes.SET_ACCOUNTS](state: State, props: SetAccountsProps): void;
   [MutationTypes.SET_ONLINE_STATUS](state: State, isOnline: boolean): void;
@@ -48,7 +49,7 @@ const mutations: MutationTree<State> & Mutations = {
     };
   },
 
-  [MutationTypes.SET_SELECTED_FIAT](state, { fiatName }) {
+  [MutationTypes.SET_SELECTED_FIAT](state, fiatName) {
     accountController.setSelectedFiat(fiatName);
 
     state.selectedFiat = fiatName;
@@ -99,6 +100,14 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.DELETE_QR](state) {
     state.qr = null;
+  },
+
+  [MutationTypes.HIDE_NETWORK_WARNING](state, network) {
+    const { hideWarningNetworks } = state;
+
+    accountController.setHideWarningNetwork(network);
+
+    state.hideWarningNetworks = [...hideWarningNetworks, network];
   },
 
   [MutationTypes.HIDE_NETWORK_WARNING](state, network) {

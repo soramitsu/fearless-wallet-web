@@ -44,8 +44,14 @@ type Currency = CurrencyController;
 
 type Currencies = Currency[];
 
+enum MarketType {
+  SMART = 'SMART',
+  TBC = 'TBC',
+}
+
 type SwapOptions = {
   isExchangeB: boolean;
+  marketType: MarketType;
   network: string;
   slippage: number;
   swapDexId: DexId;
@@ -82,6 +88,7 @@ type CreateSwapResult = {
   providerFee: string;
   AToB: string;
   BToA: string;
+  route: string;
 };
 
 export {
@@ -95,4 +102,5 @@ export {
   ExtrinsicOptions,
   UpdateBalanceProps,
   CreateSwapResult,
+  MarketType,
 };

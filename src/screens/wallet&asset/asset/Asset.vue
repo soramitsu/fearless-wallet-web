@@ -57,7 +57,7 @@
         class="activity-button"
         text="assets.swap"
         iconName="swap"
-        @click="toggleVisible('showSwapForm', true)"
+        @click="openSoraSwap"
       />
     </div>
 
@@ -342,6 +342,16 @@ export default class Asset extends Vue {
     }
 
     this.showBalanceDetailsPopup = !this.showBalanceDetailsPopup;
+  }
+
+  openSoraSwap() {
+    this.$router.push({
+      name: Components.SoraSwap,
+      params: {
+        assetId: this.selectedAssetId,
+        reset: '1',
+      },
+    });
   }
 }
 </script>

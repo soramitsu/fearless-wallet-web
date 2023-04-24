@@ -23,8 +23,12 @@ export default class Rotate extends Vue {
   }
 
   @Watch('isActive')
-  filter() {
+  isActiveWatcher() {
     this.notFirstOpening = true;
+  }
+
+  activated() {
+    this.notFirstOpening = false;
   }
 }
 </script>

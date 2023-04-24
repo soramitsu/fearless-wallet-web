@@ -82,7 +82,7 @@ type Network = {
   settings: Record<string, any>;
   externalApi: ExternalApi;
   status: NetworkStatus;
-  fee?: FPNumber; // only Sora network
+  fees?: SoraFees; // only Sora network
 };
 
 type Networks = Network[];
@@ -105,4 +105,5 @@ export {
   ApiOptions,
   NetworkStatus,
   HistoryServiceType,
+  SoraFees,
 };

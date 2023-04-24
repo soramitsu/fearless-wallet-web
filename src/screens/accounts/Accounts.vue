@@ -50,6 +50,7 @@ export default class Account extends Vue {
   selectedNetwork = '';
   selectedAddress = '';
   newName = '';
+  chainAccounts: ChainAccount[] = [];
 
   @Getter(NetworksGettersTypes.getAllNetworks) networks!: Networks;
   @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<string>;
@@ -79,8 +80,21 @@ export default class Account extends Vue {
     this.newName = name;
   }
 
+  @Watch('networks')
+  networksWatcher() {
+    this.updatedAccounts();
+  }
+
+  activated() {
+    this.updatedAccounts();
+  }
+
   mounted() {
     this.newName = this.accountName;
+  }
+
+  updatedAccounts() {
+    this.chainAccounts = getChainAccounts(this.networks, this.selectedWallet);
   }
 
   back() {

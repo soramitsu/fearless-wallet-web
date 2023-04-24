@@ -1,4 +1,3 @@
-import { SetSelectedFiatProps } from '..';
 import type { ActionTree, ActionContext } from 'vuex';
 import type { Mutations } from '@/store/accounts/mutations';
 import type { State } from '@/store/accounts/state';
@@ -17,7 +16,7 @@ type AugmentedActionContext = {
 } & Omit<ActionContext<State, any>, 'commit'>;
 
 export type Actions = {
-  [ActionTypes.SET_SELECTED_FIAT](context: AugmentedActionContext, props: SetSelectedFiatProps): Promise<void>;
+  [ActionTypes.SET_SELECTED_FIAT](context: AugmentedActionContext, props: string): Promise<void>;
   [ActionTypes.SET_BALANCE](context: AugmentedActionContext, props: BalanceJson): Promise<void>;
   [ActionTypes.SET_SELECTED_WALLET](context: AugmentedActionContext, props: AccountJson | undefined): Promise<void>;
 };
@@ -27,10 +26,8 @@ const actions: ActionTree<State, State> & Actions = {
     commit(MutationTypes.SET_BALANCE, payload);
   },
 
-  async [ActionTypes.SET_SELECTED_FIAT]({ commit }, { fiatName }) {
-    commit(MutationTypes.SET_SELECTED_FIAT, {
-      fiatName,
-    });
+  async [ActionTypes.SET_SELECTED_FIAT]({ commit }, fiatName) {
+    commit(MutationTypes.SET_SELECTED_FIAT, fiatName);
   },
 
   async [ActionTypes.SET_SELECTED_WALLET]({ commit }, account) {

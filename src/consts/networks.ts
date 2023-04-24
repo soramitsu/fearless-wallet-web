@@ -1,6 +1,5 @@
 import { IS_PRODUCTION } from '@/consts/global';
 
-const ETHEREUM_NETWORKS = ['moonbeam', 'moonriver', 'moonbase alpha', 'astarEvm', 'shidenEvm'];
 const NOT_SUPPORTED_ALL_TRANSFER_NETWORKS = ['karura', 'acala', 'acala_testnet'];
 const ETHEREUM_NETWORKS = [
   'moonbeam',
@@ -40,12 +39,7 @@ const SORA_XOR_ASSET_ID = IS_PRODUCTION
 const SORA_UTILITY_ASSET = 'xor';
 
 export {
-  COINGECKO_TOKENS,
-  UNIT,
-  LIT,
-  PHA,
   ALL_NETWORKS,
-  NETWORK_AND_ASSET,
   RELAY_CHAINS,
   MAIN_NETWORKS,
   NATIVE_NETWORKS,

@@ -1,6 +1,10 @@
-import { FPNumber } from '@sora-substrate/util';
+import { FPNumber, NetworkFeesObject } from '@sora-substrate/util';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { Node, TypeAsset } from '@/interfaces';
+
+type SoraFees = {
+  [key in keyof NetworkFeesObject]: FPNumber;
+};
 
 type TypesForMobile = {
   url: string;

@@ -65,7 +65,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Mutation } from 'vuex-class';
 import type { TMutation } from '@/interfaces';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import URLS from '@/consts/urls';
+import { URLS } from '@/consts/urls';
 
 @Component
 export default class Disclaimer extends Vue {

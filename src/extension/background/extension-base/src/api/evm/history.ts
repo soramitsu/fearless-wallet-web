@@ -1,7 +1,6 @@
 import fetchAdapter from '@vespaiach/axios-fetch-adapter';
 import axios from 'axios';
 import { evmBlockExplorer } from '../../const';
-import { DEFAULT_EVM_TOKENS } from '@/consts/networks';
 
 export async function fetchHistory(address: string, chain: keyof typeof evmBlockExplorer, token?: string) {
   const url = new URL(`${evmBlockExplorer[chain]}/api`);
@@ -9,10 +8,9 @@ export async function fetchHistory(address: string, chain: keyof typeof evmBlock
   url.searchParams.set('action', `${token ? 'tokentx' : 'txlist'}`);
 
   if (token) {
-    const smartContractAddress = DEFAULT_EVM_TOKENS.erc20.find((el) => el.symbol.toLowerCase() === token.toLowerCase());
-    if (!smartContractAddress) throw Error('token symbol is wrong');
-
-    url.searchParams.set('contractaddress', `${smartContractAddress.smartContract}`);
+    // const smartContractAddress = DEFAULT_EVM_TOKENS.erc20.find((el) => el.symbol.toLowerCase() === token.toLowerCase());
+    // if (!smartContractAddress) throw Error('token symbol is wrong');
+    // url.searchParams.set('contractaddress', `${smartContractAddress.smartContract}`);
   }
 
   url.searchParams.set('address', address);

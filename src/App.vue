@@ -12,13 +12,7 @@ import { Mutation, Getter, Action } from 'vuex-class';
 import { AccountJson, BalanceJson, PriceJson } from './extension/background/extension-base/src/background/types/types';
 import { NetworksController } from './controllers';
 import { Components } from './router/routes';
-import type {
-  Accounts,
-  SetAccountsProps,
-  SetNetworksStatusProps,
-  SetAssetsPriceProps,
-  SetSelectedFiatProps,
-} from '@/store';
+import type { Accounts, SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
@@ -50,7 +44,7 @@ export default class App extends Vue {
   @Mutation(NetworksMutationTypes.SET_ASSETS_PRICE) setPrices!: TMutation<SetAssetsPriceProps>;
   @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<boolean>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
-  @Action(AccountsActionTypes.SET_SELECTED_FIAT) setSelectedFiat!: TAction<SetSelectedFiatProps>;
+  @Action(AccountsActionTypes.SET_SELECTED_FIAT) setSelectedFiat!: TAction<string>;
 
   async created() {
     if (BaseApi.isExtension()) this.extensionSubscribe();
@@ -113,7 +107,7 @@ export default class App extends Vue {
   }
 
   updatePrice({ currency, tokenPriceMap, tokenPriceChange }: PriceJson) {
-    this.setSelectedFiat({ fiatName: currency });
+    this.setSelectedFiat(currency);
     this.setPrices({ tokenPriceMap, tokenPriceChange });
   }
 

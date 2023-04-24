@@ -7,7 +7,6 @@ import { isEthereumAddress } from '@polkadot/util-crypto';
 import { CustomTokenJson, NetworkJson } from '../types/ether';
 import EthProvider from '../ethProvider';
 import ERC20Contract from '../helpers/ERC20Contract.json';
-import { DEFAULT_EVM_TOKENS } from '@/consts/networks';
 
 export function isEqualContractAddress(address1: string, address2: string) {
   if (isEthereumAddress(address1) && isEthereumAddress(address2)) {
@@ -116,22 +115,22 @@ export function sumBN(inputArr: BN[]) {
 export function initEvmTokenState(customTokenState: CustomTokenJson, networkMap: Record<string, NetworkJson>) {
   const evmTokenState = { erc20: customTokenState.erc20 };
 
-  for (const defaultToken of DEFAULT_EVM_TOKENS.erc20) {
-    let exist = false;
+  //TODO refactoring for eth default tokens
+  for (const defaultToken of { erc20: [] }.erc20) {
+    const exist = false;
 
     for (const storedToken of evmTokenState.erc20) {
-      if (
-        isEqualContractAddress(defaultToken.smartContract, storedToken.smartContract) &&
-        defaultToken.chain === storedToken.chain
-      ) {
-        if (storedToken.isCustom) {
-          // if existed, migrate the custom token -> default token
-          delete storedToken.isCustom;
-        }
-
-        exist = true;
-        break;
-      }
+      // if (
+      // isEqualContractAddress(defaultToken.smartContract, storedToken.smartContract) &&
+      // defaultToken.chain === storedToken.chain
+      // ) {
+      //   if (storedToken.isCustom) {
+      // if existed, migrate the custom token -> default token
+      //     delete storedToken.isCustom;
+      //   }
+      //   exist = true;
+      //   break;
+      // }
     }
 
     if (!exist) {

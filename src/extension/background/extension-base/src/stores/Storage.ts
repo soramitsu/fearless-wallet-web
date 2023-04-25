@@ -6,7 +6,7 @@ class Storage {
 
   // eslint-disable-next-line prettier/prettier
   get(key: (keyof IState)[]): Promise<Pick<IState, (typeof key)[number]>> {
-    return chrome.storage.local.get(key) as Promise<Pick<IState, typeof key[number]>>;
+    return chrome.storage.local.get(key) as Promise<Pick<IState, (typeof key)[number]>>;
   }
 }
 

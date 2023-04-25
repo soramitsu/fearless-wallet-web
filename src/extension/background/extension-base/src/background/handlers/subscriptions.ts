@@ -115,13 +115,13 @@ export class FWSubscription {
       .switchAccount()
       .then(() => {
         this.state
-          .getDecodedAddresses(address)
+          .getDecodedAddress(address)
           .then((addresses) => {
             if (!addresses.length) return;
 
             this.updateSubscription(
               'balance',
-              this.initBalanceSubscription(addresses, dotSamaApiMap, web3ApiMap, onlyRunOnFirstTime)
+              this.initBalanceSubscription(address, dotSamaApiMap, web3ApiMap, onlyRunOnFirstTime)
             );
           })
           .catch(this.logger.error);
@@ -130,12 +130,12 @@ export class FWSubscription {
   }
 
   initBalanceSubscription(
-    addresses: string[],
+    address: string,
     dotSamaApiMap: Record<string, ApiProps>,
     web3ApiMap: Record<string, EthProvider>,
     onlyRunOnFirstTime?: boolean
   ) {
-    const unsub = subscribeBalance(addresses, dotSamaApiMap, web3ApiMap, (networkKey, rs) => {
+    const unsub = subscribeBalance(address, dotSamaApiMap, web3ApiMap, (networkKey, rs) => {
       this.state.setBalanceItem(networkKey, rs);
     });
 

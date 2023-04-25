@@ -235,10 +235,9 @@ export async function createAccountSuri(
   password: string,
   suri: string,
   type?: KeypairType,
-  genesisHash?: string,
   meta?: Record<string, unknown>
-): Promise<ResponseCreateAccountSuri> {
-  return sendMessage('pri(accounts.create.suri)', { genesisHash, password, suri, type, meta });
+): Promise<string> {
+  return sendMessage('pri(accounts.create.suri)', { password, suri, type, meta });
 }
 
 export async function createAddress(address: string, meta: KeyringPair$Meta): Promise<boolean> {
@@ -518,10 +517,6 @@ export async function removeNetworkMap(networkKey: string): Promise<boolean> {
 
 export async function disableNetworkMap(networkKey: string): Promise<DisableNetworkResponse> {
   return sendMessage('pri(networkMap.disableOne)', networkKey);
-}
-
-export async function enableNetworkMap(networkKey: string): Promise<boolean> {
-  return sendMessage('pri(networkMap.enableOne)', networkKey);
 }
 
 export async function enableNetworks(targetKeys: string[]): Promise<boolean> {

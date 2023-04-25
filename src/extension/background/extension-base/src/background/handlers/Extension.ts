@@ -180,36 +180,15 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  async accountsCreateSuri({
-    password,
-    suri,
-    type,
-    meta,
-  }: RequestAccountCreateSuri): Promise<ResponseCreateAccountSuri> {
+  async accountsCreateSuri({ password, suri, type, meta }: RequestAccountCreateSuri): Promise<string> {
     const { pair } = keyring.addUri(suri, password, meta, type);
     const { address } = pair;
-    const metaData = getMetaTyped(pair.meta);
 
-    if (isEthereumAddress(address)) {
-      metaData.ethereumAddress = address;
-      keyring.saveAccountMeta(pair, metaData as any);
+    this.updateCurrentAccountAddress(address);
 
-      return {
-        name: metaData.name,
-        address: address,
-        ethereumAddress: metaData.ethereumAddress,
-        isMobile: metaData.isMobile,
-      };
-    }
+    state.generateDefaultBalance(address);
 
-    await this.updateCurrentAccountAddress(address);
-
-    return {
-      name: metaData.name,
-      address,
-      ethereumAddress: metaData.ethereumAddress,
-      isMobile: metaData.isMobile,
-    };
+    return address;
   }
 
   async accountsForget({ address, type }: RequestAccountForget): Promise<boolean> {
@@ -435,14 +414,6 @@ export default class Extension extends FWExtensionBase {
     } else {
       throw new Error('Unable to decode using the supplied passphrase');
     }
-  }
-
-  private async enableNetworkMap(networkKey: string): Promise<boolean> {
-    const networkMap = this.getNetworkMap();
-
-    if (!(networkKey in networkMap)) return false;
-
-    return this.state.enableNetworkMap(networkKey);
   }
 
   private async upsertNetworkMap(data: NetworkJsonOld): Promise<boolean> {
@@ -1273,6 +1244,7 @@ export default class Extension extends FWExtensionBase {
 
     return txState;
   }
+
   private getNetworkMap(): Record<string, NetworkJson> {
     return this.state.getNetworkMap;
   }
@@ -1304,9 +1276,6 @@ export default class Extension extends FWExtensionBase {
       //App Managment, networks
       case 'pri(app.port.ping)':
         return true;
-
-      case 'pri(networkMap.enableOne)':
-        return this.enableNetworkMap(request as string);
 
       case 'pri(networkMap.upsert)':
         return this.upsertNetworkMap(request as NetworkJsonOld);

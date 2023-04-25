@@ -87,7 +87,7 @@ export default class SendForm extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get currency() {
-    return this.balances.find(({ name }) => name === this.selectedAssetId)!;
+    return this.balances.find(({ assetId }) => assetId === this.selectedAssetId)!;
   }
 
   get isUtilityAsset() {

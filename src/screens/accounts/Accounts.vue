@@ -17,7 +17,6 @@
 
     <!-- <template v-if="showSharedSecretAccounts">
       <div class="row label">{{ $t('accounts.accountsDefaultSecrets') }}</div>
-
       <AccountsItem
         v-for="{ network, address, networkIcon } in sharedAccountsItems"
         :key="network"
@@ -37,7 +36,7 @@ import { Getter, Mutation } from 'vuex-class';
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import AccountsItem from './AccountsItem.vue';
 import type { SelectedWallet, Wallet } from '@/store';
-import type { ChainAccount, Networks, TMutation } from '@/interfaces';
+import type { Networks, TMutation } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { getChainAccounts } from '@/helpers/accounts';
@@ -50,8 +49,6 @@ export default class Account extends Vue {
   selectedNetwork = '';
   selectedAddress = '';
   newName = '';
-  chainAccounts: ChainAccount[] = [];
-
   @Getter(NetworksGettersTypes.getAllNetworks) networks!: Networks;
   @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<string>;
 
@@ -71,26 +68,17 @@ export default class Account extends Vue {
     return this.accountAddress.isMobile;
   }
 
+  get chainAccounts() {
+    return getChainAccounts(this.networks, this.accountAddress);
+  }
+
   @Watch('selectedWallet')
   ethereumJsonChanged({ name }: SelectedWallet) {
     this.newName = name;
   }
 
-  @Watch('networks')
-  networksWatcher() {
-    this.updatedAccounts();
-  }
-
-  activated() {
-    this.updatedAccounts();
-  }
-
   mounted() {
     this.newName = this.accountName;
-  }
-
-  updatedAccounts() {
-    this.chainAccounts = getChainAccounts(this.networks, this.accountAddress);
   }
 
   back() {
@@ -111,7 +99,6 @@ export default class Account extends Vue {
     }
 
     // BaseApi.updateWalletName(address, this.newName);
-
     this.setSelectedWallet(address);
   }
 }

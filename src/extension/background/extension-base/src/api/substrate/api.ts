@@ -10,42 +10,41 @@ import { DOTSAMA_AUTO_CONNECT_MS } from '../../const/intervals';
 import { state } from '../../background/handlers';
 import { NetworkJsonOld } from '../../types';
 import { getCurrentProvider } from '../../utils';
+import type { ApiInterfaceEvents } from '@polkadot/api/types';
 import { isSora } from '@/helpers/common';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
-export const DEFAULT_AUX = ['Aux1', 'Aux2', 'Aux3', 'Aux4', 'Aux5', 'Aux6', 'Aux7', 'Aux8', 'Aux9'];
 
-function createApiObject(apiUrl: string, isEthereum: boolean, registry: TypeRegistry) {
-  const result: ApiProps = {
+// export const DEFAULT_AUX = ['Aux1', 'Aux2', 'Aux3', 'Aux4', 'Aux5', 'Aux6', 'Aux7', 'Aux8', 'Aux9'];
+
+function createApiObject(): ApiProps {
+  return {
     apiDefaultTx: undefined,
     apiDefaultTxSudo: undefined,
     apiError: undefined,
-    apiUrl,
     defaultFormatBalance: undefined,
     isApiConnected: false,
     isApiReady: false,
     isApiInitialized: false,
-    isEthereum,
+    isEthereum: false,
     isEthereumOnly: false,
-    registry,
+    registry: new TypeRegistry(), // TODO это нужно?
     specName: '',
     specVersion: '',
     systemChain: '',
     systemName: '',
     systemVersion: '',
     apiRetry: 0,
+    nodeIndex: 0,
   } as unknown as ApiProps;
-
-  return result;
 }
 
-function generateEvmHttpApi(apiUrl: string, registry: Registry): ApiProps {
+function generateEvmHttpApi(): ApiProps {
   return {
     api: undefined,
     provider: undefined,
     apiDefaultTx: undefined,
     apiDefaultTxSudo: undefined,
     apiError: undefined,
-    apiUrl,
     nodeIndex: 0,
     defaultFormatBalance: undefined,
     isApiConnected: true,
@@ -54,7 +53,7 @@ function generateEvmHttpApi(apiUrl: string, registry: Registry): ApiProps {
     isEthereum: true,
     tryAnotherNode: true,
     isEthereumOnly: true,
-    registry,
+    registry: new TypeRegistry(), // TODO это нужно?
     specName: '',
     specVersion: '',
     systemChain: '',
@@ -70,106 +69,82 @@ function generateEvmHttpApi(apiUrl: string, registry: Registry): ApiProps {
   } as unknown as ApiProps;
 }
 
-function onDisconnect(apiObject: ApiProps, network: string) {
-  apiObject.apiRetry += 1;
-  apiObject.isApiConnected = false;
-  apiObject.provider = undefined;
-  apiObject.isApiReady = false; // result.isApiInitialized && result.isApiConnected
+function onConnected(networkName: string) {
+  if (isSora(networkName)) state.apis.substrate[networkName].api = soraConnection.api!;
 
-  // console.info(`DotSamaAPI disconnected from ${JSON.stringify(apiUrl)} ${JSON.stringify(result.apiRetry)} times`);
-  if (apiObject.apiRetry >= MAX_CONTINUE_RETRY) {
-    if (state.networkMap[network].nodes.length <= apiObject.nodeIndex + 1) {
-      apiObject.apiRetry = 0;
-      apiObject.nodeIndex += 1;
-      apiObject.provider = undefined;
-      const networkObj = state.networkMap[network];
-      if (navigator.onLine) initApi(networkObj);
+  state.apis.substrate[networkName].apiRetry = 0;
+  state.apis.substrate[networkName].isApiConnected = true;
+  state.apis.substrate[networkName].isApiReady = false; // todo ??? apiObject.isApiInitialized;
+}
+
+function onDisconnect(networkName: string) {
+  console.info('onDisconnect');
+
+  // возможно лишнее
+  if (state.apis.substrate[networkName] === undefined) return;
+
+  state.apis.substrate[networkName].apiRetry += 1;
+  state.apis.substrate[networkName].isApiConnected = false;
+  state.apis.substrate[networkName].isApiReady = false;
+
+  const { apiRetry, nodeIndex } = state.apis.substrate[networkName];
+
+  if (apiRetry >= MAX_CONTINUE_RETRY) {
+    state.apis.substrate[networkName].provider?.disconnect();
+
+    if (nodeIndex <= state.networkMap[networkName].nodes.length - 1) {
+      state.apis.substrate[networkName].apiRetry = 0;
+      state.apis.substrate[networkName].nodeIndex += 1;
+      state.apis.substrate[networkName].provider = undefined;
+      state.apis.substrate[networkName].api = undefined;
+      state.apis.substrate[networkName].apiUrl = '';
+
+      // eslint-disable-next-line no-use-before-define
+      if (navigator.onLine) initApi(state.networkMap[networkName]);
     } else {
-      apiObject.tryAnotherNode = false;
-      // console.info(`Discontinue to use ${JSON.stringify(apiUrl)} because max retry`);
-      apiObject.api.disconnect().then(console.info).catch(console.error);
+      // apiObject.tryAnotherNode = false;
 
-      state.disableNetworkMap(network);
+      state.disableNetworkMap(networkName);
     }
   }
 }
 
-function onConnected(apiObject: ApiProps, network: string) {
-  const api = isSora(network) ? soraConnection.api! : apiObject.api!;
-  apiObject.api = api;
-  apiObject.apiRetry = 0;
-  apiObject.isApiConnected = true;
-  apiObject.isApiReady = apiObject.isApiInitialized;
-}
+function onReady(networkName: string) {
+  if (isSora(networkName)) apiSora.initialize(false);
 
-function onReady(apiObject: Partial<ApiProps>, network: string) {
-  if (isSora(network)) apiSora.initialize(false);
-
-  apiObject.isApiReady = true;
+  state.apis.substrate[networkName].isApiReady = true;
 }
 
 export async function initApi(network: NetworkJsonOld): Promise<void> {
-  const registry = new TypeRegistry();
-
   const { name: networkName, providers, isEthereum } = network;
 
+  if (state.apis.substrate[networkName] === undefined) {
+    if (isEthereum)
+      // return EVM HTTP Placeholder
+      state.apis.substrate[networkName] = generateEvmHttpApi();
+    else state.apis.substrate[networkName] = createApiObject(); // можно вынести эту инициализацию в др место и как только известен список сетей создавать дефолтный state.apis.substrate[networkName] для каждой сети, хз где это , Женя хелп
+  }
+
+  const { nodeIndex } = state.apis.substrate[networkName];
   const autoSelectNode = network.isManual ? getCurrentProvider(network) : null;
+  const currentProvider = autoSelectNode ?? Object.values(providers)[nodeIndex];
 
-  const currentProvider = autoSelectNode ?? Object.values(providers)[0];
-
-  const apiObject: ApiProps = createApiObject(currentProvider, !!isEthereum, registry);
-  const eventListeners: Array<['connected' | 'disconnected' | 'ready', ProviderInterfaceEmitCb]> = [
-    ['connected', () => onConnected(apiObject, networkName)],
-    [
-      'ready',
-      () => {
-        const api = soraConnection.api;
-        if (api) return onReady(apiObject, networkName);
-      },
-    ],
+  const eventListeners: Array<[ApiInterfaceEvents, ProviderInterfaceEmitCb]> = [
+    ['connected', () => onConnected(networkName)],
+    ['disconnected', () => onDisconnect(networkName)],
+    ['ready', () => onReady(networkName)],
+    ['error', () => null],
   ];
 
-  if (isEthereum) {
-    // return EVM HTTP Placeholder
-    state.apis.substrate[networkName] = generateEvmHttpApi(currentProvider, registry);
-  }
-
   if (isSora(networkName)) {
-    eventListeners.push(['disconnected', () => onDisconnect(apiObject, networkName)]);
-
-    await soraConnection.open(currentProvider, {
-      autoConnectMs: AUTO_CONNECT_MS,
-      eventListeners,
-    });
+    soraConnection.open(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners });
   } else {
     const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS);
-
-    // Init ApiPromise with selected provider
     const api = new ApiPromise({ provider, noInitWarn: true });
 
-    apiObject.api = api;
-    apiObject.provider = provider;
-    // Create APIProps Object
+    state.apis.substrate[networkName].api = api;
+    state.apis.substrate[networkName].provider = provider;
 
-    // Listen ApiPromise events
-    // On connected: provider is connected
-    api
-      .on('connected', () => {
-        onConnected(apiObject, networkName);
-      })
-      // On disconnected: provider is disconnected
-      .on('disconnected', () => {
-        onDisconnect(apiObject, networkName);
-      })
-      // On ready: Load all metadata and ready to init data
-      .on('ready', () => {
-        onReady(apiObject, networkName);
-      })
-      // On ready: Load all metadata and ready to init data
-      .on('error', () => {
-        //
-      });
+    eventListeners.forEach(([eventName, callback]) => api.on(eventName, callback));
   }
-
-  state.apis.substrate[networkName] = apiObject;
 }

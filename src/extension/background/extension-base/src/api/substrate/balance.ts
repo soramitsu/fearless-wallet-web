@@ -136,7 +136,7 @@ export async function getFreeBalance(
   token?: string
 ): Promise<string> {
   const apiProps = await dotSamaApiMap[networkKey].isReady;
-  const api = apiProps.api;
+  const api = apiProps.api!;
   const web3Api = web3ApiMap[networkKey];
   const tokenInfo = token ? await getTokenInfo(networkKey, api, token) : undefined;
 
@@ -168,7 +168,7 @@ export async function getFreeBalance(
   } else {
     const options = getAssetOptions(tokenInfo!.symbol, 'soraAsset', tokenInfo!.id);
 
-    const _balance = await api.query.tokens.accounts(address, options);
+    const _balance = await api?.query.tokens.accounts(address, options);
     console.info(_balance.toHuman(), api, '_balance');
 
     return '';
@@ -269,7 +269,7 @@ export async function subscribeWithAccount(
   let unsub: () => void;
 
   try {
-    unsub = await subscribeTokensBalance(address, networkKey, networkAPI.api, setBalance);
+    unsub = await subscribeTokensBalance(address, networkKey, networkAPI.api!, setBalance);
   } catch (err) {
     console.warn(err);
   }
@@ -288,12 +288,12 @@ export function subscribeBalance(
   const [substrateAddresses, evmAddresses] = categoryAddresses(addresses);
 
   const unsubList = Object.entries(dotSamaApiMap).map(async ([networkKey, apiProps]) => {
-    await apiProps.api.isReadyOrError;
+    await apiProps.api?.isReadyOrError;
 
     const useAddresses = apiProps.isEthereum ? evmAddresses : substrateAddresses;
 
     if (['ethereum', 'ethereum_goerli'].includes(networkKey)) {
-      return subscribeEVMBalance(networkKey, apiProps.api, useAddresses, web3ApiMap, callback);
+      return subscribeEVMBalance(networkKey, apiProps.api!, useAddresses, web3ApiMap, callback);
     }
 
     return subscribeWithAccount(useAddresses, networkKey, apiProps, web3ApiMap, callback);

@@ -103,11 +103,6 @@ export type SetSoraFee = {
 };
 
 // Actions
-export type FetchJsons = {
-  chainsUrl: string;
-  assetsUrl: string;
-  fiatsUrl: string;
-};
 
 export type FetchHistory = {
   networkName: NetworkName;

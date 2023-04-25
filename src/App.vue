@@ -49,6 +49,7 @@ export default class App extends Vue {
 
   get includeKeepAlive() {
     const components = ['Main'];
+
     if (this.showPolkaswapAlert) components.push('SwapForm');
 
     return components;
@@ -57,8 +58,9 @@ export default class App extends Vue {
   async created() {
     if (BaseApi.isExtension()) this.extensionSubscribe();
 
-    await NetworksController.loadJsons();
+    await NetworksController.fetchFiats();
     await this.setupWallet();
+
     this.setupSWPing();
     this.setupPrice();
     this.setupNetworks();

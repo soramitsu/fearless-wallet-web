@@ -1010,7 +1010,7 @@ export default class Extension extends FWExtensionBase {
       });
     }
 
-    const tokenInfo = await getTokenInfo(networkKey, dotSamaApiMap[networkKey].api, token);
+    const tokenInfo = await getTokenInfo(networkKey, dotSamaApiMap[networkKey].api!, token);
 
     return [errors, keypair, transferValue, tokenInfo];
   }

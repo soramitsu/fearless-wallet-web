@@ -324,7 +324,7 @@ export interface ApiState {
   defaultFormatBalance: DefaultFormatBalance;
 }
 export interface ApiProps extends ApiState {
-  api: ApiPromise;
+  api?: ApiPromise;
   provider?: WsProvider;
   apiError?: string;
   apiUrl: string;

@@ -33,7 +33,7 @@ export async function getExistentialDeposit(
   const apiProps = await dotSamaApiMap[networkKey].isReady;
   const api = apiProps.api;
 
-  const tokenInfo = await getTokenInfo(networkKey, api, token);
+  const tokenInfo = await getTokenInfo(networkKey, api!, token);
   const isMainToken = checkMainToken(networkKey, tokenInfo.id);
 
   if (tokenInfo && isMainToken) {
@@ -184,7 +184,7 @@ export async function estimateFee(
   }
 
   const apiProps = await dotSamaApiMap[networkKey].isReady;
-  const api = apiProps.api;
+  const api = apiProps.api!;
 
   const extrinsic = createExtrinsicTransfer({
     amount: value,
@@ -432,7 +432,7 @@ export const createTransferExtrinsic = async ({
   transferAll,
   value,
 }: CreateTransferExtrinsicProps): Promise<SubmittableExtrinsic | null> => {
-  const api = apiProp.api;
+  const api = apiProp.api!;
 
   // const isMainToken = checkMainToken(networkKey, tokenInfo.id);
   const transfer = createExtrinsicTransfer({

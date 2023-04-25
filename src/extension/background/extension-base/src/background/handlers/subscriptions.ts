@@ -12,6 +12,7 @@ type SubscriptionName = 'balance';
 type Subscriptions = Record<string, Port>;
 
 const subscriptions: Subscriptions = {};
+
 export class FWSubscription {
   private serviceSubscription: Subscription | undefined;
   private state: State;

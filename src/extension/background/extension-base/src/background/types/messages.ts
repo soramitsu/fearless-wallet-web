@@ -108,7 +108,7 @@ export interface RequestSignatures {
   'pri(accounts.validate.path)': [DerivationPath, boolean];
 
   'pri(accounts.create.hardware)': [RequestAccountCreateHardware, boolean];
-  'pri(accounts.create.suri)': [RequestAccountCreateSuri, ResponseCreateAccountSuri];
+  'pri(accounts.create.suri)': [RequestAccountCreateSuri, string];
   'pri(addresses.create)': [RequestAddressCreate, boolean];
   'pri(addresses.remove)': [RequestAddressRemove, boolean];
   'pri(addresses.get)': [null, KeyringAddress[]];

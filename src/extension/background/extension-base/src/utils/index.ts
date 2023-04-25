@@ -54,34 +54,6 @@ export function filterAddressByNetworkKey(addresses: string[], networkKey: strin
   }
 }
 
-export function categoryAddresses(addresses: string[]) {
-  const substrateAddresses: string[] = [];
-  const evmAddresses: string[] = [];
-
-  addresses.forEach((address) => {
-    if (isEthereumAddress(address)) {
-      evmAddresses.push(address);
-    } else {
-      substrateAddresses.push(address);
-    }
-  });
-
-  return [substrateAddresses, evmAddresses];
-}
-
-export function categoryNetworks(networks: NetworkJson[]) {
-  const substrateAddresses: string[] = [];
-  const evmAddresses: string[] = [];
-
-  return [substrateAddresses, evmAddresses];
-}
-
-export function convertToEvmAddress(substrateAddress: string): string {
-  const addressBytes = decodeAddress(substrateAddress);
-
-  return ethereumEncode('0x' + Buffer.from(addressBytes.subarray(0, 20)).toString('hex'));
-}
-
 export function isUrl(targetString: string) {
   let url;
 

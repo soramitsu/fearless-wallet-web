@@ -96,6 +96,7 @@ export type CurrencyMock = {
   providers: string[];
   balances: BalanceItem[];
 };
+
 export interface NetworkJsonOld extends NetworkJson {
   chainId: string;
   parentId?: string;
@@ -103,7 +104,6 @@ export interface NetworkJsonOld extends NetworkJson {
   externalApi?: ExternalApi;
   assets: NetworkAssets[];
   isEthereumNetwork?: boolean;
-
   customNodes?: Record<string, string>;
   nodes: Node[];
   icon: string;

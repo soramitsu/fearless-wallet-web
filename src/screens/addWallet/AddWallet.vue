@@ -759,24 +759,17 @@ export default class AddWallet extends Vue {
     } = this.derivationPaths;
 
     if (this.suriEthereum !== '') {
-      const { ethereumAddress } = await createAccountSuri(
+      const ethereumAddress = await createAccountSuri(
         this.walletPassword,
         this.suriEthereum,
         ethereumKeypairType,
-        undefined,
         meta
-      ); // for proper work of extension
+      );
 
       meta.ethereumAddress = ethereumAddress;
     }
 
-    const address = await createAccountSuri(
-      this.walletPassword,
-      this.suriSubstrate,
-      substrateKeypairType,
-      undefined,
-      meta
-    ); // for proper work of extension
+    const address = await createAccountSuri(this.walletPassword, this.suriSubstrate, substrateKeypairType, meta);
 
     return address;
   }

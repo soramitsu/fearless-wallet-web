@@ -67,19 +67,6 @@ export function categoryAddresses(addresses: string[]) {
   return [substrateAddresses, evmAddresses];
 }
 
-export function categoryNetworks(networks: NetworkJson[]) {
-  const substrateAddresses: string[] = [];
-  const evmAddresses: string[] = [];
-
-  return [substrateAddresses, evmAddresses];
-}
-
-export function convertToEvmAddress(substrateAddress: string): string {
-  const addressBytes = decodeAddress(substrateAddress);
-
-  return ethereumEncode('0x' + Buffer.from(addressBytes.subarray(0, 20)).toString('hex'));
-}
-
 export function isUrl(targetString: string) {
   let url;
 

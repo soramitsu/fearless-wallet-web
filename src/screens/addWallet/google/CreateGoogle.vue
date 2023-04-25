@@ -226,7 +226,7 @@ export default class CreateGoogle extends Vue {
   async watchStep() {
     if (this.step === 5) {
       this.isLoading = false;
-      const { address } = await this.saveKeypairFromSeed();
+      const address = await this.saveKeypairFromSeed();
 
       this.backupWallet(address);
 
@@ -344,24 +344,17 @@ export default class CreateGoogle extends Vue {
     } = this.derivationPaths;
 
     if (this.suriEthereum !== '') {
-      const { ethereumAddress } = await createAccountSuri(
+      const ethereumAddress = await createAccountSuri(
         this.walletPassword,
         this.suriEthereum,
         ethereumKeypairType,
-        undefined,
         meta
-      ); // for proper work of extension
+      );
 
       meta.ethereumAddress = ethereumAddress;
     }
 
-    const address = await createAccountSuri(
-      this.walletPassword,
-      this.suriSubstrate,
-      substrateKeypairType,
-      undefined,
-      meta
-    ); // for proper work of extension
+    const address = await createAccountSuri(this.walletPassword, this.suriSubstrate, substrateKeypairType, meta);
 
     return address;
   }

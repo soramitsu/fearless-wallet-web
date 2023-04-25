@@ -20,6 +20,7 @@ import type { FiatJson, TAction } from '@/interfaces/common';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { updateFiatSymbol } from '@/extension/messaging';
 
 @Component
 export default class FiatsPopup extends Vue {
@@ -36,7 +37,7 @@ export default class FiatsPopup extends Vue {
 
     return this.fiats
       .filter(({ name }) => name.toLowerCase().includes(filter))
-      .map(({ name, id, icon }) => {
+      .map(({ name, id, icon, symbol }) => {
         return { name: name, value: id, icon };
       });
   }
@@ -45,10 +46,11 @@ export default class FiatsPopup extends Vue {
     this.filterValue = value;
   }
 
-  toggleSelectedFiat(fiatName: string) {
-    this.setSelectedFiat(fiatName);
-
-    this.handlerClose();
+  async toggleSelectedFiat(id: string) {
+    updateFiatSymbol(id).then(() => {
+      this.setSelectedFiat(id);
+      this.handlerClose();
+    });
   }
 }
 </script>

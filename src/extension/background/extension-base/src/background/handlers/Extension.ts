@@ -785,6 +785,11 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
+  private updateCurrencySymbol(symbol: string) {
+    this.state.setFiatSymbol(symbol);
+    this.state.refreshPrice();
+  }
+
   private getPrice(): Promise<PriceJson> {
     return new Promise<PriceJson>((resolve) => {
       this.state.getPrice((rs: PriceJson) => {
@@ -1302,7 +1307,7 @@ export default class Extension extends FWExtensionBase {
         return this.cancelAuthRequest(request as string);
 
       case 'pri(authorize.requests)':
-        return port && (await this.authorizeSubscribe(id, port));
+        return this.authorizeSubscribe(id, port);
 
       case 'pri(addresses.create)':
         return this.createAddress(request as RequestAddressCreate);
@@ -1328,11 +1333,14 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.create.suri)':
         return this.accountsCreateSuri(request as RequestAccountCreateSuri);
 
+      case 'pri(price.update.currency)':
+        return this.updateCurrencySymbol(request as string);
+
       case 'pri(price.get.price)':
-        return await this.getPrice();
+        return this.getPrice();
 
       case 'pri(price.get.subscription)':
-        return await this.subscribePrice(id, port);
+        return this.subscribePrice(id, port);
 
       case 'pri(accounts.current.saveAddress)':
         return this.saveCurrentAccountAddress(request as RequestCurrentAccountAddress, id, port as Port);

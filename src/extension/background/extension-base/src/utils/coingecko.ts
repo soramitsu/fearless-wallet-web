@@ -8,8 +8,9 @@ import { axios } from './axios';
 export const getTokenPrice = async (chains: Array<string>, currency = 'usd'): Promise<PriceJson> => {
   try {
     const now = new Date().getTime();
+    const { currency: currentCurrency } = state.prices.json;
 
-    if (Math.abs(state.prices.timestamp - now) <= REFRESH_PRICE_INTERVAL) {
+    if (Math.abs(state.prices.timestamp - now) <= REFRESH_PRICE_INTERVAL && currentCurrency === currency) {
       console.info(
         'Return prices from cache',
         state.prices,

@@ -9,7 +9,6 @@ import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { base64Decode, isEthereumAddress } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
-import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import {
   AuthorizeRequest,
   AuthRequest,
@@ -41,12 +40,11 @@ import {
   ResponseAccountExportPrivateKey,
   ServiceInfo,
   BalanceMap,
-  TokenBalance,
 } from '../types/types';
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';
-import { BalanceItem, CustomToken, CustomTokenJson, NETWORK_STATUS } from '../../api/evm/types/ether';
+import { BalanceItem, CustomTokenJson, NETWORK_STATUS } from '../../api/evm/types/ether';
 import CustomTokenStore from '../../stores/CustomEvmToken';
 import CurrentAccountStore, { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import { initEvmTokenState } from '../../api/evm/utils/eth';
@@ -159,7 +157,7 @@ export default class State {
     evm: {},
   };
   private priceStoreReady = false;
-  private fiatSymbol = 'usd';
+  public fiatSymbol = 'usd';
   public authorizeCached: AuthUrls | undefined = undefined;
   public tokenMap: AssetJson[] = [];
   public networkMap: Record<string, NetworkJsonOld> = {}; // mapping to networkMapStore, for uses in background
@@ -206,10 +204,6 @@ export default class State {
     this.fiatSymbol = symbol;
 
     chrome.storage.local.set({ fiatSymbol: this.fiatSymbol });
-  }
-
-  get getFiatSymbol() {
-    return this.fiatSymbol;
   }
 
   public getAssetBalance(address: string, name: string, relayChain?: string) {
@@ -926,6 +920,21 @@ export default class State {
     await Promise.all([this.resetBalanceMap()]);
   }
 
+  public refreshPrice() {
+    // Update for tokens price
+    const coinGeckoKeys = Object.values(this.tokenMap)
+      .map((network) => network.priceId)
+      .filter((key) => key) as string[];
+
+    getTokenPrice(coinGeckoKeys, this.fiatSymbol)
+      .then((rs) => {
+        this.setPrice(rs, () => {
+          console.info('Get Token Price From CoinGecko');
+        });
+      })
+      .catch((err) => console.info(err));
+  }
+
   public async publishBalance(reset?: boolean) {
     this.getBalance(reset).then((balance) => {
       this.balanceSubject.next(balance);
@@ -1024,8 +1033,8 @@ export default class State {
         update(rs);
       } else {
         const activeNetworks: string[] = this.tokenMap
-          .filter((el) => el.priceId)
-          .map((asset) => asset.priceId as string);
+          .filter(({ priceId }) => priceId)
+          .map(({ priceId }) => priceId as string);
 
         getTokenPrice(activeNetworks, this.fiatSymbol)
           .then((rs) => {

@@ -81,7 +81,7 @@ export class FWCron {
         Object.keys(this.state.getSubstrateApiMap).length !== 0 ||
         Object.keys(this.state.getEvmApiMap).length !== 0
       ) {
-        // this.refreshPrice();
+        // this.state.refreshPrice();
         this.updateApiMapStatus();
         // this.resetHistory(currentAccountInfo.address)
         // .then(() => {
@@ -105,7 +105,7 @@ export class FWCron {
         Object.keys(this.state.getSubstrateApiMap).length !== 0 ||
         Object.keys(this.state.getEvmApiMap).length !== 0
       ) {
-        // this.addCron('refreshPrice', this.refreshPrice, CRON_REFRESH_PRICE_INTERVAL);
+        // this.addCron('refreshPrice', this.state.refreshPrice, CRON_REFRESH_PRICE_INTERVAL);
         this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
         this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
 
@@ -233,21 +233,6 @@ export class FWCron {
           }
         });
     }
-  };
-
-  refreshPrice = () => {
-    // Update for tokens price
-    const coinGeckoKeys = Object.values(this.state.tokenMap)
-      .map((network) => network.priceId)
-      .filter((key) => key) as string[];
-
-    getTokenPrice(coinGeckoKeys)
-      .then((rs) => {
-        this.state.setPrice(rs, () => {
-          this.logger.log('Get Token Price From CoinGecko');
-        });
-      })
-      .catch((err) => this.logger.log(err));
   };
 
   // refreshHistory = (address: string, networkMap: Record<string, NetworkJson>) => {

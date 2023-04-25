@@ -78,7 +78,7 @@ function onConnected(networkName: string) {
 }
 
 function onDisconnect(networkName: string) {
-  console.log('onDisconnect');
+  console.info('onDisconnect');
 
   // возможно лишнее
   if (state.apis.substrate[networkName] === undefined) return;

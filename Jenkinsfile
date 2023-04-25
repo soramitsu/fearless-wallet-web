@@ -24,7 +24,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     sonarProjectName:           'fearless-wallet-web',
     sonarCredential:            'sonar_fearless_token',
     mozillaSlug:                'fearless-wallet',
-    mozillaChannel:             'unlisted',
+    mozillaChannel:             'listed',
     distFolders:                ['./dist/extension/firefox','./dist/extension/chrome'],
     preBuildCmds:               ['apt-get update && apt-get install zip -y && yarn set version 3.4.1 && yarn install'],
     nexusFiles:                 [ '.zip'],

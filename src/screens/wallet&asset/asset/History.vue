@@ -105,6 +105,10 @@ export default class History extends Vue {
     );
   }
 
+  mounted() {
+    this.fetchHistory();
+  }
+
   async fetchHistory() {
     if (this.history.length !== 0 || !this.isMainNetwork) return;
 

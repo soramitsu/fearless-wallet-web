@@ -300,8 +300,7 @@ export default class State {
   }
 
   async popupOpen(): Promise<void> {
-    const { notification } = await this.getFromStorage(['notification']);
-    if (notification && notification !== 'extension')
+    if (this.notification && this.notification !== 'extension')
       chrome.windows.getCurrent((win) => {
         const popupOptions = { ...POPUP_WINDOW_OPTS };
 

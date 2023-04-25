@@ -4,6 +4,7 @@ import type { State } from '@/store/accounts/state';
 import { MutationTypes } from '@/store/accounts/mutations';
 import { AccountJson, BalanceJson } from '@/extension/background/extension-base/src/background/types/types';
 import { accountController } from '@/controllers/accountController';
+import { getPrice, updateFiatSymbol } from '@/extension/messaging';
 
 export enum ActionTypes {
   SET_SELECTED_FIAT = 'SET_SELECTED_FIAT',

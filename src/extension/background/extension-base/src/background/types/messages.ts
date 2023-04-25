@@ -198,6 +198,7 @@ export interface RequestSignatures {
   ];
   'pri(transaction.history.add)': [RequestTransactionHistoryAdd, boolean, TransactionHistoryItemType[]];
   'pri(transaction.history.get)': [RequestTransactionHistoryGet, any];
+  'pri(price.update.currency)': [string, void];
   'pri(price.get.price)': [RequestPrice, PriceJson];
   'pri(price.get.subscription)': [RequestSubscribePrice, PriceJson, PriceJson];
 

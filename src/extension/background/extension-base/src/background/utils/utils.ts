@@ -1,7 +1,7 @@
 import { NetworkJsonOld } from '../../types';
 import { APIItemState, BalanceItem } from '../../api/evm/types/ether';
 import { TokenBalance } from '../types/types';
-import { MAIN_NETWORKS } from '@/consts/networks';
+import { MAIN_NETWORKS, ETHEREUM_NETWORKS } from '@/consts/networks';
 import { RelayChainName, AssetJson } from '@/interfaces';
 
 export function getMockCurrencies(networks: NetworkJsonOld[], tokens: AssetJson[]) {
@@ -65,15 +65,6 @@ export function getMockCurrencies(networks: NetworkJsonOld[], tokens: AssetJson[
         },
       ];
 
-      // balances.forEach((network) => {
-      //   keyring.getAccounts().forEach(({ address }) => {
-      //     const isEthereumAccountType = keyring.getPair(address).type === 'ethereum';
-
-      //     if ((isEthereumNetwork && isEthereumAccountType) || (!isEthereumNetwork && !isEthereumAccountType))
-      //       network[address] = MOCK_FP_BALANCE;
-      //   });
-      // });
-
       result[index].balances = balances;
     });
 
@@ -81,4 +72,8 @@ export function getMockCurrencies(networks: NetworkJsonOld[], tokens: AssetJson[
   }, []);
 
   return currencies;
+}
+
+export function isEthereumNetwork(network: string) {
+  return ETHEREUM_NETWORKS.includes(network.toLowerCase());
 }

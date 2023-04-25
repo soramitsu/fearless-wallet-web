@@ -221,7 +221,6 @@ export interface RequestAccountCreateExternal {
 export interface RequestAccountCreateSuri {
   suri: string;
   password: string;
-  genesisHash?: string | null;
   type?: KeypairType;
   meta?: Record<string, unknown>;
 }

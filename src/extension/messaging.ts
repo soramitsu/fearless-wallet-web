@@ -454,7 +454,7 @@ export async function getHistory(address: string, networkKey: string, token?: st
   return sendMessage('pri(transaction.history.get)', { address, networkKey, token });
 }
 
-export async function updateTransactionHistory(
+export function updateTransactionHistory(
   address: string,
   networkKey: string,
   item: TransactionHistoryItemType,
@@ -463,18 +463,22 @@ export async function updateTransactionHistory(
   return sendMessage('pri(transaction.history.add)', { address, networkKey, item }, callback);
 }
 
-export async function getPrice(): Promise<PriceJson> {
+export function updateFiatSymbol(symbol: string): Promise<void> {
+  return sendMessage('pri(price.update.currency)', symbol);
+}
+
+export function getPrice(): Promise<PriceJson> {
   return sendMessage('pri(price.get.price)', null);
 }
 
-export async function subscribePrice(
+export function subscribePrice(
   callback: (priceData: PriceJson) => void,
   request: RequestSubscribePrice = null
 ): Promise<PriceJson> {
   return sendMessage('pri(price.get.subscription)', request, callback);
 }
 
-export async function makeTransfer(
+export function makeTransfer(
   request: RequestTransfer,
   callback: (data: BasicTxResponse) => void
 ): Promise<BasicTxResponse> {

@@ -81,13 +81,8 @@ export class FWCron {
         Object.keys(this.state.getSubstrateApiMap).length !== 0 ||
         Object.keys(this.state.getEvmApiMap).length !== 0
       ) {
-        // this.refreshPrice();
+        this.state.refreshPrice();
         this.updateApiMapStatus();
-        // this.resetHistory(currentAccountInfo.address)
-        // .then(() => {
-        //   this.refreshHistory2(currentAccountInfo.address);
-        // })
-        // .catch((err) => this.logger.warn(err));
       }
     });
   };
@@ -105,19 +100,9 @@ export class FWCron {
         Object.keys(this.state.getSubstrateApiMap).length !== 0 ||
         Object.keys(this.state.getEvmApiMap).length !== 0
       ) {
-        // this.addCron('refreshPrice', this.refreshPrice, CRON_REFRESH_PRICE_INTERVAL);
+        this.addCron('refreshPrice', this.state.refreshPrice, CRON_REFRESH_PRICE_INTERVAL);
         this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
         this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
-
-        // this.resetHistory(currentAccountInfo.address)
-        //   .then(() => {
-        //     this.addCron(
-        //       'refreshHistory',
-        //       this.refreshHistory2(currentAccountInfo.address),
-        //       CRON_REFRESH_HISTORY_INTERVAL
-        //     );
-        //   })
-        //   .catch((err) => this.logger.warn(err));
       }
     });
 
@@ -125,27 +110,14 @@ export class FWCron {
       next: (serviceInfo) => {
         if (!serviceInfo.currentAccountInfo) return;
 
-        // const { address } = serviceInfo.currentAccountInfo;
-
-        // this.resetHistory(address)
-        //   .then(() => {
-        //     this.removeCron('refreshHistory');
-
-        //     if (this.checkNetworkAvailable(serviceInfo)) {
-        //       // only add cron job if there's at least 1 active network
-        //       this.addCron('refreshHistory', this.refreshHistory2(address), CRON_REFRESH_HISTORY_INTERVAL);
-        //     }
-        //   })
-        //   .catch((err) => this.logger.warn(err));
-
-        // this.removeCron('refreshPrice');
+        this.removeCron('refreshPrice');
         this.removeCron('checkStatusApiMap');
         this.removeCron('recoverApiMap');
 
         if (this.checkNetworkAvailable(serviceInfo)) {
           // only add cron job if there's at least 1 active network
 
-          // this.addCron('refreshPrice', this.refreshPrice, CRON_REFRESH_PRICE_INTERVAL);
+          this.addCron('refreshPrice', this.state.refreshPrice, CRON_REFRESH_PRICE_INTERVAL);
           this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
           this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
         }
@@ -233,21 +205,6 @@ export class FWCron {
           }
         });
     }
-  };
-
-  refreshPrice = () => {
-    // Update for tokens price
-    const coinGeckoKeys = Object.values(this.state.tokenMap)
-      .map((network) => network.priceId)
-      .filter((key) => key) as string[];
-
-    getTokenPrice(coinGeckoKeys)
-      .then((rs) => {
-        this.state.setPrice(rs, () => {
-          this.logger.log('Get Token Price From CoinGecko');
-        });
-      })
-      .catch((err) => this.logger.log(err));
   };
 
   // refreshHistory = (address: string, networkMap: Record<string, NetworkJson>) => {

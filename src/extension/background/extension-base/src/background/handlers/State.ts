@@ -483,7 +483,7 @@ export default class State {
     if (this.networkMap[key].active) {
       // update API map if network is active
       if (data.key in this.apis.substrate) {
-        this.apis.substrate[key].api?.disconnect && (await this.apis.substrate[key].api.disconnect());
+        this.apis.substrate[key].api?.disconnect && (await this.apis.substrate[key].api?.disconnect());
         delete this.apis.substrate[key];
       }
 
@@ -509,15 +509,16 @@ export default class State {
   }
 
   public async disableNetworkMap(networkKey: string): Promise<boolean> {
-    if (this.lockNetworkMap) return false;
+    if (this.lockNetworkMap) return false; // todo ???
 
-    this.lockNetworkMap = true;
-    this.apis.substrate[networkKey].api.disconnect && (await this.apis.substrate[networkKey].api.disconnect());
-    delete this.apis.substrate[networkKey];
+    this.lockNetworkMap = true; // todo ???
 
-    if (this.networkMap[networkKey].isEthereum && this.networkMap[networkKey].isEthereum) {
-      delete this.apis.evm[networkKey];
-    }
+    // this.apis.substrate[networkKey].api?.disconnect && (await this.apis.substrate[networkKey].api?.disconnect());
+
+    delete this.apis.substrate[networkKey]; // todo можно и не удалять по идее, значение api для сети будет = undefined
+
+    if (this.networkMap[networkKey].isEthereum && this.networkMap[networkKey].isEthereum)
+      delete this.apis.evm[networkKey]; // todo аналогично
 
     this.networkMap[networkKey].active = false;
     this.networkMap[networkKey].apiStatus = NETWORK_STATUS.DISCONNECTED;
@@ -1302,7 +1303,7 @@ export default class State {
     // Disconnect dotsama networks
     return Promise.all(
       Object.values(this.apis.substrate).map(async (network) => {
-        if (network.api.isConnected) {
+        if (network.api?.isConnected) {
           network.api?.disconnect && (await network.api?.disconnect());
         }
       })
@@ -1326,8 +1327,8 @@ export default class State {
     // Reconnect dotsama networks
     return Promise.all(
       Object.values(this.apis.substrate).map(async (network) => {
-        if (!network.api.isConnected && network.api.connect) {
-          await network.api.connect();
+        if (!network.api?.isConnected && network.api?.connect) {
+          await network.api?.connect();
         }
       })
     );

@@ -52,7 +52,7 @@ export const signExtrinsic = async ({
 
   let signer: Signer | undefined;
 
-  const registry = apiProps.api.registry;
+  const registry = apiProps.api!.registry;
 
   if (type === SignerType.PASSWORD) {
     const pair = keyring.getPair(address);

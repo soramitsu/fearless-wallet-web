@@ -7,6 +7,7 @@ export enum APIItemState {
   ERROR = 'error',
   NOT_SUPPORT = 'not_support',
 }
+
 export interface BalanceChildItem {
   reserved: string;
   frozen: string;

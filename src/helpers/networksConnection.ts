@@ -65,10 +65,10 @@ const readyHandler = (network: Network) => {
   //   loadHistory: false,
   //   networksProps: [network],
   // });
-  //   store.commit(MutationTypes.SET_NETWORK_STATUS, {
-  //     network: network.name,
-  //     status: 'ready',
-  //   });
+  // store.commit(MutationTypes.SET_NETWORK_STATUS, {
+  //   network: network.name,
+  //   status: 'ready',
+  // });
 };
 
 async function connectToApi(network: Network, apiOptions: ApiOptions, _node?: Node): Promise<void> {

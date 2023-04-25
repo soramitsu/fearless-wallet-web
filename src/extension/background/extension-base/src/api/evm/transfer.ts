@@ -34,7 +34,7 @@ export async function getExistentialDeposit(
   dotSamaApiMap: Record<string, ApiProps>
 ): Promise<string> {
   const apiProps = await dotSamaApiMap[networkKey].isReady;
-  const api = apiProps.api;
+  const api = apiProps.api!;
   const tokenInfo = await getTokenInfo(networkKey, api, token);
 
   const isMainToken = checkMainToken(networkKey, tokenInfo.id);

@@ -63,7 +63,7 @@ import { ASSETS, CHAINS, prepNetworkNames } from '../../const/networks';
 import { DEFAULT_EVM_TOKENS } from '../../api/tokens/evm/defaultEvmToken';
 import { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '../../types';
 import { FWCron } from '../cron';
-import { getMockCurrencies } from '../utils/utils';
+import { getMockCurrencies, isEthereumNetwork } from '../utils/utils';
 import { getCurrentProvider, stripUrl, withErrorLog } from './helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
@@ -108,6 +108,7 @@ function extractMetadata(store: MetadataStore): void {
 }
 
 export const registry = new TypeRegistry();
+
 const metaStore = new MetadataStore();
 
 export async function initState() {
@@ -162,11 +163,10 @@ export default class State {
   public authorizeCached: AuthUrls | undefined = undefined;
   public tokenMap: AssetJson[] = [];
   public networkMap: Record<string, NetworkJsonOld> = {}; // mapping to networkMapStore, for uses in background
-  public networkJson: NetworkJsonOld[] = [];
+  public networksJson: NetworkJsonOld[] = []; // from github
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJsonOld>>();
   public serviceInfoSubject = new Subject<ServiceInfo>();
-  public defaultBalanceMap: TokenBalance[] = [];
   public balanceMap: BalanceMap = {};
   public balanceSubject = new Subject<BalanceJson>();
   public customTokenState: CustomTokenJson = { erc20: [] };
@@ -189,6 +189,7 @@ export default class State {
     authorizeAccountsCount: 0,
     dAppName: '',
   };
+
   public get knownMetadata(): MetadataDef[] {
     return knownMetadata();
   }
@@ -203,6 +204,7 @@ export default class State {
 
   setFiatSymbol(symbol: string) {
     this.fiatSymbol = symbol;
+
     chrome.storage.local.set({ fiatSymbol: this.fiatSymbol });
   }
 
@@ -224,14 +226,6 @@ export default class State {
 
   public getNetworkMapByKey(key: string) {
     return this.networkMap[key];
-  }
-
-  public getSubstrateApi(networkKey: string) {
-    return this.apis.substrate[networkKey];
-  }
-
-  public getEvmApi(networkKey: string) {
-    return this.apis.evm[networkKey];
   }
 
   public get getApiMap() {
@@ -334,7 +328,9 @@ export default class State {
       'authUrls',
       'defaultAuthAccountSelection',
     ]);
+
     if (authUrls) this.authUrls = authUrls;
+
     if (fiatSymbol) this.setFiatSymbol(fiatSymbol);
 
     if (defaultAuthAccountSelection && defaultAuthAccountSelection.length)
@@ -433,7 +429,7 @@ export default class State {
 
   public async onInstall() {
     await this.getCurrentAccount((account) => {
-      const accounts = keyring.getAccounts().filter((el) => !isEthereumAddress(el.address));
+      const accounts = this.getSubstrateAccounts();
 
       if (accounts.length && !account) {
         const [{ address, meta }] = accounts;
@@ -538,78 +534,6 @@ export default class State {
     return true;
   }
 
-  public async enableNetworkMap(networkKey: string) {
-    if (this.lockNetworkMap) return false;
-
-    const networkData = this.networkMap[networkKey];
-
-    this.lockNetworkMap = true;
-    const currentProvider = getCurrentProvider(networkData);
-
-    if (currentProvider) {
-      await initApi(networkData);
-
-      if (networkData.isEthereum && networkData.isEthereum) {
-        this.apis.evm[networkKey] = initWeb3Api(currentProvider);
-      }
-    }
-
-    networkData.active = true;
-    this.networkMapSubject.next(this.networkMap);
-    this.networkMapStore.set('NetworkMap', this.networkMap);
-    this.updateServiceInfo();
-    this.lockNetworkMap = false;
-
-    this.getAuthorize((data) => {
-      if (this.networkMap[networkKey].isEthereum) {
-        this.evmChainSubject.next(data);
-      }
-
-      this.authorizeUrlSubject.next(data);
-    });
-
-    return true;
-  }
-
-  public async enableAllNetworks() {
-    if (this.lockNetworkMap) return false;
-
-    this.lockNetworkMap = true;
-    const targetNetworkKeys: string[] = [];
-
-    for (const [key, network] of Object.entries(this.networkMap)) {
-      if (!network.active) {
-        targetNetworkKeys.push(key);
-        this.networkMap[key].active = true;
-      }
-    }
-
-    this.networkMapSubject.next(this.networkMap);
-    this.networkMapStore.set('NetworkMap', this.networkMap);
-
-    for (const key of targetNetworkKeys) {
-      const currentProvider = getCurrentProvider(this.networkMap[key]);
-
-      if (currentProvider) {
-        initApi(this.networkMap[key]);
-
-        if (this.networkMap[key].isEthereum && this.networkMap[key].isEthereum) {
-          this.apis.evm[key] = initWeb3Api(currentProvider);
-        }
-      }
-    }
-
-    this.updateServiceInfo();
-    this.lockNetworkMap = false;
-
-    this.getAuthorize((data) => {
-      this.evmChainSubject.next(data);
-      this.authorizeUrlSubject.next(data);
-    });
-
-    return true;
-  }
-
   public updateServiceInfo() {
     this.getCurrentAccount((accountInfo) => {
       this.serviceInfoSubject.next({
@@ -618,18 +542,6 @@ export default class State {
         currentAccountInfo: accountInfo,
       });
     });
-  }
-
-  public async refreshSubstrateApi(key: string) {
-    const apiProps = this.apis.substrate[key];
-
-    // if (key in this.apis.substrate) {
-    //   if (!apiProps.isApiConnected) {
-    //     apiProps.recoverConnect && apiProps.recoverConnect();
-    //   }
-    // }
-
-    return true;
   }
 
   public refreshWeb3Api(key: string) {
@@ -989,14 +901,14 @@ export default class State {
     });
   }
 
-  public async getDecodedAddresses(address?: string): Promise<string[]> {
+  public async getDecodedAddress(address?: string): Promise<string> {
     let checkingAddress: string | null | undefined = address;
 
     if (!address) checkingAddress = await this.getAccountAddress();
 
-    if (!checkingAddress) return [];
+    if (!checkingAddress) return '';
 
-    return [checkingAddress];
+    return checkingAddress;
   }
 
   public getAccountAddress(): Promise<string | null | undefined> {
@@ -1009,12 +921,6 @@ export default class State {
         }
       });
     });
-  }
-
-  public async getStoredBalance(address: string): Promise<Record<string, Record<string, BalanceItem>>> {
-    const { balances } = await storage.get(['balances']);
-
-    return balances[address] || {};
   }
 
   public async switchAccount() {
@@ -1031,23 +937,13 @@ export default class State {
     this.publishBalance(true);
   }
 
-  public getActiveErc20Tokens() {
-    const filteredErc20Tokens: CustomToken[] = [];
-
-    this.customTokenState.erc20.forEach((token) => {
-      if (!token.isDeleted) filteredErc20Tokens.push(token);
-    });
-
-    return filteredErc20Tokens;
-  }
-
   public async prepNetworkJson() {
     const result: Record<string, NetworkJsonOld> = {};
     const { data: networks } = await axios.get<NetworkJsonOld[]>(CHAINS);
     const { data: assets } = await axios.get<AssetJson[]>(ASSETS);
-    this.networkJson = networks;
+
+    this.networksJson = networks;
     this.tokenMap = assets;
-    this.defaultBalanceMap = getMockCurrencies(networks, assets);
 
     networks.forEach((network) => {
       const prepCurrentProvider = network.nodes[0].name;
@@ -1078,6 +974,7 @@ export default class State {
 
   public async init() {
     await this.prepNetworkJson();
+
     this.initNetworkStates();
     this.updateServiceInfo();
   }
@@ -1116,6 +1013,7 @@ export default class State {
     this.priceStore.set('PriceData', priceData, () => {
       if (callback) {
         callback(priceData);
+
         this.priceStoreReady = true;
       }
     });
@@ -1214,27 +1112,6 @@ export default class State {
     });
   }
 
-  // private mapNetworksByToken(id: string): BalanceItem[] {
-  //   return Object.values(this.networkMap)
-  //     .filter((network) => {
-  //       return network.assets.some(({ assetId }) => assetId === id);
-  //     })
-  //     .map(({ name, assets, icon, key }) => {
-  //       const { isNative, isUtility, type, purchaseProviders } = assets.find(({ assetId }) => assetId === id)!;
-
-  //       return {
-  //         state: APIItemState.PENDING,
-  //         name,
-  //         key,
-  //         icon,
-  //         type: type ?? 'native',
-  //         purchaseProviders: purchaseProviders ?? [],
-  //         isUtility: isUtility ?? false,
-  //         isNative: isNative ?? false,
-  //       };
-  //     });
-  // }
-
   public getSubstrateAccounts() {
     return keyring.getAccounts().filter((el) => !isEthereumAddress(el.address));
   }
@@ -1243,29 +1120,30 @@ export default class State {
     return keyring.getAccounts().filter((el) => isEthereumAddress(el.address));
   }
 
-  public generateDefaultBalance({ address }: Partial<KeyringAddress>) {
+  get getEthereumNetworks() {
+    return this.networksJson.filter(({ name }) => isEthereumNetwork(name));
+  }
+
+  get getSubstrateNetworks() {
+    return this.networksJson.filter(({ name }) => !isEthereumNetwork(name));
+  }
+
+  public generateDefaultBalance(address: string) {
     if (!address) return;
 
     if (this.balanceMap && this.balanceMap[address] !== undefined) return;
 
-    if (Object.values(this.defaultBalanceMap).length) {
-      this.balanceMap[address] = [...this.defaultBalanceMap];
+    const isEthAddress = isEthereumAddress(address);
 
-      return;
-    }
+    if (isEthAddress) this.balanceMap[address] = getMockCurrencies(this.getEthereumNetworks, this.tokenMap);
+    else this.balanceMap[address] = getMockCurrencies(this.getSubstrateNetworks, this.tokenMap);
 
-    const mocks = getMockCurrencies(this.networkJson, this.tokenMap);
-    this.balanceMap[address] = mocks;
-    this.defaultBalanceMap = mocks;
     this.publishBalance();
   }
 
   public generateDefaultBalanceMap() {
-    const accounts = this.getSubstrateAccounts();
-
-    accounts.forEach((account) => {
-      this.generateDefaultBalance(account);
-    });
+    this.getSubstrateAccounts().forEach(({ address }) => this.generateDefaultBalance(address));
+    this.getEthereumAccounts().forEach(({ address }) => this.generateDefaultBalance(address));
   }
 
   public accountExportPrivateKey({
@@ -1293,59 +1171,6 @@ export default class State {
     });
   }
 
-  public getCustomTokenStore(callback: (data: CustomTokenJson) => void) {
-    return this.customTokenStore.get('EvmToken', (data) => {
-      callback(data);
-    });
-  }
-
-  public pauseAllNetworks(code?: number, reason?: string) {
-    // Disconnect dotsama networks
-    return Promise.all(
-      Object.values(this.apis.substrate).map(async (network) => {
-        if (network.api?.isConnected) {
-          network.api?.disconnect && (await network.api?.disconnect());
-        }
-      })
-    );
-  }
-
-  async resumeAllNetworks() {
-    // Reconnect web3 networks
-    // Object.entries(this.apiMap.web3).forEach(([key, network]) => {
-    //   const currentProvider = network.currentProvider;
-
-    //   if (currentProvider instanceof Web3.providers.WebsocketProvider) {
-    //     if (!currentProvider.connected) {
-    //       console.log(`[Web3] ${key} is disconected`);
-    //       currentProvider?.connect();
-    //       setTimeout(() => console.log(`[Web3] ${key} is ${currentProvider.connected ? 'connected' : 'disconnected'} now`), 500);
-    //     }
-    //   }
-    // });
-
-    // Reconnect dotsama networks
-    return Promise.all(
-      Object.values(this.apis.substrate).map(async (network) => {
-        if (!network.api?.isConnected && network.api?.connect) {
-          await network.api?.connect();
-        }
-      })
-    );
-  }
-
-  public async sleep() {
-    this.cron.stop();
-    this.subscription.stop();
-    await this.pauseAllNetworks(undefined, 'IDLE mode');
-  }
-
-  public async wakeup() {
-    await this.resumeAllNetworks();
-    this.cron.start();
-    this.subscription.start();
-  }
-
   private lazyNext = (key: string, callback: () => void) => {
     if (this.lazyMap[key]) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -1365,17 +1190,6 @@ export default class State {
     const addressList = Object.keys(accounts.subject.value);
 
     return addressList.reduce((addressList, v) => ({ ...addressList, [v]: value }), {});
-  }
-
-  public getChainRegistryMap(): Record<string, ChainRegistry> {
-    return this.chainRegistryMap;
-  }
-
-  public setChainRegistryItem(networkKey: string, registry: ChainRegistry) {
-    this.chainRegistryMap[networkKey] = registry;
-    this.lazyNext('setChainRegistry', () => {
-      this.chainRegistrySubject.next(this.getChainRegistryMap());
-    });
   }
 
   private onReady() {
@@ -1451,12 +1265,6 @@ export default class State {
 
   private publishHistory() {
     this.historySubject.next(this.getHistoryMap());
-  }
-
-  public async getStoredHistories(address: string) {
-    const { transaction } = await storage.get(['transaction']);
-
-    return transaction[address] || {};
   }
 
   private combineHistories(

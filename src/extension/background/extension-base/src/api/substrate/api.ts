@@ -78,8 +78,6 @@ function onConnected(networkName: string) {
 }
 
 function onDisconnect(networkName: string) {
-  console.info('onDisconnect');
-
   // возможно лишнее
   if (state.apis.substrate[networkName] === undefined) return;
 
@@ -122,7 +120,7 @@ export async function initApi(network: NetworkJsonOld): Promise<void> {
     if (isEthereum)
       // return EVM HTTP Placeholder
       state.apis.substrate[networkName] = generateEvmHttpApi();
-    else state.apis.substrate[networkName] = createApiObject(); // можно вынести эту инициализацию в др место и как только известен список сетей создавать дефолтный state.apis.substrate[networkName] для каждой сети, хз где это , Женя хелп
+    else state.apis.substrate[networkName] = createApiObject();
   }
 
   const { nodeIndex } = state.apis.substrate[networkName];

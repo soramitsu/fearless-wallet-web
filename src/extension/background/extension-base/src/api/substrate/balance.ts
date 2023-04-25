@@ -177,12 +177,11 @@ export async function getFreeBalance(
 }
 
 async function subscribeTokensBalance(
-  addresses: string[],
+  address: string,
   networkKey: string,
   api: ApiPromise,
   setBalance: (rs: BalanceItem) => void
 ) {
-  state.generateDefaultBalance({ address: addresses[0] });
   const network = state.networkMap[networkKey];
   const tokenList = network.assets.map(({ assetId, type, isNative, isUtility, purchaseProviders, staking }) => {
     const searchedAsset = state.tokenMap.find((token) => token.id === assetId)! as AssetJson;
@@ -210,9 +209,9 @@ async function subscribeTokensBalance(
         const query = api!.rx.query;
         let pallet;
 
-        if (type === 'native') pallet = query.system.account(addresses[0]);
-        else if (type === 'equilibrium') pallet = query.eqBalances.reserved(addresses[0], options);
-        else pallet = query.tokens.accounts(addresses[0], options);
+        if (type === 'native') pallet = query.system.account(address);
+        else if (type === 'equilibrium') pallet = query.eqBalances.reserved(address, options);
+        else pallet = query.tokens.accounts(address, options);
 
         const onBalanceFetch = (balances: any) => {
           const { frozen, locked, reserved, total, transferable } = formatBalance(
@@ -255,16 +254,14 @@ async function subscribeTokensBalance(
 }
 
 export async function subscribeWithAccount(
-  address: string[],
+  address: string,
   networkKey: string,
   networkAPI: ApiProps,
   web3ApiMap: Record<string, EthProvider>,
   callback: (networkKey: string, rs: BalanceItem) => void
 ) {
   //move elsewhere
-  function setBalance(item: BalanceItem) {
-    callback(networkKey, item);
-  }
+  const setBalance = (item: BalanceItem) => callback(networkKey, item);
 
   let unsub: () => void;
 
@@ -280,23 +277,19 @@ export async function subscribeWithAccount(
 }
 
 export function subscribeBalance(
-  addresses: string[],
+  address: string,
   dotSamaApiMap: Record<string, ApiProps>,
   web3ApiMap: Record<string, EthProvider>,
   callback: (networkKey: string, rs: BalanceItem) => void
 ) {
-  const [substrateAddresses, evmAddresses] = categoryAddresses(addresses);
-
   const unsubList = Object.entries(dotSamaApiMap).map(async ([networkKey, apiProps]) => {
     await apiProps.api?.isReadyOrError;
 
-    const useAddresses = apiProps.isEthereum ? evmAddresses : substrateAddresses;
-
     if (['ethereum', 'ethereum_goerli'].includes(networkKey)) {
-      return subscribeEVMBalance(networkKey, apiProps.api!, useAddresses, web3ApiMap, callback);
+      return subscribeEVMBalance(networkKey, apiProps.api!, [address], web3ApiMap, callback); // todo [address] -> address
     }
 
-    return subscribeWithAccount(useAddresses, networkKey, apiProps, web3ApiMap, callback);
+    return subscribeWithAccount(address, networkKey, apiProps, web3ApiMap, callback);
   });
 
   return () => {

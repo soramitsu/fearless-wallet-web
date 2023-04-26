@@ -9,7 +9,6 @@ import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { base64Decode, isEthereumAddress } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
-import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import {
   AuthorizeRequest,
   AuthRequest,
@@ -41,12 +40,11 @@ import {
   ResponseAccountExportPrivateKey,
   ServiceInfo,
   BalanceMap,
-  TokenBalance,
 } from '../types/types';
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';
-import { BalanceItem, CustomToken, CustomTokenJson, NETWORK_STATUS } from '../../api/evm/types/ether';
+import { BalanceItem, CustomTokenJson, NETWORK_STATUS } from '../../api/evm/types/ether';
 import CustomTokenStore from '../../stores/CustomEvmToken';
 import CurrentAccountStore, { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import { initEvmTokenState } from '../../api/evm/utils/eth';
@@ -159,7 +157,7 @@ export default class State {
     evm: {},
   };
   private priceStoreReady = false;
-  private fiatSymbol = 'usd';
+  public fiatSymbol = 'usd';
   public authorizeCached: AuthUrls | undefined = undefined;
   public tokenMap: AssetJson[] = [];
   public networkMap: Record<string, NetworkJsonOld> = {}; // mapping to networkMapStore, for uses in background
@@ -206,10 +204,6 @@ export default class State {
     this.fiatSymbol = symbol;
 
     chrome.storage.local.set({ fiatSymbol: this.fiatSymbol });
-  }
-
-  get getFiatSymbol() {
-    return this.fiatSymbol;
   }
 
   public getAssetBalance(address: string, name: string, relayChain?: string) {
@@ -306,8 +300,7 @@ export default class State {
   }
 
   async popupOpen(): Promise<void> {
-    const { notification } = await this.getFromStorage(['notification']);
-    if (notification && notification !== 'extension')
+    if (this.notification && this.notification !== 'extension')
       chrome.windows.getCurrent((win) => {
         const popupOptions = { ...POPUP_WINDOW_OPTS };
 
@@ -931,6 +924,21 @@ export default class State {
     await Promise.all([this.resetBalanceMap()]);
   }
 
+  public refreshPrice() {
+    // Update for tokens price
+    const coinGeckoKeys = Object.values(this.tokenMap)
+      .map((network) => network.priceId)
+      .filter((key) => key) as string[];
+
+    getTokenPrice(coinGeckoKeys, this.fiatSymbol)
+      .then((rs) => {
+        this.setPrice(rs, () => {
+          console.info('Get Token Price From CoinGecko');
+        });
+      })
+      .catch((err) => console.info(err));
+  }
+
   public async publishBalance(reset?: boolean) {
     this.getBalance(reset).then((balance) => {
       this.balanceSubject.next(balance);
@@ -1029,8 +1037,8 @@ export default class State {
         update(rs);
       } else {
         const activeNetworks: string[] = this.tokenMap
-          .filter((el) => el.priceId)
-          .map((asset) => asset.priceId as string);
+          .filter(({ priceId }) => priceId)
+          .map(({ priceId }) => priceId as string);
 
         getTokenPrice(activeNetworks, this.fiatSymbol)
           .then((rs) => {
@@ -1050,39 +1058,38 @@ export default class State {
 
   public setBalanceItem(networkKey: string, item: BalanceItem) {
     this.getCurrentAccount((account) => {
-      if (account) {
-        const { address } = account;
+      if (!account) return;
 
-        const tokenIndex = this.balanceMap[address].findIndex(({ assetId: _assetId, name, relayChain }) => {
-          const isExistingAssetId = _assetId === item.id;
-          const isExistingDisplayName = name === item.name;
-          const isExistingAsset = isExistingDisplayName && relayChain === item.relayChain;
+      const { address } = account;
 
-          return isExistingAssetId || isExistingAsset;
-        });
+      const currencyIndex = this.balanceMap[address].findIndex(({ assetId: _assetId, name, relayChain }) => {
+        const isExistingAssetId = _assetId === item.id;
+        const isExistingDisplayName = name === item.name;
+        const isExistingAsset = isExistingDisplayName && relayChain === item.relayChain;
 
-        const token = this.balanceMap[address][tokenIndex];
-        const balanceIndex = token.balances.findIndex((el) => {
-          const key = prepNetworkNames[el.name] ?? el.name;
+        return isExistingAssetId || isExistingAsset;
+      });
+      const token = this.balanceMap[address][currencyIndex];
 
-          return key === item.chain;
-        });
+      const index = token.balances.findIndex((el) => {
+        const key = prepNetworkNames[el.name] ?? el.name;
 
-        const oldBalanceItem = this.balanceMap[address][tokenIndex].balances[balanceIndex];
-        const { reserved, free, frozen, total, transferable, state, locked } = item;
+        return key === item.chain;
+      });
 
-        this.balanceMap[address][tokenIndex].balances[balanceIndex] = {
-          ...oldBalanceItem,
-          reserved,
-          free,
-          frozen,
-          total,
-          transferable,
-          locked,
-          state,
-          timestamp: Date.now(),
-        };
-      }
+      const balanceItem = this.balanceMap[address][currencyIndex].balances[index];
+      const { reserved, free, frozen, total, transferable, state } = item;
+
+      this.balanceMap[address][currencyIndex].balances[index] = {
+        ...balanceItem,
+        reserved,
+        free,
+        frozen,
+        total,
+        transferable,
+        state,
+        timestamp: +new Date(),
+      };
     });
 
     this.updateBalanceStore(networkKey, item);
@@ -1161,12 +1168,7 @@ export default class State {
     return new Promise((resolve) => {
       this.getCurrentAccount((account) => {
         if (account) {
-          const { address } = account;
-
-          resolve({
-            details: this.balanceMap[address],
-            reset,
-          });
+          resolve({ details: this.balanceMap[account.address] ?? [], reset });
         }
       });
     });
@@ -1174,9 +1176,7 @@ export default class State {
 
   private lazyNext = (key: string, callback: () => void) => {
     if (this.lazyMap[key]) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      clearTimeout(this.lazyMap[key]);
+      clearTimeout(this.lazyMap[key] as number);
     }
 
     const lazy = setTimeout(() => {

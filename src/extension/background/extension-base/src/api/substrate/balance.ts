@@ -216,6 +216,7 @@ async function subscribeTokensBalance(
             balances.data ? (balances as any).data : (balances as OrmlAccountData),
             precision
           );
+          const name = displayName ?? symbol;
 
           setBalance(networkKey, {
             state: APIItemState.READY,
@@ -223,7 +224,7 @@ async function subscribeTokensBalance(
             key: networkKey,
             symbol,
             relayChain,
-            name: displayName ?? symbol,
+            name,
             icon,
             reserved,
             locked,
@@ -276,6 +277,8 @@ export function subscribeBalance(
   web3ApiMap: Record<string, EthProvider>,
   setBalance: (networkKey: string, rs: BalanceItem) => void
 ) {
+  state.generateDefaultBalance(address);
+
   const unsubList = Object.entries(dotSamaApiMap).map(async ([networkKey, apiProps]) => {
     await apiProps.api?.isReadyOrError;
 

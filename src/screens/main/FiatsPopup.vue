@@ -21,6 +21,7 @@ import type { TMutation } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { updateFiatSymbol } from '@/extension/messaging';
 
 @Component
 export default class FiatsPopup extends Vue {
@@ -46,10 +47,11 @@ export default class FiatsPopup extends Vue {
     this.filterValue = value;
   }
 
-  toggleSelectedFiat(fiatName: string) {
-    this.setSelectedFiat(fiatName);
-
-    this.handlerClose();
+  async toggleSelectedFiat(id: string) {
+    updateFiatSymbol(id).then(() => {
+      this.setSelectedFiat(id);
+      this.handlerClose();
+    });
   }
 }
 </script>

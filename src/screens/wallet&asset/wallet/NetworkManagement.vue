@@ -34,7 +34,7 @@ import { NetworkJsonOld } from '@/extension/background/extension-base/src/types'
 
 @Component
 export default class ReceiveForm extends Vue {
-  @Prop(Array) disconnectedNetworks!: NetworkJsonOld[];
+  @Prop(Array) networks!: NetworkJsonOld[];
   @Prop(Function) closeForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 }

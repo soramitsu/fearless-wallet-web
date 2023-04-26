@@ -212,7 +212,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import Disclaimer from '@/screens/wallet&asset/swap/Disclaimer.vue';
-import { SORA_UTILITY_ASSET } from '@/consts/networks';
+import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/networks';
 import { Components } from '@/router/routes';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { isSora } from '@/helpers/common';
@@ -254,8 +254,7 @@ export default class SwapForm extends Vue {
   swapOptions: SwapOptions = {} as SwapOptions;
 
   @Prop(Function) closeForm!: VoidFunction;
-  @Prop(String) selectedNetwork!: string;
-  @Prop(String) _selectedAssetId!: string;
+
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
   @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
@@ -269,8 +268,12 @@ export default class SwapForm extends Vue {
     return this.showSettings;
   }
 
+  get selectedAssetId() {
+    return this.$route.params.assetId;
+  }
+
   get price() {
-    return this.getAssetPrice(this._selectedAssetId).price;
+    return this.getAssetPrice(this.selectedAssetId).price;
   }
 
   get sendAssetPrice() {
@@ -308,6 +311,10 @@ export default class SwapForm extends Vue {
     const balance = this.getAssetPrice(this.currencyXOR.priceId!).price * +fee;
 
     return this.$n(+balance, 'price');
+  }
+
+  get selectedNetwork() {
+    return SORA_NETWORK_NAME as string;
   }
 
   get soraMainAssetUpper() {
@@ -548,7 +555,7 @@ export default class SwapForm extends Vue {
 
   async created() {
     this.getSoraFee();
-    this.sendAssetId = this._selectedAssetId;
+    this.sendAssetId = this.selectedAssetId;
   }
 
   getSoraFee() {

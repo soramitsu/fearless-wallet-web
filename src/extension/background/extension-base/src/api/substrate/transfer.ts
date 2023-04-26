@@ -173,7 +173,7 @@ export async function estimateFee(
   value: string | undefined,
   transferAll: boolean,
   dotSamaApiMap: Record<string, ApiProps>,
-  tokenInfo: TokenBalance
+  tokenBalance: TokenBalance
 ): Promise<number> {
   const fee = 0;
   // eslint-disable-next-line
@@ -189,15 +189,14 @@ export async function estimateFee(
   const extrinsic = createExtrinsicTransfer({
     amount: value,
     api,
-    asset: tokenInfo.name,
-    networkProps: tokenInfo,
+    tokenBalance,
     to,
     networkKey,
   });
 
   const paymentInfo = await extrinsic?.paymentInfo(to);
   const partialFee = paymentInfo ? +paymentInfo.partialFee : 0;
-  const result = new FPNumber(partialFee, tokenInfo?.precision);
+  const result = new FPNumber(partialFee, tokenBalance?.precision);
 
   return result.toNumber();
 }
@@ -413,40 +412,6 @@ export async function doSignAndSend({
   });
 }
 
-interface CreateTransferExtrinsicProps {
-  apiProp: ApiProps;
-  networkKey: string;
-  to: string;
-  from: string;
-  value: string;
-  transferAll: boolean;
-  tokenInfo: TokenBalance;
-}
-
-export const createTransferExtrinsic = async ({
-  apiProp,
-  from,
-  networkKey,
-  to,
-  tokenInfo,
-  transferAll,
-  value,
-}: CreateTransferExtrinsicProps): Promise<SubmittableExtrinsic | null> => {
-  const api = apiProp.api!;
-
-  // const isMainToken = checkMainToken(networkKey, tokenInfo.id);
-  const transfer = createExtrinsicTransfer({
-    amount: value,
-    api,
-    asset: tokenInfo.name,
-    networkProps: tokenInfo,
-    to,
-    networkKey,
-  });
-
-  return transfer;
-};
-
 export interface MakeTransferProps {
   networkKey: string;
   to: string;
@@ -466,7 +431,6 @@ export async function makeTransfer({
   networkKey,
   to,
   tokenInfo,
-  transferAll,
   value,
 }: MakeTransferProps): Promise<void> {
   const txState: BasicTxResponse = {};
@@ -474,16 +438,15 @@ export async function makeTransfer({
   const transferAmount = value;
 
   const tokenBalance = state.balanceMap[from].find(
-    (balance) => balance.name === tokenInfo.name && balance.relayChain === tokenInfo.relayChain
+    ({ name, relayChain }) => name === tokenInfo.name && relayChain === tokenInfo.relayChain
   )!;
-  const extrinsic = await createTransferExtrinsic({
-    transferAll: transferAll,
-    value: value,
-    from: from,
-    networkKey: networkKey,
-    tokenInfo: tokenBalance,
-    to: to,
-    apiProp: apiProps,
+
+  const extrinsic = createExtrinsicTransfer({
+    amount: value,
+    api: apiProps.api!,
+    tokenBalance,
+    to,
+    networkKey,
   });
 
   const updateResponseTxResult = (response: BasicTxResponse, records: EventRecord[]) => {

@@ -34,14 +34,12 @@ import { Getter, Mutation } from 'vuex-class';
 import WalletInfo from './WalletInfo.vue';
 import type { SelectedWallet } from '@/store';
 import type { Currencies, TMutation, CustomEvent } from '@/interfaces';
-import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { Components } from '@/router/routes';
-import { addNumbers, getChangeWalletBalance } from '@/helpers/numbers';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
-import { saveCurrentAccountAddress, updateCurrentAccountAddress } from '@/extension/messaging';
+import { updateCurrentAccountAddress } from '@/extension/messaging';
 import { CurrentAccountInfo } from '@/extension/background/extension-base/src/stores/CurrentAccountStore';
 
 @Component({
@@ -59,7 +57,7 @@ export default class SelectWalletPopup extends Vue {
     this.$router.push({ name: Components.Welcome });
   }
 
-  isMobile(address: string) {
+  isMobile() {
     return this.selectedWallet.isMobile ?? false;
   }
 

@@ -10,9 +10,8 @@ type ExtrinsicTransferProps = {
   api: ApiPromise;
   to: string;
   amount: string | undefined;
-  asset: string;
   networkKey: string;
-  networkProps: TokenBalance;
+  tokenBalance: TokenBalance;
 };
 
 export function getAssetOptions(symbol: string, type: TypeAsset, assetId: string) {
@@ -46,11 +45,10 @@ export function getPrecisionValue(
 export function createExtrinsicTransfer(
   props: ExtrinsicTransferProps
 ): SubmittableExtrinsic<'promise', ISubmittableResult> | null {
-  const { amount, api, asset, networkProps, to, networkKey } = props;
-  const { precision, assetId: id } = networkProps;
-  const type =
-    (networkProps.balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())!.type as TypeAsset) ?? '';
-  const ormlOptions = getAssetOptions(asset, type, id);
+  const { amount, api, tokenBalance, to, networkKey } = props;
+  const { precision, assetId: id, balances, name } = tokenBalance;
+  const type = (balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())!.type as TypeAsset) ?? '';
+  const ormlOptions = getAssetOptions(name, type, id);
   const precisionAmount = getPrecisionValue(amount, precision) as string;
 
   try {

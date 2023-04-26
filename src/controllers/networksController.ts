@@ -72,10 +72,6 @@ export class NetworksController {
     // await store.dispatch(NetworksActionTypes.CONNECT_TO_NODES);
   }
 
-  public static async fetchFiats(): Promise<void> {
-    await store.dispatch(NetworksActionTypes.FETCH_FIATS);
-  }
-
   public static async fetchHistory(
     networkName: string,
     wallet: Wallet,

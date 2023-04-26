@@ -226,11 +226,12 @@ export default class CreateGoogle extends Vue {
   async watchStep() {
     if (this.step === 5) {
       this.isLoading = false;
+
       const address = await this.saveKeypairFromSeed();
 
-      this.backupWallet(address);
-
       this.isLoading = true;
+
+      this.backupWallet(address);
     }
   }
 

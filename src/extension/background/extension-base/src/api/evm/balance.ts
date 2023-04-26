@@ -55,7 +55,7 @@ function subscribeERC20Interval(
           key: name,
           symbol,
           reserved: '0',
-          feeFrozen: '0',
+          frozen: '0',
           free: free.toString(),
         });
       } catch (err) {
@@ -95,7 +95,7 @@ export function subscribeEVMBalance(
     free: '0',
     reserved: '0',
     miscFrozen: '0',
-    feeFrozen: '0',
+    frozen: '0',
   } as BalanceItem;
 
   function getBalance() {

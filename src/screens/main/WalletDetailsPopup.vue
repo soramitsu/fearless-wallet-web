@@ -30,8 +30,7 @@ import type { TMutation } from '@/interfaces/common';
 import { Components } from '@/router/routes';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-
-import { forgetAccount, initGoogleAuth, updateCurrentAccountAddress } from '@/extension/messaging';
+import { forgetAccount, initGoogleAuth } from '@/extension/messaging';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 
 @Component

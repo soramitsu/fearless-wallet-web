@@ -13,14 +13,11 @@ import { getEVMBalance } from '../evm/balance';
 import EthProvider from '../evm/ethProvider';
 import { APIItemState, BalanceItem } from '../evm/types/ether';
 import { getERC20Contract } from '../evm/utils/eth';
-import { categoryAddresses } from '../../utils/utils';
-import { ORML_PALLETS_TYPES } from '../../const/networks';
 import { getRegistry, getTokenInfo } from './registry';
 import { getAssetOptions } from './utils';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
-import { AssetJson, RelayChainName, TypeAsset } from '@/interfaces';
+import { AssetJson, RelayChainName } from '@/interfaces';
 import { formatBalance } from '@/util/balances';
-import { MAIN_NETWORKS } from '@/consts/networks';
 
 function subscribeERC20Interval(
   addresses: string[],
@@ -53,7 +50,7 @@ function subscribeERC20Interval(
           key: networkKey,
           symbol,
           reserved: '0',
-          feeFrozen: '0',
+          frozen: '0',
           free: free.toString(),
           chain: networkKey,
         });
@@ -94,7 +91,7 @@ export function subscribeEVMBalance(
     free: '0',
     reserved: '0',
     miscFrozen: '0',
-    feeFrozen: '0',
+    frozen: '0',
   } as BalanceItem;
 
   function getBalance() {
@@ -180,20 +177,21 @@ async function subscribeTokensBalance(
   address: string,
   networkKey: string,
   api: ApiPromise,
-  setBalance: (rs: BalanceItem) => void
+  setBalance: (networkKey: string, rs: BalanceItem) => void
 ) {
-  const network = state.networkMap[networkKey];
-  const tokenList = network.assets.map(({ assetId, type, isNative, isUtility, purchaseProviders, staking }) => {
-    const searchedAsset = state.tokenMap.find((token) => token.id === assetId)! as AssetJson;
-    const relayChain = (Object.values(state.networkMap).find(({ chainId }) => chainId === network.parentId)?.name ??
-      network.name) as RelayChainName;
+  const { parentId, assets, name: networkName } = state.networkMap[networkKey];
+
+  const tokenList = assets.map(({ assetId, type, isNative, isUtility, purchaseProviders, staking }) => {
+    const searchedAsset = state.tokenMap.find(({ id }) => id === assetId)!;
+    const relayChain = (Object.values(state.networkMap).find(({ chainId }) => chainId === parentId)?.name ??
+      networkName) as RelayChainName;
 
     return {
       ...searchedAsset,
       purchaseProviders,
       staking,
       relayChain: relayChain,
-      type: type ?? ('native' as TypeAsset),
+      type: type ?? 'native',
       isNative,
       isUtility,
     };
@@ -202,7 +200,7 @@ async function subscribeTokensBalance(
   await api.isReadyOrError;
 
   const unsubList = await Promise.all(
-    tokenList.map(({ precision, symbol, id, type, isUtility, isNative, icon, relayChain, displayName }) => {
+    tokenList.map(({ precision, symbol, id, type, icon, relayChain, displayName }) => {
       try {
         const options = getAssetOptions(symbol, type, id);
 
@@ -218,18 +216,19 @@ async function subscribeTokensBalance(
             balances.data ? (balances as any).data : (balances as OrmlAccountData),
             precision
           );
+          const name = displayName ?? symbol;
 
-          setBalance({
+          setBalance(networkKey, {
             state: APIItemState.READY,
             chain: networkKey,
             key: networkKey,
             symbol,
             relayChain,
-            name: displayName ?? symbol,
+            name,
             icon,
             reserved,
             locked,
-            feeFrozen: frozen,
+            frozen,
             transferable,
             total,
           });
@@ -257,12 +256,8 @@ export async function subscribeWithAccount(
   address: string,
   networkKey: string,
   networkAPI: ApiProps,
-  web3ApiMap: Record<string, EthProvider>,
-  callback: (networkKey: string, rs: BalanceItem) => void
+  setBalance: (networkKey: string, rs: BalanceItem) => void
 ) {
-  //move elsewhere
-  const setBalance = (item: BalanceItem) => callback(networkKey, item);
-
   let unsub: () => void;
 
   try {
@@ -280,16 +275,18 @@ export function subscribeBalance(
   address: string,
   dotSamaApiMap: Record<string, ApiProps>,
   web3ApiMap: Record<string, EthProvider>,
-  callback: (networkKey: string, rs: BalanceItem) => void
+  setBalance: (networkKey: string, rs: BalanceItem) => void
 ) {
+  state.generateDefaultBalance(address);
+
   const unsubList = Object.entries(dotSamaApiMap).map(async ([networkKey, apiProps]) => {
     await apiProps.api?.isReadyOrError;
 
     if (['ethereum', 'ethereum_goerli'].includes(networkKey)) {
-      return subscribeEVMBalance(networkKey, apiProps.api!, [address], web3ApiMap, callback); // todo [address] -> address
+      return subscribeEVMBalance(networkKey, apiProps.api!, [address], web3ApiMap, setBalance); // todo [address] -> address
     }
 
-    return subscribeWithAccount(address, networkKey, apiProps, web3ApiMap, callback);
+    return subscribeWithAccount(address, networkKey, apiProps, setBalance);
   });
 
   return () => {

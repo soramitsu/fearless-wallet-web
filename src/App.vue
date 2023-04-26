@@ -31,7 +31,7 @@ import {
   subscribeNetworkMap,
   subscribePrice,
 } from '@/extension/messaging';
-import store from '@/store';
+import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 
 @Component
 export default class App extends Vue {
@@ -44,8 +44,10 @@ export default class App extends Vue {
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<SetAccountsProps>;
   @Mutation(NetworksMutationTypes.SET_ASSETS_PRICE) setPrices!: TMutation<SetAssetsPriceProps>;
   @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<boolean>;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_FIAT) setSelectedFiat!: TMutation<string>;
+  @Mutation(AccountsMutationTypes.SET_BALANCE) setBalance!: TMutation<BalanceJson>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
-  @Action(AccountsActionTypes.SET_SELECTED_FIAT) setSelectedFiat!: TAction<string>;
+  @Action(NetworksActionTypes.FETCH_FIATS) fetchFiats!: TAction<void>;
 
   get includeKeepAlive() {
     const components = ['Main'];
@@ -58,8 +60,7 @@ export default class App extends Vue {
   async created() {
     if (BaseApi.isExtension()) this.extensionSubscribe();
 
-    await NetworksController.fetchFiats();
-    await this.setupWallet();
+    await Promise.all([this.fetchFiats(), this.setupWallet()]);
 
     this.setupSWPing();
     this.setupPrice();
@@ -86,20 +87,17 @@ export default class App extends Vue {
 
   async setupBalance() {
     const balance = await getBalance();
-    this.updateBalance(balance);
+
+    this.setBalance(balance);
 
     subscribeBalance((balances) => {
-      this.updateBalance(balances);
+      this.setBalance(balances);
     }).catch(console.error);
-  }
-
-  updateBalance(balanceData: BalanceJson): void {
-    console.info(balanceData, 'balances');
-    store.dispatch('SET_BALANCE', balanceData);
   }
 
   async setupNetworks() {
     const nets = await getNetworkMap();
+
     this.setNetworks({ networks: Object.values(nets) });
 
     subscribeNetworkMap((networks) => {
@@ -122,19 +120,16 @@ export default class App extends Vue {
   }
 
   async setupWallet() {
-    let isFirstTime = true;
     await subscribeAccounts((accounts) => {
-      console.info(accounts, 'accounts');
-      const isAccountsExists = accounts.length === 0;
-      const selectedAccount = isAccountsExists ? undefined : accounts.find((el) => el.active);
+      console.info('accounts', accounts);
+
+      const isAccountsNotExists = accounts.length === 0;
+      const selectedAccount = isAccountsNotExists ? undefined : accounts.find((el) => el.active);
 
       this.setSelectedWallet(selectedAccount);
       this.setAccounts({ accounts });
 
-      if (isAccountsExists && isFirstTime) {
-        isFirstTime = false;
-        this.$router.push(Components.Wallet);
-      }
+      if (isAccountsNotExists) this.$router.push(Components.Welcome);
     });
   }
 

@@ -128,6 +128,7 @@
       v-if="showBalanceDetailsPopup"
       :network="selectedNetwork"
       :currency="currentCurrency"
+      :assetPrice="assetPrice"
       :closePopup="toggleBalanceDetailsPopup"
     />
 
@@ -159,8 +160,7 @@ import { ALL_NETWORKS, ETHEREUM_NETWORKS } from '@/consts/networks';
 import { firstCharToUp, isSora } from '@/helpers/common';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
-import { getTotalBalance, getTotalCountAssets } from '@/helpers/currencies';
-import { AssetPrice } from '@/interfaces';
+import { getTotalCountAssets } from '@/helpers/currencies';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup' | 'showSwapForm';
 
@@ -191,6 +191,7 @@ export default class Asset extends Vue {
   showSelectNetworkPopup = false;
   showBalanceDetailsPopup = false;
   filterValue = '';
+
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
@@ -248,7 +249,7 @@ export default class Asset extends Vue {
     return this.currentCurrency.name.toUpperCase();
   }
 
-  get assetPrice(): AssetPrice {
+  get assetPrice() {
     return this.getAssetPrice(this.currentCurrency.priceId ?? '');
   }
 
@@ -261,12 +262,21 @@ export default class Asset extends Vue {
     return `${this.selectedAssetUpper} ${total}`;
   }
 
+  get transferableAssetBalance() {
+    return this.currentCurrency!.balances.reduce((result, { transferable }) => {
+      if (transferable) return result + +transferable;
+      else return result;
+    }, 0);
+  }
+
+  get transferableFiatBalance() {
+    return this.transferableAssetBalance * this.assetPrice.price;
+  }
+
   get transferableFiatBalanceInNetworkString() {
     if (!this.currentCurrency) return `${this.fiatSymbol} 0`;
 
-    const total = +getTotalBalance(this.currentCurrency, this.selectedNetwork);
-
-    return `${this.fiatSymbol} ${this.$n(total, 'price')}`;
+    return `${this.fiatSymbol} ${this.$n(this.transferableFiatBalance, 'price')}`;
   }
 
   get optionsNetworks() {

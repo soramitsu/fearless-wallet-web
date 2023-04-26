@@ -9,8 +9,6 @@ export interface CurrentAccountInfo {
   ethereumAddress: string;
   name: string;
   isMobile: boolean;
-  currentGenesisHash: string | null;
-  allGenesisHash?: string;
 }
 
 export default class CurrentAccountStore extends SubscribableStore<CurrentAccountInfo | undefined> {

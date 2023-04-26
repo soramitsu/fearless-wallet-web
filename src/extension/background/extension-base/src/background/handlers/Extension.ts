@@ -31,7 +31,6 @@ import {
   RequestTransfer,
   ResponseCheckSwap,
   ResponseCheckTransfer,
-  ResponseCreateAccountSuri,
   ResponseMakeSwap,
   TransferErrorCode,
 } from '../types/types';
@@ -42,7 +41,6 @@ import {
   RequestTransactionHistoryGet,
   TransactionHistoryItemType,
 } from '../../types';
-import { ALL_GENESIS_HASH } from '../../const';
 import { fetchHistory } from '../../api/evm/history';
 import { NetworkJson } from '../../api/evm/types/ether';
 import {
@@ -119,7 +117,6 @@ import {
   IGetFilesResponse,
   VerifyTokenResponse,
 } from '@/interfaces';
-import { getMetaTyped } from '@/helpers/common';
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
 const ETH_DERIVE_DEFAULT = "/m/44'/60'/0'/0/0";
@@ -133,6 +130,8 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
 }
 
 async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
+  if (Object.keys(accounts).length === 0) return [];
+
   const currentAccount = await new Promise<CurrentAccountInfo | undefined>((res) => {
     state.getCurrentAccount((value) => {
       res(value);
@@ -144,6 +143,7 @@ async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> 
     .filter((el) => !isEthereumAddress(el.json.address))
     .map(({ json: { address, meta }, type }): AccountJson => {
       const isDefault = address === currentAccount?.address;
+
       if (isDefault) isAccountDefaultSetup = true;
 
       return {
@@ -184,9 +184,11 @@ export default class Extension extends FWExtensionBase {
     const { pair } = keyring.addUri(suri, password, meta, type);
     const { address } = pair;
 
-    this.updateCurrentAccountAddress(address);
+    if (!isEthereumAddress(address)) {
+      state.generateDefaultBalance(address);
 
-    state.generateDefaultBalance(address);
+      this.updateCurrentAccountAddress(address);
+    }
 
     return address;
   }
@@ -213,11 +215,13 @@ export default class Extension extends FWExtensionBase {
       const newDefaultAuthAccounts = this.state.defaultAuthAccountSelection.filter(
         (defaultSelectionAddress) => defaultSelectionAddress !== address
       );
+
       this.state.updateDefaultAuthAccounts(newDefaultAuthAccounts);
     }
 
     if (type === 'native') {
       const pair = keyring.getAccount(address);
+
       const ethereumAddress = pair?.meta.ethereumAddress as string;
 
       if (ethereumAddress !== '') keyring.forgetAccount(ethereumAddress);
@@ -235,18 +239,9 @@ export default class Extension extends FWExtensionBase {
     const shouldUpdate = !accounts.some((el) => el.address === currentAcc?.address);
 
     if (shouldUpdate) {
-      const account = accounts.find((el) => !isEthereumAddress(el.address));
-      const currentAccount = account
-        ? {
-            address,
-            name: account.meta.name as string,
-            ethereumAddress: account.meta.ethereumAddress as string,
-            currentGenesisHash: account.meta.genesisHash ?? null,
-            isMobile: (account.meta.isMobile as boolean) ?? false,
-          }
-        : undefined;
+      const account = accounts.find((el) => !isEthereumAddress(el.address))!;
 
-      this.updateCurrentAccountAddress(currentAccount ? currentAccount.address : '');
+      this.updateCurrentAccountAddress(account ? account.address : '');
     }
 
     return true;
@@ -265,7 +260,7 @@ export default class Extension extends FWExtensionBase {
   accountsSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(accounts.subscribe)'>(id, port);
     const subscription = accountsObservable.subject.subscribe((accounts: SubjectInfo): void => {
-      if (Object.values(accounts).length % 2 === 0) transformAccounts(accounts).then(cb);
+      if (Object.keys(accounts).length % 2 === 0) transformAccounts(accounts).then(cb);
     });
 
     port.onDisconnect.addListener((): void => {
@@ -436,15 +431,21 @@ export default class Extension extends FWExtensionBase {
   }
 
   private _saveCurrentAccountAddress(address: string, callback?: (data: CurrentAccountInfo | undefined) => void) {
-    const currentKeyPair = keyring.getAccount(address);
+    if (address === '') {
+      this.state.setCurrentAccount(undefined);
+
+      return;
+    }
+
+    const {
+      meta: { isMobile, name, ethereumAddress },
+    } = keyring.getAccount(address)!;
 
     const accountInfo: CurrentAccountInfo = {
       address,
-      isMobile: (currentKeyPair?.meta.isMobile as boolean) ?? false,
-      name: currentKeyPair?.meta.name as string,
-      ethereumAddress: (currentKeyPair?.meta.ethereumAddress as string) ?? '',
-      currentGenesisHash: ALL_GENESIS_HASH,
-      allGenesisHash: ALL_GENESIS_HASH || undefined,
+      isMobile: (isMobile as boolean) ?? false,
+      name: name as string,
+      ethereumAddress: (ethereumAddress as string) ?? '',
     };
 
     this.state.setCurrentAccount(accountInfo, () => {

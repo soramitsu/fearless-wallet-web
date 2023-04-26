@@ -4,8 +4,9 @@
 import { EventRecord } from '@polkadot/types/interfaces';
 import { BasicTxResponse } from '../../../background/types/types';
 import { signAndSendExtrinsic } from '../shared/signAndSendExtrinsic';
-import { createTransferExtrinsic, updateTransferResponseTxResult } from '../transfer';
+import { updateTransferResponseTxResult } from '../transfer';
 import { state } from '../../../background/handlers';
+import { createExtrinsicTransfer } from '../utils';
 import { ExternalProps } from './shared';
 import { AssetJson } from '@/interfaces';
 
@@ -27,31 +28,21 @@ export const makeTransferExternal = async ({
   setState,
   signerType,
   tokenInfo,
-  transferAll,
   updateState,
   value,
 }: MakeTransferExternalProps): Promise<void> => {
   const networkKey = network.key;
   const txState: BasicTxResponse = {};
   const name = tokenInfo.displayName ?? tokenInfo.symbol;
-
   const tokenBalance = state.getAssetBalance(senderAddress, name, tokenInfo.relayChain);
   const transferAmount = value;
-  const extrinsic = await createTransferExtrinsic({
-    apiProp: apiProps,
-    from: senderAddress,
+  const extrinsic = createExtrinsicTransfer({
+    api: apiProps.api!,
     networkKey: networkKey,
     to: recipientAddress,
-    tokenInfo: tokenBalance,
-    transferAll: transferAll,
-    value: value,
+    tokenBalance,
+    amount: value,
   });
-
-  // if (!extrinsic) {
-  //   callback(getUnsupportedResponse());
-
-  //   return;
-  // }
 
   const updateResponseTxResult = (response: BasicTxResponse, records: EventRecord[]) => {
     updateTransferResponseTxResult(networkKey, tokenInfo, response, records, transferAmount);

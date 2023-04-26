@@ -10,7 +10,7 @@
     <div class="descriptions-column">
       <div class="row first-row">
         <div>
-          {{ getMainNetwork }}
+          {{ mainNetwork }}
         </div>
 
         <template>
@@ -48,7 +48,7 @@
         <Shimmer v-if="showShimmers" height="14px" width="70px" />
 
         <div v-else-if="!showWarning" class="total-balance overflow">
-          {{ totalFiatBalanceValue }}
+          {{ transferableFiatBalanceValue }}
         </div>
       </div>
     </div>
@@ -66,9 +66,7 @@
           class="button send"
           tooltipText="assets.sendButtonText"
           target=".send"
-          @click="
-            toggleVisibleActivityForm('showSendForm', true, { mainNetwork: getMainNetwork, assetId: assetData.name })
-          "
+          @click="toggleVisibleActivityForm('showSendForm', true, { mainNetwork, assetId: assetData.name })"
         />
 
         <CircleButton
@@ -77,9 +75,7 @@
           class="button receive"
           tooltipText="assets.receiveButtonText"
           target=".receive"
-          @click="
-            toggleVisibleActivityForm('showReceiveForm', true, { mainNetwork: getMainNetwork, assetId: assetData.name })
-          "
+          @click="toggleVisibleActivityForm('showReceiveForm', true, { mainNetwork, assetId: assetData.name })"
         />
 
         <CircleButton
@@ -119,7 +115,7 @@ export default class CurrencyItemStateLess extends Vue {
   @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: TMutation<string>;
   @Mutation(AccountsMutationTypes.DELETE_HIDDEN_ASSET) deleteHiddenAssets!: TMutation<string>;
 
-  get getMainNetwork() {
+  get mainNetwork() {
     return this.assetData.mainNetwork.toUpperCase();
   }
 
@@ -140,7 +136,7 @@ export default class CurrencyItemStateLess extends Vue {
   }
 
   get networkBadges() {
-    return this.assetData.balances.filter((el) => el.name.toLowerCase() !== this.getMainNetwork?.toLowerCase());
+    return this.assetData.balances.filter((el) => el.name.toLowerCase() !== this.mainNetwork?.toLowerCase());
   }
 
   get showShimmers() {
@@ -155,8 +151,8 @@ export default class CurrencyItemStateLess extends Vue {
     return `${this.fiatSymbol}${this.$n(this.tokenPrice.price, 'price')}`;
   }
 
-  get totalFiatBalanceValue() {
-    return `${this.fiatSymbol}${this.$n(this.totalFiatBalance, 'price')}`;
+  get transferableFiatBalanceValue() {
+    return `${this.fiatSymbol}${this.$n(this.transferableFiatBalance, 'price')}`;
   }
 
   get assetPriceChange() {
@@ -166,20 +162,18 @@ export default class CurrencyItemStateLess extends Vue {
   }
 
   get totalAssetBalanceValue() {
-    return this.$n(this.totalAssetBalance, 'decimal');
+    return this.$n(this.transferableAssetBalance, 'decimal');
   }
 
-  get totalAssetBalance() {
-    let total = 0;
-    this.assetData.balances.forEach((el) => {
-      if (el.total) total += +el.total;
-    });
-
-    return total;
+  get transferableAssetBalance() {
+    return this.assetData.balances.reduce((result, { transferable }) => {
+      if (transferable) return result + +transferable;
+      else return result;
+    }, 0);
   }
 
-  get totalFiatBalance() {
-    return this.totalAssetBalance * this.tokenPrice.price;
+  get transferableFiatBalance() {
+    return this.transferableAssetBalance * this.tokenPrice.price;
   }
 
   get changePriceClasses() {
@@ -200,8 +194,8 @@ export default class CurrencyItemStateLess extends Vue {
 
     return this.isCurrentNetwork
       ? this.selectedNetwork
-      : this.getMainNetwork !== undefined
-      ? this.getMainNetwork
+      : this.assetData.mainNetwork !== undefined
+      ? this.assetData.mainNetwork
       : network.name;
   }
 

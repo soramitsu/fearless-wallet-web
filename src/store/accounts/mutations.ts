@@ -17,7 +17,6 @@ export enum MutationTypes {
   SET_HIDDEN_ASSET = 'SET_HIDDEN_ASSET',
   DELETE_HIDDEN_ASSET = 'DELETE_HIDDEN_ASSET',
   DELETE_QR = 'DELETE_QR',
-
   HIDE_POLKASWAP_ALERT = 'HIDE_POLKASWAP_ALERT',
   HIDE_NETWORK_WARNING = 'HIDE_NETWORK_WARNING',
 }
@@ -128,6 +127,8 @@ const mutations: MutationTree<State> & Mutations = {
   },
 
   [MutationTypes.SET_BALANCE](state, payload) {
+    console.info('balances', payload);
+
     state.balances = payload.details;
   },
 

@@ -14,12 +14,13 @@
 </template>
 
 <script lang="ts">
-import { Getter, Action } from 'vuex-class';
+import { Getter, Mutation } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { FiatJson, TAction } from '@/interfaces/common';
-import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
+import type { FiatJson } from '@/interfaces/common';
+import type { TMutation } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 
 @Component
 export default class FiatsPopup extends Vue {
@@ -29,7 +30,7 @@ export default class FiatsPopup extends Vue {
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(NetworksGettersTypes.getFiats) fiats!: FiatJson[];
   @Getter(AccountsGettersTypes.getSelectedFiat) selectedFiat!: string;
-  @Action(AccountsActionTypes.SET_SELECTED_FIAT) setSelectedFiat!: TAction<string>;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_FIAT) setSelectedFiat!: TMutation<string>;
 
   get filteredOptionsFiats() {
     const filter = this.filterValue.trim().toLowerCase();

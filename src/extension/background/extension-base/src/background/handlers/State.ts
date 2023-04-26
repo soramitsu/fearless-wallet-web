@@ -427,19 +427,23 @@ export default class State {
     };
   }
 
-  public async onInstall() {
-    await this.getCurrentAccount((account) => {
+  public onInstall() {
+    this.getCurrentAccount((account) => {
       const accounts = this.getSubstrateAccounts();
 
       if (accounts.length && !account) {
-        const [{ address, meta }] = accounts;
+        const [
+          {
+            address,
+            meta: { name, ethereumAddress, isMobile },
+          },
+        ] = accounts;
 
         this.setCurrentAccount({
           address,
-          name: meta.name as string,
-          ethereumAddress: meta.ethereumAddress as string,
-          currentGenesisHash: null,
-          isMobile: meta.isMobile as boolean,
+          name: name as string,
+          ethereumAddress: ethereumAddress as string,
+          isMobile: isMobile as boolean,
         });
 
         return;
@@ -1048,33 +1052,35 @@ export default class State {
     this.getCurrentAccount((account) => {
       if (account) {
         const { address } = account;
-        const currencyIndex = this.balanceMap[address].findIndex(({ assetId: _assetId, name, relayChain }) => {
+
+        const tokenIndex = this.balanceMap[address].findIndex(({ assetId: _assetId, name, relayChain }) => {
           const isExistingAssetId = _assetId === item.id;
           const isExistingDisplayName = name === item.name;
           const isExistingAsset = isExistingDisplayName && relayChain === item.relayChain;
 
           return isExistingAssetId || isExistingAsset;
         });
-        const token = this.balanceMap[address][currencyIndex];
 
-        const index = token.balances.findIndex((el) => {
+        const token = this.balanceMap[address][tokenIndex];
+        const balanceIndex = token.balances.findIndex((el) => {
           const key = prepNetworkNames[el.name] ?? el.name;
 
           return key === item.chain;
         });
 
-        const balanceItem = this.balanceMap[address][currencyIndex].balances[index];
-        const { reserved, free, feeFrozen, total, transferable, state } = item;
+        const oldBalanceItem = this.balanceMap[address][tokenIndex].balances[balanceIndex];
+        const { reserved, free, frozen, total, transferable, state, locked } = item;
 
-        this.balanceMap[address][currencyIndex].balances[index] = {
-          ...balanceItem,
+        this.balanceMap[address][tokenIndex].balances[balanceIndex] = {
+          ...oldBalanceItem,
           reserved,
           free,
-          feeFrozen,
+          frozen,
           total,
           transferable,
+          locked,
           state,
-          timestamp: +new Date(),
+          timestamp: Date.now(),
         };
       }
     });
@@ -1120,30 +1126,18 @@ export default class State {
     return keyring.getAccounts().filter((el) => isEthereumAddress(el.address));
   }
 
-  get getEthereumNetworks() {
-    return this.networksJson.filter(({ name }) => isEthereumNetwork(name));
-  }
-
-  get getSubstrateNetworks() {
-    return this.networksJson.filter(({ name }) => !isEthereumNetwork(name));
-  }
-
   public generateDefaultBalance(address: string) {
     if (!address) return;
 
     if (this.balanceMap && this.balanceMap[address] !== undefined) return;
 
-    const isEthAddress = isEthereumAddress(address);
-
-    if (isEthAddress) this.balanceMap[address] = getMockCurrencies(this.getEthereumNetworks, this.tokenMap);
-    else this.balanceMap[address] = getMockCurrencies(this.getSubstrateNetworks, this.tokenMap);
+    this.balanceMap[address] = getMockCurrencies(this.networksJson, this.tokenMap);
 
     this.publishBalance();
   }
 
   public generateDefaultBalanceMap() {
     this.getSubstrateAccounts().forEach(({ address }) => this.generateDefaultBalance(address));
-    this.getEthereumAccounts().forEach(({ address }) => this.generateDefaultBalance(address));
   }
 
   public accountExportPrivateKey({
@@ -1166,7 +1160,14 @@ export default class State {
   public getBalance(reset?: boolean): Promise<BalanceJson> {
     return new Promise((resolve) => {
       this.getCurrentAccount((account) => {
-        if (account) resolve({ details: this.balanceMap[account.address], reset });
+        if (account) {
+          const { address } = account;
+
+          resolve({
+            details: this.balanceMap[address],
+            reset,
+          });
+        }
       });
     });
   }

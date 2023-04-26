@@ -302,7 +302,7 @@ export default class SwapForm extends Vue {
 
   get currencyXOR() {
     return this.balances.find(({ name }) => {
-      return name === SORA_UTILITY_ASSET && isSora(this.selectedNetwork ?? '');
+      return name === SORA_UTILITY_ASSET && isSora(this.selectedNetwork);
     })!;
   }
 

@@ -32,7 +32,7 @@ export interface BalanceItem {
   reserved?: string;
   locked?: string;
   miscFrozen?: string;
-  feeFrozen?: string;
+  frozen?: string;
   total?: string;
   transferable?: string;
   timestamp?: number;

@@ -1,7 +1,7 @@
 <template>
   <Popup headerText="assets.balanceDetails" :showBorder="true" :handlerClose="closePopup" sizeWidth="big">
     <div class="content">
-      <div v-for="{ name, value, fiat } in balances" :key="name" class="balance-row">
+      <div v-for="{ name, value, fiat } in detailsBalance" :key="name" class="balance-row">
         <div class="label">{{ name }}</div>
 
         <div class="count">
@@ -24,32 +24,38 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GetAssetPrice, SelectedWallet } from '@/store';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { AssetPrice } from '@/interfaces';
 
 @Component
 export default class BalanceDetailsPopup extends Vue {
   @Prop(String) network!: string;
   @Prop(Object) currency!: TokenBalance;
+  @Prop(Object) assetPrice!: AssetPrice;
   @Prop(Function) closePopup!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
 
+  get selectedNetwork() {
+    return this.$route.params.network;
+  }
+
   get assetNameUpper() {
     return this.currency.name.toUpperCase();
   }
 
-  get balances() {
-    const balances = this.currency.balances.filter((net) => {
-      if (net.total) return +net.total > 0;
+  get detailsBalance() {
+    const { transferable, total, reserved, locked, frozen } = this.currency.balances.find(
+      ({ name }) => name === this.selectedNetwork
+    )!;
 
-      return false;
-    });
-
-    return balances.map((el) => ({
-      name: el.name,
-      value: el.total,
-      fiat: this.fiatPrice,
-    }));
+    return [
+      { name: 'reserved', value: reserved, fiat: +reserved! * +this.assetPrice.price },
+      { name: 'locked', value: locked, fiat: +locked! * +this.assetPrice.price },
+      { name: 'frozen', value: frozen, fiat: +frozen! * +this.assetPrice.price },
+      { name: 'transferable', value: transferable, fiat: +transferable! * +this.assetPrice.price },
+      { name: 'total', value: total, fiat: +total! * +this.assetPrice.price },
+    ];
   }
 
   get showFiatValue() {

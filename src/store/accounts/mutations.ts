@@ -128,6 +128,8 @@ const mutations: MutationTree<State> & Mutations = {
   },
 
   [MutationTypes.SET_BALANCE](state, payload) {
+    console.info('balances', payload);
+
     state.balances = payload.details;
   },
 

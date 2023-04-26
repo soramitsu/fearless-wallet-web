@@ -1,4 +1,3 @@
-is
 <template>
   <div class="add-wallet">
     <div class="header">
@@ -455,17 +454,6 @@ export default class AddWallet extends Vue {
     }
 
     if (step === 5) {
-      // if (this.isReplaceAccountFlow) {
-      //   try {
-      //     this.replaceAccount();
-      //   } catch {
-      //     return;
-      //   }
-
-      //   this.$router.push({ name: Components.Accounts });
-
-      //   return;
-      // }
       this.isLoading = true;
 
       await this.saveKeypair();

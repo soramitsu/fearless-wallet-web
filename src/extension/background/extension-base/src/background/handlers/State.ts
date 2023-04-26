@@ -1054,37 +1054,38 @@ export default class State {
 
   public setBalanceItem(networkKey: string, item: BalanceItem) {
     this.getCurrentAccount((account) => {
-      if (account) {
-        const { address } = account;
-        const currencyIndex = this.balanceMap[address].findIndex(({ assetId: _assetId, name, relayChain }) => {
-          const isExistingAssetId = _assetId === item.id;
-          const isExistingDisplayName = name === item.name;
-          const isExistingAsset = isExistingDisplayName && relayChain === item.relayChain;
+      if (!account) return;
 
-          return isExistingAssetId || isExistingAsset;
-        });
-        const token = this.balanceMap[address][currencyIndex];
+      const { address } = account;
 
-        const index = token.balances.findIndex((el) => {
-          const key = prepNetworkNames[el.name] ?? el.name;
+      const currencyIndex = this.balanceMap[address].findIndex(({ assetId: _assetId, name, relayChain }) => {
+        const isExistingAssetId = _assetId === item.id;
+        const isExistingDisplayName = name === item.name;
+        const isExistingAsset = isExistingDisplayName && relayChain === item.relayChain;
 
-          return key === item.chain;
-        });
+        return isExistingAssetId || isExistingAsset;
+      });
+      const token = this.balanceMap[address][currencyIndex];
 
-        const balanceItem = this.balanceMap[address][currencyIndex].balances[index];
-        const { reserved, free, feeFrozen, total, transferable, state } = item;
+      const index = token.balances.findIndex((el) => {
+        const key = prepNetworkNames[el.name] ?? el.name;
 
-        this.balanceMap[address][currencyIndex].balances[index] = {
-          ...balanceItem,
-          reserved,
-          free,
-          feeFrozen,
-          total,
-          transferable,
-          state,
-          timestamp: +new Date(),
-        };
-      }
+        return key === item.chain;
+      });
+
+      const balanceItem = this.balanceMap[address][currencyIndex].balances[index];
+      const { reserved, free, feeFrozen, total, transferable, state } = item;
+
+      this.balanceMap[address][currencyIndex].balances[index] = {
+        ...balanceItem,
+        reserved,
+        free,
+        feeFrozen,
+        total,
+        transferable,
+        state,
+        timestamp: +new Date(),
+      };
     });
 
     this.updateBalanceStore(networkKey, item);
@@ -1174,16 +1175,16 @@ export default class State {
   public getBalance(reset?: boolean): Promise<BalanceJson> {
     return new Promise((resolve) => {
       this.getCurrentAccount((account) => {
-        if (account) resolve({ details: this.balanceMap[account.address], reset });
+        if (account) {
+          resolve({ details: this.balanceMap[account.address] ?? [], reset });
+        }
       });
     });
   }
 
   private lazyNext = (key: string, callback: () => void) => {
     if (this.lazyMap[key]) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      clearTimeout(this.lazyMap[key]);
+      clearTimeout(this.lazyMap[key] as number);
     }
 
     const lazy = setTimeout(() => {

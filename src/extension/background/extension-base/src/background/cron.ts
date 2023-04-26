@@ -12,8 +12,6 @@ import {
   CRON_REFRESH_PRICE_INTERVAL,
 } from '../const/intervals';
 import { NetworkJson, NETWORK_STATUS } from '../api/evm/types/ether';
-
-import { getTokenPrice } from '../utils/coingecko';
 import FWState from './handlers/State';
 import { FWSubscription } from './handlers/subscriptions';
 import { ServiceInfo } from './types/types';
@@ -75,6 +73,7 @@ export class FWCron {
 
   init = () => {
     this.state.getCurrentAccount((currentAccountInfo) => {
+      if (!this.state.isReady) return;
       if (!currentAccountInfo?.address) return;
 
       if (
@@ -92,9 +91,7 @@ export class FWCron {
 
     this.logger.log('Stating cron jobs');
     this.state.getCurrentAccount((currentAccountInfo) => {
-      if (!currentAccountInfo?.address) {
-        return;
-      }
+      if (!currentAccountInfo?.address) return;
 
       if (
         Object.keys(this.state.getSubstrateApiMap).length !== 0 ||
@@ -117,7 +114,13 @@ export class FWCron {
         if (this.checkNetworkAvailable(serviceInfo)) {
           // only add cron job if there's at least 1 active network
 
-          this.addCron('refreshPrice', this.state.refreshPrice, CRON_REFRESH_PRICE_INTERVAL);
+          this.addCron(
+            'refreshPrice',
+            () => {
+              this.state.refreshPrice();
+            },
+            CRON_REFRESH_PRICE_INTERVAL
+          );
           this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
           this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
         }
@@ -128,9 +131,7 @@ export class FWCron {
   };
 
   stop = () => {
-    if (this.status === 'stopped') {
-      return;
-    }
+    if (this.status === 'stopped') return;
 
     if (this.serviceSubscription) {
       this.serviceSubscription.unsubscribe();
@@ -146,12 +147,6 @@ export class FWCron {
   recoverApiMap = () => {
     const apiMap = this.state.getApiMap;
 
-    for (const apiProp of Object.values(apiMap.substrate)) {
-      // if (!apiProp.isApiConnected) {
-      //   apiProp.recoverConnect && apiProp.recoverConnect();
-      // }
-    }
-
     for (const [key, evm] of Object.entries(apiMap.evm)) {
       evm.provider._ready().catch(() => {
         this.state.refreshWeb3Api(key);
@@ -161,8 +156,8 @@ export class FWCron {
     this.state.getCurrentAccount((account) => {
       if (!account) return;
       const { address } = account;
-      this.subscriptions?.subscribeBalances &&
-        this.subscriptions.subscribeBalances(address, this.state.getSubstrateApiMap, this.state.getEvmApiMap);
+
+      this.subscriptions.subscribeBalances(address, this.state.getSubstrateApiMap, this.state.getEvmApiMap);
     });
   };
 
@@ -171,72 +166,37 @@ export class FWCron {
     const networkMap = this.state.getNetworkMap;
 
     for (const [key, apiProp] of Object.entries(apiMap.substrate)) {
-      if (apiProp.isEthereumOnly) {
-        continue;
-      }
+      if (apiProp.isEthereumOnly) continue;
 
       let status: NETWORK_STATUS = NETWORK_STATUS.CONNECTING;
 
-      if (apiProp.isApiConnected) {
-        status = NETWORK_STATUS.CONNECTED;
-      }
+      if (apiProp.isApiConnected) status = NETWORK_STATUS.CONNECTED;
 
-      if (!networkMap[key].apiStatus) {
-        this.state.updateNetworkStatus(key, status);
-      } else if (networkMap[key].apiStatus && networkMap[key].apiStatus !== status) {
+      if (!networkMap[key].apiStatus) this.state.updateNetworkStatus(key, status);
+      else if (networkMap[key].apiStatus && networkMap[key].apiStatus !== status) {
         this.state.updateNetworkStatus(key, status);
       }
     }
 
     for (const [key, evm] of Object.entries(apiMap.evm)) {
+      const apiStatus = networkMap[key].apiStatus;
+
       evm.provider.ready
         .then(() => {
-          if (!networkMap[key].apiStatus) {
-            this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
-          } else if (networkMap[key].apiStatus && networkMap[key].apiStatus !== NETWORK_STATUS.CONNECTED) {
+          if (!apiStatus) this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
+          else if (apiStatus !== NETWORK_STATUS.CONNECTED) {
             this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
           }
         })
         .catch(() => {
-          if (!networkMap[key].apiStatus) {
+          if (!apiStatus) {
             this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING);
-          } else if (networkMap[key].apiStatus && networkMap[key].apiStatus !== NETWORK_STATUS.CONNECTING) {
+          } else if (apiStatus !== NETWORK_STATUS.CONNECTING) {
             this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING);
           }
         });
     }
   };
-
-  // refreshHistory = (address: string, networkMap: Record<string, NetworkJson>) => {
-  //   return () => {
-  //     this.logger.log('Refresh History state');
-  //     fetchDotSamaHistory(address, networkMap, (network, historyMap) => {
-  //       this.logger.log(`[${network}] historyMap: `, historyMap);
-  //       this.state.setHistory(address, network, historyMap);
-  //     });
-  //   };
-  // };
-
-  // refreshHistory2 = (currentAddress: string) => {
-  //   return () => {
-  //     const addresses = currentAddress !== undefined ? [currentAddress] : Object.values(this.state.getAllAddresses());
-
-  //     this.logger.log('Refresh History state');
-  //     fetchMultiChainHistories(addresses)
-  //       .then((historiesMap) => {
-  //         Object.entries(historiesMap).forEach(([address, data]) => {
-  //           data.forEach((item) => {
-  //             this.state.setHistory(address, item.networkKey, item);
-  //           });
-  //         });
-  //       })
-  //       .catch((err) => this.logger.warn(err));
-  //   };
-  // };
-
-  // resetHistory = (address: string): Promise<void> => {
-  //   return this.state.resetHistoryMap(address).catch((err) => this.logger.warn(err));
-  // };
 
   checkNetworkAvailable = (serviceInfo: ServiceInfo): boolean => {
     return Object.keys(serviceInfo.apiMap.substrate).length > 0 || Object.keys(serviceInfo.apiMap.evm).length > 0;

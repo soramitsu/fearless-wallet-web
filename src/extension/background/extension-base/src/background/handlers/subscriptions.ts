@@ -53,12 +53,12 @@ export class FWSubscription {
   start() {
     this.logger.log('Starting subscription');
 
-    // this.state.getCurrentAccount((currentAccountInfo) => {
-    //   if (currentAccountInfo) {
-    //     const { address } = currentAccountInfo;
-    //     this.subscribeBalances(address, this.state.getSubstrateApiMap, this.state.getEvmApiMap);
-    //   }
-    // });
+    this.state.getCurrentAccount((currentAccountInfo) => {
+      if (currentAccountInfo) {
+        const { address } = currentAccountInfo;
+        this.subscribeBalances(address, this.state.getSubstrateApiMap, this.state.getEvmApiMap);
+      }
+    });
 
     !this.serviceSubscription &&
       (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
@@ -110,7 +110,7 @@ export class FWSubscription {
     web3ApiMap: Record<string, EthProvider>,
     onlyRunOnFirstTime?: boolean
   ) {
-    this.logger.log('Start balance sub');
+    this.logger.log('Start balance sub for:', address);
     this.state
       .switchAccount()
       .then(() => {

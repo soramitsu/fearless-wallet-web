@@ -202,7 +202,7 @@ async function subscribeTokensBalance(
   await api.isReadyOrError;
 
   const unsubList = await Promise.all(
-    tokenList.map(({ precision, symbol, id, type, isUtility, isNative, icon, relayChain, displayName }) => {
+    tokenList.map(({ precision, symbol, id, type, icon, relayChain, displayName }) => {
       try {
         const options = getAssetOptions(symbol, type, id);
 
@@ -214,10 +214,14 @@ async function subscribeTokensBalance(
         else pallet = query.tokens.accounts(address, options);
 
         const onBalanceFetch = (balances: any) => {
-          const { frozen, locked, reserved, total, transferable } = formatBalance(
-            balances.data ? (balances as any).data : (balances as OrmlAccountData),
-            precision
-          );
+          const {
+            frozen: feeFrozen,
+            locked,
+            reserved,
+            total,
+            transferable,
+          } = formatBalance(balances.data ? (balances as any).data : (balances as OrmlAccountData), precision);
+          const name = displayName ?? symbol;
 
           setBalance({
             state: APIItemState.READY,
@@ -225,11 +229,11 @@ async function subscribeTokensBalance(
             key: networkKey,
             symbol,
             relayChain,
-            name: displayName ?? symbol,
+            name,
             icon,
             reserved,
             locked,
-            feeFrozen: frozen,
+            feeFrozen,
             transferable,
             total,
           });
@@ -282,6 +286,8 @@ export function subscribeBalance(
   web3ApiMap: Record<string, EthProvider>,
   callback: (networkKey: string, rs: BalanceItem) => void
 ) {
+  state.generateDefaultBalance(address);
+
   const unsubList = Object.entries(dotSamaApiMap).map(async ([networkKey, apiProps]) => {
     await apiProps.api?.isReadyOrError;
 

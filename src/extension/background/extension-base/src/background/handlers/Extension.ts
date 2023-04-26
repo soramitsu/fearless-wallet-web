@@ -402,9 +402,16 @@ export default class Extension extends FWExtensionBase {
     if (isPasswordValidated) {
       return new Promise((resolve, reject) => {
         try {
-          this._saveCurrentAccountAddress(address, () => {
-            const pair = keyring.restoreAccount(file, password);
+          const pair = keyring.restoreAccount(file, password);
 
+          if (isEthereumAddress(pair.address)) {
+            resolve(address);
+
+            return;
+          }
+
+          this._saveCurrentAccountAddress(address, () => {
+            this.updateCurrentAccountAddress(pair.address);
             resolve(pair.address);
           });
         } catch (error) {
@@ -461,8 +468,11 @@ export default class Extension extends FWExtensionBase {
   }
 
   private updateCurrentAccountAddress(address: string): boolean {
+    if (isEthereumAddress(address)) return true;
+
     this._saveCurrentAccountAddress(address, () => {
       this.triggerAccountsSubscription();
+      this.state.generateDefaultBalance(address);
       this.state.publishBalance();
     });
 

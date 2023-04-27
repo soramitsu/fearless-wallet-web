@@ -9,18 +9,7 @@
       :disabled="disabledSelect"
     />
 
-    <Input
-      v-if="notJsonImport"
-      v-model="inputValue"
-      type="textarea"
-      class="row"
-      size="big"
-      :placeholder="placeholderTypeImportValue"
-      :maxlength="130"
-      :height="170"
-    />
-
-    <template v-else>
+    <template v-if="isJsonImport">
       <div class="row">
         <Input
           v-model="inputValue"
@@ -34,6 +23,17 @@
         <Input v-model="syncedPasswordJson" size="big" placeholder="common.password" class="row" :showPassword="true" />
       </div>
     </template>
+
+    <Input
+      v-else
+      v-model="inputValue"
+      type="textarea"
+      class="row"
+      size="big"
+      :placeholder="placeholderTypeImportValue"
+      :maxlength="130"
+      :height="170"
+    />
 
     <slot v-if="showSlot"></slot>
   </div>
@@ -59,8 +59,6 @@ export default class ImportWallet extends Vue {
   @Prop(String) ethereumJson!: string;
   @Prop(Number) step!: number;
   @Prop(Boolean) isOnlyEthereumAccountFlow!: boolean;
-  @Prop(Boolean) isReplaceAccountFlow!: boolean;
-  @Prop(Boolean) isEthereumReplacedNetwork!: boolean;
   @PropSync('passwordJson', { type: String }) syncedPasswordJson!: string;
 
   get inputValue() {
@@ -75,10 +73,6 @@ export default class ImportWallet extends Vue {
     if (this.typeImport === 'mnemonic') return 'mnemonic';
 
     if (this.typeImport === 'rawSeed') {
-      if (this.isReplaceAccountFlow) {
-        return this.isEthereumReplacedNetwork ? 'ethereumRawSeed' : 'substrateRawSeed';
-      }
-
       if (this.isOnlyEthereumAccountFlow) {
         return 'ethereumRawSeed';
       }
@@ -87,10 +81,6 @@ export default class ImportWallet extends Vue {
     }
 
     // typeImport === 'json'
-    if (this.isReplaceAccountFlow) {
-      return this.isEthereumReplacedNetwork ? 'ethereumJson' : 'substrateJson';
-    }
-
     if (this.isOnlyEthereumAccountFlow) {
       return 'ethereumJson';
     }
@@ -107,17 +97,11 @@ export default class ImportWallet extends Vue {
   }
 
   get showSlot() {
-    return this.isReplaceAccountFlow ? this.typeImport === 'mnemonic' : this.notJsonImport && this.step === 1;
+    return this.typeImport === 'mnemonic' || (this.typeImport === 'rawSeed' && this.step === 1);
   }
 
   get placeholderTypeImportValue() {
     if (this.typeImport === 'rawSeed') {
-      if (this.isReplaceAccountFlow) {
-        const type = this.isEthereumReplacedNetwork ? 'ETH' : 'Substrate';
-
-        return this.t('rawSeed', { type });
-      }
-
       if (this.isOnlyEthereumAccountFlow) {
         return this.t('rawSeed', { type: 'ETH' });
       }

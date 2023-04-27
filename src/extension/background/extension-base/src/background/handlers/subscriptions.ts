@@ -55,8 +55,9 @@ export class FWSubscription {
 
     this.state.getCurrentAccount((currentAccountInfo) => {
       if (currentAccountInfo) {
-        const { address } = currentAccountInfo;
-        this.subscribeBalances(address, this.state.getSubstrateApiMap, this.state.getEvmApiMap);
+        const { address, ethereumAddress } = currentAccountInfo;
+
+        this.subscribeBalances(address, ethereumAddress, this.state.getSubstrateApiMap, this.state.getEvmApiMap);
       }
     });
 
@@ -65,9 +66,9 @@ export class FWSubscription {
         next: (serviceInfo) => {
           if (!serviceInfo.currentAccountInfo?.address || serviceInfo.currentAccountInfo === undefined) return;
 
-          const { address } = serviceInfo.currentAccountInfo;
+          const { address, ethereumAddress } = serviceInfo.currentAccountInfo;
 
-          this.subscribeBalances(address, serviceInfo.apiMap.substrate, serviceInfo.apiMap.evm);
+          this.subscribeBalances(address, ethereumAddress, serviceInfo.apiMap.substrate, serviceInfo.apiMap.evm);
         },
       }));
   }
@@ -106,6 +107,7 @@ export class FWSubscription {
 
   subscribeBalances(
     address: string,
+    ethereumAddress: string,
     dotSamaApiMap: Record<string, ApiProps>,
     web3ApiMap: Record<string, EthProvider>,
     onlyRunOnFirstTime?: boolean
@@ -114,28 +116,22 @@ export class FWSubscription {
     this.state
       .switchAccount()
       .then(() => {
-        this.state
-          .getDecodedAddress(address)
-          .then((addresses) => {
-            if (!addresses.length) return;
-
-            this.updateSubscription(
-              'balance',
-              this.initBalanceSubscription(address, dotSamaApiMap, web3ApiMap, onlyRunOnFirstTime)
-            );
-          })
-          .catch(this.logger.error);
+        this.updateSubscription(
+          'balance',
+          this.initBalanceSubscription(address, ethereumAddress, dotSamaApiMap, web3ApiMap, onlyRunOnFirstTime)
+        );
       })
       .catch((err) => this.logger.warn(err));
   }
 
   initBalanceSubscription(
     address: string,
+    ethereumAddress: string,
     dotSamaApiMap: Record<string, ApiProps>,
     web3ApiMap: Record<string, EthProvider>,
     onlyRunOnFirstTime?: boolean
   ) {
-    const unsub = subscribeBalance(address, dotSamaApiMap, web3ApiMap, (networkKey, rs) => {
+    const unsub = subscribeBalance(address, ethereumAddress, dotSamaApiMap, web3ApiMap, (networkKey, rs) => {
       this.state.setBalanceItem(networkKey, rs);
     });
 

@@ -42,7 +42,6 @@
       :showExport="!isExportRoute"
       :showReplaceAccount="showReplaceAccount"
       :buttonTopClick="buttonTopClick"
-      @openReplacePopup="openReplacePopup"
       @openNotificationPopup="openNotificationPopup"
     />
 
@@ -76,8 +75,6 @@
       :handlerAccept="handlerAccept"
     />
 
-    <ReplacePopup v-if="showReplacePopup" :selectedNetwork="selectedNetwork" :handlerClose="closeReplacePopup" />
-
     <AddEthereumAccountPopup v-if="showAddEthereumAccountPopup" :handlerClose="closeAddEthereumAccountPopup" />
 
     <ExportForm v-if="showExportForm" :password="password" :closeHandler="setPassword" />
@@ -90,7 +87,6 @@ import { Getter } from 'vuex-class';
 import ExportForm from './ExportForm.vue';
 import EditNodeForm from './EditNodeForm.vue';
 import NodeSettingsPopup from './NodeSettingsPopup.vue';
-import ReplacePopup from './ReplacePopup.vue';
 import AddEthereumAccountPopup from './AddEthereumAccountPopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
 import Nodes from './Nodes.vue';
@@ -104,7 +100,6 @@ type NotificationType = 'delete' | 'export' | '';
 @Component({
   components: {
     ExportForm,
-    ReplacePopup,
     EditNodeForm,
     NodeSettingsPopup,
     AccountSettingsPopup,
@@ -121,7 +116,6 @@ export default class AccountsLayout extends Vue {
   selectedNodeIsActive = false;
   buttonTopClick = 0;
   showReplaceAccount = true;
-  showReplacePopup = false;
   showAddEthereumAccountPopup = false;
   showAccountSettingsPopup = false;
   showEditNodeForm = false;
@@ -280,12 +274,6 @@ export default class AccountsLayout extends Vue {
     this.closeAccountSettings(false);
   }
 
-  openReplacePopup() {
-    this.showReplacePopup = true;
-
-    this.closeAccountSettings(false);
-  }
-
   openAddEthereumAccountPopup() {
     this.showAddEthereumAccountPopup = true;
   }
@@ -303,10 +291,6 @@ export default class AccountsLayout extends Vue {
       this.selectedNodeName = '';
       this.selectedNodeUrl = '';
     }
-  }
-
-  closeReplacePopup() {
-    this.showReplacePopup = false;
   }
 
   closeAddEthereumAccountPopup() {

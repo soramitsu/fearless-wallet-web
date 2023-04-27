@@ -65,21 +65,7 @@ export default class SettingsPopup extends Vue {
   }
 
   open(name: SettingsItemType) {
-    if (this.routeName !== name) {
-      const accountParams = {
-        address: this.selectedWallet.address,
-        name: this.selectedWallet.name,
-        ethereumAddress: this.selectedWallet.ethereumAddress,
-        isMobile: this.selectedWallet.isMobile ? 'mobile' : '',
-      };
-
-      this.$router.push({
-        name: Components[name],
-        params: {
-          ...(name === Components.Accounts ? accountParams : {}),
-        },
-      });
-    }
+    if (this.routeName !== name) this.$router.push({ name: Components[name] });
 
     this.handlerClose();
   }

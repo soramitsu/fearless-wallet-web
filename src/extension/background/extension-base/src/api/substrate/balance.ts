@@ -13,6 +13,7 @@ import { getEVMBalance } from '../evm/balance';
 import EthProvider from '../evm/ethProvider';
 import { APIItemState, BalanceItem } from '../evm/types/ether';
 import { getERC20Contract } from '../evm/utils/eth';
+import { isEthereumNetwork } from '../../background/utils/utils';
 import { getRegistry, getTokenInfo } from './registry';
 import { getAssetOptions } from './utils';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
@@ -197,8 +198,6 @@ async function subscribeTokensBalance(
     };
   });
 
-  await api.isReadyOrError;
-
   const unsubList = await Promise.all(
     tokenList.map(({ precision, symbol, id, type, icon, relayChain, displayName }) => {
       try {
@@ -273,6 +272,7 @@ export async function subscribeWithAccount(
 
 export function subscribeBalance(
   address: string,
+  ethereumAddress: string,
   dotSamaApiMap: Record<string, ApiProps>,
   web3ApiMap: Record<string, EthProvider>,
   setBalance: (networkKey: string, rs: BalanceItem) => void
@@ -283,10 +283,12 @@ export function subscribeBalance(
     await apiProps.api?.isReadyOrError;
 
     if (['ethereum', 'ethereum_goerli'].includes(networkKey)) {
-      return subscribeEVMBalance(networkKey, apiProps.api!, [address], web3ApiMap, setBalance); // todo [address] -> address
+      return subscribeEVMBalance(networkKey, apiProps.api!, [ethereumAddress], web3ApiMap, setBalance); // todo [ethereumAddress] -> ethereumAddress
     }
 
-    return subscribeWithAccount(address, networkKey, apiProps, setBalance);
+    const addressForNetwork = isEthereumNetwork(networkKey) ? ethereumAddress : address;
+
+    return subscribeWithAccount(addressForNetwork, networkKey, apiProps, setBalance);
   });
 
   return () => {

@@ -112,13 +112,6 @@ export interface SubscribeBalanceRequest {
   port: Port;
 }
 
-export type ConnectedTabsUrlResponse = string[];
-export interface ResponseCreateAccountSuri {
-  name: string;
-  address: string;
-  ethereumAddress: string;
-  isMobile: boolean;
-}
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
 
 export enum NETWORK_ERROR {
@@ -452,6 +445,11 @@ export interface RequestAccountShow {
 export interface RequestAccountTie {
   address: string;
   genesisHash: string | null;
+}
+
+export interface RequestAccountName {
+  address: string;
+  name: string;
 }
 
 export interface RequestAccountValidate {

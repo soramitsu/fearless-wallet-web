@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { TypeRegistry } from '@polkadot/types/create';
-import { Registry } from '@polkadot/types/types';
 import { api as apiSora, connection as soraConnection } from '@sora-substrate/util';
 import { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
 import { ApiProps } from '../../background/types/types';

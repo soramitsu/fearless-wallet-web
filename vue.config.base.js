@@ -52,9 +52,11 @@ module.exports = {
 
     config.optimization.merge({
       splitChunks: {
+        maxSize: 400000,
+        minSize: 200000,
         cacheGroups: {
           vendor: {
-            test: /[\\/]node_modules[\\/](vue|qrcode|file-saver|vuedraggable|tippy.js|vue-class-component|@airgap)[\\/]/,
+            test: /[\\/]node_modules[\\/]/,
             name: 'vendor',
             chunks: 'all',
           },

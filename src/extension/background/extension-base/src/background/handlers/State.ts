@@ -898,16 +898,6 @@ export default class State {
     });
   }
 
-  public async getDecodedAddress(address?: string): Promise<string> {
-    let checkingAddress: string | null | undefined = address;
-
-    if (!address) checkingAddress = await this.getAccountAddress();
-
-    if (!checkingAddress) return '';
-
-    return checkingAddress;
-  }
-
   public getAccountAddress(): Promise<string | null | undefined> {
     return new Promise((resolve) => {
       this.getCurrentAccount((account) => {

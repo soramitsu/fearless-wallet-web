@@ -43,7 +43,7 @@ function getTotalWalletBalance(tokens: TokenBalance[], price: AssetsPrice): numb
     token.balances.forEach((balance) => {
       if (balance.state === APIItemState.READY) {
         const tokenPrice = price.tokenPriceMap[token.priceId ?? ''] ?? 0;
-        const assetCount = balance.total ? +balance.total : 0;
+        const assetCount = +(balance.transferable ?? 0);
         const assetValue = assetCount * tokenPrice;
 
         walletBalance += assetValue;

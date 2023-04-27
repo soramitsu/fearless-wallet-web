@@ -31,7 +31,6 @@
     <PasswordForm
       v-if="passwordStep"
       :isGoogleFlow="true"
-      :showMockPassword="false"
       :showSamePasswordText="false"
       @updateWalletPassword="updateWalletPassword"
     />

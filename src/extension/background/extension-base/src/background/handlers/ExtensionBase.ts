@@ -9,6 +9,7 @@ import {
   RequestAccountExportPrivateKey,
   RequestAccountShow,
   RequestAccountTie,
+  RequestAccountName,
   RequestBatchRestore,
   RequestJsonValidate,
   RequestSigningIsLocked,
@@ -86,6 +87,16 @@ export default class FWExtensionBase {
     assert(pair, 'Unable to find pair');
 
     keyring.saveAccountMeta(pair, { ...pair.meta, genesisHash });
+
+    return true;
+  }
+
+  accountUpdateName({ address, name }: RequestAccountName): boolean {
+    const pair = keyring.getPair(address);
+
+    assert(pair, 'Unable to find pair');
+
+    keyring.saveAccountMeta(pair, { ...pair.meta, name });
 
     return true;
   }

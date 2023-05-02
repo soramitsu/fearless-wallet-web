@@ -3,6 +3,7 @@
     <div :class="containerInputClasses" spellcheck="false">
       <SInput
         v-model="vModel"
+        ref="input"
         :class="inputClasses"
         :type="type"
         :accept="accept"
@@ -20,7 +21,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
+import { Component, Vue, Prop, VModel, Ref } from 'vue-property-decorator';
 
 type Size = 'small' | 'medium' | 'big';
 type Type = 'text' | 'textarea' | 'text-file' | 'number';
@@ -42,6 +43,7 @@ export default class Input extends Vue {
   @Prop({ default: 'default' }) styleInput!: Style;
   @Prop({ default: false }) isError!: boolean;
   @Prop({ default: false }) cursorPointer!: boolean;
+  @Ref('input') readonly input!: HTMLInputElement;
 
   get wrapperClasses() {
     return [

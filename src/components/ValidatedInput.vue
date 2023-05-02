@@ -2,12 +2,14 @@
   <div class="validate-input">
     <Input
       v-model="vModel"
-      size="big"
+      ref="input"
+      :size="size"
       :placeholder="placeholder"
       :maxlength="maxlength"
       :showPassword="showPassword"
       :isError="isError"
       :readonly="readonly"
+      :disabled="disabled"
       :typeText="typeText"
     />
 
@@ -16,7 +18,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
+import { Component, Vue, Prop, VModel, Ref } from 'vue-property-decorator';
 import Input from './Input.vue';
 
 @Component({
@@ -31,6 +33,13 @@ export default class ValidatedInput extends Vue {
   @Prop({ default: false }) showPassword!: boolean;
   @Prop({ default: false }) readonly!: boolean;
   @Prop({ default: 'none' }) typeText!: string;
+  @Prop({ default: false }) disabled!: boolean;
+  @Prop({ default: 'big' }) size!: string;
+  @Ref('input') readonly inputComponent!: Input;
+
+  get input() {
+    return this.inputComponent.input as HTMLInputElement;
+  }
 
   get showErrorText() {
     return this.isError && this.errorDescriptions;

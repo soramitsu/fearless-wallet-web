@@ -2,6 +2,7 @@
   <div class="password-form">
     <ValidatedInput
       v-model="pass1"
+      ref="pass1Input"
       :errorDescriptions="t('shortPassword')"
       :placeholder="t('enterPassword')"
       :isError="isShortPassword"
@@ -26,13 +27,15 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
+import { Component, Vue, Watch, Prop, Ref } from 'vue-property-decorator';
+import type ValidatedInput from '@/components/ValidatedInput.vue';
 
 @Component
 export default class PasswordForm extends Vue {
   pass1 = '';
   pass2 = '';
 
+  @Ref('pass1Input') readonly pass1InputComponent!: ValidatedInput;
   @Prop(Boolean) showMockPassword!: boolean;
   @Prop({ type: Boolean, default: false }) isGoogleFlow!: boolean;
   @Prop(Boolean) showSamePasswordText!: boolean;
@@ -62,6 +65,8 @@ export default class PasswordForm extends Vue {
   }
 
   mounted() {
+    this.pass1InputComponent.input.focus();
+
     if (this.showMockPassword) this.pass1 = '000000';
   }
 

@@ -1,4 +1,5 @@
 import { IState } from '../background/types';
+
 class Storage {
   set(value: Partial<IState>) {
     return chrome.storage.local.set(value);

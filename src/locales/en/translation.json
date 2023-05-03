@@ -131,7 +131,7 @@
     "currentExtensionPage": "Current extension page",
     "notConnected": "not connected",
     "connectedMessage": "You have 1 account connected to this site.| You have {count} accounts connected to this site.",
-    "connectionStatusMessage": "Fearless Wallet is not connected to this site. To connect web3 site, find and click connect button.",
+    "connectionStatusMessage": "Fearless Wallet is not connected to this site. To connect to a web3 site, find and click on the connect button.",
     "connectionStatus": "Connection status",
     "walletManagement": "Wallet management",
     "settingsAndManagement": "Settings and account management",

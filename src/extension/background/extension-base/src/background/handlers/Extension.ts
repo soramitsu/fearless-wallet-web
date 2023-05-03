@@ -77,6 +77,7 @@ import type {
   RequestAccountForget,
   RequestAccountShow,
   RequestAccountTie,
+  RequestAccountName,
   RequestAccountValidate,
   RequestActiveTabsUrlUpdate,
   RequestAddressCreate,
@@ -91,7 +92,6 @@ import type {
   RequestSeedValidate,
   RequestSigningApprovePassword,
   RequestSigningApproveSignature,
-  RequestSaveTimeoutCache,
   RequestSigningCancel,
   RequestSigningIsLocked,
   RequestTypes,
@@ -1376,6 +1376,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(accounts.tie)':
         return this.accountsTie(request as RequestAccountTie);
+
+      case 'pri(accounts.name)':
+        return this.accountUpdateName(request as RequestAccountName);
 
       case 'pri(accounts.validate)':
         return this.accountsValidate(request as RequestAccountValidate);

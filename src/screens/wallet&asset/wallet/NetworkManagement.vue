@@ -33,7 +33,7 @@ import { SelectedWallet } from '@/store';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 @Component
-export default class ReceiveForm extends Vue {
+export default class NetworkManagement extends Vue {
   @Prop(Array) networks!: NetworkJsonOld[];
   @Prop(Function) closeForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;

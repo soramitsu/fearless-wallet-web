@@ -6,7 +6,6 @@
       :placeholder="t('enterPassword')"
       :isError="isShortPassword"
       :showPassword="true"
-      :readonly="showMockPassword"
       class="row"
     />
 
@@ -33,7 +32,6 @@ export default class PasswordForm extends Vue {
   pass1 = '';
   pass2 = '';
 
-  @Prop(Boolean) showMockPassword!: boolean;
   @Prop({ type: Boolean, default: false }) isGoogleFlow!: boolean;
   @Prop(Boolean) showSamePasswordText!: boolean;
 
@@ -46,7 +44,7 @@ export default class PasswordForm extends Vue {
   }
 
   get showPasswordConfirmation() {
-    return !this.showMockPassword && this.pass1.length !== 0 && !this.isShortPassword;
+    return this.pass1.length !== 0 && !this.isShortPassword;
   }
 
   get hintGoogleDriveText() {
@@ -54,15 +52,9 @@ export default class PasswordForm extends Vue {
   }
 
   get hintText() {
-    if (this.showMockPassword) return this.t('mockPassword');
-
     if (this.showSamePasswordText) return this.t('samePassword');
 
     return this.t('passwordInfo');
-  }
-
-  mounted() {
-    if (this.showMockPassword) this.pass1 = '000000';
   }
 
   @Watch('pass1')

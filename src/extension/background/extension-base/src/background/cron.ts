@@ -155,9 +155,14 @@ export class FWCron {
 
     this.state.getCurrentAccount((account) => {
       if (!account) return;
-      const { address } = account;
+      const { address, ethereumAddress } = account;
 
-      this.subscriptions.subscribeBalances(address, this.state.getSubstrateApiMap, this.state.getEvmApiMap);
+      this.subscriptions.subscribeBalances(
+        address,
+        ethereumAddress,
+        this.state.getSubstrateApiMap,
+        this.state.getEvmApiMap
+      );
     });
   };
 

@@ -12,7 +12,6 @@ import {
   RequestAccountCreateExternal,
   RequestAccountCreateHardware,
   RequestAccountCreateSuri,
-  ResponseCreateAccountSuri,
   RequestAddressCreate,
   RequestAddressRemove,
   RequestAccountMeta,
@@ -25,6 +24,7 @@ import {
   RequestAccountList,
   RequestAccountShow,
   RequestAccountTie,
+  RequestAccountName,
   RequestAccountSubscribe,
   AccountJson,
   RequestAccountValidate,
@@ -39,7 +39,6 @@ import {
   AuthorizeRequest,
   RequestUpdateAuthorizedAccounts,
   RequestActiveTabsUrlUpdate,
-  ConnectedTabsUrlResponse,
   RequestDeriveCreate,
   RequestDeriveValidate,
   ResponseDeriveValidate,
@@ -119,6 +118,7 @@ export interface RequestSignatures {
   'pri(accounts.list)': [RequestAccountList, InjectedAccount[]];
   'pri(accounts.show)': [RequestAccountShow, boolean];
   'pri(accounts.tie)': [RequestAccountTie, boolean];
+  'pri(accounts.name)': [RequestAccountName, boolean];
   'pri(accounts.subscribe)': [RequestAccountSubscribe, boolean, AccountJson[]];
   'pri(accounts.validate)': [RequestAccountValidate, boolean];
   'pri(accounts.changePassword)': [RequestAccountChangePassword, boolean];

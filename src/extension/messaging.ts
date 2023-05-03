@@ -43,7 +43,6 @@ import type {
   RequestCurrentAccountAddress,
   DisableNetworkResponse,
   ValidateNetworkResponse,
-  ResponseCreateAccountSuri,
   RequestCheckSwap,
   ResponseCheckSwap,
   RequestSwap,
@@ -156,6 +155,10 @@ export async function showAccount(address: string, isShowing: boolean): Promise<
 
 export async function tieAccount(address: string, genesisHash: string | null): Promise<boolean> {
   return sendMessage('pri(accounts.tie)', { address, genesisHash });
+}
+
+export async function accountUpdateName(address: string, name: string): Promise<boolean> {
+  return sendMessage('pri(accounts.name)', { address, name });
 }
 
 export async function exportAccount(address: string, password: string): Promise<{ exportedJson: KeyringPair$Json }> {

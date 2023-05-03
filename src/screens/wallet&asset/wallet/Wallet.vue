@@ -98,7 +98,7 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import type { TMutation, TabWallet } from '@/interfaces/common';
-import type { SelectedWallet } from '@/store';
+import type { SelectedWallet, GetShowWarningNetworks } from '@/store';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import CurrencyItemStateLess from '@/screens/wallet&asset/wallet/CurrencyItemStateLess.vue';
@@ -157,6 +157,7 @@ export default class Wallet extends Vue {
   evmCurrencies = {};
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getShowWarningNetworks) getShowWarningNetworks!: GetShowWarningNetworks;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
@@ -259,7 +260,9 @@ export default class Wallet extends Vue {
   }
 
   get networksWithWarning() {
-    return this.networks.filter(({ apiStatus }) => apiStatus === 'disconnected');
+    return this.networks.filter(
+      ({ name, apiStatus }) => apiStatus === 'disconnected' && !this.getShowWarningNetworks(name)
+    );
   }
 
   @Watch('networksWithWarning')

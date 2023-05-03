@@ -37,7 +37,7 @@ import { AccountJson } from '@/extension/background/extension-base/src/backgroun
 export default class WalletDetailsPopup extends Vue {
   @Prop(Number) buttonTopClick!: number;
   @Prop(String) selectedWalletAddress!: string;
-  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<string>;
+  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<AccountJson>;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
   get selectedWallet() {
@@ -72,7 +72,8 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   openWalletDetails() {
-    this.setSelectedWallet(this.selectedWalletAddress);
+    const [account] = this.accounts.filter((account) => account.address === this.selectedWalletAddress);
+    this.setSelectedWallet(account);
 
     this.$router.push({
       name: Components.Accounts,

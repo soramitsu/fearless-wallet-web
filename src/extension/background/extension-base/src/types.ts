@@ -1,8 +1,8 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { BalanceItem, CustomTokenType, NetworkJson, TokenInfo } from './api/evm/types/ether';
-import { AssetJson, Balances, BalancesNew, ExternalApi, NetworkAssets, RelayChainName } from '@/interfaces';
+import { BalanceItem, CustomTokenType, NetworkJson } from './api/evm/types/ether';
+import { AssetJson, ExternalApi, NetworkAssets, RelayChainName } from '@/interfaces';
 
 export interface Message extends MessageEvent {
   data: {

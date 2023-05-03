@@ -31,7 +31,7 @@ export default class SelectNetworkButton extends Vue {
   @Prop(Boolean) showWarningIcon!: boolean;
 
   get textFormatted() {
-    if (this.text === 'all') return this.$t('common.allNetworks');
+    if (this.text === 'All') return this.$t('common.allNetworks');
 
     return firstCharToUp(this.text);
   }

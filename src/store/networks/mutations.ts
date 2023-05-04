@@ -32,9 +32,6 @@ export type Mutations = {
 
   [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
-  // [MutationTypes.SET_ACTIVE_NODE](state: State, props: SetActiveNodeProps): void;
-  // [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApiProps): void;
-  // [MutationTypes.SET_NETWORK_STATUS](state: State, props: SetNetworkStatusProps): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {

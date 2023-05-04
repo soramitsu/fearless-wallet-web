@@ -122,6 +122,7 @@ import { NetworkJsonOld } from '@/extension/background/extension-base/src/types'
 import { AssetsPrice } from '@/interfaces';
 import { defaultSortingCurrencies, getTotalBalance } from '@/helpers/currencies';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/evm/types/ether';
+import { getCurrencyVisibility, setCurrencyVisibility } from '@/controllers/currencyHelper';
 
 @Component({
   components: {
@@ -155,8 +156,10 @@ export default class Wallet extends Vue {
     assetId?: string;
   };
   evmCurrencies = {};
+
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(NetworksGettersTypes.getCurrencies) currencies!: TokenBalance[]; //for custom ordering
   @Getter(AccountsGettersTypes.getShowWarningNetworks) getShowWarningNetworks!: GetShowWarningNetworks;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
@@ -197,6 +200,20 @@ export default class Wallet extends Vue {
     return getChangeWalletBalance(this.balances, this.prices);
   }
 
+  get sequence() {
+    const { address } = this.selectedWallet;
+
+    if (address === '') return [];
+
+    return accountController.getSequenceAssetsByAddress(address, this.selectedNetwork);
+  }
+
+  get filteredBalances() {
+    if (this.currencies.length) return this.currencies;
+
+    return this.balances;
+  }
+
   get sortedCurrencies() {
     const { address } = this.selectedWallet;
 
@@ -204,11 +221,9 @@ export default class Wallet extends Vue {
 
     const sequence = accountController.getSequenceAssetsByAddress(address, this.selectedNetwork);
 
-    return this.balances.sort((currency1, currency2) => {
-      const { name: assetId1 } = currency1;
-      const { name: assetId2 } = currency2;
-      const index1 = sequence.indexOf(assetId1);
-      const index2 = sequence.indexOf(assetId2);
+    return this.filteredBalances.sort((currency1, currency2) => {
+      const index1 = sequence.indexOf(currency1.name);
+      const index2 = sequence.indexOf(currency2.name);
 
       return index1 - index2;
     });
@@ -303,19 +318,20 @@ export default class Wallet extends Vue {
   }
 
   toggleCurrenciesVisible(allCurrenciesHidden: boolean) {
-    // if (allCurrenciesHidden) {
-    //   this.currencies.forEach((currency) => currency.setCurrencyVisibility(this.selectedWallet.address, true));
-    //   return;
-    // }
-    // this.currencies.forEach((currency) => {
-    //   const isZeroBalance = currency.getTotalCountAssets(this.selectedWallet) === '0';
-    //   if (isZeroBalance) currency.setCurrencyVisibility(this.selectedWallet.address, false);
-    // });
-    // const currenciesVisibleWithBalance = this.currencies.filter(
-    //   (currency) =>
-    //     currency.getCurrencyVisibility(this.selectedWallet.address) &&
-    //     currency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork) !== '0'
-    // );
+    if (allCurrenciesHidden) {
+      this.balances.forEach((currency) => setCurrencyVisibility(currency, this.selectedWallet.address, true));
+
+      return;
+    }
+
+    this.balances.forEach((currency) => {
+      const isZeroBalance = !!currency.balances.filter((balance) => {
+        return balance.transferable && balance.transferable !== '0';
+      }).length;
+
+      if (isZeroBalance) setCurrencyVisibility(currency, this.selectedWallet.address, false);
+    });
+
     // const currenciesInvisibleWithBalance = this.currencies.filter(
     //   (currency) =>
     //     !currency.getCurrencyVisibility(this.selectedWallet.address) &&

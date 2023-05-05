@@ -800,6 +800,7 @@ export class CurrencyController {
     const pair = BaseApi.getPair(from);
 
     apiSora.account = { json: null as any, pair };
+    apiSora.shouldPairBeLocked = !isSavePass;
 
     this.setTransactionStatus('pending');
 

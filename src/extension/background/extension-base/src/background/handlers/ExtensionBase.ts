@@ -19,6 +19,7 @@ import {
   ResponseJsonGetAccountInfo,
   ResponseSigningIsLocked,
   ValidateJsonResult,
+  RequestUpdateMeta,
 } from '../types/types';
 import State from './State';
 import { state } from '.';
@@ -70,6 +71,16 @@ export default class FWExtensionBase {
   public decodeAddress = (key: string | Uint8Array, ignoreChecksum?: boolean, ss58Format?: number): Uint8Array => {
     return keyring.decodeAddress(key, ignoreChecksum, ss58Format);
   };
+
+  updatePairMeta({ address, meta }: RequestUpdateMeta) {
+    const pair = keyring.getPair(address);
+
+    assert(pair, 'Unable to find pair');
+
+    keyring.saveAccountMeta(pair, { ...pair.meta, ...meta });
+
+    return true;
+  }
 
   accountsShow({ address, isShowing }: RequestAccountShow): boolean {
     const pair = keyring.getPair(address);

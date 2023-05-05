@@ -86,6 +86,7 @@ import {
   ResponseCheckSwap,
   RequestSwap,
   ResponseMakeSwap,
+  RequestUpdateMeta,
 } from './types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import {
@@ -105,13 +106,12 @@ export interface RequestSignatures {
   //Account Managment
   'pri(accounts.create.external)': [RequestAccountCreateExternal, boolean];
   'pri(accounts.validate.path)': [DerivationPath, boolean];
-
-  'pri(accounts.create.hardware)': [RequestAccountCreateHardware, boolean];
   'pri(accounts.create.suri)': [RequestAccountCreateSuri, string];
   'pri(addresses.create)': [RequestAddressCreate, boolean];
   'pri(addresses.remove)': [RequestAddressRemove, boolean];
   'pri(addresses.get)': [null, KeyringAddress[]];
   'pri(accounts.get.meta)': [RequestAccountMeta, ResponseAccountMeta];
+  'pri(accounts.update.meta)': [RequestUpdateMeta, boolean];
   'pri(accounts.export)': [RequestAccountExport, ResponseAccountExport];
   'pri(accounts.batchExport)': [RequestAccountBatchExport, ResponseAccountsExport];
   'pri(accounts.forget)': [RequestAccountForget, boolean];
@@ -120,6 +120,7 @@ export interface RequestSignatures {
   'pri(accounts.tie)': [RequestAccountTie, boolean];
   'pri(accounts.name)': [RequestAccountName, boolean];
   'pri(accounts.subscribe)': [RequestAccountSubscribe, boolean, AccountJson[]];
+  'pri(accounts.triggerSubscription)': [null, boolean];
   'pri(accounts.validate)': [RequestAccountValidate, boolean];
   'pri(accounts.changePassword)': [RequestAccountChangePassword, boolean];
   'pri(accounts.current.saveAddress)': [RequestCurrentAccountAddress, boolean, CurrentAccountInfo];

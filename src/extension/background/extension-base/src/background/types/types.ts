@@ -437,6 +437,11 @@ export interface RequestAccountForget {
   type: 'native' | 'mobile';
 }
 
+export interface RequestUpdateMeta {
+  address: string;
+  meta: KeyringPair$Meta;
+}
+
 export interface RequestAccountShow {
   address: string;
   isShowing: boolean;

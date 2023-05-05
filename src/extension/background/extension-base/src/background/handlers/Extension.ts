@@ -180,9 +180,10 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  async accountsCreateSuri({ password, suri, type, meta }: RequestAccountCreateSuri): Promise<string> {
-    const { pair } = keyring.addUri(suri, password, meta, type);
-    const { address } = pair;
+  accountsCreateSuri({ password, suri, type, meta }: RequestAccountCreateSuri): string {
+    const {
+      pair: { address },
+    } = keyring.addUri(suri, password, meta, type);
 
     if (!isEthereumAddress(address)) {
       state.generateDefaultBalance(address);
@@ -221,7 +222,6 @@ export default class Extension extends FWExtensionBase {
 
     if (type === 'native') {
       const pair = keyring.getAccount(address);
-
       const ethereumAddress = pair?.meta.ethereumAddress as string;
 
       if (ethereumAddress !== '') keyring.forgetAccount(ethereumAddress);
@@ -260,7 +260,7 @@ export default class Extension extends FWExtensionBase {
   accountsSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(accounts.subscribe)'>(id, port);
     const subscription = accountsObservable.subject.subscribe((accounts: SubjectInfo): void => {
-      if (Object.keys(accounts).length % 2 === 0) transformAccounts(accounts).then(cb);
+      transformAccounts(accounts).then(cb);
     });
 
     port.onDisconnect.addListener((): void => {
@@ -1373,6 +1373,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(accounts.subscribe)':
         return this.accountsSubscribe(id, port as Port);
+
+      case 'pri(accounts.triggerSubscription)':
+        return this.triggerAccountsSubscription();
 
       case 'pri(accounts.tie)':
         return this.accountsTie(request as RequestAccountTie);

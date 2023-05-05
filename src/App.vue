@@ -30,6 +30,7 @@ import {
   subscribeBalance,
   subscribeNetworkMap,
   subscribePrice,
+  triggerAccountsSubscription,
 } from '@/extension/messaging';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 
@@ -60,10 +61,10 @@ export default class App extends Vue {
   async created() {
     if (BaseApi.isExtension()) this.extensionSubscribe();
 
-    await Promise.all([this.fetchFiats(), this.setupWallet()]);
-
     this.setupSWPing();
+    this.fetchFiats();
     this.setupPrice();
+    this.setupWallet();
     this.setupNetworks();
     this.setupBalance();
   }
@@ -119,8 +120,8 @@ export default class App extends Vue {
     this.setPrices({ tokenPriceMap, tokenPriceChange });
   }
 
-  async setupWallet() {
-    await subscribeAccounts((accounts) => {
+  setupWallet() {
+    subscribeAccounts((accounts) => {
       console.info('accounts', accounts);
 
       const isAccountsNotExists = accounts.length === 0;
@@ -130,6 +131,8 @@ export default class App extends Vue {
       this.setAccounts({ accounts });
 
       if (isAccountsNotExists) this.$router.push(Components.Welcome);
+    }).then(() => {
+      triggerAccountsSubscription();
     });
   }
 

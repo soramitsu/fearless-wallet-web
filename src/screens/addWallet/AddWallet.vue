@@ -152,7 +152,14 @@ import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { WarningValueName } from '@/consts/messages';
 import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/consts/derivationPath';
-import { createAccountSuri, forgetAccount, validateAccount, windowOpen } from '@/extension/messaging';
+import {
+  createAccountSuri,
+  forgetAccount,
+  triggerAccountsSubscription,
+  updatePairMeta,
+  validateAccount,
+  windowOpen,
+} from '@/extension/messaging';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 
@@ -407,6 +414,7 @@ export default class AddWallet extends Vue {
 
       await this.saveKeypair();
 
+      await triggerAccountsSubscription();
       this.isLoading = false;
 
       // this.setSelectedWallet(newAccount as AccountJson);
@@ -695,7 +703,7 @@ export default class AddWallet extends Vue {
       const ethereumAddress = await BaseApi.addKeypairFromJson(this.ethereumJSON, this.passwordEthereumJson);
 
       if (this.isOnlyEthereumAccountFlow) {
-        // BaseApi.saveEthereumAddress(this.selectedWallet.address, ethereumAddress);
+        updatePairMeta(this.selectedWallet.address, { ethereumAddress });
 
         return '';
       }

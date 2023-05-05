@@ -122,7 +122,6 @@ import { NetworkJsonOld } from '@/extension/background/extension-base/src/types'
 import { AssetsPrice } from '@/interfaces';
 import { defaultSortingCurrencies, getTotalBalance } from '@/helpers/currencies';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/evm/types/ether';
-import { getCurrencyVisibility, setCurrencyVisibility } from '@/controllers/currencyHelper';
 
 @Component({
   components: {
@@ -318,20 +317,16 @@ export default class Wallet extends Vue {
   }
 
   toggleCurrenciesVisible(allCurrenciesHidden: boolean) {
-    if (allCurrenciesHidden) {
-      this.balances.forEach((currency) => setCurrencyVisibility(currency, this.selectedWallet.address, true));
-
-      return;
-    }
-
-    this.balances.forEach((currency) => {
-      const isZeroBalance = !!currency.balances.filter((balance) => {
-        return balance.transferable && balance.transferable !== '0';
-      }).length;
-
-      if (isZeroBalance) setCurrencyVisibility(currency, this.selectedWallet.address, false);
-    });
-
+    // if (allCurrenciesHidden) {
+    //   this.balances.forEach((currency) => setCurrencyVisibility(currency, this.selectedWallet.address, true));
+    //   return;
+    // }
+    // this.balances.forEach((currency) => {
+    //   const isZeroBalance = !!currency.balances.filter((balance) => {
+    //     return balance.transferable && balance.transferable !== '0';
+    //   }).length;
+    //   if (isZeroBalance) setCurrencyVisibility(currency, this.selectedWallet.address, false);
+    // });
     // const currenciesInvisibleWithBalance = this.currencies.filter(
     //   (currency) =>
     //     !currency.getCurrencyVisibility(this.selectedWallet.address) &&

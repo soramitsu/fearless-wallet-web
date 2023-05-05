@@ -49,6 +49,7 @@ export default class App extends Vue {
   created() {
     if (BaseApi.isExtension()) {
       this.extensionSubscribe();
+
       resetTimeouts();
     }
 

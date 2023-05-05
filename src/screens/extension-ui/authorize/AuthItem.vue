@@ -58,7 +58,7 @@ export default class AuthItem extends Vue {
 }
 
 .auth-content {
-  padding-bottom: 12px;
+  padding: 16px 0;
   border-bottom: 1px solid $default-background-color;
 }
 

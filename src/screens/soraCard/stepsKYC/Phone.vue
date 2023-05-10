@@ -341,7 +341,7 @@ export default class Phone extends Vue {
         this.notFoundPhoneWhenUserApplied = false;
         this.verificationCode = '';
 
-        clearInterval(interval!);
+        clearInterval(interval);
       }
     }, 1000);
   }

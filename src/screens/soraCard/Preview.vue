@@ -3,7 +3,7 @@
     <ContentForm :height="430">
       <Scroll>
         <div class="card-content">
-          <img src="@/assets/icons/sora-card.png" class="banner" />
+          <img src="@/assets/icons/sora-card.png" class="banner" alt="sora card banner" />
 
           <div class="card-descriptions">{{ $t('soraCard.cardDescriptions') }}</div>
           <div class="card-get">{{ $t('soraCard.cardGet') }}</div>

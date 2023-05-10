@@ -219,7 +219,6 @@ const initPayWingsAuthSdk = async (setAuthLogin: (login: any) => void) => {
   });
 
   await loadScript(authService.sdkURL).then(() => {
-    // TODO: annotate via TS main calls
     // @ts-expect-error no undefined
     const login = Paywings.WebSDK.create({
       Domain: 'soracard.com',

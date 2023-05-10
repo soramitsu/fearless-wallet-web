@@ -3,7 +3,7 @@
     <ContentForm :height="430">
       <Scroll>
         <div :class="statusesClasses">
-          <img :src="iconName" class="banner" />
+          <img :src="iconName" class="banner" alt="status card" />
 
           <div class="status">{{ $t(statusText) }}</div>
           <div class="status-description">{{ $t(statusDescription) }}</div>

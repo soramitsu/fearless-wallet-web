@@ -1,6 +1,6 @@
 <template>
   <div v-if="showSoraCardBanner" class="sora-banner">
-    <img src="@/assets/icons/sora-card-banner.png" class="banner" />
+    <img src="@/assets/icons/sora-card-banner.png" class="banner" alt="sora card banner" />
 
     <div class="close-button close-circle" @click="hideBanner">
       <Icon icon="close-thin" class="close-icon" />

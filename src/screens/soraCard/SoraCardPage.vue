@@ -206,7 +206,6 @@ export default class SoraCardPage extends Vue {
     await this.getUserStatus();
 
     if (this.currentStatus === VerificationStatus.Rejected && this.wantsToPassKycAgain && this.hasFreeAttempts) {
-      // TODO openPolkaswap??????
       if (this.isExtension) this.openPolkaswap(false);
       else this.step = StepsKyc.KycView;
 
@@ -220,7 +219,6 @@ export default class SoraCardPage extends Vue {
     }
 
     if (this.hasTokens) {
-      // TODO openPolkaswap??????
       if (this.isExtension) this.openPolkaswap(false);
       else this.step = StepsKyc.KycView;
 

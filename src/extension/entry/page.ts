@@ -2,6 +2,7 @@ import { MESSAGE_ORIGIN_CONTENT } from '@extension-base/defaults';
 import { enable, saveSoraCardToken, handleResponse, redirectIfPhishing } from '@extension-base/page';
 import type { Message } from '@extension-base/types';
 import type { RequestSignatures, TransportRequestMessage } from '@extension-base/background/types';
+import { APP_VERSION } from '@/consts/global';
 
 class Page {
   private inject() {
@@ -13,7 +14,7 @@ class Page {
     windowInject.injectedWeb3['fearless-wallet'] = {
       enable: (origin: string) => enable(origin),
       saveSoraCardToken: (token: string) => saveSoraCardToken(token),
-      version: '1.0.0', // TODO
+      version: APP_VERSION,
     };
   }
 

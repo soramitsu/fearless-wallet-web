@@ -189,7 +189,7 @@ export default class Email extends Vue {
       if (this.leftTimeForResend === 0) {
         this.emailSent = false;
 
-        clearInterval(interval!);
+        clearInterval(interval);
       }
     }, 1000);
   }

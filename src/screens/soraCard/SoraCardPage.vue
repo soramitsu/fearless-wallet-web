@@ -22,7 +22,7 @@
       <TermsAndConditions
         v-else-if="showTermsAndConditions"
         ref="termsAndConditions"
-        @termsProceed="termsProceed"
+        @openStepsKYCPopup="openStepsKYCPopup"
         @toggleCountriesFormVisibility="toggleCountriesFormVisibility"
       />
 
@@ -35,8 +35,6 @@
       <KycView v-else-if="showKycView" @confirmKyc="redirectToView" />
 
       <Status v-else-if="showStatus" @openStartPage="openStartPage" />
-
-      <div v-else-if="polkaswapIsOpened">Redirect to Polkaswap</div>
 
       <Loader v-else />
 
@@ -83,6 +81,7 @@ import { WalletInfo } from '@/store';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { stripUrl } from '@/extension/background/extension-base/src/background/handlers/helpers';
+import { subscribeCardToken } from '@/util/soraCard';
 
 @Component({
   components: {
@@ -107,7 +106,6 @@ export default class SoraCardPage extends Vue {
   userApplied = false;
   showStepsKYCPopup = false;
   showX1Form = false;
-  polkaswapIsOpened = false;
   step: StepsKyc | -1 = -1;
 
   @Ref('termsAndConditions') readonly termsAndConditions!: TermsAndConditions;
@@ -192,7 +190,11 @@ export default class SoraCardPage extends Vue {
   }
 
   mounted() {
-    if (this.isExtension) this.getAuthList();
+    if (this.isExtension) {
+      subscribeCardToken(this.checkKyc);
+
+      this.getAuthList();
+    }
 
     soraCardController.clearPayWingsKeysFromLocalStorage();
 
@@ -279,22 +281,17 @@ export default class SoraCardPage extends Vue {
   }
 
   confirmApply(userApplied: boolean) {
-    this.userApplied = userApplied;
+    if (this.isExtension) {
+      this.openPolkaswap();
 
-    if (userApplied) {
-      if (this.isExtension) {
-        this.openPolkaswap();
-
-        return;
-      } else this.showStepsKYCPopup = true;
+      return;
     }
 
-    this.step = StepsKyc.TermsAndConditions;
-  }
+    this.userApplied = userApplied;
 
-  termsProceed() {
-    if (this.isExtension) this.openPolkaswap();
-    else this.openStepsKYCPopup();
+    if (userApplied) this.showStepsKYCPopup = true;
+
+    this.step = StepsKyc.TermsAndConditions;
   }
 
   openGetXORPopup() {
@@ -329,7 +326,7 @@ export default class SoraCardPage extends Vue {
 
   async openPolkaswap(check = true) {
     const { POLKASWAP } = URLS;
-    const selectedAddress = this.selectedWallet.address;
+    const { address: selectedAddress, name } = this.selectedWallet;
 
     if (check) {
       const stripPolkaswap = stripUrl(POLKASWAP);
@@ -351,9 +348,7 @@ export default class SoraCardPage extends Vue {
       } else approvePolkaswapAuthRequest([selectedAddress]);
     }
 
-    window.open(`${POLKASWAP}/#/card?fearless=${selectedAddress}&userApplied=${this.userApplied}`);
-
-    this.polkaswapIsOpened = true;
+    window.open(`${POLKASWAP}/#/card?fearless=${selectedAddress}&name=${name}`);
   }
 }
 </script>

@@ -74,6 +74,7 @@
 
     <div class="buttons">
       <Button
+        v-if="!isExtension"
         text="soraCard.haveCard"
         width="49%"
         size="big"
@@ -86,7 +87,7 @@
 
       <Button
         :text="textIssueCardButton"
-        width="49%"
+        :width="widthProceedBtn"
         size="big"
         fontSize="big"
         type="primary"
@@ -111,11 +112,14 @@ import { GetNetworkStatus } from '@/store';
 import { getXORCurrency } from '@/helpers/currencies';
 import { soraCardController } from '@/controllers';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
+import { IS_EXTENSION } from '@/consts/global';
 
 @Component({
   components: { UnsupportedCountries },
 })
 export default class Preview extends Vue {
+  readonly isExtension = IS_EXTENSION;
+
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -130,6 +134,10 @@ export default class Preview extends Vue {
     if (this.isValidEuroBalanceXor) return 1;
 
     return this.euroBalanceXOR / 100;
+  }
+
+  get widthProceedBtn() {
+    return this.isExtension ? '100%' : '49%';
   }
 
   get haveFreePass() {

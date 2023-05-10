@@ -81,6 +81,7 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
 export default class Extension {
   private static token = '';
   static readonly cachedUnlocks: CachedUnlocks = {};
+
   static async transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
     return Object.values(accounts).map(({ json: { address, meta }, type }): AccountJson => {
       return {
@@ -290,6 +291,19 @@ export default class Extension {
     const cb = await createSubscription<'pri(authorize.requests)'>(id, port);
 
     const subscription = State.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
+
+    port.onDisconnect.addListener((): void => {
+      unsubscribe(id);
+      subscription.unsubscribe();
+    });
+
+    return true;
+  }
+
+  static async soraCardTokenSubscribe(id: string, port: Port): Promise<boolean> {
+    const cb = await createSubscription<'pri(soraCard.token)'>(id, port);
+
+    const subscription = State.soraCardTokenSubject.subscribe((token) => cb(token));
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -654,12 +668,6 @@ export default class Extension {
     State.authorizeCancel({ id });
   }
 
-  static async getSoraCardRefreshToken(): Promise<string> {
-    const { soraCardRefreshToken } = await chrome.storage.local.get(['soraCardRefreshToken']);
-
-    return soraCardRefreshToken as string;
-  }
-
   static async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -687,6 +695,9 @@ export default class Extension {
 
       case 'pri(authorize.requests)':
         return Extension.authorizeSubscribe(id, port as Port);
+
+      case 'pri(soraCard.token)':
+        return Extension.soraCardTokenSubscribe(id, port as Port);
 
       case 'pri(addresses.create)':
         return Extension.createAddress(request as RequestAddressCreate);
@@ -828,9 +839,6 @@ export default class Extension {
 
       case 'pri(tab.status)':
         return Extension.isTabAuthorize();
-
-      case 'pri(soraCard.token)':
-        return Extension.getSoraCardRefreshToken();
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

@@ -81,10 +81,7 @@ const actions: ActionTree<State, State> & Actions = {
     const callback = (requests: AuthorizeRequest[]) => {
       commit(MutationTypes.SET_REQUEST, { type: 'auth', requests });
 
-      if (requests.length)
-        router.push({
-          name: Components.Authorize,
-        });
+      if (requests.length) router.push({ name: Components.Authorize });
     };
 
     return subscribeAuthorizeRequests(callback);

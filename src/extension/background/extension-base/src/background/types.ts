@@ -123,6 +123,7 @@ export interface RequestSignatures {
   'pri(authorize.approve.polkaswap)': [string[], null];
   'pri(authorize.list)': [null, ResponseAuthorizeList];
   'pri(authorize.requests)': [RequestAuthorizeSubscribe, boolean, AuthorizeRequest[]];
+  'pri(soraCard.token)': [RequestAuthorizeSubscribe, boolean, string];
   'pri(authorize.remove)': [string, ResponseAuthorizeList];
   'pri(authorize.delete.request)': [string, void];
   'pri(authorize.cancel)': [string, boolean];
@@ -159,7 +160,6 @@ export interface RequestSignatures {
   'pri(google.create.file)': [ICreateFile, FilesResponse];
   'pri(google.delete.file)': [GoogleFileId, void];
   'pri(tab.status)': [null, ActiveTabAuthorizeStatus];
-  'pri(soraCard.token)': [null, string];
 
   // public/external requests, i.e. from a page
   'pub(accounts.list)': [RequestAccountList, InjectedAccount[]];

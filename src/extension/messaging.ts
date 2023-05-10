@@ -295,6 +295,10 @@ export async function subscribeAuthorizeRequests(cb: (requests: AuthorizeRequest
   return sendMessage('pri(authorize.requests)', null, cb);
 }
 
+export async function subscribeSoraCardToken(cb: (token: string) => void): Promise<boolean> {
+  return sendMessage('pri(soraCard.token)', null, cb);
+}
+
 export async function getAuthList(): Promise<ResponseAuthorizeList> {
   return sendMessage('pri(authorize.list)');
 }
@@ -396,8 +400,4 @@ export async function deleteGoogleFile(id: string, token: string): Promise<void>
 
 export function isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
   return sendMessage('pri(tab.status)');
-}
-
-export function getSoraCardRefreshToken(): Promise<string> {
-  return sendMessage('pri(soraCard.token)');
 }

@@ -1,7 +1,6 @@
 import { LocalStorage } from '@/controllers/localStorageController';
 
 class SoraCardController {
-  // private readonly lsSoraCard = new LocalStorage('sora-card');
   private readonly ls = new LocalStorage('');
   private readonly PWEmail = 'PW-Email';
   private readonly PWToken = 'PW-token';

@@ -22,7 +22,6 @@ import { NetworksController, accountController } from '@/controllers';
 import { resetTimeouts } from '@/extension/messaging';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 import { IS_EXTENSION } from '@/consts/global';
-import { saveSoraCardRefreshToken } from '@/util/soraCard';
 
 @Component
 export default class App extends Vue {
@@ -45,7 +44,6 @@ export default class App extends Vue {
       this.extensionSubscribe();
 
       resetTimeouts();
-      saveSoraCardRefreshToken();
     }
 
     this.setWallet();

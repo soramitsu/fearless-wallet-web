@@ -214,7 +214,7 @@ export default class Tabs {
   }
 
   static async saveSoraCardRefreshToken(token: string): Promise<void> {
-    chrome.storage.local.set({ soraCardRefreshToken: token });
+    State.soraCardTokenSubject.next(token);
   }
 
   static async handle<TMessageType extends MessageTypes>(

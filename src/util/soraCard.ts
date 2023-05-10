@@ -7,7 +7,7 @@ import type { Status } from '@/consts/soraCard';
 import { IS_PRODUCTION } from '@/consts/global';
 import { soraCardController } from '@/controllers';
 import { VerificationStatus, KycStatus } from '@/consts/soraCard';
-import { getSoraCardRefreshToken } from '@/extension/messaging';
+import { subscribeSoraCardToken } from '@/extension/messaging';
 
 const getXorPerEuroRatio = async () => {
   try {
@@ -329,10 +329,14 @@ const initWebKyc = async (confirmKyc: (value: boolean) => void) => {
     .catch(() => null);
 };
 
-const saveSoraCardRefreshToken = async () => {
-  const token = await getSoraCardRefreshToken();
+const subscribeCardToken = async (checkStatus: () => Promise<void>) => {
+  const callback = async (token: string) => {
+    soraCardController.setPWRefreshToken(token);
 
-  soraCardController.setPWRefreshToken(token);
+    checkStatus();
+  };
+
+  return subscribeSoraCardToken(callback);
 };
 
 export {
@@ -342,5 +346,5 @@ export {
   initWebKyc,
   defineUserStatus,
   getFreeKycAttemptCount,
-  saveSoraCardRefreshToken,
+  subscribeCardToken,
 };

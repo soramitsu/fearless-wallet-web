@@ -81,7 +81,7 @@ const disconnectHandler = (
   }
 };
 
-const readyHandler = (network: Network) => {
+const readyHandler = async (network: Network) => {
   NetworksController.subscribeToBalancesOfNetworks(getAccounts(), [network]);
 
   store.commit(MutationTypes.SET_NETWORK_STATUS, {

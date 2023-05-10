@@ -1,4 +1,4 @@
-import { FPNumber } from '@sora-substrate/util';
+import { FPNumber, api as apiSora } from '@sora-substrate/util';
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
 import type {
@@ -17,6 +17,7 @@ import type {
   UpdateXorTotalBalanceProps,
   SetTotalXorSubscribeProps,
 } from './types';
+import type { SoraFees } from '@/interfaces';
 import { accountController } from '@/controllers';
 import { isSora } from '@/helpers/common';
 import { getFormattedHistory } from '@/helpers/history';
@@ -54,7 +55,7 @@ export type Mutations = {
   [MutationTypes.SET_ACTIVE_NODE](state: State, props: SetActiveNodeProps): void;
   [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApiProps): void;
   [MutationTypes.SET_NETWORK_STATUS](state: State, props: SetNetworkStatusProps): void;
-  [MutationTypes.SET_SORA_FEE](state: State, props: SetSoraFee): void;
+  [MutationTypes.SET_SORA_FEE](state: State): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -223,9 +224,12 @@ const mutations: MutationTree<State> & Mutations = {
     }
   },
 
-  [MutationTypes.SET_SORA_FEE](state, { fee }) {
+  [MutationTypes.SET_SORA_FEE](state) {
+    const fees = Object.fromEntries(
+      Object.entries(apiSora.NetworkFee).map(([key, value]) => [key, FPNumber.fromCodecValue(value)])
+    ) as SoraFees;
     const soraIndex = state.networks.findIndex(({ name }) => isSora(name))!;
-    const newSoraItem = { ...state.networks[soraIndex], fee: FPNumber.fromCodecValue(fee) };
+    const newSoraItem = { ...state.networks[soraIndex], fees };
 
     state.networks.splice(soraIndex, 1, newSoraItem);
   },

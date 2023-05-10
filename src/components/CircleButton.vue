@@ -14,12 +14,10 @@ import type { Placement } from '@/interfaces';
 
 type BackgroundType = 'none' | 'black' | 'light-black';
 type Size = 'small' | 'medium';
-type IconColor = 'gray' | 'white';
 
 @Component
 export default class CircleButton extends Vue {
   @Prop(String) iconName!: string;
-  @Prop({ default: 'gray' }) iconColor!: IconColor;
   @Prop(String) backgroundColor!: BackgroundType;
   @Prop(String) backgroundColorHover!: BackgroundType;
   @Prop(String) target!: string;
@@ -52,7 +50,7 @@ export default class CircleButton extends Vue {
 
     return [
       'image',
-      this.disabled ? 'image-disabled' : this.iconColor,
+      this.disabled ? 'image-disabled' : 'image-enabled',
       this.iconName,
       {
         'image-shift-left': shiftLeft,

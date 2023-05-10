@@ -33,7 +33,7 @@ import { createExtrinsicTransfer, getAssetOptions } from '@/util/assets';
 import { BeaconSigner } from '@/extension/background/extension-base/src/background/BeaconSigner';
 import store from '@/store';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
-import { MOCK_BALANCE, MOCK_FP_BALANCE } from '@/consts/currencies';
+import { MOCK_BALANCE, MOCK_FP_BALANCE, LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { saveTimeoutCache } from '@/extension/messaging';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/networks';
 import { addNumbers } from '@/helpers/numbers';
@@ -662,10 +662,11 @@ export class CurrencyController {
    * @returns {Promise<CreateSwapResult>}
    */
   public async createSwap(options: Partial<SwapOptions>): Promise<CreateSwapResult> {
-    const { assetAId, assetBId, isExchangeB, amountA, amountB, symbolA, symbolB, slippage } = options;
+    const { assetAId, assetBId, isExchangeB, amountA, amountB, symbolA, symbolB, slippage, marketType } = options;
     const assetAAddress = getAssetOptions('', 'soraAsset', assetAId!) as string;
     const assetBAddress = getAssetOptions('', 'soraAsset', assetBId!) as string;
     const amountWithDirection = (isExchangeB ? amountB : amountA) as string;
+    const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
     const assetA: Asset = { address: assetAAddress, decimals: 18, name: symbolA!, symbol: symbolA! };
     const assetB: Asset = {
       address: assetBAddress,
@@ -674,21 +675,29 @@ export class CurrencyController {
       symbol: symbolB!,
     };
 
-    const { amount: amountDexIdXOR, fee: providerFeeDexIdXOR } = await apiSora.swap.getResultFromBackend(
+    const {
+      amount: amountDexIdXOR,
+      fee: providerFeeDexIdXOR,
+      route: routeDexIdXOR,
+    } = await apiSora.swap.getResultFromBackend(
       assetAAddress,
       assetBAddress,
       amountWithDirection,
       isExchangeB,
-      LiquiditySourceTypes.Default,
+      liquiditySource,
       DexId.XOR
     );
 
-    const { amount: amountDexIdXSTUSD, fee: providerFeeDexIdXSTUSD } = await apiSora.swap.getResultFromBackend(
+    const {
+      amount: amountDexIdXSTUSD,
+      fee: providerFeeDexIdXSTUSD,
+      route: routeDexIdXSTUSD,
+    } = await apiSora.swap.getResultFromBackend(
       assetAAddress,
       assetBAddress,
       amountWithDirection,
       isExchangeB,
-      LiquiditySourceTypes.Default,
+      liquiditySource,
       DexId.XSTUSD
     );
 
@@ -696,83 +705,97 @@ export class CurrencyController {
     const amountDexIdXORFP = FPNumber.fromCodecValue(amountDexIdXOR);
     const amountDexIdXSTUSDFP = FPNumber.fromCodecValue(amountDexIdXSTUSD);
 
+    let isDexXor;
+    let expectedAmount;
+    let providerFee;
+    let route;
+
+    if (amountDexIdXORFP.isZero()) {
+      isDexXor = false;
+      expectedAmount = amountDexIdXSTUSDFP;
+      providerFee = providerFeeDexIdXSTUSD;
+      route = routeDexIdXSTUSD;
+    } else if (amountDexIdXSTUSDFP.isZero()) {
+      isDexXor = true;
+      expectedAmount = amountDexIdXORFP;
+      providerFee = providerFeeDexIdXOR;
+      route = routeDexIdXOR;
+    } else {
+      isDexXor = isExchangeB
+        ? FPNumber.lt(amountDexIdXORFP, amountDexIdXSTUSDFP)
+        : FPNumber.gt(amountDexIdXORFP, amountDexIdXSTUSDFP);
+      expectedAmount = isDexXor ? amountDexIdXORFP : amountDexIdXSTUSDFP;
+      providerFee = isDexXor ? providerFeeDexIdXOR : providerFeeDexIdXSTUSD;
+      route = isDexXor ? routeDexIdXOR : routeDexIdXSTUSD;
+    }
+
+    route =
+      route
+        ?.map((item) => {
+          const assetsJson = NetworksController.getAssetsJson();
+          const { symbol } = assetsJson.find(({ currencyId }) => currencyId === item)!;
+
+          return symbol.toUpperCase();
+        })
+        .join(' > ') ?? '';
+
     if (isExchangeB) {
-      const isDexXor = amountDexIdXORFP.isZero()
-        ? false
-        : amountDexIdXSTUSDFP.isZero()
-        ? true
-        : FPNumber.lt(amountDexIdXORFP, amountDexIdXSTUSDFP);
-
-      const expectedAmountA = amountDexIdXORFP.isZero()
-        ? amountDexIdXSTUSDFP
-        : amountDexIdXSTUSDFP.isZero()
-        ? amountDexIdXORFP
-        : isDexXor
-        ? amountDexIdXORFP
-        : amountDexIdXSTUSDFP;
-
       const minMaxValue = apiSora.swap.getMinMaxValue(
         assetA,
         assetB,
-        expectedAmountA.toString(),
+        expectedAmount.toString(),
         amountB!,
         isExchangeB,
         slippage!
       );
 
+      const AToB = expectedAmount.div(new FPNumber(amountB!)).toNumber();
+      const BToA = new FPNumber(amountB!).div(expectedAmount).toNumber();
+
       this.extrinsicOptions.swapOptions = {
         ...swapOptions,
-        amountA: expectedAmountA.toString(),
+        amountA: expectedAmount.toString(),
         amountB: amountB!,
         swapDexId: isDexXor ? DexId.XOR : DexId.XSTUSD,
       };
 
       return {
-        amountA: expectedAmountA.toString(),
+        amountA: expectedAmount.toString(),
         amountB: amountB!,
-        AToB: expectedAmountA.div(new FPNumber(amountB!)).toString(),
-        BToA: new FPNumber(amountB!).div(expectedAmountA).toString(),
+        AToB: isFinite(AToB) ? AToB.toString() : '0',
+        BToA: isFinite(BToA) ? BToA.toString() : '0',
         minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
-        providerFee: FPNumber.fromCodecValue(providerFeeDexIdXSTUSD).toString(),
+        providerFee: FPNumber.fromCodecValue(providerFee).toString(),
+        route,
       };
     } else {
-      const isDexXor = amountDexIdXORFP.isZero()
-        ? false
-        : amountDexIdXSTUSDFP.isZero()
-        ? true
-        : FPNumber.gt(amountDexIdXORFP, amountDexIdXSTUSDFP);
-
-      const expectedAmountB = amountDexIdXORFP.isZero()
-        ? amountDexIdXSTUSDFP
-        : amountDexIdXSTUSDFP.isZero()
-        ? amountDexIdXORFP
-        : isDexXor
-        ? amountDexIdXORFP
-        : amountDexIdXSTUSDFP;
-
       const minMaxValue = apiSora.swap.getMinMaxValue(
         assetA,
         assetB,
         amountA!,
-        expectedAmountB.toString(),
+        expectedAmount.toString(),
         isExchangeB!,
         slippage!
       );
 
+      const AToB = new FPNumber(amountA!).div(expectedAmount).toNumber();
+      const BToA = expectedAmount.div(new FPNumber(amountA!)).toNumber();
+
       this.extrinsicOptions.swapOptions = {
         ...swapOptions,
         amountA: amountA!,
-        amountB: expectedAmountB.toString(),
+        amountB: expectedAmount.toString(),
         swapDexId: isDexXor ? DexId.XOR : DexId.XSTUSD,
       };
 
       return {
         amountA: amountA!,
-        amountB: expectedAmountB.toString(),
-        AToB: new FPNumber(amountA!).div(expectedAmountB).toString(),
-        BToA: expectedAmountB.div(new FPNumber(amountA!)).toString(),
+        amountB: expectedAmount.toString(),
+        AToB: isFinite(AToB) ? AToB.toString() : '0',
+        BToA: isFinite(BToA) ? BToA.toString() : '0',
         minMaxValue: FPNumber.fromCodecValue(minMaxValue).toString(),
-        providerFee: FPNumber.fromCodecValue(providerFeeDexIdXOR).toString(),
+        providerFee: FPNumber.fromCodecValue(providerFee).toString(),
+        route,
       };
     }
   }
@@ -784,21 +807,19 @@ export class CurrencyController {
   public async sendSwap(from: string, isSavePass: boolean): Promise<void> {
     if (IS_EXTENSION) saveTimeoutCache(from, isSavePass);
 
-    const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB } = this.extrinsicOptions.swapOptions!;
+    const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } =
+      this.extrinsicOptions.swapOptions!;
+    const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
+
+    const pair = BaseApi.getPair(from);
+
+    apiSora.account = { json: null as any, pair };
+    apiSora.shouldPairBeLocked = !isSavePass;
 
     this.setTransactionStatus('pending');
 
     try {
-      await apiSora.swap.execute(
-        assetA,
-        assetB,
-        amountA,
-        amountB,
-        slippage,
-        isExchangeB,
-        LiquiditySourceTypes.Default,
-        swapDexId
-      );
+      await apiSora.swap.execute(assetA, assetB, amountA, amountB, slippage, isExchangeB, liquiditySource, swapDexId);
     } catch (ex) {
       this.setTransactionStatus('failed');
 

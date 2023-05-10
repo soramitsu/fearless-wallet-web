@@ -34,10 +34,15 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
+import { MarketType } from '@/interfaces';
 
 @Component
 export default class SwapSettings extends Vue {
-  readonly optionsSubstrateKeyPair = [{ label: 'SMART', value: 'smart' }];
+  readonly optionsSubstrateKeyPair = [
+    { label: MarketType.SMART, value: MarketType.SMART },
+    { label: MarketType.TBC, value: MarketType.TBC },
+  ];
+
   readonly slippageValues = [
     { label: '0.1%', value: 0.1, warningText: 'assets.transactionMayFail' },
     { label: '0.5%', value: 0.5 },
@@ -47,8 +52,6 @@ export default class SwapSettings extends Vue {
     { label: '4%', value: 4 },
     { label: '5%', value: 5, warningText: 'assets.transactionFrontrun' },
   ];
-
-  inputIsFocused = 'smart';
 
   @Prop({ default: '' }) text!: string;
   @PropSync('temporaryMarketType', { type: String }) syncedMarketType!: string;

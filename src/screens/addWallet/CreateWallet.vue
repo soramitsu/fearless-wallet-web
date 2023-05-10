@@ -35,7 +35,7 @@ export default class CreateWallet extends Vue {
   }
 
   get mnemonicMix() {
-    return [...this.mnemonicArray].sort(() => Math.random() - 0.5);
+    return [...this.mnemonicArray].sort(() => Math.random() - 0.5).map((word) => `${word} `);
   }
 
   get showMnemonicBackupForm() {

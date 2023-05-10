@@ -4,13 +4,7 @@
       <div class="column left-column">
         <div class="header">{{ $t(text).toUpperCase() }}</div>
 
-        <input
-          v-model="syncedAmount"
-          placeholder="0.00"
-          type="number"
-          @focus="setFocusValue(true)"
-          @blur="setFocusValue(false)"
-        />
+        <input v-model="amountInternal" placeholder="0.00" @focus="setFocusValue(true)" @blur="setFocusValue(false)" />
 
         <div class="price">{{ fiatSymbol }}{{ valueCut }}</div>
       </div>
@@ -44,6 +38,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import { FPNumber } from '@sora-substrate/util';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 
 @Component
@@ -58,6 +53,17 @@ export default class SwapSelectInput extends Vue {
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+
+  get amountInternal() {
+    const localAmount = FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();
+
+    return localAmount;
+  }
+
+  set amountInternal(value: string) {
+    if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN')
+      this.syncedAmount = FPNumber.fromCodecValue(value || 0, 0).toString();
+  }
 
   get valueCut() {
     return this.$n(+this.value, 'price');

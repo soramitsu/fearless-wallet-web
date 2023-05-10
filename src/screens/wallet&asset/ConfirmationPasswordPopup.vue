@@ -8,6 +8,7 @@
 
         <ValidatedInput
           v-if="isLocked"
+          ref="passInput"
           v-model="password"
           placeholder="common.password"
           size="big"
@@ -59,10 +60,11 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Component, Vue, Prop, Watch, Ref } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { Currencies, Currency, RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
 import type { GetNetworkGenesisHash, SelectedWallet } from '@/store';
+import type ValidatedInput from '@/components/ValidatedInput.vue';
 import { beaconController, ExtensionController } from '@/controllers';
 import { isSignLocked, refreshPasswordTimeout } from '@/extension/messaging';
 import BaseApi from '@/util/BaseApi';
@@ -86,6 +88,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   transactionState: 'pending' | 'success' | 'failed' | undefined = undefined;
   showUnknownErrorPopup = false;
 
+  @Ref('passInput') readonly passInputComponent!: ValidatedInput;
   @Prop(String) amount!: string;
   @Prop(String) value!: string;
   @Prop(String) firstIcon!: string;
@@ -188,6 +191,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async mounted() {
+    this.passInputComponent.input.focus();
+
     if (!this.isExtension || this.isSignMobile) return;
 
     if (this.transactionId !== undefined) {

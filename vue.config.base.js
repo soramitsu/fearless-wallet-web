@@ -52,10 +52,18 @@ module.exports = {
 
     config.optimization.merge({
       splitChunks: {
+        maxSize: 40000,
         cacheGroups: {
+          polkadotRpc: {
+            test: /[\\/]node_modules[\\/](@polkadot[\\/](rpc-provider|rpc-core))[\\/]/,
+            name: 'polkadot-rpc-provider',
+            reuseExistingChunk: true,
+            chunks: 'all',
+          },
           vendor: {
             test: /[\\/]node_modules[\\/](vue|qrcode|file-saver|vuedraggable|tippy.js|vue-class-component|@airgap)[\\/]/,
             name: 'vendor',
+            reuseExistingChunk: true,
             chunks: 'all',
           },
         },

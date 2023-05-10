@@ -106,6 +106,7 @@
               :sendAssetUP="sendAssetUP"
               :receiveAssetUP="receiveAssetUP"
               :isExchangeB="isExchangeB"
+              :route="route"
             />
           </template>
 
@@ -125,6 +126,7 @@
             :sendAssetUP="sendAssetUP"
             :receiveAssetUP="receiveAssetUP"
             :isExchangeB="isExchangeB"
+            :route="route"
           />
         </div>
 
@@ -199,10 +201,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { Currencies, NetworkStatus } from '@/interfaces';
-import type { GetAssetName, SelectedWallet, GetNetworkStatus, GetNetwork } from '@/store';
+import type { GetAssetName, SelectedWallet, GetNetwork } from '@/store';
+import { Currencies, MarketType } from '@/interfaces';
 import SwapSelectInput from '@/screens/polkaswap/swap/SwapSelectInput.vue';
 import SwapPreview from '@/screens/polkaswap/swap/SwapPreview.vue';
 import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
@@ -215,6 +217,8 @@ import { NetworksController } from '@/controllers';
 import Disclaimer from '@/screens/polkaswap/swap/Disclaimer.vue';
 import { SORA_UTILITY_ASSET, SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/networks';
 import { Components } from '@/router/routes';
+
+const SWAP_INTERVAL_RECALCULATE = 10000;
 
 @Component({
   components: {
@@ -231,8 +235,8 @@ export default class SwapForm extends Vue {
   step = 1;
   slippage = 0.5;
   temporarySlippage = 0.5;
-  marketType = 'smart';
-  temporaryMarketType = 'smart';
+  marketType = MarketType.SMART;
+  temporaryMarketType = MarketType.SMART;
   sendAssetId = '';
   receiveAssetId = '';
   sendAmount = '';
@@ -242,18 +246,19 @@ export default class SwapForm extends Vue {
   selectAssetType = '';
   AToB = '';
   BToA = '';
+  route = '';
   filterValue = '';
   showSettings = false;
   showConfirmationPasswordPopup = false;
   isExchangeB = false;
+  swapInterval!: NodeJS.Timer;
 
   @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
   @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
-  @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getPolkaswapAlertVisibility) showPolkaswapAlert!: boolean;
+  @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
 
   get showCloseIcon() {
     return this.showSettings;
@@ -291,7 +296,7 @@ export default class SwapForm extends Vue {
   }
 
   get fee() {
-    return this.getNetwork(this.soraNetworkName)?.fee?.toString() ?? '';
+    return this.getNetwork(this.soraNetworkName)?.fees?.Swap?.toString() ?? '';
   }
 
   get minMaxAmountPrice() {
@@ -365,7 +370,14 @@ export default class SwapForm extends Vue {
   }
 
   get showSwapInfo() {
-    return this.sendAssetId !== '' && this.receiveAssetId !== '' && this.sendAmount !== '' && this.receiveAmount !== '';
+    return (
+      this.sendAssetId !== '' &&
+      this.receiveAssetId !== '' &&
+      this.sendAmount !== '' &&
+      this.receiveAmount !== '' &&
+      +this.sendAmount !== 0 &&
+      +this.receiveAmount !== 0
+    );
   }
 
   get sendAsset() {
@@ -430,14 +442,17 @@ export default class SwapForm extends Vue {
   get buttonText() {
     if (this.showSettings) return 'common.save';
 
-    if (this.sendAmount !== '' && this.receiveAmount !== '' && this.fee === '') return 'assets.calculateFee';
+    if (this.sendAmount !== '' && this.receiveAmount !== '') {
+      if (this.fee === '') return 'assets.calculateFee';
 
-    if (!this.isValidSendAsset) return { text: 'assets.insufficientBalance', localeProps: { asset: this.sendAssetUP } };
+      if (!this.isValidSendAsset)
+        return { text: 'assets.insufficientBalance', localeProps: { asset: this.sendAssetUP } };
 
-    if (!this.isValidTransferByXOR)
-      return { text: 'assets.insufficientBalance', localeProps: { asset: this.soraMainAssetUpper } };
+      if (!this.isValidTransferByXOR)
+        return { text: 'assets.insufficientBalance', localeProps: { asset: this.soraMainAssetUpper } };
 
-    if (+this.sendAmount === 0 || +this.receiveAmount === 0) return { text: 'assets.unableSwap' };
+      if (+this.sendAmount === 0 || +this.receiveAmount === 0) return { text: 'assets.insufficientLiquidity' };
+    }
 
     return this.step === 1 ? 'assets.preview' : 'common.confirm';
   }
@@ -513,9 +528,19 @@ export default class SwapForm extends Vue {
     return this.receiveCurrency?.getCostOfAssets(this.receiveAmount);
   }
 
-  @Watch('networkStatus')
-  connect(status: NetworkStatus) {
-    if (status === 'ready') this.initializeSora();
+  activated() {
+    const { reset } = this.$route.params;
+
+    if (reset) {
+      this.receiveAssetId = '';
+      this.sendAmount = '';
+      this.receiveAmount = '';
+    }
+  }
+
+  deactivated() {
+    this.selectAssetType = '';
+    this.step = 1;
   }
 
   async created() {
@@ -526,22 +551,9 @@ export default class SwapForm extends Vue {
       this.receiveAmount = restPriceXOR;
       this.isExchangeB = true;
     } else this.sendAssetId = assetId ?? SORA_XOR_ASSET_ID;
-
-    if (this.networkStatus === 'ready') this.initializeSora();
   }
 
-  async initializeSora() {
-    if (this.fee !== '') return;
-
-    try {
-      await NetworksController.initializeSora();
-      await NetworksController.calcSoraFee();
-    } catch (ex) {
-      console.info('initializeSora', ex);
-    }
-  }
-
-  async createSwap() {
+  createSwap() {
     if (this.sendAssetId === '' || this.receiveAssetId === '') {
       if (this.isExchangeB) this.sendAmount = '';
       else this.receiveAmount = '';
@@ -556,25 +568,44 @@ export default class SwapForm extends Vue {
       return;
     }
 
-    const { amountA, amountB, AToB, BToA, providerFee, minMaxValue } = await this.sendCurrency!.createSwap({
-      network: this.soraNetworkName,
-      amountA: this.sendAmount,
-      amountB: this.receiveAmount,
-      assetAId: this.sendAssetId,
-      assetBId: this.receiveAssetId,
-      slippage: this.slippage,
-      symbolA: this.sendAsset,
-      symbolB: this.receiveAsset,
-      isExchangeB: this.isExchangeB,
-    });
+    const createSwap = async () => {
+      const { amountA, amountB, AToB, BToA, providerFee, minMaxValue, route } = await this.sendCurrency!.createSwap({
+        network: this.soraNetworkName,
+        marketType: this.marketType,
+        amountA: this.sendAmount,
+        amountB: this.receiveAmount,
+        assetAId: this.sendAssetId,
+        assetBId: this.receiveAssetId,
+        slippage: this.slippage,
+        symbolA: this.sendAsset,
+        symbolB: this.receiveAsset,
+        isExchangeB: this.isExchangeB,
+      });
 
-    if (this.isExchangeB) this.sendAmount = amountA;
-    else this.receiveAmount = amountB;
+      if (this.isExchangeB) this.sendAmount = amountA;
+      else this.receiveAmount = amountB;
 
-    this.minMaxAmount = minMaxValue;
-    this.providerFee = providerFee;
-    this.AToB = AToB;
-    this.BToA = BToA;
+      this.minMaxAmount = minMaxValue;
+      this.providerFee = providerFee;
+      this.AToB = AToB;
+      this.BToA = BToA;
+      this.route = route;
+    };
+
+    this.clearSwapInterval();
+
+    this.swapInterval = setInterval(createSwap, SWAP_INTERVAL_RECALCULATE);
+
+    createSwap();
+  }
+
+  closeForm() {
+    this.clearSwapInterval();
+    this.$router.back();
+  }
+
+  clearSwapInterval() {
+    clearInterval(this.swapInterval);
   }
 
   openPolkaswapDisclaimer() {
@@ -612,10 +643,6 @@ export default class SwapForm extends Vue {
     if (closeForm) this.closeForm();
   }
 
-  closeForm() {
-    this.$router.back();
-  }
-
   handlerFilter(value: string) {
     this.filterValue = value;
   }
@@ -639,7 +666,7 @@ export default class SwapForm extends Vue {
   }
 
   resetSettings() {
-    this.temporaryMarketType = 'smart';
+    this.temporaryMarketType = MarketType.SMART;
     this.temporarySlippage = 0.5;
   }
 
@@ -649,6 +676,7 @@ export default class SwapForm extends Vue {
     this.showSettings = !this.showSettings;
     this.temporaryMarketType = this.marketType;
     this.temporarySlippage = this.slippage;
+    this.selectAssetType = '';
   }
 
   swapAssets() {
@@ -671,7 +699,7 @@ export default class SwapForm extends Vue {
     else this.step -= 1;
   }
 
-  updateMarketType(value: string) {
+  updateMarketType(value: MarketType) {
     this.temporaryMarketType = value;
   }
 
@@ -788,6 +816,7 @@ export default class SwapForm extends Vue {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  margin-right: 4px;
 }
 
 .swap-content {

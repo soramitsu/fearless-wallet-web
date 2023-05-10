@@ -70,6 +70,7 @@ function extractMetadata(store: MetadataStore): void {
     });
 
     removals.forEach((key) => store.remove(key));
+
     Object.values(defs).forEach(({ def }) => addMetadata(def));
   });
 }
@@ -77,16 +78,19 @@ function extractMetadata(store: MetadataStore): void {
 export const registry = new TypeRegistry();
 const metaStore = new MetadataStore();
 
-export async function initState() {
-  extractMetadata(metaStore);
+export async function initStorage() {
+  const { authUrls } = await State.getFromStorage(['authUrls']);
 
-  await storage.set({
-    authUrls: {},
+  const obj: Record<string, any> = {
     defaultAuthAccountSelection: [],
     accountSubs: {},
     addresses: {},
     providers: {},
-  });
+  };
+
+  if (authUrls === undefined) obj.authUrls = {};
+
+  await storage.set(obj);
 }
 
 export default class State {
@@ -103,6 +107,14 @@ export default class State {
   static readonly metaSubject: BehaviorSubject<MetadataRequest[]> = new BehaviorSubject<MetadataRequest[]>([]);
   static readonly signSubject: BehaviorSubject<SigningRequest[]> = new BehaviorSubject<SigningRequest[]>([]);
   static currentTabStatus: ActiveTabAuthorizeStatus;
+
+  static async init() {
+    extractMetadata(metaStore);
+
+    const { authUrls } = await State.getFromStorage(['authUrls']);
+
+    this.authUrls = authUrls ?? {}; // at the very first start after installation authUrls = undefined
+  }
 
   static get knownMetadata(): MetadataDef[] {
     return knownMetadata();
@@ -279,16 +291,14 @@ export default class State {
 
   private static async saveCurrentAuthList() {
     await storage.set({ authUrls: State.authUrls });
+
+    State.init();
   }
 
-  private static async saveDefaultAuthAccounts() {
-    await storage.set({ defaultAuthAccountSelection: State.defaultAuthAccountSelection });
-  }
+  static async updateDefaultAuthAccounts(defaultAuthAccountSelection: string[]) {
+    this.defaultAuthAccountSelection = defaultAuthAccountSelection;
 
-  static async updateDefaultAuthAccounts(newList: string[]) {
-    this.defaultAuthAccountSelection = newList;
-
-    State.saveDefaultAuthAccounts();
+    storage.set({ defaultAuthAccountSelection });
   }
 
   private static metaComplete = (

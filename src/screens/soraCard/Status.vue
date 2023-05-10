@@ -3,7 +3,7 @@
     <ContentForm :height="430">
       <Scroll>
         <div :class="statusesClasses">
-          <Icon :icon="iconName" class="banner" />
+          <img :src="iconName" class="banner" />
 
           <div class="status">{{ $t(statusText) }}</div>
           <div class="status-description">{{ $t(statusDescription) }}</div>
@@ -75,9 +75,9 @@ export default class Status extends Vue {
   }
 
   get iconName() {
-    if (this.isRejectedAndNotFreeAttempts) return 'sora-card';
+    if (this.isRejectedAndNotFreeAttempts) return require('@/assets/icons/sora-card.png');
 
-    return `sora-card-${this.currentStatus.toLowerCase()}`;
+    return require(`@/assets/icons/sora-card-${this.currentStatus.toLowerCase()}.png`);
   }
 
   get statusText() {

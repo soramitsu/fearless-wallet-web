@@ -174,7 +174,7 @@ body {
   text-align: center;
   margin: 0 auto;
   padding: $default-padding;
-  background-image: url('./assets/background.png');
+  background-image: url('@/assets/background.png');
   background-position: center;
   background-size: cover;
 }

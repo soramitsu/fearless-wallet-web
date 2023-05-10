@@ -2,13 +2,11 @@
   <div v-if="showSoraCardBanner" class="sora-banner">
     <Icon icon="sora-card-banner" class="banner" :style="iconStyle" />
 
-    <CircleButton
-      backgroundColor="light-black"
-      iconName="close-thin"
-      size="small"
-      class="close-button"
-      @click="hideBanner"
-    />
+    <!-- <img src="@/assets/icons/sora-card-banner.png" class="banner" :style="iconStyle" /> -->
+
+    <div class="close-button close-circle" @click="hideBanner">
+      <Icon icon="close-thin" class="close-icon" />
+    </div>
 
     <button class="status-card-button" @click="openSoraCardForm">{{ $t(statusText) }}</button>
   </div>
@@ -41,7 +39,7 @@ export default class SoraCardBanner extends Vue {
 
   get iconStyle() {
     const styles: Record<string, string> = {
-      height: `${SORA_CARD_BANNER_HEIGHT}px`,
+      'min-height': `${SORA_CARD_BANNER_HEIGHT}px`,
     };
 
     return styles;
@@ -68,13 +66,33 @@ export default class SoraCardBanner extends Vue {
 
   .banner {
     width: calc($extension-width - $default-padding - $default-padding);
-    min-height: 130px;
   }
 
   .close-button {
     position: relative;
     top: -110px;
     left: 250px;
+    width: 16px;
+    min-height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    .close-icon {
+      color: $default-white;
+
+      :hover {
+        color: $plain-white;
+      }
+    }
+
+    &:hover {
+      .close-icon {
+        color: $plain-white;
+      }
+    }
   }
 
   .status-card-button {

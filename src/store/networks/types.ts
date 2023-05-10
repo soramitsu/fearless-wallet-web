@@ -107,10 +107,6 @@ export type SetTotalXorSubscribeProps = {
   subscription: Subscription;
 };
 
-export type SetSoraFee = {
-  fee: string;
-};
-
 // Actions
 export type FetchJsons = {
   chainsUrl: string;

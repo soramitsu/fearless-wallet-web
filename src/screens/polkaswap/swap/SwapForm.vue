@@ -201,7 +201,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { GetAssetName, SelectedWallet, GetNetwork } from '@/store';
 import { Currencies, MarketType } from '@/interfaces';
@@ -213,10 +213,10 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { getCurrencyOptions, getXORCurrency } from '@/helpers/currencies';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
-import { NetworksController } from '@/controllers';
 import Disclaimer from '@/screens/polkaswap/swap/Disclaimer.vue';
 import { SORA_UTILITY_ASSET, SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/networks';
 import { Components } from '@/router/routes';
+import { GetNetworkStatus } from '@/store';
 
 const SWAP_INTERVAL_RECALCULATE = 10000;
 
@@ -259,6 +259,7 @@ export default class SwapForm extends Vue {
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
+  @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
 
   get showCloseIcon() {
     return this.showSettings;

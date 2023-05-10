@@ -13,7 +13,6 @@ import type {
   SetNetworkApiProps,
   SetNetworkStatusProps,
   SetAssetsPriceIntervalProps,
-  SetSoraFee,
   UpdateXorTotalBalanceProps,
   SetTotalXorSubscribeProps,
 } from './types';

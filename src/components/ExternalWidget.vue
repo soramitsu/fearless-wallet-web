@@ -2,7 +2,7 @@
   <div :class="containerClasses">
     <Loader v-if="widgetLoading" />
 
-    <iframe v-show="showFrame" :src="src" class="widget" @load="onLoadWidget" />
+    <iframe v-show="showFrame" :src="src" title="External Widget" class="widget" @load="onLoadWidget" />
   </div>
 </template>
 

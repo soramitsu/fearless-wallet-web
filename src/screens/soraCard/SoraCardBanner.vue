@@ -1,8 +1,6 @@
 <template>
   <div v-if="showSoraCardBanner" class="sora-banner">
-    <Icon icon="sora-card-banner" class="banner" :style="iconStyle" />
-
-    <!-- <img src="@/assets/icons/sora-card-banner.png" class="banner" :style="iconStyle" /> -->
+    <img src="@/assets/icons/sora-card-banner.png" class="banner" />
 
     <div class="close-button close-circle" @click="hideBanner">
       <Icon icon="close-thin" class="close-icon" />
@@ -16,7 +14,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import type { Fn } from '@/interfaces';
-import { SORA_CARD_BANNER_HEIGHT, VerificationStatus } from '@/consts/soraCard';
+import { VerificationStatus } from '@/consts/soraCard';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
@@ -37,14 +35,6 @@ export default class SoraCardBanner extends Vue {
     return 'soraCard.getCard';
   }
 
-  get iconStyle() {
-    const styles: Record<string, string> = {
-      'min-height': `${SORA_CARD_BANNER_HEIGHT}px`,
-    };
-
-    return styles;
-  }
-
   hideBanner() {
     this.setSoraCardBannerVisibility(false);
   }
@@ -62,7 +52,7 @@ export default class SoraCardBanner extends Vue {
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: 130px;
+  height: 120px;
 
   .banner {
     width: calc($extension-width - $default-padding - $default-padding);
@@ -70,7 +60,7 @@ export default class SoraCardBanner extends Vue {
 
   .close-button {
     position: relative;
-    top: -110px;
+    top: -100px;
     left: 250px;
     width: 16px;
     min-height: 16px;
@@ -97,7 +87,7 @@ export default class SoraCardBanner extends Vue {
 
   .status-card-button {
     position: relative;
-    top: -65px;
+    top: -55px;
     background: #131313;
     border-radius: 16px;
     border: none;

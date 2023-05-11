@@ -415,15 +415,7 @@ export default class SendForm extends Vue {
     }
 
     // const partialFee = await this.createTransferAndGetFee();
-    const checkResponse = await checkTransfer({
-      networkKey: this.syncedSelectedNetwork,
-      from: this.syncedRecipient,
-      to: this.syncedRecipient,
-      relayChain: this.currency?.relayChain,
-      value: this.syncedAmount,
-      transferAll: false,
-      token: this.syncedSelectedAssetId,
-    });
+    const checkResponse = await this.verifyTransfer();
 
     this.syncedPartialFee = checkResponse.estimateFee ?? '0';
     // this.isValidCountAssets = this.currency!.validateCountAssets(
@@ -548,22 +540,28 @@ export default class SendForm extends Vue {
       networkKey: this.syncedSelectedNetwork,
       from: this.transactionAddress,
       to: this.syncedRecipient,
+      relayChain: this.currency?.relayChain,
       value: this.syncedAmount,
       transferAll: false,
       token: this.syncedSelectedAssetId,
     };
   }
 
+  verifyTransfer() {
+    return checkTransfer({
+      networkKey: this.syncedSelectedNetwork,
+      from: this.syncedRecipient,
+      to: this.syncedRecipient,
+      relayChain: this.currency?.relayChain,
+      value: this.syncedAmount,
+      transferAll: false,
+      token: this.syncedSelectedAssetId,
+    });
+  }
+
   async handlerContinueButton(skipWarning = false) {
     if (!skipWarning && this.step === 1) {
-      const checkResponse = await checkTransfer({
-        networkKey: this.syncedSelectedNetwork,
-        from: this.syncedRecipient,
-        to: this.syncedRecipient,
-        value: this.syncedAmount,
-        transferAll: false,
-        token: this.syncedSelectedAssetId,
-      });
+      const checkResponse = await this.verifyTransfer();
 
       if (checkResponse.errors?.length) {
         this.showExistentialPopup = checkResponse.errors.some((error) => error.code === 'notEnoughValue');

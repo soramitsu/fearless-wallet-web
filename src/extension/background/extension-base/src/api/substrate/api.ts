@@ -130,18 +130,22 @@ export async function initApi(network: NetworkJsonOld): Promise<void> {
     ['connected', () => onConnected(networkName)],
     ['disconnected', () => onDisconnect(networkName)],
     ['ready', () => onReady(networkName)],
-    ['error', () => null],
+    ['error', () => onDisconnect(networkName)],
   ];
 
   if (isSora(networkName)) {
     soraConnection.open(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners });
   } else {
-    const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS);
-    const api = new ApiPromise({ provider, noInitWarn: true });
+    try {
+      const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS);
 
-    state.apis.substrate[networkName].api = api;
-    state.apis.substrate[networkName].provider = provider;
+      const api = new ApiPromise({ provider, noInitWarn: true });
+      eventListeners.forEach(([eventName, callback]) => api.on(eventName, callback));
 
-    eventListeners.forEach(([eventName, callback]) => api.on(eventName, callback));
+      state.apis.substrate[networkName].api = api;
+      state.apis.substrate[networkName].provider = provider;
+    } catch {
+      console.warn(`Error while init api for ${networkName}`);
+    }
   }
 }

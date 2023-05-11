@@ -186,9 +186,12 @@ export async function estimateFee(
     return fee;
   }
 
-  const apiProps = dotSamaApiMap[networkKey];
-  await apiProps.api?.isReady;
-  const api = apiProps.api!;
+  const apiProps = state.getSubstrateApiMap[networkKey];
+
+  if (!apiProps.api) return 0;
+
+  await apiProps.api.isReadyOrError;
+  const api = apiProps.api;
 
   const extrinsic = createExtrinsicTransfer({
     amount: value,
@@ -437,20 +440,25 @@ export async function makeTransfer({
   networkKey,
   to,
   tokenInfo,
+  isSavePass,
   value,
 }: MakeTransferProps): Promise<void> {
   const txState: BasicTxResponse = {};
   const apiProps = dotSamaApiMap[networkKey];
+
   await apiProps.api?.isReady;
+
+  const api = apiProps.api!;
   const transferAmount = value;
 
-  const tokenBalance = state.balanceMap[from].find(
-    ({ name, relayChain }) => name === tokenInfo.name && relayChain === tokenInfo.relayChain
-  )!;
+  const tokenBalance = state.balanceMap[from].find(({ assetId, relayChain }) => {
+    if (tokenInfo.relayChain) return assetId === tokenInfo.id && relayChain === tokenInfo.relayChain;
+    else return assetId === tokenInfo.id;
+  })!;
 
   const extrinsic = createExtrinsicTransfer({
     amount: value,
-    api: apiProps.api!,
+    api,
     tokenBalance,
     to,
     networkKey,

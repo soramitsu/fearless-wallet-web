@@ -298,7 +298,7 @@ export function subscribeBalance(
         .then((unsub) => {
           unsub && unsub();
         })
-        .catch(console.error);
+        .catch((err) => err);
     });
   };
 }

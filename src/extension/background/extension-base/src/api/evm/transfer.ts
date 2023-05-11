@@ -58,7 +58,6 @@ export async function getExistentialDeposit(
 export const handleTransferBalanceResult = ({
   callback,
   changeValue,
-  networkKey,
   receipt,
   response,
   updateState,

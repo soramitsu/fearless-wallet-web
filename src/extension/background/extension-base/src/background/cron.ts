@@ -155,6 +155,7 @@ export class FWCron {
 
     this.state.getCurrentAccount((account) => {
       if (!account) return;
+
       const { address, ethereumAddress } = account;
 
       this.subscriptions.subscribeBalances(

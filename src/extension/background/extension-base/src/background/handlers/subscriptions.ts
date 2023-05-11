@@ -53,14 +53,6 @@ export class FWSubscription {
   start() {
     this.logger.log('Starting subscription');
 
-    this.state.getCurrentAccount((currentAccountInfo) => {
-      if (currentAccountInfo) {
-        const { address, ethereumAddress } = currentAccountInfo;
-
-        this.subscribeBalances(address, ethereumAddress, this.state.getSubstrateApiMap, this.state.getEvmApiMap);
-      }
-    });
-
     !this.serviceSubscription &&
       (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
         next: (serviceInfo) => {
@@ -121,7 +113,7 @@ export class FWSubscription {
           this.initBalanceSubscription(address, ethereumAddress, dotSamaApiMap, web3ApiMap, onlyRunOnFirstTime)
         );
       })
-      .catch((err) => this.logger.warn(err));
+      .catch((err) => console.warn('Unable to subscribe', err));
   }
 
   initBalanceSubscription(

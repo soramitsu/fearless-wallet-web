@@ -42,9 +42,7 @@ export function getPrecisionValue(
   return returnFPNumber ? amountFP : amountFP.toCodecString();
 }
 
-export function createExtrinsicTransfer(
-  props: ExtrinsicTransferProps
-): SubmittableExtrinsic<'promise', ISubmittableResult> | null {
+export function createExtrinsicTransfer(props: ExtrinsicTransferProps): SubmittableExtrinsic<'promise'> | null {
   const { amount, api, tokenBalance, to, networkKey } = props;
   const { precision, assetId: id, balances, name } = tokenBalance;
   const type = (balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())!.type as TypeAsset) ?? '';

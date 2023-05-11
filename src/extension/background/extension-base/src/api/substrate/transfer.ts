@@ -30,10 +30,11 @@ export async function getExistentialDeposit(
   token: string,
   dotSamaApiMap: Record<string, ApiProps>
 ): Promise<string> {
-  const apiProps = await dotSamaApiMap[networkKey].isReady;
+  const apiProps = dotSamaApiMap[networkKey];
+  await apiProps.api?.isReady;
   const api = apiProps.api;
 
-  const tokenInfo = await getTokenInfo(networkKey, api!, token);
+  const tokenInfo = getTokenInfo(token);
   const isMainToken = checkMainToken(networkKey, tokenInfo.id);
 
   if (tokenInfo && isMainToken) {
@@ -58,7 +59,8 @@ export async function checkReferenceCount(
   address: string,
   dotSamaApiMap: Record<string, ApiProps>
 ): Promise<boolean> {
-  const apiProps = await dotSamaApiMap[networkKey].isReady;
+  const apiProps = dotSamaApiMap[networkKey];
+  await apiProps.api?.isReady;
   const api = apiProps.api;
 
   if (apiProps.isEthereum) {
@@ -81,7 +83,8 @@ export async function checkSupportTransfer(
   token: string,
   dotSamaApiMap: Record<string, ApiProps>
 ): Promise<SupportTransferResponse> {
-  const apiProps = await dotSamaApiMap[networkKey].isReady;
+  const apiProps = dotSamaApiMap[networkKey];
+  await apiProps.api?.isReady;
 
   if (apiProps.isEthereum) {
     return {
@@ -115,7 +118,7 @@ export async function checkSupportTransfer(
     return result;
   }
 
-  const tokenInfo = await getTokenInfo(networkKey, api, token);
+  const tokenInfo = getTokenInfo(token);
   const isMainToken = checkMainToken(networkKey, tokenInfo.id);
   const type = state.networkMap[networkKey].assets.find((asset) => asset.assetId === tokenInfo?.id)?.type;
 
@@ -183,7 +186,8 @@ export async function estimateFee(
     return fee;
   }
 
-  const apiProps = await dotSamaApiMap[networkKey].isReady;
+  const apiProps = dotSamaApiMap[networkKey];
+  await apiProps.api?.isReady;
   const api = apiProps.api!;
 
   const extrinsic = createExtrinsicTransfer({
@@ -194,7 +198,9 @@ export async function estimateFee(
     networkKey,
   });
 
-  const paymentInfo = await extrinsic?.paymentInfo(to);
+  if (!extrinsic) return 0;
+
+  const paymentInfo = await extrinsic.paymentInfo(to);
   const partialFee = paymentInfo ? +paymentInfo.partialFee : 0;
   const result = new FPNumber(partialFee, tokenBalance?.precision);
 
@@ -434,7 +440,8 @@ export async function makeTransfer({
   value,
 }: MakeTransferProps): Promise<void> {
   const txState: BasicTxResponse = {};
-  const apiProps = await dotSamaApiMap[networkKey].isReady;
+  const apiProps = dotSamaApiMap[networkKey];
+  await apiProps.api?.isReady;
   const transferAmount = value;
 
   const tokenBalance = state.balanceMap[from].find(

@@ -43,8 +43,6 @@ export const getRegistry = async (networkKey: string, api: ApiPromise) => {
   return chainRegistry;
 };
 
-export async function getTokenInfo(networkKey: string, api: ApiPromise, token: string): Promise<AssetJson> {
-  const { tokenMap } = await getRegistry(networkKey, api);
-
-  return tokenMap.find((el) => el.displayName === token || el.symbol === token)!;
+export function getTokenInfo(tokenId: string): AssetJson {
+  return state.tokenMap.find((el) => el.id === tokenId)!;
 }

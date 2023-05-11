@@ -419,6 +419,7 @@ export default class SendForm extends Vue {
       networkKey: this.syncedSelectedNetwork,
       from: this.syncedRecipient,
       to: this.syncedRecipient,
+      relayChain: this.currency?.relayChain,
       value: this.syncedAmount,
       transferAll: false,
       token: this.syncedSelectedAssetId,

@@ -129,7 +129,7 @@ export default class SendForm extends Vue {
   get totalString() {
     const total = addNumbers([this.amount, this.partialFee]);
 
-    return `${formattedNumber(+total, { decimalsValue: 7 })} ${this.selectedAssetUpper}`;
+    return `${this.$n(+total, 'price')} ${this.selectedAssetUpper}`;
   }
 
   created() {

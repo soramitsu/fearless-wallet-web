@@ -58,7 +58,7 @@
                 <div class="transferable-label">{{ $t('assets.transferable') }}</div>
 
                 <div class="transferable-descriptions">
-                  <div class="transferable-amount">{{ $n(transferableAmount, 'decimal') }}</div>
+                  <div class="transferable-amount">{{ $n(transferrableAmount, 'decimal') }}</div>
                   <div class="transferable-assets">{{ selectedAssetUpper }}</div>
                 </div>
               </div>

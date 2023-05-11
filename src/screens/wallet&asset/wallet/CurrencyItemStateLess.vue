@@ -10,23 +10,25 @@
     <div class="descriptions-column">
       <div class="row first-row">
         <div>
-          {{ mainNetwork }}
+          {{ tokenName }}
         </div>
 
         <template>
-          <!-- <Shimmer v-if="showShimmers" height="14px" width="60px" /> -->
+          <Shimmer v-if="showShimmers" height="14px" width="60px" />
 
-          <div class="available-networks">
-            <ExternalLogo
-              v-for="{ icon, name } in networkBadges"
-              class="minor-network-img"
-              :key="name"
-              :name="icon"
-              :width="12"
-            />
+          <template v-else>
+            <div class="available-networks">
+              <ExternalLogo
+                v-for="{ icon, name } in networkBadges"
+                class="minor-network-img"
+                :key="name"
+                :name="icon"
+                :width="12"
+              />
 
-            <!-- <div v-if="isAdditional" class="additional">+{{ additionalCount }}</div> -->
-          </div>
+              <div v-if="isAdditional" class="additional">+{{ additionalCount }}</div>
+            </div>
+          </template>
         </template>
       </div>
       <div class="row second-row">
@@ -105,6 +107,8 @@ import { ALL_NETWORKS } from '@/consts/networks';
 import { GetAssetPrice } from '@/store/networks/types';
 @Component
 export default class CurrencyItemStateLess extends Vue {
+  readonly countDisplayedNetworks = 5;
+
   @Prop(Object) assetData!: TokenBalance;
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
@@ -114,6 +118,18 @@ export default class CurrencyItemStateLess extends Vue {
   @Getter(AccountsGettersTypes.getHiddenAssets) hiddenAssets!: string[];
   @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: TMutation<string>;
   @Mutation(AccountsMutationTypes.DELETE_HIDDEN_ASSET) deleteHiddenAssets!: TMutation<string>;
+
+  get isAdditional() {
+    return this.assetData.balances.length > this.countDisplayedNetworks;
+  }
+
+  get additionalCount() {
+    return this.assetData.balances.length - (this.countDisplayedNetworks - 1);
+  }
+
+  get tokenName() {
+    return this.assetData.tokenName.toUpperCase() ?? '';
+  }
 
   get mainNetwork() {
     return this.assetData.mainNetwork.toUpperCase();
@@ -136,7 +152,21 @@ export default class CurrencyItemStateLess extends Vue {
   }
 
   get networkBadges() {
-    return this.assetData.balances.filter((el) => el.name.toLowerCase() !== this.mainNetwork?.toLowerCase());
+    if (this.isCurrentNetwork) {
+      const { icon, name } = this.assetData.balances.find(
+        ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
+      )!;
+
+      return [{ icon, name }];
+    }
+
+    if (this.isAdditional) return [...this.assetData.balances].splice(0, this.countDisplayedNetworks - 1);
+
+    return this.assetData.balances;
+  }
+
+  get allNetworkBadges() {
+    return this.assetData.balances;
   }
 
   get showShimmers() {

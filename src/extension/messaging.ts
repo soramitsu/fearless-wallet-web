@@ -59,6 +59,7 @@ import type {
   GoogleAuthTypes,
   ICreateFile,
   IGetFilesResponse,
+  SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
 
@@ -475,8 +476,8 @@ export function checkTransfer(request: RequestCheckTransfer): Promise<ResponseCh
   return sendMessage('pri(accounts.checkTransfer)', request);
 }
 
-export function getSoraFee(): Promise<string> {
-  return sendMessage('pri(accounts.get.soraFee)', null);
+export function getSoraFees(): Promise<SoraFees> {
+  return sendMessage('pri(accounts.get.soraFees)', null);
 }
 
 export function makeSwap(request: RequestSwap): Promise<ResponseMakeSwap> {

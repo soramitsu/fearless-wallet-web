@@ -13,7 +13,7 @@
         <Corners class="corners-button" @click.native="$emit('toggleSelectAssetPopupVisibility')">
           <button class="select-button">
             <template v-if="asset !== ''">
-              <ExternalLogo class="asset-icon" :name="assetId" :width="32" />
+              <ExternalLogo class="asset-icon" :name="assetIcon" :width="32" />
 
               <div class="asset">{{ asset.toUpperCase() }}</div>
             </template>
@@ -40,6 +40,7 @@ import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
 @Component
 export default class SwapSelectInput extends Vue {
@@ -53,6 +54,11 @@ export default class SwapSelectInput extends Vue {
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+
+  get assetIcon() {
+    return this.balances.find(({ assetId }) => assetId === this.assetId)?.icon;
+  }
 
   get amountInternal() {
     const localAmount = FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();

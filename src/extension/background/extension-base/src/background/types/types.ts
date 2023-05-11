@@ -22,7 +22,7 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import { Balances, RelayChainName, SwapOptions } from '@/interfaces';
+import { Balances, RelayChainName, SwapOptions, MarketType } from '@/interfaces';
 
 export interface PrepareExternalRequest {
   id: string;
@@ -368,7 +368,9 @@ export interface RequestCheckSwap extends BaseRequestSign {
   symbolA: string;
   symbolB: string;
   isExchangeB: boolean;
+  marketType: MarketType;
 }
+
 export interface ResponseCheckSwap {
   errors?: Array<BasicTxError>;
   warnings?: Array<BasicTxWarning>;
@@ -380,6 +382,7 @@ export interface ResponseCheckSwap {
   fee: string;
   networkFee?: string;
   minMaxValue: string;
+  route: string;
 }
 
 export interface ResponseMakeSwap {
@@ -895,6 +898,7 @@ export interface TokenBalance {
   assetId: string;
   priceId?: string;
   precision: number;
+  tokenName: string;
   name: string;
   symbol: string;
   relayChain: RelayChainName;

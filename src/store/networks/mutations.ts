@@ -44,7 +44,7 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_CURRENCIES](state, { currencies, address, network }) {
     if (address && network) {
       if (Array.isArray(currencies)) {
-        const sequence = currencies.map(({ name }) => name);
+        const sequence = currencies.map(({ assetId }) => assetId);
 
         accountController.setSequenceAssets(sequence, address, network);
       }

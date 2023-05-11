@@ -84,13 +84,6 @@
       :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
     />
 
-    <SwapForm
-      v-if="showSwapForm"
-      :selectedNetwork="selectedNetwork"
-      :_selectedAssetId="selectedAssetId"
-      :closeForm="toggleVisible.bind(null, 'showSwapForm', false)"
-    />
-
     <BuyPopup
       v-if="showBuyPopup"
       :asset="selectedAssetUpper"
@@ -147,7 +140,6 @@ import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue'
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import TeleportForm from '@/screens/wallet&asset/TeleportForm.vue';
-import SwapForm from '@/screens/wallet&asset/swap/SwapForm.vue';
 import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
 import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
@@ -162,13 +154,12 @@ import { TokenBalance } from '@/extension/background/extension-base/src/backgrou
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 import { getTotalCountAssets } from '@/helpers/currencies';
 
-type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup' | 'showSwapForm';
+type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
 
 @Component({
   components: {
     History,
     SendForm,
-    SwapForm,
     BuyPopup,
     ReceiveForm,
     TeleportForm,
@@ -185,7 +176,6 @@ export default class Asset extends Vue {
   showSendForm = false;
   showReceiveForm = false;
   showTeleportForm = false;
-  showSwapForm = false;
   showBuyPopup = false;
   showHistoryDetailsForm = false;
   showSelectNetworkPopup = false;

@@ -13,7 +13,6 @@ import {
 } from '@polkadot/util-crypto';
 import { createPair } from '@polkadot/keyring';
 import { keyring } from '@polkadot/ui-keyring';
-import { LiquiditySourceTypes } from '@sora-substrate/liquidity-proxy';
 import {
   ActiveTabAuthorizeStatus,
   BalanceJson,
@@ -107,6 +106,7 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
+import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { googleManage } from '@/controllers/googleController';
 import {
   AssetJson,
@@ -115,6 +115,7 @@ import {
   GoogleAuthTypes,
   ICreateFile,
   IGetFilesResponse,
+  SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
 const SEED_DEFAULT_LENGTH = 12;
@@ -835,21 +836,20 @@ export default class Extension extends FWExtensionBase {
     };
   }
 
-  public async calcSoraFee() {
+  public async getSoraFees() {
     await apiSora.calcStaticNetworkFees();
-  }
 
-  public async getSoraFee() {
-    await apiSora.calcStaticNetworkFees();
-    this.state.soraFee = FPNumber.fromCodecValue(apiSora.NetworkFee.Swap).toString();
+    this.state.soraFees = Object.fromEntries(
+      Object.entries(apiSora.NetworkFee).map(([nameFee, value]) => [nameFee, FPNumber.fromCodecValue(value).toString()])
+    ) as SoraFees;
 
-    return this.state.soraFee;
+    return this.state.soraFees;
   }
 
   private async validateSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
-    // if (!this.state.soraFee) await this.getSoraFee();
+    // if (!this.state.soraFees) await this.getSoraFees();
 
-    const { AToB, BToA, amountA, amountB, minMaxValue, extrinsicOptions, providerFee } = await createSwap(
+    const { AToB, BToA, amountA, amountB, minMaxValue, extrinsicOptions, providerFee, route } = await createSwap(
       options,
       apiSora
     );
@@ -857,22 +857,23 @@ export default class Extension extends FWExtensionBase {
     return {
       swapOptions: extrinsicOptions.swapOptions,
       fee: providerFee,
-      // networkFee: this.state.soraFee,
       AToB,
       BToA,
       amountA,
       amountB,
       minMaxValue,
+      route,
     };
   }
 
   private async makeSwap(options: RequestSwap): Promise<ResponseMakeSwap> {
     const { extrinsicOptions } = await createSwap(options, apiSora);
     const { password, isSavePass } = options;
-    const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB } = extrinsicOptions;
+    const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } = extrinsicOptions;
     let status = false;
     const errors: Array<BasicTxError> = [];
     const address = await this.state.getAccountAddress();
+    const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
 
     if (!address) {
       errors.push({
@@ -923,16 +924,7 @@ export default class Extension extends FWExtensionBase {
     apiSora.account = { json: null as any, pair };
 
     try {
-      await apiSora.swap.execute(
-        assetA,
-        assetB,
-        amountA,
-        amountB,
-        slippage,
-        isExchangeB,
-        LiquiditySourceTypes.Default,
-        swapDexId
-      );
+      await apiSora.swap.execute(assetA, assetB, amountA, amountB, slippage, isExchangeB, liquiditySource, swapDexId);
 
       status = true;
     } catch (ex) {
@@ -1484,8 +1476,8 @@ export default class Extension extends FWExtensionBase {
       case 'pri(accounts.transfer)':
         return this.makeTransfer(id, port as Port, request as RequestTransfer);
 
-      case 'pri(accounts.get.soraFee)':
-        return this.getSoraFee();
+      case 'pri(accounts.get.soraFees)':
+        return this.getSoraFees();
 
       case 'pri(accounts.checkSwap)':
         return this.validateSwap(request as RequestCheckSwap);

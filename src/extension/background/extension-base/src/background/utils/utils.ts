@@ -13,6 +13,7 @@ export function getMockCurrencies(networks: NetworkJsonOld[], tokens: AssetJson[
       const {
         symbol,
         icon: assetIcon,
+        name: tokenName,
         displayName: _displayName,
         priceId,
         precision,
@@ -36,6 +37,7 @@ export function getMockCurrencies(networks: NetworkJsonOld[], tokens: AssetJson[
           precision,
           symbol,
           name: displayName,
+          tokenName,
           relayChain,
           icon: assetIcon,
           providers: purchaseProviders ?? [],

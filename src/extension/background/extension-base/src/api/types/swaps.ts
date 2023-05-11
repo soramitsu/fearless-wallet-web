@@ -1,11 +1,13 @@
 import { FPNumber } from '@sora-substrate/util';
 import { AccountAsset, Asset } from '@sora-substrate/util/build/assets/types';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
-import { SwapOptions } from '@/interfaces';
+import { MarketType, SwapOptions } from '@/interfaces';
 
 export interface BaseExchangeProps {
-  amountDexIdXORFP: FPNumber;
-  amountDexIdXSTUSDFP: FPNumber;
+  expectedAmount: FPNumber;
+  providerFee: string;
+  isDexXor: boolean;
+  route: string;
   assetA: Asset | AccountAsset;
   assetB: Asset | AccountAsset;
   slippage?: number;
@@ -14,12 +16,10 @@ export interface BaseExchangeProps {
 
 export interface CreateExchangeBOptions extends BaseExchangeProps {
   amountB?: string;
-  providerFeeDexIdXSTUSD: string | number;
 }
 
 export interface CreateExchangeAOptions extends BaseExchangeProps {
   amountA: string;
-  providerFeeDexIdXOR: string | number;
 }
 export interface ExtrinsicSwapOptions {
   amountA: string;
@@ -37,6 +37,7 @@ export interface ExtrinsicSwapOptions {
   symbolB: string;
   assetA: Asset;
   assetB: Asset;
+  marketType: MarketType;
 }
 
 export type CreateSwapResult = {
@@ -47,4 +48,5 @@ export type CreateSwapResult = {
   AToB: string;
   BToA: string;
   extrinsicOptions: ExtrinsicSwapOptions;
+  route: string;
 };

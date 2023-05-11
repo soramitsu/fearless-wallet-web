@@ -98,6 +98,7 @@ import {
   FilesResponse,
   SignerPayloadRaw,
   SignerPayloadJSON,
+  SoraFees,
 } from '@/interfaces';
 
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
@@ -187,7 +188,7 @@ export interface RequestSignatures {
   'pri(accounts.transfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
   'pri(accounts.checkSwap)': [RequestCheckSwap, ResponseCheckSwap];
   'pri(accounts.swap)': [RequestSwap, ResponseMakeSwap];
-  'pri(accounts.get.soraFee)': [null, string];
+  'pri(accounts.get.soraFees)': [null, SoraFees];
 
   //ether
   'pri(balance.get.balance)': [null, BalanceJson];

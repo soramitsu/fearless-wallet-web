@@ -3,7 +3,7 @@ import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { Node, TypeAsset } from '@/interfaces';
 
 type SoraFees = {
-  [key in keyof NetworkFeesObject]: FPNumber;
+  [key in keyof NetworkFeesObject]: string;
 };
 
 type TypesForMobile = {

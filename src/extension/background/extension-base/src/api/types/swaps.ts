@@ -1,7 +1,7 @@
 import { FPNumber } from '@sora-substrate/util';
 import { AccountAsset, Asset } from '@sora-substrate/util/build/assets/types';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
-import { SwapOptions } from '@/interfaces';
+import { MarketType, SwapOptions } from '@/interfaces';
 
 export interface BaseExchangeProps {
   expectedAmount: FPNumber;
@@ -37,6 +37,7 @@ export interface ExtrinsicSwapOptions {
   symbolB: string;
   assetA: Asset;
   assetB: Asset;
+  marketType: MarketType;
 }
 
 export type CreateSwapResult = {

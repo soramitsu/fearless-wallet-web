@@ -49,8 +49,10 @@ export default class History extends Vue {
     { label: 'assets.history.reward', value: 'reward' },
     { label: 'assets.history.extrinsic', value: 'extrinsic' },
   ];
+
   filterHistoryValue: FilterHistory = 'all';
   showLoader = false;
+
   @Prop(Object) currency!: TokenBalance;
   @Prop(String) assetId!: string;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
@@ -73,11 +75,9 @@ export default class History extends Vue {
     ];
   }
 
-  // get walletIncludingReplacedAccount() {
-  //   return BaseApi.getWalletIncludingReplacedAccount(this.selectedWallet, this.selectedNetwork);
-  // }
-
   get history() {
+    if (!this.selectedNetwork) return [];
+
     return (
       this.getHistory(this.currency?.assetId, this.selectedWallet.address, this.selectedNetwork.toLowerCase())?.nodes ??
       []
@@ -101,7 +101,8 @@ export default class History extends Vue {
 
   get isMainNetwork() {
     return !!this.currency.balances.find(
-      (el) => el.name.toLowerCase() === this.selectedNetwork.toLowerCase() && (el.isUtility || el.isNative)
+      ({ name, isUtility, isNative }) =>
+        name.toLowerCase() === this.selectedNetwork.toLowerCase() && (isUtility || isNative)
     );
   }
 

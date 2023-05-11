@@ -1,7 +1,6 @@
 import { Api, FPNumber } from '@sora-substrate/util';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
 import { Asset } from '@sora-substrate/util/build/assets/types';
-import { LiquiditySourceTypes } from '@sora-substrate/liquidity-proxy';
 import {
   CreateExchangeBOptions,
   ExtrinsicSwapOptions,
@@ -9,6 +8,7 @@ import {
   CreateSwapResult,
   BaseExchangeProps,
 } from '../types/swaps';
+import { state } from '../../background/handlers';
 import { getAssetOptions } from './utils';
 import { SwapOptions } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
@@ -28,7 +28,6 @@ async function createExchangeB(
   api: Api<void>
 ): Promise<CreateSwapResult> {
   const minMaxValue = api.swap.getMinMaxValue(assetA, assetB, expectedAmount.toString(), amountB!, true, slippage!);
-
   const extrinsicOptions: ExtrinsicSwapOptions = {
     ...swapOptions,
     amountA: expectedAmount.toString(),
@@ -112,7 +111,7 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
     assetBAddress,
     amountWithDirection,
     isExchangeB,
-    LiquiditySourceTypes.Default,
+    liquiditySource,
     DexId.XOR
   );
 
@@ -125,7 +124,7 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
     assetBAddress,
     amountWithDirection,
     isExchangeB,
-    LiquiditySourceTypes.Default,
+    liquiditySource,
     DexId.XSTUSD
   );
 
@@ -160,7 +159,7 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
   route =
     route
       ?.map((item) => {
-        const assetsJson = NetworksController.getAssetsJson();
+        const assetsJson = state.tokenMap;
         const { symbol } = assetsJson.find(({ currencyId }) => currencyId === item)!;
 
         return symbol.toUpperCase();

@@ -67,7 +67,7 @@ import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscripti
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
-import { AssetJson } from '@/interfaces';
+import { AssetJson, SoraFees } from '@/interfaces';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -180,7 +180,7 @@ export default class State {
   public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
   public balanceService = new BalanceService();
   public lazyMap: Record<string, unknown> = {};
-  public soraFee = '';
+  public soraFees: SoraFees = {} as SoraFees;
   public ready = false;
   public currentTabStatus: ActiveTabAuthorizeStatus = {
     isAuthorize: false,

@@ -10,7 +10,7 @@
     <div class="descriptions-column">
       <div class="row first-row">
         <div>
-          {{ mainNetwork }}
+          {{ tokenName }}
         </div>
 
         <template>
@@ -114,6 +114,10 @@ export default class CurrencyItemStateLess extends Vue {
   @Getter(AccountsGettersTypes.getHiddenAssets) hiddenAssets!: string[];
   @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: TMutation<string>;
   @Mutation(AccountsMutationTypes.DELETE_HIDDEN_ASSET) deleteHiddenAssets!: TMutation<string>;
+
+  get tokenName() {
+    return this.assetData.tokenName.toUpperCase() ?? '';
+  }
 
   get mainNetwork() {
     return this.assetData.mainNetwork.toUpperCase();

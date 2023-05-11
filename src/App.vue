@@ -10,7 +10,6 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import { AccountJson, BalanceJson, PriceJson } from './extension/background/extension-base/src/background/types/types';
-import { NetworksController } from './controllers';
 import { Components } from './router/routes';
 import type { Accounts, SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';

@@ -158,7 +158,7 @@ export default class Wallet extends Vue {
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
-  @Getter(NetworksGettersTypes.getCurrencies) currencies!: TokenBalance[]; //for custom ordering
+  @Getter(NetworksGettersTypes.getCurrencies) currencies!: TokenBalance[]; // for custom ordering
   @Getter(AccountsGettersTypes.getShowWarningNetworks) getShowWarningNetworks!: GetShowWarningNetworks;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
@@ -355,7 +355,6 @@ export default class Wallet extends Vue {
     currency: { mainNetwork: string; assetId: string }
   ) {
     this[field] = value;
-
     this.selectedCurrency = currency;
   }
 

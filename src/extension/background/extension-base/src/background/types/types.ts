@@ -380,6 +380,7 @@ export interface ResponseCheckSwap {
   fee: string;
   networkFee?: string;
   minMaxValue: string;
+  route: string;
 }
 
 export interface ResponseMakeSwap {
@@ -895,6 +896,7 @@ export interface TokenBalance {
   assetId: string;
   priceId?: string;
   precision: number;
+  tokenName: string;
   name: string;
   symbol: string;
   relayChain: RelayChainName;

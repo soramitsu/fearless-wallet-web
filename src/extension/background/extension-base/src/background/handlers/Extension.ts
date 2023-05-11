@@ -849,7 +849,7 @@ export default class Extension extends FWExtensionBase {
   private async validateSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
     // if (!this.state.soraFee) await this.getSoraFee();
 
-    const { AToB, BToA, amountA, amountB, minMaxValue, extrinsicOptions, providerFee } = await createSwap(
+    const { AToB, BToA, amountA, amountB, minMaxValue, extrinsicOptions, providerFee, route } = await createSwap(
       options,
       apiSora
     );
@@ -857,12 +857,12 @@ export default class Extension extends FWExtensionBase {
     return {
       swapOptions: extrinsicOptions.swapOptions,
       fee: providerFee,
-      // networkFee: this.state.soraFee,
       AToB,
       BToA,
       amountA,
       amountB,
       minMaxValue,
+      route,
     };
   }
 

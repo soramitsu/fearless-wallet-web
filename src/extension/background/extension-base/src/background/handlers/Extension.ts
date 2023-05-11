@@ -945,15 +945,14 @@ export default class Extension extends FWExtensionBase {
     };
   }
 
-  private async validateTransfer(
+  private validateTransfer(
     networkKey: string,
     token: string,
     from: string,
     password: string | undefined,
     value: string | undefined,
     transferAll: boolean | undefined
-  ): Promise<[Array<BasicTxError>, KeyringPair | undefined, BN | undefined, AssetJson]> {
-    const dotSamaApiMap = this.state.getSubstrateApiMap;
+  ): [Array<BasicTxError>, KeyringPair | undefined, BN | undefined, AssetJson] {
     const errors = [] as Array<BasicTxError>;
     let keypair: KeyringPair | undefined;
     let transferValue;
@@ -989,7 +988,7 @@ export default class Extension extends FWExtensionBase {
       });
     }
 
-    const tokenInfo = await getTokenInfo(networkKey, dotSamaApiMap[networkKey].api!, token);
+    const tokenInfo = getTokenInfo(token);
 
     return [errors, keypair, transferValue, tokenInfo];
   }
@@ -1004,7 +1003,7 @@ export default class Extension extends FWExtensionBase {
     value,
     password,
   }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
-    const [errors, fromKeyPair, valueNumber, tokenInfo] = await this.validateTransfer(
+    const [errors, fromKeyPair, valueNumber, tokenInfo] = this.validateTransfer(
       networkKey,
       token,
       from,
@@ -1031,9 +1030,8 @@ export default class Extension extends FWExtensionBase {
     let fromAccountFreeBalance = '0';
     const toAccountFreeBalance = '0';
     // const fromAccountNativeBalance = '0';
-
     const tokenBalance = this.state.balanceMap[address].find(
-      (balance) => balance.name === token && balance.relayChain === relayChain
+      (balance) => balance.assetId === token && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
 
     if (isEthereumAddress(from) && isEthereumAddress(to)) {
@@ -1147,7 +1145,7 @@ export default class Extension extends FWExtensionBase {
   ): Promise<BasicTxResponse | undefined> {
     const txState: BasicTxResponse = {};
 
-    const [errors, fromKeyPair, , tokenInfo] = await this.validateTransfer(
+    const [errors, fromKeyPair, , tokenInfo] = this.validateTransfer(
       networkKey,
       token,
       from,

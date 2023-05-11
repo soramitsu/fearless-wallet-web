@@ -457,7 +457,7 @@ export default class SwapForm extends Vue {
     if (!this.isValidTransferByXOR)
       return { text: 'assets.insufficientBalance', localeProps: { asset: this.soraMainAssetUpper } };
 
-    if (+this.sendAmount === 0 || +this.receiveAmount === 0) return { text: 'assets.unableSwap' };
+    if (+this.sendAmount === 0 || +this.receiveAmount === 0) return { text: 'assets.insufficientLiquidity' };
 
     return this.step === 1 ? 'assets.preview' : 'common.confirm';
   }

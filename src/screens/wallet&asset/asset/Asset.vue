@@ -190,7 +190,7 @@ export default class Asset extends Vue {
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
 
   get showShimmers() {
-    return !this.isOnline || !this.currentNetwork || this.currentNetwork.state === 'pending';
+    return !this.isOnline || !this.balances.length || !this.currentNetwork || this.currentNetwork.state === 'pending';
   }
 
   get providers() {
@@ -208,7 +208,7 @@ export default class Asset extends Vue {
   }
 
   get mainNetwork() {
-    return this.currentCurrency.balances.find((network) => network.isUtility || network.isNative)!.name;
+    return this.currentCurrency.balances.find((network) => network.isUtility || network.isNative)!.name ?? '';
   }
 
   get showBuyButton() {
@@ -216,7 +216,7 @@ export default class Asset extends Vue {
   }
 
   get currentCurrency() {
-    return this.balances.find(({ assetId: id }) => id === this.selectedAssetId)!;
+    return this.balances.find(({ assetId: id }) => id === this.selectedAssetId)! ?? '';
   }
 
   get displayAddressByNetwork() {

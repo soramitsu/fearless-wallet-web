@@ -133,10 +133,11 @@ export async function getFreeBalance(
   web3ApiMap: Record<string, EthProvider>,
   token?: string
 ): Promise<string> {
-  const apiProps = await dotSamaApiMap[networkKey].isReady;
+  const apiProps = dotSamaApiMap[networkKey];
+  await apiProps.isApiReady;
   const api = apiProps.api!;
   const web3Api = web3ApiMap[networkKey];
-  const tokenInfo = token ? await getTokenInfo(networkKey, api, token) : undefined;
+  const tokenInfo = token ? getTokenInfo(token) : undefined;
 
   const isMainToken = tokenInfo ? await checkMainToken(networkKey, tokenInfo?.id) : false;
   console.info(isMainToken, token, web3Api, 'isMain');
@@ -297,7 +298,7 @@ export function subscribeBalance(
         .then((unsub) => {
           unsub && unsub();
         })
-        .catch(console.error);
+        .catch((err) => err);
     });
   };
 }

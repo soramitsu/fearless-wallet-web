@@ -579,7 +579,7 @@ export class CurrencyController {
    * Validate swap to XOR
    * @param {Wallet} wallet
    * @param {string} receiveAmount
-   * @param {string} receiveAmount
+   * @param {string} fee
    * @returns {boolean}
    */
   public validateSwapToXOR(wallet: Wallet, receiveAmount: string, fee: string): boolean {

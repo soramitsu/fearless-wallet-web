@@ -18,7 +18,7 @@ export interface BalanceChildItem {
 export interface BalanceItem {
   state: APIItemState;
   symbol?: string;
-  name: string;
+  name: string; // is network Name, TODO name -> networkName
   id?: string;
   relayChain?: string;
   existentialDeposit?: string;

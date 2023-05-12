@@ -111,7 +111,7 @@ import { accountController } from '@/controllers/accountController';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { addNumbers, getChangeWalletBalance, getTotalWalletBalance } from '@/helpers/numbers';
+import { addNumbers, getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/numbers';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
@@ -187,7 +187,7 @@ export default class Wallet extends Vue {
   }
 
   get summaryTransferableBalance() {
-    return getTotalWalletBalance(this.balances, this.prices) ?? 0;
+    return getSummaryTransferableWalletBalance(this.balances, this.prices);
   }
 
   get changeWalletBalance() {

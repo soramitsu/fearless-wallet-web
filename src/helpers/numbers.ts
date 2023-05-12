@@ -36,7 +36,7 @@ function addNumbers(values: (string | number)[]): string {
   return values.reduce((sum, number) => sum.add(new FPNumber(number)), FPNumber.ZERO).toString();
 }
 
-function getTotalWalletBalance(tokens: TokenBalance[], price: AssetsPrice): number {
+function getSummaryTransferableWalletBalance(tokens: TokenBalance[], price: AssetsPrice): number {
   let walletBalance = 0;
 
   tokens.forEach((token) => {
@@ -75,4 +75,4 @@ function getChangeWalletBalance(tokens: TokenBalance[], price: AssetsPrice): Cha
   };
 }
 
-export { formattedNumber, addNumbers, getChangeWalletBalance, getTotalWalletBalance };
+export { formattedNumber, addNumbers, getChangeWalletBalance, getSummaryTransferableWalletBalance };

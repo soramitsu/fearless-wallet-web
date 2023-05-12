@@ -937,7 +937,11 @@ export default class Extension extends FWExtensionBase {
     }
 
     if (isSavePass) this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
-    else if (remainTime) pair.lock();
+    else if (remainTime) {
+      this.cachedUnlocks[address] = 0;
+
+      pair.lock();
+    }
 
     return {
       status,

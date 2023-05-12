@@ -126,9 +126,9 @@ export function getTotalBalance(token: TokenBalance, network = ALL_NETWORKS) {
   return balance;
 }
 
-export function getTotalCountAssets(token: TokenBalance, network = ALL_NETWORKS): string {
+export function getTransferableCountAssets(token: TokenBalance, network = ALL_NETWORKS): string {
   if (network && network !== ALL_NETWORKS) {
-    const balance = token.balances.find((el) => el.name.toLowerCase() === network.toLowerCase())?.total ?? '0';
+    const balance = token.balances.find((el) => el.name.toLowerCase() === network.toLowerCase())?.transferable ?? '0';
 
     return balance ?? '0';
   }

@@ -77,6 +77,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 import { upsertNetworkMap } from '@/extension/messaging';
+import { accountController } from '@/controllers';
 
 @Component({
   components: { NodeItem },
@@ -110,7 +111,7 @@ export default class Nodes extends Vue {
   }
 
   get defaultNodes() {
-    return this.networkJson?.nodes ?? [];
+    return this.networkJson.nodes ?? [];
   }
 
   get route() {
@@ -121,37 +122,39 @@ export default class Nodes extends Vue {
     return this.$route.params.network;
   }
 
+  get networkJson() {
+    return this.networks.find(({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase())!;
+  }
+
   get selectedNetworkUpper() {
     return this.$route.params.network.toUpperCase();
+  }
+
+  @Watch('autoSelectNode')
+  toggleAutoSelectNodesValue() {
+    const [{ name, url }] = this.defaultNodes;
+
+    this.changeNode(name, url);
   }
 
   mounted() {
     this.updatedCustomNodes();
   }
 
-  @Watch('autoSelectNode')
-  toggleAutoSelectNodesValue() {
-    const [{ name }] = this.defaultNodes;
-
-    this.changeNode(name);
-  }
-
   openNodeSettingsPopup(name: string, url: string, buttonTop: number, isActive: boolean) {
     this.$emit('openNodeSettingsPopup', this.selectedNetwork, name, url, buttonTop, isActive);
   }
 
-  get networkJson() {
-    return this.networks.find(({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase())!;
-  }
-
   updatedCustomNodes() {
-    // this.customNodes = accountController.getCustomNodesByNetwork(this.selectedNetwork);
+    this.customNodes = accountController.getCustomNodesByNetwork(this.selectedNetwork);
   }
 
-  async changeNode(url: string) {
-    if (url) this.autoSelectNode = false;
-    await upsertNetworkMap({ ...this.networkJson, currentProvider: url });
-    // NetworksController.toggleActiveNode(this.selectedNetwork, name, url, this.activeNode.url);
+  changeNode(url: string, name: string) {
+    upsertNetworkMap({
+      ...this.networkJson,
+      currentProvider: url,
+      isManual: this.autoSelectNode,
+    });
   }
 
   copyAddress() {

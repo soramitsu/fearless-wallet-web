@@ -55,7 +55,7 @@
       :top="148"
       :left="-160"
       :height="360"
-      :options="optionsNetworks"
+      :options="assetNetworks"
       :handlerFilter="handlerFilter"
       :toggleValue="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
@@ -67,21 +67,20 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
-import RotateInput from './RotateInput.vue';
-import type { Currencies } from '@/interfaces';
+import RotateInput from '@/screens/wallet&asset/RotateInput.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store';
-import { firstCharToUp } from '@/helpers/common';
 import { cut } from '@/helpers/history';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
-import { NetworksController } from '@/controllers';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 @Component({
   components: { RotateInput },
 })
-export default class ReceiveForm extends Vue {
+export default class ReceiveFormStateLess extends Vue {
   readonly selectNetworkInputRef = 'selectNetworkInput';
   readonly copyQRTooltip = { text: 'common.copiedValue', localeProps: { value: 'QR' } };
   filterValue = '';
@@ -92,74 +91,37 @@ export default class ReceiveForm extends Vue {
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(NetworksGettersTypes.getNetworks) networks!: NetworkJsonOld[];
 
   get currency() {
-    return this.currencies.find(({ assetId }) => assetId === this.selectedAssetId);
+    return this.selectedAssetId;
+  }
+
+  get assetNetworks() {
+    return this.balances
+      .find((el) => el.name.toLowerCase() === this.currency.toLowerCase())
+      ?.balances.map(({ name, icon }) => ({ name, icon, value: name }));
+  }
+
+  get decimals() {
+    return this.networks?.find((network) => network.name.toLowerCase() === this.selectedNetwork.toLowerCase())
+      ?.addressPrefix;
   }
 
   get address() {
     if (this.selectedWallet.address === '') return '';
+    if (ETHEREUM_NETWORKS.includes(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
 
-    return BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.selectedNetwork);
+    return BaseApi.encodeAddress(this.selectedWallet.address, this.decimals);
   }
 
   get cutAddress() {
     return cut(this.address, 5);
   }
 
-  get optionsNetworks() {
-    const haveEthereumAccount = this.selectedWallet.ethereumAddress !== '';
-    const walletBalance = (this.currency?.getNetworkList() ?? []).filter(({ network }) =>
-      ETHEREUM_NETWORKS.includes(network) ? haveEthereumAccount : true
-    );
-    const filter = this.filterValue.trim().toLowerCase();
-
-    return walletBalance
-      .map(({ network, type }) => {
-        const icon = NetworksController.getNetwork(network).icon;
-
-        return {
-          label: firstCharToUp(network),
-          value: network,
-          path: icon,
-          type,
-          relayChain: this.currency?.relayChain,
-        };
-      })
-      .filter(({ value }) => {
-        return value.includes(filter);
-      });
-  }
-
   mounted() {
-    const nativeNet = this.getNetworkNameByAsset();
-
-    if (nativeNet === undefined) {
-      const utilityNet = this.getNetworkNameByAsset(false);
-
-      if (utilityNet !== undefined) this.selectedNetwork = utilityNet.value;
-      else
-        this.selectedNetwork = this._selectedNetwork === 'All' ? this.optionsNetworks[0].value : this._selectedNetwork;
-
-      return;
-    }
-
-    this.selectedNetwork = nativeNet.value;
-  }
-
-  getNetworkNameByAsset(isNative = true) {
-    return this.optionsNetworks.find(({ value }) => {
-      const network = NetworksController.getNetwork(value);
-
-      const assetIndex = network.assets.findIndex((asset) => {
-        const key = isNative ? 'isNative' : 'isUtility';
-
-        return asset.assetId === this.selectedAssetId && asset[key];
-      });
-
-      return assetIndex !== -1;
-    });
+    this.selectedNetwork = this._selectedNetwork;
   }
 
   toggleSelectNetworkPopupVisible() {

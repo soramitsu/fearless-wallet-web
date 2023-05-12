@@ -148,16 +148,14 @@ const getters: GetterTree<State, State> & Getters = {
     return currencies;
   },
 
-  // [GettersTypes.getAssetsPriceInterval]({ assetsPriceInterval }): NodeJS.Timer | null {
-  //   return assetsPriceInterval;
-  // },
-
   [GettersTypes.getActiveNodesByNetwork]:
     ({ networks }) =>
     (networkName: string) => {
       const { currentProvider, nodes } = networks.find((net) => net.name.toLowerCase() === networkName.toLowerCase())!;
 
-      return nodes.find((node) => node.name === currentProvider)!;
+      const node = nodes.find((node) => node.name === currentProvider);
+
+      return !node ? nodes[0] : node;
     },
 
   [GettersTypes.getAllNetworksIsReadyToUse]({ networks }): boolean {

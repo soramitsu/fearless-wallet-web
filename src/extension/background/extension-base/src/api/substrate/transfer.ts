@@ -427,6 +427,7 @@ export interface MakeTransferProps {
   from: string;
   value: string;
   transferAll: boolean;
+  password: string | undefined;
   dotSamaApiMap: Record<string, ApiProps>;
   tokenInfo: AssetJson;
   isSavePass?: boolean;
@@ -440,6 +441,7 @@ export async function makeTransfer({
   networkKey,
   to,
   tokenInfo,
+  password,
   isSavePass,
   value,
 }: MakeTransferProps): Promise<void> {
@@ -474,6 +476,7 @@ export async function makeTransfer({
     callback: callback,
     extrinsic: extrinsic,
     txState: txState,
+    password,
     address: from,
     updateResponseTxResult: updateResponseTxResult,
     errorMessage: 'error transfer',

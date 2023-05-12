@@ -35,19 +35,14 @@ type SignExtrinsicProps = PasswordSignExtrinsicProps | ExternalSignExtrinsicProp
 export const signExtrinsic = async ({
   address,
   apiProps,
-  callback,
   extrinsic,
-  id,
   password,
-  setState,
   type,
 }: SignExtrinsicProps): Promise<string | null> => {
   if (type === SignerType.PASSWORD) {
     const passwordError: string | null = unlockAccount(address, password);
 
-    if (passwordError) {
-      return passwordError;
-    }
+    if (passwordError) return passwordError;
   }
 
   let signer: Signer | undefined;
@@ -58,6 +53,7 @@ export const signExtrinsic = async ({
     const pair = keyring.getPair(address);
 
     assert(pair, 'Unable to find pair');
+
     signer = new KeyringSigner({ registry: registry, keyPair: pair });
   }
 

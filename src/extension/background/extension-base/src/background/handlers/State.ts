@@ -61,7 +61,7 @@ import { ASSETS, CHAINS, prepNetworkNames } from '../../const/networks';
 import { DEFAULT_EVM_TOKENS } from '../../api/tokens/evm/defaultEvmToken';
 import { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '../../types';
 import { FWCron } from '../cron';
-import { getMockCurrencies } from '../utils/utils';
+import { getMockCurrencies, isEthereumNetwork } from '../utils/utils';
 import { getCurrentProvider, stripUrl, withErrorLog } from './helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
@@ -958,7 +958,7 @@ export default class State {
       result[network.name] = {
         ...network,
         key: network.name,
-        isEthereum: false,
+        isEthereum: isEthereumNetwork(network.name),
         genesisHash: `0x${network.chainId}`,
         chainType: 'substrate',
         active: true,

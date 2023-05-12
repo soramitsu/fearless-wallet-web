@@ -39,7 +39,7 @@ export default class NetworkUnavailablePopup extends Vue {
   }
 
   get haveMoreOneNodes() {
-    return this.networks.find(({ name }) => name === this.network)!.nodes.length > 1;
+    return this.networks.find(({ name }) => name.toLowerCase() === this.network.toLowerCase())!.nodes.length > 1;
   }
 
   get showWarningIcon() {

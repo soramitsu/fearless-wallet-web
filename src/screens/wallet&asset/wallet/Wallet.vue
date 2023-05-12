@@ -59,14 +59,14 @@
       </div>
     </ContentForm>
 
-    <SendFormStateLess
+    <SendForm
       v-if="showSendForm"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :_selectedAssetId="selectedCurrency.assetId"
       :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false)"
     />
 
-    <ReceiveFormStateLess
+    <ReceiveForm
       v-if="showReceiveForm"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :selectedAssetId="selectedCurrency.assetId"
@@ -105,8 +105,8 @@ import CurrencyItemStateLess from '@/screens/wallet&asset/wallet/CurrencyItemSta
 import ContentSettings from '@/screens/wallet&asset/wallet/ContentSettings.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
-import ReceiveFormStateLess from '@/screens/wallet&asset/wallet/ReceiveFormStateLess.vue';
-import SendFormStateLess from '@/screens/wallet&asset/wallet/SendFormStateLess.vue';
+import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
+import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import { accountController } from '@/controllers/accountController';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -126,10 +126,10 @@ import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/ev
 @Component({
   components: {
     NFTs,
-    SendFormStateLess,
+    SendForm,
     Currencies,
     CurrencyItemStateLess,
-    ReceiveFormStateLess,
+    ReceiveForm,
     WalletBalance,
     ContentSettings,
     NetworkManagement,

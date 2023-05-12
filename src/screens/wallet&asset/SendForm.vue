@@ -42,7 +42,7 @@
           <div class="name">{{ $t('assets.fee') }}</div>
 
           <div class="column">
-            <!-- <div>{{ partialFeeString }}</div> -->
+            <div>{{ partialFeeString }}</div>
           </div>
         </div>
 
@@ -61,17 +61,17 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import TransferForm from './TransferForm.vue';
 import type { SelectedWallet } from '@/store';
+import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { formattedNumber, addNumbers } from '@/helpers/numbers';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { ALL_NETWORKS } from '@/consts/networks';
+import { getUtilityAsset } from '@/helpers/currencies';
 
 @Component({
   components: { TransferForm },
 })
-export default class SendForm extends Vue {
+export default class SendFormStateLess extends Vue {
   partialFee = '';
   selectedNetwork = '';
   selectedAssetId = '';
@@ -87,20 +87,19 @@ export default class SendForm extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get currency() {
-    return this.balances.find(({ assetId }) => assetId === this.selectedAssetId)!;
+    return this.balances.find(({ name }) => name.toLowerCase() === this.selectedAssetId.toLowerCase());
   }
 
   get isUtilityAsset() {
-    if (this.selectedNetwork === ALL_NETWORKS) return false;
-
-    return this.currency?.balances.some((el) => el.name === this.selectedNetwork && el.isUtility);
+    return this.currency?.balances.find((el) => el.isUtility || el.isNative);
   }
 
-  // get partialFeeString() {
-  //   const utilityAsset = getUtilityAsset(this.currencies, this.selectedNetwork);
+  get partialFeeString() {
+    // const utilityAsset = getUtilityAsset(this.balances, this.selectedNetwork);
 
-  //   return `${formattedNumber(+this.partialFee, { decimalsValue: 7 })} ${utilityAsset.toUpperCase()}`;
-  // }
+    // return `${formattedNumber(+this.partialFee, { decimalsValue: 7 })} ${utilityAsset.toUpperCase()}`;
+    return this.partialFee;
+  }
 
   get showValue() {
     return this.value !== '0';
@@ -119,7 +118,11 @@ export default class SendForm extends Vue {
   }
 
   get selectedAsset() {
-    return this.currency;
+    return this.balances.find(
+      (el) =>
+        el.name.toLowerCase() === this.selectedAssetId.toLowerCase() ||
+        el.assetId.toLowerCase() === this.selectedAssetId.toLowerCase()
+    )!;
   }
 
   get selectedAssetUpper() {
@@ -127,9 +130,9 @@ export default class SendForm extends Vue {
   }
 
   get totalString() {
-    const total = addNumbers([this.amount, this.partialFee]);
+    const total = +addNumbers([this.amount, this.partialFee]);
 
-    return `${this.$n(+total, 'price')} ${this.selectedAssetUpper}`;
+    return `${formattedNumber(total, { decimalsValue: 7 })} ${this.selectedAssetUpper}`;
   }
 
   created() {

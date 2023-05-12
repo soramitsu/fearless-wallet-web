@@ -53,62 +53,64 @@ export const signAndSendExtrinsic = async ({
   updateResponseTxResult,
   updateState,
 }: SignAndSendExtrinsicProps) => {
-  if (extrinsic !== null) {
-    try {
-      const passwordError = await signExtrinsic({
-        address,
-        apiProps,
-        callback,
-        extrinsic,
-        password,
-        type,
-      });
+  if (extrinsic === null) {
+    txState.txError = true;
+    txState.status = false;
+    callback(txState);
 
-      if (passwordError) {
-        txState.passwordError = passwordError;
-        callback(txState);
+    return;
+  }
 
-        return;
-      }
-    } catch (e: unknown) {
-      if (e) {
-        console.error(errorMessage, e);
-        txState.errors = [{ code: BasicTxErrorCode.KEYRING_ERROR, message: (e as Error).message }];
-        txState.txError = true;
-        txState.status = false;
-        callback(txState);
-      }
+  try {
+    const passwordError = await signExtrinsic({
+      address,
+      apiProps,
+      callback,
+      extrinsic,
+      password,
+      type,
+    });
+
+    if (passwordError) {
+      txState.passwordError = passwordError;
+      callback(txState);
 
       return;
     }
-
-    try {
-      await sendExtrinsic({
-        apiProps: apiProps,
-        callback: callback,
-        extrinsic: extrinsic,
-        txState: txState,
-        updateResponseTxResult: updateResponseTxResult,
-        updateState: updateState,
-      });
-
-      if (type === SignerType.PASSWORD) lockAccount(address);
-    } catch (e) {
+  } catch (e: unknown) {
+    if (e) {
       console.error(errorMessage, e);
-
-      if (
-        (e as Error).message.includes('Invalid Transaction: Inability to pay some fees , e.g. account balance too low')
-      ) {
-        txState.errors = [{ code: BasicTxErrorCode.BALANCE_TO_LOW, message: (e as Error).message }];
-      } else {
-        txState.errors = [{ code: BasicTxErrorCode.INVALID_PARAM, message: (e as Error).message }];
-      }
-
+      txState.errors = [{ code: BasicTxErrorCode.KEYRING_ERROR, message: (e as Error).message }];
       txState.txError = true;
       txState.status = false;
       callback(txState);
     }
-  } else {
+
+    return;
+  }
+
+  try {
+    await sendExtrinsic({
+      apiProps: apiProps,
+      callback: callback,
+      extrinsic: extrinsic,
+      txState: txState,
+      updateResponseTxResult: updateResponseTxResult,
+      updateState: updateState,
+    });
+
+    if (type === SignerType.PASSWORD) lockAccount(address);
+  } catch (e) {
+    console.error(errorMessage, e);
+
+    if (
+      (e as Error).message.includes('Invalid Transaction: Inability to pay some fees , e.g. account balance too low')
+    ) {
+      txState.errors = [{ code: BasicTxErrorCode.BALANCE_TO_LOW, message: (e as Error).message }];
+    } else {
+      txState.errors = [{ code: BasicTxErrorCode.INVALID_PARAM, message: (e as Error).message }];
+    }
+
     txState.txError = true;
     txState.status = false;
     callback(txState);

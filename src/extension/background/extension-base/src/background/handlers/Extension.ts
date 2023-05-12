@@ -1206,6 +1206,7 @@ export default class Extension extends FWExtensionBase {
           value: value!,
           from: fromKeyPair.address,
           to: to,
+          password,
           dotSamaApiMap: dotSamaApiMap,
           transferAll: !!transferAll,
           isSavePass,

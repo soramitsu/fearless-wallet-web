@@ -41,12 +41,12 @@
 
       <template v-else-if="isTransactionFinished">
         <div class="descriptions">
-          <ExternalLogo :name="firstIcon" :width="30" />
+          <ExternalLogo :name="firstIconUrl" :width="30" />
 
           <template v-if="secondIcon">
             <SIcon name="arrows-arrow-right-24" />
 
-            <ExternalLogo :name="secondIcon" :width="30" />
+            <ExternalLogo :name="secondIconUrl" :width="30" />
           </template>
         </div>
 
@@ -122,6 +122,14 @@ export default class ConfirmationPasswordPopup extends Vue {
         'password-input-margin': !this.show15MinCheckbox,
       },
     ];
+  }
+
+  get firstIconUrl() {
+    return this.currencies.find((el) => el.assetId === this.firstIcon)?.icon;
+  }
+
+  get secondIconUrl() {
+    return this.currencies.find((el) => el.assetId === this.secondIcon)?.icon;
   }
 
   get requestTransfer(): RequestTransfer {

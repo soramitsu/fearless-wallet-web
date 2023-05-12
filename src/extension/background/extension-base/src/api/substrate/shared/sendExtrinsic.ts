@@ -32,9 +32,7 @@ export const sendExtrinsic = async ({
   const unsubscribe = await extrinsic.send((result) => {
     if (!result || !result.status) return;
 
-    if (result.status.isBroadcast) updateResponseTxResult && updateResponseTxResult(txState, result.events);
-
-    if (result.status.asInBlock || result.status.isFinalized) {
+    if (result.status.isInBlock || result.status.isFinalized) {
       txState.isFinalized = result.status.isFinalized;
 
       if (result.status.isBroadcast) updateResponseTxResult && updateResponseTxResult(txState, result.events);

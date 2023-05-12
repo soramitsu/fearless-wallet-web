@@ -152,7 +152,7 @@ import { ALL_NETWORKS, ETHEREUM_NETWORKS } from '@/consts/networks';
 import { firstCharToUp, isSora } from '@/helpers/common';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
-import { getTotalCountAssets } from '@/helpers/currencies';
+import { getTransferableCountAssets } from '@/helpers/currencies';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
 
@@ -204,7 +204,7 @@ export default class Asset extends Vue {
   }
 
   get currentNetwork() {
-    return this.currentCurrency.balances.find((el) => el.name.toLowerCase() === this.selectedNetwork.toLowerCase());
+    return this.currentCurrency.balances.find((el) => el.name.toLowerCase() === this.selectedNetwork?.toLowerCase());
   }
 
   get mainNetwork() {
@@ -246,7 +246,7 @@ export default class Asset extends Vue {
   get countAssetsString() {
     if (!this.currentCurrency) return `${this.selectedAssetUpper} 0`;
 
-    const totalCountAssets = +getTotalCountAssets(this.currentCurrency, this.selectedNetwork);
+    const totalCountAssets = +getTransferableCountAssets(this.currentCurrency, this.selectedNetwork);
     const total = this.$n(totalCountAssets, 'decimal');
 
     return `${this.selectedAssetUpper} ${total}`;

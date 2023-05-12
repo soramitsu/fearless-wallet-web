@@ -122,6 +122,7 @@ import { NetworkJsonOld } from '@/extension/background/extension-base/src/types'
 import { AssetsPrice } from '@/interfaces';
 import { defaultSortingCurrencies, getTotalBalance } from '@/helpers/currencies';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/evm/types/ether';
+import { tieAccount } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -361,10 +362,10 @@ export default class Wallet extends Vue {
   toggleSelectedNetwork(network: string) {
     if (this.selectedNetwork === network) return;
 
-    // const prepNetwork = network === 'all' ? null : `0x${this.getNetwork(network).chainId}`;
+    const prepNetwork = network === 'All' ? null : `0x${this.getNetwork(network).chainId}`;
 
     this.setSelectedNetwork(network);
-    // tieAccount(this.selectedWallet.address, prepNetwork);
+    tieAccount(this.selectedWallet.address, prepNetwork);
     this.toggleSelectNetworkPopupVisible();
   }
 

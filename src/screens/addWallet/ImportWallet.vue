@@ -9,7 +9,18 @@
       :disabled="disabledSelect"
     />
 
-    <template v-if="isJsonImport">
+    <Input
+      v-if="notJsonImport"
+      v-model="inputValue"
+      type="textarea"
+      class="row"
+      size="big"
+      :placeholder="placeholderTypeImportValue"
+      :maxlength="130"
+      :height="170"
+    />
+
+    <template v-else>
       <div class="row">
         <Input
           v-model="inputValue"
@@ -23,17 +34,6 @@
         <Input v-model="syncedPasswordJson" size="big" placeholder="common.password" class="row" :showPassword="true" />
       </div>
     </template>
-
-    <Input
-      v-else
-      v-model="inputValue"
-      type="textarea"
-      class="row"
-      size="big"
-      :placeholder="placeholderTypeImportValue"
-      :maxlength="130"
-      :height="170"
-    />
 
     <slot v-if="showSlot"></slot>
   </div>

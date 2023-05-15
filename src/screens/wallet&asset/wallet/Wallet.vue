@@ -191,7 +191,7 @@ export default class Wallet extends Vue {
   }
 
   get summaryTransferableBalance() {
-    return getTotalWalletBalance(this.balances, this.prices);
+    return getTotalWalletBalance(this.balances, this.prices) ?? 0;
   }
 
   get changeWalletBalance() {

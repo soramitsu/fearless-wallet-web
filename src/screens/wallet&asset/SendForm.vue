@@ -64,7 +64,7 @@ import { Getter } from 'vuex-class';
 import type { SelectedWallet } from '@/store';
 import TransferForm from '@/screens/wallet&asset/TransferForm.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { formattedNumber, addNumbers } from '@/helpers/numbers';
+import { addNumbers } from '@/helpers/numbers';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { getUtilityAsset } from '@/helpers/currencies';
 
@@ -87,18 +87,17 @@ export default class SendFormStateLess extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get currency() {
-    return this.balances.find(({ name }) => name.toLowerCase() === this.selectedAssetId.toLowerCase());
+    return this.balances.find(({ assetId }) => assetId.toLowerCase() === this.selectedAssetId.toLowerCase());
   }
 
   get isUtilityAsset() {
-    return this.currency?.balances.find((el) => el.isUtility || el.isNative);
+    return !!this.currency?.balances.find((el) => el.isUtility || el.isNative);
   }
 
   get partialFeeString() {
-    // const utilityAsset = getUtilityAsset(this.balances, this.selectedNetwork);
+    const utilityAsset = getUtilityAsset(this.balances, this.selectedNetwork);
 
-    // return `${formattedNumber(+this.partialFee, { decimalsValue: 7 })} ${utilityAsset.toUpperCase()}`;
-    return this.partialFee;
+    return `${this.$n(+this.partialFee, 'decimal')} ${utilityAsset.toUpperCase()}`;
   }
 
   get showValue() {
@@ -132,7 +131,7 @@ export default class SendFormStateLess extends Vue {
   get totalString() {
     const total = +addNumbers([this.amount, this.partialFee]);
 
-    return `${formattedNumber(total, { decimalsValue: 7 })} ${this.selectedAssetUpper}`;
+    return `${this.$n(total, 'decimal')} ${this.selectedAssetUpper}`;
   }
 
   created() {

@@ -22,9 +22,9 @@ export default class WalletBalance extends Vue {
     const { percent, amount } = this.changeWalletBalance;
     const sign = percent > 0 ? '+' : '';
     const displayAmount = amount < 0 ? amount * -1 : amount;
-    const prepData = percent / 100;
+    const percentage = percent / 100 ?? 0;
 
-    return `${sign}${this.$n(prepData, 'percent')}(${this.fiatSymbol}${this.$n(displayAmount, 'price')})`;
+    return `${sign}${this.$n(percentage, 'percent')}(${this.fiatSymbol}${this.$n(displayAmount ?? 0, 'price')})`;
   }
 
   get percentClasses() {

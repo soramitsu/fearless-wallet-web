@@ -190,10 +190,14 @@ function getCurrencyOptions(currencies: TokenBalance[]) {
   });
 }
 
-function getUtilityAsset(currencies: TokenBalance[], _network: NetworkName): string {
+function getUtilityAsset(currencies: TokenBalance[], _network: NetworkName) {
   const currency = currencies.find(({ balances }) =>
-    balances.some(({ name, type }) => name === _network && (type === 'native' || type === 'equilibrium'))
-  )!;
+    balances.some(
+      ({ name, type }) => name.toLowerCase() === _network.toLowerCase() && (type === 'native' || type === 'equilibrium')
+    )
+  );
+
+  if (!currency) return '';
 
   return currency.name;
 }

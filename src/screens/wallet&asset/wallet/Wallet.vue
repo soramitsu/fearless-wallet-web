@@ -177,11 +177,7 @@ export default class Wallet extends Vue {
   }
 
   get showWarningIcon() {
-    if (this.selectedNetwork !== ALL_NETWORKS) {
-      const { apiStatus } = this.networks.find((el) => el.name.toLowerCase() === this.selectedNetwork.toLowerCase())!;
-
-      return apiStatus === 'disconnected';
-    }
+    if (this.selectedNetwork !== ALL_NETWORKS) return !!this.disconnectedNetworks.length;
 
     return this.networksWithWarning.length !== 0;
   }
@@ -230,11 +226,9 @@ export default class Wallet extends Vue {
   }
 
   get showShimmers() {
-    const index = this.networks.findIndex(({ apiStatus }) => {
-      return apiStatus === 'pending';
-    });
+    const isPendingExists = this.networks.some(({ apiStatus }) => apiStatus === NETWORK_STATUS.PENDING);
 
-    return !this.isOnline || index !== -1;
+    return !this.isOnline || isPendingExists;
   }
 
   get filteredCurrencies() {
@@ -275,9 +269,7 @@ export default class Wallet extends Vue {
   }
 
   get networksWithWarning() {
-    return this.networks.filter(
-      ({ name, apiStatus }) => apiStatus === 'disconnected' && !this.getShowWarningNetworks(name)
-    );
+    return this.disconnectedNetworks.filter(({ name }) => !this.getShowWarningNetworks(name));
   }
 
   @Watch('networksWithWarning')

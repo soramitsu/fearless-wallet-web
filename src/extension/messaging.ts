@@ -293,6 +293,10 @@ export function subscribeAccounts(cb: (accounts: AccountJson[]) => void): Promis
   return sendMessage('pri(accounts.subscribe)', null, cb);
 }
 
+export function subscribeAddresses(cb: (accounts: AccountJson[]) => void): Promise<boolean> {
+  return sendMessage('pri(addresses.subscribe)', null, cb);
+}
+
 export async function triggerAccountsSubscription(): Promise<boolean> {
   return sendMessage('pri(accounts.triggerSubscription)');
 }

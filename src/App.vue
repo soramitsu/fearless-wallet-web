@@ -25,6 +25,7 @@ import {
   getPrice,
   pingServiceWorker,
   subscribeAccounts,
+  subscribeAddresses,
   subscribeBalance,
   subscribeNetworkMap,
   subscribePrice,
@@ -120,20 +121,21 @@ export default class App extends Vue {
     this.setPrices({ tokenPriceMap, tokenPriceChange });
   }
 
+  onAccountUpdate(accounts: AccountJson[]) {
+    const isAccountsNotExists = accounts.length === 0;
+    const selectedAccount = isAccountsNotExists ? undefined : accounts.find((el) => el.active);
+
+    this.setSelectedWallet(selectedAccount);
+    this.setAccounts({ accounts });
+
+    if (isAccountsNotExists) this.$router.push(Components.Welcome);
+  }
+
   setupWallet() {
-    subscribeAccounts((accounts) => {
-      console.info('accounts', accounts);
+    subscribeAddresses(this.onAccountUpdate);
+    subscribeAccounts(this.onAccountUpdate);
 
-      const isAccountsNotExists = accounts.length === 0;
-      const selectedAccount = isAccountsNotExists ? undefined : accounts.find((el) => el.active);
-
-      this.setSelectedWallet(selectedAccount);
-      this.setAccounts({ accounts });
-
-      if (isAccountsNotExists) this.$router.push(Components.Welcome);
-    }).then(() => {
-      triggerAccountsSubscription();
-    });
+    triggerAccountsSubscription();
   }
 
   unsubscribe() {

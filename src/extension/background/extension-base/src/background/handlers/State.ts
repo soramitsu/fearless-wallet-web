@@ -1115,11 +1115,10 @@ export default class State {
   }
 
   public getSubstrateAccounts() {
-    return keyring.getAccounts().filter((el) => !isEthereumAddress(el.address));
-  }
+    const accounts = keyring.getAccounts().filter((el) => !isEthereumAddress(el.address));
+    const addresses = keyring.getAddresses();
 
-  public getEthereumAccounts() {
-    return keyring.getAccounts().filter((el) => isEthereumAddress(el.address));
+    return [...accounts, ...addresses];
   }
 
   public generateDefaultBalance(address: string) {

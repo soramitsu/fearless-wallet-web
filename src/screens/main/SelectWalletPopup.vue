@@ -12,11 +12,11 @@
   >
     <div class="wallet-content">
       <WalletInfo
-        v-for="({ name, address, active }, index) in wallets"
+        v-for="({ name, address, active, isMobile }, index) in wallets"
         :key="name + index"
         :name="name"
         :isSelected="active"
-        :isMobile="isMobile(address)"
+        :isMobile="isMobile"
         :balance="0"
         class="total"
         @setShowWalletDetailsPopupVisible="toggleWalletDetailsPopupVisible(...arguments, address)"
@@ -55,10 +55,6 @@ export default class SelectWalletPopup extends Vue {
 
   addWallet() {
     this.$router.push({ name: Components.Welcome });
-  }
-
-  isMobile() {
-    return this.selectedWallet.isMobile ?? false;
   }
 
   // getBalance(address: string, ethereumAddress: string) {

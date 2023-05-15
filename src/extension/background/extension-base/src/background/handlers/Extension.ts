@@ -3,6 +3,8 @@
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
+import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
+
 import { hexToU8a, isHex, assert, BN, BN_ZERO } from '@polkadot/util';
 import {
   keyExtractSuri,
@@ -231,16 +233,21 @@ export default class Extension extends FWExtensionBase {
     } else keyring.forgetAddress(address);
 
     const accounts = keyring.getAccounts();
+    const addresses = keyring.getAddresses();
     const currentAcc = await new Promise<CurrentAccountInfo | undefined>((res) => {
       this.state.getCurrentAccount((value) => {
         res(value);
       });
     });
 
-    const shouldUpdate = !accounts.some((el) => el.address === currentAcc?.address);
+    const shouldUpdate =
+      !accounts.some(({ address }) => address === currentAcc?.address) ||
+      !addresses.some(({ address }) => address === currentAcc?.address);
 
     if (shouldUpdate) {
-      const account = accounts.find((el) => !isEthereumAddress(el.address))!;
+      const account = currentAcc?.isMobile
+        ? addresses[0]
+        : accounts.find(({ address }) => !isEthereumAddress(address))!;
 
       this.updateCurrentAccountAddress(account ? account.address : '');
     }
@@ -256,6 +263,20 @@ export default class Extension extends FWExtensionBase {
     } catch (e) {
       return false;
     }
+  }
+
+  addressesSubscribe(id: string, port: Port): boolean {
+    const cb = createSubscription<'pri(addresses.subscribe)'>(id, port);
+    const subscription = addressesObservable.subject.subscribe((addresses: SubjectInfo): void => {
+      transformAccounts(addresses).then(cb);
+    });
+
+    port.onDisconnect.addListener((): void => {
+      unsubscribe(id);
+      subscription.unsubscribe();
+    });
+
+    return true;
   }
 
   accountsSubscribe(id: string, port: Port): boolean {
@@ -1369,6 +1390,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(accounts.subscribe)':
         return this.accountsSubscribe(id, port as Port);
+
+      case 'pri(addresses.subscribe)':
+        return this.addressesSubscribe(id, port as Port);
 
       case 'pri(accounts.triggerSubscription)':
         return this.triggerAccountsSubscription();

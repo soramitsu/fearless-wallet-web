@@ -73,9 +73,18 @@ const mutations: MutationTree<State> & Mutations = {
   },
 
   [MutationTypes.SET_ACCOUNTS](state, { accounts }) {
+    if (accounts[0].isMobile) {
+      const mobileIndex = state.accounts.findIndex((el) => el.isMobile);
+
+      if (mobileIndex) state.accounts[mobileIndex] = accounts[0];
+      accountController.setAccounts(state.accounts);
+
+      return;
+    }
+
     state.accounts = [...accounts];
 
-    accountController.setAccounts(accounts);
+    accountController.setAccounts(state.accounts);
   },
 
   [MutationTypes.HIDE_POLKASWAP_ALERT](state) {

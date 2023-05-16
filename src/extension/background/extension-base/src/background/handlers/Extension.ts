@@ -1283,8 +1283,6 @@ export default class Extension extends FWExtensionBase {
   private createMobileWallet(wallet: RequestAddressCreate) {
     this.createAddress(wallet);
 
-    state.generateDefaultBalance(wallet.address);
-
     this.updateCurrentAccountAddress(wallet.address);
   }
 

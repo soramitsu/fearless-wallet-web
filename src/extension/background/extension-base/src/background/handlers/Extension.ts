@@ -135,7 +135,7 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
 async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
   if (Object.keys(accounts).length === 0) return [];
 
-  const currentAccount = await new Promise<CurrentAccountInfo | undefined>((res) => {
+  const currentAccount = await new Promise<CurrentAccountInfo | null>((res) => {
     state.getCurrentAccount((value) => {
       res(value);
     });
@@ -247,7 +247,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   getCurrentAccount() {
-    return new Promise<CurrentAccountInfo | undefined>((res) => {
+    return new Promise<CurrentAccountInfo | null>((res) => {
       this.state.getCurrentAccount((value) => {
         res(value);
       });
@@ -460,7 +460,7 @@ export default class Extension extends FWExtensionBase {
 
   private _saveCurrentAccountAddress(address: string, callback?: (data: CurrentAccountInfo | undefined) => void) {
     if (address === '') {
-      this.state.setCurrentAccount(undefined);
+      this.state.setCurrentAccount(null);
 
       return;
     }

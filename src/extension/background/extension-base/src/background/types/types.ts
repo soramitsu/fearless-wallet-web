@@ -497,7 +497,7 @@ export interface ServiceInfo {
   networkMap: Record<string, NetworkJson>;
   apiMap: ApiMap;
   isLock?: boolean;
-  currentAccountInfo: CurrentAccountInfo | undefined;
+  currentAccountInfo: CurrentAccountInfo | null;
 }
 
 export interface RequestAccountBatchExport {

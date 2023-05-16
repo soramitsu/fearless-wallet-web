@@ -442,7 +442,7 @@ export default class State {
         return;
       }
 
-      this.setCurrentAccount(undefined);
+      this.setCurrentAccount(null);
     });
   }
 
@@ -1094,11 +1094,11 @@ export default class State {
     return network && network.genesisHash;
   }
 
-  public getCurrentAccount(update: (value: CurrentAccountInfo | undefined) => void): void {
+  public getCurrentAccount(update: (value: CurrentAccountInfo | null) => void): void {
     this.currentAccountStore.get('CurrentAccountInfo', update);
   }
 
-  public setCurrentAccount(data: CurrentAccountInfo | undefined, callback?: () => void): void {
+  public setCurrentAccount(data: CurrentAccountInfo | null, callback?: () => void): void {
     this.currentAccountStore.set('CurrentAccountInfo', data, () => {
       this.updateServiceInfo();
       callback && callback();

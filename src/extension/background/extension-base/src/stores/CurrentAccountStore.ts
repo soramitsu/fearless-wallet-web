@@ -11,7 +11,7 @@ export interface CurrentAccountInfo {
   isMobile: boolean;
 }
 
-export default class CurrentAccountStore extends SubscribableStore<CurrentAccountInfo | undefined> {
+export default class CurrentAccountStore extends SubscribableStore<CurrentAccountInfo | null> {
   constructor() {
     super(EXTENSION_PREFIX ? `${EXTENSION_PREFIX}current_account` : null);
   }

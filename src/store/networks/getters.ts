@@ -5,7 +5,6 @@ import type {
   GetNetworkGenesisHash,
   GetNetworkStatus,
   GetActiveNodesByNetwork,
-  GetAssetName,
 } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
@@ -21,11 +20,9 @@ export enum GettersTypes {
   getNetworkGenesisHash = 'getNetworkGenesisHash',
   getPrice = 'getPrice',
   getAssetPrice = 'getAssetPrice',
-  getAssetName = 'getAssetName',
   getAssetIcon = 'getAssetIcon',
   getFiats = 'getFiats',
   getHistory = 'getHistory',
-  getCurrencies = 'getCurrencies',
   getActiveNodesByNetwork = 'getActiveNodesByNetwork',
   getAllNetworksIsReadyToUse = 'getAllNetworksIsReadyToUse',
   getNetworkStatus = 'getNetworkStatus',
@@ -44,11 +41,9 @@ export type Getters = {
     rootState?: any
   ): NetworkJsonOld[];
   [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
-  [GettersTypes.getAssetName](state: State, getters?: GetterTree<State, State> & Getters): GetAssetName;
   // [GettersTypes.getAssetIcon](state: State, getters?: GetterTree<State, State> & Getters): GetAssetIcon;
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
-  [GettersTypes.getCurrencies](state: State, getters?: GetterTree<State, State> & Getters): TokenBalance[];
   // [GettersTypes.getAssetsPriceInterval](
   //   state: State,
   //   getters?: GetterTree<State, State> & Getters
@@ -118,35 +113,11 @@ const getters: GetterTree<State, State> & Getters = {
       return { price, priceChange };
     },
 
-  [GettersTypes.getAssetName]:
-    ({ currencies }) =>
-    (assetId: string) => {
-      const asset = currencies.find(({ assetId: id }) => id === assetId);
-
-      if (!asset) return '';
-
-      return asset.name;
-    },
-
-  // [GettersTypes.getAssetIcon]:
-  //   ({ assetsJson }) =>
-  //   (assetId: string) => {
-  //     const asset = assetsJson.find(({ id }) => id === assetId);
-
-  //     if (!asset) return '';
-
-  //     return asset.icon;
-  //   },
-
   [GettersTypes.getHistory]:
     ({ history }) =>
     (assetId: string, walletAddress: string, networkName: string) => {
       return history[assetId]?.[walletAddress]?.[networkName.toLowerCase()];
     },
-
-  [GettersTypes.getCurrencies]({ currencies }): TokenBalance[] {
-    return currencies;
-  },
 
   [GettersTypes.getActiveNodesByNetwork]:
     ({ networks }) =>

@@ -78,16 +78,16 @@ export default class ContentSettings extends Vue {
   @PropSync('activeTabName', { type: String }) syncedActiveTabName!: TabWallet;
   @PropSync('filterValue', { type: String }) syncedFilterValue!: TabWallet;
   @PropSync('showAssetsManagementForm', { type: Boolean }) syncedShowAssetsManagementForm!: boolean;
-  @Prop(Array) currencies!: Currency[];
+  @Prop(Array) balances!: Currency[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getHiddenAssets) hiddenAssets!: Set<string>;
+  @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
 
   get target() {
     return `.${this.iconName}`;
   }
 
   get allCurrenciesHidden() {
-    return this.hiddenAssets.size === 0;
+    return this.hiddenAssets.length === this.balances.length;
   }
 
   get toggleButtonText() {

@@ -1,14 +1,6 @@
-import { FPNumber, api as apiSora } from '@sora-substrate/util';
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
-import type {
-  SetFiatsJsonProps,
-  SetCurrenciesProps,
-  SetHistoryProps,
-  SetNetworksStatusProps,
-  SetAssetsPriceProps,
-} from './types';
-import { accountController } from '@/controllers';
+import type { SetFiatsJsonProps, SetHistoryProps, SetNetworksStatusProps, SetAssetsPriceProps } from './types';
 import { getFormattedHistory } from '@/helpers/history';
 export enum MutationTypes {
   SET_NETWORKS = 'SET_NETWORKS',
@@ -16,7 +8,6 @@ export enum MutationTypes {
   SET_FIATS_JSON = 'SET_FIATS_JSON',
   SET_ASSETS_PRICE = 'SET_ASSETS_PRICE',
   SET_ASSETS_PRICE_INTERVAL = 'SET_ASSETS_PRICE_INTERVAL',
-  SET_CURRENCIES = 'SET_CURRENCIES',
   SORT_CURRENCIES = 'SORT_CURRENCIES',
   SET_HISTORY = 'SET_HISTORY',
   SET_ACTIVE_NODE = 'SET_ACTIVE_NODE',
@@ -29,8 +20,6 @@ export type Mutations = {
   [MutationTypes.SET_NETWORKS](state: State, props: SetNetworksStatusProps): void;
   [MutationTypes.SET_FIATS_JSON](state: State, props: SetFiatsJsonProps): void;
   [MutationTypes.SET_ASSETS_PRICE](state: State, props: SetAssetsPriceProps): void;
-
-  [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
 };
 
@@ -38,19 +27,9 @@ const mutations: MutationTree<State> & Mutations = {
   [MutationTypes.SET_NETWORKS](state, { networks }) {
     state.networks = networks;
   },
+
   [MutationTypes.SET_ASSETS_PRICE](state, price) {
     state.assetsPrice = { ...price };
-  },
-  [MutationTypes.SET_CURRENCIES](state, { currencies, address, network }) {
-    if (address && network) {
-      if (Array.isArray(currencies)) {
-        const sequence = currencies.map(({ assetId }) => assetId);
-
-        accountController.setSequenceAssets(sequence, address, network);
-      }
-    }
-
-    state.currencies = currencies;
   },
 
   [MutationTypes.SET_FIATS_JSON](state, { fiats }) {

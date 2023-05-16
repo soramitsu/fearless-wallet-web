@@ -1,5 +1,5 @@
 import type { MutationTree } from 'vuex';
-import type { SelectedWallet, SetAccountsProps, SetAutoSelectNode } from './types';
+import type { SelectedWallet, SetAccountsProps, SetAutoSelectNode, SetHiddenAsset } from './types';
 import type { State } from './state';
 import { accountController } from '@/controllers';
 import { BalanceJson } from '@/extension/background/extension-base/src/background/types/types';
@@ -14,7 +14,6 @@ export enum MutationTypes {
   SET_CUSTOM_SORT = 'SET_CUSTOM_SORT',
   SET_AUTO_SELECT_NODE = 'SET_AUTO_SELECT_NODE',
   SET_HIDDEN_ASSET = 'SET_HIDDEN_ASSET',
-  DELETE_HIDDEN_ASSET = 'DELETE_HIDDEN_ASSET',
   SET_QR = 'SET_QR',
   DELETE_QR = 'DELETE_QR',
   HIDE_POLKASWAP_ALERT = 'HIDE_POLKASWAP_ALERT',
@@ -32,8 +31,7 @@ export type Mutations = {
   [MutationTypes.SET_AUTO_SELECT_NODE](state: State, props: SetAutoSelectNode): void;
   [MutationTypes.SET_QR](state: State, props: string): void;
   [MutationTypes.DELETE_QR](state: State): void;
-  [MutationTypes.SET_HIDDEN_ASSET](state: State, props: string): void;
-  [MutationTypes.DELETE_HIDDEN_ASSET](state: State, props: string): void;
+  [MutationTypes.SET_HIDDEN_ASSET](state: State, props: SetHiddenAsset): void;
   [MutationTypes.SET_CUSTOM_SORT](state: State, props: string): void;
   [MutationTypes.HIDE_POLKASWAP_ALERT](state: State, value: boolean): void;
   [MutationTypes.HIDE_NETWORK_WARNING](state: State, network: string): void;
@@ -149,15 +147,29 @@ const mutations: MutationTree<State> & Mutations = {
     state.balances = details;
   },
 
-  [MutationTypes.SET_HIDDEN_ASSET](state, payload) {
-    if (state.hiddenAssets.find((el) => el === payload)) return;
-    state.hiddenAssets.push(payload);
-  },
+  [MutationTypes.SET_HIDDEN_ASSET](state, { assetId, value }) {
+    const address = state.selectedWallet.address;
+    const hiddenAssets = state.hiddenAssets[address] ?? [];
 
-  [MutationTypes.DELETE_HIDDEN_ASSET](state, payload) {
-    const index = state.hiddenAssets.findIndex((el) => el === payload);
+    if (value) {
+      const index = state.hiddenAssets[address].findIndex((id) => id === assetId);
 
-    if (index >= 0) state.hiddenAssets.splice(index, 1);
+      hiddenAssets.splice(index, 1);
+
+      if (index !== -1) {
+        state.hiddenAssets = {
+          ...state.hiddenAssets,
+          [address]: hiddenAssets,
+        };
+      }
+    } else {
+      state.hiddenAssets = {
+        ...state.hiddenAssets,
+        [address]: Array.from(new Set([...hiddenAssets, assetId])),
+      };
+    }
+
+    accountController.setHiddenAssets(state.hiddenAssets);
   },
 };
 

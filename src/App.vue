@@ -9,10 +9,10 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
-import { AccountJson, BalanceJson, PriceJson } from './extension/background/extension-base/src/background/types/types';
-import { Components } from './router/routes';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
+import { Components } from '@/router/routes';
+import { AccountJson, BalanceJson, PriceJson } from '@/extension/background/extension-base/src/background/types/types';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
@@ -46,7 +46,7 @@ export default class App extends Vue {
   @Mutation(NetworksMutationTypes.SET_ASSETS_PRICE) setPrices!: TMutation<SetAssetsPriceProps>;
   @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<boolean>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_FIAT) setSelectedFiat!: TMutation<string>;
-  @Mutation(AccountsMutationTypes.SET_BALANCE) setBalance!: TMutation<BalanceJson>;
+  @Action(AccountsActionTypes.SET_BALANCE) setBalance!: TAction<BalanceJson>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
   @Action(NetworksActionTypes.FETCH_FIATS) fetchFiats!: TAction<void>;
 

@@ -2,11 +2,12 @@ import type { ActionTree, ActionContext } from 'vuex';
 import type { Mutations } from '@/store/accounts/mutations';
 import type { State } from '@/store/accounts/state';
 import { MutationTypes } from '@/store/accounts/mutations';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
+import { AccountJson, BalanceJson } from '@/extension/background/extension-base/src/background/types/types';
 import { accountController } from '@/controllers/accountController';
 
 export enum ActionTypes {
   SET_SELECTED_WALLET = 'SET_SELECTED_WALLET',
+  SET_BALANCE = 'SET_BALANCE',
 }
 
 type AugmentedActionContext = {
@@ -15,6 +16,7 @@ type AugmentedActionContext = {
 
 export type Actions = {
   [ActionTypes.SET_SELECTED_WALLET](context: AugmentedActionContext, props: AccountJson | undefined): void;
+  [ActionTypes.SET_BALANCE](context: AugmentedActionContext, props: BalanceJson): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
@@ -26,6 +28,19 @@ const actions: ActionTree<State, State> & Actions = {
       ethereumAddress: account?.ethereumAddress ?? '',
       name: account?.name ?? '',
     });
+  },
+
+  async [ActionTypes.SET_BALANCE]({ commit, state }, { details, reset, saveSequence = false }) {
+    if (saveSequence) {
+      const address = state.selectedWallet.address;
+      const sequence = details.map(({ assetId }) => assetId);
+
+      accountController.setSequenceAssets(sequence, address);
+
+      commit(MutationTypes.SET_CUSTOM_SORT, address);
+    }
+
+    commit(MutationTypes.SET_BALANCE, { details, reset });
   },
 };
 

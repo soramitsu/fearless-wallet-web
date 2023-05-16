@@ -21,15 +21,15 @@
 <script lang="ts">
 import Draggable from 'vuedraggable';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Mutation, Getter } from 'vuex-class';
-import type { SelectedWallet, SetCurrenciesProps } from '@/store';
-import type { TMutation } from '@/interfaces/common';
-import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
+import { Getter, Action } from 'vuex-class';
+import type { SelectedWallet } from '@/store';
+import type { TAction } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import CurrencyItem from '@/screens/wallet&asset/wallet/CurrencyItem.vue';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import { TokenBalance, BalanceJson } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { AssetsPrice } from '@/interfaces';
+import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 
 @Component({
   components: {
@@ -46,7 +46,8 @@ export default class Currencies extends Vue {
   @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
-  @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
+  @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
+  @Action(AccountsActionTypes.SET_BALANCE) setBalance!: TAction<BalanceJson>;
 
   get mainText() {
     if (!this.isOnline) return 'common.offlineStatus';
@@ -55,7 +56,11 @@ export default class Currencies extends Vue {
   }
 
   get showAllAssetsHiddenText() {
-    return this.balances.length === 0 && !this.showAssetsManagementForm;
+    if (this.showAssetsManagementForm) return false;
+
+    const allHidden = this.balances.every(({ assetId }) => this.hiddenAssets.includes(assetId));
+
+    return this.balances.length === this.hiddenAssets.length || allHidden;
   }
 
   get filteredBalances() {
@@ -63,12 +68,10 @@ export default class Currencies extends Vue {
   }
 
   set filteredBalances(balances) {
-    this.$emit('setCustomSort');
-
-    this.setCurrencies({
-      currencies: balances, //FIX
-      address: this.selectedWallet.address,
-      network: this.selectedNetwork,
+    this.setBalance({
+      details: balances,
+      reset: false,
+      saveSequence: true,
     });
   }
 

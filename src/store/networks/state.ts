@@ -1,5 +1,4 @@
 import type { AssetsPrice, History, FiatJson } from '@/interfaces';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 export type State = {
@@ -7,7 +6,6 @@ export type State = {
   assetsPrice: AssetsPrice;
   fiats: FiatJson[];
   history: History;
-  currencies: TokenBalance[];
 };
 
 const state = (): State => {
@@ -18,7 +16,6 @@ const state = (): State => {
       tokenPriceMap: {},
     },
     fiats: [],
-    currencies: [],
     history: {},
   };
 };

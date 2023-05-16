@@ -138,7 +138,7 @@ import MaxButton from './MaxButton.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
 import RotateInput from './RotateInput.vue';
-import type { GetAssetName, GetAssetPrice } from '@/store';
+import type { GetAssetPrice } from '@/store';
 import BaseApi from '@/util/BaseApi';
 import FloatInput from '@/components/FloatInput.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -189,7 +189,6 @@ export default class SendForm extends Vue {
   @Getter(AccountsGettersTypes.getBalances) currencies!: TokenBalance[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.getNetworks) getNetworks!: NetworkJsonOld[];
-  @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
 
   get firstIcon() {
     return this.extrinsicType === 'transfer' ? this.syncedSelectedAssetId : this.syncedSelectedNetwork;
@@ -345,10 +344,6 @@ export default class SendForm extends Vue {
     const cost = getCostOfAssets(this.transferrableAmount, this.assetPrice) ?? 0;
 
     return this.$n(cost, 'price');
-  }
-
-  get selectedAsset() {
-    return this.getAssetName(this.syncedSelectedAssetId);
   }
 
   get selectedAssetUpper() {

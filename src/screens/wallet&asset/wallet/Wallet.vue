@@ -38,7 +38,7 @@
           :activeTabName="activeTabName"
           :filterValue="filterValue"
           :showAssetsManagementForm="showAssetsManagementForm"
-          :currencies="filteredCurrencies"
+          :balances="filteredCurrencies"
           @update:filterValue="updateFilterValue"
           @update:activeTabName="updateActiveTabName"
           @update:showAssetsManagementForm="toggleAssetsManagementFormVisible"
@@ -47,13 +47,11 @@
 
         <Currencies
           v-if="showCurrencies"
-          :key="currenciesKey"
           :balances="filteredCurrencies"
           :selectedNetwork="selectedNetwork"
           :showAssetsManagementForm="showAssetsManagementForm"
           :toggleVisibleActivityForm="toggleVisibleActivityForm"
           :filterValue="filterValue"
-          @setCustomSort="setCustomSort"
           @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
         />
       </div>
@@ -96,9 +94,10 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import { Getter, Mutation } from 'vuex-class';
-import type { TMutation, TabWallet } from '@/interfaces/common';
-import type { SelectedWallet, GetShowWarningNetworks } from '@/store';
+import { Getter, Mutation, Action } from 'vuex-class';
+import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset } from '@/store';
+import type { TAction, TMutation, TabWallet } from '@/interfaces';
+import { BalanceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
 import ContentSettings from '@/screens/wallet&asset/wallet/ContentSettings.vue';
@@ -110,12 +109,13 @@ import { accountController } from '@/controllers/accountController';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { addNumbers, getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/numbers';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
-import { BalanceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+
 import { ALL_NETWORKS } from '@/consts/networks';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 import { AssetsPrice } from '@/interfaces';
@@ -146,18 +146,15 @@ export default class Wallet extends Vue {
   showReceiveForm = false;
   showSelectNetworkPopup = false;
   networkUnavailable = '';
-  currenciesKey = 0;
   activeTabName: TabWallet = 'Currencies';
   filterValue = '';
   selectedCurrency!: {
     mainNetwork?: string;
     assetId?: string;
   };
-  evmCurrencies = {};
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
-  @Getter(NetworksGettersTypes.getCurrencies) currencies!: TokenBalance[]; // for custom ordering
   @Getter(AccountsGettersTypes.getShowWarningNetworks) getShowWarningNetworks!: GetShowWarningNetworks;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
@@ -167,9 +164,10 @@ export default class Wallet extends Vue {
   @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJsonOld;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
+  @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<string>;
-  @Mutation(AccountsMutationTypes.SET_CUSTOM_SORT) setCustomSorting!: TMutation<string>;
-  @Mutation(AccountsMutationTypes.SET_BALANCE) setBalance!: TMutation<BalanceJson>;
+  @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: TMutation<SetHiddenAsset>;
+  @Action(AccountsActionTypes.SET_BALANCE) setBalance!: TAction<BalanceJson>;
 
   get showNetworkUnavailablePopup() {
     return this.networkUnavailable !== '';
@@ -195,28 +193,21 @@ export default class Wallet extends Vue {
     return getChangeWalletBalance(this.balances, this.prices);
   }
 
-  get sequence() {
-    const { address } = this.selectedWallet;
-
-    if (address === '') return [];
-
-    return accountController.getSequenceAssetsByAddress(address, this.selectedNetwork);
-  }
-
-  get filteredBalances() {
-    if (this.currencies.length) return this.currencies;
-
-    return this.balances;
-  }
-
   get sortedCurrencies() {
     const { address } = this.selectedWallet;
 
     if (address === '') return [];
 
-    const sequence = accountController.getSequenceAssetsByAddress(address, this.selectedNetwork);
+    if (!this.isCustomSort(address)) {
+      const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
+      const network = isAllNetworks ? undefined : this.selectedNetwork;
 
-    return this.filteredBalances.sort((currency1, currency2) => {
+      return defaultSortingCurrencies(this.balances, network);
+    }
+
+    const sequence = accountController.getSequenceAssetsByAddress(address);
+
+    return this.balances.sort((currency1, currency2) => {
       const index1 = sequence.indexOf(currency1.assetId);
       const index2 = sequence.indexOf(currency2.assetId);
 
@@ -235,7 +226,7 @@ export default class Wallet extends Vue {
 
     const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
 
-    const result = this.sortedCurrencies.filter((currency) => {
+    return this.sortedCurrencies.filter((currency) => {
       const walletBalance = currency.balances.map(({ name }) => name);
       const isAvailableInSelectedNetwork = walletBalance.includes(this.selectedNetwork);
 
@@ -243,14 +234,6 @@ export default class Wallet extends Vue {
 
       return currency.name.includes(filter);
     });
-
-    if (!this.isCustomSort(this.selectedWallet.address)) {
-      const network = isAllNetworks ? undefined : this.selectedNetwork;
-
-      return defaultSortingCurrencies(result, network);
-    }
-
-    return result;
   }
 
   get totalBalance() {
@@ -274,10 +257,6 @@ export default class Wallet extends Vue {
   @Watch('networksWithWarning')
   connect(value: string[]) {
     if (value.length === 0) this.showNetworkManagement = false;
-  }
-
-  setCustomSort() {
-    this.setCustomSorting(this.selectedWallet.address);
   }
 
   closeGoogleExportPopup() {
@@ -309,36 +288,45 @@ export default class Wallet extends Vue {
   }
 
   toggleCurrenciesVisible(allCurrenciesHidden: boolean) {
-    // if (allCurrenciesHidden) {
-    //   this.balances.forEach((currency) => setCurrencyVisibility(currency, this.selectedWallet.address, true));
-    //   return;
-    // }
-    // this.balances.forEach((currency) => {
-    //   const isZeroBalance = !!currency.balances.filter((balance) => {
-    //     return balance.transferable && balance.transferable !== '0';
-    //   }).length;
-    //   if (isZeroBalance) setCurrencyVisibility(currency, this.selectedWallet.address, false);
-    // });
-    // const currenciesInvisibleWithBalance = this.currencies.filter(
-    //   (currency) =>
-    //     !currency.getCurrencyVisibility(this.selectedWallet.address) &&
-    //     currency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork) !== '0'
-    // );
-    // const currenciesInvisibleWithoutBalance = this.currencies.filter(
-    //   (currency) =>
-    //     !currency.getCurrencyVisibility(this.selectedWallet.address) &&
-    //     currency.getTotalCountAssets(this.selectedWallet, this.selectedNetwork) === '0'
-    // );
-    // this.setCurrencies({
-    //   currencies: [
-    //     ...currenciesVisibleWithBalance,
-    //     ...currenciesInvisibleWithBalance,
-    //     ...currenciesInvisibleWithoutBalance,
-    //   ],
-    //   address: this.selectedWallet.address,
-    //   network: this.selectedNetwork,
-    // });
-    // this.currenciesKey += 1;
+    if (allCurrenciesHidden) {
+      this.balances.forEach(({ assetId }) => this.setHiddenAssets({ assetId, value: true }));
+
+      return;
+    }
+
+    this.balances.forEach(({ assetId, balances }) => {
+      const index = balances.findIndex(({ transferable }) => transferable && transferable !== '0');
+      const isZeroBalance = index === -1;
+
+      if (isZeroBalance) this.setHiddenAssets({ assetId, value: false });
+    });
+
+    const assetsVisibleWithBalance = this.balances.filter(({ balances, assetId }) => {
+      const haveAssets = balances.findIndex(({ transferable }) => transferable && transferable !== '0') !== -1;
+      const isVisibleAsset = !this.hiddenAssets.includes(assetId);
+
+      return isVisibleAsset && haveAssets;
+    });
+
+    const assetsInvisibleWithBalance = this.balances.filter(({ balances, assetId }) => {
+      const haveAssets = balances.findIndex(({ transferable }) => transferable && transferable !== '0') !== -1;
+      const isHiddenAsset = this.hiddenAssets.includes(assetId);
+
+      return isHiddenAsset && haveAssets;
+    });
+
+    const assetsInvisibleWithoutBalance = this.balances.filter(({ balances, assetId }) => {
+      const notHaveAssets = balances.findIndex(({ transferable }) => transferable && transferable !== '0') === -1;
+      const isHiddenAsset = this.hiddenAssets.includes(assetId);
+
+      return isHiddenAsset && notHaveAssets;
+    });
+
+    this.setBalance({
+      details: [...assetsVisibleWithBalance, ...assetsInvisibleWithBalance, ...assetsInvisibleWithoutBalance],
+      reset: false,
+      saveSequence: true,
+    });
   }
 
   toggleVisibleActivityForm(

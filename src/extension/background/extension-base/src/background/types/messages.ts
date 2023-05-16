@@ -10,7 +10,6 @@ import {
 } from '../../types';
 import {
   RequestAccountCreateExternal,
-  RequestAccountCreateHardware,
   RequestAccountCreateSuri,
   RequestAddressCreate,
   RequestAddressRemove,

@@ -10,8 +10,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import { AccountJson, BalanceJson, PriceJson } from './extension/background/extension-base/src/background/types/types';
-import { Components } from './router/routes';
-import type { Accounts, SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
+import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
@@ -67,6 +66,8 @@ export default class App extends Vue {
     this.setupWallet();
     this.setupNetworks();
     this.setupBalance();
+
+    triggerAccountsSubscription();
   }
 
   setupSWPing() {
@@ -88,12 +89,10 @@ export default class App extends Vue {
 
   async setupBalance() {
     const balance = await getBalance();
-
     this.setBalance(balance);
-
     subscribeBalance((balances) => {
       this.setBalance(balances);
-    }).catch(console.error);
+    });
   }
 
   async setupNetworks() {
@@ -129,15 +128,14 @@ export default class App extends Vue {
     this.setAccounts({ accounts, isMobileUpdate });
   }
 
-  async setupWallet() {
-    await subscribeAddresses((accounts) => {
+  setupWallet() {
+    subscribeAddresses((accounts) => {
       this.onAccountUpdate(accounts, true);
     });
-    await subscribeAccounts((accounts) => {
+
+    subscribeAccounts((accounts) => {
       this.onAccountUpdate(accounts);
     });
-
-    triggerAccountsSubscription();
   }
 
   unsubscribe() {

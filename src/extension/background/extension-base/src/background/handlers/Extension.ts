@@ -35,7 +35,7 @@ import {
   ResponseMakeSwap,
   TransferErrorCode,
 } from '../types/types';
-import { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
+import { CurrentAccountInfo, CurrentAccountState } from '../../stores/CurrentAccountStore';
 import {
   NetworkJsonOld,
   RequestTransactionHistoryAdd,
@@ -133,9 +133,7 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
 }
 
 async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
-  if (Object.keys(accounts).length === 0) return [];
-
-  const currentAccount = await new Promise<CurrentAccountInfo | null>((res) => {
+  const currentAccount = await new Promise<CurrentAccountState>((res) => {
     state.getCurrentAccount((value) => {
       res(value);
     });
@@ -247,7 +245,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   getCurrentAccount() {
-    return new Promise<CurrentAccountInfo | null>((res) => {
+    return new Promise<CurrentAccountState>((res) => {
       this.state.getCurrentAccount((value) => {
         res(value);
       });
@@ -458,7 +456,7 @@ export default class Extension extends FWExtensionBase {
     };
   }
 
-  private _saveCurrentAccountAddress(address: string, callback?: (data: CurrentAccountInfo | undefined) => void) {
+  private _saveCurrentAccountAddress(address: string, callback?: (account: CurrentAccountState) => void) {
     if (address === '') {
       this.state.setCurrentAccount(null);
 
@@ -496,7 +494,6 @@ export default class Extension extends FWExtensionBase {
 
     this._saveCurrentAccountAddress(address, () => {
       this.state.generateDefaultBalance(address);
-      this.state.publishBalance();
       this.triggerWalletsSubscription();
     });
 
@@ -779,7 +776,7 @@ export default class Extension extends FWExtensionBase {
     return this.getBalance(true);
   }
 
-  private subscribeHistory(id: string, port: chrome.runtime.Port): Record<string, TransactionHistoryItemType[]> {
+  private subscribeHistory(id: string, port: Port): Record<string, TransactionHistoryItemType[]> {
     const cb = createSubscription<'pri(transaction.history.get.subscription)'>(id, port);
 
     const historySubscription = this.state.subscribeHistory().subscribe({
@@ -1398,10 +1395,10 @@ export default class Extension extends FWExtensionBase {
         return this.accountsShow(request as RequestAccountShow);
 
       case 'pri(accounts.subscribe)':
-        return this.accountsSubscribe(id, port as Port);
+        return this.accountsSubscribe(id, port);
 
       case 'pri(addresses.subscribe)':
-        return this.addressesSubscribe(id, port as Port);
+        return this.addressesSubscribe(id, port);
 
       case 'pri(accounts.triggerSubscription)':
         return this.triggerWalletsSubscription();

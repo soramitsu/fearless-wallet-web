@@ -105,11 +105,11 @@ export class FWCron {
 
     this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
       next: (serviceInfo) => {
-        if (!serviceInfo.currentAccountInfo) return;
-
         this.removeCron('refreshPrice');
         this.removeCron('checkStatusApiMap');
         this.removeCron('recoverApiMap');
+
+        if (!serviceInfo.currentAccountInfo) return;
 
         if (this.checkNetworkAvailable(serviceInfo)) {
           // only add cron job if there's at least 1 active network

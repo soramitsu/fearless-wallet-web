@@ -104,7 +104,7 @@ export interface NetworkJsonOld extends NetworkJson {
   externalApi?: ExternalApi;
   assets: NetworkAssets[];
   isEthereumNetwork?: boolean;
-  customNodes?: Record<string, string>;
+  customNodes: Node[];
   nodes: Node[];
   icon: string;
   addressPrefix: number;

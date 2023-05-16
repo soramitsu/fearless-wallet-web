@@ -33,7 +33,7 @@ import type {
   PermissionResponsePayload,
 } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
-import { createAddress } from '@/extension/messaging';
+import { createMobileWallet } from '@/extension/messaging';
 import { beaconController } from '@/controllers';
 import { ActionTypes as AccountActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as NetworkGettersTypes } from '@/store/networks/getters';
@@ -170,7 +170,7 @@ export default class MobileConnect extends Vue {
     const ethereumAddress = this.getEthereumAccount(account);
     const meta: KeyringJson$Meta = { name: 'mobile wallet', isMobile: true, ethereumAddress };
 
-    if (IS_EXTENSION) await createAddress(substrateAccount, meta);
+    if (IS_EXTENSION) await createMobileWallet(substrateAccount, meta);
 
     // BaseApi.saveAddress(substrateAccount, meta);
     await this.setSelectedWallet(substrateAccount);

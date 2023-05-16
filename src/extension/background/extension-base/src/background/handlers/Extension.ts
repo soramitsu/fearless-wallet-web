@@ -140,14 +140,11 @@ async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> 
       res(value);
     });
   });
-  let isAccountDefaultSetup = false;
 
   const transformedAccounts = Object.values(accounts)
     .filter((el) => !isEthereumAddress(el.json.address))
     .map(({ json: { address, meta }, type }): AccountJson => {
       const isDefault = address === currentAccount?.address;
-
-      if (isDefault) isAccountDefaultSetup = true;
 
       return {
         address,
@@ -158,9 +155,6 @@ async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> 
         ...meta,
       };
     });
-
-  //if no active account make active first one
-  if (!isAccountDefaultSetup) transformedAccounts[0].active = true;
 
   return transformedAccounts;
 }
@@ -186,11 +180,9 @@ export default class Extension extends FWExtensionBase {
   accountsCreateSuri({ password, suri, type, meta }: RequestAccountCreateSuri): string {
     const {
       pair: { address },
-    } = keyring.addUri(suri, password, meta, type);
+    } = keyring.addUri(suri, password, { ...meta, isMobile: false }, type);
 
     if (!isEthereumAddress(address)) {
-      state.generateDefaultBalance(address);
-
       this.updateCurrentAccountAddress(address);
     }
 
@@ -234,25 +226,32 @@ export default class Extension extends FWExtensionBase {
 
     const accounts = keyring.getAccounts();
     const addresses = keyring.getAddresses();
-    const currentAcc = await new Promise<CurrentAccountInfo | undefined>((res) => {
-      this.state.getCurrentAccount((value) => {
-        res(value);
-      });
-    });
-
+    const currentAcc = await this.getCurrentAccount();
     const shouldUpdate =
       !accounts.some(({ address }) => address === currentAcc?.address) ||
       !addresses.some(({ address }) => address === currentAcc?.address);
+    const isNoAccounts = !accounts.length && !accounts.length;
 
-    if (shouldUpdate) {
-      const account = currentAcc?.isMobile
-        ? addresses[0]
-        : accounts.find(({ address }) => !isEthereumAddress(address))!;
+    if (shouldUpdate || isNoAccounts) {
+      let account;
+
+      if (accounts.length) account = accounts.find(({ address }) => !isEthereumAddress(address))!;
+      else if (addresses.length) {
+        account = addresses[0];
+      }
 
       this.updateCurrentAccountAddress(account ? account.address : '');
     }
 
     return true;
+  }
+
+  getCurrentAccount() {
+    return new Promise<CurrentAccountInfo | undefined>((res) => {
+      this.state.getCurrentAccount((value) => {
+        res(value);
+      });
+    });
   }
 
   accountsValidate({ address, password }: RequestAccountValidate): boolean {
@@ -468,7 +467,7 @@ export default class Extension extends FWExtensionBase {
 
     const {
       meta: { isMobile, name, ethereumAddress },
-    } = keyring.getAccount(address)!;
+    } = keyring.getAccount(address) ?? keyring.getAddress(address)!;
 
     const accountInfo: CurrentAccountInfo = {
       address,
@@ -482,10 +481,12 @@ export default class Extension extends FWExtensionBase {
     });
   }
 
-  private triggerAccountsSubscription(): boolean {
+  private triggerWalletsSubscription(): boolean {
     const accountsSubject = accountsObservable.subject;
+    const addressSubject = addressesObservable.subject;
 
     accountsSubject.next(accountsSubject.getValue());
+    addressSubject.next(addressSubject.getValue());
 
     return true;
   }
@@ -494,9 +495,9 @@ export default class Extension extends FWExtensionBase {
     if (isEthereumAddress(address)) return true;
 
     this._saveCurrentAccountAddress(address, () => {
-      this.triggerAccountsSubscription();
       this.state.generateDefaultBalance(address);
       this.state.publishBalance();
+      this.triggerWalletsSubscription();
     });
 
     return true;
@@ -1282,6 +1283,14 @@ export default class Extension extends FWExtensionBase {
     return this.state.getNetworkMap;
   }
 
+  private createMobileWallet(wallet: RequestAddressCreate) {
+    this.createAddress(wallet);
+
+    state.generateDefaultBalance(wallet.address);
+
+    this.updateCurrentAccountAddress(wallet.address);
+  }
+
   private subscribeNetworkMap(id: string, port: Port): Record<string, NetworkJson> {
     const cb = createSubscription<'pri(networkMap.getSubscription)'>(id, port);
     const networkMapSubscription = this.state.subscribeNetworkMap().subscribe({
@@ -1337,8 +1346,8 @@ export default class Extension extends FWExtensionBase {
       case 'pri(authorize.requests)':
         return this.authorizeSubscribe(id, port);
 
-      case 'pri(addresses.create)':
-        return this.createAddress(request as RequestAddressCreate);
+      case 'pri(accounts.create.mobile)':
+        return this.createMobileWallet(request as RequestAddressCreate);
 
       case 'pri(addresses.remove)':
         return this.removeAddress(request as string);
@@ -1395,7 +1404,7 @@ export default class Extension extends FWExtensionBase {
         return this.addressesSubscribe(id, port as Port);
 
       case 'pri(accounts.triggerSubscription)':
-        return this.triggerAccountsSubscription();
+        return this.triggerWalletsSubscription();
 
       case 'pri(accounts.tie)':
         return this.accountsTie(request as RequestAccountTie);

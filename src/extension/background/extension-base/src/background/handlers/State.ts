@@ -1106,9 +1106,9 @@ export default class State {
   }
 
   private updateBalanceStore(networkKey: string, item: BalanceItem) {
-    this.getCurrentAccount(async (currentAccountInfo) => {
+    this.getCurrentAccount((currentAccountInfo) => {
       if (currentAccountInfo)
-        await this.balanceService
+        this.balanceService
           .updateBalanceStore(networkKey, currentAccountInfo.address, item)
           .catch((e) => console.warn(e));
     });
@@ -1122,7 +1122,7 @@ export default class State {
   }
 
   public generateDefaultBalance(address: string) {
-    if (!address) return;
+    if (address === '') return;
 
     if (this.balanceMap && this.balanceMap[address] !== undefined) return;
 

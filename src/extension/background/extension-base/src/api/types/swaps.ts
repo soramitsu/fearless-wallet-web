@@ -12,15 +12,10 @@ export interface BaseExchangeProps {
   assetB: Asset | AccountAsset;
   slippage?: number;
   swapOptions: SwapOptions;
-}
-
-export interface CreateExchangeBOptions extends BaseExchangeProps {
+  amountA: string;
   amountB?: string;
 }
 
-export interface CreateExchangeAOptions extends BaseExchangeProps {
-  amountA: string;
-}
 export interface ExtrinsicSwapOptions {
   amountA: string;
   amountB: string;

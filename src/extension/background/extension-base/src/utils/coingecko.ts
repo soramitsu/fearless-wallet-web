@@ -11,13 +11,7 @@ export const getTokenPrice = async (chains: Array<string>, currency = 'usd'): Pr
     const { currency: currentCurrency } = state.prices.json;
 
     if (Math.abs(state.prices.timestamp - now) <= REFRESH_PRICE_INTERVAL && currentCurrency === currency) {
-      console.info(
-        'Return prices from cache',
-        state.prices,
-        Math.abs(now - state.prices.timestamp) >= REFRESH_PRICE_INTERVAL,
-        REFRESH_PRICE_INTERVAL,
-        now
-      );
+      console.info('Return prices from cache', state.prices);
 
       return state.prices.json;
     }

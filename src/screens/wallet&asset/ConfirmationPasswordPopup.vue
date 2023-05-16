@@ -78,6 +78,7 @@ import {
 } from '@/extension/background/extension-base/src/background/types/types';
 import { getTransactionAddress } from '@/controllers/transferHelpers';
 import { ExtensionController } from '@/controllers';
+import { IS_EXTENSION } from '@/consts/global';
 
 @Component({
   components: { SignMobile },
@@ -111,7 +112,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
   get show15MinCheckbox() {
-    return BaseApi.isExtension();
+    return IS_EXTENSION;
   }
 
   get classesInput() {
@@ -212,7 +213,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async mounted() {
-    if (!BaseApi.isExtension() || this.isSignMobile) return;
+    if (!IS_EXTENSION || this.isSignMobile) return;
 
     // const address = this.transactionId ? this.transactionAddress : this.selectedWallet.address;
 

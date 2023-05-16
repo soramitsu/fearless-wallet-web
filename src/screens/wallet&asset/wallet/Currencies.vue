@@ -3,7 +3,7 @@
     <div v-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText) }}</div>
 
     <Draggable v-else v-model="filteredBalances" handle=".handle" :key="selectedWallet.address">
-      <CurrencyItemStateLess
+      <CurrencyItem
         v-for="(asset, assetKey) in filteredBalances"
         :assetData="asset"
         :price="getAssetPrice(asset.priceId)"
@@ -26,7 +26,7 @@ import type { SelectedWallet, SetCurrenciesProps } from '@/store';
 import type { TMutation } from '@/interfaces/common';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import CurrencyItemStateLess from '@/screens/wallet&asset/wallet/CurrencyItemStateLess.vue';
+import CurrencyItem from '@/screens/wallet&asset/wallet/CurrencyItem.vue';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { AssetsPrice } from '@/interfaces';
@@ -34,7 +34,7 @@ import { AssetsPrice } from '@/interfaces';
 @Component({
   components: {
     Draggable,
-    CurrencyItemStateLess,
+    CurrencyItem,
   },
 })
 export default class Currencies extends Vue {

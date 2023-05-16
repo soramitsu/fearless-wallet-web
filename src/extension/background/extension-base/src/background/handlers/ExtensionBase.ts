@@ -196,7 +196,9 @@ export default class FWExtensionBase {
   jsonValid({ file, password, isSubstrate }: RequestJsonValidate): ValidateJsonResult {
     try {
       const pair = keyring.restoreAccount(file, password);
+
       pair.decodePkcs8(password);
+
       if (isSubstrate) keyring.encodeAddress(pair.address);
 
       return { value: true };

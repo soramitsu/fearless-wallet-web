@@ -106,7 +106,7 @@ import { Components } from '@/router/routes';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { GetAssetPrice } from '@/store/networks/types';
 @Component
-export default class CurrencyItemStateLess extends Vue {
+export default class CurrencyItem extends Vue {
   readonly countDisplayedNetworks = 5;
 
   @Prop(Object) assetData!: TokenBalance;
@@ -261,6 +261,7 @@ export default class CurrencyItemStateLess extends Vue {
   margin-right: 16px;
   align-items: center;
   height: 80px;
+  user-select: none;
 
   &:hover {
     cursor: pointer;

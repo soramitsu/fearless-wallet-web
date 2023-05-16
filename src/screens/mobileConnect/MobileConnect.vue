@@ -41,6 +41,7 @@ import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutations';
 import PermissionRequestPopup from '@/screens/mobileConnect/PermissionRequestPopup.vue';
 import { MOONBEAM_GENESISHASH } from '@/consts/networks';
+import { IS_EXTENSION } from '@/consts/global';
 
 @Component({
   components: {
@@ -169,7 +170,7 @@ export default class MobileConnect extends Vue {
     const ethereumAddress = this.getEthereumAccount(account);
     const meta: KeyringJson$Meta = { name: 'mobile wallet', isMobile: true, ethereumAddress };
 
-    if (BaseApi.isExtension()) await createAddress(substrateAccount, meta); //extenstion service worker
+    if (IS_EXTENSION) await createAddress(substrateAccount, meta);
 
     // BaseApi.saveAddress(substrateAccount, meta);
     await this.setSelectedWallet(substrateAccount);

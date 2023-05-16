@@ -742,7 +742,7 @@ export default class Extension extends FWExtensionBase {
   private subscribeBalance(id: string, port: Port): Promise<BalanceJson> {
     const cb = createSubscription<'pri(balance.get.subscription)'>(id, port);
 
-    const balanceSubscription = this.state.subscribeBalance().subscribe({
+    const balanceSubscription = this.state.balanceSubject.subscribe({
       next: (rs) => {
         cb(rs);
       },
@@ -922,6 +922,7 @@ export default class Extension extends FWExtensionBase {
       };
 
     apiSora.account = { json: null as any, pair };
+    apiSora.shouldPairBeLocked = !isSavePass;
 
     try {
       await apiSora.swap.execute(assetA, assetB, amountA, amountB, slippage, isExchangeB, liquiditySource, swapDexId);

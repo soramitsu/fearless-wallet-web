@@ -101,7 +101,6 @@ import type { TMutation, TabWallet } from '@/interfaces/common';
 import type { SelectedWallet, GetShowWarningNetworks } from '@/store';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
-import CurrencyItemStateLess from '@/screens/wallet&asset/wallet/CurrencyItemStateLess.vue';
 import ContentSettings from '@/screens/wallet&asset/wallet/ContentSettings.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
@@ -129,7 +128,6 @@ import { tieAccount } from '@/extension/messaging';
     NFTs,
     SendForm,
     Currencies,
-    CurrencyItemStateLess,
     ReceiveForm,
     WalletBalance,
     ContentSettings,
@@ -171,6 +169,7 @@ export default class Wallet extends Vue {
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<string>;
   @Mutation(AccountsMutationTypes.SET_CUSTOM_SORT) setCustomSorting!: TMutation<string>;
+  @Mutation(AccountsMutationTypes.SET_BALANCE) setBalance!: TMutation<BalanceJson>;
 
   get showNetworkUnavailablePopup() {
     return this.networkUnavailable !== '';

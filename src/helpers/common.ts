@@ -1,4 +1,4 @@
-import type { Meta, ReplacedMeta, AddressMeta } from '@/interfaces/common';
+import type { Meta, AddressMeta } from '@/interfaces/common';
 import type { KeyringPair$Meta } from '@polkadot/keyring/types';
 import { SORA_NETWORK_NAME } from '@/consts/networks';
 
@@ -19,10 +19,6 @@ function getAddressMetaTyped(meta: KeyringPair$Meta) {
   return meta as unknown as AddressMeta;
 }
 
-function getReplacedMetaTyped(meta: KeyringPair$Meta) {
-  return meta as unknown as ReplacedMeta;
-}
-
 function isSora(network: string) {
   return network.toLowerCase() === SORA_NETWORK_NAME;
 }
@@ -31,4 +27,4 @@ function validateEmail(email: string) {
   return EMAIL_REGEXP.test(email);
 }
 
-export { getReplacedMetaTyped, getAddressMetaTyped, getMetaTyped, firstCharToUp, isSora, validateEmail };
+export { getAddressMetaTyped, getMetaTyped, firstCharToUp, isSora, validateEmail };

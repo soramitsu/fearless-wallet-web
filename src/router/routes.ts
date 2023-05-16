@@ -50,7 +50,7 @@ export enum Components {
 }
 
 const haveSelectedWallet = () => {
-  return store.getters.getSelectedWallet.address.length;
+  return store.getters.getSelectedWallet.address.length !== 0;
 };
 
 const haveAuthRequests = () => store.getters.getAuthList.length;

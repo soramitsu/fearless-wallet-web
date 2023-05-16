@@ -111,12 +111,13 @@ export function subscribeEVMBalance(
   }
 
   getBalance();
+
   const interval = setInterval(getBalance, ASTAR_REFRESH_BALANCE_INTERVAL);
-  const unsub2 = subscribeERC20Interval(addresses, networkKey, api, web3ApiMap, subCallback);
+  const unsub = subscribeERC20Interval(addresses, networkKey, api, web3ApiMap, subCallback);
 
   return () => {
     clearInterval(interval);
-    unsub2 && unsub2();
+    unsub && unsub();
   };
 }
 

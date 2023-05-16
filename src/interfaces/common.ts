@@ -22,11 +22,6 @@ interface AddressMeta extends Meta {
 
 type ParentAddress = string;
 
-interface ReplacedMeta {
-  isReplacedAccount: true;
-  replacedSettings: Record<ParentAddress, string[]>;
-}
-
 type TabWallet = 'Currencies' | 'NFTs';
 type ImportType = 'mnemonic' | 'rawSeed' | 'json';
 type FilterHistory = 'all' | 'transfer' | 'reward' | 'extrinsic';
@@ -120,7 +115,6 @@ export {
   TabWallet,
   ValidateJsonResult,
   WalletAddress,
-  ReplacedMeta,
   Meta,
   MnemonicConfirmation,
   ChainAccount,

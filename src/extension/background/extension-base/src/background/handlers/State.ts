@@ -444,13 +444,15 @@ export default class State {
     this.setCurrentAccount(null);
   }
 
-  public async upsertNetworkMap(data: NetworkJsonOld): Promise<boolean> {
+  public upsertNetworkMap(data: NetworkJsonOld): boolean {
     if (this.lockNetworkMap) return false;
     this.lockNetworkMap = true;
     const { key, currentProvider, chain, blockExplorer, paraId, nativeToken, decimals } = data;
 
     if (key in this.networkMap) {
       const network = this.networkMap[key];
+      //make network active if it was disabled previously
+      network.active = true;
       // update provider for existed network
       if (data.customProviders) network.customProviders = data.customProviders;
 
@@ -474,7 +476,7 @@ export default class State {
     if (this.networkMap[key].active) {
       // update API map if network is active
       if (data.key in this.apis.substrate) {
-        this.apis.substrate[key].api?.disconnect && (await this.apis.substrate[key].api?.disconnect());
+        this.apis.substrate[key].api?.disconnect && this.apis.substrate[key].api?.disconnect();
         delete this.apis.substrate[key];
       }
 
@@ -483,7 +485,7 @@ export default class State {
       const currentProvider = getCurrentProvider(data);
 
       if (currentProvider) {
-        await initApi(data);
+        initApi(data);
 
         if (data.isEthereum && data.isEthereum) {
           this.apis.evm[data.key] = initWeb3Api(currentProvider);
@@ -908,10 +910,6 @@ export default class State {
     });
   }
 
-  public async switchAccount() {
-    await this.resetBalanceMap();
-  }
-
   public refreshPrice() {
     // Update for tokens price
     const coinGeckoKeys = Object.values(this.tokenMap)
@@ -927,8 +925,8 @@ export default class State {
       .catch((err) => console.info(err));
   }
 
-  public async publishBalance(reset?: boolean) {
-    this.getBalance(reset).then((balance) => {
+  public publishBalance(reset?: boolean) {
+    return this.getBalance(reset).then((balance) => {
       this.balanceSubject.next(balance);
     });
   }
@@ -1123,14 +1121,10 @@ export default class State {
     if (address === '') return;
 
     if (this.balanceMap && this.balanceMap[address] !== undefined) {
-      this.publishBalance();
-
       return;
     }
 
     this.balanceMap[address] = getMockCurrencies(this.networksJson, this.tokenMap);
-
-    this.publishBalance();
   }
 
   public generateDefaultBalanceMap() {

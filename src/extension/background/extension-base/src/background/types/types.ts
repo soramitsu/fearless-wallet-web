@@ -233,9 +233,11 @@ export interface PriceJson {
   tokenPriceMap: Record<string, number>;
   tokenPriceChange: Record<string, number>;
 }
+
 export interface BalanceJson {
   reset?: boolean;
   details: TokenBalance[];
+  saveSequence?: boolean;
 }
 
 export enum TransferErrorCode {

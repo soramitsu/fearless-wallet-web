@@ -115,12 +115,11 @@ export function getTotalBalanceInNetwork(token: TokenBalance, network: string) {
 
 export function getTotalBalance(token: TokenBalance, network = ALL_NETWORKS) {
   if (network !== ALL_NETWORKS) return getTotalBalanceInNetwork(token, network);
+
   let balance = 0;
 
-  token.balances.forEach((network) => {
-    if (network.state === APIItemState.READY && network.total) {
-      balance += +network.total;
-    }
+  token.balances.forEach(({ state, total }) => {
+    if (state === APIItemState.READY && total) balance += +total;
   });
 
   return balance;
@@ -158,9 +157,7 @@ function defaultSortingCurrencies(currencies: TokenBalance[], network?: NetworkN
 }
 
 export function getWalletTotalBalance(tokens: TokenBalance[]) {
-  const balance = tokens.reduce((acc, curr) => {
-    return acc + +getTotalBalance(curr);
-  }, 0);
+  const balance = tokens.reduce((acc, curr) => acc + +getTotalBalance(curr), 0);
 
   return balance;
 }

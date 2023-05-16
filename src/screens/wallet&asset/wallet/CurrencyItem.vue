@@ -89,6 +89,7 @@
           target=".details"
         />
       </template>
+
       <Switcher v-else v-model="currencyVisible" />
     </div>
   </Lazy>
@@ -98,6 +99,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import type { CustomEvent, TMutation } from '@/interfaces';
+import type { SetHiddenAsset, SelectedWallet } from '@/store';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -105,6 +107,7 @@ import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutatio
 import { Components } from '@/router/routes';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { GetAssetPrice } from '@/store/networks/types';
+
 @Component
 export default class CurrencyItem extends Vue {
   readonly countDisplayedNetworks = 5;
@@ -115,9 +118,9 @@ export default class CurrencyItem extends Vue {
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
-  @Getter(AccountsGettersTypes.getHiddenAssets) hiddenAssets!: string[];
-  @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: TMutation<string>;
-  @Mutation(AccountsMutationTypes.DELETE_HIDDEN_ASSET) deleteHiddenAssets!: TMutation<string>;
+  @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: TMutation<SetHiddenAsset>;
 
   get isAdditional() {
     return this.assetData.balances.length > this.countDisplayedNetworks;
@@ -140,11 +143,11 @@ export default class CurrencyItem extends Vue {
   }
 
   get currencyVisible(): boolean {
-    return !this.hiddenAssets.find((assetId) => assetId === this.assetData.assetId);
+    return !this.hiddenAssets.includes(this.assetData.assetId);
   }
 
   set currencyVisible(value: boolean) {
-    value ? this.deleteHiddenAssets(this.assetData.assetId) : this.setHiddenAssets(this.assetData.assetId);
+    this.setHiddenAssets({ assetId: this.assetData.assetId, value });
   }
 
   get showCurrencyItem() {

@@ -15,7 +15,7 @@ export enum GettersTypes {
   getOnlineStatus = 'getOnlineStatus',
   getFiatId = 'getFiatId',
   getAccounts = 'getAccounts',
-  getHiddenAssets = 'getHiddenAssets',
+  hiddenAssets = 'hiddenAssets',
   getAddresses = 'getAddresses',
   getBalances = 'getBalances',
   getWallets = 'getWallets',
@@ -34,7 +34,7 @@ export type Getters = {
   [GettersTypes.getFiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getOnlineStatus](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getFiatId](state: State, getters?: GetterTree<State, State> & Getters): string;
-  [GettersTypes.getHiddenAssets](state: State, getters?: GetterTree<State, State> & Getters): string[];
+  [GettersTypes.hiddenAssets](state: State, getters?: GetterTree<State, State> & Getters): string[];
   [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): AccountJson[];
   [GettersTypes.getWallets](state: State, getters?: GetterTree<State, State> & Getters): WalletInfo[];
   [GettersTypes.showPolkaswapAlert](state: State, getters?: GetterTree<State, State> & Getters): boolean;
@@ -62,8 +62,10 @@ const getters: GetterTree<State, State> & Getters = {
     return balances;
   },
 
-  [GettersTypes.getHiddenAssets]({ hiddenAssets }) {
-    return hiddenAssets;
+  [GettersTypes.hiddenAssets]({ selectedWallet, hiddenAssets }): any {
+    const { address } = selectedWallet;
+
+    return hiddenAssets[address] ?? [];
   },
 
   [GettersTypes.getSelectedFiat]({ selectedFiat }): string {

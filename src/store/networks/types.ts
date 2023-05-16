@@ -19,7 +19,6 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ActionContext } from 'vuex';
 import type { State } from '@/store/networks/state';
 import type { Mutations } from '@/store/networks/mutations';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GiantsquidHistoryItem, HistoryElement } from '@/interfaces';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/evm/types/ether';
@@ -27,7 +26,6 @@ import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/ev
 // getters
 export type GetNetwork = (networkName: NetworkName) => NetworkJsonOld;
 export type GetNetworkGenesisHash = (networkName: NetworkName) => HexString;
-export type GetAssetName = (assetId: string) => string;
 export type GetAssetIcon = (assetId: string) => string;
 export type GetAssetPrice = (assetId: string) => AssetPrice;
 
@@ -54,12 +52,6 @@ export type SetAssetsPriceProps = {
 
 export type SetAssetsPriceIntervalProps = {
   interval: NodeJS.Timer;
-};
-
-export type SetCurrenciesProps = {
-  currencies: TokenBalance[];
-  address?: string;
-  network?: NetworkName;
 };
 
 export type SetHistoryProps = {

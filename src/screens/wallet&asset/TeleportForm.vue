@@ -74,10 +74,8 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import TransferForm from './TransferForm.vue';
-import type { Currencies } from '@/interfaces';
-import type { GetAssetName, SelectedWallet } from '@/store';
+import type { SelectedWallet } from '@/store';
 import Select from '@/components/Select.vue';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { firstCharToUp } from '@/helpers/common';
 import { addNumbers, formattedNumber } from '@/helpers/numbers';
@@ -103,8 +101,6 @@ export default class TeleportForm extends Vue {
   @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
-  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
-  @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
 
   get showValue() {
     return this.value !== '0';
@@ -141,7 +137,7 @@ export default class TeleportForm extends Vue {
   }
 
   get selectedAsset() {
-    return this.getAssetName(this.selectedAssetId);
+    return 'FIX';
   }
 
   get selectedAssetUpper() {

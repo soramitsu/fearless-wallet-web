@@ -19,7 +19,6 @@ export type GetAutoSelectNodesValueByNetwork = (networkName: string) => boolean;
 export type GetShowWarningNetworks = (assetId: string) => boolean;
 
 // mutations
-
 export type SetAccountsProps = {
   accounts: AccountJson[];
 };
@@ -30,6 +29,11 @@ export type SetAddressesProps = {
 
 export type SetAutoSelectNode = {
   network: string;
+  value: boolean;
+};
+
+export type SetHiddenAsset = {
+  assetId: string;
   value: boolean;
 };
 

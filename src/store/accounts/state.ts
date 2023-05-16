@@ -1,5 +1,5 @@
 import type { SelectedWallet, SelectedNetworks, AutoSelectNode } from './types';
-import type { NetworkName } from '@/interfaces';
+import type { NetworkName, WalletAddress } from '@/interfaces';
 import { accountController } from '@/controllers';
 import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
@@ -10,7 +10,7 @@ export type State = {
   accounts: AccountJson[];
   isOnline: boolean;
   balances: TokenBalance[];
-  hiddenAssets: string[];
+  hiddenAssets: Record<WalletAddress, string[]>;
   autoSelectNode: AutoSelectNode;
   isCustomSort: Record<string, boolean>;
   hideWarningNetworks: NetworkName[];
@@ -25,7 +25,7 @@ const state = (): State => {
     selectedNetworks: accountController.getSelectedNetwork(),
     isOnline: navigator.onLine,
     balances: [],
-    hiddenAssets: [],
+    hiddenAssets: accountController.getHiddenAssets(),
     accounts: accountController.getAccounts(),
     isCustomSort: accountController.getCustomSort(),
     autoSelectNode: accountController.getAutoSelectNodesValue(),

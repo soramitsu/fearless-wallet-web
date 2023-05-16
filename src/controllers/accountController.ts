@@ -1,4 +1,4 @@
-import type { Node, NetworkName } from '@/interfaces';
+import type { Node, NetworkName, WalletAddress } from '@/interfaces';
 import type { Lang } from '@/locales';
 import { LocalStorage } from '@/controllers/localStorageController';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
@@ -13,16 +13,11 @@ class AccountController {
   private readonly selectedFiatStorageName = 'selected-fiat';
   private readonly selectedWalletStorageName = 'selected-wallet';
   private readonly selectedNetworkStorageName = 'selected-network';
-  private readonly customSort = 'customSort';
+  private readonly customSort = 'custom-sort';
   private readonly accounts = 'accounts';
+  private readonly hiddenAssets = 'hidden-assets';
   private readonly agreeSwapDisclaimer = 'agree-swap-disclaimer';
   private readonly hideWarningNetworks = 'hide-warning-networks';
-
-  private getSequenceAssets(): Record<string, Record<NetworkName, string>> {
-    const sequencesAssets = this.lsAccount.get(this.sequenceAssetsStorageName);
-
-    return sequencesAssets.value ?? {};
-  }
 
   public getHideWarningNetworks(): string[] {
     const array = this.lsAccount.get(this.hideWarningNetworks);
@@ -95,6 +90,14 @@ class AccountController {
     this.lsAccount.set(this.selectedFiatStorageName, fiat);
   }
 
+  public getHiddenAssets(): Record<WalletAddress, string[]> {
+    return this.lsAccount.get(this.hiddenAssets).value ?? {};
+  }
+
+  public setHiddenAssets(hiddenAssets: Record<WalletAddress, string[]>): void {
+    this.lsAccount.set(this.hiddenAssets, hiddenAssets);
+  }
+
   public getAccounts(): AccountJson[] {
     return this.lsAccount.get(this.accounts).value ?? [];
   }
@@ -119,39 +122,26 @@ class AccountController {
     this.lsAccount.set(this.selectedNetworkStorageName, newValue);
   }
 
-  public getSequenceAssetsByAddress(address: string, network: string): string[] {
-    const sequencesAssets = this.getSequenceAssets();
+  private getSequenceAssets(): Record<string, string> {
+    const sequencesAssets = this.lsAccount.get(this.sequenceAssetsStorageName);
 
-    return (sequencesAssets?.[address]?.[network]?.split(',') as string[]) ?? [];
+    return sequencesAssets.value ?? {};
   }
 
-  public setSequenceAssets(
-    sequence: string[] | Record<NetworkName, string[]>,
-    address: string,
-    network?: string
-  ): void {
+  public getSequenceAssetsByAddress(address: string): string[] {
+    const sequencesAssets = this.getSequenceAssets();
+
+    return (sequencesAssets?.[address]?.split(',') as string[]) ?? [];
+  }
+
+  public setSequenceAssets(sequence: string[], address: string): void {
     const prevSequence = this.getSequenceAssets();
+    const newSequence = {
+      ...prevSequence,
+      [address]: sequence.join(),
+    };
 
-    if (Array.isArray(sequence)) {
-      const prevSequenceByAddress = prevSequence[address];
-
-      const newSequence = {
-        ...prevSequence,
-        [address]: {
-          ...prevSequenceByAddress,
-          [network!]: sequence.join(),
-        },
-      };
-
-      this.lsAccount.set(this.sequenceAssetsStorageName, newSequence);
-    } else {
-      const newSequence = {
-        ...prevSequence,
-        [address]: sequence,
-      };
-
-      this.lsAccount.set(this.sequenceAssetsStorageName, newSequence);
-    }
+    this.lsAccount.set(this.sequenceAssetsStorageName, newSequence);
   }
 
   public getAutoSelectNodesValue(): Record<string, boolean> {

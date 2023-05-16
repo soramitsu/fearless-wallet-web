@@ -63,7 +63,7 @@ export default class Export extends Vue {
   }
 
   async checkPassword() {
-    const addressByNetwork = BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.network);
+    const addressByNetwork = BaseApi.formatAddress(this.selectedWallet, this.network);
     const validatePass = await validateAccount(addressByNetwork, this.password);
 
     this.isWrongPassword = !validatePass;

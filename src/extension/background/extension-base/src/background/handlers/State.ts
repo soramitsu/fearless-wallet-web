@@ -1023,9 +1023,8 @@ export default class State {
 
   public getPrice(update: (value: PriceJson) => void): void {
     this.priceStore.get('PriceData', (rs) => {
-      if (this.priceStoreReady) {
-        update(rs);
-      } else {
+      if (this.priceStoreReady) update(rs);
+      else {
         const activeNetworks: string[] = this.tokenMap
           .filter(({ priceId }) => priceId)
           .map(({ priceId }) => priceId as string);
@@ -1150,16 +1149,12 @@ export default class State {
     };
   }
 
-  public subscribeBalance() {
-    return this.balanceSubject;
-  }
-
-  public getBalance(reset?: boolean): Promise<BalanceJson> {
+  public getBalance(reset = false): Promise<BalanceJson> {
     return new Promise((resolve) => {
       this.getCurrentAccount((account) => {
-        if (account) {
-          resolve({ details: this.balanceMap[account.address] ?? [], reset });
-        }
+        const details = this.balanceMap[account?.address ?? ''] ?? [];
+
+        resolve({ details, reset });
       });
     });
   }

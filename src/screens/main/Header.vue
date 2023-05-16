@@ -26,7 +26,7 @@
 
       <div class="header-part">
         <CircleButton
-          v-if="showFullScreenIcon"
+          v-if="isPopup"
           iconName="expand"
           backgroundColor="light-black"
           class="button-margin"
@@ -36,7 +36,7 @@
           @click="openFullScreen"
         />
 
-        <div v-if="useIsPopup" class="background-ellipse button-margin" @click="toggleConnectionPopup">
+        <div v-if="isPopup" class="background-ellipse button-margin" @click="toggleConnectionPopup">
           <Loading v-if="!tabStatus" />
 
           <template v-else>
@@ -75,7 +75,6 @@ import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
 import { windowOpen } from '@/extension/messaging';
 import { ActiveTabAuthorizeStatus } from '@/extension/background/extension-base/src/background/types/types';
-import Loading from '@/components/Loading.vue';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
 import { TAction } from '@/interfaces';
 
@@ -85,6 +84,7 @@ import { TAction } from '@/interfaces';
 export default class Header extends Vue {
   readonly walletNameRef = 'walletName';
   readonly settingsNameRef = 'settingsName';
+  readonly isPopup = BaseApi.useIsPopup();
 
   showConnectionPopup = false;
 
@@ -93,10 +93,6 @@ export default class Header extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(ExtensionGettersTypes.getTabStatus) tabStatus!: ActiveTabAuthorizeStatus;
   @Action(ExtensionActionTypes.FETCH_TAB_STATUS) fetchTabStatus!: TAction<ActiveTabAuthorizeStatus>;
-
-  get showFullScreenIcon() {
-    return BaseApi.useIsPopup();
-  }
 
   get showBackIcon() {
     return this.$route.name === Components.Asset;
@@ -112,10 +108,6 @@ export default class Header extends Vue {
 
   get statusConnectedText() {
     return !this.tabStatus || !this.tabStatus.isAuthorize ? 'header.notConnected' : 'header.connected';
-  }
-
-  get useIsPopup() {
-    return BaseApi.useIsPopup();
   }
 
   @Watch('syncedShowSelectWalletPopup')

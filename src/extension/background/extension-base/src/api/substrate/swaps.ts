@@ -1,32 +1,14 @@
 import { Api, FPNumber } from '@sora-substrate/util';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
 import { Asset } from '@sora-substrate/util/build/assets/types';
-import {
-  CreateExchangeBOptions,
-  ExtrinsicSwapOptions,
-  CreateExchangeAOptions,
-  CreateSwapResult,
-  BaseExchangeProps,
-} from '../types/swaps';
+import { ExtrinsicSwapOptions, CreateSwapResult, BaseExchangeProps } from '../types/swaps';
 import { state } from '../../background/handlers';
 import { getAssetOptions } from './utils';
 import { SwapOptions } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 
-async function createExchangeB(
-  {
-    expectedAmount,
-    isDexXor,
-    providerFee,
-    route,
-    assetA,
-    assetB,
-    amountB,
-    slippage,
-    swapOptions,
-  }: CreateExchangeBOptions,
-  api: Api<void>
-): Promise<CreateSwapResult> {
+async function createExchangeB(props: BaseExchangeProps, api: Api<void>): Promise<CreateSwapResult> {
+  const { expectedAmount, isDexXor, providerFee, route, assetA, assetB, amountB, slippage, swapOptions } = props;
   const minMaxValue = api.swap.getMinMaxValue(assetA, assetB, expectedAmount.toString(), amountB!, true, slippage!);
   const extrinsicOptions: ExtrinsicSwapOptions = {
     ...swapOptions,
@@ -48,20 +30,8 @@ async function createExchangeB(
   };
 }
 
-async function createExchangeA(
-  {
-    expectedAmount,
-    isDexXor,
-    providerFee,
-    route,
-    assetA,
-    assetB,
-    amountA,
-    slippage,
-    swapOptions,
-  }: CreateExchangeAOptions,
-  api: Api<void>
-): Promise<CreateSwapResult> {
+async function createExchangeA(props: BaseExchangeProps, api: Api<void>): Promise<CreateSwapResult> {
+  const { expectedAmount, isDexXor, providerFee, route, assetA, assetB, amountA, slippage, swapOptions } = props;
   const minMaxValue = api.swap.getMinMaxValue(assetA, assetB, amountA!, expectedAmount.toString(), false, slippage!);
   const extrinsicOptions: ExtrinsicSwapOptions = {
     ...swapOptions,
@@ -175,22 +145,9 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
     assetA,
     assetB,
     slippage,
+    amountA: amountA ?? '0',
+    amountB: amountB ?? '0',
   };
 
-  if (isExchangeB)
-    return createExchangeB(
-      {
-        ...baseOptions,
-        amountB,
-      },
-      api
-    );
-
-  return createExchangeA(
-    {
-      ...baseOptions,
-      amountA: amountA ?? '0',
-    },
-    api
-  );
+  return isExchangeB ? createExchangeB(baseOptions, api) : createExchangeA(baseOptions, api);
 }

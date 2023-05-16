@@ -34,6 +34,7 @@ import { MOCK_BALANCE, MOCK_FP_BALANCE } from '@/consts/currencies';
 import { saveTimeoutCache } from '@/extension/messaging';
 import { SORA_NETWORK_NAME } from '@/consts/networks';
 import { addNumbers } from '@/helpers/numbers';
+import { IS_EXTENSION } from '@/consts/global';
 
 type TransactionStatus = 'success' | 'failed' | 'pending';
 
@@ -103,23 +104,10 @@ export class CurrencyController {
   private getWalletBalance(wallet: Wallet): WalletBalance[] {
     const { address, ethereumAddress } = wallet;
 
-    // const replacedAccounts = BaseApi.getReplacedAccounts(wallet);
-    // const replacedNetworks = replacedAccounts.reduce((result, { address: _address, meta }) => {
-    //   const { replacedSettings } = getReplacedMetaTyped(meta);
-    //   const replacedNetworks = replacedSettings[address] ?? replacedSettings[ethereumAddress];
-
-    //   replacedNetworks.forEach((network) => (result[network] = _address));
-
-    //   return result;
-    // }, {} as Record<string, string>);
-
     return this.balances.map((item) => {
       const { network, type, precision, existentialDeposit, balance, assetId } = item;
       const isEthereumNetwork = BaseApi.isEthereumNetwork(network);
-      // const replacedAddress = replacedNetworks[network];
-      // const walletBalance = replacedAddress
-      //   ? balance[replacedAddress]
-      //   : isEthereumNetwork
+      // const walletBalance = isEthereumNetwork
       //   ? balance[ethereumAddress]
       //   : balance[address];
 
@@ -205,20 +193,13 @@ export class CurrencyController {
   }
 
   /**
-   * Get transaction address for wallet(taking network and replaced wallet)
+   * Get transaction address for wallet
    * @param {Wallet} wallet
    * @param {NetworkName} network
    * @returns {string}
    */
   public getTransactionAddress(wallet: Wallet, network: NetworkName): string {
     const { address, ethereumAddress } = wallet;
-    // const replacedAccount = BaseApi.getReplacedAccountByNetwork(wallet, network);
-
-    // if (replacedAccount) {
-    //   const { address } = replacedAccount;
-
-    //   return address;
-    // }
 
     return BaseApi.isEthereumNetwork(network) ? ethereumAddress : address;
   }
@@ -717,7 +698,7 @@ export class CurrencyController {
    * @param {string} from
    */
   public async sendSwap(from: string, isSavePass: boolean): Promise<void> {
-    if (BaseApi.isExtension()) saveTimeoutCache(from, isSavePass);
+    if (IS_EXTENSION) saveTimeoutCache(from, isSavePass);
 
     const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB } = this.extrinsicOptions.swapOptions!;
 
@@ -782,7 +763,7 @@ export class CurrencyController {
    * @returns {Promise<boolean>}
    */
   public async send(from: string, isMobile = false, isSavePass = false): Promise<boolean> {
-    if (BaseApi.isExtension()) saveTimeoutCache(from, isSavePass);
+    if (IS_EXTENSION) saveTimeoutCache(from, isSavePass);
 
     // const account = isMobile ? from : BaseApi.getPair(from);
 
@@ -858,7 +839,7 @@ export class CurrencyController {
             extrinsic: null,
             reward: null,
             transfer: {
-              from: BaseApi.getDisplayAddressByNetwork({ address: from, ethereumAddress: from }, network),
+              from: BaseApi.formatAddress({ address: from, ethereumAddress: from }, network),
               success,
               amount: precisionAmount,
               eventIdx: -1,

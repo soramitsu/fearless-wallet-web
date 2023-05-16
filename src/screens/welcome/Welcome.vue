@@ -83,12 +83,12 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { Components } from '@/router/routes';
-import BaseApi from '@/util/BaseApi';
 import { URLS } from '@/consts/urls';
 import MobileConnect from '@/screens/mobileConnect/MobileConnect.vue';
 import { initGoogleAuth } from '@/extension/messaging';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { IS_EXTENSION } from '@/consts/global';
 
 @Component({
   components: { MobileConnect },
@@ -110,7 +110,7 @@ export default class Welcome extends Vue {
   }
 
   manageGoogle() {
-    if (BaseApi.isExtension()) initGoogleAuth();
+    if (IS_EXTENSION) initGoogleAuth();
   }
 
   closeGooglePopup() {

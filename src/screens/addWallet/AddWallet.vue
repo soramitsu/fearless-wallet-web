@@ -198,12 +198,7 @@ export default class AddWallet extends Vue {
   address: string | null = null;
   isLoading = false;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  // @Mutation(AccountMutationsTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<SelectedWallet>;
   @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<AccountJson>;
-
-  get replacedNetwork() {
-    return this.$route.params.network ?? '';
-  }
 
   get confirmMnemonicStep() {
     return this.step === 3 && this.isCreateWallet;
@@ -413,8 +408,8 @@ export default class AddWallet extends Vue {
       this.isLoading = true;
 
       await this.saveKeypair();
-
       await triggerAccountsSubscription();
+
       this.isLoading = false;
 
       // this.setSelectedWallet(newAccount as AccountJson);
@@ -550,9 +545,9 @@ export default class AddWallet extends Vue {
     this.step += 1;
   }
 
-  proceed() {
-    if (this.isCreateWallet) this.createFlow();
-    else this.importFlow();
+  async proceed() {
+    if (this.isCreateWallet) await this.createFlow();
+    else await this.importFlow();
 
     // if a invalid popup or add ETH account popup is shown, then the index does not need to be increased
     this.step += this.showNotificationPopup || this.showAddEthereumAccountPopup ? 0 : 1;
@@ -568,14 +563,14 @@ export default class AddWallet extends Vue {
 
   async createFlow() {
     if (this.step === 1 && !this.mnemonic.length) this.mnemonic = BaseApi.generateMnemonic();
-    else if (this.step === 2) this.validateSuri();
+    else if (this.step === 2) await this.validateSuri();
     else if (this.step === 3) this.validateSequenceMnemonic();
     else if (this.step === 4 && this.isOnlyEthereumAccountFlow) await this.checkPassword();
   }
 
   async importFlow() {
     if (this.step === 1) {
-      this.validateSuri();
+      await this.validateSuri();
 
       if (this.warningValueName !== '') return;
       else if (this.isOnlyEthereumAccountFlow) {
@@ -590,7 +585,7 @@ export default class AddWallet extends Vue {
       // if import type is raw seed or json, show a window with a question about adding an ETH account
       if (this.typeImport === 'mnemonic') this.step += 1;
       else this.showAddEthereumAccountPopup = true;
-    } else if (this.step === 2) this.validateSuri();
+    } else if (this.step === 2) await this.validateSuri();
     else if (this.step === 3 && this.typeImport === 'json') this.step += 1;
     else if (this.step === 4 && this.isOnlyEthereumAccountFlow) await this.checkPassword();
   }
@@ -642,7 +637,7 @@ export default class AddWallet extends Vue {
     } = this.derivationPaths;
     const ETHDP = (ethereumDerivationPath[0] === '/' ? ethereumDerivationPath.slice(1) : ethereumDerivationPath).trim();
     const isValidMnemonic = this.mnemonic ? BaseApi.isValidPhrase(this.mnemonic.trim()) : true;
-    const isValidSubstratePhrase = substrate.value ? BaseApi.isValidSubstrateDerivationPath(substrate) : true;
+    const isValidSubstratePhrase = substrate.value ? await BaseApi.isValidSubstrateDerivationPath(substrate) : true;
     const isValidEthereumDP = ethereumDerivationPath ? BaseApi.isValidEthereumDerivationPath(ETHDP) : true;
     const isValidSubstrateRawSeed = this.substrateRawSeed ? BaseApi.isHex(this.substrateRawSeed) : true;
     const isValidEthereumRawSeed = this.ethereumRawSeed ? BaseApi.isHex(this.ethereumRawSeed) : true;

@@ -61,7 +61,21 @@ export default class AdvancedForm extends Vue {
   }
 
   get showAcceptIcon() {
-    return !!this.substrateDP || !!this.ethereumDP;
+    const { ethereum, substrate } = this.derivationPaths;
+
+    if (substrate.value !== '' && ethereum.value !== '') {
+      return this.substrateDP !== substrate.value || this.ethereumDP !== ethereum.value;
+    }
+
+    if (substrate.value !== '' && ethereum.value === '') {
+      return this.substrateDP !== substrate.value || this.ethereumDP !== '';
+    }
+
+    if (ethereum.value !== '' && substrate.value === '') {
+      return this.ethereumDP !== ethereum.value || this.substrateDP !== '';
+    }
+
+    return this.substrateDP !== '' || this.ethereumDP !== '';
   }
 
   mounted() {

@@ -13,7 +13,6 @@ import { AccountJson, BalanceJson, PriceJson } from './extension/background/exte
 import { Components } from './router/routes';
 import type { Accounts, SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
-import BaseApi from '@/util/BaseApi';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
@@ -32,6 +31,7 @@ import {
   triggerAccountsSubscription,
 } from '@/extension/messaging';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
+import { IS_EXTENSION } from '@/consts/global';
 
 @Component
 export default class App extends Vue {
@@ -58,7 +58,7 @@ export default class App extends Vue {
   }
 
   async created() {
-    if (BaseApi.isExtension()) this.extensionSubscribe();
+    if (IS_EXTENSION) this.extensionSubscribe();
 
     this.setupSWPing();
     this.fetchFiats();
@@ -107,6 +107,7 @@ export default class App extends Vue {
 
   async setupPrice() {
     const priceJson = await getPrice();
+
     this.updatePrice(priceJson);
 
     subscribePrice((priceUpdates) => {

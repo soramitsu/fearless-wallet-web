@@ -84,8 +84,6 @@ export default class ExportForm extends Vue {
     const meta = { ...this.json.meta, genesisHash: `0x${chainId}` } as Record<string, string>;
 
     delete meta['ethereumAddress'];
-    delete meta['isReplacedAccount'];
-    delete meta['replacedSettings'];
 
     const jsonSubstrate = JSON.stringify({ ...this.json, meta });
 

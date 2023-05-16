@@ -39,8 +39,9 @@ export class FWSubscription {
   updateSubscription(name: SubscriptionName, func: (() => void) | undefined) {
     const oldFunc = this.subscriptionMap[name];
 
-    oldFunc && oldFunc();
-    func && (this.subscriptionMap[name] = func);
+    if (oldFunc) oldFunc();
+
+    if (func) this.subscriptionMap[name] = func;
   }
 
   stopAllSubscription() {
@@ -108,10 +109,15 @@ export class FWSubscription {
     this.state
       .switchAccount()
       .then(() => {
-        this.updateSubscription(
-          'balance',
-          this.initBalanceSubscription(address, ethereumAddress, dotSamaApiMap, web3ApiMap, onlyRunOnFirstTime)
+        const unsub = this.initBalanceSubscription(
+          address,
+          ethereumAddress,
+          dotSamaApiMap,
+          web3ApiMap,
+          onlyRunOnFirstTime
         );
+
+        this.updateSubscription('balance', unsub);
       })
       .catch((err) => console.warn('Unable to subscribe', err));
   }
@@ -133,9 +139,7 @@ export class FWSubscription {
       return;
     }
 
-    return () => {
-      unsub && unsub();
-    };
+    return () => unsub && unsub();
   }
 }
 
@@ -151,6 +155,7 @@ export function createSubscription<TMessageType extends MessageTypesWithSubscrip
         port.postMessage({ id, subscription });
       } catch (error) {
         console.info('Error occured while trying to post message', error);
+
         unsubscribe(id);
       }
     }

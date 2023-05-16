@@ -59,7 +59,7 @@ const getters: GetterTree<State, State> & Getters = {
   },
 
   [GettersTypes.getBalances]({ balances }): TokenBalance[] {
-    return Object.values(balances);
+    return balances;
   },
 
   [GettersTypes.getHiddenAssets]({ hiddenAssets }) {

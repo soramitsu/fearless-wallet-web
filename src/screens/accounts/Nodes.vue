@@ -107,7 +107,7 @@ export default class Nodes extends Vue {
   get address() {
     if (this.selectedWallet.address === '') return '';
 
-    return BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.selectedNetwork);
+    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
   }
 
   get defaultNodes() {

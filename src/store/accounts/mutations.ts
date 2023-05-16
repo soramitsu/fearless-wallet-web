@@ -127,10 +127,10 @@ const mutations: MutationTree<State> & Mutations = {
     };
   },
 
-  [MutationTypes.SET_BALANCE](state, payload) {
-    console.info('balances', payload);
+  [MutationTypes.SET_BALANCE](state, { details, reset }) {
+    console.info('[SET_BALANCE]', details, reset);
 
-    state.balances = payload.details;
+    state.balances = details;
   },
 
   [MutationTypes.SET_HIDDEN_ASSET](state, payload) {

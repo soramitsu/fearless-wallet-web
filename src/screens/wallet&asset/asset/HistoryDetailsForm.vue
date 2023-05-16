@@ -257,7 +257,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   openSubscan() {
-    const addressByNetwork = BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.selectedNetwork);
+    const addressByNetwork = BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
     const url = this.isExtrinsic
       ? `https://${this.selectedNetwork}.subscan.io/extrinsic/${this.hash}`
       : `https://${this.selectedNetwork}.subscan.io/account/${addressByNetwork}`;

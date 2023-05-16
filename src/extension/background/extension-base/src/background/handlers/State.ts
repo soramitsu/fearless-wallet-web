@@ -909,7 +909,7 @@ export default class State {
   }
 
   public async switchAccount() {
-    await Promise.all([this.resetBalanceMap()]);
+    await this.resetBalanceMap();
   }
 
   public refreshPrice() {
@@ -934,7 +934,7 @@ export default class State {
   }
 
   public resetBalanceMap() {
-    this.publishBalance(true);
+    return this.publishBalance(true);
   }
 
   public async prepNetworkJson() {

@@ -107,8 +107,9 @@ export class FWSubscription {
     onlyRunOnFirstTime?: boolean
   ) {
     this.logger.log('Start balance sub for:', address);
+
     this.state
-      .switchAccount()
+      .resetBalanceMap()
       .then(() => {
         const unsub = this.initBalanceSubscription(
           address,

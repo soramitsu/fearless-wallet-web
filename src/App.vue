@@ -10,6 +10,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import { AccountJson, BalanceJson, PriceJson } from './extension/background/extension-base/src/background/types/types';
+import { Components } from './router/routes';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
@@ -122,10 +123,13 @@ export default class App extends Vue {
 
   onAccountUpdate(accounts: AccountJson[], isMobileUpdate = false) {
     const selectedAccount = accounts.find((account) => account.active);
-
-    if (selectedAccount) this.setSelectedWallet(selectedAccount);
-
     this.setAccounts({ accounts, isMobileUpdate });
+
+    if (selectedAccount || !this.wallets.length) this.setSelectedWallet(selectedAccount);
+
+    if (!this.wallets.length) {
+      this.$router.push(Components.Welcome);
+    }
   }
 
   setupWallet() {

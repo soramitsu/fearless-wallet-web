@@ -30,9 +30,11 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-
-import { accountController, NetworksController } from '@/controllers';
+import { Getter } from 'vuex-class';
 import { firstCharToUp } from '@/helpers/common';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { upsertNetworkMap } from '@/extension/messaging';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
 export default class EditNodeForm extends Vue {
@@ -44,9 +46,14 @@ export default class EditNodeForm extends Vue {
   @Prop(String) _name!: string;
   @Prop(String) _url!: string;
   @Prop(Boolean) isActive!: boolean;
+  @Getter(NetworksGettersTypes.getAllNetworks) networks!: NetworkJsonOld[];
 
   get buttonText() {
     return this.isEdit ? 'common.save' : this.getPath('addNode');
+  }
+
+  get networkJson() {
+    return this.networks.find(({ name }) => name.toLowerCase() === this.network.toLowerCase())!;
   }
 
   get isEdit() {
@@ -79,12 +86,19 @@ export default class EditNodeForm extends Vue {
   }
 
   updateNodes() {
-    accountController.updateCustomNodes({ name: this.name, url: this.url }, this.network, {
-      name: this._name,
-      url: this._url,
-    });
+    const prepData: Partial<NetworkJsonOld> = {};
 
-    // if (this.isActive) NetworksController.toggleActiveNode(this.network, this.name, this.url);
+    if (!prepData.customNodes) prepData.customNodes = [];
+
+    prepData.customNodes.push({ name: this.name, url: this.url });
+
+    prepData.currentProvider = this.name;
+
+    upsertNetworkMap({
+      ...this.networkJson,
+      ...prepData,
+      isManual: true,
+    });
 
     this.closeForm(true);
   }

@@ -54,7 +54,7 @@
       :isCustomNode="true"
       :isActive="getActiveStatus(name, url)"
       :isRemoveBorderBottom="getRemoveBorderBottomValue(index, true)"
-      @changeNode="changeNode(name, url)"
+      @changeNode="changeNode(name, url, true)"
       @openNodeSettingsPopup="openNodeSettingsPopup(name, url, ...arguments)"
     />
   </div>
@@ -77,14 +77,11 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 import { upsertNetworkMap } from '@/extension/messaging';
-import { accountController } from '@/controllers';
 
 @Component({
   components: { NodeItem },
 })
 export default class Nodes extends Vue {
-  customNodes: Node[] = [];
-
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getAutoSelectNodesValueByNetwork)
   getAutoSelectNodesValueByNetwork!: GetAutoSelectNodesValueByNetwork;
@@ -101,7 +98,12 @@ export default class Nodes extends Vue {
   }
 
   get activeNode() {
-    return this.getActiveNodesByNetwork(this.selectedNetwork);
+    const { currentProvider } = this.networkJson;
+    const activeNode =
+      this.networkJson.nodes.find((el) => el.url === currentProvider) ??
+      this.networkJson.customNodes.find((el) => el.url === currentProvider);
+
+    return activeNode ?? this.networkJson.nodes[0];
   }
 
   get address() {
@@ -112,6 +114,10 @@ export default class Nodes extends Vue {
 
   get defaultNodes() {
     return this.networkJson.nodes ?? [];
+  }
+
+  get customNodes() {
+    return this.networkJson.customNodes ?? [];
   }
 
   get route() {
@@ -137,22 +143,24 @@ export default class Nodes extends Vue {
     this.changeNode(name, url);
   }
 
-  mounted() {
-    this.updatedCustomNodes();
-  }
-
   openNodeSettingsPopup(name: string, url: string, buttonTop: number, isActive: boolean) {
     this.$emit('openNodeSettingsPopup', this.selectedNetwork, name, url, buttonTop, isActive);
   }
 
-  updatedCustomNodes() {
-    this.customNodes = accountController.getCustomNodesByNetwork(this.selectedNetwork);
-  }
+  changeNode(url: string, name: string, isCustomNode = false) {
+    const prepData: Partial<NetworkJsonOld> = {};
 
-  changeNode(url: string, name: string) {
+    if (isCustomNode) {
+      if (!prepData.customNodes) prepData.customNodes = [];
+
+      prepData.customNodes.push({ name, url });
+    }
+
+    prepData.currentProvider = url;
+
     upsertNetworkMap({
       ...this.networkJson,
-      currentProvider: url,
+      ...prepData,
       isManual: this.autoSelectNode,
     });
   }

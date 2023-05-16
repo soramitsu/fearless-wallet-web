@@ -454,7 +454,7 @@ export default class State {
       //make network active if it was disabled previously
       network.active = true;
       // update provider for existed network
-      if (data.customProviders) network.customProviders = data.customProviders;
+      if (data.customNodes) network.customNodes = data.customNodes;
 
       if (currentProvider !== network.currentProvider && currentProvider) {
         network.currentProvider = currentProvider;
@@ -488,7 +488,7 @@ export default class State {
         initApi(data);
 
         if (data.isEthereum && data.isEthereum) {
-          this.apis.evm[data.key] = initWeb3Api(currentProvider);
+          this.apis.evm[data.key] = initWeb3Api(currentProvider.url);
         }
       }
     }
@@ -544,7 +544,7 @@ export default class State {
   public refreshWeb3Api(key: string) {
     const currentProvider = getCurrentProvider(this.networkMap[key]);
 
-    if (currentProvider) this.apis.evm[key] = initWeb3Api(currentProvider);
+    if (currentProvider) this.apis.evm[key] = initWeb3Api(currentProvider.url);
   }
 
   getCurrentTabStatus() {
@@ -958,7 +958,7 @@ export default class State {
         genesisHash: `0x${network.chainId}`,
         chainType: 'substrate',
         active: true,
-        customNodes: {},
+        customNodes: [],
         providers: prepNodes,
         currentProvider: prepCurrentProvider,
       };

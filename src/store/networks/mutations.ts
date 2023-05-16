@@ -36,30 +36,6 @@ const mutations: MutationTree<State> & Mutations = {
     state.fiats = fiats.map((fiat) => ({ ...fiat }));
   },
 
-  // [MutationTypes.SET_ASSETS_PRICE_INTERVAL](state, { interval }) {
-  //   state.assetsPriceInterval = interval;
-  // },
-
-  // [MutationTypes.UPDATE_CURRENCY_BALANCE](
-  //   { currencies, assetsJson, networks },
-  //   { walletAddress, network, assetId, balance, parentId }
-  // ) {
-  //   const { symbol, displayName } = assetsJson.find(({ id }) => id === assetId)!;
-  //   const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name ?? network;
-
-  //   const currentCurrency = currencies.find(
-  //     ({ assetId: _assetId, relayChain: _relayChain, displayName: _displayName }) => {
-  //       const isExistingAssetId = _assetId === assetId;
-  //       const isExistingDisplayName = _displayName === symbol || displayName === _displayName;
-  //       const isExistingAsset = isExistingDisplayName && _relayChain === relayChain;
-
-  //       return isExistingAssetId || isExistingAsset;
-  //     }
-  //   )!;
-
-  //   currentCurrency.updateCurrencyBalance({ walletAddress, network, balance });
-  // },
-
   [MutationTypes.SET_HISTORY](
     state,
     { history, networkName, walletAddress, isPreviously, assetId, serviceType, isMock }

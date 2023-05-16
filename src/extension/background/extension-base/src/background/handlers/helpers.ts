@@ -131,9 +131,13 @@ export const getCurrentProvider = (data: NetworkJsonOld) => {
     return null;
   }
 
-  if (data.currentProvider.startsWith('custom') && data.customProviders) {
-    return data.customProviders[data.currentProvider];
-  } else {
-    return data.providers[data.currentProvider];
-  }
+  const customIndex = data.customNodes.findIndex((el) => el.name === data.currentProvider);
+
+  if (customIndex >= 0) return data.customNodes[customIndex];
+
+  const defaultNodesIndex = data.nodes.findIndex((el) => el.name === data.currentProvider);
+
+  if (defaultNodesIndex >= 0) return data.nodes[customIndex];
+
+  return null;
 };

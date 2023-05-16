@@ -96,8 +96,8 @@ const getters: GetterTree<State, State> & Getters = {
     return fiat?.id ?? '';
   },
 
-  [GettersTypes.getAccounts]({ accounts }): AccountJson[] {
-    return accounts;
+  [GettersTypes.getAccounts](state): AccountJson[] {
+    return state.accounts;
   },
 
   [GettersTypes.getAutoSelectNodesValueByNetwork]:

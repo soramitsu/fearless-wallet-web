@@ -14,11 +14,11 @@ type AugmentedActionContext = {
 } & Omit<ActionContext<State, any>, 'commit'>;
 
 export type Actions = {
-  [ActionTypes.SET_SELECTED_WALLET](context: AugmentedActionContext, props: AccountJson | undefined): Promise<void>;
+  [ActionTypes.SET_SELECTED_WALLET](context: AugmentedActionContext, props: AccountJson | undefined): void;
 };
 
 const actions: ActionTree<State, State> & Actions = {
-  async [ActionTypes.SET_SELECTED_WALLET]({ commit }, account) {
+  [ActionTypes.SET_SELECTED_WALLET]({ commit }, account) {
     accountController.setSelectedWalletAddress(account?.address);
 
     commit(MutationTypes.SET_SELECTED_WALLET, {

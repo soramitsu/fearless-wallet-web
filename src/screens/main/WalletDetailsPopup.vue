@@ -45,7 +45,7 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   get isMobileWallet() {
-    return this.accounts.find((el) => el.address === this.selectedWalletAddress && el.isMobile);
+    return this.accounts.find(({ address, isMobile }) => address === this.selectedWalletAddress && isMobile);
   }
 
   get isExportPossible() {
@@ -72,7 +72,7 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   openWalletDetails() {
-    const [account] = this.accounts.filter((account) => account.address === this.selectedWalletAddress);
+    const [account] = this.accounts.filter(({ address }) => address === this.selectedWalletAddress);
     this.setSelectedWallet(account);
 
     this.$router.push({

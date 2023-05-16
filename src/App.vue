@@ -37,7 +37,7 @@ import { IS_EXTENSION } from '@/consts/global';
 @Component
 export default class App extends Vue {
   @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
-  @Getter(AccountsGettersTypes.getWallets) wallets!: Record<string, Accounts>;
+  @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
   @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<AccountJson>;
@@ -121,19 +121,21 @@ export default class App extends Vue {
     this.setPrices({ tokenPriceMap, tokenPriceChange });
   }
 
-  onAccountUpdate(accounts: AccountJson[]) {
-    const isAccountsNotExists = accounts.length === 0;
-    const selectedAccount = isAccountsNotExists ? undefined : accounts.find((el) => el.active);
+  onAccountUpdate(accounts: AccountJson[], isMobileUpdate = false) {
+    const selectedAccount = accounts.find((account) => account.active);
 
-    this.setSelectedWallet(selectedAccount);
-    this.setAccounts({ accounts });
+    if (selectedAccount) this.setSelectedWallet(selectedAccount);
 
-    if (isAccountsNotExists) this.$router.push(Components.Welcome);
+    this.setAccounts({ accounts, isMobileUpdate });
   }
 
-  setupWallet() {
-    subscribeAddresses(this.onAccountUpdate);
-    subscribeAccounts(this.onAccountUpdate);
+  async setupWallet() {
+    await subscribeAddresses((accounts) => {
+      this.onAccountUpdate(accounts, true);
+    });
+    await subscribeAccounts((accounts) => {
+      this.onAccountUpdate(accounts);
+    });
 
     triggerAccountsSubscription();
   }

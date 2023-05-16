@@ -27,7 +27,7 @@ export default class BaseApi {
     const accounts = store.getters.getAccounts as AccountJson[];
     const account = accounts.find(({ address }) => address === substrateAddress);
 
-    if (account === undefined) return undefined;
+    if (account === undefined) return null;
 
     return account.isMobile ? 'mobile' : 'native';
   }

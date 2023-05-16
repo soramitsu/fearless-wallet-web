@@ -140,11 +140,11 @@ export default class CurrencyItem extends Vue {
   }
 
   get currencyVisible(): boolean {
-    return !this.hiddenAssets.find((el) => el === this.assetData.name);
+    return !this.hiddenAssets.find((assetId) => assetId === this.assetData.assetId);
   }
 
   set currencyVisible(value: boolean) {
-    value ? this.deleteHiddenAssets(this.assetData.name) : this.setHiddenAssets(this.assetData.name);
+    value ? this.deleteHiddenAssets(this.assetData.assetId) : this.setHiddenAssets(this.assetData.assetId);
   }
 
   get showCurrencyItem() {

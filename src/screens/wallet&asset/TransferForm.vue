@@ -414,7 +414,6 @@ export default class SendForm extends Vue {
       return;
     }
 
-    // const partialFee = await this.createTransferAndGetFee();
     const checkResponse = await this.verifyTransfer();
 
     this.syncedPartialFee = checkResponse.estimateFee ?? '0';

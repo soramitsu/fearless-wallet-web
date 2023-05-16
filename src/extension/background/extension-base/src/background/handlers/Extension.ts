@@ -1138,7 +1138,7 @@ export default class Extension extends FWExtensionBase {
       warnings,
       fromAccountFree: fromAccountFreeBalance,
       toAccountFree: toAccountFreeBalance,
-      estimateFee: fee.toString(),
+      estimateFee: FPNumber.fromCodecValue(fee, tokenInfo.precision).toString(),
       feeSymbol,
     } as ResponseCheckTransfer;
   }

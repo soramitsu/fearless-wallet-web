@@ -121,6 +121,7 @@ import { NetworkJsonOld } from '@/extension/background/extension-base/src/types'
 import { AssetsPrice } from '@/interfaces';
 import { defaultSortingCurrencies, getTotalBalance } from '@/helpers/currencies';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/evm/types/ether';
+import { tieAccount } from '@/extension/messaging';
 
 @Component({
   components: {
@@ -175,11 +176,7 @@ export default class Wallet extends Vue {
   }
 
   get showWarningIcon() {
-    if (this.selectedNetwork !== ALL_NETWORKS) {
-      const { apiStatus } = this.networks.find((el) => el.name.toLowerCase() === this.selectedNetwork.toLowerCase())!;
-
-      return apiStatus === 'disconnected';
-    }
+    if (this.selectedNetwork !== ALL_NETWORKS) return !!this.disconnectedNetworks.length;
 
     return this.networksWithWarning.length !== 0;
   }
@@ -228,11 +225,9 @@ export default class Wallet extends Vue {
   }
 
   get showShimmers() {
-    const index = this.networks.findIndex(({ apiStatus }) => {
-      return apiStatus === 'pending';
-    });
+    const isPendingExists = this.networks.some(({ apiStatus }) => apiStatus === NETWORK_STATUS.PENDING);
 
-    return !this.isOnline || index !== -1;
+    return !this.isOnline || isPendingExists;
   }
 
   get filteredCurrencies() {
@@ -273,9 +268,7 @@ export default class Wallet extends Vue {
   }
 
   get networksWithWarning() {
-    return this.networks.filter(
-      ({ name, apiStatus }) => apiStatus === 'disconnected' && !this.getShowWarningNetworks(name)
-    );
+    return this.disconnectedNetworks.filter(({ name }) => !this.getShowWarningNetworks(name));
   }
 
   @Watch('networksWithWarning')
@@ -360,10 +353,10 @@ export default class Wallet extends Vue {
   toggleSelectedNetwork(network: string) {
     if (this.selectedNetwork === network) return;
 
-    // const prepNetwork = network === 'all' ? null : `0x${this.getNetwork(network).chainId}`;
+    const prepNetwork = network === 'All' ? null : `0x${this.getNetwork(network).chainId}`;
 
     this.setSelectedNetwork(network);
-    // tieAccount(this.selectedWallet.address, prepNetwork);
+    tieAccount(this.selectedWallet.address, prepNetwork);
     this.toggleSelectNetworkPopupVisible();
   }
 

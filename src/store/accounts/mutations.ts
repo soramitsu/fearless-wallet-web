@@ -28,7 +28,6 @@ export type Mutations = {
   [MutationTypes.SET_SELECTED_NETWORK](state: State, network: string): void;
   [MutationTypes.SET_ACCOUNTS](state: State, props: SetAccountsProps): void;
   [MutationTypes.SET_ONLINE_STATUS](state: State, isOnline: boolean): void;
-  // [MutationTypes.SET_ADDRESSES](state: State, props: SetAddressesProps): void;
   [MutationTypes.SET_AUTO_SELECT_NODE](state: State, props: SetAutoSelectNode): void;
   [MutationTypes.SET_QR](state: State, props: string): void;
   [MutationTypes.DELETE_QR](state: State): void;
@@ -51,8 +50,6 @@ const mutations: MutationTree<State> & Mutations = {
     accountController.setSelectedFiat(fiatName);
 
     state.selectedFiat = fiatName;
-
-    // currencies.forEach((currency) => currency.updatePrice());
   },
 
   [MutationTypes.SET_SELECTED_NETWORK](state, network) {
@@ -70,10 +67,33 @@ const mutations: MutationTree<State> & Mutations = {
     state.isOnline = isOnline;
   },
 
-  [MutationTypes.SET_ACCOUNTS](state, { accounts }) {
-    state.accounts = [...accounts];
+  [MutationTypes.SET_ACCOUNTS](state, { accounts, isMobileUpdate }) {
+    const mobileIndex = state.accounts.findIndex((account) => account.isMobile);
+    const isMobileWalletExists = mobileIndex >= 0;
 
-    accountController.setAccounts(accounts);
+    if (!accounts.length) {
+      if (isMobileUpdate) {
+        if (isMobileWalletExists) state.accounts.splice(mobileIndex, 1);
+      } else {
+        if (isMobileWalletExists) {
+          state.accounts = [state.accounts[mobileIndex], ...accounts];
+        } else state.accounts = [];
+      }
+
+      accountController.setAccounts(state.accounts);
+
+      return;
+    }
+
+    if (isMobileWalletExists) {
+      if (isMobileUpdate) {
+        state.accounts[mobileIndex] = accounts[0];
+      } else {
+        state.accounts = [state.accounts[mobileIndex], ...accounts];
+      }
+    } else state.accounts = [...accounts];
+
+    accountController.setAccounts(state.accounts);
   },
 
   [MutationTypes.HIDE_POLKASWAP_ALERT](state) {
@@ -81,10 +101,6 @@ const mutations: MutationTree<State> & Mutations = {
 
     accountController.setAgreeSwapDisclaimer();
   },
-
-  // [MutationTypes.SET_ADDRESSES](state, { addresses }) {
-  //   state.addresses = addresses;
-  // },
 
   [MutationTypes.SET_AUTO_SELECT_NODE](state, { network, value }) {
     accountController.setAutoSelectNodes(value, network);

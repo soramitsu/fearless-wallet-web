@@ -46,7 +46,7 @@ import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';
 import { BalanceItem, CustomTokenJson, NETWORK_STATUS } from '../../api/evm/types/ether';
 import CustomTokenStore from '../../stores/CustomEvmToken';
-import CurrentAccountStore, { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
+import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
 import { initEvmTokenState } from '../../api/evm/utils/eth';
 import BalanceService from '../../shared/balanceService';
 import NetworkMapStore from '../../stores/NetworkMap';
@@ -421,29 +421,27 @@ export default class State {
   }
 
   public onInstall() {
-    this.getCurrentAccount((account) => {
-      const accounts = this.getSubstrateAccounts();
+    const accounts = this.getSubstrateAccounts();
 
-      if (accounts.length && !account) {
-        const [
-          {
-            address,
-            meta: { name, ethereumAddress, isMobile },
-          },
-        ] = accounts;
-
-        this.setCurrentAccount({
+    if (accounts.length) {
+      const [
+        {
           address,
-          name: name as string,
-          ethereumAddress: ethereumAddress as string,
-          isMobile: isMobile as boolean,
-        });
+          meta: { name, ethereumAddress, isMobile },
+        },
+      ] = accounts;
 
-        return;
-      }
+      this.setCurrentAccount({
+        address,
+        name: name as string,
+        ethereumAddress: ethereumAddress as string,
+        isMobile: isMobile as boolean,
+      });
 
-      this.setCurrentAccount(undefined);
-    });
+      return;
+    }
+
+    this.setCurrentAccount(null);
   }
 
   public async upsertNetworkMap(data: NetworkJsonOld): Promise<boolean> {
@@ -911,7 +909,7 @@ export default class State {
   }
 
   public async switchAccount() {
-    await Promise.all([this.resetBalanceMap()]);
+    await this.resetBalanceMap();
   }
 
   public refreshPrice() {
@@ -936,7 +934,7 @@ export default class State {
   }
 
   public resetBalanceMap() {
-    this.publishBalance(true);
+    return this.publishBalance(true);
   }
 
   public async prepNetworkJson() {
@@ -1094,11 +1092,11 @@ export default class State {
     return network && network.genesisHash;
   }
 
-  public getCurrentAccount(update: (value: CurrentAccountInfo | undefined) => void): void {
+  public getCurrentAccount(update: (value: CurrentAccountState) => void): void {
     this.currentAccountStore.get('CurrentAccountInfo', update);
   }
 
-  public setCurrentAccount(data: CurrentAccountInfo | undefined, callback?: () => void): void {
+  public setCurrentAccount(data: CurrentAccountState, callback?: () => void): void {
     this.currentAccountStore.set('CurrentAccountInfo', data, () => {
       this.updateServiceInfo();
       callback && callback();
@@ -1106,26 +1104,29 @@ export default class State {
   }
 
   private updateBalanceStore(networkKey: string, item: BalanceItem) {
-    this.getCurrentAccount(async (currentAccountInfo) => {
+    this.getCurrentAccount((currentAccountInfo) => {
       if (currentAccountInfo)
-        await this.balanceService
+        this.balanceService
           .updateBalanceStore(networkKey, currentAccountInfo.address, item)
           .catch((e) => console.warn(e));
     });
   }
 
   public getSubstrateAccounts() {
-    return keyring.getAccounts().filter((el) => !isEthereumAddress(el.address));
-  }
+    const accounts = keyring.getAccounts().filter((el) => !isEthereumAddress(el.address));
+    const addresses = keyring.getAddresses();
 
-  public getEthereumAccounts() {
-    return keyring.getAccounts().filter((el) => isEthereumAddress(el.address));
+    return [...accounts, ...addresses];
   }
 
   public generateDefaultBalance(address: string) {
-    if (!address) return;
+    if (address === '') return;
 
-    if (this.balanceMap && this.balanceMap[address] !== undefined) return;
+    if (this.balanceMap && this.balanceMap[address] !== undefined) {
+      this.publishBalance();
+
+      return;
+    }
 
     this.balanceMap[address] = getMockCurrencies(this.networksJson, this.tokenMap);
 

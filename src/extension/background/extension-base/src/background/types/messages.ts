@@ -10,7 +10,6 @@ import {
 } from '../../types';
 import {
   RequestAccountCreateExternal,
-  RequestAccountCreateHardware,
   RequestAccountCreateSuri,
   RequestAddressCreate,
   RequestAddressRemove,
@@ -108,6 +107,7 @@ export interface RequestSignatures {
   'pri(accounts.create.external)': [RequestAccountCreateExternal, boolean];
   'pri(accounts.validate.path)': [DerivationPath, boolean];
   'pri(accounts.create.suri)': [RequestAccountCreateSuri, string];
+  'pri(accounts.create.mobile)': [RequestAddressCreate, boolean];
   'pri(addresses.create)': [RequestAddressCreate, boolean];
   'pri(addresses.remove)': [RequestAddressRemove, boolean];
   'pri(addresses.get)': [null, KeyringAddress[]];
@@ -121,6 +121,7 @@ export interface RequestSignatures {
   'pri(accounts.tie)': [RequestAccountTie, boolean];
   'pri(accounts.name)': [RequestAccountName, boolean];
   'pri(accounts.subscribe)': [RequestAccountSubscribe, boolean, AccountJson[]];
+  'pri(addresses.subscribe)': [RequestAccountSubscribe, boolean, AccountJson[]];
   'pri(accounts.triggerSubscription)': [null, boolean];
   'pri(accounts.validate)': [RequestAccountValidate, boolean];
   'pri(accounts.changePassword)': [RequestAccountChangePassword, boolean];

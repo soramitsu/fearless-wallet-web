@@ -12,8 +12,8 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ALLOWED_PATH } from '../../defaults';
 import MetadataStore from '../../stores/Metadata';
 import { BalanceItem, NetworkJson } from '../../api/evm/types/ether';
-import { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
 import EthProvider from '../../api/evm/ethProvider';
+import { CurrentAccountState } from '../../stores/CurrentAccountStore';
 import { RequestSignatures } from './messages';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
@@ -22,7 +22,7 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import { Balances, RelayChainName, SwapOptions, MarketType } from '@/interfaces';
+import { RelayChainName, SwapOptions, MarketType } from '@/interfaces';
 
 export interface PrepareExternalRequest {
   id: string;
@@ -495,11 +495,12 @@ export interface ApiMap {
   substrate: Record<string, ApiProps>;
   evm: Record<string, EthProvider>;
 }
+
 export interface ServiceInfo {
   networkMap: Record<string, NetworkJson>;
   apiMap: ApiMap;
   isLock?: boolean;
-  currentAccountInfo: CurrentAccountInfo | undefined;
+  currentAccountInfo: CurrentAccountState;
 }
 
 export interface RequestAccountBatchExport {

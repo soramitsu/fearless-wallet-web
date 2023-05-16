@@ -9,7 +9,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
-import type { Accounts, SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
+import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { TAction, TMutation } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { AccountJson, BalanceJson, PriceJson } from '@/extension/background/extension-base/src/background/types/types';
@@ -25,6 +25,7 @@ import {
   getPrice,
   pingServiceWorker,
   subscribeAccounts,
+  subscribeAddresses,
   subscribeBalance,
   subscribeNetworkMap,
   subscribePrice,
@@ -36,7 +37,7 @@ import { IS_EXTENSION } from '@/consts/global';
 @Component
 export default class App extends Vue {
   @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
-  @Getter(AccountsGettersTypes.getWallets) wallets!: Record<string, Accounts>;
+  @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
   @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<AccountJson>;
@@ -66,6 +67,8 @@ export default class App extends Vue {
     this.setupWallet();
     this.setupNetworks();
     this.setupBalance();
+
+    triggerAccountsSubscription();
   }
 
   setupSWPing() {
@@ -87,12 +90,10 @@ export default class App extends Vue {
 
   async setupBalance() {
     const balance = await getBalance();
-
     this.setBalance(balance);
-
     subscribeBalance((balances) => {
       this.setBalance(balances);
-    }).catch(console.error);
+    });
   }
 
   async setupNetworks() {
@@ -120,19 +121,24 @@ export default class App extends Vue {
     this.setPrices({ tokenPriceMap, tokenPriceChange });
   }
 
+  onAccountUpdate(accounts: AccountJson[], isMobileUpdate = false) {
+    const selectedAccount = accounts.find((account) => account.active);
+    this.setAccounts({ accounts, isMobileUpdate });
+
+    if (selectedAccount || !this.wallets.length) this.setSelectedWallet(selectedAccount);
+
+    if (!this.wallets.length) {
+      this.$router.push(Components.Welcome);
+    }
+  }
+
   setupWallet() {
+    subscribeAddresses((accounts) => {
+      this.onAccountUpdate(accounts, true);
+    });
+
     subscribeAccounts((accounts) => {
-      console.info('accounts', accounts);
-
-      const isAccountsNotExists = accounts.length === 0;
-      const selectedAccount = isAccountsNotExists ? undefined : accounts.find((el) => el.active);
-
-      this.setSelectedWallet(selectedAccount);
-      this.setAccounts({ accounts });
-
-      if (isAccountsNotExists) this.$router.push(Components.Welcome);
-    }).then(() => {
-      triggerAccountsSubscription();
+      this.onAccountUpdate(accounts);
     });
   }
 

@@ -25,10 +25,11 @@ export default class BaseApi {
   public static getWalletType(address: string): WalletTypes | null {
     const substrateAddress = BaseApi.encodeAddress(address);
     const accounts = store.getters.getAccounts as AccountJson[];
-    const account = accounts.find((account) => account.address === substrateAddress);
-    if (!account) null;
+    const account = accounts.find(({ address }) => address === substrateAddress);
 
-    return account?.isMobile ? 'mobile' : 'native';
+    if (account === undefined) return null;
+
+    return account.isMobile ? 'mobile' : 'native';
   }
 
   public static mortalityDecode(era: ExtrinsicEra, hexBlockNumber: string) {

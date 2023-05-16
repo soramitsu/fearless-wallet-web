@@ -10,8 +10,9 @@ export interface CurrentAccountInfo {
   name: string;
   isMobile: boolean;
 }
+export type CurrentAccountState = CurrentAccountInfo | null;
 
-export default class CurrentAccountStore extends SubscribableStore<CurrentAccountInfo | undefined> {
+export default class CurrentAccountStore extends SubscribableStore<CurrentAccountState> {
   constructor() {
     super(EXTENSION_PREFIX ? `${EXTENSION_PREFIX}current_account` : null);
   }

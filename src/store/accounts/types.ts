@@ -21,6 +21,7 @@ export type GetShowWarningNetworks = (assetId: string) => boolean;
 // mutations
 export type SetAccountsProps = {
   accounts: AccountJson[];
+  isMobileUpdate: boolean;
 };
 
 export type SetAddressesProps = {

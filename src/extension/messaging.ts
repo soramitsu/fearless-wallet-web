@@ -194,7 +194,7 @@ export function isSignLocked(address: string): Promise<ResponseSigningIsLocked> 
   return sendMessage('pri(signing.isLocked)', { address });
 }
 
-export async function approveSignPassword(id: string, savePass: boolean, password?: string): Promise<boolean> {
+export function approveSignPassword(id: string, savePass: boolean, password?: string): Promise<boolean> {
   return sendMessage('pri(signing.approve.password)', { id, password, savePass });
 }
 
@@ -223,8 +223,8 @@ export function createAccountSuri(
   return sendMessage('pri(accounts.create.suri)', { password, suri, type, meta });
 }
 
-export function createAddress(address: string, meta: KeyringPair$Meta): Promise<boolean> {
-  return sendMessage('pri(addresses.create)', { meta, address });
+export function createMobileWallet(address: string, meta: KeyringPair$Meta): Promise<boolean> {
+  return sendMessage('pri(accounts.create.mobile)', { meta, address });
 }
 
 export function removeAddress(address: string): Promise<boolean> {
@@ -293,7 +293,11 @@ export function subscribeAccounts(cb: (accounts: AccountJson[]) => void): Promis
   return sendMessage('pri(accounts.subscribe)', null, cb);
 }
 
-export async function triggerAccountsSubscription(): Promise<boolean> {
+export function subscribeAddresses(cb: (accounts: AccountJson[]) => void): Promise<boolean> {
+  return sendMessage('pri(addresses.subscribe)', null, cb);
+}
+
+export function triggerAccountsSubscription(): Promise<boolean> {
   return sendMessage('pri(accounts.triggerSubscription)');
 }
 
@@ -423,7 +427,7 @@ export function isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
   return sendMessage('pri(tab.status)');
 }
 
-export async function getBalance(): Promise<BalanceJson> {
+export function getBalance(): Promise<BalanceJson> {
   return sendMessage('pri(balance.get.balance)');
 }
 

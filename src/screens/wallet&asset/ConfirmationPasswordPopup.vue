@@ -16,7 +16,6 @@
           :readonly="!isLocked"
           :isError="isErrorPassword"
           :showPassword="true"
-          @keydown.native.enter="sendExtrinsic"
         />
 
         <div v-if="show15MinCheckbox" class="remember-checkbox">
@@ -136,6 +135,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   get requestTransfer(): RequestTransfer {
     return {
       ...this.tx,
+      isSavePass: this.isSavePass,
       password: this.password,
     };
   }
@@ -294,6 +294,12 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     const results = await makeTransfer(this.requestTransfer, (data) => {
+      if (data.passwordError) {
+        this.isErrorPassword = true;
+
+        return;
+      }
+
       this.transactionState = data.status ? 'success' : 'failed';
     });
 

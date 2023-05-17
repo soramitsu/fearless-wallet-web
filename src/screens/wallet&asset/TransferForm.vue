@@ -410,7 +410,6 @@ export default class SendForm extends Vue {
     }
 
     const checkResponse = await this.verifyTransfer();
-
     this.syncedPartialFee = checkResponse.estimateFee ?? '0';
     // this.isValidCountAssets = this.currency!.validateCountAssets(
     //   this.syncedAmount,
@@ -558,7 +557,7 @@ export default class SendForm extends Vue {
       const checkResponse = await this.verifyTransfer();
 
       if (checkResponse.errors?.length) {
-        this.showExistentialPopup = checkResponse.errors.some((error) => error.code === 'notEnoughValue');
+        this.showExistentialPopup = checkResponse.errors.some((error) => error.code === 'notEnoughExistentialDeposit');
         this.syncedPartialFee = checkResponse.estimateFee || '0';
       }
 

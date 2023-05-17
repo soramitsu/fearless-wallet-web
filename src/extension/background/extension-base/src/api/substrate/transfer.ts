@@ -398,11 +398,11 @@ export async function doSignAndSend({
   await extrinsic.send(({ events = [], status }) => {
     console.info('Transaction status:', status.type, status.hash.toHex());
 
-    if (status.isInBlock) {
+    if (status.isBroadcast) {
       callback(response);
 
       updateResponseByEvents(response, events);
-
+      response.isFinalized = true;
       response.extrinsicHash = extrinsic.hash.toHex();
       callback(response);
 
@@ -412,9 +412,6 @@ export async function doSignAndSend({
             status: response.status ? ExternalRequestPromiseStatus.COMPLETED : ExternalRequestPromiseStatus.FAILED,
           });
       }
-    } else if (status.isFinalized) {
-      response.isFinalized = true;
-      callback(response);
     } else {
       callback(response);
     }
@@ -425,33 +422,30 @@ export interface MakeTransferProps {
   networkKey: string;
   to: string;
   from: string;
-  value: string;
-  transferAll: boolean;
+  amount: string;
   password: string | undefined;
-  dotSamaApiMap: Record<string, ApiProps>;
   tokenInfo: AssetJson;
   isSavePass?: boolean;
   callback: (data: BasicTxResponse) => void;
 }
 
 export async function makeTransfer({
-  callback,
-  dotSamaApiMap,
   from,
   networkKey,
   to,
   tokenInfo,
-  password,
   isSavePass,
-  value,
+  password,
+  amount,
+  callback,
 }: MakeTransferProps): Promise<void> {
   const txState: BasicTxResponse = {};
-  const apiProps = dotSamaApiMap[networkKey];
+  const apiProps = state.getSubstrateApiMap[networkKey];
 
   await apiProps.api?.isReady;
 
   const api = apiProps.api!;
-  const transferAmount = value;
+  const transferAmount = amount;
 
   const tokenBalance = state.balanceMap[from].find(({ assetId, relayChain }) => {
     if (tokenInfo.relayChain) return assetId === tokenInfo.id && relayChain === tokenInfo.relayChain;
@@ -459,7 +453,7 @@ export async function makeTransfer({
   })!;
 
   const extrinsic = createExtrinsicTransfer({
-    amount: value,
+    amount,
     api,
     tokenBalance,
     to,
@@ -473,12 +467,12 @@ export async function makeTransfer({
   await signAndSendExtrinsic({
     type: SignerType.PASSWORD,
     apiProps: apiProps,
-    callback: callback,
+    callback,
     extrinsic: extrinsic,
     txState: txState,
     password,
+    isSavePass,
     address: from,
-    updateResponseTxResult: updateResponseTxResult,
     errorMessage: 'error transfer',
   });
 }

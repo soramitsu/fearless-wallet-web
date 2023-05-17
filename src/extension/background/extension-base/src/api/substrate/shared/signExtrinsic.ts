@@ -8,6 +8,7 @@ import { ApiProps, ExternalRequestPromise, SignerType } from '../../../backgroun
 import KeyringSigner from '../../../signers/KeyringSigner';
 import { unlockAccount } from '../../../utils/keyring';
 import { HandleBasicTx } from '../../evm/transfer';
+import registry from '../typeRegistry';
 
 interface AbstractSignExtrinsicProps {
   address: string;
@@ -39,22 +40,22 @@ export const signExtrinsic = async ({
   password,
   type,
 }: SignExtrinsicProps): Promise<string | null> => {
-  if (type === SignerType.PASSWORD) {
-    const passwordError: string | null = unlockAccount(address, password);
-
-    if (passwordError) return passwordError;
-  }
-
   let signer: Signer | undefined;
-
-  const registry = apiProps.api!.registry;
 
   if (type === SignerType.PASSWORD) {
     const pair = keyring.getPair(address);
 
     assert(pair, 'Unable to find pair');
 
-    signer = new KeyringSigner({ registry: registry, keyPair: pair });
+    if (pair.isLocked) {
+      const passwordError: string | null = unlockAccount(address, password);
+
+      if (passwordError) return passwordError;
+    }
+
+    const registry = apiProps.api!.registry;
+
+    signer = new KeyringSigner({ registry, keyPair: pair });
   }
 
   await extrinsic.signAsync(address, { signer: signer });

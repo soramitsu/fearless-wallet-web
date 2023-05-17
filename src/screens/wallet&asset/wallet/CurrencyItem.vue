@@ -68,7 +68,7 @@
           class="button send"
           tooltipText="assets.sendButtonText"
           target=".send"
-          @click="toggleVisibleActivityForm('showSendForm', true, { mainNetwork, assetId: assetData.name })"
+          @click="toggleVisibleActivityForm('showSendForm', true, { mainNetwork, assetId: assetData.assetId })"
         />
 
         <CircleButton

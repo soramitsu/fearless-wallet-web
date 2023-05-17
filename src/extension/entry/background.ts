@@ -6,6 +6,7 @@ import '@polkadot/extension-inject/crossenv';
 import AccountsStore from '../background/extension-base/src/stores/Accounts';
 import { RequestSignatures } from '../background/extension-base/src/background/types/messages';
 import type { Port, TransportRequestMessage } from '@/extension/background/extension-base/src/background/types/types';
+
 interface ModifiedPort extends Port {
   timer?: NodeJS.Timeout;
 }
@@ -31,11 +32,6 @@ chrome.runtime.onInstalled.addListener(async () => {
   state.onInstall();
 
   getActiveTabs();
-});
-
-chrome.alarms.create({ periodInMinutes: 0.4 });
-chrome.alarms.onAlarm.addListener(() => {
-  console.info('wake up service worker');
 });
 
 function deleteTimer(port: ModifiedPort) {

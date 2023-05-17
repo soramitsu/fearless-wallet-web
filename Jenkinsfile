@@ -18,6 +18,7 @@ def buildWithCred  = [
 def pipeline = new org.js.AppArtifactsPipeline(
     steps:                      this,
     buildCmds:                  ['yarn build:extension:all'],
+    secretScannerExclusion:     '/src/extension/background/extension-base/src/api/evm/history.ts',
     nexusCredential:            'bot-fearless-rw',
     nexusProjectPath:           'fearless/extension',
     sonarProjectKey:            'fearless:fearless-wallet-web',

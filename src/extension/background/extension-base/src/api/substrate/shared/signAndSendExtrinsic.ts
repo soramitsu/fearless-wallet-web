@@ -24,6 +24,7 @@ interface AbstractSignAndSendExtrinsicProps extends Partial<PrepareExternalReque
   type: SignerType;
   errorMessage: string;
   apiProps: ApiProps;
+  isSavePass?: boolean;
   password?: string;
   updateResponseTxResult?: (response: BasicTxResponse, records: EventRecord[]) => void;
 }
@@ -49,9 +50,8 @@ export const signAndSendExtrinsic = async ({
   extrinsic,
   password,
   txState,
+  isSavePass,
   type,
-  updateResponseTxResult,
-  updateState,
 }: SignAndSendExtrinsicProps) => {
   if (extrinsic === null) {
     txState.txError = true;
@@ -73,6 +73,7 @@ export const signAndSendExtrinsic = async ({
 
     if (passwordError) {
       txState.passwordError = passwordError;
+
       callback(txState);
 
       return;
@@ -90,16 +91,13 @@ export const signAndSendExtrinsic = async ({
   }
 
   try {
-    await sendExtrinsic({
+    sendExtrinsic({
       apiProps: apiProps,
-      callback: callback,
+      callback,
       extrinsic: extrinsic,
       txState: txState,
-      updateResponseTxResult: updateResponseTxResult,
-      updateState: updateState,
+      isSavePass,
     });
-
-    if (type === SignerType.PASSWORD) lockAccount(address);
   } catch (e) {
     console.error(errorMessage, e);
 

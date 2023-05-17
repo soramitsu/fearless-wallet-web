@@ -5,7 +5,7 @@ import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
 
-import { hexToU8a, isHex, assert, BN, BN_ZERO } from '@polkadot/util';
+import { hexToU8a, isHex, assert } from '@polkadot/util';
 import {
   keyExtractSuri,
   mnemonicGenerate,
@@ -582,16 +582,6 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  async saveTimeoutCache(address: string): Promise<boolean> {
-    const { cachedUnlocks } = await this.state.getFromStorage(['cachedUnlocks']);
-
-    cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
-
-    await chrome.storage.local.set({ cachedUnlocks });
-
-    return true;
-  }
-
   async signingApproveSignature({ id, signature }: RequestSigningApproveSignature): Promise<boolean> {
     this.state.signature = signature;
 
@@ -849,8 +839,6 @@ export default class Extension extends FWExtensionBase {
 
   private makeTransferCallback(portCallback: (res: BasicTxResponse) => void): (res: BasicTxResponse) => void {
     return (res: BasicTxResponse) => {
-      // !res.isFinalized to prevent duplicate action
-
       portCallback(res);
     };
   }
@@ -1001,15 +989,17 @@ export default class Extension extends FWExtensionBase {
       }
     }
 
-    try {
-      keypair = keyring.getPair(from);
+    if (password) {
+      try {
+        keypair = keyring.getPair(from);
 
-      keypair.unlock(password);
-    } catch (e: any) {
-      errors.push({
-        code: BasicTxErrorCode.KEYRING_ERROR,
-        message: String(e.message),
-      });
+        keypair.unlock(password);
+      } catch (e: any) {
+        errors.push({
+          code: BasicTxErrorCode.KEYRING_ERROR,
+          message: String(e.message),
+        });
+      }
     }
 
     const tokenInfo = getTokenInfo(token);
@@ -1087,7 +1077,7 @@ export default class Extension extends FWExtensionBase {
 
     const fromAccountFreeNumber = new FPNumber(fromAccountFreeBalance);
     const feeNumber = FPNumber.fromCodecValue(fee, tokenInfo.precision);
-    const existentialDepositNumber = new FPNumber(existentialDeposit);
+    const existentialDepositNumber = new FPNumber(existentialDeposit, tokenInfo.precision);
     const rawExistentialDeposit = Number(existentialDeposit) / Math.pow(10, tokenInfo.precision);
 
     if (!transferAll && value && feeNumber && valueNumber && FPNumber.gt(valueNumber, FPNumber.ZERO)) {
@@ -1181,90 +1171,82 @@ export default class Extension extends FWExtensionBase {
 
       // todo: add condition to lock KeyPair (for example: not remember password)
 
-      fromKeyPair && fromKeyPair.lock();
+      return txState;
+    }
+
+    if (!fromKeyPair) {
+      txState.status = false;
+      txState.txError = true;
 
       return txState;
     }
 
-    if (fromKeyPair) {
-      const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
-      const callback = this.makeTransferCallback(cb);
+    const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
+    const ethereumAddress = fromKeyPair.meta.ethereumAddress as string | undefined;
 
-      let transferProm: Promise<void> | undefined;
+    const remainTime = this.refreshAccountPasswordCache(fromKeyPair);
 
-      if (isEthereumAddress(from) && isEthereumAddress(to)) {
-        // Make transfer with EVM API
-        const { privateKey } = this.accountExportPrivateKey({ address: from, password });
-        const web3ApiMap = this.state.getApiMap.evm;
-        const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
+    const callback = this.makeTransferCallback(cb);
 
-        if (tokenInfo && !isMainToken && tokenInfo.contractAddress) {
-          transferProm = makeERC20Transfer(
-            tokenInfo.contractAddress,
-            networkKey,
-            from,
-            to,
-            privateKey,
-            value || '0',
-            !!transferAll,
-            web3ApiMap,
-            callback
-          );
-        } else {
-          transferProm = makeEVMTransfer(networkKey, to, privateKey, value || '0', !!transferAll, web3ApiMap, callback);
-        }
+    let transferProm: Promise<void> | undefined;
+
+    if (isEthereumAddress(from) && isEthereumAddress(to)) {
+      // Make transfer with EVM API
+      const { privateKey } = this.accountExportPrivateKey({ address: from, password });
+      const web3ApiMap = this.state.getApiMap.evm;
+      const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
+
+      if (tokenInfo && !isMainToken && tokenInfo.contractAddress) {
+        transferProm = makeERC20Transfer(
+          tokenInfo.contractAddress,
+          networkKey,
+          from,
+          to,
+          privateKey,
+          value || '0',
+          !!transferAll,
+          web3ApiMap,
+          callback
+        );
       } else {
-        const dotSamaApiMap = this.state.getSubstrateApiMap;
-
-        // Make transfer with Dotsama API
-        transferProm = makeTransfer({
-          networkKey: networkKey,
-          tokenInfo: tokenInfo,
-          value: value!,
-          from: fromKeyPair.address,
-          to: to,
-          password,
-          dotSamaApiMap: dotSamaApiMap,
-          transferAll: !!transferAll,
-          isSavePass,
-          callback: callback,
-        });
+        transferProm = makeEVMTransfer(networkKey, to, privateKey, value || '0', !!transferAll, web3ApiMap, callback);
       }
-
-      transferProm
-        .then(() => {
-          // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-          console.info(`Start transfer ${transferAll ? 'all' : value} from ${from} to ${to}`);
-
-          // todo: add condition to lock KeyPair
-          //fromKeyPair.lock();
-        })
-        .catch((e) => {
-          cb({
-            txError: true,
-            status: false,
-            errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (e as Error).message }],
-          });
-          console.error('Transfer error', e);
-          setTimeout(() => {
-            this.cancelSubscription(id);
-          }, 500);
-
-          // todo: add condition to lock KeyPair
-          fromKeyPair.lock();
-        });
+    } else {
+      // Make transfer with Dotsama API
+      transferProm = makeTransfer({
+        networkKey: networkKey,
+        tokenInfo: tokenInfo,
+        amount: value ?? '0',
+        from: fromKeyPair.address,
+        to: to,
+        password,
+        isSavePass,
+        callback,
+      });
     }
+
+    transferProm
+      .then(() => {
+        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+        console.info(`Start transfer ${transferAll ? 'all' : value} from ${from} to ${to}`);
+      })
+      .catch((e) => {
+        cb({
+          txError: true,
+          status: false,
+          errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (e as Error).message }],
+        });
+        console.error('Transfer error', e);
+        setTimeout(() => {
+          this.cancelSubscription(id);
+        }, 500);
+
+        // todo: add condition to lock KeyPair
+      });
 
     port.onDisconnect.addListener((): void => {
       this.cancelSubscription(id);
     });
-
-    if (isSavePass && fromKeyPair) {
-      const ethereumAddress = fromKeyPair.meta.ethereumAddress as string;
-      this.cachedUnlocks[from] = Date.now() + PASSWORD_EXPIRY_MS;
-
-      if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
-    } else fromKeyPair && fromKeyPair.lock();
 
     return txState;
   }
@@ -1465,9 +1447,6 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(window.open)':
         return this.windowOpen(request as AllowedPath);
-
-      case 'pri(signing.saveTimeoutCache)':
-        return this.saveTimeoutCache(request as string);
 
       case 'pri(google.get.files)':
         return this.getFiles(request as { token: string });

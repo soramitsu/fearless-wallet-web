@@ -61,7 +61,7 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import type { RequestSentInfo, TAction, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
+import type { RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
 import type { GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import { beaconController } from '@/controllers/beaconController';
 import { isSignLocked, makeSwap, makeTransfer } from '@/extension/messaging';
@@ -105,8 +105,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop({ default: 'default' }) extrinsicType!: 'default' | 'swap';
 
   @Getter(AccountsGettersTypes.getBalances) currencies!: TokenBalance[];
-  @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: TAction<ApprovePayload>;
-  @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
+  @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: AsyncFn<ApprovePayload>;
+  @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: AsyncFn<string>;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];

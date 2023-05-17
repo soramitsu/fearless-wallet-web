@@ -17,7 +17,7 @@
 import { Getter, Mutation } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { FiatJson } from '@/interfaces/common';
-import type { TMutation } from '@/interfaces';
+import type { Fn } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
@@ -31,7 +31,7 @@ export default class FiatsPopup extends Vue {
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(NetworksGettersTypes.getFiats) fiats!: FiatJson[];
   @Getter(AccountsGettersTypes.getSelectedFiat) selectedFiat!: string;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_FIAT) setSelectedFiat!: TMutation<string>;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_FIAT) setSelectedFiat!: Fn<string>;
 
   get filteredOptionsFiats() {
     const filter = this.filterValue.trim().toLowerCase();

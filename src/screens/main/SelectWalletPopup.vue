@@ -33,7 +33,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import WalletInfo from './WalletInfo.vue';
 import type { SelectedWallet } from '@/store';
-import type { TMutation, CustomEvent } from '@/interfaces';
+import type { Fn, CustomEvent } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { Components } from '@/router/routes';
@@ -49,7 +49,7 @@ export default class SelectWalletPopup extends Vue {
   // @Getter(AccountsGettersTypes.getAddresses) addresses!: Accounts;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
-  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<CurrentAccountInfo>;
+  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: Fn<CurrentAccountInfo>;
 
   addWallet() {
     this.$router.push({ name: Components.Welcome });

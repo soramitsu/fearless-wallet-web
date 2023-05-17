@@ -44,7 +44,7 @@ import {
   ApproveAuthRequest,
   AccountJson,
 } from '@/extension/background/extension-base/src/background/types/types';
-import { TAction } from '@/interfaces';
+import { AsyncFn } from '@/interfaces';
 import Hint from '@/components/Hint.vue';
 import { Components } from '@/router/routes';
 import { WalletInfo } from '@/store';
@@ -69,8 +69,8 @@ export default class Authorize extends Vue {
 
   @Getter(ExtensionGettersTypes.getAuthRequests) requests!: AuthorizeRequest[];
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
-  @Action(ExtensionActionTypes.APPROVE_AUTH_REQUEST) onApproveAuthRequest!: TAction<ApproveAuthRequest>;
-  @Action(ExtensionActionTypes.REJECT_AUTH_REQUEST) onRejectAuthRequest!: TAction<AuthorizeRequest>;
+  @Action(ExtensionActionTypes.APPROVE_AUTH_REQUEST) onApproveAuthRequest!: AsyncFn<ApproveAuthRequest>;
+  @Action(ExtensionActionTypes.REJECT_AUTH_REQUEST) onRejectAuthRequest!: AsyncFn<AuthorizeRequest>;
 
   get isAccountsExists() {
     return this.accounts.length > 0;

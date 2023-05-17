@@ -51,7 +51,7 @@ import InfoItem from '@/screens/extension-ui/InfoItem.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
-import { TAction, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
+import { AsyncFn, SignerPayloadJSON, PayloadJSON } from '@/interfaces';
 import { beaconController, ExtensionController } from '@/controllers';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -71,7 +71,7 @@ export default class Auth extends Vue {
 
   @Getter(ExtensionGettersTypes.getSignRequestPayload) payload!: SignerPayloadJSON;
   @Getter(ExtensionGettersTypes.getSignList) requests!: SigningRequest[];
-  @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: TAction<string>;
+  @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: AsyncFn<string>;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
   get request() {

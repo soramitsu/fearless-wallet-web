@@ -15,7 +15,7 @@ import SelectAuthAccount from '@/screens/extension-ui/authorize/SelectAuthAccoun
 import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import { WalletInfo } from '@/store';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
-import { TAction } from '@/interfaces';
+import { AsyncFn } from '@/interfaces';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 
 @Component({
@@ -30,7 +30,7 @@ export default class Authorize extends Vue {
   @Prop(String) url!: string;
   @Getter(AccountGettersTypes.getWallets) wallets!: WalletInfo[];
   @Getter(ExtensionGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
-  @Action(ExtensionActionTypes.GET_AUTHLIST) fetchAuthList!: TAction<void>;
+  @Action(ExtensionActionTypes.GET_AUTHLIST) fetchAuthList!: AsyncFn;
 
   get buttonText() {
     const count = Object.values(this.state).filter((el) => el.active).length;

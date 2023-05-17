@@ -95,7 +95,7 @@ import NickNameForm from '@/screens/addWallet/NicknameForm.vue';
 import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
 import { Components } from '@/router/routes';
-import { DerivationPaths, MnemonicConfirmation, TAction } from '@/interfaces';
+import { DerivationPaths, MnemonicConfirmation, AsyncFn } from '@/interfaces';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH, INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import BaseApi from '@/util/BaseApi';
@@ -138,7 +138,7 @@ export default class CreateGoogle extends Vue {
   isLoading = false;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<string>;
+  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<string>;
 
   get invalidMessages() {
     if (!this.warningValueName) return {};

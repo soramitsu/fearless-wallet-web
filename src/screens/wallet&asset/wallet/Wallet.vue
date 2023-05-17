@@ -96,7 +96,7 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation, Action } from 'vuex-class';
 import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset } from '@/store';
-import type { TAction, TMutation, TabWallet } from '@/interfaces';
+import type { AsyncFn, Fn, TabWallet } from '@/interfaces';
 import { BalanceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
@@ -165,9 +165,9 @@ export default class Wallet extends Vue {
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJsonOld;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
-  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: TMutation<string>;
-  @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: TMutation<SetHiddenAsset>;
-  @Action(AccountsActionTypes.SET_BALANCE) setBalance!: TAction<BalanceJson>;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
+  @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: Fn<SetHiddenAsset>;
+  @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
 
   get showNetworkUnavailablePopup() {
     return this.networkUnavailable !== '';

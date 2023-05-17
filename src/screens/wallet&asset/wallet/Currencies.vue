@@ -23,7 +23,7 @@ import Draggable from 'vuedraggable';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { SelectedWallet } from '@/store';
-import type { TAction } from '@/interfaces';
+import type { AsyncFn } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import CurrencyItem from '@/screens/wallet&asset/wallet/CurrencyItem.vue';
 import { TokenBalance, BalanceJson } from '@/extension/background/extension-base/src/background/types/types';
@@ -47,7 +47,7 @@ export default class Currencies extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
-  @Action(AccountsActionTypes.SET_BALANCE) setBalance!: TAction<BalanceJson>;
+  @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
 
   get mainText() {
     if (!this.isOnline) return 'common.offlineStatus';

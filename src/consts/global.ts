@@ -1,3 +1,5 @@
+import packages from '../../package.json';
+
 const APP_WIDTH = 561;
 const APP_HEIGHT = 600;
 const APP_NAME = 'Fearless Wallet';
@@ -9,6 +11,7 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const RAMP_API_KEY = IS_PRODUCTION ? process.env.RAMP_PROD_API_KEY : process.env.RAMP_TEST_API_KEY;
 const MOONPAY_API_KEY = IS_PRODUCTION ? process.env.MOONPAY_PROD_API_KEY : process.env.MOONPAY_TEST_API_KEY;
 const IS_EXTENSION = chrome.extension !== undefined;
+const APP_VERSION = packages.version;
 
 export {
   APP_WIDTH,
@@ -22,4 +25,5 @@ export {
   RAMP_API_KEY,
   MOONPAY_API_KEY,
   IS_EXTENSION,
+  APP_VERSION,
 };

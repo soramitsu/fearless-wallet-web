@@ -2,6 +2,7 @@
   <div class="validate-input">
     <Input
       v-model="vModel"
+      ref="input"
       size="big"
       :placeholder="placeholder"
       :maxlength="maxlength"
@@ -9,6 +10,7 @@
       :isError="isError"
       :readonly="readonly"
       :typeText="typeText"
+      :type="type"
     />
 
     <div v-show="showErrorText" class="error-descriptions">{{ $t(errorDescriptions) }}</div>
@@ -16,8 +18,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
+import { Component, Vue, Prop, VModel, Ref } from 'vue-property-decorator';
 import Input from './Input.vue';
+
+type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
 
 @Component({
   components: { Input },
@@ -30,10 +34,16 @@ export default class ValidatedInput extends Vue {
   @Prop({ default: 50 }) maxlength!: number;
   @Prop({ default: false }) showPassword!: boolean;
   @Prop({ default: false }) readonly!: boolean;
-  @Prop({ default: 'none' }) typeText!: string;
+  @Prop({ default: 'text' }) type!: Type;
+  @Prop({ default: 'uppercase' }) typeText!: string;
+  @Ref('input') readonly inputComponent!: Input;
 
   get showErrorText() {
     return this.isError && this.errorDescriptions;
+  }
+
+  get input() {
+    return this.inputComponent.input as HTMLInputElement;
   }
 }
 </script>

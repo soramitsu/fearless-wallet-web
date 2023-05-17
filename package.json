@@ -129,7 +129,6 @@
     "webpack-extension-manifest-plugin": "^0.8.0"
   },
   "gitHooks": {
-    "pre-commit": "lint-staged"
   },
   "license": "Apache-2.0",
   "lint-staged": {

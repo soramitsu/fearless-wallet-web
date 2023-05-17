@@ -4,7 +4,7 @@ import { LocalStorage } from '@/controllers/localStorageController';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 
 class AccountController {
-  private readonly lsAccount = new LocalStorage('account');
+  private readonly lsAccount = new LocalStorage('account_');
   private readonly langStorageName = 'lang';
   private readonly sequenceAssetsStorageName = 'sequence-assets';
   private readonly autoSelectNodesStorageName = 'auto-select-nodes';
@@ -18,6 +18,15 @@ class AccountController {
   private readonly hiddenAssets = 'hidden-assets';
   private readonly agreeSwapDisclaimer = 'agree-swap-disclaimer';
   private readonly hideWarningNetworks = 'hide-warning-networks';
+  private readonly hidingSoraCardBannerTime = 'hiding-sora-card-banner-time';
+
+  public getHidingSoraCardBannerTime(): number {
+    return +(this.lsAccount.get(this.hidingSoraCardBannerTime).value ?? 0);
+  }
+
+  public setHidingSoraCardBannerTime(time: number) {
+    this.lsAccount.set(this.hidingSoraCardBannerTime, time);
+  }
 
   public getHideWarningNetworks(): string[] {
     const array = this.lsAccount.get(this.hideWarningNetworks);
@@ -150,12 +159,12 @@ class AccountController {
     return autoSelectNodes.value ?? {};
   }
 
-  public setCustomSort(address: string) {
-    this.lsAccount.set(this.customSort, { [address]: true });
-  }
-
   public getCustomSort(): Record<string, boolean> {
     return this.lsAccount.get(this.customSort).value ?? {};
+  }
+
+  public setCustomSort(address: string) {
+    this.lsAccount.set(this.customSort, { [address]: true });
   }
 
   public setAutoSelectNodes(value: boolean, network: string): void {

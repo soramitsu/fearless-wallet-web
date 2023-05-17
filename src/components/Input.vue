@@ -10,6 +10,7 @@
         :size="size"
         :maxlength="maxlength"
         :readonly="readonly"
+        :disabled="disabled"
         :show-password="showPassword"
         :style="inputStyle"
         @blur="$emit('blur', $event)"
@@ -23,7 +24,7 @@
 import { Component, Vue, Prop, VModel } from 'vue-property-decorator';
 
 type Size = 'small' | 'medium' | 'big';
-type Type = 'text' | 'textarea' | 'text-file' | 'number';
+type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
 type Style = 'default' | 'pink';
 type TypeText = 'none' | 'uppercase';
 
@@ -42,6 +43,7 @@ export default class Input extends Vue {
   @Prop({ default: 'default' }) styleInput!: Style;
   @Prop({ default: false }) isError!: boolean;
   @Prop({ default: false }) cursorPointer!: boolean;
+  @Prop({ default: false }) disabled!: boolean;
 
   get wrapperClasses() {
     return [
@@ -113,7 +115,7 @@ export default class Input extends Vue {
   }
 
   .error-input {
-    border: 1px solid $orange-color !important;
+    border: 1px solid $simple-orange-color !important;
   }
 }
 

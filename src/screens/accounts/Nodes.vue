@@ -33,7 +33,7 @@
         :url="url"
         :isActive="getActiveStatus(name, url)"
         :isRemoveBorderBottom="getRemoveBorderBottomValue(index)"
-        @changeNode="changeNode(name, url)"
+        @changeNode="changeNode(url, name)"
       />
     </div>
     <div class="custom-nodes">
@@ -54,7 +54,7 @@
       :isCustomNode="true"
       :isActive="getActiveStatus(name, url)"
       :isRemoveBorderBottom="getRemoveBorderBottomValue(index, true)"
-      @changeNode="changeNode(name, url, true)"
+      @changeNode="changeNode(url)"
       @openNodeSettingsPopup="openNodeSettingsPopup(name, url, ...arguments)"
     />
   </div>
@@ -70,7 +70,7 @@ import type {
   GetAutoSelectNodesValueByNetwork,
   GetActiveNodesByNetwork,
 } from '@/store';
-import type { Node, TMutation } from '@/interfaces';
+import type { TMutation } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -100,8 +100,8 @@ export default class Nodes extends Vue {
   get activeNode() {
     const { currentProvider } = this.networkJson;
     const activeNode =
-      this.networkJson.nodes.find((el) => el.name === currentProvider) ??
-      this.networkJson.customNodes.find((el) => el.name === currentProvider);
+      this.networkJson.nodes.find(({ url }) => url === currentProvider) ??
+      this.networkJson.customNodes.find(({ url }) => url === currentProvider);
 
     return activeNode ?? this.networkJson.nodes[0];
   }
@@ -138,22 +138,18 @@ export default class Nodes extends Vue {
 
   @Watch('autoSelectNode')
   toggleAutoSelectNodesValue() {
-    const [{ name, url }] = this.defaultNodes;
-    this.changeNode(name, url);
+    const [{ url }] = this.defaultNodes;
+    this.changeNode(url);
   }
 
   openNodeSettingsPopup(name: string, url: string, buttonTop: number, isActive: boolean) {
     this.$emit('openNodeSettingsPopup', this.selectedNetwork, name, url, buttonTop, isActive);
   }
 
-  changeNode(url: string, name: string, isCustomNode = false) {
+  changeNode(url: string) {
+    if (this.autoSelectNode) return;
+
     const prepData: Partial<NetworkJsonOld> = {};
-
-    if (isCustomNode) {
-      if (!prepData.customNodes) prepData.customNodes = [];
-
-      prepData.customNodes.push({ name, url });
-    }
 
     prepData.currentProvider = url;
 

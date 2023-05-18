@@ -454,7 +454,7 @@ export default class State {
       //make network active if it was disabled previously
       network.active = true;
       // update provider for existed network
-      if (data.customNodes) network.customNodes = data.customNodes;
+      network.customNodes = data.customNodes;
 
       if (currentProvider !== network.currentProvider && currentProvider) {
         network.currentProvider = currentProvider;
@@ -950,7 +950,7 @@ export default class State {
     this.tokenMap = assets;
 
     networks.forEach((network) => {
-      const prepCurrentProvider = network.nodes[0].name;
+      const prepCurrentProvider = network.nodes[0].url;
       const prepNodes: Record<string, string> = {};
 
       network.nodes.map((node) => {

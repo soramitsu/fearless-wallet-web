@@ -215,14 +215,12 @@ export default class ConfirmationPasswordPopup extends Vue {
   async mounted() {
     if (!IS_EXTENSION || this.isSignMobile) return;
 
-    // const address = this.transactionId ? this.transactionAddress : this.selectedWallet.address;
+    const address = this.transactionId ? this.transactionAddress : this.selectedWallet.address;
 
-    const { isLocked, remainingTime } = await isSignLocked(this.selectedWallet.address);
+    const { isLocked } = await isSignLocked(address);
 
     this.isLocked = isLocked;
     this.isSavePass = !this.isLocked;
-
-    this.isLocked = remainingTime <= 0;
   }
 
   resetTxStatus() {

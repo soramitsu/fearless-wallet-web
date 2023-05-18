@@ -837,7 +837,12 @@ export default class Extension extends FWExtensionBase {
     return this.getPrice();
   }
 
-  private makeTransferCallback(portCallback: (res: BasicTxResponse) => void): (res: BasicTxResponse) => void {
+  private makeTransferCallback(
+    portCallback: (res: BasicTxResponse) => void,
+    cb: () => void
+  ): (res: BasicTxResponse) => void {
+    cb();
+
     return (res: BasicTxResponse) => {
       portCallback(res);
     };
@@ -966,7 +971,7 @@ export default class Extension extends FWExtensionBase {
     transferAll: boolean | undefined
   ): [Array<BasicTxError>, KeyringPair | undefined, FPNumber | undefined, AssetJson] {
     const errors = [] as Array<BasicTxError>;
-    let keypair: KeyringPair | undefined;
+
     let transferValue;
 
     if (!transferAll) {
@@ -989,10 +994,10 @@ export default class Extension extends FWExtensionBase {
       }
     }
 
+    const keypair = keyring.getPair(from);
+
     if (password) {
       try {
-        keypair = keyring.getPair(from);
-
         keypair.unlock(password);
       } catch (e: any) {
         errors.push({
@@ -1186,7 +1191,25 @@ export default class Extension extends FWExtensionBase {
 
     const remainTime = this.refreshAccountPasswordCache(fromKeyPair);
 
-    const callback = this.makeTransferCallback(cb);
+    const savePass = () => {
+      if (isSavePass) {
+        this.cachedUnlocks[fromKeyPair.address] = Date.now() + PASSWORD_EXPIRY_MS;
+        if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
+      } else if (remainTime) {
+        this.cachedUnlocks[fromKeyPair.address] = 0;
+
+        fromKeyPair.lock();
+
+        if (ethereumAddress) {
+          this.cachedUnlocks[ethereumAddress] = 0;
+          const ethereumPair = keyring.getPair(ethereumAddress);
+
+          ethereumPair.lock();
+        }
+      }
+    };
+
+    const callback = this.makeTransferCallback(cb, savePass);
 
     let transferProm: Promise<void> | undefined;
 

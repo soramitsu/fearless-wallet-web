@@ -153,6 +153,12 @@ export class FWCron {
       });
     }
 
+    for (const [key, substrate] of Object.entries(apiMap.substrate)) {
+      substrate.api?.isReadyOrError.catch(() => {
+        this.state.refreshDotSamaApi(key);
+      });
+    }
+
     this.state.getCurrentAccount((account) => {
       if (!account) return;
 

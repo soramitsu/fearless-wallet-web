@@ -547,6 +547,12 @@ export default class State {
     if (currentProvider) this.apis.evm[key] = initWeb3Api(currentProvider.url);
   }
 
+  public refreshDotSamaApi(key: string) {
+    const currentProvider = this.networkMap[key];
+
+    if (currentProvider) initApi(currentProvider);
+  }
+
   getCurrentTabStatus() {
     return this.currentTabStatus;
   }

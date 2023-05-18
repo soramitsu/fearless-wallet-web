@@ -100,8 +100,8 @@ export default class Nodes extends Vue {
   get activeNode() {
     const { currentProvider } = this.networkJson;
     const activeNode =
-      this.networkJson.nodes.find((el) => el.url === currentProvider) ??
-      this.networkJson.customNodes.find((el) => el.url === currentProvider);
+      this.networkJson.nodes.find((el) => el.name === currentProvider) ??
+      this.networkJson.customNodes.find((el) => el.name === currentProvider);
 
     return activeNode ?? this.networkJson.nodes[0];
   }
@@ -139,7 +139,6 @@ export default class Nodes extends Vue {
   @Watch('autoSelectNode')
   toggleAutoSelectNodesValue() {
     const [{ name, url }] = this.defaultNodes;
-
     this.changeNode(name, url);
   }
 

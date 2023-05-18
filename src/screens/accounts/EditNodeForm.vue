@@ -87,12 +87,16 @@ export default class EditNodeForm extends Vue {
 
   updateNodes() {
     const prepData: Partial<NetworkJsonOld> = {};
+    const customNodeIndex = this.networkJson.customNodes.findIndex(
+      (el) => el.url === this._url && el.name === this._name
+    );
 
-    if (!prepData.customNodes) prepData.customNodes = [];
+    prepData.customNodes = this.networkJson.customNodes ?? [];
 
-    prepData.customNodes.push({ name: this.name, url: this.url });
+    if (customNodeIndex >= 0) prepData.customNodes[customNodeIndex] = { name: this.name, url: this.url };
+    else prepData.customNodes.push({ name: this.name, url: this.url });
 
-    prepData.currentProvider = this.name;
+    prepData.currentProvider = this.url;
 
     upsertNetworkMap({
       ...this.networkJson,

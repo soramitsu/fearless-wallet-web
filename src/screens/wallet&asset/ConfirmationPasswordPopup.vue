@@ -16,7 +16,6 @@
           :readonly="!isLocked"
           :isError="isErrorPassword"
           :showPassword="true"
-          @keydown.native.enter="sendExtrinsic"
         />
 
         <div v-if="isExtension" class="remember-checkbox">
@@ -133,6 +132,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   get requestTransfer(): RequestTransfer {
     return {
       ...this.tx,
+      isSavePass: this.isSavePass,
       password: this.password,
     };
   }
@@ -212,14 +212,12 @@ export default class ConfirmationPasswordPopup extends Vue {
   async mounted() {
     if (!IS_EXTENSION || this.isSignMobile) return;
 
-    // const address = this.transactionId ? this.transactionAddress : this.selectedWallet.address;
+    const address = this.transactionId ? this.transactionAddress : this.selectedWallet.address;
 
-    const { isLocked, remainingTime } = await isSignLocked(this.selectedWallet.address);
+    const { isLocked } = await isSignLocked(address);
 
     this.isLocked = isLocked;
     this.isSavePass = !this.isLocked;
-
-    this.isLocked = remainingTime <= 0;
   }
 
   resetTxStatus() {
@@ -291,6 +289,12 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     const results = await makeTransfer(this.requestTransfer, (data) => {
+      if (data.passwordError) {
+        this.isErrorPassword = true;
+
+        return;
+      }
+
       this.transactionState = data.status ? 'success' : 'failed';
     });
 

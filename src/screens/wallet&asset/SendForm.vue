@@ -97,7 +97,7 @@ export default class SendFormStateLess extends Vue {
   get partialFeeString() {
     const utilityAsset = getUtilityAsset(this.balances, this.selectedNetwork);
 
-    return `${this.$n(+this.partialFee, 'decimal')} ${utilityAsset.toUpperCase()}`;
+    return `${this.$n(+this.partialFee, 'decimalPrecise')} ${utilityAsset.toUpperCase()}`;
   }
 
   get showValue() {
@@ -131,7 +131,7 @@ export default class SendFormStateLess extends Vue {
   get totalString() {
     const total = +addNumbers([this.amount, this.partialFee]);
 
-    return `${this.$n(total, 'decimal')} ${this.selectedAssetUpper}`;
+    return `${this.$n(total, 'decimalPrecise')} ${this.selectedAssetUpper}`;
   }
 
   created() {

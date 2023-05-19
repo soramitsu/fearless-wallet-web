@@ -1,6 +1,7 @@
 import assert from 'assert';
 import { keyring } from '@polkadot/ui-keyring';
 import { MetadataDef } from '@polkadot/extension-inject/types';
+import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import {
   CachedUnlocks,
   RequestAccountBatchExport,
@@ -29,7 +30,7 @@ import { DerivationPath } from '@/interfaces';
 
 export default class FWExtensionBase {
   protected token: string;
-  protected cachedUnlocks: CachedUnlocks;
+  public cachedUnlocks: CachedUnlocks;
   protected state: State;
 
   constructor() {
@@ -122,9 +123,9 @@ export default class FWExtensionBase {
 
   refreshAccountPasswordCache(pair: KeyringPair): number {
     const { address, meta } = pair;
+
     const ethereumAddress = meta.ethereumAddress as string;
 
-    // const { cachedUnlocks } = await state.getFromStorage(['cachedUnlocks']);
     const savedExpiry = this.cachedUnlocks[address] || 0;
 
     const remainingTime = savedExpiry - Date.now();
@@ -148,10 +149,6 @@ export default class FWExtensionBase {
   }
 
   signingIsLocked({ address }: RequestSigningIsLocked): ResponseSigningIsLocked {
-    // const queued = await state.getSignRequest(id);
-    // assert(queued, 'Unable to find request');
-    // const address = queued.request.payload.address;
-
     const pair = keyring.getPair(address);
 
     assert(pair, 'Unable to find pair');

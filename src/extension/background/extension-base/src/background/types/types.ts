@@ -286,7 +286,7 @@ export type TxErrorCode = TransferErrorCode | BasicTxErrorCode;
 export type TxWarningCode = BasicTxWarningCode;
 
 export type BasicTxError = {
-  code: TxErrorCode;
+  code: TxErrorCode | TxWarningCode;
   data?: object;
   message: string;
 };

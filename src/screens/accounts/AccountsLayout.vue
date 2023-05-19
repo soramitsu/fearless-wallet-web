@@ -91,9 +91,11 @@ import AddEthereumAccountPopup from './AddEthereumAccountPopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
 import Nodes from './Nodes.vue';
 import type { SelectedWallet } from '@/store';
-import { accountController } from '@/controllers';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { upsertNetworkMap } from '@/extension/messaging';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 type NotificationType = 'delete' | 'export' | '';
 
@@ -123,6 +125,7 @@ export default class AccountsLayout extends Vue {
   notificationType: NotificationType = '';
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.getAllNetworks) networks!: NetworkJsonOld[];
 
   get headers() {
     return this.notificationType === 'delete'
@@ -133,6 +136,10 @@ export default class AccountsLayout extends Vue {
           subtext: 'accounts.exportWarning',
         }
       : '';
+  }
+
+  get networkJson() {
+    return this.networks.find(({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase())!;
   }
 
   get showExportForm() {
@@ -253,8 +260,13 @@ export default class AccountsLayout extends Vue {
   }
 
   deleteNode() {
-    accountController.deleteNode({ name: this.selectedNodeName, url: this.selectedNodeUrl }, this.selectedNetwork);
-
+    const customNodes = this.networkJson.customNodes.filter(
+      (node) => node.name !== this.selectedNodeName && node.url !== this.selectedNodeUrl
+    );
+    upsertNetworkMap({
+      ...this.networkJson,
+      customNodes,
+    });
     this.childUpdatedNode(true);
     this.closeNotificationPopup();
   }
@@ -285,7 +297,7 @@ export default class AccountsLayout extends Vue {
   closeNodeSettings() {
     this.showNodeSettingsPopup = false;
 
-    if (!this.showEditNodeForm) {
+    if (this.showEditNodeForm) {
       this.selectedNodeName = '';
       this.selectedNodeUrl = '';
     }

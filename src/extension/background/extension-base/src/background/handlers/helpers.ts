@@ -131,11 +131,11 @@ export const getCurrentProvider = (data: NetworkJsonOld) => {
     return null;
   }
 
-  const customIndex = data.customNodes.findIndex((el) => el.name === data.currentProvider);
+  const customIndex = data.customNodes.findIndex(({ url }) => url === data.currentProvider);
 
   if (customIndex >= 0) return data.customNodes[customIndex];
 
-  const defaultNodesIndex = data.nodes.findIndex((el) => el.name === data.currentProvider);
+  const defaultNodesIndex = data.nodes.findIndex(({ url }) => url === data.currentProvider);
 
   if (defaultNodesIndex >= 0) return data.nodes[customIndex];
 

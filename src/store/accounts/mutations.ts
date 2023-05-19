@@ -155,9 +155,7 @@ const mutations: MutationTree<State> & Mutations = {
     };
   },
 
-  [MutationTypes.SET_BALANCE](state, { details, reset }) {
-    console.info('[SET_BALANCE]', details, reset);
-
+  [MutationTypes.SET_BALANCE](state, { details }) {
     state.balances = details;
   },
 

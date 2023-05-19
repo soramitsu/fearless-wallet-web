@@ -50,6 +50,7 @@ import { TokenBalance } from '@/extension/background/extension-base/src/backgrou
 import { isSora } from '@/helpers/common';
 import { calculateXOREuroBalance } from '@/util/soraCard';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
+import { getXORCurrency } from '@/helpers/currencies';
 
 @Component({})
 export default class X1Form extends Vue {
@@ -75,9 +76,7 @@ export default class X1Form extends Vue {
   }
 
   get currencyXOR() {
-    return this.balances.find(({ name }) => {
-      return name === SORA_UTILITY_ASSET && isSora(SORA_NETWORK_NAME);
-    })!;
+    return getXORCurrency(this.balances);
   }
 
   get euroBalanceXOR() {

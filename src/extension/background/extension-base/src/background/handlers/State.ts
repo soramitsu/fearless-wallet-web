@@ -70,7 +70,7 @@ import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types
 import type { HexString } from '@polkadot/util/types';
 import { AssetJson, SoraFees } from '@/interfaces';
 import { URLS } from '@/consts/urls';
-import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID, SORA_UTILITY_ASSET } from '@/consts/networks';
+import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/networks';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -1065,21 +1065,21 @@ export default class State {
   }
 
   public updateXorTotalBalance(muchTotal: FPNumber): void {
+    console.log('updateXorTotalBalance');
+
     this.getCurrentAccount((account) => {
       if (!account) return;
 
       const { address } = account;
 
       const currencyIndex = this.balanceMap[address].findIndex(({ assetId }) => assetId === SORA_XOR_ASSET_ID);
+
       const token = this.balanceMap[address][currencyIndex];
-      const index = token.balances.findIndex(({ name }) => name === SORA_NETWORK_NAME);
+      const index = token.balances.findIndex(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
 
       this.balanceMap[address][currencyIndex].balances[index].muchTotal = muchTotal.toString();
 
-      console.log('muchTotal', muchTotal.toString());
-      console.log('muchTotal 2', this.balanceMap[address][currencyIndex].balances[index].muchTotal);
-
-      this.lazyNext('setBalanceItem', () => this.publishBalance());
+      // this.lazyNext('setBalanceItem', () => this.publishBalance());
     });
   }
 
@@ -1138,14 +1138,30 @@ export default class State {
     this.currentAccountStore.set('CurrentAccountInfo', data, () => {
       this.updateServiceInfo();
 
+      // logic for Sora library
+      if (data?.address) {
+        const pair = keyring.getPair(data?.address);
+
+        apiSora.account = { json: null as any, pair };
+
+        this.subscribeTotalXorBalance();
+      }
+
       callback && callback();
     });
+  }
 
-    // logic for Sora library
-    if (data?.address) {
-      const pair = keyring.getPair(data?.address);
+  public subscribeTotalXorBalance() {
+    if (!apiSora.api.isConnected) return;
 
-      apiSora.account = { json: null as any, pair };
+    try {
+      const subscription = apiSora.assets
+        .getTotalXorBalanceObservable()
+        .subscribe((xorTotalBalance: FPNumber) => this.updateXorTotalBalance(xorTotalBalance));
+
+      this.subscription.updateSubscription('xorTotalBalance', subscription.unsubscribe);
+    } catch (ex) {
+      console.error('failed subscribe or unsubscribe to XOR balance');
     }
   }
 

@@ -60,9 +60,9 @@ import { Getter, Action, Mutation } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
 import type Input from '@/components/Input.vue';
-import type { AsyncFn, Fn, Currencies } from '@/interfaces';
+import type { AsyncFn, Fn } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
-import { validatePhoneNumber, isSora } from '@/helpers/common';
+import { validatePhoneNumber } from '@/helpers/common';
 import { RESEND_INTERVAL, OTP_CODE_LENGTH, VerificationStatus, StepsKyc } from '@/consts/soraCard';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
@@ -73,7 +73,8 @@ import { MutationTypes as SoraCardMutationTypes } from '@/store/soraCard/mutatio
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SORA_UTILITY_ASSET, SORA_NETWORK_NAME } from '@/consts/networks';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { calculateXorRestPrice, calculateXOREuroBalance, isValidEuroBalanceXor } from '@/util/soraCard';
+import { calculateXOREuroBalance, isValidEuroBalanceXor } from '@/util/soraCard';
+import { getXORCurrency } from '@/helpers/currencies';
 
 @Component({
   components: { Disclaimer },
@@ -108,9 +109,7 @@ export default class Phone extends Vue {
   @Mutation(SoraCardMutationTypes.SET_WILL_TO_KYC_PASS_KYC_AGAIN) setWillToPassKycAgain!: Fn<boolean>;
 
   get currencyXOR() {
-    return this.balances.find(({ name }) => {
-      return name === SORA_UTILITY_ASSET && isSora(this.soraNetworkName);
-    })!;
+    return getXORCurrency(this.balances);
   }
 
   get euroBalanceXOR() {

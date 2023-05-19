@@ -71,7 +71,6 @@ import type {
   MetadataRequest,
   RequestAccountBatchExport,
   RequestAccountCreateExternal,
-  RequestAccountCreateHardware,
   RequestAccountCreateSuri,
   RequestAccountExport,
   RequestAccountForget,
@@ -159,19 +158,6 @@ async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> 
 export default class Extension extends FWExtensionBase {
   private cancelSubscription(id: string): boolean {
     return this.state.cancelSubscription(id);
-  }
-
-  accountsCreateHardware({
-    accountIndex,
-    address,
-    addressOffset,
-    genesisHash,
-    hardwareType,
-    name,
-  }: RequestAccountCreateHardware): boolean {
-    keyring.addHardware(address, hardwareType, { accountIndex, addressOffset, genesisHash, name });
-
-    return true;
   }
 
   accountsCreateSuri({ password, suri, type, meta }: RequestAccountCreateSuri): string {
@@ -1308,6 +1294,10 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
+  async authorizeApprovePolkaswap(authorizedAccounts: string[]): Promise<void> {
+    this.state.approvePolkaswap(authorizedAccounts);
+  }
+
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -1331,8 +1321,14 @@ export default class Extension extends FWExtensionBase {
       case 'pri(authorize.approve)':
         return this.authorizeApprove(request as RequestAuthorizeApprove);
 
+      case 'pri(soraCard.token)':
+        return this.soraCardTokenSubscribe(id, port as Port);
+
       case 'pri(authorize.list)':
         return this.getAuthList();
+
+      case 'pri(authorize.approve.polkaswap)':
+        return this.authorizeApprovePolkaswap(request as string[]);
 
       case 'pri(authorize.remove)':
         return this.removeAuthorization(request as string);
@@ -1345,9 +1341,6 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(authorize.requests)':
         return this.authorizeSubscribe(id, port);
-
-      case 'pri(soraCard.token)':
-        return this.soraCardTokenSubscribe(id, port as Port);
 
       case 'pri(accounts.create.mobile)':
         return this.createMobileWallet(request as RequestAddressCreate);
@@ -1366,9 +1359,6 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(accounts.validate.path)':
         return this.validateDerivationPath(request as DerivationPath);
-
-      case 'pri(accounts.create.hardware)':
-        return this.accountsCreateHardware(request as RequestAccountCreateHardware);
 
       case 'pri(accounts.create.suri)':
         return this.accountsCreateSuri(request as RequestAccountCreateSuri);

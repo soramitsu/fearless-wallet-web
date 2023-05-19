@@ -150,7 +150,7 @@ import { Components } from '@/router/routes';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { firstCharToUp, isSora } from '@/helpers/common';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { getTransferableCountAssets } from '@/helpers/currencies';
+import { getSummaryTransferableBalance } from '@/helpers/currencies';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
 
@@ -245,7 +245,7 @@ export default class Asset extends Vue {
   get countAssetsString() {
     if (!this.currentCurrency) return `${this.selectedAssetUpper} 0`;
 
-    const totalCountAssets = +getTransferableCountAssets(this.currentCurrency, this.selectedNetwork);
+    const totalCountAssets = +getSummaryTransferableBalance(this.currentCurrency, this.selectedNetwork);
     const total = this.$n(totalCountAssets, 'decimal');
 
     return `${this.selectedAssetUpper} ${total}`;

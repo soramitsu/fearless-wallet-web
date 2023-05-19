@@ -46,24 +46,12 @@ import { CurrentAccountInfo } from '@/extension/background/extension-base/src/st
 })
 export default class SelectWalletPopup extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
-  // @Getter(AccountsGettersTypes.getAddresses) addresses!: Accounts;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-
   @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: Fn<CurrentAccountInfo>;
 
   addWallet() {
     this.$router.push({ name: Components.Welcome });
   }
-
-  // getBalance(address: string, ethereumAddress: string) {
-  //   // const arr = this.currencies.map((currency) => currency.getTotalBalance({ address, ethereumAddress }));
-
-  //   return 0;
-  // }
-
-  // getChangeWalletBalance(address: string, ethereumAddress: string) {
-  //   return getChangeWalletBalance(this.currencies);
-  // }
 
   walletPopupClick({ target: { classList } }: CustomEvent) {
     if (

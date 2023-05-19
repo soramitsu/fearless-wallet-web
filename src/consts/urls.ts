@@ -38,7 +38,7 @@ const EMAIL = 'fearless@soramitsu.co.jp';
 const POLKASWAP_FAQ = 'https://wiki.sora.org/ecosystem/what-is-polkaswap/polkaswap-faq';
 const POLKASWAP_MEMORANDUM = 'https://wiki.sora.org/ecosystem/what-is-polkaswap/terms';
 const POLKASWAP_POLICY = 'https://wiki.sora.org/ecosystem/what-is-polkaswap/privacy';
-const POLKASWAP = IS_PRODUCTION ? 'https://polkaswap.io' : 'https://test.polkaswap.io'; // 'https://exchange-1038.dev.sora2.tachi.soramitsu.co.jp'
+const POLKASWAP = IS_PRODUCTION ? 'https://polkaswap.io' : 'https://exchange.dev.sora2.tachi.soramitsu.co.jp/'; // https://test.polkaswap.io
 
 const URLS = {
   ASSETS,

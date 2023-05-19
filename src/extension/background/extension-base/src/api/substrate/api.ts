@@ -1,6 +1,6 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { TypeRegistry } from '@polkadot/types/create';
-import { api as apiSora, connection as soraConnection, FPNumber } from '@sora-substrate/util';
+import { api as apiSora, connection as soraConnection } from '@sora-substrate/util';
 import { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
 import { ApiProps } from '../../background/types/types';
 import { DOTSAMA_AUTO_CONNECT_MS } from '../../const/intervals';
@@ -10,20 +10,6 @@ import { getCurrentProvider } from '../../utils';
 import type { ApiInterfaceEvents } from '@polkadot/api/types';
 import { isSora } from '@/helpers/common';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
-
-const subscribeTotalXorBalance = () => {
-  try {
-    console.log('subscribeTotalXorBalance');
-
-    const subscription = apiSora.assets
-      .getTotalXorBalanceObservable()
-      .subscribe((xorTotalBalance: FPNumber) => state.updateXorTotalBalance(xorTotalBalance));
-
-    state.subscription.updateSubscription('xorTotalBalance', subscription.unsubscribe);
-  } catch {
-    console.error('failed subscribe to XOR balance');
-  }
-};
 
 function createApiObject(): ApiProps {
   return {
@@ -123,7 +109,7 @@ function onReady(networkName: string) {
     apiSora.initialize(false);
     apiSora.calcStaticNetworkFees();
 
-    subscribeTotalXorBalance();
+    state.subscribeTotalXorBalance();
   }
 
   state.apis.substrate[networkName].isApiReady = true;

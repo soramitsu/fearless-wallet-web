@@ -22,7 +22,7 @@ export type Getters = {
   [GettersTypes.currentStatus](state: State): Nullable<VerificationStatus>;
   [GettersTypes.wantsToPassKycAgain](state: State): boolean;
   [GettersTypes.hasFreeAttempts](state: State): Nullable<boolean>;
-  [GettersTypes.xorPerEuroRatio](state: State): Nullable<FPNumber>;
+  [GettersTypes.xorPerEuroRatio](state: State): FPNumber;
 };
 
 const getters: GetterTree<State, State> & Getters = {

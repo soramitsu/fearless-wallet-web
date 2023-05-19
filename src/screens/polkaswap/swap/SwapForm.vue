@@ -217,9 +217,8 @@ import Disclaimer from '@/screens/polkaswap/swap/Disclaimer.vue';
 import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET, SORA_XOR_ASSET_ID } from '@/consts/networks';
 import { Components } from '@/router/routes';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { isSora } from '@/helpers/common';
 import { checkSwap, getSoraFees } from '@/extension/messaging';
-import { getCurrencyOptions } from '@/helpers/currencies';
+import { getCurrencyOptions, getXORCurrency } from '@/helpers/currencies';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { MarketType, SwapOptions } from '@/interfaces';
 import { addNumbers } from '@/helpers/numbers';
@@ -297,9 +296,7 @@ export default class SwapForm extends Vue {
   }
 
   get currencyXOR() {
-    return this.balances.find(({ name }) => {
-      return name === SORA_UTILITY_ASSET && isSora(this.soraNetworkName);
-    })!;
+    return getXORCurrency(this.balances);
   }
 
   get feePrice() {

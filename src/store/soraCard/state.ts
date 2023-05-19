@@ -8,7 +8,7 @@ export type State = {
   rejectReason: Nullable<string>;
   wantsToPassKycAgain: boolean;
   hasFreeAttempts: Nullable<boolean>;
-  xorPerEuroRatio: Nullable<FPNumber>;
+  xorPerEuroRatio: FPNumber;
 };
 
 const state = (): State => {
@@ -19,7 +19,7 @@ const state = (): State => {
     rejectReason: null,
     wantsToPassKycAgain: false,
     hasFreeAttempts: null,
-    xorPerEuroRatio: null,
+    xorPerEuroRatio: FPNumber.ZERO,
   };
 };
 

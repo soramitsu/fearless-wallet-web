@@ -347,7 +347,7 @@ const subscribeCardToken = async (checkStatus: () => Promise<void>) => {
 };
 
 const calculateXOREuroBalance = ({ balances }: TokenBalance, xorPerEuroRatio: FPNumber): number => {
-  const balance = balances.find(({ name }) => name === SORA_NETWORK_NAME);
+  const balance = balances.find(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
   const xorTotalBalance = balance?.muchTotal ?? FPNumber.ZERO;
   const xorBalanceInEuros = new FPNumber(xorTotalBalance).mul(xorPerEuroRatio).toNumber();
 
@@ -355,8 +355,9 @@ const calculateXOREuroBalance = ({ balances }: TokenBalance, xorPerEuroRatio: FP
 };
 
 const calculateXorRestPrice = ({ balances }: TokenBalance, xorPerEuroRatio: FPNumber): XorRestPrice => {
-  const balance = balances.find(({ name }) => name === SORA_NETWORK_NAME);
+  const balance = balances.find(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
   const xorTotalBalance = new FPNumber(balance?.total ?? 0);
+
   const euroToPay = FPNumber.HUNDRED.add(FPNumber.ONE).sub(xorTotalBalance.mul(xorPerEuroRatio));
   const euroToPayInXor = euroToPay.div(xorPerEuroRatio);
 

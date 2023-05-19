@@ -218,14 +218,6 @@ export interface RequestAccountCreateSuri {
   meta?: Record<string, unknown>;
 }
 
-export interface RequestAccountCreateHardware {
-  accountIndex: number;
-  address: string;
-  addressOffset: number;
-  genesisHash: string;
-  hardwareType: string;
-  name: string;
-}
 export interface PriceJson {
   ready?: boolean;
   currency: string;

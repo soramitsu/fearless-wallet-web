@@ -525,6 +525,7 @@ export default class SendForm extends Vue {
     // this.syncedAmount = transferableCountAssets;
     // this.syncedValue = getCostOfAssets(transferableCountAssets, this.assetPrice).toString();
   }
+
   get transactionAddress() {
     return getTransactionAddress(this.selectedWallet, this.syncedSelectedNetwork);
   }

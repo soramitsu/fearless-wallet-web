@@ -106,18 +106,18 @@ import { FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet } from '@/store';
 import type { AsyncFn } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/networks';
+import { SORA_NETWORK_NAME } from '@/consts/networks';
 import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
 import { soraCardController } from '@/controllers';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import { IS_EXTENSION } from '@/consts/global';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { isSora } from '@/helpers/common';
 import { calculateXorRestPrice, calculateXOREuroBalance, isValidEuroBalanceXor } from '@/util/soraCard';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/evm/types/ether';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { getXORCurrency } from '@/helpers/currencies';
 
 @Component({
   components: { UnsupportedCountries },
@@ -141,8 +141,6 @@ export default class Preview extends Vue {
   }
 
   get fillFactorBar() {
-    console.log('currencyXOR', this.currencyXOR.balances[0]);
-
     if (this.isValidEuroBalanceXor) return 1;
 
     return this.euroBalanceXOR / 100;
@@ -159,9 +157,7 @@ export default class Preview extends Vue {
   }
 
   get currencyXOR() {
-    return this.balances.find(({ name }) => {
-      return name === SORA_UTILITY_ASSET && isSora(this.soraNetworkName);
-    })!;
+    return getXORCurrency(this.balances);
   }
 
   get isValidEuroBalanceXor() {

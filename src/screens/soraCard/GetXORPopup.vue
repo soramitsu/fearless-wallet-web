@@ -25,6 +25,7 @@ import { TokenBalance } from '@/extension/background/extension-base/src/backgrou
 import { isSora } from '@/helpers/common';
 import { calculateXorRestPrice } from '@/util/soraCard';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
+import { getXORCurrency } from '@/helpers/currencies';
 
 @Component
 export default class GetXORPopup extends Vue {
@@ -41,9 +42,7 @@ export default class GetXORPopup extends Vue {
   }
 
   get currencyXOR() {
-    return this.balances.find(({ name }) => {
-      return name === SORA_UTILITY_ASSET && isSora(this.soraNetworkName);
-    })!;
+    return getXORCurrency(this.balances);
   }
 
   get restPriceXOR() {

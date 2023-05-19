@@ -112,7 +112,6 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
-import { addNumbers, getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/numbers';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
@@ -120,7 +119,11 @@ import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.v
 import { ALL_NETWORKS } from '@/consts/networks';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 import { AssetsPrice } from '@/interfaces';
-import { defaultSortingCurrencies, getTotalBalance } from '@/helpers/currencies';
+import {
+  defaultSortingCurrencies,
+  getChangeWalletBalance,
+  getSummaryTransferableWalletBalance,
+} from '@/helpers/currencies';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/evm/types/ether';
 import { tieAccount } from '@/extension/messaging';
 import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
@@ -195,13 +198,13 @@ export default class Wallet extends Vue {
   }
 
   get summaryTransferableBalance() {
-    return getSummaryTransferableWalletBalance(this.balances, this.prices);
+    return getSummaryTransferableWalletBalance(this.balances, this.prices, this.selectedNetwork);
   }
 
   get changeWalletBalance() {
-    if (this.balances.length === 0) return { totalBalance: 0, changeAmount: 0 };
+    if (this.balances.length === 0) return { percent: 0, amount: 0 };
 
-    return getChangeWalletBalance(this.balances, this.prices);
+    return getChangeWalletBalance(this.balances, this.prices, this.selectedNetwork);
   }
 
   get sortedCurrencies() {
@@ -209,12 +212,7 @@ export default class Wallet extends Vue {
 
     if (address === '') return [];
 
-    if (!this.isCustomSort(address)) {
-      const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
-      const network = isAllNetworks ? undefined : this.selectedNetwork;
-
-      return defaultSortingCurrencies(this.balances, network);
-    }
+    if (!this.isCustomSort(address)) return defaultSortingCurrencies(this.balances, this.prices, this.selectedNetwork);
 
     const sequence = accountController.getSequenceAssetsByAddress(address);
 
@@ -237,20 +235,14 @@ export default class Wallet extends Vue {
 
     const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
 
-    return this.sortedCurrencies.filter((currency) => {
-      const walletBalance = currency.balances.map(({ name }) => name);
+    return this.sortedCurrencies.filter(({ balances, name }) => {
+      const walletBalance = balances.map(({ name }) => name);
       const isAvailableInSelectedNetwork = walletBalance.includes(this.selectedNetwork);
 
       if (!isAllNetworks && !isAvailableInSelectedNetwork) return false;
 
-      return currency.name.includes(filter);
+      return name.includes(filter);
     });
-  }
-
-  get totalBalance() {
-    const arr = this.sortedCurrencies.map((currency) => getTotalBalance(currency));
-
-    return +addNumbers(arr);
   }
 
   get showCurrencies() {

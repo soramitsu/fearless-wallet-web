@@ -128,7 +128,9 @@
     "vue-template-compiler": "2.6.14",
     "webpack-extension-manifest-plugin": "^0.8.0"
   },
-  "gitHooks": {},
+  "gitHooks": {
+    "pre-commit": "lint-staged"
+  },
   "license": "Apache-2.0",
   "lint-staged": {
     "*.{js,jsx,vue,ts,tsx}": [

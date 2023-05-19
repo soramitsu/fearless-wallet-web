@@ -19,7 +19,7 @@
           @keydown.native.enter="sendExtrinsic"
         />
 
-        <div v-if="show15MinCheckbox" class="remember-checkbox">
+        <div v-if="isExtension" class="remember-checkbox">
           <Checkbox v-model="isSavePass" size="medium" :label="min15Label" />
         </div>
 
@@ -84,6 +84,7 @@ import { IS_EXTENSION } from '@/consts/global';
   components: { SignMobile },
 })
 export default class ConfirmationPasswordPopup extends Vue {
+  readonly isExtension = IS_EXTENSION;
   password = '';
   isErrorPassword = false;
   isLocked = true;
@@ -104,33 +105,29 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(Object) swapOptions?: SwapOptions;
   @Prop({ default: 'default' }) extrinsicType!: 'default' | 'swap';
 
-  @Getter(AccountsGettersTypes.getBalances) currencies!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: AsyncFn<ApprovePayload>;
   @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: AsyncFn<string>;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
-  get show15MinCheckbox() {
-    return IS_EXTENSION;
-  }
-
   get classesInput() {
     return [
       'row',
       'password-input',
       {
-        'password-input-margin': !this.show15MinCheckbox,
+        'password-input-margin': !this.isExtension,
       },
     ];
   }
 
   get firstIconUrl() {
-    return this.currencies.find((el) => el.assetId === this.firstIcon)?.icon;
+    return this.balances.find(({ assetId }) => assetId === this.firstIcon)?.icon;
   }
 
   get secondIconUrl() {
-    return this.currencies.find((el) => el.assetId === this.secondIcon)?.icon;
+    return this.balances.find(({ assetId }) => assetId === this.secondIcon)?.icon;
   }
 
   get requestTransfer(): RequestTransfer {

@@ -221,12 +221,13 @@ async function subscribeTokensBalance(
 
           setBalance(networkKey, {
             state: APIItemState.READY,
-            chain: networkKey,
-            key: networkKey,
-            symbol,
+            // chain: networkKey,
+            // key: networkKey,
+            // symbol,
             relayChain,
             name,
-            icon,
+            // icon,
+            id,
             reserved,
             locked,
             frozen,

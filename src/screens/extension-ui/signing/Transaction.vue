@@ -69,8 +69,8 @@ export default class Auth extends Vue {
   isLocked = false;
   isSignPopupVisible = false;
 
-  @Getter(ExtensionGettersTypes.getSignRequestPayload) payload!: SignerPayloadJSON;
-  @Getter(ExtensionGettersTypes.getSignList) requests!: SigningRequest[];
+  @Getter(ExtensionGettersTypes.signRequestPayload) payload!: SignerPayloadJSON;
+  @Getter(ExtensionGettersTypes.signList) requests!: SigningRequest[];
   @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: AsyncFn<string>;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 

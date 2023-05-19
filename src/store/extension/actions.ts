@@ -55,28 +55,28 @@ type SignPayload = {
   id: string;
 };
 
-type AugmentedActionContext = {
+type AugmentedExtensionContext = {
   commit<K extends keyof Mutations>(key: K, payload?: Parameters<Mutations[K]>[1]): ReturnType<Mutations[K]>;
 } & Omit<ActionContext<State, any>, 'commit'>;
 
 export type Actions = {
-  [ActionTypes.SUBSCRIBE_AUTH_REQUESTS](context: AugmentedActionContext): Promise<boolean>;
-  [ActionTypes.APPROVE_AUTH_REQUEST](context: AugmentedActionContext, props: ApproveAuthRequest): Promise<void>;
-  [ActionTypes.REJECT_AUTH_REQUEST](context: AugmentedActionContext, props: AuthorizeRequest): Promise<void>;
-  [ActionTypes.GET_AUTHLIST](context: AugmentedActionContext): Promise<void>;
-  [ActionTypes.DELETE_AUTH_CONNECTION](context: AugmentedActionContext, props: string): Promise<void>;
+  [ActionTypes.SUBSCRIBE_AUTH_REQUESTS](context: AugmentedExtensionContext): Promise<boolean>;
+  [ActionTypes.APPROVE_AUTH_REQUEST](context: AugmentedExtensionContext, props: ApproveAuthRequest): Promise<void>;
+  [ActionTypes.REJECT_AUTH_REQUEST](context: AugmentedExtensionContext, props: AuthorizeRequest): Promise<void>;
+  [ActionTypes.GET_AUTHLIST](context: AugmentedExtensionContext): Promise<void>;
+  [ActionTypes.DELETE_AUTH_CONNECTION](context: AugmentedExtensionContext, props: string): Promise<void>;
 
-  [ActionTypes.SUBSCRIBE_META_REQUESTS](context: AugmentedActionContext): Promise<boolean>;
-  [ActionTypes.APPROVE_META_REQUEST](context: AugmentedActionContext, props: MetadataRequest): Promise<void>;
-  [ActionTypes.REJECT_META_REQUEST](context: AugmentedActionContext, props: MetadataRequest): Promise<void>;
+  [ActionTypes.SUBSCRIBE_META_REQUESTS](context: AugmentedExtensionContext): Promise<boolean>;
+  [ActionTypes.APPROVE_META_REQUEST](context: AugmentedExtensionContext, props: MetadataRequest): Promise<void>;
+  [ActionTypes.REJECT_META_REQUEST](context: AugmentedExtensionContext, props: MetadataRequest): Promise<void>;
 
-  [ActionTypes.SUBSCRIBE_SIGN_REQUESTS](context: AugmentedActionContext): Promise<boolean>;
-  [ActionTypes.SIGN_CANCEL](context: AugmentedActionContext, id: string): Promise<void>;
-  [ActionTypes.APPROVE_SIGN_PASSWORD](context: AugmentedActionContext, payload: ApprovePayload): Promise<void>;
-  [ActionTypes.SIGN_SIGNATURE](context: AugmentedActionContext, payload: SignPayload): Promise<void>;
-  [ActionTypes.SUBSCRIBE_EXTENSION_REQUESTS](context: AugmentedActionContext): Promise<void[]>;
+  [ActionTypes.SUBSCRIBE_SIGN_REQUESTS](context: AugmentedExtensionContext): Promise<boolean>;
+  [ActionTypes.SIGN_CANCEL](context: AugmentedExtensionContext, id: string): Promise<void>;
+  [ActionTypes.APPROVE_SIGN_PASSWORD](context: AugmentedExtensionContext, payload: ApprovePayload): Promise<void>;
+  [ActionTypes.SIGN_SIGNATURE](context: AugmentedExtensionContext, payload: SignPayload): Promise<void>;
+  [ActionTypes.SUBSCRIBE_EXTENSION_REQUESTS](context: AugmentedExtensionContext): Promise<void[]>;
 
-  [ActionTypes.FETCH_TAB_STATUS](context: AugmentedActionContext): Promise<void>;
+  [ActionTypes.FETCH_TAB_STATUS](context: AugmentedExtensionContext): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
@@ -211,7 +211,7 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.FETCH_TAB_STATUS]({ commit }) {
     const tabStatus = await isTabAuthorize();
 
-    commit(MutationTypes.SET_TABSTATUS, tabStatus);
+    commit(MutationTypes.SET_TAB_STATUS, tabStatus);
   },
 };
 

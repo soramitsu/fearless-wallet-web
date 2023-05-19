@@ -67,7 +67,7 @@ export default class Authorize extends Vue {
   state: Record<string, WalletInfo> = {};
   selectAll = true;
 
-  @Getter(ExtensionGettersTypes.getAuthRequests) requests!: AuthorizeRequest[];
+  @Getter(ExtensionGettersTypes.authRequests) requests!: AuthorizeRequest[];
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
   @Action(ExtensionActionTypes.APPROVE_AUTH_REQUEST) onApproveAuthRequest!: AsyncFn<ApproveAuthRequest>;
   @Action(ExtensionActionTypes.REJECT_AUTH_REQUEST) onRejectAuthRequest!: AsyncFn<AuthorizeRequest>;

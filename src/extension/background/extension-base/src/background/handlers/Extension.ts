@@ -59,7 +59,6 @@ import { withErrorLog } from './helpers';
 import { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
 import FWExtensionBase from './ExtensionBase';
-
 import { state } from '.';
 import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type {
@@ -856,7 +855,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   public async getSoraFees() {
-    await apiSora.calcStaticNetworkFees();
+    // await apiSora.calcStaticNetworkFees();
 
     this.state.soraFees = Object.fromEntries(
       Object.entries(apiSora.NetworkFee).map(([nameFee, value]) => [nameFee, FPNumber.fromCodecValue(value).toString()])
@@ -940,7 +939,7 @@ export default class Extension extends FWExtensionBase {
         errors,
       };
 
-    apiSora.account = { json: null as any, pair };
+    // apiSora.account = { json: null as any, pair };// Вроде здесь это не нужно, тк устаналивается в функции State.setCurrentAccount
     apiSora.shouldPairBeLocked = !isSavePass;
 
     try {
@@ -1296,6 +1295,19 @@ export default class Extension extends FWExtensionBase {
     return this.getNetworkMap();
   }
 
+  private async soraCardTokenSubscribe(id: string, port: Port): Promise<boolean> {
+    const cb = await createSubscription<'pri(soraCard.token)'>(id, port);
+
+    const subscription = this.state.soraCardTokenSubject.subscribe((token) => cb(token));
+
+    port.onDisconnect.addListener((): void => {
+      unsubscribe(id);
+      subscription.unsubscribe();
+    });
+
+    return true;
+  }
+
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -1333,6 +1345,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(authorize.requests)':
         return this.authorizeSubscribe(id, port);
+
+      case 'pri(soraCard.token)':
+        return this.soraCardTokenSubscribe(id, port as Port);
 
       case 'pri(accounts.create.mobile)':
         return this.createMobileWallet(request as RequestAddressCreate);

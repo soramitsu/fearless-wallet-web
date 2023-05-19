@@ -32,7 +32,9 @@
       :handlerClose="toggleSelectNetworkPopupVisible"
     />
 
-    <ContentForm :height="397">
+    <SoraCardBanner />
+
+    <ContentForm :height="contentFormHeight">
       <div class="content">
         <ContentSettings
           :activeTabName="activeTabName"
@@ -115,13 +117,14 @@ import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
-
 import { ALL_NETWORKS } from '@/consts/networks';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 import { AssetsPrice } from '@/interfaces';
 import { defaultSortingCurrencies, getTotalBalance } from '@/helpers/currencies';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/evm/types/ether';
 import { tieAccount } from '@/extension/messaging';
+import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
+import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
 
 @Component({
   components: {
@@ -130,6 +133,7 @@ import { tieAccount } from '@/extension/messaging';
     Currencies,
     ReceiveForm,
     WalletBalance,
+    SoraCardBanner,
     ContentSettings,
     NetworkManagement,
     SelectNetworkPopup,
@@ -160,6 +164,7 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
+  @Getter(AccountsGettersTypes.showSoraCardBanner) showSoraCardBanner!: boolean;
   @Getter(NetworksGettersTypes.getNetworks) networks!: NetworkJsonOld[];
   @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJsonOld;
@@ -168,6 +173,12 @@ export default class Wallet extends Vue {
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
   @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: Fn<SetHiddenAsset>;
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
+
+  get contentFormHeight() {
+    const subtractionNumber = this.showSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;
+
+    return 397 - subtractionNumber;
+  }
 
   get showNetworkUnavailablePopup() {
     return this.networkUnavailable !== '';
@@ -344,7 +355,9 @@ export default class Wallet extends Vue {
     const prepNetwork = network === 'All' ? null : `0x${this.getNetwork(network).chainId}`;
 
     this.setSelectedNetwork(network);
+
     tieAccount(this.selectedWallet.address, prepNetwork);
+
     this.toggleSelectNetworkPopupVisible();
   }
 

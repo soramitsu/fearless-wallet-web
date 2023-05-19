@@ -63,7 +63,7 @@ export default class WalletBalance extends Vue {
   }
 
   .down-percent {
-    color: $delete-color;
+    color: $orange-color;
   }
 
   .fiat-balance {

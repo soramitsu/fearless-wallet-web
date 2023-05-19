@@ -235,6 +235,10 @@ export default class Tabs {
     return false;
   }
 
+  async saveSoraCardRefreshToken(token: string): Promise<void> {
+    this.state.soraCardTokenSubject.next(token);
+  }
+
   async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
@@ -249,6 +253,9 @@ export default class Tabs {
     switch (type) {
       case 'pub(authorize.tab)':
         return this.authorize(url, request as RequestAuthorizeTab);
+
+      case 'pub(soraCard.token)':
+        return this.saveSoraCardRefreshToken(request as string);
 
       case 'pub(accounts.list)':
         return this.accountsListAuthorized(url, request as RequestAccountList);

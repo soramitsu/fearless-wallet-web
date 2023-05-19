@@ -8,7 +8,7 @@ import EthProvider from '../../api/evm/ethProvider';
 import { subscribeBalance } from '../../api/substrate/balance';
 import State from './State';
 
-type SubscriptionName = 'balance';
+type SubscriptionName = 'balance' | 'xorTotalBalance';
 type Subscriptions = Record<string, Port>;
 
 const subscriptions: Subscriptions = {};
@@ -18,6 +18,7 @@ export class FWSubscription {
   private state: State;
   private subscriptionMap: Record<SubscriptionName, (() => void) | undefined> = {
     balance: undefined,
+    xorTotalBalance: undefined,
   };
 
   private logger: Logger;
@@ -47,6 +48,7 @@ export class FWSubscription {
   stopAllSubscription() {
     if (this.subscriptionMap.balance) {
       this.subscriptionMap.balance();
+
       delete this.subscriptionMap.balance;
     }
   }

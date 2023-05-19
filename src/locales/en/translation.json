@@ -130,7 +130,7 @@
     "currentExtensionPage": "Current extension page",
     "notConnected": "not connected",
     "connectedMessage": "You have 1 account connected to this site.| You have {count} accounts connected to this site.",
-    "connectionStatusMessage": "Fearless Wallet is not connected to this site. To connect web3 site, find and click connect button.",
+    "connectionStatusMessage": "Fearless Wallet is not connected to this site. To connect to a web3 site, find and click on the connect button.",
     "connectionStatus": "Connection status",
     "walletManagement": "Wallet management",
     "settingsAndManagement": "Settings and account management",
@@ -250,7 +250,7 @@
     "minMaxReceiveInfo": "Your transaction will revert if there is a large, unfavorable price movement before it is confirmed.",
     "liquidityProvideFeeInfo": "A portion of each trade goes to liquidity providers as a protocol incentive.",
     "existentialDepositSubtext": "This transaction will result in the account going below the Existential Deposit, which will cause it to be reaped (the account will be wiped from the blockchain’s state to conserve space). If you choose to continue you will lose any funds that are below the existential deposit amount set by the network. For detailed information please refer to the official network documentation (e.g., the Polkadot Wiki). Fearless Wallet is a fully non-custodial application and has no control or knowledge of any of your actions on the network itself. ONLY CONTINUE IF YOU FULLY AGREE TO AND UNDERSTAND THE IMPLICATIONS;"
-  },
+   },
   "accounts": {
     "walletName": "Wallet name",
     "createNewAccount": "Create a new account",
@@ -286,10 +286,10 @@
     "noAccounts": "You don’t have any account. Please create an account and refresh the application’s page."
   },
   "soraCard": {
+    "getCard": "Get SORA Card",
     "title": "SORA Card",
     "cardDescriptions": "Top up SORA Card with fiat or crypto and pay online, in-store or withdraw in ATM",
     "cardGet": "Get Euro IBAN account and Mastercard Debit Card connected to your SORA Wallet",
-    "holdXor": "If you hold at least €100 worth of XOR in your SORA account",
     "haveCard": "I already have a card",
     "issueCardFee": "Issue card for 12 €",
     "issueCardFree": "Issue card for free",
@@ -311,16 +311,16 @@
     "phoneNumber": "Phone number",
     "code": "Code",
     "verificationCode": "Verification code",
-    "yourTestCode": "Your code for testing purposes: 123456",
     "confirmSMScode": "Confirm SMS code",
     "sendVerificationEmail": "Send verification email",
-    "invalidCode": "Invalid code",
+    "codeLength": "Code length 6 characters",
     "wellSendEmail": "We’ll send you a verification email",
     "firstName": "First Name",
     "lastName": "Last Name",
     "useRealName": "Use you real name",
-    "resend": "RESEND IN",
-    "sendCode": "SEND CODE",
+    "resend": "Resend in",
+    "sendCode": "Send code",
+    "sendIn": "Send in",
     "invalidPhone": "Invalid phone number",
     "invalidEmail": "Invalid email",
     "countriesLabel": "Unfortunately, at this moment we are not able to support the following countries:",
@@ -334,7 +334,53 @@
     "seeList": "See the list",
     "getXORLabel": "You can swap for XOR or buy with Euro",
     "buyXORWithEUR": "Buy XOR with EUR",
-    "swapXOR": "Swap crypto for XOR"
+    "swapXOR": "Swap crypto for XOR",
+    "invalidCode": "Code incorrect",
+    "emailSent": "Follow the magic link that has been sent to",
+    "useAnotherEmail": "Use another email",
+    "numberNotFound": "Number not found",
+    "tryAgain": "Try again",
+    "support": "Support",
+    "getPrepared": "Get prepared",
+    "cardDetails": "Card details",
+    "prepareAttention": "You have only 2 free attempts to pass the KYC process. Every other attempt after that will cost €3.80. Paid attempts will be available after the next update of the app.",
+    "prepare": "To complete the KYC you will need to:",
+    "prepareSteps": {
+      "step1": "Submit a photo of your ID document",
+      "stepDescription1": "Passport, Driver License, ID card or Residence Permit",
+      "step2": "Take a selfie",
+      "stepDescription2": "Guidance will be provided during the process",
+      "step3": "Submit a photo of proof of address",
+      "stepDescription3": "An official document (utility bill, bank statement, government statement or correspondence) that contains your full name and address, and that is not older then 3 months",
+      "step4": "Submit your personal info",
+      "stepDescription4": "Fill in the form with your name and address"
+    },
+    "statuses" : {
+      "pending": {
+        "statusText": "Verification in progress",
+        "text1": "Your KYC is completed. Waiting for the results",
+        "text2": "You have successfully completed your KYC application. The review is pending and you can expect a decision shortly.",
+        "text3": "Usually the decision is made the same day. In some cases can take up to 3 days."
+      },
+      "rejected": {
+        "statusText": "Verification rejected",
+        "text1": "Verification rejected",
+        "text2": "Your application has been rejected.",
+        "text3": "PLACEHOLDER TEXT: *Display 'additional description' provided in the answer* (done by devs. We should check the format of the answer, to be sure it's human-readable)"
+      },
+      "accepted": {
+        "statusText": "Card is on the way",
+        "text1": "Verification is successful!",
+        "text2": "Your KYC verification has been successful. We already started the preparation to send your SORA Card.",
+        "text3": ""
+      },
+      "noFreeAttempts": {
+        "statusText": "No more free attempts",
+        "text1": "No more free attempts",
+        "text2": "You have used your free attempts to pass the KYC process.",
+        "text3": "We kindly ask you to wait until the next update of the application to proceed with paid attempts."
+      }
+    }
   },
   "disclaimers": {
     "swapDisclaimer1": "Polkaswap is maintained by the SORA community. Before continuing to use Polkaswap, please review the",
@@ -367,6 +413,7 @@
     "copiedValue": "Сopied {value}",
     "understood": "Understood",
     "cancel": "Cancel",
+    "close": "Close",
     "save": "Save",
     "yes": "Yes",
     "no": "No",
@@ -408,6 +455,7 @@
     "readPolkaswapDisclaimer": "Please read before continuing to use Polkaswap",
     "resolve": "Resolve",
     "resolveOption": "Resolve Option",
-    "dontShowAgain": "Don't show me again"
+    "dontShowAgain": "Don't show me again",
+    "iAmReady": "OK, I am ready"
   }
 }

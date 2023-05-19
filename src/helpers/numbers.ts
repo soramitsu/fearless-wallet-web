@@ -75,4 +75,8 @@ function getChangeWalletBalance(tokens: TokenBalance[], price: AssetsPrice): Cha
   };
 }
 
-export { formattedNumber, addNumbers, getChangeWalletBalance, getSummaryTransferableWalletBalance };
+function isNumber(value: any) {
+  return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].includes(+value);
+}
+
+export { formattedNumber, addNumbers, getChangeWalletBalance, getSummaryTransferableWalletBalance, isNumber };

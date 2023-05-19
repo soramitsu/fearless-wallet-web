@@ -182,6 +182,10 @@ export function approveAuthRequest(id: string, authorizedAccounts: string[]) {
   return sendMessage('pri(authorize.approve)', { id, authorizedAccounts });
 }
 
+export async function approvePolkaswapAuthRequest(authorizedAccounts: string[]) {
+  return sendMessage('pri(authorize.approve.polkaswap)', authorizedAccounts);
+}
+
 export function approveMetaRequest(id: string): Promise<boolean> {
   return sendMessage('pri(metadata.approve)', { id });
 }
@@ -301,7 +305,7 @@ export function triggerAccountsSubscription(): Promise<boolean> {
   return sendMessage('pri(accounts.triggerSubscription)');
 }
 
-export function saveCurrentAccountAddress(
+export function saveCurrentAccountAddress( // не используется, мб можно удалить
   data: RequestCurrentAccountAddress,
   callback: (data: CurrentAccountInfo) => void
 ): Promise<boolean> {
@@ -312,8 +316,12 @@ export function updateCurrentAccountAddress(address: string): Promise<boolean> {
   return sendMessage('pri(accounts.update.current)', address);
 }
 
-export function subscribeAuthorizeRequests(cb: (accounts: AuthorizeRequest[]) => void): Promise<boolean> {
+export function subscribeAuthorizeRequests(cb: (requests: AuthorizeRequest[]) => void): Promise<boolean> {
   return sendMessage('pri(authorize.requests)', null, cb);
+}
+
+export async function subscribeSoraCardToken(cb: (token: string) => void): Promise<boolean> {
+  return sendMessage('pri(soraCard.token)', null, cb);
 }
 
 export function getAuthList(): Promise<ResponseAuthorizeList> {

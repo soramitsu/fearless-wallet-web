@@ -93,7 +93,9 @@ export default class App extends Vue {
 
   async setupBalance() {
     const balance = await getBalance();
+
     this.setBalance(balance);
+
     subscribeBalance((balances) => {
       this.setBalance(balances);
     });
@@ -126,13 +128,12 @@ export default class App extends Vue {
 
   onAccountUpdate(accounts: AccountJson[], isMobileUpdate = false) {
     const selectedAccount = accounts.find((account) => account.active);
+
     this.setAccounts({ accounts, isMobileUpdate });
 
     if (selectedAccount || !this.wallets.length) this.setSelectedWallet(selectedAccount);
 
-    if (!this.wallets.length) {
-      this.$router.push(Components.Welcome);
-    }
+    if (!this.wallets.length) this.$router.push(Components.Welcome);
   }
 
   setupWallet() {

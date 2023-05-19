@@ -50,19 +50,19 @@
     "bignumber.js": "^9.0.2",
     "core-js": "^3.6.5",
     "country-code-emoji": "^2.3.0",
-    "email-validator": "^2.0.4",
-    "jwt-decode": "^3.1.2",
-    "uuidv4": "^6.2.13",
     "date-fns": "^2.28.0",
     "element-ui": "^2.15.13",
+    "email-validator": "^2.0.4",
     "ethers": "^5.7.2",
     "file-saver": "^2.0.5",
+    "jwt-decode": "^3.1.2",
     "lodash": "^4.17.21",
     "qrcode": "^1.5.1",
     "rlp": "^3.0.0",
     "rxjs": "^7.5.6",
     "svg-sprite-loader": "^6.0.11",
     "tippy.js": "^6.3.7",
+    "uuidv4": "^6.2.13",
     "vue": "2.6.14",
     "vue-class-component": "^7.2.6",
     "vue-fragment": "^1.6.0",
@@ -128,8 +128,7 @@
     "vue-template-compiler": "2.6.14",
     "webpack-extension-manifest-plugin": "^0.8.0"
   },
-  "gitHooks": {
-  },
+  "gitHooks": {},
   "license": "Apache-2.0",
   "lint-staged": {
     "*.{js,jsx,vue,ts,tsx}": [

@@ -42,7 +42,7 @@ export default class ManageAuths extends Vue {
   url = '';
 
   @Prop(Function) handlerClose!: VoidFunction;
-  @Getter(ExtensionGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
+  @Getter(ExtensionGettersTypes.authList) authlist!: Record<string, AuthUrlInfo>;
   @Action(ExtensionActionTypes.GET_AUTHLIST) getAuthList!: AsyncFn;
 
   get showUpdateAuths() {

@@ -29,7 +29,7 @@ export default class Authorize extends Vue {
 
   @Prop(String) url!: string;
   @Getter(AccountGettersTypes.getWallets) wallets!: WalletInfo[];
-  @Getter(ExtensionGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
+  @Getter(ExtensionGettersTypes.authList) authlist!: Record<string, AuthUrlInfo>;
   @Action(ExtensionActionTypes.GET_AUTHLIST) fetchAuthList!: AsyncFn;
 
   get buttonText() {

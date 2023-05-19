@@ -108,10 +108,10 @@
       :currency="currency"
       :amount="syncedAmount"
       :value="syncedValue"
-      :tx="tx"
       :network="syncedSelectedNetwork"
       :firstIcon="firstIcon"
       :secondIcon="syncedDestNet"
+      :tx="tx"
       @close="confirmationPasswordPopupClose"
     />
 
@@ -186,7 +186,7 @@ export default class SendForm extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
-  @Getter(AccountsGettersTypes.getBalances) currencies!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.getNetworks) getNetworks!: NetworkJsonOld[];
 
@@ -299,7 +299,7 @@ export default class SendForm extends Vue {
   }
 
   get currency() {
-    return this.currencies.find(
+    return this.balances.find(
       ({ name, assetId: id }) => name === this.syncedSelectedAssetId || id === this.syncedSelectedAssetId
     );
   }
@@ -351,7 +351,7 @@ export default class SendForm extends Vue {
   }
 
   get optionsCurrency() {
-    return getCurrencyOptions(this.currencies);
+    return getCurrencyOptions(this.balances);
   }
 
   @Watch('showSelectedAssetPopup')

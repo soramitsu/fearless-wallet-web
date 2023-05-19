@@ -5198,6 +5198,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/uuid@npm:8.3.4":
+  version: 8.3.4
+  resolution: "@types/uuid@npm:8.3.4"
+  checksum: 6f11f3ff70f30210edaa8071422d405e9c1d4e53abbe50fdce365150d3c698fe7bbff65c1e71ae080cbfb8fded860dbb5e174da96fdbbdfcaa3fb3daa474d20f
+  languageName: node
+  linkType: hard
+
 "@types/verror@npm:^1.10.3":
   version: 1.10.6
   resolution: "@types/verror@npm:1.10.6"
@@ -8545,6 +8552,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"country-code-emoji@npm:^2.3.0":
+  version: 2.3.0
+  resolution: "country-code-emoji@npm:2.3.0"
+  checksum: 6b61e13787c9133526ac45758775e3566869c0de4ee3fa4c3eac85e6077e57faf1f98173ccdb07440994c2cb1ac2757e4585cb40a64059b3ec725c5edef6f657
+  languageName: node
+  linkType: hard
+
 "crc@npm:^3.8.0":
   version: 3.8.0
   resolution: "crc@npm:3.8.0"
@@ -9817,6 +9831,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"email-validator@npm:^2.0.4":
+  version: 2.0.4
+  resolution: "email-validator@npm:2.0.4"
+  checksum: e702fee24e1b9efb7e6a84abb309bebdb4ddde137fdb99a61e24bd82ac0b605be34e191b1c4d04fbc855be7b94cad967f932a456c0def2240303881f4e388f2d
+  languageName: node
+  linkType: hard
+
 "emittery@npm:^0.10.2":
   version: 0.10.2
   resolution: "emittery@npm:0.10.2"
@@ -11002,6 +11023,7 @@ __metadata:
     axios: ^0.27.2
     bignumber.js: ^9.0.2
     core-js: ^3.6.5
+    country-code-emoji: ^2.3.0
     css-unicode-loader: ^1.0.3
     cypress: ^9.7.0
     date-fns: ^2.28.0
@@ -11010,6 +11032,7 @@ __metadata:
     electron-debug: ^3.2.0
     electron-devtools-installer: ^3.2.0
     element-ui: ^2.15.13
+    email-validator: ^2.0.4
     env-cmd: ^10.1.0
     eslint: ^7.29.0
     eslint-plugin-import: ^2.25.2
@@ -11020,6 +11043,7 @@ __metadata:
     ethers: ^5.7.2
     file-saver: ^2.0.5
     jest: ^27.2.2
+    jwt-decode: ^3.1.2
     lint-staged: ^9.5.0
     lodash: ^4.17.21
     node-polyfill-webpack-plugin: ^1.1.4
@@ -11035,12 +11059,14 @@ __metadata:
     tippy.js: ^6.3.7
     ts-jest: ^27.0.5
     typescript: ~4.5.5
+    uuidv4: ^6.2.13
     vue: 2.6.14
     vue-class-component: ^7.2.6
     vue-cli-plugin-chrome-extension-cli: ^1.1.4
     vue-cli-plugin-electron-builder: ^3.0.0-alpha.4
     vue-fragment: ^1.6.0
     vue-i18n: 8
+    vue-plugin-load-script: 2.1.1
     vue-property-decorator: ^9.1.2
     vue-router: ^3.2.0
     vue-template-compiler: 2.6.14
@@ -14123,6 +14149,13 @@ __metadata:
     readable-stream: ~2.3.6
     setimmediate: ^1.0.5
   checksum: abc77bfbe33e691d4d1ac9c74c8851b5761fba6a6986630864f98d876f3fcc2d36817dfc183779f32c00157b5d53a016796677298272a714ae096dfe6b1c8b60
+  languageName: node
+  linkType: hard
+
+"jwt-decode@npm:^3.1.2":
+  version: 3.1.2
+  resolution: "jwt-decode@npm:3.1.2"
+  checksum: 20a4b072d44ce3479f42d0d2c8d3dabeb353081ba4982e40b83a779f2459a70be26441be6c160bfc8c3c6eadf9f6380a036fbb06ac5406b5674e35d8c4205eeb
   languageName: node
   linkType: hard
 
@@ -19719,12 +19752,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"uuid@npm:^8.3.2":
+"uuid@npm:8.3.2, uuid@npm:^8.3.2":
   version: 8.3.2
   resolution: "uuid@npm:8.3.2"
   bin:
     uuid: dist/bin/uuid
   checksum: 5575a8a75c13120e2f10e6ddc801b2c7ed7d8f3c8ac22c7ed0c7b2ba6383ec0abda88c905085d630e251719e0777045ae3236f04c812184b7c765f63a70e58df
+  languageName: node
+  linkType: hard
+
+"uuidv4@npm:^6.2.13":
+  version: 6.2.13
+  resolution: "uuidv4@npm:6.2.13"
+  dependencies:
+    "@types/uuid": 8.3.4
+    uuid: 8.3.2
+  checksum: 25b3ce1d5860c7fb2232270f20d36c320e52817356cc0dfc88610965e6faced3e7050b3628be08ed08092dffc099288ed24ac0404a2869d59963a2be1939f476
   languageName: node
   linkType: hard
 
@@ -19903,6 +19946,13 @@ __metadata:
     vue:
       optional: true
   checksum: 42cc8c8ff032dcac774f6f098723d4bc8000579ff4ecf9e0e72a4193e60234e6582ad4b6c43d0a9c76f59e510cf6d676070de67f2cd26588210cb51219845c27
+  languageName: node
+  linkType: hard
+
+"vue-plugin-load-script@npm:2.1.1":
+  version: 2.1.1
+  resolution: "vue-plugin-load-script@npm:2.1.1"
+  checksum: 64c88dc1d565ceac2d1a784742d3c44e0806185432092172eac8d263909d74ddb15e0136bb529d91259a9a25f1d14712b244a3330ccdb38c43df26606487cb35
   languageName: node
   linkType: hard
 

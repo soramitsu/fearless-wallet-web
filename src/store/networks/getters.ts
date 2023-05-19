@@ -1,17 +1,9 @@
 import type { AssetsPrice, FiatJson, GetHistory } from '@/interfaces';
-import type {
-  GetNetwork,
-  GetAssetPrice,
-  GetNetworkGenesisHash,
-  GetNetworkStatus,
-  GetActiveNodesByNetwork,
-} from './types';
+import type { GetNetwork, GetAssetPrice, GetNetworkGenesisHash, GetActiveNodesByNetwork } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
-import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/evm/types/ether';
 
 export enum GettersTypes {
   getNetworks = 'getNetworks',
@@ -25,7 +17,6 @@ export enum GettersTypes {
   getHistory = 'getHistory',
   getActiveNodesByNetwork = 'getActiveNodesByNetwork',
   getAllNetworksIsReadyToUse = 'getAllNetworksIsReadyToUse',
-  getNetworkStatus = 'getNetworkStatus',
   getAssetsPriceInterval = 'getAssetsPriceInterval',
 }
 
@@ -53,7 +44,6 @@ export type Getters = {
     getters?: GetterTree<State, State> & Getters
   ): GetActiveNodesByNetwork;
   [GettersTypes.getAllNetworksIsReadyToUse](state: State, getters?: GetterTree<State, State> & Getters): boolean;
-  [GettersTypes.getNetworkStatus](state: State, getters?: GetterTree<State, State> & Getters): GetNetworkStatus;
   [GettersTypes.getNetworkGenesisHash](
     state: State,
     getters?: GetterTree<State, State> & Getters
@@ -83,7 +73,7 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getNetwork]:
     ({ networks }) =>
     (networkName: string) => {
-      return networks.find(({ name }) => name.toLowerCase() === networkName.toLowerCase())!;
+      return networks.find(({ name }) => name.toLowerCase() === networkName?.toLowerCase());
     },
 
   [GettersTypes.getNetworkGenesisHash]:
@@ -132,14 +122,6 @@ const getters: GetterTree<State, State> & Getters = {
   [GettersTypes.getAllNetworksIsReadyToUse]({ networks }): boolean {
     return !networks.some(({ apiStatus }) => apiStatus === 'pending' || apiStatus === 'connected');
   },
-
-  [GettersTypes.getNetworkStatus]:
-    ({ networks }) =>
-    (networkName: string) => {
-      const network = networks.find(({ name }) => name === networkName);
-
-      return network?.apiStatus ?? NETWORK_STATUS.PENDING;
-    },
 };
 
 export default getters;

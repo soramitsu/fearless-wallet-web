@@ -120,6 +120,7 @@ export default class AddFromGoogle extends Vue {
 
     files.forEach(({ id, description, name }) => {
       const [prepName] = name.split('.');
+
       const [address, ethID] = description.split('/');
       if (ethID === undefined) return;
 

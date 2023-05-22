@@ -98,7 +98,13 @@ export class FWCron {
         Object.keys(this.state.getSubstrateApiMap).length !== 0 ||
         Object.keys(this.state.getEvmApiMap).length !== 0
       ) {
-        this.addCron('refreshPrice', this.state.refreshPrice, CRON_REFRESH_PRICE_INTERVAL);
+        this.addCron(
+          'refreshPrice',
+          () => {
+            this.state.refreshPrice();
+          },
+          CRON_REFRESH_PRICE_INTERVAL
+        );
         this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
         this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
       }

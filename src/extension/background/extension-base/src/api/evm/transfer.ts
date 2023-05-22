@@ -3,8 +3,8 @@
 
 import { BN } from '@polkadot/util';
 import { ethers } from 'ethers';
+import { state } from '../../background/handlers';
 import {
-  ApiProps,
   BasicTxResponse,
   ExternalRequestPromise,
   ExternalRequestPromiseStatus,
@@ -28,16 +28,13 @@ interface HandleTransferBalanceResultProps {
   updateState?: (promise: Partial<ExternalRequestPromise>) => void;
 }
 
-export async function getExistentialDeposit(
-  networkKey: string,
-  token: string,
-  dotSamaApiMap: Record<string, ApiProps>
-): Promise<string> {
-  const apiProps = dotSamaApiMap[networkKey];
-
-  await apiProps.isApiReady;
+export async function getExistentialDeposit(networkKey: string, token: string): Promise<string> {
+  const apiProps = state.getSubstrateApiMap[networkKey];
 
   const api = apiProps.api!;
+
+  if (!apiProps.isApiReady) return '0';
+
   const tokenInfo = getTokenInfo(token);
 
   const isMainToken = checkMainToken(networkKey, tokenInfo.id);

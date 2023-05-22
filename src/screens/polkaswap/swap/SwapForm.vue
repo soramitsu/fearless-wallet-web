@@ -303,7 +303,7 @@ export default class SwapForm extends Vue {
   get currencyXOR() {
     return this.balances.find(({ name }) => {
       return name === SORA_UTILITY_ASSET && isSora(this.selectedNetwork);
-    })!;
+    });
   }
 
   get feePrice() {
@@ -522,7 +522,7 @@ export default class SwapForm extends Vue {
 
   get transferableSendAmount() {
     const count =
-      this.sendCurrency?.balances.find((balance) => balance.name.toLowerCase() === this.selectedNetwork.toLowerCase())
+      this.sendCurrency?.balances?.find((balance) => balance.name.toLowerCase() === this.selectedNetwork.toLowerCase())
         ?.transferable ?? 0;
 
     return this.$n(+count, 'decimal');
@@ -530,7 +530,7 @@ export default class SwapForm extends Vue {
 
   get transferableReceiveAmount() {
     const count =
-      this.receiveCurrency?.balances.find(
+      this.receiveCurrency?.balances?.find(
         (balance) => balance.name.toLowerCase() === this.selectedNetwork.toLowerCase()
       )?.transferable ?? 0;
 
@@ -718,17 +718,22 @@ export default class SwapForm extends Vue {
   }
 
   calcTransferableXor() {
-    const balance = this.currencyXOR!.balances.find(
+    const balance = this.currencyXOR?.balances?.find(
       ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
-    )!;
+    );
+
+    if (!balance) return '';
 
     return balance.transferable?.toString() ?? '';
   }
 
   calcTransferableSendMinusFee() {
-    const balance = this.sendCurrency!.balances.find(
+    const balance = this.sendCurrency?.balances?.find(
       ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
-    )!;
+    );
+
+    if (!balance) return '0';
+
     const transferable = balance.transferable ? +balance.transferable : 0;
 
     if (this.sendCurrency?.name === SORA_UTILITY_ASSET) {

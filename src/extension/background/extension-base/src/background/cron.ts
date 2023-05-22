@@ -22,7 +22,7 @@ export class FWCron {
   private serviceSubscription: Subscription | undefined;
   private state: FWState;
   private logger: Logger;
-  private cronMap: Record<string, any> = {};
+  private cronMap: Record<string, unknown> = {};
   private subjectMap: Record<string, Subject<any>> = {};
 
   constructor(state: FWState, subscriptions: FWSubscription) {
@@ -31,15 +31,15 @@ export class FWCron {
     this.logger = createLogger('Cron');
   }
 
-  getCron = (name: string): any => {
+  getCron = (name: string): unknown => {
     return this.cronMap[name];
   };
 
-  getSubjectMap = (name: string): any => {
+  getSubjectMap = (name: string): unknown => {
     return this.subjectMap[name];
   };
 
-  addCron = (name: string, callback: (param?: any) => void, interval: number, runFirst = true) => {
+  addCron = (name: string, callback: (param?: unknown) => void, interval: number, runFirst = true) => {
     if (runFirst) {
       callback();
     }

@@ -1021,7 +1021,7 @@ export default class Extension extends FWExtensionBase {
     }
 
     const address = this.encodeAddress(from);
-    const existentialDeposit = await getExistentialDeposit(networkKey, token, this.state.getSubstrateApiMap);
+    const existentialDeposit = await getExistentialDeposit(networkKey, token);
     let fee = 0;
     let feeSymbol;
     let fromAccountFreeBalance = '0';

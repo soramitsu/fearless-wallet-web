@@ -848,7 +848,7 @@ export default class State {
     await storage.set({ injectedProviders });
 
     // Close provider connection when page is closed
-    port.onDisconnect.addListener(async (): Promise<void> => {
+    port.onDisconnect.addListener((): void => {
       const provider = injectedProviders.get(port);
 
       if (provider) {
@@ -856,7 +856,8 @@ export default class State {
       }
 
       injectedProviders.delete(port);
-      await storage.set({ injectedProviders });
+
+      storage.set({ injectedProviders });
     });
 
     return Promise.resolve(providers[key].meta);
@@ -884,6 +885,7 @@ export default class State {
     assert(provider, 'Cannot call pub(rpc.subscribeConnected) before provider is set');
 
     cb(null, provider.isConnected); // Immediately send back current isConnected
+
     provider.on('connected', () => cb(null, true));
     provider.on('disconnected', () => cb(null, false));
   }

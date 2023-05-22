@@ -78,8 +78,8 @@ const getters: GetterTree<State, State> & Getters = {
     return selectedNetworks[address] ?? ALL_NETWORKS;
   },
 
-  [GettersTypes.getOnlineStatus]({ isOnline }): boolean {
-    return isOnline;
+  [GettersTypes.getOnlineStatus](state): boolean {
+    return state.isOnline;
   },
 
   [GettersTypes.showPolkaswapAlert]({ showPolkaswapAlert }): boolean {

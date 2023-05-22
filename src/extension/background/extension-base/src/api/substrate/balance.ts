@@ -130,18 +130,17 @@ export function checkMainToken(networkKey: string, id: string): boolean {
 export async function getFreeBalance(
   networkKey: string,
   address: string,
-  dotSamaApiMap: Record<string, ApiProps>,
   web3ApiMap: Record<string, EthProvider>,
   token?: string
 ): Promise<string> {
-  const apiProps = dotSamaApiMap[networkKey];
-  await apiProps.isApiReady;
+  const apiProps = state.getSubstrateApiMap[networkKey];
+  await apiProps.api?.isReady;
+
   const api = apiProps.api!;
-  const web3Api = web3ApiMap[networkKey];
+  const web3Api = state.getEvmApiMap[networkKey];
   const tokenInfo = token ? getTokenInfo(token) : undefined;
 
   const isMainToken = tokenInfo ? await checkMainToken(networkKey, tokenInfo?.id) : false;
-  console.info(isMainToken, token, web3Api, 'isMain');
 
   // Only EVM Address use with EVM network
   if (Boolean(web3Api || apiProps.isEthereum) !== isEthereumAddress(address)) {

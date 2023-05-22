@@ -61,14 +61,22 @@ export default class App extends Vue {
   async created() {
     if (IS_EXTENSION) this.extensionSubscribe();
 
-    this.setupSWPing();
+    this.unregisterInactiveWorkers();
+    this.setupWallet();
+    this.setupBalance();
+    triggerAccountsSubscription();
     this.fetchFiats();
     this.setupPrice();
-    this.setupWallet();
     this.setupNetworks();
-    this.setupBalance();
+    this.setupSWPing();
+  }
 
-    triggerAccountsSubscription();
+  unregisterInactiveWorkers() {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const registration of registrations) {
+        if (registration.active?.state !== 'activated') registration.unregister();
+      }
+    });
   }
 
   setupSWPing() {
@@ -91,6 +99,7 @@ export default class App extends Vue {
   async setupBalance() {
     const balance = await getBalance();
     this.setBalance(balance);
+
     subscribeBalance((balances) => {
       this.setBalance(balances);
     });

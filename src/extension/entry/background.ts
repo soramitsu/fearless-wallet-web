@@ -11,8 +11,6 @@ interface ModifiedPort extends Port {
   timer?: NodeJS.Timeout;
 }
 
-state.init();
-
 async function getActiveTabs() {
   // quering the current active tab in the current window should only ever return 1 tab
   // although an array is specified here

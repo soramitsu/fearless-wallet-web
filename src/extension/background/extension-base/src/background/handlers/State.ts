@@ -307,6 +307,8 @@ export default class State {
   }
 
   async injectFromStorage() {
+    extractMetadata(metaStore);
+
     const { authUrls, defaultAuthAccountSelection, fiatSymbol } = await this.getFromStorage([
       'fiatSymbol',
       'authUrls',
@@ -989,12 +991,6 @@ export default class State {
 
     this.initNetworkStates();
     this.updateServiceInfo();
-
-    extractMetadata(metaStore);
-
-    const { authUrls } = await this.getFromStorage(['authUrls']);
-
-    this.authUrls = authUrls ?? {}; // at the very first start after installation authUrls = undefined
   }
 
   public initNetworkStates() {

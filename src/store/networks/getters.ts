@@ -32,13 +32,9 @@ export type Getters = {
     rootState?: any
   ): NetworkJsonOld[];
   [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
-  // [GettersTypes.getAssetIcon](state: State, getters?: GetterTree<State, State> & Getters): GetAssetIcon;
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
-  // [GettersTypes.getAssetsPriceInterval](
-  //   state: State,
-  //   getters?: GetterTree<State, State> & Getters
-  // ): NodeJS.Timer | null;
+
   [GettersTypes.getActiveNodesByNetwork](
     state: State,
     getters?: GetterTree<State, State> & Getters

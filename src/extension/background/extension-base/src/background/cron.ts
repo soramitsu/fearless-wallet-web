@@ -127,20 +127,28 @@ export class FWCron {
       },
     });
 
+    navigator.connection.removeEventListener('change', () => {
+      this.onConnectionChange();
+    });
+
     navigator.connection.addEventListener('change', () => {
-      if (navigator.onLine) {
-        this.logger.log('Extension is offline');
-
-        this.start();
-      } else {
-        this.logger.log('Extension is back online');
-
-        this.stop();
-      }
+      this.onConnectionChange();
     });
 
     this.status = 'running';
   };
+
+  onConnectionChange() {
+    if (navigator.onLine) {
+      this.logger.log('Extension is offline');
+
+      this.start();
+    } else {
+      this.logger.log('Extension is back online');
+
+      this.stop();
+    }
+  }
 
   stop = () => {
     if (this.status === 'stopped') return;

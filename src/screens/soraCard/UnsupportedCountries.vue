@@ -27,22 +27,6 @@ export default class UnsupportedCountries extends Vue {
     name,
     icon: countryCodeEmoji(key),
   }));
-
-  get countriesLength() {
-    return this.unsupportedCountries.length;
-  }
-
-  get midpoint() {
-    return Math.ceil(this.countriesLength / 2);
-  }
-
-  get countriesPartOne() {
-    return this.unsupportedCountries.slice(0, this.midpoint);
-  }
-
-  get countriesPartTwo() {
-    return this.unsupportedCountries.slice(this.midpoint, this.countriesLength);
-  }
 }
 </script>
 

@@ -87,16 +87,10 @@ const mutations: MutationTree<State> & Mutations = {
       return;
     }
 
-    if (isMobileUpdate) {
-      if (isMobileWalletExists) state.accounts.splice(mobileIndex, 1);
-      else {
-        // ничего не делаем
-      }
-    } else {
+    if (isMobileUpdate || isMobileWalletExists) state.accounts.splice(mobileIndex, 1);
+    else {
       if (isMobileWalletExists) state.accounts = [state.accounts[mobileIndex]];
-      else {
-        state.accounts = [];
-      }
+      else state.accounts = [];
     }
 
     accountController.setAccounts(state.accounts);

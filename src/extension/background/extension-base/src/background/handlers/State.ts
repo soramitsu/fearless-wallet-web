@@ -1071,8 +1071,6 @@ export default class State {
   }
 
   public updateXorTotalBalance(muchTotal: FPNumber): void {
-    console.log('updateXorTotalBalance');
-
     this.getCurrentAccount((account) => {
       if (!account) return;
 
@@ -1084,8 +1082,6 @@ export default class State {
       const index = token.balances.findIndex(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
 
       this.balanceMap[address][currencyIndex].balances[index].muchTotal = muchTotal.toString();
-
-      // this.lazyNext('setBalanceItem', () => this.publishBalance());
     });
   }
 

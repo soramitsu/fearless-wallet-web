@@ -8,6 +8,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+
 type BackgroundColor = 'polkaswap' | 'default';
 
 @Component
@@ -57,18 +58,22 @@ export default class ExternalWidget extends Vue {
   padding: 10px;
   border-radius: 10px;
   background-color: #111111;
+
   .widget {
     flex: 1;
     border: none;
   }
+
   .container-border {
     padding: 8px 4px;
     margin: 4px;
   }
 }
+
 .background-default {
   background-color: #111111;
 }
+
 .background-polkaswap {
   background-color: #fdf7fb;
 }

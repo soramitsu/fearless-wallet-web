@@ -834,8 +834,6 @@ export default class Extension extends FWExtensionBase {
   }
 
   public async getSoraFees() {
-    // await apiSora.calcStaticNetworkFees();
-
     this.state.soraFees = Object.fromEntries(
       Object.entries(apiSora.NetworkFee).map(([nameFee, value]) => [nameFee, FPNumber.fromCodecValue(value).toString()])
     ) as SoraFees;
@@ -844,8 +842,6 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async validateSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
-    // if (!this.state.soraFees) await this.getSoraFees();
-
     const { AToB, BToA, amountA, amountB, minMaxValue, extrinsicOptions, providerFee, route } = await createSwap(
       options,
       apiSora
@@ -918,7 +914,6 @@ export default class Extension extends FWExtensionBase {
         errors,
       };
 
-    // apiSora.account = { json: null as any, pair };// Вроде здесь это не нужно, тк устаналивается в функции State.setCurrentAccount
     apiSora.shouldPairBeLocked = !isSavePass;
 
     try {
@@ -1287,7 +1282,7 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async soraCardTokenSubscribe(id: string, port: Port): Promise<boolean> {
-    const cb = await createSubscription<'pri(soraCard.token)'>(id, port);
+    const cb = createSubscription<'pri(soraCard.token)'>(id, port);
 
     const subscription = this.state.soraCardTokenSubject.subscribe((token) => cb(token));
 

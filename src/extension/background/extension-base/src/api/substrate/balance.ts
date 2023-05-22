@@ -201,7 +201,7 @@ async function subscribeTokensBalance(
   });
 
   const unsubList = await Promise.all(
-    tokenList.map(({ precision, symbol, id, type, icon, relayChain, displayName }) => {
+    tokenList.map(({ precision, symbol, id, type, relayChain, displayName }) => {
       try {
         const options = getAssetOptions(symbol, type, id);
 
@@ -221,12 +221,8 @@ async function subscribeTokensBalance(
 
           setBalance(networkKey, {
             state: APIItemState.READY,
-            // chain: networkKey,
-            // key: networkKey,
-            // symbol,
             relayChain,
             name,
-            // icon,
             id,
             reserved,
             locked,

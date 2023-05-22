@@ -63,6 +63,7 @@ export default class Container extends Vue {
 .text-small {
   font-size: 14px;
 }
+
 .text-big {
   font-size: 18px;
 }

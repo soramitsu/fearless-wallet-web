@@ -32,8 +32,4 @@ function addNumbers(values: (string | number)[]): string {
   return values.reduce((sum, number) => sum.add(new FPNumber(number)), FPNumber.ZERO).toString();
 }
 
-function isNumber(value: any) {
-  return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].includes(+value);
-}
-
-export { formattedNumber, addNumbers, isNumber };
+export { formattedNumber, addNumbers };

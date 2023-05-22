@@ -68,7 +68,6 @@ import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import Disclaimer from '@/screens/soraCard/stepsKYC/Disclaimer.vue';
 import { soraCardController } from '@/controllers';
-import { isNumber } from '@/helpers/numbers';
 import { MutationTypes as SoraCardMutationTypes } from '@/store/soraCard/mutations';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SORA_UTILITY_ASSET, SORA_NETWORK_NAME } from '@/consts/networks';
@@ -164,16 +163,14 @@ export default class Phone extends Vue {
   }
 
   set countryCode(value: string) {
-    if (value.length > 3) {
-      this.phoneNumberComponent.input.focus();
-    }
+    if (value.length > 3) this.phoneNumberComponent.input.focus();
 
     const isDeleteSymbol = value.length < this.countryCodeInternal.length;
+    const isNumber = !Number.isNaN(+value[value.length - 1]);
 
-    if (isNumber(value[value.length - 1]) || isDeleteSymbol) {
-      if (value.length === 1) {
-        this.countryCodeInternal = isDeleteSymbol ? '' : `+${value}`;
-      } else this.countryCodeInternal = value;
+    if (isNumber || isDeleteSymbol) {
+      if (value.length === 1) this.countryCodeInternal = isDeleteSymbol ? '' : `+${value}`;
+      else this.countryCodeInternal = value;
     }
   }
 
@@ -182,12 +179,12 @@ export default class Phone extends Vue {
   }
 
   set phoneNumber(value: string) {
-    if (value.length === 0) {
-      this.countryCodeComponent.input.focus();
-    }
+    if (value.length === 0) this.countryCodeComponent.input.focus();
 
-    if (isNumber(value[value.length - 1]) || value.length < this.phoneNumberInternal.length)
-      this.phoneNumberInternal = value;
+    const isDeleteSymbol = value.length < this.phoneNumberInternal.length;
+    const isNumber = !Number.isNaN(+value[value.length - 1]);
+
+    if (isNumber || isDeleteSymbol) this.phoneNumberInternal = value;
   }
 
   get isPhoneNumberValid() {

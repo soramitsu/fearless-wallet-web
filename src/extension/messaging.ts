@@ -182,7 +182,7 @@ export function approveAuthRequest(id: string, authorizedAccounts: string[]) {
   return sendMessage('pri(authorize.approve)', { id, authorizedAccounts });
 }
 
-export async function approvePolkaswapAuthRequest(authorizedAccounts: string[]) {
+export function approvePolkaswapAuthRequest(authorizedAccounts: string[]) {
   return sendMessage('pri(authorize.approve.polkaswap)', authorizedAccounts);
 }
 
@@ -401,10 +401,6 @@ export function isJsonValid(file: KeyringPair$Json, password: string, isSubstrat
 
 export function batchRestore(file: KeyringPairs$Json, password: string): Promise<void> {
   return sendMessage('pri(json.batchRestore)', { file, password });
-}
-
-export function setNotification(notification: string): Promise<boolean> {
-  return sendMessage('pri(settings.notification)', notification);
 }
 
 export function verifyToken(token: string): Promise<VerifyTokenResponse> {

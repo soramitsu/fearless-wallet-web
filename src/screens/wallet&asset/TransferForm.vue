@@ -306,7 +306,7 @@ export default class SendForm extends Vue {
 
   get options() {
     const filter = this.filterValue.trim().toLowerCase();
-    let options: any[] = [];
+    let options: { name: string; value: string; icon: string | undefined }[] = [];
 
     if (this.showSelectedAssetPopup) options = this.optionsCurrency;
     else if (this.showSelectNetworkPopup) options = this.optionsNetworks;

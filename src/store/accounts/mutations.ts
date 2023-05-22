@@ -87,8 +87,9 @@ const mutations: MutationTree<State> & Mutations = {
       return;
     }
 
-    if (isMobileUpdate || isMobileWalletExists) state.accounts.splice(mobileIndex, 1);
-    else {
+    if (isMobileUpdate) {
+      if (isMobileWalletExists) state.accounts.splice(mobileIndex, 1);
+    } else {
       if (isMobileWalletExists) state.accounts = [state.accounts[mobileIndex]];
       else state.accounts = [];
     }

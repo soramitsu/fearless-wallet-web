@@ -35,6 +35,7 @@ export interface BalanceItem {
   frozen?: string;
   total?: string;
   transferable?: string;
+  muchTotal?: string; // only for Sora
   timestamp?: number;
   chain?: string;
   chainHash?: string;
@@ -53,7 +54,6 @@ export interface CustomToken {
   smartContract: string;
   chain: string;
   type: CustomTokenType;
-
   name?: string;
   symbol?: string;
   decimals?: number;

@@ -32,7 +32,7 @@ import { Components } from '@/router/routes';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import InfoList from '@/screens/extension-ui/InfoList.vue';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
-import { TAction } from '@/interfaces';
+import { AsyncFn } from '@/interfaces';
 
 @Component({
   components: {
@@ -42,9 +42,9 @@ import { TAction } from '@/interfaces';
   },
 })
 export default class MetaRequest extends Vue {
-  @Getter(ExtensionGettersTypes.getMetaRequests) requests!: MetadataRequest[];
-  @Action(ExtensionActionTypes.APPROVE_META_REQUEST) onApproveMetaRequest!: TAction<MetadataRequest>;
-  @Action(ExtensionActionTypes.REJECT_META_REQUEST) onRejectMetaRequest!: TAction<MetadataRequest>;
+  @Getter(ExtensionGettersTypes.metaRequests) requests!: MetadataRequest[];
+  @Action(ExtensionActionTypes.APPROVE_META_REQUEST) onApproveMetaRequest!: AsyncFn<MetadataRequest>;
+  @Action(ExtensionActionTypes.REJECT_META_REQUEST) onRejectMetaRequest!: AsyncFn<MetadataRequest>;
 
   get request() {
     return this.requests[0];

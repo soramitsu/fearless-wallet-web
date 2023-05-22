@@ -12,6 +12,7 @@
       :fontSize="fontSize"
       :text="text"
       :width="width"
+      :loading="loading"
       @click="$emit('click')"
     />
   </Corners>
@@ -38,5 +39,6 @@ export default class BorderButton extends Vue {
   @Prop({ default: true }) hover!: boolean;
   @Prop({ default: true }) topLeftCorner!: boolean;
   @Prop({ default: true }) bottomRightCorner!: boolean;
+  @Prop({ default: false }) loading!: boolean;
 }
 </script>

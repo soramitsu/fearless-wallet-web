@@ -135,7 +135,7 @@ import { Getter } from 'vuex-class';
 import HistoryDetailsForm from './HistoryDetailsForm.vue';
 import History from './History.vue';
 import type { HistoryElement } from '@/interfaces/history';
-import type { GetAssetPrice, SelectedWallet } from '@/store';
+import type { GetAssetPrice, SelectedWallet, GetNetwork } from '@/store';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
@@ -147,12 +147,10 @@ import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
-import { tieAccount } from '@/extension/messaging';
-import { ALL_NETWORKS, ETHEREUM_NETWORKS } from '@/consts/networks';
+import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { firstCharToUp, isSora } from '@/helpers/common';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
-import { getTransferableCountAssets } from '@/helpers/currencies';
+import { getSummaryTransferableBalance } from '@/helpers/currencies';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
 
@@ -185,18 +183,19 @@ export default class Asset extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJsonOld;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
 
   get showShimmers() {
-    return !this.isOnline || !this.balances.length || !this.currentNetwork || this.currentNetwork.state === 'pending';
+    return !this.isOnline || !this.balances.length || !this.currentNetwork || this.currentNetwork?.state === 'pending';
   }
 
   get providers() {
-    return (
-      this.getNetwork(this.selectedNetwork).assets.find((el) => el.purchaseProviders?.length)?.purchaseProviders ?? []
-    );
+    const network = this.getNetwork(this.selectedNetwork);
+    const asset = network?.assets.find(({ assetId }) => assetId === this.selectedAssetId);
+
+    return asset?.purchaseProviders ?? [];
   }
 
   get showSwapButton() {
@@ -216,7 +215,7 @@ export default class Asset extends Vue {
   }
 
   get currentCurrency() {
-    return this.balances.find(({ assetId: id }) => id === this.selectedAssetId)! ?? '';
+    return this.balances.find(({ assetId: id }) => id === this.selectedAssetId)! ?? {};
   }
 
   get displayAddressByNetwork() {
@@ -228,15 +227,15 @@ export default class Asset extends Vue {
   }
 
   get selectedNetwork() {
-    return this.$route.params.network;
+    return this.$route.params.network ?? '';
   }
 
   get selectedAssetId() {
-    return this.$route.params.assetId;
+    return this.$route.params.assetId ?? '';
   }
 
   get selectedAssetUpper() {
-    return this.currentCurrency.name.toUpperCase();
+    return this.currentCurrency.name?.toUpperCase() ?? '';
   }
 
   get assetPrice() {
@@ -246,14 +245,14 @@ export default class Asset extends Vue {
   get countAssetsString() {
     if (!this.currentCurrency) return `${this.selectedAssetUpper} 0`;
 
-    const totalCountAssets = +getTransferableCountAssets(this.currentCurrency, this.selectedNetwork);
+    const totalCountAssets = +getSummaryTransferableBalance(this.currentCurrency, this.selectedNetwork);
     const total = this.$n(totalCountAssets, 'decimal');
 
     return `${this.selectedAssetUpper} ${total}`;
   }
 
   get transferableAssetBalance() {
-    return this.currentCurrency!.balances.reduce((result, { transferable }) => {
+    return this.currentCurrency?.balances?.reduce((result, { transferable }) => {
       if (transferable) return result + +transferable;
       else return result;
     }, 0);
@@ -292,10 +291,6 @@ export default class Asset extends Vue {
 
   toggleSelectedNetwork(network: string) {
     if (this.selectedNetwork === network) return;
-
-    const prepNetwork = network === ALL_NETWORKS ? null : `0x${this.getNetwork(network).chainId}`;
-
-    tieAccount(this.selectedWallet.address, prepNetwork);
 
     this.$router.push({
       name: Components.Asset,
@@ -349,7 +344,7 @@ export default class Asset extends Vue {
       name: Components.SoraSwap,
       params: {
         assetId: this.selectedAssetId,
-        reset: '1',
+        reset: '',
       },
     });
   }

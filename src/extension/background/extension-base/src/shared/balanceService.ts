@@ -1,10 +1,6 @@
-// Copyright 2019-2022 @subwallet/extension-koni authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
 import { logger as createLogger } from '@polkadot/util';
 import { Logger } from '@polkadot/util/types';
 import { APIItemState, BalanceItem } from '../api/evm/types/ether';
-import { state } from '../background/handlers';
 import { storage } from '../stores/Storage';
 import { TransactionHistoryItemType } from '../types';
 
@@ -18,7 +14,6 @@ export default class BalanceService {
   // Balance
   async updateBalanceStore(chain: string, address: string, item: BalanceItem) {
     if (item.state === APIItemState.READY) {
-      // this.logger.log(`Updating balance for [${chain}]`);
       const { balances } = await storage.get(['balances']);
       const copyBalance = { ...(balances ?? {}) };
 

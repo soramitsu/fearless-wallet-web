@@ -136,7 +136,7 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Action, Getter } from 'vuex-class';
-import type { DerivationPaths, ImportType, ValidateJsonResult, MnemonicConfirmation, TAction } from '@/interfaces';
+import type { DerivationPaths, ImportType, ValidateJsonResult, MnemonicConfirmation, AsyncFn } from '@/interfaces';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type { SelectedWallet } from '@/store';
 import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
@@ -198,7 +198,7 @@ export default class AddWallet extends Vue {
   address: string | null = null;
   isLoading = false;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<AccountJson>;
+  @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<AccountJson>;
 
   get confirmMnemonicStep() {
     return this.step === 3 && this.isCreateWallet;

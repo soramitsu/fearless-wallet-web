@@ -2,6 +2,7 @@ import type { SelectedWallet, SelectedNetworks, AutoSelectNode } from './types';
 import type { NetworkName, WalletAddress } from '@/interfaces';
 import { accountController } from '@/controllers';
 import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import { SORA_CARD_BANNER_RERUN } from '@/consts/soraCard';
 
 export type State = {
   selectedWallet: SelectedWallet;
@@ -16,6 +17,7 @@ export type State = {
   hideWarningNetworks: NetworkName[];
   qr: string | null;
   showPolkaswapAlert: boolean;
+  showSoraCardBanner: boolean;
 };
 
 const state = (): State => {
@@ -31,6 +33,7 @@ const state = (): State => {
     autoSelectNode: accountController.getAutoSelectNodesValue(),
     showPolkaswapAlert: !accountController.getAgreeSwapDisclaimer(),
     hideWarningNetworks: accountController.getHideWarningNetworks(),
+    showSoraCardBanner: Date.now() - accountController.getHidingSoraCardBannerTime() >= SORA_CARD_BANNER_RERUN,
     qr: null,
   };
 };

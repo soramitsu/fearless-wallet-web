@@ -24,6 +24,7 @@ export enum GettersTypes {
   getIsCustomSort = 'getIsCustomSort',
   showPolkaswapAlert = 'showPolkaswapAlert',
   getShowWarningNetworks = 'getShowWarningNetworks',
+  showSoraCardBanner = 'showSoraCardBanner',
 }
 
 export type Getters = {
@@ -38,6 +39,7 @@ export type Getters = {
   [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): AccountJson[];
   [GettersTypes.getWallets](state: State, getters?: GetterTree<State, State> & Getters): WalletInfo[];
   [GettersTypes.showPolkaswapAlert](state: State, getters?: GetterTree<State, State> & Getters): boolean;
+  [GettersTypes.showSoraCardBanner](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getShowWarningNetworks](
     state: State,
     getters?: GetterTree<State, State> & Getters
@@ -137,6 +139,10 @@ const getters: GetterTree<State, State> & Getters = {
     (address: string) => {
       return isCustomSort[address] ?? false;
     },
+
+  [GettersTypes.showSoraCardBanner]({ showSoraCardBanner }): boolean {
+    return showSoraCardBanner;
+  },
 };
 
 export default getters;

@@ -11,7 +11,6 @@
     <ValidatedInput
       v-model="slippagePercent"
       placeholder="assets.slippage"
-      typeText="uppercase"
       class="row"
       :errorDescriptions="warningMessage"
       :isError="isErrorSlippageInput"

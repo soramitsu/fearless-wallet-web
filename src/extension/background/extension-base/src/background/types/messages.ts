@@ -147,6 +147,7 @@ export interface RequestSignatures {
   'pri(networkMap.getSubscription)': [null, Record<string, NetworkJsonOld>, Record<string, NetworkJsonOld>];
 
   //Authorize
+  'pri(authorize.approve.polkaswap)': [string[], null];
   'pri(authorize.approve)': [RequestAuthorizeApprove, boolean];
   'pri(authorize.list)': [null, ResponseAuthorizeList];
   'pri(authorize.requests)': [RequestAuthorizeSubscribe, boolean, AuthorizeRequest[]];
@@ -184,6 +185,7 @@ export interface RequestSignatures {
   'pri(google.create.file)': [ICreateFile, FilesResponse];
   'pri(google.delete.file)': [GoogleFileId, void];
   'pri(tab.status)': [null, ActiveTabAuthorizeStatus];
+
   //Transfer
   'pri(accounts.checkTransfer)': [RequestCheckTransfer, ResponseCheckTransfer];
   'pri(accounts.transfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
@@ -204,8 +206,10 @@ export interface RequestSignatures {
   'pri(price.update.currency)': [string, void];
   'pri(price.get.price)': [RequestPrice, PriceJson];
   'pri(price.get.subscription)': [RequestSubscribePrice, PriceJson, PriceJson];
+  'pri(soraCard.token)': [RequestAuthorizeSubscribe, boolean, string];
 
   // public/external requests, i.e. from a page
+  'pub(soraCard.token)': [string, null];
   'pub(accounts.list)': [RequestAccountList, InjectedAccount[]];
   'pub(accounts.subscribe)': [RequestAccountSubscribe, string, InjectedAccount[]];
   'pub(accounts.unsubscribe)': [RequestAccountUnsubscribe, boolean];

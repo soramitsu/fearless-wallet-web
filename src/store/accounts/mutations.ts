@@ -19,6 +19,7 @@ export enum MutationTypes {
   HIDE_POLKASWAP_ALERT = 'HIDE_POLKASWAP_ALERT',
   HIDE_NETWORK_WARNING = 'HIDE_NETWORK_WARNING',
   SET_BALANCE = 'SET_BALANCE',
+  SET_SORA_CARD_BANNER_VISIBILITY = 'SET_SORA_CARD_BANNER_VISIBILITY',
 }
 
 export type Mutations = {
@@ -35,6 +36,7 @@ export type Mutations = {
   [MutationTypes.SET_CUSTOM_SORT](state: State, props: string): void;
   [MutationTypes.HIDE_POLKASWAP_ALERT](state: State, value: boolean): void;
   [MutationTypes.HIDE_NETWORK_WARNING](state: State, network: string): void;
+  [MutationTypes.SET_SORA_CARD_BANNER_VISIBILITY](state: State, value: boolean): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -69,15 +71,15 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.SET_ACCOUNTS](state, { accounts, isMobileUpdate }) {
     const mobileIndex = state.accounts.findIndex((account) => account.isMobile);
-    const isMobileWalletExists = mobileIndex >= 0;
+    const isMobileWalletExists = mobileIndex !== -1;
 
-    if (!accounts.length) {
+    if (accounts.length !== 0) {
       if (isMobileUpdate) {
-        if (isMobileWalletExists) state.accounts.splice(mobileIndex, 1);
+        if (isMobileWalletExists) state.accounts.splice(mobileIndex, 1, accounts[0]);
+        else state.accounts.push(accounts[0]);
       } else {
-        if (isMobileWalletExists) {
-          state.accounts = [state.accounts[mobileIndex], ...accounts];
-        } else state.accounts = [];
+        if (isMobileWalletExists) state.accounts = [state.accounts[mobileIndex], ...accounts];
+        else state.accounts = accounts;
       }
 
       accountController.setAccounts(state.accounts);
@@ -85,21 +87,21 @@ const mutations: MutationTree<State> & Mutations = {
       return;
     }
 
-    if (isMobileWalletExists) {
-      if (isMobileUpdate) {
-        state.accounts[mobileIndex] = accounts[0];
-      } else {
-        state.accounts = [state.accounts[mobileIndex], ...accounts];
-      }
-    } else state.accounts = [...accounts];
+    if (isMobileUpdate || isMobileWalletExists) state.accounts.splice(mobileIndex, 1);
+    else {
+      if (isMobileWalletExists) state.accounts = [state.accounts[mobileIndex]];
+      else state.accounts = [];
+    }
 
     accountController.setAccounts(state.accounts);
   },
 
   [MutationTypes.HIDE_POLKASWAP_ALERT](state) {
-    state.showPolkaswapAlert = false;
+    setTimeout(() => {
+      state.showPolkaswapAlert = false;
 
-    accountController.setAgreeSwapDisclaimer();
+      accountController.setAgreeSwapDisclaimer();
+    }, 100);
   },
 
   [MutationTypes.SET_AUTO_SELECT_NODE](state, { network, value }) {
@@ -110,6 +112,12 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.SET_QR](state, payload) {
     state.qr = payload;
+  },
+
+  [MutationTypes.SET_SORA_CARD_BANNER_VISIBILITY](state, value) {
+    accountController.setHidingSoraCardBannerTime(Date.now());
+
+    state.showSoraCardBanner = value;
   },
 
   [MutationTypes.DELETE_QR](state) {

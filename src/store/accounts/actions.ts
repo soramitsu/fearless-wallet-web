@@ -11,14 +11,14 @@ export enum ActionTypes {
   ONLINE_STATUS_UPDATE = 'ONLINE_STATUS_UPDATE',
 }
 
-type AugmentedActionContext = {
+type AugmentedAccountContext = {
   commit<K extends keyof Mutations>(key: K, payload: Parameters<Mutations[K]>[1]): ReturnType<Mutations[K]>;
 } & Omit<ActionContext<State, any>, 'commit'>;
 
 export type Actions = {
-  [ActionTypes.SET_SELECTED_WALLET](context: AugmentedActionContext, props: AccountJson | undefined): void;
-  [ActionTypes.SET_BALANCE](context: AugmentedActionContext, props: BalanceJson): Promise<void>;
-  [ActionTypes.ONLINE_STATUS_UPDATE](context: AugmentedActionContext): void;
+  [ActionTypes.SET_SELECTED_WALLET](context: AugmentedAccountContext, props: AccountJson | undefined): void;
+  [ActionTypes.SET_BALANCE](context: AugmentedAccountContext, props: BalanceJson): Promise<void>;
+  [ActionTypes.ONLINE_STATUS_UPDATE](context: AugmentedAccountContext): void;
 };
 
 const actions: ActionTree<State, State> & Actions = {
@@ -44,6 +44,7 @@ const actions: ActionTree<State, State> & Actions = {
 
     commit(MutationTypes.SET_BALANCE, { details, reset });
   },
+
   [ActionTypes.ONLINE_STATUS_UPDATE]({ commit }) {
     navigator.connection.addEventListener('change', () => {
       commit(MutationTypes.SET_ONLINE_STATUS, navigator.onLine);

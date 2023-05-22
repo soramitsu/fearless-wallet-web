@@ -20,6 +20,9 @@ export default class WalletBalance extends Vue {
 
   get percentString() {
     const { percent, amount } = this.changeWalletBalance;
+
+    if (percent === 0) return `${this.$n(0, 'percent')}`;
+
     const sign = percent > 0 ? '+' : '';
     const displayAmount = amount < 0 ? amount * -1 : amount;
     const percentage = percent / 100 ?? 0;
@@ -63,7 +66,7 @@ export default class WalletBalance extends Vue {
   }
 
   .down-percent {
-    color: $delete-color;
+    color: $orange-color;
   }
 
   .fiat-balance {

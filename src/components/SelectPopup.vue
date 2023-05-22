@@ -20,10 +20,12 @@
   >
     <div v-for="{ name, value, icon } in options" :key="value" :class="rowClasses(value)" @click="toggle(value)">
       <div class="description">
-        <Icon v-if="icon === 'globus' && showIcon" :icon="icon" className="img" />
-        <Icon v-else-if="icon === '_default' && showIcon" :icon="icon" className="img" />
+        <template v-if="showIcon">
+          <Icon v-if="icon === 'globus' && showIcon" :icon="icon" className="img" />
 
-        <ExternalLogo v-else-if="showIcon" :name="icon" class="img" />
+          <ExternalLogo v-else-if="showIcon" :name="icon" class="img" />
+        </template>
+
         {{ name }}
       </div>
 

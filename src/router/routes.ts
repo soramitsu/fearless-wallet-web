@@ -9,7 +9,6 @@ import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Staking = () => import('@/screens/staking/Staking.vue');
 const History = () => import('@/screens/history/History.vue');
-const Polkaswap = () => import('@/screens/polkaswap/Polkaswap.vue');
 const Accounts = () => import('@/screens/accounts/Accounts.vue');
 const Nodes = () => import('@/screens/accounts/Nodes.vue');
 const MobileConnect = () => import('@/screens/mobileConnect/MobileConnect.vue');
@@ -17,9 +16,11 @@ const Authorize = () => import('@/screens/extension-ui/authorize/Authorize.vue')
 const Transaction = () => import('@/screens/extension-ui/signing/Transaction.vue');
 const MetaRequest = () => import('@/screens/extension-ui/metadata/Metadata.vue');
 const Export = () => import('@/screens/accounts/Export.vue');
-const PolkaswapDisclaimer = () => import('@/screens/polkaswap/swap/Disclaimer.vue');
 
+const SoraCard = () => import(/* webpackChunkName: "sora" */ '@/screens/soraCard/SoraCardPage.vue');
 const SoraSwap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/SwapForm.vue');
+const PolkaswapDisclaimer = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/swap/Disclaimer.vue');
+const Polkaswap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkaswap/Polkaswap.vue');
 
 const AddWallet = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/AddWallet.vue');
 const AddFromGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/AddFromGoogle.vue');
@@ -47,15 +48,16 @@ export enum Components {
   AddFromGoogle = 'AddFromGoogle',
   PolkaswapDisclaimer = 'PolkaswapDisclaimer',
   SoraSwap = 'SoraSwap',
+  SoraCard = 'SoraCard',
 }
 
 const haveSelectedWallet = () => {
   return store.getters.getSelectedWallet.address.length !== 0;
 };
 
-const haveAuthRequests = () => store.getters.getAuthList.length;
-const haveSignRequests = () => store.getters.getSignList.length;
-const haveMetaRequests = () => store.getters.getMetaRequests.length;
+const haveAuthRequests = () => store.getters.authList.length;
+const haveSignRequests = () => store.getters.signList.length;
+const haveMetaRequests = () => store.getters.metaRequests.length;
 
 const routes: Array<RouteConfig> = [
   {
@@ -99,14 +101,19 @@ const routes: Array<RouteConfig> = [
     component: Transaction,
   },
   {
-    path: '/polkaswap-disclaimer',
-    name: Components.PolkaswapDisclaimer,
-    component: PolkaswapDisclaimer,
+    path: '/sora-card',
+    name: Components.SoraCard,
+    component: SoraCard,
   },
   {
     path: '/sora-swap',
     name: Components.SoraSwap,
     component: SoraSwap,
+  },
+  {
+    path: '/polkaswap-disclaimer',
+    name: Components.PolkaswapDisclaimer,
+    component: PolkaswapDisclaimer,
   },
   {
     path: '/fearless',

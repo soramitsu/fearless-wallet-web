@@ -1,5 +1,3 @@
-// Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
-// SPDX-License-Identifier: Apache-2.0
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { TypeRegistry } from '@polkadot/types/create';
 import { api as apiSora, connection as soraConnection } from '@sora-substrate/util';
@@ -12,8 +10,6 @@ import { getCurrentProvider } from '../../utils';
 import type { ApiInterfaceEvents } from '@polkadot/api/types';
 import { isSora } from '@/helpers/common';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
-
-// export const DEFAULT_AUX = ['Aux1', 'Aux2', 'Aux3', 'Aux4', 'Aux5', 'Aux6', 'Aux7', 'Aux8', 'Aux9'];
 
 function createApiObject(): ApiProps {
   return {
@@ -69,7 +65,9 @@ function generateEvmHttpApi(): ApiProps {
 }
 
 function onConnected(networkName: string) {
-  if (isSora(networkName)) state.apis.substrate[networkName].api = soraConnection.api!;
+  if (isSora(networkName)) {
+    state.apis.substrate[networkName].api = soraConnection.api!;
+  }
 
   state.apis.substrate[networkName].apiRetry = 0;
   state.apis.substrate[networkName].isApiConnected = true;
@@ -107,7 +105,12 @@ function onDisconnect(networkName: string) {
 }
 
 function onReady(networkName: string) {
-  if (isSora(networkName)) apiSora.initialize(false);
+  if (isSora(networkName)) {
+    apiSora.initialize(false);
+    apiSora.calcStaticNetworkFees();
+
+    state.subscribeTotalXorBalance();
+  }
 
   state.apis.substrate[networkName].isApiReady = true;
 }
@@ -133,9 +136,8 @@ export async function initApi(network: NetworkJsonOld): Promise<void> {
     ['error', () => onDisconnect(networkName)],
   ];
 
-  if (isSora(networkName)) {
-    soraConnection.open(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners });
-  } else {
+  if (isSora(networkName)) soraConnection.open(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners });
+  else {
     try {
       const provider = new WsProvider(currentProvider, DOTSAMA_AUTO_CONNECT_MS);
 

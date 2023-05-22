@@ -1,9 +1,9 @@
+import EmailValidator from 'email-validator';
 import type { Meta, AddressMeta } from '@/interfaces/common';
 import type { KeyringPair$Meta } from '@polkadot/keyring/types';
 import { SORA_NETWORK_NAME } from '@/consts/networks';
 
-const EMAIL_REGEXP =
-  /^(([^<>()[\].,;:\s@"]+(\.[^<>()[\].,;:\s@"]+)*)|(".+"))@(([^<>()[\].,;:\s@"]+\.)+[^<>()[\].,;:\s@"]{2,})$/iu;
+const MIN_PHONE_LENGTH_WITH_CODE = 8;
 
 function firstCharToUp(string: string) {
   if (!string) return '';
@@ -23,8 +23,14 @@ function isSora(network: string) {
   return network.toLowerCase() === SORA_NETWORK_NAME;
 }
 
-function validateEmail(email: string) {
-  return EMAIL_REGEXP.test(email);
+function validatePhoneNumber(countryCode: string, phoneNumber: string) {
+  const code = countryCode.replace('+', '');
+
+  return !!(+code && phoneNumber && `${code}${phoneNumber}`.length >= MIN_PHONE_LENGTH_WITH_CODE);
 }
 
-export { getAddressMetaTyped, getMetaTyped, firstCharToUp, isSora, validateEmail };
+function validateEmail(email: string) {
+  return EmailValidator.validate(email);
+}
+
+export { getAddressMetaTyped, getMetaTyped, firstCharToUp, isSora, validatePhoneNumber, validateEmail };

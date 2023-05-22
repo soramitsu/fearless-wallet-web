@@ -26,7 +26,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
-import type { TMutation } from '@/interfaces/common';
+import type { Fn } from '@/interfaces/common';
 import { Components } from '@/router/routes';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -38,7 +38,7 @@ import { beaconController } from '@/controllers';
 export default class WalletDetailsPopup extends Vue {
   @Prop(Number) buttonTopClick!: number;
   @Prop(String) selectedWalletAddress!: string;
-  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<AccountJson>;
+  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: Fn<AccountJson>;
   @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
 
   get selectedWallet() {
@@ -124,7 +124,7 @@ export default class WalletDetailsPopup extends Vue {
     }
 
     .delete {
-      color: $delete-color;
+      color: $orange-color;
       opacity: 0.8;
     }
   }

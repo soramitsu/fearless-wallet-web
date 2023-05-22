@@ -3,15 +3,27 @@ import { IS_PRODUCTION } from '@/consts/global';
 const CHAINS = IS_PRODUCTION
   ? 'https://raw.githubusercontent.com/soramitsu/fearless-utils/v4/chains/chains.json'
   : 'https://raw.githubusercontent.com/soramitsu/fearless-utils/v4/chains/chains_dev.json';
+
 const ASSETS = IS_PRODUCTION
   ? 'https://raw.githubusercontent.com/soramitsu/fearless-utils/v4/chains/assets.json'
   : 'https://raw.githubusercontent.com/soramitsu/fearless-utils/v4/chains/assets_dev.json';
+
 const FIATS = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';
+
+const BASE_URLS_PREFIX = {
+  MOONPAY: 'https://buy.moonpay.com',
+  RAMP: 'https://buy.ramp.network',
+  GOOGLE: 'https://accounts.google.com',
+};
+
+const BASE_URLS_SUFFIX = {
+  SUBSCAN: 'subscan.io',
+};
 
 const FEARLESS_TERMS = 'https://fearlesswallet.io/terms/';
 const FEARLESS_PRIVACY = 'https://fearlesswallet.io/privacy/';
-const SORA_CARD_PRIVACY = 'https://soracard.com/privacy/';
-const SORA_CARD_TERMS = 'https://soracard.com/terms/';
+const SORA_CARD_PRIVACY = 'https://soracard.com/terms/en/polkaswap/';
+const SORA_CARD_TERMS = 'https://soracard.com/privacy/en/polkaswap/';
 const FEARLESS_WALLET = 'https://fearlesswallet.io/';
 const WIKI = 'https://wiki.fearlesswallet.io/';
 const GITHUB = 'https://github.com/soramitsu/fearless-wallet-web';
@@ -26,6 +38,7 @@ const EMAIL = 'fearless@soramitsu.co.jp';
 const POLKASWAP_FAQ = 'https://wiki.sora.org/ecosystem/what-is-polkaswap/polkaswap-faq';
 const POLKASWAP_MEMORANDUM = 'https://wiki.sora.org/ecosystem/what-is-polkaswap/terms';
 const POLKASWAP_POLICY = 'https://wiki.sora.org/ecosystem/what-is-polkaswap/privacy';
+const POLKASWAP = IS_PRODUCTION ? 'https://polkaswap.io' : 'https://exchange.dev.sora2.tachi.soramitsu.co.jp/'; // https://test.polkaswap.io
 
 const URLS = {
   ASSETS,
@@ -49,16 +62,7 @@ const URLS = {
   POLKASWAP_POLICY,
   SORA_CARD_PRIVACY,
   SORA_CARD_TERMS,
-};
-
-const BASE_URLS_PREFIX = {
-  MOONPAY: 'https://buy.moonpay.com',
-  RAMP: 'https://buy.ramp.network',
-  GOOGLE: 'https://accounts.google.com',
-};
-
-const BASE_URLS_SUFFIX = {
-  SUBSCAN: 'subscan.io',
+  POLKASWAP,
 };
 
 function isSafeForExternalOpen(url: string): boolean {
@@ -81,4 +85,4 @@ function isSafeForExternalOpen(url: string): boolean {
   return false;
 }
 
-export { isSafeForExternalOpen, BASE_URLS_PREFIX, URLS };
+export { URLS, BASE_URLS_PREFIX, isSafeForExternalOpen };

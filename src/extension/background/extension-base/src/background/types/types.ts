@@ -22,7 +22,7 @@ import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types'
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import { RelayChainName, SwapOptions, MarketType } from '@/interfaces';
+import { RelayChainName, SwapOptions, MarketType, WalletAddress } from '@/interfaces';
 
 export interface PrepareExternalRequest {
   id: string;
@@ -218,14 +218,6 @@ export interface RequestAccountCreateSuri {
   meta?: Record<string, unknown>;
 }
 
-export interface RequestAccountCreateHardware {
-  accountIndex: number;
-  address: string;
-  addressOffset: number;
-  genesisHash: string;
-  hardwareType: string;
-  name: string;
-}
 export interface PriceJson {
   ready?: boolean;
   currency: string;
@@ -726,6 +718,7 @@ export interface AuthResponse {
   result: boolean;
   authorizedAccounts: string[];
 }
+
 export type ActiveTabAuthorizeStatus = {
   isAuthorize: boolean;
   authorizeAccountsCount: number;
@@ -910,4 +903,4 @@ export interface TokenBalance {
   balances: BalanceItem[];
 }
 
-export type BalanceMap = Record<string, TokenBalance[]>;
+export type BalanceMap = Record<WalletAddress, TokenBalance[]>;

@@ -1,8 +1,4 @@
 import { FPNumber } from '@sora-substrate/util';
-import { getTotalBalance } from './currencies';
-import type { ChangeWalletBalance, AssetsPrice } from '@/interfaces';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { APIItemState } from '@/extension/background/extension-base/src/api/evm/types/ether';
 
 interface Options {
   decimalsValue?: number;
@@ -36,43 +32,4 @@ function addNumbers(values: (string | number)[]): string {
   return values.reduce((sum, number) => sum.add(new FPNumber(number)), FPNumber.ZERO).toString();
 }
 
-function getSummaryTransferableWalletBalance(tokens: TokenBalance[], price: AssetsPrice): number {
-  let walletBalance = 0;
-
-  tokens.forEach((token) => {
-    token.balances.forEach((balance) => {
-      if (balance.state === APIItemState.READY) {
-        const tokenPrice = price.tokenPriceMap[token.priceId ?? ''] ?? 0;
-        const assetCount = +(balance.transferable ?? 0);
-        const assetValue = assetCount * tokenPrice;
-
-        walletBalance += assetValue;
-      }
-    });
-  });
-
-  return walletBalance;
-}
-
-function getChangeWalletBalance(tokens: TokenBalance[], price: AssetsPrice): ChangeWalletBalance {
-  const changeAssets = tokens.map((token) => {
-    const priceChange = price?.tokenPriceChange[token.priceId ?? ''] ?? 0;
-    const totalBalance = +getTotalBalance(token);
-    const currentPercent = 100 + (priceChange ?? 0);
-    const oldBalance = (totalBalance / currentPercent) * 100;
-    const changeAmount = totalBalance - oldBalance;
-
-    return { totalBalance, changeAmount };
-  });
-
-  const totalChange = +addNumbers(changeAssets.map(({ changeAmount }) => changeAmount));
-  const totalBalance = +addNumbers(changeAssets.map(({ totalBalance }) => totalBalance));
-  const totalPercentChange = totalBalance === 0 ? 0 : (totalChange / totalBalance) * 100;
-
-  return {
-    percent: totalPercentChange,
-    amount: totalChange,
-  };
-}
-
-export { formattedNumber, addNumbers, getChangeWalletBalance, getSummaryTransferableWalletBalance };
+export { formattedNumber, addNumbers };

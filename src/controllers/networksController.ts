@@ -7,7 +7,7 @@ import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { LocalStorage } from '@/controllers/localStorageController';
 
-const lsNetworks = new LocalStorage('networks');
+const lsNetworks = new LocalStorage('networks_');
 const zeroBalance = 'zero-balance';
 
 type NetworksZeroBalance = Record<WalletAddress, Record<NetworkName, Record<AssetId, string>>>;

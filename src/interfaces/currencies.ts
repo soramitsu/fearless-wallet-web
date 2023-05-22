@@ -1,7 +1,6 @@
 import { FPNumber, CodecString } from '@sora-substrate/util';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
 import type { WalletAddress, NetworkAssetsType, NetworkName, AccountBalance } from '@/interfaces';
-import type { CurrencyController } from '@/controllers';
 import type { ApiPromise } from '@polkadot/api';
 import type { SignerOptions } from '@polkadot/api/submittable/types';
 import type { Asset } from '@sora-substrate/util/build/assets/types';
@@ -39,10 +38,6 @@ type AssetsBalancesNew = AssetBalance & {
 
 export type BalancesNew = AssetsBalancesNew[];
 type Balances = AssetsBalances[];
-
-type Currency = CurrencyController;
-
-type Currencies = Currency[];
 
 enum MarketType {
   SMART = 'SMART',
@@ -94,9 +89,7 @@ type CreateSwapResult = {
 export {
   WalletBalance,
   Balances,
-  Currencies,
   BalanceFP,
-  Currency,
   TypeAsset,
   SwapOptions,
   ExtrinsicOptions,

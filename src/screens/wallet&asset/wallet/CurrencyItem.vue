@@ -98,7 +98,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
-import type { CustomEvent, TMutation } from '@/interfaces';
+import type { CustomEvent, Fn } from '@/interfaces';
 import type { SetHiddenAsset, SelectedWallet } from '@/store';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -107,6 +107,7 @@ import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutatio
 import { Components } from '@/router/routes';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { GetAssetPrice } from '@/store/networks/types';
+import { getSummaryTransferableBalance } from '@/helpers/currencies';
 
 @Component
 export default class CurrencyItem extends Vue {
@@ -120,7 +121,7 @@ export default class CurrencyItem extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: TMutation<SetHiddenAsset>;
+  @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: Fn<SetHiddenAsset>;
 
   get isAdditional() {
     return this.assetData.balances.length > this.countDisplayedNetworks;
@@ -199,10 +200,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get transferableAssetBalance() {
-    return this.assetData.balances.reduce((result, { transferable }) => {
-      if (transferable) return result + +transferable;
-      else return result;
-    }, 0);
+    return +getSummaryTransferableBalance(this.assetData, this.selectedNetwork);
   }
 
   get transferableFiatBalance() {

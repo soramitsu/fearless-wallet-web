@@ -100,9 +100,9 @@ export default class History extends Vue {
   }
 
   get isMainNetwork() {
-    return !!this.currency.balances.find(
+    return !!this.currency.balances?.find(
       ({ name, isUtility, isNative }) =>
-        name.toLowerCase() === this.selectedNetwork.toLowerCase() && (isUtility || isNative)
+        name.toLowerCase() === this.selectedNetwork?.toLowerCase() && (isUtility || isNative)
     );
   }
 

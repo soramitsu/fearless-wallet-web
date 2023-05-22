@@ -9,6 +9,7 @@ import { accounts } from '@polkadot/ui-keyring/observable/accounts';
 import { base64Decode, isEthereumAddress } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
+import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import {
   AuthorizeRequest,
   AuthRequest,
@@ -55,7 +56,7 @@ import { initWeb3Api } from '../../api/evm';
 import PriceStore from '../../stores/Price';
 import { getTokenPrice } from '../../utils/coingecko';
 import { getId } from '../../utils';
-import { initApi } from '../../api/substrate';
+import { initApi } from '../../api/substrate/api';
 import { axios } from '../../utils/axios';
 import { ASSETS, CHAINS, prepNetworkNames } from '../../const/networks';
 import { DEFAULT_EVM_TOKENS } from '../../api/tokens/evm/defaultEvmToken';
@@ -68,6 +69,8 @@ import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-p
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
 import { AssetJson, SoraFees } from '@/interfaces';
+import { URLS } from '@/consts/urls';
+import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/networks';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -175,6 +178,7 @@ export default class State {
   public signRequests: Record<string, SignRequest> = {};
   private historyMap: Record<string, TransactionHistoryItemType[]> = {};
   private historySubject = new Subject<Record<string, TransactionHistoryItemType[]>>();
+  public readonly soraCardTokenSubject: BehaviorSubject<string> = new BehaviorSubject<string>('');
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
   public readonly metaSubject = new BehaviorSubject<MetadataRequest[]>([]);
   public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
@@ -329,6 +333,24 @@ export default class State {
     if (defaultAuthAccountSelection && defaultAuthAccountSelection.length)
       this.defaultAuthAccountSelection = defaultAuthAccountSelection;
   }
+
+  approvePolkaswap = async (authorizedAccounts: string[]): Promise<void> => {
+    const { POLKASWAP } = URLS;
+    const stripedUrl = stripUrl(POLKASWAP);
+
+    this.authUrls[stripedUrl] = {
+      authorizedAccounts,
+      count: 0,
+      id: getId(),
+      origin: 'SubWallet Connect',
+      url: POLKASWAP,
+      isAllowed: true,
+      isAllowedMap: {},
+    };
+
+    await this.saveCurrentAuthList();
+    await this.updateDefaultAuthAccounts(authorizedAccounts);
+  };
 
   authComplete = (
     id: string,
@@ -885,6 +907,7 @@ export default class State {
   }
 
   async setNotification(notification: string): Promise<boolean> {
+    // не используется, мб можно удалить
     storage.set({ notification });
 
     return true;
@@ -1049,6 +1072,21 @@ export default class State {
     return this.priceStore.getSubject();
   }
 
+  public updateXorTotalBalance(muchTotal: FPNumber): void {
+    this.getCurrentAccount((account) => {
+      if (!account) return;
+
+      const { address } = account;
+
+      const currencyIndex = this.balanceMap[address].findIndex(({ assetId }) => assetId === SORA_XOR_ASSET_ID);
+
+      const token = this.balanceMap[address][currencyIndex];
+      const index = token.balances.findIndex(({ name }) => name.toLowerCase() === SORA_NETWORK_NAME);
+
+      this.balanceMap[address][currencyIndex].balances[index].muchTotal = muchTotal.toString();
+    });
+  }
+
   public setBalanceItem(networkKey: string, item: BalanceItem) {
     this.getCurrentAccount((account) => {
       if (!account) return;
@@ -1062,12 +1100,12 @@ export default class State {
 
         return isExistingAssetId || isExistingAsset;
       });
-      const token = this.balanceMap[address][currencyIndex];
 
+      const token = this.balanceMap[address][currencyIndex];
       const index = token.balances.findIndex((el) => {
         const key = prepNetworkNames[el.name] ?? el.name;
 
-        return key === item.chain;
+        return key === networkKey;
       });
 
       const balanceItem = this.balanceMap[address][currencyIndex].balances[index];
@@ -1087,9 +1125,7 @@ export default class State {
 
     this.updateBalanceStore(networkKey, item);
 
-    this.lazyNext('setBalanceItem', () => {
-      this.publishBalance();
-    });
+    this.lazyNext('setBalanceItem', () => this.publishBalance());
   }
 
   public getNetworkGenesisHashByKey(key: string) {
@@ -1105,8 +1141,32 @@ export default class State {
   public setCurrentAccount(data: CurrentAccountState, callback?: () => void): void {
     this.currentAccountStore.set('CurrentAccountInfo', data, () => {
       this.updateServiceInfo();
+
+      // logic for Sora library
+      if (data?.address) {
+        const pair = keyring.getPair(data?.address);
+
+        apiSora.account = { json: null as any, pair };
+
+        this.subscribeTotalXorBalance();
+      }
+
       callback && callback();
     });
+  }
+
+  public subscribeTotalXorBalance() {
+    if (!apiSora.api.isConnected) return;
+
+    try {
+      const subscription = apiSora.assets
+        .getTotalXorBalanceObservable()
+        .subscribe((xorTotalBalance: FPNumber) => this.updateXorTotalBalance(xorTotalBalance));
+
+      this.subscription.updateSubscription('xorTotalBalance', subscription.unsubscribe);
+    } catch (ex) {
+      console.error('failed subscribe or unsubscribe to XOR balance');
+    }
   }
 
   private updateBalanceStore(networkKey: string, item: BalanceItem) {

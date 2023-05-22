@@ -76,7 +76,7 @@ import BaseApi from '@/util/BaseApi';
 import { windowOpen } from '@/extension/messaging';
 import { ActiveTabAuthorizeStatus } from '@/extension/background/extension-base/src/background/types/types';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
-import { TAction } from '@/interfaces';
+import { AsyncFn } from '@/interfaces';
 
 @Component({
   components: { ConnectionPopup },
@@ -91,8 +91,8 @@ export default class Header extends Vue {
   @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(ExtensionGettersTypes.getTabStatus) tabStatus!: ActiveTabAuthorizeStatus;
-  @Action(ExtensionActionTypes.FETCH_TAB_STATUS) fetchTabStatus!: TAction<ActiveTabAuthorizeStatus>;
+  @Getter(ExtensionGettersTypes.tabStatus) tabStatus!: ActiveTabAuthorizeStatus;
+  @Action(ExtensionActionTypes.FETCH_TAB_STATUS) fetchTabStatus!: AsyncFn<ActiveTabAuthorizeStatus>;
 
   get showBackIcon() {
     return this.$route.name === Components.Asset;

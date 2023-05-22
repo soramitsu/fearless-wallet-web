@@ -10,7 +10,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
-import type { TAction, TMutation } from '@/interfaces';
+import type { AsyncFn, Fn } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { AccountJson, BalanceJson, PriceJson } from '@/extension/background/extension-base/src/background/types/types';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
@@ -33,6 +33,7 @@ import {
 } from '@/extension/messaging';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { IS_EXTENSION } from '@/consts/global';
+import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 
 @Component
 export default class App extends Vue {
@@ -40,17 +41,17 @@ export default class App extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
-  @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<AccountJson>;
-  @Action(AccountsActionTypes.ONLINE_STATUS_UPDATE) updateOnlineStatus!: TAction<void>;
-
-  @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: TMutation<SetNetworksStatusProps>;
-  @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<SetAccountsProps>;
-  @Mutation(NetworksMutationTypes.SET_ASSETS_PRICE) setPrices!: TMutation<SetAssetsPriceProps>;
-  @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<boolean>;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_FIAT) setSelectedFiat!: TMutation<string>;
-  @Action(AccountsActionTypes.SET_BALANCE) setBalance!: TAction<BalanceJson>;
-  @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
-  @Action(NetworksActionTypes.FETCH_FIATS) fetchFiats!: TAction<void>;
+  @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: Fn<SetNetworksStatusProps>;
+  @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: Fn<SetAccountsProps>;
+  @Mutation(NetworksMutationTypes.SET_ASSETS_PRICE) setPrices!: Fn<SetAssetsPriceProps>;
+  @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: Fn<boolean>;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_FIAT) setSelectedFiat!: Fn<string>;
+  @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: AsyncFn;
+  @Action(NetworksActionTypes.FETCH_FIATS) fetchFiats!: AsyncFn;
+  @Action(SoraCardActionTypes.GET_USER_STATUS) getUserStatus!: AsyncFn;
+  @Action(AccountsActionTypes.ONLINE_STATUS_UPDATE) updateOnlineStatus!: AsyncFn;
+  @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<AccountJson>;
+  @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
 
   get includeKeepAlive() {
     const components = ['Main'];
@@ -73,6 +74,7 @@ export default class App extends Vue {
     this.setupPrice();
     this.setupNetworks();
     this.setupSWPing();
+    this.getUserStatus(); // SORA Card
   }
 
   unregisterInactiveWorkers() {
@@ -106,6 +108,7 @@ export default class App extends Vue {
 
   async setupBalance() {
     const balance = await getBalance();
+
     this.setBalance(balance);
 
     subscribeBalance((balances) => {
@@ -140,13 +143,12 @@ export default class App extends Vue {
 
   onAccountUpdate(accounts: AccountJson[], isMobileUpdate = false) {
     const selectedAccount = accounts.find((account) => account.active);
+
     this.setAccounts({ accounts, isMobileUpdate });
 
     if (selectedAccount || !this.wallets.length) this.setSelectedWallet(selectedAccount);
 
-    if (!this.wallets.length) {
-      this.$router.push(Components.Welcome);
-    }
+    if (!this.wallets.length) this.$router.push(Components.Welcome);
   }
 
   setupWallet() {
@@ -189,7 +191,7 @@ body {
   text-align: center;
   margin: 0 auto;
   padding: $default-padding;
-  background-image: url('./assets/background.png');
+  background-image: url('@/assets/background.png');
   background-position: center;
   background-size: cover;
 }

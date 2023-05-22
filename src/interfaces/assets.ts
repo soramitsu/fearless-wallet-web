@@ -124,6 +124,7 @@ type AssetsPrice = {
   tokenPriceMap: Record<string, number>;
   tokenPriceChange: Record<string, number>;
 };
+
 type KeysAssetPricesJson = keyof AssetPrices;
 
 export { KeysAssetPricesJson, AssetsPrice, AssetName, AssetPrices, AssetPrice, AssetJson, AssetId };

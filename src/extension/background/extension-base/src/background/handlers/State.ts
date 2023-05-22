@@ -41,6 +41,7 @@ import {
   ResponseAccountExportPrivateKey,
   ServiceInfo,
   BalanceMap,
+  Providers,
 } from '../types/types';
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
@@ -66,7 +67,7 @@ import { getMockCurrencies, isEthereumNetwork } from '../utils/utils';
 import { NETWORK_STATUS } from '../../api/types/networks';
 import { getCurrentProvider, stripUrl, withErrorLog } from './helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
-import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
+import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
 import { AssetJson, SoraFees } from '@/interfaces';
@@ -130,6 +131,8 @@ export default class State {
     timestamp: 0,
   };
   public subscription: FWSubscription;
+  public injectedProviders: Map<Port, ProviderInterface> = new Map();
+  public providers: Providers = {};
   public chainRegistryMap: Record<string, ChainRegistry> = {};
   public chainRegistrySubject = new Subject<Record<string, ChainRegistry>>();
   public readonly unsubscriptionMap: Record<string, () => void> = {};
@@ -184,14 +187,14 @@ export default class State {
   }
 
   constructor() {
-    this.authUrls = {};
     this.injectFromStorage();
+
     this.subscription = new FWSubscription(this);
     this.cron = new FWCron(this, this.subscription);
     this.init();
   }
 
-  setFiatSymbol(symbol: string) {
+  public setFiatSymbol(symbol: string) {
     this.fiatSymbol = symbol;
 
     chrome.storage.local.set({ fiatSymbol: this.fiatSymbol });
@@ -252,15 +255,15 @@ export default class State {
     return storage.get(key);
   }
 
-  private async numAuthRequests() {
+  private numAuthRequests() {
     return Object.keys(this.authRequests).length;
   }
 
-  private async numMetaRequests() {
+  private numMetaRequests() {
     return Object.keys(this.metaRequests).length;
   }
 
-  private async numSignRequests() {
+  private numSignRequests() {
     return Object.keys(this.signRequests).length;
   }
 
@@ -268,29 +271,27 @@ export default class State {
     return this.ready;
   }
 
-  public async allAuthRequests(): Promise<AuthorizeRequest[]> {
+  public allAuthRequests(): AuthorizeRequest[] {
     return Object.values(this.authRequests).map(({ id, request, url }): AuthorizeRequest => ({ id, request, url }));
   }
 
-  public async allMetaRequests(): Promise<MetadataRequest[]> {
+  public allMetaRequests(): MetadataRequest[] {
     return Object.values(this.metaRequests).map(({ id, request, url }): MetadataRequest => ({ id, request, url }));
   }
 
-  public async allSignRequests(): Promise<SigningRequest[]> {
+  public allSignRequests(): SigningRequest[] {
     return Object.values(this.signRequests).map(
       ({ account, id, request, url }): SigningRequest => ({ account, id, request, url })
     );
   }
 
-  async popupClose(): Promise<void> {
-    const { windows } = await this.getFromStorage(['windows']);
+  popupClose(): void {
+    this.windows.forEach((id: number) => withErrorLog(() => chrome.windows.remove(id)));
 
-    windows?.forEach((id: number) => withErrorLog(() => chrome.windows.remove(id)));
-
-    await storage.set({ windows: [] });
+    this.windows = [];
   }
 
-  async popupOpen(): Promise<void> {
+  popupOpen(): void {
     if (this.notification && this.notification !== 'extension')
       chrome.windows.getCurrent((win) => {
         const popupOptions = { ...POPUP_WINDOW_OPTS };
@@ -309,16 +310,21 @@ export default class State {
   async injectFromStorage() {
     extractMetadata(metaStore);
 
-    const { authUrls, defaultAuthAccountSelection, fiatSymbol } = await this.getFromStorage([
-      'fiatSymbol',
-      'authUrls',
-      'defaultAuthAccountSelection',
-    ]);
+    const { authUrls, defaultAuthAccountSelection, fiatSymbol, injectedProviders, providers, windows } =
+      await this.getFromStorage([
+        'fiatSymbol',
+        'authUrls',
+        'defaultAuthAccountSelection',
+        'injectedProviders',
+        'providers',
+        'windows',
+      ]);
 
-    if (authUrls) this.authUrls = authUrls;
-
+    if (authUrls && Object.keys(authUrls).length) this.authUrls = authUrls;
+    if (windows && windows.length) this.windows = windows;
     if (fiatSymbol) this.setFiatSymbol(fiatSymbol);
-
+    if (injectedProviders) this.injectedProviders = new Map(injectedProviders);
+    if (providers) this.providers = providers;
     if (defaultAuthAccountSelection && defaultAuthAccountSelection.length)
       this.defaultAuthAccountSelection = defaultAuthAccountSelection;
   }
@@ -404,7 +410,7 @@ export default class State {
     }
   }
 
-  public async updateCurrentTabsUrl([tab]: chrome.tabs.Tab[]) {
+  public updateCurrentTabsUrl([tab]: chrome.tabs.Tab[]) {
     if (!tab || !tab.url) {
       this.currentTabStatus = {
         isAuthorize: false,
@@ -512,7 +518,7 @@ export default class State {
     return true;
   }
 
-  public async disableNetworkMap(networkKey: string): Promise<boolean> {
+  public disableNetworkMap(networkKey: string): boolean {
     if (this.lockNetworkMap) return false; // todo ???
 
     this.lockNetworkMap = true; // todo ???
@@ -568,7 +574,7 @@ export default class State {
     return this.currentTabStatus;
   }
 
-  async deleteAuthRequest(requestId: string) {
+  deleteAuthRequest(requestId: string) {
     delete this.authRequests[requestId];
 
     this.updateIconAuth(true);
@@ -587,14 +593,14 @@ export default class State {
     return true;
   }
 
-  private async saveCurrentAuthList() {
-    await storage.set({ authUrls: this.authUrls });
+  private saveCurrentAuthList() {
+    return storage.set({ authUrls: this.authUrls });
   }
 
-  async updateDefaultAuthAccounts(defaultAuthAccountSelection: string[]) {
+  updateDefaultAuthAccounts(defaultAuthAccountSelection: string[]) {
     this.defaultAuthAccountSelection = defaultAuthAccountSelection;
 
-    await storage.set({ defaultAuthAccountSelection });
+    storage.set({ defaultAuthAccountSelection });
   }
 
   public getAllAddresses(): string[] {
@@ -617,7 +623,7 @@ export default class State {
     resolve: (result: boolean) => void,
     reject: (error: Error) => void
   ): Resolver<boolean> => {
-    const complete = async (): Promise<void> => {
+    const complete = (): void => {
       delete this.metaRequests[id];
 
       this.updateIconMeta(true);
@@ -640,7 +646,7 @@ export default class State {
     resolve: (result: ResponseSigning) => void,
     reject: (error: Error) => void
   ): Resolver<ResponseSigning> => {
-    const complete = async (): Promise<void> => {
+    const complete = (): void => {
       delete this.signRequests[id];
       this.updateIconSign(true);
     };
@@ -658,9 +664,9 @@ export default class State {
   };
 
   async updateIcon(shouldClose?: boolean): Promise<void> {
-    const authCount = await this.numAuthRequests();
-    const metaCount = await this.numMetaRequests();
-    const signCount = await this.numSignRequests();
+    const authCount = this.numAuthRequests();
+    const metaCount = this.numMetaRequests();
+    const signCount = this.numSignRequests();
 
     const text = authCount ? 'Auth' : metaCount ? 'Meta' : signCount ? `${signCount}` : '';
 
@@ -681,36 +687,34 @@ export default class State {
 
     delete this.authUrls[url];
 
-    await storage.set({ authUrls: this.authUrls });
-
-    this.saveCurrentAuthList();
+    await this.saveCurrentAuthList();
 
     return this.authUrls;
   }
 
-  async updateIconAuth(shouldClose?: boolean): Promise<void> {
-    const allAuthRequests = await this.allAuthRequests();
+  updateIconAuth(shouldClose?: boolean): void {
+    const allAuthRequests = this.allAuthRequests();
 
     this.authSubject.next(allAuthRequests);
 
     this.updateIcon(shouldClose);
   }
 
-  async updateIconMeta(shouldClose?: boolean): Promise<void> {
-    const allMetaRequests = await this.allMetaRequests();
+  updateIconMeta(shouldClose?: boolean): void {
+    const allMetaRequests = this.allMetaRequests();
 
     this.metaSubject.next(allMetaRequests);
     this.updateIcon(shouldClose);
   }
 
-  async updateIconSign(shouldClose?: boolean): Promise<void> {
-    const allSignRequests = await this.allSignRequests();
+  updateIconSign(shouldClose?: boolean): void {
+    const allSignRequests = this.allSignRequests();
 
     this.signSubject.next(allSignRequests);
     this.updateIcon(shouldClose);
   }
 
-  async updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): Promise<void> {
+  updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): void {
     authorizedAccountDiff.forEach(([url, authorizedAccountDiff]) => {
       this.authUrls[url].authorizedAccounts = authorizedAccountDiff;
     });
@@ -758,7 +762,7 @@ export default class State {
     });
   }
 
-  async ensureUrlAuthorized(url: string): Promise<boolean> {
+  ensureUrlAuthorized(url: string): boolean {
     const stripedUrl = stripUrl(url);
     const entry = this.authUrls[stripedUrl];
 
@@ -767,7 +771,7 @@ export default class State {
     return true;
   }
 
-  async injectMetadata(url: string, request: MetadataDef): Promise<boolean> {
+  injectMetadata(url: string, request: MetadataDef): Promise<boolean> {
     return new Promise((resolve, reject): void => {
       const id = getId();
 
@@ -783,35 +787,29 @@ export default class State {
     });
   }
 
-  async getAuthRequest(id: string): Promise<AuthRequest> {
+  getAuthRequest(id: string): AuthRequest {
     return this.authRequests[id];
   }
 
-  async getMetaRequest(id: string): Promise<MetaRequest> {
+  getMetaRequest(id: string): MetaRequest {
     return this.metaRequests[id];
   }
 
-  async getSignRequest(id: string): Promise<SignRequest> {
+  getSignRequest(id: string): SignRequest {
     return this.signRequests[id];
   }
 
   // List all providers the extension is exposing
-  async rpcListProviders(): Promise<ResponseRpcListProviders> {
-    const { providers } = await this.getFromStorage(['providers']);
+  rpcListProviders(): ResponseRpcListProviders {
+    return Object.keys(this.providers).reduce((acc, key) => {
+      acc[key] = this.providers[key].meta;
 
-    return Promise.resolve(
-      Object.keys(providers).reduce((acc, key) => {
-        acc[key] = providers[key].meta;
-
-        return acc;
-      }, {} as ResponseRpcListProviders)
-    );
+      return acc;
+    }, {} as ResponseRpcListProviders);
   }
 
-  async rpcSend(request: RequestRpcSend, port: Port): Promise<JsonRpcResponse> {
-    const { injectedProviders } = await this.getFromStorage(['injectedProviders']);
-
-    const provider = injectedProviders.get(port);
+  rpcSend(request: RequestRpcSend, port: Port): Promise<JsonRpcResponse> {
+    const provider = this.injectedProviders.get(port);
 
     assert(provider, 'Cannot call pub(rpc.subscribe) before provider is set');
 
@@ -819,53 +817,47 @@ export default class State {
   }
 
   // Start a provider, return its meta
-  async rpcStartProvider(key: string, port: Port): Promise<ProviderMeta> {
-    const { providers, injectedProviders } = await this.getFromStorage(['providers', 'injectedProviders']);
+  rpcStartProvider(key: string, port: Port): ProviderMeta {
+    assert(Object.keys(this.providers).includes(key), `Provider ${key} is not exposed by extension`);
 
-    assert(Object.keys(providers).includes(key), `Provider ${key} is not exposed by extension`);
-
-    if (injectedProviders.get(port)) {
-      return Promise.resolve(providers[key].meta);
+    if (this.injectedProviders.get(port)) {
+      return this.providers[key].meta;
     }
 
     // Instantiate the provider
-    injectedProviders.set(port, providers[key].start());
-    await storage.set({ injectedProviders });
+    this.injectedProviders.set(port, this.providers[key].start());
+    storage.set({ injectedProviders: this.injectedProviders });
 
     // Close provider connection when page is closed
     port.onDisconnect.addListener((): void => {
-      const provider = injectedProviders.get(port);
+      const provider = this.injectedProviders.get(port);
 
       if (provider) {
         withErrorLog(() => provider.disconnect());
       }
 
-      injectedProviders.delete(port);
+      this.injectedProviders.delete(port);
 
-      storage.set({ injectedProviders });
+      storage.set({ injectedProviders: this.injectedProviders });
     });
 
-    return Promise.resolve(providers[key].meta);
+    return this.providers[key].meta;
   }
 
-  async rpcSubscribe(
+  rpcSubscribe(
     { method, params, type }: RequestRpcSubscribe,
     cb: ProviderInterfaceCallback,
     port: Port
   ): Promise<number | string> {
-    const { injectedProviders } = await this.getFromStorage(['injectedProviders']);
-
-    const provider = injectedProviders.get(port);
+    const provider = this.injectedProviders.get(port);
 
     assert(provider, 'Cannot call pub(rpc.subscribe) before provider is set');
 
     return provider.subscribe(type, method, params, cb);
   }
 
-  async rpcSubscribeConnected(_request: null, cb: ProviderInterfaceCallback, port: Port): Promise<void> {
-    const { injectedProviders } = await this.getFromStorage(['injectedProviders']);
-
-    const provider = injectedProviders.get(port);
+  rpcSubscribeConnected(_request: null, cb: ProviderInterfaceCallback, port: Port): void {
+    const provider = this.injectedProviders.get(port);
 
     assert(provider, 'Cannot call pub(rpc.subscribeConnected) before provider is set');
 
@@ -875,30 +867,21 @@ export default class State {
     provider.on('disconnected', () => cb(null, false));
   }
 
-  async rpcUnsubscribe(request: RequestRpcUnsubscribe, port: Port): Promise<boolean> {
-    const { injectedProviders } = await this.getFromStorage(['injectedProviders']);
-
-    const provider = injectedProviders.get(port);
+  rpcUnsubscribe(request: RequestRpcUnsubscribe, port: Port): Promise<boolean> {
+    const provider = this.injectedProviders.get(port);
 
     assert(provider, 'Cannot call pub(rpc.unsubscribe) before provider is set');
 
     return provider.unsubscribe(request.type, request.method, request.subscriptionId);
   }
 
-  async saveMetadata(meta: MetadataDef): Promise<void> {
+  saveMetadata(meta: MetadataDef): void {
     metaStore.set(meta.genesisHash, meta);
 
     addMetadata(meta);
   }
 
-  async setNotification(notification: string): Promise<boolean> {
-    // не используется, мб можно удалить
-    storage.set({ notification });
-
-    return true;
-  }
-
-  async sign(url: string, request: RequestSign, account: AccountJson): Promise<ResponseSigning> {
+  sign(url: string, request: RequestSign, account: AccountJson): Promise<ResponseSigning> {
     const id = getId();
 
     return new Promise((resolve, reject): void => {

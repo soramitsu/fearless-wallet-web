@@ -275,8 +275,8 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  async authorizeApprove({ authorizedAccounts, id }: RequestAuthorizeApprove): Promise<boolean> {
-    const queued = await this.state.getAuthRequest(id);
+  authorizeApprove({ authorizedAccounts, id }: RequestAuthorizeApprove): boolean {
+    const queued = this.state.getAuthRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -344,8 +344,8 @@ export default class Extension extends FWExtensionBase {
 
     return true;
   }
-  async metadataReject({ id }: RequestMetadataReject): Promise<boolean> {
-    const queued = await this.state.getMetaRequest(id);
+  metadataReject({ id }: RequestMetadataReject): boolean {
+    const queued = this.state.getMetaRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -358,7 +358,6 @@ export default class Extension extends FWExtensionBase {
 
   metadataSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(metadata.requests)'>(id, port);
-    // const { metaSubject } = await this.state.getFromStorage(['metaSubject']);
 
     const subscription = this.state.metaSubject.subscribe((requests: MetadataRequest[]): void => cb(requests));
 
@@ -517,8 +516,8 @@ export default class Extension extends FWExtensionBase {
     };
   }
 
-  async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
-    const queued = await this.state.getSignRequest(id);
+  signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): boolean {
+    const queued = this.state.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -567,10 +566,10 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  async signingApproveSignature({ id, signature }: RequestSigningApproveSignature): Promise<boolean> {
+  signingApproveSignature({ id, signature }: RequestSigningApproveSignature): boolean {
     this.state.signature = signature;
 
-    const queued = await this.state.getSignRequest(id);
+    const queued = this.state.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -579,8 +578,8 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  async signingCancel({ id }: RequestSigningCancel): Promise<boolean> {
-    const queued = await this.state.getSignRequest(id);
+  signingCancel({ id }: RequestSigningCancel): boolean {
+    const queued = this.state.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -591,7 +590,6 @@ export default class Extension extends FWExtensionBase {
 
   signingSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(signing.requests)'>(id, port);
-    // const { signSubject } = await this.state.getFromStorage(['signSubject']);
 
     const subscription = this.state.signSubject.subscribe((requests: SigningRequest[]): void => cb(requests));
 
@@ -1294,8 +1292,8 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  async authorizeApprovePolkaswap(authorizedAccounts: string[]): Promise<void> {
-    this.state.approvePolkaswap(authorizedAccounts);
+  authorizeApprovePolkaswap(authorizedAccounts: string[]): Promise<void> {
+    return this.state.approvePolkaswap(authorizedAccounts);
   }
 
   async handle<TMessageType extends MessageTypes>(
@@ -1322,7 +1320,7 @@ export default class Extension extends FWExtensionBase {
         return this.authorizeApprove(request as RequestAuthorizeApprove);
 
       case 'pri(soraCard.token)':
-        return this.soraCardTokenSubscribe(id, port as Port);
+        return this.soraCardTokenSubscribe(id, port);
 
       case 'pri(authorize.list)':
         return this.getAuthList();
@@ -1373,7 +1371,7 @@ export default class Extension extends FWExtensionBase {
         return this.subscribePrice(id, port);
 
       case 'pri(accounts.current.saveAddress)':
-        return this.saveCurrentAccountAddress(request as RequestCurrentAccountAddress, id, port as Port);
+        return this.saveCurrentAccountAddress(request as RequestCurrentAccountAddress, id, port);
 
       case 'pri(accounts.update.current)':
         return this.updateCurrentAccountAddress(request as string);
@@ -1450,9 +1448,6 @@ export default class Extension extends FWExtensionBase {
       case 'pri(seed.validate)':
         return this.seedValidate(request as RequestSeedValidate);
 
-      case 'pri(settings.notification)':
-        return this.state.setNotification(request as string);
-
       case 'pri(signing.approve.password)':
         return this.signingApprovePassword(request as RequestSigningApprovePassword);
 
@@ -1466,7 +1461,7 @@ export default class Extension extends FWExtensionBase {
         return this.signingIsLocked(request as RequestSigningIsLocked);
 
       case 'pri(signing.requests)':
-        return this.signingSubscribe(id, port as Port);
+        return this.signingSubscribe(id, port);
 
       case 'pri(window.open)':
         return this.windowOpen(request as AllowedPath);
@@ -1503,7 +1498,7 @@ export default class Extension extends FWExtensionBase {
         return this.checkTransfer(request as RequestCheckTransfer);
 
       case 'pri(accounts.transfer)':
-        return this.makeTransfer(id, port as Port, request as RequestTransfer);
+        return this.makeTransfer(id, port, request as RequestTransfer);
 
       case 'pri(accounts.get.soraFees)':
         return this.getSoraFees();
@@ -1515,13 +1510,13 @@ export default class Extension extends FWExtensionBase {
         return this.makeSwap(request as RequestSwap);
 
       case 'pri(transaction.history.add)':
-        return this.updateTransactionHistory(request as RequestTransactionHistoryAdd, id, port as Port);
+        return this.updateTransactionHistory(request as RequestTransactionHistoryAdd, id, port);
 
       case 'pri(transaction.history.get)':
         return this.getHistory(request as RequestTransactionHistoryGet);
 
       case 'pri(transaction.history.get.subscription)':
-        return this.subscribeHistory(id, port as Port);
+        return this.subscribeHistory(id, port);
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

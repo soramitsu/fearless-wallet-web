@@ -64,11 +64,11 @@ export default class Tabs {
     );
   }
 
-  async authorize(url: string, request: RequestAuthorizeTab): Promise<AuthResponse> {
+  authorize(url: string, request: RequestAuthorizeTab): Promise<AuthResponse> {
     return this.state.authorizeUrl(url, request);
   }
 
-  async accountsListAuthorized(url: string, { anyType }: RequestAccountList): Promise<InjectedAccount[]> {
+  accountsListAuthorized(url: string, { anyType }: RequestAccountList): InjectedAccount[] {
     const transformedAccounts = transformAccounts(accountsObservable.subject.getValue(), anyType);
     const transformedAddresses = transformAddresses(keyring.addresses.subject.getValue());
     const totalAccounts = [...transformedAccounts, ...transformedAddresses];
@@ -76,13 +76,14 @@ export default class Tabs {
     return this.filterForAuthorizedAccounts(totalAccounts, url);
   }
 
-  async accountsSubscribeAuthorized(url: string, id: string, port: Port): Promise<string> {
-    const cb = await createSubscription<'pub(accounts.subscribe)'>(id, port);
+  accountsSubscribeAuthorized(url: string, id: string, port: Port): string {
+    const cb = createSubscription<'pub(accounts.subscribe)'>(id, port);
     this.accountSubs[id] = {
       subscription: accountsObservable.subject.subscribe((accounts: SubjectInfo): void => {
         const transformedAccounts = transformAccounts(accounts);
         const transformedMobileAccount = transformAddresses(keyring.addresses.subject.value);
         const allAccounts = [...transformedAccounts, ...transformedMobileAccount];
+
         chrome.storage.local.set({ transformAccounts: allAccounts });
 
         const auths = this.filterForAuthorizedAccounts(allAccounts, url);
@@ -99,7 +100,7 @@ export default class Tabs {
     return id;
   }
 
-  async accountsUnsubscribe(url: string, { id }: RequestAccountUnsubscribe): Promise<boolean> {
+  accountsUnsubscribe(url: string, { id }: RequestAccountUnsubscribe): boolean {
     const sub = this.accountSubs[id];
 
     if (!sub || sub.url !== url) return false;
@@ -167,7 +168,7 @@ export default class Tabs {
     }));
   }
 
-  rpcListProviders(): Promise<ResponseRpcListProviders> {
+  rpcListProviders(): ResponseRpcListProviders {
     return this.state.rpcListProviders();
   }
 
@@ -175,12 +176,12 @@ export default class Tabs {
     return this.state.rpcSend(request, port);
   }
 
-  rpcStartProvider(key: string, port: Port): Promise<ProviderMeta> {
+  rpcStartProvider(key: string, port: Port): ProviderMeta {
     return this.state.rpcStartProvider(key, port);
   }
 
   async rpcSubscribe(request: RequestRpcSubscribe, id: string, port: Port): Promise<boolean> {
-    const innerCb = await createSubscription<'pub(rpc.subscribe)'>(id, port);
+    const innerCb = createSubscription<'pub(rpc.subscribe)'>(id, port);
     const cb = (_error: Error | null, data: SubscriptionMessageTypes['pub(rpc.subscribe)']): void => innerCb(data);
     const subscriptionId = await this.state.rpcSubscribe(request, cb, port);
 
@@ -193,7 +194,7 @@ export default class Tabs {
   }
 
   async rpcSubscribeConnected(request: null, id: string, port: Port): Promise<boolean> {
-    const innerCb = await createSubscription<'pub(rpc.subscribeConnected)'>(id, port);
+    const innerCb = createSubscription<'pub(rpc.subscribeConnected)'>(id, port);
     const cb = (_error: Error | null, data: SubscriptionMessageTypes['pub(rpc.subscribeConnected)']): void =>
       innerCb(data);
 
@@ -206,7 +207,7 @@ export default class Tabs {
     return Promise.resolve(true);
   }
 
-  async rpcUnsubscribe(request: RequestRpcUnsubscribe, port: Port): Promise<boolean> {
+  rpcUnsubscribe(request: RequestRpcUnsubscribe, port: Port): Promise<boolean> {
     return this.state.rpcUnsubscribe(request, port);
   }
 
@@ -235,7 +236,7 @@ export default class Tabs {
     return false;
   }
 
-  async saveSoraCardRefreshToken(token: string): Promise<void> {
+  saveSoraCardRefreshToken(token: string): void {
     this.state.soraCardTokenSubject.next(token);
   }
 
@@ -282,19 +283,19 @@ export default class Tabs {
         return this.rpcListProviders();
 
       case 'pub(rpc.send)':
-        return port && this.rpcSend(request as RequestRpcSend, port);
+        return this.rpcSend(request as RequestRpcSend, port);
 
       case 'pub(rpc.startProvider)':
-        return port && this.rpcStartProvider(request as string, port);
+        return this.rpcStartProvider(request as string, port);
 
       case 'pub(rpc.subscribe)':
-        return port && this.rpcSubscribe(request as RequestRpcSubscribe, id, port);
+        return this.rpcSubscribe(request as RequestRpcSubscribe, id, port);
 
       case 'pub(rpc.subscribeConnected)':
-        return port && this.rpcSubscribeConnected(request as null, id, port);
+        return this.rpcSubscribeConnected(request as null, id, port);
 
       case 'pub(rpc.unsubscribe)':
-        return port && this.rpcUnsubscribe(request as RequestRpcUnsubscribe, port);
+        return this.rpcUnsubscribe(request as RequestRpcUnsubscribe, port);
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

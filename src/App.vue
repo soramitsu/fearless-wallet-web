@@ -41,6 +41,8 @@ export default class App extends Vue {
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
   @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<AccountJson>;
+  @Action(AccountsActionTypes.ONLINE_STATUS_UPDATE) updateOnlineStatus!: TAction<void>;
+
   @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: TMutation<SetNetworksStatusProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<SetAccountsProps>;
   @Mutation(NetworksMutationTypes.SET_ASSETS_PRICE) setPrices!: TMutation<SetAssetsPriceProps>;
@@ -59,6 +61,8 @@ export default class App extends Vue {
   }
 
   async created() {
+    this.onUpdateOnlineStatus();
+
     if (IS_EXTENSION) this.extensionSubscribe();
 
     this.unregisterInactiveWorkers();
@@ -77,6 +81,10 @@ export default class App extends Vue {
         if (registration.active?.state !== 'activated') registration.unregister();
       }
     });
+  }
+
+  onUpdateOnlineStatus() {
+    this.updateOnlineStatus();
   }
 
   setupSWPing() {

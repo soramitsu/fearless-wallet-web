@@ -60,7 +60,7 @@ export default class Currencies extends Vue {
 
     const allHidden = this.balances.every(({ assetId }) => this.hiddenAssets.includes(assetId));
 
-    return this.balances.length === this.hiddenAssets.length || allHidden;
+    return this.balances.length === this.hiddenAssets.length || allHidden || !this.isOnline;
   }
 
   get filteredBalances() {

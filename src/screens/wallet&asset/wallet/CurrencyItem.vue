@@ -16,7 +16,7 @@
         <template>
           <Shimmer v-if="showShimmers" height="14px" width="60px" />
 
-          <template v-else>
+          <template v-else-if="!showWarning">
             <div class="available-networks">
               <ExternalLogo
                 v-for="{ icon, name } in networkBadges"
@@ -106,8 +106,9 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
 import { ALL_NETWORKS } from '@/consts/networks';
-import { GetAssetPrice } from '@/store/networks/types';
+import { GetAssetPrice, GetNetwork } from '@/store/networks/types';
 import { getSummaryTransferableBalance } from '@/helpers/currencies';
+import { APIItemState, NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
 
 @Component
 export default class CurrencyItem extends Vue {
@@ -119,9 +120,15 @@ export default class CurrencyItem extends Vue {
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: Fn<SetHiddenAsset>;
+
+  get networkJson() {
+    return this.getNetwork(this.selectedNetwork);
+  }
 
   get isAdditional() {
     return this.assetData.balances.length > this.countDisplayedNetworks;
@@ -178,7 +185,10 @@ export default class CurrencyItem extends Vue {
   }
 
   get showWarning() {
-    return this.assetData.balances.some((el) => el.state === 'error');
+    return (
+      this.assetData.balances.some((el) => el.state === APIItemState.ERROR) ||
+      this.networkJson?.apiStatus === NETWORK_STATUS.DISCONNECTED
+    );
   }
 
   get assetPrice() {

@@ -280,7 +280,7 @@ export default class CreateGoogle extends Vue {
     if (this.step === 3) {
       const isValidSequenceMnemonic = BaseApi.isValidSequenceMnemonic(
         this.mnemonic,
-        this.selectedMnemonicElements.map(({ word }) => word)
+        this.selectedMnemonicElements.map(({ word }) => word.trim())
       );
 
       if (!isValidSequenceMnemonic) {

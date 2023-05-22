@@ -12,3 +12,18 @@ class Storage {
 }
 
 export const storage = new Storage();
+
+export async function initStorage() {
+  const { authUrls } = await storage.get(['authUrls']);
+
+  const obj: Record<string, any> = {
+    defaultAuthAccountSelection: [],
+    accountSubs: {},
+    addresses: {},
+    providers: {},
+  };
+
+  if (authUrls === undefined) obj.authUrls = {};
+
+  await storage.set(obj);
+}

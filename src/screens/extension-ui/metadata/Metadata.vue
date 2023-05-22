@@ -1,24 +1,28 @@
 <template>
-  <AboveForm :blur="true" header="metadata.text" :closeHandler="onReject">
-    <InfoList>
-      <InfoItem name="from" :value="request.url" />
+  <AboveForm :fullScreen="true" header="metadata.text" :closeHandler="onReject">
+    <div class="meta-content">
+      <div>
+        <InfoList>
+          <InfoItem name="from" :value="request.url" />
 
-      <InfoItem name="chain" :value="request.request.chain" />
+          <InfoItem name="chain" :value="request.request.chain" />
 
-      <InfoItem name="icon" :value="request.request.specVersion" />
+          <InfoItem name="icon" :value="request.request.specVersion" />
 
-      <InfoItem name="decimals" :value="request.request.tokenDecimals" />
+          <InfoItem name="decimals" :value="request.request.tokenDecimals" />
 
-      <InfoItem name="symbol" :value="request.request.tokenSymbol" />
+          <InfoItem name="symbol" :value="request.request.tokenSymbol" />
 
-      <InfoItem name="upgrade" :value="request.request.metaCalls" />
-    </InfoList>
+          <InfoItem name="upgrade" :value="request.request.metaCalls" />
+        </InfoList>
 
-    <div class="alert">
-      <Alert message="metadata.alertMessage" />
+        <div class="alert">
+          <Alert message="metadata.alertMessage" />
+        </div>
+      </div>
+
+      <Button width="100%" text="metadata.appAccess" size="big" fontSize="big" @click="onApprove" />
     </div>
-
-    <Button width="100%" text="metadata.appAccess" size="big" fontSize="big" @click="onApprove" />
   </AboveForm>
 </template>
 
@@ -66,7 +70,14 @@ export default class MetaRequest extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.alert {
-  margin-bottom: 10px;
+.meta-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+
+  .alert {
+    margin-bottom: 10px;
+  }
 }
 </style>

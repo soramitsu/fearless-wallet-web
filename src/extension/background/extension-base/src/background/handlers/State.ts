@@ -113,20 +113,6 @@ export const registry = new TypeRegistry();
 
 const metaStore = new MetadataStore();
 
-export async function initState() {
-  extractMetadata(metaStore);
-
-  await storage.set({
-    authUrls: {},
-    defaultAuthAccountSelection: [],
-    accountSubs: {},
-    addresses: {},
-    providers: {},
-    connectedTabsUrl: [],
-    balances: {},
-  });
-}
-
 export default class State {
   public notification = 'popup';
   private cron: FWCron;
@@ -321,6 +307,8 @@ export default class State {
   }
 
   async injectFromStorage() {
+    extractMetadata(metaStore);
+
     const { authUrls, defaultAuthAccountSelection, fiatSymbol } = await this.getFromStorage([
       'fiatSymbol',
       'authUrls',
@@ -603,14 +591,10 @@ export default class State {
     await storage.set({ authUrls: this.authUrls });
   }
 
-  private async saveDefaultAuthAccounts() {
-    await storage.set({ defaultAuthAccountSelection: this.defaultAuthAccountSelection });
-  }
+  async updateDefaultAuthAccounts(defaultAuthAccountSelection: string[]) {
+    this.defaultAuthAccountSelection = defaultAuthAccountSelection;
 
-  async updateDefaultAuthAccounts(newList: string[]) {
-    this.defaultAuthAccountSelection = newList;
-
-    this.saveDefaultAuthAccounts();
+    await storage.set({ defaultAuthAccountSelection });
   }
 
   public getAllAddresses(): string[] {

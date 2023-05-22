@@ -623,7 +623,7 @@ export default class AddWallet extends Vue {
     const isValidSequenceMnemonic = this.isCreateWallet
       ? BaseApi.isValidSequenceMnemonic(
           this.mnemonic,
-          this.selectedMnemonicElements.map(({ word }) => word)
+          this.selectedMnemonicElements.map(({ word }) => word.trim())
         )
       : true;
 

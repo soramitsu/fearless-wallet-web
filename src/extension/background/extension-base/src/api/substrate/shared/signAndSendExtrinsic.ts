@@ -11,7 +11,6 @@ import {
   PrepareExternalRequest,
   SignerType,
 } from '../../../background/types/types';
-import { lockAccount } from '../../../utils/keyring';
 import { HandleBasicTx } from '../../evm/transfer';
 import { sendExtrinsic } from './sendExtrinsic';
 import { signExtrinsic } from './signExtrinsic';

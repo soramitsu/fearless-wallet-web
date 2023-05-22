@@ -114,10 +114,10 @@ import { IS_EXTENSION } from '@/consts/global';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { calculateXorRestPrice, calculateXOREuroBalance, isValidEuroBalanceXor } from '@/util/soraCard';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
-import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/evm/types/ether';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 import { getXORCurrency } from '@/helpers/currencies';
+import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
 
 @Component({
   components: { UnsupportedCountries },

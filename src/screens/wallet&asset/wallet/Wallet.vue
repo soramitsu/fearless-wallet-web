@@ -124,10 +124,10 @@ import {
   getChangeWalletBalance,
   getSummaryTransferableWalletBalance,
 } from '@/helpers/currencies';
-import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/evm/types/ether';
 import { tieAccount } from '@/extension/messaging';
 import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
 import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
+import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
 
 @Component({
   components: {

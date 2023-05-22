@@ -11,13 +11,14 @@ import { SUB_TOKEN_REFRESH_BALANCE_INTERVAL, ASTAR_REFRESH_BALANCE_INTERVAL } fr
 import { sumBN } from '../../utils';
 import { getEVMBalance } from '../evm/balance';
 import EthProvider from '../evm/ethProvider';
-import { APIItemState, BalanceItem } from '../evm/types/ether';
+import { BalanceItem } from '../evm/types/ether';
 import { getERC20Contract } from '../evm/utils/eth';
 import { isEthereumNetwork } from '../../background/utils/utils';
+import { APIItemState } from '../types/networks';
 import { getRegistry, getTokenInfo } from './registry';
 import { getAssetOptions } from './utils';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
-import { AssetJson, RelayChainName } from '@/interfaces';
+import type { AssetJson, RelayChainName } from '@/interfaces';
 import { formatBalance } from '@/util/balances';
 
 function subscribeERC20Interval(

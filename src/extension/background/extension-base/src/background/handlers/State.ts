@@ -45,7 +45,7 @@ import {
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
 import EthProvider from '../../api/evm/ethProvider';
-import { BalanceItem, CustomTokenJson, NETWORK_STATUS } from '../../api/evm/types/ether';
+import { BalanceItem, CustomTokenJson } from '../../api/evm/types/ether';
 import CustomTokenStore from '../../stores/CustomEvmToken';
 import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
 import { initEvmTokenState } from '../../api/evm/utils/eth';
@@ -63,6 +63,7 @@ import { DEFAULT_EVM_TOKENS } from '../../api/tokens/evm/defaultEvmToken';
 import { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '../../types';
 import { FWCron } from '../cron';
 import { getMockCurrencies, isEthereumNetwork } from '../utils/utils';
+import { NETWORK_STATUS } from '../../api/types/networks';
 import { getCurrentProvider, stripUrl, withErrorLog } from './helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
 import type { JsonRpcResponse, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
@@ -570,9 +571,9 @@ export default class State {
   }
 
   public refreshDotSamaApi(key: string) {
-    const currentProvider = this.networkMap[key];
+    const network = this.networkMap[key];
 
-    if (currentProvider) initApi(currentProvider);
+    if (network && network.apiStatus && network.apiStatus === NETWORK_STATUS.DISCONNECTED) initApi(network);
   }
 
   getCurrentTabStatus() {

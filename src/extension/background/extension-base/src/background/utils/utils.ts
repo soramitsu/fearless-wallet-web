@@ -1,6 +1,7 @@
 import { NetworkJsonOld } from '../../types';
-import { APIItemState, BalanceItem } from '../../api/evm/types/ether';
+import { BalanceItem } from '../../api/evm/types/ether';
 import { TokenBalance } from '../types/types';
+import { APIItemState } from '../../api/types/networks';
 import { MAIN_NETWORKS, ETHEREUM_NETWORKS } from '@/consts/networks';
 import { RelayChainName, AssetJson } from '@/interfaces';
 

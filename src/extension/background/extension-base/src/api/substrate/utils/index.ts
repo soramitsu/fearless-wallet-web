@@ -1,6 +1,5 @@
 import { assetFromToken } from '@equilab/api';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { ISubmittableResult } from '@polkadot/types/types';
 import { FPNumber } from '@sora-substrate/math';
 import { ApiPromise } from '@polkadot/api';
 import { state } from '../../../background/handlers';

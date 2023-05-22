@@ -1,6 +1,7 @@
 import { logger as createLogger } from '@polkadot/util';
 import { Logger } from '@polkadot/util/types';
-import { APIItemState, BalanceItem } from '../api/evm/types/ether';
+import { BalanceItem } from '../api/evm/types/ether';
+import { APIItemState } from '../api/types/networks';
 import { storage } from '../stores/Storage';
 import { TransactionHistoryItemType } from '../types';
 

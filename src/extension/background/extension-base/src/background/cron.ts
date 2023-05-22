@@ -11,7 +11,8 @@ import {
   CRON_GET_API_MAP_STATUS,
   CRON_REFRESH_PRICE_INTERVAL,
 } from '../const/intervals';
-import { NetworkJson, NETWORK_STATUS } from '../api/evm/types/ether';
+import { NetworkJson } from '../api/evm/types/ether';
+import { NETWORK_STATUS } from '../api/types/networks';
 import FWState from './handlers/State';
 import { FWSubscription } from './handlers/subscriptions';
 import { ServiceInfo } from './types/types';
@@ -140,11 +141,11 @@ export class FWCron {
 
   onConnectionChange() {
     if (navigator.onLine) {
-      this.logger.log('Extension is offline');
+      this.logger.log('Extension is back online');
 
       this.start();
     } else {
-      this.logger.log('Extension is back online');
+      this.logger.log('Extension is offline');
 
       this.stop();
     }

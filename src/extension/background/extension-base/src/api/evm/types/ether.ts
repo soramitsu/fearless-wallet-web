@@ -1,12 +1,5 @@
+import { APIItemState, NETWORK_STATUS } from '../../types/networks';
 import { ContractType } from '@/interfaces/ether';
-
-export enum APIItemState {
-  PENDING = 'pending',
-  READY = 'ready',
-  CACHED = 'cached',
-  ERROR = 'error',
-  NOT_SUPPORT = 'not_support',
-}
 
 export interface BalanceChildItem {
   reserved: string;
@@ -44,9 +37,6 @@ export interface BalanceItem {
 
 export enum CustomTokenType {
   erc20 = 'erc20',
-  // erc721 = 'erc721',
-  // psp22 = 'psp22',
-  // psp34 = 'psp34',
 }
 
 export interface CustomToken {
@@ -64,13 +54,6 @@ export interface CustomToken {
 
 export interface CustomTokenJson {
   [CustomTokenType.erc20]: CustomToken[];
-}
-
-export enum NETWORK_STATUS {
-  CONNECTED = 'connected',
-  CONNECTING = 'connecting',
-  DISCONNECTED = 'disconnected',
-  PENDING = 'pending',
 }
 
 export type NetWorkGroup =
@@ -136,17 +119,4 @@ export type TokenInfo = {
   specialOption?: object;
   assetId?: string; // for moon assets
   assetIndex?: number | string;
-};
-
-export type AssetJsonOld = {
-  id: string;
-  symbol: string;
-  displayName?: string;
-  chainId: string;
-  precision: number;
-  priceId?: string;
-  icon: string;
-  currencyId?: string;
-  transfersEnabled?: true;
-  existentialDeposit: string;
 };

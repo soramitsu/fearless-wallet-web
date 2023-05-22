@@ -99,13 +99,6 @@ export default class App extends Vue {
     }, 24000);
   }
 
-  addEventOnline() {
-    const updateOnlineStatus = () => this.setOnlineStatus(navigator.onLine);
-
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
-  }
-
   async setupBalance() {
     const balance = await getBalance();
 

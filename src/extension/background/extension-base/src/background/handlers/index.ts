@@ -8,7 +8,7 @@ import State from './State';
 import type { MessageTypes, Port, TransportRequestMessage } from '../types/types';
 
 export const state = new State();
-export const extension = new Extension();
+export const extension = new Extension(state);
 export const tabs = new Tabs(state);
 
 export default function handler<TMessageType extends MessageTypes>(

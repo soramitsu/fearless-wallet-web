@@ -1,8 +1,8 @@
 import assert from 'assert';
 import { keyring } from '@polkadot/ui-keyring';
-import { MetadataDef } from '@polkadot/extension-inject/types';
-import { KeyringAddress } from '@polkadot/ui-keyring/types';
-import {
+import type { MetadataDef } from '@polkadot/extension-inject/types';
+
+import type {
   CachedUnlocks,
   RequestAccountBatchExport,
   RequestAccountCreateExternal,
@@ -22,8 +22,7 @@ import {
   ValidateJsonResult,
   RequestUpdateMeta,
 } from '../types/types';
-import State from './State';
-import { state } from '.';
+import type State from './State';
 import type { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types';
 import { VALID_MNEMONIC } from '@/consts/derivationPath';
 import { DerivationPath } from '@/interfaces';
@@ -33,7 +32,7 @@ export default class FWExtensionBase {
   public cachedUnlocks: CachedUnlocks;
   protected state: State;
 
-  constructor() {
+  constructor(state: State) {
     this.cachedUnlocks = {};
     this.state = state;
     this.token = '';
@@ -211,6 +210,6 @@ export default class FWExtensionBase {
     address,
     password,
   }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
-    return state.accountExportPrivateKey({ address, password });
+    return this.state.accountExportPrivateKey({ address, password });
   }
 }

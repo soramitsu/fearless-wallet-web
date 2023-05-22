@@ -56,7 +56,7 @@ import { estimateFee, makeTransfer } from '../../api/substrate/transfer';
 import { getTokenInfo } from '../../api/substrate/registry';
 import { createSwap } from '../../api/substrate/swaps';
 import { withErrorLog } from './helpers';
-import { registry } from './State';
+import State, { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
 import FWExtensionBase from './ExtensionBase';
 import { state } from '.';
@@ -156,6 +156,10 @@ async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> 
 }
 
 export default class Extension extends FWExtensionBase {
+  constructor(state: State) {
+    super(state);
+  }
+
   private cancelSubscription(id: string): boolean {
     return this.state.cancelSubscription(id);
   }

@@ -192,7 +192,6 @@ export default class Header extends Vue {
       height: 48px;
 
       .name {
-        display: flex;
         max-width: 220px;
         font-weight: 700;
         font-size: 24px;

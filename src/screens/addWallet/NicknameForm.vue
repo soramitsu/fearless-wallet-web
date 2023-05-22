@@ -2,6 +2,7 @@
   <div class="nickname">
     <Input
       v-model="syncedNickname"
+      ref="nicknameInput"
       placeholder="addWallet.walletNickname"
       size="big"
       :maxlength="35"
@@ -14,12 +15,18 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
+import { Component, Vue, Prop, PropSync, Ref } from 'vue-property-decorator';
+import type Input from '@/components/Input.vue';
 
 @Component
 export default class NicknameForm extends Vue {
   @Prop({ default: false }) readonly!: boolean;
   @PropSync('nickname', { type: String }) syncedNickname!: string;
+  @Ref('nicknameInput') readonly nicknameInputComponent!: Input;
+
+  async mounted() {
+    this.nicknameInputComponent.input.focus();
+  }
 }
 </script>
 

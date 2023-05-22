@@ -113,20 +113,6 @@ export const registry = new TypeRegistry();
 
 const metaStore = new MetadataStore();
 
-export async function initState() {
-  extractMetadata(metaStore);
-
-  await storage.set({
-    authUrls: {},
-    defaultAuthAccountSelection: [],
-    accountSubs: {},
-    addresses: {},
-    providers: {},
-    connectedTabsUrl: [],
-    balances: {},
-  });
-}
-
 export default class State {
   public notification = 'popup';
   private cron: FWCron;
@@ -603,14 +589,10 @@ export default class State {
     await storage.set({ authUrls: this.authUrls });
   }
 
-  private async saveDefaultAuthAccounts() {
-    await storage.set({ defaultAuthAccountSelection: this.defaultAuthAccountSelection });
-  }
+  async updateDefaultAuthAccounts(defaultAuthAccountSelection: string[]) {
+    this.defaultAuthAccountSelection = defaultAuthAccountSelection;
 
-  async updateDefaultAuthAccounts(newList: string[]) {
-    this.defaultAuthAccountSelection = newList;
-
-    this.saveDefaultAuthAccounts();
+    await storage.set({ defaultAuthAccountSelection });
   }
 
   public getAllAddresses(): string[] {
@@ -1007,6 +989,12 @@ export default class State {
 
     this.initNetworkStates();
     this.updateServiceInfo();
+
+    extractMetadata(metaStore);
+
+    const { authUrls } = await this.getFromStorage(['authUrls']);
+
+    this.authUrls = authUrls ?? {}; // at the very first start after installation authUrls = undefined
   }
 
   public initNetworkStates() {

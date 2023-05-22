@@ -1,15 +1,17 @@
 import { keyring } from '@polkadot/ui-keyring';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import handlers, { state } from '@extension-base/background/handlers';
-import { initState } from '@extension-base/background/handlers/State';
 import '@polkadot/extension-inject/crossenv';
 import AccountsStore from '../background/extension-base/src/stores/Accounts';
 import { RequestSignatures } from '../background/extension-base/src/background/types/messages';
+import { initStorage } from '../background/extension-base/src/stores/Storage';
 import type { Port, TransportRequestMessage } from '@/extension/background/extension-base/src/background/types/types';
 
 interface ModifiedPort extends Port {
   timer?: NodeJS.Timeout;
 }
+
+state.init();
 
 async function getActiveTabs() {
   // quering the current active tab in the current window should only ever return 1 tab
@@ -28,7 +30,8 @@ async function getActiveTabs() {
 }
 
 chrome.runtime.onInstalled.addListener(async () => {
-  await initState();
+  await initStorage();
+
   state.onInstall();
 
   getActiveTabs();

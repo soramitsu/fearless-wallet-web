@@ -127,6 +127,18 @@ export class FWCron {
       },
     });
 
+    navigator.connection.addEventListener('change', () => {
+      if (navigator.onLine) {
+        this.logger.log('Extension is offline');
+
+        this.start();
+      } else {
+        this.logger.log('Extension is back online');
+
+        this.stop();
+      }
+    });
+
     this.status = 'running';
   };
 

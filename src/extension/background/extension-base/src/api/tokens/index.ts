@@ -2,19 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import { ApiProps } from '../../background/types/types';
-import { ChainRegistry, DeleteCustomTokenParams } from '../../types';
 import EthProvider from '../evm/ethProvider';
-import { CustomTokenType, CustomTokenJson, CustomToken } from '../evm/types/ether';
-
+import { CustomTokenType } from '../evm/types/ether';
 import { validateEvmToken } from './evm/utils';
+import type { ChainRegistry, DeleteCustomTokenParams } from '../../types';
+import type { CustomTokenJson, CustomToken } from '../evm/types/ether';
 
 export async function validateCustomToken(
   contractAddress: string,
   tokenType: CustomTokenType,
-  web3: EthProvider | undefined,
-  apiProps: ApiProps | undefined,
-  contractCaller?: string
+  web3: EthProvider | undefined
 ) {
   if (tokenType === CustomTokenType.erc20 && web3 !== undefined) {
     return await validateEvmToken(contractAddress, tokenType, web3);

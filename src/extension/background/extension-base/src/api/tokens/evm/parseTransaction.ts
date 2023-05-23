@@ -1,12 +1,9 @@
 // Copyright 2019-2022 @subwallet/extension-koni authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import axios from 'axios';
-import BigN from 'bignumber.js';
-import { NestedArray, EVMTransactionArg, ParseEVMTransactionData, ResponseParseEVMContractInput } from '../../../types';
-import { NetworkJson } from '../../evm/types/ether';
-import { createTransactionFromRLP } from '../../evm/utils/eth';
-import { ERC20Contract, initWeb3Api } from './web3';
+import { NestedArray, EVMTransactionArg } from '../../../types';
+
+import { ERC20Contract } from './web3';
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 const ABIs = [ERC20Contract.abi];

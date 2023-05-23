@@ -1,5 +1,5 @@
 import { APIItemState, NETWORK_STATUS } from '../../types/networks';
-import { ContractType } from '@/interfaces/ether';
+import type { ContractType } from '@/interfaces/ether';
 
 export interface BalanceChildItem {
   reserved: string;

@@ -1,13 +1,14 @@
 // Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import { keyring } from '@polkadot/ui-keyring';
 import { assert } from '@polkadot/util';
+import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
 import KeyringSigner from '../../../signers/KeyringSigner';
 import { unlockAccount } from '../../../utils/keyring';
-import { HandleBasicTx } from '../../evm/transfer';
-import { ApiProps, ExternalRequestPromise, SignerType } from '../../../background/types/types';
+import { SignerType } from '../../../background/types/types';
+import type { ApiProps, ExternalRequestPromise } from '../../../background/types/types';
+import type { HandleBasicTx } from '../../evm/transfer';
 
 interface AbstractSignExtrinsicProps {
   address: string;

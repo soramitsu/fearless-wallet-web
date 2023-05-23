@@ -3,7 +3,6 @@
 
 import { SubmittableExtrinsic } from '@polkadot/api/promise/types';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { AccountInfoWithProviders, AccountInfoWithRefCount, EventRecord } from '@polkadot/types/interfaces';
 import { FPNumber } from '@sora-substrate/util';
 import {
   ApiProps,
@@ -15,15 +14,14 @@ import {
   SupportTransferResponse,
   TokenBalance,
 } from '../../background/types/types';
-import { TokenInfo } from '../evm/types/ether';
 import { state } from '../../background/handlers';
 import { getTokenInfo } from './registry';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
 import { checkMainToken } from './balance';
 import { createExtrinsicTransfer } from './utils';
-import { AssetJson } from '@/interfaces';
-
-// import { FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT, getOrmlOptions } from '@/util/teleport';
+import type { AccountInfoWithProviders, AccountInfoWithRefCount, EventRecord } from '@polkadot/types/interfaces';
+import type { TokenInfo } from '../evm/types/ether';
+import type { AssetJson } from '@/interfaces';
 
 export async function getExistentialDeposit(
   networkKey: string,

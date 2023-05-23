@@ -42,6 +42,7 @@ import {
   ServiceInfo,
   BalanceMap,
   Providers,
+  ResponseTotalBalances,
 } from '../types/types';
 import MetadataStore from '../../stores/Metadata';
 import { storage } from '../../stores/Storage';
@@ -70,9 +71,10 @@ import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscripti
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
-import { AssetJson, SoraFees } from '@/interfaces';
+import type { AssetJson, ChangeWalletBalance, SoraFees } from '@/interfaces';
 import { URLS } from '@/consts/urls';
-import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/networks';
+import { ALL_NETWORKS, SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/networks';
+import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/currencies';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -1055,41 +1057,35 @@ export default class State {
     });
   }
 
-  public setBalanceItem(networkKey: string, item: BalanceItem) {
-    this.getCurrentAccount((account) => {
-      if (!account) return;
+  public setBalanceItem(networkKey: string, item: BalanceItem, address: string) {
+    const currencyIndex = this.balanceMap[address].findIndex(({ assetId: _assetId, name, relayChain }) => {
+      const isExistingAssetId = _assetId === item.id;
+      const isExistingDisplayName = name === item.name;
+      const isExistingAsset = isExistingDisplayName && relayChain === item.relayChain;
 
-      const { address } = account;
-
-      const currencyIndex = this.balanceMap[address].findIndex(({ assetId: _assetId, name, relayChain }) => {
-        const isExistingAssetId = _assetId === item.id;
-        const isExistingDisplayName = name === item.name;
-        const isExistingAsset = isExistingDisplayName && relayChain === item.relayChain;
-
-        return isExistingAssetId || isExistingAsset;
-      });
-
-      const token = this.balanceMap[address][currencyIndex];
-      const index = token.balances.findIndex((el) => {
-        const key = prepNetworkNames[el.name] ?? el.name;
-
-        return key === networkKey;
-      });
-
-      const balanceItem = this.balanceMap[address][currencyIndex].balances[index];
-      const { reserved, free, frozen, total, transferable, state } = item;
-
-      this.balanceMap[address][currencyIndex].balances[index] = {
-        ...balanceItem,
-        reserved,
-        free,
-        frozen,
-        total,
-        transferable,
-        state,
-        timestamp: +new Date(),
-      };
+      return isExistingAssetId || isExistingAsset;
     });
+
+    const token = this.balanceMap[address][currencyIndex];
+    const index = token.balances.findIndex((el) => {
+      const key = prepNetworkNames[el.name] ?? el.name;
+
+      return key === networkKey;
+    });
+
+    const balanceItem = this.balanceMap[address][currencyIndex].balances[index];
+    const { reserved, free, frozen, total, transferable, state } = item;
+
+    this.balanceMap[address][currencyIndex].balances[index] = {
+      ...balanceItem,
+      reserved,
+      free,
+      frozen,
+      total,
+      transferable,
+      state,
+      timestamp: +new Date(),
+    };
 
     this.updateBalanceStore(networkKey, item);
 
@@ -1100,6 +1096,14 @@ export default class State {
     const network = this.networkMap[key];
 
     return network && network.genesisHash;
+  }
+
+  get currentAccount() {
+    return new Promise<CurrentAccountState>((res) => {
+      this.getCurrentAccount((value) => {
+        res(value);
+      });
+    });
   }
 
   public getCurrentAccount(update: (value: CurrentAccountState) => void): void {
@@ -1180,12 +1184,35 @@ export default class State {
     };
   }
 
+  async getTotalBalances(): Promise<ResponseTotalBalances[]> {
+    return new Promise<ResponseTotalBalances[]>((res) =>
+      this.getPrice((prices) => {
+        const balances: BalanceMap = { ...this.balanceMap };
+
+        const totalBalances = Object.keys(balances).map((account) => {
+          const total = getSummaryTransferableWalletBalance(balances[account], prices, ALL_NETWORKS);
+          const change = getChangeWalletBalance(balances[account], prices, ALL_NETWORKS);
+
+          return {
+            address: account,
+            total,
+            change,
+          };
+        });
+
+        res(totalBalances);
+      })
+    );
+  }
+
   public getBalance(reset = false): Promise<BalanceJson> {
     return new Promise((resolve) => {
       this.getCurrentAccount((account) => {
-        const details = this.balanceMap[account?.address ?? ''] ?? [];
+        if (account) {
+          const details = this.balanceMap[account.address] ?? [];
 
-        resolve({ details, reset });
+          resolve({ details, reset });
+        }
       });
     });
   }

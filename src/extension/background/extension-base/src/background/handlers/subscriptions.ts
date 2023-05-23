@@ -1,12 +1,11 @@
 // Copyright 2019-2022 @subwallet/extension-koni authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 import { logger as createLogger } from '@polkadot/util';
-import { Logger } from '@polkadot/util/types';
 import { Subscription } from 'rxjs';
-import { ApiProps, MessageTypesWithSubscriptions, Port, SubscriptionMessageTypes } from '../types/types';
-import EthProvider from '../../api/evm/ethProvider';
 import { subscribeBalance } from '../../api/substrate/balance';
-import State from './State';
+import type State from './State';
+import type { Logger } from '@polkadot/util/types';
+import type { MessageTypesWithSubscriptions, Port, SubscriptionMessageTypes } from '../types/types';
 
 type SubscriptionName = 'balance' | 'xorTotalBalance';
 type Subscriptions = Record<string, Port>;
@@ -53,8 +52,18 @@ export class FWSubscription {
     }
   }
 
-  start() {
+  async start() {
     this.logger.log('Starting subscription');
+    const currentAccount = await this.state.currentAccount;
+    const getAccountsExeptCurrent = this.state
+      .getSubstrateAccounts()
+      .filter((el) => el.address !== currentAccount?.address);
+
+    getAccountsExeptCurrent.forEach((account) => {
+      const ethAddress = account.meta.ethereumAddress as string;
+
+      this.subscribeBalances(account.address, ethAddress, true);
+    });
 
     !this.serviceSubscription &&
       (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
@@ -64,7 +73,7 @@ export class FWSubscription {
 
           const { address, ethereumAddress } = serviceInfo.currentAccountInfo;
 
-          this.subscribeBalances(address, ethereumAddress, serviceInfo.apiMap.substrate, serviceInfo.apiMap.evm);
+          this.subscribeBalances(address, ethereumAddress);
         },
       }));
   }
@@ -101,40 +110,22 @@ export class FWSubscription {
     });
   }
 
-  subscribeBalances(
-    address: string,
-    ethereumAddress: string,
-    dotSamaApiMap: Record<string, ApiProps>,
-    web3ApiMap: Record<string, EthProvider>,
-    onlyRunOnFirstTime?: boolean
-  ) {
+  subscribeBalances(address: string, ethereumAddress: string, onlyRunOnFirstTime?: boolean) {
     this.logger.log('Start balance sub for:', address);
 
     this.state
       .resetBalanceMap()
       .then(() => {
-        const unsub = this.initBalanceSubscription(
-          address,
-          ethereumAddress,
-          dotSamaApiMap,
-          web3ApiMap,
-          onlyRunOnFirstTime
-        );
+        const unsub = this.initBalanceSubscription(address, ethereumAddress, onlyRunOnFirstTime);
 
         this.updateSubscription('balance', unsub);
       })
       .catch((err) => console.warn('Unable to subscribe', err));
   }
 
-  initBalanceSubscription(
-    address: string,
-    ethereumAddress: string,
-    dotSamaApiMap: Record<string, ApiProps>,
-    web3ApiMap: Record<string, EthProvider>,
-    onlyRunOnFirstTime?: boolean
-  ) {
-    const unsub = subscribeBalance(address, ethereumAddress, dotSamaApiMap, web3ApiMap, (networkKey, rs) => {
-      this.state.setBalanceItem(networkKey, rs);
+  initBalanceSubscription(address: string, ethereumAddress: string, onlyRunOnFirstTime?: boolean) {
+    const unsub = subscribeBalance(address, ethereumAddress, (networkKey, rs) => {
+      this.state.setBalanceItem(networkKey, rs, address);
     });
 
     if (onlyRunOnFirstTime) {

@@ -2,27 +2,26 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /* eslint-disable no-use-before-define */
-import { SignerResult } from '@polkadot/types/types/extrinsic';
-import { TypeRegistry } from '@polkadot/types';
-import { Registry } from '@polkadot/types/types';
-import { SubmittableExtrinsicFunction } from '@polkadot/api/promise/types';
 import { BN } from '@polkadot/util';
 import { Subscription } from 'rxjs';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ALLOWED_PATH } from '../../defaults';
 import MetadataStore from '../../stores/Metadata';
-import { BalanceItem, NetworkJson } from '../../api/evm/types/ether';
 import EthProvider from '../../api/evm/ethProvider';
 import { CurrentAccountState } from '../../stores/CurrentAccountStore';
 import { RequestSignatures } from './messages';
+import type { SubmittableExtrinsicFunction } from '@polkadot/api/promise/types';
+import type { TypeRegistry } from '@polkadot/types';
+import type { SignerResult } from '@polkadot/types/types/extrinsic';
+import type { Registry, SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
+import type { BalanceItem, NetworkJson } from '../../api/evm/types/ether';
 import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { ProviderInterface } from '@polkadot/rpc-provider/types';
-import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import { RelayChainName, SwapOptions, MarketType, WalletAddress } from '@/interfaces';
+import type { RelayChainName, SwapOptions, MarketType, WalletAddress, ChangeWalletBalance } from '@/interfaces';
 
 export interface PrepareExternalRequest {
   id: string;
@@ -888,7 +887,11 @@ export interface RequestAccountMeta {
 export interface ResponseAccountMeta {
   meta: KeyringPair$Meta;
 }
-
+export type ResponseTotalBalances = {
+  address: string;
+  total: number;
+  change: ChangeWalletBalance;
+};
 export interface TokenBalance {
   mainNetwork: string;
   assetId: string;

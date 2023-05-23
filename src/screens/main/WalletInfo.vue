@@ -4,7 +4,7 @@
       <div class="content">
         <div class="name">{{ name }}</div>
 
-        <!-- <WalletBalance class="balance" :balance="balance" :changeWalletBalance="changeWalletBalance" /> -->
+        <WalletBalance class="balance" :balance="balance" :changeWalletBalance="changeWalletBalance" />
       </div>
 
       <Icon v-if="isMobile" icon="mobile" className="mobile" />
@@ -20,7 +20,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { CustomEvent } from '@/interfaces';
+import { ChangeWalletBalance, CustomEvent } from '@/interfaces';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
 
 @Component({
@@ -36,7 +36,7 @@ export default class WalletInfo extends Vue {
   @Prop({ default: '' }) name!: string;
   @Prop(Number) balance!: number;
   @Prop(Boolean) isMobile!: boolean;
-  // @Prop(Object) changeWalletBalance!: ChangeWalletBalance;
+  @Prop(Object) changeWalletBalance!: ChangeWalletBalance;
   @Prop({ default: false }) isSelected!: boolean;
   @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
 

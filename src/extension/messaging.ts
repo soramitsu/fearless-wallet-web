@@ -47,6 +47,7 @@ import type {
   ResponseCheckSwap,
   RequestSwap,
   ResponseMakeSwap,
+  ResponseTotalBalances,
 } from '@/extension/background/extension-base/src/background/types/types';
 import type { Message, NetworkJsonOld, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
@@ -54,6 +55,7 @@ import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/typ
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type {
+  ChangeWalletBalance,
   DerivationPath,
   FilesResponse,
   GoogleAuthTypes,
@@ -429,6 +431,10 @@ export function deleteGoogleFile(id: string, token: string): Promise<void> {
 
 export function isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
   return sendMessage('pri(tab.status)');
+}
+
+export function getTotalBalances(): Promise<ResponseTotalBalances[]> {
+  return sendMessage('pri(accounts.get.totalBalances)', null);
 }
 
 export function getBalance(): Promise<BalanceJson> {

@@ -17,7 +17,8 @@
         :name="name"
         :isSelected="active"
         :isMobile="isMobile"
-        :balance="0"
+        :balance="getTotalBalance(address)"
+        :changeWalletBalance="getTotalBalanceChange(address)"
         class="total"
         @setShowWalletDetailsPopupVisible="toggleWalletDetailsPopupVisible(...arguments, address)"
         @updateSelectedWallet="updateSelectedWallet(address)"
@@ -34,12 +35,15 @@ import { Getter, Mutation } from 'vuex-class';
 import WalletInfo from './WalletInfo.vue';
 import type { SelectedWallet } from '@/store';
 import type { Fn, CustomEvent } from '@/interfaces';
+import type {
+  AccountJson,
+  ResponseTotalBalances,
+} from '@/extension/background/extension-base/src/background/types/types';
+import type { CurrentAccountInfo } from '@/extension/background/extension-base/src/stores/CurrentAccountStore';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { Components } from '@/router/routes';
-import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
-import { updateCurrentAccountAddress } from '@/extension/messaging';
-import { CurrentAccountInfo } from '@/extension/background/extension-base/src/stores/CurrentAccountStore';
+import { getTotalBalances, updateCurrentAccountAddress } from '@/extension/messaging';
 
 @Component({
   components: { WalletInfo },
@@ -48,6 +52,26 @@ export default class SelectWalletPopup extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: Fn<CurrentAccountInfo>;
+
+  totalBalances: ResponseTotalBalances[] = [];
+
+  async mounted() {
+    this.totalBalances = await getTotalBalances();
+  }
+
+  getTotalBalance(address: string) {
+    const item = this.totalBalances.find((el) => el.address === address);
+
+    if (item) return item.total;
+
+    return 0;
+  }
+  getTotalBalanceChange(address: string) {
+    const item = this.totalBalances.find((el) => el.address === address);
+    if (item) return item.change;
+
+    return 0;
+  }
 
   addWallet() {
     this.$router.push({ name: Components.Welcome });

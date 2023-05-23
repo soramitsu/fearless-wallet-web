@@ -47,7 +47,7 @@ export default class FiatsPopup extends Vue {
     this.filterValue = value;
   }
 
-  async toggleSelectedFiat(id: string) {
+  toggleSelectedFiat(id: string) {
     updateFiatSymbol(id).then(() => {
       this.setSelectedFiat(id);
       this.handlerClose();

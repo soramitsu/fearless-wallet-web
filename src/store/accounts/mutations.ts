@@ -1,8 +1,8 @@
 import type { MutationTree } from 'vuex';
 import type { SelectedWallet, SetAccountsProps, SetAutoSelectNode, SetHiddenAsset } from './types';
 import type { State } from './state';
+import type { BalanceJson } from '@/extension/background/extension-base/src/background/types/types';
 import { accountController } from '@/controllers';
-import { BalanceJson } from '@/extension/background/extension-base/src/background/types/types';
 
 export enum MutationTypes {
   SET_SELECTED_WALLET = 'SET_SELECTED_WALLET',

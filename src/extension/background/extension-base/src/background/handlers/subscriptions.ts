@@ -96,11 +96,9 @@ export class FWSubscription {
 
       if (previousAuth && Object.keys(previousAuth).length) {
         Object.keys(previousAuth).forEach((url) => {
-          if (previousAuth[url].isAllowed) {
-            previousAuth[url].isAllowedMap = this.state.getAddressList(true);
-          } else {
-            previousAuth[url].isAllowedMap = this.state.getAddressList();
-          }
+          previousAuth[url].isAllowedMap = previousAuth[url].isAllowed
+            ? this.state.getAddressList(true)
+            : this.state.getAddressList();
         });
       }
 

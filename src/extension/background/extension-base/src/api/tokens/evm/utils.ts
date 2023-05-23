@@ -6,7 +6,7 @@ import { isEqualContractAddress } from '..';
 import EthProvider from '../../evm/ethProvider';
 import { CustomTokenType, CustomTokenJson, NetworkJson } from '../../evm/types/ether';
 import { DEFAULT_EVM_TOKENS } from './defaultEvmToken';
-import { ERC721Contract, ERC20Contract } from './web3';
+import { ERC20Contract } from './web3';
 
 export async function validateEvmToken(contractAddress: string, tokenType: CustomTokenType.erc20, web3: EthProvider) {
   let tokenContract: Contract;

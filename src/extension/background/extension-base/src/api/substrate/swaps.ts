@@ -1,10 +1,10 @@
 import { Api, FPNumber } from '@sora-substrate/util';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
-import { Asset } from '@sora-substrate/util/build/assets/types';
-import { ExtrinsicSwapOptions, CreateSwapResult, BaseExchangeProps } from '../types/swaps';
 import { state } from '../../background/handlers';
 import { getAssetOptions } from './utils';
-import { SwapOptions } from '@/interfaces';
+import type { Asset } from '@sora-substrate/util/build/assets/types';
+import type { ExtrinsicSwapOptions, CreateSwapResult, BaseExchangeProps } from '../types/swaps';
+import type { SwapOptions } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 
 async function createExchangeB(props: BaseExchangeProps, api: Api<void>): Promise<CreateSwapResult> {

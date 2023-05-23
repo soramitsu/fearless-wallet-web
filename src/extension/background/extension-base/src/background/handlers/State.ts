@@ -10,14 +10,36 @@ import { base64Decode, isEthereumAddress } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
-import {
+import MetadataStore from '../../stores/Metadata';
+import { storage } from '../../stores/Storage';
+import EthProvider from '../../api/evm/ethProvider';
+import CustomTokenStore from '../../stores/CustomEvmToken';
+import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
+import { initEvmTokenState } from '../../api/evm/utils/eth';
+import BalanceService from '../../shared/balanceService';
+import NetworkMapStore from '../../stores/NetworkMap';
+import AuthorizeStore from '../../stores/Authorize';
+import { initWeb3Api } from '../../api/evm';
+import PriceStore from '../../stores/Price';
+import { getTokenPrice } from '../../utils/coingecko';
+import { getId } from '../../utils';
+import { initApi } from '../../api/substrate/api';
+import { axios } from '../../utils/axios';
+import { ASSETS, CHAINS, prepNetworkNames } from '../../const/networks';
+import { DEFAULT_EVM_TOKENS } from '../../api/tokens/evm/defaultEvmToken';
+import { FWCron } from '../cron';
+import { getMockCurrencies, isEthereumNetwork } from '../utils/utils';
+import { NETWORK_STATUS } from '../../api/types/networks';
+import { POPUP_WINDOW_OPTS } from '../types/types';
+import { getCurrentProvider, stripUrl, withErrorLog } from './helpers';
+import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
+import type {
   AuthorizeRequest,
   AuthRequest,
   AuthResponse,
   AuthUrls,
   MetadataRequest,
   MetaRequest,
-  POPUP_WINDOW_OPTS,
   ResponseSigning,
   SigningRequest,
   SignRequest,
@@ -44,34 +66,12 @@ import {
   Providers,
   ResponseTotalBalances,
 } from '../types/types';
-import MetadataStore from '../../stores/Metadata';
-import { storage } from '../../stores/Storage';
-import EthProvider from '../../api/evm/ethProvider';
-import { BalanceItem, CustomTokenJson } from '../../api/evm/types/ether';
-import CustomTokenStore from '../../stores/CustomEvmToken';
-import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
-import { initEvmTokenState } from '../../api/evm/utils/eth';
-import BalanceService from '../../shared/balanceService';
-import NetworkMapStore from '../../stores/NetworkMap';
-import AuthorizeStore from '../../stores/Authorize';
-import { initWeb3Api } from '../../api/evm';
-import PriceStore from '../../stores/Price';
-import { getTokenPrice } from '../../utils/coingecko';
-import { getId } from '../../utils';
-import { initApi } from '../../api/substrate/api';
-import { axios } from '../../utils/axios';
-import { ASSETS, CHAINS, prepNetworkNames } from '../../const/networks';
-import { DEFAULT_EVM_TOKENS } from '../../api/tokens/evm/defaultEvmToken';
-import { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '../../types';
-import { FWCron } from '../cron';
-import { getMockCurrencies, isEthereumNetwork } from '../utils/utils';
-import { NETWORK_STATUS } from '../../api/types/networks';
-import { getCurrentProvider, stripUrl, withErrorLog } from './helpers';
-import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
+import type { BalanceItem, CustomTokenJson } from '../../api/evm/types/ether';
+import type { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '../../types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
-import type { AssetJson, ChangeWalletBalance, SoraFees } from '@/interfaces';
+import type { AssetJson, SoraFees } from '@/interfaces';
 import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/networks';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/currencies';

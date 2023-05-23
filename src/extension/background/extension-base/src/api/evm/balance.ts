@@ -6,10 +6,10 @@ import { ethers } from 'ethers';
 import { ASTAR_REFRESH_BALANCE_INTERVAL, SUB_TOKEN_REFRESH_BALANCE_INTERVAL } from '../../const/intervals';
 import { getRegistry } from '../substrate/registry';
 import { APIItemState } from '../types/networks';
-import { BalanceItem } from './types/ether';
 import EthProvider from './ethProvider';
 import { getERC20Contract } from './utils/eth';
-import { AssetJson } from '@/interfaces';
+import type { BalanceItem } from './types/ether';
+import type { AssetJson } from '@/interfaces';
 
 export async function getEVMBalance(
   networkKey: string,

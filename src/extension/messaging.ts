@@ -451,10 +451,6 @@ export function subscribeHistory(
   return sendMessage('pri(transaction.history.get.subscription)', null, callback);
 }
 
-export function getHistory(address: string, networkKey: string, token?: string) {
-  return sendMessage('pri(transaction.history.get)', { address, networkKey, token });
-}
-
 export function updateTransactionHistory(
   address: string,
   networkKey: string,

@@ -1,11 +1,11 @@
 // Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { EventRecord } from '@polkadot/types/interfaces';
+import type { SubmittableExtrinsic } from '@polkadot/api/types';
 
-import { BasicTxResponse, ExternalRequestPromise, ApiProps } from '../../../background/types/types';
-import { HandleBasicTx } from '../../evm/transfer';
+import type { BasicTxResponse, ExternalRequestPromise, ApiProps } from '../../../background/types/types';
+import type { HandleBasicTx } from '../../evm/transfer';
+import type { EventRecord } from '@polkadot/types/interfaces';
 
 interface SendExtrinsicProps {
   extrinsic: SubmittableExtrinsic<'promise'>;

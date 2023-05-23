@@ -1,10 +1,10 @@
 import { assetFromToken } from '@equilab/api';
-import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { FPNumber } from '@sora-substrate/math';
 import { ApiPromise } from '@polkadot/api';
 import { state } from '../../../background/handlers';
-import { TokenBalance } from '../../../background/types/types';
-import { AssetJson, TypeAsset } from '@/interfaces';
+import type { TokenBalance } from '../../../background/types/types';
+import type { SubmittableExtrinsic } from '@polkadot/api/types';
+import type { AssetJson, TypeAsset } from '@/interfaces';
 type ExtrinsicTransferProps = {
   api: ApiPromise;
   to: string;

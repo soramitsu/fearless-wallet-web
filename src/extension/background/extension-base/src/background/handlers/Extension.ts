@@ -42,7 +42,6 @@ import {
   RequestTransactionHistoryGet,
   TransactionHistoryItemType,
 } from '../../types';
-import { fetchHistory } from '../../api/evm/history';
 import { NetworkJson } from '../../api/evm/types/ether';
 import {
   getERC20TransactionObject,
@@ -765,10 +764,6 @@ export default class Extension extends FWExtensionBase {
     });
 
     return this.state.getHistoryMap();
-  }
-
-  private getHistory({ address, networkKey, token }: RequestTransactionHistoryGet) {
-    return fetchHistory(address, networkKey, token);
   }
 
   private updateTransactionHistory(
@@ -1514,9 +1509,6 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(transaction.history.add)':
         return this.updateTransactionHistory(request as RequestTransactionHistoryAdd, id, port);
-
-      case 'pri(transaction.history.get)':
-        return this.getHistory(request as RequestTransactionHistoryGet);
 
       case 'pri(transaction.history.get.subscription)':
         return this.subscribeHistory(id, port);

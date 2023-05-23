@@ -11,11 +11,11 @@ import {
   CRON_GET_API_MAP_STATUS,
   CRON_REFRESH_PRICE_INTERVAL,
 } from '../const/intervals';
-import { NetworkJson } from '../api/evm/types/ether';
 import { NETWORK_STATUS } from '../api/types/networks';
-import FWState from './handlers/State';
-import { FWSubscription } from './handlers/subscriptions';
-import { ServiceInfo } from './types/types';
+import type { NetworkJson } from '../api/evm/types/ether';
+import type FWState from './handlers/State';
+import type { FWSubscription } from './handlers/subscriptions';
+import type { ServiceInfo } from './types/types';
 
 export class FWCron {
   subscriptions: FWSubscription;
@@ -98,13 +98,7 @@ export class FWCron {
         Object.keys(this.state.getSubstrateApiMap).length !== 0 ||
         Object.keys(this.state.getEvmApiMap).length !== 0
       ) {
-        this.addCron(
-          'refreshPrice',
-          () => {
-            this.state.refreshPrice();
-          },
-          CRON_REFRESH_PRICE_INTERVAL
-        );
+        this.addCron('refreshPrice', () => this.state.refreshPrice(), CRON_REFRESH_PRICE_INTERVAL);
         this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
         this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
       }
@@ -121,13 +115,7 @@ export class FWCron {
         if (this.checkNetworkAvailable(serviceInfo)) {
           // only add cron job if there's at least 1 active network
 
-          this.addCron(
-            'refreshPrice',
-            () => {
-              this.state.refreshPrice();
-            },
-            CRON_REFRESH_PRICE_INTERVAL
-          );
+          this.addCron('refreshPrice', () => this.state.refreshPrice(), CRON_REFRESH_PRICE_INTERVAL);
           this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
           this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
         }

@@ -213,7 +213,7 @@ export default class Extension extends FWExtensionBase {
 
     const accounts = keyring.getAccounts();
     const addresses = keyring.getAddresses();
-    const currentAcc = await this.getCurrentAccount();
+    const currentAcc = await this.state.currentAccount;
     const shouldUpdate =
       !accounts.some(({ address }) => address === currentAcc?.address) ||
       !addresses.some(({ address }) => address === currentAcc?.address);
@@ -231,14 +231,6 @@ export default class Extension extends FWExtensionBase {
     }
 
     return true;
-  }
-
-  getCurrentAccount() {
-    return new Promise<CurrentAccountState>((res) => {
-      this.state.getCurrentAccount((value) => {
-        res(value);
-      });
-    });
   }
 
   accountsValidate({ address, password }: RequestAccountValidate): boolean {
@@ -729,6 +721,10 @@ export default class Extension extends FWExtensionBase {
 
   private createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
     this.state.createUnsubscriptionHandle(id, unsubscribe);
+  }
+
+  private getTotalBalances(reset?: boolean) {
+    return this.state.getTotalBalances();
   }
 
   private getBalance(reset?: boolean): Promise<BalanceJson> {
@@ -1493,6 +1489,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(balance.get.balance)':
         return this.getBalance();
+
+      case 'pri(accounts.get.totalBalances)':
+        return this.getTotalBalances();
 
       case 'pri(balance.get.subscription)':
         return this.subscribeBalance(id, port);

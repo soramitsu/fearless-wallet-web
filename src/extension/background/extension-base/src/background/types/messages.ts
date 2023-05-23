@@ -1,14 +1,19 @@
-import { InjectedAccount, MetadataDef, InjectedMetadataKnown, ProviderMeta } from '@polkadot/extension-inject/types';
-import { JsonRpcResponse } from '@polkadot/rpc-provider/types';
-import { KeyringAddress } from '@polkadot/ui-keyring/types';
-import { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
-import {
+import type {
+  InjectedAccount,
+  MetadataDef,
+  InjectedMetadataKnown,
+  ProviderMeta,
+} from '@polkadot/extension-inject/types';
+import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
+import type { KeyringAddress } from '@polkadot/ui-keyring/types';
+import type { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
+import type {
   NetworkJsonOld,
   TransactionHistoryItemType,
   RequestTransactionHistoryAdd,
   RequestTransactionHistoryGet,
 } from '../../types';
-import {
+import type {
   RequestAccountCreateExternal,
   RequestAccountCreateSuri,
   RequestAddressCreate,
@@ -86,9 +91,10 @@ import {
   RequestSwap,
   ResponseMakeSwap,
   RequestUpdateMeta,
+  ResponseTotalBalances,
 } from './types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import {
+import type {
   DerivationPath,
   GoogleAuthTypes,
   VerifyTokenResponse,
@@ -98,6 +104,7 @@ import {
   SignerPayloadRaw,
   SignerPayloadJSON,
   SoraFees,
+  ChangeWalletBalance,
 } from '@/interfaces';
 
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
@@ -127,6 +134,7 @@ export interface RequestSignatures {
   'pri(accounts.changePassword)': [RequestAccountChangePassword, boolean];
   'pri(accounts.current.saveAddress)': [RequestCurrentAccountAddress, boolean, CurrentAccountInfo];
   'pri(accounts.update.current)': [string, boolean];
+  'pri(accounts.get.totalBalances)': [null, ResponseTotalBalances[]];
 
   //App Managment - networks
   // Network, APIs, Custom tokens functions

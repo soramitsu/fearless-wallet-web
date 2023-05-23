@@ -54,27 +54,6 @@ const actions: ActionTree<State, State> & Actions = {
         serviceType: type,
       });
   },
-
-  // async [ActionTypes.TOGGLE_ACTIVE_NODE]({ state }, { network, nodeUrl, nodeName, oldNodeUrl }) {
-  //   const networkApi = state.networks.find(({ name }) => name === network)!;
-
-  //   if (networkApi.status !== 'disconnected' && nodeUrl === undefined) return;
-  //   else if (nodeUrl === oldNodeUrl) {
-  //     accountController.setActiveNode({ name: nodeName!, url: nodeUrl! }, network);
-
-  //     return;
-  //   }
-
-  //   await networkApi.provider?.disconnect();
-
-  //   const nodeOptions = nodeName && nodeUrl ? { name: nodeName, url: nodeUrl } : undefined;
-  //   const apiOptions: ApiOptions = {
-  //     apiRetry: 0,
-  //     nodeIndex: 0,
-  //   };
-
-  //   connectToApi(networkApi, apiOptions, nodeOptions);
-  // },
 };
 
 export default actions;

@@ -66,11 +66,12 @@ export default class SelectWalletPopup extends Vue {
 
     return 0;
   }
+
   getTotalBalanceChange(address: string) {
     const item = this.totalBalances.find((el) => el.address === address);
     if (item) return item.change;
 
-    return 0;
+    return { percent: 0, amount: 0 };
   }
 
   addWallet() {

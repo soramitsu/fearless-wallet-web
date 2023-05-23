@@ -723,7 +723,7 @@ export default class Extension extends FWExtensionBase {
     this.state.createUnsubscriptionHandle(id, unsubscribe);
   }
 
-  private getTotalBalances(reset?: boolean) {
+  private getTotalBalances() {
     return this.state.getTotalBalances();
   }
 

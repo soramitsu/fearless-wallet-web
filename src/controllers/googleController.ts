@@ -116,15 +116,18 @@ ${json}
     return data;
   }
 
-  public async verifyToken(token: string): Promise<VerifyTokenResponse> {
-    const { data } = await axios.get<VerifyTokenResponse>(
-      `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`,
-      {
+  public async verifyToken(token: string): Promise<VerifyTokenResponse | null> {
+    const res = await axios
+      .get<VerifyTokenResponse>(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`, {
         adapter: fetchAdapter,
-      }
-    );
+      })
+      .catch(() => {
+        return null;
+      });
 
-    return data;
+    if (res && res.data) return res.data;
+
+    return null;
   }
 
   async createFile({ json, options, token }: ICreateFile): Promise<FilesResponse> {

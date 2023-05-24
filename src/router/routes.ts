@@ -49,6 +49,7 @@ export enum Components {
   PolkaswapDisclaimer = 'PolkaswapDisclaimer',
   SoraSwap = 'SoraSwap',
   SoraCard = 'SoraCard',
+  NoFound = 'NoFound',
 }
 
 const haveSelectedWallet = () => {
@@ -66,15 +67,32 @@ const routes: Array<RouteConfig> = [
     component: Welcome,
   },
   {
-    path: '/google/:access_token',
-    name: Components.AddFromGoogle,
-    component: AddFromGoogle,
+    path: '*',
+    name: Components.NoFound,
+    component: Welcome,
+    beforeEnter: (to, from, next) => {
+      if (haveSelectedWallet()) next({ name: Components.Wallet });
+      else next();
+    },
   },
   {
-    path: '/google/create/:access_token',
-    name: Components.CreateGoogle,
-    component: CreateGoogle,
+    path: '/google',
+    name: Components.AddFromGoogle,
+    component: AddFromGoogle,
+    children: [
+      {
+        path: ':access_token',
+        name: Components.AddFromGoogle,
+        component: AddFromGoogle,
+      },
+      {
+        path: 'create/:access_token',
+        name: Components.CreateGoogle,
+        component: CreateGoogle,
+      },
+    ],
   },
+
   {
     path: '/add-wallet/:type',
     name: Components.AddWallet,
@@ -187,12 +205,6 @@ const routes: Array<RouteConfig> = [
     beforeEnter: (to, from, next) => {
       if (!haveSelectedWallet()) next({ name: Components.Welcome });
       else next();
-    },
-  },
-  {
-    path: '/*',
-    redirect: () => {
-      return { name: haveSelectedWallet() ? Components.Wallet : Components.Welcome };
     },
   },
 ];

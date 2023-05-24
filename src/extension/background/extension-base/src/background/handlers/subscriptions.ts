@@ -69,7 +69,7 @@ export class FWSubscription {
       (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
         next: (serviceInfo) => {
           console.info(serviceInfo, 'serviceInfo');
-          if (serviceInfo.currentAccountInfo === null) return;
+          if (!serviceInfo.currentAccountInfo) return;
 
           const { address, ethereumAddress } = serviceInfo.currentAccountInfo;
 

@@ -11,7 +11,6 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { AsyncFn, Fn } from '@/interfaces';
-import { Components } from '@/router/routes';
 import { AccountJson, BalanceJson, PriceJson } from '@/extension/background/extension-base/src/background/types/types';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
@@ -29,7 +28,6 @@ import {
   subscribeBalance,
   subscribeNetworkMap,
   subscribePrice,
-  triggerAccountsSubscription,
 } from '@/extension/messaging';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { IS_EXTENSION } from '@/consts/global';
@@ -69,7 +67,6 @@ export default class App extends Vue {
     this.unregisterInactiveWorkers();
     this.setupWallet();
     this.setupBalance();
-    triggerAccountsSubscription();
     this.fetchFiats();
     this.setupPrice();
     this.setupNetworks();
@@ -100,9 +97,9 @@ export default class App extends Vue {
   }
 
   async setupBalance() {
-    const balance = await getBalance();
-
-    this.setBalance(balance);
+    getBalance().then((value) => {
+      if (value.details.length) this.setBalance(value);
+    });
 
     subscribeBalance((balances) => {
       this.setBalance(balances);
@@ -110,10 +107,6 @@ export default class App extends Vue {
   }
 
   async setupNetworks() {
-    const nets = await getNetworkMap();
-
-    this.setNetworks({ networks: Object.values(nets) });
-
     subscribeNetworkMap((networks) => {
       this.setNetworks({ networks: Object.values(networks) });
     });
@@ -140,8 +133,6 @@ export default class App extends Vue {
     this.setAccounts({ accounts, isMobileUpdate });
 
     if (selectedAccount || !this.wallets.length) this.setSelectedWallet(selectedAccount);
-
-    if (!this.wallets.length) this.$router.push(Components.Welcome);
   }
 
   setupWallet() {

@@ -143,7 +143,6 @@ export default class AddFromGoogle extends Vue {
   back() {
     if (this.step === 1) {
       this.$router.replace('/');
-      this.$router.push({ name: Components.Welcome });
 
       return;
     }
@@ -161,8 +160,7 @@ export default class AddFromGoogle extends Vue {
 
   proceed() {
     if (this.isFinishForm || this.isAccessDenied) {
-      this.$router.replace('/');
-      this.$router.push({ name: Components.Wallet });
+      this.$router.replace('/wallet');
 
       return;
     }

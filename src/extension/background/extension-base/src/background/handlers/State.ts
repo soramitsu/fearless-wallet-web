@@ -1128,7 +1128,7 @@ export default class State {
   }
 
   public subscribeTotalXorBalance() {
-    if (!apiSora.api.isConnected) return;
+    if (!apiSora.api || !apiSora.api.isConnected) return;
 
     try {
       const subscription = apiSora.assets
@@ -1205,16 +1205,15 @@ export default class State {
     );
   }
 
-  public getBalance(reset = false): Promise<BalanceJson> {
-    return new Promise((resolve) => {
-      this.getCurrentAccount((account) => {
-        if (account) {
-          const details = this.balanceMap[account.address] ?? [];
+  public async getBalance(reset = false): Promise<BalanceJson> {
+    const account = await this.currentAccount;
 
-          resolve({ details, reset });
-        }
+    if (account)
+      return new Promise((resolve) => {
+        resolve({ details: this.balanceMap[account.address] ?? [], reset });
       });
-    });
+
+    return { details: [], reset };
   }
 
   private lazyNext = (key: string, callback: () => void) => {

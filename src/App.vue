@@ -20,7 +20,6 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import {
   getBalance,
-  getNetworkMap,
   getPrice,
   pingServiceWorker,
   subscribeAccounts,

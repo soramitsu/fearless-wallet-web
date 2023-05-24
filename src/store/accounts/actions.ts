@@ -1,8 +1,8 @@
 import type { ActionTree, ActionContext } from 'vuex';
 import type { Mutations } from '@/store/accounts/mutations';
 import type { State } from '@/store/accounts/state';
+import type { AccountJson, BalanceJson } from '@/extension/background/extension-base/src/background/types/types';
 import { MutationTypes } from '@/store/accounts/mutations';
-import { AccountJson, BalanceJson } from '@/extension/background/extension-base/src/background/types/types';
 import { accountController } from '@/controllers/accountController';
 import router from '@/router';
 import { Components } from '@/router/routes';
@@ -38,7 +38,7 @@ const actions: ActionTree<State, State> & Actions = {
       router.currentRoute.name !== Components.Welcome &&
       router.currentRoute.name !== Components.AddFromGoogle
     )
-      router.push(Components.Welcome);
+      router.replace('/');
   },
 
   async [ActionTypes.SET_BALANCE]({ commit, state }, { details, reset, saveSequence = false }) {

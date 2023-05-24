@@ -405,7 +405,7 @@ export function batchRestore(file: KeyringPairs$Json, password: string): Promise
   return sendMessage('pri(json.batchRestore)', { file, password });
 }
 
-export function verifyToken(token: string): Promise<VerifyTokenResponse> {
+export function verifyToken(token: string): Promise<VerifyTokenResponse | null> {
   return sendMessage('pri(google.verify.token)', { token });
 }
 

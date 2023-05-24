@@ -187,7 +187,7 @@ export interface RequestSignatures {
   'pri(signing.refreshPasswordTimeout)': [string, number];
   'pri(signing.saveTimeoutCache)': [RequestSaveTimeoutCache, boolean];
   'pri(google.auth)': [GoogleAuthTypes, void];
-  'pri(google.verify.token)': [{ token: string }, VerifyTokenResponse];
+  'pri(google.verify.token)': [{ token: string }, VerifyTokenResponse | null];
   'pri(google.get.files)': [{ token: string }, IGetFilesResponse];
   'pri(google.get.file)': [GoogleFileId, KeyringPair$Json];
   'pri(google.create.file)': [ICreateFile, FilesResponse];

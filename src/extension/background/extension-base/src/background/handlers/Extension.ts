@@ -683,7 +683,7 @@ export default class Extension extends FWExtensionBase {
     googleManage.authExtension(type, wallet);
   }
 
-  async verifyToken({ token }: { token: string }): Promise<VerifyTokenResponse> {
+  async verifyToken({ token }: { token: string }): Promise<VerifyTokenResponse | null> {
     return googleManage.verifyToken(token);
   }
 

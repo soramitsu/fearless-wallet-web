@@ -19,7 +19,6 @@ import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import {
-  getBalance,
   getPrice,
   pingServiceWorker,
   subscribeAccounts,
@@ -96,29 +95,27 @@ export default class App extends Vue {
   }
 
   async setupBalance() {
-    getBalance().then((value) => {
-      if (value.details.length) this.setBalance(value);
+    const balance = await subscribeBalance((balanceUpdates) => {
+      this.setBalance(balanceUpdates);
     });
 
-    subscribeBalance((balances) => {
-      this.setBalance(balances);
-    });
+    this.setBalance(balance);
   }
 
   async setupNetworks() {
-    subscribeNetworkMap((networks) => {
-      this.setNetworks({ networks: Object.values(networks) });
+    const nets = await subscribeNetworkMap((networksUpdates) => {
+      this.setNetworks({ networks: Object.values(networksUpdates) });
     });
+
+    this.setNetworks({ networks: Object.values(nets) });
   }
 
   async setupPrice() {
-    const priceJson = await getPrice();
-
-    this.updatePrice(priceJson);
-
-    subscribePrice((priceUpdates) => {
+    const prices = await subscribePrice((priceUpdates) => {
       this.updatePrice(priceUpdates);
-    }).catch(console.error);
+    });
+
+    this.updatePrice(prices);
   }
 
   updatePrice({ currency, tokenPriceMap, tokenPriceChange }: PriceJson) {

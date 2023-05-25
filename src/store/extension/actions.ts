@@ -83,10 +83,6 @@ const actions: ActionTree<State, State> & Actions = {
   async [ActionTypes.SUBSCRIBE_AUTH_REQUESTS]({ commit }) {
     const callback = (requests: AuthorizeRequest[]) => {
       commit(MutationTypes.SET_REQUEST, { type: 'auth', requests });
-      // if (router.currentRoute.name === 'Authorize' && requests.length === 0)
-      //   router.push({
-      //     name: Components.Wallet,
-      //   });
 
       if (requests.length)
         router.push({

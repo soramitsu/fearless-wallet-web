@@ -140,7 +140,11 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transactionAddress() {
-    return getTransactionAddress(this.selectedWallet, this.network) ?? '';
+    if (this.transactionId) {
+      if (this.payload?.address) return BaseApi.encodeAddress(this.payload?.address);
+    }
+
+    return this.selectedWallet.address;
   }
 
   get disabledButton() {
@@ -215,9 +219,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (!IS_EXTENSION || this.isSignMobile) return;
     this.passInputComponent.input.focus();
 
-    const address = this.transactionId ? this.transactionAddress : this.selectedWallet.address;
-
-    const { isLocked } = await isSignLocked(address);
+    const { isLocked } = await isSignLocked(this.transactionAddress);
 
     this.isLocked = isLocked;
     this.isSavePass = !this.isLocked;
@@ -242,7 +244,7 @@ export default class ConfirmationPasswordPopup extends Vue {
       });
     else if (this.extrinsicType === 'swap' && this.swapOptions)
       await makeSwap({ ...this.swapOptions, password: this.password });
-    else if (this.payload && this.transactionId) await this.signTransactionJSON(this.transactionId);
+    else if (this.payload) await this.signTransactionJSON(this.transactionId);
   }
 
   async signTransactionJSON(id: string) {

@@ -1243,7 +1243,11 @@ export default class Extension extends FWExtensionBase {
     return txState;
   }
 
-  private getNetworkMap(): Record<string, NetworkJson> {
+  private publishNetworks() {
+    this.state.networkMapSubject.next(this.getNetworkMap());
+  }
+
+  private getNetworkMap(): Record<string, NetworkJsonOld> {
     return this.state.getNetworkMap;
   }
 

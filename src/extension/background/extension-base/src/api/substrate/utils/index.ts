@@ -44,28 +44,30 @@ export function getPrecisionValue(
 export function createExtrinsicTransfer(props: ExtrinsicTransferProps): SubmittableExtrinsic<'promise'> | null {
   const { amount, api, tokenBalance, to, networkKey } = props;
   const { precision, assetId: id, balances, name } = tokenBalance;
-  const type = (balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())!.type as TypeAsset) ?? '';
+  const type = balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())!.type as TypeAsset;
   const ormlOptions = getAssetOptions(name, type, id);
   const precisionAmount = getPrecisionValue(amount, precision) as string;
 
   try {
     switch (type) {
       case 'native':
-        return api!.tx.balances.transfer(to, precisionAmount);
+        return api.tx.balances.transfer(to, precisionAmount);
 
       case 'equilibrium':
-        return api!.tx.eqBalances.transfer(ormlOptions, to, precisionAmount);
+        return api.tx.eqBalances.transfer(ormlOptions, to, precisionAmount);
 
       case 'ormlChain':
-        return api!.tx.tokens.transfer(to, ormlOptions, precisionAmount);
+        return api.tx.tokens.transfer(to, ormlOptions, precisionAmount);
 
       case 'soraAsset':
-        return api!.tx.assets.transfer(ormlOptions, to, precisionAmount);
+        return api.tx.assets.transfer(ormlOptions, to, precisionAmount);
 
       default:
-        return api!.tx.currencies.transfer(to, ormlOptions, precisionAmount);
+        return api.tx.currencies.transfer(to, ormlOptions, precisionAmount);
     }
-  } catch {
+  } catch (e) {
+    console.info('Unable to create extrinsic', e);
+
     return null;
   }
 }

@@ -52,7 +52,7 @@ const mutations: MutationTree<State> & Mutations = {
   },
 
   [MutationTypes.SET_AUTHLIST](state, { list }) {
-    state.authList = list;
+    Object.assign(state.authList, list);
   },
 
   [MutationTypes.DELETE_AUTHLIST_ITEM](state, id) {

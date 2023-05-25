@@ -716,12 +716,12 @@ export default class State {
     this.updateIcon(shouldClose);
   }
 
-  updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): void {
+  updateAuthorizedAccounts(authorizedAccountDiff: AuthorizedAccountsDiff): Promise<void> {
     authorizedAccountDiff.forEach(([url, authorizedAccountDiff]) => {
       this.authUrls[url].authorizedAccounts = authorizedAccountDiff;
     });
 
-    this.saveCurrentAuthList();
+    return this.saveCurrentAuthList();
   }
 
   async authorizeUrl(url: string, request: RequestAuthorizeTab): Promise<AuthResponse> {

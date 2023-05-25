@@ -21,6 +21,8 @@ export function getMockCurrencies(networks: NetworkJsonOld[], tokens: AssetJson[
         existentialDeposit,
       } = tokens.find(({ id }) => id === assetId)!;
       const displayName = _displayName ?? symbol;
+      const isXOR = displayName === 'xor';
+
       const mainNetwork = MAIN_NETWORKS[displayName] ?? mainNet;
       const currencyIndex = result.findIndex(({ assetId: _assetId, relayChain: _relayChain, name: _displayName }) => {
         const isExistingAssetId = _assetId === assetId;
@@ -59,7 +61,7 @@ export function getMockCurrencies(networks: NetworkJsonOld[], tokens: AssetJson[
           state: APIItemState.PENDING,
           name: mainNet,
           existentialDeposit,
-          type: type ?? 'native',
+          type: type ? type : isXOR ? 'soraAsset' : 'native',
           decimals: precision,
           icon,
           isNative,

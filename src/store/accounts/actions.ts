@@ -36,7 +36,8 @@ const actions: ActionTree<State, State> & Actions = {
     if (
       account === undefined &&
       router.currentRoute.name !== Components.Welcome &&
-      router.currentRoute.name !== Components.AddFromGoogle
+      router.currentRoute.name !== Components.AddFromGoogle &&
+      router.currentRoute.name !== Components.AddWallet
     )
       router.replace('/');
   },

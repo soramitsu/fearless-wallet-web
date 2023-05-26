@@ -1,7 +1,7 @@
-import { NetworkJsonOld } from '../../types';
-import { BalanceItem } from '../../api/evm/types/ether';
-import { TokenBalance } from '../types/types';
-import { APIItemState } from '../../api/types/networks';
+import { NetworkJsonOld } from '@extension-base/types';
+import { BalanceItem } from '@extension-base/api/evm/types/ether';
+import { APIItemState } from '@extension-base/api/types/networks';
+import { TokenBalance } from '@extension-base/background/types/types';
 import { MAIN_NETWORKS, ETHEREUM_NETWORKS, SORA_UTILITY_ASSET } from '@/consts/networks';
 import { RelayChainName, AssetJson } from '@/interfaces';
 

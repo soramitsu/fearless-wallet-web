@@ -3,19 +3,19 @@
 
 import { BN } from '@polkadot/util';
 import { ethers } from 'ethers';
-import { state } from '../../background/handlers';
+import { state } from '@extension-base/background/handlers';
 import {
   BasicTxResponse,
   ExternalRequestPromise,
   ExternalRequestPromiseStatus,
   TransferErrorCode,
-} from '../../background/types/types';
-import { checkMainToken } from '../substrate/balance';
-import { getTokenInfo } from '../substrate/registry';
+} from '@extension-base/background/types/types';
+import { checkMainToken } from '@extension-base/api/substrate/balance';
+import { getTokenInfo } from '@extension-base/api/substrate/registry';
 
-import EthProvider from './ethProvider';
+import EthProvider from '@extension-base/api/evm/ethProvider';
 
-import { getERC20Contract } from './utils/eth';
+import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
 
 export type HandleBasicTx = (data: BasicTxResponse) => void;
 export type HandleTxResponse<T extends BasicTxResponse> = (data: T) => void;

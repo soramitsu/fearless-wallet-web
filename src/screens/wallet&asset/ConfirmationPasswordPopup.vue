@@ -79,7 +79,6 @@ import {
 } from '@/extension/background/extension-base/src/background/types/types';
 import { getTransactionAddress } from '@/controllers/transferHelpers';
 import { IS_EXTENSION } from '@/consts/global';
-
 @Component({
   components: { SignMobile },
 })
@@ -140,8 +139,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transactionAddress() {
-    if (this.transactionId) {
-      if (this.payload?.address) return BaseApi.encodeAddress(this.payload?.address);
+    if (this.transactionId && this.payload?.address) {
+      return BaseApi.encodeAddress(this.payload?.address);
     }
 
     return this.selectedWallet.address;

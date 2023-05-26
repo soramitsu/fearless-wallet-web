@@ -1,7 +1,7 @@
 // Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import EthProvider from '../../evm/ethProvider';
+import EthProvider from '@extension-base/api/evm/ethProvider';
 
 export async function getEVMBalance(
   networkKey: string,

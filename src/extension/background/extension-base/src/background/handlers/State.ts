@@ -108,6 +108,7 @@ function extractMetadata(store: MetadataStore): void {
     });
 
     removals.forEach((key) => store.remove(key));
+
     Object.values(defs).forEach(({ def }) => addMetadata(def));
   });
 }

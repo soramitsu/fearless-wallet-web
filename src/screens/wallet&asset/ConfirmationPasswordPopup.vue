@@ -8,6 +8,7 @@
 
         <ValidatedInput
           v-if="isLocked"
+          ref="passInput"
           v-model="password"
           placeholder="common.password"
           size="big"
@@ -58,12 +59,13 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Component, Vue, Prop, Watch, Ref } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import type { RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
 import type { GetNetworkGenesisHash, SelectedWallet } from '@/store';
-import { beaconController } from '@/controllers/beaconController';
+import type ValidatedInput from '@/components/ValidatedInput.vue';
 import { isSignLocked, makeSwap, makeTransfer } from '@/extension/messaging';
+import { beaconController, ExtensionController } from '@/controllers';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as ExtensionActionTypes, ApprovePayload } from '@/store/extension/actions';
@@ -76,7 +78,6 @@ import {
   TokenBalance,
 } from '@/extension/background/extension-base/src/background/types/types';
 import { getTransactionAddress } from '@/controllers/transferHelpers';
-import { ExtensionController } from '@/controllers';
 import { IS_EXTENSION } from '@/consts/global';
 
 @Component({
@@ -92,6 +93,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   transactionState: 'pending' | 'success' | 'failed' | null = null;
   showUnknownErrorPopup = false;
 
+  @Ref('passInput') readonly passInputComponent!: ValidatedInput;
   @Prop(String) amount!: string;
   @Prop(String) value!: string;
   @Prop(String) firstIcon!: string;
@@ -211,6 +213,7 @@ export default class ConfirmationPasswordPopup extends Vue {
 
   async mounted() {
     if (!IS_EXTENSION || this.isSignMobile) return;
+    this.passInputComponent.input.focus();
 
     const address = this.transactionId ? this.transactionAddress : this.selectedWallet.address;
 

@@ -7,7 +7,7 @@
 
           <InfoItem name="chain" :value="request.request.chain" />
 
-          <InfoItem name="icon" :value="request.request.specVersion" />
+          <InfoItem name="specVersion" :value="request.request.specVersion" />
 
           <InfoItem name="decimals" :value="request.request.tokenDecimals" />
 

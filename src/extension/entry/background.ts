@@ -3,9 +3,9 @@ import { cryptoWaitReady } from '@polkadot/util-crypto';
 import handlers, { state } from '@extension-base/background/handlers';
 import '@polkadot/extension-inject/crossenv';
 import AccountsStore from '../background/extension-base/src/stores/Accounts';
-import { RequestSignatures } from '../background/extension-base/src/background/types/messages';
 import { initStorage } from '../background/extension-base/src/stores/Storage';
-import type { Port, TransportRequestMessage } from '@/extension/background/extension-base/src/background/types/types';
+import { RequestSignatures } from '../background/extension-base/src/background/types/messages';
+import type { Port, TransportRequestMessage } from '@extension-base/background/types';
 
 interface ModifiedPort extends Port {
   timer?: NodeJS.Timeout;

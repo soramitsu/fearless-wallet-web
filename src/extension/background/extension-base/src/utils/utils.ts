@@ -3,7 +3,7 @@
 
 import { BN } from '@polkadot/util';
 import { EXTENSION_PREFIX } from '@extension-base/defaults';
-import type { NetworkJson } from '../api/evm/types/ether';
+import type { NetworkJson } from '@extension-base/api/evm/types/ether';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 
 export function sumBN(inputArr: BN[]) {
@@ -26,7 +26,7 @@ export function canDerive(type?: KeypairType): boolean {
   return !!type && ['ed25519', 'sr25519', 'ecdsa', 'ethereum'].includes(type);
 }
 
-export const getCurrentProvider = (data: NetworkJson) => {
+export const getCurrentProvider = (data: NetworkJson): string | null => {
   if (!data?.currentProvider) {
     return null;
   }

@@ -5,23 +5,15 @@
 
 import { TypeRegistry } from '@polkadot/types';
 import { Subscription } from 'rxjs';
-import { ALLOWED_PATH } from '../defaults';
-import MetadataStore from '../stores/Metadata';
-import { RequestSignatures } from './types/messages';
-import type {
-  InjectedAccount,
-  InjectedMetadataKnown,
-  MetadataDef,
-  ProviderList,
-  ProviderMeta,
-} from '@polkadot/extension-inject/types';
+import { ALLOWED_PATH } from '@extension-base/defaults';
+import { RequestSignatures } from '@extension-base/background/types/messages';
+import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
-import type { JsonRpcResponse, ProviderInterface } from '@polkadot/rpc-provider/types';
+import type { ProviderInterface } from '@polkadot/rpc-provider/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
+import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import type { FilesResponse, GoogleAuthTypes, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
 
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;

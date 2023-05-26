@@ -1,9 +1,8 @@
 import { logger as createLogger } from '@polkadot/util';
 import { Logger } from '@polkadot/util/types';
-import { BalanceItem } from '../api/evm/types/ether';
-import { APIItemState } from '../api/types/networks';
-import { storage } from '../stores/Storage';
-import { TransactionHistoryItemType } from '../types';
+import { BalanceItem } from '@extension-base/api/evm/types/ether';
+import { APIItemState } from '@extension-base/api/types/networks';
+import { storage } from '@extension-base/stores/Storage';
 
 export default class BalanceService {
   private logger: Logger;
@@ -25,12 +24,5 @@ export default class BalanceService {
 
       await storage.set({ balances: copyBalance });
     }
-  }
-
-  // Transaction history
-  async addHistories(chain: string, chainHash: string, address: string, histories: TransactionHistoryItemType[]) {
-    this.logger.log(`Updating transaction history for [${chain}]`);
-
-    return chrome.storage.local.set(histories.map((item) => ({ chainHash, chain, address, eventIdx: 0, ...item })));
   }
 }

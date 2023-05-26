@@ -4,11 +4,11 @@
 import { keyring } from '@polkadot/ui-keyring';
 import { assert } from '@polkadot/util';
 import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
-import KeyringSigner from '../../../signers/KeyringSigner';
-import { unlockAccount } from '../../../utils';
-import { SignerType } from '../../../background/types/types';
-import type { ApiProps, ExternalRequestPromise } from '../../../background/types/types';
-import type { HandleBasicTx } from '../../evm/transfer';
+import KeyringSigner from '@extension-base/signers/KeyringSigner';
+import { unlockAccount } from '@extension-base/utils/keyring';
+import { SignerType } from '@extension-base/background/types/types';
+import type { ApiProps, ExternalRequestPromise } from '@extension-base/background/types/types';
+import type { HandleBasicTx } from '@extension-base/api/evm/transfer';
 
 interface AbstractSignExtrinsicProps {
   address: string;

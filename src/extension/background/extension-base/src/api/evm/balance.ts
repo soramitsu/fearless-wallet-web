@@ -3,12 +3,12 @@
 
 import { ApiPromise } from '@polkadot/api';
 import { ethers } from 'ethers';
-import { ASTAR_REFRESH_BALANCE_INTERVAL, SUB_TOKEN_REFRESH_BALANCE_INTERVAL } from '../../const/intervals';
-import { getRegistry } from '../substrate/registry';
-import { APIItemState } from '../types/networks';
-import EthProvider from './ethProvider';
-import { getERC20Contract } from './utils/eth';
-import type { BalanceItem } from './types/ether';
+import { ASTAR_REFRESH_BALANCE_INTERVAL, SUB_TOKEN_REFRESH_BALANCE_INTERVAL } from '@extension-base/const/intervals';
+import { getRegistry } from '@extension-base/api/substrate/registry';
+import { APIItemState } from '@extension-base/api/types/networks';
+import EthProvider from '@extension-base/api/evm/ethProvider';
+import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
+import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { AssetJson } from '@/interfaces';
 
 export async function getEVMBalance(

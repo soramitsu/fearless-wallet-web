@@ -1,10 +1,10 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { MESSAGE_ORIGIN_PAGE } from '../defaults';
-import { getId } from '../utils';
-import Injected from './Injected';
-import { Handlers } from './types';
+import Injected from '@extension-base/page/Injected';
+import { MESSAGE_ORIGIN_PAGE } from '@extension-base/defaults';
+import { getId } from '@extension-base/utils/utils';
+import type { Handlers } from '@extension-base/page/types';
 import type {
   MessageTypes,
   MessageTypesWithNoSubscriptions,
@@ -15,7 +15,7 @@ import type {
   SubscriptionMessageTypes,
   TransportRequestMessage,
   TransportResponseMessage,
-} from '../background/types/types';
+} from '@extension-base/background/types/types';
 
 // when sending a message from the injector to the extension, we
 //  - create an event - this we send to the loader

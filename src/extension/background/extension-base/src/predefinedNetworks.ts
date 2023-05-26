@@ -1,7 +1,7 @@
 // Copyright 2019-2022 @subwallet/extension-koni authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { NetworkJsonOld } from './types';
+import type { NetworkJsonOld } from '@extension-base/types';
 
 export const PREDEFINED_EVM_NETWORKS = {
   chainId: '0xb60d7bdd334cd3768d43f14a05c7fe7e886ba5bcb77e1064530052fed1a3f145',

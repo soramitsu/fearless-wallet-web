@@ -1,7 +1,7 @@
 // Copyright 2019-2022 @subwallet/extension-koni authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { CustomToken, CustomTokenType } from '../../evm/types/ether';
+import { CustomToken, CustomTokenType } from '@extension-base/api/evm/types/ether';
 
 interface EvmTokenJson {
   erc20: CustomToken[];

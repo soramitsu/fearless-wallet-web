@@ -1,12 +1,12 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { TypeRegistry } from '@polkadot/types/create';
 import { api as apiSora, connection as soraConnection } from '@sora-substrate/util';
-import { DOTSAMA_AUTO_CONNECT_MS } from '../../const/intervals';
-import { state } from '../../background/handlers';
-import { getCurrentProvider } from '../../utils';
+import { DOTSAMA_AUTO_CONNECT_MS } from '@extension-base/const/intervals';
+import { state } from '@extension-base/background/handlers';
+import { getCurrentProvider } from '@extension-base/utils/utils';
 import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
-import type { ApiProps } from '../../background/types/types';
-import type { NetworkJsonOld } from '../../types';
+import type { ApiProps } from '@extension-base/background/types/types';
+import type { NetworkJsonOld } from '@extension-base/types';
 import type { ApiInterfaceEvents } from '@polkadot/api/types';
 import { isSora } from '@/helpers/common';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';

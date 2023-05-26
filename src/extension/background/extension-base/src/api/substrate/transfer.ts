@@ -13,14 +13,14 @@ import {
   SignerType,
   SupportTransferResponse,
   TokenBalance,
-} from '../../background/types/types';
-import { state } from '../../background/handlers';
-import { getTokenInfo } from './registry';
-import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
-import { checkMainToken } from './balance';
-import { createExtrinsicTransfer } from './utils';
+} from '@extension-base/background/types/types';
+import { state } from '@extension-base/background/handlers';
+import { getTokenInfo } from '@extension-base/api/substrate/registry';
+import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
+import { checkMainToken } from '@extension-base/api/substrate/balance';
+import { createExtrinsicTransfer } from '@extension-base/api/substrate/utils';
 import type { AccountInfoWithProviders, AccountInfoWithRefCount, EventRecord } from '@polkadot/types/interfaces';
-import type { TokenInfo } from '../evm/types/ether';
+import type { TokenInfo } from '@extension-base/api/evm/types/ether';
 import type { AssetJson } from '@/interfaces';
 
 export async function getExistentialDeposit(
@@ -443,7 +443,6 @@ export async function makeTransfer({
   await apiProps.api?.isReady;
 
   const api = apiProps.api!;
-  const transferAmount = amount;
 
   const tokenBalance = state.balanceMap[from].find(({ assetId, relayChain }) => {
     if (tokenInfo.relayChain) return assetId === tokenInfo.id && relayChain === tokenInfo.relayChain;
@@ -457,10 +456,6 @@ export async function makeTransfer({
     to,
     networkKey,
   });
-
-  const updateResponseTxResult = (response: BasicTxResponse, records: EventRecord[]) => {
-    updateTransferResponseTxResult(networkKey, tokenInfo, response, records, transferAmount);
-  };
 
   await signAndSendExtrinsic({
     type: SignerType.PASSWORD,

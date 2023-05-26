@@ -6,16 +6,16 @@ import { Subject, Subscription } from 'rxjs';
 import { logger as createLogger } from '@polkadot/util';
 import { Logger } from '@polkadot/util/types';
 
+import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import {
   CRON_AUTO_RECOVER_DOTSAMA_INTERVAL,
   CRON_GET_API_MAP_STATUS,
   CRON_REFRESH_PRICE_INTERVAL,
-} from '../const/intervals';
-import { NETWORK_STATUS } from '../api/types/networks';
-import type { NetworkJson } from '../api/evm/types/ether';
-import type FWState from './handlers/State';
-import type { FWSubscription } from './handlers/subscriptions';
-import type { ServiceInfo } from './types/types';
+} from '@extension-base/const/intervals';
+import type { NetworkJson } from '@extension-base/api/evm/types/ether';
+import type FWState from '@extension-base/background/handlers/State';
+import type { FWSubscription } from '@extension-base/background/handlers/subscriptions';
+import type { ServiceInfo } from '@extension-base/background/types/types';
 
 export class FWCron {
   subscriptions: FWSubscription;

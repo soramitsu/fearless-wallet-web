@@ -9,7 +9,7 @@ import type {
   EraInfo,
   FormattedMethod,
   ResponseParseTransactionSubstrate,
-} from '../../background/types/types';
+} from '@extension-base/background/types/types';
 
 const formatArgs = (callInstance: Call): ArgInfo[] => {
   const paramArgKvArray: ArgInfo[] = [];

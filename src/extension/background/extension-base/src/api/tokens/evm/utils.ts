@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Contract, ethers } from 'ethers';
-import { isEqualContractAddress } from '..';
-import EthProvider from '../../evm/ethProvider';
-import { CustomTokenType, CustomTokenJson, NetworkJson } from '../../evm/types/ether';
-import { DEFAULT_EVM_TOKENS } from './defaultEvmToken';
-import { ERC20Contract } from './web3';
+import EthProvider from '@extension-base/api/evm/ethProvider';
+import { CustomTokenType, CustomTokenJson, NetworkJson } from '@extension-base/api/evm/types/ether';
+import { DEFAULT_EVM_TOKENS } from '@extension-base/api/tokens/evm/defaultEvmToken';
+import { ERC20Contract } from '@extension-base/api/tokens/evm/web3';
+import { isEqualContractAddress } from '@extension-base/api/tokens';
 
 export async function validateEvmToken(contractAddress: string, tokenType: CustomTokenType.erc20, web3: EthProvider) {
   let tokenContract: Contract;

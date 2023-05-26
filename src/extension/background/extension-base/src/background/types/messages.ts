@@ -1,3 +1,4 @@
+import { NetworkJsonOld, RequestTransactionHistoryAdd, TransactionHistoryItemType } from '@extension-base/types';
 import type {
   InjectedAccount,
   MetadataDef,
@@ -6,13 +7,7 @@ import type {
 } from '@polkadot/extension-inject/types';
 import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
 import type { KeyringAddress } from '@polkadot/ui-keyring/types';
-import type { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
-import type {
-  NetworkJsonOld,
-  TransactionHistoryItemType,
-  RequestTransactionHistoryAdd,
-  RequestTransactionHistoryGet,
-} from '../../types';
+import type { CurrentAccountInfo } from '@extension-base/stores/CurrentAccountStore';
 import type {
   RequestAccountCreateExternal,
   RequestAccountCreateSuri,
@@ -92,7 +87,7 @@ import type {
   ResponseMakeSwap,
   RequestUpdateMeta,
   ResponseTotalBalances,
-} from './types';
+} from '@extension-base/background/types/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
   DerivationPath,
@@ -104,7 +99,6 @@ import type {
   SignerPayloadRaw,
   SignerPayloadJSON,
   SoraFees,
-  ChangeWalletBalance,
 } from '@/interfaces';
 
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]

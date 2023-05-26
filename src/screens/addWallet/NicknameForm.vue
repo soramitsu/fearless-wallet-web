@@ -20,9 +20,9 @@ import type Input from '@/components/Input.vue';
 
 @Component
 export default class NicknameForm extends Vue {
+  @Ref('nicknameInput') readonly nicknameInputComponent!: Input;
   @Prop({ default: false }) readonly!: boolean;
   @PropSync('nickname', { type: String }) syncedNickname!: string;
-  @Ref('nicknameInput') readonly nicknameInputComponent!: Input;
 
   mounted() {
     this.nicknameInputComponent.input.focus();

@@ -2,7 +2,7 @@ import { NetworkJsonOld } from '../../types';
 import { BalanceItem } from '../../api/evm/types/ether';
 import { TokenBalance } from '../types/types';
 import { APIItemState } from '../../api/types/networks';
-import { MAIN_NETWORKS, ETHEREUM_NETWORKS } from '@/consts/networks';
+import { MAIN_NETWORKS, ETHEREUM_NETWORKS, SORA_UTILITY_ASSET } from '@/consts/networks';
 import { RelayChainName, AssetJson } from '@/interfaces';
 
 export function getMockCurrencies(networks: NetworkJsonOld[], tokens: AssetJson[]) {
@@ -22,6 +22,8 @@ export function getMockCurrencies(networks: NetworkJsonOld[], tokens: AssetJson[
         color,
       } = tokens.find(({ id }) => id === assetId)!;
       const displayName = _displayName ?? symbol;
+      const isXOR = displayName === SORA_UTILITY_ASSET;
+
       const mainNetwork = MAIN_NETWORKS[displayName] ?? mainNet;
       const currencyIndex = result.findIndex(({ assetId: _assetId, relayChain: _relayChain, name: _displayName }) => {
         const isExistingAssetId = _assetId === assetId;
@@ -61,7 +63,7 @@ export function getMockCurrencies(networks: NetworkJsonOld[], tokens: AssetJson[
           state: APIItemState.PENDING,
           name: mainNet,
           existentialDeposit,
-          type: type ?? 'native',
+          type: type ? type : isXOR ? 'soraAsset' : 'native',
           decimals: precision,
           icon,
           isNative,

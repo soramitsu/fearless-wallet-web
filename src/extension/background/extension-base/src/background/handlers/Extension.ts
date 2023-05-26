@@ -391,18 +391,10 @@ export default class Extension extends FWExtensionBase {
     if (isPasswordValidated) {
       return new Promise((resolve, reject) => {
         try {
-          const pair = keyring.restoreAccount(file, password);
+          keyring.restoreAccount(file, password);
 
-          if (isEthereumAddress(pair.address)) {
-            resolve(address);
-
-            return;
-          }
-
-          this._saveCurrentAccountAddress(address, () => {
-            this.updateCurrentAccountAddress(pair.address);
-            resolve(pair.address);
-          });
+          this.updateCurrentAccountAddress(address);
+          resolve(address);
         } catch (error) {
           reject({ error: (error as Error).message });
         }
@@ -467,8 +459,9 @@ export default class Extension extends FWExtensionBase {
   private updateCurrentAccountAddress(address: string): boolean {
     if (isEthereumAddress(address)) return true;
 
+    this.state.generateDefaultBalance(address);
+
     this._saveCurrentAccountAddress(address, () => {
-      this.state.generateDefaultBalance(address);
       this.triggerWalletsSubscription();
     });
 
@@ -526,9 +519,15 @@ export default class Extension extends FWExtensionBase {
     this.refreshAccountPasswordCache(pair);
 
     // if the keyring pair is locked, the password is needed
-    if (pair.isLocked && !password) reject(new Error('Password needed to unlock the account'));
+    if (pair.isLocked) {
+      if (!password) {
+        reject(new Error('Password needed to unlock the account'));
 
-    if (pair.isLocked) pair.decodePkcs8(password);
+        return false;
+      }
+
+      pair.decodePkcs8(password);
+    }
 
     const { payload } = request;
 
@@ -549,10 +548,7 @@ export default class Extension extends FWExtensionBase {
     if (savePass) this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
     else pair.lock();
 
-    resolve({
-      id,
-      ...result,
-    });
+    resolve({ id, ...result });
 
     return true;
   }
@@ -682,7 +678,7 @@ export default class Extension extends FWExtensionBase {
     googleManage.authExtension(type, wallet);
   }
 
-  async verifyToken({ token }: { token: string }): Promise<VerifyTokenResponse> {
+  async verifyToken({ token }: { token: string }): Promise<VerifyTokenResponse | null> {
     return googleManage.verifyToken(token);
   }
 
@@ -1255,7 +1251,7 @@ export default class Extension extends FWExtensionBase {
     return {} as BasicTxResponse;
   }
 
-  private getNetworkMap(): Record<string, NetworkJson> {
+  private getNetworkMap(): Record<string, NetworkJsonOld> {
     return this.state.getNetworkMap;
   }
 

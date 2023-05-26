@@ -34,9 +34,10 @@ export default class PasswordForm extends Vue {
   pass1 = '';
   pass2 = '';
 
+  @Ref('pass1Input') readonly pass1InputComponent!: ValidatedInput;
+  @Prop(Boolean) showMockPassword!: boolean;
   @Prop({ type: Boolean, default: false }) isGoogleFlow!: boolean;
   @Prop(Boolean) showSamePasswordText!: boolean;
-  @Ref('pass1Input') readonly pass1InputComponent!: ValidatedInput;
 
   get isShortPassword() {
     return this.pass1.length !== 0 && this.pass1.length < 6;
@@ -60,6 +61,12 @@ export default class PasswordForm extends Vue {
     return this.t('passwordInfo');
   }
 
+  mounted() {
+    this.pass1InputComponent.input.focus();
+
+    if (this.showMockPassword) this.pass1 = '000000';
+  }
+
   @Watch('pass1')
   changePassword(pass1: string) {
     if (pass1.length < 6) this.pass2 = '';
@@ -75,10 +82,6 @@ export default class PasswordForm extends Vue {
     }
 
     this.setPassword('');
-  }
-
-  mounted() {
-    this.pass1InputComponent.input.focus();
   }
 
   setPassword(password: string) {

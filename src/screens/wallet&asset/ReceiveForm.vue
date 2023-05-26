@@ -107,7 +107,7 @@ export default class ReceiveFormStateLess extends Vue {
 
   get address() {
     if (this.selectedWallet.address === '') return '';
-    if (ETHEREUM_NETWORKS.includes(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
+    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
 
     return BaseApi.encodeAddress(this.selectedWallet.address, this.decimals);
   }

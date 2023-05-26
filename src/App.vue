@@ -11,7 +11,6 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { AsyncFn, Fn } from '@/interfaces';
-import { Components } from '@/router/routes';
 import { AccountJson, BalanceJson, PriceJson } from '@/extension/background/extension-base/src/background/types/types';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
@@ -20,8 +19,6 @@ import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import {
-  getBalance,
-  getNetworkMap,
   getPrice,
   pingServiceWorker,
   subscribeAccounts,
@@ -29,7 +26,6 @@ import {
   subscribeBalance,
   subscribeNetworkMap,
   subscribePrice,
-  triggerAccountsSubscription,
 } from '@/extension/messaging';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
 import { IS_EXTENSION } from '@/consts/global';
@@ -69,7 +65,6 @@ export default class App extends Vue {
     this.unregisterInactiveWorkers();
     this.setupWallet();
     this.setupBalance();
-    triggerAccountsSubscription();
     this.fetchFiats();
     this.setupPrice();
     this.setupNetworks();
@@ -100,33 +95,27 @@ export default class App extends Vue {
   }
 
   async setupBalance() {
-    const balance = await getBalance();
+    const balance = await subscribeBalance((balanceUpdates) => {
+      this.setBalance(balanceUpdates);
+    });
 
     this.setBalance(balance);
-
-    subscribeBalance((balances) => {
-      this.setBalance(balances);
-    });
   }
 
   async setupNetworks() {
-    const nets = await getNetworkMap();
+    const nets = await subscribeNetworkMap((networksUpdates) => {
+      this.setNetworks({ networks: Object.values(networksUpdates) });
+    });
 
     this.setNetworks({ networks: Object.values(nets) });
-
-    subscribeNetworkMap((networks) => {
-      this.setNetworks({ networks: Object.values(networks) });
-    });
   }
 
   async setupPrice() {
-    const priceJson = await getPrice();
-
-    this.updatePrice(priceJson);
-
-    subscribePrice((priceUpdates) => {
+    const prices = await subscribePrice((priceUpdates) => {
       this.updatePrice(priceUpdates);
-    }).catch(console.error);
+    });
+
+    this.updatePrice(prices);
   }
 
   updatePrice({ currency, tokenPriceMap, tokenPriceChange }: PriceJson) {
@@ -140,8 +129,6 @@ export default class App extends Vue {
     this.setAccounts({ accounts, isMobileUpdate });
 
     if (selectedAccount || !this.wallets.length) this.setSelectedWallet(selectedAccount);
-
-    if (!this.wallets.length) this.$router.push(Components.Welcome);
   }
 
   setupWallet() {

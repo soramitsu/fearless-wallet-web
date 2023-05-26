@@ -35,8 +35,11 @@ import type {
   RequestSubscribePrice,
   BasicTxResponse,
   RequestTransfer,
+  RequestCrossChain,
   RequestCheckTransfer,
+  RequestCheckCrossChain,
   ResponseCheckTransfer,
+  ResponseCheckCrossChain,
   ValidateJsonResult,
   RequestAccountMeta,
   ResponseAccountMeta,
@@ -172,7 +175,7 @@ export function exportAccounts(addresses: string[], password: string): Promise<{
   return sendMessage('pri(accounts.batchExport)', { addresses, password });
 }
 
-export function validateAccount(address: string, password: string): Promise<boolean> {
+export function validatePassword(address: string, password: string): Promise<boolean> {
   return sendMessage('pri(accounts.validate)', { address, password });
 }
 
@@ -475,6 +478,10 @@ export function subscribePrice(
   return sendMessage('pri(price.get.subscription)', request, callback);
 }
 
+export function checkTransfer(request: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
+  return sendMessage('pri(accounts.checkTransfer)', request);
+}
+
 export function makeTransfer(
   request: RequestTransfer,
   callback: (data: BasicTxResponse) => void
@@ -482,8 +489,15 @@ export function makeTransfer(
   return sendMessage('pri(accounts.transfer)', request, callback);
 }
 
-export function checkTransfer(request: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
-  return sendMessage('pri(accounts.checkTransfer)', request);
+export function checkCrossChain(request: RequestCheckCrossChain): Promise<ResponseCheckCrossChain> {
+  return sendMessage('pri(accounts.checkCrossChain)', request);
+}
+
+export function makeCrossChain(
+  request: RequestCrossChain,
+  callback: (data: BasicTxResponse) => void
+): Promise<BasicTxResponse> {
+  return sendMessage('pri(accounts.crossChain)', request, callback);
 }
 
 export function getSoraFees(): Promise<SoraFees> {

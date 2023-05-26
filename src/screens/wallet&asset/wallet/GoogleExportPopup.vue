@@ -50,7 +50,7 @@
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
-import { createGoogleFile, exportAccount, validateAccount } from '@/extension/messaging';
+import { createGoogleFile, exportAccount, validatePassword } from '@/extension/messaging';
 import { ICreateFile } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
@@ -123,7 +123,7 @@ export default class GoogleExportPopup extends Vue {
 
     this.status = 'prepare';
 
-    const isValid = await validateAccount(this.selectedWalletAddress, this.password);
+    const isValid = await validatePassword(this.selectedWalletAddress, this.password);
 
     if (!isValid) {
       this.status = 'await';

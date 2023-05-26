@@ -72,6 +72,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import {
   AccountJson,
   RequestCheckTransfer,
+  RequestCheckCrossChain,
   RequestTransfer,
   TokenBalance,
 } from '@/extension/background/extension-base/src/background/types/types';
@@ -99,7 +100,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(String) secondIcon!: string;
   @Prop(String) transactionId?: string;
   @Prop(Object) currency?: TokenBalance;
-  @Prop(Object) tx!: RequestCheckTransfer;
+  @Prop(Object) tx!: RequestCheckTransfer; // RequestCheckTransfer | RequestCheckCrossChain
   @Prop(Object) payload?: SignerPayloadJSON;
   @Prop(Object) swapOptions?: SwapOptions;
   @Prop({ default: 'default' }) extrinsicType!: 'default' | 'swap';

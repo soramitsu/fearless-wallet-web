@@ -1,5 +1,5 @@
 <template>
-  <AboveForm header="assets.receiveFunds" :blur="true" :closeHandler="closeForm">
+  <AboveForm header="assets.receiveFunds" :fullScreen="true" :closeHandler="closeForm">
     <div class="receive-form">
       <div>
         <RotateInput
@@ -71,7 +71,7 @@ import RotateInput from '@/screens/wallet&asset/RotateInput.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { cut } from '@/helpers/history';
+import { cut } from '@/helpers/common';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -94,14 +94,10 @@ export default class ReceiveFormStateLess extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.getNetworks) networks!: NetworkJsonOld[];
 
-  get currency() {
-    return this.selectedAssetId;
-  }
-
   get assetNetworks() {
-    return this.balances
-      .find((el) => el.name.toLowerCase() === this.currency.toLowerCase())
-      ?.balances.map(({ name, icon }) => ({ name, icon, value: name }));
+    const currency = this.balances.find(({ assetId }) => assetId === this.selectedAssetId)!;
+
+    return currency?.balances.map(({ name, icon }) => ({ name, icon, value: name })) ?? [];
   }
 
   get decimals() {
@@ -145,7 +141,6 @@ export default class ReceiveFormStateLess extends Vue {
   createBlob() {
     const el = (this.$refs.qr as Vue).$el;
     const imgQR = el.firstChild as Element;
-    // const imgLogo = el.lastChild as Element;
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
 
@@ -153,7 +148,6 @@ export default class ReceiveFormStateLess extends Vue {
     canvas.height = imgQR.clientHeight;
 
     context?.drawImage(imgQR as CanvasImageSource, 0, 0);
-    // context?.drawImage(imgLogo as CanvasImageSource, 67.5, 85, 65, 30);
 
     return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   }

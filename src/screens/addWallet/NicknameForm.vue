@@ -24,7 +24,7 @@ export default class NicknameForm extends Vue {
   @PropSync('nickname', { type: String }) syncedNickname!: string;
   @Ref('nicknameInput') readonly nicknameInputComponent!: Input;
 
-  async mounted() {
+  mounted() {
     this.nicknameInputComponent.input.focus();
   }
 }

@@ -148,9 +148,7 @@ export default class BaseApi {
   }
 
   public static validateAddressByNetwork(address: string, network: string): boolean {
-    if (BaseApi.isEthereumNetwork(network)) {
-      return BaseApi.validateEthereumAddress(address);
-    }
+    if (BaseApi.isEthereumNetwork(network)) return BaseApi.validateEthereumAddress(address);
 
     return address === BaseApi.formatAddress({ address, ethereumAddress: address }, network);
   }

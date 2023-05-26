@@ -11,18 +11,12 @@ import { URLS } from '@/consts/urls';
 
 export enum ActionTypes {
   FETCH_FIATS = 'FETCH_FIATS',
-  CONNECT_TO_NODES = 'CONNECT_TO_NODES',
-  FETCH_ASSETS_PRICE = 'FETCH_ASSETS_PRICE',
   FETCH_HISTORY = 'FETCH_HISTORY',
-  SUBSCRIBE_TO_BALANCES = 'SUBSCRIBE_TO_BALANCES',
-  TOGGLE_ACTIVE_NODE = 'TOGGLE_ACTIVE_NODE',
 }
 
 export type Actions = {
   [ActionTypes.FETCH_FIATS](store: AugmentedActionContext): Promise<void>;
-  // [ActionTypes.FETCH_ASSETS_PRICE](store: AugmentedActionContext): Promise<void>;
   [ActionTypes.FETCH_HISTORY](store: AugmentedActionContext, props: FetchHistory): Promise<void>;
-  // [ActionTypes.TOGGLE_ACTIVE_NODE](store: AugmentedActionContext, props: ToggleActiveNode): Promise<void>;
 };
 
 const actions: ActionTree<State, State> & Actions = {

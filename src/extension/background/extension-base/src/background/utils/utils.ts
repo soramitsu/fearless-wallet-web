@@ -19,6 +19,7 @@ export function getMockCurrencies(networks: NetworkJsonOld[], tokens: AssetJson[
         priceId,
         precision,
         existentialDeposit,
+        color,
       } = tokens.find(({ id }) => id === assetId)!;
       const displayName = _displayName ?? symbol;
       const mainNetwork = MAIN_NETWORKS[displayName] ?? mainNet;
@@ -43,6 +44,7 @@ export function getMockCurrencies(networks: NetworkJsonOld[], tokens: AssetJson[
           icon: assetIcon,
           providers: purchaseProviders ?? [],
           balances: [],
+          color,
         };
 
         result.push(newCurrency);
@@ -63,7 +65,7 @@ export function getMockCurrencies(networks: NetworkJsonOld[], tokens: AssetJson[
           decimals: precision,
           icon,
           isNative,
-          isUtility,
+          isUtility: isUtility ?? false,
           id: assetId,
         },
       ];

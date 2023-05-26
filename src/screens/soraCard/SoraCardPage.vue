@@ -111,7 +111,7 @@ export default class SoraCardPage extends Vue {
   @Ref('termsAndConditions') readonly termsAndConditions!: TermsAndConditions;
   @Getter(ExtensionGettersTypes.authList) authlist!: Record<string, AuthUrlInfo>;
   @Getter(AccountsGettersTypes.getWallets) wallets!: WalletInfo[];
-  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(SoraCardGettersTypes.currentStatus) currentStatus!: VerificationStatus;
   @Getter(SoraCardGettersTypes.wantsToPassKycAgain) wantsToPassKycAgain!: boolean;
   @Getter(SoraCardGettersTypes.hasFreeAttempts) hasFreeAttempts!: boolean;

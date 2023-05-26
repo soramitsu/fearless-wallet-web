@@ -33,4 +33,10 @@ function validateEmail(email: string) {
   return EmailValidator.validate(email);
 }
 
-export { getAddressMetaTyped, getMetaTyped, firstCharToUp, isSora, validatePhoneNumber, validateEmail };
+function cut(value: string, length = 7) {
+  const endNumber = length + 1;
+
+  return `${value.slice(0, length)}...${value.slice(-endNumber)}`;
+}
+
+export { getAddressMetaTyped, getMetaTyped, firstCharToUp, isSora, validatePhoneNumber, validateEmail, cut };

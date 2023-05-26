@@ -25,7 +25,7 @@ import { getTokenPrice } from '../../utils/coingecko';
 import { getId } from '../../utils';
 import { initApi } from '../../api/substrate/api';
 import { axios } from '../../utils/axios';
-import { ASSETS, CHAINS, prepNetworkNames } from '../../const/networks';
+import { prepNetworkNames } from '../../const/networks';
 import { DEFAULT_EVM_TOKENS } from '../../api/tokens/evm/defaultEvmToken';
 import { FWCron } from '../cron';
 import { getMockCurrencies, isEthereumNetwork } from '../utils/utils';
@@ -73,6 +73,7 @@ import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types
 import type { HexString } from '@polkadot/util/types';
 import type { AssetJson, SoraFees } from '@/interfaces';
 import { URLS } from '@/consts/urls';
+
 import { ALL_NETWORKS, SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/networks';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/currencies';
 
@@ -927,9 +928,7 @@ export default class State {
   }
 
   public publishBalance(reset?: boolean) {
-    return this.getBalance(reset).then((balance) => {
-      this.balanceSubject.next(balance);
-    });
+    return this.getBalance(reset).then((balance) => this.balanceSubject.next(balance));
   }
 
   public resetBalanceMap() {
@@ -938,8 +937,8 @@ export default class State {
 
   public async prepNetworkJson() {
     const result: Record<string, NetworkJsonOld> = {};
-    const { data: networks } = await axios.get<NetworkJsonOld[]>(CHAINS);
-    const { data: assets } = await axios.get<AssetJson[]>(ASSETS);
+    const { data: networks } = await axios.get<NetworkJsonOld[]>(URLS.CHAINS);
+    const { data: assets } = await axios.get<AssetJson[]>(URLS.ASSETS);
 
     this.networksJson = networks;
     this.tokenMap = assets;
@@ -1160,9 +1159,7 @@ export default class State {
   public generateDefaultBalance(address: string) {
     if (address === '') return;
 
-    if (this.balanceMap && this.balanceMap[address] !== undefined) {
-      return;
-    }
+    if (this.balanceMap && this.balanceMap[address] !== undefined) return;
 
     this.balanceMap[address] = getMockCurrencies(this.networksJson, this.tokenMap);
   }
@@ -1218,9 +1215,7 @@ export default class State {
   }
 
   private lazyNext = (key: string, callback: () => void) => {
-    if (this.lazyMap[key]) {
-      clearTimeout(this.lazyMap[key] as number);
-    }
+    if (this.lazyMap[key]) clearTimeout(this.lazyMap[key] as number);
 
     const lazy = setTimeout(() => {
       callback();

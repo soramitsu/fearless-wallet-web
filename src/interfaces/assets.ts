@@ -12,6 +12,7 @@ type AssetJson = {
   currencyId?: string;
   transfersEnabled?: true;
   existentialDeposit: string;
+  color: string;
 };
 
 type AssetPrices = {

@@ -155,10 +155,10 @@ import { INITIAL_DERIVATION_PATHS, ETHEREUM_DEFAULT_DERIVATION_PATH } from '@/co
 import {
   createAccountSuri,
   forgetAccount,
-  triggerAccountsSubscription,
   updatePairMeta,
-  validateAccount,
+  validatePassword,
   windowOpen,
+  updateCurrentAccountAddress,
 } from '@/extension/messaging';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
@@ -407,12 +407,11 @@ export default class AddWallet extends Vue {
     if (step === 5) {
       this.isLoading = true;
 
-      await this.saveKeypair();
-      await triggerAccountsSubscription();
+      const address = await this.saveKeypair();
+
+      updateCurrentAccountAddress(address);
 
       this.isLoading = false;
-
-      // this.setSelectedWallet(newAccount as AccountJson);
 
       if (this.isOnlyEthereumAccountFlow) this.$router.push({ name: Components.Wallet });
 
@@ -554,7 +553,7 @@ export default class AddWallet extends Vue {
   }
 
   async checkPassword(): Promise<boolean> {
-    const isPasswordMatch = await validateAccount(this.selectedWallet.address, this.walletPassword);
+    const isPasswordMatch = await validatePassword(this.selectedWallet.address, this.walletPassword);
 
     if (!isPasswordMatch) this.warningValueName = 'isNotSamePassword';
 

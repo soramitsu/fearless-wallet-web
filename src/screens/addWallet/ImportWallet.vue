@@ -12,6 +12,7 @@
     <Input
       v-if="notJsonImport"
       v-model="inputValue"
+      ref="valueInput"
       type="textarea"
       class="row"
       size="big"
@@ -40,8 +41,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch, VModel, PropSync } from 'vue-property-decorator';
+import { Component, Vue, Prop, Watch, VModel, PropSync, Ref } from 'vue-property-decorator';
 import type { ImportType } from '@/interfaces';
+import type Input from '@/components/Input.vue';
 
 @Component
 export default class ImportWallet extends Vue {
@@ -60,6 +62,7 @@ export default class ImportWallet extends Vue {
   @Prop(Number) step!: number;
   @Prop(Boolean) isOnlyEthereumAccountFlow!: boolean;
   @PropSync('passwordJson', { type: String }) syncedPasswordJson!: string;
+  @Ref('valueInput') readonly valueInputComponent!: Input;
 
   get inputValue() {
     return this[this.field];
@@ -123,6 +126,12 @@ export default class ImportWallet extends Vue {
   @Watch('typeImport')
   onTypeImportChanged() {
     this.$emit('reset');
+
+    this.$nextTick(() => this.valueInputComponent?.input.focus());
+  }
+
+  mounted() {
+    this.valueInputComponent.input.focus();
   }
 
   t(value: string, obj: Record<string, string> = {}) {

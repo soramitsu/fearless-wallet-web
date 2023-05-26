@@ -3,14 +3,8 @@ import { NetworkName } from '@/interfaces';
 import { Wallet } from '@/store';
 import BaseApi from '@/util/BaseApi';
 
-export function calculateCost(count: FPNumber, price: number): FPNumber {
-  const FPPrice = new FPNumber(price);
-
-  return count.mul(FPPrice);
-}
-
 export function getCostOfAssets(count: number, price: number): number {
-  return calculateCost(new FPNumber(count), price).toNumber();
+  return new FPNumber(count).mul(new FPNumber(price)).toNumber();
 }
 
 export function getTransactionAddress(wallet: Wallet, network: NetworkName): string {

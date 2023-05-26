@@ -1,4 +1,4 @@
-import { FPNumber, NetworkFeesObject } from '@sora-substrate/util';
+import { NetworkFeesObject } from '@sora-substrate/util';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { Node, TypeAsset } from '@/interfaces';
 
@@ -56,20 +56,6 @@ type NetworkAssets = {
 
 type NetworkStatus = 'pending' | 'disconnected' | 'connected' | 'ready';
 
-type NetworkJson = {
-  chainId: string;
-  parentId?: string;
-  paraId?: string;
-  name: string;
-  externalApi?: ExternalApi;
-  assets: NetworkAssets[];
-  nodes: Node[];
-  icon: string;
-  addressPrefix: number;
-  types: TypesForMobile;
-  options?: string[];
-};
-
 type Network = {
   name: string;
   label: string;
@@ -101,7 +87,6 @@ interface ApiOptions {
 export {
   Networks,
   Network,
-  NetworkJson,
   NetworkAssetsType,
   NetworkAssets,
   NetworkName,

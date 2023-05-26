@@ -110,6 +110,11 @@ export interface NetworkJsonOld extends NetworkJson {
   addressPrefix: number;
   types: TypesForMobile;
   options?: string[];
+  xcm?: {
+    xcmVersion: 'v1' | 'v3';
+    availableAssets: string[];
+    availableDestinations: { chainId: string; assets: string[] }[];
+  };
 }
 
 export interface ChainRegistry {

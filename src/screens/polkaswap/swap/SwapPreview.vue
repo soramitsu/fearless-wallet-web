@@ -67,7 +67,7 @@ export default class SwapPreview extends Vue {
   @Prop({ default: '' }) receiveAssetUP!: string;
   @Prop({ default: '' }) route!: string;
   @Prop(Boolean) isExchangeB!: boolean;
-  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
 
   get sendAmountCut() {
     return `${this.$n(+this.sendAmount, 'decimal')} ${this.sendAssetUP}`;

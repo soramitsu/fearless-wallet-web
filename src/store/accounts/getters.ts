@@ -11,7 +11,7 @@ export enum GettersTypes {
   getSelectedWallet = 'getSelectedWallet',
   getSelectedFiat = 'getSelectedFiat',
   getSelectedNetwork = 'getSelectedNetwork',
-  getFiatSymbol = 'getFiatSymbol',
+  fiatSymbol = 'fiatSymbol',
   getOnlineStatus = 'getOnlineStatus',
   getFiatId = 'getFiatId',
   getAccounts = 'getAccounts',
@@ -32,7 +32,7 @@ export type Getters = {
   [GettersTypes.getBalances](state: State, getters?: GetterTree<State, State> & Getters): TokenBalance[];
   [GettersTypes.getSelectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getSelectedNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
-  [GettersTypes.getFiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
+  [GettersTypes.fiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getOnlineStatus](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getFiatId](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.hiddenAssets](state: State, getters?: GetterTree<State, State> & Getters): string[];
@@ -86,7 +86,7 @@ const getters: GetterTree<State, State> & Getters = {
     return showPolkaswapAlert;
   },
 
-  [GettersTypes.getFiatSymbol]({ selectedFiat }): string {
+  [GettersTypes.fiatSymbol]({ selectedFiat }): string {
     const fiats: FiatJson[] = store.getters[NetworksGettersTypes.getFiats];
     const fiat = fiats.find(({ id }) => id === selectedFiat);
 

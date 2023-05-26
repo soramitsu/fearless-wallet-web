@@ -111,8 +111,6 @@ export interface SubscribeBalanceRequest {
   port: Port;
 }
 
-// [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
-
 export enum NETWORK_ERROR {
   INVALID_INFO_TYPE = 'invalidInfoType',
   INJECT_SCRIPT_DETECTED = 'injectScriptDetected',
@@ -329,8 +327,10 @@ export type BasicTxWarning = {
   data?: object;
   message: string;
 };
+
 // eslint-disable-next-line @typescript-eslint/ban-types
 export type BaseRequestSign = {};
+
 export interface RequestCheckTransfer extends BaseRequestSign {
   networkKey: string;
   from: string;
@@ -342,7 +342,27 @@ export interface RequestCheckTransfer extends BaseRequestSign {
   password?: string;
 }
 
+export interface RequestCheckCrossChain extends BaseRequestSign {
+  networkKey: string;
+  from: string;
+  to: string;
+  token: string;
+  relayChain?: string;
+  value?: string;
+  transferAll?: boolean;
+  password?: string;
+}
+
 export interface ResponseCheckTransfer {
+  errors?: Array<BasicTxError>;
+  warnings?: Array<BasicTxWarning>;
+  fromAccountFree: string;
+  toAccountFree: string;
+  estimateFee?: string;
+  feeSymbol?: string; // if undefined => use main token
+}
+
+export interface ResponseCheckCrossChain {
   errors?: Array<BasicTxError>;
   warnings?: Array<BasicTxWarning>;
   fromAccountFree: string;
@@ -395,10 +415,14 @@ export interface BasicSwapResponse {
 }
 
 export type RequestTransfer = PasswordRequestSign<RequestCheckTransfer>;
+
+export type RequestCrossChain = PasswordRequestSign<RequestCheckCrossChain>;
+
 export interface RequestAccountExportPrivateKey {
   address: string;
   password: string;
 }
+
 export interface ExternalRequestPromise {
   resolve?: (result: SignerResult | PromiseLike<SignerResult>) => void;
   reject?: (error?: Error) => void;
@@ -406,16 +430,19 @@ export interface ExternalRequestPromise {
   message?: string;
   createdAt: number;
 }
+
 export enum ExternalRequestPromiseStatus {
   PENDING,
   REJECTED,
   FAILED,
   COMPLETED,
 }
+
 export interface ResponseAccountExportPrivateKey {
   privateKey: string;
   publicKey: string;
 }
+
 export interface RequestAccountChangePassword {
   address: string;
   oldPass: string;
@@ -799,6 +826,7 @@ export interface GoogleFileId {
 export interface RequestGoogleCreateFile {
   data: Record<string, string>;
 }
+
 export interface TransactionHistoryItem {
   time: number | string;
   networkKey: string;
@@ -904,6 +932,7 @@ export interface TokenBalance {
   icon: string;
   providers: string[];
   balances: BalanceItem[];
+  color?: string;
 }
 
 export type BalanceMap = Record<WalletAddress, TokenBalance[]>;

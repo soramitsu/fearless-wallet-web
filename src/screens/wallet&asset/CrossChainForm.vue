@@ -1,0 +1,258 @@
+<template>
+  <TransferForm
+    extrinsicType="crossChain"
+    header="assets.crossChain"
+    :assetId="assetId"
+    :selectedNetwork="originalNetwork"
+    :amount="amount"
+    :value="value"
+    :partialFee="originNetFee"
+    :destNetFee="destNetFee"
+    :destinationNetwork="destinationNetwork"
+    :recipient="recipient"
+    :closeForm="closeForm"
+    @update:assetId="updateAssetId"
+    @update:selectedNetwork="updateOriginalNetwork"
+    @update:amount="updateAmount"
+    @update:value="updateValue"
+    @update:partialFee="updateOriginNetFee"
+    @update:destinationNetwork="updateDestinationNetwork"
+    @update:recipient="updateRecipient"
+  >
+    <div class="cross-chain">
+      <div class="direction">
+        <ExternalLogo :name="originNetIcon" :width="42" />
+
+        <div class="asset-logo">
+          <div class="hr"></div>
+
+          <div class="background-circle" :style="circleStyles">
+            <ExternalLogo :name="currency.icon" :width="87" />
+          </div>
+
+          <div class="hr"></div>
+        </div>
+
+        <ExternalLogo :name="destNetIcon" :width="42" />
+      </div>
+
+      <Corners size="big" class="row">
+        <div class="summary">
+          <InfoRow text="assets.direction" :value="directionText" />
+
+          <InfoRow text="assets.assetsAmount" :value="amountString" :price="showValue ? valueString : ''" />
+
+          <InfoRow text="assets.sendTo" :value="cut(recipient)" />
+
+          <InfoRow
+            text="assets.originalNetworkFee"
+            :value="originalNetworkPartialFeeString"
+            icon="info"
+            :iconClasses="['origin-fee']"
+          />
+
+          <InfoRow
+            text="assets.crossChainFee"
+            :value="destinationNetworkPartialFeeString"
+            icon="info"
+            :iconClasses="['cross-chain-fee']"
+          />
+        </div>
+
+        <Tooltip text="common.read" target=".origin-fee" placement="right" />
+        <Tooltip text="common.read" target=".cross-chain-fee" placement="right" />
+      </Corners>
+    </div>
+  </TransferForm>
+</template>
+
+<script lang="ts">
+import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import TransferForm from './TransferForm.vue';
+import type { SelectedWallet } from '@/store';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { firstCharToUp, cut } from '@/helpers/common';
+import { formattedNumber } from '@/helpers/numbers';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+
+@Component({
+  components: { TransferForm },
+})
+export default class CrossChainForm extends Vue {
+  originNetFee = '';
+  destNetFee = '';
+  assetId = '';
+  originalNetwork = '';
+  destinationNetwork = '';
+  amount = '';
+  recipient = '';
+  value = '';
+  step = 1;
+
+  @Prop(Function) closeForm!: VoidFunction;
+  @Prop(String) _originalNetwork!: string;
+  @Prop(String) _selectedAssetId!: string;
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(NetworksGettersTypes.getAllNetworks) getNetworks!: NetworkJsonOld[];
+
+  get circleStyles() {
+    return {
+      filter: `drop-shadow(0px 6.53061px 25px #${this.iconShadowColor})`,
+    };
+  }
+
+  get directionText() {
+    return `${this.$t('assets.from')} ${this.originalNetwork} ${this.$t('assets.to')} ${this.destinationNetwork} `;
+  }
+
+  get showValue() {
+    return this.value !== '0';
+  }
+
+  get originalNetworkString() {
+    return `${firstCharToUp(this.originalNetwork)}`;
+  }
+
+  get destinationNetworkString() {
+    return `${firstCharToUp(this.destinationNetwork)}`;
+  }
+
+  get amountString() {
+    return `${+this.amount} ${this.assetName}`;
+  }
+
+  get valueString() {
+    return `${this.fiatSymbol}${this.$n(+this.value, 'price')}`;
+  }
+
+  get originalNetworkPartialFeeString() {
+    return `${formattedNumber(+this.originNetFee, { decimalsValue: 7 })} ${this.originalNetworkUtilityAssetUpper}`;
+  }
+
+  get destinationNetworkPartialFeeString() {
+    return `${formattedNumber(+this.destNetFee)} ${this.assetName}`;
+  }
+
+  get currency() {
+    return this.balances.find(({ assetId }) => assetId === this.assetId);
+  }
+
+  get assetName() {
+    return (this.currency?.name ?? '').toUpperCase();
+  }
+
+  get iconShadowColor() {
+    return this.currency?.color ?? '';
+  }
+
+  get originNet() {
+    return this.getNetworks.find(({ name }) => name.toLowerCase() === this.originalNetwork.toLowerCase());
+  }
+
+  get destNet() {
+    return this.getNetworks.find(({ name }) => name.toLowerCase() === this.destinationNetwork.toLowerCase());
+  }
+
+  get originNetIcon() {
+    return this.originNet?.icon ?? '';
+  }
+
+  get destNetIcon() {
+    return this.destNet?.icon ?? '';
+  }
+
+  get originalNetworkUtilityAsset() {
+    const utilityId = this.originNet?.assets[0].assetId ?? ''; // [0] - is utility asset
+    const currency = this.balances.find(({ assetId }) => assetId === utilityId);
+
+    return currency?.name ?? '';
+  }
+
+  get originalNetworkUtilityAssetUpper() {
+    return this.originalNetworkUtilityAsset.toUpperCase();
+  }
+
+  created() {
+    this.assetId = this._selectedAssetId;
+    this.originalNetwork = this._originalNetwork;
+  }
+
+  cut(value: string) {
+    return cut(value);
+  }
+
+  updateAssetId(value: string) {
+    this.assetId = value;
+  }
+
+  updateOriginalNetwork(value: string) {
+    this.originalNetwork = value;
+  }
+
+  updateDestinationNetwork(value: string) {
+    this.destinationNetwork = value;
+  }
+
+  updateAmount(value: string) {
+    this.amount = value;
+  }
+
+  updateValue(value: string) {
+    this.value = value;
+  }
+
+  updateOriginNetFee(value: string) {
+    this.originNetFee = value;
+  }
+
+  updateRecipient(value: string) {
+    this.recipient = value;
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+.summary {
+  background-color: $secondary-background-color !important;
+  border: 1px solid $default-background-color !important;
+  clip-path: $big-clip-path-left-top-and-right-bottom;
+  border-radius: $default-border-radius;
+  margin-bottom: 15px;
+}
+
+.direction {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 180px;
+
+  .asset-logo {
+    display: flex;
+    align-items: center;
+    margin: 0 10px;
+
+    .hr {
+      width: 100px;
+      height: 1px;
+      border-bottom: 1px dashed $gray-color;
+    }
+
+    .background-circle {
+      width: 95px;
+      height: 95px;
+      background-color: #111;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      // filter: drop-shadow(0px 6.53061px 30px rgba(238, 34, 51, 0.77));
+      // box-shadow: 0 0 15px 5px red;
+    }
+  }
+}
+</style>

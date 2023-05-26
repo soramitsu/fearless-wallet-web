@@ -7,12 +7,6 @@ import { formattedNumber } from '@/helpers/numbers';
 import store from '@/store';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
-function cut(value: string, length = 7) {
-  const endNumber = length + 1;
-
-  return `${value.slice(0, length)}...${value.slice(-endNumber)}`;
-}
-
 function getType(historyElement: HistoryElement): TransactionType {
   const { reward, transfer } = historyElement;
 
@@ -170,7 +164,6 @@ function getFormattedHistory(
 }
 
 export {
-  cut,
   getType,
   getTypeFormatted,
   getHumanTransferFee,

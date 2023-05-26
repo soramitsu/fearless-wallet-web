@@ -90,11 +90,11 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.getAssetPrice]:
     ({ assetsPrice }) =>
-    (assetId: string) => {
-      if (assetsPrice.tokenPriceMap[assetId] === undefined) return { price: 0, priceChange: 0 };
+    (priceId: string) => {
+      if (assetsPrice.tokenPriceMap[priceId] === undefined) return { price: 0, priceChange: 0 };
 
-      const price = assetsPrice.tokenPriceMap[assetId];
-      const priceChange = assetsPrice.tokenPriceChange[assetId] / 100;
+      const price = assetsPrice.tokenPriceMap[priceId];
+      const priceChange = assetsPrice.tokenPriceChange[priceId] / 100;
 
       return { price, priceChange };
     },

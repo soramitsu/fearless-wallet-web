@@ -27,21 +27,19 @@ import {
   PriceJson,
   RequestCheckSwap,
   RequestCheckTransfer,
+  RequestCheckCrossChain,
   RequestCurrentAccountAddress,
   RequestSwap,
   RequestTransfer,
+  RequestCrossChain,
   ResponseCheckSwap,
   ResponseCheckTransfer,
+  ResponseCheckCrossChain,
   ResponseMakeSwap,
   TransferErrorCode,
 } from '../types/types';
 import { CurrentAccountInfo, CurrentAccountState } from '../../stores/CurrentAccountStore';
-import {
-  NetworkJsonOld,
-  RequestTransactionHistoryAdd,
-  RequestTransactionHistoryGet,
-  TransactionHistoryItemType,
-} from '../../types';
+import { NetworkJsonOld, RequestTransactionHistoryAdd, TransactionHistoryItemType } from '../../types';
 import { NetworkJson } from '../../api/evm/types/ether';
 import {
   getERC20TransactionObject,
@@ -168,9 +166,7 @@ export default class Extension extends FWExtensionBase {
       pair: { address },
     } = keyring.addUri(suri, password, { ...meta, isMobile: false }, type);
 
-    if (!isEthereumAddress(address)) {
-      this.updateCurrentAccountAddress(address);
-    }
+    if (!isEthereumAddress(address)) this.updateCurrentAccountAddress(address);
 
     return address;
   }
@@ -232,7 +228,7 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  accountsValidate({ address, password }: RequestAccountValidate): boolean {
+  accountsValidatePassword({ address, password }: RequestAccountValidate): boolean {
     try {
       keyring.backupAccount(keyring.getPair(address), password);
 
@@ -936,7 +932,6 @@ export default class Extension extends FWExtensionBase {
   }
 
   private validateTransfer(
-    networkKey: string,
     token: string,
     from: string,
     password: string | undefined,
@@ -996,7 +991,6 @@ export default class Extension extends FWExtensionBase {
     password,
   }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
     const [errors, fromKeyPair, valueNumber, tokenInfo] = this.validateTransfer(
-      networkKey,
       token,
       from,
       password,
@@ -1050,7 +1044,7 @@ export default class Extension extends FWExtensionBase {
 
       fee = await estimateFee(networkKey, fromKeyPair, to, value, !!transferAll, dotSamaApiMap, tokenBalance);
       fromAccountFreeBalance =
-        tokenBalance.balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0';
+        tokenBalance.balances.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0';
     }
 
     const fromAccountFreeNumber = new FPNumber(fromAccountFreeBalance);
@@ -1130,14 +1124,7 @@ export default class Extension extends FWExtensionBase {
   ): Promise<BasicTxResponse | undefined> {
     const txState: BasicTxResponse = {};
 
-    const [errors, fromKeyPair, , tokenInfo] = this.validateTransfer(
-      networkKey,
-      token,
-      from,
-      password,
-      value,
-      transferAll
-    );
+    const [errors, fromKeyPair, , tokenInfo] = this.validateTransfer(token, from, password, value, transferAll);
 
     if (errors.length) {
       txState.txError = true;
@@ -1245,6 +1232,27 @@ export default class Extension extends FWExtensionBase {
     });
 
     return txState;
+  }
+
+  private async checkCrossChain({
+    from,
+    networkKey,
+    to,
+    token,
+    relayChain,
+    transferAll,
+    value,
+    password,
+  }: RequestCheckCrossChain): Promise<ResponseCheckCrossChain> {
+    return {} as ResponseCheckCrossChain;
+  }
+
+  private async makeCrossChain(
+    id: string,
+    port: Port,
+    { from, networkKey, password, to, token, transferAll, value, isSavePass }: RequestTransfer
+  ): Promise<BasicTxResponse | undefined> {
+    return {} as BasicTxResponse;
   }
 
   private getNetworkMap(): Record<string, NetworkJson> {
@@ -1399,7 +1407,7 @@ export default class Extension extends FWExtensionBase {
         return this.accountUpdateName(request as RequestAccountName);
 
       case 'pri(accounts.validate)':
-        return this.accountsValidate(request as RequestAccountValidate);
+        return this.accountsValidatePassword(request as RequestAccountValidate);
 
       case 'pri(metadata.approve)':
         return this.metadataApprove(request as RequestMetadataApprove);
@@ -1491,21 +1499,27 @@ export default class Extension extends FWExtensionBase {
       case 'pri(balance.get.subscription)':
         return this.subscribeBalance(id, port);
 
-      /// Transfer
+      /// Transfer, CrossChain, Sora Swap
       case 'pri(accounts.checkTransfer)':
         return this.checkTransfer(request as RequestCheckTransfer);
 
       case 'pri(accounts.transfer)':
         return this.makeTransfer(id, port, request as RequestTransfer);
 
-      case 'pri(accounts.get.soraFees)':
-        return this.getSoraFees();
+      case 'pri(accounts.checkCrossChain)':
+        return this.checkCrossChain(request as RequestCheckCrossChain);
+
+      case 'pri(accounts.crossChain)':
+        return this.makeCrossChain(id, port, request as RequestCrossChain);
 
       case 'pri(accounts.checkSwap)':
         return this.validateSwap(request as RequestCheckSwap);
 
       case 'pri(accounts.swap)':
         return this.makeSwap(request as RequestSwap);
+
+      case 'pri(accounts.get.soraFees)':
+        return this.getSoraFees();
 
       case 'pri(transaction.history.add)':
         return this.updateTransactionHistory(request as RequestTransactionHistoryAdd, id, port);

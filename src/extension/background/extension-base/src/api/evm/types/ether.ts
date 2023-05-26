@@ -1,5 +1,6 @@
 import { APIItemState, NETWORK_STATUS } from '../../types/networks';
 import type { ContractType } from '@/interfaces/ether';
+import type { TypeAsset } from '@/interfaces';
 
 export interface BalanceChildItem {
   reserved: string;
@@ -17,11 +18,11 @@ export interface BalanceItem {
   existentialDeposit?: string;
   key?: string;
   decimals?: number;
-  type?: string;
+  type?: TypeAsset;
   free?: string;
   isUtility?: boolean;
   isNative?: boolean;
-  icon?: string;
+  icon?: string; // is network icon
   reserved?: string;
   locked?: string;
   miscFrozen?: string;

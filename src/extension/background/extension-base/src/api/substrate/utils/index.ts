@@ -5,6 +5,7 @@ import { state } from '../../../background/handlers';
 import type { TokenBalance } from '../../../background/types/types';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { AssetJson, TypeAsset } from '@/interfaces';
+
 type ExtrinsicTransferProps = {
   api: ApiPromise;
   to: string;

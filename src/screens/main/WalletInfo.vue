@@ -1,6 +1,6 @@
 <template>
   <Corners size="big">
-    <div :class="contentClasses" @click="updateSelectedWallet">
+    <div :class="contentClasses" @click="setWallet">
       <div class="content">
         <div class="name">{{ name }}</div>
 
@@ -9,7 +9,7 @@
 
       <Icon v-if="isMobile" icon="mobile" className="mobile" />
 
-      <div class="dots-container" :ref="dotsHorizontalRef">
+      <div v-if="showMenu" class="dots-container" :ref="dotsHorizontalRef">
         <Icon icon="dots-horizontal" className="dots" />
       </div>
     </div>
@@ -19,9 +19,11 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import type { ResponseTotalBalances } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { ChangeWalletBalance, CustomEvent } from '@/interfaces';
+import { CustomEvent } from '@/interfaces';
 import WalletBalance from '@/screens/main/WalletBalance.vue';
+import { getTotalBalances } from '@/extension/messaging';
 
 @Component({
   components: { WalletBalance },
@@ -29,16 +31,30 @@ import WalletBalance from '@/screens/main/WalletBalance.vue';
 export default class WalletInfo extends Vue {
   readonly dotsHorizontalRef = 'dotsHorizontal';
   showWalletMenu = false;
+  totalBalances: ResponseTotalBalances[] = [];
+
   $refs!: {
     dotsHorizontal: HTMLDivElement;
   };
 
   @Prop({ default: '' }) name!: string;
-  @Prop(Number) balance!: number;
+  @Prop({ default: '' }) address!: string;
   @Prop(Boolean) isMobile!: boolean;
-  @Prop(Object) changeWalletBalance!: ChangeWalletBalance;
   @Prop({ default: false }) isSelected!: boolean;
-  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Prop({ default: true }) showMenu!: boolean;
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+
+  get totalBalance() {
+    return this.totalBalances.find(({ address }) => address === this.address);
+  }
+
+  get balance() {
+    return this.totalBalance?.total ?? 0;
+  }
+
+  get changeWalletBalance() {
+    return this.totalBalance?.change ?? { percent: 0, amount: 0 };
+  }
 
   get contentClasses() {
     return [
@@ -49,7 +65,11 @@ export default class WalletInfo extends Vue {
     ];
   }
 
-  updateSelectedWallet({ target: { classList } }: CustomEvent) {
+  async mounted() {
+    this.totalBalances = await getTotalBalances();
+  }
+
+  setWallet({ target: { classList } }: CustomEvent) {
     const shouldUpdateSelectedWallet = !(
       classList.contains('dots-container') ||
       classList.contains('dots') ||
@@ -57,7 +77,7 @@ export default class WalletInfo extends Vue {
       classList.contains('icon__inner')
     );
 
-    if (shouldUpdateSelectedWallet) this.$emit('updateSelectedWallet');
+    if (shouldUpdateSelectedWallet) this.$emit('setWallet');
     else {
       const buttonTop = this.$refs[this.dotsHorizontalRef].getBoundingClientRect().top;
 
@@ -81,9 +101,9 @@ export default class WalletInfo extends Vue {
   border-radius: $default-border-radius;
   background: $secondary-background-color;
   user-select: none;
+  cursor: pointer;
 
   &:hover {
-    cursor: pointer;
     opacity: 1;
   }
 

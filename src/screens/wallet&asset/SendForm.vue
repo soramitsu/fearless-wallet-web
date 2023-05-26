@@ -2,14 +2,14 @@
   <TransferForm
     extrinsicType="transfer"
     header="assets.sendFunds"
-    :selectedAssetId="selectedAssetId"
+    :assetId="assetId"
     :selectedNetwork="selectedNetwork"
     :amount="amount"
     :value="value"
     :partialFee="partialFee"
     :recipient="recipient"
     :closeForm="closeForm"
-    @update:selectedAssetId="updateSelectedAssetId"
+    @update:assetId="updateAssetId"
     @update:selectedNetwork="updateSelectedNetwork"
     @update:amount="updateAmount"
     @update:value="updateValue"
@@ -74,7 +74,7 @@ import { getUtilityAsset } from '@/helpers/currencies';
 export default class SendFormStateLess extends Vue {
   partialFee = '';
   selectedNetwork = '';
-  selectedAssetId = '';
+  assetId = '';
   recipient = '';
   amount = '';
   value = '';
@@ -83,11 +83,11 @@ export default class SendFormStateLess extends Vue {
   @Prop(String) _selectedNetwork!: string;
   @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get currency() {
-    return this.balances.find(({ assetId }) => assetId.toLowerCase() === this.selectedAssetId.toLowerCase());
+    return this.balances.find(({ assetId }) => assetId.toLowerCase() === this.assetId.toLowerCase());
   }
 
   get isUtilityAsset() {
@@ -119,8 +119,7 @@ export default class SendFormStateLess extends Vue {
   get selectedAsset() {
     return this.balances.find(
       (el) =>
-        el.name.toLowerCase() === this.selectedAssetId.toLowerCase() ||
-        el.assetId.toLowerCase() === this.selectedAssetId.toLowerCase()
+        el.name.toLowerCase() === this.assetId.toLowerCase() || el.assetId.toLowerCase() === this.assetId.toLowerCase()
     )!;
   }
 
@@ -135,12 +134,12 @@ export default class SendFormStateLess extends Vue {
   }
 
   created() {
-    this.selectedAssetId = this._selectedAssetId;
+    this.assetId = this._selectedAssetId;
     this.selectedNetwork = this._selectedNetwork;
   }
 
-  updateSelectedAssetId(value: string) {
-    this.selectedAssetId = value;
+  updateAssetId(value: string) {
+    this.assetId = value;
   }
 
   updateSelectedNetwork(value: string) {
@@ -165,7 +164,7 @@ export default class SendFormStateLess extends Vue {
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .direction-column {
   display: flex;
   justify-content: space-between;

@@ -10,7 +10,7 @@
 
     <ValidatedInput
       v-model="slippagePercent"
-      placeholder="assets.slippage"
+      placeholder="assets.slippageTolerance"
       class="row"
       :errorDescriptions="warningMessage"
       :isError="isErrorSlippageInput"

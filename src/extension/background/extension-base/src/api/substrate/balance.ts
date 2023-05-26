@@ -196,7 +196,7 @@ async function subscribeTokensBalance(
       relayChain: relayChain,
       type: type ?? 'native',
       isNative,
-      isUtility,
+      isUtility: isUtility ?? false,
     };
   });
 

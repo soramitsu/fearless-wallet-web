@@ -1,4 +1,4 @@
-@Library('jenkins-library')
+@Library('jenkins-library@feature/DOPS-2406-limit-the-execution')
 
 def buildWithCred  = [
     [$class: 'UsernamePasswordMultiBinding', credentialsId: 'OAUTH_CLIENT_UPLOAD', usernameVariable: 'OAUTH_CLIENT_ID_UPLOAD', passwordVariable: 'OAUTH_CLIENT_SECRET_UPLOAD'],
@@ -34,6 +34,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     uploadToNexusFor:           ['master','develop'],
     uploadToGoogleFor:          ['master'],
     uploadToFirefoxFor:         ['master'],
-    buildWithCred:              buildWithCred
+    buildWithCred:              buildWithCred,
+    timeoutOption:              '1'
 )
 pipeline.runPipeline()

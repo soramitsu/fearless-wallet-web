@@ -61,7 +61,6 @@ export default class MobileConnect extends Vue {
   permissionRequestDenied = false;
 
   @Action(AccountActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<string>;
-  @Getter(NetworkGettersTypes.getAllNetworks) getNetworks!: Networks;
   @Getter(AccountGettersTypes.GET_QR) getQR!: Nullable<string>;
   @Mutation(AccountMutationsTypes.SET_QR) setQR!: Fn<string>;
 

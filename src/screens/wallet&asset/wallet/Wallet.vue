@@ -168,7 +168,7 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(AccountsGettersTypes.showSoraCardBanner) showSoraCardBanner!: boolean;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJsonOld[];
   @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJsonOld;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;

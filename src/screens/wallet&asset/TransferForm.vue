@@ -26,11 +26,21 @@
           <div>
             <template v-if="step === 1">
               <RotateInput
+                v-if="isTransfer"
                 v-model="syncedNetwork"
                 class="row"
                 :placeholder="placeholderNetwork"
                 :isActiveRotate="showSelectNetworkPopup"
                 @click="toggleNetworkPopupVisibility"
+              />
+
+              <Input
+                v-else
+                v-model="originNetwork"
+                class="row"
+                size="big"
+                :placeholder="placeholderNetwork"
+                :readonly="true"
               />
 
               <SelectInput
@@ -209,7 +219,12 @@ export default class SendForm extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(NetworksGettersTypes.getNetworks) getNetworks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJsonOld;
+
+  get originNetwork() {
+    return firstCharToUp(this.syncedNetwork);
+  }
 
   get filteredWallets() {
     if (this.isCrossChain) return this.wallets;
@@ -389,7 +404,18 @@ export default class SendForm extends Vue {
     return options.filter(({ name }) => name.toLowerCase().includes(filter));
   }
 
+  get optionsCurrency() {
+    const balances = this.isTransfer
+      ? this.balances
+      : this.balances.filter(({ balances }) =>
+          balances.some(({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase())
+        );
+
+    return getCurrencyOptions(balances);
+  }
+
   get optionsNetworks() {
+    // used only for transfer
     const walletBalance = this.currency?.balances ?? [];
 
     return walletBalance.map(({ name, icon }) => {
@@ -402,15 +428,21 @@ export default class SendForm extends Vue {
   }
 
   get optionsDestNet() {
-    return this.optionsNetworks.filter(({ value }) => value !== this.syncedNetwork);
+    const { xcm } = this.networks.find(({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase())!;
+
+    return xcm!.availableDestinations.map(({ chainId }) => {
+      const { name, icon } = this.getNetwork(chainId);
+
+      return {
+        name: firstCharToUp(name),
+        value: name,
+        icon,
+      };
+    });
   }
 
   get sendAssetName() {
     return this.currency!.name;
-  }
-
-  get optionsCurrency() {
-    return getCurrencyOptions(this.balances);
   }
 
   get isValidSendAsset() {
@@ -482,14 +514,6 @@ export default class SendForm extends Vue {
     const { estimateFee } = await this.verifyTx();
 
     this.syncedFee = estimateFee ?? '0';
-  }
-
-  mounted() {
-    this.$nextTick(() => {
-      const index = this.optionsNetworks?.findIndex(({ value }) => value === this.syncedNetwork);
-
-      if (index === -1) this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
-    });
   }
 
   toggleAssetPopupVisibility() {
@@ -579,7 +603,7 @@ export default class SendForm extends Vue {
   calcTransferableSendMinusFee(fee: string) {
     if (this.currency === undefined) return 0;
 
-    // Для Utility ассета вычитаем комиссию, тк комиссия всегда списывается в isUtility токене
+    // Для Utility ассета вычитаем комиссию, тк комиссия всегда списывается в Utility токене
     if (this.currencyBalance?.isUtility) {
       const result = new FPNumber(this.transferableAmount).sub(new FPNumber(fee));
 
@@ -617,11 +641,12 @@ export default class SendForm extends Vue {
       } as RequestCheckTransfer;
 
     return {
-      networkKey: this.syncedNetwork,
+      originNet: this.syncedNetwork,
+      destinationNet: this.syncedDestNet,
+      amount: this.syncedAmount,
       from: this.transactionAddress,
       to: this.syncedRecipient,
       relayChain: this.currency?.relayChain,
-      value: this.syncedAmount,
       transferAll: false,
       token: this.syncedAssetId,
     } as RequestCheckCrossChain;
@@ -654,12 +679,12 @@ export default class SendForm extends Vue {
     );
 
     return checkCrossChain({
-      networkKey: this.syncedNetwork,
+      originNet: this.syncedNetwork,
+      destinationNet: this.syncedNetwork,
       from: this.transactionAddress,
       to,
       relayChain: this.currency?.relayChain,
-      value: amount ?? this.syncedAmount,
-      transferAll: false,
+      amount: amount ?? this.syncedAmount,
       token: this.syncedAssetId,
     });
   }
@@ -701,7 +726,7 @@ export default class SendForm extends Vue {
   }
 
   handlerCloseWarningAddressPopup() {
-    const network = this.getNetworks.find(({ name }) => BaseApi.validateAddressByNetwork(this.syncedRecipient, name));
+    const network = this.networks.find(({ name }) => BaseApi.validateAddressByNetwork(this.syncedRecipient, name));
 
     this.syncedAssetId = network?.assets[0].assetId ?? ''; // [0] - is utility asset
 

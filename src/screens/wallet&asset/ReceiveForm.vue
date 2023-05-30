@@ -92,7 +92,7 @@ export default class ReceiveFormStateLess extends Vue {
   @Prop(String) selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
-  @Getter(NetworksGettersTypes.getNetworks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJsonOld[];
 
   get assetNetworks() {
     const currency = this.balances.find(({ assetId }) => assetId === this.selectedAssetId)!;

@@ -85,7 +85,7 @@ export default class Nodes extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getAutoSelectNodesValueByNetwork)
   getAutoSelectNodesValueByNetwork!: GetAutoSelectNodesValueByNetwork;
-  @Getter(NetworksGettersTypes.getAllNetworks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJsonOld[];
   @Getter(NetworksGettersTypes.getActiveNodesByNetwork) getActiveNodesByNetwork!: GetActiveNodesByNetwork;
   @Mutation(AccountsMutationTypes.SET_AUTO_SELECT_NODE) setAutoSelectNode!: Fn<SetAutoSelectNode>;
 

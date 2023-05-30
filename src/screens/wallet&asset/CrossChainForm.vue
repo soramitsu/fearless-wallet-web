@@ -98,7 +98,7 @@ export default class CrossChainForm extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
-  @Getter(NetworksGettersTypes.getAllNetworks) getNetworks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJsonOld[];
 
   get circleStyles() {
     return {
@@ -151,11 +151,11 @@ export default class CrossChainForm extends Vue {
   }
 
   get originNet() {
-    return this.getNetworks.find(({ name }) => name.toLowerCase() === this.originalNetwork.toLowerCase());
+    return this.networks.find(({ name }) => name.toLowerCase() === this.originalNetwork.toLowerCase());
   }
 
   get destNet() {
-    return this.getNetworks.find(({ name }) => name.toLowerCase() === this.destinationNetwork.toLowerCase());
+    return this.networks.find(({ name }) => name.toLowerCase() === this.destinationNetwork.toLowerCase());
   }
 
   get originNetIcon() {
@@ -178,8 +178,13 @@ export default class CrossChainForm extends Vue {
   }
 
   created() {
+    const originNet = this.networks.find(({ name }) => name.toLowerCase() === this._originalNetwork.toLowerCase());
+    const destChainId = originNet?.xcm?.availableDestinations[0]?.chainId;
+    const { name: destName } = this.networks.find(({ chainId }) => chainId === destChainId)!;
+
     this.assetId = this._selectedAssetId;
     this.originalNetwork = this._originalNetwork;
+    this.destinationNetwork = destName;
   }
 
   cut(value: string) {

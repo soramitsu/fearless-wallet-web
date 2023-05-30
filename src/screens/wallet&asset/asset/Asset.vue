@@ -152,6 +152,7 @@ import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { firstCharToUp, isSora } from '@/helpers/common';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { getSummaryTransferableBalance } from '@/helpers/currencies';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 
@@ -184,9 +185,10 @@ export default class Asset extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJsonOld[];
 
   get showShimmers() {
     return !this.isOnline || !this.balances.length || !this.currentNetwork || this.currentNetwork?.state === 'pending';
@@ -200,7 +202,9 @@ export default class Asset extends Vue {
   }
 
   get showCrossChainButton() {
-    return true; // TODO
+    const network = this.networks.find(({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase())!;
+
+    return network?.xcm?.availableAssets.some((assetName) => assetName.toLowerCase() === this.selectedAsset);
   }
 
   get showSwapButton() {
@@ -208,7 +212,7 @@ export default class Asset extends Vue {
   }
 
   get currentNetwork() {
-    return this.currentCurrency.balances.find((el) => el.name.toLowerCase() === this.selectedNetwork?.toLowerCase());
+    return this.currentCurrency.balances.find(({ name }) => name.toLowerCase() === this.selectedNetwork?.toLowerCase());
   }
 
   get mainNetwork() {
@@ -239,8 +243,12 @@ export default class Asset extends Vue {
     return this.$route.params.assetId ?? '';
   }
 
+  get selectedAsset() {
+    return this.currentCurrency.name.toLowerCase() ?? '';
+  }
+
   get selectedAssetUpper() {
-    return this.currentCurrency.name?.toUpperCase() ?? '';
+    return this.selectedAsset.toUpperCase();
   }
 
   get assetPrice() {

@@ -131,7 +131,7 @@ export default class Preview extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(SoraCardGettersTypes.hasFreeAttempts) hasFreeAttempts!: boolean;
   @Getter(SoraCardGettersTypes.xorPerEuroRatio) xorPerEuroRatio!: FPNumber;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJsonOld[];
   @Action(SoraCardActionTypes.GET_XOR_PER_EURO_RATIO) getXorPerEuroRatio!: AsyncFn;
 
   get networkIsReady() {

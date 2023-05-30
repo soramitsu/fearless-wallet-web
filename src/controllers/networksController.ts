@@ -52,10 +52,6 @@ export class NetworksController {
     lsNetworks.set(zeroBalance, newValue);
   }
 
-  static getNetworks(): Networks {
-    return store.getters[NetworksGettersTypes.getNetworks];
-  }
-
   static getNetwork(networkName: string): Network {
     return store.getters[NetworksGettersTypes.getNetwork](networkName);
   }

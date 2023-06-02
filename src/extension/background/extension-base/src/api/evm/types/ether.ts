@@ -82,7 +82,7 @@ export interface NetworkJson {
   genesisHash: string; // identifier for network
   groups: NetWorkGroup[];
   ss58Format: number;
-  paraId?: number;
+  paraId?: string;
   chainType?: 'substrate' | 'ethereum';
   crowdloanUrl?: string;
 

@@ -1,14 +1,19 @@
 import { IS_PRODUCTION } from '@/consts/global';
 
 const CHAINS = IS_PRODUCTION
-  ? 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/chains/chains.json'
-  : 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/chains/chains_dev.json';
+  ? 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop/chains/chains.json'
+  : 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop/chains/chains_dev.json';
 
 const ASSETS = IS_PRODUCTION
-  ? 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/chains/assets.json'
-  : 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/master/chains/assets_dev.json';
+  ? 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop/chains/assets.json'
+  : 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop/chains/assets_dev.json';
 
 const FIATS = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';
+
+const XCM_LOCATIONS =
+  'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop/xcm/xcm_token_locations.json';
+
+const XCM_FEES = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop/xcm/xcm_fees.json';
 
 const BASE_URLS_PREFIX = {
   MOONPAY: 'https://buy.moonpay.com',
@@ -63,6 +68,8 @@ const URLS = {
   SORA_CARD_PRIVACY,
   SORA_CARD_TERMS,
   POLKASWAP,
+  XCM_LOCATIONS,
+  XCM_FEES,
 };
 
 function isSafeForExternalOpen(url: string): boolean {

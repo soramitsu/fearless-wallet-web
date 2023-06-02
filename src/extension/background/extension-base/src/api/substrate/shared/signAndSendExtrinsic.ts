@@ -15,7 +15,7 @@ import type {
   SignerType,
 } from '../../../background/types/types';
 interface AbstractSignAndSendExtrinsicProps extends Partial<PrepareExternalRequest> {
-  extrinsic: SubmittableExtrinsic<'promise'> | null;
+  extrinsic: Nullable<SubmittableExtrinsic<'promise'>>;
   callback: HandleBasicTx;
   txState: BasicTxResponse;
   address: string;
@@ -64,7 +64,7 @@ export const signAndSendExtrinsic = async ({
       address,
       apiProps,
       callback,
-      extrinsic,
+      extrinsic: extrinsic!,
       password,
       type,
     });
@@ -92,23 +92,20 @@ export const signAndSendExtrinsic = async ({
     sendExtrinsic({
       apiProps: apiProps,
       callback,
-      extrinsic: extrinsic,
+      extrinsic: extrinsic!,
       txState: txState,
       isSavePass,
     });
   } catch (e) {
     console.error(errorMessage, e);
 
-    if (
-      (e as Error).message.includes('Invalid Transaction: Inability to pay some fees , e.g. account balance too low')
-    ) {
+    if ((e as Error).message.includes('Invalid Transaction: Inability to pay some fees , e.g. account balance too low'))
       txState.errors = [{ code: BasicTxErrorCode.BALANCE_TO_LOW, message: (e as Error).message }];
-    } else {
-      txState.errors = [{ code: BasicTxErrorCode.INVALID_PARAM, message: (e as Error).message }];
-    }
+    else txState.errors = [{ code: BasicTxErrorCode.INVALID_PARAM, message: (e as Error).message }];
 
     txState.txError = true;
     txState.status = false;
+
     callback(txState);
   }
 };

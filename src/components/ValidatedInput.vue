@@ -22,6 +22,8 @@
 import { Component, Vue, Prop, VModel, Ref } from 'vue-property-decorator';
 import Input from './Input.vue';
 
+type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
+
 @Component({
   components: { Input },
 })
@@ -34,6 +36,7 @@ export default class ValidatedInput extends Vue {
   @Prop({ default: false }) showPassword!: boolean;
   @Prop({ default: false }) readonly!: boolean;
   @Prop({ default: 'none' }) typeText!: string;
+  @Prop({ default: 'text' }) type!: Type;
   @Prop({ default: false }) disabled!: boolean;
   @Prop({ default: 'big' }) size!: string;
   @Ref('input') readonly inputComponent!: Input;

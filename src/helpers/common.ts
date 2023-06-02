@@ -8,7 +8,7 @@ const MIN_PHONE_LENGTH_WITH_CODE = 8;
 function firstCharToUp(string: string) {
   if (!string) return '';
 
-  return `${string.charAt(0).toUpperCase()}${string.slice(1)}`;
+  return `${string.charAt(0).toUpperCase()}${string.slice(1).toLowerCase()}`;
 }
 
 function getMetaTyped(meta: KeyringPair$Meta) {

@@ -7,12 +7,7 @@ import type {
 import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
 import type { KeyringAddress } from '@polkadot/ui-keyring/types';
 import type { CurrentAccountInfo } from '../../stores/CurrentAccountStore';
-import type {
-  NetworkJsonOld,
-  TransactionHistoryItemType,
-  RequestTransactionHistoryAdd,
-  RequestTransactionHistoryGet,
-} from '../../types';
+import type { NetworkJsonOld, TransactionHistoryItemType, RequestTransactionHistoryAdd } from '../../types';
 import type {
   RequestAccountCreateExternal,
   RequestAccountCreateSuri,

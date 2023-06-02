@@ -16,6 +16,7 @@
     @update:amount="updateAmount"
     @update:value="updateValue"
     @update:partialFee="updateOriginNetFee"
+    @update:destNetFee="updateDestNetFee"
     @update:destinationNetwork="updateDestinationNetwork"
     @update:recipient="updateRecipient"
   >
@@ -168,7 +169,7 @@ export default class CrossChainForm extends Vue {
 
   get originalNetworkUtilityAsset() {
     const utilityId = this.originNet?.assets[0].assetId ?? ''; // [0] - is utility asset
-    const currency = this.balances.find(({ assetId }) => assetId === utilityId);
+    const currency = this.balances.find(({ balances }) => balances.some(({ id }) => id === utilityId));
 
     return currency?.name ?? '';
   }
@@ -213,6 +214,10 @@ export default class CrossChainForm extends Vue {
 
   updateOriginNetFee(value: string) {
     this.originNetFee = value;
+  }
+
+  updateDestNetFee(value: string) {
+    this.destNetFee = value;
   }
 
   updateRecipient(value: string) {

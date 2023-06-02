@@ -4,7 +4,6 @@ import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
-
 import { hexToU8a, isHex, assert } from '@polkadot/util';
 import {
   keyExtractSuri,
@@ -22,7 +21,6 @@ import {
   BasicTxErrorCode,
   BasicTxResponse,
   BasicTxWarning,
-  BasicTxWarningCode,
   Port,
   PriceJson,
   RequestCheckSwap,
@@ -52,6 +50,11 @@ import { checkMainToken } from '../../api/substrate/balance';
 import { estimateFee, makeTransfer } from '../../api/substrate/transfer';
 import { getTokenInfo } from '../../api/substrate/registry';
 import { createSwap } from '../../api/substrate/swaps';
+import {
+  createCrossChainExtrinsic,
+  estimateFee as estimateCrossChainFee,
+  makeCrossChain,
+} from '../../api/substrate/crossChain';
 import { withErrorLog } from './helpers';
 import State, { registry } from './State';
 import { createSubscription, unsubscribe } from './subscriptions';
@@ -807,15 +810,13 @@ export default class Extension extends FWExtensionBase {
     return this.getPrice();
   }
 
-  private makeTransferCallback(
+  private makeExtrinsicCallback(
     portCallback: (res: BasicTxResponse) => void,
     cb: () => void
   ): (res: BasicTxResponse) => void {
     cb();
 
-    return (res: BasicTxResponse) => {
-      portCallback(res);
-    };
+    return (res: BasicTxResponse) => portCallback(res);
   }
 
   public async getSoraFees() {
@@ -928,35 +929,34 @@ export default class Extension extends FWExtensionBase {
   }
 
   private validateTransfer(
-    token: string,
+    tokenId: string,
     from: string,
-    password: string | undefined,
-    value: string | undefined,
-    transferAll: boolean | undefined
-  ): [Array<BasicTxError>, KeyringPair | undefined, FPNumber | undefined, AssetJson] {
+    password: string | undefined
+    // value: string | undefined,
+    // transferAll: boolean | undefined
+  ): [Array<BasicTxError>, KeyringPair | undefined, AssetJson] {
     const errors = [] as Array<BasicTxError>;
 
-    let transferValue;
+    // мы не используем transferAll
+    // if (!transferAll) {
+    //   try {
+    //     if (value === undefined) {
+    //       errors.push({
+    //         code: TransferErrorCode.INVALID_VALUE,
+    //         message: 'Require transfer value',
+    //       });
+    //     }
 
-    if (!transferAll) {
-      try {
-        if (value === undefined) {
-          errors.push({
-            code: TransferErrorCode.INVALID_VALUE,
-            message: 'Require transfer value',
-          });
-        }
-
-        if (value) transferValue = new FPNumber(value);
-      } catch (e) {
-        errors.push({
-          code: TransferErrorCode.INVALID_VALUE,
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          message: String(e.message),
-        });
-      }
-    }
+    //     if (value) transferValue = new FPNumber(value);
+    //   } catch (e) {
+    //     errors.push({
+    //       code: TransferErrorCode.INVALID_VALUE,
+    //       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //       // @ts-ignore
+    //       message: String(e.message),
+    //     });
+    //   }
+    // }
 
     const keypair = keyring.getPair(from);
 
@@ -971,40 +971,31 @@ export default class Extension extends FWExtensionBase {
       }
     }
 
-    const tokenInfo = getTokenInfo(token);
+    const tokenInfo = getTokenInfo(tokenId);
 
-    return [errors, keypair, transferValue, tokenInfo];
+    return [errors, keypair, tokenInfo];
   }
 
   private async checkTransfer({
     from,
     networkKey,
     to,
-    token,
+    tokenId,
     relayChain,
     transferAll,
     value,
     password,
   }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
-    const [errors, fromKeyPair, valueNumber, tokenInfo] = this.validateTransfer(
-      token,
-      from,
-      password,
-      value,
-      transferAll
-    );
-    const dotSamaApiMap = this.state.getSubstrateApiMap;
+    const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(tokenId, from, password);
     const web3ApiMap = this.state.getApiMap.evm;
-    let mainToken: string | undefined;
+    // let mainToken: string | undefined;
     const warnings: BasicTxWarning[] = [];
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
 
-    if (!isMainToken) {
-      mainToken = this.state.getNetworkMapByKey(networkKey).nativeToken as string;
-    }
+    // if (!isMainToken) mainToken = this.state.getNetworkMapByKey(networkKey).nativeToken as string;
 
     const address = this.encodeAddress(from);
-    const existentialDeposit = await getExistentialDeposit(networkKey, token);
+    const existentialDeposit = await getExistentialDeposit(networkKey, tokenId);
     let fee = 0;
     let feeSymbol;
     let fromAccountFreeBalance = '0';
@@ -1012,7 +1003,7 @@ export default class Extension extends FWExtensionBase {
     // const fromAccountNativeBalance = '0';
 
     const tokenBalance = this.state.balanceMap[address].find(
-      (balance) => balance.assetId === token && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
+      (balance) => balance.assetId === tokenId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
 
     if (isEthereumAddress(from) && isEthereumAddress(to)) {
@@ -1038,7 +1029,7 @@ export default class Extension extends FWExtensionBase {
     } else {
       // Estimate with DotSama API
 
-      fee = await estimateFee(networkKey, fromKeyPair, to, value, !!transferAll, dotSamaApiMap, tokenBalance);
+      fee = await estimateFee(networkKey, fromKeyPair, to, value, tokenBalance);
       fromAccountFreeBalance =
         tokenBalance.balances.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0';
     }
@@ -1048,60 +1039,62 @@ export default class Extension extends FWExtensionBase {
     const existentialDepositNumber = new FPNumber(existentialDeposit, tokenInfo.precision);
     const rawExistentialDeposit = Number(existentialDeposit) / Math.pow(10, tokenInfo.precision);
 
-    if (!transferAll && value && feeNumber && valueNumber && FPNumber.gt(valueNumber, FPNumber.ZERO)) {
-      if (isMainToken && FPNumber.gt(fromAccountFreeNumber, valueNumber)) {
-        if (!FPNumber.gte(fromAccountFreeNumber, valueNumber.add(feeNumber).add(existentialDepositNumber))) {
-          if (FPNumber.gt(existentialDepositNumber, FPNumber.ZERO)) {
-            warnings.push({
-              code: BasicTxWarningCode.NOT_ENOUGH_EXISTENTIAL_DEPOSIT,
-              message: `Beware! This transaction might cause a total loss of assets in this account because it would lower your balance below the minimum threshold of ${rawExistentialDeposit} ${tokenInfo.symbol}`,
-            });
-          }
+    // ВАЖНО!!! Как будто бы это все не нужно, тк мы не юзаем transferAll
 
-          const isEnoughBalanceToSend = FPNumber.gte(fromAccountFreeNumber, valueNumber.add(feeNumber));
-          console.info(isEnoughBalanceToSend, valueNumber, feeNumber);
+    // if (!transferAll && value && feeNumber && valueNumber && FPNumber.gt(valueNumber, FPNumber.ZERO)) {
+    //   if (isMainToken && FPNumber.gt(fromAccountFreeNumber, valueNumber)) {
+    //     if (!FPNumber.gte(fromAccountFreeNumber, valueNumber.add(feeNumber).add(existentialDepositNumber))) {
+    //       if (FPNumber.gt(existentialDepositNumber, FPNumber.ZERO)) {
+    //         warnings.push({
+    //           code: BasicTxWarningCode.NOT_ENOUGH_EXISTENTIAL_DEPOSIT,
+    //           message: `Beware! This transaction might cause a total loss of assets in this account because it would lower your balance below the minimum threshold of ${rawExistentialDeposit} ${tokenInfo.symbol}`,
+    //         });
+    //       }
 
-          if (!isEnoughBalanceToSend) {
-            errors.push({
-              code: TransferErrorCode.NOT_ENOUGH_FEE,
-              message: `Not enough ${tokenInfo.symbol} to pay the network fee`,
-            });
-            // }
-          }
-        } else {
-          errors.push({
-            code: TransferErrorCode.NOT_ENOUGH_VALUE,
-            message: 'Not enough balance free to make transfer',
-          });
-        }
-      } else {
-        if (FPNumber.gte(fromAccountFreeNumber, valueNumber)) {
-          if (!FPNumber.gte(fromAccountFreeNumber, existentialDepositNumber.add(feeNumber))) {
-            if (FPNumber.gt(existentialDepositNumber, FPNumber.ZERO)) {
-              warnings.push({
-                code: BasicTxWarningCode.NOT_ENOUGH_EXISTENTIAL_DEPOSIT,
-                message: `Beware! This transaction might cause a total loss of assets in this account because it would lower your balance below the minimum threshold of ${rawExistentialDeposit} ${
-                  mainToken || ''
-                }`,
-              });
-            }
+    //       const isEnoughBalanceToSend = FPNumber.gte(fromAccountFreeNumber, valueNumber.add(feeNumber));
+    //       console.info(isEnoughBalanceToSend, valueNumber, feeNumber);
 
-            if (!FPNumber.gte(fromAccountFreeNumber, feeNumber)) {
-              errors.push({
-                code: TransferErrorCode.NOT_ENOUGH_FEE,
-                message: `Not enough ${mainToken || ''} to pay the network fee`,
-              });
-              // }
-            }
-          }
-        } else {
-          errors.push({
-            code: TransferErrorCode.NOT_ENOUGH_VALUE,
-            message: 'Not enough balance free to make transfer',
-          });
-        }
-      }
-    }
+    //       if (!isEnoughBalanceToSend) {
+    //         errors.push({
+    //           code: TransferErrorCode.NOT_ENOUGH_FEE,
+    //           message: `Not enough ${tokenInfo.symbol} to pay the network fee`,
+    //         });
+    //         // }
+    //       }
+    //     } else {
+    //       errors.push({
+    //         code: TransferErrorCode.NOT_ENOUGH_VALUE,
+    //         message: 'Not enough balance free to make transfer',
+    //       });
+    //     }
+    //   } else {
+    //     if (FPNumber.gte(fromAccountFreeNumber, valueNumber)) {
+    //       if (!FPNumber.gte(fromAccountFreeNumber, existentialDepositNumber.add(feeNumber))) {
+    //         if (FPNumber.gt(existentialDepositNumber, FPNumber.ZERO)) {
+    //           warnings.push({
+    //             code: BasicTxWarningCode.NOT_ENOUGH_EXISTENTIAL_DEPOSIT,
+    //             message: `Beware! This transaction might cause a total loss of assets in this account because it would lower your balance below the minimum threshold of ${rawExistentialDeposit} ${
+    //               mainToken || ''
+    //             }`,
+    //           });
+    //         }
+
+    //         if (!FPNumber.gte(fromAccountFreeNumber, feeNumber)) {
+    //           errors.push({
+    //             code: TransferErrorCode.NOT_ENOUGH_FEE,
+    //             message: `Not enough ${mainToken || ''} to pay the network fee`,
+    //           });
+    //           // }
+    //         }
+    //       }
+    //     } else {
+    //       errors.push({
+    //         code: TransferErrorCode.NOT_ENOUGH_VALUE,
+    //         message: 'Not enough balance free to make transfer',
+    //       });
+    //     }
+    //   }
+    // }
 
     return {
       errors,
@@ -1116,19 +1109,17 @@ export default class Extension extends FWExtensionBase {
   private async makeTransfer(
     id: string,
     port: Port,
-    { from, networkKey, password, to, token, transferAll, value, isSavePass }: RequestTransfer
+    { from, networkKey, password, to, tokenId, transferAll, value, isSavePass }: RequestTransfer
   ): Promise<BasicTxResponse | undefined> {
     const txState: BasicTxResponse = {};
 
-    const [errors, fromKeyPair, , tokenInfo] = this.validateTransfer(token, from, password, value, transferAll);
+    const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(tokenId, from, password);
 
     if (errors.length) {
       txState.txError = true;
       txState.errors = errors;
 
-      setTimeout(() => {
-        this.cancelSubscription(id);
-      }, 500);
+      setTimeout(() => this.cancelSubscription(id), 500);
 
       // todo: add condition to lock KeyPair (for example: not remember password)
 
@@ -1165,7 +1156,7 @@ export default class Extension extends FWExtensionBase {
       }
     };
 
-    const callback = this.makeTransferCallback(cb, savePass);
+    const callback = this.makeExtrinsicCallback(cb, savePass);
 
     let transferProm: Promise<void> | undefined;
 
@@ -1193,8 +1184,8 @@ export default class Extension extends FWExtensionBase {
     } else {
       // Make transfer with Dotsama API
       transferProm = makeTransfer({
-        networkKey: networkKey,
-        tokenInfo: tokenInfo,
+        networkKey,
+        tokenInfo,
         amount: value ?? '0',
         from: fromKeyPair.address,
         to: to,
@@ -1216,39 +1207,117 @@ export default class Extension extends FWExtensionBase {
           errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (e as Error).message }],
         });
         console.error('Transfer error', e);
-        setTimeout(() => {
-          this.cancelSubscription(id);
-        }, 500);
+
+        setTimeout(() => this.cancelSubscription(id), 500);
 
         // todo: add condition to lock KeyPair
       });
 
-    port.onDisconnect.addListener((): void => {
-      this.cancelSubscription(id);
-    });
+    port.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return txState;
   }
 
   private async checkCrossChain({
     from,
-    networkKey,
+    originNet,
+    destinationNet,
     to,
-    token,
+    tokenId,
     relayChain,
-    transferAll,
-    value,
-    password,
+    amount,
   }: RequestCheckCrossChain): Promise<ResponseCheckCrossChain> {
-    return {} as ResponseCheckCrossChain;
+    const tokenBalance = this.state.balanceMap[from].find(
+      (balance) => balance.assetId === tokenId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
+    )!;
+
+    const extrinsic = await createCrossChainExtrinsic(tokenId, originNet, destinationNet, to, amount!, tokenBalance);
+
+    console.info('checkCrossChain', extrinsic);
+
+    const tokenInfo = getTokenInfo(tokenId);
+    const fee = await estimateCrossChainFee(extrinsic, to, tokenBalance);
+    const destFees = state.xcmFees.find(({ destChain }) => destChain.toLowerCase() === destinationNet.toLowerCase());
+    const destEstimateFee = destFees?.destXcmFee?.find(
+      ({ symbol }) => symbol.toLowerCase() === tokenInfo.symbol.toLowerCase()
+    );
+
+    return {
+      estimateFee: FPNumber.fromCodecValue(fee, tokenBalance?.precision).toString(),
+      destEstimateFee: FPNumber.fromCodecValue(destEstimateFee?.feeInPlanks ?? '0', tokenBalance?.precision).toString(), // TODO Уточнить у Виталия как искать комиссию
+    } as ResponseCheckCrossChain;
   }
 
   private async makeCrossChain(
     id: string,
     port: Port,
-    { from, networkKey, password, to, token, transferAll, value, isSavePass }: RequestTransfer
-  ): Promise<BasicTxResponse | undefined> {
-    return {} as BasicTxResponse;
+    { from, originNet, destinationNet, amount, password, to, tokenId, isSavePass }: RequestCrossChain
+  ): Promise<void> {
+    const [, fromKeyPair, tokenInfo] = this.validateTransfer(tokenId, from, password);
+
+    const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
+    const ethereumAddress = fromKeyPair!.meta.ethereumAddress as string | undefined;
+
+    const remainTime = this.refreshAccountPasswordCache(fromKeyPair!);
+
+    const savePass = () => {
+      if (isSavePass) {
+        this.cachedUnlocks[fromKeyPair!.address] = Date.now() + PASSWORD_EXPIRY_MS;
+
+        if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
+      } else if (remainTime) {
+        this.cachedUnlocks[fromKeyPair!.address] = 0;
+
+        fromKeyPair!.lock();
+
+        if (ethereumAddress) {
+          this.cachedUnlocks[ethereumAddress] = 0;
+          const ethereumPair = keyring.getPair(ethereumAddress);
+
+          ethereumPair.lock();
+        }
+      }
+    };
+
+    const callback = this.makeExtrinsicCallback(cb, savePass);
+
+    const transferProm: Promise<void> | undefined = makeCrossChain({
+      asset: tokenId,
+      originNet,
+      destinationNet,
+      tokenInfo,
+      amount: amount ?? '0',
+      from: fromKeyPair!.address,
+      to,
+      password,
+      isSavePass,
+      callback,
+    });
+
+    transferProm
+      .then(() =>
+        console.info(`
+          Start crossChain amount: ${amount}
+          [${originNet}] => [${destinationNet}]
+          from ${from}
+          to ${to}
+        `)
+      )
+      .catch((e) => {
+        cb({
+          txError: true,
+          status: false,
+          errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (e as Error).message }],
+        });
+
+        console.error('Transfer error', e);
+
+        setTimeout(() => this.cancelSubscription(id), 500);
+
+        // todo: add condition to lock KeyPair
+      });
+
+    port.onDisconnect.addListener(() => this.cancelSubscription(id));
   }
 
   private getNetworkMap(): Record<string, NetworkJsonOld> {

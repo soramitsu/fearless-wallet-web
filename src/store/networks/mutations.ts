@@ -4,16 +4,9 @@ import type { SetFiatsJsonProps, SetHistoryProps, SetNetworksStatusProps, SetAss
 import { getFormattedHistory } from '@/helpers/history';
 export enum MutationTypes {
   SET_NETWORKS = 'SET_NETWORKS',
-  SET_ASSETS_JSON = 'SET_ASSETS_JSON',
   SET_FIATS_JSON = 'SET_FIATS_JSON',
   SET_ASSETS_PRICE = 'SET_ASSETS_PRICE',
-  SET_ASSETS_PRICE_INTERVAL = 'SET_ASSETS_PRICE_INTERVAL',
-  SORT_CURRENCIES = 'SORT_CURRENCIES',
   SET_HISTORY = 'SET_HISTORY',
-  SET_ACTIVE_NODE = 'SET_ACTIVE_NODE',
-  SET_NETWORK_API = 'SET_NETWORK_API',
-  SET_NETWORK_STATUS = 'SET_NETWORK_STATUS',
-  SET_SORA_FEE = 'SET_SORA_FEE',
 }
 
 export type Mutations = {
@@ -114,33 +107,6 @@ const mutations: MutationTree<State> & Mutations = {
 
     state.history = { ...state.history, [assetId]: historyForAssetId };
   },
-
-  // [MutationTypes.SET_ACTIVE_NODE](state, { network, name, url, saveNode }) {
-  //   const oldActiveNodes = state.activeNodes;
-
-  //   if (saveNode) accountController.setActiveNode({ name, url }, network);
-
-  //   state.activeNodes = { ...oldActiveNodes, [network]: { name, url } };
-  // },
-
-  // [MutationTypes.SET_NETWORK_API](state, { network, provider, api }) {
-  //   const networkIndex = state.networks.findIndex(({ name }) => name === network)!;
-
-  //   state.networks[networkIndex].provider = provider;
-  //   state.networks[networkIndex].api = api;
-  // },
-
-  // [MutationTypes.SET_NETWORK_STATUS](state, { network, status }) {
-  //   const networkIndex = state.networks.findIndex(({ name }) => name === network)!;
-
-  //   if (status === 'connected' || status === 'ready') {
-  //     setTimeout(() => {
-  //       state.networks[networkIndex].apiStatus = status;
-  //     }, 3000);
-  //   } else {
-  //     state.networks[networkIndex].apiStatus = status;
-  //   }
-  // },
 };
 
 export default mutations;

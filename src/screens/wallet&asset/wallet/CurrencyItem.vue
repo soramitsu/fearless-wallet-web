@@ -109,6 +109,7 @@ import { ALL_NETWORKS } from '@/consts/networks';
 import { GetAssetPrice, GetNetwork } from '@/store/networks/types';
 import { getSummaryTransferableBalance } from '@/helpers/currencies';
 import { APIItemState, NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
+import { firstCharToUp } from '@/helpers/common';
 
 @Component
 export default class CurrencyItem extends Vue {
@@ -257,7 +258,7 @@ export default class CurrencyItem extends Vue {
       name: Components.Asset,
       params: {
         assetId: this.assetData.assetId,
-        network: this.redirectNetwork,
+        network: firstCharToUp(this.redirectNetwork),
       },
     });
   }

@@ -132,6 +132,7 @@
       :network="syncedNetwork"
       :firstIcon="firstIcon"
       :secondIcon="syncedDestNet"
+      :extrinsicType="extrinsicType"
       :tx="tx"
       @close="confirmationPasswordPopupClose"
     />
@@ -205,7 +206,6 @@ export default class SendForm extends Vue {
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) header!: string;
   @Prop(String) extrinsicType!: 'transfer' | 'crossChain';
-  @Prop(String) destNetFee!: string;
   @PropSync('recipient', { default: '' }) syncedRecipient!: string;
   @PropSync('assetId', { type: String }) syncedAssetId!: string;
   @PropSync('selectedNetwork', { type: String }) syncedNetwork!: string;
@@ -213,6 +213,7 @@ export default class SendForm extends Vue {
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('value', { type: String }) syncedValue!: string;
   @PropSync('partialFee', { type: String }) syncedFee!: string;
+  @PropSync('destNetFee', { type: String }) syncedDestNetFee!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
@@ -250,12 +251,19 @@ export default class SendForm extends Vue {
     return this.extrinsicType === 'crossChain';
   }
 
+  get originalNetworkUtilityAsset() {
+    const utilityId = this.originNet?.assets[0].assetId ?? ''; // [0] - is utility asset
+    const currency = this.balances.find(({ balances }) => balances.some(({ id }) => id === utilityId));
+
+    return currency?.name ?? '';
+  }
+
   get syncedFeeCut() {
-    return this.$n(+this.syncedFee, 'decimal');
+    return `${this.$n(+this.syncedFee, 'decimal')} ${this.originalNetworkUtilityAsset.toUpperCase()}`;
   }
 
   get destNetFeeCut() {
-    return this.$n(+this.destNetFee, 'decimal');
+    return `${this.$n(+this.syncedDestNetFee, 'decimal')} ${this.sendAssetName.toUpperCase()}`;
   }
 
   get firstIcon() {
@@ -427,10 +435,12 @@ export default class SendForm extends Vue {
     });
   }
 
-  get optionsDestNet() {
-    const { xcm } = this.networks.find(({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase())!;
+  get originNet() {
+    return this.networks.find(({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase())!;
+  }
 
-    return xcm!.availableDestinations.map(({ chainId }) => {
+  get optionsDestNet() {
+    return this.originNet.xcm!.availableDestinations.map(({ chainId }) => {
       const { name, icon } = this.getNetwork(chainId);
 
       return {
@@ -507,13 +517,13 @@ export default class SendForm extends Vue {
     if (
       (this.isTransfer && (!this.isValidRecipientAddress || this.syncedNetwork === '')) ||
       (this.isCrossChain && (!this.isValidDirection || this.syncedNetwork === ''))
-    ) {
+    )
       return;
-    }
 
-    const { estimateFee } = await this.verifyTx();
+    const { estimateFee, destEstimateFee } = await this.verifyTx();
 
     this.syncedFee = estimateFee ?? '0';
+    this.syncedDestNetFee = destEstimateFee ?? '0';
   }
 
   toggleAssetPopupVisibility() {
@@ -542,30 +552,6 @@ export default class SendForm extends Vue {
 
       this.toggleDestNetPopupVisibility();
     }
-  }
-
-  async createTransferAndGetFee(amount?: string) {
-    if (this.isTransfer) {
-      if (!this.isValidRecipientAddress || this.syncedNetwork === '') return '0';
-
-      // this.currency!.createTransferExtrinsic(
-      //   this.selectedWallet,
-      //   this.syncedRecipient,
-      //   amount ?? this.syncedAmount,
-      //   this.syncedNetwork
-      // );
-    } else {
-      if (!this.isValidDirection || this.syncedNetwork === '') return '0';
-
-      // this.currency!.createTeleportExtrinsic(
-      //   this.selectedWallet,
-      //   this.syncedNetwork,
-      //   this.syncedDestNet,
-      //   amount ?? this.syncedAmount
-      // );
-    }
-
-    // return this.currency!.extrinsicOptions.fee!;
   }
 
   updateAmount(amount: string) {
@@ -637,7 +623,7 @@ export default class SendForm extends Vue {
         relayChain: this.currency?.relayChain,
         value: this.syncedAmount,
         transferAll: false,
-        token: this.syncedAssetId,
+        tokenId: this.syncedAssetId,
       } as RequestCheckTransfer;
 
     return {
@@ -648,7 +634,7 @@ export default class SendForm extends Vue {
       to: this.syncedRecipient,
       relayChain: this.currency?.relayChain,
       transferAll: false,
-      token: this.syncedAssetId,
+      tokenId: this.syncedAssetId,
     } as RequestCheckCrossChain;
   }
 
@@ -668,34 +654,34 @@ export default class SendForm extends Vue {
         relayChain: this.currency?.relayChain,
         value: amount ?? this.syncedAmount,
         transferAll: false,
-        token: this.syncedAssetId,
+        tokenId: this.syncedAssetId,
       });
     }
 
-    // TODO
     const to = BaseApi.formatAddress(
       { address: VALID_SUBSTRATE_ADDRESS, ethereumAddress: VALID_ETHEREUM_ADDRESS },
-      this.syncedNetwork
+      this.syncedDestNet
     );
 
     return checkCrossChain({
       originNet: this.syncedNetwork,
-      destinationNet: this.syncedNetwork,
+      destinationNet: this.syncedDestNet,
       from: this.transactionAddress,
       to,
       relayChain: this.currency?.relayChain,
       amount: amount ?? this.syncedAmount,
-      token: this.syncedAssetId,
+      tokenId: this.syncedAssetId,
     });
   }
 
   async handlerContinueButton(skipWarning = false) {
     if (!skipWarning && this.step === 1) {
-      const { errors, estimateFee } = await this.verifyTx();
+      const { errors, estimateFee, destEstimateFee } = await this.verifyTx();
 
       if (errors?.length) {
         this.showExistentialPopup = errors.some(({ code }) => code === 'notEnoughExistentialDeposit');
         this.syncedFee = estimateFee || '0';
+        this.syncedDestNetFee = destEstimateFee || '0';
       }
 
       if (this.showExistentialPopup) return;

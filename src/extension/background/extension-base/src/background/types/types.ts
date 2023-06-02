@@ -251,9 +251,11 @@ export enum BasicTxErrorCode {
   BALANCE_TO_LOW = 'balanceTooLow1',
   UNKNOWN_ERROR = 'unknownError',
 }
+
 export interface ExternalState {
   externalId: string;
 }
+
 export interface BasicTxResponse {
   passwordError?: string | null;
   callHash?: string;
@@ -335,7 +337,7 @@ export interface RequestCheckTransfer extends BaseRequestSign {
   networkKey: string;
   from: string;
   to: string;
-  token: string;
+  tokenId: string;
   relayChain?: string;
   value?: string;
   transferAll?: boolean;
@@ -343,13 +345,13 @@ export interface RequestCheckTransfer extends BaseRequestSign {
 }
 
 export interface RequestCheckCrossChain extends BaseRequestSign {
-  networkKey: string;
+  originNet: string;
+  destinationNet: string;
   from: string;
   to: string;
-  token: string;
+  tokenId: string;
   relayChain?: string;
-  value?: string;
-  transferAll?: boolean;
+  amount?: string;
   password?: string;
 }
 
@@ -359,16 +361,15 @@ export interface ResponseCheckTransfer {
   fromAccountFree: string;
   toAccountFree: string;
   estimateFee?: string;
+  destEstimateFee: undefined;
   feeSymbol?: string; // if undefined => use main token
 }
 
 export interface ResponseCheckCrossChain {
   errors?: Array<BasicTxError>;
   warnings?: Array<BasicTxWarning>;
-  fromAccountFree: string;
-  toAccountFree: string;
   estimateFee?: string;
-  feeSymbol?: string; // if undefined => use main token
+  destEstimateFee?: string;
 }
 
 export interface RequestCheckSwap extends BaseRequestSign {

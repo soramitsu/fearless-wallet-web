@@ -202,7 +202,7 @@ export default class Asset extends Vue {
   }
 
   get showCrossChainButton() {
-    const network = this.networks.find(({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase())!;
+    const network = this.networks.find(({ name }) => name.toLowerCase() === this.selectedNetwork?.toLowerCase())!;
 
     return network?.xcm?.availableAssets.some((assetName) => assetName.toLowerCase() === this.selectedAsset);
   }
@@ -220,7 +220,7 @@ export default class Asset extends Vue {
   }
 
   get showBuyButton() {
-    return this.providers.length !== 0 && this.mainNetwork.toLowerCase() === this.selectedNetwork.toLowerCase();
+    return this.providers.length !== 0 && this.mainNetwork?.toLowerCase() === this.selectedNetwork?.toLowerCase();
   }
 
   get currentCurrency() {
@@ -244,7 +244,7 @@ export default class Asset extends Vue {
   }
 
   get selectedAsset() {
-    return this.currentCurrency.name.toLowerCase() ?? '';
+    return this.currentCurrency.name?.toLowerCase() ?? '';
   }
 
   get selectedAssetUpper() {
@@ -298,7 +298,7 @@ export default class Asset extends Vue {
         };
       })
       .filter(({ value }) => {
-        return value.includes(filter);
+        return value.toLowerCase().includes(filter);
       });
   }
 
@@ -322,6 +322,8 @@ export default class Asset extends Vue {
     this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
 
     targetElement.style.zIndex = this.showSelectNetworkPopup ? '400' : '0';
+
+    this.filterValue = '';
   }
 
   toggleVisible(field: ShowField, value: boolean) {

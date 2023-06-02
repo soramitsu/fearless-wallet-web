@@ -2,13 +2,10 @@ import { NetworkFeesObject } from '@sora-substrate/util';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { Node, TypeAsset } from '@/interfaces';
 
+type RelayChainName = 'polkadot' | 'kusama' | 'westend' | 'rococo';
+
 type SoraFees = {
   [key in keyof NetworkFeesObject]: string;
-};
-
-type TypesForMobile = {
-  url: string;
-  name: string;
 };
 
 type NetworkName = string;
@@ -95,4 +92,5 @@ export {
   NetworkStatus,
   HistoryServiceType,
   SoraFees,
+  RelayChainName,
 };

@@ -69,9 +69,8 @@ import type { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
-import type { AssetJson, SoraFees } from '@/interfaces';
+import type { AssetJson, SoraFees, XcmLocations, XcmFees } from '@/interfaces';
 import { URLS } from '@/consts/urls';
-
 import { ALL_NETWORKS, SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/networks';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/currencies';
 
@@ -154,6 +153,8 @@ export default class State {
   private priceStoreReady = false;
   public fiatSymbol = 'usd';
   public authorizeCached: AuthUrls | undefined = undefined;
+  public xcmFees: XcmFees = [];
+  public xcmLocations: XcmLocations = [];
   public tokenMap: AssetJson[] = [];
   public networkMap: Record<string, NetworkJsonOld> = {}; // mapping to networkMapStore, for uses in background
   public networksJson: NetworkJsonOld[] = []; // from github
@@ -938,9 +939,13 @@ export default class State {
     const result: Record<string, NetworkJsonOld> = {};
     const { data: networks } = await axios.get<NetworkJsonOld[]>(URLS.CHAINS);
     const { data: assets } = await axios.get<AssetJson[]>(URLS.ASSETS);
+    const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
+    const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
     this.networksJson = networks;
     this.tokenMap = assets;
+    this.xcmLocations = xcmLocations;
+    this.xcmFees = xcmFees;
 
     networks.forEach((network) => {
       const prepCurrentProvider = network.nodes[0].url;

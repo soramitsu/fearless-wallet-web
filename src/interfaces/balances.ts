@@ -8,7 +8,7 @@ type CodecString = string;
  * locked = max(miscFrozen, feeFrozen)
  *
  * transferable = free - locked
- *
+
  * frozen = locked + reserved
  */
 type AccountBalance = {

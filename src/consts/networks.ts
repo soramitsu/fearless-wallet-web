@@ -1,4 +1,5 @@
 import { IS_PRODUCTION } from '@/consts/global';
+import { NetworkName } from '@/interfaces';
 
 const NOT_SUPPORTED_ALL_TRANSFER_NETWORKS = ['karura', 'acala', 'acala_testnet'];
 const ETHEREUM_NETWORKS = [
@@ -14,6 +15,14 @@ const RELAY_CHAINS = ['polkadot', 'kusama', 'westend', 'rococo'];
 const NATIVE_PARACHAINS = ['statemint', 'statemine', 'encointer on kusama', 'westmint', 'rockmine'];
 const NATIVE_NETWORKS = [...RELAY_CHAINS, ...NATIVE_PARACHAINS];
 const ALL_NETWORKS = 'All';
+
+const POLKADOT_ID = '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3';
+const KUSAMA_ID = 'b0a8d493285c2df73290dfb7e61f870f17b41801197a149ca93654499ea3dafe';
+
+const CHAIN_IDS: Record<string, NetworkName> = {
+  [POLKADOT_ID]: 'Polkadot',
+  [KUSAMA_ID]: 'Kusama',
+};
 
 const MAIN_NETWORKS: Record<string, string> = {
   dot: 'polkadot',
@@ -60,4 +69,7 @@ export {
   SORA_XOR_ASSET_ID,
   VALID_SUBSTRATE_ADDRESS,
   VALID_ETHEREUM_ADDRESS,
+  POLKADOT_ID,
+  KUSAMA_ID,
+  CHAIN_IDS,
 };

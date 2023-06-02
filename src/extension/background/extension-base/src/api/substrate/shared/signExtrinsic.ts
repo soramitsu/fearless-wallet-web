@@ -58,7 +58,7 @@ export const signExtrinsic = async ({
     signer = new KeyringSigner({ registry, keyPair: pair });
   }
 
-  await extrinsic.signAsync(address, { signer: signer });
+  await extrinsic.signAsync(address, { signer });
 
   return null;
 };

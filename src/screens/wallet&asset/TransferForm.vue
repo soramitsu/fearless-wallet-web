@@ -413,10 +413,11 @@ export default class SendForm extends Vue {
   }
 
   get optionsCurrency() {
+    const { xcm } = this.networks.find(({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase())!;
     const balances = this.isTransfer
       ? this.balances
-      : this.balances.filter(({ balances }) =>
-          balances.some(({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase())
+      : this.balances.filter(({ name }) =>
+          xcm?.availableAssets.some((assetName) => assetName.toLowerCase() === name.toLowerCase())
         );
 
     return getCurrencyOptions(balances);
@@ -440,15 +441,20 @@ export default class SendForm extends Vue {
   }
 
   get optionsDestNet() {
-    return this.originNet.xcm!.availableDestinations.map(({ chainId }) => {
-      const { name, icon } = this.getNetwork(chainId);
+    // used only for crossChain
+    return this.originNet
+      .xcm!.availableDestinations.filter(({ assets }) =>
+        assets.some((assetName) => assetName.toLowerCase() === this.sendAssetName.toLowerCase())
+      )
+      .map(({ chainId }) => {
+        const { name, icon } = this.getNetwork(chainId);
 
-      return {
-        name: firstCharToUp(name),
-        value: name,
-        icon,
-      };
-    });
+        return {
+          name: firstCharToUp(name),
+          value: name,
+          icon,
+        };
+      });
   }
 
   get sendAssetName() {
@@ -500,9 +506,8 @@ export default class SendForm extends Vue {
 
   @Watch('syncedAssetId')
   updateSelectedNetwork() {
-    this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
     this.syncedAmount = '';
-    this.syncedDestNet = '';
+    this.syncedDestNet = this.optionsDestNet?.[0]?.value ?? '';
     this.syncedValue = '';
   }
 

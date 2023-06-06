@@ -17,7 +17,7 @@
     @update:value="updateValue"
     @update:partialFee="updateOriginNetFee"
     @update:destNetFee="updateDestNetFee"
-    @update:destinationNetwork="updateDestinationNetwork"
+    @update:destinationNetwork="setDestinationNetwork"
     @update:recipient="updateRecipient"
   >
     <div class="cross-chain">
@@ -68,7 +68,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
+import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import TransferForm from './TransferForm.vue';
 import type { SelectedWallet } from '@/store';
@@ -179,13 +179,19 @@ export default class CrossChainForm extends Vue {
   }
 
   created() {
-    const originNet = this.networks.find(({ name }) => name.toLowerCase() === this._originalNetwork.toLowerCase());
-    const destChainId = originNet?.xcm?.availableDestinations[0]?.chainId;
-    const { name: destName } = this.networks.find(({ chainId }) => chainId === destChainId)!;
-
     this.assetId = this._selectedAssetId;
     this.originalNetwork = this._originalNetwork;
-    this.destinationNetwork = destName;
+
+    this.$nextTick(() => {
+      const originNet = this.networks.find(({ name }) => name.toLowerCase() === this._originalNetwork.toLowerCase());
+      const destChainId = originNet?.xcm?.availableDestinations.find(({ assets }) =>
+        assets.some((assetName) => assetName.toLowerCase() === this.assetName.toLowerCase())
+      )?.chainId;
+
+      const { name: destName } = this.networks.find(({ chainId }) => chainId === destChainId)!;
+
+      this.destinationNetwork = destName;
+    });
   }
 
   cut(value: string) {
@@ -200,7 +206,7 @@ export default class CrossChainForm extends Vue {
     this.originalNetwork = value;
   }
 
-  updateDestinationNetwork(value: string) {
+  setDestinationNetwork(value: string) {
     this.destinationNetwork = value;
   }
 

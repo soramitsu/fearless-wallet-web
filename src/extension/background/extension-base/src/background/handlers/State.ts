@@ -1077,12 +1077,13 @@ export default class State {
     });
 
     const balanceItem = this.balanceMap[address][currencyIndex].balances[index];
-    const { reserved, free, frozen, total, transferable, state } = item;
+    const { reserved, free, frozen, total, transferable, state, locked } = item;
 
     this.balanceMap[address][currencyIndex].balances[index] = {
       ...balanceItem,
       reserved,
       free,
+      locked,
       frozen,
       total,
       transferable,

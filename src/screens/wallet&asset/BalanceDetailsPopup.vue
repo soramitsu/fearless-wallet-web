@@ -46,7 +46,7 @@ export default class BalanceDetailsPopup extends Vue {
 
   get detailsBalance() {
     const { transferable, total, reserved, locked, frozen } = this.currency.balances.find(
-      ({ name }) => name === this.selectedNetwork
+      ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
     )!;
 
     return [

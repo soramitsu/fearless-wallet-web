@@ -131,7 +131,7 @@ export async function getEVMTransactionObject(
   const web3Api = web3ApiMap[networkKey];
   const feeData = await web3Api.provider.getFeeData();
   const gasPrice = feeData.gasPrice;
-  const nonce = await web3Api.provider.getTransactionCount('0x599dC6fD485E0eD55C1BCc7D8AE02EDAF7bE4f4e');
+  const nonce = await web3Api.provider.getTransactionCount('0x599dC6fD485E0eD55C1BCc7D8AE02EDAF7bE4f4e'); // TODO mock ???
   const transactionObject = {
     gasPrice: gasPrice,
     nonce,

@@ -18,12 +18,14 @@ const XCM_NATIVE_PALLETS = ['xcmPallet', 'polkadotXcm'];
 const FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT = 5000000000;
 
 function interiorHelper(interiors: Interior) {
-  return Object.entries(interiors).map(([key, value]) => {
-    const newKey = key.startsWith('generalKey') ? 'generalKey' : key;
+  return interiors.map((interior) => {
+    return Object.fromEntries(
+      Object.entries(interior).map(([key, value]) => {
+        const newKey = key.startsWith('generalKey') ? 'generalKey' : key;
 
-    return {
-      [firstCharToUp(newKey)]: value,
-    };
+        return [firstCharToUp(newKey, false), value];
+      })
+    );
   });
 }
 
@@ -46,7 +48,7 @@ function getNativeTeleportParams(originNet: NetworkName, destNet: NetworkName, t
   const isToRelayChain = isRelayChain(destNet);
   const { xcm, parentId, name } = state.networkMap[originNet];
   const { paraId: _paraId } = state.networkMap[destNet];
-  const paraId = +(_paraId ?? -1); // -1 for isToRelayChain
+  const paraId = isToRelayChain ? -1 : +_paraId!;
   const xcmVersion = xcm!.xcmVersion.toUpperCase();
   const publicKey = decodeAddress(toAddress);
   const value = new BN(amount);
@@ -113,7 +115,6 @@ function getNativeTeleportParams(originNet: NetworkName, destNet: NetworkName, t
 }
 
 function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: string, amount: string, tokenId: string) {
-  const isToRelayChain = isRelayChain(destNet);
   const { xcm, parentId, name } = state.networkMap[originNet];
   const { paraId: _paraId } = state.networkMap[destNet];
   const paraId = +_paraId!;
@@ -154,6 +155,12 @@ function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: st
           [`X${interiorXcmLength}`]: interiorHelper(interiorsByXcmVersion),
         };
 
+  const haveParachainParameter = interiorsByXcmVersion.some((interior) =>
+    Object.keys(interior).some((key) => key === 'parachain')
+  );
+
+  const parentsAsset = interiorXcmLength === 0 || haveParachainParameter ? 1 : 0;
+
   const asset = {
     [xcmVersion]: {
       fun: {
@@ -162,7 +169,7 @@ function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: st
       id: {
         Concrete: {
           interior: interiorAsset,
-          parents: isToRelayChain ? 1 : 0,
+          parents: parentsAsset,
         },
       },
     },
@@ -187,8 +194,6 @@ function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: st
       interior: interiorDestinationChain,
     },
   };
-
-  console.log('interiorDestinationChain', interiorDestinationChain);
 
   const limit = { Unlimited: null };
 
@@ -270,15 +275,15 @@ async function createCrossChainExtrinsic(
   tokenBalance: TokenBalance
 ): Promise<Extrinsic> {
   if (isNativeNetwork(originNet)) {
-    // Case RelayChain -> Nonnative ParaChain (polkadot -> acala, etc; kusama -> bifrost, etc) paraId = 2000-2999, pallet = xcmPallet, module = limitedReserveTransferAssets
-    // Case RelayChain -> Native ParaChain (polkadot -> statemint; kusama -> statemine, encointer) paraId = 1000-1999, pallet = xcmPallet, module = limitedTeleportAssets
-    // Case Native ParaChain -> RelayChain (statemint -> polkadot; statemine, encointer -> kusama) paraId = -1, pallet = polkadotXcm, module = limitedTeleportAssets
+    // Case RelayChain -> Nonnative ParaChain (polkadot -> acala, etc; kusama -> bifrost, etc) pallet = xcmPallet, module = limitedReserveTransferAssets
+    // Case RelayChain -> Native ParaChain (polkadot -> statemint; kusama -> statemine, encointer) pallet = xcmPallet, module = limitedTeleportAssets
+    // Case Native ParaChain -> RelayChain (statemint -> polkadot; statemine, encointer -> kusama) pallet = polkadotXcm, module = limitedTeleportAssets
     // TODO: add case: Native ParaChain -> Nonnative ParaChain
     // TODO: add case: Native ParaChain -> Native ParaChain
     return await createNativeTeleportExtrinsic(originNet, destNet, toAddress, amount!, tokenBalance);
   } else {
-    // Case Nonnative ParaChain -> Nonnative ParaChain (karura, etc -> bifrost, etc) paraId = 2000-2999
-    //Case Nonnative ParaChain -> RelayChain (karura, etc -> kusama, etc; acala, etc  -> polkadot)
+    // Case Nonnative ParaChain -> Nonnative ParaChain (karura, etc -> bifrost, etc)
+    // Case Nonnative ParaChain -> RelayChain (karura, etc -> kusama, etc; acala, etc -> polkadot)
     return await createOrmlTeleportExtrinsic(tokenId, originNet, destNet, toAddress, amount!, tokenBalance);
   }
 }

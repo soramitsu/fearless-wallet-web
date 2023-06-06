@@ -5,10 +5,12 @@ import { SORA_NETWORK_NAME } from '@/consts/networks';
 
 const MIN_PHONE_LENGTH_WITH_CODE = 8;
 
-function firstCharToUp(string: string) {
+function firstCharToUp(string: string, onlyFirstChat = true) {
   if (!string) return '';
 
-  return `${string.charAt(0).toUpperCase()}${string.slice(1).toLowerCase()}`;
+  const end = onlyFirstChat ? string.slice(1).toLowerCase() : string.slice(1);
+
+  return `${string.charAt(0).toUpperCase()}${end}`;
 }
 
 function getMetaTyped(meta: KeyringPair$Meta) {

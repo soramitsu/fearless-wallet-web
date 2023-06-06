@@ -128,10 +128,10 @@ function getProviderUrl(name: 'moonpay' | 'ramp', asset: string, address: string
 }
 
 function getCurrencyOptions(currencies: TokenBalance[]) {
-  return currencies.map(({ assetId: id, name: _name, icon }) => {
+  return currencies.map(({ assetId: id, name: _name, icon, relayChain }) => {
     const assetUpper = _name.toUpperCase();
     const filteredOptions = currencies.filter(({ name }) => name === _name);
-    const label = filteredOptions.length > 1 ? `${assetUpper} (${'test'.toUpperCase()})` : assetUpper;
+    const label = filteredOptions.length > 1 ? `${assetUpper} (${relayChain.toUpperCase()})` : assetUpper;
 
     return {
       name: label,

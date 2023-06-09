@@ -25,10 +25,11 @@
         <div v-else class="transfer-form">
           <div>
             <template v-if="step === 1">
-              <RotateInput
+              <InputWithIcon
                 v-if="isTransfer"
                 v-model="syncedNetwork"
                 class="row"
+                icon="rotate"
                 :placeholder="placeholderNetwork"
                 :isActiveRotate="showSelectNetworkPopup"
                 @click="toggleNetworkPopupVisibility"
@@ -57,21 +58,23 @@
                 @toggleSelectAssetPopupVisibility="toggleAssetPopupVisibility"
               />
 
-              <RotateInput
+              <InputWithIcon
                 v-if="isCrossChain"
                 v-model="syncedDestNet"
                 class="row"
+                icon="rotate"
                 placeholder="assets.destNet"
                 :isActiveRotate="showDestNetPopup"
                 @click="toggleDestNetPopupVisibility"
               />
 
-              <Input
+              <InputWithIcon
                 v-model="syncedRecipient"
-                placeholder="assets.sendTo"
-                size="big"
-                typeText="uppercase"
                 class="row"
+                icon="close"
+                placeholder="assets.sendTo"
+                :isActiveRotate="showDestNetPopup"
+                @click="clearRecipient"
               />
 
               <div class="activity-buttons row">
@@ -159,7 +162,7 @@ import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import MaxButton from './MaxButton.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
-import RotateInput from './RotateInput.vue';
+import InputWithIcon from './InputWithIcon.vue';
 import type { GetAssetPrice } from '@/store';
 import type { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 import BaseApi from '@/util/BaseApi';
@@ -185,7 +188,7 @@ import WalletInfo from '@/screens/main/WalletInfo.vue';
     MaxButton,
     WalletInfo,
     FloatInput,
-    RotateInput,
+    InputWithIcon,
     ExistentialPopup,
     WarningAddressPopup,
     ConfirmationPasswordPopup,
@@ -543,6 +546,10 @@ export default class SendForm extends Vue {
     this.showDestNetPopup = !this.showDestNetPopup;
   }
 
+  clearRecipient() {
+    this.syncedRecipient = '';
+  }
+
   toggleSelectedNetwork(value: string) {
     if (this.showSelectedAssetPopup) {
       this.syncedAssetId = value.toLowerCase();
@@ -808,6 +815,7 @@ export default class SendForm extends Vue {
 
   .activity-buttons {
     display: flex;
+    user-select: none;
 
     .button {
       display: flex;

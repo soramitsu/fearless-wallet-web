@@ -10,9 +10,13 @@
       :cursorPointer="true"
     />
 
-    <Rotate :ref="rotateRef" :isActive="isActiveRotate" class="rotate-icon">
+    <Rotate v-if="icon === 'rotate'" :ref="rotateRef" :isActive="isActiveRotate" class="icon">
       <SIcon name="chevron-bottom-16" />
     </Rotate>
+
+    <div v-else-if="icon === 'close'" class="icon">
+      <Icon icon="close" class="close-icon" />
+    </div>
   </div>
 </template>
 
@@ -26,7 +30,7 @@ import { firstCharToUp } from '@/helpers/common';
     SelectNetworkPopup,
   },
 })
-export default class RotateInput extends Vue {
+export default class InputWithIcon extends Vue {
   readonly inputRef = 'input';
   readonly rotateRef = 'rotate';
 
@@ -35,6 +39,7 @@ export default class RotateInput extends Vue {
   @VModel({ type: String || Number }) vModel!: string;
   @Prop(String) placeholder!: string;
   @Prop(Boolean) isActiveRotate!: boolean;
+  @Prop(String) icon!: 'rotate' | 'close';
 
   get firstCharToUpVModel() {
     return firstCharToUp(this.vModel);
@@ -52,7 +57,7 @@ export default class RotateInput extends Vue {
     width: 529px;
   }
 
-  .rotate-icon {
+  .icon {
     position: relative;
     right: 40px;
     top: 23px;
@@ -63,6 +68,12 @@ export default class RotateInput extends Vue {
     }
 
     .s-icon-chevron-bottom-16 {
+      color: $gray-color;
+    }
+
+    .close-icon {
+      height: 15px;
+      width: 15px;
       color: $gray-color;
     }
   }

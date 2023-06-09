@@ -18,7 +18,7 @@ const XCM_NATIVE_PALLETS = ['xcmPallet', 'polkadotXcm'];
 const FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT = 5000000000;
 
 function interiorHelper(interiors: Interior) {
-  return interiors.map((interior) => {
+  const array = interiors.map((interior) => {
     return Object.fromEntries(
       Object.entries(interior).map(([key, value]) => {
         const newKey = key.startsWith('generalKey') ? 'generalKey' : key;
@@ -27,6 +27,8 @@ function interiorHelper(interiors: Interior) {
       })
     );
   });
+
+  return array.length === 1 ? array[0] : array;
 }
 
 function isNativeNetwork(networkName: NetworkName) {
@@ -149,8 +151,6 @@ function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: st
   const interiorAsset =
     interiorXcmLength === 0
       ? { Here: '' }
-      : interiorXcmLength === 1
-      ? interiorHelper(interiorsByXcmVersion)[0]
       : {
           [`X${interiorXcmLength}`]: interiorHelper(interiorsByXcmVersion),
         };

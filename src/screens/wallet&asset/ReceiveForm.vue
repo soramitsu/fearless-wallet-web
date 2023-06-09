@@ -2,9 +2,10 @@
   <AboveForm header="assets.receiveFunds" :fullScreen="true" :closeHandler="closeForm">
     <div class="receive-form">
       <div>
-        <RotateInput
+        <InputWithIcon
           v-model="selectedNetwork"
           placeholder="assets.network"
+          icon="rotate"
           :ref="selectNetworkInputRef"
           :isActiveRotate="showSelectNetworkPopup"
           @click="toggleSelectNetworkPopupVisible"
@@ -67,18 +68,17 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
-import RotateInput from '@/screens/wallet&asset/RotateInput.vue';
+import InputWithIcon from '@/screens/wallet&asset/InputWithIcon.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 import { cut } from '@/helpers/common';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 @Component({
-  components: { RotateInput },
+  components: { InputWithIcon },
 })
 export default class ReceiveFormStateLess extends Vue {
   readonly selectNetworkInputRef = 'selectNetworkInput';
@@ -107,6 +107,7 @@ export default class ReceiveFormStateLess extends Vue {
 
   get address() {
     if (this.selectedWallet.address === '') return '';
+
     if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
 
     return BaseApi.encodeAddress(this.selectedWallet.address, this.decimals);

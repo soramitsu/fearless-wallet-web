@@ -528,8 +528,6 @@ export default class State {
 
     // this.apis.substrate[networkKey].api?.disconnect && (await this.apis.substrate[networkKey].api?.disconnect());
 
-    delete this.apis.substrate[networkKey]; // todo можно и не удалять по идее, значение api для сети будет = undefined
-
     if (this.networkMap[networkKey].isEthereum && this.networkMap[networkKey].isEthereum)
       delete this.apis.evm[networkKey]; // todo аналогично
 

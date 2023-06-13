@@ -75,7 +75,6 @@ function onConnected(networkName: string) {
 }
 
 function onDisconnect(networkName: string) {
-  // возможно лишнее
   if (state.apis.substrate[networkName] === undefined) return;
 
   state.apis.substrate[networkName].apiRetry += 1;
@@ -84,7 +83,7 @@ function onDisconnect(networkName: string) {
 
   const { apiRetry, nodeIndex } = state.apis.substrate[networkName];
 
-  if (apiRetry >= MAX_CONTINUE_RETRY) {
+  if (apiRetry <= MAX_CONTINUE_RETRY) {
     state.apis.substrate[networkName].provider?.disconnect();
 
     if (nodeIndex <= state.networkMap[networkName].nodes.length - 1) {
@@ -97,8 +96,6 @@ function onDisconnect(networkName: string) {
       // eslint-disable-next-line no-use-before-define
       if (navigator.onLine) initApi(state.networkMap[networkName]);
     } else {
-      // apiObject.tryAnotherNode = false;
-
       state.disableNetworkMap(networkName);
     }
   }

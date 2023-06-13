@@ -66,8 +66,11 @@ import type {
   GoogleFileId,
   ActiveTabAuthorizeStatus,
   RequestCheckTransfer,
+  RequestCheckCrossChain,
   ResponseCheckTransfer,
+  ResponseCheckCrossChain,
   RequestTransfer,
+  RequestCrossChain,
   BasicTxResponse,
   BalanceJson,
   RequestPrice,
@@ -188,9 +191,11 @@ export interface RequestSignatures {
   'pri(google.delete.file)': [GoogleFileId, void];
   'pri(tab.status)': [null, ActiveTabAuthorizeStatus];
 
-  //Transfer
+  //Transfer, CrossChain, Sora Swap
   'pri(accounts.checkTransfer)': [RequestCheckTransfer, ResponseCheckTransfer];
   'pri(accounts.transfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
+  'pri(accounts.checkCrossChain)': [RequestCheckCrossChain, ResponseCheckCrossChain];
+  'pri(accounts.crossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse]; // TODO
   'pri(accounts.checkSwap)': [RequestCheckSwap, ResponseCheckSwap];
   'pri(accounts.swap)': [RequestSwap, ResponseMakeSwap];
   'pri(accounts.get.soraFees)': [null, SoraFees];

@@ -5,10 +5,12 @@ import { SORA_NETWORK_NAME } from '@/consts/networks';
 
 const MIN_PHONE_LENGTH_WITH_CODE = 8;
 
-function firstCharToUp(string: string) {
+function firstCharToUp(string: string, onlyFirstChat = true) {
   if (!string) return '';
 
-  return `${string.charAt(0).toUpperCase()}${string.slice(1)}`;
+  const end = onlyFirstChat ? string.slice(1).toLowerCase() : string.slice(1);
+
+  return `${string.charAt(0).toUpperCase()}${end}`;
 }
 
 function getMetaTyped(meta: KeyringPair$Meta) {
@@ -33,4 +35,10 @@ function validateEmail(email: string) {
   return EmailValidator.validate(email);
 }
 
-export { getAddressMetaTyped, getMetaTyped, firstCharToUp, isSora, validatePhoneNumber, validateEmail };
+function cut(value: string, length = 7) {
+  const endNumber = length + 1;
+
+  return `${value.slice(0, length)}...${value.slice(-endNumber)}`;
+}
+
+export { getAddressMetaTyped, getMetaTyped, firstCharToUp, isSora, validatePhoneNumber, validateEmail, cut };

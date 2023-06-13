@@ -44,5 +44,5 @@ export const getRegistry = async (networkKey: string, api: ApiPromise) => {
 };
 
 export function getTokenInfo(tokenId: string): AssetJson {
-  return state.tokenMap.find((el) => el.id === tokenId)!;
+  return state.tokenMap.find(({ id }) => id === tokenId)!;
 }

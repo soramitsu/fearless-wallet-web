@@ -17,11 +17,10 @@
         :name="name"
         :isSelected="active"
         :isMobile="isMobile"
-        :balance="getTotalBalance(address)"
-        :changeWalletBalance="getTotalBalanceChange(address)"
-        class="total"
+        :address="address"
+        class="wallet"
         @setShowWalletDetailsPopupVisible="toggleWalletDetailsPopupVisible(...arguments, address)"
-        @updateSelectedWallet="updateSelectedWallet(address)"
+        @setWallet="updateSelectedWallet(address)"
       />
 
       <BorderButton text="wallet.addWallet" iconName="plus-pink" @click="addWallet" />
@@ -57,21 +56,6 @@ export default class SelectWalletPopup extends Vue {
 
   async mounted() {
     this.totalBalances = await getTotalBalances();
-  }
-
-  getTotalBalance(address: string) {
-    const item = this.totalBalances.find((el) => el.address === address);
-
-    if (item) return item.total;
-
-    return 0;
-  }
-
-  getTotalBalanceChange(address: string) {
-    const item = this.totalBalances.find((el) => el.address === address);
-    if (item) return item.change;
-
-    return { percent: 0, amount: 0 };
   }
 
   addWallet() {
@@ -112,7 +96,7 @@ export default class SelectWalletPopup extends Vue {
   height: 100%;
 }
 
-.total {
+.wallet {
   margin-bottom: 12px !important;
 }
 </style>

@@ -58,7 +58,9 @@ export const signExtrinsic = async ({
     signer = new KeyringSigner({ registry, keyPair: pair });
   }
 
-  await extrinsic.signAsync(address, { signer: signer });
+  const nonce = (await apiProps.api?.rpc.system.accountNextIndex(address)) as unknown as number;
+
+  await extrinsic.signAsync(address, { signer, nonce });
 
   return null;
 };

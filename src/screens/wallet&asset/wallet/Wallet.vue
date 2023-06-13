@@ -163,12 +163,12 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getShowWarningNetworks) getShowWarningNetworks!: GetShowWarningNetworks;
-  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(AccountsGettersTypes.showSoraCardBanner) showSoraCardBanner!: boolean;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJsonOld[];
   @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJsonOld;
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getGenesisHashByNetwork!: (value: string) => string;
@@ -389,14 +389,17 @@ export default class Wallet extends Vue {
     justify-content: space-between;
     margin-bottom: 10px;
   }
+
   .wallet-balance__container {
     display: flex;
     flex-flow: row;
     gap: 5px;
   }
+
   .wallet-balance__loading {
     height: 46px;
   }
+
   .balance {
     font-size: 22px;
     line-height: 28px;

@@ -1,10 +1,11 @@
 <template>
-  <AboveForm header="assets.receiveFunds" :blur="true" :closeHandler="closeForm">
+  <AboveForm header="assets.receiveFunds" :fullScreen="true" :closeHandler="closeForm">
     <div class="receive-form">
       <div>
-        <RotateInput
+        <InputWithIcon
           v-model="selectedNetwork"
           placeholder="assets.network"
+          icon="rotate"
           :ref="selectNetworkInputRef"
           :isActiveRotate="showSelectNetworkPopup"
           @click="toggleSelectNetworkPopupVisible"
@@ -67,20 +68,19 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
-import RotateInput from '@/screens/wallet&asset/RotateInput.vue';
+import InputWithIcon from '@/screens/wallet&asset/InputWithIcon.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { cut } from '@/helpers/history';
+import { cut } from '@/helpers/common';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 @Component({
-  components: { RotateInput },
+  components: { InputWithIcon },
 })
-export default class ReceiveFormStateLess extends Vue {
+export default class ReceiveForm extends Vue {
   readonly selectNetworkInputRef = 'selectNetworkInput';
   readonly copyQRTooltip = { text: 'common.copiedValue', localeProps: { value: 'QR' } };
   filterValue = '';
@@ -92,16 +92,12 @@ export default class ReceiveFormStateLess extends Vue {
   @Prop(String) selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
-  @Getter(NetworksGettersTypes.getNetworks) networks!: NetworkJsonOld[];
-
-  get currency() {
-    return this.selectedAssetId;
-  }
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJsonOld[];
 
   get assetNetworks() {
-    return this.balances
-      .find((el) => el.name.toLowerCase() === this.currency.toLowerCase())
-      ?.balances.map(({ name, icon }) => ({ name, icon, value: name }));
+    const currency = this.balances.find(({ assetId }) => assetId === this.selectedAssetId)!;
+
+    return currency?.balances.map(({ name, icon }) => ({ name, icon, value: name })) ?? [];
   }
 
   get decimals() {
@@ -111,6 +107,7 @@ export default class ReceiveFormStateLess extends Vue {
 
   get address() {
     if (this.selectedWallet.address === '') return '';
+
     if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
 
     return BaseApi.encodeAddress(this.selectedWallet.address, this.decimals);
@@ -145,7 +142,6 @@ export default class ReceiveFormStateLess extends Vue {
   createBlob() {
     const el = (this.$refs.qr as Vue).$el;
     const imgQR = el.firstChild as Element;
-    // const imgLogo = el.lastChild as Element;
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
 
@@ -153,7 +149,6 @@ export default class ReceiveFormStateLess extends Vue {
     canvas.height = imgQR.clientHeight;
 
     context?.drawImage(imgQR as CanvasImageSource, 0, 0);
-    // context?.drawImage(imgLogo as CanvasImageSource, 67.5, 85, 65, 30);
 
     return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   }

@@ -48,7 +48,7 @@ import Disclaimer from '@/screens/soraCard/stepsKYC/Disclaimer.vue';
 export default class TermsAndConditions extends Vue {
   link = '';
 
-  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
 
   openDoc(value: 'terms' | 'privacy' | 'unsupportedCountries') {
     if (value === 'terms') this.link = URLS.SORA_CARD_TERMS;

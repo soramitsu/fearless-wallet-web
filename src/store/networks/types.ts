@@ -26,7 +26,7 @@ import { NetworkJsonOld } from '@/extension/background/extension-base/src/types'
 export type GetNetwork = (networkName: NetworkName) => NetworkJsonOld | undefined;
 export type GetNetworkGenesisHash = (networkName: NetworkName) => HexString;
 export type GetAssetIcon = (assetId: string) => string;
-export type GetAssetPrice = (assetId: string) => AssetPrice;
+export type GetAssetPrice = (priceId: string) => AssetPrice;
 export type GetActiveNodesByNetwork = (networkName: NetworkName) => Node;
 
 // Mutations

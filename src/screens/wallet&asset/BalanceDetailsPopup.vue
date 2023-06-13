@@ -33,7 +33,7 @@ export default class BalanceDetailsPopup extends Vue {
   @Prop(Object) assetPrice!: AssetPrice;
   @Prop(Function) closePopup!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
 
   get selectedNetwork() {
@@ -46,7 +46,7 @@ export default class BalanceDetailsPopup extends Vue {
 
   get detailsBalance() {
     const { transferable, total, reserved, locked, frozen } = this.currency.balances.find(
-      ({ name }) => name === this.selectedNetwork
+      ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
     )!;
 
     return [

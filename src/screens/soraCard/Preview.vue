@@ -126,12 +126,12 @@ export default class Preview extends Vue {
   readonly isExtension = IS_EXTENSION;
   readonly soraNetworkName = SORA_NETWORK_NAME;
 
-  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(SoraCardGettersTypes.hasFreeAttempts) hasFreeAttempts!: boolean;
   @Getter(SoraCardGettersTypes.xorPerEuroRatio) xorPerEuroRatio!: FPNumber;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJsonOld[];
   @Action(SoraCardActionTypes.GET_XOR_PER_EURO_RATIO) getXorPerEuroRatio!: AsyncFn;
 
   get networkIsReady() {

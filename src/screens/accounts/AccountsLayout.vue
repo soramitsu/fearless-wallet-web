@@ -125,7 +125,7 @@ export default class AccountsLayout extends Vue {
   notificationType: NotificationType = '';
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getAllNetworks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJsonOld[];
 
   get headers() {
     return this.notificationType === 'delete'

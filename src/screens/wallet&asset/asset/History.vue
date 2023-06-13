@@ -2,7 +2,7 @@
   <ContentForm :height="306">
     <div class="history">
       <div class="history-settings">
-        <div class="history-label">{{ $t('assets.history.text') }}</div>
+        <div class="history-label">{{ $t('assets.history') }}:</div>
 
         <Dropdown :value="filterHistoryValue" :options="historyDropdownOption" :handler="filterHistoryValueUpdate" />
       </div>
@@ -21,7 +21,7 @@
             />
           </template>
 
-          <div v-else>{{ $t('assets.history.noHistory') }}</div>
+          <div v-else>{{ $t('assets.noHistory') }}</div>
         </div>
       </Scroll>
     </div>
@@ -44,17 +44,16 @@ import { NetworksController } from '@/controllers';
 })
 export default class History extends Vue {
   readonly historyDropdownOption = [
-    { label: 'assets.history.all', value: 'all' },
-    { label: 'assets.history.transfer', value: 'transfer' },
-    { label: 'assets.history.reward', value: 'reward' },
-    { label: 'assets.history.extrinsic', value: 'extrinsic' },
+    { label: 'assets.all', value: 'all' },
+    { label: 'assets.transfer', value: 'transfer' },
+    { label: 'assets.reward', value: 'reward' },
+    { label: 'assets.extrinsic', value: 'extrinsic' },
   ];
 
   filterHistoryValue: FilterHistory = 'all';
   showLoader = false;
 
   @Prop(Object) currency!: TokenBalance;
-  @Prop(String) assetId!: string;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
@@ -107,7 +106,7 @@ export default class History extends Vue {
   }
 
   mounted() {
-    this.fetchHistory();
+    setTimeout(() => this.fetchHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
   }
 
   async fetchHistory() {

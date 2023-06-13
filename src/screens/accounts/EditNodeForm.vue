@@ -45,7 +45,7 @@ export default class EditNodeForm extends Vue {
   @Prop(String) _name!: string;
   @Prop(String) _url!: string;
   @Prop(Boolean) isActive!: boolean;
-  @Getter(NetworksGettersTypes.getAllNetworks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJsonOld[];
 
   get buttonText() {
     return this.isEdit ? 'common.save' : this.getPath('addNode');

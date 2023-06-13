@@ -53,9 +53,11 @@ export default class SoraCardBanner extends Vue {
   flex-direction: column;
   align-items: center;
   height: 120px;
+
   .banner {
     width: calc($extension-width - $default-padding - $default-padding);
   }
+
   .close-button {
     position: relative;
     top: -100px;
@@ -67,18 +69,23 @@ export default class SoraCardBanner extends Vue {
     align-items: center;
     justify-content: center;
     cursor: pointer;
+
     .close-icon {
       color: $default-white;
+      height: 16px;
+
       :hover {
         color: $plain-white;
       }
     }
+
     &:hover {
       .close-icon {
         color: $plain-white;
       }
     }
   }
+
   .status-card-button {
     position: relative;
     top: -55px;
@@ -94,6 +101,7 @@ export default class SoraCardBanner extends Vue {
     white-space: nowrap;
     color: $plain-white;
     cursor: pointer;
+
     &:hover {
       background: #201f1f;
     }

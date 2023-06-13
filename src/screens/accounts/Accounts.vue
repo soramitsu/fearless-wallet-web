@@ -38,7 +38,7 @@ export default class Account extends Vue {
   selectedAddress = '';
   newName = '';
 
-  @Getter(NetworksGettersTypes.getAllNetworks) networks!: Networks;
+  @Getter(NetworksGettersTypes.allNetworks) networks!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get chainAccounts() {

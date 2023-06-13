@@ -40,9 +40,9 @@
           />
 
           <template v-else-if="step === 1">
-            <SwapSelectInput
+            <SelectInput
               text="assets.sendButtonText"
-              :balance="transferableSendAmount"
+              :transferableAmount="transferableSendAmount"
               :value="sendValue"
               :asset="sendAssetName"
               :assetId="sendAssetId"
@@ -53,10 +53,10 @@
               @toggleSelectAssetPopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'send')"
             />
 
-            <SwapSelectInput
+            <SelectInput
               class="receive-input"
               text="assets.receiveButtonText"
-              :balance="transferableReceiveAmount"
+              :transferableAmount="transferableReceiveAmount"
               :value="receiveValue"
               :asset="receiveAssetName"
               :assetId="receiveAssetId"
@@ -206,7 +206,6 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet, GetNetwork, GetAssetPrice } from '@/store';
-import SwapSelectInput from '@/screens/polkaswap/swap/SwapSelectInput.vue';
 import SwapPreview from '@/screens/polkaswap/swap/SwapPreview.vue';
 import SwapInfo from '@/screens/polkaswap/swap/SwapInfo.vue';
 import SwapSettings from '@/screens/polkaswap/swap/SwapSettings.vue';
@@ -231,7 +230,6 @@ const SWAP_INTERVAL_RECALCULATE = 10000;
     Disclaimer,
     SwapPreview,
     SwapSettings,
-    SwapSelectInput,
     ConfirmationPasswordPopup,
   },
 })
@@ -263,7 +261,7 @@ export default class SwapForm extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
 
@@ -339,7 +337,7 @@ export default class SwapForm extends Vue {
   }
 
   get AToBValueCut() {
-    const cost = getCostOfAssets(+this.transferableSendAmount, this.sendAssetPrice) ?? 0;
+    const cost = getCostOfAssets(this.transferableSendAmount, this.sendAssetPrice) ?? 0;
     const value = this.$n(cost, 'price') || '0';
 
     return `${this.fiatSymbol} ${value}`;
@@ -420,7 +418,7 @@ export default class SwapForm extends Vue {
   }
 
   get top() {
-    return this.isSendAssetType ? 145 : 250;
+    return this.isSendAssetType ? 145 : 248;
   }
 
   get selectPopupValue() {
@@ -470,8 +468,8 @@ export default class SwapForm extends Vue {
   get isValidSendAsset() {
     const maxSendFP = new FPNumber(this.calcTransferableSendMinusFee());
 
-    // если количество токенов равно нулю, то своп невалиден,
-    // для xor количество токенов за вычетом комиссии
+    // sendAsset !== xor, если количество токенов равно нулю, то своп невалиден
+    // sendAsset === xor, если количество токенов за вычетом комиссии равно нулю, то своп невалиден
     if (FPNumber.isEqualTo(maxSendFP, FPNumber.ZERO)) return false;
 
     // если sendAmount меньше или равен максимальному количеству токенов, то своп валиден
@@ -510,11 +508,10 @@ export default class SwapForm extends Vue {
   }
 
   get transferableSendAmount() {
-    const count =
+    return +(
       this.sendCurrency?.balances.find((balance) => balance.name.toLowerCase() === this.soraNetworkName.toLowerCase())
-        ?.transferable ?? 0;
-
-    return this.$n(+count, 'decimal');
+        ?.transferable ?? 0
+    );
   }
 
   get transferableReceiveAmount() {
@@ -527,9 +524,7 @@ export default class SwapForm extends Vue {
   }
 
   get sendValue() {
-    const amount = +this.sendAmount ?? 0;
-
-    return (this.sendAssetPrice * amount).toString();
+    return (this.sendAssetPrice * (+this.sendAmount ?? 0)).toString();
   }
 
   get receiveValue() {

@@ -6,8 +6,8 @@ import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 export enum GettersTypes {
-  getNetworks = 'getNetworks',
-  getAllNetworks = 'getAllNetworks',
+  networks = 'networks',
+  allNetworks = 'allNetworks',
   getNetwork = 'getNetwork',
   getNetworkGenesisHash = 'getNetworkGenesisHash',
   getPrice = 'getPrice',
@@ -21,12 +21,12 @@ export enum GettersTypes {
 }
 
 export type Getters = {
-  [GettersTypes.getNetworks](
+  [GettersTypes.networks](
     state: State,
     getters?: GetterTree<State, State> & Getters,
     rootState?: any
   ): NetworkJsonOld[];
-  [GettersTypes.getAllNetworks](
+  [GettersTypes.allNetworks](
     state: State,
     getters?: GetterTree<State, State> & Getters,
     rootState?: any
@@ -54,7 +54,7 @@ export type Getters = {
 };
 
 const getters: GetterTree<State, State> & Getters = {
-  [GettersTypes.getNetworks](state, getters, rootState): NetworkJsonOld[] {
+  [GettersTypes.networks](state, getters, rootState): NetworkJsonOld[] {
     const haveEthereumAccount = rootState.account.selectedWallet.ethereumAddress !== '';
 
     return haveEthereumAccount
@@ -62,14 +62,16 @@ const getters: GetterTree<State, State> & Getters = {
       : state.networks.filter(({ name }) => !ETHEREUM_NETWORKS.includes(name));
   },
 
-  [GettersTypes.getAllNetworks]({ networks }): NetworkJsonOld[] {
+  [GettersTypes.allNetworks]({ networks }): NetworkJsonOld[] {
     return networks;
   },
 
   [GettersTypes.getNetwork]:
     ({ networks }) =>
-    (networkName: string) => {
-      return networks.find(({ name }) => name.toLowerCase() === networkName?.toLowerCase());
+    (networkNameOrChainId: string) => {
+      const value = networkNameOrChainId?.toLowerCase();
+
+      return networks.find(({ name, chainId }) => name.toLowerCase() === value || chainId.toLowerCase() === value);
     },
 
   [GettersTypes.getNetworkGenesisHash]:
@@ -90,11 +92,11 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.getAssetPrice]:
     ({ assetsPrice }) =>
-    (assetId: string) => {
-      if (assetsPrice.tokenPriceMap[assetId] === undefined) return { price: 0, priceChange: 0 };
+    (priceId: string) => {
+      if (assetsPrice.tokenPriceMap[priceId] === undefined) return { price: 0, priceChange: 0 };
 
-      const price = assetsPrice.tokenPriceMap[assetId];
-      const priceChange = assetsPrice.tokenPriceChange[assetId] / 100;
+      const price = assetsPrice.tokenPriceMap[priceId];
+      const priceChange = assetsPrice.tokenPriceChange[priceId] / 100;
 
       return { price, priceChange };
     },

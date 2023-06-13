@@ -53,7 +53,7 @@ export default class SelectNetworkButton extends Vue {
   @Prop(Array) _optionsNetworks!: Options[];
   @Prop(Function) toggleSelectedNetwork!: (value: string) => void;
   @Prop(Function) handlerClose!: VoidFunction;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJsonOld[];
 
   get optionsNetworks() {
     if (this._optionsNetworks !== undefined) return this._optionsNetworks;

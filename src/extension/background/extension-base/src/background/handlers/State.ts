@@ -10,6 +10,7 @@ import { base64Decode, isEthereumAddress } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
+
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import MetadataStore from '@extension-base/stores/Metadata';
 import { storage } from '@extension-base/stores/Storage';
@@ -25,7 +26,7 @@ import { getTokenPrice } from '@extension-base/utils/coingecko';
 import { getCurrentProvider, getId } from '@extension-base/utils/utils';
 import { initApi } from '@extension-base/api/substrate/api';
 import { axios } from '@extension-base/utils/axios';
-import { ASSETS, CHAINS, prepNetworkNames } from '@extension-base/const/networks';
+import { prepNetworkNames } from '@extension-base/const/networks';
 import { DEFAULT_EVM_TOKENS } from '@extension-base/api/tokens/evm/defaultEvmToken';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
@@ -71,7 +72,7 @@ import type { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
-import type { AssetJson, SoraFees } from '@/interfaces';
+import type { AssetJson, SoraFees, XcmLocations, XcmFees } from '@/interfaces';
 import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/networks';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/currencies';
@@ -155,6 +156,8 @@ export default class State {
   private priceStoreReady = false;
   public fiatSymbol = 'usd';
   public authorizeCached: AuthUrls | undefined = undefined;
+  public xcmFees: XcmFees = [];
+  public xcmLocations: XcmLocations = [];
   public tokenMap: AssetJson[] = [];
   public networkMap: Record<string, NetworkJsonOld> = {}; // mapping to networkMapStore, for uses in background
   public networksJson: NetworkJsonOld[] = []; // from github
@@ -928,9 +931,7 @@ export default class State {
   }
 
   public publishBalance(reset?: boolean) {
-    return this.getBalance(reset).then((balance) => {
-      this.balanceSubject.next(balance);
-    });
+    return this.getBalance(reset).then((balance) => this.balanceSubject.next(balance));
   }
 
   public resetBalanceMap() {
@@ -939,11 +940,15 @@ export default class State {
 
   public async prepNetworkJson() {
     const result: Record<string, NetworkJsonOld> = {};
-    const { data: networks } = await axios.get<NetworkJsonOld[]>(CHAINS);
-    const { data: assets } = await axios.get<AssetJson[]>(ASSETS);
+    const { data: networks } = await axios.get<NetworkJsonOld[]>(URLS.CHAINS);
+    const { data: assets } = await axios.get<AssetJson[]>(URLS.ASSETS);
+    const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
+    const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
     this.networksJson = networks;
     this.tokenMap = assets;
+    this.xcmLocations = xcmLocations;
+    this.xcmFees = xcmFees;
 
     networks.forEach((network) => {
       const prepCurrentProvider = network.nodes[0].url;
@@ -1075,12 +1080,13 @@ export default class State {
     });
 
     const balanceItem = this.balanceMap[address][currencyIndex].balances[index];
-    const { reserved, free, frozen, total, transferable, state } = item;
+    const { reserved, free, frozen, total, transferable, state, locked } = item;
 
     this.balanceMap[address][currencyIndex].balances[index] = {
       ...balanceItem,
       reserved,
       free,
+      locked,
       frozen,
       total,
       transferable,
@@ -1161,9 +1167,7 @@ export default class State {
   public generateDefaultBalance(address: string) {
     if (address === '') return;
 
-    if (this.balanceMap && this.balanceMap[address] !== undefined) {
-      return;
-    }
+    if (this.balanceMap && this.balanceMap[address] !== undefined) return;
 
     this.balanceMap[address] = getMockCurrencies(this.networksJson, this.tokenMap);
   }
@@ -1218,9 +1222,7 @@ export default class State {
   }
 
   private lazyNext = (key: string, callback: () => void) => {
-    if (this.lazyMap[key]) {
-      clearTimeout(this.lazyMap[key] as number);
-    }
+    if (this.lazyMap[key]) clearTimeout(this.lazyMap[key] as number);
 
     const lazy = setTimeout(() => {
       callback();

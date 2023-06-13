@@ -28,7 +28,8 @@
 
         <div class="balance">
           {{ $t('assets.balance') }}
-          <div class="balance-value" @click="setMax">&nbsp;{{ balance }}</div>
+
+          <div class="balance-value" @click="setMax">&nbsp;{{ $n(transferableAmount, 'decimal') }}</div>
         </div>
       </div>
     </div>
@@ -43,32 +44,30 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
 @Component
-export default class SwapSelectInput extends Vue {
+export default class SelectInput extends Vue {
   inputIsFocused = false;
 
   @Prop({ default: '' }) text!: string;
   @Prop({ default: '' }) asset!: string;
   @Prop({ default: '' }) assetId!: string;
   @Prop({ default: '' }) value!: string;
-  @Prop({ default: '' }) balance!: string;
+  @Prop({ default: 0 }) transferableAmount!: number;
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
-  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
-  get assetIcon() {
-    return this.balances.find(({ assetId }) => assetId === this.assetId)?.icon;
-  }
-
   get amountInternal() {
-    const localAmount = FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();
-
-    return localAmount;
+    return FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();
   }
 
   set amountInternal(value: string) {
     if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN')
       this.syncedAmount = FPNumber.fromCodecValue(value || 0, 0).toString();
+  }
+
+  get assetIcon() {
+    return this.balances.find(({ assetId }) => assetId === this.assetId)?.icon;
   }
 
   get valueCut() {

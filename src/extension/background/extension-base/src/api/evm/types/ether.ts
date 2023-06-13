@@ -1,5 +1,6 @@
 import { APIItemState, NETWORK_STATUS } from '@extension-base/api/types/networks';
 import type { ContractType } from '@/interfaces/ether';
+import type { TypeAsset } from '@/interfaces';
 
 export interface BalanceChildItem {
   reserved: string;
@@ -11,17 +12,17 @@ export interface BalanceChildItem {
 export interface BalanceItem {
   state: APIItemState;
   symbol?: string;
-  name: string; // is network Name, TODO name -> networkName
+  name: string; // is Network Name, TODO name -> networkName
   id?: string;
   relayChain?: string;
   existentialDeposit?: string;
   key?: string;
   decimals?: number;
-  type?: string;
+  type?: TypeAsset;
   free?: string;
   isUtility?: boolean;
   isNative?: boolean;
-  icon?: string;
+  icon?: string; // is network icon
   reserved?: string;
   locked?: string;
   miscFrozen?: string;
@@ -81,7 +82,7 @@ export interface NetworkJson {
   genesisHash: string; // identifier for network
   groups: NetWorkGroup[];
   ss58Format: number;
-  paraId?: number;
+  paraId?: string;
   chainType?: 'substrate' | 'ethereum';
   crowdloanUrl?: string;
 

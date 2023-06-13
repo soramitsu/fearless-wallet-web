@@ -1,4 +1,4 @@
-import { APIItemState, NETWORK_STATUS } from '../../types/networks';
+import { APIItemState, NETWORK_STATUS } from '@extension-base/api/types/networks';
 import type { ContractType } from '@/interfaces/ether';
 import type { TypeAsset } from '@/interfaces';
 

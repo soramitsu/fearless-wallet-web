@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ethers } from 'ethers';
-import EthProvider from '../../evm/ethProvider';
+import EthProvider from '@extension-base/api/evm/ethProvider';
 import type { EvmNetworkType } from '@/interfaces/ether';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires,@typescript-eslint/no-unsafe-assignment

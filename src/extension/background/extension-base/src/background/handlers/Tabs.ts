@@ -10,10 +10,15 @@ import RequestBytesSign from '@extension-base/background/RequestBytesSign';
 import RequestExtrinsicSign from '@extension-base/background/RequestExtrinsicSign';
 
 import { keyring } from '@polkadot/ui-keyring';
-import BeaconSignerJSON from '../BeaconSignerJSON';
-import { stripUrl, transformAccounts, transformAddresses, withErrorLog } from './helpers';
-import State from './State';
-import { createSubscription, unsubscribe } from './subscriptions';
+import BeaconSignerJSON from '@extension-base/background/BeaconSignerJSON';
+import {
+  stripUrl,
+  transformAccounts,
+  transformAddresses,
+  withErrorLog,
+} from '@extension-base/background/handlers/helpers';
+import State from '@extension-base/background/handlers/State';
+import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import type {
   AccountSub,
   AuthResponse,
@@ -30,7 +35,7 @@ import type {
   ResponseSigning,
   ResponseTypes,
   SubscriptionMessageTypes,
-} from '../types/types';
+} from '@extension-base/background/types/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
@@ -137,18 +142,14 @@ export default class Tabs {
     const address = request.address;
     const isMobile = !!keyring.getAddress(address, 'address')?.meta.isMobile;
     let meta;
+
     if (keyring.getAccount(address)) meta = this.getSigningPair(address).meta;
     else if (isMobile) meta = keyring.getAddress(address, 'address')?.meta;
-    const pair = this.getSigningPair(address);
-    if (isMobile)
-      return this.state.sign(url, new BeaconSignerJSON(request), {
-        address: pair.address,
-        ethereumAddress: pair.meta.ethereumAddress as string,
-        name: (pair.meta.name as string) ?? '',
-        ...meta,
-      });
 
-    return this.state.sign(url, new RequestExtrinsicSign(request), {
+    const pair = this.getSigningPair(address);
+    const signer = isMobile ? new BeaconSignerJSON(request) : new RequestExtrinsicSign(request);
+
+    return this.state.sign(url, signer, {
       address: pair.address,
       ethereumAddress: pair.meta.ethereumAddress as string,
       name: (pair.meta.name as string) ?? '',
@@ -160,7 +161,6 @@ export default class Tabs {
     return this.state.injectMetadata(url, request);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   metadataList(url: string): InjectedMetadataKnown[] {
     return this.state.knownMetadata.map(({ genesisHash, specVersion }) => ({
       genesisHash,

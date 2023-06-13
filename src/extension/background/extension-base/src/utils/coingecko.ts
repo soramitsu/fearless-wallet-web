@@ -1,11 +1,11 @@
 // Copyright 2019-2022 @subwallet/extension-koni authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-import { state } from '../background/handlers';
-import { PriceJson } from '../background/types/types';
-import { REFRESH_PRICE_INTERVAL } from '../const/intervals';
-import { axios } from './axios';
+import { state } from '@extension-base/background/handlers';
+import { REFRESH_PRICE_INTERVAL } from '@extension-base/const/intervals';
+import { axios } from '@extension-base/utils/axios';
+import type { PriceJson } from '@extension-base/background/types/types';
 
-export const getTokenPrice = async (chains: Array<string>, currency = 'usd'): Promise<PriceJson> => {
+export async function getTokenPrice(chains: Array<string>, currency = 'usd'): Promise<PriceJson> {
   try {
     const now = new Date().getTime();
     const { currency: currentCurrency } = state.prices.json;
@@ -17,9 +17,9 @@ export const getTokenPrice = async (chains: Array<string>, currency = 'usd'): Pr
     }
 
     const chainsStr = chains.join(',');
-    const res = await axios.get(
-      `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${currency}&include_24hr_change=true&ids=${chainsStr}`
-    );
+    const coingeckoUrl = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${currency}&include_24hr_change=true&ids=${chainsStr}`;
+
+    const res = await axios.get(coingeckoUrl);
 
     if (res.status !== 200) {
       console.warn('Failed to get token price');
@@ -58,9 +58,9 @@ export const getTokenPrice = async (chains: Array<string>, currency = 'usd'): Pr
       priceMap,
       tokenPriceMap,
       tokenPriceChange,
-    } as PriceJson;
+    };
   } catch (err) {
     console.error('Failed to get token price', err);
     throw err;
   }
-};
+}

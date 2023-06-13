@@ -1,24 +1,14 @@
 // Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { SubmittableExtrinsic } from '@polkadot/api/promise/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { FPNumber } from '@sora-substrate/util';
-import {
-  ApiProps,
-  BasicTxResponse,
-  TransferErrorCode,
-  ExternalRequestPromise,
-  ExternalRequestPromiseStatus,
-  SignerType,
-  SupportTransferResponse,
-  TokenBalance,
-} from '../../background/types/types';
-import { state } from '../../background/handlers';
-import { getTokenInfo } from './registry';
-import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
-import { checkMainToken } from './balance';
-import { createExtrinsicTransfer } from './utils';
+import { state } from '@extension-base/background/handlers';
+import { getTokenInfo } from '@extension-base/api/substrate/registry';
+import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
+import { checkMainToken } from '@extension-base/api/substrate/balance';
+import { createExtrinsicTransfer } from '@extension-base/api/substrate/utils';
+import { ApiProps, BasicTxResponse, TransferErrorCode, SignerType, TokenBalance } from '../../background/types/types';
 import type { AccountInfoWithProviders, AccountInfoWithRefCount } from '@polkadot/types/interfaces';
 import type { AssetJson } from '@/interfaces';
 import { NetworkName } from '@/interfaces';

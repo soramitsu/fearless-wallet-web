@@ -1,9 +1,8 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 import { assert } from '@polkadot/util';
-import { canDerive } from '../../utils';
-import type { NetworkJsonOld } from '../../types';
-import type { NetworkJson } from '../../api/evm/types/ether';
+import { canDerive } from '@extension-base/utils/utils';
+import type { NetworkJsonOld } from '@extension-base/types';
 import type { InjectedAccount } from '@polkadot/extension-inject/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
@@ -73,55 +72,6 @@ export function transformAddresses(addresses: SubjectInfo): InjectedAccount[] {
         type,
       })
     );
-}
-
-export function mergeNetworkProviders(
-  customNetwork: NetworkJson,
-  predefinedNetwork: NetworkJson
-): {
-  currentProviderMethod: 'http' | 'ws';
-  parsedProviderKey: string;
-  parsedCustomProviders: Record<string, string>;
-} {
-  // merge providers for 2 networks with the same genesisHash
-  if (customNetwork.customProviders) {
-    const parsedCustomProviders: Record<string, string> = {};
-    const currentProvider = customNetwork.customProviders[customNetwork.currentProvider || ''] || '';
-    const currentProviderMethod: 'http' | 'ws' = currentProvider.startsWith('http') ? 'http' : 'ws';
-    let parsedProviderKey = '';
-
-    for (const customProvider of Object.values(customNetwork.customProviders)) {
-      let exist = false;
-
-      for (const [key, provider] of Object.entries(predefinedNetwork.providers)) {
-        if (currentProvider === provider) {
-          // point currentProvider to predefined
-          parsedProviderKey = key;
-        }
-
-        if (provider === customProvider) {
-          exist = true;
-          break;
-        }
-      }
-
-      if (!exist) {
-        const index = Object.values(parsedCustomProviders).length;
-
-        parsedCustomProviders[`custom_${index}`] = customProvider;
-      }
-    }
-
-    for (const [key, parsedProvider] of Object.entries(parsedCustomProviders)) {
-      if (currentProvider === parsedProvider) {
-        parsedProviderKey = key;
-      }
-    }
-
-    return { currentProviderMethod, parsedProviderKey, parsedCustomProviders };
-  } else {
-    return { currentProviderMethod: 'ws', parsedProviderKey: '', parsedCustomProviders: {} };
-  }
 }
 
 export const getCurrentProvider = (data: NetworkJsonOld) => {

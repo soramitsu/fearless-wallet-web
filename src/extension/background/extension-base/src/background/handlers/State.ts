@@ -10,27 +10,30 @@ import { base64Decode, isEthereumAddress } from '@polkadot/util-crypto';
 import { decodePair } from '@polkadot/keyring/pair/decode';
 import { keyring } from '@polkadot/ui-keyring';
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
-import MetadataStore from '../../stores/Metadata';
-import { storage } from '../../stores/Storage';
-import EthProvider from '../../api/evm/ethProvider';
-import CustomTokenStore from '../../stores/CustomEvmToken';
-import CurrentAccountStore, { CurrentAccountState } from '../../stores/CurrentAccountStore';
-import { initEvmTokenState } from '../../api/evm/utils/eth';
-import BalanceService from '../../shared/balanceService';
-import NetworkMapStore from '../../stores/NetworkMap';
-import AuthorizeStore from '../../stores/Authorize';
-import { initWeb3Api } from '../../api/evm';
-import PriceStore from '../../stores/Price';
-import { getTokenPrice, getId, axios } from '../../utils';
-import { initApi } from '../../api/substrate/api';
-import { prepNetworkNames } from '../../const/networks';
-import { DEFAULT_EVM_TOKENS } from '../../api/tokens/evm/defaultEvmToken';
-import { FWCron } from '../cron';
-import { getMockCurrencies, isEthereumNetwork } from '../utils/utils';
-import { NETWORK_STATUS } from '../../api/types/networks';
-import { POPUP_WINDOW_OPTS } from '../types/types';
-import { getCurrentProvider, stripUrl, withErrorLog } from './helpers';
-import { FWSubscription, isSubscriptionRunning, unsubscribe } from './subscriptions';
+
+import NetworkMapStore from '@extension-base/stores/NetworkMap';
+import MetadataStore from '@extension-base/stores/Metadata';
+import { storage } from '@extension-base/stores/Storage';
+import EthProvider from '@extension-base/api/evm/ethProvider';
+import CustomTokenStore from '@extension-base/stores/CustomEvmToken';
+import CurrentAccountStore, { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import { initEvmTokenState } from '@extension-base/api/evm/utils/eth';
+import BalanceService from '@extension-base/shared/balanceService';
+import AuthorizeStore from '@extension-base/stores/Authorize';
+import { initWeb3Api } from '@extension-base/api/evm';
+import PriceStore from '@extension-base/stores/Price';
+import { getTokenPrice } from '@extension-base/utils/coingecko';
+import { getCurrentProvider, getId } from '@extension-base/utils/utils';
+import { initApi } from '@extension-base/api/substrate/api';
+import { axios } from '@extension-base/utils/axios';
+import { prepNetworkNames } from '@extension-base/const/networks';
+import { DEFAULT_EVM_TOKENS } from '@extension-base/api/tokens/evm/defaultEvmToken';
+import { NETWORK_STATUS } from '@extension-base/api/types/networks';
+import { FWCron } from '@extension-base/background/cron';
+import { getMockCurrencies, isEthereumNetwork } from '@extension-base/background/utils/utils';
+import { POPUP_WINDOW_OPTS } from '@extension-base/background/types/types';
+import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
+import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -63,9 +66,9 @@ import type {
   BalanceMap,
   Providers,
   ResponseTotalBalances,
-} from '../types/types';
-import type { BalanceItem, CustomTokenJson } from '../../api/evm/types/ether';
-import type { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '../../types';
+} from '@extension-base/background/types/types';
+import type { BalanceItem, CustomTokenJson } from '@extension-base/api/evm/types/ether';
+import type { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
@@ -508,7 +511,7 @@ export default class State {
         initApi(data);
 
         if (data.isEthereum && data.isEthereum) {
-          this.apis.evm[data.key] = initWeb3Api(currentProvider.url);
+          this.apis.evm[data.key] = initWeb3Api(currentProvider);
         }
       }
     }
@@ -564,7 +567,7 @@ export default class State {
   public refreshWeb3Api(key: string) {
     const currentProvider = getCurrentProvider(this.networkMap[key]);
 
-    if (currentProvider) this.apis.evm[key] = initWeb3Api(currentProvider.url);
+    if (currentProvider) this.apis.evm[key] = initWeb3Api(currentProvider);
   }
 
   public refreshDotSamaApi(key: string) {

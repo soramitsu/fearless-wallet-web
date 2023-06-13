@@ -2,10 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { logger as createLogger } from '@polkadot/util';
 import { Subscription } from 'rxjs';
-import { subscribeBalance } from '../../api/substrate/balance';
-import type State from './State';
+import { subscribeBalance } from '@extension-base/api/substrate/balance';
+import type State from '@extension-base/background/handlers/State';
 import type { Logger } from '@polkadot/util/types';
-import type { MessageTypesWithSubscriptions, Port, SubscriptionMessageTypes } from '../types/types';
+import type {
+  MessageTypesWithSubscriptions,
+  Port,
+  SubscriptionMessageTypes,
+} from '@extension-base/background/types/types';
 
 type SubscriptionName = 'balance' | 'xorTotalBalance';
 type Subscriptions = Record<string, Port>;

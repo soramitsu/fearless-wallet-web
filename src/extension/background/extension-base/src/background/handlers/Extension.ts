@@ -15,6 +15,22 @@ import {
 import { createPair } from '@polkadot/keyring';
 import { keyring } from '@polkadot/ui-keyring';
 import {
+  getERC20TransactionObject,
+  getEVMTransactionObject,
+  getExistentialDeposit,
+  makeERC20Transfer,
+  makeEVMTransfer,
+} from '@extension-base/api/evm/transfer';
+import { checkMainToken } from '@extension-base/api/substrate/balance';
+import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
+import { getTokenInfo } from '@extension-base/api/substrate/registry';
+import { createSwap } from '@extension-base/api/substrate/swaps';
+import { withErrorLog } from '@extension-base/background/handlers/helpers';
+import State, { registry } from '@extension-base/background/handlers/State';
+import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
+import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
+import { state } from '@extension-base/background/handlers';
+import {
   ActiveTabAuthorizeStatus,
   BalanceJson,
   BasicTxError,
@@ -36,30 +52,14 @@ import {
   ResponseMakeSwap,
   TransferErrorCode,
 } from '../types/types';
-import { CurrentAccountInfo, CurrentAccountState } from '../../stores/CurrentAccountStore';
-import { NetworkJsonOld, RequestTransactionHistoryAdd, TransactionHistoryItemType } from '../../types';
-import { NetworkJson } from '../../api/evm/types/ether';
-import {
-  getERC20TransactionObject,
-  getEVMTransactionObject,
-  getExistentialDeposit,
-  makeERC20Transfer,
-  makeEVMTransfer,
-} from '../../api/evm/transfer';
-import { checkMainToken } from '../../api/substrate/balance';
-import { estimateFee, makeTransfer } from '../../api/substrate/transfer';
-import { getTokenInfo } from '../../api/substrate/registry';
-import { createSwap } from '../../api/substrate/swaps';
 import {
   createCrossChainExtrinsic,
   estimateFee as estimateCrossChainFee,
   makeCrossChain,
 } from '../../api/substrate/crossChain';
-import { withErrorLog } from './helpers';
-import State, { registry } from './State';
-import { createSubscription, unsubscribe } from './subscriptions';
-import FWExtensionBase from './ExtensionBase';
-import { state } from '.';
+import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import type { NetworkJson } from '@extension-base/api/evm/types/ether';
+import type { NetworkJsonOld, RequestTransactionHistoryAdd, TransactionHistoryItemType } from '@extension-base/types';
 import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type {
   AccountJson,
@@ -101,7 +101,7 @@ import type {
   ResponseSeedValidate,
   ResponseType,
   SigningRequest,
-} from '../types/types';
+} from '@extension-base/background/types/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
@@ -211,11 +211,14 @@ export default class Extension extends FWExtensionBase {
 
     const accounts = keyring.getAccounts();
     const addresses = keyring.getAddresses();
+
     const currentAcc = await this.state.currentAccount;
+
     const shouldUpdate =
       !accounts.some(({ address }) => address === currentAcc?.address) ||
       !addresses.some(({ address }) => address === currentAcc?.address);
-    const isNoAccounts = !accounts.length && !accounts.length;
+
+    const isNoAccounts = !accounts.length && !addresses.length;
 
     if (shouldUpdate || isNoAccounts) {
       let account;

@@ -159,8 +159,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transactionAddress() {
-    if (this.transactionId) {
-      if (this.payload?.address) return BaseApi.encodeAddress(this.payload?.address);
+    if (this.transactionId && this.payload?.address) {
+      return BaseApi.encodeAddress(this.payload?.address);
     }
 
     return this.selectedWallet.address;

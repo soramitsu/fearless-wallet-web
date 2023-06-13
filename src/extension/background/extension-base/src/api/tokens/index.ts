@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import EthProvider from '../evm/ethProvider';
-import { CustomTokenType } from '../evm/types/ether';
-import { validateEvmToken } from './evm/utils';
-import type { ChainRegistry, DeleteCustomTokenParams } from '../../types';
-import type { CustomTokenJson, CustomToken } from '../evm/types/ether';
+import EthProvider from '@extension-base/api/evm/ethProvider';
+import { CustomTokenType } from '@extension-base/api/evm/types/ether';
+import { validateEvmToken } from '@extension-base/api/tokens/evm/utils';
+import type { ChainRegistry, DeleteCustomTokenParams } from '@extension-base/types';
+import type { CustomTokenJson, CustomToken } from '@extension-base/api/evm/types/ether';
 
 export async function validateCustomToken(
   contractAddress: string,

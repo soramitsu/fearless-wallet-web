@@ -4,9 +4,9 @@ import BNEther from 'bn.js';
 import RLP from 'rlp';
 import { ethers } from 'ethers';
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import { CustomTokenJson, NetworkJson } from '../types/ether';
-import EthProvider from '../ethProvider';
-import ERC20Contract from '../helpers/ERC20Contract.json';
+import EthProvider from '@extension-base/api/evm/ethProvider';
+import ERC20Contract from '@extension-base/api/evm/helpers/ERC20Contract.json';
+import type { CustomTokenJson, NetworkJson } from '@extension-base/api/evm/types/ether';
 
 export function isEqualContractAddress(address1: string, address2: string) {
   if (isEthereumAddress(address1) && isEthereumAddress(address2)) {

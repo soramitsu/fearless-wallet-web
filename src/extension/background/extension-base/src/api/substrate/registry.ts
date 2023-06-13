@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ApiPromise } from '@polkadot/api';
-import { state } from '../../background/handlers';
-import { ChainRegistry } from '../../types';
+import { state } from '@extension-base/background/handlers';
+import { ChainRegistry } from '@extension-base/types';
 import { AssetJson } from '@/interfaces';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};

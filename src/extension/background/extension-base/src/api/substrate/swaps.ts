@@ -1,9 +1,9 @@
 import { Api, FPNumber } from '@sora-substrate/util';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
-import { state } from '../../background/handlers';
-import { getAssetOptions } from './utils';
+import { state } from '@extension-base/background/handlers';
+import { getAssetOptions } from '@extension-base/api/substrate/utils';
 import type { Asset } from '@sora-substrate/util/build/assets/types';
-import type { ExtrinsicSwapOptions, CreateSwapResult, BaseExchangeProps } from '../types/swaps';
+import type { ExtrinsicSwapOptions, CreateSwapResult, BaseExchangeProps } from '@extension-base/api/types/swaps';
 import type { SwapOptions } from '@/interfaces';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 

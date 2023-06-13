@@ -19,7 +19,6 @@ import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import {
-  getPrice,
   pingServiceWorker,
   subscribeAccounts,
   subscribeAddresses,

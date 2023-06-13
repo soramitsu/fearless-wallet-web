@@ -80,7 +80,7 @@ import { NetworkJsonOld } from '@/extension/background/extension-base/src/types'
 @Component({
   components: { InputWithIcon },
 })
-export default class ReceiveFormStateLess extends Vue {
+export default class ReceiveForm extends Vue {
   readonly selectNetworkInputRef = 'selectNetworkInput';
   readonly copyQRTooltip = { text: 'common.copiedValue', localeProps: { value: 'QR' } };
   filterValue = '';

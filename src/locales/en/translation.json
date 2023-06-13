@@ -171,6 +171,8 @@
   },
   "assets": {
     "all": "All",
+    "recent": "Recent",
+    "chooseFromHistory": "Choose from history",
     "myWallets": "My wallets",
     "direction": "Direction",
     "wallets": "Wallets",
@@ -234,7 +236,6 @@
     "saveQR": "Save QR-code",
     "copyQR": "Copy QR-code",
     "incorrectAddress": "Incorrect address",
-    "impossibleCrossChain": "Impossible cross chain",
     "insufficientBalance": "Insufficient balance {asset}",
     "insufficientLiquidity": "Insufficient Liquidity",
     "isSameAddress": "Transfers to your own account are prohibited",

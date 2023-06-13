@@ -8,7 +8,15 @@
       :closeHandler="closeForm"
     >
       <Scroll>
-        <div v-if="showMyWallets">
+        <HistoryBook
+          v-if="showHistoryBook"
+          :network="syncedNetwork"
+          :assetId="syncedAssetId"
+          @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
+          @setRecipient="setRecipient"
+        />
+
+        <div v-else-if="showMyWallets">
           <WalletInfo
             v-for="({ name, address, ethereumAddress, isMobile }, index) in filteredWallets"
             :key="name + index"
@@ -74,11 +82,11 @@
                 icon="close"
                 placeholder="assets.sendTo"
                 :isActiveRotate="showDestNetPopup"
-                @click="clearRecipient"
+                @click="setRecipient"
               />
 
               <div class="activity-buttons row">
-                <button class="button" @click="openHistory">{{ $t('assets.history') }}</button>
+                <button class="button" @click="toggleHistoryBookVisibility">{{ $t('assets.history') }}</button>
 
                 <button class="button" @click="paste">{{ $t('common.paste') }}</button>
 
@@ -160,6 +168,7 @@ import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import MaxButton from './MaxButton.vue';
+import HistoryBook from './HistoryBook.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
 import InputWithIcon from './InputWithIcon.vue';
@@ -172,7 +181,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 import { firstCharToUp } from '@/helpers/common';
 import { getCurrencyOptions } from '@/helpers/currencies';
-import { NATIVE_PARACHAINS, RELAY_CHAINS, VALID_SUBSTRATE_ADDRESS, VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
+import { VALID_SUBSTRATE_ADDRESS, VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
 import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHelpers';
 import {
   RequestCheckTransfer,
@@ -188,6 +197,7 @@ import WalletInfo from '@/screens/main/WalletInfo.vue';
     MaxButton,
     WalletInfo,
     FloatInput,
+    HistoryBook,
     InputWithIcon,
     ExistentialPopup,
     WarningAddressPopup,
@@ -203,6 +213,7 @@ export default class SendForm extends Vue {
   showExistentialPopup = false;
   showConfirmationPasswordPopup = false;
   showMyWallets = false;
+  showHistoryBook = false;
   filterValue = '';
   step = 1;
 
@@ -237,6 +248,8 @@ export default class SendForm extends Vue {
   }
 
   get formHeader() {
+    if (this.showHistoryBook) return 'assets.chooseFromHistory';
+
     if (this.showMyWallets) return 'assets.wallets';
 
     return this.header;
@@ -324,14 +337,7 @@ export default class SendForm extends Vue {
   }
 
   get showBackIcon() {
-    return this.step === 2 || this.showMyWallets;
-  }
-
-  get isValidDirection() {
-    // TODO: fix; from native parachains only to the relay chain
-    if (NATIVE_PARACHAINS.includes(this.syncedNetwork) && !RELAY_CHAINS.includes(this.syncedDestNet)) return false;
-
-    return !!this.currency && this.syncedNetwork !== '' && this.syncedDestNet !== '';
+    return this.step === 2 || this.showHistoryBook || this.showMyWallets;
   }
 
   get buttonText() {
@@ -345,12 +351,9 @@ export default class SendForm extends Vue {
       return 'common.confirm';
     }
 
-    if (this.isTransfer && this.syncedRecipient !== '' && !this.isValidRecipientAddress) {
-      if (this.isSameAddress) return 'assets.isSameAddress';
+    if (this.isSameAddress) return 'assets.isSameAddress';
 
-      return 'assets.incorrectAddress';
-    } else if (this.isCrossChain && this.syncedDestNet !== '' && !this.isValidDirection)
-      return 'assets.impossibleCrossChain';
+    if (!this.isValidRecipientAddress && this.syncedRecipient !== '') return 'assets.incorrectAddress';
 
     if (!this.isValidSendAsset)
       return { text: 'assets.insufficientBalance', localeProps: { asset: this.sendAssetName.toUpperCase() } };
@@ -524,7 +527,7 @@ export default class SendForm extends Vue {
 
     if (
       (this.isTransfer && (!this.isValidRecipientAddress || this.syncedNetwork === '')) ||
-      (this.isCrossChain && (!this.isValidDirection || this.syncedNetwork === ''))
+      (this.isCrossChain && this.syncedNetwork === '')
     )
       return;
 
@@ -546,8 +549,10 @@ export default class SendForm extends Vue {
     this.showDestNetPopup = !this.showDestNetPopup;
   }
 
-  clearRecipient() {
-    this.syncedRecipient = '';
+  setRecipient(address = '') {
+    this.syncedRecipient = BaseApi.formatAddress({ address, ethereumAddress: address }, this.targetNetwork);
+
+    if (this.showHistoryBook) this.toggleHistoryBookVisibility();
   }
 
   toggleSelectedNetwork(value: string) {
@@ -578,7 +583,8 @@ export default class SendForm extends Vue {
   }
 
   handlerBack() {
-    if (this.showMyWallets) this.toggleMyWalletsVisibility();
+    if (this.showHistoryBook) this.toggleHistoryBookVisibility();
+    else if (this.showMyWallets) this.toggleMyWalletsVisibility();
     else this.step -= 1;
   }
 
@@ -748,10 +754,6 @@ export default class SendForm extends Vue {
     );
   }
 
-  openHistory() {
-    console.info('openHistory');
-  }
-
   async paste() {
     this.syncedRecipient = await navigator.clipboard.readText();
   }
@@ -766,6 +768,10 @@ export default class SendForm extends Vue {
 
   toggleMyWalletsVisibility() {
     this.showMyWallets = !this.showMyWallets;
+  }
+
+  toggleHistoryBookVisibility() {
+    this.showHistoryBook = !this.showHistoryBook;
   }
 }
 </script>

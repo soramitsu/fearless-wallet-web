@@ -71,7 +71,7 @@ import { getUtilityAsset } from '@/helpers/currencies';
 @Component({
   components: { TransferForm },
 })
-export default class SendFormStateLess extends Vue {
+export default class SendForm extends Vue {
   partialFee = '';
   selectedNetwork = '';
   assetId = '';

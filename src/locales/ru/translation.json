@@ -169,6 +169,8 @@
   },
   "assets": {
     "all": "Все",
+    "recent": "Недавние",
+    "chooseFromHistory": "Выбрать из истории",
     "myWallets": "Мои кошельки",
     "direction": "Направление",
     "wallets": "Rошельки",
@@ -232,7 +234,6 @@
     "saveQR": "Сохранить QR-код",
     "copyQR": "Скопировать QR-код",
     "incorrectAddress": "Некорректный адрес",
-    "impossibleCrossChain": "Невозможно телепортировать",
     "insufficientBalance": "Недостаточный баланс {asset}",
     "insufficientLiquidity": "Недостаточно ликвидности",
     "isSameAddress": "Переводы на свой адрес запрещены",

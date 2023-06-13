@@ -54,7 +54,6 @@ export default class History extends Vue {
   showLoader = false;
 
   @Prop(Object) currency!: TokenBalance;
-  @Prop(String) assetId!: string;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
@@ -107,7 +106,7 @@ export default class History extends Vue {
   }
 
   mounted() {
-    this.fetchHistory();
+    setTimeout(() => this.fetchHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
   }
 
   async fetchHistory() {

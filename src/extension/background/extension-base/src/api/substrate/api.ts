@@ -133,7 +133,7 @@ export async function initApi(network: NetworkJson): Promise<void> {
     ['connected', () => onConnected(networkName)],
     ['disconnected', () => onDisconnect(networkName)],
     ['ready', () => onReady(networkName)],
-    ['error', () => onDisconnect(networkName)],
+    ['error', () => null],
   ];
 
   if (isSora(networkName)) soraConnection.open(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners });

@@ -60,8 +60,8 @@
           />
         </div>
 
-        <Tooltip text="common.read" target=".origin-fee" placement="right" />
-        <Tooltip text="common.read" target=".cross-chain-fee" placement="right" />
+        <Tooltip text="Original network fee" target=".origin-fee" placement="right" />
+        <Tooltip text="Cross-Chain fee" target=".cross-chain-fee" placement="right" />
       </Corners>
     </div>
   </TransferForm>
@@ -243,7 +243,7 @@ export default class CrossChainForm extends Vue {
 
 .direction {
   display: flex;
-  justify-content: space-around;
+  justify-content: center;
   align-items: center;
   height: 180px;
 
@@ -253,21 +253,20 @@ export default class CrossChainForm extends Vue {
     margin: 0 10px;
 
     .hr {
-      width: 100px;
+      width: 135px;
+      border: none;
       height: 1px;
-      border-bottom: 1px dashed $gray-color;
+      background: repeating-linear-gradient(90deg, $gray-color, $gray-color, 6px, transparent 6px, transparent 12px);
     }
 
     .background-circle {
-      width: 95px;
-      height: 95px;
+      width: 90px;
+      height: 90px;
       background-color: #111;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      // filter: drop-shadow(0px 6.53061px 30px rgba(238, 34, 51, 0.77));
-      // box-shadow: 0 0 15px 5px red;
     }
   }
 }

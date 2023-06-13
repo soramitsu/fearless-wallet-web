@@ -1,13 +1,17 @@
 import { BN, isFunction } from '@polkadot/util';
 import { FPNumber } from '@sora-substrate/util';
 import { decodeAddress } from '@polkadot/util-crypto';
-import { state } from '../../background/handlers';
-import { TokenBalance, BasicTxResponse, SignerType } from '../../background/types/types';
+import { state } from '@extension-base/background/handlers';
 import { getTokenInfo } from '../substrate/registry';
 import { isEthereumNetwork } from '../../background/utils/utils';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { AssetJson, Interior } from '@/interfaces';
+import {
+  TokenBalance,
+  BasicTxResponse,
+  SignerType,
+} from '@/extension/background/extension-base/src/background/types/types';
 import { NATIVE_NETWORKS, RELAY_CHAINS, CHAIN_IDS } from '@/consts/networks';
 import { AssetName, NetworkName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';

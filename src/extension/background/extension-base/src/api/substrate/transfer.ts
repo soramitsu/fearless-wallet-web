@@ -8,9 +8,15 @@ import { getTokenInfo } from '@extension-base/api/substrate/registry';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { checkMainToken } from '@extension-base/api/substrate/balance';
 import { createExtrinsicTransfer } from '@extension-base/api/substrate/utils';
-import { ApiProps, BasicTxResponse, TransferErrorCode, SignerType, TokenBalance } from '../../background/types/types';
 import type { AccountInfoWithProviders, AccountInfoWithRefCount } from '@polkadot/types/interfaces';
 import type { AssetJson } from '@/interfaces';
+import {
+  ApiProps,
+  BasicTxResponse,
+  TransferErrorCode,
+  SignerType,
+  TokenBalance,
+} from '@/extension/background/extension-base/src/background/types/types';
 import { NetworkName } from '@/interfaces';
 
 export async function getExistentialDeposit(

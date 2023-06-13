@@ -13,7 +13,7 @@ import {
   CRON_REFRESH_PRICE_INTERVAL,
   CRON_UPDATE_JSON_INTERVAL,
 } from '@extension-base/const/intervals';
-import type { NetworkJson } from '@extension-base/api/evm/types/ether';
+import { NetworkJson } from '@extension-base/types';
 import type FWState from '@extension-base/background/handlers/State';
 import type { FWSubscription } from '@extension-base/background/handlers/subscriptions';
 import type { ServiceInfo } from '@extension-base/background/types/types';

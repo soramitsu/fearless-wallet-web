@@ -77,7 +77,7 @@ import { firstCharToUp, cut } from '@/helpers/common';
 import { formattedNumber } from '@/helpers/numbers';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component({
   components: { TransferForm },
@@ -99,7 +99,7 @@ export default class CrossChainForm extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
   get circleStyles() {
     return {

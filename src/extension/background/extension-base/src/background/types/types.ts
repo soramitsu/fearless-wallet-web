@@ -340,7 +340,6 @@ export interface RequestCheckTransfer extends BaseRequestSign {
   tokenId: string;
   relayChain?: string;
   value?: string;
-  transferAll?: boolean;
   password?: string;
 }
 
@@ -871,22 +870,6 @@ export interface ResponseParseTransactionSubstrate {
   message: string;
 }
 
-export interface SupportTransferResponse {
-  supportTransfer: boolean;
-  supportTransferAll: boolean;
-}
-export type ChainRelationType = 'p' | 'r'; // parachain | relaychain
-
-export interface ChainRelationInfo {
-  type: ChainRelationType;
-  isEthereum: boolean;
-  supportedToken: string[];
-}
-export interface CrossChainRelation {
-  type: ChainRelationType;
-  isEthereum: boolean;
-  relationMap: Record<string, ChainRelationInfo>;
-}
 type WarningValueName =
   | 'mnemonicSequence'
   | 'mnemonic'
@@ -898,6 +881,7 @@ type WarningValueName =
   | 'isNotSamePassword'
   | 'duplicateMobileWallet'
   | '';
+
 interface ValidateJsonResultPositive {
   value: true;
 }
@@ -916,11 +900,13 @@ export interface RequestAccountMeta {
 export interface ResponseAccountMeta {
   meta: KeyringPair$Meta;
 }
+
 export type ResponseTotalBalances = {
   address: string;
   total: number;
   change: ChangeWalletBalance;
 };
+
 export interface TokenBalance {
   mainNetwork: string;
   assetId: string;

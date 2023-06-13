@@ -935,31 +935,8 @@ export default class Extension extends FWExtensionBase {
     tokenId: string,
     from: string,
     password: string | undefined
-    // value: string | undefined,
-    // transferAll: boolean | undefined
   ): [Array<BasicTxError>, KeyringPair | undefined, AssetJson] {
     const errors = [] as Array<BasicTxError>;
-
-    // мы не используем transferAll
-    // if (!transferAll) {
-    //   try {
-    //     if (value === undefined) {
-    //       errors.push({
-    //         code: TransferErrorCode.INVALID_VALUE,
-    //         message: 'Require transfer value',
-    //       });
-    //     }
-
-    //     if (value) transferValue = new FPNumber(value);
-    //   } catch (e) {
-    //     errors.push({
-    //       code: TransferErrorCode.INVALID_VALUE,
-    //       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //       // @ts-ignore
-    //       message: String(e.message),
-    //     });
-    //   }
-    // }
 
     const keypair = keyring.getPair(from);
 
@@ -985,25 +962,19 @@ export default class Extension extends FWExtensionBase {
     to,
     tokenId,
     relayChain,
-    transferAll,
     value,
     password,
   }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
     const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(tokenId, from, password);
     const web3ApiMap = this.state.getApiMap.evm;
-    // let mainToken: string | undefined;
     const warnings: BasicTxWarning[] = [];
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
 
-    // if (!isMainToken) mainToken = this.state.getNetworkMapByKey(networkKey).nativeToken as string;
-
     const address = this.encodeAddress(from);
-    const existentialDeposit = await getExistentialDeposit(networkKey, tokenId);
     let fee = 0;
     let feeSymbol;
     let fromAccountFreeBalance = '0';
     const toAccountFreeBalance = '0';
-    // const fromAccountNativeBalance = '0';
 
     const tokenBalance = this.state.balanceMap[address].find(
       (balance) => balance.assetId === tokenId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
@@ -1013,21 +984,13 @@ export default class Extension extends FWExtensionBase {
       const fromAccountFreeBalance = tokenBalance
         ? tokenBalance.balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0'
         : '0';
-      const txVal: string = transferAll ? fromAccountFreeBalance : value || '0';
+      const txVal = fromAccountFreeBalance || '0';
 
       // Estimate with EVM API
       if (!isMainToken && tokenInfo.contractAddress) {
-        [, , fee] = await getERC20TransactionObject(
-          tokenInfo.contractAddress,
-          networkKey,
-          from,
-          to,
-          txVal,
-          !!transferAll,
-          web3ApiMap
-        );
+        [, , fee] = await getERC20TransactionObject(tokenInfo.contractAddress, networkKey, from, to, txVal, web3ApiMap);
       } else {
-        [, , fee] = await getEVMTransactionObject(networkKey, to, txVal, !!transferAll, web3ApiMap);
+        [, , fee] = await getEVMTransactionObject(networkKey, to, txVal, web3ApiMap);
       }
     } else {
       // Estimate with DotSama API
@@ -1036,68 +999,6 @@ export default class Extension extends FWExtensionBase {
       fromAccountFreeBalance =
         tokenBalance.balances.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0';
     }
-
-    const fromAccountFreeNumber = new FPNumber(fromAccountFreeBalance);
-    const feeNumber = FPNumber.fromCodecValue(fee, tokenInfo.precision);
-    const existentialDepositNumber = new FPNumber(existentialDeposit, tokenInfo.precision);
-    const rawExistentialDeposit = Number(existentialDeposit) / Math.pow(10, tokenInfo.precision);
-
-    // ВАЖНО!!! Как будто бы это все не нужно, тк мы не юзаем transferAll
-
-    // if (!transferAll && value && feeNumber && valueNumber && FPNumber.gt(valueNumber, FPNumber.ZERO)) {
-    //   if (isMainToken && FPNumber.gt(fromAccountFreeNumber, valueNumber)) {
-    //     if (!FPNumber.gte(fromAccountFreeNumber, valueNumber.add(feeNumber).add(existentialDepositNumber))) {
-    //       if (FPNumber.gt(existentialDepositNumber, FPNumber.ZERO)) {
-    //         warnings.push({
-    //           code: BasicTxWarningCode.NOT_ENOUGH_EXISTENTIAL_DEPOSIT,
-    //           message: `Beware! This transaction might cause a total loss of assets in this account because it would lower your balance below the minimum threshold of ${rawExistentialDeposit} ${tokenInfo.symbol}`,
-    //         });
-    //       }
-
-    //       const isEnoughBalanceToSend = FPNumber.gte(fromAccountFreeNumber, valueNumber.add(feeNumber));
-    //       console.info(isEnoughBalanceToSend, valueNumber, feeNumber);
-
-    //       if (!isEnoughBalanceToSend) {
-    //         errors.push({
-    //           code: TransferErrorCode.NOT_ENOUGH_FEE,
-    //           message: `Not enough ${tokenInfo.symbol} to pay the network fee`,
-    //         });
-    //         // }
-    //       }
-    //     } else {
-    //       errors.push({
-    //         code: TransferErrorCode.NOT_ENOUGH_VALUE,
-    //         message: 'Not enough balance free to make transfer',
-    //       });
-    //     }
-    //   } else {
-    //     if (FPNumber.gte(fromAccountFreeNumber, valueNumber)) {
-    //       if (!FPNumber.gte(fromAccountFreeNumber, existentialDepositNumber.add(feeNumber))) {
-    //         if (FPNumber.gt(existentialDepositNumber, FPNumber.ZERO)) {
-    //           warnings.push({
-    //             code: BasicTxWarningCode.NOT_ENOUGH_EXISTENTIAL_DEPOSIT,
-    //             message: `Beware! This transaction might cause a total loss of assets in this account because it would lower your balance below the minimum threshold of ${rawExistentialDeposit} ${
-    //               mainToken || ''
-    //             }`,
-    //           });
-    //         }
-
-    //         if (!FPNumber.gte(fromAccountFreeNumber, feeNumber)) {
-    //           errors.push({
-    //             code: TransferErrorCode.NOT_ENOUGH_FEE,
-    //             message: `Not enough ${mainToken || ''} to pay the network fee`,
-    //           });
-    //           // }
-    //         }
-    //       }
-    //     } else {
-    //       errors.push({
-    //         code: TransferErrorCode.NOT_ENOUGH_VALUE,
-    //         message: 'Not enough balance free to make transfer',
-    //       });
-    //     }
-    //   }
-    // }
 
     return {
       errors,
@@ -1112,7 +1013,7 @@ export default class Extension extends FWExtensionBase {
   private async makeTransfer(
     id: string,
     port: Port,
-    { from, networkKey, password, to, tokenId, transferAll, value, isSavePass }: RequestTransfer
+    { from, networkKey, password, to, tokenId, value, isSavePass }: RequestTransfer
   ): Promise<BasicTxResponse | undefined> {
     const txState: BasicTxResponse = {};
 
@@ -1177,12 +1078,11 @@ export default class Extension extends FWExtensionBase {
           to,
           privateKey,
           value || '0',
-          !!transferAll,
           web3ApiMap,
           callback
         );
       } else {
-        transferProm = makeEVMTransfer(networkKey, to, privateKey, value || '0', !!transferAll, web3ApiMap, callback);
+        transferProm = makeEVMTransfer(networkKey, to, privateKey, value || '0', web3ApiMap, callback);
       }
     } else {
       // Make transfer with Dotsama API
@@ -1201,7 +1101,7 @@ export default class Extension extends FWExtensionBase {
     transferProm
       .then(() => {
         // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-        console.info(`Start transfer ${transferAll ? 'all' : value} from ${from} to ${to}`);
+        console.info(`Start transfer ${value} from ${from} to ${to}`);
       })
       .catch((e) => {
         cb({

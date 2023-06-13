@@ -640,7 +640,6 @@ export default class SendForm extends Vue {
         to: this.syncedRecipient,
         relayChain: this.currency?.relayChain,
         value: this.syncedAmount,
-        transferAll: false,
         tokenId: this.syncedAssetId,
       } as RequestCheckTransfer;
 
@@ -651,7 +650,6 @@ export default class SendForm extends Vue {
       from: this.transactionAddress,
       to: this.syncedRecipient,
       relayChain: this.currency?.relayChain,
-      transferAll: false,
       tokenId: this.syncedAssetId,
     } as RequestCheckCrossChain;
   }
@@ -671,7 +669,6 @@ export default class SendForm extends Vue {
         to,
         relayChain: this.currency?.relayChain,
         value: amount ?? this.syncedAmount,
-        transferAll: false,
         tokenId: this.syncedAssetId,
       });
     }

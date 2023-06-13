@@ -55,7 +55,6 @@ import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/typ
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type {
-  ChangeWalletBalance,
   DerivationPath,
   FilesResponse,
   GoogleAuthTypes,

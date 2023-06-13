@@ -11,6 +11,7 @@ import {
   CRON_AUTO_RECOVER_DOTSAMA_INTERVAL,
   CRON_GET_API_MAP_STATUS,
   CRON_REFRESH_PRICE_INTERVAL,
+  CRON_UPDATE_JSONS_INTERVAL,
 } from '@extension-base/const/intervals';
 import type { NetworkJson } from '@extension-base/api/evm/types/ether';
 import type FWState from '@extension-base/background/handlers/State';
@@ -101,6 +102,7 @@ export class FWCron {
         this.addCron('refreshPrice', () => this.state.refreshPrice(), CRON_REFRESH_PRICE_INTERVAL);
         this.addCron('checkStatusApiMap', this.updateApiMapStatus, CRON_GET_API_MAP_STATUS);
         this.addCron('recoverApiMap', this.recoverApiMap, CRON_AUTO_RECOVER_DOTSAMA_INTERVAL, false);
+        this.addCron('refetchJsons', () => this.updateJsons(), CRON_UPDATE_JSONS_INTERVAL);
       }
     });
 
@@ -109,7 +111,6 @@ export class FWCron {
         this.removeCron('refreshPrice');
         this.removeCron('checkStatusApiMap');
         this.removeCron('recoverApiMap');
-
         if (!serviceInfo.currentAccountInfo) return;
 
         if (this.checkNetworkAvailable(serviceInfo)) {
@@ -235,4 +236,8 @@ export class FWCron {
 
     return contractSupportedNetworkMap;
   };
+
+  updateJsons() {
+    this.state.init();
+  }
 }

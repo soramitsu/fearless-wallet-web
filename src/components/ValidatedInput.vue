@@ -11,6 +11,7 @@
       :readonly="readonly"
       :disabled="disabled"
       :typeText="typeText"
+      :type="type"
     />
 
     <div v-show="showErrorText" class="error-descriptions">{{ $t(errorDescriptions) }}</div>
@@ -20,6 +21,8 @@
 <script lang="ts">
 import { Component, Vue, Prop, VModel, Ref } from 'vue-property-decorator';
 import Input from './Input.vue';
+
+type Type = 'text' | 'textarea' | 'text-file' | 'number' | 'email';
 
 @Component({
   components: { Input },
@@ -33,16 +36,17 @@ export default class ValidatedInput extends Vue {
   @Prop({ default: false }) showPassword!: boolean;
   @Prop({ default: false }) readonly!: boolean;
   @Prop({ default: 'none' }) typeText!: string;
+  @Prop({ default: 'text' }) type!: Type;
   @Prop({ default: false }) disabled!: boolean;
   @Prop({ default: 'big' }) size!: string;
   @Ref('input') readonly inputComponent!: Input;
 
-  get input() {
-    return this.inputComponent.input as HTMLInputElement;
-  }
-
   get showErrorText() {
     return this.isError && this.errorDescriptions;
+  }
+
+  get input() {
+    return this.inputComponent.input as HTMLInputElement;
   }
 }
 </script>

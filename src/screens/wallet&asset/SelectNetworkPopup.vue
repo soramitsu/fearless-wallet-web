@@ -22,14 +22,15 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { Networks, RelayChainName } from '@/interfaces';
+import type { RelayChainName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 interface Options {
-  label: string;
+  name: string;
   value: string;
-  path: string;
+  icon: string;
   relayChain?: RelayChainName;
   isAll?: true;
 }
@@ -52,19 +53,19 @@ export default class SelectNetworkButton extends Vue {
   @Prop(Array) _optionsNetworks!: Options[];
   @Prop(Function) toggleSelectedNetwork!: (value: string) => void;
   @Prop(Function) handlerClose!: VoidFunction;
-  @Getter(NetworksGettersTypes.getNetworks) networks!: Networks;
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJsonOld[];
 
   get optionsNetworks() {
     if (this._optionsNetworks !== undefined) return this._optionsNetworks;
 
     let options: Options[] = [
-      ...this.networks.map(({ name, label, parentId, icon }) => {
+      ...this.networks.map(({ name, parentId, icon }) => {
         const relayChain = this.networks.find(({ chainId }) => chainId === parentId)?.name ?? name;
 
         return {
-          label: firstCharToUp(label),
+          name: firstCharToUp(name),
           value: name,
-          path: icon,
+          icon: icon,
           relayChain: relayChain as RelayChainName,
         };
       }),
@@ -74,9 +75,9 @@ export default class SelectNetworkButton extends Vue {
 
     if (this.allNetworksItem)
       options.unshift({
-        label: this.$t('common.allNetworks') as string,
-        value: 'all',
-        path: 'globus',
+        name: this.$t('common.allNetworks') as string,
+        value: 'All',
+        icon: 'globus',
         isAll: true,
       });
 
@@ -87,7 +88,7 @@ export default class SelectNetworkButton extends Vue {
     const filter = this.filterValue.trim().toLowerCase();
 
     return this.optionsNetworks.filter(({ value }) => {
-      return value.includes(filter);
+      return value.toLowerCase().includes(filter);
     });
   }
 

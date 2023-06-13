@@ -1,15 +1,65 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
-
+import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
-import { assert, isHex } from '@polkadot/util';
-import { keyExtractSuri, mnemonicGenerate, mnemonicValidate } from '@polkadot/util-crypto';
+import { addresses as addressesObservable } from '@polkadot/ui-keyring/observable/addresses';
+import { hexToU8a, isHex, assert } from '@polkadot/util';
+import {
+  keyExtractSuri,
+  mnemonicGenerate,
+  mnemonicValidate,
+  isEthereumAddress,
+  base64Decode,
+} from '@polkadot/util-crypto';
+import { createPair } from '@polkadot/keyring';
 import { keyring } from '@polkadot/ui-keyring';
-import { ActiveTabAuthorizeStatus, CachedUnlocks, Port } from '../types';
-import { withErrorLog } from './helpers';
-import State, { registry } from './State';
-import { createSubscription, unsubscribe } from './subscriptions';
+import {
+  getERC20TransactionObject,
+  getEVMTransactionObject,
+  getExistentialDeposit,
+  makeERC20Transfer,
+  makeEVMTransfer,
+} from '@extension-base/api/evm/transfer';
+import { checkMainToken } from '@extension-base/api/substrate/balance';
+import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
+import { getTokenInfo } from '@extension-base/api/substrate/registry';
+import { createSwap } from '@extension-base/api/substrate/swaps';
+import { withErrorLog } from '@extension-base/background/handlers/helpers';
+import State, { registry } from '@extension-base/background/handlers/State';
+import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
+import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
+import { state } from '@extension-base/background/handlers';
+import {
+  ActiveTabAuthorizeStatus,
+  BalanceJson,
+  BasicTxError,
+  BasicTxErrorCode,
+  BasicTxResponse,
+  BasicTxWarning,
+  Port,
+  PriceJson,
+  RequestCheckSwap,
+  RequestCheckTransfer,
+  RequestCheckCrossChain,
+  RequestCurrentAccountAddress,
+  RequestSwap,
+  RequestTransfer,
+  RequestCrossChain,
+  ResponseCheckSwap,
+  ResponseCheckTransfer,
+  ResponseCheckCrossChain,
+  ResponseMakeSwap,
+  TransferErrorCode,
+} from '../types/types';
+import {
+  createCrossChainExtrinsic,
+  estimateFee as estimateCrossChainFee,
+  makeCrossChain,
+} from '../../api/substrate/crossChain';
+import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import type { NetworkJson } from '@extension-base/api/evm/types/ether';
+import type { NetworkJsonOld, RequestTransactionHistoryAdd, TransactionHistoryItemType } from '@extension-base/types';
 import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type {
   AccountJson,
@@ -20,15 +70,13 @@ import type {
   MessageTypes,
   MetadataRequest,
   RequestAccountBatchExport,
-  RequestAccountChangePassword,
   RequestAccountCreateExternal,
-  RequestAccountCreateHardware,
   RequestAccountCreateSuri,
-  RequestAccountEdit,
   RequestAccountExport,
   RequestAccountForget,
   RequestAccountShow,
   RequestAccountTie,
+  RequestAccountName,
   RequestAccountValidate,
   RequestActiveTabsUrlUpdate,
   RequestAddressCreate,
@@ -43,29 +91,33 @@ import type {
   RequestSeedValidate,
   RequestSigningApprovePassword,
   RequestSigningApproveSignature,
-  RequestSaveTimeoutCache,
   RequestSigningCancel,
   RequestSigningIsLocked,
   RequestTypes,
   RequestUpdateAuthorizedAccounts,
-  ResponseAccountExport,
-  ResponseAccountsExport,
   ResponseAuthorizeList,
   ResponseDeriveValidate,
-  ResponseJsonGetAccountInfo,
   ResponseSeedCreate,
   ResponseSeedValidate,
-  ResponseSigningIsLocked,
   ResponseType,
   SigningRequest,
-} from '../types';
+} from '@extension-base/background/types/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
+import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { googleManage } from '@/controllers/googleController';
-import { FilesResponse, GoogleAuthTypes, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
-
+import {
+  AssetJson,
+  DerivationPath,
+  FilesResponse,
+  GoogleAuthTypes,
+  ICreateFile,
+  IGetFilesResponse,
+  SoraFees,
+  VerifyTokenResponse,
+} from '@/interfaces';
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
 const ETH_DERIVE_DEFAULT = "/m/44'/60'/0'/0/0";
@@ -78,91 +130,55 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
   return (value as SignerPayloadJSON).genesisHash !== undefined;
 }
 
-export default class Extension {
-  private static token = '';
-  static readonly cachedUnlocks: CachedUnlocks = {};
-  static async transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
-    return Object.values(accounts).map(({ json: { address, meta }, type }): AccountJson => {
+async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
+  const currentAccount = await new Promise<CurrentAccountState>((res) => {
+    state.getCurrentAccount((value) => {
+      res(value);
+    });
+  });
+
+  const transformedAccounts = Object.values(accounts)
+    .filter((el) => !isEthereumAddress(el.json.address))
+    .map(({ json: { address, meta }, type }): AccountJson => {
+      const isDefault = address === currentAccount?.address;
+
       return {
         address,
-        isDefaultAuthSelected: State.defaultAuthAccountSelection.includes(address),
-        ...meta,
+        ethereumAddress: meta.ethereumAddress as string,
+        active: isDefault,
+        name: meta.name ?? '',
         type,
+        ...meta,
       };
     });
+
+  return transformedAccounts;
+}
+
+export default class Extension extends FWExtensionBase {
+  constructor(state: State) {
+    super(state);
   }
 
-  static accountsCreateExternal({ address, genesisHash, name }: RequestAccountCreateExternal): boolean {
-    keyring.addExternal(address, { genesisHash, name });
-
-    return true;
+  private cancelSubscription(id: string): boolean {
+    return this.state.cancelSubscription(id);
   }
 
-  static accountsCreateHardware({
-    accountIndex,
-    address,
-    addressOffset,
-    genesisHash,
-    hardwareType,
-    name,
-  }: RequestAccountCreateHardware): boolean {
-    keyring.addHardware(address, hardwareType, { accountIndex, addressOffset, genesisHash, name });
+  accountsCreateSuri({ password, suri, type, meta }: RequestAccountCreateSuri): string {
+    const {
+      pair: { address },
+    } = keyring.addUri(suri, password, { ...meta, isMobile: false }, type);
 
-    return true;
+    if (!isEthereumAddress(address)) this.updateCurrentAccountAddress(address);
+
+    return address;
   }
 
-  static accountsCreateSuri({ password, suri, type, meta }: RequestAccountCreateSuri): boolean {
-    keyring.addUri(suri, password, meta, type);
-
-    return true;
-  }
-
-  static accountsChangePassword({ address, newPass, oldPass }: RequestAccountChangePassword): boolean {
-    const pair = keyring.getPair(address);
-
-    assert(pair, 'Unable to find pair');
-
-    try {
-      if (!pair.isLocked) pair.lock();
-
-      pair.decodePkcs8(oldPass);
-    } catch (error) {
-      throw new Error('oldPass is invalid');
-    }
-
-    keyring.encryptAccount(pair, newPass);
-
-    return true;
-  }
-
-  static accountsEdit({ address, name }: RequestAccountEdit): boolean {
-    const pair = keyring.getPair(address);
-
-    assert(pair, 'Unable to find pair');
-
-    keyring.saveAccountMeta(pair, { ...pair.meta, name });
-
-    return true;
-  }
-
-  static accountsExport({ address, password }: RequestAccountExport): ResponseAccountExport {
-    return { exportedJson: keyring.backupAccount(keyring.getPair(address), password) };
-  }
-
-  static async accountsBatchExport({
-    addresses,
-    password,
-  }: RequestAccountBatchExport): Promise<ResponseAccountsExport> {
-    return {
-      exportedJson: await keyring.backupAccounts(addresses, password),
-    };
-  }
-
-  static async accountsForget({ address, type }: RequestAccountForget): Promise<boolean> {
+  async accountsForget({ address, type }: RequestAccountForget): Promise<boolean> {
     const authorizedAccountsDiff: AuthorizedAccountsDiff = [];
 
     // cycle through authUrls and prepare the array of diff
-    Object.entries(State.authUrls).forEach(([url, urlInfo]) => {
+    Object.entries(this.state.authUrls).forEach(([url, urlInfo]) => {
       if (!urlInfo.authorizedAccounts.includes(address)) {
         return;
       }
@@ -173,64 +189,52 @@ export default class Extension {
       ]);
     });
 
-    State.updateAuthorizedAccounts(authorizedAccountsDiff);
+    this.state.updateAuthorizedAccounts(authorizedAccountsDiff);
 
-    // cycle through default account selection for auth and remove any occurence of the account
-    const newDefaultAuthAccounts = State.defaultAuthAccountSelection.filter(
-      (defaultSelectionAddress) => defaultSelectionAddress !== address
-    );
+    //  cycle through default account selection for auth and remove any occurence of the account
+    if (!isEthereumAddress(address)) {
+      const newDefaultAuthAccounts = this.state.defaultAuthAccountSelection.filter(
+        (defaultSelectionAddress) => defaultSelectionAddress !== address
+      );
 
-    State.updateDefaultAuthAccounts(newDefaultAuthAccounts);
-
-    type === 'native' ? keyring.forgetAccount(address) : keyring.forgetAddress(address);
-
-    return true;
-  }
-
-  static async refreshAccountPasswordCache(_pair: KeyringPair | string): Promise<number> {
-    const pair = typeof _pair === 'string' ? keyring.getPair(_pair) : _pair;
-    const { address } = pair;
-    const savedExpiry = Extension.cachedUnlocks[address] || 0;
-    const remainingTime = savedExpiry - Date.now();
-
-    if (remainingTime < 0) {
-      Extension.cachedUnlocks[address] = 0;
-
-      pair.lock();
-
-      return 0;
+      this.state.updateDefaultAuthAccounts(newDefaultAuthAccounts);
     }
 
-    return remainingTime;
-  }
+    if (type === 'native') {
+      const pair = keyring.getAccount(address);
+      const ethereumAddress = pair?.meta.ethereumAddress as string;
 
-  static async resetTimeouts(): Promise<boolean> {
-    Object.keys(Extension.cachedUnlocks).forEach((address) => (Extension.cachedUnlocks[address] = 0));
+      if (ethereumAddress !== '') keyring.forgetAccount(ethereumAddress);
+
+      keyring.forgetAccount(address);
+    } else keyring.forgetAddress(address);
+
+    const accounts = keyring.getAccounts();
+    const addresses = keyring.getAddresses();
+
+    const currentAcc = await this.state.currentAccount;
+
+    const shouldUpdate =
+      !accounts.some(({ address }) => address === currentAcc?.address) ||
+      !addresses.some(({ address }) => address === currentAcc?.address);
+
+    const isNoAccounts = !accounts.length && !addresses.length;
+
+    if (shouldUpdate || isNoAccounts) {
+      let account;
+
+      if (accounts.length) account = accounts.find(({ address }) => !isEthereumAddress(address))!;
+      else if (addresses.length) {
+        account = addresses[0];
+      }
+
+      this.updateCurrentAccountAddress(account ? account.address : '');
+    }
 
     return true;
   }
 
-  static accountsShow({ address, isShowing }: RequestAccountShow): boolean {
-    const pair = keyring.getPair(address);
-
-    assert(pair, 'Unable to find pair');
-
-    keyring.saveAccountMeta(pair, { ...pair.meta, isHidden: !isShowing });
-
-    return true;
-  }
-
-  static accountsTie({ address, genesisHash }: RequestAccountTie): boolean {
-    const pair = keyring.getPair(address);
-
-    assert(pair, 'Unable to find pair');
-
-    keyring.saveAccountMeta(pair, { ...pair.meta, genesisHash });
-
-    return true;
-  }
-
-  static accountsValidate({ address, password }: RequestAccountValidate): boolean {
+  accountsValidatePassword({ address, password }: RequestAccountValidate): boolean {
     try {
       keyring.backupAccount(keyring.getPair(address), password);
 
@@ -240,52 +244,11 @@ export default class Extension {
     }
   }
 
-  static async accountsSubscribe(id: string, port: Port): Promise<boolean> {
-    const cb = await createSubscription<'pri(accounts.subscribe)'>(id, port);
-    const subscription = accountsObservable.subject.subscribe(async (accounts: SubjectInfo): Promise<void> => {
-      const acc = await Extension.transformAccounts(accounts);
-
-      return cb(acc);
+  addressesSubscribe(id: string, port: Port): boolean {
+    const cb = createSubscription<'pri(addresses.subscribe)'>(id, port);
+    const subscription = addressesObservable.subject.subscribe((addresses: SubjectInfo): void => {
+      transformAccounts(addresses).then(cb);
     });
-
-    port.onDisconnect.addListener((): void => {
-      async () => {
-        await unsubscribe(id);
-      };
-
-      subscription.unsubscribe();
-    });
-
-    return true;
-  }
-
-  static async authorizeApprove({ authorizedAccounts, id }: RequestAuthorizeApprove): Promise<boolean> {
-    const queued = await State.getAuthRequest(id);
-
-    assert(queued, 'Unable to find request');
-
-    const { resolve } = queued;
-    resolve({ authorizedAccounts, result: true });
-
-    return true;
-  }
-
-  static async authorizeUpdate({ authorizedAccounts, url }: RequestUpdateAuthorizedAccounts): Promise<void> {
-    return State.updateAuthorizedAccounts([[url, authorizedAccounts]]);
-  }
-
-  static async getAuthList(): Promise<ResponseAuthorizeList> {
-    return { list: State.authUrls };
-  }
-
-  static isTabAuthorize(): ActiveTabAuthorizeStatus {
-    return State.currentTabStatus;
-  }
-
-  static async authorizeSubscribe(id: string, port: Port): Promise<boolean> {
-    const cb = await createSubscription<'pri(authorize.requests)'>(id, port);
-
-    const subscription = State.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -295,30 +258,91 @@ export default class Extension {
     return true;
   }
 
-  static async metadataApprove({ id }: RequestMetadataApprove): Promise<boolean> {
-    const queued = State.getMetaRequest(id);
+  accountsSubscribe(id: string, port: Port): boolean {
+    const cb = createSubscription<'pri(accounts.subscribe)'>(id, port);
+    const subscription = accountsObservable.subject.subscribe((accounts: SubjectInfo): void => {
+      transformAccounts(accounts).then(cb);
+    });
+
+    port.onDisconnect.addListener((): void => {
+      unsubscribe(id);
+      subscription.unsubscribe();
+    });
+
+    return true;
+  }
+
+  authorizeApprove({ authorizedAccounts, id }: RequestAuthorizeApprove): boolean {
+    const queued = this.state.getAuthRequest(id);
+
+    assert(queued, 'Unable to find request');
+
+    const { resolve } = queued;
+    resolve({ authorizedAccounts, result: true });
+
+    return true;
+  }
+
+  async authorizeUpdate({ authorizedAccounts, url }: RequestUpdateAuthorizedAccounts): Promise<void> {
+    return this.state.updateAuthorizedAccounts([[url, authorizedAccounts]]);
+  }
+
+  async getAuthList(): Promise<ResponseAuthorizeList> {
+    return { list: this.state.authUrls };
+  }
+
+  async isTabAuthorize(): Promise<ActiveTabAuthorizeStatus> {
+    return new Promise((resolve) => {
+      chrome.tabs.query({ active: true, lastFocusedWindow: true }, ([tab]) => {
+        if (!tab || !tab.url) {
+          return resolve({
+            isAuthorize: false,
+            authorizeAccountsCount: 0,
+            dAppName: '',
+          });
+        }
+
+        const tabHostName = new URL(tab.url).hostname;
+        const authorizeUrl = Object.keys(this.state.authUrls).filter((url) => url === tabHostName);
+        const isAuthorize = authorizeUrl.length !== 0;
+
+        resolve({
+          isAuthorize,
+          authorizeAccountsCount: isAuthorize ? this.state.authUrls[tabHostName].authorizedAccounts.length : 0,
+          dAppName: tabHostName,
+        });
+      });
+    });
+  }
+
+  authorizeSubscribe(id: string, port: Port): boolean {
+    const cb = createSubscription<'pri(authorize.requests)'>(id, port);
+
+    const subscription = this.state.authSubject.subscribe((requests: AuthorizeRequest[]): void => cb(requests));
+
+    port.onDisconnect.addListener((): void => {
+      unsubscribe(id);
+      subscription.unsubscribe();
+    });
+
+    return true;
+  }
+
+  async metadataApprove({ id }: RequestMetadataApprove): Promise<boolean> {
+    const queued = this.state.getMetaRequest(id);
 
     assert(queued, 'Unable to find request');
 
     const { request, resolve } = await queued;
 
-    State.saveMetadata(request);
+    this.state.saveMetadata(request);
 
     resolve(true);
 
     return true;
   }
-
-  static metadataGet(genesisHash: string | null): MetadataDef | null {
-    return State.knownMetadata.find((result) => result.genesisHash === genesisHash) || null;
-  }
-
-  static metadataList(): MetadataDef[] {
-    return State.knownMetadata;
-  }
-
-  static async metadataReject({ id }: RequestMetadataReject): Promise<boolean> {
-    const queued = await State.getMetaRequest(id);
+  metadataReject({ id }: RequestMetadataReject): boolean {
+    const queued = this.state.getMetaRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -329,10 +353,10 @@ export default class Extension {
     return true;
   }
 
-  static async metadataSubscribe(id: string, port: Port): Promise<boolean> {
-    const cb = await createSubscription<'pri(metadata.requests)'>(id, port);
+  metadataSubscribe(id: string, port: Port): boolean {
+    const cb = createSubscription<'pri(metadata.requests)'>(id, port);
 
-    const subscription = State.metaSubject.subscribe((requests: MetadataRequest[]): void => cb(requests));
+    const subscription = this.state.metaSubject.subscribe((requests: MetadataRequest[]): void => cb(requests));
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -342,53 +366,61 @@ export default class Extension {
     return true;
   }
 
-  static jsonRestore({ file, password }: RequestJsonRestore): void {
+  private validatePassword(json: KeyringPair$Json, password: string): boolean {
+    const cryptoType = Array.isArray(json.encoding.content) ? json.encoding.content[1] : 'ed25519';
+    const encType = Array.isArray(json.encoding.type) ? json.encoding.type : [json.encoding.type];
+    const pair = createPair(
+      { toSS58: this.encodeAddress, type: cryptoType as KeypairType },
+      { publicKey: this.decodeAddress(json.address, true) },
+      json.meta,
+      isHex(json.encoded) ? hexToU8a(json.encoded) : base64Decode(json.encoded),
+      encType
+    );
+
+    // unlock then lock (locking cleans secretKey, so needs to be last)
     try {
-      keyring.restoreAccount(file, password);
-    } catch (error) {
-      throw new Error((error as Error).message);
-    }
-  }
+      pair.decodePkcs8(password);
+      pair.lock();
 
-  static jsonValid({ file, password }: RequestJsonRestore): boolean {
-    try {
-      keyring.restoreAccount(file, password);
-    } catch (error) {
-      return false;
-    }
-
-    return true;
-  }
-
-  static batchRestore({ file, password }: RequestBatchRestore): void {
-    try {
-      keyring.restoreAccounts(file, password);
-    } catch (error) {
-      throw new Error((error as Error).message);
-    }
-  }
-
-  static jsonGetAccountInfo(json: KeyringPair$Json): ResponseJsonGetAccountInfo {
-    try {
-      const {
-        address,
-        meta: { genesisHash, name },
-        type,
-      } = keyring.createFromJson(json);
-
-      return {
-        address,
-        genesisHash,
-        name,
-        type,
-      } as ResponseJsonGetAccountInfo;
+      return true;
     } catch (e) {
       console.error(e);
-      throw new Error((e as Error).message);
+
+      return false;
     }
   }
 
-  static seedCreate({ length = SEED_DEFAULT_LENGTH, seed: _seed, type }: RequestSeedCreate): ResponseSeedCreate {
+  jsonRestore({ file, password }: RequestJsonRestore): Promise<string> {
+    const isPasswordValidated = this.validatePassword(file, password);
+    const { address } = this.jsonGetAccountInfo(file);
+
+    if (isPasswordValidated) {
+      return new Promise((resolve, reject) => {
+        try {
+          keyring.restoreAccount(file, password);
+
+          this.updateCurrentAccountAddress(address);
+          resolve(address);
+        } catch (error) {
+          reject({ error: (error as Error).message });
+        }
+      });
+    } else {
+      throw new Error('Unable to decode using the supplied passphrase');
+    }
+  }
+
+  private async upsertNetworkMap(data: NetworkJsonOld): Promise<boolean> {
+    try {
+      return await this.state.upsertNetworkMap(data);
+    } catch (e) {
+      console.error(e);
+
+      return false;
+    }
+  }
+
+  seedCreate({ length = SEED_DEFAULT_LENGTH, seed: _seed, type }: RequestSeedCreate): ResponseSeedCreate {
     const seed = _seed || mnemonicGenerate(length);
 
     return {
@@ -397,7 +429,64 @@ export default class Extension {
     };
   }
 
-  static seedValidate({ suri, type }: RequestSeedValidate): ResponseSeedValidate {
+  private _saveCurrentAccountAddress(address: string, callback?: (account: CurrentAccountState) => void) {
+    if (address === '') {
+      this.state.setCurrentAccount(null);
+
+      return;
+    }
+
+    const {
+      meta: { isMobile, name, ethereumAddress },
+    } = keyring.getAccount(address) ?? keyring.getAddress(address)!;
+
+    const accountInfo: CurrentAccountInfo = {
+      address,
+      isMobile: (isMobile as boolean) ?? false,
+      name: name as string,
+      ethereumAddress: (ethereumAddress as string) ?? '',
+    };
+
+    this.state.setCurrentAccount(accountInfo, () => {
+      callback && callback(accountInfo);
+    });
+  }
+
+  private triggerWalletsSubscription(): boolean {
+    const accountsSubject = accountsObservable.subject;
+    const addressSubject = addressesObservable.subject;
+
+    accountsSubject.next(accountsSubject.getValue());
+    addressSubject.next(addressSubject.getValue());
+
+    return true;
+  }
+
+  private updateCurrentAccountAddress(address: string): boolean {
+    if (isEthereumAddress(address)) return true;
+
+    this.state.generateDefaultBalance(address);
+
+    this._saveCurrentAccountAddress(address, () => {
+      this.triggerWalletsSubscription();
+    });
+
+    return true;
+  }
+
+  private saveCurrentAccountAddress(data: RequestCurrentAccountAddress, id: string, port: Port): boolean {
+    const cb = createSubscription<'pri(accounts.current.saveAddress)'>(id, port);
+
+    this._saveCurrentAccountAddress(data.address, cb);
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+    });
+
+    return true;
+  }
+
+  seedValidate({ suri, type }: RequestSeedValidate): ResponseSeedValidate {
     const { phrase } = keyExtractSuri(suri);
 
     if (isHex(phrase)) {
@@ -417,8 +506,8 @@ export default class Extension {
     };
   }
 
-  static async signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): Promise<boolean> {
-    const queued = await State.getSignRequest(id);
+  signingApprovePassword({ id, password, savePass }: RequestSigningApprovePassword): boolean {
+    const queued = this.state.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
@@ -433,93 +522,69 @@ export default class Extension {
 
     const { address } = pair;
 
-    await Extension.refreshAccountPasswordCache(pair);
+    this.refreshAccountPasswordCache(pair);
 
     // if the keyring pair is locked, the password is needed
-    if (pair.isLocked && !password) reject(new Error('Password needed to unlock the account'));
+    if (pair.isLocked) {
+      if (!password) {
+        reject(new Error('Password needed to unlock the account'));
 
-    if (pair.isLocked) pair.decodePkcs8(password);
+        return false;
+      }
+
+      pair.decodePkcs8(password);
+    }
 
     const { payload } = request;
 
     if (isJsonPayload(payload)) {
       // Get the metadata for the genesisHash
-      const currentMetadata = State.knownMetadata.find((meta: MetadataDef) => meta.genesisHash === payload.genesisHash);
+      const currentMetadata = this.state.knownMetadata.find(
+        (meta: MetadataDef) => meta.genesisHash === payload.genesisHash
+      );
 
       // set the registry before calling the sign function
       registry.setSignedExtensions(payload.signedExtensions, currentMetadata?.userExtensions);
 
-      if (currentMetadata) {
-        registry.register(currentMetadata?.types);
-      }
+      if (currentMetadata) registry.register(currentMetadata?.types);
     }
 
     const result = request.sign(registry, pair);
 
-    if (savePass) Extension.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
+    if (savePass) this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
     else pair.lock();
 
-    resolve({
-      id,
-      ...result,
-    });
+    resolve({ id, ...result });
 
     return true;
   }
 
-  static async saveTimeoutCache({ address, isSavePass }: RequestSaveTimeoutCache): Promise<boolean> {
-    Extension.cachedUnlocks[address] = isSavePass ? Date.now() + PASSWORD_EXPIRY_MS : 0;
+  signingApproveSignature({ id, signature }: RequestSigningApproveSignature): boolean {
+    this.state.signature = signature;
 
-    return true;
-  }
-
-  static async signingApproveSignature({ id, signature }: RequestSigningApproveSignature): Promise<boolean> {
-    State.signature = signature;
-    const queued = await State.getSignRequest(id);
+    const queued = this.state.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
-    const { resolve } = queued;
-
-    resolve({ id, signature });
+    queued.resolve({ id, signature });
 
     return true;
   }
 
-  static async signingCancel({ id }: RequestSigningCancel): Promise<boolean> {
-    const queued = await State.getSignRequest(id);
+  signingCancel({ id }: RequestSigningCancel): boolean {
+    const queued = this.state.getSignRequest(id);
 
     assert(queued, 'Unable to find request');
 
-    const { reject } = queued;
-
-    reject(new Error('Cancelled'));
+    queued.reject(new Error('Cancelled'));
 
     return true;
   }
 
-  static async signingIsLocked({ id }: RequestSigningIsLocked): Promise<ResponseSigningIsLocked> {
-    const queued = await State.getSignRequest(id);
-    assert(queued, 'Unable to find request');
-    const address = queued.request.payload.address;
+  signingSubscribe(id: string, port: Port): boolean {
+    const cb = createSubscription<'pri(signing.requests)'>(id, port);
 
-    const pair = keyring.getPair(address);
-
-    assert(pair, 'Unable to find pair');
-
-    const remainingTime = await Extension.refreshAccountPasswordCache(pair);
-
-    return {
-      isLocked: pair.isLocked,
-      remainingTime,
-    };
-  }
-
-  // FIXME This looks very much like what we have in authorization
-  static async signingSubscribe(id: string, port: Port): Promise<boolean> {
-    const cb = await createSubscription<'pri(signing.requests)'>(id, port);
-
-    const subscription = State.signSubject.subscribe((requests: SigningRequest[]): void => cb(requests));
+    const subscription = this.state.signSubject.subscribe((requests: SigningRequest[]): void => cb(requests));
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -529,29 +594,29 @@ export default class Extension {
     return true;
   }
 
-  static async windowOpen(path: AllowedPath): Promise<void> {
-    chrome.tabs.query({ title: 'fearless-wallet' }, ([tab]) => {
-      if (tab && tab.id) {
-        chrome.tabs.update(tab.id, { active: true });
+  async windowOpen(path: AllowedPath): Promise<boolean> {
+    const [tab] = await chrome.tabs.query({ title: 'fearless-wallet' });
 
-        return true;
-      }
-
-      const url = `${chrome.runtime.getURL('popup.html')}#${path}`;
-
-      if (!ALLOWED_PATH.includes(path)) {
-        console.error('Not allowed to open the url:', url);
-
-        return false;
-      }
-
-      withErrorLog(() => chrome.tabs.create({ url }));
+    if (tab && tab.id) {
+      chrome.tabs.update(tab.id, { active: true });
 
       return true;
-    });
+    }
+
+    const url = `${chrome.runtime.getURL('popup.html')}#${path}`;
+
+    if (!ALLOWED_PATH.includes(path)) {
+      console.error('Not allowed to open the url:', url);
+
+      return false;
+    }
+
+    withErrorLog(() => chrome.tabs.create({ url }));
+
+    return true;
   }
 
-  static derive(parentAddress: string, suri: string, password: string, metadata: KeyringPair$Meta): KeyringPair {
+  derive(parentAddress: string, suri: string, password: string, metadata: KeyringPair$Meta): KeyringPair {
     const parentPair = keyring.getPair(parentAddress);
 
     try {
@@ -567,7 +632,7 @@ export default class Extension {
     }
   }
 
-  static derivationValidate({ parentAddress, parentPassword, suri }: RequestDeriveValidate): ResponseDeriveValidate {
+  derivationValidate({ parentAddress, parentPassword, suri }: RequestDeriveValidate): ResponseDeriveValidate {
     const childPair = this.derive(parentAddress, suri, parentPassword, {});
 
     return {
@@ -576,14 +641,7 @@ export default class Extension {
     };
   }
 
-  static derivationCreate({
-    genesisHash,
-    name,
-    parentAddress,
-    parentPassword,
-    password,
-    suri,
-  }: RequestDeriveCreate): boolean {
+  derivationCreate({ genesisHash, name, parentAddress, parentPassword, password, suri }: RequestDeriveCreate): boolean {
     const childPair = this.derive(parentAddress, suri, parentPassword, {
       genesisHash,
       name,
@@ -596,224 +654,846 @@ export default class Extension {
     return true;
   }
 
-  static async removeAuthorization(url: string): Promise<ResponseAuthorizeList> {
-    const list = await State.removeAuthorization(url);
+  async removeAuthorization(url: string): Promise<ResponseAuthorizeList> {
+    const list = await this.state.removeAuthorization(url);
 
     return { list };
   }
 
-  static async deleteAuthRequest(requestId: string): Promise<void> {
-    return State.deleteAuthRequest(requestId);
+  async deleteAuthRequest(requestId: string): Promise<void> {
+    return this.state.deleteAuthRequest(requestId);
   }
 
-  static updateCurrentTabs({ tabs }: RequestActiveTabsUrlUpdate) {
-    State.updateCurrentTabsUrl(tabs);
+  updateCurrentTabs({ tabs }: RequestActiveTabsUrlUpdate) {
+    this.state.updateCurrentTabsUrl(tabs);
   }
 
-  static createAddress({ address, meta }: RequestAddressCreate) {
+  createAddress({ address, meta }: RequestAddressCreate) {
     keyring.saveAddress(address, meta, 'address');
   }
 
-  static removeAddress(address: string) {
+  removeAddress(address: string) {
     keyring.forgetAddress(address);
   }
 
-  static getAddresses() {
+  getAddresses() {
     return keyring.getAddresses();
   }
 
-  static initAuth({ type, wallet }: GoogleAuthTypes): void {
+  initAuth({ type, wallet }: GoogleAuthTypes): void {
     googleManage.authExtension(type, wallet);
   }
 
-  static async verifyToken({ token }: { token: string }): Promise<VerifyTokenResponse> {
+  async verifyToken({ token }: { token: string }): Promise<VerifyTokenResponse | null> {
     return googleManage.verifyToken(token);
   }
 
-  static async getFiles({ token }: { token: string }): Promise<IGetFilesResponse> {
+  getToken(): void {
+    chrome.identity.getAuthToken({}, (token) => {
+      this.token = token;
+    });
+  }
+
+  async getFiles({ token }: { token: string }): Promise<IGetFilesResponse> {
     return googleManage.getFiles(token);
   }
 
-  static async getFile({ id, token }: GoogleFileId): Promise<KeyringPair$Json> {
+  async getFile({ id, token }: GoogleFileId): Promise<KeyringPair$Json> {
     return googleManage.getFile(id, token);
   }
 
-  static async createFile({ json, options, token }: ICreateFile): Promise<FilesResponse> {
+  async createFile({ json, options, token }: ICreateFile): Promise<FilesResponse> {
     return googleManage.createFile({ json, options, token });
   }
 
-  static deleteFile({ id }: GoogleFileId): void {
-    googleManage.deleteFile(id, Extension.token);
+  deleteFile({ id }: GoogleFileId): void {
+    if (!this.token) this.getToken();
+
+    googleManage.deleteFile(id, this.token);
   }
 
-  static cancelAuthRequest(id: string) {
-    State.authorizeCancel({ id });
+  cancelAuthRequest(id: string) {
+    this.state.authorizeCancel({ id });
   }
-  static async handle<TMessageType extends MessageTypes>(
+
+  private createUnsubscriptionHandle(id: string, unsubscribe: () => void): void {
+    this.state.createUnsubscriptionHandle(id, unsubscribe);
+  }
+
+  private getTotalBalances() {
+    return this.state.getTotalBalances();
+  }
+
+  private getBalance(reset?: boolean): Promise<BalanceJson> {
+    return this.state.getBalance(reset);
+  }
+
+  private subscribeBalance(id: string, port: Port): Promise<BalanceJson> {
+    const cb = createSubscription<'pri(balance.get.subscription)'>(id, port);
+
+    const balanceSubscription = this.state.balanceSubject.subscribe({
+      next: (rs) => {
+        cb(rs);
+      },
+    });
+
+    this.createUnsubscriptionHandle(id, balanceSubscription.unsubscribe);
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+    });
+
+    return this.getBalance(true);
+  }
+
+  private subscribeHistory(id: string, port: Port): Record<string, TransactionHistoryItemType[]> {
+    const cb = createSubscription<'pri(transaction.history.get.subscription)'>(id, port);
+
+    const historySubscription = this.state.subscribeHistory().subscribe({
+      next: (rs) => {
+        cb(rs);
+      },
+    });
+
+    this.createUnsubscriptionHandle(id, historySubscription.unsubscribe);
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+    });
+
+    return this.state.getHistoryMap();
+  }
+
+  private updateTransactionHistory(
+    { address, item, networkKey }: RequestTransactionHistoryAdd,
+    id: string,
+    port: Port
+  ): boolean {
+    const cb = createSubscription<'pri(transaction.history.add)'>(id, port);
+
+    this.state.setHistory(address, networkKey, item, (items) => {
+      cb(items);
+    });
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+    });
+
+    return true;
+  }
+
+  private updateCurrencySymbol(symbol: string) {
+    this.state.setFiatSymbol(symbol);
+    this.state.refreshPrice();
+  }
+
+  private getPrice(): Promise<PriceJson> {
+    return new Promise<PriceJson>((resolve) => {
+      this.state.getPrice((rs: PriceJson) => {
+        resolve(rs);
+      });
+    });
+  }
+
+  private subscribePrice(id: string, port: chrome.runtime.Port): Promise<PriceJson> {
+    const cb = createSubscription<'pri(price.get.subscription)'>(id, port);
+
+    const priceSubscription = this.state.subscribePrice().subscribe({
+      next: (rs) => {
+        cb(rs);
+      },
+    });
+
+    this.createUnsubscriptionHandle(id, priceSubscription.unsubscribe);
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+    });
+
+    return this.getPrice();
+  }
+
+  private makeExtrinsicCallback(
+    portCallback: (res: BasicTxResponse) => void,
+    cb: () => void
+  ): (res: BasicTxResponse) => void {
+    cb();
+
+    return (res: BasicTxResponse) => portCallback(res);
+  }
+
+  public async getSoraFees() {
+    this.state.soraFees = Object.fromEntries(
+      Object.entries(apiSora.NetworkFee).map(([nameFee, value]) => [nameFee, FPNumber.fromCodecValue(value).toString()])
+    ) as SoraFees;
+
+    return this.state.soraFees;
+  }
+
+  private async validateSwap(options: RequestCheckSwap): Promise<ResponseCheckSwap> {
+    const { AToB, BToA, amountA, amountB, minMaxValue, extrinsicOptions, providerFee, route } = await createSwap(
+      options,
+      apiSora
+    );
+
+    return {
+      swapOptions: extrinsicOptions.swapOptions,
+      fee: providerFee,
+      AToB,
+      BToA,
+      amountA,
+      amountB,
+      minMaxValue,
+      route,
+    };
+  }
+
+  private async makeSwap(options: RequestSwap): Promise<ResponseMakeSwap> {
+    const { extrinsicOptions } = await createSwap(options, apiSora);
+    const { password, isSavePass } = options;
+    const { isExchangeB, swapDexId, amountA, amountB, slippage, assetA, assetB, marketType } = extrinsicOptions;
+    let status = false;
+    const errors: Array<BasicTxError> = [];
+    const address = await this.state.getAccountAddress();
+    const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
+
+    if (!address) {
+      errors.push({
+        code: BasicTxErrorCode.KEYRING_ERROR,
+        message: 'Something went wrong',
+      });
+
+      return {
+        errors,
+        status,
+      };
+    }
+
+    const pair = keyring.getPair(address);
+
+    const remainTime = this.refreshAccountPasswordCache(pair);
+
+    // if the keyring pair is locked, the password is needed
+    if (pair.isLocked && !password) {
+      errors.push({
+        code: BasicTxErrorCode.KEYRING_ERROR,
+        message: 'Password needed to unlock the account',
+      });
+
+      return {
+        errors,
+        status,
+      };
+    }
+
+    try {
+      if (pair.isLocked && password) pair.unlock(password);
+    } catch (e: any) {
+      pair.lock();
+
+      errors.push({
+        code: BasicTxErrorCode.KEYRING_ERROR,
+        message: String(e.message),
+      });
+    }
+
+    if (errors.length)
+      return {
+        status,
+        errors,
+      };
+
+    apiSora.shouldPairBeLocked = !isSavePass;
+
+    try {
+      await apiSora.swap.execute(assetA, assetB, amountA, amountB, slippage, isExchangeB, liquiditySource, swapDexId);
+
+      status = true;
+    } catch (ex) {
+      errors.push({
+        code: TransferErrorCode.TRANSFER_ERROR,
+        message: '',
+      });
+
+      console.info(`Swap transaction failed ${ex}`);
+    }
+
+    if (isSavePass) this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
+    else if (remainTime) {
+      this.cachedUnlocks[address] = 0;
+
+      pair.lock();
+    }
+
+    return {
+      status,
+      errors,
+    };
+  }
+
+  private validateTransfer(
+    tokenId: string,
+    from: string,
+    password: string | undefined
+  ): [Array<BasicTxError>, KeyringPair | undefined, AssetJson] {
+    const errors = [] as Array<BasicTxError>;
+
+    const keypair = keyring.getPair(from);
+
+    if (password) {
+      try {
+        keypair.unlock(password);
+      } catch (e: any) {
+        errors.push({
+          code: BasicTxErrorCode.KEYRING_ERROR,
+          message: String(e.message),
+        });
+      }
+    }
+
+    const tokenInfo = getTokenInfo(tokenId);
+
+    return [errors, keypair, tokenInfo];
+  }
+
+  private async checkTransfer({
+    from,
+    networkKey,
+    to,
+    tokenId,
+    relayChain,
+    value,
+    password,
+  }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
+    const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(tokenId, from, password);
+    const web3ApiMap = this.state.getApiMap.evm;
+    const warnings: BasicTxWarning[] = [];
+    const isMainToken = checkMainToken(networkKey, tokenInfo.id);
+
+    const address = this.encodeAddress(from);
+    let fee = 0;
+    let feeSymbol;
+    let fromAccountFreeBalance = '0';
+    const toAccountFreeBalance = '0';
+
+    const tokenBalance = this.state.balanceMap[address].find(
+      (balance) => balance.assetId === tokenId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
+    )!;
+
+    if (isEthereumAddress(from) && isEthereumAddress(to)) {
+      const fromAccountFreeBalance = tokenBalance
+        ? tokenBalance.balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0'
+        : '0';
+      const txVal = fromAccountFreeBalance || '0';
+
+      // Estimate with EVM API
+      if (!isMainToken && tokenInfo.contractAddress) {
+        [, , fee] = await getERC20TransactionObject(tokenInfo.contractAddress, networkKey, from, to, txVal, web3ApiMap);
+      } else {
+        [, , fee] = await getEVMTransactionObject(networkKey, to, txVal, web3ApiMap);
+      }
+    } else {
+      // Estimate with DotSama API
+
+      fee = await estimateFee(networkKey, fromKeyPair, to, value, tokenBalance);
+      fromAccountFreeBalance =
+        tokenBalance.balances.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0';
+    }
+
+    return {
+      errors,
+      warnings,
+      fromAccountFree: fromAccountFreeBalance,
+      toAccountFree: toAccountFreeBalance,
+      estimateFee: FPNumber.fromCodecValue(fee, tokenInfo.precision).toString(),
+      feeSymbol,
+    } as ResponseCheckTransfer;
+  }
+
+  private async makeTransfer(
+    id: string,
+    port: Port,
+    { from, networkKey, password, to, tokenId, value, isSavePass }: RequestTransfer
+  ): Promise<BasicTxResponse | undefined> {
+    const txState: BasicTxResponse = {};
+
+    const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(tokenId, from, password);
+
+    if (errors.length) {
+      txState.txError = true;
+      txState.errors = errors;
+
+      setTimeout(() => this.cancelSubscription(id), 500);
+
+      // todo: add condition to lock KeyPair (for example: not remember password)
+
+      return txState;
+    }
+
+    if (!fromKeyPair) {
+      txState.status = false;
+      txState.txError = true;
+
+      return txState;
+    }
+
+    const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
+    const ethereumAddress = fromKeyPair.meta.ethereumAddress as string | undefined;
+
+    const remainTime = this.refreshAccountPasswordCache(fromKeyPair);
+
+    const savePass = () => {
+      if (isSavePass) {
+        this.cachedUnlocks[fromKeyPair.address] = Date.now() + PASSWORD_EXPIRY_MS;
+        if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
+      } else if (remainTime) {
+        this.cachedUnlocks[fromKeyPair.address] = 0;
+
+        fromKeyPair.lock();
+
+        if (ethereumAddress) {
+          this.cachedUnlocks[ethereumAddress] = 0;
+          const ethereumPair = keyring.getPair(ethereumAddress);
+
+          ethereumPair.lock();
+        }
+      }
+    };
+
+    const callback = this.makeExtrinsicCallback(cb, savePass);
+
+    let transferProm: Promise<void> | undefined;
+
+    if (isEthereumAddress(from) && isEthereumAddress(to)) {
+      // Make transfer with EVM API
+      const { privateKey } = this.accountExportPrivateKey({ address: from, password });
+      const web3ApiMap = this.state.getApiMap.evm;
+      const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
+
+      if (tokenInfo && !isMainToken && tokenInfo.contractAddress) {
+        transferProm = makeERC20Transfer(
+          tokenInfo.contractAddress,
+          networkKey,
+          from,
+          to,
+          privateKey,
+          value || '0',
+          web3ApiMap,
+          callback
+        );
+      } else {
+        transferProm = makeEVMTransfer(networkKey, to, privateKey, value || '0', web3ApiMap, callback);
+      }
+    } else {
+      // Make transfer with Dotsama API
+      transferProm = makeTransfer({
+        networkKey,
+        tokenInfo,
+        amount: value ?? '0',
+        from: fromKeyPair.address,
+        to: to,
+        password,
+        isSavePass,
+        callback,
+      });
+    }
+
+    transferProm
+      .then(() => {
+        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+        console.info(`Start transfer ${value} from ${from} to ${to}`);
+      })
+      .catch((e) => {
+        cb({
+          txError: true,
+          status: false,
+          errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (e as Error).message }],
+        });
+        console.error('Transfer error', e);
+
+        setTimeout(() => this.cancelSubscription(id), 500);
+
+        // todo: add condition to lock KeyPair
+      });
+
+    port.onDisconnect.addListener(() => this.cancelSubscription(id));
+
+    return txState;
+  }
+
+  private async checkCrossChain({
+    from,
+    originNet,
+    destinationNet,
+    to,
+    tokenId,
+    relayChain,
+    amount,
+  }: RequestCheckCrossChain): Promise<ResponseCheckCrossChain> {
+    const tokenBalance = this.state.balanceMap[from].find(
+      (balance) => balance.assetId === tokenId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
+    )!;
+
+    const extrinsic = await createCrossChainExtrinsic(tokenId, originNet, destinationNet, to, amount!, tokenBalance);
+
+    console.info('checkCrossChain', extrinsic);
+
+    const tokenInfo = getTokenInfo(tokenId);
+    const fee = await estimateCrossChainFee(extrinsic, to, tokenBalance);
+    const destFees = state.xcmFees.find(({ destChain }) => destChain.toLowerCase() === destinationNet.toLowerCase());
+    const destEstimateFee = destFees?.destXcmFee?.find(
+      ({ symbol }) => symbol.toLowerCase() === tokenInfo.symbol.toLowerCase()
+    );
+
+    return {
+      estimateFee: FPNumber.fromCodecValue(fee, tokenBalance?.precision).toString(),
+      destEstimateFee: FPNumber.fromCodecValue(destEstimateFee?.feeInPlanks ?? '0', tokenBalance?.precision).toString(), // TODO Уточнить у Виталия как искать комиссию
+    } as ResponseCheckCrossChain;
+  }
+
+  private async makeCrossChain(
+    id: string,
+    port: Port,
+    { from, originNet, destinationNet, amount, password, to, tokenId, isSavePass }: RequestCrossChain
+  ): Promise<void> {
+    const [, fromKeyPair, tokenInfo] = this.validateTransfer(tokenId, from, password);
+
+    const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
+    const ethereumAddress = fromKeyPair!.meta.ethereumAddress as string | undefined;
+
+    const remainTime = this.refreshAccountPasswordCache(fromKeyPair!);
+
+    const savePass = () => {
+      if (isSavePass) {
+        this.cachedUnlocks[fromKeyPair!.address] = Date.now() + PASSWORD_EXPIRY_MS;
+
+        if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
+      } else if (remainTime) {
+        this.cachedUnlocks[fromKeyPair!.address] = 0;
+
+        fromKeyPair!.lock();
+
+        if (ethereumAddress) {
+          this.cachedUnlocks[ethereumAddress] = 0;
+          const ethereumPair = keyring.getPair(ethereumAddress);
+
+          ethereumPair.lock();
+        }
+      }
+    };
+
+    const callback = this.makeExtrinsicCallback(cb, savePass);
+
+    const transferProm: Promise<void> | undefined = makeCrossChain({
+      asset: tokenId,
+      originNet,
+      destinationNet,
+      tokenInfo,
+      amount: amount ?? '0',
+      from: fromKeyPair!.address,
+      to,
+      password,
+      isSavePass,
+      callback,
+    });
+
+    transferProm
+      .then(() =>
+        console.info(`
+          Start crossChain amount: ${amount}
+          [${originNet}] => [${destinationNet}]
+          from ${from}
+          to ${to}
+        `)
+      )
+      .catch((e) => {
+        cb({
+          txError: true,
+          status: false,
+          errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (e as Error).message }],
+        });
+
+        console.error('Transfer error', e);
+
+        setTimeout(() => this.cancelSubscription(id), 500);
+
+        // todo: add condition to lock KeyPair
+      });
+
+    port.onDisconnect.addListener(() => this.cancelSubscription(id));
+  }
+
+  private getNetworkMap(): Record<string, NetworkJsonOld> {
+    return this.state.getNetworkMap;
+  }
+
+  private createMobileWallet(wallet: RequestAddressCreate) {
+    this.createAddress(wallet);
+
+    this.updateCurrentAccountAddress(wallet.address);
+  }
+
+  private subscribeNetworkMap(id: string, port: Port): Record<string, NetworkJson> {
+    const cb = createSubscription<'pri(networkMap.getSubscription)'>(id, port);
+    const networkMapSubscription = this.state.subscribeNetworkMap().subscribe({
+      next: (rs) => {
+        cb(rs);
+      },
+    });
+
+    this.createUnsubscriptionHandle(id, networkMapSubscription.unsubscribe);
+
+    port.onDisconnect.addListener((): void => {
+      this.cancelSubscription(id);
+    });
+
+    return this.getNetworkMap();
+  }
+
+  private async soraCardTokenSubscribe(id: string, port: Port): Promise<boolean> {
+    const cb = createSubscription<'pri(soraCard.token)'>(id, port);
+
+    const subscription = this.state.soraCardTokenSubject.subscribe((token) => cb(token));
+
+    port.onDisconnect.addListener((): void => {
+      unsubscribe(id);
+      subscription.unsubscribe();
+    });
+
+    return true;
+  }
+
+  authorizeApprovePolkaswap(authorizedAccounts: string[]): Promise<void> {
+    return this.state.approvePolkaswap(authorizedAccounts);
+  }
+
+  async handle<TMessageType extends MessageTypes>(
     id: string,
     type: TMessageType,
     request: RequestTypes[TMessageType],
-    port?: Port
+    port: Port
   ): Promise<ResponseType<TMessageType>> {
     switch (type) {
+      //App Managment, networks
+      case 'pri(app.port.ping)':
+        return true;
+
+      case 'pri(networkMap.upsert)':
+        return this.upsertNetworkMap(request as NetworkJsonOld);
+
+      case 'pri(networkMap.getSubscription)':
+        return this.subscribeNetworkMap(id, port);
+
+      case 'pri(networkMap.getNetworkMap)':
+        return this.getNetworkMap();
+
       case 'pri(authorize.approve)':
-        return Extension.authorizeApprove(request as RequestAuthorizeApprove);
+        return this.authorizeApprove(request as RequestAuthorizeApprove);
+
+      case 'pri(soraCard.token)':
+        return this.soraCardTokenSubscribe(id, port);
 
       case 'pri(authorize.list)':
-        return Extension.getAuthList();
+        return this.getAuthList();
+
+      case 'pri(authorize.approve.polkaswap)':
+        return this.authorizeApprovePolkaswap(request as string[]);
 
       case 'pri(authorize.remove)':
-        return Extension.removeAuthorization(request as string);
+        return this.removeAuthorization(request as string);
 
       case 'pri(authorize.delete.request)':
-        return Extension.deleteAuthRequest(request as string);
+        return this.deleteAuthRequest(request as string);
 
       case 'pri(authorize.cancel)':
-        return Extension.cancelAuthRequest(request as string);
+        return this.cancelAuthRequest(request as string);
 
       case 'pri(authorize.requests)':
-        return Extension.authorizeSubscribe(id, port as Port);
+        return this.authorizeSubscribe(id, port);
 
-      case 'pri(addresses.create)':
-        return Extension.createAddress(request as RequestAddressCreate);
+      case 'pri(accounts.create.mobile)':
+        return this.createMobileWallet(request as RequestAddressCreate);
 
       case 'pri(addresses.remove)':
-        return Extension.removeAddress(request as string);
+        return this.removeAddress(request as string);
 
       case 'pri(addresses.get)':
-        return Extension.getAddresses();
+        return this.getAddresses();
 
       case 'pri(authorize.update)':
-        return Extension.authorizeUpdate(request as RequestUpdateAuthorizedAccounts);
+        return this.authorizeUpdate(request as RequestUpdateAuthorizedAccounts);
 
       case 'pri(accounts.create.external)':
-        return Extension.accountsCreateExternal(request as RequestAccountCreateExternal);
+        return this.accountsCreateExternal(request as RequestAccountCreateExternal);
 
-      case 'pri(accounts.create.hardware)':
-        return Extension.accountsCreateHardware(request as RequestAccountCreateHardware);
+      case 'pri(accounts.validate.path)':
+        return this.validateDerivationPath(request as DerivationPath);
 
       case 'pri(accounts.create.suri)':
-        return Extension.accountsCreateSuri(request as RequestAccountCreateSuri);
+        return this.accountsCreateSuri(request as RequestAccountCreateSuri);
 
-      case 'pri(accounts.changePassword)':
-        return Extension.accountsChangePassword(request as RequestAccountChangePassword);
+      case 'pri(price.update.currency)':
+        return this.updateCurrencySymbol(request as string);
 
-      case 'pri(accounts.edit)':
-        return Extension.accountsEdit(request as RequestAccountEdit);
+      case 'pri(price.get.price)':
+        return this.getPrice();
+
+      case 'pri(price.get.subscription)':
+        return this.subscribePrice(id, port);
+
+      case 'pri(accounts.current.saveAddress)':
+        return this.saveCurrentAccountAddress(request as RequestCurrentAccountAddress, id, port);
+
+      case 'pri(accounts.update.current)':
+        return this.updateCurrentAccountAddress(request as string);
 
       case 'pri(accounts.export)':
-        return Extension.accountsExport(request as RequestAccountExport);
+        return this.accountsExport(request as RequestAccountExport);
 
       case 'pri(accounts.batchExport)':
-        return Extension.accountsBatchExport(request as RequestAccountBatchExport);
+        return this.accountsBatchExport(request as RequestAccountBatchExport);
 
       case 'pri(accounts.forget)':
-        return Extension.accountsForget(request as RequestAccountForget);
+        return this.accountsForget(request as RequestAccountForget);
 
       case 'pri(accounts.show)':
-        return Extension.accountsShow(request as RequestAccountShow);
+        return this.accountsShow(request as RequestAccountShow);
 
       case 'pri(accounts.subscribe)':
-        return Extension.accountsSubscribe(id, port as Port);
+        return this.accountsSubscribe(id, port);
+
+      case 'pri(addresses.subscribe)':
+        return this.addressesSubscribe(id, port);
+
+      case 'pri(accounts.triggerSubscription)':
+        return this.triggerWalletsSubscription();
 
       case 'pri(accounts.tie)':
-        return Extension.accountsTie(request as RequestAccountTie);
+        return this.accountsTie(request as RequestAccountTie);
+
+      case 'pri(accounts.name)':
+        return this.accountUpdateName(request as RequestAccountName);
 
       case 'pri(accounts.validate)':
-        return Extension.accountsValidate(request as RequestAccountValidate);
+        return this.accountsValidatePassword(request as RequestAccountValidate);
 
       case 'pri(metadata.approve)':
-        return Extension.metadataApprove(request as RequestMetadataApprove);
+        return this.metadataApprove(request as RequestMetadataApprove);
 
       case 'pri(metadata.get)':
-        return Extension.metadataGet(request as string);
+        return this.metadataGet(request as string);
 
       case 'pri(metadata.list)':
-        return Extension.metadataList();
+        return this.metadataList();
 
       case 'pri(metadata.reject)':
-        return Extension.metadataReject(request as RequestMetadataReject);
+        return this.metadataReject(request as RequestMetadataReject);
 
       case 'pri(metadata.requests)':
-        return Extension.metadataSubscribe(id, port as Port);
+        return port && this.metadataSubscribe(id, port);
 
       case 'pri(activeTabsUrl.update)':
-        return Extension.updateCurrentTabs(request as RequestActiveTabsUrlUpdate);
+        return this.updateCurrentTabs(request as RequestActiveTabsUrlUpdate);
 
       case 'pri(derivation.create)':
-        return Extension.derivationCreate(request as RequestDeriveCreate);
+        return this.derivationCreate(request as RequestDeriveCreate);
 
       case 'pri(derivation.validate)':
-        return Extension.derivationValidate(request as RequestDeriveValidate);
+        return this.derivationValidate(request as RequestDeriveValidate);
 
       case 'pri(json.restore)':
-        return Extension.jsonRestore(request as RequestJsonRestore);
+        return this.jsonRestore(request as RequestJsonRestore);
 
       case 'pri(json.valid)':
-        return Extension.jsonValid(request as RequestJsonRestore);
+        return this.jsonValid(request as RequestJsonRestore);
 
       case 'pri(json.batchRestore)':
-        return Extension.batchRestore(request as RequestBatchRestore);
+        return this.batchRestore(request as RequestBatchRestore);
 
       case 'pri(json.account.info)':
-        return Extension.jsonGetAccountInfo(request as KeyringPair$Json);
+        return this.jsonGetAccountInfo(request as KeyringPair$Json);
 
       case 'pri(seed.create)':
-        return Extension.seedCreate(request as RequestSeedCreate);
+        return this.seedCreate(request as RequestSeedCreate);
 
       case 'pri(seed.validate)':
-        return Extension.seedValidate(request as RequestSeedValidate);
-
-      case 'pri(settings.notification)':
-        return State.setNotification(request as string);
+        return this.seedValidate(request as RequestSeedValidate);
 
       case 'pri(signing.approve.password)':
-        return Extension.signingApprovePassword(request as RequestSigningApprovePassword);
+        return this.signingApprovePassword(request as RequestSigningApprovePassword);
 
       case 'pri(signing.approve.signature)':
-        return Extension.signingApproveSignature(request as RequestSigningApproveSignature);
+        return this.signingApproveSignature(request as RequestSigningApproveSignature);
 
       case 'pri(signing.cancel)':
-        return Extension.signingCancel(request as RequestSigningCancel);
+        return this.signingCancel(request as RequestSigningCancel);
 
       case 'pri(signing.isLocked)':
-        return Extension.signingIsLocked(request as RequestSigningIsLocked);
+        return this.signingIsLocked(request as RequestSigningIsLocked);
 
       case 'pri(signing.requests)':
-        return Extension.signingSubscribe(id, port as Port);
+        return this.signingSubscribe(id, port);
 
       case 'pri(window.open)':
-        return Extension.windowOpen(request as AllowedPath);
-
-      case 'pri(signing.refreshPasswordTimeout)':
-        return Extension.refreshAccountPasswordCache(request as string);
-
-      case 'pri(signing.resetTimeouts)':
-        return Extension.resetTimeouts();
-
-      case 'pri(signing.saveTimeoutCache)':
-        return Extension.saveTimeoutCache(request as RequestSaveTimeoutCache);
+        return this.windowOpen(request as AllowedPath);
 
       case 'pri(google.get.files)':
-        return Extension.getFiles(request as { token: string });
+        return this.getFiles(request as { token: string });
 
       case 'pri(google.auth)':
-        return Extension.initAuth(request as GoogleAuthTypes);
+        return this.initAuth(request as GoogleAuthTypes);
 
       case 'pri(google.verify.token)':
-        return Extension.verifyToken(request as { token: string });
+        return this.verifyToken(request as { token: string });
 
       case 'pri(google.get.file)':
-        return Extension.getFile(request as GoogleFileId);
+        return this.getFile(request as GoogleFileId);
 
       case 'pri(google.create.file)':
-        return Extension.createFile(request as ICreateFile);
+        return this.createFile(request as ICreateFile);
 
       case 'pri(google.delete.file)':
-        return Extension.deleteFile(request as GoogleFileId);
+        return this.deleteFile(request as GoogleFileId);
 
       case 'pri(tab.status)':
-        return Extension.isTabAuthorize();
+        return this.isTabAuthorize();
+
+      case 'pri(balance.get.balance)':
+        return this.getBalance();
+
+      case 'pri(accounts.get.totalBalances)':
+        return this.getTotalBalances();
+
+      case 'pri(balance.get.subscription)':
+        return this.subscribeBalance(id, port);
+
+      /// Transfer, CrossChain, Sora Swap
+      case 'pri(accounts.checkTransfer)':
+        return this.checkTransfer(request as RequestCheckTransfer);
+
+      case 'pri(accounts.transfer)':
+        return this.makeTransfer(id, port, request as RequestTransfer);
+
+      case 'pri(accounts.checkCrossChain)':
+        return this.checkCrossChain(request as RequestCheckCrossChain);
+
+      case 'pri(accounts.crossChain)':
+        return this.makeCrossChain(id, port, request as RequestCrossChain);
+
+      case 'pri(accounts.checkSwap)':
+        return this.validateSwap(request as RequestCheckSwap);
+
+      case 'pri(accounts.swap)':
+        return this.makeSwap(request as RequestSwap);
+
+      case 'pri(accounts.get.soraFees)':
+        return this.getSoraFees();
+
+      case 'pri(transaction.history.add)':
+        return this.updateTransactionHistory(request as RequestTransactionHistoryAdd, id, port);
+
+      case 'pri(transaction.history.get.subscription)':
+        return this.subscribeHistory(id, port);
 
       default:
         throw new Error(`Unable to handle message of type ${type}`);

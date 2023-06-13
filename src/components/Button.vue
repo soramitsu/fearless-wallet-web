@@ -6,6 +6,8 @@
       :size="size"
       :disabled="disabled"
       :class="buttonClasses"
+      :loading="loading"
+      :style="buttonStyle"
       @click="$emit('click')"
     >
       <Icon v-if="shouldBeWithIcon" :icon="prepIconName" :className="prepIconClass" :iconColor="iconColor" />
@@ -22,6 +24,7 @@ import type { ComponentText } from '@/interfaces';
 type Size = 'mini' | 'small' | 'medium' | 'big';
 type FontSize = 'small' | 'medium' | 'big';
 type Type = 'primary' | 'secondary' | 'link' | 'google' | 'warning';
+type TypeText = 'none' | 'uppercase';
 
 @Component
 export default class Button extends Vue {
@@ -36,7 +39,9 @@ export default class Button extends Vue {
   @Prop({ default: 'medium' }) size!: Size;
   @Prop({ default: 'medium' }) fontSize!: FontSize;
   @Prop({ default: 'medium' }) borderRadius!: Size;
+  @Prop({ default: 'none' }) typeText!: TypeText;
   @Prop({ default: false }) disabled!: boolean;
+  @Prop({ default: false }) loading!: boolean;
   @Prop({ default: true }) hover!: boolean;
   @Prop({ default: true }) border!: boolean;
 
@@ -52,6 +57,14 @@ export default class Button extends Vue {
     }
 
     return this.$t(text, localeProps);
+  }
+
+  get buttonStyle() {
+    const styles: Record<string, string> = {
+      'text-transform': this.typeText,
+    };
+
+    return styles;
   }
 
   get shouldBeWithIcon() {
@@ -171,7 +184,7 @@ export default class Button extends Vue {
 
 .button-warning {
   .el-button {
-    background-color: $orange-color;
+    background-color: $simple-orange-color;
     border: none;
     color: $plain-white;
   }

@@ -15,7 +15,7 @@ type Lang = keyof typeof messages;
 
 export default new VueI18n({
   locale: accountController.getLang(),
-  fallbackLocale: 'en',
+  fallbackLocale: 'en-EN',
   messages,
   numberFormats: {
     'en-EN': {

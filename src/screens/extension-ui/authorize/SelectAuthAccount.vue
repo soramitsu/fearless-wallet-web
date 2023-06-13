@@ -10,7 +10,7 @@
 
     <Scroll>
       <ul class="account__list">
-        <li v-for="(account, index) in accountsValue" class="auth-account" v-bind:key="index">
+        <li v-for="(account, index) in accounts" class="auth-account" v-bind:key="index">
           <div class="checkbox">
             <Checkbox
               class="account__checkbox"
@@ -38,19 +38,15 @@
 <script lang="ts">
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { WalletInfo } from '@/store';
-import { cut } from '@/helpers/history';
+import { cut } from '@/helpers/common';
 
 @Component
 export default class SelectAuthAccount extends Vue {
   @PropSync('selectAll', { type: Boolean }) syncSelectAll!: boolean;
   @Prop(Object) accounts!: WalletInfo[];
 
-  get accountsValue() {
-    return Object.values(this.accounts);
-  }
-
   get showAllCheckbox() {
-    return this.accountsValue.length !== 0;
+    return this.accounts.length !== 0;
   }
 
   cutAddress(address: string) {

@@ -1,22 +1,11 @@
 import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
 import { FPNumber } from '@sora-substrate/util';
-import type {
-  HistoryElement,
-  AssetJson,
-  GiantsquidHistoryItem,
-  SubqueryHistory,
-  HistoryServiceType,
-} from '@/interfaces';
+import type { HistoryElement, GiantsquidHistoryItem, SubqueryHistory, HistoryServiceType } from '@/interfaces';
 import { TransactionType, TransferType } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
 import { formattedNumber } from '@/helpers/numbers';
-import { NetworksController } from '@/controllers';
-
-function cut(value: string, length = 7) {
-  const endNumber = length + 1;
-
-  return `${value.slice(0, length)}...${value.slice(-endNumber)}`;
-}
+import store from '@/store';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
 function getType(historyElement: HistoryElement): TransactionType {
   const { reward, transfer } = historyElement;
@@ -75,8 +64,8 @@ function getFormattedDate({ timestamp }: HistoryElement) {
 }
 
 function getHumanValue(value: string, assetId: string) {
-  const assetsJson: AssetJson[] = NetworksController.getAssetsJson();
-  const assetJson = assetsJson.find(({ id }) => id === assetId)!;
+  const assetsJson: TokenBalance[] = store.getters.getBalances;
+  const assetJson = assetsJson.find(({ assetId: id }) => id === assetId)!;
   const precision = assetJson?.precision ?? 0;
 
   return +FPNumber.fromCodecValue(value, precision);
@@ -175,7 +164,6 @@ function getFormattedHistory(
 }
 
 export {
-  cut,
   getType,
   getTypeFormatted,
   getHumanTransferFee,

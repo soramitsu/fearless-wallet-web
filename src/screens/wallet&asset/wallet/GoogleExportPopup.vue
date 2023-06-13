@@ -15,7 +15,6 @@
 
       <template v-if="isAwaitsConfirmation">
         <ValidatedInput
-          v-if="isAwaitsConfirmation"
           v-model="password"
           placeholder="common.password"
           size="big"
@@ -49,25 +48,28 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
-import type { KeyringPair } from '@polkadot/keyring/types';
-import { createGoogleFile, exportAccount, validateAccount } from '@/extension/messaging';
-import BaseApi from '@/util/BaseApi';
+import { Getter } from 'vuex-class';
+import type { KeyringPair$Json } from '@polkadot/keyring/types';
+import { createGoogleFile, exportAccount, validatePassword } from '@/extension/messaging';
 import { ICreateFile } from '@/interfaces';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 
 @Component
 export default class GoogleExportPopup extends Vue {
   password = '';
   isErrorPassword = false;
-
   status: 'prepare' | 'upload' | 'uploaded' | 'await' = 'await';
-  @Prop(Function) closePopup!: VoidFunction;
 
-  get selectedWallet() {
+  @Prop(Function) closePopup!: VoidFunction;
+  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
+
+  get selectedWalletAddress() {
     return this.$route.query.wallet as string;
   }
 
   get isAwaiting() {
-    return this.status === 'await' || this.status === 'uploaded';
+    return this.status === 'await';
   }
 
   get isUploading() {
@@ -100,6 +102,13 @@ export default class GoogleExportPopup extends Vue {
     return this.$t('addWallet.google.saved');
   }
 
+  get statusMessagesHeader() {
+    if (this.status === 'prepare') return this.$t('googleExport.prepData');
+    if (this.status === 'upload') return this.$t('googleExport.uploading');
+
+    return '';
+  }
+
   @Watch('password')
   resetStatusError() {
     this.isErrorPassword = false;
@@ -114,7 +123,7 @@ export default class GoogleExportPopup extends Vue {
 
     this.status = 'prepare';
 
-    const isValid = await validateAccount(this.selectedWallet, this.password);
+    const isValid = await validatePassword(this.selectedWalletAddress, this.password);
 
     if (!isValid) {
       this.status = 'await';
@@ -123,36 +132,37 @@ export default class GoogleExportPopup extends Vue {
       return;
     }
 
-    const pair = BaseApi.getPair(this.selectedWallet);
-
-    const ethPair = BaseApi.getPair(pair.meta.ethereumAddress as string);
-    const ethJson = ethPair.toJson(this.password);
-    const substrateJson = (await exportAccount(pair.address, this.password)).exportedJson;
-    const ethOptions = this.prepUploadMeta(ethPair);
+    let ethWalletId;
+    let substrateWalletId;
+    const { exportedJson: substrateJson } = await exportAccount(this.selectedWalletAddress, this.password);
+    const isEthereumAddress = !!substrateJson.meta.ethereumAddress;
+    const stringifyJson = JSON.stringify(substrateJson);
 
     this.status = 'upload';
 
-    const ethWalletId = await this.createFile(JSON.stringify(ethJson), ethOptions);
+    if (isEthereumAddress) {
+      const { exportedJson: ethereumJson } = await exportAccount(
+        substrateJson.meta.ethereumAddress as string,
+        this.password
+      );
 
-    if (!ethWalletId) return;
+      const ethOptions = this.prepUploadMeta(substrateJson);
+      ethWalletId = await this.createFile(JSON.stringify(ethereumJson), ethOptions);
 
-    const substrateOptions = this.prepUploadMeta(pair, ethWalletId);
-    const substrateWalletId = await this.createFile(JSON.stringify(substrateJson), substrateOptions);
+      const substrateOptions = this.prepUploadMeta(substrateJson, ethWalletId);
+      substrateWalletId = await this.createFile(stringifyJson, substrateOptions);
+    } else {
+      const substrateOptions = this.prepUploadMeta(substrateJson);
+      substrateWalletId = await this.createFile(stringifyJson, substrateOptions);
+    }
 
-    if (ethWalletId && substrateWalletId) this.status = 'uploaded';
+    this.status = substrateWalletId ? 'uploaded' : 'await';
   }
 
-  get statusMessagesHeader() {
-    if (this.status === 'prepare') return this.$t('googleExport.prepData');
-    if (this.status === 'upload') return this.$t('googleExport.uploading');
-
-    return '';
-  }
-
-  prepUploadMeta(pair: KeyringPair, ethWalletId?: string): ICreateFile['options'] {
+  prepUploadMeta(json: KeyringPair$Json, ethWalletId?: string): ICreateFile['options'] {
     return {
-      name: pair.meta.name as string,
-      address: ethWalletId ? `${pair.address}/${ethWalletId}` : (pair.meta.ethereumAddress as string),
+      name: json.meta.name as string,
+      address: ethWalletId ? `${json.address}/${ethWalletId}` : (json.meta.ethereumAddress as string),
       password: this.password,
     };
   }

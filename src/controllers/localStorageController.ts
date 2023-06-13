@@ -1,10 +1,14 @@
 type Value = number | string | boolean | Record<string, any> | any[];
 
 export class LocalStorage {
-  private prefix;
+  constructor(private prefix: string) {}
 
-  constructor(prefix: string) {
-    this.prefix = `${prefix}_`;
+  public getWithoutParse(key: string): string | null {
+    return localStorage.getItem(`${this.prefix}${key}`);
+  }
+
+  public setDefault(key: string, value: string) {
+    localStorage.setItem(`${this.prefix}${key}`, value);
   }
 
   public get(key: string): Record<string, any> {

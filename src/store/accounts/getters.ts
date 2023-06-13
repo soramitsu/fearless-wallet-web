@@ -1,45 +1,45 @@
-import { IWallet } from './types';
 import type { GetterTree } from 'vuex';
-import type {
-  SelectedWallet,
-  Accounts,
-  WalletInfo,
-  GetAutoSelectNodesValueByNetwork,
-  GetShowWarningNetworks,
-} from './types';
+import type { SelectedWallet, WalletInfo, GetAutoSelectNodesValueByNetwork, GetShowWarningNetworks } from './types';
 import type { State } from './state';
 import type { FiatJson } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import store from '@/store';
+import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import { ALL_NETWORKS } from '@/consts/networks';
 
 export enum GettersTypes {
   getSelectedWallet = 'getSelectedWallet',
   getSelectedFiat = 'getSelectedFiat',
   getSelectedNetwork = 'getSelectedNetwork',
-  getFiatSymbol = 'getFiatSymbol',
+  fiatSymbol = 'fiatSymbol',
   getOnlineStatus = 'getOnlineStatus',
   getFiatId = 'getFiatId',
   getAccounts = 'getAccounts',
+  hiddenAssets = 'hiddenAssets',
   getAddresses = 'getAddresses',
+  getBalances = 'getBalances',
   getWallets = 'getWallets',
   getAutoSelectNodesValueByNetwork = 'getAutoSelectNodesValueByNetwork',
   GET_QR = 'getQR',
   getIsCustomSort = 'getIsCustomSort',
   showPolkaswapAlert = 'showPolkaswapAlert',
   getShowWarningNetworks = 'getShowWarningNetworks',
+  showSoraCardBanner = 'showSoraCardBanner',
 }
 
 export type Getters = {
   [GettersTypes.getSelectedWallet](state: State, getters?: GetterTree<State, State> & Getters): SelectedWallet;
+  [GettersTypes.getBalances](state: State, getters?: GetterTree<State, State> & Getters): TokenBalance[];
   [GettersTypes.getSelectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getSelectedNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
-  [GettersTypes.getFiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
+  [GettersTypes.fiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.getOnlineStatus](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getFiatId](state: State, getters?: GetterTree<State, State> & Getters): string;
-  [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
-  [GettersTypes.getAddresses](state: State, getters?: GetterTree<State, State> & Getters): Accounts;
+  [GettersTypes.hiddenAssets](state: State, getters?: GetterTree<State, State> & Getters): string[];
+  [GettersTypes.getAccounts](state: State, getters?: GetterTree<State, State> & Getters): AccountJson[];
   [GettersTypes.getWallets](state: State, getters?: GetterTree<State, State> & Getters): WalletInfo[];
   [GettersTypes.showPolkaswapAlert](state: State, getters?: GetterTree<State, State> & Getters): boolean;
+  [GettersTypes.showSoraCardBanner](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getShowWarningNetworks](
     state: State,
     getters?: GetterTree<State, State> & Getters
@@ -60,23 +60,33 @@ const getters: GetterTree<State, State> & Getters = {
     return selectedWallet;
   },
 
+  [GettersTypes.getBalances]({ balances }): TokenBalance[] {
+    return balances;
+  },
+
+  [GettersTypes.hiddenAssets]({ selectedWallet, hiddenAssets }): any {
+    const { address } = selectedWallet;
+
+    return hiddenAssets[address] ?? [];
+  },
+
   [GettersTypes.getSelectedFiat]({ selectedFiat }): string {
     return selectedFiat;
   },
 
   [GettersTypes.getSelectedNetwork]({ selectedNetworks, selectedWallet: { address } }): string {
-    return selectedNetworks[address] ?? 'all';
+    return selectedNetworks[address] ?? ALL_NETWORKS;
   },
 
-  [GettersTypes.getOnlineStatus]({ isOnline }): boolean {
-    return isOnline;
+  [GettersTypes.getOnlineStatus](state): boolean {
+    return state.isOnline;
   },
 
   [GettersTypes.showPolkaswapAlert]({ showPolkaswapAlert }): boolean {
     return showPolkaswapAlert;
   },
 
-  [GettersTypes.getFiatSymbol]({ selectedFiat }): string {
+  [GettersTypes.fiatSymbol]({ selectedFiat }): string {
     const fiats: FiatJson[] = store.getters[NetworksGettersTypes.getFiats];
     const fiat = fiats.find(({ id }) => id === selectedFiat);
 
@@ -90,12 +100,8 @@ const getters: GetterTree<State, State> & Getters = {
     return fiat?.id ?? '';
   },
 
-  [GettersTypes.getAccounts]({ accounts }): Accounts {
-    return accounts;
-  },
-
-  [GettersTypes.getAddresses]({ addresses }): Accounts {
-    return addresses;
+  [GettersTypes.getAccounts](state): AccountJson[] {
+    return state.accounts;
   },
 
   [GettersTypes.getAutoSelectNodesValueByNetwork]:
@@ -104,17 +110,15 @@ const getters: GetterTree<State, State> & Getters = {
       return autoSelectNode[networkName] ?? true;
     },
 
-  [GettersTypes.getWallets]({ addresses, accounts }): WalletInfo[] {
+  [GettersTypes.getWallets]({ accounts }): WalletInfo[] {
     const wallets: WalletInfo[] = [];
-    const prepAccounts = { ...addresses, ...accounts };
-    (Object.values(prepAccounts) as any).forEach((wallet: IWallet) => {
-      if (wallet.type !== 'ethereum')
-        wallets.push({
-          name: wallet.json.meta.name,
-          address: wallet.json.address,
-          isMobile: false,
-          active: false,
-        });
+    accounts.forEach((account) => {
+      wallets.push({
+        name: account.name,
+        address: account.address,
+        isMobile: !!account.isMobile,
+        active: !!account.active,
+      });
     });
 
     return wallets;
@@ -135,6 +139,10 @@ const getters: GetterTree<State, State> & Getters = {
     (address: string) => {
       return isCustomSort[address] ?? false;
     },
+
+  [GettersTypes.showSoraCardBanner]({ showSoraCardBanner }): boolean {
+    return showSoraCardBanner;
+  },
 };
 
 export default getters;

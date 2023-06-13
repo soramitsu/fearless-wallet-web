@@ -31,7 +31,6 @@
     <PasswordForm
       v-if="passwordStep"
       :isGoogleFlow="true"
-      :showMockPassword="false"
       :showSamePasswordText="false"
       @updateWalletPassword="updateWalletPassword"
     />
@@ -66,8 +65,10 @@
           width="100%"
           type="primary"
           :border="false"
+          :iconName="isLoading ? 'loader' : ''"
+          :iconType="isLoading ? 'loading' : ''"
           :disabled="disabledProceed"
-          :text="buttonText"
+          :text="isLoading ? '' : buttonText"
           @click="proceed"
         />
       </div>
@@ -94,11 +95,11 @@ import NickNameForm from '@/screens/addWallet/NicknameForm.vue';
 import CreateWallet from '@/screens/addWallet/CreateWallet.vue';
 import FlowStepLayout from '@/screens/addWallet/google/FlowStepLayout.vue';
 import { Components } from '@/router/routes';
-import { DerivationPaths, MnemonicConfirmation, TAction } from '@/interfaces';
+import { DerivationPaths, MnemonicConfirmation, AsyncFn } from '@/interfaces';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH, INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import BaseApi from '@/util/BaseApi';
-import { createGoogleFile } from '@/extension/messaging';
+import { createAccountSuri, createGoogleFile, exportAccount } from '@/extension/messaging';
 import { SelectedWallet } from '@/store/accounts/types';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -134,9 +135,10 @@ export default class CreateGoogle extends Vue {
   derivationPaths = INITIAL_DERIVATION_PATHS;
   showNotificationPopup = false;
   warningValueName: WarningValueName = '';
+  isLoading = false;
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<string>;
+  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<string>;
 
   get invalidMessages() {
     if (!this.warningValueName) return {};
@@ -179,6 +181,7 @@ export default class CreateGoogle extends Vue {
 
   get disabledProceed() {
     if (this.nickNameStep) return !this.nickname;
+    if (this.isLoading) return true;
     if (this.step === 3) return this.mnemonic.split(' ').length !== this.selectedMnemonicElements.length;
 
     if (this.passwordStep) return !this.walletPassword;
@@ -219,11 +222,13 @@ export default class CreateGoogle extends Vue {
   }
 
   @Watch('step')
-  watchStep() {
+  async watchStep() {
     if (this.step === 5) {
-      const address = this.saveKeypairFromSeed();
+      this.isLoading = false;
 
-      this.setSelectedWallet(address || this.selectedWallet.address);
+      const address = await this.saveKeypairFromSeed();
+
+      this.isLoading = true;
 
       this.backupWallet(address);
     }
@@ -275,7 +280,7 @@ export default class CreateGoogle extends Vue {
     if (this.step === 3) {
       const isValidSequenceMnemonic = BaseApi.isValidSequenceMnemonic(
         this.mnemonic,
-        this.selectedMnemonicElements.map(({ word }) => word)
+        this.selectedMnemonicElements.map(({ word }) => word.trim())
       );
 
       if (!isValidSequenceMnemonic) {
@@ -310,25 +315,28 @@ export default class CreateGoogle extends Vue {
   }
 
   async backupWallet(address: string) {
-    const json = BaseApi.getPair(address).toJson(this.walletPassword);
+    const { exportedJson: json } = await exportAccount(address, this.walletPassword);
     const ethAddress = json.meta.ethereumAddress as string;
-    const ethJson = BaseApi.getPair(ethAddress).toJson(this.walletPassword);
+    let ethRes;
     const token = this.$route.params.access_token;
 
-    const ethRes = await createGoogleFile({
-      json: JSON.stringify(ethJson),
-      options: { name: this.nickname, address: ethAddress },
-      token,
-    });
+    if (ethAddress) {
+      const ethJson = await exportAccount(ethAddress, this.walletPassword);
+      ethRes = await createGoogleFile({
+        json: JSON.stringify(ethJson),
+        options: { name: this.nickname, address: ethAddress },
+        token,
+      });
+    }
 
     createGoogleFile({
       json: JSON.stringify(json),
-      options: { name: this.nickname, address: `${address}/${ethRes.id}` },
+      options: { name: this.nickname, address: `${address}/${ethRes ? ethRes.id : ''}` },
       token,
     });
   }
 
-  saveKeypairFromSeed() {
+  async saveKeypairFromSeed() {
     const meta: Record<string, unknown> = { name: this.nickname.trim(), ethereumAddress: '' };
     const {
       substrate: { keypairType: substrateKeypairType },
@@ -336,17 +344,17 @@ export default class CreateGoogle extends Vue {
     } = this.derivationPaths;
 
     if (this.suriEthereum !== '') {
-      const { address: ethereumAddress } = BaseApi.addKeypair(
-        this.suriEthereum,
+      const ethereumAddress = await createAccountSuri(
         this.walletPassword,
-        meta,
-        ethereumKeypairType
+        this.suriEthereum,
+        ethereumKeypairType,
+        meta
       );
 
       meta.ethereumAddress = ethereumAddress;
     }
 
-    const { address } = BaseApi.addKeypair(this.suriSubstrate, this.walletPassword, meta, substrateKeypairType);
+    const address = await createAccountSuri(this.walletPassword, this.suriSubstrate, substrateKeypairType, meta);
 
     return address;
   }

@@ -25,21 +25,28 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Mutation } from 'vuex-class';
-import type { TMutation } from '@/interfaces/common';
-import BaseApi from '@/util/BaseApi';
+import { Getter, Mutation } from 'vuex-class';
+import type { Fn } from '@/interfaces/common';
 import { Components } from '@/router/routes';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { initGoogleAuth } from '@/extension/messaging';
+import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { forgetAccount, initGoogleAuth } from '@/extension/messaging';
+import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
+import { beaconController } from '@/controllers';
 
 @Component
 export default class WalletDetailsPopup extends Vue {
   @Prop(Number) buttonTopClick!: number;
   @Prop(String) selectedWalletAddress!: string;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<string>;
+  @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: Fn<AccountJson>;
+  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
+
+  get selectedWallet() {
+    return this.accounts.find((account) => account.active)!;
+  }
 
   get isMobileWallet() {
-    return BaseApi.isMobileWallet(this.selectedWalletAddress);
+    return this.accounts.find(({ address, isMobile }) => address === this.selectedWalletAddress && isMobile);
   }
 
   get isExportPossible() {
@@ -55,21 +62,10 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   async deleteWallet() {
-    const walletsCount = this.isMobileWallet
-      ? await BaseApi.deleteMobileWallet(this.selectedWalletAddress)
-      : BaseApi.deleteNativeWallet(this.selectedWalletAddress);
-
-    if (walletsCount === 0) this.$router.push({ name: Components.Welcome });
-    else {
-      this.setWallet();
-      this.close();
-    }
-  }
-
-  setWallet() {
-    const selectedWalletAddress = BaseApi.getFirstSubstrateWalletAddress();
-
-    if (selectedWalletAddress) this.setSelectedWallet(selectedWalletAddress);
+    forgetAccount(this.selectedWalletAddress, this.isMobileWallet ? 'mobile' : 'native');
+    if (this.isMobileWallet) beaconController.resetConnection();
+    if (this.accounts.length === 0) this.$router.push({ name: Components.Welcome });
+    else this.close();
   }
 
   exportToGoogleDrive() {
@@ -77,9 +73,18 @@ export default class WalletDetailsPopup extends Vue {
   }
 
   openWalletDetails() {
-    this.setSelectedWallet(this.selectedWalletAddress);
+    const [account] = this.accounts.filter(({ address }) => address === this.selectedWalletAddress);
+    this.setSelectedWallet(account);
 
-    this.$router.push({ name: Components.Accounts });
+    this.$router.push({
+      name: Components.Accounts,
+      params: {
+        address: this.selectedWallet.address,
+        name: this.selectedWallet.name,
+        ethereumAddress: this.selectedWallet.ethereumAddress,
+        isMobile: this.selectedWallet.isMobile ? 'mobile' : '',
+      },
+    });
 
     this.$emit('closeSelectWalletPopup');
   }
@@ -119,7 +124,7 @@ export default class WalletDetailsPopup extends Vue {
     }
 
     .delete {
-      color: $delete-color;
+      color: $orange-color;
       opacity: 0.8;
     }
   }

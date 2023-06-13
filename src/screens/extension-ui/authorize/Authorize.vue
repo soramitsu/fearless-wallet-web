@@ -39,11 +39,15 @@
 <script lang="ts">
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { AuthorizeRequest, ApproveAuthRequest } from '@extension-base/background/types';
-import { TAction } from '@/interfaces';
+import {
+  AuthorizeRequest,
+  ApproveAuthRequest,
+  AccountJson,
+} from '@/extension/background/extension-base/src/background/types/types';
+import { AsyncFn } from '@/interfaces';
 import Hint from '@/components/Hint.vue';
 import { Components } from '@/router/routes';
-import { Accounts, WalletInfo } from '@/store';
+import { WalletInfo } from '@/store';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -63,14 +67,13 @@ export default class Authorize extends Vue {
   state: Record<string, WalletInfo> = {};
   selectAll = true;
 
-  @Getter(ExtensionGettersTypes.getAuthRequests) requests!: AuthorizeRequest[];
-  @Getter(AccountsGettersTypes.getWallets) wallets!: WalletInfo[];
-  @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
-  @Action(ExtensionActionTypes.APPROVE_AUTH_REQUEST) onApproveAuthRequest!: TAction<ApproveAuthRequest>;
-  @Action(ExtensionActionTypes.REJECT_AUTH_REQUEST) onRejectAuthRequest!: TAction<AuthorizeRequest>;
+  @Getter(ExtensionGettersTypes.authRequests) requests!: AuthorizeRequest[];
+  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
+  @Action(ExtensionActionTypes.APPROVE_AUTH_REQUEST) onApproveAuthRequest!: AsyncFn<ApproveAuthRequest>;
+  @Action(ExtensionActionTypes.REJECT_AUTH_REQUEST) onRejectAuthRequest!: AsyncFn<AuthorizeRequest>;
 
   get isAccountsExists() {
-    return BaseApi.getAccounts().length > 0 || BaseApi.getAddresses().length > 0;
+    return this.accounts.length > 0;
   }
 
   get request(): AuthorizeRequest {
@@ -83,7 +86,7 @@ export default class Authorize extends Vue {
   }
 
   mounted() {
-    this.wallets.forEach(({ name, address, isMobile }) =>
+    this.accounts.forEach(({ name, address, isMobile }) =>
       Vue.set(this.state, name, {
         name: name,
         address: address,

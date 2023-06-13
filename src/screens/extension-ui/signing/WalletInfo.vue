@@ -6,7 +6,7 @@
       <div class="wallet-info__content">
         <span class="wallet__name">{{ name }}</span>
 
-        <span ref="address" class="wallet__address" @click="saveToClipboard">
+        <span class="wallet__address" @click="saveToClipboard">
           {{ cutAddress }}
         </span>
       </div>
@@ -18,19 +18,15 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import { cut } from '@/helpers/history';
+import { cut } from '@/helpers/common';
 
 @Component
 export default class WalletInfo extends Vue {
   @Prop(String) address!: string;
   @Prop(String) name!: string;
 
-  $refs!: {
-    address: HTMLSpanElement;
-  };
-
   saveToClipboard() {
-    navigator.clipboard.writeText(this.$refs.address.innerText);
+    navigator.clipboard.writeText(this.address);
   }
 
   get cutAddress() {

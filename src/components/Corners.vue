@@ -61,6 +61,7 @@ export default class Corners extends Vue {
 .corners {
   position: relative;
   margin-bottom: 3px;
+  height: fit-content;
 
   .corner-size-big {
     position: absolute;
@@ -86,7 +87,7 @@ export default class Corners extends Vue {
 }
 
 .corner-border-error {
-  border-top: 1px solid $orange-color;
+  border-top: 1px solid $simple-orange-color;
 }
 
 .corner-border-selected {

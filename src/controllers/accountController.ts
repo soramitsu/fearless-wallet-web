@@ -1,11 +1,10 @@
-import type { Node, NetworkName } from '@/interfaces';
+import type { Node, NetworkName, WalletAddress } from '@/interfaces';
 import type { Lang } from '@/locales';
 import { LocalStorage } from '@/controllers/localStorageController';
-import store from '@/store';
-import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
+import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 
 class AccountController {
-  private readonly lsAccount = new LocalStorage('account');
+  private readonly lsAccount = new LocalStorage('account_');
   private readonly langStorageName = 'lang';
   private readonly sequenceAssetsStorageName = 'sequence-assets';
   private readonly autoSelectNodesStorageName = 'auto-select-nodes';
@@ -14,14 +13,19 @@ class AccountController {
   private readonly selectedFiatStorageName = 'selected-fiat';
   private readonly selectedWalletStorageName = 'selected-wallet';
   private readonly selectedNetworkStorageName = 'selected-network';
-  private readonly customSort = 'customSort';
+  private readonly customSort = 'custom-sort';
+  private readonly accounts = 'accounts';
+  private readonly hiddenAssets = 'hidden-assets';
   private readonly agreeSwapDisclaimer = 'agree-swap-disclaimer';
   private readonly hideWarningNetworks = 'hide-warning-networks';
+  private readonly hidingSoraCardBannerTime = 'hiding-sora-card-banner-time';
 
-  private getSequenceAssets(): Record<string, Record<NetworkName, string>> {
-    const sequencesAssets = this.lsAccount.get(this.sequenceAssetsStorageName);
+  public getHidingSoraCardBannerTime(): number {
+    return +(this.lsAccount.get(this.hidingSoraCardBannerTime).value ?? 0);
+  }
 
-    return sequencesAssets.value ?? {};
+  public setHidingSoraCardBannerTime(time: number) {
+    this.lsAccount.set(this.hidingSoraCardBannerTime, time);
   }
 
   public getHideWarningNetworks(): string[] {
@@ -56,6 +60,25 @@ class AccountController {
     this.lsAccount.set(this.langStorageName, lang);
   }
 
+  public getSelectedWallet(): { address: string; ethereumAddress: string; name: string } {
+    const lsFiat = this.lsAccount.get(this.selectedWalletStorageName);
+    const account = this.getAccounts().filter((el) => el.address == lsFiat.value);
+
+    if (account.length) {
+      return {
+        address: account[0].address,
+        ethereumAddress: account[0].ethereumAddress,
+        name: account[0].name ?? '',
+      };
+    }
+
+    return {
+      address: '',
+      ethereumAddress: '',
+      name: '',
+    };
+  }
+
   public getSelectedWalletAddress(): string {
     const lsFiat = this.lsAccount.get(this.selectedWalletStorageName);
 
@@ -74,8 +97,22 @@ class AccountController {
 
   public setSelectedFiat(fiat: string): void {
     this.lsAccount.set(this.selectedFiatStorageName, fiat);
+  }
 
-    store.dispatch(NetworksActionTypes.FETCH_ASSETS_PRICE);
+  public getHiddenAssets(): Record<WalletAddress, string[]> {
+    return this.lsAccount.get(this.hiddenAssets).value ?? {};
+  }
+
+  public setHiddenAssets(hiddenAssets: Record<WalletAddress, string[]>): void {
+    this.lsAccount.set(this.hiddenAssets, hiddenAssets);
+  }
+
+  public getAccounts(): AccountJson[] {
+    return this.lsAccount.get(this.accounts).value ?? [];
+  }
+
+  public setAccounts(accounts: AccountJson[]) {
+    this.lsAccount.set(this.accounts, accounts);
   }
 
   public getSelectedNetwork(): Record<string, string> {
@@ -94,39 +131,26 @@ class AccountController {
     this.lsAccount.set(this.selectedNetworkStorageName, newValue);
   }
 
-  public getSequenceAssetsByAddress(address: string, network: string): string[] {
-    const sequencesAssets = this.getSequenceAssets();
+  private getSequenceAssets(): Record<string, string> {
+    const sequencesAssets = this.lsAccount.get(this.sequenceAssetsStorageName);
 
-    return (sequencesAssets?.[address]?.[network]?.split(',') as string[]) ?? [];
+    return sequencesAssets.value ?? {};
   }
 
-  public setSequenceAssets(
-    sequence: string[] | Record<NetworkName, string[]>,
-    address: string,
-    network?: string
-  ): void {
+  public getSequenceAssetsByAddress(address: string): string[] {
+    const sequencesAssets = this.getSequenceAssets();
+
+    return (sequencesAssets?.[address]?.split(',') as string[]) ?? [];
+  }
+
+  public setSequenceAssets(sequence: string[], address: string): void {
     const prevSequence = this.getSequenceAssets();
+    const newSequence = {
+      ...prevSequence,
+      [address]: sequence.join(),
+    };
 
-    if (Array.isArray(sequence)) {
-      const prevSequenceByAddress = prevSequence[address];
-
-      const newSequence = {
-        ...prevSequence,
-        [address]: {
-          ...prevSequenceByAddress,
-          [network!]: sequence.join(),
-        },
-      };
-
-      this.lsAccount.set(this.sequenceAssetsStorageName, newSequence);
-    } else {
-      const newSequence = {
-        ...prevSequence,
-        [address]: sequence,
-      };
-
-      this.lsAccount.set(this.sequenceAssetsStorageName, newSequence);
-    }
+    this.lsAccount.set(this.sequenceAssetsStorageName, newSequence);
   }
 
   public getAutoSelectNodesValue(): Record<string, boolean> {
@@ -135,12 +159,12 @@ class AccountController {
     return autoSelectNodes.value ?? {};
   }
 
-  public setCustomSort(address: string) {
-    this.lsAccount.set(this.customSort, { [address]: true });
-  }
-
   public getCustomSort(): Record<string, boolean> {
     return this.lsAccount.get(this.customSort).value ?? {};
+  }
+
+  public setCustomSort(address: string) {
+    this.lsAccount.set(this.customSort, { [address]: true });
   }
 
   public setAutoSelectNodes(value: boolean, network: string): void {

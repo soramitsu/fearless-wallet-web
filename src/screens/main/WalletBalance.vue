@@ -16,15 +16,18 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 export default class WalletBalance extends Vue {
   @Prop(Object) changeWalletBalance!: ChangeWalletBalance;
   @Prop(Number) balance!: number;
-  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
 
   get percentString() {
     const { percent, amount } = this.changeWalletBalance;
+
+    if (percent === 0) return `${this.$n(0, 'percent')}`;
+
     const sign = percent > 0 ? '+' : '';
     const displayAmount = amount < 0 ? amount * -1 : amount;
-    const prepData = percent / 100;
+    const percentage = percent / 100 ?? 0;
 
-    return `${sign}${this.$n(prepData, 'percent')}(${this.fiatSymbol}${this.$n(displayAmount, 'price')})`;
+    return `${sign}${this.$n(percentage, 'percent')}(${this.fiatSymbol}${this.$n(displayAmount ?? 0, 'price')})`;
   }
 
   get percentClasses() {
@@ -63,7 +66,7 @@ export default class WalletBalance extends Vue {
   }
 
   .down-percent {
-    color: $delete-color;
+    color: $orange-color;
   }
 
   .fiat-balance {
@@ -71,6 +74,7 @@ export default class WalletBalance extends Vue {
     text-overflow: ellipsis;
     overflow-x: hidden;
     height: 30px;
+    line-height: 30px;
   }
 }
 </style>

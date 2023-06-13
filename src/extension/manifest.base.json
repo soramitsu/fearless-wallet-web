@@ -1,10 +1,10 @@
 {
-  "homepage_url": "https://github.com/soramitsu",
+  "homepage_url": "https://fearlesswallet.io/",
   "name": "Fearless Wallet",
   "short_name": "FW",
   "author": "Soramitsu",
   "manifest_version": 3,
-  "permissions": ["storage", "tabs", "identity"],
+  "permissions": ["storage", "tabs", "identity", "alarms"],
   "background": {
     "service_worker": "background.js",
     "type": "module"
@@ -39,6 +39,6 @@
     }
   ],
   "content_security_policy": {
-    "extension_pages": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self';  style-src 'unsafe-inline';img-src 'self' https://raw.githubusercontent.com data:; connect-src https://accounts.google.com https://www.googleapis.com https://api.subquery.network https://squid.subsquid.io/ https://polkadot.js.org https://raw.githubusercontent.com https://api.coingecko.com https://beacon-node-1.hope-5.papers.tech https://beacon-node-1.hope-4.papers.tech https://beacon-node-1.sky.papers.tech https://beacon-node-2.sky.papers.tech https://beacon-node-1.hope.papers.tech https://beacon-node-1.hope-2.papers.tech https://beacon-node-1.diamond.papers.tech https://beacon-node-1.hope-3.papers.tech ws:"
+    "extension_pages": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self';  style-src 'unsafe-inline';img-src 'self' https://raw.githubusercontent.com data:; frame-src https://soracard.com/; connect-src https://accounts.google.com https://www.googleapis.com https://api.etherscan.io https://squid.subsquid.io https://eth-mainnet.blastapi.io https://goerli.etherscan.io wss://eth-mainnet.blastapi.io/  https://api.subquery.network https://polkadot.js.org https://raw.githubusercontent.com https://api.coingecko.com https://beacon-node-1.hope-5.papers.tech https://beacon-node-1.hope-4.papers.tech https://beacon-node-1.sky.papers.tech https://beacon-node-2.sky.papers.tech https://beacon-node-1.hope.papers.tech https://beacon-node-1.hope-2.papers.tech https://beacon-node-1.diamond.papers.tech https://beacon-node-1.hope-3.papers.tech https://api-auth-test.soracard.com https://backend.dev.sora-card.tachi.soramitsu.co.jp wss: ws:"
   }
 }

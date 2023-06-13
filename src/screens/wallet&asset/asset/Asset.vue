@@ -37,12 +37,13 @@
         @click="toggleVisible('showReceiveForm', true)"
       />
 
-      <!-- <BorderButton
+      <BorderButton
+        v-if="showCrossChainButton"
         class="activity-button"
-        text="assets.teleportButtonText"
-        iconName="teleport"
-        @click="toggleVisible('showTeleportForm', true)"
-      /> -->
+        text="assets.crossChain"
+        iconName="cross-chain"
+        @click="toggleVisible('showCrossChainForm', true)"
+      />
 
       <BorderButton
         v-if="showBuyButton"
@@ -77,11 +78,11 @@
       :closeForm="toggleVisible.bind(null, 'showReceiveForm', false)"
     />
 
-    <TeleportForm
-      v-if="showTeleportForm"
+    <CrossChainForm
+      v-if="showCrossChainForm"
       :_originalNetwork="selectedNetwork"
       :_selectedAssetId="selectedAssetId"
-      :closeForm="toggleVisible.bind(null, 'showTeleportForm', false)"
+      :closeForm="toggleVisible.bind(null, 'showCrossChainForm', false)"
     />
 
     <BuyPopup
@@ -121,6 +122,7 @@
       v-if="showBalanceDetailsPopup"
       :network="selectedNetwork"
       :currency="currentCurrency"
+      :assetPrice="assetPrice"
       :closePopup="toggleBalanceDetailsPopup"
     />
 
@@ -134,25 +136,25 @@ import { Getter } from 'vuex-class';
 import HistoryDetailsForm from './HistoryDetailsForm.vue';
 import History from './History.vue';
 import type { HistoryElement } from '@/interfaces/history';
-import type { GetAssetName, SelectedWallet, GetNetworkStatus } from '@/store';
+import type { GetAssetPrice, SelectedWallet, GetNetwork } from '@/store';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
-import TeleportForm from '@/screens/wallet&asset/TeleportForm.vue';
+import CrossChainForm from '@/screens/wallet&asset/CrossChainForm.vue';
 import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
 import BalanceDetailsPopup from '@/screens/wallet&asset/BalanceDetailsPopup.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import BaseApi from '@/util/BaseApi';
-import { Currencies } from '@/interfaces/currencies';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
-import { tieAccount } from '@/extension/messaging';
-import { Network } from '@/interfaces';
-import { isSora, firstCharToUp } from '@/helpers/common';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
+import { firstCharToUp, isSora } from '@/helpers/common';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import { getSummaryTransferableBalance } from '@/helpers/currencies';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
-type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'showBuyPopup';
+type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 
 @Component({
   components: {
@@ -160,7 +162,7 @@ type ShowField = 'showSendForm' | 'showReceiveForm' | 'showTeleportForm' | 'show
     SendForm,
     BuyPopup,
     ReceiveForm,
-    TeleportForm,
+    CrossChainForm,
     SelectNetworkPopup,
     HistoryDetailsForm,
     BalanceDetailsPopup,
@@ -173,128 +175,135 @@ export default class Asset extends Vue {
   historyElement: HistoryElement | Record<string, string> = {};
   showSendForm = false;
   showReceiveForm = false;
-  showTeleportForm = false;
+  showCrossChainForm = false;
   showBuyPopup = false;
   showHistoryDetailsForm = false;
   showSelectNetworkPopup = false;
   showBalanceDetailsPopup = false;
   filterValue = '';
 
-  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
-  @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
-  @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => Network;
-
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJsonOld[];
 
   get showShimmers() {
-    const status = this.getNetworkStatus(this.selectedNetwork);
-
-    return !this.isOnline || status === 'pending';
+    return !this.isOnline || !this.balances.length || !this.currentNetwork || this.currentNetwork?.state === 'pending';
   }
 
   get providers() {
-    return this.currentCurrency?.providers ?? [];
+    const network = this.getNetwork(this.selectedNetwork);
+    const asset = network?.assets.find(({ assetId }) => assetId === this.selectedAssetId);
+
+    return asset?.purchaseProviders ?? [];
   }
 
-  get relayChain() {
-    return this.currentCurrency?.relayChain;
-  }
+  get showCrossChainButton() {
+    const network = this.networks.find(({ name }) => name.toLowerCase() === this.selectedNetwork?.toLowerCase())!;
 
-  get showBuyButton() {
-    return this.providers.length !== 0 && this.currentCurrency?.mainNetwork === this.selectedNetwork;
+    return network?.xcm?.availableAssets.some((assetName) => assetName.toLowerCase() === this.selectedAsset);
   }
 
   get showSwapButton() {
-    return isSora(this.selectedNetwork) && BaseApi.getWalletType(this.selectedWallet.address) === 'native';
+    return isSora(this.selectedNetwork) && !this.selectedWallet.isMobile;
+  }
+
+  get currentNetwork() {
+    return this.currentCurrency.balances.find(({ name }) => name.toLowerCase() === this.selectedNetwork?.toLowerCase());
+  }
+
+  get mainNetwork() {
+    return this.currentCurrency.balances.find((network) => network.isUtility || network.isNative)!.name ?? '';
+  }
+
+  get showBuyButton() {
+    return this.providers.length !== 0 && this.mainNetwork?.toLowerCase() === this.selectedNetwork?.toLowerCase();
   }
 
   get currentCurrency() {
-    return this.currencies.find(({ assetId }) => assetId === this.selectedAssetId);
+    return this.balances.find(({ assetId: id }) => id === this.selectedAssetId)! ?? {};
   }
 
   get displayAddressByNetwork() {
-    return BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.selectedNetwork);
+    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
   }
 
   get assetPriceString() {
-    return `1 ${this.selectedAssetUpper} = ${this.fiatSymbol}${this.$n(this.price ?? 0, 'price')}`;
+    return `1 ${this.selectedAssetUpper} = ${this.fiatSymbol}${this.$n(this.assetPrice.price, 'price')}`;
   }
 
   get selectedNetwork() {
-    return this.$route.params.network;
+    return this.$route.params.network ?? '';
   }
 
   get selectedAssetId() {
-    return this.$route.params.assetId;
+    return this.$route.params.assetId ?? '';
+  }
+
+  get selectedAsset() {
+    return this.currentCurrency.name?.toLowerCase() ?? '';
   }
 
   get selectedAssetUpper() {
-    return this.getAssetName(this.selectedAssetId).toUpperCase();
+    return this.selectedAsset.toUpperCase();
   }
 
-  get price() {
-    return this.currentCurrency?.price;
+  get assetPrice() {
+    return this.getAssetPrice(this.currentCurrency.priceId ?? '');
   }
 
   get countAssetsString() {
     if (!this.currentCurrency) return `${this.selectedAssetUpper} 0`;
 
-    const transferableCountAsset = +this.currentCurrency.getTransferableCountAssets(
-      this.selectedWallet,
-      this.selectedNetwork
-    );
+    const totalCountAssets = +getSummaryTransferableBalance(this.currentCurrency, this.selectedNetwork);
+    const total = this.$n(totalCountAssets, 'decimal');
 
-    return `${this.selectedAssetUpper} ${this.$n(transferableCountAsset, 'decimal')}`;
+    return `${this.selectedAssetUpper} ${total}`;
+  }
+
+  get transferableAssetBalance() {
+    return this.currentCurrency?.balances?.reduce((result, { transferable }) => {
+      if (transferable) return result + +transferable;
+      else return result;
+    }, 0);
+  }
+
+  get transferableFiatBalance() {
+    return this.transferableAssetBalance * this.assetPrice.price;
   }
 
   get transferableFiatBalanceInNetworkString() {
     if (!this.currentCurrency) return `${this.fiatSymbol} 0`;
 
-    const transferableFiatBalance = this.currentCurrency.getTransferableFiatBalance(
-      this.selectedWallet,
-      this.selectedNetwork
-    );
-
-    return `${this.fiatSymbol} ${this.$n(+transferableFiatBalance, 'price')}`;
-  }
-
-  get currency() {
-    return this.currencies.find(({ assetId }) => assetId === this.selectedAssetId);
+    return `${this.fiatSymbol} ${this.$n(this.transferableFiatBalance, 'price')}`;
   }
 
   get optionsNetworks() {
     const haveEthereumAccount = this.selectedWallet.ethereumAddress !== '';
-    const walletBalance = (this.currency?.getNetworkList() ?? []).filter(({ network }) =>
-      ETHEREUM_NETWORKS.includes(network) ? haveEthereumAccount : true
+    const walletBalance = (this.currentCurrency?.balances ?? []).filter(({ name }) =>
+      ETHEREUM_NETWORKS.includes(name) ? haveEthereumAccount : true
     );
     const filter = this.filterValue.trim().toLowerCase();
 
     return walletBalance
-      .map(({ network, type }) => {
-        const icon = this.getNetwork(network).icon;
-
+      .map(({ name, type, icon }) => {
         return {
-          label: firstCharToUp(network),
-          value: network,
-          path: icon,
+          name: firstCharToUp(name),
+          value: name,
+          icon,
           type,
-          relayChain: this.currency?.relayChain,
         };
       })
       .filter(({ value }) => {
-        return value.includes(filter);
+        return value.toLowerCase().includes(filter);
       });
   }
 
   toggleSelectedNetwork(network: string) {
     if (this.selectedNetwork === network) return;
-
-    const prepNetwork = network === 'all' ? null : `0x${this.getNetwork(network).chainId}`;
-
-    tieAccount(this.selectedWallet.address, prepNetwork);
 
     this.$router.push({
       name: Components.Asset,
@@ -313,6 +322,8 @@ export default class Asset extends Vue {
     this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
 
     targetElement.style.zIndex = this.showSelectNetworkPopup ? '400' : '0';
+
+    this.filterValue = '';
   }
 
   toggleVisible(field: ShowField, value: boolean) {
@@ -348,7 +359,7 @@ export default class Asset extends Vue {
       name: Components.SoraSwap,
       params: {
         assetId: this.selectedAssetId,
-        reset: '1',
+        reset: '',
       },
     });
   }
@@ -428,7 +439,6 @@ export default class Asset extends Vue {
     .activity-button {
       flex-grow: 1;
       margin-left: 5px;
-      width: 125px;
 
       &:first-child {
         margin-left: 0;

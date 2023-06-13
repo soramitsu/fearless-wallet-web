@@ -1,5 +1,10 @@
-import { AccountJson, AuthorizeRequest, MetadataRequest, SigningRequest } from '@extension-base/background/types';
 import type { HexString } from '@polkadot/util/types';
+import {
+  AccountJson,
+  AuthorizeRequest,
+  MetadataRequest,
+  SigningRequest,
+} from '@/extension/background/extension-base/src/background/types/types';
 import {
   approveSignPassword,
   approveSignSignature,

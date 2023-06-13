@@ -1,10 +1,10 @@
-import type { NetworkName } from './networks';
-
 type AssetJson = {
   id: string;
   name: string;
   symbol: string;
   displayName?: string;
+  relayChain?: string;
+  contractAddress?: string;
   chainId: string;
   precision: number;
   priceId?: string;
@@ -12,10 +12,11 @@ type AssetJson = {
   currencyId?: string;
   transfersEnabled?: true;
   existentialDeposit: string;
+  color: string;
 };
 
 type AssetPrices = {
-/* eslint-disable */
+  /* eslint-disable */
   aed: number;
   aed_24h_change: number;
   ars: number;
@@ -113,14 +114,17 @@ type AssetPrices = {
 
 interface AssetPrice {
   price: number;
-  hours24Change: number;
+  priceChange: number;
 }
 
 type AssetName = string;
 
 type AssetId = string;
 
-type AssetsPrice = Record<NetworkName | AssetName, AssetPrices>;
+type AssetsPrice = {
+  tokenPriceMap: Record<string, number>;
+  tokenPriceChange: Record<string, number>;
+};
 
 type KeysAssetPricesJson = keyof AssetPrices;
 

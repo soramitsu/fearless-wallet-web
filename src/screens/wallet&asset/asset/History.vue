@@ -2,7 +2,7 @@
   <ContentForm :height="306">
     <div class="history">
       <div class="history-settings">
-        <div class="history-label">{{ $t('assets.history.text') }}</div>
+        <div class="history-label">{{ $t('assets.history') }}:</div>
 
         <Dropdown :value="filterHistoryValue" :options="historyDropdownOption" :handler="filterHistoryValueUpdate" />
       </div>
@@ -16,12 +16,12 @@
               v-for="(historyElement, index) in filteredHistory"
               :key="index"
               :historyElement="historyElement"
-              :assetId="currency.assetId"
+              :token="currency"
               @click.native="$emit('openHistoryDetailsForm', historyElement)"
             />
           </template>
 
-          <div v-else>{{ $t('assets.history.noHistory') }}</div>
+          <div v-else>{{ $t('assets.noHistory') }}</div>
         </div>
       </Scroll>
     </div>
@@ -36,8 +36,7 @@ import type { FilterHistory, GetHistory } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { Currency } from '@/interfaces';
-import BaseApi from '@/util/BaseApi';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworksController } from '@/controllers';
 
 @Component({
@@ -45,15 +44,16 @@ import { NetworksController } from '@/controllers';
 })
 export default class History extends Vue {
   readonly historyDropdownOption = [
-    { label: 'assets.history.all', value: 'all' },
-    { label: 'assets.history.transfer', value: 'transfer' },
-    { label: 'assets.history.reward', value: 'reward' },
-    { label: 'assets.history.extrinsic', value: 'extrinsic' },
+    { label: 'assets.all', value: 'all' },
+    { label: 'assets.transfer', value: 'transfer' },
+    { label: 'assets.reward', value: 'reward' },
+    { label: 'assets.extrinsic', value: 'extrinsic' },
   ];
+
   filterHistoryValue: FilterHistory = 'all';
   showLoader = false;
 
-  @Prop(Object) currency!: Currency;
+  @Prop(Object) currency!: TokenBalance;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
@@ -74,14 +74,13 @@ export default class History extends Vue {
     ];
   }
 
-  get walletIncludingReplacedAccount() {
-    return BaseApi.getWalletIncludingReplacedAccount(this.selectedWallet, this.selectedNetwork);
-  }
-
   get history() {
-    const { address } = this.walletIncludingReplacedAccount;
+    if (!this.selectedNetwork) return [];
 
-    return this.getHistory(this.currency?.assetId, address, this.selectedNetwork)?.nodes ?? [];
+    return (
+      this.getHistory(this.currency?.assetId, this.selectedWallet.address, this.selectedNetwork.toLowerCase())?.nodes ??
+      []
+    );
   }
 
   get filteredHistory() {
@@ -95,25 +94,27 @@ export default class History extends Vue {
 
   @Watch('selectedNetwork')
   @Watch('selectedWallet')
-  @Watch('currency')
   async watchSelectedNetwork() {
     this.fetchHistory();
   }
 
+  get isMainNetwork() {
+    return !!this.currency.balances?.find(
+      ({ name, isUtility, isNative }) =>
+        name.toLowerCase() === this.selectedNetwork?.toLowerCase() && (isUtility || isNative)
+    );
+  }
+
   mounted() {
-    this.fetchHistory();
+    setTimeout(() => this.fetchHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
   }
 
   async fetchHistory() {
-    if (!this.currency?.assetId || this.history.length !== 0 || !this.currency.isUtility(this.selectedNetwork)) return;
+    if (this.history.length !== 0 || !this.isMainNetwork) return;
 
     this.showLoader = true;
 
-    await NetworksController.fetchHistory(
-      this.selectedNetwork,
-      this.walletIncludingReplacedAccount,
-      this.currency.assetId
-    );
+    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.currency.assetId);
 
     this.showLoader = false;
   }

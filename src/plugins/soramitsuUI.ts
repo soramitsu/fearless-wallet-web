@@ -108,6 +108,7 @@ Vue.use(ElementUIPlugin)
   .use(STable)
   .use(STableColumn)
   .use(STooltip);
+
 Vue.prototype.$prompt = MessageBox.prompt;
 Vue.prototype.$alert = MessageBox.alert;
 Vue.prototype.$message = Message;

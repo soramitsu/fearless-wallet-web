@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { InjectedAccount, InjectedAccounts, Unsubcall } from '@polkadot/extension-inject/types';
-import type { SendRequest } from './types';
+import type { SendRequest } from '@extension-base/page/types';
 
 // External to class, this.# is not private enough (yet)
 let sendRequest: SendRequest;

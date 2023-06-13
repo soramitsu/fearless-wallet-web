@@ -6,7 +6,7 @@ import { isUndefined, logger } from '@polkadot/util';
 import type { InjectedProvider, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { ProviderInterfaceEmitCb, ProviderInterfaceEmitted } from '@polkadot/rpc-provider/types';
 import type { AnyFunction } from '@polkadot/types/types';
-import type { SendRequest } from './types';
+import type { SendRequest } from '@extension-base/page/types';
 
 const l = logger('PostMessageProvider');
 
@@ -27,7 +27,7 @@ let sendRequest: SendRequest;
  */
 export default class PostMessageProvider implements InjectedProvider {
   readonly #eventemitter: EventEmitter;
-
+  isClonable = true;
   // Whether or not the actual extension background provider is connected
   #isConnected = false;
 

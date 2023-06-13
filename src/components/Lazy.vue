@@ -10,7 +10,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 
 @Component
-export default class Currencies extends Vue {
+export default class Lazy extends Vue {
   readonly targetRef = 'target';
   shouldRender = false;
 

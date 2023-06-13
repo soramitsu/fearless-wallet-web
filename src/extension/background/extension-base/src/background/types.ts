@@ -5,22 +5,15 @@
 
 import { TypeRegistry } from '@polkadot/types';
 import { Subscription } from 'rxjs';
-import { ALLOWED_PATH } from '../defaults';
-import MetadataStore from '../stores/Metadata';
-import type {
-  InjectedAccount,
-  InjectedMetadataKnown,
-  MetadataDef,
-  ProviderList,
-  ProviderMeta,
-} from '@polkadot/extension-inject/types';
+import { ALLOWED_PATH } from '@extension-base/defaults';
+import { RequestSignatures } from '@extension-base/background/types/messages';
+import type { MetadataDef, ProviderList, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { KeyringPair, KeyringPair$Json, KeyringPair$Meta } from '@polkadot/keyring/types';
-import type { JsonRpcResponse, ProviderInterface } from '@polkadot/rpc-provider/types';
+import type { ProviderInterface } from '@polkadot/rpc-provider/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
-import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
+import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import { FilesResponse, GoogleAuthTypes, ICreateFile, IGetFilesResponse, VerifyTokenResponse } from '@/interfaces';
 
 type KeysWithDefinedValues<T> = {
   [K in keyof T]: T[K] extends undefined ? never : K;
@@ -99,83 +92,6 @@ export interface RequestAddressRemove {
 export type ConnectedTabsUrlResponse = string[];
 
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
-export interface RequestSignatures {
-  // private/internal requests, i.e. from a popup
-  'pri(accounts.create.external)': [RequestAccountCreateExternal, boolean];
-  'pri(accounts.create.hardware)': [RequestAccountCreateHardware, boolean];
-  'pri(accounts.create.suri)': [RequestAccountCreateSuri, boolean];
-
-  'pri(addresses.create)': [RequestAddressCreate, boolean];
-  'pri(addresses.remove)': [RequestAddressRemove, boolean];
-  'pri(addresses.get)': [null, KeyringAddress[]];
-
-  'pri(accounts.edit)': [RequestAccountEdit, boolean];
-  'pri(accounts.export)': [RequestAccountExport, ResponseAccountExport];
-  'pri(accounts.batchExport)': [RequestAccountBatchExport, ResponseAccountsExport];
-  'pri(accounts.forget)': [RequestAccountForget, boolean];
-  'pri(accounts.list)': [RequestAccountList, InjectedAccount[]];
-  'pri(accounts.show)': [RequestAccountShow, boolean];
-  'pri(accounts.tie)': [RequestAccountTie, boolean];
-  'pri(accounts.subscribe)': [RequestAccountSubscribe, boolean, AccountJson[]];
-  'pri(accounts.validate)': [RequestAccountValidate, boolean];
-  'pri(accounts.changePassword)': [RequestAccountChangePassword, boolean];
-  'pri(authorize.approve)': [RequestAuthorizeApprove, boolean];
-  'pri(authorize.list)': [null, ResponseAuthorizeList];
-  'pri(authorize.requests)': [RequestAuthorizeSubscribe, boolean, AuthorizeRequest[]];
-  'pri(authorize.remove)': [string, ResponseAuthorizeList];
-  'pri(authorize.delete.request)': [string, void];
-  'pri(authorize.cancel)': [string, boolean];
-  'pri(authorize.update)': [RequestUpdateAuthorizedAccounts, void];
-  'pri(activeTabsUrl.update)': [RequestActiveTabsUrlUpdate, void];
-  'pri(connectedTabsUrl.get)': [null, ConnectedTabsUrlResponse];
-  'pri(derivation.create)': [RequestDeriveCreate, boolean];
-  'pri(derivation.validate)': [RequestDeriveValidate, ResponseDeriveValidate];
-  'pri(json.restore)': [RequestJsonRestore, void];
-  'pri(json.valid)': [RequestJsonRestore, boolean];
-  'pri(json.batchRestore)': [RequestBatchRestore, void];
-  'pri(json.account.info)': [KeyringPair$Json, ResponseJsonGetAccountInfo];
-  'pri(metadata.approve)': [RequestMetadataApprove, boolean];
-  'pri(metadata.get)': [string | null, MetadataDef | null];
-  'pri(metadata.reject)': [RequestMetadataReject, boolean];
-  'pri(metadata.requests)': [RequestMetadataSubscribe, boolean, MetadataRequest[]];
-  'pri(metadata.list)': [null, MetadataDef[]];
-  'pri(seed.create)': [RequestSeedCreate, ResponseSeedCreate];
-  'pri(seed.validate)': [RequestSeedValidate, ResponseSeedValidate];
-  'pri(settings.notification)': [string, boolean];
-  'pri(signing.approve.password)': [RequestSigningApprovePassword, boolean];
-  'pri(signing.approve.signature)': [RequestSigningApproveSignature, boolean];
-  'pri(signing.cancel)': [RequestSigningCancel, boolean];
-  'pri(signing.isLocked)': [RequestSigningIsLocked, ResponseSigningIsLocked];
-  'pri(signing.requests)': [RequestSigningSubscribe, boolean, SigningRequest[]];
-  'pri(window.open)': [AllowedPath, boolean];
-  'pri(signing.refreshPasswordTimeout)': [string, number];
-  'pri(signing.resetTimeouts)': [null, boolean];
-  'pri(signing.saveTimeoutCache)': [RequestSaveTimeoutCache, boolean];
-  'pri(google.auth)': [GoogleAuthTypes, void];
-  'pri(google.verify.token)': [{ token: string }, VerifyTokenResponse];
-  'pri(google.get.files)': [{ token: string }, IGetFilesResponse];
-  'pri(google.get.file)': [GoogleFileId, KeyringPair$Json];
-  'pri(google.create.file)': [ICreateFile, FilesResponse];
-  'pri(google.delete.file)': [GoogleFileId, void];
-  'pri(tab.status)': [null, ActiveTabAuthorizeStatus];
-
-  // public/external requests, i.e. from a page
-  'pub(accounts.list)': [RequestAccountList, InjectedAccount[]];
-  'pub(accounts.subscribe)': [RequestAccountSubscribe, string, InjectedAccount[]];
-  'pub(accounts.unsubscribe)': [RequestAccountUnsubscribe, boolean];
-  'pub(authorize.tab)': [RequestAuthorizeTab, Promise<AuthResponse>];
-  'pub(bytes.sign)': [SignerPayloadRaw, ResponseSigning];
-  'pub(extrinsic.sign)': [SignerPayloadJSON, ResponseSigning];
-  'pub(metadata.list)': [null, InjectedMetadataKnown[]];
-  'pub(metadata.provide)': [MetadataDef, boolean];
-  'pub(phishing.redirectIfDenied)': [null, boolean];
-  'pub(rpc.listProviders)': [void, ResponseRpcListProviders];
-  'pub(rpc.send)': [RequestRpcSend, JsonRpcResponse];
-  'pub(rpc.startProvider)': [string, ProviderMeta];
-  'pub(rpc.subscribe)': [RequestRpcSubscribe, number, JsonRpcResponse];
-  'pub(rpc.subscribeConnected)': [null, boolean, boolean];
-  'pub(rpc.unsubscribe)': [RequestRpcUnsubscribe, boolean];
-}
 
 export type MessageTypes = keyof RequestSignatures;
 
@@ -458,7 +374,7 @@ export interface ResponseJsonRestore {
   error: string | null;
 }
 
-export type AllowedPath = typeof ALLOWED_PATH[number];
+export type AllowedPath = (typeof ALLOWED_PATH)[number];
 
 export interface ResponseJsonGetAccountInfo {
   address: string;
@@ -560,22 +476,6 @@ export interface AccountSub {
   url: string;
 }
 export type Subscriptions = Record<string, Port>;
-
-export interface IState {
-  registry: TypeRegistry;
-  metaStore: MetadataStore;
-  authUrls: AuthUrls;
-  addresses: Record<string, string>;
-  defaultAuthAccountSelection: string[];
-  injectedProviders: Map<Port, ProviderInterface>;
-  notification: string;
-  subscriptions: Subscriptions;
-  providers: Providers;
-  accountSubs: Record<string, AccountSub>;
-  windows: number[];
-  cachedUnlocks: CachedUnlocks;
-  connectedTabsUrl: string[];
-}
 
 export interface GoogleFileId {
   id: string;

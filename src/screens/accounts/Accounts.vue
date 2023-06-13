@@ -2,29 +2,15 @@
   <div class="accounts">
     <Input v-model="newName" placeholder="accounts.walletName" size="big" :maxlength="35" @blur="blurInputName" />
 
-    <template v-if="showReplacedAccounts">
-      <div class="row label">{{ $t('accounts.accountsUniquesSecrets') }}</div>
-
-      <AccountsItem
-        v-for="{ network, address, networkIcon } in replacedAccountsItems"
-        :key="network"
-        :network="network"
-        :icon="networkIcon"
-        :address="address"
-        @openAccountSettingsPopup="openAccountSettingsPopup"
-      />
-    </template>
-
-    <template v-if="showSharedSecretAccounts">
+    <template>
       <div class="row label">{{ $t('accounts.accountsDefaultSecrets') }}</div>
 
       <AccountsItem
-        v-for="{ network, address, networkIcon } in sharedAccountsItems"
+        v-for="{ network, address, networkIcon } in chainAccounts"
         :key="network"
         :network="network"
         :icon="networkIcon"
         :address="address"
-        :isMobile="isMobileWallet"
         @openAddEthereumAccountPopup="$emit('openAddEthereumAccountPopup')"
         @openAccountSettingsPopup="openAccountSettingsPopup"
       />
@@ -33,17 +19,16 @@
 </template>
 
 <script lang="ts">
-import { Getter, Mutation } from 'vuex-class';
+import { Getter } from 'vuex-class';
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import AccountsItem from './AccountsItem.vue';
 import type { SelectedWallet } from '@/store';
-import type { Networks, TMutation, ChainAccount } from '@/interfaces';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import type { Networks } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { getChainAccounts } from '@/helpers/accounts';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import BaseApi from '@/util/BaseApi';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { accountUpdateName } from '@/extension/messaging';
 
 @Component({
   components: { AccountsItem },
@@ -52,58 +37,21 @@ export default class Account extends Vue {
   selectedNetwork = '';
   selectedAddress = '';
   newName = '';
-  chainAccounts: ChainAccount[] = [];
 
+  @Getter(NetworksGettersTypes.allNetworks) networks!: Networks;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getAllNetworks) networks!: Networks;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<string>;
 
-  get showReplacedAccounts() {
-    return this.replacedAccountsItems.length > 0;
-  }
-
-  get isMobileWallet() {
-    return BaseApi.isMobileWallet(this.selectedWallet.address);
-  }
-
-  get showSharedSecretAccounts() {
-    return this.sharedAccountsItems.length > 0;
-  }
-
-  get replacedAccountsItems() {
-    if (this.selectedWallet.address === '') return [];
-
-    return this.chainAccounts.filter(({ isReplaced }) => isReplaced);
-  }
-
-  get sharedAccountsItems() {
-    if (this.selectedWallet.address === '') return [];
-
-    return this.chainAccounts.filter(({ isReplaced }) => !isReplaced);
+  get chainAccounts() {
+    return getChainAccounts(this.networks, this.selectedWallet);
   }
 
   @Watch('selectedWallet')
-  ethereumJsonChanged({ name }: SelectedWallet) {
+  selectedWalletWatcher({ name }: SelectedWallet) {
     this.newName = name;
   }
 
-  @Watch('networks')
-  networksWatcher() {
-    this.updatedAccounts();
-  }
-
-  activated() {
-    this.updatedAccounts();
-  }
-
   mounted() {
-    this.updatedAccounts();
-
     this.newName = this.selectedWallet.name;
-  }
-
-  updatedAccounts() {
-    this.chainAccounts = getChainAccounts(this.networks, this.selectedWallet);
   }
 
   back() {
@@ -123,9 +71,7 @@ export default class Account extends Vue {
       return;
     }
 
-    BaseApi.updateWalletName(address, this.newName);
-
-    this.setSelectedWallet(address);
+    accountUpdateName(address, this.newName);
   }
 }
 </script>

@@ -1,15 +1,22 @@
 import { MESSAGE_ORIGIN_CONTENT } from '@extension-base/defaults';
-import { injectExtension } from '@polkadot/extension-inject';
-import { enable, handleResponse, redirectIfPhishing } from '@extension-base/page';
+import { enable, handleResponse, redirectIfPhishing, saveSoraCardToken } from '@extension-base/page';
+import { RequestSignatures } from '@extension-base/background/types/messages';
 import type { Message } from '@extension-base/types';
-import type { RequestSignatures, TransportRequestMessage } from '@extension-base/background/types';
+import type { TransportRequestMessage } from '@extension-base/background/types/types';
+import { APP_VERSION } from '@/consts/global';
 
 class Page {
   private inject() {
-    injectExtension(enable, {
-      name: 'fearless-wallet',
-      version: '0.0.1',
-    });
+    // small helper with the typescript types, just cast window
+    const windowInject: any = window; // don't clobber the existing object, we will add it (or create as needed)
+
+    windowInject.injectedWeb3 = windowInject.injectedWeb3 || {}; // add our enable and saveSoraCardToken functions
+
+    windowInject.injectedWeb3['fearless-wallet'] = {
+      enable: (origin: string) => enable(origin),
+      saveSoraCardToken: (token: string) => saveSoraCardToken(token),
+      version: APP_VERSION,
+    };
   }
 
   init() {

@@ -26,14 +26,14 @@ import type { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import type { PermissionResponseOutput } from '@airgap/beacon-sdk';
 import type {
   PermissionSuccess,
-  TAction,
+  AsyncFn,
   RequestSentInfo,
   Networks,
-  TMutation,
+  Fn,
   PermissionResponsePayload,
 } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
-import { createAddress } from '@/extension/messaging';
+import { createMobileWallet } from '@/extension/messaging';
 import { beaconController } from '@/controllers';
 import { ActionTypes as AccountActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as NetworkGettersTypes } from '@/store/networks/getters';
@@ -41,6 +41,7 @@ import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutations';
 import PermissionRequestPopup from '@/screens/mobileConnect/PermissionRequestPopup.vue';
 import { MOONBEAM_GENESISHASH } from '@/consts/networks';
+import { IS_EXTENSION } from '@/consts/global';
 
 @Component({
   components: {
@@ -59,10 +60,9 @@ export default class MobileConnect extends Vue {
   isPossibleConnectionProblem = false;
   permissionRequestDenied = false;
 
-  @Action(AccountActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<string>;
-  @Getter(NetworkGettersTypes.getAllNetworks) getNetworks!: Networks;
+  @Action(AccountActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<string>;
   @Getter(AccountGettersTypes.GET_QR) getQR!: Nullable<string>;
-  @Mutation(AccountMutationsTypes.SET_QR) setQR!: TMutation<string>;
+  @Mutation(AccountMutationsTypes.SET_QR) setQR!: Fn<string>;
 
   async mounted() {
     this.isLoading = !this.getQR;
@@ -169,10 +169,9 @@ export default class MobileConnect extends Vue {
     const ethereumAddress = this.getEthereumAccount(account);
     const meta: KeyringJson$Meta = { name: 'mobile wallet', isMobile: true, ethereumAddress };
 
-    if (BaseApi.isExtension()) await createAddress(substrateAccount, meta); //extenstion service worker
+    if (IS_EXTENSION) await createMobileWallet(substrateAccount, meta);
 
-    BaseApi.saveAddress(substrateAccount, meta);
-
+    // BaseApi.saveAddress(substrateAccount, meta);
     await this.setSelectedWallet(substrateAccount);
   }
 

@@ -14,12 +14,14 @@
 </template>
 
 <script lang="ts">
-import { Getter, Action } from 'vuex-class';
+import { Getter, Mutation } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { FiatJson, TAction } from '@/interfaces/common';
-import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
+import type { FiatJson } from '@/interfaces/common';
+import type { Fn } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { updateFiatSymbol } from '@/extension/messaging';
 
 @Component
 export default class FiatsPopup extends Vue {
@@ -29,7 +31,7 @@ export default class FiatsPopup extends Vue {
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(NetworksGettersTypes.getFiats) fiats!: FiatJson[];
   @Getter(AccountsGettersTypes.getSelectedFiat) selectedFiat!: string;
-  @Action(AccountsActionTypes.SET_SELECTED_FIAT) setSelectedFiat!: TAction<string>;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_FIAT) setSelectedFiat!: Fn<string>;
 
   get filteredOptionsFiats() {
     const filter = this.filterValue.trim().toLowerCase();
@@ -37,7 +39,7 @@ export default class FiatsPopup extends Vue {
     return this.fiats
       .filter(({ name }) => name.toLowerCase().includes(filter))
       .map(({ name, id, icon }) => {
-        return { label: name, value: id, path: icon };
+        return { name: name, value: id, icon };
       });
   }
 
@@ -45,10 +47,11 @@ export default class FiatsPopup extends Vue {
     this.filterValue = value;
   }
 
-  toggleSelectedFiat(fiatName: string) {
-    this.setSelectedFiat(fiatName);
-
-    this.handlerClose();
+  toggleSelectedFiat(id: string) {
+    updateFiatSymbol(id).then(() => {
+      this.setSelectedFiat(id);
+      this.handlerClose();
+    });
   }
 }
 </script>

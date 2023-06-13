@@ -18,18 +18,19 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Mutation } from 'vuex-class';
-import type { Networks, TMutation } from '@/interfaces';
+import type { Fn } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 @Component
 export default class NetworkUnavailablePopup extends Vue {
   isDontShowAgain = false;
 
   @Prop(Function) closePopup!: VoidFunction;
-  @Prop(Array) networks!: Networks;
+  @Prop(Array) networks!: NetworkJsonOld[];
   @Prop(String) network!: string;
-  @Mutation(AccountsMutationTypes.HIDE_NETWORK_WARNING) hideNetworkWarning!: TMutation<string>;
+  @Mutation(AccountsMutationTypes.HIDE_NETWORK_WARNING) hideNetworkWarning!: Fn<string>;
 
   get headers() {
     return this.haveMoreOneNodes
@@ -38,7 +39,7 @@ export default class NetworkUnavailablePopup extends Vue {
   }
 
   get haveMoreOneNodes() {
-    return this.networks.find(({ name }) => name === this.network)!.nodes.length > 1;
+    return this.networks.find(({ name }) => name.toLowerCase() === this.network.toLowerCase())!.nodes.length > 1;
   }
 
   get showWarningIcon() {

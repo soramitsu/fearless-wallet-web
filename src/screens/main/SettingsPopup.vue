@@ -11,6 +11,8 @@
     <div class="settings">
       <SettingMenuItem title="header.settings.accounts" icon="account" @onOpen="open('Accounts')" />
 
+      <SettingMenuItem title="soraCard.title" icon="card" @onOpen="open('SoraCard')" />
+
       <SettingMenuItem title="header.settings.currency" icon="dollar-circle" @onOpen="openPopup('openFiatsPopup')" />
 
       <SettingMenuItem
@@ -35,10 +37,12 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-
+import { Getter } from 'vuex-class';
 import { Components } from '@/router/routes';
 import SettingMenuItem from '@/screens/main/SettingMenuItem.vue';
-import BaseApi from '@/util/BaseApi';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { SelectedWallet } from '@/store';
+import { IS_EXTENSION } from '@/consts/global';
 
 type SettingsItemType = 'Accounts';
 
@@ -46,14 +50,13 @@ type SettingsItemType = 'Accounts';
   components: { SettingMenuItem },
 })
 export default class SettingsPopup extends Vue {
+  readonly isExtension = IS_EXTENSION;
+
   @Prop(Function) handlerClose!: VoidFunction;
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get routeName() {
     return this.$route.name;
-  }
-
-  get isExtension() {
-    return BaseApi.isExtension();
   }
 
   openPopup(value: string) {
@@ -61,9 +64,7 @@ export default class SettingsPopup extends Vue {
   }
 
   open(name: SettingsItemType) {
-    if (this.routeName !== name) {
-      this.$router.push({ name: Components[name] });
-    }
+    if (this.routeName !== name) this.$router.push({ name: Components[name] });
 
     this.handlerClose();
   }

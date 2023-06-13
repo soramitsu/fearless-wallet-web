@@ -55,7 +55,7 @@
         </div>
       </Scroll>
 
-      <Button v-if="showSwitcher" size="big" text="common.continue" :disabled="buttonDisabled" @click="proceed" />
+      <Button v-if="showSwitcher" size="big" text="common.continue" :disabled="buttonDisabled" @click="agree" />
     </div>
   </AboveForm>
 </template>
@@ -63,7 +63,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation } from 'vuex-class';
-import type { TMutation } from '@/interfaces';
+import type { Fn } from '@/interfaces';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { URLS } from '@/consts/urls';
 
@@ -71,7 +71,7 @@ import { URLS } from '@/consts/urls';
 export default class Disclaimer extends Vue {
   agreeWithRules = false;
 
-  @Mutation(AccountsMutationTypes.HIDE_POLKASWAP_ALERT) hidePolkaswapAlert!: TMutation<unknown>;
+  @Mutation(AccountsMutationTypes.HIDE_POLKASWAP_ALERT) hidePolkaswapAlert!: Fn<unknown>;
 
   get showSwitcher() {
     return this.$route.params.showSwitcher;
@@ -93,7 +93,7 @@ export default class Disclaimer extends Vue {
     this.$router.back();
   }
 
-  proceed() {
+  agree() {
     this.hidePolkaswapAlert();
     this.closeForm();
   }
@@ -130,7 +130,7 @@ export default class Disclaimer extends Vue {
     margin-bottom: 16px;
 
     .important {
-      color: $orange-color;
+      color: $simple-orange-color;
       font-weight: 600;
     }
   }

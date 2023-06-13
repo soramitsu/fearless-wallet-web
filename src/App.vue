@@ -7,36 +7,46 @@
 </template>
 
 <script lang="ts">
-import { Watch, Component, Vue } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
-import type { SetAccountsProps, Accounts, SetAddressesProps } from '@/store';
-import type { TAction, TMutation } from '@/interfaces';
-import type { BehaviorSubject } from 'rxjs';
-import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-import BaseApi from '@/util/BaseApi';
+import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
+import type { AsyncFn, Fn } from '@/interfaces';
+import { AccountJson, BalanceJson, PriceJson } from '@/extension/background/extension-base/src/background/types/types';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
+import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NetworksController, accountController } from '@/controllers';
-import { resetTimeouts } from '@/extension/messaging';
+import {
+  pingServiceWorker,
+  subscribeAccounts,
+  subscribeAddresses,
+  subscribeBalance,
+  subscribeNetworkMap,
+  subscribePrice,
+} from '@/extension/messaging';
+import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
+import { IS_EXTENSION } from '@/consts/global';
+import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 
 @Component
 export default class App extends Vue {
-  subscribeAccounts!: BehaviorSubject<SubjectInfo>;
-  subscribeAddresses!: BehaviorSubject<SubjectInfo>;
-
   @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
-  @Getter(AccountsGettersTypes.getAccounts) accounts!: Accounts;
-  @Getter(AccountsGettersTypes.getAddresses) addresses!: Accounts;
-  @Getter(AccountsGettersTypes.getWallets) wallets!: Record<string, Accounts>;
+  @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
-  @Mutation(AccountsMutationTypes.SET_SELECTED_WALLET) setSelectedWallet!: TMutation<string>;
-  @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: TMutation<SetAccountsProps>;
-  @Mutation(AccountsMutationTypes.SET_ADDRESSES) setAddresses!: TMutation<SetAddressesProps>;
-  @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: TMutation<boolean>;
-  @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: TAction<unknown>;
+  @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: Fn<SetNetworksStatusProps>;
+  @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: Fn<SetAccountsProps>;
+  @Mutation(NetworksMutationTypes.SET_ASSETS_PRICE) setPrices!: Fn<SetAssetsPriceProps>;
+  @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: Fn<boolean>;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_FIAT) setSelectedFiat!: Fn<string>;
+  @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: AsyncFn;
+  @Action(NetworksActionTypes.FETCH_FIATS) fetchFiats!: AsyncFn;
+  @Action(SoraCardActionTypes.GET_USER_STATUS) getUserStatus!: AsyncFn;
+  @Action(AccountsActionTypes.ONLINE_STATUS_UPDATE) updateOnlineStatus!: AsyncFn;
+  @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<AccountJson>;
+  @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
 
   get includeKeepAlive() {
     const components = ['Main'];
@@ -46,103 +56,92 @@ export default class App extends Vue {
     return components;
   }
 
-  created() {
-    if (BaseApi.isExtension()) {
-      this.extensionSubscribe();
+  async created() {
+    this.onUpdateOnlineStatus();
 
-      resetTimeouts();
-    }
+    if (IS_EXTENSION) this.extensionSubscribe();
 
-    this.setWallet();
-    this.addEventOnline();
-    this.connectToNodes();
-    this.subscribeToBalancesOfNetworks();
+    this.unregisterInactiveWorkers();
+    this.setupWallet();
+    this.setupBalance();
+    this.fetchFiats();
+    this.setupPrice();
+    this.setupNetworks();
+    this.setupSWPing();
+    this.getUserStatus(); // SORA Card
   }
 
-  @Watch('isOnline')
-  connect(value: boolean) {
-    if (value) {
-      this.connectToNodes();
-      this.subscribeToBalancesOfNetworks();
-    } else this.unsubscribe();
-  }
-
-  async connectToNodes() {
-    if (!this.isOnline) return;
-
-    const { fetchJsons, connectToNodes } = NetworksController;
-
-    await fetchJsons();
-    await connectToNodes();
-  }
-
-  subscribeToBalancesOfNetworks() {
-    if (!this.isOnline) return;
-
-    const { subscribeToBalancesOfNetworks } = NetworksController;
-
-    this.subscribeAccounts = BaseApi.getAccountsSubject();
-    this.subscribeAddresses = BaseApi.getAddressesSubject();
-    this.subscribeAccounts.subscribe(async (accounts) => {
-      const newAccounts = this.getNewAccounts(accounts, 'accounts');
-      const accountsCount = Object.keys(accounts).length;
-      const newAccountsCount = Object.keys(newAccounts).length;
-
-      this.setAccounts({ accounts });
-
-      if (newAccountsCount === 0) return;
-
-      if (accountsCount === 1 || accountsCount !== newAccountsCount) subscribeToBalancesOfNetworks(newAccounts);
-    });
-
-    this.subscribeAddresses.subscribe(async (addresses) => {
-      const newAddresses = this.getNewAccounts(addresses, 'addresses');
-      const addressesCount = Object.keys(addresses).length;
-      const newAddressesCount = Object.keys(newAddresses).length;
-
-      this.setAddresses({ addresses });
-
-      if (newAddressesCount === 0) return;
-
-      if (addressesCount === 1 || addressesCount !== newAddressesCount) subscribeToBalancesOfNetworks(newAddresses);
+  unregisterInactiveWorkers() {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const registration of registrations) {
+        if (registration.active?.state !== 'activated') registration.unregister();
+      }
     });
   }
 
-  addEventOnline() {
-    const updateOnlineStatus = () => this.setOnlineStatus(navigator.onLine);
-
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
+  onUpdateOnlineStatus() {
+    this.updateOnlineStatus();
   }
 
-  getNewAccounts(accounts: SubjectInfo, type: 'accounts' | 'addresses') {
-    const result: SubjectInfo = {};
-
-    for (const address in accounts) {
-      if (this[type][address] === undefined) result[address] = accounts[address];
-    }
-
-    console.info(type, result);
-
-    return result;
+  setupSWPing() {
+    setInterval(() => {
+      try {
+        pingServiceWorker();
+      } catch (error) {
+        window.close();
+      }
+    }, 15000);
   }
 
-  setWallet() {
-    const LSSelectedWalletAddress = accountController.getSelectedWalletAddress();
-    const selectedWalletAddress = LSSelectedWalletAddress || BaseApi.getFirstSubstrateWalletAddress();
+  async setupBalance() {
+    const balance = await subscribeBalance((balanceUpdates) => {
+      this.setBalance(balanceUpdates);
+    });
 
-    if (selectedWalletAddress) {
-      const selectedSubstrateAddress = BaseApi.encodeAddress(selectedWalletAddress);
+    this.setBalance(balance);
+  }
 
-      this.setSelectedWallet(selectedSubstrateAddress);
-    }
+  async setupNetworks() {
+    const nets = await subscribeNetworkMap((networksUpdates) => {
+      this.setNetworks({ networks: Object.values(networksUpdates) });
+    });
+
+    this.setNetworks({ networks: Object.values(nets) });
+  }
+
+  async setupPrice() {
+    const prices = await subscribePrice((priceUpdates) => {
+      this.updatePrice(priceUpdates);
+    });
+
+    this.updatePrice(prices);
+  }
+
+  updatePrice({ currency, tokenPriceMap, tokenPriceChange }: PriceJson) {
+    this.setSelectedFiat(currency);
+    this.setPrices({ tokenPriceMap, tokenPriceChange });
+  }
+
+  onAccountUpdate(accounts: AccountJson[], isMobileUpdate = false) {
+    const selectedAccount = accounts.find((account) => account.active);
+
+    this.setAccounts({ accounts, isMobileUpdate });
+
+    if (selectedAccount || !this.wallets.length) this.setSelectedWallet(selectedAccount);
+  }
+
+  setupWallet() {
+    subscribeAddresses((accounts) => {
+      this.onAccountUpdate(accounts, true);
+    });
+
+    subscribeAccounts((accounts) => {
+      this.onAccountUpdate(accounts);
+    });
   }
 
   unsubscribe() {
     clearInterval(this.assetsPriceInterval!);
-
-    this.subscribeAccounts.unsubscribe();
-    this.subscribeAddresses.unsubscribe();
   }
 
   beforeUnmount() {
@@ -171,7 +170,7 @@ body {
   text-align: center;
   margin: 0 auto;
   padding: $default-padding;
-  background-image: url('./assets/background.png');
+  background-image: url('@/assets/background.png');
   background-position: center;
   background-size: cover;
 }

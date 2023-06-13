@@ -1,20 +1,20 @@
 import { keyring } from '@polkadot/ui-keyring';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
-import handlers from '@extension-base/background/handlers';
-import State, { initStorage } from '@extension-base/background/handlers/State';
+import handlers, { state } from '@extension-base/background/handlers';
 import '@polkadot/extension-inject/crossenv';
-import AccountsStore from '../background/extension-base/src/stores/Accounts';
-import type { Port, RequestSignatures, TransportRequestMessage } from '@extension-base/background/types';
+import AccountsStore from '@extension-base/stores/Accounts';
+import { initStorage } from '@extension-base/stores/Storage';
+import { RequestSignatures } from '@extension-base/background/types/messages';
+import type { Port, TransportRequestMessage } from '@extension-base/background/types';
 
 interface ModifiedPort extends Port {
   timer?: NodeJS.Timeout;
 }
 
-State.init();
-
-function getActiveTabs() {
-  // queriing the current active tab in the current window should only ever return 1 tab
+async function getActiveTabs() {
+  // quering the current active tab in the current window should only ever return 1 tab
   // although an array is specified here
+
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const request: TransportRequestMessage<'pri(activeTabsUrl.update)'> = {
       id: 'background',
@@ -29,6 +29,8 @@ function getActiveTabs() {
 
 chrome.runtime.onInstalled.addListener(async () => {
   await initStorage();
+
+  state.onInstall();
 
   getActiveTabs();
 });

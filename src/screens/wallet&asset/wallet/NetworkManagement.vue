@@ -28,13 +28,13 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import type { Networks } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 @Component
-export default class ReceiveForm extends Vue {
-  @Prop(Array) networks!: Networks;
+export default class NetworkManagement extends Vue {
+  @Prop(Array) networks!: NetworkJsonOld[];
   @Prop(Function) closeForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 }

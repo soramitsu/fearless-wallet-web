@@ -12,9 +12,12 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
 import { Components } from '@/router/routes';
 import MenuItem from '@/screens/main/MenuItem.vue';
 import { firstCharToUp } from '@/helpers/common';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { SelectedWallet } from '@/store';
 
 type MenuItemType = 'wallet' | 'crowdloans' | 'staking' | 'polkaswap' | 'history';
 
@@ -24,6 +27,8 @@ type MenuItemType = 'wallet' | 'crowdloans' | 'staking' | 'polkaswap' | 'history
 export default class Menu extends Vue {
   walletItems = [Components.Accounts, Components.Export, Components.Nodes];
   menuItems: MenuItemType[] = ['wallet', 'crowdloans', 'staking', 'polkaswap', 'history'];
+
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get currentRouteName() {
     const route = this.$route.path.split('/')[2];
@@ -45,7 +50,19 @@ export default class Menu extends Vue {
 
     const route = firstCharToUp(menuItem) as keyof typeof Components;
 
-    this.$router.push({ name: Components[route] });
+    const accountParams = {
+      address: this.selectedWallet.address,
+      name: this.selectedWallet.name,
+      ethereumAddress: this.selectedWallet.ethereumAddress,
+      isMobile: this.selectedWallet.isMobile ? 'mobile' : '',
+    };
+
+    this.$router.push({
+      name: Components[route],
+      params: {
+        ...(route === Components.Accounts ? accountParams : {}),
+      },
+    });
   }
 }
 </script>

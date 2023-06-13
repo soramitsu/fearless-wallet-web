@@ -1,34 +1,28 @@
 <template>
-  <Lazy
-    v-if="showCurrencyItem"
-    :timeoutCallback="timeoutCallback"
-    :class="currencyClasses"
-    @click.native="openAssetPage"
-  >
+  <Lazy v-if="showCurrencyItem" class="currency-item" @click.native="openAssetPage">
     <div v-if="showAssetsManagementForm" class="drag-icon">
       <SIcon name="basic-menu-24" class="handle" />
     </div>
-
     <div class="img-container">
-      <ExternalLogo class="main-network-img" :name="currency.assetId" :width="42" />
+      <ExternalLogo class="main-network-img" :name="assetData.icon" :width="42" />
     </div>
 
     <div class="descriptions-column">
       <div class="row first-row">
         <div>
-          {{ assetFullName }}
+          {{ tokenName }}
         </div>
 
-        <template v-if="!isCurrentNetwork">
+        <template>
           <Shimmer v-if="showShimmers" height="14px" width="60px" />
 
           <template v-else-if="!showWarning">
             <div class="available-networks">
               <ExternalLogo
-                v-for="{ network } in availableInNetworksPart"
+                v-for="{ icon, name } in networkBadges"
                 class="minor-network-img"
-                :key="network"
-                :name="network"
+                :key="name"
+                :name="icon"
                 :width="12"
               />
 
@@ -38,27 +32,25 @@
         </template>
       </div>
       <div class="row second-row">
-        <div class="currency-name overflow">
-          {{ assetString }}
-        </div>
+        <div class="currency-name overflow">{{ assetData.name.toUpperCase() }}</div>
 
         <Shimmer v-if="showShimmers" height="23px" width="60px" />
 
         <div v-else-if="!showWarning" class="count-assets overflow">
-          {{ transferableCountAssetString }}
+          {{ totalAssetBalanceValue }}
         </div>
       </div>
       <div class="row third-row">
         <div class="price row">
-          {{ priceString }}
+          {{ assetPrice }}
 
-          <div :class="changePriceClasses">{{ usd24HoursChangeString }}</div>
+          <div :class="changePriceClasses">{{ assetPriceChange }}</div>
         </div>
 
         <Shimmer v-if="showShimmers" height="14px" width="70px" />
 
         <div v-else-if="!showWarning" class="total-balance overflow">
-          {{ transferableFiatBalanceString }}
+          {{ transferableFiatBalanceValue }}
         </div>
       </div>
     </div>
@@ -76,7 +68,7 @@
           class="button send"
           tooltipText="assets.sendButtonText"
           target=".send"
-          @click="toggleVisibleActivityForm('showSendForm', true, currency)"
+          @click="toggleVisibleActivityForm('showSendForm', true, { mainNetwork, assetId: assetData.assetId })"
         />
 
         <CircleButton
@@ -85,7 +77,7 @@
           class="button receive"
           tooltipText="assets.receiveButtonText"
           target=".receive"
-          @click="toggleVisibleActivityForm('showReceiveForm', true, currency)"
+          @click="toggleVisibleActivityForm('showReceiveForm', true, { mainNetwork, assetId: assetData.name })"
         />
 
         <CircleButton
@@ -105,157 +97,148 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { Currency } from '@/interfaces/currencies';
-import type { SelectedWallet } from '@/store';
-import type { CustomEvent } from '@/interfaces';
-import { Components } from '@/router/routes';
-import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { Getter, Mutation } from 'vuex-class';
+import type { CustomEvent, Fn } from '@/interfaces';
+import type { SetHiddenAsset, SelectedWallet } from '@/store';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { GetNetworkStatus } from '@/store';
-import { NetworksController } from '@/controllers';
-import BaseApi from '@/util/BaseApi';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { Components } from '@/router/routes';
+import { ALL_NETWORKS } from '@/consts/networks';
+import { GetAssetPrice, GetNetwork } from '@/store/networks/types';
+import { getSummaryTransferableBalance } from '@/helpers/currencies';
+import { APIItemState, NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
+import { firstCharToUp } from '@/helpers/common';
 
 @Component
 export default class CurrencyItem extends Vue {
   readonly countDisplayedNetworks = 5;
 
-  @Prop(Object) currency!: Currency;
+  @Prop(Object) assetData!: TokenBalance;
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
-  @Prop({ required: false }) timeoutCallback!: (fn: () => void) => VoidFunction;
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+  @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+
+  @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getFiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
-  @Getter(NetworksGettersTypes.getNetworkStatus) getNetworkStatus!: GetNetworkStatus;
+  @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: Fn<SetHiddenAsset>;
 
-  get currencyClasses() {
-    return [
-      'currency-item',
-      {
-        'currency-item-management': this.showAssetsManagementForm,
-      },
-    ];
+  get networkJson() {
+    return this.getNetwork(this.selectedNetwork);
   }
 
-  get showShimmers() {
-    if (this.isCurrentNetwork) return !this.isOnline || this.getNetworkStatus(this.selectedNetwork) === 'pending';
-
-    const index = this.currency.getNetworkList().findIndex(({ network }) => {
-      const status = this.getNetworkStatus(network);
-
-      return status === 'pending';
-    });
-
-    return !this.isOnline || index !== -1;
+  get isAdditional() {
+    return this.assetData.balances.length > this.countDisplayedNetworks;
   }
 
-  get showWarning() {
-    if (this.showAssetsManagementForm) return false;
-
-    if (this.isCurrentNetwork) {
-      const status = this.getNetworkStatus(this.selectedNetwork);
-      const isZeroBalanceNetwork = NetworksController.isZeroBalanceNetwork(this.selectedWallet, this.selectedNetwork);
-
-      return isZeroBalanceNetwork ? status === 'disconnected' : false;
-    }
-
-    return this.currency.getNetworkList().every(({ network }) => {
-      const status = this.getNetworkStatus(network);
-      const isZeroBalanceNetwork = NetworksController.isZeroBalanceNetwork(this.selectedWallet, network);
-
-      return isZeroBalanceNetwork ? status === 'disconnected' : false;
-    });
+  get additionalCount() {
+    return this.assetData.balances.length - (this.countDisplayedNetworks - 1);
   }
 
-  get isCurrentNetwork() {
-    return this.selectedNetwork !== 'all';
+  get tokenName() {
+    return this.assetData.tokenName.toUpperCase() ?? '';
   }
 
-  get currencyVisible() {
-    return this.currency.getCurrencyVisibility(this.selectedWallet.address);
+  get mainNetwork() {
+    return this.assetData.mainNetwork.toUpperCase();
+  }
+
+  get tokenPrice() {
+    return this.getTokenPrice(this.assetData.priceId ?? '');
+  }
+
+  get currencyVisible(): boolean {
+    return !this.hiddenAssets.includes(this.assetData.assetId);
   }
 
   set currencyVisible(value: boolean) {
-    this.currency.setCurrencyVisibility(this.selectedWallet.address, value);
+    this.setHiddenAssets({ assetId: this.assetData.assetId, value });
   }
 
   get showCurrencyItem() {
     return this.showAssetsManagementForm || this.currencyVisible;
   }
 
+  get networkBadges() {
+    if (this.isCurrentNetwork) {
+      const { icon, name } = this.assetData.balances.find(
+        ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
+      )!;
+
+      return [{ icon, name }];
+    }
+
+    if (this.isAdditional) return [...this.assetData.balances].splice(0, this.countDisplayedNetworks - 1);
+
+    return this.assetData.balances;
+  }
+
+  get allNetworkBadges() {
+    return this.assetData.balances;
+  }
+
+  get showShimmers() {
+    return this.assetData.balances.every((el) => el.state !== 'ready');
+  }
+
+  get showWarning() {
+    return (
+      this.assetData.balances.some((el) => el.state === APIItemState.ERROR) ||
+      this.networkJson?.apiStatus === NETWORK_STATUS.DISCONNECTED
+    );
+  }
+
+  get assetPrice() {
+    return `${this.fiatSymbol}${this.$n(this.tokenPrice.price, 'price')}`;
+  }
+
+  get transferableFiatBalanceValue() {
+    return `${this.fiatSymbol}${this.$n(this.transferableFiatBalance, 'price')}`;
+  }
+
+  get assetPriceChange() {
+    if (this.tokenPrice.priceChange === 0) return '';
+
+    return this.$n(this.tokenPrice.priceChange, 'percent');
+  }
+
+  get totalAssetBalanceValue() {
+    return this.$n(this.transferableAssetBalance, 'decimal');
+  }
+
+  get transferableAssetBalance() {
+    return +getSummaryTransferableBalance(this.assetData, this.selectedNetwork);
+  }
+
+  get transferableFiatBalance() {
+    return this.transferableAssetBalance * this.tokenPrice.price;
+  }
+
   get changePriceClasses() {
-    const { hours24Change } = this.currency;
     const classes = ['price-change'];
 
-    if (hours24Change > 0) classes.push('up-price');
-    else if (hours24Change < 0) classes.push('down-price');
+    if (this.tokenPrice.priceChange > 0) classes.push('up-price');
+    else if (this.tokenPrice.priceChange < 0) classes.push('down-price');
 
     return classes;
   }
 
-  get usd24HoursChangeString() {
-    const { hours24Change } = this.currency;
-
-    return hours24Change !== 0 ? `${hours24Change > 0 ? '+' : ''}${this.$n(hours24Change / 100, 'percent')}` : '';
+  get isCurrentNetwork() {
+    return this.selectedNetwork !== ALL_NETWORKS;
   }
 
-  get assetString() {
-    return this.currency?.displayName.toUpperCase();
-  }
+  get redirectNetwork(): string {
+    const network = this.assetData.balances[0];
 
-  get transferableCountAssetString() {
-    const totalCountAssets = +this.currency.getTransferableCountAssets(this.selectedWallet, this.selectedNetwork);
-
-    return this.$n(totalCountAssets, 'decimal');
-  }
-
-  get transferableFiatBalanceString() {
-    const balance = +this.currency.getTransferableFiatBalance(this.selectedWallet, this.selectedNetwork);
-
-    return `${this.fiatSymbol}${this.$n(balance, 'price')}`;
-  }
-
-  get priceString() {
-    return `${this.fiatSymbol}${this.$n(this.currency.price, 'price')}`;
-  }
-
-  get assetFullName() {
-    return this.currency.assetFullName.toUpperCase() ?? '';
-  }
-
-  get walletBalance() {
-    return this.currency.getNetworksWithBalance(this.selectedWallet);
-  }
-
-  get isAdditional() {
-    return this.walletBalance.length > this.countDisplayedNetworks;
-  }
-
-  get additionalCount() {
-    return this.walletBalance.length - (this.countDisplayedNetworks - 1);
-  }
-
-  get availableInNetworksPart() {
-    if (this.isCurrentNetwork) return [{ network: this.selectedNetwork }];
-
-    if (this.isAdditional) return [...this.walletBalance].splice(0, this.countDisplayedNetworks - 1);
-
-    return this.walletBalance;
-  }
-
-  get redirectNetwork() {
-    const { mainNetwork } = this.currency;
-    const [{ network: firstNetwork }] = this.currency.getNetworkList();
-    const isEthereumMainNetwork = BaseApi.isEthereumNetwork(mainNetwork);
-
-    if (this.isCurrentNetwork) return this.selectedNetwork;
-
-    if ((this.selectedWallet.ethereumAddress === '' && isEthereumMainNetwork) || mainNetwork === '')
-      return firstNetwork;
-
-    return mainNetwork;
+    return this.isCurrentNetwork
+      ? this.selectedNetwork
+      : this.assetData.mainNetwork !== undefined
+      ? this.assetData.mainNetwork
+      : network.name;
   }
 
   openAssetPage(event: CustomEvent) {
@@ -271,13 +254,11 @@ export default class CurrencyItem extends Vue {
     )
       return;
 
-    const { assetId } = this.currency;
-
     this.$router.push({
       name: Components.Asset,
       params: {
-        assetId,
-        network: this.redirectNetwork,
+        assetId: this.assetData.assetId,
+        network: firstCharToUp(this.redirectNetwork),
       },
     });
   }
@@ -292,7 +273,11 @@ export default class CurrencyItem extends Vue {
   margin-right: 16px;
   align-items: center;
   height: 80px;
-  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    cursor: pointer;
+  }
 
   &:last-child {
     border-bottom: none;
@@ -300,7 +285,10 @@ export default class CurrencyItem extends Vue {
 
   .drag-icon {
     margin: auto 20px auto 0;
-    cursor: pointer;
+
+    &:hover {
+      cursor: pointer;
+    }
 
     i {
       color: #fff;
@@ -327,7 +315,10 @@ export default class CurrencyItem extends Vue {
 
       .additional {
         border-radius: 50%;
-        cursor: pointer;
+
+        &:hover {
+          cursor: pointer;
+        }
       }
     }
 
@@ -337,7 +328,8 @@ export default class CurrencyItem extends Vue {
 
       .currency-name {
         font-size: 20px;
-        max-width: 100px;
+        text-transform: uppercase;
+        max-width: 220px;
       }
 
       .count-assets {
@@ -407,12 +399,10 @@ export default class CurrencyItem extends Vue {
 
   .img-container {
     margin: auto;
-    min-width: 45px;
     user-select: none;
-    margin-right: 12px;
 
     .main-network-img {
-      width: 42px;
+      margin-right: 13px;
     }
   }
 
@@ -425,9 +415,5 @@ export default class CurrencyItem extends Vue {
       margin-right: 0;
     }
   }
-}
-
-.currency-item-management {
-  cursor: default;
 }
 </style>

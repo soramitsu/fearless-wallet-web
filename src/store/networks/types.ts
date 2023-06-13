@@ -1,13 +1,11 @@
+import { Wallet } from '../accounts/types';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { HexString } from '@polkadot/util/types';
 import type {
-  Currencies,
   SubqueryHistory,
   AccountBalance,
   Networks,
-  Network,
   AssetJson,
-  AssetsPrice,
   AssetPrice,
   FiatJson,
   NetworkStatus,
@@ -21,21 +19,19 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ActionContext } from 'vuex';
 import type { State } from '@/store/networks/state';
 import type { Mutations } from '@/store/networks/mutations';
-import type { Wallet } from '@/store';
 import { GiantsquidHistoryItem, HistoryElement } from '@/interfaces';
+import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
 
 // getters
-export type GetNetwork = (networkName: NetworkName) => Network;
+export type GetNetwork = (networkName: NetworkName) => NetworkJsonOld | undefined;
 export type GetNetworkGenesisHash = (networkName: NetworkName) => HexString;
-export type GetAssetName = (assetId: string) => string;
 export type GetAssetIcon = (assetId: string) => string;
-export type GetAssetPrice = (assetId: string) => AssetPrice;
-export type GetNetworkStatus = (networkName: NetworkName) => NetworkStatus;
+export type GetAssetPrice = (priceId: string) => AssetPrice;
 export type GetActiveNodesByNetwork = (networkName: NetworkName) => Node;
 
 // Mutations
 export type SetNetworksStatusProps = {
-  networks: Networks;
+  networks: NetworkJsonOld[];
 };
 
 export type SetAssetsJsonProps = {
@@ -47,17 +43,12 @@ export type SetFiatsJsonProps = {
 };
 
 export type SetAssetsPriceProps = {
-  assetsPrice: AssetsPrice;
+  tokenPriceMap: Record<string, number>;
+  tokenPriceChange: Record<string, number>;
 };
 
 export type SetAssetsPriceIntervalProps = {
   interval: NodeJS.Timer;
-};
-
-export type SetCurrenciesProps = {
-  currencies: Currencies | Record<NetworkName, Currencies>;
-  address?: string;
-  network?: NetworkName;
 };
 
 export type SetHistoryProps = {
@@ -96,12 +87,11 @@ export type SetNetworkStatusProps = {
   status: NetworkStatus;
 };
 
-// Actions
-export type FetchJsons = {
-  chainsUrl: string;
-  assetsUrl: string;
-  fiatsUrl: string;
+export type SetSoraFee = {
+  fee: string;
 };
+
+// Actions
 
 export type FetchHistory = {
   networkName: NetworkName;

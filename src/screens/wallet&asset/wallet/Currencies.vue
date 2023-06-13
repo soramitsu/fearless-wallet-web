@@ -1,35 +1,35 @@
 <template>
-  <div v-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText) }}</div>
+  <Scroll>
+    <div v-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText) }}</div>
 
-  <Draggable v-else v-model="filteredCurrencies" handle=".handle" :key="selectedWallet.address">
-    <CurrencyItem
-      v-for="currency in filteredCurrencies"
-      :key="currency.assetId"
-      :currency="currency"
-      :selectedNetwork="selectedNetwork"
-      :showAssetsManagementForm="showAssetsManagementForm"
-      :toggleVisibleActivityForm="toggleVisibleActivityForm"
-      :timeoutCallback="timeoutCallback"
-      @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible')"
-    />
-  </Draggable>
+    <Draggable v-else v-model="filteredBalances" handle=".handle" :key="selectedWallet.address">
+      <CurrencyItem
+        v-for="(asset, assetKey) in filteredBalances"
+        :assetData="asset"
+        :price="getAssetPrice(asset.priceId)"
+        :priceChange="getPriceChange(asset.priceId)"
+        :key="assetKey"
+        :selectedNetwork="selectedNetwork"
+        :showAssetsManagementForm="showAssetsManagementForm"
+        :toggleVisibleActivityForm="toggleVisibleActivityForm"
+        @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible')"
+      />
+    </Draggable>
+  </Scroll>
 </template>
 
 <script lang="ts">
 import Draggable from 'vuedraggable';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Mutation, Getter } from 'vuex-class';
-import CurrencyItem from './CurrencyItem.vue';
-import type { SelectedWallet, SetCurrenciesProps } from '@/store';
-import type { TMutation } from '@/interfaces/common';
-import type { Currency } from '@/interfaces/currencies';
-import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
+import { Getter, Action } from 'vuex-class';
+import type { SelectedWallet } from '@/store';
+import type { AsyncFn } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-
-type TimeoutSubscription = {
-  subscription: NodeJS.Timeout;
-  fn: () => void;
-};
+import CurrencyItem from '@/screens/wallet&asset/wallet/CurrencyItem.vue';
+import { TokenBalance, BalanceJson } from '@/extension/background/extension-base/src/background/types/types';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { AssetsPrice } from '@/interfaces';
+import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 
 @Component({
   components: {
@@ -38,16 +38,16 @@ type TimeoutSubscription = {
   },
 })
 export default class Currencies extends Vue {
-  timeoutSubscriptions: TimeoutSubscription[] = [];
-
-  @Prop(Array) currencies!: Currency[];
+  @Prop(Array) balances!: TokenBalance[];
   @Prop(String) selectedNetwork!: string;
   @Prop(String) filterValue!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
+  @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
-  @Mutation(NetworksMutationTypes.SET_CURRENCIES) setCurrencies!: TMutation<SetCurrenciesProps>;
+  @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
+  @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
 
   get mainText() {
     if (!this.isOnline) return 'common.offlineStatus';
@@ -56,36 +56,38 @@ export default class Currencies extends Vue {
   }
 
   get showAllAssetsHiddenText() {
-    const visibleCurrencies = this.currencies.filter((currency) =>
-      currency.getCurrencyVisibility(this.selectedWallet.address)
-    );
+    if (this.showAssetsManagementForm) return false;
 
-    return visibleCurrencies.length === 0 && !this.showAssetsManagementForm;
+    const allHidden = this.balances.every(({ assetId }) => this.hiddenAssets.includes(assetId));
+
+    return this.balances.length === this.hiddenAssets.length || allHidden || !this.isOnline;
   }
 
-  get filteredCurrencies() {
-    return this.currencies;
+  get filteredBalances() {
+    return this.balances;
   }
 
-  set filteredCurrencies(currencies) {
-    this.$emit('setCustomSort');
-    this.setCurrencies({
-      currencies,
-      address: this.selectedWallet.address,
-      network: this.selectedNetwork,
+  set filteredBalances(balances) {
+    this.setBalance({
+      details: balances,
+      reset: false,
+      saveSequence: true,
     });
   }
 
-  timeoutCallback(fn: () => void) {
-    this.timeoutSubscriptions.forEach(({ subscription }) => {
-      clearTimeout(subscription);
-    });
+  getAssetPrice(assetKey: string) {
+    if (Object.keys(this.prices).length && this.prices.tokenPriceMap[assetKey])
+      return this.prices.tokenPriceMap[assetKey];
 
-    this.timeoutSubscriptions = [...this.timeoutSubscriptions, { fn }].map(({ fn }) => {
-      const subscription = setTimeout(() => fn(), 300);
+    return 0;
+  }
 
-      return { subscription, fn };
-    });
+  getPriceChange(assetKey: string) {
+    if (this.prices === undefined || this.prices.tokenPriceChange === undefined || assetKey === undefined) return 0;
+
+    if (this.prices.tokenPriceChange[assetKey]) return this.prices.tokenPriceChange[assetKey] / 100;
+
+    return 0;
   }
 }
 </script>

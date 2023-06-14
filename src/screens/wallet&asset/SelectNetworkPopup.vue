@@ -25,7 +25,7 @@ import { Getter } from 'vuex-class';
 import type { RelayChainName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 interface Options {
   name: string;
@@ -53,7 +53,7 @@ export default class SelectNetworkButton extends Vue {
   @Prop(Array) _optionsNetworks!: Options[];
   @Prop(Function) toggleSelectedNetwork!: (value: string) => void;
   @Prop(Function) handlerClose!: VoidFunction;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
   get optionsNetworks() {
     if (this._optionsNetworks !== undefined) return this._optionsNetworks;

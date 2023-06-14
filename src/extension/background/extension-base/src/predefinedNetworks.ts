@@ -1,7 +1,7 @@
 // Copyright 2019-2022 @subwallet/extension-koni authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { NetworkJsonOld } from '@extension-base/types';
+import type { NetworkJson } from '@extension-base/types';
 
 export const PREDEFINED_EVM_NETWORKS = {
   chainId: '0xb60d7bdd334cd3768d43f14a05c7fe7e886ba5bcb77e1064530052fed1a3f145',
@@ -41,7 +41,7 @@ export const PREDEFINED_EVM_NETWORKS = {
   ],
 };
 
-export function getGenesisHashes(networkJson: Record<string, NetworkJsonOld>) {
+export function getGenesisHashes(networkJson: Record<string, NetworkJson>) {
   const result: Record<string, string> = {};
 
   for (const [key, network] of Object.entries(networkJson)) {

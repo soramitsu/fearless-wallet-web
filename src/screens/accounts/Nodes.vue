@@ -75,7 +75,7 @@ import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { upsertNetworkMap } from '@/extension/messaging';
 
 @Component({
@@ -85,7 +85,7 @@ export default class Nodes extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getAutoSelectNodesValueByNetwork)
   getAutoSelectNodesValueByNetwork!: GetAutoSelectNodesValueByNetwork;
-  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getActiveNodesByNetwork) getActiveNodesByNetwork!: GetActiveNodesByNetwork;
   @Mutation(AccountsMutationTypes.SET_AUTO_SELECT_NODE) setAutoSelectNode!: Fn<SetAutoSelectNode>;
 
@@ -149,7 +149,7 @@ export default class Nodes extends Vue {
   changeNode(url: string) {
     if (this.autoSelectNode) return;
 
-    const prepData: Partial<NetworkJsonOld> = {};
+    const prepData: Partial<NetworkJson> = {};
 
     prepData.currentProvider = url;
 

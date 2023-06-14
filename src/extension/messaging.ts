@@ -7,7 +7,6 @@ import { selectableNetworks } from '@polkadot/networks';
 import { getId } from '@extension-base/utils/utils';
 import { PORT_EXTENSION } from '@extension-base/defaults';
 import { CurrentAccountInfo } from '@extension-base/stores/CurrentAccountStore';
-import { NetworkJson } from '@extension-base/api/evm/types/ether';
 import type { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
 import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
@@ -52,7 +51,7 @@ import type {
   ResponseMakeSwap,
   ResponseTotalBalances,
 } from '@/extension/background/extension-base/src/background/types/types';
-import type { Message, NetworkJsonOld, TransactionHistoryItemType } from '@extension-base/types';
+import type { Message, NetworkJson, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
@@ -512,16 +511,16 @@ export function checkSwap(request: RequestCheckSwap): Promise<ResponseCheckSwap>
 }
 
 export function subscribeNetworkMap(
-  callback: (data: Record<string, NetworkJsonOld>) => void
-): Promise<Record<string, NetworkJsonOld>> {
+  callback: (data: Record<string, NetworkJson>) => void
+): Promise<Record<string, NetworkJson>> {
   return sendMessage('pri(networkMap.getSubscription)', null, callback);
 }
 
-export function upsertNetworkMap(data: NetworkJsonOld): Promise<boolean> {
+export function upsertNetworkMap(data: NetworkJson): Promise<boolean> {
   return sendMessage('pri(networkMap.upsert)', data);
 }
 
-export function getNetworkMap(): Promise<Record<string, NetworkJsonOld>> {
+export function getNetworkMap(): Promise<Record<string, NetworkJson>> {
   return sendMessage('pri(networkMap.getNetworkMap)');
 }
 

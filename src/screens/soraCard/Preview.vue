@@ -115,7 +115,7 @@ import { TokenBalance } from '@/extension/background/extension-base/src/backgrou
 import { calculateXorRestPrice, calculateXOREuroBalance, isValidEuroBalanceXor } from '@/util/soraCard';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { getXORCurrency } from '@/helpers/currencies';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
 
@@ -131,7 +131,7 @@ export default class Preview extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(SoraCardGettersTypes.hasFreeAttempts) hasFreeAttempts!: boolean;
   @Getter(SoraCardGettersTypes.xorPerEuroRatio) xorPerEuroRatio!: FPNumber;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Action(SoraCardActionTypes.GET_XOR_PER_EURO_RATIO) getXorPerEuroRatio!: AsyncFn;
 
   get networkIsReady() {

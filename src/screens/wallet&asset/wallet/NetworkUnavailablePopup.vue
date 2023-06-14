@@ -21,14 +21,14 @@ import { Mutation } from 'vuex-class';
 import type { Fn } from '@/interfaces';
 import { Components } from '@/router/routes';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component
 export default class NetworkUnavailablePopup extends Vue {
   isDontShowAgain = false;
 
   @Prop(Function) closePopup!: VoidFunction;
-  @Prop(Array) networks!: NetworkJsonOld[];
+  @Prop(Array) networks!: NetworkJson[];
   @Prop(String) network!: string;
   @Mutation(AccountsMutationTypes.HIDE_NETWORK_WARNING) hideNetworkWarning!: Fn<string>;
 

@@ -188,7 +188,7 @@ import {
   RequestCheckCrossChain,
   TokenBalance,
 } from '@/extension/background/extension-base/src/background/types/types';
-import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { checkTransfer, checkCrossChain } from '@/extension/messaging';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 
@@ -234,8 +234,8 @@ export default class SendForm extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJsonOld[];
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJsonOld;
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
 
   get originNetwork() {
     return firstCharToUp(this.syncedNetwork);

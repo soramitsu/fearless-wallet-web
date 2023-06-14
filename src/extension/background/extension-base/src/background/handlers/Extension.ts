@@ -17,7 +17,6 @@ import { keyring } from '@polkadot/ui-keyring';
 import {
   getERC20TransactionObject,
   getEVMTransactionObject,
-  getExistentialDeposit,
   makeERC20Transfer,
   makeEVMTransfer,
 } from '@extension-base/api/evm/transfer';

@@ -218,10 +218,6 @@ export default class State {
     return this.apis.evm;
   }
 
-  public getNetworkMapByKey(key: string) {
-    return this.networkMap[key];
-  }
-
   public get getApiMap() {
     return this.apis;
   }
@@ -614,9 +610,7 @@ export default class State {
   }
 
   public updateNetworkStatus(networkKey: string, status: NETWORK_STATUS) {
-    if (this.networkMap[networkKey].apiStatus === status) {
-      return;
-    }
+    if (this.networkMap[networkKey].apiStatus === status) return;
 
     this.networkMap[networkKey].apiStatus = status;
 

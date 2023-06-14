@@ -5,6 +5,7 @@ import Main from '@/screens/main/Main.vue';
 import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
+import { SORA_CARD_VISIBILITY } from '@/consts/global';
 
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Staking = () => import('@/screens/staking/Staking.vue');
@@ -128,6 +129,10 @@ const routes: Array<RouteConfig> = [
     path: '/sora-card',
     name: Components.SoraCard,
     component: SoraCard,
+    beforeEnter: (to, from, next) => {
+      if (SORA_CARD_VISIBILITY) next();
+      else next({ name: Components.Wallet });
+    },
   },
   {
     path: '/sora-swap',

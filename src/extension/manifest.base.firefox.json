@@ -4,7 +4,7 @@
   "short_name": "FW",
   "author": "Soramitsu",
   "manifest_version": 2,
-  "permissions": ["storage", "tabs", "identity", "*://www.googleapis.com/*"],
+  "permissions": ["storage", "tabs", "identity", "*://www.googleapis.com/*", "clipboard"],
   "background": {
     "scripts": ["background.js"],
     "persistent": true

@@ -3,10 +3,11 @@
 
 import { Contract, ethers } from 'ethers';
 import EthProvider from '@extension-base/api/evm/ethProvider';
-import { CustomTokenType, CustomTokenJson, NetworkJson } from '@extension-base/api/evm/types/ether';
+import { CustomTokenType, CustomTokenJson } from '@extension-base/api/evm/types/ether';
 import { DEFAULT_EVM_TOKENS } from '@extension-base/api/tokens/evm/defaultEvmToken';
 import { ERC20Contract } from '@extension-base/api/tokens/evm/web3';
 import { isEqualContractAddress } from '@extension-base/api/tokens';
+import { NetworkJson } from '@extension-base/types';
 
 export async function validateEvmToken(contractAddress: string, tokenType: CustomTokenType.erc20, web3: EthProvider) {
   let tokenContract: Contract;

@@ -75,7 +75,7 @@ import { SelectedWallet } from '@/store';
 import { cut } from '@/helpers/common';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component({
   components: { InputWithIcon },
@@ -92,7 +92,7 @@ export default class ReceiveForm extends Vue {
   @Prop(String) selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
   get assetNetworks() {
     const currency = this.balances.find(({ assetId }) => assetId === this.selectedAssetId)!;

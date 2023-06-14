@@ -31,7 +31,7 @@
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { firstCharToUp } from '@/helpers/common';
-import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { upsertNetworkMap } from '@/extension/messaging';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
@@ -45,7 +45,7 @@ export default class EditNodeForm extends Vue {
   @Prop(String) _name!: string;
   @Prop(String) _url!: string;
   @Prop(Boolean) isActive!: boolean;
-  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
 
   get buttonText() {
     return this.isEdit ? 'common.save' : this.getPath('addNode');
@@ -85,7 +85,7 @@ export default class EditNodeForm extends Vue {
   }
 
   updateNodes() {
-    const prepData: Partial<NetworkJsonOld> = {};
+    const prepData: Partial<NetworkJson> = {};
     const customNodeIndex = this.networkJson.customNodes.findIndex(
       (el) => el.url === this._url && el.name === this._name
     );

@@ -1,8 +1,10 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { BalanceItem, CustomTokenType, NetworkJson } from '@extension-base/api/evm/types/ether';
+import { BalanceItem, CustomTokenType, NetWorkGroup } from '@extension-base/api/evm/types/ether';
+import { NETWORK_STATUS } from './api/types/networks';
 import { AssetJson, ExternalApi, NetworkAssets, RelayChainName } from '@/interfaces';
+import { ContractType } from '@/interfaces/ether';
 
 export interface Message extends MessageEvent {
   data: {
@@ -97,7 +99,44 @@ export type CurrencyMock = {
   balances: BalanceItem[];
 };
 
-export interface NetworkJsonOld extends NetworkJson {
+export interface NetworkJson {
+  // General Information
+  key: string; // Key of network in NetworkMap
+  chain: string; // Name of the network
+  icon: string; // Icon name, available with known network
+  active: boolean; // Network is active or not
+  // Provider Information
+  isManual?: boolean;
+  providers: Record<string, string>; // Predefined provider map
+  currentProvider: string | null; // Current provider key
+  // currentProviderMode: 'http' | 'ws'; // Current provider mode, compute depend on provider protocol. the feature need to know this to decide use subscribe or cronjob to use this features.
+  customProviders?: Record<string, string>; // Custom provider map, provider name same with provider map
+
+  // Metadata get after connect to provider
+  genesisHash: string; // identifier for network
+  groups: NetWorkGroup[];
+  ss58Format: number;
+  paraId?: string;
+  chainType?: 'substrate' | 'ethereum';
+  crowdloanUrl?: string;
+
+  // Ethereum related information for predefined network only
+  isEthereum?: boolean; // Only show network with isEthereum=true when select one EVM account // user input
+  evmChainId?: number;
+  // isHybrid?: boolean;
+  // Native token information
+  nativeToken?: string;
+  decimals?: number;
+  // Other information
+  coinGeckoKey: string; // Provider key to get token price from CoinGecko // user input
+  blockExplorer?: string; // Link to block scanner to check transaction with extrinsic hash // user input
+  abiExplorer?: string; // Link to block scanner to check transaction with extrinsic hash // user input
+  dependencies?: string[]; // Auto active network in dependencies if current network is activated
+  // getStakingOnChain?: boolean; // support get bonded on chain
+  // supportBonding?: boolean;
+  supportSmartContract?: ContractType[]; // if network supports PSP smart contracts
+  apiStatus?: NETWORK_STATUS;
+  requestId?: string;
   chainId: string;
   parentId?: string;
   name: string;
@@ -106,7 +145,6 @@ export interface NetworkJsonOld extends NetworkJson {
   isEthereumNetwork?: boolean;
   customNodes: Node[];
   nodes: Node[];
-  icon: string;
   addressPrefix: number;
   types: TypesForMobile;
   options?: string[];

@@ -20,10 +20,10 @@ import type { ActionContext } from 'vuex';
 import type { State } from '@/store/networks/state';
 import type { Mutations } from '@/store/networks/mutations';
 import { GiantsquidHistoryItem, HistoryElement } from '@/interfaces';
-import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 // getters
-export type GetNetwork = (networkName: NetworkName) => NetworkJsonOld | undefined;
+export type GetNetwork = (networkName: NetworkName) => NetworkJson | undefined;
 export type GetNetworkGenesisHash = (networkName: NetworkName) => HexString;
 export type GetAssetIcon = (assetId: string) => string;
 export type GetAssetPrice = (priceId: string) => AssetPrice;
@@ -31,7 +31,7 @@ export type GetActiveNodesByNetwork = (networkName: NetworkName) => Node;
 
 // Mutations
 export type SetNetworksStatusProps = {
-  networks: NetworkJsonOld[];
+  networks: NetworkJson[];
 };
 
 export type SetAssetsJsonProps = {

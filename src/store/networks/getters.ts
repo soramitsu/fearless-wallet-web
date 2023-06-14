@@ -3,7 +3,7 @@ import type { GetNetwork, GetAssetPrice, GetNetworkGenesisHash, GetActiveNodesBy
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
-import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 export enum GettersTypes {
   networks = 'networks',
@@ -21,16 +21,12 @@ export enum GettersTypes {
 }
 
 export type Getters = {
-  [GettersTypes.networks](
-    state: State,
-    getters?: GetterTree<State, State> & Getters,
-    rootState?: any
-  ): NetworkJsonOld[];
+  [GettersTypes.networks](state: State, getters?: GetterTree<State, State> & Getters, rootState?: any): NetworkJson[];
   [GettersTypes.allNetworks](
     state: State,
     getters?: GetterTree<State, State> & Getters,
     rootState?: any
-  ): NetworkJsonOld[];
+  ): NetworkJson[];
   [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
@@ -54,7 +50,7 @@ export type Getters = {
 };
 
 const getters: GetterTree<State, State> & Getters = {
-  [GettersTypes.networks](state, getters, rootState): NetworkJsonOld[] {
+  [GettersTypes.networks](state, getters, rootState): NetworkJson[] {
     const haveEthereumAccount = rootState.account.selectedWallet.ethereumAddress !== '';
 
     return haveEthereumAccount
@@ -62,7 +58,7 @@ const getters: GetterTree<State, State> & Getters = {
       : state.networks.filter(({ name }) => !ETHEREUM_NETWORKS.includes(name));
   },
 
-  [GettersTypes.allNetworks]({ networks }): NetworkJsonOld[] {
+  [GettersTypes.allNetworks]({ networks }): NetworkJson[] {
     return networks;
   },
 

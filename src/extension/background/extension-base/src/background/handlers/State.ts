@@ -68,7 +68,7 @@ import type {
   ResponseTotalBalances,
 } from '@extension-base/background/types/types';
 import type { BalanceItem, CustomTokenJson } from '@extension-base/api/evm/types/ether';
-import type { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '@extension-base/types';
+import type { ChainRegistry, NetworkJson, TransactionHistoryItemType } from '@extension-base/types';
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
@@ -115,7 +115,10 @@ function extractMetadata(store: MetadataStore): void {
 }
 
 export const registry = new TypeRegistry();
-
+type APIs = {
+  evm: Record<string, EthProvider>;
+  substrate: Record<string, ApiProps>;
+};
 const metaStore = new MetadataStore();
 
 export default class State {
@@ -149,7 +152,7 @@ export default class State {
   public signature: HexString | null = null;
   public defaultAuthAccountSelection: string[] = [];
   private lockNetworkMap = false;
-  public apis: { evm: Record<string, EthProvider>; substrate: Record<string, ApiProps> } = {
+  public apis: APIs = {
     substrate: {},
     evm: {},
   };
@@ -159,10 +162,10 @@ export default class State {
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
   public tokenMap: AssetJson[] = [];
-  public networkMap: Record<string, NetworkJsonOld> = {}; // mapping to networkMapStore, for uses in background
-  public networksJson: NetworkJsonOld[] = []; // from github
+  public networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
+  public networksJson: NetworkJson[] = []; // from github
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
-  public networkMapSubject = new Subject<Record<string, NetworkJsonOld>>();
+  public networkMapSubject = new Subject<Record<string, NetworkJson>>();
   public serviceInfoSubject = new Subject<ServiceInfo>();
   public balanceMap: BalanceMap = {};
   public balanceSubject = new Subject<BalanceJson>();
@@ -216,10 +219,6 @@ export default class State {
 
   public get getEvmApiMap() {
     return this.apis.evm;
-  }
-
-  public getNetworkMapByKey(key: string) {
-    return this.networkMap[key];
   }
 
   public get getApiMap() {
@@ -467,7 +466,7 @@ export default class State {
     this.setCurrentAccount(null);
   }
 
-  public upsertNetworkMap(data: NetworkJsonOld): boolean {
+  public upsertNetworkMap(data: NetworkJson): boolean {
     if (this.lockNetworkMap) return false;
     this.lockNetworkMap = true;
     const { key, currentProvider, chain, blockExplorer, paraId, nativeToken, decimals } = data;
@@ -614,9 +613,7 @@ export default class State {
   }
 
   public updateNetworkStatus(networkKey: string, status: NETWORK_STATUS) {
-    if (this.networkMap[networkKey].apiStatus === status) {
-      return;
-    }
+    if (this.networkMap[networkKey].apiStatus === status) return;
 
     this.networkMap[networkKey].apiStatus = status;
 
@@ -939,8 +936,8 @@ export default class State {
   }
 
   public async prepNetworkJson() {
-    const result: Record<string, NetworkJsonOld> = {};
-    const { data: networks } = await axios.get<NetworkJsonOld[]>(URLS.CHAINS);
+    const result: Record<string, NetworkJson> = {};
+    const { data: networks } = await axios.get<NetworkJson[]>(URLS.CHAINS);
     const { data: assets } = await axios.get<AssetJson[]>(URLS.ASSETS);
     const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
     const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);

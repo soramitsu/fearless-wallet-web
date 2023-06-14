@@ -507,7 +507,7 @@ export default class SendForm extends Vue {
 
   @Watch('syncedNetwork')
   resetDestNetwork(newValue: string, prevValue: string) {
-    if (newValue === this.syncedDestNet) this.syncedDestNet = prevValue;
+    if (newValue.toLowerCase() === this.syncedDestNet.toLowerCase()) this.syncedDestNet = prevValue;
   }
 
   @Watch('syncedAssetId')

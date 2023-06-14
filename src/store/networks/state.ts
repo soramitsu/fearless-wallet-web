@@ -1,8 +1,8 @@
 import type { AssetsPrice, History, FiatJson } from '@/interfaces';
-import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 export type State = {
-  networks: NetworkJsonOld[];
+  networks: NetworkJson[];
   assetsPrice: AssetsPrice;
   fiats: FiatJson[];
   history: History;

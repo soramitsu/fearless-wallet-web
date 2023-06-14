@@ -125,7 +125,11 @@ export function subscribeEVMBalance(
 export function checkMainToken(networkKey: string, id: string): boolean {
   if (id === undefined) return false;
 
-  return state.networkMap[networkKey].assets.find((asset) => asset.assetId === id)?.isUtility ?? false;
+  return (
+    state.networksJson
+      .find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())!
+      .assets.find((asset) => asset.assetId === id)?.isUtility ?? false
+  );
 }
 
 export async function getFreeBalance(

@@ -1,4 +1,4 @@
-import { NetworkJsonOld, RequestTransactionHistoryAdd, TransactionHistoryItemType } from '@extension-base/types';
+import { NetworkJson, RequestTransactionHistoryAdd, TransactionHistoryItemType } from '@extension-base/types';
 import type {
   InjectedAccount,
   MetadataDef,
@@ -146,10 +146,10 @@ export interface RequestSignatures {
   'pri(networkMap.enableOne)': [string, boolean];
   'pri(networkMap.disableOne)': [string, DisableNetworkResponse];
   'pri(networkMap.removeOne)': [string, boolean];
-  'pri(networkMap.upsert)': [NetworkJsonOld, boolean];
+  'pri(networkMap.upsert)': [NetworkJson, boolean];
   'pri(networkMap.addCustomNode)': [string, boolean];
-  'pri(networkMap.getNetworkMap)': [null, Record<string, NetworkJsonOld>];
-  'pri(networkMap.getSubscription)': [null, Record<string, NetworkJsonOld>, Record<string, NetworkJsonOld>];
+  'pri(networkMap.getNetworkMap)': [null, Record<string, NetworkJson>];
+  'pri(networkMap.getSubscription)': [null, Record<string, NetworkJson>, Record<string, NetworkJson>];
 
   //Authorize
   'pri(authorize.approve.polkaswap)': [string[], null];

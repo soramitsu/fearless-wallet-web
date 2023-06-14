@@ -6,7 +6,7 @@ import { state } from '@extension-base/background/handlers';
 import { getCurrentProvider } from '@extension-base/utils/utils';
 import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
 import type { ApiProps } from '@extension-base/background/types/types';
-import type { NetworkJsonOld } from '@extension-base/types';
+import type { NetworkJson } from '@extension-base/types';
 import type { ApiInterfaceEvents } from '@polkadot/api/types';
 import { isSora } from '@/helpers/common';
 import { AUTO_CONNECT_MS, MAX_CONTINUE_RETRY } from '@/consts/networks';
@@ -115,7 +115,7 @@ function onReady(networkName: string) {
   state.apis.substrate[networkName].isApiReady = true;
 }
 
-export async function initApi(network: NetworkJsonOld): Promise<void> {
+export async function initApi(network: NetworkJson): Promise<void> {
   const { name: networkName, providers, isEthereum } = network;
 
   if (state.apis.substrate[networkName] === undefined) {
@@ -133,7 +133,7 @@ export async function initApi(network: NetworkJsonOld): Promise<void> {
     ['connected', () => onConnected(networkName)],
     ['disconnected', () => onDisconnect(networkName)],
     ['ready', () => onReady(networkName)],
-    ['error', () => onDisconnect(networkName)],
+    ['error', () => null],
   ];
 
   if (isSora(networkName)) soraConnection.open(currentProvider, { autoConnectMs: AUTO_CONNECT_MS, eventListeners });

@@ -1,11 +1,11 @@
-import { NetworkJsonOld } from '@extension-base/types';
+import { NetworkJson } from '@extension-base/types';
 import { BalanceItem } from '@extension-base/api/evm/types/ether';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { TokenBalance } from '@extension-base/background/types/types';
 import { MAIN_NETWORKS, ETHEREUM_NETWORKS, SORA_UTILITY_ASSET } from '@/consts/networks';
 import { RelayChainName, AssetJson } from '@/interfaces';
 
-export function getMockCurrencies(networks: NetworkJsonOld[], tokens: AssetJson[]) {
+export function getMockCurrencies(networks: NetworkJson[], tokens: AssetJson[]) {
   const currencies = networks.reduce<TokenBalance[]>((result, network) => {
     const { assets: networkAssets, name: mainNet, parentId, icon } = network;
     const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNet) as RelayChainName;

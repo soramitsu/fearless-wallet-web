@@ -95,7 +95,7 @@ import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { upsertNetworkMap } from '@/extension/messaging';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 type NotificationType = 'delete' | 'export' | '';
 
@@ -125,7 +125,7 @@ export default class AccountsLayout extends Vue {
   notificationType: NotificationType = '';
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
 
   get headers() {
     return this.notificationType === 'delete'

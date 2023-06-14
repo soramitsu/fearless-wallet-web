@@ -11,7 +11,7 @@
     <div class="settings">
       <SettingMenuItem title="header.settings.accounts" icon="account" @onOpen="open('Accounts')" />
 
-      <SettingMenuItem title="soraCard.title" icon="card" @onOpen="open('SoraCard')" />
+      <SettingMenuItem v-if="showSoraCard" title="soraCard.title" icon="card" @onOpen="open('SoraCard')" />
 
       <SettingMenuItem title="header.settings.currency" icon="dollar-circle" @onOpen="openPopup('openFiatsPopup')" />
 
@@ -42,7 +42,7 @@ import { Components } from '@/router/routes';
 import SettingMenuItem from '@/screens/main/SettingMenuItem.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { IS_EXTENSION } from '@/consts/global';
+import { IS_EXTENSION, SORA_CARD_VISIBILITY } from '@/consts/global';
 
 type SettingsItemType = 'Accounts';
 
@@ -54,6 +54,10 @@ export default class SettingsPopup extends Vue {
 
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+
+  get showSoraCard() {
+    return SORA_CARD_VISIBILITY;
+  }
 
   get routeName() {
     return this.$route.name;

@@ -72,7 +72,7 @@ import type { ChainRegistry, NetworkJson, TransactionHistoryItemType } from '@ex
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
-import type { SoraFees, XcmLocations, XcmFees } from '@/interfaces';
+import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
 import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/networks';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/currencies';
@@ -116,8 +116,8 @@ function extractMetadata(store: MetadataStore): void {
 
 export const registry = new TypeRegistry();
 type APIs = {
-  evm: Record<string, EthProvider>;
-  substrate: Record<string, ApiProps>;
+  evm: Record<NetworkName, EthProvider>;
+  substrate: Record<NetworkName, ApiProps>;
 };
 const metaStore = new MetadataStore();
 

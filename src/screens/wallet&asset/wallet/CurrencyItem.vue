@@ -68,7 +68,7 @@
           class="button send"
           tooltipText="assets.sendButtonText"
           target=".send"
-          @click="toggleVisibleActivityForm('showSendForm', true, { mainNetwork, assetId: assetData.assetId })"
+          @click="toggleVisibleActivityForm('showSendForm', true, { mainNetwork, assetId })"
         />
 
         <CircleButton
@@ -77,7 +77,7 @@
           class="button receive"
           tooltipText="assets.receiveButtonText"
           target=".receive"
-          @click="toggleVisibleActivityForm('showReceiveForm', true, { mainNetwork, assetId: assetData.name })"
+          @click="toggleVisibleActivityForm('showReceiveForm', true, { mainNetwork, assetId })"
         />
 
         <CircleButton
@@ -109,7 +109,6 @@ import { ALL_NETWORKS } from '@/consts/networks';
 import { GetAssetPrice, GetNetwork } from '@/store/networks/types';
 import { getSummaryTransferableBalance } from '@/helpers/currencies';
 import { APIItemState, NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
-import { firstCharToUp } from '@/helpers/common';
 
 @Component
 export default class CurrencyItem extends Vue {
@@ -150,6 +149,10 @@ export default class CurrencyItem extends Vue {
 
   get mainNetwork() {
     return this.assetData.mainNetwork;
+  }
+
+  get assetId() {
+    return this.assetData.assetId;
   }
 
   get tokenPrice() {
@@ -263,7 +266,7 @@ export default class CurrencyItem extends Vue {
       name: Components.Asset,
       params: {
         assetId: this.assetData.assetId,
-        network: firstCharToUp(this.redirectNetwork),
+        network: this.redirectNetwork,
       },
     });
   }

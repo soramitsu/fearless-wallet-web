@@ -6,7 +6,7 @@ import { FPNumber } from '@sora-substrate/util';
 import { state } from '@extension-base/background/handlers';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { createExtrinsicTransfer } from '@extension-base/api/substrate/utils';
-import { Asset } from '../../types';
+import type { Asset } from '@extension-base/types';
 import type { AccountInfoWithProviders, AccountInfoWithRefCount } from '@polkadot/types/interfaces';
 import {
   ApiProps,

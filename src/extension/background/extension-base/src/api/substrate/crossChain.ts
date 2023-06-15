@@ -3,9 +3,9 @@ import { FPNumber } from '@sora-substrate/util';
 import { decodeAddress } from '@polkadot/util-crypto';
 import { state } from '@extension-base/background/handlers';
 import { isEthereumNetwork } from '@extension-base/background/utils/utils';
-import { getAssetInfo } from '../substrate/registry';
-import { Asset } from '../../types';
+import { getAssetInfo } from '@extension-base/api/substrate/registry';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
+import type { Asset } from '@extension-base/types';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { Interior } from '@/interfaces';
 import {

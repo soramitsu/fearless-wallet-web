@@ -1,24 +1,16 @@
-// Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
-import { BN } from '@polkadot/util';
 import { ethers } from 'ethers';
-import { state } from '@extension-base/background/handlers';
 import {
   BasicTxResponse,
   ExternalRequestPromise,
   ExternalRequestPromiseStatus,
   TransferErrorCode,
 } from '@extension-base/background/types/types';
-import { checkMainToken } from '@extension-base/api/substrate/balance';
-import { getTokenInfo } from '@extension-base/api/substrate/registry';
-
 import EthProvider from '@extension-base/api/evm/ethProvider';
-
 import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
 
 export type HandleBasicTx = (data: BasicTxResponse) => void;
 export type HandleTxResponse<T extends BasicTxResponse> = (data: T) => void;
+
 interface HandleTransferBalanceResultProps {
   callback: HandleBasicTx;
   changeValue: string;
@@ -26,30 +18,6 @@ interface HandleTransferBalanceResultProps {
   receipt: ethers.providers.TransactionReceipt;
   response: BasicTxResponse;
   updateState?: (promise: Partial<ExternalRequestPromise>) => void;
-}
-
-export async function getExistentialDeposit(networkKey: string, token: string): Promise<string> {
-  const apiProps = state.getSubstrateApiMap[networkKey];
-
-  const api = apiProps.api!;
-
-  if (!apiProps.isApiReady) return '0';
-
-  const tokenInfo = getTokenInfo(token);
-
-  const isMainToken = checkMainToken(networkKey, tokenInfo.id);
-
-  if (isMainToken) {
-    //asset json
-
-    if (api?.consts?.balances.existentialDeposit) {
-      return api.consts.balances.existentialDeposit.toString();
-    } else if (api?.consts?.eqBalances?.existentialDeposit) {
-      return api.consts.eqBalances.existentialDeposit.toString();
-    }
-  }
-
-  return '0';
 }
 
 export const handleTransferBalanceResult = ({

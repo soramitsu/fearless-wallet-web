@@ -41,7 +41,7 @@ export default class BalanceDetailsPopup extends Vue {
   }
 
   get assetNameUpper() {
-    return this.currency.name.toUpperCase();
+    return this.currency.symbol.toUpperCase();
   }
 
   get detailsBalance() {

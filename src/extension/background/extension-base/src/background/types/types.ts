@@ -21,7 +21,15 @@ import type { ProviderInterface } from '@polkadot/rpc-provider/types';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
 import type { HexString } from '@polkadot/util/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
-import type { RelayChainName, SwapOptions, MarketType, WalletAddress, ChangeWalletBalance } from '@/interfaces';
+import type {
+  RelayChainName,
+  SwapOptions,
+  MarketType,
+  WalletAddress,
+  ChangeWalletBalance,
+  NetworkName,
+  AssetName,
+} from '@/interfaces';
 
 export interface PrepareExternalRequest {
   id: string;
@@ -337,7 +345,7 @@ export interface RequestCheckTransfer extends BaseRequestSign {
   networkKey: string;
   from: string;
   to: string;
-  tokenId: string;
+  assetId: string;
   relayChain?: string;
   value?: string;
   password?: string;
@@ -348,7 +356,7 @@ export interface RequestCheckCrossChain extends BaseRequestSign {
   destinationNet: string;
   from: string;
   to: string;
-  tokenId: string;
+  assetId: string;
   relayChain?: string;
   amount?: string;
   password?: string;
@@ -813,7 +821,7 @@ export interface IState {
   windows: number[];
   fiatSymbol: string;
   cachedUnlocks: CachedUnlocks;
-  balances: Record<string, Record<string, Record<string, BalanceItem>>>;
+  balances: Record<WalletAddress, Record<AssetName, Record<NetworkName, BalanceItem>>>;
   connectedTabsUrl: string[];
   transaction: Record<string, TransactionHistoryItem[]>;
 }
@@ -913,7 +921,6 @@ export interface TokenBalance {
   priceId?: string;
   precision: number;
   tokenName: string;
-  name: string;
   symbol: string;
   relayChain: RelayChainName;
   icon: string;

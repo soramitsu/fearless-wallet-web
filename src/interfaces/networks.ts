@@ -1,6 +1,6 @@
 import { NetworkFeesObject } from '@sora-substrate/util';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
-import type { Node, TypeAsset } from '@/interfaces';
+import type { Node } from '@/interfaces';
 
 type RelayChainName = 'polkadot' | 'kusama' | 'westend' | 'rococo';
 
@@ -30,7 +30,8 @@ type ExternalApi = {
   explorers?: Explorer[];
 };
 
-type NetworkAssetsType =
+type AssetsType =
+  | 'normal'
   | 'ormlAsset'
   | 'vToken'
   | 'vsToken'
@@ -48,7 +49,7 @@ type NetworkAssets = {
   purchaseProviders?: string[];
   isUtility?: true;
   isNative?: true;
-  type?: TypeAsset;
+  type?: AssetsType;
 };
 
 type NetworkStatus = 'pending' | 'disconnected' | 'connected' | 'ready';
@@ -84,8 +85,7 @@ interface ApiOptions {
 export {
   Networks,
   Network,
-  NetworkAssetsType,
-  NetworkAssets,
+  AssetsType,
   NetworkName,
   ExternalApi,
   ApiOptions,

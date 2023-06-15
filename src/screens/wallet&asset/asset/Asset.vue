@@ -196,7 +196,7 @@ export default class Asset extends Vue {
 
   get providers() {
     const network = this.getNetwork(this.selectedNetwork);
-    const asset = network?.assets.find(({ assetId }) => assetId === this.selectedAssetId);
+    const asset = network?.assets.find(({ id }) => id === this.selectedAssetId);
 
     return asset?.purchaseProviders ?? [];
   }
@@ -244,7 +244,7 @@ export default class Asset extends Vue {
   }
 
   get selectedAsset() {
-    return this.currentCurrency.name?.toLowerCase() ?? '';
+    return this.currentCurrency.symbol?.toLowerCase() ?? '';
   }
 
   get selectedAssetUpper() {

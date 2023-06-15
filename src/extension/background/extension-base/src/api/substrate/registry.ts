@@ -4,7 +4,7 @@
 import { ApiPromise } from '@polkadot/api';
 import { state } from '@extension-base/background/handlers';
 import { ChainRegistry } from '@extension-base/types';
-import { AssetJson } from '@/interfaces';
+import type { Asset } from '@extension-base/types';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -35,7 +35,7 @@ export const getRegistry = async (networkKey: string, api: ApiPromise) => {
   const chainRegistry = {
     chainDecimals,
     chainTokens,
-    tokenMap: state.tokenMap,
+    assetsMap: state.assetsMap,
   } as ChainRegistry;
 
   cacheRegistryMap[networkKey] = chainRegistry;
@@ -43,6 +43,6 @@ export const getRegistry = async (networkKey: string, api: ApiPromise) => {
   return chainRegistry;
 };
 
-export function getTokenInfo(tokenId: string): AssetJson {
-  return state.tokenMap.find(({ id }) => id === tokenId)!;
+export function getAssetInfo(assetId: string): Asset {
+  return state.assetsMap.find(({ id }) => id === assetId)!;
 }

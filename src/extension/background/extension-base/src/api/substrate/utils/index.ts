@@ -4,7 +4,7 @@ import { ApiPromise } from '@polkadot/api';
 import { state } from '@extension-base/background/handlers';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
-import type { AssetJson, TypeAsset } from '@/interfaces';
+import type { AssetsType } from '@/interfaces';
 
 type ExtrinsicTransferProps = {
   api: ApiPromise;
@@ -14,19 +14,18 @@ type ExtrinsicTransferProps = {
   tokenBalance: TokenBalance;
 };
 
-export function getAssetOptions(symbol: string, type: TypeAsset, assetId: string) {
-  if (type === 'stable') return { Stable: symbol.toUpperCase() };
-  if (type === 'vToken') return { VToken: symbol.toUpperCase() };
-  if (type === 'vsToken') return { VSToken: symbol.toUpperCase() };
+export function getAssetOptions(symbol: string, type: AssetsType, assetId: string) {
+  if (type === 'equilibrium') return assetFromToken(symbol)[0]; // TODO: сейчас currencyId лежит в новом JSON, возможно можно его брать оттуда
 
-  const assetsJson: AssetJson[] = state.tokenMap;
-  const { currencyId } = assetsJson.find(({ id }) => id === assetId)!;
+  const { currencyId } = state.assetsMap.find(({ id }) => id === assetId)!;
 
+  if (type === 'stable') return { Stable: currencyId!.toUpperCase() };
+  if (type === 'vsToken') return { VSToken: currencyId!.toUpperCase() };
+  if (type === 'vToken') return { VToken: currencyId!.toUpperCase() };
   if (type === 'foreignAsset') return { ForeignAsset: currencyId };
   if (type === 'liquidCrowdloan') return { LiquidCrowdloan: currencyId };
   if (type === 'stableAssetPoolToken') return { StableAssetPoolToken: currencyId };
   if (type === 'soraAsset') return currencyId;
-  if (type === 'equilibrium') return assetFromToken(symbol)[0];
 
   return { Token: symbol.toUpperCase() };
 }
@@ -44,14 +43,14 @@ export function getPrecisionValue(
 
 export function createExtrinsicTransfer(props: ExtrinsicTransferProps): SubmittableExtrinsic<'promise'> | null {
   const { amount, api, tokenBalance, to, networkKey } = props;
-  const { precision, assetId: id, balances, name } = tokenBalance;
-  const type = balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())!.type as TypeAsset;
-  const ormlOptions = getAssetOptions(name, type, id);
+  const { precision, assetId: id, balances, symbol } = tokenBalance;
+  const type = balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())!.type;
+  const ormlOptions = getAssetOptions(symbol, type, id);
   const precisionAmount = getPrecisionValue(amount, precision) as string;
 
   try {
     switch (type) {
-      case 'native':
+      case 'normal':
         return api.tx.balances.transfer(to, precisionAmount);
 
       case 'equilibrium':

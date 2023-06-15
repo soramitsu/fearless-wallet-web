@@ -235,13 +235,13 @@ export default class Wallet extends Vue {
 
     const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
 
-    return this.sortedCurrencies.filter(({ balances, name }) => {
+    return this.sortedCurrencies.filter(({ balances, symbol }) => {
       const walletBalance = balances.map(({ name }) => name);
       const isAvailableInSelectedNetwork = walletBalance.includes(this.selectedNetwork);
 
       if (!isAllNetworks && !isAvailableInSelectedNetwork) return false;
 
-      return name.includes(filter);
+      return symbol.includes(filter);
     });
   }
 

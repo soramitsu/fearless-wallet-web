@@ -32,7 +32,7 @@
         </template>
       </div>
       <div class="row second-row">
-        <div class="currency-name overflow">{{ assetData.name.toUpperCase() }}</div>
+        <div class="currency-name overflow">{{ assetData.symbol.toUpperCase() }}</div>
 
         <Shimmer v-if="showShimmers" height="23px" width="60px" />
 
@@ -131,12 +131,18 @@ export default class CurrencyItem extends Vue {
     return this.getNetwork(this.selectedNetwork);
   }
 
+  get filteredBalances() {
+    return this.assetData.balances.filter(
+      ({ transferable, state }) => state === APIItemState.READY && transferable !== '0'
+    );
+  }
+
   get isAdditional() {
-    return this.assetData.balances.length > this.countDisplayedNetworks;
+    return this.filteredBalances.length > this.countDisplayedNetworks;
   }
 
   get additionalCount() {
-    return this.assetData.balances.length - (this.countDisplayedNetworks - 1);
+    return this.filteredBalances.length - (this.countDisplayedNetworks - 1);
   }
 
   get tokenName() {
@@ -172,9 +178,9 @@ export default class CurrencyItem extends Vue {
       return [{ icon, name }];
     }
 
-    if (this.isAdditional) return [...this.assetData.balances].splice(0, this.countDisplayedNetworks - 1);
+    if (this.isAdditional) return this.filteredBalances.splice(0, this.countDisplayedNetworks - 1);
 
-    return this.assetData.balances;
+    return this.filteredBalances;
   }
 
   get allNetworkBadges() {

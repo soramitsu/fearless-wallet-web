@@ -1,12 +1,8 @@
 import { IS_PRODUCTION } from '@/consts/global';
 
 const CHAINS = IS_PRODUCTION
-  ? 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop/chains/chains.json'
-  : 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop/chains/chains_dev.json';
-
-const ASSETS = IS_PRODUCTION
-  ? 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop/chains/assets.json'
-  : 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop/chains/assets_dev.json';
+  ? 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/new-assets/chains/chains.json'
+  : 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/new-assets/chains/chains_dev.json';
 
 const FIATS = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';
 
@@ -46,7 +42,6 @@ const POLKASWAP_POLICY = 'https://wiki.sora.org/ecosystem/what-is-polkaswap/priv
 const POLKASWAP = IS_PRODUCTION ? 'https://polkaswap.io' : 'https://exchange.dev.sora2.tachi.soramitsu.co.jp/'; // https://test.polkaswap.io
 
 const URLS = {
-  ASSETS,
   FIATS,
   CHAINS,
   FEARLESS_TERMS,

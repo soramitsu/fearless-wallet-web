@@ -5,6 +5,7 @@ type Interior = any[];
 
 type Interiors = {
   v1: Interior;
+  v2?: Interior;
   v3?: Interior;
 };
 

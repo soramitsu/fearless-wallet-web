@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { BalanceItem, CustomTokenType, NetworkJson } from '@extension-base/api/evm/types/ether';
-import { AssetJson, ExternalApi, NetworkAssets, RelayChainName } from '@/interfaces';
+import type { AssetsType } from '@/interfaces';
+import { ExternalApi, RelayChainName } from '@/interfaces';
 
 export interface Message extends MessageEvent {
   data: {
@@ -97,12 +98,30 @@ export type CurrencyMock = {
   balances: BalanceItem[];
 };
 
+export type Asset = {
+  id: string;
+  type: AssetsType;
+  name: string; // ex: voucher ksm
+  symbol: string; // ex: vksm
+  currencyId?: string; // ex: ksm
+  precision: number;
+  priceId: string;
+  icon: string;
+  color: string;
+  staking: string;
+  purchaseProviders?: string[];
+  isUtility?: true;
+  isNative?: true;
+  existentialDeposit?: string;
+  contractAddress?: string;
+};
+
 export interface NetworkJsonOld extends NetworkJson {
   chainId: string;
   parentId?: string;
   name: string;
   externalApi?: ExternalApi;
-  assets: NetworkAssets[];
+  assets: Asset[];
   isEthereumNetwork?: boolean;
   customNodes: Node[];
   nodes: Node[];
@@ -111,14 +130,17 @@ export interface NetworkJsonOld extends NetworkJson {
   types: TypesForMobile;
   options?: string[];
   xcm?: {
-    xcmVersion: 'v1' | 'v3';
+    xcmVersion: 'v1' | 'v2' | 'v3';
     availableAssets: string[];
-    availableDestinations: { chainId: string; assets: string[] }[];
+    availableDestinations: {
+      chainId: string;
+      assets: string[];
+    }[];
   };
 }
 
 export interface ChainRegistry {
   chainDecimals: number[];
   chainTokens: string[];
-  tokenMap: AssetJson[];
+  assetsMap: Asset[];
 }

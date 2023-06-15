@@ -1,9 +1,6 @@
 import { CodecString } from '@sora-substrate/util';
 import { DexId } from '@sora-substrate/util/build/dex/consts';
-import type { NetworkAssetsType } from '@/interfaces';
 import type { Asset } from '@sora-substrate/util/build/assets/types';
-
-type TypeAsset = NetworkAssetsType | 'native';
 
 enum MarketType {
   SMART = 'SMART',
@@ -38,4 +35,4 @@ type CreateSwapResult = {
   route: string;
 };
 
-export { TypeAsset, SwapOptions, CreateSwapResult, MarketType };
+export { SwapOptions, CreateSwapResult, MarketType };

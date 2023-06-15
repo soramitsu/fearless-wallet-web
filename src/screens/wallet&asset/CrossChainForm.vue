@@ -144,7 +144,7 @@ export default class CrossChainForm extends Vue {
   }
 
   get assetName() {
-    return (this.currency?.name ?? '').toUpperCase();
+    return (this.currency?.symbol ?? '').toUpperCase();
   }
 
   get iconShadowColor() {
@@ -168,10 +168,10 @@ export default class CrossChainForm extends Vue {
   }
 
   get originalNetworkUtilityAsset() {
-    const utilityId = this.originNet?.assets[0].assetId ?? ''; // [0] - is utility asset
+    const utilityId = this.originNet?.assets[0].id ?? ''; // [0] - is utility asset
     const currency = this.balances.find(({ balances }) => balances.some(({ id }) => id === utilityId));
 
-    return currency?.name ?? '';
+    return currency?.symbol ?? '';
   }
 
   get originalNetworkUtilityAssetUpper() {

@@ -129,8 +129,7 @@ export async function createSwap(options: Partial<SwapOptions>, api: Api<void>):
   route =
     route
       ?.map((item) => {
-        const assetsJson = state.tokenMap;
-        const { symbol } = assetsJson.find(({ currencyId }) => currencyId === item)!;
+        const { symbol } = state.assetsMap.find(({ currencyId }) => currencyId === item)!;
 
         return symbol.toUpperCase();
       })

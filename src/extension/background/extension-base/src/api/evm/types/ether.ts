@@ -1,6 +1,6 @@
 import { APIItemState, NETWORK_STATUS } from '@extension-base/api/types/networks';
 import type { ContractType } from '@/interfaces/ether';
-import type { TypeAsset } from '@/interfaces';
+import type { AssetsType } from '@/interfaces';
 
 export interface BalanceChildItem {
   reserved: string;
@@ -16,9 +16,10 @@ export interface BalanceItem {
   id?: string;
   relayChain?: string;
   existentialDeposit?: string;
+  currencyId?: string;
   key?: string;
   decimals?: number;
-  type?: TypeAsset;
+  type: AssetsType;
   free?: string;
   isUtility?: boolean;
   isNative?: boolean;

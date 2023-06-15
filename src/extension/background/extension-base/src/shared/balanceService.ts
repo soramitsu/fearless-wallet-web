@@ -12,15 +12,15 @@ export default class BalanceService {
   }
 
   // Balance
-  async updateBalanceStore(chain: string, address: string, item: BalanceItem) {
+  async updateBalanceStore(chain: string, address: string, item: Partial<BalanceItem>) {
     if (item.state === APIItemState.READY) {
       const { balances } = await storage.get(['balances']);
       const copyBalance = { ...(balances ?? {}) };
 
       if (!copyBalance[address]) copyBalance[address] = {};
-      if (!copyBalance[address][item.name]) copyBalance[address][item.name] = {};
+      if (!copyBalance[address][item.name!]) copyBalance[address][item.name!] = {};
 
-      copyBalance[address][item.name][chain] = { chain, ...item };
+      copyBalance![address][item.symbol!][chain] = { chain, ...item } as BalanceItem;
 
       await storage.set({ balances: copyBalance });
     }

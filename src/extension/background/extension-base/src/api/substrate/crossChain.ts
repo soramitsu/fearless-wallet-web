@@ -2,18 +2,19 @@ import { BN, isFunction } from '@polkadot/util';
 import { FPNumber } from '@sora-substrate/util';
 import { decodeAddress } from '@polkadot/util-crypto';
 import { state } from '@extension-base/background/handlers';
-import { getTokenInfo } from '../substrate/registry';
+import { getAssetInfo } from '../substrate/registry';
 import { isEthereumNetwork } from '../../background/utils/utils';
+import { Asset } from '../../types';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
-import type { AssetJson, Interior } from '@/interfaces';
+import type { Interior } from '@/interfaces';
 import {
   TokenBalance,
   BasicTxResponse,
   SignerType,
 } from '@/extension/background/extension-base/src/background/types/types';
 import { NATIVE_NETWORKS, RELAY_CHAINS, CHAIN_IDS } from '@/consts/networks';
-import { AssetName, NetworkName } from '@/interfaces';
+import { NetworkName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
 
 type Extrinsic = Nullable<SubmittableExtrinsic<'promise'>>;
@@ -120,7 +121,7 @@ function getNativeTeleportParams(originNet: NetworkName, destNet: NetworkName, t
   return [destinationChain, receiver, asset, 0, limit];
 }
 
-function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: string, amount: string, tokenId: string) {
+function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: string, amount: string, assetId: string) {
   const { xcm, parentId, name } = state.networkMap[originNet];
   const { paraId: _paraId } = state.networkMap[destNet];
   const paraId = +_paraId!;
@@ -129,7 +130,7 @@ function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: st
   const value = new BN(amount);
 
   const { assets: xcmLocationsAssets } = state.xcmLocations.find(({ chainId }) => chainId === parentId)!;
-  const tokenInfo = getTokenInfo(tokenId);
+  const tokenInfo = getAssetInfo(assetId);
   const { interiors } = xcmLocationsAssets.find(
     ({ symbol }) => symbol.toLowerCase() === tokenInfo.symbol.toLowerCase()
   )!;
@@ -227,7 +228,7 @@ async function createNativeTeleportExtrinsic(
 }
 
 async function createOrmlTeleportExtrinsic(
-  tokenId: string,
+  assetId: string,
   originNet: NetworkName,
   destNet: NetworkName,
   toAddress: string,
@@ -244,7 +245,7 @@ async function createOrmlTeleportExtrinsic(
 
   // В большинстве случаев используется xTokens, но он есть не всегда
   if (api!.tx?.xTokens?.transferMultiasset) {
-    const params = getOrmlTeleportParams(originNet, destNet, toAddress, precisionAmount, tokenId);
+    const params = getOrmlTeleportParams(originNet, destNet, toAddress, precisionAmount, assetId);
 
     return api!.tx?.xTokens?.transferMultiasset(...params);
   }
@@ -271,7 +272,7 @@ async function estimateFee(extrinsic: Extrinsic, to: string, tokenBalance: Token
 }
 
 async function createCrossChainExtrinsic(
-  tokenId: string,
+  assetId: string,
   originNet: NetworkName,
   destNet: NetworkName,
   toAddress: string,
@@ -288,25 +289,25 @@ async function createCrossChainExtrinsic(
   } else {
     // Case Nonnative ParaChain -> Nonnative ParaChain (karura, etc -> bifrost, etc)
     // Case Nonnative ParaChain -> RelayChain (karura, etc -> kusama, etc; acala, etc -> polkadot)
-    return await createOrmlTeleportExtrinsic(tokenId, originNet, destNet, toAddress, amount!, tokenBalance);
+    return await createOrmlTeleportExtrinsic(assetId, originNet, destNet, toAddress, amount!, tokenBalance);
   }
 }
 
 export interface MakeCrossChainProps {
-  asset: AssetName;
+  assetId: string;
   originNet: NetworkName;
   destinationNet: NetworkName;
   to: string;
   from: string;
   amount: string;
   password: string | undefined;
-  tokenInfo: AssetJson;
+  tokenInfo: Asset;
   isSavePass?: boolean;
   callback: (data: BasicTxResponse) => void;
 }
 
 async function makeCrossChain({
-  asset,
+  assetId,
   originNet,
   destinationNet,
   from,
@@ -322,12 +323,9 @@ async function makeCrossChain({
 
   await apiProps.api?.isReady;
 
-  const tokenBalance = state.balanceMap[from].find(({ assetId, relayChain }) => {
-    if (tokenInfo.relayChain) return assetId === tokenInfo.id && relayChain === tokenInfo.relayChain;
-    else return assetId === tokenInfo.id;
-  })!;
+  const tokenBalance = state.balanceMap[from].find(({ assetId }) => assetId === tokenInfo.id)!;
 
-  const extrinsic = await createCrossChainExtrinsic(asset, originNet, destinationNet, to, amount!, tokenBalance);
+  const extrinsic = await createCrossChainExtrinsic(assetId, originNet, destinationNet, to, amount!, tokenBalance);
 
   await signAndSendExtrinsic({
     type: SignerType.PASSWORD,

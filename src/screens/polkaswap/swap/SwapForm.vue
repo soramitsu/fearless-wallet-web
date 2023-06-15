@@ -379,7 +379,7 @@ export default class SwapForm extends Vue {
   }
 
   get sendAssetName(): string {
-    return this.sendCurrency?.name ?? '';
+    return this.sendCurrency?.symbol ?? '';
   }
 
   get sendAssetIcon() {
@@ -391,7 +391,7 @@ export default class SwapForm extends Vue {
   }
 
   get receiveAssetName(): string {
-    return this.receiveCurrency?.name ?? '';
+    return this.receiveCurrency?.symbol ?? '';
   }
 
   get receiveAssetIcon() {
@@ -735,7 +735,7 @@ export default class SwapForm extends Vue {
     )!;
     const transferable = balance.transferable ? +balance.transferable : 0;
 
-    if (this.sendCurrency?.name === SORA_UTILITY_ASSET) {
+    if (this.sendCurrency?.symbol === SORA_UTILITY_ASSET) {
       const result = new FPNumber(transferable).sub(new FPNumber(this.fee));
 
       return FPNumber.lt(result, FPNumber.ZERO) ? '0' : result.toString();

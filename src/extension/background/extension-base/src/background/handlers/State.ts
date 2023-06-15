@@ -72,7 +72,7 @@ import type { ChainRegistry, NetworkJsonOld, TransactionHistoryItemType } from '
 import type { JsonRpcResponse, ProviderInterface, ProviderInterfaceCallback } from '@polkadot/rpc-provider/types';
 import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types';
 import type { HexString } from '@polkadot/util/types';
-import type { AssetJson, SoraFees, XcmLocations, XcmFees } from '@/interfaces';
+import type { SoraFees, XcmLocations, XcmFees } from '@/interfaces';
 import { URLS } from '@/consts/urls';
 import { ALL_NETWORKS, SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/networks';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/currencies';
@@ -158,7 +158,6 @@ export default class State {
   public authorizeCached: AuthUrls | undefined = undefined;
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
-  public tokenMap: AssetJson[] = [];
   public networkMap: Record<string, NetworkJsonOld> = {}; // mapping to networkMapStore, for uses in background
   public networksJson: NetworkJsonOld[] = []; // from github
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
@@ -206,8 +205,8 @@ export default class State {
     chrome.storage.local.set({ fiatSymbol: this.fiatSymbol });
   }
 
-  public getAssetBalance(address: string, name: string, relayChain?: string) {
-    return this.balanceMap[address].find((balance) => balance.name === name && balance.relayChain === relayChain)!;
+  public get assetsMap() {
+    return this.networksJson.map(({ assets }) => assets).flat();
   }
 
   public get getSubstrateApiMap() {
@@ -916,12 +915,9 @@ export default class State {
   }
 
   public refreshPrice() {
-    // Update for tokens price
-    const coinGeckoKeys = Object.values(this.tokenMap)
-      .map((network) => network.priceId)
-      .filter((key) => key) as string[];
+    const assets: string[] = this.assetsMap.filter(({ priceId }) => priceId).map(({ priceId }) => priceId);
 
-    getTokenPrice(coinGeckoKeys, this.fiatSymbol)
+    getTokenPrice(Array.from(new Set(assets)), this.fiatSymbol)
       .then((rs) => {
         this.setPrice(rs, () => {
           console.info('Get Token Price From CoinGecko');
@@ -941,12 +937,10 @@ export default class State {
   public async prepNetworkJson() {
     const result: Record<string, NetworkJsonOld> = {};
     const { data: networks } = await axios.get<NetworkJsonOld[]>(URLS.CHAINS);
-    const { data: assets } = await axios.get<AssetJson[]>(URLS.ASSETS);
     const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
     const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
     this.networksJson = networks;
-    this.tokenMap = assets;
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
 
@@ -1028,11 +1022,9 @@ export default class State {
     this.priceStore.get('PriceData', (rs) => {
       if (this.priceStoreReady) update(rs);
       else {
-        const activeNetworks: string[] = this.tokenMap
-          .filter(({ priceId }) => priceId)
-          .map(({ priceId }) => priceId as string);
+        const assets: string[] = this.assetsMap.filter(({ priceId }) => priceId).map(({ priceId }) => priceId);
 
-        getTokenPrice(activeNetworks, this.fiatSymbol)
+        getTokenPrice(Array.from(new Set(assets)), this.fiatSymbol)
           .then((rs) => {
             this.setPrice(rs);
             update(rs);
@@ -1063,10 +1055,10 @@ export default class State {
     });
   }
 
-  public setBalanceItem(networkKey: string, item: BalanceItem, address: string) {
-    const currencyIndex = this.balanceMap[address].findIndex(({ assetId: _assetId, name, relayChain }) => {
+  public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {
+    const currencyIndex = this.balanceMap[address].findIndex(({ assetId: _assetId, symbol, relayChain }) => {
       const isExistingAssetId = _assetId === item.id;
-      const isExistingDisplayName = name === item.name;
+      const isExistingDisplayName = symbol === item.symbol;
       const isExistingAsset = isExistingDisplayName && relayChain === item.relayChain;
 
       return isExistingAssetId || isExistingAsset;
@@ -1090,7 +1082,7 @@ export default class State {
       frozen,
       total,
       transferable,
-      state,
+      state: state!,
       timestamp: +new Date(),
     };
 
@@ -1148,7 +1140,7 @@ export default class State {
     }
   }
 
-  private updateBalanceStore(networkKey: string, item: BalanceItem) {
+  private updateBalanceStore(networkKey: string, item: Partial<BalanceItem>) {
     this.getCurrentAccount((currentAccountInfo) => {
       if (currentAccountInfo)
         this.balanceService
@@ -1169,7 +1161,7 @@ export default class State {
 
     if (this.balanceMap && this.balanceMap[address] !== undefined) return;
 
-    this.balanceMap[address] = getMockCurrencies(this.networksJson, this.tokenMap);
+    this.balanceMap[address] = getMockCurrencies(this.networksJson);
   }
 
   public generateDefaultBalanceMap() {

@@ -119,12 +119,13 @@ export default class SendForm extends Vue {
   get selectedAsset() {
     return this.balances.find(
       (el) =>
-        el.name.toLowerCase() === this.assetId.toLowerCase() || el.assetId.toLowerCase() === this.assetId.toLowerCase()
+        el.symbol.toLowerCase() === this.assetId.toLowerCase() ||
+        el.assetId.toLowerCase() === this.assetId.toLowerCase()
     )!;
   }
 
   get selectedAssetUpper() {
-    return this.selectedAsset.name.toUpperCase();
+    return this.selectedAsset.symbol.toUpperCase();
   }
 
   get totalString() {

@@ -50,18 +50,17 @@ import {
   ResponseCheckCrossChain,
   ResponseMakeSwap,
   TransferErrorCode,
-} from '../types/types';
+} from '@extension-base/background/types/types';
 import {
   createCrossChainExtrinsic,
   estimateFee as estimateCrossChainFee,
   makeCrossChain,
-} from '../../api/substrate/crossChain';
+} from '@extension-base/api/substrate/crossChain';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
-import type { NetworkJson } from '@extension-base/api/evm/types/ether';
 import type {
   Asset,
-  NetworkJsonOld,
   RequestTransactionHistoryAdd,
+  NetworkJson,
   TransactionHistoryItemType,
 } from '@extension-base/types';
 import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
@@ -413,7 +412,7 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
-  private async upsertNetworkMap(data: NetworkJsonOld): Promise<boolean> {
+  private async upsertNetworkMap(data: NetworkJson): Promise<boolean> {
     try {
       return await this.state.upsertNetworkMap(data);
     } catch (e) {
@@ -1226,7 +1225,7 @@ export default class Extension extends FWExtensionBase {
     port.onDisconnect.addListener(() => this.cancelSubscription(id));
   }
 
-  private getNetworkMap(): Record<string, NetworkJsonOld> {
+  private getNetworkMap(): Record<string, NetworkJson> {
     return this.state.getNetworkMap;
   }
 
@@ -1282,7 +1281,7 @@ export default class Extension extends FWExtensionBase {
         return true;
 
       case 'pri(networkMap.upsert)':
-        return this.upsertNetworkMap(request as NetworkJsonOld);
+        return this.upsertNetworkMap(request as NetworkJson);
 
       case 'pri(networkMap.getSubscription)':
         return this.subscribeNetworkMap(id, port);

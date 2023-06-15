@@ -11,8 +11,9 @@ import {
   CRON_AUTO_RECOVER_DOTSAMA_INTERVAL,
   CRON_GET_API_MAP_STATUS,
   CRON_REFRESH_PRICE_INTERVAL,
+  CRON_UPDATE_JSON_INTERVAL,
 } from '@extension-base/const/intervals';
-import type { NetworkJson } from '@extension-base/api/evm/types/ether';
+import { NetworkJson } from '@extension-base/types';
 import type FWState from '@extension-base/background/handlers/State';
 import type { FWSubscription } from '@extension-base/background/handlers/subscriptions';
 import type { ServiceInfo } from '@extension-base/background/types/types';
@@ -90,7 +91,9 @@ export class FWCron {
   start = () => {
     if (this.status === 'running') return;
 
-    this.logger.log('Stating cron jobs');
+    this.logger.log('Starting cron jobs');
+    this.addCron('refreshJsons', () => this.state.init(), CRON_UPDATE_JSON_INTERVAL, false);
+
     this.state.getCurrentAccount((currentAccountInfo) => {
       if (!currentAccountInfo?.address) return;
 

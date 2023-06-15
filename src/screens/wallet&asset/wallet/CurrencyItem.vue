@@ -122,7 +122,6 @@ export default class CurrencyItem extends Vue {
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
-
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: Fn<SetHiddenAsset>;
@@ -150,7 +149,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get mainNetwork() {
-    return this.assetData.mainNetwork.toUpperCase();
+    return this.assetData.mainNetwork;
   }
 
   get tokenPrice() {
@@ -242,8 +241,8 @@ export default class CurrencyItem extends Vue {
 
     return this.isCurrentNetwork
       ? this.selectedNetwork
-      : this.assetData.mainNetwork !== undefined
-      ? this.assetData.mainNetwork
+      : this.mainNetwork !== undefined
+      ? this.mainNetwork
       : network.name;
   }
 

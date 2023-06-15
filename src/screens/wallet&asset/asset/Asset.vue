@@ -152,7 +152,7 @@ import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { firstCharToUp, isSora } from '@/helpers/common';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { getSummaryTransferableBalance } from '@/helpers/currencies';
-import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 
@@ -188,7 +188,7 @@ export default class Asset extends Vue {
   @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-  @Getter(NetworksGettersTypes.networks) networks!: NetworkJsonOld[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
   get showShimmers() {
     return !this.isOnline || !this.balances.length || !this.currentNetwork || this.currentNetwork?.state === 'pending';

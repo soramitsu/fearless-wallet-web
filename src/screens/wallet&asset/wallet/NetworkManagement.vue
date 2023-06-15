@@ -30,11 +30,11 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { NetworkJsonOld } from '@/extension/background/extension-base/src/types';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component
 export default class NetworkManagement extends Vue {
-  @Prop(Array) networks!: NetworkJsonOld[];
+  @Prop(Array) networks!: NetworkJson[];
   @Prop(Function) closeForm!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 }

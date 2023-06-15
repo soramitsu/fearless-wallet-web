@@ -16,45 +16,47 @@
     @update:partialFee="updatePartialFee"
     @update:recipient="updateRecipient"
   >
-    <div class="row direction-column">
-      <Input v-model="selectedWallet.name" placeholder="assets.from" size="big" :readonly="true" />
+    <div>
+      <div class="row direction-column">
+        <Input v-model="selectedWallet.name" placeholder="assets.from" size="big" :readonly="true" />
 
-      <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
+        <SIcon name="arrows-arrow-right-24" class="arrow-icon" />
 
-      <Input v-model="formattedAddressTo" placeholder="assets.to" size="big" :readonly="true" />
-    </div>
-
-    <Corners size="big" class="row">
-      <div class="summary">
-        <div class="summary-label">{{ $t('assets.summary') }}</div>
-
-        <div class="summary-row">
-          <div class="name">{{ $t('assets.assetsAmount') }}</div>
-
-          <div class="column">
-            <div>{{ amountString }}</div>
-
-            <div v-if="showValue" class="value">{{ valueString }}</div>
-          </div>
-        </div>
-
-        <div class="summary-row">
-          <div class="name">{{ $t('assets.fee') }}</div>
-
-          <div class="column">
-            <div>{{ partialFeeString }}</div>
-          </div>
-        </div>
-
-        <div v-if="isUtilityAsset" class="summary-row">
-          <div class="name">{{ $t('assets.total') }}</div>
-
-          <div class="column">
-            <div>{{ totalString }}</div>
-          </div>
-        </div>
+        <Input v-model="formattedAddressTo" placeholder="assets.to" size="big" :readonly="true" />
       </div>
-    </Corners>
+
+      <Corners size="big" class="row">
+        <div class="summary">
+          <div class="summary-label">{{ $t('assets.summary') }}</div>
+
+          <div class="summary-row">
+            <div class="name">{{ $t('assets.assetsAmount') }}</div>
+
+            <div class="column">
+              <div>{{ amountString }}</div>
+
+              <div v-if="showValue" class="value">{{ valueString }}</div>
+            </div>
+          </div>
+
+          <div class="summary-row">
+            <div class="name">{{ $t('assets.fee') }}</div>
+
+            <div class="column">
+              <div>{{ partialFeeString }}</div>
+            </div>
+          </div>
+
+          <div v-if="isUtilityAsset" class="summary-row">
+            <div class="name">{{ $t('assets.total') }}</div>
+
+            <div class="column">
+              <div>{{ totalString }}</div>
+            </div>
+          </div>
+        </div>
+      </Corners>
+    </div>
   </TransferForm>
 </template>
 

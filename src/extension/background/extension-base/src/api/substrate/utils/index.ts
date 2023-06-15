@@ -22,6 +22,7 @@ export function getAssetOptions(symbol: string, type: AssetsType, assetId: strin
   if (type === 'stable') return { Stable: currencyId!.toUpperCase() };
   if (type === 'vsToken') return { VSToken: currencyId!.toUpperCase() };
   if (type === 'vToken') return { VToken: currencyId!.toUpperCase() };
+  if (type === 'token2') return { Token2: currencyId }; // TODO ВАЖНО: Проверить правильно ли задан параметр
   if (type === 'foreignAsset') return { ForeignAsset: currencyId };
   if (type === 'liquidCrowdloan') return { LiquidCrowdloan: currencyId };
   if (type === 'stableAssetPoolToken') return { StableAssetPoolToken: currencyId };

@@ -1,20 +1,3 @@
-type AssetJson = {
-  id: string;
-  name: string;
-  symbol: string;
-  displayName?: string;
-  relayChain?: string;
-  contractAddress?: string;
-  chainId: string;
-  precision: number;
-  priceId?: string;
-  icon: string;
-  currencyId?: string;
-  transfersEnabled?: true;
-  existentialDeposit: string;
-  color: string;
-};
-
 type AssetPrices = {
   /* eslint-disable */
   aed: number;
@@ -128,4 +111,4 @@ type AssetsPrice = {
 
 type KeysAssetPricesJson = keyof AssetPrices;
 
-export { KeysAssetPricesJson, AssetsPrice, AssetName, AssetPrices, AssetPrice, AssetJson, AssetId };
+export { KeysAssetPricesJson, AssetsPrice, AssetName, AssetPrices, AssetPrice, AssetId };

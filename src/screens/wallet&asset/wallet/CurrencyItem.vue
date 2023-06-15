@@ -32,7 +32,7 @@
         </template>
       </div>
       <div class="row second-row">
-        <div class="currency-name overflow">{{ assetData.name.toUpperCase() }}</div>
+        <div class="currency-name overflow">{{ assetData.symbol.toUpperCase() }}</div>
 
         <Shimmer v-if="showShimmers" height="23px" width="60px" />
 
@@ -68,7 +68,7 @@
           class="button send"
           tooltipText="assets.sendButtonText"
           target=".send"
-          @click="toggleVisibleActivityForm('showSendForm', true, { mainNetwork, assetId: assetData.assetId })"
+          @click="toggleVisibleActivityForm('showSendForm', true, { mainNetwork, assetId })"
         />
 
         <CircleButton
@@ -77,7 +77,7 @@
           class="button receive"
           tooltipText="assets.receiveButtonText"
           target=".receive"
-          @click="toggleVisibleActivityForm('showReceiveForm', true, { mainNetwork, assetId: assetData.name })"
+          @click="toggleVisibleActivityForm('showReceiveForm', true, { mainNetwork, assetId })"
         />
 
         <CircleButton
@@ -109,7 +109,6 @@ import { ALL_NETWORKS } from '@/consts/networks';
 import { GetAssetPrice, GetNetwork } from '@/store/networks/types';
 import { getSummaryTransferableBalance } from '@/helpers/currencies';
 import { APIItemState, NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
-import { firstCharToUp } from '@/helpers/common';
 
 @Component
 export default class CurrencyItem extends Vue {
@@ -130,12 +129,18 @@ export default class CurrencyItem extends Vue {
     return this.getNetwork(this.selectedNetwork);
   }
 
+  get filteredBalances() {
+    return this.assetData.balances.filter(
+      ({ transferable, state }) => state === APIItemState.READY && transferable !== '0'
+    );
+  }
+
   get isAdditional() {
-    return this.assetData.balances.length > this.countDisplayedNetworks;
+    return this.filteredBalances.length > this.countDisplayedNetworks;
   }
 
   get additionalCount() {
-    return this.assetData.balances.length - (this.countDisplayedNetworks - 1);
+    return this.filteredBalances.length - (this.countDisplayedNetworks - 1);
   }
 
   get tokenName() {
@@ -144,6 +149,10 @@ export default class CurrencyItem extends Vue {
 
   get mainNetwork() {
     return this.assetData.mainNetwork;
+  }
+
+  get assetId() {
+    return this.assetData.assetId;
   }
 
   get tokenPrice() {
@@ -171,9 +180,9 @@ export default class CurrencyItem extends Vue {
       return [{ icon, name }];
     }
 
-    if (this.isAdditional) return [...this.assetData.balances].splice(0, this.countDisplayedNetworks - 1);
+    if (this.isAdditional) return this.filteredBalances.splice(0, this.countDisplayedNetworks - 1);
 
-    return this.assetData.balances;
+    return this.filteredBalances;
   }
 
   get allNetworkBadges() {
@@ -257,7 +266,7 @@ export default class CurrencyItem extends Vue {
       name: Components.Asset,
       params: {
         assetId: this.assetData.assetId,
-        network: firstCharToUp(this.redirectNetwork),
+        network: this.redirectNetwork,
       },
     });
   }

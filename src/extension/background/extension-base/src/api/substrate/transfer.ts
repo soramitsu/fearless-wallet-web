@@ -4,12 +4,10 @@
 import { KeyringPair } from '@polkadot/keyring/types';
 import { FPNumber } from '@sora-substrate/util';
 import { state } from '@extension-base/background/handlers';
-import { getTokenInfo } from '@extension-base/api/substrate/registry';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
-import { checkMainToken } from '@extension-base/api/substrate/balance';
 import { createExtrinsicTransfer } from '@extension-base/api/substrate/utils';
+import type { Asset } from '@extension-base/types';
 import type { AccountInfoWithProviders, AccountInfoWithRefCount } from '@polkadot/types/interfaces';
-import type { AssetJson } from '@/interfaces';
 import {
   ApiProps,
   BasicTxResponse,
@@ -18,29 +16,6 @@ import {
   TokenBalance,
 } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworkName } from '@/interfaces';
-
-export async function getExistentialDeposit(
-  networkKey: string,
-  token: string,
-  dotSamaApiMap: Record<string, ApiProps>
-): Promise<string> {
-  const apiProps = dotSamaApiMap[networkKey];
-  await apiProps.api?.isReady;
-  const api = apiProps.api;
-
-  const tokenInfo = getTokenInfo(token);
-  const isMainToken = checkMainToken(networkKey, tokenInfo.id);
-
-  if (tokenInfo && isMainToken) {
-    if (api?.consts?.balances?.existentialDeposit) {
-      return api.consts.balances.existentialDeposit.toString();
-    } else if (api?.consts?.eqBalances?.existentialDeposit) {
-      return api.consts.eqBalances.existentialDeposit.toString();
-    }
-  }
-
-  return '0';
-}
 
 function isRefCount(
   accountInfo: AccountInfoWithProviders | AccountInfoWithRefCount
@@ -125,7 +100,7 @@ export interface MakeTransferProps {
   from: string;
   amount: string;
   password: string | undefined;
-  tokenInfo: AssetJson;
+  tokenInfo: Asset;
   isSavePass?: boolean;
   callback: (data: BasicTxResponse) => void;
 }
@@ -145,10 +120,7 @@ export async function makeTransfer({
 
   await apiProps.api?.isReady;
 
-  const tokenBalance = state.balanceMap[from].find(({ assetId, relayChain }) => {
-    if (tokenInfo.relayChain) return assetId === tokenInfo.id && relayChain === tokenInfo.relayChain;
-    else return assetId === tokenInfo.id;
-  })!;
+  const tokenBalance = state.balanceMap[from].find(({ assetId }) => assetId === tokenInfo.id)!;
 
   const extrinsic = createExtrinsicTransfer({
     amount,

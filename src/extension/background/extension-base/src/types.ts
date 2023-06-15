@@ -3,7 +3,9 @@
 
 import { BalanceItem, CustomTokenType, NetWorkGroup } from '@extension-base/api/evm/types/ether';
 import { NETWORK_STATUS } from './api/types/networks';
-import { AssetJson, ExternalApi, NetworkAssets, RelayChainName } from '@/interfaces';
+import type { AssetsType } from '@/interfaces';
+import { RelayChainName, ExternalApi } from '@/interfaces';
+
 import { ContractType } from '@/interfaces/ether';
 
 export interface Message extends MessageEvent {
@@ -99,6 +101,24 @@ export type CurrencyMock = {
   balances: BalanceItem[];
 };
 
+export type Asset = {
+  id: string;
+  type: AssetsType;
+  name: string; // ex: voucher ksm
+  symbol: string; // ex: vksm
+  currencyId?: string; // ex: ksm
+  precision: number;
+  priceId: string;
+  icon: string;
+  color: string;
+  staking: string;
+  purchaseProviders?: string[];
+  isUtility?: true;
+  isNative?: true;
+  existentialDeposit?: string;
+  contractAddress?: string;
+};
+
 export interface NetworkJson {
   // General Information
   key: string; // Key of network in NetworkMap
@@ -141,7 +161,7 @@ export interface NetworkJson {
   parentId?: string;
   name: string;
   externalApi?: ExternalApi;
-  assets: NetworkAssets[];
+  assets: Asset[];
   isEthereumNetwork?: boolean;
   customNodes: Node[];
   nodes: Node[];
@@ -149,14 +169,17 @@ export interface NetworkJson {
   types: TypesForMobile;
   options?: string[];
   xcm?: {
-    xcmVersion: 'v1' | 'v3';
+    xcmVersion: 'v1' | 'v2' | 'v3';
     availableAssets: string[];
-    availableDestinations: { chainId: string; assets: string[] }[];
+    availableDestinations: {
+      chainId: string;
+      assets: string[];
+    }[];
   };
 }
 
 export interface ChainRegistry {
   chainDecimals: number[];
   chainTokens: string[];
-  tokenMap: AssetJson[];
+  assetsMap: Asset[];
 }

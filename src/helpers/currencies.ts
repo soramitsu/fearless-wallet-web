@@ -34,7 +34,7 @@ function defaultSortingCurrencies(currencies: TokenBalance[], { tokenPriceMap }:
 
   const currenciesWithoutAssets = currencies.filter(({ balances }) => balances.every(({ total }) => total === '0'));
 
-  const dotIndex = currenciesWithoutAssets.findIndex(({ name }) => name === 'dot');
+  const dotIndex = currenciesWithoutAssets.findIndex(({ symbol }) => symbol === 'dot');
 
   if (dotIndex !== -1) {
     const dot = currenciesWithoutAssets.splice(dotIndex, 1)[0];
@@ -42,7 +42,7 @@ function defaultSortingCurrencies(currencies: TokenBalance[], { tokenPriceMap }:
     relayChains.push(dot);
   }
 
-  const ksmIndex = currenciesWithoutAssets.findIndex(({ name }) => name === 'ksm');
+  const ksmIndex = currenciesWithoutAssets.findIndex(({ symbol }) => symbol === 'ksm');
 
   if (ksmIndex !== -1) {
     const ksm = currenciesWithoutAssets.splice(ksmIndex, 1)[0];
@@ -67,7 +67,7 @@ function defaultSortingCurrencies(currencies: TokenBalance[], { tokenPriceMap }:
     return totalFiatBalanceTwo - totalFiatBalanceOne;
   });
 
-  currenciesWithoutAssets.sort(({ name: asset1 }, { name: asset2 }) => asset1.localeCompare(asset2));
+  currenciesWithoutAssets.sort(({ symbol: symbol1 }, { symbol: symbol2 }) => symbol1.localeCompare(symbol2));
 
   return [
     ...currenciesWithAssetsAndWithFiatBalance,
@@ -128,9 +128,9 @@ function getProviderUrl(name: 'moonpay' | 'ramp', asset: string, address: string
 }
 
 function getCurrencyOptions(currencies: TokenBalance[]) {
-  return currencies.map(({ assetId: id, name: _name, icon, relayChain }) => {
-    const assetUpper = _name.toUpperCase();
-    const filteredOptions = currencies.filter(({ name }) => name === _name);
+  return currencies.map(({ assetId: id, symbol: _symbol, icon, relayChain }) => {
+    const assetUpper = _symbol.toUpperCase();
+    const filteredOptions = currencies.filter(({ symbol }) => symbol === _symbol);
     const label = filteredOptions.length > 1 ? `${assetUpper} (${relayChain.toUpperCase()})` : assetUpper;
 
     return {
@@ -144,17 +144,17 @@ function getCurrencyOptions(currencies: TokenBalance[]) {
 function getUtilityAsset(currencies: TokenBalance[], _network: NetworkName) {
   const currency = currencies.find(({ balances }) =>
     balances.some(
-      ({ name, type }) => name.toLowerCase() === _network.toLowerCase() && (type === 'native' || type === 'equilibrium')
+      ({ name, type }) => name.toLowerCase() === _network.toLowerCase() && (type === 'normal' || type === 'equilibrium')
     )
   );
 
   if (!currency) return '';
 
-  return currency.name;
+  return currency.symbol;
 }
 
 const getXORCurrency = (balances: TokenBalance[]) => {
-  return balances.find(({ name }) => name === SORA_UTILITY_ASSET && isSora(SORA_NETWORK_NAME))!;
+  return balances.find(({ symbol }) => symbol === SORA_UTILITY_ASSET && isSora(SORA_NETWORK_NAME))!;
 };
 
 export {

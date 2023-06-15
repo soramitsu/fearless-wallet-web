@@ -268,10 +268,10 @@ export default class SendForm extends Vue {
   }
 
   get originalNetworkUtilityAsset() {
-    const utilityId = this.originNet?.assets[0].assetId ?? ''; // [0] - is utility asset
+    const utilityId = this.originNet?.assets[0].id ?? ''; // [0] - is utility asset
     const currency = this.balances.find(({ balances }) => balances.some(({ id }) => id === utilityId));
 
-    return currency?.name ?? '';
+    return currency?.symbol ?? '';
   }
 
   get syncedFeeCut() {
@@ -396,7 +396,7 @@ export default class SendForm extends Vue {
   }
 
   get currency() {
-    return this.balances.find(({ name, assetId }) => name === this.syncedAssetId || assetId === this.syncedAssetId);
+    return this.balances.find(({ symbol, assetId }) => symbol === this.syncedAssetId || assetId === this.syncedAssetId); // TODO проверить нужны ли оба условия
   }
 
   get currencyBalance() {
@@ -422,8 +422,8 @@ export default class SendForm extends Vue {
     const { xcm } = this.networks.find(({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase())!;
     const balances = this.isTransfer
       ? this.balances
-      : this.balances.filter(({ name }) =>
-          xcm?.availableAssets.some((assetName) => assetName.toLowerCase() === name.toLowerCase())
+      : this.balances.filter(({ symbol }) =>
+          xcm?.availableAssets.some((assetName) => assetName.toLowerCase() === symbol.toLowerCase())
         );
 
     return getCurrencyOptions(balances);
@@ -464,7 +464,7 @@ export default class SendForm extends Vue {
   }
 
   get sendAssetName() {
-    return this.currency!.name;
+    return this.currency!.symbol;
   }
 
   get isValidSendAsset() {
@@ -640,7 +640,7 @@ export default class SendForm extends Vue {
         to: this.syncedRecipient,
         relayChain: this.currency?.relayChain,
         value: this.syncedAmount,
-        tokenId: this.syncedAssetId,
+        assetId: this.syncedAssetId,
       } as RequestCheckTransfer;
 
     return {
@@ -650,7 +650,7 @@ export default class SendForm extends Vue {
       from: this.transactionAddress,
       to: this.syncedRecipient,
       relayChain: this.currency?.relayChain,
-      tokenId: this.syncedAssetId,
+      assetId: this.syncedAssetId,
     } as RequestCheckCrossChain;
   }
 
@@ -669,7 +669,7 @@ export default class SendForm extends Vue {
         to,
         relayChain: this.currency?.relayChain,
         value: amount ?? this.syncedAmount,
-        tokenId: this.syncedAssetId,
+        assetId: this.syncedAssetId,
       });
     }
 
@@ -685,7 +685,7 @@ export default class SendForm extends Vue {
       to,
       relayChain: this.currency?.relayChain,
       amount: amount ?? this.syncedAmount,
-      tokenId: this.syncedAssetId,
+      assetId: this.syncedAssetId,
     });
   }
 
@@ -729,7 +729,7 @@ export default class SendForm extends Vue {
   handlerCloseWarningAddressPopup() {
     const network = this.networks.find(({ name }) => BaseApi.validateAddressByNetwork(this.syncedRecipient, name));
 
-    this.syncedAssetId = network?.assets[0].assetId ?? ''; // [0] - is utility asset
+    this.syncedAssetId = network?.assets[0].id ?? ''; // [0] - is utility asset
 
     // nextTick needed to work after @Watch
     this.$nextTick(() => {

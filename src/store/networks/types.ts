@@ -5,7 +5,6 @@ import type {
   SubqueryHistory,
   AccountBalance,
   Networks,
-  AssetJson,
   AssetPrice,
   FiatJson,
   NetworkStatus,
@@ -32,10 +31,6 @@ export type GetActiveNodesByNetwork = (networkName: NetworkName) => Node;
 // Mutations
 export type SetNetworksStatusProps = {
   networks: NetworkJson[];
-};
-
-export type SetAssetsJsonProps = {
-  assetsJson: AssetJson[];
 };
 
 export type SetFiatsJsonProps = {

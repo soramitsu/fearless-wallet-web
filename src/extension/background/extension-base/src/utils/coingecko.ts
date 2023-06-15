@@ -5,7 +5,7 @@ import { REFRESH_PRICE_INTERVAL } from '@extension-base/const/intervals';
 import { axios } from '@extension-base/utils/axios';
 import type { PriceJson } from '@extension-base/background/types/types';
 
-export async function getTokenPrice(chains: Array<string>, currency = 'usd'): Promise<PriceJson> {
+export async function getTokenPrice(assets: Array<string>, currency = 'usd'): Promise<PriceJson> {
   try {
     const now = new Date().getTime();
     const { currency: currentCurrency } = state.prices.json;
@@ -16,8 +16,8 @@ export async function getTokenPrice(chains: Array<string>, currency = 'usd'): Pr
       return state.prices.json;
     }
 
-    const chainsStr = chains.join(',');
-    const coingeckoUrl = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${currency}&include_24hr_change=true&ids=${chainsStr}`;
+    const assetsStr = assets.join(',');
+    const coingeckoUrl = `https://api.coingecko.com/api/v3/simple/price?vs_currencies=${currency}&include_24hr_change=true&ids=${assetsStr}`;
 
     const res = await axios.get(coingeckoUrl);
 

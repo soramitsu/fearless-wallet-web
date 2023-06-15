@@ -24,13 +24,14 @@ const CHAIN_IDS: Record<string, NetworkName> = {
   [KUSAMA_ID]: 'Kusama',
 };
 
+// названия сетей должны быть в таком же регистре, как и в json
 const MAIN_NETWORKS: Record<string, string> = {
-  dot: 'polkadot',
-  ksm: 'kusama',
-  ethereum: 'ethereum',
-  ethereum_goerli: 'ethereum_goerli',
-  wnd: 'westend',
-  roc: 'rococo',
+  dot: 'Polkadot',
+  ksm: 'Kusama',
+  ethereum: 'Ethereum',
+  ethereum_goerli: 'Ethereum_goerli',
+  wnd: 'Westend',
+  roc: 'Rococo',
 };
 
 const ETHEREUM_ADDRESS_LENGTH = 42;

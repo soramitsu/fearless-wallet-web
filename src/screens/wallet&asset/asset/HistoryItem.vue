@@ -36,7 +36,7 @@ export default class HistoryItem extends Vue {
   }
 
   get asset() {
-    return this.token.name;
+    return this.token.symbol;
   }
 
   get date() {

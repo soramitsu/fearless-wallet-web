@@ -22,7 +22,7 @@ import {
 } from '@extension-base/api/evm/transfer';
 import { checkMainToken } from '@extension-base/api/substrate/balance';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
-import { getTokenInfo } from '@extension-base/api/substrate/registry';
+import { getAssetInfo } from '@extension-base/api/substrate/registry';
 import { createSwap } from '@extension-base/api/substrate/swaps';
 import { withErrorLog } from '@extension-base/background/handlers/helpers';
 import State, { registry } from '@extension-base/background/handlers/State';
@@ -57,7 +57,12 @@ import {
   makeCrossChain,
 } from '@extension-base/api/substrate/crossChain';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
-import type { NetworkJson, RequestTransactionHistoryAdd, TransactionHistoryItemType } from '@extension-base/types';
+import type {
+  Asset,
+  RequestTransactionHistoryAdd,
+  NetworkJson,
+  TransactionHistoryItemType,
+} from '@extension-base/types';
 import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type {
   AccountJson,
@@ -107,7 +112,6 @@ import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 import { googleManage } from '@/controllers/googleController';
 import {
-  AssetJson,
   DerivationPath,
   FilesResponse,
   GoogleAuthTypes,
@@ -933,7 +937,7 @@ export default class Extension extends FWExtensionBase {
     tokenId: string,
     from: string,
     password: string | undefined
-  ): [Array<BasicTxError>, KeyringPair | undefined, AssetJson] {
+  ): [Array<BasicTxError>, KeyringPair | undefined, Asset] {
     const errors = [] as Array<BasicTxError>;
 
     const keypair = keyring.getPair(from);
@@ -949,7 +953,7 @@ export default class Extension extends FWExtensionBase {
       }
     }
 
-    const tokenInfo = getTokenInfo(tokenId);
+    const tokenInfo = getAssetInfo(tokenId);
 
     return [errors, keypair, tokenInfo];
   }
@@ -958,12 +962,12 @@ export default class Extension extends FWExtensionBase {
     from,
     networkKey,
     to,
-    tokenId,
+    assetId,
     relayChain,
     value,
     password,
   }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
-    const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(tokenId, from, password);
+    const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(assetId, from, password);
     const web3ApiMap = this.state.getApiMap.evm;
     const warnings: BasicTxWarning[] = [];
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
@@ -975,7 +979,7 @@ export default class Extension extends FWExtensionBase {
     const toAccountFreeBalance = '0';
 
     const tokenBalance = this.state.balanceMap[address].find(
-      (balance) => balance.assetId === tokenId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
+      (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
 
     if (isEthereumAddress(from) && isEthereumAddress(to)) {
@@ -1011,11 +1015,11 @@ export default class Extension extends FWExtensionBase {
   private async makeTransfer(
     id: string,
     port: Port,
-    { from, networkKey, password, to, tokenId, value, isSavePass }: RequestTransfer
+    { from, networkKey, password, to, assetId, value, isSavePass }: RequestTransfer
   ): Promise<BasicTxResponse | undefined> {
     const txState: BasicTxResponse = {};
 
-    const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(tokenId, from, password);
+    const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(assetId, from, password);
 
     if (errors.length) {
       txState.txError = true;
@@ -1124,19 +1128,19 @@ export default class Extension extends FWExtensionBase {
     originNet,
     destinationNet,
     to,
-    tokenId,
+    assetId,
     relayChain,
     amount,
   }: RequestCheckCrossChain): Promise<ResponseCheckCrossChain> {
     const tokenBalance = this.state.balanceMap[from].find(
-      (balance) => balance.assetId === tokenId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
+      (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
 
-    const extrinsic = await createCrossChainExtrinsic(tokenId, originNet, destinationNet, to, amount!, tokenBalance);
+    const extrinsic = await createCrossChainExtrinsic(assetId, originNet, destinationNet, to, amount!, tokenBalance);
 
     console.info('checkCrossChain', extrinsic);
 
-    const tokenInfo = getTokenInfo(tokenId);
+    const tokenInfo = getAssetInfo(assetId);
     const fee = await estimateCrossChainFee(extrinsic, to, tokenBalance);
     const destFees = state.xcmFees.find(({ destChain }) => destChain.toLowerCase() === destinationNet.toLowerCase());
     const destEstimateFee = destFees?.destXcmFee?.find(
@@ -1152,9 +1156,9 @@ export default class Extension extends FWExtensionBase {
   private async makeCrossChain(
     id: string,
     port: Port,
-    { from, originNet, destinationNet, amount, password, to, tokenId, isSavePass }: RequestCrossChain
+    { from, originNet, destinationNet, amount, password, to, assetId, isSavePass }: RequestCrossChain
   ): Promise<void> {
-    const [, fromKeyPair, tokenInfo] = this.validateTransfer(tokenId, from, password);
+    const [, fromKeyPair, tokenInfo] = this.validateTransfer(assetId, from, password);
 
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
     const ethereumAddress = fromKeyPair!.meta.ethereumAddress as string | undefined;
@@ -1183,7 +1187,7 @@ export default class Extension extends FWExtensionBase {
     const callback = this.makeExtrinsicCallback(cb, savePass);
 
     const transferProm: Promise<void> | undefined = makeCrossChain({
-      asset: tokenId,
+      assetId,
       originNet,
       destinationNet,
       tokenInfo,

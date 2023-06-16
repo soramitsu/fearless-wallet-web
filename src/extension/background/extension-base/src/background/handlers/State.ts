@@ -1111,7 +1111,7 @@ export default class State {
       this.updateServiceInfo();
 
       // logic for Sora library
-      if (data?.address) {
+      if (data?.address && !data.isMobile) {
         const pair = keyring.getPair(data?.address);
 
         apiSora.account = { json: null as any, pair };

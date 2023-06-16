@@ -308,13 +308,6 @@ export function triggerAccountsSubscription(): Promise<boolean> {
   return sendMessage('pri(accounts.triggerSubscription)');
 }
 
-export function saveCurrentAccountAddress( // не используется, мб можно удалить
-  data: RequestCurrentAccountAddress,
-  callback: (data: CurrentAccountInfo) => void
-): Promise<boolean> {
-  return sendMessage('pri(accounts.current.saveAddress)', data, callback);
-}
-
 export function updateCurrentAccountAddress(address: string): Promise<boolean> {
   return sendMessage('pri(accounts.update.current)', address);
 }

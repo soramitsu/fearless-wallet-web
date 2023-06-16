@@ -133,11 +133,7 @@ function isJsonPayload(value: SignerPayloadJSON | SignerPayloadRaw): value is Si
 }
 
 async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> {
-  const currentAccount = await new Promise<CurrentAccountState>((res) => {
-    state.getCurrentAccount((value) => {
-      res(value);
-    });
-  });
+  const currentAccount = await state.currentAccount;
 
   const transformedAccounts = Object.values(accounts)
     .filter((el) => !isEthereumAddress(el.json.address))
@@ -471,18 +467,6 @@ export default class Extension extends FWExtensionBase {
 
     this._saveCurrentAccountAddress(address, () => {
       this.triggerWalletsSubscription();
-    });
-
-    return true;
-  }
-
-  private saveCurrentAccountAddress(data: RequestCurrentAccountAddress, id: string, port: Port): boolean {
-    const cb = createSubscription<'pri(accounts.current.saveAddress)'>(id, port);
-
-    this._saveCurrentAccountAddress(data.address, cb);
-
-    port.onDisconnect.addListener((): void => {
-      this.cancelSubscription(id);
     });
 
     return true;
@@ -1342,9 +1326,6 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(price.get.subscription)':
         return this.subscribePrice(id, port);
-
-      case 'pri(accounts.current.saveAddress)':
-        return this.saveCurrentAccountAddress(request as RequestCurrentAccountAddress, id, port);
 
       case 'pri(accounts.update.current)':
         return this.updateCurrentAccountAddress(request as string);

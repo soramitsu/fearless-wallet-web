@@ -231,8 +231,9 @@ export default class Wallet extends Vue {
   }
 
   get filteredCurrencies() {
-    const filter = this.filterValue.trim().toLowerCase();
+    if (this.showAssetsManagementForm) return this.sortedCurrencies;
 
+    const filter = this.filterValue.trim().toLowerCase();
     const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
 
     return this.sortedCurrencies.filter(({ balances, symbol }) => {

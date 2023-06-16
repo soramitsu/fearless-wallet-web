@@ -14,7 +14,10 @@
           :assetId="syncedAssetId"
           @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
           @setRecipient="setRecipient"
+          @setAddress="setAddress"
         />
+
+        <EditAddressBook v-else-if="showEditAddressBook" :_address="newAddress" @setAddress="setAddress" />
 
         <div v-else-if="showMyWallets">
           <WalletInfo
@@ -169,6 +172,7 @@ import { FPNumber } from '@sora-substrate/util';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import MaxButton from './MaxButton.vue';
 import HistoryBook from './HistoryBook.vue';
+import EditAddressBook from './EditAddressBook.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
 import InputWithIcon from './InputWithIcon.vue';
@@ -179,7 +183,7 @@ import FloatInput from '@/components/FloatInput.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { firstCharToUp } from '@/helpers/common';
+import { firstCharToUp, getClipboard } from '@/helpers/common';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { VALID_SUBSTRATE_ADDRESS, VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
 import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHelpers';
@@ -199,6 +203,7 @@ import WalletInfo from '@/screens/main/WalletInfo.vue';
     FloatInput,
     HistoryBook,
     InputWithIcon,
+    EditAddressBook,
     ExistentialPopup,
     WarningAddressPopup,
     ConfirmationPasswordPopup,
@@ -214,6 +219,7 @@ export default class SendForm extends Vue {
   showConfirmationPasswordPopup = false;
   showMyWallets = false;
   showHistoryBook = false;
+  newAddress = '';
   filterValue = '';
   step = 1;
 
@@ -237,6 +243,10 @@ export default class SendForm extends Vue {
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
 
+  get showEditAddressBook() {
+    return this.newAddress !== '';
+  }
+
   get originNetwork() {
     return firstCharToUp(this.syncedNetwork);
   }
@@ -251,6 +261,8 @@ export default class SendForm extends Vue {
     if (this.showHistoryBook) return 'assets.chooseFromHistory';
 
     if (this.showMyWallets) return 'assets.wallets';
+
+    if (this.showEditAddressBook) return 'assets.addContact';
 
     return this.header;
   }
@@ -275,11 +287,11 @@ export default class SendForm extends Vue {
   }
 
   get syncedFeeCut() {
-    return `${this.$n(+this.syncedFee, 'decimal')} ${this.originalNetworkUtilityAsset.toUpperCase()}`;
+    return `${this.$n(+this.syncedFee, 'decimalPrecise')} ${this.originalNetworkUtilityAsset.toUpperCase()}`;
   }
 
   get destNetFeeCut() {
-    return `${this.$n(+this.syncedDestNetFee, 'decimal')} ${this.sendAssetName.toUpperCase()}`;
+    return `${this.$n(+this.syncedDestNetFee, 'decimalPrecise')} ${this.sendAssetName.toUpperCase()}`;
   }
 
   get firstIcon() {
@@ -752,7 +764,7 @@ export default class SendForm extends Vue {
   }
 
   async paste() {
-    this.syncedRecipient = await navigator.clipboard.readText();
+    this.syncedRecipient = getClipboard();
   }
 
   setWallet(address: string, ethereumAddress: string) {
@@ -769,6 +781,12 @@ export default class SendForm extends Vue {
 
   toggleHistoryBookVisibility() {
     this.showHistoryBook = !this.showHistoryBook;
+  }
+
+  setAddress(address: string, openHistoryBook = false) {
+    this.newAddress = address;
+
+    if (openHistoryBook) this.toggleHistoryBookVisibility();
   }
 }
 </script>

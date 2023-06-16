@@ -729,6 +729,11 @@ export interface AuthRequest extends Resolver<AuthResponse> {
 
 export type AuthUrls = Record<string, AuthUrlInfo>;
 
+export type AddressBook = {
+  name: string;
+  address: string;
+}[];
+
 export type AuthorizedAccountsDiff = [url: string, authorizedAccounts: AuthUrlInfo['authorizedAccounts']][];
 export type AccountAuthType = 'substrate' | 'evm' | 'both';
 export interface AuthUrlInfo {
@@ -825,6 +830,7 @@ export interface IState {
   balances: Record<WalletAddress, Record<AssetName, Record<NetworkName, BalanceItem>>>;
   connectedTabsUrl: string[];
   transaction: Record<string, TransactionHistoryItem[]>;
+  addressBook: AddressBook;
 }
 
 export interface GoogleFileId {

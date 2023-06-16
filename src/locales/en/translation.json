@@ -171,6 +171,8 @@
   },
   "assets": {
     "all": "All",
+    "invalidAccountAddress": "Invalid account address",
+    "addContact": "Add contact",
     "recent": "Recent",
     "chooseFromHistory": "Choose from history",
     "myWallets": "My wallets",
@@ -274,7 +276,6 @@
     "invalidNodeAddress": "Invalid node address format",
     "addNode": "Add node",
     "urlAddress": "Url address",
-    "nodeName": "Name",
     "network": "Network",
     "autoNodes": "Auto select nodes",
     "defaultNodes": "Default nodes",
@@ -459,6 +460,7 @@
     "paste": "Paste",
     "resolveOption": "Resolve Option",
     "dontShowAgain": "Don't show me again",
-    "iAmReady": "OK, I am ready"
+    "iAmReady": "OK, I am ready",
+    "name": "Name"
   }
 }

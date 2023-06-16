@@ -129,7 +129,6 @@ export interface RequestSignatures {
   'pri(accounts.triggerSubscription)': [null, boolean];
   'pri(accounts.validate)': [RequestAccountValidate, boolean];
   'pri(accounts.changePassword)': [RequestAccountChangePassword, boolean];
-  'pri(accounts.current.saveAddress)': [RequestCurrentAccountAddress, boolean, CurrentAccountInfo];
   'pri(accounts.update.current)': [string, boolean];
   'pri(accounts.get.totalBalances)': [null, ResponseTotalBalances[]];
 

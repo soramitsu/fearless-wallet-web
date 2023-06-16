@@ -13,14 +13,6 @@ function firstCharToUp(string: string, onlyFirstChat = true) {
   return `${string.charAt(0).toUpperCase()}${end}`;
 }
 
-function getMetaTyped(meta: KeyringPair$Meta) {
-  return meta as unknown as Meta;
-}
-
-function getAddressMetaTyped(meta: KeyringPair$Meta) {
-  return meta as unknown as AddressMeta;
-}
-
 function isSora(network: string) {
   return network.toLowerCase() === SORA_NETWORK_NAME;
 }
@@ -41,4 +33,22 @@ function cut(value: string, length = 7) {
   return `${value.slice(0, length)}...${value.slice(-endNumber)}`;
 }
 
-export { getAddressMetaTyped, getMetaTyped, firstCharToUp, isSora, validatePhoneNumber, validateEmail, cut };
+function getClipboard() {
+  const pasteTarget = document.createElement('div');
+
+  pasteTarget.contentEditable = 'true';
+
+  const actElem = document.activeElement?.appendChild(pasteTarget).parentNode;
+
+  pasteTarget.focus();
+
+  document.execCommand('paste');
+
+  const paste = pasteTarget.innerText;
+
+  actElem?.removeChild(pasteTarget);
+
+  return paste;
+}
+
+export { firstCharToUp, isSora, validatePhoneNumber, validateEmail, cut, getClipboard };

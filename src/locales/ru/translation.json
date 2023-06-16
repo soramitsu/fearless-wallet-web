@@ -169,6 +169,8 @@
   },
   "assets": {
     "all": "Все",
+    "invalidAccountAddress": "Неверный адресс",
+    "addContact": "Добаить контакт",
     "recent": "Недавние",
     "chooseFromHistory": "Выбрать из истории",
     "myWallets": "Мои кошельки",
@@ -272,7 +274,6 @@
     "invalidNodeAddress": "Неверный формат адреса ноды",
     "addNode": "Добавить ноду",
     "urlAddress": "Url адрес",
-    "nodeName": "Имя",
     "network": "Сеть",
     "autoNodes": "Автовыбор ноды",
     "defaultNodes": "Стандартные ноды",
@@ -457,6 +458,7 @@
     "paste": "Вставить",
     "Resolve Option": "Варианты решения",
     "dontShowAgain": "не показывать снова",
-    "iAmReady": "ОК, я готов"
+    "iAmReady": "ОК, я готов",
+    "name": "Имя"
   }
 }

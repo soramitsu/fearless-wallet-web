@@ -1,21 +1,14 @@
 <template>
-  <AboveForm header="accounts.newNode" :closeHandler="closeForm">
+  <AboveForm :fullScreen="true" header="accounts.newNode" :closeHandler="closeForm">
     <div class="add-node-form">
       <div>
-        <Input v-model="networkCharUp" :placeholder="getPath('network')" size="big" class="row" :readonly="true" />
+        <Input v-model="networkCharUp" placeholder="accounts.network" size="big" class="row" :readonly="true" />
 
-        <Input
-          v-model="name"
-          :placeholder="getPath('nodeName')"
-          typeText="uppercase"
-          size="big"
-          class="row"
-          :maxlength="45"
-        />
+        <Input v-model="name" placeholder="common.name" typeText="uppercase" size="big" class="row" :maxlength="45" />
 
         <ValidatedInput
           v-model="url"
-          :placeholder="getPath('urlAddress')"
+          placeholder="accounts.urlAddress"
           class="row"
           errorDescriptions="accounts.invalidNodeAddress"
           :isError="isErrorUrlNode"
@@ -48,7 +41,7 @@ export default class EditNodeForm extends Vue {
   @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
 
   get buttonText() {
-    return this.isEdit ? 'common.save' : this.getPath('addNode');
+    return this.isEdit ? 'common.save' : 'accounts.addNode';
   }
 
   get networkJson() {
@@ -104,10 +97,6 @@ export default class EditNodeForm extends Vue {
     });
 
     this.closeForm(true);
-  }
-
-  getPath(value: string) {
-    return `accounts.${value}`;
   }
 }
 </script>

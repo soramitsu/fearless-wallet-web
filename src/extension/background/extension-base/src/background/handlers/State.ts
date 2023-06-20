@@ -32,8 +32,6 @@ import { getMockCurrencies, isEthereumNetwork } from '@extension-base/background
 import { MobileSigningRequest, MobileSignRequest, POPUP_WINDOW_OPTS } from '@extension-base/background/types/types';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
-import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { ISubmittableResult, SignerPayloadRaw } from '@polkadot/types/types';
 import { EVM_NETWORKS_JSON } from '../../api/evm/helpers/networks';
 
 import type {
@@ -992,24 +990,27 @@ export default class State {
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
 
-    this.networksJson.forEach(
-      (network) =>
-        (result[network.name] = {
-          ...network,
-          key: network.name,
-          isEthereum: isEthereumNetwork(network.name),
-          genesisHash: `0x${network.chainId}`,
-          chainType: 'substrate',
-          active: true,
-          customNodes: [],
-          currentProvider: network.nodes[0].url,
-          providers: network.nodes.reduce<Record<string, string>>((result, { name, url }) => {
-            result[name] = url;
+    this.networksJson.forEach((network) => {
+      const prepCurrentProvider = network.nodes[0].url;
+      const prepNodes: Record<string, string> = {};
 
-            return result;
-          }, {}),
-        })
-    );
+      network.nodes.map((node) => {
+        prepNodes[node.name] = node.url;
+      });
+      const isEthereum = isEthereumNetwork(network.name);
+
+      result[network.name] = {
+        ...network,
+        key: network.name,
+        isEthereum,
+        genesisHash: `0x${network.chainId}`,
+        chainType: isEthereum ? 'ethereum' : 'substrate',
+        active: true,
+        customNodes: [],
+        providers: prepNodes,
+        currentProvider: prepCurrentProvider,
+      };
+    });
 
     this.networkMapStore.set('NetworkMap', result);
     this.networkMap = result;

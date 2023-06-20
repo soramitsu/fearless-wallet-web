@@ -144,7 +144,7 @@ export function deleteCustomTokens(
         let deleteKey = '';
 
         for (const [key, token] of Object.entries(chainRegistry.assetsMap)) {
-          if (token.contractAddress && isEqualContractAddress(token.contractAddress, targetToken.smartContract)) {
+          if (token.smartContract && isEqualContractAddress(token.smartContract, targetToken.smartContract)) {
             deleteKey = key;
 
             break;

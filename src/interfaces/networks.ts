@@ -42,6 +42,7 @@ type AssetsType =
   | 'equilibrium'
   | 'ormlChain'
   | 'soraAsset'
+  | 'erc20'
   | 'token2';
 
 type NetworkAssets = {

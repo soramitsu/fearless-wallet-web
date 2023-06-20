@@ -34,6 +34,7 @@ import { getMockCurrencies, isEthereumNetwork } from '@extension-base/background
 import { POPUP_WINDOW_OPTS } from '@extension-base/background/types/types';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
+import { EVM_NETWORKS_JSON } from '../../api/evm/helpers/networks';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -937,24 +938,25 @@ export default class State {
     const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
     const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
-    this.networksJson = networks.filter((el) => !el.disabled);
+    this.networksJson = [...EVM_NETWORKS_JSON].filter((el) => !el.disabled);
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
 
-    networks.forEach((network) => {
+    this.networksJson.forEach((network) => {
       const prepCurrentProvider = network.nodes[0].url;
       const prepNodes: Record<string, string> = {};
 
       network.nodes.map((node) => {
         prepNodes[node.name] = node.url;
       });
+      const isEthereum = isEthereumNetwork(network.name);
 
       result[network.name] = {
         ...network,
         key: network.name,
-        isEthereum: isEthereumNetwork(network.name),
+        isEthereum,
         genesisHash: `0x${network.chainId}`,
-        chainType: 'substrate',
+        chainType: isEthereum ? 'ethereum' : 'substrate',
         active: true,
         customNodes: [],
         providers: prepNodes,
@@ -979,8 +981,8 @@ export default class State {
     this.networkMapStore.get('NetworkMap', async (storedNetworkMap) => {
       for (const [key, network] of Object.entries(storedNetworkMap)) {
         if (network.active) {
-          if ((network.isEthereum && key === 'ethereum') || key === 'ethereum_goerli') {
-            this.apis.evm[key] = initWeb3Api(key === 'ethereum' ? 'ethereum' : 'ethereum_goerli');
+          if ((network.isEthereum && key === 'Ethereum') || key === 'Ethereum Goerli') {
+            this.apis.evm[key] = initWeb3Api(network.currentProvider as string);
           } else initApi(network);
         }
       }

@@ -26,9 +26,9 @@ export function canDerive(type?: KeypairType): boolean {
   return !!type && ['ed25519', 'sr25519', 'ecdsa', 'ethereum'].includes(type);
 }
 
-export const getCurrentProvider = (data: NetworkJson): string | null => {
+export const getCurrentProvider = (data: NetworkJson): string => {
   if (!data?.currentProvider) {
-    return null;
+    return data.nodes[0].url;
   }
 
   if (data.currentProvider.startsWith('custom') && data.customProviders) {

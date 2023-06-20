@@ -60,11 +60,11 @@ function subscribeERC20Interval(
 
   getRegistry(networkKey, api)
     .then(({ assetsMap }) => {
-      tokenList = assetsMap.filter(({ contractAddress }) => !!contractAddress);
+      tokenList = assetsMap.filter(({ smartContract }) => !!smartContract);
 
-      tokenList.forEach(({ contractAddress, symbol }) => {
-        if (contractAddress) {
-          ERC20ContractMap[symbol] = getERC20Contract(networkKey, contractAddress, web3ApiMap);
+      tokenList.forEach(({ smartContract, symbol }) => {
+        if (smartContract) {
+          ERC20ContractMap[symbol] = getERC20Contract(networkKey, smartContract, web3ApiMap);
         }
       });
       getTokenBalances();

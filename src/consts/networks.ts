@@ -9,7 +9,7 @@ const ETHEREUM_NETWORKS = [
   'astarEvm',
   'shidenEvm',
   'ethereum',
-  'ethereum_gorli',
+  'ethereum goerli',
 ];
 const RELAY_CHAINS = ['polkadot', 'kusama', 'westend', 'rococo'];
 const NATIVE_PARACHAINS = ['statemint', 'statemine', 'encointer on kusama', 'westmint', 'rockmine'];

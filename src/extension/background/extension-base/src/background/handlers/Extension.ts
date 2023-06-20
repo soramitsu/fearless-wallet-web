@@ -973,8 +973,8 @@ export default class Extension extends FWExtensionBase {
       const txVal = fromAccountFreeBalance || '0';
 
       // Estimate with EVM API
-      if (!isMainToken && tokenInfo.contractAddress) {
-        [, , fee] = await getERC20TransactionObject(tokenInfo.contractAddress, networkKey, from, to, txVal, web3ApiMap);
+      if (!isMainToken && tokenInfo.smartContract) {
+        [, , fee] = await getERC20TransactionObject(tokenInfo.smartContract, networkKey, from, to, txVal, web3ApiMap);
       } else {
         [, , fee] = await getEVMTransactionObject(networkKey, to, txVal, web3ApiMap);
       }
@@ -1056,9 +1056,9 @@ export default class Extension extends FWExtensionBase {
       const web3ApiMap = this.state.getApiMap.evm;
       const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
 
-      if (tokenInfo && !isMainToken && tokenInfo.contractAddress) {
+      if (tokenInfo && !isMainToken && tokenInfo.smartContract) {
         transferProm = makeERC20Transfer(
-          tokenInfo.contractAddress,
+          tokenInfo.smartContract,
           networkKey,
           from,
           to,

@@ -116,7 +116,7 @@ export type Asset = {
   isUtility?: true;
   isNative?: true;
   existentialDeposit?: string;
-  contractAddress?: string;
+  smartContract?: string;
 };
 
 export interface NetworkJson {

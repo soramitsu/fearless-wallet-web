@@ -20,7 +20,7 @@ import {
   makeERC20Transfer,
   makeEVMTransfer,
 } from '@extension-base/api/evm/transfer';
-import { checkMainToken } from '@extension-base/api/substrate/balance';
+import { checkMainToken } from '@extension-base/api/helpers';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { getAssetInfo } from '@extension-base/api/substrate/registry';
 import { createSwap } from '@extension-base/api/substrate/swaps';
@@ -974,9 +974,9 @@ export default class Extension extends FWExtensionBase {
 
       // Estimate with EVM API
       if (!isMainToken && tokenInfo.smartContract) {
-        [, , fee] = await getERC20TransactionObject(tokenInfo.smartContract, networkKey, from, to, txVal, web3ApiMap);
+        [, , fee] = await getERC20TransactionObject(tokenInfo.smartContract, networkKey, from, to, txVal);
       } else {
-        [, , fee] = await getEVMTransactionObject(networkKey, to, txVal, web3ApiMap);
+        [, , fee] = await getEVMTransactionObject(networkKey, to, txVal);
       }
     } else {
       // Estimate with DotSama API
@@ -1053,7 +1053,6 @@ export default class Extension extends FWExtensionBase {
     if (isEthereumAddress(from) && isEthereumAddress(to)) {
       // Make transfer with EVM API
       const { privateKey } = this.accountExportPrivateKey({ address: from, password });
-      const web3ApiMap = this.state.getApiMap.evm;
       const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
 
       if (tokenInfo && !isMainToken && tokenInfo.smartContract) {
@@ -1064,11 +1063,10 @@ export default class Extension extends FWExtensionBase {
           to,
           privateKey,
           value || '0',
-          web3ApiMap,
           callback
         );
       } else {
-        transferProm = makeEVMTransfer(networkKey, to, privateKey, value || '0', web3ApiMap, callback);
+        transferProm = makeEVMTransfer(networkKey, to, privateKey, value || '0', callback);
       }
     } else {
       // Make transfer with Dotsama API

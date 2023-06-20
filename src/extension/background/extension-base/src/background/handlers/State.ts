@@ -17,7 +17,6 @@ import { storage } from '@extension-base/stores/Storage';
 import EthProvider from '@extension-base/api/evm/ethProvider';
 import CustomTokenStore from '@extension-base/stores/CustomEvmToken';
 import CurrentAccountStore, { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
-import { initEvmTokenState } from '@extension-base/api/evm/utils/eth';
 import BalanceService from '@extension-base/shared/balanceService';
 import AuthorizeStore from '@extension-base/stores/Authorize';
 import { initWeb3Api } from '@extension-base/api/evm';
@@ -35,6 +34,7 @@ import { POPUP_WINDOW_OPTS } from '@extension-base/background/types/types';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import { EVM_NETWORKS_JSON } from '../../api/evm/helpers/networks';
+import { initEvmTokenState } from '../../api/tokens/evm/utils';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -987,24 +987,8 @@ export default class State {
         }
       }
 
-      this.initCustomTokenState();
+      this.onReady();
     });
-  }
-
-  public initCustomTokenState() {
-    this.customTokenStore.get('EvmToken', (storedCustomTokens) => {
-      if (!storedCustomTokens) this.customTokenState = DEFAULT_EVM_TOKENS;
-      else {
-        const processedEvmTokens = initEvmTokenState(storedCustomTokens, this.networkMap);
-
-        this.customTokenState = { ...processedEvmTokens };
-      }
-
-      this.customTokenStore.set('EvmToken', this.customTokenState);
-      this.customTokenSubject.next(this.customTokenState);
-    });
-
-    this.onReady();
   }
 
   public setPrice(priceData: PriceJson, callback?: (priceData: PriceJson) => void): void {

@@ -20,29 +20,6 @@ const DEFAULT_TOKEN_REGISTRY: Record<string, { chainDecimals: number[]; chainTok
   watr_network_evm: { chainDecimals: [18], chainTokens: ['WATRD'] },
 };
 
-export const getRegistry = async (networkKey: string, api: ApiPromise) => {
-  const cached = cacheRegistryMap[networkKey];
-
-  if (cached) {
-    return cached;
-  }
-
-  await api.isReady;
-
-  const { chainDecimals, chainTokens } = api.registry ||
-    DEFAULT_TOKEN_REGISTRY[networkKey] || { chainDecimals: [], chainTokens: [] };
-
-  const chainRegistry = {
-    chainDecimals,
-    chainTokens,
-    assetsMap: state.assetsMap,
-  } as ChainRegistry;
-
-  cacheRegistryMap[networkKey] = chainRegistry;
-
-  return chainRegistry;
-};
-
 export function getAssetInfo(assetId: string): Asset {
   return state.assetsMap.find(({ id }) => id === assetId)!;
 }

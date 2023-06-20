@@ -5,8 +5,8 @@ import {
   ExternalRequestPromiseStatus,
   TransferErrorCode,
 } from '@extension-base/background/types/types';
-import EthProvider from '@extension-base/api/evm/ethProvider';
 import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
+import { state } from '../../background/handlers';
 
 export type HandleBasicTx = (data: BasicTxResponse) => void;
 export type HandleTxResponse<T extends BasicTxResponse> = (data: T) => void;
@@ -48,10 +48,9 @@ export async function handleTransfer(
   changeValue: string,
   networkKey: string,
   privateKey: string,
-  web3ApiMap: Record<string, EthProvider>,
   callback: (data: BasicTxResponse) => void
 ) {
-  const web3Api = web3ApiMap[networkKey];
+  const web3Api = state.getEvmApiMap[networkKey];
   const signer = new ethers.Wallet(privateKey);
 
   const signedTransaction = await signer.signTransaction(transactionObject);
@@ -92,20 +91,20 @@ export async function handleTransfer(
 export async function getEVMTransactionObject(
   networkKey: string,
   to: string,
-  value: string,
-  web3ApiMap: Record<string, EthProvider>
+  value: string
 ): Promise<[ethers.providers.TransactionRequest, string, number]> {
-  const web3Api = web3ApiMap[networkKey];
+  const web3Api = state.getEvmApiMap[networkKey];
   const feeData = await web3Api.provider.getFeeData();
   const gasPrice = feeData.gasPrice;
-  const nonce = await web3Api.provider.getTransactionCount('0x599dC6fD485E0eD55C1BCc7D8AE02EDAF7bE4f4e'); // TODO mock ???
+  const nonce = await web3Api.provider.getTransactionCount(to);
   const transactionObject = {
     gasPrice: gasPrice,
     nonce,
     to: to,
   } as ethers.providers.TransactionRequest;
+  const gas = await web3Api.provider.estimateGas(transactionObject);
 
-  const gasLimit = (await web3Api.provider.estimateGas(transactionObject)).toNumber();
+  const gasLimit = gas.toNumber();
   transactionObject.gasLimit = gasLimit;
   const estimateFee = gasPrice!.toNumber() * gasLimit;
 
@@ -119,12 +118,11 @@ export async function makeEVMTransfer(
   to: string,
   privateKey: string,
   value: string,
-  web3ApiMap: Record<string, EthProvider>,
   callback: (data: BasicTxResponse) => void
 ): Promise<void> {
-  const [transactionObject, changeValue] = await getEVMTransactionObject(networkKey, to, value, web3ApiMap);
+  const [transactionObject, changeValue] = await getEVMTransactionObject(networkKey, to, value);
 
-  await handleTransfer(transactionObject, changeValue, networkKey, privateKey, web3ApiMap, callback);
+  await handleTransfer(transactionObject, changeValue, networkKey, privateKey, callback);
 }
 
 export async function getERC20TransactionObject(
@@ -132,16 +130,14 @@ export async function getERC20TransactionObject(
   networkKey: string,
   from: string,
   to: string,
-  value: string,
-  web3ApiMap: Record<string, EthProvider>
+  value: string
 ): Promise<[ethers.providers.TransactionRequest, string, number]> {
-  const web3Api = web3ApiMap[networkKey];
-  const erc20Contract = getERC20Contract(networkKey, assetAddress, web3ApiMap);
+  const web3Api = state.getEvmApiMap[networkKey];
+  const erc20Contract = getERC20Contract(networkKey, assetAddress);
 
   const transferValue = value;
 
   function generateTransferData(to: string, transferValue: string): string {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
     return erc20Contract.methods.transfer(to, transferValue).encodeABI() as string;
   }
 
@@ -170,17 +166,9 @@ export async function makeERC20Transfer(
   to: string,
   privateKey: string,
   value: string,
-  web3ApiMap: Record<string, EthProvider>,
   callback: (data: BasicTxResponse) => void
 ) {
-  const [transactionObject, changeValue] = await getERC20TransactionObject(
-    assetAddress,
-    networkKey,
-    from,
-    to,
-    value,
-    web3ApiMap
-  );
+  const [transactionObject, changeValue] = await getERC20TransactionObject(assetAddress, networkKey, from, to, value);
 
-  await handleTransfer(transactionObject, changeValue, networkKey, privateKey, web3ApiMap, callback);
+  await handleTransfer(transactionObject, changeValue, networkKey, privateKey, callback);
 }

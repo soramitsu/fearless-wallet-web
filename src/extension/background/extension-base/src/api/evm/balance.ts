@@ -1,13 +1,14 @@
 import { Contract, ethers } from 'ethers';
 import { FPNumber } from '@sora-substrate/util';
-import { ASTAR_REFRESH_BALANCE_INTERVAL, SUB_TOKEN_REFRESH_BALANCE_INTERVAL } from '../../const/intervals';
+import { ETHEREUM_REFRESH_BALANCE_INTERVAL, SUB_TOKEN_REFRESH_BALANCE_INTERVAL } from '../../const/intervals';
 import { APIItemState } from '../types/networks';
 import { state } from '../../background/handlers';
 import { BalanceItem } from './types/ether';
 import { getERC20Contract } from './utils/eth';
 
 export async function getEtherBalance(networkKey: string, address: string): Promise<string> {
-  const eth = state.getEvmApiMap[networkKey];
+  const eth = state.getEvmApiMap[networkKey].provider;
+
   const balance = await eth.getBalance(address);
 
   return ethers.utils.formatEther(balance);
@@ -21,19 +22,22 @@ function subscribeERC20Interval(
   const ERC20ContractMap = {} as Record<string, Contract>;
 
   const getTokenBalances = () => {
-    state.networkMap[networkKey].assets.map(async ({ symbol, name, icon, precision }) => {
+    const assets = state.networkMap[networkKey].assets.filter((el) => !el.isUtility);
+
+    assets.map(async ({ symbol, name, icon, precision, id }) => {
       let free = '0';
 
       try {
         const contract = ERC20ContractMap[symbol];
         const bal = await contract.balanceOf(address);
 
-        free = new FPNumber(bal, precision).value.toString();
+        free = new FPNumber(bal, precision).toString();
 
         subCallback({
           state: APIItemState.READY,
           key: networkKey,
           symbol,
+          id,
           reserved: '0',
           frozen: '0',
           free,
@@ -70,12 +74,13 @@ export function subscribeEVMBalance(
   callback: (networkKey: string, rs: Partial<BalanceItem>) => void
 ) {
   const network = state.networkMap[networkKey];
-  const { icon, name, type } = network.assets.find((el) => el.isUtility)!;
+  const { icon, name, type, id } = network.assets.find((el) => el.isUtility)!;
   const balanceItem = {
     state: APIItemState.PENDING,
     name,
     icon,
     type,
+    id,
     free: '0',
     reserved: '0',
     miscFrozen: '0',
@@ -103,11 +108,35 @@ export function subscribeEVMBalance(
 
   getBalance();
 
-  const interval = setInterval(getBalance, ASTAR_REFRESH_BALANCE_INTERVAL);
+  const interval = setInterval(getBalance, ETHEREUM_REFRESH_BALANCE_INTERVAL);
   const unsub = subscribeERC20Interval(address, networkKey, subCallback);
 
   return () => {
     clearInterval(interval);
     unsub && unsub();
+  };
+}
+
+export function subscribeEvmBalance(
+  address: string,
+  ethereumAddress: string,
+  setBalance: (networkKey: string, rs: Partial<BalanceItem>) => void
+) {
+  state.generateDefaultBalance(address);
+
+  const unsubList = Object.entries(state.getEvmApiMap).map(async ([networkKey, apiProps]) => {
+    await apiProps.provider.ready;
+
+    return subscribeEVMBalance(networkKey, ethereumAddress, setBalance); // todo [ethereumAddress] -> ethereumAddress
+  });
+
+  return () => {
+    unsubList.forEach((subProm) => {
+      subProm
+        .then((unsub) => {
+          unsub && unsub();
+        })
+        .catch((err) => err);
+    });
   };
 }

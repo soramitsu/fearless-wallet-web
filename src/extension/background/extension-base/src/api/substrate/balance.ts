@@ -103,10 +103,6 @@ export function subscribeBalance(
   const unsubList = Object.entries(state.getSubstrateApiMap).map(async ([networkKey, apiProps]) => {
     await apiProps.api?.isReadyOrError;
 
-    if (['ethereum', 'ethereum_goerli'].includes(networkKey)) {
-      return subscribeEVMBalance(networkKey, ethereumAddress, setBalance); // todo [ethereumAddress] -> ethereumAddress
-    }
-
     const addressForNetwork = isEthereumNetwork(networkKey) ? ethereumAddress : address;
 
     return subscribeWithAccount(addressForNetwork, networkKey, apiProps, setBalance);

@@ -938,7 +938,7 @@ export default class State {
     const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
     const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
-    this.networksJson = [...EVM_NETWORKS_JSON].filter((el) => !el.disabled);
+    this.networksJson = [...networks, ...EVM_NETWORKS_JSON].filter((el) => !el.disabled);
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
 
@@ -1039,25 +1039,29 @@ export default class State {
   }
 
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {
-    const currencyIndex = this.balanceMap[address].findIndex(({ assetId: _assetId, symbol, relayChain }) => {
-      const isExistingAssetId = _assetId === item.id;
-      const isExistingDisplayName = symbol === item.symbol;
-      const isExistingAsset = isExistingDisplayName && relayChain === item.relayChain;
+    const { reserved, free, frozen, total, transferable, state, locked, id, relayChain, symbol } = item;
 
-      return isExistingAssetId || isExistingAsset;
-    });
+    const balancesByAddress = this.balanceMap[address];
+    const currencyIndex = balancesByAddress.findIndex(
+      ({ assetId: _assetId, symbol: _symbol, relayChain: _relayChain }) => {
+        const isExistingAssetId = _assetId === id;
+        const isExistingDisplayName = _symbol === symbol;
+        const isExistingAsset = isExistingDisplayName && _relayChain === relayChain;
 
-    const token = this.balanceMap[address][currencyIndex];
-    const index = token.balances.findIndex((el) => {
+        return isExistingAssetId || isExistingAsset;
+      }
+    );
+
+    const asset = balancesByAddress[currencyIndex];
+    const assetIndex = asset.balances.findIndex((el) => {
       const key = prepNetworkNames[el.name] ?? el.name;
 
       return key === networkKey;
     });
 
-    const balanceItem = this.balanceMap[address][currencyIndex].balances[index];
-    const { reserved, free, frozen, total, transferable, state, locked } = item;
+    const balanceItem = asset.balances[assetIndex];
 
-    this.balanceMap[address][currencyIndex].balances[index] = {
+    asset.balances[assetIndex] = {
       ...balanceItem,
       reserved,
       free,

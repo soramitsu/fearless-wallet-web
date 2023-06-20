@@ -941,7 +941,7 @@ export default class State {
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
 
-    networks.forEach((network) => {
+    this.networksJson.forEach((network) => {
       const prepCurrentProvider = network.nodes[0].url;
       const prepNodes: Record<string, string> = {};
 

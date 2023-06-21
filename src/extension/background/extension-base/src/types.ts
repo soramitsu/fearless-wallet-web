@@ -139,7 +139,7 @@ export interface NetworkJson {
   paraId?: string;
   chainType?: 'substrate' | 'ethereum';
   crowdloanUrl?: string;
-
+  disabled: boolean;
   // Ethereum related information for predefined network only
   isEthereum?: boolean; // Only show network with isEthereum=true when select one EVM account // user input
   evmChainId?: number;

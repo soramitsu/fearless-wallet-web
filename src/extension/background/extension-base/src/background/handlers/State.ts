@@ -937,11 +937,11 @@ export default class State {
     const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
     const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
-    this.networksJson = networks;
+    this.networksJson = networks.filter((el) => !el.disabled);
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
 
-    networks.forEach((network) => {
+    this.networksJson.forEach((network) => {
       const prepCurrentProvider = network.nodes[0].url;
       const prepNodes: Record<string, string> = {};
 

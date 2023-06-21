@@ -34,7 +34,6 @@ import { stripUrl, withErrorLog } from '@extension-base/background/handlers/help
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import { SignerPayloadRaw } from '@polkadot/types/types';
 import { EVM_NETWORKS_JSON } from '../../api/evm/helpers/networks';
-import { initEvmTokenState } from '../../api/tokens/evm/utils';
 
 import type {
   AuthorizeRequest,

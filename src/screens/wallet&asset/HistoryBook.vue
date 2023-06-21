@@ -1,36 +1,51 @@
 <template>
   <div class="history-book">
-    <div v-if="showRecent" class="label">
-      {{ $t('assets.recent') }}
-    </div>
-
-    <div v-for="address in historyAddresses" :key="address" class="row" @click="setRecipient(address)">
-      <div class="description">
-        <Identicon class="identicon" :size="24" theme="polkadot" :value="address" />
-
-        <div class="full-description">
-          <div class="address">{{ cut(address) }}</div>
-        </div>
-      </div>
-
-      <Icon icon="plus-pink" class="plus" @click="setAddress(address)" />
-    </div>
-
-    <template v-for="[key, addressBook] in splitAddressBook">
-      <div class="label" :key="key">{{ key }}</div>
-
-      <div v-for="{ name, address } in addressBook" :key="address" class="row" @click="setRecipient(address)">
-        <div class="description">
-          <Identicon class="identicon" :size="24" theme="polkadot" :value="address" />
-
-          <div class="full-description">
-            <div class="name">{{ name }}</div>
-
-            <div class="address">{{ cut(address) }}</div>
+    <Scroll>
+      <div class="history">
+        <template v-if="showHistory">
+          <div class="label">
+            {{ $t('assets.recent') }}
           </div>
-        </div>
+
+          <div v-for="address in historyAddresses" :key="address" class="row" @click="setRecipient(address)">
+            <div class="description">
+              <Identicon class="identicon" :size="24" theme="polkadot" :value="address" />
+
+              <div class="full-description">
+                <div class="address">{{ cut(address) }}</div>
+              </div>
+            </div>
+
+            <Icon icon="plus-pink" class="plus" @click="setAddress(address)" />
+          </div>
+
+          <template v-for="[key, addressBook] in splitAddressBook">
+            <div class="label" :key="key">{{ key }}</div>
+
+            <div
+              v-for="{ name, address } in addressBook"
+              :key="name + address"
+              class="row"
+              @click="setRecipient(address)"
+            >
+              <div class="description">
+                <Identicon class="identicon" :size="24" theme="polkadot" :value="address" />
+
+                <div class="full-description">
+                  <div class="name">{{ name }}</div>
+
+                  <div class="address">{{ cut(address) }}</div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </template>
+
+        <div v-else>{{ $t('assets.noHistory') }}</div>
       </div>
-    </template>
+    </Scroll>
+
+    <Button size="big" fontSize="big" width="100%" text="assets.createContact" @click="setAddress(' ')" />
   </div>
 </template>
 
@@ -54,7 +69,7 @@ import { TransactionType } from '@/interfaces/history';
   components: { Identicon },
 })
 export default class HistoryBook extends Vue {
-  addressBook: AddressBook = [];
+  addressBook: AddressBook = {};
 
   @Prop(String) network!: string;
   @Prop(String) assetId!: string;
@@ -62,12 +77,22 @@ export default class HistoryBook extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
+  get showHistory() {
+    return this.historyAddresses.length !== 0;
+  }
+
   get showRecent() {
     return this.historyAddresses.length !== 0;
   }
 
   get addressPrefix() {
     return this.getNetwork(this.network)?.addressPrefix;
+  }
+
+  get book() {
+    const addresses = [...(this.addressBook['all'] ?? []), ...(this.addressBook[this.network] ?? [])];
+
+    return Array.from(new Set(addresses));
   }
 
   get historyAddresses() {
@@ -81,7 +106,7 @@ export default class HistoryBook extends Vue {
     return Array.from(new Set(addresses))
       .filter(
         (address) =>
-          !this.addressBook.some(
+          !this.book.some(
             ({ address: addressFromBook }) => BaseApi.encodeAddress(address) === BaseApi.encodeAddress(addressFromBook)
           )
       )
@@ -89,7 +114,7 @@ export default class HistoryBook extends Vue {
   }
 
   get splitAddressBook() {
-    const sortedAddressBook = this.addressBook.sort(({ name: name1 }, { name: name2 }) => name1.localeCompare(name2));
+    const sortedAddressBook = this.book.sort(({ name: name1 }, { name: name2 }) => name1.localeCompare(name2));
 
     const splitObj = sortedAddressBook.reduce((result, { address, name }) => {
       const firstChar = name[0].toUpperCase();
@@ -130,6 +155,7 @@ export default class HistoryBook extends Vue {
 
   setRecipient(address: string) {
     this.$emit('setRecipient', address);
+    this.$emit('toggleHistoryBookVisibility');
   }
 
   setAddress(address: string) {
@@ -140,57 +166,69 @@ export default class HistoryBook extends Vue {
 
 <style lang="scss" scoped>
 .history-book {
-  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
 
-  .label {
-    font-weight: 700;
-    font-size: 12px;
-    text-transform: uppercase;
-    color: $default-white;
-    text-align: left;
-    margin: 20px 0 10px 0;
-  }
+  .history {
+    padding: 10px 16px;
+    height: 100%;
 
-  .row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid $default-background-color;
-
-    .plus {
-      width: 15px;
-      height: 15px;
-      cursor: pointer;
-      opacity: 0.9;
-
-      &:hover {
-        opacity: 1;
-      }
+    .label {
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+      color: $default-white;
+      text-align: left;
+      margin: 20px 0 10px 0;
     }
 
-    .description {
+    .row {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      height: 65px;
-      cursor: pointer;
-      text-align: left;
+      border-bottom: 1px solid $default-background-color;
 
-      &:hover {
-        .address {
-          color: $default-white;
+      &:last-child {
+        border: none;
+      }
+
+      .plus {
+        width: 15px;
+        height: 15px;
+        cursor: pointer;
+        opacity: 0.9;
+
+        &:hover {
+          opacity: 1;
         }
       }
 
-      .address {
-        color: rgba(255, 255, 255, 0.64);
-        font-size: 14px;
-      }
+      .description {
+        display: flex;
+        align-items: center;
+        height: 65px;
+        cursor: pointer;
+        text-align: left;
 
-      .full-description {
-        margin-left: 25px;
+        &:hover {
+          .address {
+            color: $default-white;
+          }
+        }
 
         .address {
-          margin-top: 5px;
+          color: rgba(255, 255, 255, 0.64);
+          font-size: 14px;
+        }
+
+        .full-description {
+          margin-left: 25px;
+
+          .address {
+            margin-top: 5px;
+          }
         }
       }
     }

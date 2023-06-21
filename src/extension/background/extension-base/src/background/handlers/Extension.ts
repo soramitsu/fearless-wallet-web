@@ -41,7 +41,6 @@ import {
   RequestCheckSwap,
   RequestCheckTransfer,
   RequestCheckCrossChain,
-  RequestCurrentAccountAddress,
   RequestSwap,
   RequestTransfer,
   RequestCrossChain,

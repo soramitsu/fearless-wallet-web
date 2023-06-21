@@ -8,16 +8,21 @@
       :closeHandler="closeForm"
     >
       <Scroll>
+        <EditAddressBook
+          v-if="showEditAddressBook"
+          :network="targetNetwork"
+          :_address="newAddress"
+          @setAddress="setAddress"
+        />
+
         <HistoryBook
-          v-if="showHistoryBook"
+          v-else-if="showHistoryBook"
           :network="syncedNetwork"
           :assetId="syncedAssetId"
           @toggleHistoryBookVisibility="toggleHistoryBookVisibility"
           @setRecipient="setRecipient"
           @setAddress="setAddress"
         />
-
-        <EditAddressBook v-else-if="showEditAddressBook" :_address="newAddress" @setAddress="setAddress" />
 
         <div v-else-if="showMyWallets">
           <WalletInfo
@@ -80,7 +85,7 @@
               />
 
               <InputWithIcon
-                v-model="syncedRecipient"
+                v-model="recipientCut"
                 class="row"
                 icon="close"
                 placeholder="assets.sendTo"
@@ -159,8 +164,8 @@
 
     <WarningAddressPopup
       v-if="showWarningAddressPopup"
+      :handlerAccept="formatAddress"
       :handlerClose="handlerCloseWarningAddressPopup"
-      :handlerAccept="handlerAcceptWarningAddress"
     />
   </div>
 </template>
@@ -183,7 +188,7 @@ import FloatInput from '@/components/FloatInput.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { firstCharToUp, getClipboard } from '@/helpers/common';
+import { cut, firstCharToUp, getClipboard } from '@/helpers/common';
 import { getCurrencyOptions } from '@/helpers/currencies';
 import { VALID_SUBSTRATE_ADDRESS, VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
 import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHelpers';
@@ -242,6 +247,10 @@ export default class SendForm extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
+
+  get recipientCut() {
+    return cut(this.syncedRecipient);
+  }
 
   get showEditAddressBook() {
     return this.newAddress !== '';
@@ -349,7 +358,7 @@ export default class SendForm extends Vue {
   }
 
   get showBackIcon() {
-    return this.step === 2 || this.showHistoryBook || this.showMyWallets;
+    return this.step === 2 || this.showHistoryBook || this.showMyWallets || this.showEditAddressBook;
   }
 
   get buttonText() {
@@ -534,19 +543,15 @@ export default class SendForm extends Vue {
   @Watch('syncedDestNet')
   @Watch('syncedRecipient')
   @Watch('syncedAmount')
-  async createTransfer() {
-    this.syncedFee = '';
-
-    if (
-      (this.isTransfer && (!this.isValidRecipientAddress || this.syncedNetwork === '')) ||
-      (this.isCrossChain && this.syncedNetwork === '')
-    )
-      return;
-
+  async calculateEstimates() {
     const { estimateFee, destEstimateFee } = await this.verifyTx();
 
     this.syncedFee = estimateFee ?? '0';
     this.syncedDestNetFee = destEstimateFee ?? '0';
+  }
+
+  created() {
+    this.calculateEstimates();
   }
 
   toggleAssetPopupVisibility() {
@@ -563,8 +568,6 @@ export default class SendForm extends Vue {
 
   setRecipient(address = '') {
     this.syncedRecipient = BaseApi.formatAddress({ address, ethereumAddress: address }, this.targetNetwork);
-
-    if (this.showHistoryBook) this.toggleHistoryBookVisibility();
   }
 
   toggleSelectedNetwork(value: string) {
@@ -596,6 +599,7 @@ export default class SendForm extends Vue {
 
   handlerBack() {
     if (this.showHistoryBook) this.toggleHistoryBookVisibility();
+    if (this.showEditAddressBook) this.setAddress('', true);
     else if (this.showMyWallets) this.toggleMyWalletsVisibility();
     else this.step -= 1;
   }
@@ -632,7 +636,7 @@ export default class SendForm extends Vue {
   async setMax() {
     if (!this.currency) return;
 
-    const { estimateFee } = await this.verifyTx(this.transferableAmount.toString(), true);
+    const { estimateFee } = await this.verifyTx(this.transferableAmount.toString());
 
     const transferableCountAssets = this.calcTransferableSendMinusFee(estimateFee ?? '0');
 
@@ -666,15 +670,14 @@ export default class SendForm extends Vue {
     } as RequestCheckCrossChain;
   }
 
-  verifyTx(amount?: string, isMockTo = false) {
-    if (this.isTransfer) {
-      const to = isMockTo
-        ? BaseApi.formatAddress(
-            { address: VALID_SUBSTRATE_ADDRESS, ethereumAddress: VALID_ETHEREUM_ADDRESS },
-            this.syncedNetwork
-          )
-        : this.syncedRecipient;
+  verifyTx(amount?: string) {
+    // комиссия не зависит от адерса получателя, поэтому подставляем всегда мок
+    const to = BaseApi.formatAddress(
+      { address: VALID_SUBSTRATE_ADDRESS, ethereumAddress: VALID_ETHEREUM_ADDRESS },
+      this.isTransfer ? this.syncedNetwork : this.syncedDestNet
+    );
 
+    if (this.isTransfer)
       return checkTransfer({
         networkKey: this.syncedNetwork,
         from: this.transactionAddress,
@@ -683,12 +686,6 @@ export default class SendForm extends Vue {
         value: amount ?? this.syncedAmount,
         assetId: this.syncedAssetId,
       });
-    }
-
-    const to = BaseApi.formatAddress(
-      { address: VALID_SUBSTRATE_ADDRESS, ethereumAddress: VALID_ETHEREUM_ADDRESS },
-      this.syncedDestNet
-    );
 
     return checkCrossChain({
       originNet: this.syncedNetwork,
@@ -739,21 +736,10 @@ export default class SendForm extends Vue {
   }
 
   handlerCloseWarningAddressPopup() {
-    const network = this.networks.find(({ name }) => BaseApi.validateAddressByNetwork(this.syncedRecipient, name));
-
-    this.syncedAssetId = network?.assets[0].id ?? ''; // [0] - is utility asset
-
-    // nextTick needed to work after @Watch
-    this.$nextTick(() => {
-      if (this.isTransfer) this.syncedNetwork = network?.name ?? '';
-      else {
-        this.syncedNetwork = this.syncedDestNet;
-        this.syncedDestNet = network?.name ?? '';
-      }
-    });
+    this.syncedRecipient = '';
   }
 
-  handlerAcceptWarningAddress() {
+  formatAddress() {
     this.syncedRecipient = BaseApi.formatAddress(
       {
         address: this.syncedRecipient,
@@ -783,10 +769,9 @@ export default class SendForm extends Vue {
     this.showHistoryBook = !this.showHistoryBook;
   }
 
-  setAddress(address: string, openHistoryBook = false) {
+  setAddress(address: string, showHistoryBook = false) {
     this.newAddress = address;
-
-    if (openHistoryBook) this.toggleHistoryBookVisibility();
+    this.showHistoryBook = showHistoryBook;
   }
 }
 </script>
@@ -849,7 +834,7 @@ export default class SendForm extends Vue {
       font-weight: 700;
       font-size: 12px;
       text-transform: uppercase;
-      color: $gray-color;
+      color: $plain-white;
       margin: 5px 14px 0 0;
       border: none;
       cursor: pointer;

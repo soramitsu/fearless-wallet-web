@@ -30,6 +30,8 @@ function validateEmail(email: string) {
 function cut(value: string, length = 7) {
   const endNumber = length + 1;
 
+  if (value.length <= length * 2 + 1) return value;
+
   return `${value.slice(0, length)}...${value.slice(-endNumber)}`;
 }
 

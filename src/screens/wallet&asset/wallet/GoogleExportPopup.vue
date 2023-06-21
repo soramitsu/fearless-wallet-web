@@ -5,15 +5,14 @@
     :headerText="statusMessagesHeader"
     :handlerClose="closePopup"
     :zIndex="399"
+    :showBorder="true"
   >
     <div class="popup-content">
       <template v-if="isAwaiting">
-        <Icon :icon="getIconName" className="icon__lock-green" iconColor="success" />
+        <Icon icon="lock-green" className="icon" iconColor="success" />
 
         <div class="text row">{{ popupMessage }}</div>
-      </template>
 
-      <template v-if="isAwaitsConfirmation">
         <ValidatedInput
           v-model="password"
           placeholder="common.password"
@@ -29,10 +28,16 @@
 
       <Loader v-if="isUploading" />
 
-      <span v-if="isFinishedUpload" class="descriptions">{{ $t('wallet.googleExportSuccess') }}</span>
+      <div v-if="isFinishedUpload">
+        <Icon icon="check" className="icon" iconColor="success" />
+
+        <div class="saved">{{ $t('addWallet.google.saved') }}</div>
+
+        <span class="descriptions">{{ $t('wallet.googleExportSuccess') }}</span>
+      </div>
 
       <Button
-        v-if="isAwaiting"
+        v-if="!isUploading"
         text="common.confirm"
         width="100%"
         size="medium"
@@ -80,20 +85,14 @@ export default class GoogleExportPopup extends Vue {
     return this.status === 'uploaded';
   }
 
-  get isAwaitsConfirmation() {
-    return this.status === 'await';
-  }
-
   get disabledButton() {
+    if (this.isFinishedUpload) return false;
+
     return this.password === '' || this.isErrorPassword;
   }
 
   get hintGoogleDriveText() {
     return this.$t('addWallet.google.dataWillStoreOnGDrive');
-  }
-
-  get getIconName() {
-    return this.status === 'uploaded' ? 'check' : 'lock-green';
   }
 
   get popupMessage() {
@@ -115,7 +114,7 @@ export default class GoogleExportPopup extends Vue {
   }
 
   async onConfirm() {
-    if (this.status === 'uploaded') {
+    if (this.isFinishedUpload) {
       this.closePopup();
 
       return;
@@ -193,7 +192,7 @@ export default class GoogleExportPopup extends Vue {
     margin-bottom: 15px;
   }
 
-  .icon__lock-green {
+  .icon {
     width: 30px;
     height: 30px;
   }
@@ -206,6 +205,12 @@ export default class GoogleExportPopup extends Vue {
 
   .row {
     margin-top: 15px;
+  }
+
+  .saved {
+    font-weight: 600;
+    font-size: 18px;
+    margin-bottom: 5px;
   }
 
   .descriptions {

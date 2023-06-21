@@ -7,10 +7,6 @@ import { initStorage } from '@extension-base/stores/Storage';
 import { RequestSignatures } from '@extension-base/background/types/messages';
 import type { Port, TransportRequestMessage } from '@extension-base/background/types';
 
-interface ModifiedPort extends Port {
-  timer?: NodeJS.Timeout;
-}
-
 async function getActiveTabs() {
   // quering the current active tab in the current window should only ever return 1 tab
   // although an array is specified here
@@ -35,22 +31,8 @@ chrome.runtime.onInstalled.addListener(async () => {
   getActiveTabs();
 });
 
-function deleteTimer(port: ModifiedPort) {
-  if (port.timer) {
-    clearTimeout(port.timer);
-    delete port.timer;
-  }
-}
-
-function forceReconnect(port: Port) {
-  deleteTimer(port);
-  port.disconnect();
-}
-
-chrome.runtime.onConnect.addListener((port: ModifiedPort) => {
+chrome.runtime.onConnect.addListener((port: Port) => {
   port.onMessage.addListener((data: TransportRequestMessage<keyof RequestSignatures>) => handlers(data, port));
-  port.onDisconnect.addListener(deleteTimer);
-  port.timer = setTimeout(forceReconnect, 250e3, port);
 });
 
 // listen to tab updates this is fired on url change

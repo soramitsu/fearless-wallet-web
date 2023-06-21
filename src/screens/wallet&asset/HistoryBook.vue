@@ -2,22 +2,24 @@
   <div class="history-book">
     <Scroll>
       <div class="history">
-        <template v-if="showHistory">
-          <div class="label">
-            {{ $t('assets.recent') }}
-          </div>
-
-          <div v-for="address in historyAddresses" :key="address" class="row" @click="setRecipient(address)">
-            <div class="description">
-              <Identicon class="identicon" :size="24" theme="polkadot" :value="address" />
-
-              <div class="full-description">
-                <div class="address">{{ cut(address) }}</div>
-              </div>
+        <template v-if="showHistoryAndBook">
+          <template v-if="showHistory">
+            <div class="label">
+              {{ $t('assets.recent') }}
             </div>
 
-            <Icon icon="plus-pink" class="plus" @click="setAddress(address)" />
-          </div>
+            <div v-for="address in historyAddresses" :key="address" class="row" @click="setRecipient(address)">
+              <div class="description">
+                <Identicon class="identicon" :size="24" theme="polkadot" :value="address" />
+
+                <div class="full-description">
+                  <div class="address">{{ cut(address) }}</div>
+                </div>
+              </div>
+
+              <Icon icon="plus-pink" class="plus" @click="setAddress(address)" />
+            </div>
+          </template>
 
           <template v-for="[key, addressBook] in splitAddressBook">
             <div class="label" :key="key">{{ key }}</div>
@@ -76,6 +78,10 @@ export default class HistoryBook extends Vue {
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
+
+  get showHistoryAndBook() {
+    return this.showHistory && this.historyAddresses.length !== 0;
+  }
 
   get showHistory() {
     return this.historyAddresses.length !== 0;

@@ -17,6 +17,7 @@
           :readonly="!isLocked"
           :isError="isErrorPassword"
           :showPassword="true"
+          @keypress.native="keypress"
         />
 
         <div v-if="isExtension" class="remember-checkbox">
@@ -295,6 +296,10 @@ export default class ConfirmationPasswordPopup extends Vue {
 
     if (this.extrinsicType === 'transfer') return await makeTransfer(this.requestTransfer, callback);
     else if (this.extrinsicType === 'crossChain') return await makeCrossChain(this.requestCrossChain, callback);
+  }
+
+  async keypress({ key }: KeyboardEvent) {
+    if (key === 'Enter') this.sendExtrinsic();
   }
 
   async sendExtrinsic() {

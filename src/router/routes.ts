@@ -89,7 +89,7 @@ const routes: Array<RouteConfig> = [
     ],
   },
   {
-    path: '/google/create',
+    path: 'google/create',
     name: Components.CreateGoogle,
     component: CreateGoogle,
     children: [

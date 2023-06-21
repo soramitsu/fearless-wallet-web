@@ -923,9 +923,9 @@ export default class Extension extends FWExtensionBase {
   ): [Array<BasicTxError>, KeyringPair | undefined, Asset] {
     const errors = [] as Array<BasicTxError>;
 
-    const keypair = keyring.getPair(from);
+    const keypair = keyring.getAccount(from) ? keyring.getPair(from) : undefined;
 
-    if (password) {
+    if (keypair && password) {
       try {
         keypair.unlock(password);
       } catch (e: any) {
@@ -950,7 +950,7 @@ export default class Extension extends FWExtensionBase {
     value,
     password,
   }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
-    const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(assetId, from, password);
+    const [errors, , tokenInfo] = this.validateTransfer(assetId, from, password);
     const web3ApiMap = this.state.getApiMap.evm;
     const warnings: BasicTxWarning[] = [];
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
@@ -980,7 +980,7 @@ export default class Extension extends FWExtensionBase {
     } else {
       // Estimate with DotSama API
 
-      fee = await estimateFee(networkKey, fromKeyPair, to, value, tokenBalance);
+      fee = await estimateFee(networkKey, to, value, tokenBalance);
       fromAccountFreeBalance =
         tokenBalance.balances.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0';
     }

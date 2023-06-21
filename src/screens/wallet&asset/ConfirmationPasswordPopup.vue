@@ -319,6 +319,10 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (key === 'Enter') this.sendExtrinsic();
   }
 
+  async keypress({ key }: KeyboardEvent) {
+    if (key === 'Enter') this.sendExtrinsic();
+  }
+
   async sendExtrinsic() {
     this.transactionState = 'pending';
 

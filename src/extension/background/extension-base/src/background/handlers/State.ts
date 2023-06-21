@@ -991,27 +991,24 @@ export default class State {
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
 
-    this.networksJson.forEach((network) => {
-      const prepCurrentProvider = network.nodes[0].url;
-      const prepNodes: Record<string, string> = {};
+    this.networksJson.forEach(
+      (network) =>
+        (result[network.name] = {
+          ...network,
+          key: network.name,
+          isEthereum: isEthereumNetwork(network.name),
+          genesisHash: `0x${network.chainId}`,
+          chainType: 'substrate',
+          active: true,
+          customNodes: [],
+          currentProvider: network.nodes[0].url,
+          providers: network.nodes.reduce<Record<string, string>>((result, { name, url }) => {
+            result[name] = url;
 
-      network.nodes.map((node) => {
-        prepNodes[node.name] = node.url;
-      });
-      const isEthereum = isEthereumNetwork(network.name);
-
-      result[network.name] = {
-        ...network,
-        key: network.name,
-        isEthereum,
-        genesisHash: `0x${network.chainId}`,
-        chainType: isEthereum ? 'ethereum' : 'substrate',
-        active: true,
-        customNodes: [],
-        providers: prepNodes,
-        currentProvider: prepCurrentProvider,
-      };
-    });
+            return result;
+          }, {}),
+        })
+    );
 
     this.networkMapStore.set('NetworkMap', result);
     this.networkMap = result;

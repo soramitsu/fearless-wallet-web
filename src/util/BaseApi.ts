@@ -142,7 +142,9 @@ export default class BaseApi {
       if (!isEthereumNetwork) BaseApi.encodeAddress(publicKey);
 
       return true;
-    } catch {
+    } catch (e) {
+      console.info(e);
+
       return false;
     }
   }

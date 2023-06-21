@@ -1101,6 +1101,7 @@ export default class Extension extends FWExtensionBase {
         from: from,
         to: to,
         password,
+        isMobile,
         isSavePass,
         callback,
         isMobile: !!isMobile,

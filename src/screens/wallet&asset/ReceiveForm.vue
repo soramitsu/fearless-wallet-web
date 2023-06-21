@@ -97,7 +97,11 @@ export default class ReceiveForm extends Vue {
   get assetNetworks() {
     const currency = this.balances.find(({ assetId }) => assetId === this.selectedAssetId)!;
 
-    return currency?.balances.map(({ name, icon }) => ({ name, icon, value: name })) ?? [];
+    return (
+      currency?.balances
+        .map(({ name, icon }) => ({ name, icon, value: name }))
+        .filter(({ name }) => name.toLowerCase().includes(this.filterValue.toLowerCase())) ?? []
+    );
   }
 
   get decimals() {

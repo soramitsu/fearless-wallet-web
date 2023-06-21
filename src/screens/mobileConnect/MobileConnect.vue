@@ -1,5 +1,5 @@
 <template>
-  <AboveForm :header="header" :closeHandler="close">
+  <AboveForm :fullScreen="true" :header="header" :closeHandler="close">
     <template v-if="isQRPrep">
       <h2 class="header">{{ $t('mobileConnector.qrHeader') }}</h2>
 

@@ -1,12 +1,7 @@
-// Copyright 2019-2022 @polkadot/extension-ui authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
 import { metadataExpand } from '@polkadot/extension-chains';
 import { selectableNetworks } from '@polkadot/networks';
-
 import { getId } from '@extension-base/utils/utils';
 import { PORT_EXTENSION } from '@extension-base/defaults';
-import { CurrentAccountInfo } from '@extension-base/stores/CurrentAccountStore';
 import type { MetadataDef, MetadataDefBase } from '@polkadot/extension-inject/types';
 import type { KeyringPair$Meta, KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
@@ -42,7 +37,6 @@ import type {
   ValidateJsonResult,
   RequestAccountMeta,
   ResponseAccountMeta,
-  RequestCurrentAccountAddress,
   DisableNetworkResponse,
   ValidateNetworkResponse,
   RequestCheckSwap,
@@ -127,7 +121,6 @@ function connect() {
 connect();
 
 // setup a listener for messages, any incoming resolves the promise
-
 function sendMessage<TMessageType extends MessageTypesWithNullRequest>(
   message: TMessageType
 ): Promise<ResponseTypes[TMessageType]>;

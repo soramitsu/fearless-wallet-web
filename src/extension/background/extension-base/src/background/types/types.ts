@@ -729,13 +729,17 @@ export interface AuthRequest extends Resolver<AuthResponse> {
 
 export type AuthUrls = Record<string, AuthUrlInfo>;
 
-export type AddressBook = {
+export type Address = {
   name: string;
   address: string;
 }[];
 
+export type AddressBook = Record<NetworkName, Address>;
+
 export type AuthorizedAccountsDiff = [url: string, authorizedAccounts: AuthUrlInfo['authorizedAccounts']][];
+
 export type AccountAuthType = 'substrate' | 'evm' | 'both';
+
 export interface AuthUrlInfo {
   count: number;
   id: string;

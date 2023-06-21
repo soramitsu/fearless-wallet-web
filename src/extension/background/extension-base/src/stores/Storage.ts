@@ -26,7 +26,7 @@ export async function initStorage() {
 
   if (authUrls === undefined) obj.authUrls = {};
 
-  if (addressBook === undefined) obj.addressBook = [];
+  if (addressBook === undefined) obj.addressBook = {};
 
   await storage.set(obj);
 }

@@ -169,6 +169,8 @@
   },
   "assets": {
     "all": "Все",
+    "createContact": "Создать контакт",
+    "saveAddressForAllNetwork": "Сохранить адрес для всех сетей",
     "invalidAccountAddress": "Неверный адресс",
     "addContact": "Добаить контакт",
     "recent": "Недавние",
@@ -221,7 +223,6 @@
     "total": "Суммарно",
     "signTransaction": "Подпишите транзакцию",
     "passwordTransaction": "Введите пароль для подтверждения транзакции",
-    "switchNetwork": "Переключитесь на правильную сеть",
     "changeAddress": "Конвертировать адрес",
     "invalidNetworkText": "Это не адрес выбранной сети",
     "invalidNetworkSubtext": "Адрес не соответствует сети назначения. Вам следует выбрать другую сеть",

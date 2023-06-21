@@ -5,16 +5,15 @@
       size="big"
       class="rotate-input"
       :placeholder="placeholder"
-      :ref="inputRef"
       :readonly="true"
       :cursorPointer="true"
     />
 
-    <Rotate v-if="icon === 'rotate'" :ref="rotateRef" :isActive="isActiveRotate" class="icon">
+    <Rotate v-if="icon === 'rotate'" :isActive="isActiveRotate" class="icon">
       <SIcon name="chevron-bottom-16" />
     </Rotate>
 
-    <div v-else-if="icon === 'close'" class="icon" @click="clickIcon">
+    <div v-else-if="icon === 'close' && firstCharToUpVModel !== ''" class="icon" @click="clickIcon">
       <Icon icon="close" class="close-icon" />
     </div>
   </div>
@@ -31,9 +30,6 @@ import { firstCharToUp } from '@/helpers/common';
   },
 })
 export default class InputWithIcon extends Vue {
-  readonly inputRef = 'input';
-  readonly rotateRef = 'rotate';
-
   showSelectNetworkPopup = false;
 
   @VModel({ type: String || Number }) vModel!: string;

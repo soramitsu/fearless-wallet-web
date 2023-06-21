@@ -49,15 +49,10 @@ export async function checkReferenceCount(
 
 export async function estimateFee(
   networkKey: string,
-  fromKeypair: KeyringPair | undefined,
   to: string,
   value: string | undefined,
   tokenBalance: TokenBalance
 ): Promise<number> {
-  const fee = 0;
-
-  if (fromKeypair === undefined) return fee;
-
   const apiProps = state.getSubstrateApiMap[networkKey];
   const api = apiProps.api;
 

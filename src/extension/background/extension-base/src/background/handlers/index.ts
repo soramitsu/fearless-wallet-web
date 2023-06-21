@@ -23,7 +23,8 @@ export default function handler<TMessageType extends MessageTypes>(
   const sender = port.sender as chrome.runtime.MessageSender;
   const from = isExtension ? 'extension' : (sender.tab && sender.tab.url) || sender.url || '<unknown>';
   const source = `${from}: ${id}: ${message}`;
-  console.info(` [in] ${source}`); // :: ${JSON.stringify(request)}`);
+
+  console.info(` [in] ${source}`);
 
   const promise = isExtension
     ? extension.handle(id, message, request, port)
@@ -31,7 +32,7 @@ export default function handler<TMessageType extends MessageTypes>(
 
   promise
     .then((response): void => {
-      console.info(`[out] ${source}`); // :: ${JSON.stringify(response)}`);
+      console.info(`[out] ${source}`);
 
       // between the start and the end of the promise, the user may have closed
       // the tab, in which case port will be undefined

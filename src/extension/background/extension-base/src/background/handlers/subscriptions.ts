@@ -74,7 +74,8 @@ export class FWSubscription {
     !this.serviceSubscription &&
       (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
         next: (serviceInfo) => {
-          console.info(serviceInfo, 'serviceInfo');
+          console.info('serviceInfo', serviceInfo);
+
           if (!serviceInfo.currentAccountInfo) return;
 
           const { address, ethereumAddress } = serviceInfo.currentAccountInfo;
@@ -172,7 +173,7 @@ export function createSubscription<TMessageType extends MessageTypesWithSubscrip
       try {
         port.postMessage({ id, subscription });
       } catch (error) {
-        console.info('Error occured while trying to post message', error);
+        console.info('Error occurred while trying to post message', error);
 
         unsubscribe(id);
       }

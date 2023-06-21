@@ -171,6 +171,8 @@
   },
   "assets": {
     "all": "All",
+    "createContact": "Create contact",
+    "saveAddressForAllNetwork": "Save address for all networks",
     "invalidAccountAddress": "Invalid account address",
     "addContact": "Add contact",
     "recent": "Recent",
@@ -223,7 +225,6 @@
     "total": "Total",
     "signTransaction": "Sign the transaction",
     "passwordTransaction": "Enter password to confirm the transaction",
-    "switchNetwork": "Switch to a correct network",
     "changeAddress": "Change address",
     "invalidNetworkText": "Is not network address",
     "invalidNetworkSubtext": "The address doesn't match the destination network. You should select another network",

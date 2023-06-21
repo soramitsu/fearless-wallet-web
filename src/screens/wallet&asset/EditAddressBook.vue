@@ -1,6 +1,6 @@
 <template>
   <div class="add-contact">
-    <div>
+    <div class="form">
       <Input v-model="name" placeholder="common.name" typeText="uppercase" size="big" class="row" :maxlength="45" />
 
       <ValidatedInput
@@ -10,6 +10,8 @@
         errorDescriptions="assets.invalidAccountAddress"
         :isError="isErrorAddress"
       />
+
+      <Checkbox v-model="saveForAllNetworks" size="medium" label="assets.saveAddressForAllNetwork" class="row" />
     </div>
 
     <Button size="big" text="common.save" :disabled="buttonDisabled" @click="updateContact" />
@@ -25,9 +27,11 @@ import BaseApi from '@/util/BaseApi';
 export default class EditAddressBook extends Vue {
   name = '';
   address = '';
+  saveForAllNetworks = false;
 
   @Prop({ default: '' }) _name!: string;
   @Prop(String) _address!: string;
+  @Prop(String) network!: string;
   @Prop(Boolean) isActive!: boolean;
 
   get buttonDisabled() {
@@ -36,7 +40,7 @@ export default class EditAddressBook extends Vue {
 
   get isErrorAddress() {
     return (
-      this.address.length !== 0 &&
+      this.address.trim().length !== 0 &&
       !(BaseApi.validateAddress(this.address, 'polkadot') || BaseApi.validateAddress(this.address, 'moonbeam'))
     );
   }
@@ -48,9 +52,14 @@ export default class EditAddressBook extends Vue {
 
   async updateContact() {
     const { addressBook } = await storage.get(['addressBook']);
+    const key = this.saveForAllNetworks ? 'all' : this.network;
+    const value = addressBook[key] ?? [];
 
     chrome.storage.local.set({
-      addressBook: [...addressBook, { name: this.name, address: BaseApi.encodeAddress(this.address) }],
+      addressBook: {
+        ...addressBook,
+        [key]: [...value, { name: this.name, address: BaseApi.encodeAddress(this.address) }],
+      },
     });
 
     this.$emit('setAddress', '', true);
@@ -67,6 +76,10 @@ export default class EditAddressBook extends Vue {
 
   .row {
     margin-top: 16px;
+  }
+
+  .form {
+    text-align: left;
   }
 }
 </style>

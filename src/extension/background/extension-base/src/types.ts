@@ -131,12 +131,10 @@ export interface NetworkJson {
   currentProvider: string | null; // Current provider key
   // currentProviderMode: 'http' | 'ws'; // Current provider mode, compute depend on provider protocol. the feature need to know this to decide use subscribe or cronjob to use this features.
   customProviders?: Record<string, string>; // Custom provider map, provider name same with provider map
-
   // Metadata get after connect to provider
   genesisHash: string; // identifier for network
   groups: NetWorkGroup[];
   ss58Format: number;
-  paraId?: string;
   chainType?: 'substrate' | 'ethereum';
   crowdloanUrl?: string;
   disabled: boolean;
@@ -157,8 +155,10 @@ export interface NetworkJson {
   supportSmartContract?: ContractType[]; // if network supports PSP smart contracts
   apiStatus?: NETWORK_STATUS;
   requestId?: string;
+  // from json
   chainId: string;
   parentId?: string;
+  paraId?: string;
   name: string;
   externalApi?: ExternalApi;
   assets: Asset[];

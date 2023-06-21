@@ -599,7 +599,7 @@ export default class SendForm extends Vue {
 
   handlerBack() {
     if (this.showHistoryBook) this.toggleHistoryBookVisibility();
-    if (this.showEditAddressBook) this.setAddress('', true);
+    else if (this.showEditAddressBook) this.setAddress('', true);
     else if (this.showMyWallets) this.toggleMyWalletsVisibility();
     else this.step -= 1;
   }

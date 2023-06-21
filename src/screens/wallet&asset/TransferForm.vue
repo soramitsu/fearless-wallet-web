@@ -15,7 +15,15 @@
           @setAddress="setAddress"
         />
 
+        <EditAddressBook
+          v-if="showEditAddressBook"
+          :network="targetNetwork"
+          :_address="newAddress"
+          @setAddress="setAddress"
+        />
+
         <HistoryBook
+          v-else-if="showHistoryBook"
           v-else-if="showHistoryBook"
           :network="syncedNetwork"
           :assetId="syncedAssetId"
@@ -599,7 +607,7 @@ export default class SendForm extends Vue {
 
   handlerBack() {
     if (this.showHistoryBook) this.toggleHistoryBookVisibility();
-    else if (this.showEditAddressBook) this.setAddress('', true);
+    if (this.showEditAddressBook) this.setAddress('', true);
     else if (this.showMyWallets) this.toggleMyWalletsVisibility();
     else this.step -= 1;
   }

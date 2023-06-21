@@ -952,11 +952,13 @@ export default class Extension extends FWExtensionBase {
     password,
   }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
     const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(assetId, from, password);
-    const web3ApiMap = this.state.getApiMap.evm;
     const warnings: BasicTxWarning[] = [];
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
+    const isFromEthereum = isEthereumAddress(from);
 
-    const address = this.encodeAddress(from);
+    const address = isEthereumAddress(from)
+      ? keyring.getAccounts().filter((el) => el.meta.ethereumAddress === from)[0].address
+      : this.encodeAddress(from);
     let fee = 0;
     let feeSymbol;
     let fromAccountFreeBalance = '0';
@@ -966,7 +968,7 @@ export default class Extension extends FWExtensionBase {
       (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
 
-    if (isEthereumAddress(from) && isEthereumAddress(to)) {
+    if (isFromEthereum && isEthereumAddress(to)) {
       const fromAccountFreeBalance = tokenBalance
         ? tokenBalance.balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0'
         : '0';

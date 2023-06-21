@@ -2,14 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Contract, ethers } from 'ethers';
-import EthProvider from '@extension-base/api/evm/ethProvider';
-import { CustomTokenType, CustomTokenJson } from '@extension-base/api/evm/types/ether';
-import { DEFAULT_EVM_TOKENS } from '@extension-base/api/tokens/evm/defaultEvmToken';
-import { ERC20Contract } from '@extension-base/api/tokens/evm/web3';
-import { isEqualContractAddress } from '@extension-base/api/tokens';
-import { NetworkJson } from '@extension-base/types';
+import ERC20Contract from '@extension-base/api/evm/helpers/ERC20Contract.json';
 
-export async function validateEvmToken(contractAddress: string, tokenType: CustomTokenType.erc20, web3: EthProvider) {
+export async function validateEvmToken(contractAddress: string) {
   let tokenContract: Contract;
   let name = '';
   let decimals: number | undefined = -1;
@@ -51,50 +46,4 @@ export async function validateEvmToken(contractAddress: string, tokenType: Custo
       contractError: true,
     };
   }
-}
-
-export function initEvmTokenState(customTokenState: CustomTokenJson, networkMap: Record<string, NetworkJson>) {
-  const evmTokenState = { erc20: customTokenState.erc20 };
-
-  for (const defaultToken of DEFAULT_EVM_TOKENS.erc20) {
-    let exist = false;
-
-    for (const storedToken of evmTokenState.erc20) {
-      if (
-        isEqualContractAddress(defaultToken.smartContract, storedToken.smartContract) &&
-        defaultToken.chain === storedToken.chain
-      ) {
-        if (storedToken.isCustom) {
-          // if existed, migrate the custom token -> default token
-          delete storedToken.isCustom;
-        }
-
-        exist = true;
-        break;
-      }
-    }
-
-    if (!exist) {
-      evmTokenState.erc20.push(defaultToken);
-    }
-  }
-
-  // Update networkKey in case networkMap change
-  for (const token of evmTokenState.erc20) {
-    if (!(token.chain in networkMap) && token.chain.startsWith('custom_')) {
-      let newKey = '';
-      const genesisHash = token.chain.split('custom_')[1]; // token from custom network has key with prefix custom_
-
-      for (const [key, network] of Object.entries(networkMap)) {
-        if (network.genesisHash.toLowerCase() === genesisHash.toLowerCase()) {
-          newKey = key;
-          break;
-        }
-      }
-
-      token.chain = newKey;
-    }
-  }
-
-  return evmTokenState;
 }

@@ -1,11 +1,7 @@
 // Copyright 2019-2022 @subwallet/extension-koni authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { ERC20Contract } from '@extension-base/api/tokens/evm/web3';
 import type { NestedArray, EVMTransactionArg } from '@extension-base/types';
-
-// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-const ABIs = [ERC20Contract.abi];
 
 const genName = (name: NestedArray<string>): string => {
   if (typeof name === 'string') {

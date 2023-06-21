@@ -1,15 +1,15 @@
 import { IS_PRODUCTION } from '@/consts/global';
 
 const CHAINS = IS_PRODUCTION
-  ? 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/new-assets/chains/chains.json'
-  : 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/new-assets/chains/chains_dev.json';
+  ? 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop-free/chains/chains.json'
+  : 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop-free/chains/chains_dev.json';
 
 const FIATS = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';
 
 const XCM_LOCATIONS =
-  'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop/xcm/xcm_token_locations.json';
+  'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop-free/xcm/xcm_token_locations.json';
 
-const XCM_FEES = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop/xcm/xcm_fees.json';
+const XCM_FEES = 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop-free/xcm/xcm_fees.json';
 
 const BASE_URLS_PREFIX = {
   MOONPAY: 'https://buy.moonpay.com',

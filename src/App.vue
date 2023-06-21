@@ -90,7 +90,7 @@ export default class App extends Vue {
       } catch (error) {
         window.close();
       }
-    }, 15000);
+    }, 20000);
   }
 
   async setupBalance() {

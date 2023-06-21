@@ -46,7 +46,7 @@ function getClipboard() {
 
   document.execCommand('paste');
 
-  const paste = pasteTarget.innerText;
+  const paste = pasteTarget.textContent ?? '';
 
   actElem?.removeChild(pasteTarget);
 

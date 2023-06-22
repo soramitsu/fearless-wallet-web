@@ -139,20 +139,19 @@ export default class Tabs {
   }
 
   extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
-    const address = request.address;
+    const address = keyring.encodeAddress(request.address);
     const isMobile = !!keyring.getAddress(address, 'address')?.meta.isMobile;
     let meta;
 
     if (keyring.getAccount(address)) meta = this.getSigningPair(address).meta;
     else if (isMobile) meta = keyring.getAddress(address, 'address')?.meta;
 
-    const pair = this.getSigningPair(address);
     const signer = isMobile ? new BeaconSignerJSON(request) : new RequestExtrinsicSign(request);
 
     return this.state.sign(url, signer, {
-      address: pair.address,
-      ethereumAddress: pair.meta.ethereumAddress as string,
-      name: (pair.meta.name as string) ?? '',
+      address: address,
+      ethereumAddress: meta?.ethereumAddress as string,
+      name: (meta?.name as string) ?? '',
       ...meta,
     });
   }

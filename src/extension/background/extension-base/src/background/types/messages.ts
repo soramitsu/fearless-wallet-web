@@ -202,6 +202,8 @@ export interface RequestSignatures {
   'pri(accounts.swap)': [RequestSwap, ResponseMakeSwap];
   'pri(accounts.get.soraFees)': [null, SoraFees];
 
+  //Beacon mobile wallet
+  'pri(beacon.getRawTx)': [null, string];
   //ether
   'pri(balance.get.balance)': [null, BalanceJson];
   'pri(balance.get.subscription)': [null, BalanceJson, BalanceJson];

@@ -41,7 +41,7 @@ export default class EditAddressBook extends Vue {
   get isErrorAddress() {
     return (
       this.address.trim().length !== 0 &&
-      !(BaseApi.validateAddress(this.address, 'polkadot') || BaseApi.validateAddress(this.address, 'moonbeam'))
+      !(BaseApi.validateAddress(this.address.trim(), 'polkadot') || BaseApi.validateAddress(this.address, 'moonbeam'))
     );
   }
 
@@ -58,7 +58,7 @@ export default class EditAddressBook extends Vue {
     chrome.storage.local.set({
       addressBook: {
         ...addressBook,
-        [key]: [...value, { name: this.name, address: BaseApi.encodeAddress(this.address) }],
+        [key]: [...value, { name: this.name, address: BaseApi.encodeAddress(this.address.trim()) }],
       },
     });
 

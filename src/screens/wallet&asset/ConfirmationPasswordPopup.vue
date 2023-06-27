@@ -62,10 +62,18 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch, Ref } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
+import { BeaconMessageType, SubstrateMessageType, SubstratePermissionScope } from '@airgap/beacon-sdk';
 import type { RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
 import type { GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
-import { isSignLocked, makeSwap, makeTransfer, makeCrossChain } from '@/extension/messaging';
+import {
+  isSignLocked,
+  makeSwap,
+  makeTransfer,
+  makeCrossChain,
+  subscribeMobileSigningRequests,
+  approveSignMobileSignature,
+} from '@/extension/messaging';
 import { beaconController, ExtensionController } from '@/controllers';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -147,6 +155,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     return {
       ...(this.tx as RequestCheckTransfer),
       isSavePass: this.isSavePass,
+      isMobile: !!this.isSignMobile,
       password: this.password,
     } as RequestTransfer;
   }
@@ -258,9 +267,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async onSignMobile() {
-    if (!this.transactionId) {
-      this.makeExtrinsic();
-    } else if (this.extrinsicType === 'swap' && this.swapOptions)
+    if (!this.transactionId) this.makeExtrinsic();
+    else if (this.extrinsicType === 'swap' && this.swapOptions)
       await makeSwap({ ...this.swapOptions, password: this.password });
     else if (this.payload) await this.signTransactionJSON(this.transactionId);
   }
@@ -294,8 +302,52 @@ export default class ConfirmationPasswordPopup extends Vue {
       this.transactionState = data.status ? 'success' : 'failed';
     };
 
-    if (this.extrinsicType === 'transfer') return await makeTransfer(this.requestTransfer, callback);
-    else if (this.extrinsicType === 'crossChain') return await makeCrossChain(this.requestCrossChain, callback);
+    if (this.isSignMobile) {
+      await subscribeMobileSigningRequests(async (req) => {
+        if (!req.length) return;
+
+        const [
+          {
+            id,
+            request: { data, type },
+          },
+        ] = req;
+        const activeAccount = await beaconController.getActiveAccount();
+
+        if (!activeAccount) throw new Error('Beacon not set up.');
+
+        const prepPayload = {
+          accountId: activeAccount.accountIdentifier,
+          appMetaData: beaconController.appMetaData,
+          blockchainData: {
+            mode: 'return',
+            payload: {
+              data,
+              dataType: type,
+              isMutable: false,
+              type: 'raw',
+            },
+            scope: SubstratePermissionScope.sign_payload_raw,
+            type: SubstrateMessageType.sign_payload_request,
+          },
+          blockchainIdentifier: 'substrate',
+          type: BeaconMessageType.BlockchainRequest,
+        } as any; /* SubstrateSignPayloadRequest */
+        const response = await beaconController.sendRequestRaw(prepPayload);
+        // makenTranf
+
+        if (!response || (response.blockchainData as any).signature === '') throw new Error('Bad Signature');
+
+        await approveSignMobileSignature(id, (response.blockchainData as any).signature);
+      });
+
+      makeTransfer(this.requestTransfer, callback);
+
+      return;
+    }
+
+    if (this.extrinsicType === 'transfer') return makeTransfer(this.requestTransfer, callback);
+    else if (this.extrinsicType === 'crossChain') return makeCrossChain(this.requestCrossChain, callback);
   }
 
   async keypress({ key }: KeyboardEvent) {

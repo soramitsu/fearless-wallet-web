@@ -39,6 +39,7 @@ export interface PrepareExternalRequest {
 }
 export enum SignerType {
   PASSWORD = 'PASSWORD',
+  MOBILE = 'MOBILE',
 }
 
 type KeysWithDefinedValues<T> = {
@@ -105,6 +106,10 @@ export interface SigningRequest {
   id: string;
   request: RequestSign;
   url: string;
+}
+export interface MobileSigningRequest {
+  id: string;
+  request: SignerPayloadRaw;
 }
 
 export interface RequestAddressCreate {
@@ -192,6 +197,11 @@ export interface RequestAuthorizeTab {
 export interface RequestAuthorizeApprove {
   id: string;
   authorizedAccounts: string[];
+}
+
+export interface RequestMobileSign {
+  signature: `0x${string}`;
+  id: string;
 }
 
 export interface RequestUpdateAuthorizedAccounts {
@@ -350,6 +360,7 @@ export interface RequestCheckTransfer extends BaseRequestSign {
   relayChain?: string;
   value?: string;
   password?: string;
+  isMobile?: boolean;
 }
 
 export interface RequestCheckCrossChain extends BaseRequestSign {
@@ -787,6 +798,10 @@ export interface SignRequest extends Resolver<ResponseSigning> {
   request: RequestSign;
   url: string;
 }
+export interface MobileSignRequest extends Resolver<ResponseSigning> {
+  id: string;
+  request: SignerPayloadRaw;
+}
 
 const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
 
@@ -939,5 +954,7 @@ export interface TokenBalance {
   balances: BalanceItem[];
   color?: string;
 }
+
+export type BeaconRawSignCallBack = (tx: SignerPayloadRaw) => string;
 
 export type BalanceMap = Record<WalletAddress, TokenBalance[]>;

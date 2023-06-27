@@ -32,10 +32,7 @@ interface PasswordSignAndSendExtrinsicProps extends AbstractSignAndSendExtrinsic
 }
 
 interface ExternalSignAndSendExtrinsicProps extends AbstractSignAndSendExtrinsicProps {
-  id: string;
-  setState: (promise: ExternalRequestPromise) => void;
-  updateState: (promise: Partial<ExternalRequestPromise>) => void;
-  type: SignerType.PASSWORD;
+  type: SignerType.MOBILE;
 }
 
 type SignAndSendExtrinsicProps = ExternalSignAndSendExtrinsicProps | PasswordSignAndSendExtrinsicProps;
@@ -48,12 +45,12 @@ export const signAndSendExtrinsic = async ({
   extrinsic,
   password,
   txState,
-  isSavePass,
   type,
 }: SignAndSendExtrinsicProps) => {
-  if (extrinsic === null) {
+  if (!extrinsic) {
     txState.txError = true;
     txState.status = false;
+
     callback(txState);
 
     return;
@@ -64,7 +61,7 @@ export const signAndSendExtrinsic = async ({
       address,
       apiProps,
       callback,
-      extrinsic: extrinsic!,
+      extrinsic,
       password,
       type,
     });
@@ -90,11 +87,10 @@ export const signAndSendExtrinsic = async ({
 
   try {
     sendExtrinsic({
-      apiProps: apiProps,
+      apiProps,
       callback,
-      extrinsic: extrinsic!,
-      txState: txState,
-      isSavePass,
+      extrinsic,
+      txState,
     });
   } catch (e) {
     console.error(errorMessage, e);

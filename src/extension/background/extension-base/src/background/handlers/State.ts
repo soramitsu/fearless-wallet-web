@@ -29,9 +29,11 @@ import { prepNetworkNames } from '@extension-base/const/networks';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
 import { getMockCurrencies, isEthereumNetwork } from '@extension-base/background/utils/utils';
-import { POPUP_WINDOW_OPTS } from '@extension-base/background/types/types';
+import { MobileSigningRequest, MobileSignRequest, POPUP_WINDOW_OPTS } from '@extension-base/background/types/types';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
+import { SubmittableExtrinsic } from '@polkadot/api/types';
+import { ISubmittableResult, SignerPayloadRaw } from '@polkadot/types/types';
 import { EVM_NETWORKS_JSON } from '../../api/evm/helpers/networks';
 import type {
   AuthorizeRequest,
@@ -173,12 +175,14 @@ export default class State {
   public authRequests: Record<string, AuthRequest> = {};
   public metaRequests: Record<string, MetaRequest> = {};
   public signRequests: Record<string, SignRequest> = {};
+  public mobileSignRequests: Record<string, MobileSignRequest> = {};
   private historyMap: Record<string, TransactionHistoryItemType[]> = {};
   private historySubject = new Subject<Record<string, TransactionHistoryItemType[]>>();
   public readonly soraCardTokenSubject: BehaviorSubject<string> = new BehaviorSubject<string>('');
   public readonly authSubject = new BehaviorSubject<AuthorizeRequest[]>([]);
   public readonly metaSubject = new BehaviorSubject<MetadataRequest[]>([]);
   public readonly signSubject = new BehaviorSubject<SigningRequest[]>([]);
+  public readonly mobileSignSubject = new BehaviorSubject<MobileSigningRequest[]>([]);
   public balanceService = new BalanceService();
   public lazyMap: Record<string, unknown> = {};
   public soraFees: SoraFees = {} as SoraFees;
@@ -286,6 +290,10 @@ export default class State {
     return Object.values(this.signRequests).map(
       ({ account, id, request, url }): SigningRequest => ({ account, id, request, url })
     );
+  }
+
+  public allMobileSignRequests(): MobileSigningRequest[] {
+    return Object.values(this.mobileSignRequests).map(({ id, request }): MobileSigningRequest => ({ id, request }));
   }
 
   popupClose(): void {
@@ -664,6 +672,30 @@ export default class State {
     };
   };
 
+  private signMobileComplete = (
+    id: string,
+    resolve: (result: ResponseSigning) => void,
+    reject: (error: Error) => void
+  ): Resolver<ResponseSigning> => {
+    const complete = (): void => {
+      delete this.mobileSignRequests[id];
+      const allSignRequests = this.allMobileSignRequests();
+
+      this.mobileSignSubject.next(allSignRequests);
+    };
+
+    return {
+      reject: (error: Error): void => {
+        complete();
+        reject(error);
+      },
+      resolve: (result: ResponseSigning): void => {
+        complete();
+        resolve(result);
+      },
+    };
+  };
+
   async updateIcon(shouldClose?: boolean): Promise<void> {
     const authCount = this.numAuthRequests();
     const metaCount = this.numMetaRequests();
@@ -800,6 +832,10 @@ export default class State {
     return this.signRequests[id];
   }
 
+  getMobileSignRequest(id: string): MobileSignRequest {
+    return this.mobileSignRequests[id];
+  }
+
   // List all providers the extension is exposing
   rpcListProviders(): ResponseRpcListProviders {
     return Object.keys(this.providers).reduce((acc, key) => {
@@ -895,6 +931,20 @@ export default class State {
       };
       this.updateIconSign();
       this.popupOpen();
+    });
+  }
+
+  signMobile(request: SignerPayloadRaw): Promise<ResponseSigning> {
+    const id = getId();
+
+    return new Promise((resolve, reject): void => {
+      this.mobileSignRequests[id] = {
+        ...this.signMobileComplete(id, resolve, reject),
+        id,
+        request,
+      };
+
+      this.mobileSignSubject.next([{ id, request }]);
     });
   }
 

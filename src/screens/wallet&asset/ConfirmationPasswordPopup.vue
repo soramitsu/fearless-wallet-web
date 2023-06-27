@@ -65,7 +65,7 @@ import { Getter, Action } from 'vuex-class';
 import type { RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
 import type { GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
-import { isSignLocked, makeSwap, makeTransfer, makeCrossChain } from '@/extension/messaging';
+import { isSignLocked, makeSwap, makeTransfer, makeCrossChain, cancelMobileSignRequest } from '@/extension/messaging';
 import { beaconController, ExtensionController } from '@/controllers';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -298,8 +298,14 @@ export default class ConfirmationPasswordPopup extends Vue {
       this.transactionState = 'pending';
     };
 
+    const onMobileCancel = (id: string) => {
+      this.transactionState = 'failed';
+
+      cancelMobileSignRequest(id);
+    };
+
     if (this.isSignMobile) {
-      await beaconController.subscribeRawRequests(mobileCb);
+      await beaconController.subscribeRawRequests(mobileCb, onMobileCancel);
 
       return makeTransfer(this.requestTransfer, callback);
     }

@@ -178,6 +178,7 @@ export interface RequestSignatures {
   'pri(signing.approve.signature)': [RequestSigningApproveSignature, boolean];
   'pri(mobileSigning.approve.signature)': [RequestSigningApproveSignature, boolean];
   'pri(signing.cancel)': [RequestSigningCancel, boolean];
+  'pri(mobileSigning.cancel)': [RequestSigningCancel, boolean];
   'pri(signing.isLocked)': [RequestSigningIsLocked, ResponseSigningIsLocked];
   'pri(signing.requests)': [RequestSigningSubscribe, boolean, SigningRequest[]];
   'pri(mobileSigning.tx)': [RequestSigningSubscribe, boolean, MobileSigningRequest[]];

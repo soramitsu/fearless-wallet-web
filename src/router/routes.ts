@@ -82,7 +82,7 @@ const routes: Array<RouteConfig> = [
     component: AddFromGoogle,
   },
   {
-    path: 'google/create',
+    path: '/google-create/:access_token',
     name: Components.CreateGoogle,
     component: CreateGoogle,
   },

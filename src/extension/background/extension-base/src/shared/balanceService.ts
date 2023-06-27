@@ -24,10 +24,6 @@ export default class BalanceService {
     if (copyBalance[address]) copyBalance[address] = {};
     if (item.state !== APIItemState.READY) return;
 
-    const { balances } = await storage.get(['balances']);
-    const copyBalance = { ...(balances ?? {}) };
-    const { symbol } = item;
-
     if (!symbol) return;
 
     if (copyBalance[address]) copyBalance[address] = {};

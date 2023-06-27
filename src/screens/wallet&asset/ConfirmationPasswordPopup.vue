@@ -71,6 +71,7 @@ import {
   makeSwap,
   makeTransfer,
   makeCrossChain,
+  cancelMobileSignRequest,
   subscribeMobileSigningRequests,
   approveSignMobileSignature,
 } from '@/extension/messaging';
@@ -306,8 +307,14 @@ export default class ConfirmationPasswordPopup extends Vue {
       this.transactionState = 'pending';
     };
 
+    const onMobileCancel = (id: string) => {
+      this.transactionState = 'failed';
+
+      cancelMobileSignRequest(id);
+    };
+
     if (this.isSignMobile) {
-      await beaconController.subscribeRawRequests(mobileCb);
+      await beaconController.subscribeRawRequests(mobileCb, onMobileCancel);
 
       return makeTransfer(this.requestTransfer, callback);
     }

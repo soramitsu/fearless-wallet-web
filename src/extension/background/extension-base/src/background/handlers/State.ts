@@ -449,7 +449,15 @@ export default class State {
     };
   }
 
-  public onInstall() {
+  public async onInstall() {
+    const currentAccount = await this.currentAccount;
+
+    if (currentAccount) {
+      this.setCurrentAccount({ ...currentAccount });
+
+      return;
+    }
+
     const accounts = this.getSubstrateAccounts();
 
     if (accounts.length) {
@@ -475,15 +483,16 @@ export default class State {
 
   public upsertNetworkMap(data: NetworkJson): boolean {
     if (this.lockNetworkMap) return false;
+
     this.lockNetworkMap = true;
-    const { key, currentProvider, chain, blockExplorer, paraId, nativeToken, decimals } = data;
+    const { key, currentProvider, chain, blockExplorer, paraId, nativeToken, decimals, customNodes } = data;
 
     if (key in this.networkMap) {
       const network = this.networkMap[key];
       //make network active if it was disabled previously
       network.active = true;
       // update provider for existed network
-      network.customNodes = data.customNodes;
+      network.customNodes = customNodes;
 
       if (currentProvider !== network.currentProvider && currentProvider) {
         network.currentProvider = currentProvider;
@@ -535,8 +544,6 @@ export default class State {
 
     this.lockNetworkMap = true; // todo ???
 
-    // this.apis.substrate[networkKey].api?.disconnect && (await this.apis.substrate[networkKey].api?.disconnect());
-
     delete this.apis.substrate[networkKey]; // todo можно и не удалять по идее, значение api для сети будет = undefined
 
     if (this.networkMap[networkKey].isEthereum && this.networkMap[networkKey].isEthereum)
@@ -561,11 +568,11 @@ export default class State {
   }
 
   public updateServiceInfo() {
-    this.getCurrentAccount((accountInfo) => {
+    this.getCurrentAccount((currentAccountInfo) => {
       this.serviceInfoSubject.next({
         networkMap: this.networkMap,
         apiMap: this.apis,
-        currentAccountInfo: accountInfo,
+        currentAccountInfo,
       });
     });
   }
@@ -966,9 +973,7 @@ export default class State {
 
     getTokenPrice(Array.from(new Set(assets)), this.fiatSymbol)
       .then((rs) => {
-        this.setPrice(rs, () => {
-          console.info('Get Token Price From CoinGecko');
-        });
+        this.setPrice(rs);
       })
       .catch((err) => console.info(err));
   }

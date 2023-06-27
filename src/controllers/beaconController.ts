@@ -205,7 +205,9 @@ class BeaconController {
   public subscribeRawRequests(cb?: () => void) {
     cb && cb();
 
-    return subscribeMobileSigningRequests(this.onRawRequest);
+    return subscribeMobileSigningRequests((req) => {
+      this.onRawRequest(req);
+    });
   }
 }
 

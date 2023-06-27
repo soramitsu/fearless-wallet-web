@@ -77,28 +77,14 @@ const routes: Array<RouteConfig> = [
     },
   },
   {
-    path: '/google',
+    path: '/google/:access_token',
     name: Components.AddFromGoogle,
     component: AddFromGoogle,
-    children: [
-      {
-        path: ':access_token',
-        name: Components.AddFromGoogle,
-        component: AddFromGoogle,
-      },
-    ],
   },
   {
-    path: 'google/create',
+    path: '/google-create/:access_token',
     name: Components.CreateGoogle,
     component: CreateGoogle,
-    children: [
-      {
-        path: ':access_token',
-        name: Components.CreateGoogle,
-        component: CreateGoogle,
-      },
-    ],
   },
   {
     path: '/add-wallet/:type',

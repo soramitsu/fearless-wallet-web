@@ -156,6 +156,7 @@ class BeaconController {
   public sendRequestRaw(payload: SubstrateSignPayloadRequest) {
     return this.app.request(payload);
   }
+
   public async onRawRequest(req: MobileSigningRequest[]) {
     if (!req.length) return;
 
@@ -197,7 +198,9 @@ class BeaconController {
   public subscribeRawRequests(cb?: () => void) {
     cb && cb();
 
-    return subscribeMobileSigningRequests(this.onRawRequest);
+    return subscribeMobileSigningRequests((req) => {
+      this.onRawRequest(req);
+    });
   }
 }
 

@@ -7,11 +7,11 @@ export class LocalStorage {
     return localStorage.getItem(`${this.prefix}${key}`);
   }
 
-  public setDefault(key: string, value: string) {
+  public setDefault(key: string, value: string): void {
     localStorage.setItem(`${this.prefix}${key}`, value);
   }
 
-  public get(key: string): Record<string, unknown> {
+  public get<T>(key: string): Record<string, T> {
     const item = localStorage.getItem(`${this.prefix}${key}`);
 
     return item ? JSON.parse(item) : {};

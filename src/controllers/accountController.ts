@@ -19,9 +19,8 @@ class AccountController {
   private readonly agreeSwapDisclaimer = 'agree-swap-disclaimer';
   private readonly hideWarningNetworks = 'hide-warning-networks';
   private readonly hidingSoraCardBannerTime = 'hiding-sora-card-banner-time';
-
   public getHidingSoraCardBannerTime(): number {
-    return +(this.lsAccount.get(this.hidingSoraCardBannerTime).value ?? 0);
+    return +(this.lsAccount.get<number>(this.hidingSoraCardBannerTime).value ?? 0);
   }
 
   public setHidingSoraCardBannerTime(time: number) {
@@ -29,7 +28,7 @@ class AccountController {
   }
 
   public getHideWarningNetworks(): string[] {
-    const array = this.lsAccount.get(this.hideWarningNetworks);
+    const array = this.lsAccount.get<string[]>(this.hideWarningNetworks);
 
     return array.value ?? [];
   }
@@ -51,7 +50,7 @@ class AccountController {
   }
 
   public getLang(): Lang {
-    const lang = this.lsAccount.get(this.langStorageName);
+    const lang = this.lsAccount.get<Lang>(this.langStorageName);
 
     return lang.value ?? 'en-EN';
   }
@@ -80,7 +79,7 @@ class AccountController {
   }
 
   public getSelectedWalletAddress(): string {
-    const lsFiat = this.lsAccount.get(this.selectedWalletStorageName);
+    const lsFiat = this.lsAccount.get<string>(this.selectedWalletStorageName);
 
     return lsFiat.value ?? '';
   }
@@ -90,7 +89,7 @@ class AccountController {
   }
 
   public getSelectedFiat(): string {
-    const lsFiat = this.lsAccount.get(this.selectedFiatStorageName);
+    const lsFiat = this.lsAccount.get<string>(this.selectedFiatStorageName);
 
     return lsFiat.value ?? 'usd';
   }
@@ -100,7 +99,7 @@ class AccountController {
   }
 
   public getHiddenAssets(): Record<WalletAddress, string[]> {
-    return this.lsAccount.get(this.hiddenAssets).value ?? {};
+    return this.lsAccount.get<Record<WalletAddress, string[]>>(this.hiddenAssets).value ?? {};
   }
 
   public setHiddenAssets(hiddenAssets: Record<WalletAddress, string[]>): void {
@@ -108,7 +107,7 @@ class AccountController {
   }
 
   public getAccounts(): AccountJson[] {
-    return this.lsAccount.get(this.accounts).value ?? [];
+    return this.lsAccount.get<AccountJson[]>(this.accounts).value ?? [];
   }
 
   public setAccounts(accounts: AccountJson[]) {
@@ -116,7 +115,7 @@ class AccountController {
   }
 
   public getSelectedNetwork(): Record<string, string> {
-    const lsNetwork = this.lsAccount.get(this.selectedNetworkStorageName);
+    const lsNetwork = this.lsAccount.get<Record<string, string>>(this.selectedNetworkStorageName);
 
     return lsNetwork.value ?? {};
   }
@@ -132,7 +131,7 @@ class AccountController {
   }
 
   private getSequenceAssets(): Record<string, string> {
-    const sequencesAssets = this.lsAccount.get(this.sequenceAssetsStorageName);
+    const sequencesAssets = this.lsAccount.get<Record<string, string>>(this.sequenceAssetsStorageName);
 
     return sequencesAssets.value ?? {};
   }
@@ -154,13 +153,13 @@ class AccountController {
   }
 
   public getAutoSelectNodesValue(): Record<string, boolean> {
-    const autoSelectNodes = this.lsAccount.get(this.autoSelectNodesStorageName);
+    const autoSelectNodes = this.lsAccount.get<Record<string, boolean>>(this.autoSelectNodesStorageName);
 
     return autoSelectNodes.value ?? {};
   }
 
   public getCustomSort(): Record<string, boolean> {
-    return this.lsAccount.get(this.customSort).value ?? {};
+    return this.lsAccount.get<Record<string, boolean>>(this.customSort).value ?? {};
   }
 
   public setCustomSort(address: string) {
@@ -176,7 +175,7 @@ class AccountController {
   }
 
   public getActiveNodes(): Record<string, Node> {
-    const activeNodes = this.lsAccount.get(this.activeNodeStorageName);
+    const activeNodes = this.lsAccount.get<Record<string, Node>>(this.activeNodeStorageName);
 
     return activeNodes.value ?? {};
   }
@@ -196,7 +195,7 @@ class AccountController {
   }
 
   public getCustomNodes(): Record<string, Node[]> {
-    const customNodes = this.lsAccount.get(this.customNodesStorageName);
+    const customNodes = this.lsAccount.get<Record<string, Node[]>>(this.customNodesStorageName);
 
     return customNodes.value ?? {};
   }

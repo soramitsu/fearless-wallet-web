@@ -14,7 +14,7 @@ type NetworksZeroBalance = Record<WalletAddress, Record<NetworkName, Record<Asse
 
 export class NetworksController {
   private static getNetworksZeroBalances(): NetworksZeroBalance {
-    const balances = lsNetworks.get(zeroBalance);
+    const balances = lsNetworks.get<NetworksZeroBalance>(zeroBalance);
 
     return balances.value ?? {};
   }

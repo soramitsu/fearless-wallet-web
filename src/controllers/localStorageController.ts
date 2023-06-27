@@ -1,4 +1,4 @@
-type Value = number | string | boolean | Record<string, any> | any[];
+type Value = number | string | boolean | Record<string, unknown> | unknown[];
 
 export class LocalStorage {
   constructor(private prefix: string) {}
@@ -11,7 +11,7 @@ export class LocalStorage {
     localStorage.setItem(`${this.prefix}${key}`, value);
   }
 
-  public get(key: string): Record<string, any> {
+  public get(key: string): Record<string, unknown> {
     const item = localStorage.getItem(`${this.prefix}${key}`);
 
     return item ? JSON.parse(item) : {};

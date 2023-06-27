@@ -79,6 +79,7 @@ import {
   RequestTransfer,
   RequestCrossChain,
   TokenBalance,
+  BasicTxResponse,
 } from '@/extension/background/extension-base/src/background/types/types';
 import { IS_EXTENSION } from '@/consts/global';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
@@ -284,7 +285,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async makeExtrinsic() {
-    const callback = (data: any) => {
+    const callback = (data: BasicTxResponse) => {
       if (data.passwordError) {
         this.isErrorPassword = true;
 

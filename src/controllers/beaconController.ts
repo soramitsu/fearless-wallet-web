@@ -25,6 +25,7 @@ import store from '@/store';
 import { MutationTypes as AccountMutationTypes } from '@/store/accounts/mutations';
 import { approveSignMobileSignature, subscribeMobileSigningRequests } from '@/extension/messaging';
 import { MobileSigningRequest } from '@/extension/background/extension-base/src/background/types/types';
+import { BeaconResV3 } from '@/extension/background/extension-base/src/types';
 class BeaconController {
   private app: DAppClient;
   private serializer = new Serializer();
@@ -153,24 +154,16 @@ class BeaconController {
     return this.app.request(request) as Promise<SubstrateSignPayloadJSONResponse>;
   }
 
-  public sendRequestRaw(payload: SubstrateSignPayloadRequest) {
-    return this.app.request(payload);
-  }
-  public async onRawRequest(req: MobileSigningRequest[]) {
-    if (!req.length) return;
-
-    const [
+  private prepSignPayload(
+    account: AccountInfo,
+    [
       {
-        id,
         request: { data, type },
       },
-    ] = req;
-    const activeAccount = await this.getActiveAccount();
-
-    if (!activeAccount) throw new Error('Beacon not set up.');
-
-    const prepPayload = {
-      accountId: activeAccount.accountIdentifier,
+    ]: MobileSigningRequest[]
+  ) {
+    return {
+      accountId: account.accountIdentifier,
       appMetaData: this.appMetaData,
       blockchainData: {
         mode: 'return',
@@ -185,13 +178,28 @@ class BeaconController {
       },
       blockchainIdentifier: 'substrate',
       type: BeaconMessageType.BlockchainRequest,
-    } as any; /* SubstrateSignPayloadRequest */
+    } as unknown as SubstrateSignPayloadRequest;
+  }
+
+  public sendRequestRaw(payload: SubstrateSignPayloadRequest) {
+    return this.app.request(payload) as unknown as BeaconResV3;
+  }
+
+  public async onRawRequest(req: MobileSigningRequest[]) {
+    if (!req.length) return;
+
+    const activeAccount = await this.getActiveAccount();
+
+    if (!activeAccount) throw new Error('Beacon not set up.');
+
+    const prepPayload = this.prepSignPayload(activeAccount, req);
     const response = await this.sendRequestRaw(prepPayload);
-    // makenTranf
 
-    if (!response || (response.blockchainData as any).signature === '') throw new Error('Bad Signature');
+    if (!response || !response.blockchainData.signature) throw new Error('Bad Signature');
 
-    await approveSignMobileSignature(id, (response.blockchainData as any).signature);
+    const [{ id }] = req;
+
+    await approveSignMobileSignature(id, response.blockchainData.signature);
   }
 
   public subscribeRawRequests(cb?: () => void) {

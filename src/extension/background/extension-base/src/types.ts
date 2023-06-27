@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { BalanceItem, CustomTokenType, NetWorkGroup } from '@extension-base/api/evm/types/ether';
+import { BlockchainResponseV3 } from '@airgap/beacon-sdk';
 import { NETWORK_STATUS } from './api/types/networks';
 import type { AssetsType } from '@/interfaces';
 import { RelayChainName, ExternalApi } from '@/interfaces';
@@ -182,4 +183,11 @@ export interface ChainRegistry {
   chainDecimals: number[];
   chainTokens: string[];
   assetsMap: Asset[];
+}
+
+export interface BeaconResV3 extends BlockchainResponseV3 {
+  blockchainData: {
+    signature: `0x${string}`;
+    payload: string;
+  };
 }

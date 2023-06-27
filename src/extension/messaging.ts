@@ -44,6 +44,7 @@ import type {
   RequestSwap,
   ResponseMakeSwap,
   ResponseTotalBalances,
+  MobileSigningRequest,
 } from '@/extension/background/extension-base/src/background/types/types';
 import type { Message, NetworkJson, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
@@ -202,6 +203,10 @@ export function approveSignSignature(id: string, signature: HexString): Promise<
   return sendMessage('pri(signing.approve.signature)', { id, signature });
 }
 
+export function approveSignMobileSignature(id: string, signature: HexString): Promise<boolean> {
+  return sendMessage('pri(mobileSigning.approve.signature)', { id, signature });
+}
+
 export function createAccountExternal(name: string, address: string, genesisHash: string): Promise<boolean> {
   return sendMessage('pri(accounts.create.external)', { address, genesisHash, name });
 }
@@ -343,6 +348,10 @@ export function subscribeMetadataRequests(cb: (accounts: MetadataRequest[]) => v
 
 export function subscribeSigningRequests(cb: (accounts: SigningRequest[]) => void): Promise<boolean> {
   return sendMessage('pri(signing.requests)', null, cb);
+}
+
+export function subscribeMobileSigningRequests(cb: (req: MobileSigningRequest[]) => void): Promise<boolean> {
+  return sendMessage('pri(mobileSigning.tx)', null, cb);
 }
 
 export function validateSeed(suri: string, type?: KeypairType): Promise<{ address: string; suri: string }> {

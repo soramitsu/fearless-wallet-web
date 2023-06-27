@@ -1,7 +1,6 @@
 // Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { KeyringPair } from '@polkadot/keyring/types';
 import { FPNumber } from '@sora-substrate/util';
 import { state } from '@extension-base/background/handlers';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
@@ -62,7 +61,6 @@ export async function estimateFee(
 
   const extrinsic = createExtrinsicTransfer({
     amount: value,
-    api,
     tokenBalance,
     to,
     networkKey,
@@ -98,6 +96,7 @@ export interface MakeTransferProps {
   tokenInfo: Asset;
   isSavePass?: boolean;
   callback: (data: BasicTxResponse) => void;
+  isMobile: boolean;
 }
 
 export async function makeTransfer({
@@ -109,6 +108,7 @@ export async function makeTransfer({
   password,
   amount,
   callback,
+  isMobile,
 }: MakeTransferProps): Promise<void> {
   const txState: BasicTxResponse = {};
   const apiProps = state.getSubstrateApiMap[networkKey];
@@ -119,14 +119,13 @@ export async function makeTransfer({
 
   const extrinsic = createExtrinsicTransfer({
     amount,
-    api: apiProps.api!,
     tokenBalance,
     to,
     networkKey,
   });
 
   await signAndSendExtrinsic({
-    type: SignerType.PASSWORD,
+    type: isMobile ? SignerType.MOBILE : SignerType.PASSWORD,
     apiProps,
     callback,
     extrinsic,

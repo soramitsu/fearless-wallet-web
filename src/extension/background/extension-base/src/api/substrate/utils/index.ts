@@ -1,13 +1,11 @@
 import { assetFromToken } from '@equilab/api';
 import { FPNumber } from '@sora-substrate/math';
-import { ApiPromise } from '@polkadot/api';
 import { state } from '@extension-base/background/handlers';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { AssetsType } from '@/interfaces';
 
 type ExtrinsicTransferProps = {
-  api: ApiPromise;
   to: string;
   amount: string | undefined;
   networkKey: string;
@@ -43,7 +41,11 @@ export function getPrecisionValue(
 }
 
 export function createExtrinsicTransfer(props: ExtrinsicTransferProps): SubmittableExtrinsic<'promise'> | null {
-  const { amount, api, tokenBalance, to, networkKey } = props;
+  const { amount, tokenBalance, to, networkKey } = props;
+  const api = state.getSubstrateApiMap[networkKey].api;
+
+  if (!api) return null;
+
   const { precision, assetId: id, balances, symbol } = tokenBalance;
   const type = balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())!.type;
   const ormlOptions = getAssetOptions(symbol, type, id);

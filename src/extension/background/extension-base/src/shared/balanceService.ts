@@ -18,7 +18,7 @@ export default class BalanceService {
       const copyBalance = { ...(balances ?? {}) };
 
       if (!copyBalance[address]) copyBalance[address] = {};
-      if (!copyBalance[address][item.name!]) copyBalance[address][item.name!] = {};
+      if (!copyBalance[address][item.symbol!]) copyBalance[address][item.symbol!] = {};
 
       copyBalance![address][item.symbol!][chain] = { chain, ...item } as BalanceItem;
 

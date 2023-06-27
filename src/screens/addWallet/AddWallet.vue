@@ -612,9 +612,10 @@ export default class AddWallet extends Vue {
       substrate: { keypairType: substrateKeypairType },
     } = this.derivationPaths;
 
-    // const { address } = await createAccountSuri(this.suriSubstrate, substrateKeypairType);
+    const address = await createAccountSuri(this.suriSubstrate, substrateKeypairType);
 
-    // this.validateAddressForDubMobileWallet(address);
+    this.validateAddressForDubMobileWallet(address);
+
     return true;
   }
 

@@ -191,6 +191,10 @@ export function cancelSignRequest(id: string): Promise<boolean> {
   return sendMessage('pri(signing.cancel)', { id });
 }
 
+export function cancelMobileSignRequest(id: string): Promise<boolean> {
+  return sendMessage('pri(mobileSigning.cancel)', { id });
+}
+
 export function isSignLocked(address: string): Promise<ResponseSigningIsLocked> {
   return sendMessage('pri(signing.isLocked)', { address });
 }

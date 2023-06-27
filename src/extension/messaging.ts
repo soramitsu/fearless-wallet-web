@@ -211,7 +211,7 @@ export function approveSignMobileSignature(id: string, signature: HexString): Pr
   return sendMessage('pri(mobileSigning.approve.signature)', { id, signature });
 }
 
-export function createAccountExternal(name: string, address: string, genesisHash: HexString): Promise<boolean> {
+export function createAccountExternal(name: string, address: string, genesisHash: string): Promise<boolean> {
   return sendMessage('pri(accounts.create.external)', { address, genesisHash, name });
 }
 

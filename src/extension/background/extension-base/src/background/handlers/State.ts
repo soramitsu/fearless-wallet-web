@@ -32,7 +32,8 @@ import { getMockCurrencies, isEthereumNetwork } from '@extension-base/background
 import { MobileSigningRequest, MobileSignRequest, POPUP_WINDOW_OPTS } from '@extension-base/background/types/types';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
-import { SignerPayloadRaw } from '@polkadot/types/types';
+import { SubmittableExtrinsic } from '@polkadot/api/types';
+import { ISubmittableResult, SignerPayloadRaw } from '@polkadot/types/types';
 import { EVM_NETWORKS_JSON } from '../../api/evm/helpers/networks';
 
 import type {

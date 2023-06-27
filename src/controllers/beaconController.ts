@@ -185,7 +185,7 @@ class BeaconController {
     return this.app.request(payload) as unknown as BeaconResV3;
   }
 
-  public async onRawRequest(req: MobileSigningRequest[]) {
+  public async onRawRequest(req: MobileSigningRequest[], onCancel?: (id: string) => void) {
     if (!req.length) return;
 
     const activeAccount = await this.getActiveAccount();
@@ -195,18 +195,20 @@ class BeaconController {
     const prepPayload = this.prepSignPayload(activeAccount, req);
     const response = await this.sendRequestRaw(prepPayload);
 
-    if (!response || !response.blockchainData.signature) throw new Error('Bad Signature');
-
     const [{ id }] = req;
+
+    if (!response || (response.blockchainData as any).signature.length === 0) {
+      return onCancel && onCancel(id);
+    }
 
     await approveSignMobileSignature(id, response.blockchainData.signature);
   }
 
-  public subscribeRawRequests(cb?: () => void) {
+  public subscribeRawRequests(cb?: () => void, onCancel?: (id: string) => void) {
     cb && cb();
 
     return subscribeMobileSigningRequests((req) => {
-      this.onRawRequest(req);
+      this.onRawRequest(req, onCancel);
     });
   }
 }

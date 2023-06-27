@@ -580,6 +580,16 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
+  mobileSigningCancel({ id }: RequestSigningCancel): boolean {
+    const queued = this.state.getMobileSignRequest(id);
+
+    assert(queued, 'Unable to find request');
+
+    queued.reject(new Error('Cancelled'));
+
+    return true;
+  }
+
   signingSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(signing.requests)'>(id, port);
 
@@ -1453,6 +1463,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(signing.cancel)':
         return this.signingCancel(request as RequestSigningCancel);
+
+      case 'pri(mobileSigning.cancel)':
+        return this.mobileSigningCancel(request as RequestSigningCancel);
 
       case 'pri(signing.isLocked)':
         return this.signingIsLocked(request as RequestSigningIsLocked);

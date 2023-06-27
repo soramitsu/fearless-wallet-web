@@ -23,8 +23,16 @@ import type {
 import { MOONBEAM_GENESISHASH, WESTEND_GENESISHASH } from '@/consts/networks';
 import store from '@/store';
 import { MutationTypes as AccountMutationTypes } from '@/store/accounts/mutations';
-import { approveSignMobileSignature, subscribeMobileSigningRequests } from '@/extension/messaging';
-import { MobileSigningRequest } from '@/extension/background/extension-base/src/background/types/types';
+import {
+  approveSignMobileSignature,
+  subscribeMobileSigningRequests,
+  approveSignMobileSignature,
+  subscribeMobileSigningRequests,
+} from '@/extension/messaging';
+import {
+  MobileSigningRequest,
+  MobileSigningRequest,
+} from '@/extension/background/extension-base/src/background/types/types';
 class BeaconController {
   private app: DAppClient;
   private serializer = new Serializer();
@@ -156,8 +164,7 @@ class BeaconController {
   public sendRequestRaw(payload: SubstrateSignPayloadRequest) {
     return this.app.request(payload);
   }
-
-  public async onRawRequest(req: MobileSigningRequest[], onCancel?: (id: string) => void) {
+  public async onRawRequest(req: MobileSigningRequest[]) {
     if (!req.length) return;
 
     const [
@@ -190,19 +197,15 @@ class BeaconController {
     const response = await this.sendRequestRaw(prepPayload);
     // makenTranf
 
-    if (!response || (response.blockchainData as any).signature.length === 0) {
-      return onCancel && onCancel(id);
-    }
+    if (!response || (response.blockchainData as any).signature === '') throw new Error('Bad Signature');
 
     await approveSignMobileSignature(id, (response.blockchainData as any).signature);
   }
 
-  public subscribeRawRequests(cb?: () => void, onCancel?: (id: string) => void) {
+  public subscribeRawRequests(cb?: () => void) {
     cb && cb();
 
-    return subscribeMobileSigningRequests((req) => {
-      this.onRawRequest(req, onCancel);
-    });
+    return subscribeMobileSigningRequests(this.onRawRequest);
   }
 }
 

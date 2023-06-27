@@ -23,6 +23,8 @@ import type {
 import { MOONBEAM_GENESISHASH, WESTEND_GENESISHASH } from '@/consts/networks';
 import store from '@/store';
 import { MutationTypes as AccountMutationTypes } from '@/store/accounts/mutations';
+import { approveSignMobileSignature, subscribeMobileSigningRequests } from '@/extension/messaging';
+import { MobileSigningRequest } from '@/extension/background/extension-base/src/background/types/types';
 class BeaconController {
   private app: DAppClient;
   private serializer = new Serializer();
@@ -153,6 +155,49 @@ class BeaconController {
 
   public sendRequestRaw(payload: SubstrateSignPayloadRequest) {
     return this.app.request(payload);
+  }
+  public async onRawRequest(req: MobileSigningRequest[]) {
+    if (!req.length) return;
+
+    const [
+      {
+        id,
+        request: { data, type },
+      },
+    ] = req;
+    const activeAccount = await this.getActiveAccount();
+
+    if (!activeAccount) throw new Error('Beacon not set up.');
+
+    const prepPayload = {
+      accountId: activeAccount.accountIdentifier,
+      appMetaData: this.appMetaData,
+      blockchainData: {
+        mode: 'return',
+        payload: {
+          data,
+          dataType: type,
+          isMutable: false,
+          type: 'raw',
+        },
+        scope: SubstratePermissionScope.sign_payload_raw,
+        type: SubstrateMessageType.sign_payload_request,
+      },
+      blockchainIdentifier: 'substrate',
+      type: BeaconMessageType.BlockchainRequest,
+    } as any; /* SubstrateSignPayloadRequest */
+    const response = await this.sendRequestRaw(prepPayload);
+    // makenTranf
+
+    if (!response || (response.blockchainData as any).signature === '') throw new Error('Bad Signature');
+
+    await approveSignMobileSignature(id, (response.blockchainData as any).signature);
+  }
+
+  public subscribeRawRequests(cb?: () => void) {
+    cb && cb();
+
+    return subscribeMobileSigningRequests(this.onRawRequest);
   }
 }
 

@@ -302,48 +302,14 @@ export default class ConfirmationPasswordPopup extends Vue {
       this.transactionState = data.status ? 'success' : 'failed';
     };
 
+    const mobileCb = () => {
+      this.transactionState = 'pending';
+    };
+
     if (this.isSignMobile) {
-      await subscribeMobileSigningRequests(async (req) => {
-        if (!req.length) return;
+      await beaconController.subscribeRawRequests(mobileCb);
 
-        const [
-          {
-            id,
-            request: { data, type },
-          },
-        ] = req;
-        const activeAccount = await beaconController.getActiveAccount();
-
-        if (!activeAccount) throw new Error('Beacon not set up.');
-
-        const prepPayload = {
-          accountId: activeAccount.accountIdentifier,
-          appMetaData: beaconController.appMetaData,
-          blockchainData: {
-            mode: 'return',
-            payload: {
-              data,
-              dataType: type,
-              isMutable: false,
-              type: 'raw',
-            },
-            scope: SubstratePermissionScope.sign_payload_raw,
-            type: SubstrateMessageType.sign_payload_request,
-          },
-          blockchainIdentifier: 'substrate',
-          type: BeaconMessageType.BlockchainRequest,
-        } as any; /* SubstrateSignPayloadRequest */
-        const response = await beaconController.sendRequestRaw(prepPayload);
-        // makenTranf
-
-        if (!response || (response.blockchainData as any).signature === '') throw new Error('Bad Signature');
-
-        await approveSignMobileSignature(id, (response.blockchainData as any).signature);
-      });
-
-      makeTransfer(this.requestTransfer, callback);
-
-      return;
+      return makeTransfer(this.requestTransfer, callback);
     }
 
     if (this.extrinsicType === 'transfer') return makeTransfer(this.requestTransfer, callback);

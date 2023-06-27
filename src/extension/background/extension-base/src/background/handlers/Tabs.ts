@@ -5,12 +5,7 @@ import { PHISHING_PAGE_REDIRECT } from '@extension-base/defaults';
 import { checkIfDenied } from '@polkadot/phishing';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { assert, isNumber } from '@polkadot/util';
-
-import RequestBytesSign from '@extension-base/background/RequestBytesSign';
-import RequestExtrinsicSign from '@extension-base/background/RequestExtrinsicSign';
-
 import { keyring } from '@polkadot/ui-keyring';
-import BeaconSignerJSON from '@extension-base/background/BeaconSignerJSON';
 import {
   stripUrl,
   transformAccounts,
@@ -19,6 +14,9 @@ import {
 } from '@extension-base/background/handlers/helpers';
 import State from '@extension-base/background/handlers/State';
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
+import BeaconSignerJSON from '@extension-base/signers/BeaconSignerJSON';
+import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
+import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
 import type {
   AccountSub,
   AuthResponse,

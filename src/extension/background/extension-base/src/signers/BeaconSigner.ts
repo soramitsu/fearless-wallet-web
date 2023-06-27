@@ -1,7 +1,7 @@
 // Copyright 2017-2022 @polkadot/app-accounts authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { state } from '@extension-base/background/handlers';
+import { state } from '../background/handlers';
 import type { Signer } from '@polkadot/api/types';
 import type { SignerPayloadRaw, SignerResult } from '@polkadot/types/types/extrinsic';
 let nextId = 0;

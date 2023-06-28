@@ -151,7 +151,7 @@ export function showAccount(address: string, isShowing: boolean): Promise<boolea
   return sendMessage('pri(accounts.show)', { address, isShowing });
 }
 
-export function tieAccount(address: string, genesisHash: string | null): Promise<boolean> {
+export function tieAccount(address: string, genesisHash: HexString | null): Promise<boolean> {
   return sendMessage('pri(accounts.tie)', { address, genesisHash });
 }
 
@@ -211,7 +211,7 @@ export function approveSignMobileSignature(id: string, signature: HexString): Pr
   return sendMessage('pri(mobileSigning.approve.signature)', { id, signature });
 }
 
-export function createAccountExternal(name: string, address: string, genesisHash: string): Promise<boolean> {
+export function createAccountExternal(name: string, address: string, genesisHash: HexString): Promise<boolean> {
   return sendMessage('pri(accounts.create.external)', { address, genesisHash, name });
 }
 
@@ -376,7 +376,7 @@ export function deriveAccount(
   parentPassword: string,
   name: string,
   password: string,
-  genesisHash: string | null
+  genesisHash: HexString | null
 ): Promise<boolean> {
   return sendMessage('pri(derivation.create)', { genesisHash, name, parentAddress, parentPassword, password, suri });
 }

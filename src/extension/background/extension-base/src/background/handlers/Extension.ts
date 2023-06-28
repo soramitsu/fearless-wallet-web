@@ -35,13 +35,6 @@ import {
   makeCrossChain,
 } from '@extension-base/api/substrate/crossChain';
 import {
-  BasicTxErrorCode,
-  MobileSigningRequest,
-  RequestMobileSign,
-  TransferErrorCode,
-} from '@extension-base/background/types/types';
-import { createExtrinsicTransfer } from '@extension-base/api/substrate/utils';
-import type {
   ActiveTabAuthorizeStatus,
   BalanceJson,
   BasicTxError,
@@ -98,6 +91,10 @@ import type {
   ResponseSeedValidate,
   ResponseType,
   SigningRequest,
+  RequestMobileSign,
+  BasicTxErrorCode,
+  MobileSigningRequest,
+  TransferErrorCode,
 } from '@extension-base/background/types/types';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
@@ -1012,7 +1009,7 @@ export default class Extension extends FWExtensionBase {
 
       // Estimate with EVM API
       if (!isMainToken && tokenInfo.smartContract) {
-        [, , fee] = await getERC20TransactionObject(tokenInfo.smartContract, networkKey, from, to, txVal, web3ApiMap);
+        [, , fee] = await getERC20TransactionObject(tokenInfo.smartContract, networkKey, from, to, txVal);
       } else {
         [, , fee] = await getEVMTransactionObject(networkKey, to, txVal);
       }
@@ -1104,7 +1101,6 @@ export default class Extension extends FWExtensionBase {
         from: from,
         to: to,
         password,
-        isMobile,
         isSavePass,
         callback,
         isMobile: !!isMobile,

@@ -97,8 +97,6 @@ function onDisconnect(networkName: string) {
       // eslint-disable-next-line no-use-before-define
       if (navigator.onLine) initApi(state.networkMap[networkName]);
     } else {
-      // apiObject.tryAnotherNode = false;
-
       state.disableNetworkMap(networkName);
     }
   }

@@ -344,7 +344,7 @@ export default class Extension extends FWExtensionBase {
 
     assert(queued, 'Unable to find request');
 
-    const { request, resolve } = await queued;
+    const { request, resolve } = queued;
 
     this.state.saveMetadata(request);
 
@@ -473,8 +473,8 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
-  private updateCurrentAccountAddress(address: string): boolean {
-    if (isEthereumAddress(address)) return true;
+  private updateCurrentAccountAddress(address: string) {
+    if (isEthereumAddress(address)) return;
 
     this.state.generateDefaultBalance(address);
 
@@ -482,7 +482,7 @@ export default class Extension extends FWExtensionBase {
       this.triggerWalletsSubscription();
     });
 
-    return true;
+    return;
   }
 
   seedValidate({ suri, type }: RequestSeedValidate): ResponseSeedValidate {

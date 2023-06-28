@@ -241,12 +241,12 @@ export default class CurrencyItem extends Vue {
 
   get redirectNetwork(): string {
     const network = this.assetData.balances[0];
+    const isMainNetwork = this.mainNetwork !== undefined;
 
-    return this.isCurrentNetwork
-      ? this.selectedNetwork
-      : this.mainNetwork !== undefined
-      ? this.mainNetwork
-      : network.name;
+    if (this.isCurrentNetwork) return this.selectedNetwork;
+    if (isMainNetwork) return this.mainNetwork;
+
+    return network.name;
   }
 
   openAssetPage(event: CustomEvent) {

@@ -1,6 +1,4 @@
 import EmailValidator from 'email-validator';
-import type { Meta, AddressMeta } from '@/interfaces/common';
-import type { KeyringPair$Meta } from '@polkadot/keyring/types';
 import { SORA_NETWORK_NAME } from '@/consts/networks';
 
 const MIN_PHONE_LENGTH_WITH_CODE = 8;

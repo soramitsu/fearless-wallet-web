@@ -11,8 +11,6 @@ export async function getTokenPrice(assets: Array<string>, currency = 'usd'): Pr
     const { currency: currentCurrency } = state.prices.json;
 
     if (Math.abs(state.prices.timestamp - now) <= REFRESH_PRICE_INTERVAL && currentCurrency === currency) {
-      console.info('Return prices from cache', state.prices);
-
       return state.prices.json;
     }
 

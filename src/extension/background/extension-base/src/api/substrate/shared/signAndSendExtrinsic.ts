@@ -10,7 +10,6 @@ import type { HandleBasicTx } from '@extension-base/api/evm/transfer';
 import type {
   ApiProps,
   BasicTxResponse,
-  ExternalRequestPromise,
   PrepareExternalRequest,
   SignerType,
 } from '@extension-base/background/types/types';

@@ -341,7 +341,7 @@ export default class Extension extends FWExtensionBase {
 
     assert(queued, 'Unable to find request');
 
-    const { request, resolve } = await queued;
+    const { request, resolve } = queued;
 
     this.state.saveMetadata(request);
 
@@ -450,7 +450,7 @@ export default class Extension extends FWExtensionBase {
 
     const accountInfo: CurrentAccountInfo = {
       address,
-      isMobile: (isMobile as boolean) ?? false,
+      isMobile: !!(isMobile as boolean),
       name: name as string,
       ethereumAddress: (ethereumAddress as string) ?? '',
     };

@@ -452,7 +452,7 @@ export default class Extension extends FWExtensionBase {
 
     const accountInfo: CurrentAccountInfo = {
       address,
-      isMobile: (isMobile as boolean) ?? false,
+      isMobile: !!(isMobile as boolean),
       name: name as string,
       ethereumAddress: (ethereumAddress as string) ?? '',
     };

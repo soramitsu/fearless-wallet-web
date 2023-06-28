@@ -169,7 +169,7 @@ export default class Tabs {
     return this.state.rpcListProviders();
   }
 
-  rpcSend(request: RequestRpcSend, port: Port): Promise<JsonRpcResponse> {
+  rpcSend(request: RequestRpcSend, port: Port): Promise<JsonRpcResponse<unknown>> {
     return this.state.rpcSend(request, port);
   }
 

@@ -59,7 +59,7 @@ export type Port = chrome.runtime.Port;
 export interface AccountJson extends KeyringPair$Meta {
   address: string;
   ethereumAddress: string;
-  genesisHash?: string | null;
+  genesisHash?: HexString | null;
   isExternal?: boolean;
   isHardware?: boolean;
   isMobile?: boolean;
@@ -223,7 +223,7 @@ export type RequestMetadataSubscribe = null;
 
 export interface RequestAccountCreateExternal {
   address: string;
-  genesisHash?: string | null;
+  genesisHash?: HexString | null;
   name: string;
 }
 
@@ -492,7 +492,7 @@ export interface RequestAccountShow {
 
 export interface RequestAccountTie {
   address: string;
-  genesisHash: string | null;
+  genesisHash: HexString | null;
 }
 
 export interface RequestAccountName {
@@ -507,7 +507,7 @@ export interface RequestAccountValidate {
 
 export interface RequestDeriveCreate {
   name: string;
-  genesisHash?: string | null;
+  genesisHash?: HexString | null;
   suri: string;
   parentAddress: string;
   parentPassword: string;

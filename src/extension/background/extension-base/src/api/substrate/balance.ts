@@ -29,17 +29,16 @@ function subscribeERC20Interval(
   let tokenList: Asset[] = [];
   const ERC20ContractMap = {} as Record<string, Contract>;
 
-  const getTokenBalances = () => {
-    tokenList.map(async ({ symbol }) => {
+  const getTokenBalances = async () => {
+    for (const { symbol } of tokenList) {
       let free = new BN(0);
 
       try {
         const contract = ERC20ContractMap[symbol];
-        const bals = await Promise.all(
-          addresses.map((address): Promise<string> => {
-            return contract.methods.balanceOf(address).call();
-          })
-        );
+        const balances = addresses.map((address): Promise<string> => {
+          return contract.methods.balanceOf(address).call();
+        });
+        const bals = await Promise.all(balances);
 
         free = sumBN(bals.map((bal) => new BN(bal || 0)));
 
@@ -55,7 +54,7 @@ function subscribeERC20Interval(
       } catch (err) {
         console.info('There is problem when fetching ' + symbol + ' token balance', err);
       }
-    });
+    }
   };
 
   getRegistry(networkKey, api)

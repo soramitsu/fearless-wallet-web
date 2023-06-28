@@ -957,11 +957,7 @@ export default class State {
   public getAccountAddress(): Promise<string | null | undefined> {
     return new Promise((resolve) => {
       this.getCurrentAccount((account) => {
-        if (account) {
-          resolve(account.address);
-        } else {
-          resolve(null);
-        }
+        account ? resolve(account.address) : resolve(null);
       });
     });
   }

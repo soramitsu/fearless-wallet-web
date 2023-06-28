@@ -81,7 +81,7 @@ export default class ExportForm extends Vue {
 
   async export() {
     const chainId = this.networks.find(({ name }) => name === this.network)!.chainId;
-    const meta = { ...this.json.meta, genesisHash: `0x${chainId}` } as Record<string, string>;
+    const meta = { ...this.json.meta, genesisHash: `0x${chainId}` } as unknown as Record<string, string>;
 
     delete meta['ethereumAddress'];
 

@@ -31,7 +31,7 @@ export type SeedLengths = 12 | 24;
 export type Port = chrome.runtime.Port;
 export interface AccountJson extends KeyringPair$Meta {
   address: string;
-  genesisHash?: string | null;
+  genesisHash?: HexString | null;
   isExternal?: boolean;
   isHardware?: boolean;
   isMobile?: boolean;

@@ -853,7 +853,7 @@ export default class State {
     }, {} as ResponseRpcListProviders);
   }
 
-  rpcSend(request: RequestRpcSend, port: Port): Promise<JsonRpcResponse> {
+  rpcSend(request: RequestRpcSend, port: Port): Promise<JsonRpcResponse<unknown>> {
     const provider = this.injectedProviders.get(port);
 
     assert(provider, 'Cannot call pub(rpc.subscribe) before provider is set');

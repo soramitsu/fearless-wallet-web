@@ -1,9 +1,15 @@
 import { ApiPromise } from '@polkadot/api';
 import { state } from '@extension-base/background/handlers';
 import { isEthereumNetwork } from '@extension-base/background/utils/utils';
-import { subscribeEVMBalance } from '@extension-base/api/evm/balance';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
+import { BN } from '@polkadot/util';
+import { Contract } from 'ethers';
+import { ETHEREUM_REFRESH_BALANCE_INTERVAL, SUB_TOKEN_REFRESH_BALANCE_INTERVAL } from '../../const/intervals';
+import { Asset } from '../../types';
+import { sumBN } from '../../utils';
+import EthProvider from '../evm/ethProvider';
+import { getERC20Contract } from '../evm/utils/eth';
 import type { ApiProps } from '@extension-base/background/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
@@ -50,64 +56,19 @@ function subscribeERC20Interval(
     });
   };
 
-  getRegistry(networkKey, api)
-    .then(({ assetsMap }) => {
-      tokenList = assetsMap.filter(({ smartContract }) => !!smartContract);
+  tokenList = state.assetsMap.filter(({ smartContract }) => !!smartContract);
 
-      tokenList.forEach(({ smartContract, symbol }) => {
-        if (smartContract) {
-          ERC20ContractMap[symbol] = getERC20Contract(networkKey, smartContract, web3ApiMap);
-        }
-      });
-      getTokenBalances();
-    })
-    .catch(console.warn);
+  tokenList.forEach(({ smartContract, symbol }) => {
+    if (smartContract) {
+      ERC20ContractMap[symbol] = getERC20Contract(networkKey, smartContract);
+    }
+  });
+  getTokenBalances();
 
   const interval = setInterval(getTokenBalances, SUB_TOKEN_REFRESH_BALANCE_INTERVAL);
 
   return () => {
     clearInterval(interval);
-  };
-}
-
-export function subscribeEVMBalance(
-  networkKey: string,
-  api: ApiPromise,
-  addresses: string[],
-  web3ApiMap: Record<string, EthProvider>,
-  callback: (networkKey: string, rs: Partial<BalanceItem>) => void
-) {
-  const balanceItem = {
-    state: APIItemState.PENDING,
-    free: '0',
-    reserved: '0',
-    miscFrozen: '0',
-    frozen: '0',
-  } as BalanceItem;
-
-  function getBalance() {
-    getEVMBalance(networkKey, addresses, web3ApiMap)
-      .then((balances) => {
-        balanceItem.free = balances.toString();
-        balanceItem.state = APIItemState.READY;
-
-        callback(networkKey, balanceItem);
-      })
-      .catch(console.warn);
-  }
-
-  function subCallback(item: Partial<BalanceItem>) {
-    callback(networkKey, item);
-  }
-
-  getBalance();
-
-  const interval = setInterval(getBalance, ASTAR_REFRESH_BALANCE_INTERVAL);
-  const unsub = subscribeERC20Interval(addresses, networkKey, api, web3ApiMap, subCallback);
-
-  return () => {
-    clearInterval(interval);
-    unsub && unsub();
   };
 }
 

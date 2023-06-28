@@ -1,5 +1,4 @@
 import { NetworkJson, RequestTransactionHistoryAdd, TransactionHistoryItemType } from '@extension-base/types';
-import { GenericExtrinsicPayload } from '@polkadot/types';
 import type {
   InjectedAccount,
   MetadataDef,

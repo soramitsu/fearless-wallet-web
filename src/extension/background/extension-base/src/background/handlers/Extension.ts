@@ -40,7 +40,6 @@ import {
   RequestMobileSign,
   TransferErrorCode,
 } from '@extension-base/background/types/types';
-import { createExtrinsicTransfer } from '@extension-base/api/substrate/utils';
 import type {
   ActiveTabAuthorizeStatus,
   BalanceJson,
@@ -344,7 +343,7 @@ export default class Extension extends FWExtensionBase {
 
     assert(queued, 'Unable to find request');
 
-    const { request, resolve } = await queued;
+    const { request, resolve } = queued;
 
     this.state.saveMetadata(request);
 

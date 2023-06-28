@@ -1066,6 +1066,8 @@ export default class State {
       return key === networkKey;
     });
 
+    if (networkKey === 'Equilibrium') console.log('Equilibrium', item);
+
     const balanceItem = this.balanceMap[address][currencyIndex].balances[index];
     const { reserved, free, frozen, total, transferable, state, locked } = item;
 

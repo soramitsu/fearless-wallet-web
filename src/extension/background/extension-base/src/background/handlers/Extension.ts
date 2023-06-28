@@ -947,7 +947,7 @@ export default class Extension extends FWExtensionBase {
     to,
     assetId,
     relayChain,
-    value,
+    amount,
     password,
   }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
     const [errors, , tokenInfo] = this.validateTransfer(assetId, from, password);
@@ -980,7 +980,7 @@ export default class Extension extends FWExtensionBase {
     } else {
       // Estimate with DotSama API
 
-      fee = await estimateFee(networkKey, to, value, tokenBalance);
+      fee = await estimateFee(networkKey, to, amount, tokenBalance);
       fromAccountFreeBalance =
         tokenBalance.balances.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0';
     }
@@ -998,7 +998,7 @@ export default class Extension extends FWExtensionBase {
   private async makeTransfer(
     id: string,
     port: Port,
-    { from, networkKey, password, to, assetId, value, isSavePass }: RequestTransfer
+    { from, networkKey, password, to, assetId, amount, isSavePass }: RequestTransfer
   ): Promise<BasicTxResponse | undefined> {
     const txState: BasicTxResponse = {};
 
@@ -1062,19 +1062,19 @@ export default class Extension extends FWExtensionBase {
           from,
           to,
           privateKey,
-          value || '0',
+          amount || '0',
           web3ApiMap,
           callback
         );
       } else {
-        transferProm = makeEVMTransfer(networkKey, to, privateKey, value || '0', web3ApiMap, callback);
+        transferProm = makeEVMTransfer(networkKey, to, privateKey, amount || '0', web3ApiMap, callback);
       }
     } else {
       // Make transfer with Dotsama API
       transferProm = makeTransfer({
         networkKey,
         tokenInfo,
-        amount: value ?? '0',
+        amount: amount ?? '0',
         from: fromKeyPair.address,
         to: to,
         password,
@@ -1086,7 +1086,7 @@ export default class Extension extends FWExtensionBase {
     transferProm
       .then(() => {
         // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-        console.info(`Start transfer ${value} from ${from} to ${to}`);
+        console.info(`Start transfer ${amount} from ${from} to ${to}`);
       })
       .catch((e) => {
         cb({

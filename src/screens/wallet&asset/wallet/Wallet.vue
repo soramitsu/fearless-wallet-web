@@ -162,7 +162,7 @@ export default class Wallet extends Vue {
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
-  @Getter(AccountsGettersTypes.getShowWarningNetworks) getShowWarningNetworks!: GetShowWarningNetworks;
+  @Getter(AccountsGettersTypes.getShowWarningNetwork) getShowWarningNetwork!: GetShowWarningNetworks;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
@@ -188,13 +188,23 @@ export default class Wallet extends Vue {
   }
 
   get showWarningIcon() {
-    if (this.selectedNetwork !== ALL_NETWORKS) return !!this.disconnectedNetworks.length;
+    if (this.selectedNetwork !== ALL_NETWORKS) {
+      const apiStatus = this.networks.find(
+        ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
+      )?.apiStatus;
+
+      return apiStatus === NETWORK_STATUS.DISCONNECTED;
+    }
 
     return this.networksWithWarning.length !== 0;
   }
 
   get disconnectedNetworks() {
     return this.networks.filter(({ apiStatus }) => apiStatus === NETWORK_STATUS.DISCONNECTED);
+  }
+
+  get networksWithWarning() {
+    return this.disconnectedNetworks.filter(({ name }) => !this.getShowWarningNetwork(name));
   }
 
   get summaryTransferableBalance() {
@@ -225,6 +235,14 @@ export default class Wallet extends Vue {
   }
 
   get showShimmers() {
+    if (this.selectedNetwork !== ALL_NETWORKS) {
+      const apiStatus = this.networks.find(
+        ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
+      )?.apiStatus;
+
+      return apiStatus === NETWORK_STATUS.PENDING;
+    }
+
     const isPendingExists = this.networks.some(({ apiStatus }) => apiStatus === NETWORK_STATUS.PENDING);
 
     return !this.isOnline || isPendingExists;
@@ -252,10 +270,6 @@ export default class Wallet extends Vue {
 
   get showGoogleExportPopup() {
     return this.$route.params.access_token && this.$route.params.access_token !== 'null';
-  }
-
-  get networksWithWarning() {
-    return this.disconnectedNetworks.filter(({ name }) => !this.getShowWarningNetworks(name));
   }
 
   @Watch('networksWithWarning')
@@ -345,7 +359,7 @@ export default class Wallet extends Vue {
   toggleSelectedNetwork(network: string) {
     if (this.selectedNetwork === network) return;
 
-    const prepNetwork = network === 'All' ? null : `0x${this.getNetwork(network).chainId}`;
+    const prepNetwork = network === ALL_NETWORKS ? null : `0x${this.getNetwork(network).chainId}`;
 
     this.setSelectedNetwork(network);
 

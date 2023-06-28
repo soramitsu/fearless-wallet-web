@@ -106,10 +106,20 @@
               <InfoRow
                 :text="`assets.${isTransfer ? 'networkFee' : 'originalNetworkFee'}`"
                 :value="syncedFeeCut"
-                class="original-network-fee"
+                :iconClasses="['origin-fee']"
+                icon="info"
               />
 
-              <InfoRow v-if="isCrossChain" text="assets.crossChainFee" :value="destNetFeeCut" />
+              <InfoRow
+                v-if="isCrossChain"
+                text="assets.crossChainFee"
+                :value="destNetFeeCut"
+                :iconClasses="['cross-chain-fee']"
+                icon="info"
+              />
+
+              <Tooltip text="Original network fee" target=".origin-fee" placement="right" />
+              <Tooltip text="Cross-Chain fee" target=".cross-chain-fee" placement="right" />
             </template>
 
             <slot v-else-if="step === 2"></slot>
@@ -214,7 +224,7 @@ import WalletInfo from '@/screens/main/WalletInfo.vue';
     ConfirmationPasswordPopup,
   },
 })
-export default class SendForm extends Vue {
+export default class TransferForm extends Vue {
   readonly isPopup = BaseApi.useIsPopup();
 
   showSelectedAssetPopup = false;
@@ -393,10 +403,13 @@ export default class SendForm extends Vue {
   get isAllFieldsCorrect() {
     if (!this.currency) return false;
 
-    const isValidMainFields =
-      !!this.syncedAssetId && !!this.syncedNetwork && !!this.syncedAmount && this.isValidSendAsset;
-
-    return isValidMainFields && (this.isValidRecipientAddress || !!this.syncedDestNet);
+    return (
+      !!this.syncedAssetId &&
+      !!this.syncedNetwork &&
+      !!this.syncedAmount &&
+      this.isValidSendAsset &&
+      this.isValidRecipientAddress
+    );
   }
 
   get isSameAddress() {
@@ -655,7 +668,7 @@ export default class SendForm extends Vue {
         from: this.transactionAddress,
         to: this.syncedRecipient,
         relayChain: this.currency?.relayChain,
-        value: this.syncedAmount,
+        amount: this.syncedAmount,
         assetId: this.syncedAssetId,
       } as RequestCheckTransfer;
 
@@ -670,12 +683,14 @@ export default class SendForm extends Vue {
     } as RequestCheckCrossChain;
   }
 
-  verifyTx(amount?: string) {
-    // комиссия не зависит от адерса получателя, поэтому подставляем всегда мок
+  verifyTx(_amount?: string) {
+    // комиссия не зависит от адреса получателя, поэтому подставляем всегда мок
     const to = BaseApi.formatAddress(
       { address: VALID_SUBSTRATE_ADDRESS, ethereumAddress: VALID_ETHEREUM_ADDRESS },
       this.isTransfer ? this.syncedNetwork : this.syncedDestNet
     );
+
+    const amount = _amount ?? (this.syncedAmount !== '' && this.syncedAmount !== '0') ? this.syncedAmount : '1';
 
     if (this.isTransfer)
       return checkTransfer({
@@ -683,7 +698,7 @@ export default class SendForm extends Vue {
         from: this.transactionAddress,
         to,
         relayChain: this.currency?.relayChain,
-        value: amount ?? this.syncedAmount,
+        amount,
         assetId: this.syncedAssetId,
       });
 
@@ -693,7 +708,7 @@ export default class SendForm extends Vue {
       from: this.transactionAddress,
       to,
       relayChain: this.currency?.relayChain,
-      amount: amount ?? this.syncedAmount,
+      amount,
       assetId: this.syncedAssetId,
     });
   }
@@ -815,13 +830,10 @@ export default class SendForm extends Vue {
     max-width: 245px;
   }
 
-  .original-network-fee {
-    margin-top: 30px;
-  }
-
   .activity-buttons {
     display: flex;
     user-select: none;
+    margin-bottom: 30px;
 
     .button {
       display: flex;

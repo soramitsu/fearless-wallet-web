@@ -11,11 +11,13 @@ import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { getRegistry } from '@extension-base/api/substrate/registry';
 import { getAssetOptions } from '@extension-base/api/substrate/utils';
+import { FPNumber } from '@sora-substrate/util';
 import type { Asset } from '@extension-base/types';
 import type { ApiProps } from '@extension-base/background/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
 import type { RelayChainName } from '@/interfaces';
+import type { u64, u128 } from '@polkadot/types-codec';
 import { formatBalance } from '@/util/balances';
 import { CHAIN_IDS } from '@/consts/networks';
 
@@ -140,19 +142,51 @@ async function subscribeTokensBalance(
     assets,
     name: networkName,
   } = state.networksJson.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())!;
+  const relayChain = CHAIN_IDS[parentId!] ?? (networkName as RelayChainName);
+
+  if (networkName === 'Equilibrium') {
+    const pallet = api!.rx.query.system.account(address);
+
+    const unsub = pallet.subscribe((balances: any) => {
+      const asV0 = balances.data['asV0'];
+      const locked = (asV0.lock as u128).toString();
+      const balance: any[] = asV0.balance;
+
+      balance.forEach(([key, { asPositive }]) => {
+        const _currencyId = (key as u128).toString();
+        const balanceValue = (asPositive as u128).toNumber();
+
+        const { symbol, id, precision } = assets.find(({ currencyId }) => currencyId === _currencyId)!;
+
+        setBalance(networkKey, {
+          state: APIItemState.READY,
+          relayChain,
+          symbol: symbol,
+          id,
+          reserved: '0',
+          frozen: '0',
+          total: '0',
+          locked,
+          transferable: FPNumber.fromCodecValue(balanceValue, precision).toString(),
+        });
+      });
+
+      return;
+    });
+
+    return () => unsub;
+  }
 
   const unsubList = await Promise.all(
     assets.map(({ precision, symbol, id, type }) => {
       try {
-        const relayChain = CHAIN_IDS[parentId!] ?? (networkName as RelayChainName);
-
-        const options = getAssetOptions(symbol, type, id);
-
+        const options = getAssetOptions(id);
         const query = api!.rx.query;
+
         let pallet;
 
         if (type === 'normal') pallet = query.system.account(address);
-        else if (type === 'equilibrium') pallet = query.eqBalances.reserved(address, options);
+        else if (type === 'assets') pallet = query.assets.account(options, address);
         else pallet = query.tokens.accounts(address, options);
 
         const onBalanceFetch = (balances: any) => {
@@ -174,9 +208,7 @@ async function subscribeTokensBalance(
           });
         };
 
-        pallet.subscribe(onBalanceFetch);
-
-        return pallet;
+        return pallet.subscribe(onBalanceFetch);
       } catch (err: any) {
         console.warn(err.message, networkKey, `type: ${type}`);
       }

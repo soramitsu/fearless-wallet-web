@@ -348,7 +348,7 @@ export interface RequestCheckTransfer extends BaseRequestSign {
   to: string;
   assetId: string;
   relayChain?: string;
-  value?: string;
+  amount?: string;
   password?: string;
 }
 

@@ -1,6 +1,5 @@
 {
   "welcome": {
-    "createWallet": "Создать новый кошелек",
     "importWallet": "У меня уже есть кошелек",
     "connectMobile": "Подключить мобильный кошелек",
     "manageGoogle": "Подключить к Google Drive",

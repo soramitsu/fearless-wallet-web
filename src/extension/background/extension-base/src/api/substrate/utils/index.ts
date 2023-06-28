@@ -1,10 +1,8 @@
-import { assetFromToken } from '@equilab/api';
 import { FPNumber } from '@sora-substrate/math';
 import { ApiPromise } from '@polkadot/api';
 import { state } from '@extension-base/background/handlers';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
-import type { AssetsType } from '@/interfaces';
 
 type ExtrinsicTransferProps = {
   api: ApiPromise;
@@ -14,10 +12,8 @@ type ExtrinsicTransferProps = {
   tokenBalance: TokenBalance;
 };
 
-export function getAssetOptions(symbol: string, type: AssetsType, assetId: string) {
-  if (type === 'equilibrium') return assetFromToken(symbol)[0]; // TODO: сейчас currencyId лежит в новом JSON, возможно можно его брать оттуда
-
-  const { currencyId } = state.assetsMap.find(({ id }) => id === assetId)!;
+export function getAssetOptions(assetId: string) {
+  const { currencyId, symbol, type } = state.assetsMap.find(({ id }) => id === assetId)!;
 
   if (type === 'stable') return { Stable: currencyId!.toUpperCase() };
   if (type === 'vsToken') return { VSToken: currencyId!.toUpperCase() };
@@ -27,6 +23,16 @@ export function getAssetOptions(symbol: string, type: AssetsType, assetId: strin
   if (type === 'liquidCrowdloan') return { LiquidCrowdloan: currencyId };
   if (type === 'stableAssetPoolToken') return { StableAssetPoolToken: currencyId };
   if (type === 'soraAsset') return currencyId;
+
+  if (type === 'equilibrium') {
+    console.log('symbol', currencyId);
+
+    return currencyId;
+  }
+
+  if (type === 'assets') {
+    return currencyId;
+  }
 
   return { Token: symbol.toUpperCase() };
 }
@@ -44,9 +50,9 @@ export function getPrecisionValue(
 
 export function createExtrinsicTransfer(props: ExtrinsicTransferProps): SubmittableExtrinsic<'promise'> | null {
   const { amount, api, tokenBalance, to, networkKey } = props;
-  const { precision, assetId: id, balances, symbol } = tokenBalance;
+  const { precision, assetId: id, balances } = tokenBalance;
   const type = balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())!.type;
-  const ormlOptions = getAssetOptions(symbol, type, id);
+  const ormlOptions = getAssetOptions(id);
   const precisionAmount = getPrecisionValue(amount, precision) as string;
 
   try {
@@ -61,6 +67,10 @@ export function createExtrinsicTransfer(props: ExtrinsicTransferProps): Submitta
         return api.tx.tokens.transfer(to, ormlOptions, precisionAmount);
 
       case 'soraAsset':
+        return api.tx.assets.transfer(ormlOptions, to, precisionAmount);
+
+      // TODO
+      case 'assets':
         return api.tx.assets.transfer(ormlOptions, to, precisionAmount);
 
       default:

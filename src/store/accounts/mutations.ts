@@ -123,11 +123,11 @@ const mutations: MutationTree<State> & Mutations = {
   },
 
   [MutationTypes.HIDE_NETWORK_WARNING](state, network) {
-    const { hideWarningNetworks } = state;
+    const { hiddenWarningNetworks } = state;
 
-    accountController.setHideWarningNetwork(network);
+    accountController.setHiddenWarningNetwork(network);
 
-    state.hideWarningNetworks = [...hideWarningNetworks, network];
+    state.hiddenWarningNetworks = [...hiddenWarningNetworks, network];
   },
 
   [MutationTypes.SET_CUSTOM_SORT](state, address: string) {

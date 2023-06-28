@@ -19,7 +19,7 @@
         class="create-button"
         size="big"
         fontSize="big"
-        :text="$t('welcome.createWallet')"
+        text="addWallet.createWallet"
         @click="openAddWalletComponent('create')"
       />
 

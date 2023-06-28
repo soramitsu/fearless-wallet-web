@@ -191,6 +191,9 @@ export default class Asset extends Vue {
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
   get showShimmers() {
+    console.log('balances', this.balances);
+    console.log('currentNetwork', this.currentNetwork);
+
     return !this.isOnline || !this.balances.length || !this.currentNetwork || this.currentNetwork?.state === 'pending';
   }
 

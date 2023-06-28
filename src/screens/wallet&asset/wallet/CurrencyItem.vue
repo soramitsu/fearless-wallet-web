@@ -190,7 +190,8 @@ export default class CurrencyItem extends Vue {
   }
 
   get showShimmers() {
-    return this.assetData.balances.every((el) => el.state !== 'ready');
+    // Убираем шимммер если баланс загружен хотя бы в одной сети
+    return !this.assetData.balances.some(({ state }) => state === APIItemState.READY);
   }
 
   get showWarning() {

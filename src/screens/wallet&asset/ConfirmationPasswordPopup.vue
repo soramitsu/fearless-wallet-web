@@ -62,19 +62,10 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch, Ref } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { BeaconMessageType, SubstrateMessageType, SubstratePermissionScope } from '@airgap/beacon-sdk';
 import type { RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
 import type { GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
-import {
-  isSignLocked,
-  makeSwap,
-  makeTransfer,
-  makeCrossChain,
-  cancelMobileSignRequest,
-  subscribeMobileSigningRequests,
-  approveSignMobileSignature,
-} from '@/extension/messaging';
+import { isSignLocked, makeSwap, makeTransfer, makeCrossChain, cancelMobileSignRequest } from '@/extension/messaging';
 import { beaconController, ExtensionController } from '@/controllers';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -320,7 +311,8 @@ export default class ConfirmationPasswordPopup extends Vue {
     }
 
     if (this.extrinsicType === 'transfer') return makeTransfer(this.requestTransfer, callback);
-    else if (this.extrinsicType === 'crossChain') return makeCrossChain(this.requestCrossChain, callback);
+
+    if (this.extrinsicType === 'crossChain') return makeCrossChain(this.requestCrossChain, callback);
   }
 
   async keypress({ key }: KeyboardEvent) {

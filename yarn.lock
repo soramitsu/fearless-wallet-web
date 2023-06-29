@@ -2596,6 +2596,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@open-web3/orml-api-derive@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "@open-web3/orml-api-derive@npm:2.0.1"
+  dependencies:
+    memoizee: ^0.4.15
+    rxjs: ^7.5.5
+  peerDependencies:
+    "@polkadot/api": ^8.12.2
+  checksum: 6ff7a515aca591d32ffdd91f57d386481894fef2be293b6f0be7b76330643b333fd3410400358791a837a8d6e57acdf930e1255bd80466bc3732b7ac7e6a5cfd
+  languageName: node
+  linkType: hard
+
 "@open-web3/orml-type-definitions@npm:1.1.4":
   version: 1.1.4
   resolution: "@open-web3/orml-type-definitions@npm:1.1.4"
@@ -10140,6 +10152,7 @@ __metadata:
   dependencies:
     "@airgap/beacon-sdk": ^3.3.3
     "@equilab/api": ^1.15.0
+    "@open-web3/orml-api-derive": ^2.0.1
     "@open-web3/orml-types": ^2.0.1
     "@polkadot/api": ^10.9.1
     "@polkadot/extension-chains": ^0.46.5
@@ -16735,7 +16748,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rxjs@npm:^7.2.0, rxjs@npm:^7.5.1, rxjs@npm:^7.5.6, rxjs@npm:^7.8.0, rxjs@npm:^7.8.1":
+"rxjs@npm:^7.2.0, rxjs@npm:^7.5.1, rxjs@npm:^7.5.5, rxjs@npm:^7.5.6, rxjs@npm:^7.8.0, rxjs@npm:^7.8.1":
   version: 7.8.1
   resolution: "rxjs@npm:7.8.1"
   dependencies:

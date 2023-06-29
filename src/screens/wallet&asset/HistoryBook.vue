@@ -23,48 +23,24 @@
 
           <template v-for="[key, addressBook] in splitAddressBook">
             <div class="label" :key="key">{{ key }}</div>
-            <template v-for="[key, addressBook] in splitAddressBook">
-              <div class="label" :key="key">{{ key }}</div>
 
-              <div
-                v-for="{ name, address } in addressBook"
-                :key="name + address"
-                class="row"
-                @click="setRecipient(address)"
-              >
-                <div class="description">
-                  <Identicon class="identicon" :size="24" theme="polkadot" :value="address" />
-                  <div
-                    v-for="{ name, address } in addressBook"
-                    :key="name + address"
-                    class="row"
-                    @click="setRecipient(address)"
-                  >
-                    <div class="description">
-                      <Identicon class="identicon" :size="24" theme="polkadot" :value="address" />
+            <div
+              v-for="{ name, address } in addressBook"
+              :key="name + address"
+              class="row"
+              @click="setRecipient(address)"
+            >
+              <div class="description">
+                <Identicon class="identicon" :size="24" theme="polkadot" :value="address" />
 
-                      <div class="full-description">
-                        <div class="name">{{ name }}</div>
-                        <div class="full-description">
-                          <div class="name">{{ name }}</div>
+                <div class="full-description">
+                  <div class="name">{{ name }}</div>
 
-                          <div class="address">{{ cut(address) }}</div>
-                        </div>
-                      </div>
-                    </div>
-            </template>
+                  <div class="address">{{ cut(address) }}</div>
+                </div>
+              </div>
+            </div>
           </template>
-
-          <div v-else>{{ $t('assets.noHistory') }}</div>
-      </div>
-    </Scroll>
-
-    <Button size="big" fontSize="big" width="100%" text="assets.createContact" @click="setAddress(' ')" />
-    <div class="address">{{ cut(address) }}</div>
-  </div>
-  </div>
-  </div>
-</template>
         </template>
 
         <div v-else>{{ $t('assets.noHistory') }}</div>

@@ -15,15 +15,7 @@
           @setAddress="setAddress"
         />
 
-        <EditAddressBook
-          v-if="showEditAddressBook"
-          :network="targetNetwork"
-          :_address="newAddress"
-          @setAddress="setAddress"
-        />
-
         <HistoryBook
-          v-else-if="showHistoryBook"
           v-else-if="showHistoryBook"
           :network="syncedNetwork"
           :assetId="syncedAssetId"

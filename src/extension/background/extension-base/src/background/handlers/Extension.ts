@@ -1009,7 +1009,7 @@ export default class Extension extends FWExtensionBase {
 
       // Estimate with EVM API
       if (!isMainToken && tokenInfo.smartContract) {
-        [, , fee] = await getERC20TransactionObject(tokenInfo.smartContract, networkKey, from, to, txVal, web3ApiMap);
+        [, , fee] = await getERC20TransactionObject(tokenInfo.smartContract, networkKey, from, to, txVal);
       } else {
         [, , fee] = await getEVMTransactionObject(networkKey, to, txVal);
       }
@@ -1101,7 +1101,6 @@ export default class Extension extends FWExtensionBase {
         from: from,
         to: to,
         password,
-        isMobile,
         isSavePass,
         callback,
         isMobile: !!isMobile,

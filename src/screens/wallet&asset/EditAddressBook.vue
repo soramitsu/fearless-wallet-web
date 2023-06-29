@@ -1,24 +1,21 @@
 <template>
   <div class="add-contact">
     <div class="form">
-      <div class="form">
-        <Input v-model="name" placeholder="common.name" typeText="uppercase" size="big" class="row" :maxlength="45" />
+      <Input v-model="name" placeholder="common.name" typeText="uppercase" size="big" class="row" :maxlength="45" />
 
-        <ValidatedInput
-          v-model="address"
-          placeholder="assets.walletAddress"
-          class="row"
-          errorDescriptions="assets.invalidAccountAddress"
-          :isError="isErrorAddress"
-        />
+      <ValidatedInput
+        v-model="address"
+        placeholder="assets.walletAddress"
+        class="row"
+        errorDescriptions="assets.invalidAccountAddress"
+        :isError="isErrorAddress"
+      />
 
-        <Checkbox v-model="saveForAllNetworks" size="medium" label="assets.saveAddressForAllNetwork" class="row" />
-
-        <Checkbox v-model="saveForAllNetworks" size="medium" label="assets.saveAddressForAllNetwork" class="row" />
-      </div>
-
-      <Button size="big" text="common.save" :disabled="buttonDisabled" @click="updateContact" />
+      <Checkbox v-model="saveForAllNetworks" size="medium" label="assets.saveAddressForAllNetwork" class="row" />
     </div>
+
+    <Button size="big" text="common.save" :disabled="buttonDisabled" @click="updateContact" />
+  </div>
 </template>
 
 <script lang="ts">
@@ -44,7 +41,7 @@ export default class EditAddressBook extends Vue {
   get isErrorAddress() {
     return (
       this.address.trim().length !== 0 &&
-      !(BaseApi.validateAddress(this.address, 'polkadot') || BaseApi.validateAddress(this.address, 'moonbeam'))
+      !(BaseApi.validateAddress(this.address.trim(), 'polkadot') || BaseApi.validateAddress(this.address, 'moonbeam'))
     );
   }
 
@@ -61,7 +58,7 @@ export default class EditAddressBook extends Vue {
     chrome.storage.local.set({
       addressBook: {
         ...addressBook,
-        [key]: [...value, { name: this.name, address: BaseApi.encodeAddress(this.address) }],
+        [key]: [...value, { name: this.name, address: BaseApi.encodeAddress(this.address.trim()) }],
       },
     });
 

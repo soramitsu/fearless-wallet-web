@@ -28,7 +28,7 @@ export default class BalanceService {
 
     if (copyBalance[address]) copyBalance[address] = {};
 
-    if (copyBalance[address][symbol]) copyBalance[address][symbol] = {};
+    if (!copyBalance[address][symbol]) copyBalance[address][symbol] = {};
 
     copyBalance[address][symbol][chain] = { chain, ...item } as BalanceItem;
 

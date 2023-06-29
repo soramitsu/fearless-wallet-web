@@ -66,12 +66,13 @@ export function getMockCurrencies(networks: NetworkJson[]) {
             state: APIItemState.PENDING,
             name: mainNet,
             existentialDeposit,
-            type: isXOR ? 'soraAsset' : type, // если в json поменяют type на soraAsset, то удалить тернарник
-            decimals: precision,
+            type,
+            precision,
             icon: networkIcon,
             isNative,
             isUtility: isUtility ?? false,
             id: assetId,
+            symbol,
           },
         ];
 

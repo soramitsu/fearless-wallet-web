@@ -43,7 +43,8 @@ type AssetsType =
   | 'ormlChain'
   | 'soraAsset'
   | 'token2'
-  | 'assets';
+  | 'assets'
+  | 'assetId';
 
 type NetworkAssets = {
   assetId: string;

@@ -1,5 +1,5 @@
 <template>
-  <Lazy v-if="showCurrencyItem" class="currency-item" @click.native="openAssetPage">
+  <Lazy v-if="showCurrencyItem" :timeoutCallback="timeoutCallback" class="currency-item" @click.native="openAssetPage">
     <div v-if="showAssetsManagementForm" class="drag-icon">
       <SIcon name="basic-menu-24" class="handle" />
     </div>
@@ -117,6 +117,7 @@ export default class CurrencyItem extends Vue {
   @Prop(Object) assetData!: TokenBalance;
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
+  @Prop({ required: false }) timeoutCallback!: (fn: () => void) => VoidFunction;
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;

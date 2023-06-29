@@ -17,7 +17,7 @@ import type { ApiProps } from '@extension-base/background/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
 import type { RelayChainName } from '@/interfaces';
-import type { u64, u128 } from '@polkadot/types-codec';
+import type { u128 } from '@polkadot/types-codec';
 import { formatBalance } from '@/util/balances';
 import { CHAIN_IDS } from '@/consts/networks';
 
@@ -152,7 +152,7 @@ async function subscribeTokensBalance(
       const locked = (asV0.lock as u128).toString();
       const balance: any[] = asV0.balance;
 
-      balance.forEach(([key, { asPositive }]) => {
+      const notZeroBalances = balance.map(([key, { asPositive }]) => {
         const _currencyId = (key as u128).toString();
         const balanceValue = (asPositive as u128).toNumber();
 
@@ -169,9 +169,27 @@ async function subscribeTokensBalance(
           locked,
           transferable: FPNumber.fromCodecValue(balanceValue, precision).toString(),
         });
+
+        return id;
       });
 
-      return;
+      // У Equilibrium system.account это "особенный" паллет, балансы возвращаются разом для всех токенов
+      // Причем возвращаются только не нулевые балансы
+      // Поэтому нужно пройтись по остальным(нулевым) балансам и проставить для них статуc Ready, тк по факту мы их "получили" и знаем, что они = 0
+      assets.forEach(({ id, symbol }) => {
+        if (!notZeroBalances.includes(id))
+          setBalance(networkKey, {
+            state: APIItemState.READY,
+            relayChain,
+            symbol,
+            id,
+            reserved: '0',
+            frozen: '0',
+            total: '0',
+            locked: '0',
+            transferable: '0',
+          });
+      });
     });
 
     return () => unsub;

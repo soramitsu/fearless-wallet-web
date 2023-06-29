@@ -10,14 +10,14 @@ export interface BalanceChildItem {
 
 export interface BalanceItem {
   state: APIItemState;
-  symbol?: string;
+  symbol: string;
   name: string; // is Network Name, TODO name -> networkName
-  id?: string;
+  id: string;
   relayChain?: string;
   existentialDeposit?: string;
   currencyId?: string;
   key?: string;
-  decimals?: number;
+  precision: number;
   type: AssetsType;
   free?: string;
   isUtility?: boolean;

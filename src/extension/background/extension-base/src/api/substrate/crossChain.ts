@@ -5,7 +5,6 @@ import { state } from '@extension-base/background/handlers';
 import { isEthereumNetwork } from '@extension-base/background/utils/utils';
 import { getAssetInfo } from '@extension-base/api/substrate/registry';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
-import type { Asset } from '@extension-base/types';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { Interior } from '@/interfaces';
 import {
@@ -20,7 +19,6 @@ import { firstCharToUp } from '@/helpers/common';
 type Extrinsic = Nullable<SubmittableExtrinsic<'promise'>>;
 
 const XCM_NATIVE_PALLETS = ['xcmPallet', 'polkadotXcm'];
-const FOUR_INSTRUCTIONS_PARACHAIN_WEIGHT = 5000000000;
 
 function interiorHelper(interiors: Interior) {
   const array = interiors.map((interior) => {
@@ -218,7 +216,9 @@ async function createNativeTeleportExtrinsic(
 
   await api.isReadyOrError;
 
-  const precisionAmount = getPrecisionValue(amount, tokenBalance?.precision);
+  const { precision } = tokenBalance.balances.find(({ name }) => name.toLowerCase() === originNet.toLowerCase())!;
+
+  const precisionAmount = getPrecisionValue(amount, precision);
   const module = isNativeNetwork(destNet) ? 'limitedTeleportAssets' : 'limitedReserveTransferAssets';
   const pallet = XCM_NATIVE_PALLETS.find((pallet) => api!.tx[pallet] && isFunction(api!.tx[pallet][module]))!;
   const tx = api!.tx[pallet][module];
@@ -241,7 +241,9 @@ async function createOrmlTeleportExtrinsic(
 
   await api.isReadyOrError;
 
-  const precisionAmount = getPrecisionValue(amount, tokenBalance?.precision);
+  const { precision } = tokenBalance.balances.find(({ name }) => name.toLowerCase() === originNet.toLowerCase())!;
+
+  const precisionAmount = getPrecisionValue(amount, precision);
 
   // В большинстве случаев используется xTokens, но он есть не всегда
   if (api!.tx?.xTokens?.transferMultiasset) {
@@ -257,13 +259,20 @@ async function createOrmlTeleportExtrinsic(
   return api!.tx?.polkadotXcm[module](...params);
 }
 
-async function estimateFee(extrinsic: Extrinsic, to: string, tokenBalance: TokenBalance): Promise<string> {
+async function estimateFee(
+  extrinsic: Extrinsic,
+  to: string,
+  tokenBalance: TokenBalance,
+  network: string
+): Promise<string> {
   if (!extrinsic) return '0';
+
+  const { precision } = tokenBalance.balances.find(({ name }) => name.toLowerCase() === network.toLowerCase())!;
 
   try {
     const paymentInfo = await extrinsic?.paymentInfo(to);
     const partialFee = paymentInfo ? +paymentInfo.partialFee : 0;
-    const result = new FPNumber(partialFee, tokenBalance?.precision);
+    const result = new FPNumber(partialFee, precision);
 
     return result.toString();
   } catch {
@@ -301,7 +310,6 @@ export interface MakeCrossChainProps {
   from: string;
   amount: string;
   password: string | undefined;
-  tokenInfo: Asset;
   isSavePass?: boolean;
   callback: (data: BasicTxResponse) => void;
 }
@@ -312,7 +320,6 @@ async function makeCrossChain({
   destinationNet,
   from,
   to,
-  tokenInfo,
   isSavePass,
   password,
   amount,
@@ -323,8 +330,7 @@ async function makeCrossChain({
 
   await apiProps.api?.isReady;
 
-  const tokenBalance = state.balanceMap[from].find(({ assetId }) => assetId === tokenInfo.id)!;
-
+  const tokenBalance = state.balanceMap[from].find(({ assetId }) => assetId === assetId)!;
   const extrinsic = await createCrossChainExtrinsic(assetId, originNet, destinationNet, to, amount!, tokenBalance);
 
   await signAndSendExtrinsic({

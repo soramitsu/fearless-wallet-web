@@ -930,7 +930,6 @@ export interface TokenBalance {
   mainNetwork: string;
   assetId: string;
   priceId?: string;
-  precision: number;
   tokenName: string;
   symbol: string;
   relayChain: RelayChainName;

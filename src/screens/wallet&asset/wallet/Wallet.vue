@@ -61,14 +61,14 @@
 
     <SendForm
       v-if="showSendForm"
-      :_selectedNetwork="selectedCurrency.mainNetwork"
+      :_selectedNetwork="networkForActiveForm"
       :_selectedAssetId="selectedCurrency.assetId"
       :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false)"
     />
 
     <ReceiveForm
       v-if="showReceiveForm"
-      :_selectedNetwork="selectedCurrency.mainNetwork"
+      :_selectedNetwork="networkForActiveForm"
       :selectedAssetId="selectedCurrency.assetId"
       :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', false)"
     />
@@ -177,6 +177,10 @@ export default class Wallet extends Vue {
   @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: Fn<SetHiddenAsset>;
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
 
+  get networkForActiveForm() {
+    return this.selectedNetwork !== ALL_NETWORKS ? this.selectedNetwork : this.selectedCurrency.mainNetwork;
+  }
+
   get contentFormHeight() {
     const subtractionNumber = this.showSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;
 
@@ -249,19 +253,18 @@ export default class Wallet extends Vue {
   }
 
   get filteredCurrencies() {
-    if (this.showAssetsManagementForm) return this.sortedCurrencies;
+    const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
+    const filteredByNetwork = isAllNetworks
+      ? this.sortedCurrencies
+      : this.sortedCurrencies.filter(({ balances }) =>
+          balances.some(({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase())
+        );
+
+    if (this.showAssetsManagementForm) return filteredByNetwork;
 
     const filter = this.filterValue.trim().toLowerCase();
-    const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
 
-    return this.sortedCurrencies.filter(({ balances, symbol }) => {
-      const walletBalance = balances.map(({ name }) => name);
-      const isAvailableInSelectedNetwork = walletBalance.includes(this.selectedNetwork);
-
-      if (!isAllNetworks && !isAvailableInSelectedNetwork) return false;
-
-      return symbol.includes(filter);
-    });
+    return filteredByNetwork.filter(({ symbol }) => symbol.includes(filter));
   }
 
   get showCurrencies() {

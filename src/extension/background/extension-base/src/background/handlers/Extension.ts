@@ -1073,7 +1073,7 @@ export default class Extension extends FWExtensionBase {
       // Make transfer with Dotsama API
       transferProm = makeTransfer({
         networkKey,
-        tokenInfo,
+        assetId,
         amount: amount ?? '0',
         from: fromKeyPair.address,
         to: to,
@@ -1123,16 +1123,23 @@ export default class Extension extends FWExtensionBase {
 
     console.info('checkCrossChain', extrinsic);
 
-    const tokenInfo = getAssetInfo(assetId);
-    const fee = await estimateCrossChainFee(extrinsic, to, tokenBalance);
+    const { precision, symbol } = tokenBalance.balances.find(
+      ({ name }) => name.toLowerCase() === originNet.toLowerCase()
+    )!;
+
+    const { precision: precisionDest } = tokenBalance.balances.find(
+      ({ name }) => name.toLowerCase() === destinationNet.toLowerCase()
+    )!;
+
+    const fee = await estimateCrossChainFee(extrinsic, to, tokenBalance, originNet);
     const destFees = state.xcmFees.find(({ destChain }) => destChain.toLowerCase() === destinationNet.toLowerCase());
     const destEstimateFee = destFees?.destXcmFee?.find(
-      ({ symbol }) => symbol.toLowerCase() === tokenInfo.symbol.toLowerCase()
+      ({ symbol: _symbol }) => _symbol.toLowerCase() === symbol!.toLowerCase()
     );
 
     return {
-      estimateFee: FPNumber.fromCodecValue(fee, tokenBalance?.precision).toString(),
-      destEstimateFee: FPNumber.fromCodecValue(destEstimateFee?.feeInPlanks ?? '0', tokenBalance?.precision).toString(), // TODO Уточнить у Виталия как искать комиссию
+      estimateFee: FPNumber.fromCodecValue(fee, precision).toString(),
+      destEstimateFee: FPNumber.fromCodecValue(destEstimateFee?.feeInPlanks ?? '0', precisionDest).toString(),
     } as ResponseCheckCrossChain;
   }
 
@@ -1141,7 +1148,7 @@ export default class Extension extends FWExtensionBase {
     port: Port,
     { from, originNet, destinationNet, amount, password, to, assetId, isSavePass }: RequestCrossChain
   ): Promise<void> {
-    const [, fromKeyPair, tokenInfo] = this.validateTransfer(assetId, from, password);
+    const [, fromKeyPair] = this.validateTransfer(assetId, from, password);
 
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
     const ethereumAddress = fromKeyPair!.meta.ethereumAddress as string | undefined;
@@ -1173,7 +1180,6 @@ export default class Extension extends FWExtensionBase {
       assetId,
       originNet,
       destinationNet,
-      tokenInfo,
       amount: amount ?? '0',
       from: fromKeyPair!.address,
       to,

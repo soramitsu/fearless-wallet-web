@@ -482,6 +482,8 @@ export default class TransferForm extends Vue {
 
   get optionsDestNet() {
     // used only for crossChain
+    if (this.isTransfer) return [];
+
     return this.originNet
       .xcm!.availableDestinations.filter(({ assets }) =>
         assets.some((assetName) => assetName.toLowerCase() === this.sendAssetName.toLowerCase())
@@ -547,6 +549,7 @@ export default class TransferForm extends Vue {
   @Watch('syncedAssetId')
   updateSelectedNetwork() {
     this.syncedAmount = '';
+    this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
     this.syncedDestNet = this.optionsDestNet?.[0]?.value ?? '';
     this.syncedValue = '';
   }

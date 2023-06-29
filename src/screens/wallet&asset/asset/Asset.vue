@@ -191,9 +191,6 @@ export default class Asset extends Vue {
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
   get showShimmers() {
-    console.log('balances', this.balances);
-    console.log('currentNetwork', this.currentNetwork);
-
     return !this.isOnline || !this.balances.length || !this.currentNetwork || this.currentNetwork?.state === 'pending';
   }
 
@@ -215,7 +212,9 @@ export default class Asset extends Vue {
   }
 
   get currentNetwork() {
-    return this.currentCurrency.balances.find(({ name }) => name.toLowerCase() === this.selectedNetwork?.toLowerCase());
+    return this.currentCurrency.balances?.find(
+      ({ name }) => name.toLowerCase() === this.selectedNetwork?.toLowerCase()
+    );
   }
 
   get mainNetwork() {

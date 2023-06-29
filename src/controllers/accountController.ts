@@ -79,12 +79,6 @@ class AccountController {
     };
   }
 
-  public getSelectedWalletAddress(): string {
-    const lsFiat = this.lsAccount.get(this.selectedWalletStorageName);
-
-    return lsFiat.value ?? '';
-  }
-
   public setSelectedWalletAddress(address = ''): void {
     this.lsAccount.set(this.selectedWalletStorageName, address);
   }

@@ -1060,16 +1060,14 @@ export default class State {
     });
 
     const token = this.balanceMap[address][currencyIndex];
-    const index = token.balances.findIndex((el) => {
-      const key = prepNetworkNames[el.name] ?? el.name;
+    const index = token.balances.findIndex(({ name }) => {
+      const key = prepNetworkNames[name] ?? name;
 
       return key === networkKey;
     });
 
-    if (networkKey === 'Equilibrium') console.log('Equilibrium', item);
-
     const balanceItem = this.balanceMap[address][currencyIndex].balances[index];
-    const { reserved, free, frozen, total, transferable, state, locked } = item;
+    const { reserved, free, locked, frozen, total, transferable, state } = item;
 
     this.balanceMap[address][currencyIndex].balances[index] = {
       ...balanceItem,

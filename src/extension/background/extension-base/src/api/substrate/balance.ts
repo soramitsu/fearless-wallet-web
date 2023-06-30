@@ -208,8 +208,9 @@ async function subscribeTokensBalance(
           symbol === SORA_UTILITY_ASSET && (networkNameLower === SORA_MAINNET || networkNameLower === SORA_TEST);
 
         if (type === 'normal' || isSoraXOR) pallet = query.system.account(address);
-        else if (type === 'assets') pallet = query.assets.account(options, address);
-        else pallet = query.tokens.accounts(address, options);
+        else if (type === 'assets') {
+          pallet = (query.assets as any).account(options, address);
+        } else pallet = query.tokens.accounts(address, options);
 
         const onBalanceFetch = (balances: any) => {
           const balance =

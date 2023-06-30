@@ -3,12 +3,13 @@
 
 import { keyring } from '@polkadot/ui-keyring';
 import { assert } from '@polkadot/util';
-import { Signer, SubmittableExtrinsic } from '@polkadot/api/types';
+import { SubmittableExtrinsic } from '@polkadot/api/types';
 import KeyringSigner from '@extension-base/signers/KeyringSigner';
 import { unlockAccount } from '@extension-base/utils/keyring';
 import { SignerType } from '@extension-base/background/types/types';
 import type { ApiProps, ExternalRequestPromise } from '@extension-base/background/types/types';
 import type { HandleBasicTx } from '@extension-base/api/evm/transfer';
+import { BeaconSigner } from '@/extension/background/extension-base/src/signers/BeaconSigner';
 
 interface AbstractSignExtrinsicProps {
   address: string;
@@ -26,9 +27,7 @@ interface PasswordSignExtrinsicProps extends AbstractSignExtrinsicProps {
 }
 
 interface ExternalSignExtrinsicProps extends AbstractSignExtrinsicProps {
-  id: string;
-  setState: (promise: ExternalRequestPromise) => void;
-  type: SignerType.PASSWORD;
+  type: SignerType.MOBILE;
 }
 
 type SignExtrinsicProps = PasswordSignExtrinsicProps | ExternalSignExtrinsicProps;
@@ -40,25 +39,21 @@ export const signExtrinsic = async ({
   password,
   type,
 }: SignExtrinsicProps): Promise<string | null> => {
-  let signer: Signer | undefined;
+  const isMobile = type === SignerType.MOBILE;
+  const pair = isMobile ? undefined : keyring.getPair(address);
 
-  if (type === SignerType.PASSWORD) {
-    const pair = keyring.getPair(address);
+  if (!isMobile) assert(pair, 'Unable to find pair');
 
-    assert(pair, 'Unable to find pair');
+  if (pair && pair.isLocked) {
+    const passwordError: string | null = unlockAccount(address, password);
 
-    if (pair.isLocked) {
-      const passwordError: string | null = unlockAccount(address, password);
-
-      if (passwordError) return passwordError;
-    }
-
-    const registry = apiProps.api!.registry;
-
-    signer = new KeyringSigner({ registry, keyPair: pair });
+    if (passwordError) return passwordError;
   }
 
+  const registry = apiProps.api!.registry;
+
   const nonce = (await apiProps.api?.rpc.system.accountNextIndex(address)) as unknown as number;
+  const signer = pair ? new KeyringSigner({ registry, keyPair: pair }) : new BeaconSigner();
 
   await extrinsic.signAsync(address, { signer, nonce });
 

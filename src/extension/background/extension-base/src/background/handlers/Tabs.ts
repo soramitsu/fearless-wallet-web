@@ -5,12 +5,7 @@ import { PHISHING_PAGE_REDIRECT } from '@extension-base/defaults';
 import { checkIfDenied } from '@polkadot/phishing';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
 import { assert, isNumber } from '@polkadot/util';
-
-import RequestBytesSign from '@extension-base/background/RequestBytesSign';
-import RequestExtrinsicSign from '@extension-base/background/RequestExtrinsicSign';
-
 import { keyring } from '@polkadot/ui-keyring';
-import BeaconSignerJSON from '@extension-base/background/BeaconSignerJSON';
 import {
   stripUrl,
   transformAccounts,
@@ -19,6 +14,9 @@ import {
 } from '@extension-base/background/handlers/helpers';
 import State from '@extension-base/background/handlers/State';
 import { createSubscription, unsubscribe } from '@extension-base/background/handlers/subscriptions';
+import BeaconSignerJSON from '@extension-base/signers/BeaconSignerJSON';
+import RequestExtrinsicSign from '@extension-base/signers/RequestExtrinsicSign';
+import RequestBytesSign from '@extension-base/signers/RequestBytesSign';
 import type {
   AccountSub,
   AuthResponse,
@@ -139,20 +137,19 @@ export default class Tabs {
   }
 
   extrinsicSign(url: string, request: SignerPayloadJSON): Promise<ResponseSigning> {
-    const address = request.address;
+    const address = keyring.encodeAddress(request.address);
     const isMobile = !!keyring.getAddress(address, 'address')?.meta.isMobile;
     let meta;
 
     if (keyring.getAccount(address)) meta = this.getSigningPair(address).meta;
     else if (isMobile) meta = keyring.getAddress(address, 'address')?.meta;
 
-    const pair = this.getSigningPair(address);
     const signer = isMobile ? new BeaconSignerJSON(request) : new RequestExtrinsicSign(request);
 
     return this.state.sign(url, signer, {
-      address: pair.address,
-      ethereumAddress: pair.meta.ethereumAddress as string,
-      name: (pair.meta.name as string) ?? '',
+      address: address,
+      ethereumAddress: meta?.ethereumAddress as string,
+      name: (meta?.name as string) ?? '',
       ...meta,
     });
   }
@@ -172,7 +169,7 @@ export default class Tabs {
     return this.state.rpcListProviders();
   }
 
-  rpcSend(request: RequestRpcSend, port: Port): Promise<JsonRpcResponse> {
+  rpcSend(request: RequestRpcSend, port: Port): Promise<JsonRpcResponse<unknown>> {
     return this.state.rpcSend(request, port);
   }
 

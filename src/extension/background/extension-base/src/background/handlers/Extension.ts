@@ -30,10 +30,20 @@ import { createSubscription, unsubscribe } from '@extension-base/background/hand
 import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { state } from '@extension-base/background/handlers';
 import {
+  createCrossChainExtrinsic,
+  estimateFee as estimateCrossChainFee,
+  makeCrossChain,
+} from '@extension-base/api/substrate/crossChain';
+import {
+  BasicTxErrorCode,
+  MobileSigningRequest,
+  RequestMobileSign,
+  TransferErrorCode,
+} from '@extension-base/background/types/types';
+import type {
   ActiveTabAuthorizeStatus,
   BalanceJson,
   BasicTxError,
-  BasicTxErrorCode,
   BasicTxResponse,
   BasicTxWarning,
   Port,
@@ -48,22 +58,6 @@ import {
   ResponseCheckTransfer,
   ResponseCheckCrossChain,
   ResponseMakeSwap,
-  TransferErrorCode,
-} from '@extension-base/background/types/types';
-import {
-  createCrossChainExtrinsic,
-  estimateFee as estimateCrossChainFee,
-  makeCrossChain,
-} from '@extension-base/api/substrate/crossChain';
-import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
-import type {
-  Asset,
-  RequestTransactionHistoryAdd,
-  NetworkJson,
-  TransactionHistoryItemType,
-} from '@extension-base/types';
-import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
-import type {
   AccountJson,
   AllowedPath,
   AuthorizedAccountsDiff,
@@ -104,6 +98,14 @@ import type {
   ResponseType,
   SigningRequest,
 } from '@extension-base/background/types/types';
+import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
+import type {
+  Asset,
+  RequestTransactionHistoryAdd,
+  NetworkJson,
+  TransactionHistoryItemType,
+} from '@extension-base/types';
+import type { KeyringPair$Json, KeyringPair, KeyringPair$Meta } from '@polkadot/keyring/types';
 import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
@@ -281,6 +283,17 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
+  mobileSignApprove({ signature, id }: RequestMobileSign): boolean {
+    const queued = this.state.getMobileSignRequest(id);
+
+    assert(queued, 'Unable to find request');
+
+    const { resolve } = queued;
+    resolve({ signature, id });
+
+    return true;
+  }
+
   async authorizeUpdate({ authorizedAccounts, url }: RequestUpdateAuthorizedAccounts): Promise<void> {
     return this.state.updateAuthorizedAccounts([[url, authorizedAccounts]]);
   }
@@ -331,7 +344,7 @@ export default class Extension extends FWExtensionBase {
 
     assert(queued, 'Unable to find request');
 
-    const { request, resolve } = await queued;
+    const { request, resolve } = queued;
 
     this.state.saveMetadata(request);
 
@@ -440,7 +453,7 @@ export default class Extension extends FWExtensionBase {
 
     const accountInfo: CurrentAccountInfo = {
       address,
-      isMobile: (isMobile as boolean) ?? false,
+      isMobile: !!(isMobile as boolean),
       name: name as string,
       ethereumAddress: (ethereumAddress as string) ?? '',
     };
@@ -567,10 +580,33 @@ export default class Extension extends FWExtensionBase {
     return true;
   }
 
+  mobileSigningCancel({ id }: RequestSigningCancel): boolean {
+    const queued = this.state.getMobileSignRequest(id);
+
+    assert(queued, 'Unable to find request');
+
+    queued.reject(new Error('Cancelled'));
+
+    return true;
+  }
+
   signingSubscribe(id: string, port: Port): boolean {
     const cb = createSubscription<'pri(signing.requests)'>(id, port);
 
     const subscription = this.state.signSubject.subscribe((requests: SigningRequest[]): void => cb(requests));
+
+    port.onDisconnect.addListener((): void => {
+      unsubscribe(id);
+      subscription.unsubscribe();
+    });
+
+    return true;
+  }
+
+  mobileSigningSubscribe(id: string, port: Port): boolean {
+    const cb = createSubscription<'pri(mobileSigning.tx)'>(id, port);
+
+    const subscription = this.state.mobileSignSubject.subscribe((req: MobileSigningRequest[]): void => cb(req));
 
     port.onDisconnect.addListener((): void => {
       unsubscribe(id);
@@ -995,8 +1031,10 @@ export default class Extension extends FWExtensionBase {
   private async makeTransfer(
     id: string,
     port: Port,
-    { from, networkKey, password, to, assetId, amount, isSavePass }: RequestTransfer
+    { from, networkKey, password, to, assetId, amount, isSavePass, isMobile }: RequestTransfer
   ): Promise<BasicTxResponse | undefined> {
+    const address = keyring.encodeAddress(from);
+
     const txState: BasicTxResponse = {};
 
     const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(assetId, from, password);
@@ -1012,7 +1050,7 @@ export default class Extension extends FWExtensionBase {
       return txState;
     }
 
-    if (!fromKeyPair) {
+    if (!fromKeyPair && !isMobile) {
       txState.status = false;
       txState.txError = true;
 
@@ -1020,26 +1058,13 @@ export default class Extension extends FWExtensionBase {
     }
 
     const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
-    const ethereumAddress = fromKeyPair.meta.ethereumAddress as string | undefined;
 
-    const remainTime = this.refreshAccountPasswordCache(fromKeyPair);
+    const ethereumAddress = fromKeyPair ? (fromKeyPair.meta.ethereumAddress as string | undefined) : '';
+
+    const remainTime = fromKeyPair ? this.refreshAccountPasswordCache(fromKeyPair) : 0;
 
     const savePass = () => {
-      if (isSavePass) {
-        this.cachedUnlocks[fromKeyPair.address] = Date.now() + PASSWORD_EXPIRY_MS;
-        if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
-      } else if (remainTime) {
-        this.cachedUnlocks[fromKeyPair.address] = 0;
-
-        fromKeyPair.lock();
-
-        if (ethereumAddress) {
-          this.cachedUnlocks[ethereumAddress] = 0;
-          const ethereumPair = keyring.getPair(ethereumAddress);
-
-          ethereumPair.lock();
-        }
-      }
+      this.savePass(address, ethereumAddress, remainTime, !!isSavePass, !!isMobile);
     };
 
     const callback = this.makeExtrinsicCallback(cb, savePass);
@@ -1072,11 +1097,12 @@ export default class Extension extends FWExtensionBase {
         networkKey,
         assetId,
         amount: amount ?? '0',
-        from: fromKeyPair.address,
-        to: to,
+        from,
+        to,
         password,
         isSavePass,
         callback,
+        isMobile: !!isMobile,
       });
     }
 
@@ -1101,6 +1127,33 @@ export default class Extension extends FWExtensionBase {
     port.onDisconnect.addListener(() => this.cancelSubscription(id));
 
     return txState;
+  }
+
+  savePass(
+    address: string,
+    ethereumAddress: string | undefined,
+    remainTime: number,
+    isSavePass: boolean,
+    isMobile: boolean
+  ) {
+    if (isMobile) return;
+
+    if (isSavePass) {
+      this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
+      if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
+    } else if (remainTime) {
+      this.cachedUnlocks[address] = 0;
+      const pair = keyring.getPair(address);
+
+      pair.lock();
+
+      if (ethereumAddress) {
+        this.cachedUnlocks[ethereumAddress] = 0;
+        const ethereumPair = keyring.getPair(ethereumAddress);
+
+        ethereumPair.lock();
+      }
+    }
   }
 
   private async checkCrossChain({
@@ -1411,11 +1464,20 @@ export default class Extension extends FWExtensionBase {
       case 'pri(signing.cancel)':
         return this.signingCancel(request as RequestSigningCancel);
 
+      case 'pri(mobileSigning.cancel)':
+        return this.mobileSigningCancel(request as RequestSigningCancel);
+
       case 'pri(signing.isLocked)':
         return this.signingIsLocked(request as RequestSigningIsLocked);
 
       case 'pri(signing.requests)':
         return this.signingSubscribe(id, port);
+
+      case 'pri(mobileSigning.tx)':
+        return this.mobileSigningSubscribe(id, port);
+
+      case 'pri(mobileSigning.approve.signature)':
+        return this.mobileSignApprove(request as RequestMobileSign);
 
       case 'pri(window.open)':
         return this.windowOpen(request as AllowedPath);

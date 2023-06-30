@@ -97,6 +97,7 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation, Action } from 'vuex-class';
+import { HexString } from '@polkadot/util/types';
 import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset } from '@/store';
 import type { AsyncFn, Fn, TabWallet } from '@/interfaces';
 import { BalanceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
@@ -360,7 +361,7 @@ export default class Wallet extends Vue {
   toggleSelectedNetwork(network: string) {
     if (this.selectedNetwork === network) return;
 
-    const prepNetwork = network === ALL_NETWORKS ? null : `0x${this.getNetwork(network).chainId}`;
+    const prepNetwork: HexString | null = network === ALL_NETWORKS ? null : `0x${this.getNetwork(network).chainId}`;
 
     this.setSelectedNetwork(network);
 

@@ -7,7 +7,6 @@ import type {
 } from '@polkadot/extension-inject/types';
 import type { JsonRpcResponse } from '@polkadot/rpc-provider/types';
 import type { KeyringAddress } from '@polkadot/ui-keyring/types';
-import type { CurrentAccountInfo } from '@extension-base/stores/CurrentAccountStore';
 import type {
   RequestAccountCreateExternal,
   RequestAccountCreateSuri,
@@ -28,7 +27,6 @@ import type {
   AccountJson,
   RequestAccountValidate,
   RequestAccountChangePassword,
-  RequestCurrentAccountAddress,
   ValidateNetworkRequest,
   ValidateNetworkResponse,
   DisableNetworkResponse,
@@ -90,6 +88,7 @@ import type {
   ResponseMakeSwap,
   RequestUpdateMeta,
   ResponseTotalBalances,
+  MobileSigningRequest,
 } from '@extension-base/background/types/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
@@ -99,9 +98,9 @@ import type {
   IGetFilesResponse,
   ICreateFile,
   FilesResponse,
-  SignerPayloadRaw,
   SignerPayloadJSON,
   SoraFees,
+  SignerPayloadRaw,
 } from '@/interfaces';
 
 // [MessageType]: [RequestType, ResponseType, SubscriptionMessageType?]
@@ -176,9 +175,13 @@ export interface RequestSignatures {
   'pri(settings.notification)': [string, boolean];
   'pri(signing.approve.password)': [RequestSigningApprovePassword, boolean];
   'pri(signing.approve.signature)': [RequestSigningApproveSignature, boolean];
+  'pri(mobileSigning.approve.signature)': [RequestSigningApproveSignature, boolean];
   'pri(signing.cancel)': [RequestSigningCancel, boolean];
+  'pri(mobileSigning.cancel)': [RequestSigningCancel, boolean];
   'pri(signing.isLocked)': [RequestSigningIsLocked, ResponseSigningIsLocked];
   'pri(signing.requests)': [RequestSigningSubscribe, boolean, SigningRequest[]];
+  'pri(mobileSigning.tx)': [RequestSigningSubscribe, boolean, MobileSigningRequest[]];
+
   'pri(window.open)': [AllowedPath, boolean];
   'pri(signing.refreshPasswordTimeout)': [string, number];
   'pri(signing.saveTimeoutCache)': [RequestSaveTimeoutCache, boolean];
@@ -225,9 +228,9 @@ export interface RequestSignatures {
   'pub(metadata.provide)': [MetadataDef, boolean];
   'pub(phishing.redirectIfDenied)': [null, boolean];
   'pub(rpc.listProviders)': [void, ResponseRpcListProviders];
-  'pub(rpc.send)': [RequestRpcSend, JsonRpcResponse];
+  'pub(rpc.send)': [RequestRpcSend, JsonRpcResponse<unknown>];
   'pub(rpc.startProvider)': [string, ProviderMeta];
-  'pub(rpc.subscribe)': [RequestRpcSubscribe, number, JsonRpcResponse];
+  'pub(rpc.subscribe)': [RequestRpcSubscribe, number, JsonRpcResponse<unknown>];
   'pub(rpc.subscribeConnected)': [null, boolean, boolean];
   'pub(rpc.unsubscribe)': [RequestRpcUnsubscribe, boolean];
 }

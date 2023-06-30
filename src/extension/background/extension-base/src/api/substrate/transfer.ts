@@ -26,7 +26,6 @@ export async function estimateFee(
 
   const extrinsic = createExtrinsicTransfer({
     amount: value,
-    api,
     tokenBalance,
     to,
     networkKey,
@@ -68,6 +67,7 @@ export interface MakeTransferProps {
   assetId: string;
   isSavePass?: boolean;
   callback: (data: BasicTxResponse) => void;
+  isMobile: boolean;
 }
 
 export async function makeTransfer({
@@ -79,6 +79,7 @@ export async function makeTransfer({
   password,
   amount,
   callback,
+  isMobile,
 }: MakeTransferProps): Promise<void> {
   const txState: BasicTxResponse = {};
   const apiProps = state.getSubstrateApiMap[networkKey];
@@ -89,14 +90,13 @@ export async function makeTransfer({
 
   const extrinsic = createExtrinsicTransfer({
     amount,
-    api: apiProps.api!,
     tokenBalance,
     to,
     networkKey,
   });
 
   await signAndSendExtrinsic({
-    type: SignerType.PASSWORD,
+    type: isMobile ? SignerType.MOBILE : SignerType.PASSWORD,
     apiProps,
     callback,
     extrinsic,

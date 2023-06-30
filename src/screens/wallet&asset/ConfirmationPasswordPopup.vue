@@ -65,7 +65,7 @@ import { Getter, Action } from 'vuex-class';
 import type { RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
 import type { GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
-import { isSignLocked, makeSwap, makeTransfer, makeCrossChain } from '@/extension/messaging';
+import { isSignLocked, makeSwap, makeTransfer, makeCrossChain, cancelMobileSignRequest } from '@/extension/messaging';
 import { beaconController, ExtensionController } from '@/controllers';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -147,6 +147,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     return {
       ...(this.tx as RequestCheckTransfer),
       isSavePass: this.isSavePass,
+      isMobile: !!this.isSignMobile,
       password: this.password,
     } as RequestTransfer;
   }
@@ -258,9 +259,8 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   async onSignMobile() {
-    if (!this.transactionId) {
-      this.makeExtrinsic();
-    } else if (this.extrinsicType === 'swap' && this.swapOptions)
+    if (!this.transactionId) this.makeExtrinsic();
+    else if (this.extrinsicType === 'swap' && this.swapOptions)
       await makeSwap({ ...this.swapOptions, password: this.password });
     else if (this.payload) await this.signTransactionJSON(this.transactionId);
   }
@@ -294,8 +294,25 @@ export default class ConfirmationPasswordPopup extends Vue {
       this.transactionState = data.status ? 'success' : 'failed';
     };
 
-    if (this.extrinsicType === 'transfer') return await makeTransfer(this.requestTransfer, callback);
-    else if (this.extrinsicType === 'crossChain') return await makeCrossChain(this.requestCrossChain, callback);
+    const mobileCb = () => {
+      this.transactionState = 'pending';
+    };
+
+    const onMobileCancel = (id: string) => {
+      this.transactionState = 'failed';
+
+      cancelMobileSignRequest(id);
+    };
+
+    if (this.isSignMobile) {
+      await beaconController.subscribeRawRequests(mobileCb, onMobileCancel);
+
+      return makeTransfer(this.requestTransfer, callback);
+    }
+
+    if (this.extrinsicType === 'transfer') return makeTransfer(this.requestTransfer, callback);
+
+    if (this.extrinsicType === 'crossChain') return makeCrossChain(this.requestCrossChain, callback);
   }
 
   async keypress({ key }: KeyboardEvent) {

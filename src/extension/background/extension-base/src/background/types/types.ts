@@ -39,6 +39,7 @@ export interface PrepareExternalRequest {
 }
 export enum SignerType {
   PASSWORD = 'PASSWORD',
+  MOBILE = 'MOBILE',
 }
 
 type KeysWithDefinedValues<T> = {
@@ -58,7 +59,7 @@ export type Port = chrome.runtime.Port;
 export interface AccountJson extends KeyringPair$Meta {
   address: string;
   ethereumAddress: string;
-  genesisHash?: string | null;
+  genesisHash?: HexString | null;
   isExternal?: boolean;
   isHardware?: boolean;
   isMobile?: boolean;
@@ -105,6 +106,10 @@ export interface SigningRequest {
   id: string;
   request: RequestSign;
   url: string;
+}
+export interface MobileSigningRequest {
+  id: string;
+  request: SignerPayloadRaw;
 }
 
 export interface RequestAddressCreate {
@@ -194,6 +199,11 @@ export interface RequestAuthorizeApprove {
   authorizedAccounts: string[];
 }
 
+export interface RequestMobileSign {
+  signature: `0x${string}`;
+  id: string;
+}
+
 export interface RequestUpdateAuthorizedAccounts {
   url: string;
   authorizedAccounts: string[];
@@ -213,7 +223,7 @@ export type RequestMetadataSubscribe = null;
 
 export interface RequestAccountCreateExternal {
   address: string;
-  genesisHash?: string | null;
+  genesisHash?: HexString | null;
   name: string;
 }
 
@@ -350,6 +360,7 @@ export interface RequestCheckTransfer extends BaseRequestSign {
   relayChain?: string;
   amount?: string;
   password?: string;
+  isMobile?: boolean;
 }
 
 export interface RequestCheckCrossChain extends BaseRequestSign {
@@ -479,7 +490,7 @@ export interface RequestAccountShow {
 
 export interface RequestAccountTie {
   address: string;
-  genesisHash: string | null;
+  genesisHash: HexString | null;
 }
 
 export interface RequestAccountName {
@@ -494,7 +505,7 @@ export interface RequestAccountValidate {
 
 export interface RequestDeriveCreate {
   name: string;
-  genesisHash?: string | null;
+  genesisHash?: HexString | null;
   suri: string;
   parentAddress: string;
   parentPassword: string;
@@ -785,6 +796,10 @@ export interface SignRequest extends Resolver<ResponseSigning> {
   request: RequestSign;
   url: string;
 }
+export interface MobileSignRequest extends Resolver<ResponseSigning> {
+  id: string;
+  request: SignerPayloadRaw;
+}
 
 const NOTIFICATION_URL = chrome.runtime.getURL('popup.html');
 
@@ -936,5 +951,7 @@ export interface TokenBalance {
   balances: BalanceItem[];
   color?: string;
 }
+
+export type BeaconRawSignCallBack = (tx: SignerPayloadRaw) => string;
 
 export type BalanceMap = Record<WalletAddress, TokenBalance[]>;

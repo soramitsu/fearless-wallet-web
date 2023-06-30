@@ -76,32 +76,35 @@ function onConnected(networkName: string) {
 
 function onDisconnect(networkName: string) {
   // возможно лишнее
-  if (state.apis.substrate[networkName] === undefined) return;
+  const api = state.apis.substrate[networkName];
 
-  state.apis.substrate[networkName].apiRetry += 1;
-  state.apis.substrate[networkName].isApiConnected = false;
-  state.apis.substrate[networkName].isApiReady = false;
+  if (api === undefined) return;
 
-  const { apiRetry, nodeIndex } = state.apis.substrate[networkName];
+  api.apiRetry += 1;
+  api.isApiConnected = false;
+  api.isApiReady = false;
 
-  if (apiRetry >= MAX_CONTINUE_RETRY) {
-    state.apis.substrate[networkName].provider?.disconnect();
+  const { apiRetry, nodeIndex } = api;
 
-    if (nodeIndex <= state.networkMap[networkName].nodes.length - 1) {
-      state.apis.substrate[networkName].apiRetry = 0;
-      state.apis.substrate[networkName].nodeIndex += 1;
-      state.apis.substrate[networkName].provider = undefined;
-      state.apis.substrate[networkName].api = undefined;
-      state.apis.substrate[networkName].apiUrl = '';
+  if (apiRetry < MAX_CONTINUE_RETRY) return;
 
-      // eslint-disable-next-line no-use-before-define
-      if (navigator.onLine) initApi(state.networkMap[networkName]);
-    } else {
-      // apiObject.tryAnotherNode = false;
+  api.provider?.disconnect();
+  const network = state.networkMap[networkName];
 
-      state.disableNetworkMap(networkName);
-    }
+  if (nodeIndex <= network.nodes.length - 1) {
+    api.apiRetry = 0;
+    api.nodeIndex += 1;
+    api.provider = undefined;
+    api.api = undefined;
+    api.apiUrl = '';
+
+    // eslint-disable-next-line no-use-before-define
+    if (navigator.onLine) initApi(network);
+
+    return;
   }
+
+  state.disableNetworkMap(networkName);
 }
 
 function onReady(networkName: string) {
@@ -119,10 +122,8 @@ export async function initApi(network: NetworkJson): Promise<void> {
   const { name: networkName, providers, isEthereum } = network;
 
   if (state.apis.substrate[networkName] === undefined) {
-    if (isEthereum)
-      // return EVM HTTP Placeholder
-      state.apis.substrate[networkName] = generateEvmHttpApi();
-    else state.apis.substrate[networkName] = createApiObject();
+    // return EVM HTTP Placeholder
+    state.apis.substrate[networkName] = isEthereum ? generateEvmHttpApi() : createApiObject();
   }
 
   const { nodeIndex } = state.apis.substrate[networkName];

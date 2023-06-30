@@ -246,17 +246,17 @@ async function createOrmlTeleportExtrinsic(
   const precisionAmount = getPrecisionValue(amount, precision);
 
   // В большинстве случаев используется xTokens, но он есть не всегда
-  if (api!.tx?.xTokens?.transferMultiasset) {
+  if (api.tx?.xTokens?.transferMultiasset) {
     const params = getOrmlTeleportParams(originNet, destNet, toAddress, precisionAmount, assetId);
 
-    return api!.tx?.xTokens?.transferMultiasset(...params);
+    return api.tx?.xTokens?.transferMultiasset(...params);
   }
 
   const module = isRelayChain(destNet) ? 'limitedReserveWithdrawAssets' : 'limitedReserveTransferAssets';
   const params = getNativeTeleportParams(originNet, destNet, toAddress, precisionAmount);
 
   // Если нет xTokens используется polkadotXcm, с соответствующим модулем
-  return api!.tx?.polkadotXcm[module](...params);
+  return api.tx?.polkadotXcm[module](...params);
 }
 
 async function estimateFee(extrinsic: Extrinsic, to: string, network: string): Promise<number> {
@@ -290,11 +290,11 @@ async function createCrossChainExtrinsic(
     // Case Native ParaChain -> RelayChain (statemint -> polkadot; statemine, encointer -> kusama) pallet = polkadotXcm, module = limitedTeleportAssets
     // TODO: add case: Native ParaChain -> Nonnative ParaChain
     // TODO: add case: Native ParaChain -> Native ParaChain
-    return await createNativeTeleportExtrinsic(originNet, destNet, toAddress, amount!, tokenBalance);
+    return createNativeTeleportExtrinsic(originNet, destNet, toAddress, amount, tokenBalance);
   } else {
     // Case Nonnative ParaChain -> Nonnative ParaChain (karura, etc -> bifrost, etc)
     // Case Nonnative ParaChain -> RelayChain (karura, etc -> kusama, etc; acala, etc -> polkadot)
-    return await createOrmlTeleportExtrinsic(assetId, originNet, destNet, toAddress, amount!, tokenBalance);
+    return createOrmlTeleportExtrinsic(assetId, originNet, destNet, toAddress, amount, tokenBalance);
   }
 }
 

@@ -44,6 +44,7 @@ import type {
   RequestSwap,
   ResponseMakeSwap,
   ResponseTotalBalances,
+  MobileSigningRequest,
 } from '@/extension/background/extension-base/src/background/types/types';
 import type { Message, NetworkJson, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
@@ -150,7 +151,7 @@ export function showAccount(address: string, isShowing: boolean): Promise<boolea
   return sendMessage('pri(accounts.show)', { address, isShowing });
 }
 
-export function tieAccount(address: string, genesisHash: string | null): Promise<boolean> {
+export function tieAccount(address: string, genesisHash: HexString | null): Promise<boolean> {
   return sendMessage('pri(accounts.tie)', { address, genesisHash });
 }
 
@@ -190,6 +191,10 @@ export function cancelSignRequest(id: string): Promise<boolean> {
   return sendMessage('pri(signing.cancel)', { id });
 }
 
+export function cancelMobileSignRequest(id: string): Promise<boolean> {
+  return sendMessage('pri(mobileSigning.cancel)', { id });
+}
+
 export function isSignLocked(address: string): Promise<ResponseSigningIsLocked> {
   return sendMessage('pri(signing.isLocked)', { address });
 }
@@ -202,7 +207,11 @@ export function approveSignSignature(id: string, signature: HexString): Promise<
   return sendMessage('pri(signing.approve.signature)', { id, signature });
 }
 
-export function createAccountExternal(name: string, address: string, genesisHash: string): Promise<boolean> {
+export function approveSignMobileSignature(id: string, signature: HexString): Promise<boolean> {
+  return sendMessage('pri(mobileSigning.approve.signature)', { id, signature });
+}
+
+export function createAccountExternal(name: string, address: string, genesisHash: HexString): Promise<boolean> {
   return sendMessage('pri(accounts.create.external)', { address, genesisHash, name });
 }
 
@@ -345,6 +354,10 @@ export function subscribeSigningRequests(cb: (accounts: SigningRequest[]) => voi
   return sendMessage('pri(signing.requests)', null, cb);
 }
 
+export function subscribeMobileSigningRequests(cb: (req: MobileSigningRequest[]) => void): Promise<boolean> {
+  return sendMessage('pri(mobileSigning.tx)', null, cb);
+}
+
 export function validateSeed(suri: string, type?: KeypairType): Promise<{ address: string; suri: string }> {
   return sendMessage('pri(seed.validate)', { suri, type });
 }
@@ -363,7 +376,7 @@ export function deriveAccount(
   parentPassword: string,
   name: string,
   password: string,
-  genesisHash: string | null
+  genesisHash: HexString | null
 ): Promise<boolean> {
   return sendMessage('pri(derivation.create)', { genesisHash, name, parentAddress, parentPassword, password, suri });
 }

@@ -119,6 +119,7 @@ import {
   SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
+
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
 const ETH_DERIVE_DEFAULT = "/m/44'/60'/0'/0/0";
@@ -957,9 +958,7 @@ export default class Extension extends FWExtensionBase {
 
     const address = this.encodeAddress(from);
     let fee = 0;
-    let feeSymbol;
     let fromAccountFreeBalance = '0';
-    const toAccountFreeBalance = '0';
 
     const tokenBalance = this.state.balanceMap[address].find(
       (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
@@ -989,9 +988,7 @@ export default class Extension extends FWExtensionBase {
       errors,
       warnings,
       fromAccountFree: fromAccountFreeBalance,
-      toAccountFree: toAccountFreeBalance,
-      estimateFee: FPNumber.fromCodecValue(fee, tokenInfo.precision).toString(),
-      feeSymbol,
+      estimateFee: fee.toString(),
     } as ResponseCheckTransfer;
   }
 
@@ -1123,22 +1120,20 @@ export default class Extension extends FWExtensionBase {
 
     console.info('checkCrossChain', extrinsic);
 
-    const { precision, symbol } = tokenBalance.balances.find(
-      ({ name }) => name.toLowerCase() === originNet.toLowerCase()
-    )!;
+    const { symbol } = tokenBalance.balances.find(({ name }) => name.toLowerCase() === originNet.toLowerCase())!;
 
     const { precision: precisionDest } = tokenBalance.balances.find(
       ({ name }) => name.toLowerCase() === destinationNet.toLowerCase()
     )!;
 
-    const fee = await estimateCrossChainFee(extrinsic, to, tokenBalance, originNet);
+    const fee = await estimateCrossChainFee(extrinsic, to, originNet);
     const destFees = state.xcmFees.find(({ destChain }) => destChain.toLowerCase() === destinationNet.toLowerCase());
     const destEstimateFee = destFees?.destXcmFee?.find(
-      ({ symbol: _symbol }) => _symbol.toLowerCase() === symbol!.toLowerCase()
+      ({ symbol: _symbol }) => _symbol.toLowerCase() === symbol.toLowerCase()
     );
 
     return {
-      estimateFee: FPNumber.fromCodecValue(fee, precision).toString(),
+      estimateFee: fee.toString(),
       destEstimateFee: FPNumber.fromCodecValue(destEstimateFee?.feeInPlanks ?? '0', precisionDest).toString(),
     } as ResponseCheckCrossChain;
   }

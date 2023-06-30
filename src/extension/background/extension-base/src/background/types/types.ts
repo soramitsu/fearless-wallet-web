@@ -367,10 +367,8 @@ export interface ResponseCheckTransfer {
   errors?: Array<BasicTxError>;
   warnings?: Array<BasicTxWarning>;
   fromAccountFree: string;
-  toAccountFree: string;
   estimateFee?: string;
   destEstimateFee: undefined;
-  feeSymbol?: string; // if undefined => use main token
 }
 
 export interface ResponseCheckCrossChain {

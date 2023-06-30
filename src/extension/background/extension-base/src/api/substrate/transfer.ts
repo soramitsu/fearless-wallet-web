@@ -2,7 +2,7 @@ import { FPNumber } from '@sora-substrate/util';
 import { state } from '@extension-base/background/handlers';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { createExtrinsicTransfer } from '@extension-base/api/substrate/utils';
-import { getAssetInfo } from '@extension-base/api/substrate/registry';
+import { getUtilityProps } from '@extension-base/background/utils/utils';
 import {
   BasicTxResponse,
   TransferErrorCode,
@@ -34,12 +34,17 @@ export async function estimateFee(
 
   if (!extrinsic) return 0;
 
-  const { precision } = tokenBalance.balances.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())!;
-  const paymentInfo = await extrinsic.paymentInfo(to);
-  const partialFee = paymentInfo ? +paymentInfo.partialFee : 0;
-  const result = new FPNumber(partialFee, precision);
+  const { precision: utilityPrecision } = getUtilityProps(networkKey);
 
-  return result.toNumber();
+  try {
+    const paymentInfo = await extrinsic.paymentInfo(to);
+    const partialFee = paymentInfo ? +paymentInfo.partialFee : 0;
+    const result = FPNumber.fromCodecValue(partialFee, utilityPrecision);
+
+    return result.toNumber();
+  } catch {
+    return 0;
+  }
 }
 
 export function getUnsupportedResponse(): BasicTxResponse {

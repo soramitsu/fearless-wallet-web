@@ -61,16 +61,16 @@
 
     <SendForm
       v-if="showSendForm"
-      :_selectedNetwork="networkForActiveForm"
+      :_selectedNetwork="selectedCurrency.mainNetwork"
       :_selectedAssetId="selectedCurrency.assetId"
-      :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false)"
+      :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false, {})"
     />
 
     <ReceiveForm
       v-if="showReceiveForm"
-      :_selectedNetwork="networkForActiveForm"
+      :_selectedNetwork="selectedCurrency.mainNetwork"
       :selectedAssetId="selectedCurrency.assetId"
-      :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', false)"
+      :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', false, {})"
     />
 
     <NetworkManagement
@@ -176,10 +176,6 @@ export default class Wallet extends Vue {
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
   @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: Fn<SetHiddenAsset>;
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
-
-  get networkForActiveForm() {
-    return this.selectedNetwork !== ALL_NETWORKS ? this.selectedNetwork : this.selectedCurrency.mainNetwork;
-  }
 
   get contentFormHeight() {
     const subtractionNumber = this.showSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;
@@ -355,8 +351,10 @@ export default class Wallet extends Vue {
     value = true,
     currency: { mainNetwork: string; assetId: string }
   ) {
-    this[field] = value;
     this.selectedCurrency = currency;
+    this[field] = value;
+
+    if (this.selectedNetwork !== ALL_NETWORKS) this.selectedCurrency.mainNetwork = this.selectedNetwork;
   }
 
   toggleSelectedNetwork(network: string) {

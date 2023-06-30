@@ -218,7 +218,7 @@ export default class Asset extends Vue {
   }
 
   get mainNetwork() {
-    return this.currentCurrency.balances.find((network) => network.isUtility || network.isNative)!.name ?? '';
+    return this.currentCurrency.balances?.find((network) => network.isUtility || network.isNative)!.name ?? '';
   }
 
   get showBuyButton() {

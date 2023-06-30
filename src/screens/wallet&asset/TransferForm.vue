@@ -200,7 +200,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 import { cut, firstCharToUp, getClipboard } from '@/helpers/common';
 import { getCurrencyOptions } from '@/helpers/currencies';
-import { VALID_SUBSTRATE_ADDRESS, VALID_ETHEREUM_ADDRESS } from '@/consts/networks';
+import { VALID_SUBSTRATE_ADDRESS, VALID_ETHEREUM_ADDRESS, CHAIN_IDS } from '@/consts/networks';
 import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHelpers';
 import {
   RequestCheckTransfer,
@@ -453,11 +453,17 @@ export default class TransferForm extends Vue {
   }
 
   get optionsCurrency() {
-    const { xcm } = this.networks.find(({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase())!;
+    const { xcm, parentId } = this.networks.find(
+      ({ name }) => name.toLowerCase() === this.syncedNetwork.toLowerCase()
+    )!;
+
+    const relay = (CHAIN_IDS[parentId!] ?? this.syncedNetwork).toLowerCase();
     const balances = this.isTransfer
       ? this.balances
-      : this.balances.filter(({ symbol }) =>
-          xcm?.availableAssets.some((assetName) => assetName.toLowerCase() === symbol.toLowerCase())
+      : this.balances.filter(
+          ({ symbol, relayChain }) =>
+            xcm?.availableAssets.some((assetName) => assetName.toLowerCase() === symbol.toLowerCase()) &&
+            relayChain.toLowerCase() === relay
         );
 
     return getCurrencyOptions(balances);
@@ -549,9 +555,10 @@ export default class TransferForm extends Vue {
   @Watch('syncedAssetId')
   updateSelectedNetwork() {
     this.syncedAmount = '';
-    this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
     this.syncedDestNet = this.optionsDestNet?.[0]?.value ?? '';
     this.syncedValue = '';
+
+    if (this.isTransfer) this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
   }
 
   @Watch('syncedAssetId')

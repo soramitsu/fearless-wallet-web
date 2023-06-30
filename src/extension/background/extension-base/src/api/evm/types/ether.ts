@@ -1,5 +1,5 @@
 import { APIItemState } from '@extension-base/api/types/networks';
-import type { AssetsType } from '@/interfaces';
+import type { AssetType } from '@/interfaces';
 
 export interface BalanceChildItem {
   reserved: string;
@@ -18,7 +18,7 @@ export interface BalanceItem {
   currencyId?: string;
   key?: string;
   precision: number;
-  type: AssetsType;
+  type: AssetType;
   free?: string;
   isUtility?: boolean;
   isNative?: boolean;

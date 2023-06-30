@@ -1,7 +1,6 @@
 import { FPNumber } from '@sora-substrate/math';
 import { ApiPromise } from '@polkadot/api';
 import { state } from '@extension-base/background/handlers';
-import { BN } from '@polkadot/util';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { NetworkName } from '@/interfaces';
@@ -27,10 +26,7 @@ export function getAssetOptions(assetId: string) {
   if (type === 'soraAsset') return currencyId;
   if (type === 'equilibrium') return currencyId;
 
-  // TODO
-  if (type === 'assets') {
-    return new BN(currencyId!);
-  }
+  if (type === 'assets') return currencyId;
 
   // TODO
   if (type === 'assetId') {
@@ -73,7 +69,6 @@ export function createExtrinsicTransfer(props: ExtrinsicTransferProps): Submitta
       case 'equilibrium':
         return api.tx.eqBalances.transfer(ormlOptions, to, precisionAmount);
 
-      // TODO
       case 'assets':
         return api.tx.assets.transfer(ormlOptions, to, precisionAmount);
 

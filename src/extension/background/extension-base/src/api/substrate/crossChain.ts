@@ -2,7 +2,7 @@ import { BN, isFunction } from '@polkadot/util';
 import { FPNumber } from '@sora-substrate/util';
 import { decodeAddress } from '@polkadot/util-crypto';
 import { state } from '@extension-base/background/handlers';
-import { isEthereumNetwork } from '@extension-base/background/utils/utils';
+import { isEthereumNetwork, getUtilityProps } from '@extension-base/background/utils/utils';
 import { getAssetInfo } from '@extension-base/api/substrate/registry';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
@@ -259,24 +259,20 @@ async function createOrmlTeleportExtrinsic(
   return api!.tx?.polkadotXcm[module](...params);
 }
 
-async function estimateFee(
-  extrinsic: Extrinsic,
-  to: string,
-  tokenBalance: TokenBalance,
-  network: string
-): Promise<string> {
-  if (!extrinsic) return '0';
+async function estimateFee(extrinsic: Extrinsic, to: string, network: string): Promise<number> {
+  if (!extrinsic) return 0;
 
-  const { precision } = tokenBalance.balances.find(({ name }) => name.toLowerCase() === network.toLowerCase())!;
+  const { precision: utilityPrecision } = getUtilityProps(network)!;
 
   try {
     const paymentInfo = await extrinsic?.paymentInfo(to);
     const partialFee = paymentInfo ? +paymentInfo.partialFee : 0;
-    const result = new FPNumber(partialFee, precision);
 
-    return result.toString();
+    const result = FPNumber.fromCodecValue(partialFee, utilityPrecision);
+
+    return result.toNumber();
   } catch {
-    return '0';
+    return 0;
   }
 }
 

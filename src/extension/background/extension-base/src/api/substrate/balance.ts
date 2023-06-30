@@ -15,7 +15,6 @@ import { FPNumber } from '@sora-substrate/util';
 import type { Asset } from '@extension-base/types';
 import type { ApiProps } from '@extension-base/background/types/types';
 import type { BalanceItem } from '@extension-base/api/evm/types/ether';
-import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
 import type { RelayChainName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
 import { formatBalance } from '@/util/balances';
@@ -149,7 +148,7 @@ async function subscribeTokensBalance(
 
     const unsub = pallet.subscribe((balances: any) => {
       const asV0 = balances.data['asV0'];
-      const locked = (asV0.lock as u128).toString();
+      const locked = FPNumber.fromCodecValue((asV0.lock as u128).toNumber(), 9); // TODO: 9 дефолтный precision, уточнить насчет asV0.lock
       const balance: any[] = asV0.balance;
 
       const notZeroBalances = balance.map(([key, { asPositive }]) => {
@@ -158,6 +157,8 @@ async function subscribeTokensBalance(
 
         const { symbol, id, precision } = assets.find(({ currencyId }) => currencyId === _currencyId)!;
 
+        const transferable = FPNumber.fromCodecValue(balanceValue, precision);
+
         setBalance(networkKey, {
           state: APIItemState.READY,
           relayChain,
@@ -165,9 +166,9 @@ async function subscribeTokensBalance(
           id,
           reserved: '0',
           frozen: '0',
-          total: '0',
-          locked,
-          transferable: FPNumber.fromCodecValue(balanceValue, precision).toString(),
+          total: locked.add(transferable).toString(),
+          locked: locked.toString(),
+          transferable: transferable.toString(),
         });
 
         return id;
@@ -208,10 +209,16 @@ async function subscribeTokensBalance(
         else pallet = query.tokens.accounts(address, options);
 
         const onBalanceFetch = (balances: any) => {
-          const { frozen, locked, reserved, total, transferable } = formatBalance(
-            balances.data ? (balances as any).data : (balances as OrmlAccountData),
-            precision
-          );
+          const balance =
+            type === 'assets'
+              ? {
+                  free: FPNumber.fromCodecValue(balances.toJSON()?.balance ?? 0, precision),
+                }
+              : balances.data
+              ? balances.data
+              : balances;
+
+          const { frozen, locked, reserved, total, transferable } = formatBalance(balance, precision);
 
           setBalance(networkKey, {
             state: APIItemState.READY,

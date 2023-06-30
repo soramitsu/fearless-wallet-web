@@ -30,7 +30,7 @@ type ExternalApi = {
   explorers?: Explorer[];
 };
 
-type AssetsType =
+type AssetType =
   | 'normal'
   | 'ormlAsset'
   | 'vToken'
@@ -44,7 +44,7 @@ type AssetsType =
   | 'soraAsset'
   | 'token2'
   | 'assets'
-  | 'assetId';
+  | 'assetId'; // TODO add
 
 type NetworkAssets = {
   assetId: string;
@@ -52,7 +52,7 @@ type NetworkAssets = {
   purchaseProviders?: string[];
   isUtility?: true;
   isNative?: true;
-  type?: AssetsType;
+  type?: AssetType;
 };
 
 type NetworkStatus = 'pending' | 'disconnected' | 'connected' | 'ready';
@@ -88,7 +88,7 @@ interface ApiOptions {
 export {
   Networks,
   Network,
-  AssetsType,
+  AssetType,
   NetworkName,
   ExternalApi,
   ApiOptions,

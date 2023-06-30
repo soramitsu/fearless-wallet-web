@@ -189,8 +189,6 @@ export default class Wallet extends Vue {
   }
 
   get showWarningIcon() {
-    if (this.selectedNetwork !== ALL_NETWORKS) return !!this.disconnectedNetworks.length;
-
     return this.networksWithWarning.length !== 0;
   }
 

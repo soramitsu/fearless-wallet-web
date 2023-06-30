@@ -18,7 +18,7 @@ import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { RelayChainName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
 import { formatBalance } from '@/util/balances';
-import { CHAIN_IDS } from '@/consts/networks';
+import { CHAIN_IDS, SORA_UTILITY_ASSET, SORA_MAINNET, SORA_TEST } from '@/consts/networks';
 
 function subscribeERC20Interval(
   addresses: string[],
@@ -204,7 +204,11 @@ async function subscribeTokensBalance(
 
         let pallet;
 
-        if (type === 'normal') pallet = query.system.account(address);
+        const networkNameLower = networkName.toLowerCase();
+        const isSoraXOR =
+          symbol === SORA_UTILITY_ASSET && (networkNameLower === SORA_MAINNET || networkNameLower === SORA_TEST);
+
+        if (type === 'normal' || isSoraXOR) pallet = query.system.account(address);
         else if (type === 'assets') pallet = query.assets.account(options, address);
         else pallet = query.tokens.accounts(address, options);
 

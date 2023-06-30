@@ -25,13 +25,10 @@ export function getAssetOptions(assetId: string) {
   if (type === 'stableAssetPoolToken') return { StableAssetPoolToken: currencyId };
   if (type === 'soraAsset') return currencyId;
   if (type === 'equilibrium') return currencyId;
-
   if (type === 'assets') return currencyId;
 
   // TODO
-  if (type === 'assetId') {
-    return currencyId;
-  }
+  if (type === 'assetId') return currencyId;
 
   return { Token: symbol.toUpperCase() };
 }
@@ -63,12 +60,10 @@ export function createExtrinsicTransfer(props: ExtrinsicTransferProps): Submitta
       case 'ormlChain':
         return api.tx.tokens.transfer(to, ormlOptions, precisionAmount);
 
-      case 'soraAsset':
-        return api.tx.assets.transfer(ormlOptions, to, precisionAmount);
-
       case 'equilibrium':
         return api.tx.eqBalances.transfer(ormlOptions, to, precisionAmount);
 
+      case 'soraAsset':
       case 'assets':
         return api.tx.assets.transfer(ormlOptions, to, precisionAmount);
 

@@ -3,7 +3,7 @@
 
 import { BalanceItem, CustomTokenType, NetWorkGroup } from '@extension-base/api/evm/types/ether';
 import { NETWORK_STATUS } from './api/types/networks';
-import type { AssetsType } from '@/interfaces';
+import type { AssetType } from '@/interfaces';
 import { RelayChainName, ExternalApi } from '@/interfaces';
 
 import { ContractType } from '@/interfaces/ether';
@@ -89,21 +89,9 @@ type Node = {
   name: string;
 };
 
-export type CurrencyMock = {
-  mainNetwork: string;
-  assetId: string;
-  name: string;
-  symbol: string;
-  displayName: string;
-  relayChain: RelayChainName;
-  icon: string;
-  providers: string[];
-  balances: BalanceItem[];
-};
-
 export type Asset = {
   id: string;
-  type: AssetsType;
+  type: AssetType;
   name: string; // ex: voucher ksm
   symbol: string; // ex: vksm
   currencyId?: string; // ex: ksm

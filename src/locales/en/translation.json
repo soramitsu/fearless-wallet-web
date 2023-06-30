@@ -1,6 +1,5 @@
 {
   "welcome": {
-    "createWallet": "Create a new wallet",
     "importWallet": "Import wallet",
     "connectMobile": "Connect mobile",
     "manageGoogle": "Connect Google Drive",

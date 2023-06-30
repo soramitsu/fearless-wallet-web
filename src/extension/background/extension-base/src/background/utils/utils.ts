@@ -2,7 +2,9 @@ import { NetworkJson } from '@extension-base/types';
 import { BalanceItem } from '@extension-base/api/evm/types/ether';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { TokenBalance } from '@extension-base/background/types/types';
-import { MAIN_NETWORKS, ETHEREUM_NETWORKS, SORA_UTILITY_ASSET } from '@/consts/networks';
+import { state } from '@extension-base/background/handlers';
+import type { NetworkName } from '@/interfaces';
+import { MAIN_NETWORKS, ETHEREUM_NETWORKS } from '@/consts/networks';
 import { RelayChainName } from '@/interfaces';
 
 export function getMockCurrencies(networks: NetworkJson[]) {
@@ -26,7 +28,6 @@ export function getMockCurrencies(networks: NetworkJson[]) {
         name: tokenName,
         currencyId,
       }) => {
-        const isXOR = symbol === SORA_UTILITY_ASSET;
         const mainNetwork = MAIN_NETWORKS[symbol] ?? mainNet;
         const currencyIndex = result.findIndex(({ assetId: _assetId, relayChain: _relayChain, symbol: _symbol }) => {
           const isExistingAssetId = _assetId === assetId;
@@ -67,11 +68,12 @@ export function getMockCurrencies(networks: NetworkJson[]) {
             name: mainNet,
             existentialDeposit,
             type,
-            decimals: precision,
+            precision,
             icon: networkIcon,
             isNative,
             isUtility: isUtility ?? false,
             id: assetId,
+            symbol,
           },
         ];
 
@@ -87,4 +89,8 @@ export function getMockCurrencies(networks: NetworkJson[]) {
 
 export function isEthereumNetwork(network: string) {
   return ETHEREUM_NETWORKS.includes(network.toLowerCase());
+}
+
+export function getUtilityProps(_network: NetworkName) {
+  return state.networksJson.find(({ name }) => name.toLowerCase() === _network.toLowerCase())!.assets[0];
 }

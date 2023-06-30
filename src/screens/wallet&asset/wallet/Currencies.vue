@@ -12,6 +12,7 @@
         :selectedNetwork="selectedNetwork"
         :showAssetsManagementForm="showAssetsManagementForm"
         :toggleVisibleActivityForm="toggleVisibleActivityForm"
+        :timeoutCallback="timeoutCallback"
         @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible')"
       />
     </Draggable>
@@ -31,6 +32,11 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { AssetsPrice } from '@/interfaces';
 import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
 
+type TimeoutSubscription = {
+  subscription: NodeJS.Timeout;
+  fn: () => void;
+};
+
 @Component({
   components: {
     Draggable,
@@ -38,6 +44,8 @@ import { ActionTypes as AccountsActionTypes } from '@/store/accounts/actions';
   },
 })
 export default class Currencies extends Vue {
+  timeoutSubscriptions: TimeoutSubscription[] = [];
+
   @Prop(Array) balances!: TokenBalance[];
   @Prop(String) selectedNetwork!: string;
   @Prop(String) filterValue!: string;
@@ -88,6 +96,16 @@ export default class Currencies extends Vue {
     if (this.prices.tokenPriceChange[assetKey]) return this.prices.tokenPriceChange[assetKey] / 100;
 
     return 0;
+  }
+
+  timeoutCallback(fn: () => void) {
+    this.timeoutSubscriptions.forEach(({ subscription }) => clearTimeout(subscription));
+
+    this.timeoutSubscriptions = [...this.timeoutSubscriptions, { fn }].map(({ fn }) => {
+      const subscription = setTimeout(() => fn(), 300);
+
+      return { subscription, fn };
+    });
   }
 }
 </script>

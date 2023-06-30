@@ -60,8 +60,8 @@ async function createExchangeA(props: BaseExchangeProps, api: Api<void>): Promis
  */
 export async function createSwap(options: Partial<SwapOptions>, api: Api<void>): Promise<CreateSwapResult> {
   const { assetAId, assetBId, isExchangeB, amountA, amountB, symbolA, symbolB, slippage, marketType } = options;
-  const assetAAddress = getAssetOptions('', 'soraAsset', assetAId!) as string;
-  const assetBAddress = getAssetOptions('', 'soraAsset', assetBId!) as string;
+  const assetAAddress = getAssetOptions(assetAId!) as string;
+  const assetBAddress = getAssetOptions(assetBId!) as string;
   const amountWithDirection = (isExchangeB ? amountB : amountA) as string;
   const liquiditySource = LIQUID_SOURCE_FOR_MARKET[marketType!];
   const assetA: Asset = { address: assetAAddress, decimals: 18, name: symbolA!, symbol: symbolA! };

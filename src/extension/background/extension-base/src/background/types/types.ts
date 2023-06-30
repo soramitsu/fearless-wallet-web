@@ -358,7 +358,7 @@ export interface RequestCheckTransfer extends BaseRequestSign {
   to: string;
   assetId: string;
   relayChain?: string;
-  value?: string;
+  amount?: string;
   password?: string;
   isMobile?: boolean;
 }
@@ -378,10 +378,8 @@ export interface ResponseCheckTransfer {
   errors?: Array<BasicTxError>;
   warnings?: Array<BasicTxWarning>;
   fromAccountFree: string;
-  toAccountFree: string;
   estimateFee?: string;
   destEstimateFee: undefined;
-  feeSymbol?: string; // if undefined => use main token
 }
 
 export interface ResponseCheckCrossChain {
@@ -945,7 +943,6 @@ export interface TokenBalance {
   mainNetwork: string;
   assetId: string;
   priceId?: string;
-  precision: number;
   tokenName: string;
   symbol: string;
   relayChain: RelayChainName;

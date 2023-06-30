@@ -121,6 +121,7 @@ import {
   SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
+
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
 const ETH_DERIVE_DEFAULT = "/m/44'/60'/0'/0/0";
@@ -983,7 +984,7 @@ export default class Extension extends FWExtensionBase {
     to,
     assetId,
     relayChain,
-    value,
+    amount,
     password,
   }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
     const [errors, , tokenInfo] = this.validateTransfer(assetId, from, password);
@@ -993,9 +994,7 @@ export default class Extension extends FWExtensionBase {
 
     const address = this.encodeAddress(from);
     let fee = 0;
-    let feeSymbol;
     let fromAccountFreeBalance = '0';
-    const toAccountFreeBalance = '0';
 
     const tokenBalance = this.state.balanceMap[address].find(
       (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
@@ -1016,7 +1015,7 @@ export default class Extension extends FWExtensionBase {
     } else {
       // Estimate with DotSama API
 
-      fee = await estimateFee(networkKey, to, value, tokenBalance);
+      fee = await estimateFee(networkKey, to, amount, tokenBalance);
       fromAccountFreeBalance =
         tokenBalance.balances.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0';
     }
@@ -1025,16 +1024,14 @@ export default class Extension extends FWExtensionBase {
       errors,
       warnings,
       fromAccountFree: fromAccountFreeBalance,
-      toAccountFree: toAccountFreeBalance,
-      estimateFee: FPNumber.fromCodecValue(fee, tokenInfo.precision).toString(),
-      feeSymbol,
+      estimateFee: fee.toString(),
     } as ResponseCheckTransfer;
   }
 
   private async makeTransfer(
     id: string,
     port: Port,
-    { from, networkKey, password, to, assetId, value, isSavePass, isMobile }: RequestTransfer
+    { from, networkKey, password, to, assetId, amount, isSavePass, isMobile }: RequestTransfer
   ): Promise<BasicTxResponse | undefined> {
     const address = keyring.encodeAddress(from);
 
@@ -1087,21 +1084,21 @@ export default class Extension extends FWExtensionBase {
           from,
           to,
           privateKey,
-          value || '0',
+          amount || '0',
           web3ApiMap,
           callback
         );
       } else {
-        transferProm = makeEVMTransfer(networkKey, to, privateKey, value || '0', web3ApiMap, callback);
+        transferProm = makeEVMTransfer(networkKey, to, privateKey, amount || '0', web3ApiMap, callback);
       }
     } else {
       // Make transfer with Dotsama API
       transferProm = makeTransfer({
         networkKey,
-        tokenInfo,
-        amount: value ?? '0',
-        from: from,
-        to: to,
+        assetId,
+        amount: amount ?? '0',
+        from,
+        to,
         password,
         isSavePass,
         callback,
@@ -1112,7 +1109,7 @@ export default class Extension extends FWExtensionBase {
     transferProm
       .then(() => {
         // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-        console.info(`Start transfer ${value} from ${from} to ${to}`);
+        console.info(`Start transfer ${amount} from ${from} to ${to}`);
       })
       .catch((e) => {
         cb({
@@ -1176,16 +1173,21 @@ export default class Extension extends FWExtensionBase {
 
     console.info('checkCrossChain', extrinsic);
 
-    const tokenInfo = getAssetInfo(assetId);
-    const fee = await estimateCrossChainFee(extrinsic, to, tokenBalance);
+    const { symbol } = tokenBalance.balances.find(({ name }) => name.toLowerCase() === originNet.toLowerCase())!;
+
+    const { precision: precisionDest } = tokenBalance.balances.find(
+      ({ name }) => name.toLowerCase() === destinationNet.toLowerCase()
+    )!;
+
+    const fee = await estimateCrossChainFee(extrinsic, to, originNet);
     const destFees = state.xcmFees.find(({ destChain }) => destChain.toLowerCase() === destinationNet.toLowerCase());
     const destEstimateFee = destFees?.destXcmFee?.find(
-      ({ symbol }) => symbol.toLowerCase() === tokenInfo.symbol.toLowerCase()
+      ({ symbol: _symbol }) => _symbol.toLowerCase() === symbol.toLowerCase()
     );
 
     return {
-      estimateFee: FPNumber.fromCodecValue(fee, tokenBalance?.precision).toString(),
-      destEstimateFee: FPNumber.fromCodecValue(destEstimateFee?.feeInPlanks ?? '0', tokenBalance?.precision).toString(), // TODO Уточнить у Виталия как искать комиссию
+      estimateFee: fee.toString(),
+      destEstimateFee: FPNumber.fromCodecValue(destEstimateFee?.feeInPlanks ?? '0', precisionDest).toString(),
     } as ResponseCheckCrossChain;
   }
 
@@ -1194,7 +1196,7 @@ export default class Extension extends FWExtensionBase {
     port: Port,
     { from, originNet, destinationNet, amount, password, to, assetId, isSavePass }: RequestCrossChain
   ): Promise<void> {
-    const [, fromKeyPair, tokenInfo] = this.validateTransfer(assetId, from, password);
+    const [, fromKeyPair] = this.validateTransfer(assetId, from, password);
 
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
     const ethereumAddress = fromKeyPair!.meta.ethereumAddress as string | undefined;
@@ -1226,7 +1228,6 @@ export default class Extension extends FWExtensionBase {
       assetId,
       originNet,
       destinationNet,
-      tokenInfo,
       amount: amount ?? '0',
       from: fromKeyPair!.address,
       to,

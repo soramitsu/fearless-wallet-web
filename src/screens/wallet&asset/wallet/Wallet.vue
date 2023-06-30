@@ -63,14 +63,14 @@
       v-if="showSendForm"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :_selectedAssetId="selectedCurrency.assetId"
-      :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false)"
+      :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false, {})"
     />
 
     <ReceiveForm
       v-if="showReceiveForm"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :selectedAssetId="selectedCurrency.assetId"
-      :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', false)"
+      :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', false, {})"
     />
 
     <NetworkManagement
@@ -163,7 +163,7 @@ export default class Wallet extends Vue {
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
-  @Getter(AccountsGettersTypes.getShowWarningNetworks) getShowWarningNetworks!: GetShowWarningNetworks;
+  @Getter(AccountsGettersTypes.getShowWarningNetwork) getShowWarningNetwork!: GetShowWarningNetworks;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
@@ -189,13 +189,23 @@ export default class Wallet extends Vue {
   }
 
   get showWarningIcon() {
-    if (this.selectedNetwork !== ALL_NETWORKS) return !!this.disconnectedNetworks.length;
+    if (this.selectedNetwork !== ALL_NETWORKS) {
+      const apiStatus = this.networks.find(
+        ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
+      )?.apiStatus;
+
+      return apiStatus === NETWORK_STATUS.DISCONNECTED;
+    }
 
     return this.networksWithWarning.length !== 0;
   }
 
   get disconnectedNetworks() {
     return this.networks.filter(({ apiStatus }) => apiStatus === NETWORK_STATUS.DISCONNECTED);
+  }
+
+  get networksWithWarning() {
+    return this.disconnectedNetworks.filter(({ name }) => !this.getShowWarningNetwork(name));
   }
 
   get summaryTransferableBalance() {
@@ -226,25 +236,32 @@ export default class Wallet extends Vue {
   }
 
   get showShimmers() {
+    if (this.selectedNetwork !== ALL_NETWORKS) {
+      const apiStatus = this.networks.find(
+        ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
+      )?.apiStatus;
+
+      return apiStatus === NETWORK_STATUS.PENDING;
+    }
+
     const isPendingExists = this.networks.some(({ apiStatus }) => apiStatus === NETWORK_STATUS.PENDING);
 
     return !this.isOnline || isPendingExists;
   }
 
   get filteredCurrencies() {
-    if (this.showAssetsManagementForm) return this.sortedCurrencies;
+    const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
+    const filteredByNetwork = isAllNetworks
+      ? this.sortedCurrencies
+      : this.sortedCurrencies.filter(({ balances }) =>
+          balances.some(({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase())
+        );
+
+    if (this.showAssetsManagementForm) return filteredByNetwork;
 
     const filter = this.filterValue.trim().toLowerCase();
-    const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
 
-    return this.sortedCurrencies.filter(({ balances, symbol }) => {
-      const walletBalance = balances.map(({ name }) => name);
-      const isAvailableInSelectedNetwork = walletBalance.includes(this.selectedNetwork);
-
-      if (!isAllNetworks && !isAvailableInSelectedNetwork) return false;
-
-      return symbol.includes(filter);
-    });
+    return filteredByNetwork.filter(({ symbol }) => symbol.includes(filter));
   }
 
   get showCurrencies() {
@@ -253,10 +270,6 @@ export default class Wallet extends Vue {
 
   get showGoogleExportPopup() {
     return this.$route.params.access_token && this.$route.params.access_token !== 'null';
-  }
-
-  get networksWithWarning() {
-    return this.disconnectedNetworks.filter(({ name }) => !this.getShowWarningNetworks(name));
   }
 
   @Watch('networksWithWarning')
@@ -339,14 +352,16 @@ export default class Wallet extends Vue {
     value = true,
     currency: { mainNetwork: string; assetId: string }
   ) {
-    this[field] = value;
     this.selectedCurrency = currency;
+    this[field] = value;
+
+    if (this.selectedNetwork !== ALL_NETWORKS) this.selectedCurrency.mainNetwork = this.selectedNetwork;
   }
 
   toggleSelectedNetwork(network: string) {
     if (this.selectedNetwork === network) return;
 
-    const prepNetwork: HexString | null = network === 'All' ? null : `0x${this.getNetwork(network).chainId}`;
+    const prepNetwork: HexString | null = network === ALL_NETWORKS ? null : `0x${this.getNetwork(network).chainId}`;
 
     this.setSelectedNetwork(network);
 

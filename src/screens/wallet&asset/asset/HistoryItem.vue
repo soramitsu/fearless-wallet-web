@@ -20,7 +20,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { HistoryElement } from '@/interfaces';
+import type { HistoryElement, NetworkName } from '@/interfaces';
 import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, getSignTransfer } from '@/helpers/history';
 import { TransactionType } from '@/interfaces/history';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
@@ -30,6 +30,7 @@ import { cut } from '@/helpers/common';
 export default class HistoryItem extends Vue {
   @Prop(Object) historyElement!: HistoryElement;
   @Prop(Object) token!: TokenBalance;
+  @Prop(String) network!: NetworkName;
 
   get signTransfer() {
     return getSignTransfer(this.historyElement);
@@ -52,7 +53,7 @@ export default class HistoryItem extends Vue {
   }
 
   get value() {
-    const { signTransfer, value } = getHistoryValue(this.historyElement, this.token.assetId);
+    const { signTransfer, value } = getHistoryValue(this.historyElement, this.token.assetId, this.network);
 
     return `${signTransfer}${this.$n(value, 'decimalPrecise')}`;
   }

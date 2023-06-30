@@ -14,7 +14,7 @@ export type State = {
   hiddenAssets: Record<WalletAddress, string[]>;
   autoSelectNode: AutoSelectNode;
   isCustomSort: Record<string, boolean>;
-  hideWarningNetworks: NetworkName[];
+  hiddenWarningNetworks: NetworkName[];
   qr: string | null;
   showPolkaswapAlert: boolean;
   showSoraCardBanner: boolean;
@@ -32,7 +32,7 @@ const state = (): State => {
     isCustomSort: accountController.getCustomSort(),
     autoSelectNode: accountController.getAutoSelectNodesValue(),
     showPolkaswapAlert: !accountController.getAgreeSwapDisclaimer(),
-    hideWarningNetworks: accountController.getHideWarningNetworks(),
+    hiddenWarningNetworks: accountController.getHiddenWarningNetworks(),
     showSoraCardBanner: Date.now() - accountController.getHidingSoraCardBannerTime() >= SORA_CARD_BANNER_RERUN,
     qr: null,
   };

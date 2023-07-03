@@ -80,7 +80,7 @@ export default class HistoryBook extends Vue {
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get showHistoryAndBook() {
-    return this.showHistory && this.historyAddresses.length !== 0;
+    return this.showHistory || this.book.length !== 0;
   }
 
   get showHistory() {

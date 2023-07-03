@@ -1088,7 +1088,7 @@ export default class State {
   }
 
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {
-    const { reserved, free, frozen, total, transferable, state, locked, id, relayChain, symbol } = item;
+    const { reserved, free, locked, frozen, total, transferable, state, id, relayChain, symbol } = item;
 
     const balancesByAddress = this.balanceMap[address];
     const currencyIndex = balancesByAddress.findIndex(
@@ -1102,8 +1102,8 @@ export default class State {
     );
 
     const asset = balancesByAddress[currencyIndex];
-    const assetIndex = asset.balances.findIndex((el) => {
-      const key = prepNetworkNames[el.name] ?? el.name;
+    const assetIndex = asset.balances.findIndex(({ name }) => {
+      const key = prepNetworkNames[name] ?? name;
 
       return key === networkKey;
     });

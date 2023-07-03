@@ -1,5 +1,5 @@
 import { APIItemState } from '@extension-base/api/types/networks';
-import type { AssetsType } from '@/interfaces';
+import type { AssetType } from '@/interfaces';
 
 export interface BalanceChildItem {
   reserved: string;
@@ -10,15 +10,15 @@ export interface BalanceChildItem {
 
 export interface BalanceItem {
   state: APIItemState;
-  symbol?: string;
+  symbol: string;
   name: string; // is Network Name, TODO name -> networkName
-  id?: string;
+  id: string;
   relayChain?: string;
   existentialDeposit?: string;
   currencyId?: string;
   key?: string;
-  decimals?: number;
-  type: AssetsType;
+  precision: number;
+  type: AssetType;
   free?: string;
   isUtility?: boolean;
   isNative?: boolean;

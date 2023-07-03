@@ -143,14 +143,10 @@ function getCurrencyOptions(currencies: TokenBalance[]) {
 
 function getUtilityAsset(currencies: TokenBalance[], _network: NetworkName) {
   const currency = currencies.find(({ balances }) =>
-    balances.some(
-      ({ name, type }) => name.toLowerCase() === _network.toLowerCase() && (type === 'normal' || type === 'equilibrium')
-    )
+    balances.some(({ name, isUtility }) => name.toLowerCase() === _network.toLowerCase() && isUtility)
   );
 
-  if (!currency) return '';
-
-  return currency.symbol;
+  return currency!.symbol;
 }
 
 const getXORCurrency = (balances: TokenBalance[]) => {

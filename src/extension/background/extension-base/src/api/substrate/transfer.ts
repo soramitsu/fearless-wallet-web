@@ -1,50 +1,15 @@
-// Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
 import { FPNumber } from '@sora-substrate/util';
 import { state } from '@extension-base/background/handlers';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { createExtrinsicTransfer } from '@extension-base/api/substrate/utils';
-import type { Asset } from '@extension-base/types';
-import type { AccountInfoWithProviders, AccountInfoWithRefCount } from '@polkadot/types/interfaces';
+import { getUtilityProps } from '@extension-base/background/utils/utils';
 import {
-  ApiProps,
   BasicTxResponse,
   TransferErrorCode,
   SignerType,
   TokenBalance,
 } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworkName } from '@/interfaces';
-
-function isRefCount(
-  accountInfo: AccountInfoWithProviders | AccountInfoWithRefCount
-): accountInfo is AccountInfoWithRefCount {
-  return !!(accountInfo as AccountInfoWithRefCount).refcount;
-}
-
-export async function checkReferenceCount(
-  networkKey: string,
-  address: string,
-  dotSamaApiMap: Record<string, ApiProps>
-): Promise<boolean> {
-  const apiProps = dotSamaApiMap[networkKey];
-  await apiProps.api?.isReady;
-  const api = apiProps.api;
-
-  if (apiProps.isEthereum) {
-    return false;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  const accountInfo: AccountInfoWithProviders | AccountInfoWithRefCount = await api.query.system.account(address);
-
-  return accountInfo
-    ? isRefCount(accountInfo)
-      ? !accountInfo.refcount.isZero()
-      : !accountInfo.consumers.isZero()
-    : false;
-}
 
 export async function estimateFee(
   networkKey: string,
@@ -68,11 +33,17 @@ export async function estimateFee(
 
   if (!extrinsic) return 0;
 
-  const paymentInfo = await extrinsic.paymentInfo(to);
-  const partialFee = paymentInfo ? +paymentInfo.partialFee : 0;
-  const result = new FPNumber(partialFee, tokenBalance?.precision);
+  const { precision: utilityPrecision } = getUtilityProps(networkKey);
 
-  return result.toNumber();
+  try {
+    const paymentInfo = await extrinsic.paymentInfo(to);
+    const partialFee = paymentInfo ? +paymentInfo.partialFee : 0;
+    const result = FPNumber.fromCodecValue(partialFee, utilityPrecision);
+
+    return result.toNumber();
+  } catch {
+    return 0;
+  }
 }
 
 export function getUnsupportedResponse(): BasicTxResponse {
@@ -93,7 +64,7 @@ export interface MakeTransferProps {
   from: string;
   amount: string;
   password: string | undefined;
-  tokenInfo: Asset;
+  assetId: string;
   isSavePass?: boolean;
   callback: (data: BasicTxResponse) => void;
   isMobile: boolean;
@@ -103,7 +74,7 @@ export async function makeTransfer({
   from,
   networkKey,
   to,
-  tokenInfo,
+  assetId,
   isSavePass,
   password,
   amount,
@@ -115,7 +86,7 @@ export async function makeTransfer({
 
   await apiProps.api?.isReady;
 
-  const tokenBalance = state.balanceMap[from].find(({ assetId }) => assetId === tokenInfo.id)!;
+  const tokenBalance = state.balanceMap[from].find(({ assetId: _assetId }) => _assetId === assetId)!;
 
   const extrinsic = createExtrinsicTransfer({
     amount,

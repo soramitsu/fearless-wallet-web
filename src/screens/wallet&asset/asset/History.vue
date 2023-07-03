@@ -17,6 +17,7 @@
               :key="index"
               :historyElement="historyElement"
               :token="currency"
+              :network="selectedNetwork"
               @click.native="$emit('openHistoryDetailsForm', historyElement)"
             />
           </template>

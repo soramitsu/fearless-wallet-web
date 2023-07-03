@@ -213,7 +213,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get transferFee() {
-    return getHumanTransferFee(this.historyElement, this.assetId);
+    return getHumanTransferFee(this.historyElement, this.assetId, this.selectedNetwork);
   }
 
   get date() {
@@ -221,7 +221,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get value() {
-    const { signTransfer, value } = getHistoryValue(this.historyElement, this.assetId);
+    const { signTransfer, value } = getHistoryValue(this.historyElement, this.assetId, this.selectedNetwork);
 
     return `${signTransfer}${this.$n(value, 'decimalPrecise')}`;
   }

@@ -212,11 +212,13 @@ export default class Asset extends Vue {
   }
 
   get currentNetwork() {
-    return this.currentCurrency.balances.find(({ name }) => name.toLowerCase() === this.selectedNetwork?.toLowerCase());
+    return this.currentCurrency.balances?.find(
+      ({ name }) => name.toLowerCase() === this.selectedNetwork?.toLowerCase()
+    );
   }
 
   get mainNetwork() {
-    return this.currentCurrency.balances.find((network) => network.isUtility || network.isNative)!.name ?? '';
+    return this.currentCurrency.balances?.find((network) => network.isUtility || network.isNative)!.name ?? '';
   }
 
   get showBuyButton() {

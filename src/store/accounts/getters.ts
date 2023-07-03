@@ -24,7 +24,7 @@ export enum GettersTypes {
   GET_QR = 'getQR',
   getIsCustomSort = 'getIsCustomSort',
   showPolkaswapAlert = 'showPolkaswapAlert',
-  getShowWarningNetworks = 'getShowWarningNetworks',
+  getShowWarningNetwork = 'getShowWarningNetwork',
   showSoraCardBanner = 'showSoraCardBanner',
 }
 
@@ -41,7 +41,7 @@ export type Getters = {
   [GettersTypes.getWallets](state: State, getters?: GetterTree<State, State> & Getters): WalletInfo[];
   [GettersTypes.showPolkaswapAlert](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.showSoraCardBanner](state: State, getters?: GetterTree<State, State> & Getters): boolean;
-  [GettersTypes.getShowWarningNetworks](
+  [GettersTypes.getShowWarningNetwork](
     state: State,
     getters?: GetterTree<State, State> & Getters
   ): GetShowWarningNetworks;
@@ -129,10 +129,10 @@ const getters: GetterTree<State, State> & Getters = {
     return qr;
   },
 
-  [GettersTypes.getShowWarningNetworks]:
-    ({ hideWarningNetworks }) =>
+  [GettersTypes.getShowWarningNetwork]:
+    ({ hiddenWarningNetworks }) =>
     (networkName: string) => {
-      return hideWarningNetworks.includes(networkName);
+      return hiddenWarningNetworks.includes(networkName);
     },
 
   [GettersTypes.getIsCustomSort]:

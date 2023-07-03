@@ -17,7 +17,7 @@ class AccountController {
   private readonly accounts = 'accounts';
   private readonly hiddenAssets = 'hidden-assets';
   private readonly agreeSwapDisclaimer = 'agree-swap-disclaimer';
-  private readonly hideWarningNetworks = 'hide-warning-networks';
+  private readonly hiddenWarningNetworks = 'hidden-warning-networks';
   private readonly hidingSoraCardBannerTime = 'hiding-sora-card-banner-time';
 
   public getHidingSoraCardBannerTime(): number {
@@ -28,16 +28,16 @@ class AccountController {
     this.lsAccount.set(this.hidingSoraCardBannerTime, time);
   }
 
-  public getHideWarningNetworks(): string[] {
-    const array = this.lsAccount.get(this.hideWarningNetworks);
+  public getHiddenWarningNetworks(): string[] {
+    const array = this.lsAccount.get(this.hiddenWarningNetworks);
 
     return array.value ?? [];
   }
 
-  public setHideWarningNetwork(networkName: NetworkName): void {
-    const array = this.getHideWarningNetworks();
+  public setHiddenWarningNetwork(networkName: NetworkName): void {
+    const array = this.getHiddenWarningNetworks();
 
-    this.lsAccount.set(this.hideWarningNetworks, [...array, networkName]);
+    this.lsAccount.set(this.hiddenWarningNetworks, [...array, networkName]);
   }
 
   public getAgreeSwapDisclaimer(): boolean {
@@ -77,12 +77,6 @@ class AccountController {
       ethereumAddress: '',
       name: '',
     };
-  }
-
-  public getSelectedWalletAddress(): string {
-    const lsFiat = this.lsAccount.get(this.selectedWalletStorageName);
-
-    return lsFiat.value ?? '';
   }
 
   public setSelectedWalletAddress(address = ''): void {

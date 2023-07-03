@@ -73,19 +73,3 @@ export function transformAddresses(addresses: SubjectInfo): InjectedAccount[] {
       })
     );
 }
-
-export const getCurrentProvider = (data: NetworkJson) => {
-  if (!data?.currentProvider) {
-    return null;
-  }
-
-  const customIndex = data.customNodes.findIndex(({ url }) => url === data.currentProvider);
-
-  if (customIndex >= 0) return data.customNodes[customIndex];
-
-  const defaultNodesIndex = data.nodes.findIndex(({ url }) => url === data.currentProvider);
-
-  if (defaultNodesIndex >= 0) return data.nodes[customIndex];
-
-  return null;
-};

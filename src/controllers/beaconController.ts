@@ -23,8 +23,8 @@ import type {
 import { MOONBEAM_GENESISHASH, WESTEND_GENESISHASH } from '@/consts/networks';
 import store from '@/store';
 import { MutationTypes as AccountMutationTypes } from '@/store/accounts/mutations';
-import { MobileSigningRequest } from '@/extension/background/extension-base/src/background/types/types';
 import { approveSignMobileSignature, subscribeMobileSigningRequests } from '@/extension/messaging';
+import { MobileSigningRequest } from '@/extension/background/extension-base/src/background/types/types';
 class BeaconController {
   private app: DAppClient;
   private serializer = new Serializer();

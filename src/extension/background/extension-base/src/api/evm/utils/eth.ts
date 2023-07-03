@@ -95,5 +95,5 @@ export const signatureToHex = (sig: ethers.Transaction): string => {
 };
 
 export const getERC20Contract = (networkKey: string, assetAddress: string): ethers.Contract => {
-  return new ethers.Contract(assetAddress, ERC20Contract.abi, state.getEvmApiMap[networkKey].provider);
+  return new ethers.Contract(assetAddress, ERC20Contract, state.getEvmApiMap[networkKey].provider);
 };

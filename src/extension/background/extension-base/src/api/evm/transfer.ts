@@ -132,7 +132,7 @@ export async function getERC20TransactionObject(
   from: string,
   to: string,
   value: string
-): Promise<[ethers.TransactionRequest, string, bigint]> {
+): Promise<{ tx: ethers.TransactionRequest; value: string; fee: bigint }> {
   const web3Api = state.getEvmApiMap[networkKey];
   const erc20Contract = getERC20Contract(networkKey, assetAddress);
 
@@ -158,7 +158,7 @@ export async function getERC20TransactionObject(
 
   const estimateFee = gasPrice ? gasPrice * gasLimit : BigInt(0);
 
-  return [transactionObject, value, estimateFee];
+  return { tx: transactionObject, value, fee: estimateFee };
 }
 
 export async function makeERC20Transfer(
@@ -170,7 +170,7 @@ export async function makeERC20Transfer(
   value: string,
   callback: (data: BasicTxResponse) => void
 ) {
-  const [transactionObject, changeValue] = await getERC20TransactionObject(assetAddress, networkKey, from, to, value);
+  const { tx, value: changeValue } = await getERC20TransactionObject(assetAddress, networkKey, from, to, value);
 
-  await handleTransfer(transactionObject, changeValue, networkKey, privateKey, callback);
+  await handleTransfer(tx, changeValue, networkKey, privateKey, callback);
 }

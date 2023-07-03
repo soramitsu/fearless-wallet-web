@@ -96,6 +96,7 @@ import {
   MobileSigningRequest,
   TransferErrorCode,
 } from '@extension-base/background/types/types';
+import { ethers } from 'ethers';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   Asset,
@@ -993,7 +994,7 @@ export default class Extension extends FWExtensionBase {
     const address = isEthereumAddress(from)
       ? keyring.getAccounts().filter((el) => el.meta.ethereumAddress === from)[0].address
       : this.encodeAddress(from);
-    let fee: bigint | number = BigInt(0);
+    let fee = '0';
     let fromAccountFreeBalance = '0';
 
     const tokenBalance = this.state.balanceMap[address].find(
@@ -1008,15 +1009,18 @@ export default class Extension extends FWExtensionBase {
 
       // Estimate with EVM API
       if (!isMainToken && tokenInfo.smartContract) {
-        [, , fee] = await getERC20TransactionObject(tokenInfo.smartContract, networkKey, from, to, txVal);
+        const { fee: feeValue } = await getERC20TransactionObject(tokenInfo.smartContract, networkKey, from, to, txVal);
+
+        fee = ethers.formatUnits(feeValue, tokenInfo.precision);
       } else {
         const { fee: _fee } = await getEVMTransactionObject(networkKey, to, txVal);
-        fee = _fee;
+        fee = ethers.formatEther(_fee);
       }
     } else {
       // Estimate with DotSama API
 
-      fee = await estimateFee(networkKey, to, amount, tokenBalance);
+      const feeNumber = await estimateFee(networkKey, to, amount, tokenBalance);
+      fee = feeNumber.toString();
       fromAccountFreeBalance =
         tokenBalance.balances.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0';
     }
@@ -1025,7 +1029,7 @@ export default class Extension extends FWExtensionBase {
       errors,
       warnings,
       fromAccountFree: fromAccountFreeBalance,
-      estimateFee: fee.toString(),
+      estimateFee: ethers.formatEther(fee),
     } as ResponseCheckTransfer;
   }
 

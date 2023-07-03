@@ -6,25 +6,22 @@ import ERC20Contract from '@extension-base/api/evm/helpers/ERC20Contract.json';
 
 export async function validateEvmToken(contractAddress: string) {
   let tokenContract: Contract;
-  const name = '';
-  const decimals: number | undefined = -1;
-  const symbol = '';
+  let name = '';
+  let decimals: number | undefined = -1;
+  let symbol = '';
   let contractError = false;
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument,@typescript-eslint/no-unsafe-member-access
-    tokenContract = new ethers.Contract(contractAddress, ERC20Contract.abi);
+    tokenContract = new ethers.Contract(contractAddress, ERC20Contract);
 
-    // const [_decimals, _symbol] = await Promise.all([
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-    // tokenContract.methods.decimals().call() as number,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-    // tokenContract.methods.symbol().call() as string,
-    // ]);
+    const [_decimals, _symbol] = await Promise.all([
+      tokenContract.decimals() as unknown as number,
+      tokenContract.symbol() as unknown as string,
+    ]);
 
-    // name = _symbol;
-    // decimals = _decimals;
-    // symbol = _symbol;
+    name = _symbol;
+    decimals = _decimals;
+    symbol = _symbol;
 
     if (name === '' || symbol === '') {
       contractError = true;

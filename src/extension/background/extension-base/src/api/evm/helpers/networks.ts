@@ -47,7 +47,7 @@ export const EVM_NETWORKS_JSON: NetworkJson[] = [
         name: 'usdt',
         symbol: 'usdt',
         precision: 6,
-        smartContract: '0x55d398326f99059fF775485246999027B3197955',
+        smartContract: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
         priceId: 'tether',
         icon: 'https://raw.githubusercontent.com/soramitsu/fearless-utils/master/icons/tokens/coloured/USDT.svg',
         color: 'FF0066',

@@ -1011,7 +1011,7 @@ export default class Extension extends FWExtensionBase {
       if (!isMainToken && tokenInfo.smartContract) {
         const { fee: feeValue } = await getERC20TransactionObject(tokenInfo.smartContract, networkKey, from, to, txVal);
 
-        fee = ethers.formatUnits(feeValue, tokenInfo.precision);
+        fee = ethers.formatEther(feeValue);
       } else {
         const { fee: _fee } = await getEVMTransactionObject(networkKey, to, txVal);
         fee = ethers.formatEther(_fee);
@@ -1029,7 +1029,7 @@ export default class Extension extends FWExtensionBase {
       errors,
       warnings,
       fromAccountFree: fromAccountFreeBalance,
-      estimateFee: ethers.formatEther(fee),
+      estimateFee: fee,
     } as ResponseCheckTransfer;
   }
 

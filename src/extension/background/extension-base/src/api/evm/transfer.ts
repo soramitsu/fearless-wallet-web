@@ -136,24 +136,23 @@ export async function getERC20TransactionObject(
   const web3Api = state.getEvmApiMap[networkKey];
   const erc20Contract = getERC20Contract(networkKey, assetAddress);
 
-  function generateTransferData(to: string, transferValue: ethers.BigNumberish) {
-    return erc20Contract.transfer(to, transferValue);
+  function generateTransferData(to: string, transferValue: ethers.BigNumberish): string {
+    return erc20Contract.interface.encodeFunctionData('transfer', [to, transferValue]);
   }
 
-  const prepValue = ethers.parseUnits(value, 6).toString();
-  const transferData = await generateTransferData(to, prepValue);
+  const transferData = await generateTransferData(to, value);
   const { gasPrice } = await web3Api.provider.getFeeData();
-
+  //TODO getTokenInfo
   const transactionObject = {
     gasPrice,
     from,
-    to: assetAddress,
-    data: transferData.data,
+    to: '0x509Ee0d083DdF8AC028f2a56731412edD63223B9',
+    data: transferData,
+    value: ethers.parseEther('0'),
   } as ethers.TransactionRequest;
 
   const estimatedGas = await web3Api.provider.estimateGas(transactionObject);
   const gasLimit = estimatedGas;
-
   transactionObject.gasLimit = gasLimit;
 
   const estimateFee = gasPrice ? gasPrice * gasLimit : BigInt(0);

@@ -2,7 +2,7 @@ import BigN from 'bignumber.js';
 import { u8aToHex } from '@polkadot/util';
 import BNEther from 'bn.js';
 import RLP from 'rlp';
-import { ethers } from 'ethers';
+import { ethers, Contract } from 'ethers';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import ERC20Contract from '@extension-base/api/evm/helpers/ERC20Contract.json';
 import { state } from '@extension-base/background/handlers';
@@ -90,10 +90,6 @@ export const createTransactionFromRLP = (rlp: string): Transaction | null => {
   }
 };
 
-export const signatureToHex = (sig: ethers.Transaction): string => {
-  return sig.hash ?? '';
-};
-
 export const getERC20Contract = (networkKey: string, assetAddress: string): ethers.Contract => {
-  return new ethers.Contract(assetAddress, ERC20Contract, state.getEvmApiMap[networkKey].provider);
+  return new Contract(assetAddress, ERC20Contract.abi, state.getEvmApiMap[networkKey].provider);
 };

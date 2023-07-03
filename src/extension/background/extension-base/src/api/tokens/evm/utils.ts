@@ -12,7 +12,7 @@ export async function validateEvmToken(contractAddress: string) {
   let contractError = false;
 
   try {
-    tokenContract = new ethers.Contract(contractAddress, ERC20Contract);
+    tokenContract = new ethers.Contract(contractAddress, ERC20Contract.abi);
 
     const [_decimals, _symbol] = await Promise.all([
       tokenContract.decimals() as unknown as number,

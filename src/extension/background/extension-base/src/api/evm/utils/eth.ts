@@ -1,5 +1,5 @@
 import BigN from 'bignumber.js';
-import { hexStripPrefix, numberToHex, u8aToHex } from '@polkadot/util';
+import { u8aToHex } from '@polkadot/util';
 import BNEther from 'bn.js';
 import RLP from 'rlp';
 import { ethers } from 'ethers';
@@ -91,14 +91,7 @@ export const createTransactionFromRLP = (rlp: string): Transaction | null => {
 };
 
 export const signatureToHex = (sig: ethers.Transaction): string => {
-  const v = sig.v;
-  const r = hexStripPrefix(sig.r);
-  const s = hexStripPrefix(sig.s);
-  const hexR = r.length % 2 === 1 ? `0${r}` : r;
-  const hexS = s.length % 2 === 1 ? `0${s}` : s;
-  const hexV = hexStripPrefix(numberToHex(v));
-
-  return hexR + hexS + hexV;
+  return sig.hash ?? '';
 };
 
 export const getERC20Contract = (networkKey: string, assetAddress: string): ethers.Contract => {

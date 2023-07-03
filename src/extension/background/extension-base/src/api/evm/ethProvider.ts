@@ -1,11 +1,13 @@
 import { ethers } from 'ethers';
 import { EvmNetworkType } from '@/interfaces/ether';
 export default class EthProvider {
-  provider: ethers.providers.BaseProvider;
+  provider: ethers.WebSocketProvider;
   isReady = false;
+
   constructor(url: string) {
-    this.provider = new ethers.providers.WebSocketProvider(url);
-    this.provider._ready().then(() => {
+    this.provider = new ethers.WebSocketProvider(url);
+
+    this.provider._waitUntilReady().then(() => {
       this.isReady = true;
     });
 
@@ -19,14 +21,6 @@ export default class EthProvider {
   public async getBalance(address: string) {
     const balance = await this.provider.getBalance(address);
 
-    return ethers.utils.formatEther(balance);
-  }
-
-  public getGasPrice() {
-    return this.provider.getGasPrice();
-  }
-
-  public getEstimateGas(tx: ethers.providers.TransactionRequest) {
-    return this.provider.estimateGas(tx);
+    return ethers.formatEther(balance);
   }
 }

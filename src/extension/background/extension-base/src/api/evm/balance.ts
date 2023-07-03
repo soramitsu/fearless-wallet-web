@@ -11,7 +11,7 @@ export async function getEtherBalance(networkKey: string, address: string): Prom
 
   const balance = await eth.getBalance(address);
 
-  return ethers.utils.formatEther(balance);
+  return ethers.formatEther(balance);
 }
 
 function subscribeERC20Interval(
@@ -24,14 +24,14 @@ function subscribeERC20Interval(
   const getTokenBalances = () => {
     const assets = state.networkMap[networkKey].assets.filter((el) => !el.isUtility);
 
-    assets.map(async ({ symbol, name, icon, precision, id }) => {
+    assets.map(async ({ symbol, name, icon, id }) => {
       let free = '0';
 
       try {
         const contract = ERC20ContractMap[symbol];
         const bal = await contract.balanceOf(address);
 
-        free = new FPNumber(bal, precision).toString();
+        free = bal.toString();
 
         subCallback({
           state: APIItemState.READY,

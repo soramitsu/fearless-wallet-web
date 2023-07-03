@@ -993,7 +993,7 @@ export default class Extension extends FWExtensionBase {
     const address = isEthereumAddress(from)
       ? keyring.getAccounts().filter((el) => el.meta.ethereumAddress === from)[0].address
       : this.encodeAddress(from);
-    let fee = 0;
+    let fee: bigint | number = BigInt(0);
     let fromAccountFreeBalance = '0';
 
     const tokenBalance = this.state.balanceMap[address].find(
@@ -1010,7 +1010,8 @@ export default class Extension extends FWExtensionBase {
       if (!isMainToken && tokenInfo.smartContract) {
         [, , fee] = await getERC20TransactionObject(tokenInfo.smartContract, networkKey, from, to, txVal);
       } else {
-        [, , fee] = await getEVMTransactionObject(networkKey, to, txVal);
+        const { fee: _fee } = await getEVMTransactionObject(networkKey, to, txVal);
+        fee = _fee;
       }
     } else {
       // Estimate with DotSama API

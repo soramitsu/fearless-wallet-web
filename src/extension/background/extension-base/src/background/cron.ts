@@ -166,7 +166,7 @@ export class FWCron {
     const apiMap = this.state.getApiMap;
 
     for (const [key, evm] of Object.entries(apiMap.evm)) {
-      evm.provider._ready().catch(() => {
+      evm.provider._waitUntilReady().catch(() => {
         this.state.refreshWeb3Api(key);
       });
     }
@@ -206,7 +206,8 @@ export class FWCron {
     for (const [key, evm] of Object.entries(apiMap.evm)) {
       const apiStatus = networkMap[key].apiStatus;
 
-      evm.provider.ready
+      evm.provider
+        ._waitUntilReady()
         .then(() => {
           if (!apiStatus) this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
           else if (apiStatus !== NETWORK_STATUS.CONNECTED) {

@@ -3,6 +3,7 @@ import { BalanceItem } from '@extension-base/api/evm/types/ether';
 import { APIItemState } from '@extension-base/api/types/networks';
 import { TokenBalance } from '@extension-base/background/types/types';
 import { state } from '@extension-base/background/handlers';
+import { keyring } from '@polkadot/ui-keyring';
 import type { NetworkName } from '@/interfaces';
 import { MAIN_NETWORKS, ETHEREUM_NETWORKS } from '@/consts/networks';
 import { RelayChainName } from '@/interfaces';
@@ -93,4 +94,10 @@ export function isEthereumNetwork(network: string) {
 
 export function getUtilityProps(_network: NetworkName) {
   return state.networksJson.find(({ name }) => name.toLowerCase() === _network.toLowerCase())!.assets[0];
+}
+
+export function getSubstrateAddressByEthAddress(ethereumAddress: string) {
+  const accounts = keyring.getAccounts();
+
+  return accounts.find(({ meta }) => meta.ethereumAddress === ethereumAddress)?.address ?? ethereumAddress;
 }

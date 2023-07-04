@@ -45,35 +45,22 @@ export const handleTransferBalanceResult = ({
 
 export async function handleTransfer(
   transactionObject: ethers.TransactionRequest,
-  changeValue: string,
   networkKey: string,
   privateKey: string,
   callback: (data: BasicTxResponse) => void
 ) {
   const web3Api = state.getEvmApiMap[networkKey];
-  const signer = new ethers.Wallet(privateKey);
+  const signer = new ethers.Wallet(privateKey, web3Api.provider);
 
-  const signedTransaction = await signer.signTransaction(transactionObject);
   const response: BasicTxResponse = {
     errors: [],
   };
 
   try {
-    signedTransaction && web3Api.provider.broadcastTransaction(signedTransaction);
-
-    web3Api.provider.on('transactionHash', (hash: string) => {
-      response.extrinsicHash = hash;
-      callback(response);
-    });
-    web3Api.provider.on('receipt', (receipt: ethers.TransactionReceipt) => {
-      handleTransferBalanceResult({
-        receipt: receipt,
-        response: response,
-        callback: callback,
-        networkKey: networkKey,
-        changeValue: changeValue,
-      });
-    });
+    const tx = await signer.sendTransaction(transactionObject);
+    response.callHash = tx.hash;
+    response.status = true;
+    response.txError = false;
   } catch (error) {
     response.status = false;
     response.txError = true;
@@ -93,7 +80,7 @@ export async function getEVMTransactionObject(
   value: string
 ): Promise<{ tx: ethers.TransactionRequest; value: string; fee: bigint }> {
   const web3Api = state.getEvmApiMap[networkKey];
-  const { gasPrice, maxFeePerGas, maxPriorityFeePerGas } = await web3Api.provider.getFeeData();
+  const { maxFeePerGas, maxPriorityFeePerGas, gasPrice } = await web3Api.provider.getFeeData();
 
   const nonce = await web3Api.provider.getTransactionCount(to);
   const transactionObject = {
@@ -104,14 +91,13 @@ export async function getEVMTransactionObject(
     value: ethers.parseEther(value),
   } as ethers.TransactionRequest;
   const gas = await web3Api.provider.estimateGas(transactionObject);
-  const prepGasPrice = BigInt(gasPrice ?? 0);
-  const gasLimit = gas;
-  transactionObject.gasLimit = gasLimit;
-  const estimateFee = prepGasPrice * gasLimit;
+  transactionObject.gasLimit = gas;
+  const prepGasPrice = gasPrice ?? BigInt(0);
+  const estimateFee = prepGasPrice * gas;
 
   transactionObject.value = ethers.parseEther(value);
 
-  return { tx: transactionObject, value: transactionObject.value.toString(), fee: estimateFee };
+  return { tx: transactionObject, value: BigInt(0).toString(), fee: estimateFee };
 }
 
 export async function makeEVMTransfer(
@@ -121,9 +107,9 @@ export async function makeEVMTransfer(
   value: string,
   callback: (data: BasicTxResponse) => void
 ): Promise<void> {
-  const { tx, value: _value } = await getEVMTransactionObject(networkKey, to, value);
+  const { tx } = await getEVMTransactionObject(networkKey, to, value);
 
-  await handleTransfer(tx, _value, networkKey, privateKey, callback);
+  await handleTransfer(tx, networkKey, privateKey, callback);
 }
 
 export async function getERC20TransactionObject(
@@ -169,7 +155,7 @@ export async function makeERC20Transfer(
   value: string,
   callback: (data: BasicTxResponse) => void
 ) {
-  const { tx, value: changeValue } = await getERC20TransactionObject(assetAddress, networkKey, from, to, value);
+  const { tx } = await getERC20TransactionObject(assetAddress, networkKey, from, to, value);
 
-  await handleTransfer(tx, changeValue, networkKey, privateKey, callback);
+  await handleTransfer(tx, networkKey, privateKey, callback);
 }

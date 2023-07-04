@@ -97,6 +97,7 @@ import {
   TransferErrorCode,
 } from '@extension-base/background/types/types';
 import { ethers } from 'ethers';
+import { getSubstrateAddressByEthAddress } from '@extension-base/background/utils/utils';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
   Asset,
@@ -991,9 +992,7 @@ export default class Extension extends FWExtensionBase {
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
     const isFromEthereum = isEthereumAddress(from);
 
-    const address = isEthereumAddress(from)
-      ? keyring.getAccounts().filter((el) => el.meta.ethereumAddress === from)[0].address
-      : this.encodeAddress(from);
+    const address = isEthereumAddress(from) ? getSubstrateAddressByEthAddress(from) : this.encodeAddress(from);
     let fee = '0';
     let fromAccountFreeBalance = '0';
 
@@ -1002,10 +1001,7 @@ export default class Extension extends FWExtensionBase {
     )!;
 
     if (isFromEthereum && isEthereumAddress(to)) {
-      const fromAccountFreeBalance = tokenBalance
-        ? tokenBalance.balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0'
-        : '0';
-      const txVal = fromAccountFreeBalance || '0';
+      const txVal = amount ?? '0';
 
       // Estimate with EVM API
       if (!isMainToken && tokenInfo.smartContract) {
@@ -1013,8 +1009,9 @@ export default class Extension extends FWExtensionBase {
 
         fee = ethers.formatEther(feeValue);
       } else {
-        const { fee: _fee } = await getEVMTransactionObject(networkKey, to, txVal);
-        fee = ethers.formatEther(_fee);
+        const { fee: feeValue } = await getEVMTransactionObject(networkKey, to, txVal);
+
+        fee = ethers.formatEther(feeValue);
       }
     } else {
       // Estimate with DotSama API
@@ -1038,7 +1035,7 @@ export default class Extension extends FWExtensionBase {
     port: Port,
     { from, networkKey, password, to, assetId, amount, isSavePass, isMobile }: RequestTransfer
   ): Promise<BasicTxResponse | undefined> {
-    const address = keyring.encodeAddress(from);
+    const address = isEthereumAddress(from) ? getSubstrateAddressByEthAddress(from) : keyring.encodeAddress(from);
 
     const txState: BasicTxResponse = {};
 
@@ -1115,12 +1112,13 @@ export default class Extension extends FWExtensionBase {
         console.info(`Start transfer ${amount} from ${from} to ${to}`);
       })
       .catch((e) => {
+        console.error('Transfer error', e);
+
         cb({
           txError: true,
           status: false,
           errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (e as Error).message }],
         });
-        console.error('Transfer error', e);
 
         setTimeout(() => this.cancelSubscription(id), 500);
 

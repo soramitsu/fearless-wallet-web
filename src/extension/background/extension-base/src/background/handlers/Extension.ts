@@ -992,7 +992,7 @@ export default class Extension extends FWExtensionBase {
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
     const isFromEthereum = isEthereumAddress(from);
 
-    const address = isEthereumAddress(from) ? getSubstrateAddressByEthAddress(from) : this.encodeAddress(from);
+    const address = isFromEthereum ? getSubstrateAddressByEthAddress(from) : this.encodeAddress(from);
     let fee = '0';
     let fromAccountFreeBalance = '0';
 
@@ -1000,8 +1000,11 @@ export default class Extension extends FWExtensionBase {
       (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
 
-    if (isFromEthereum && isEthereumAddress(to)) {
-      const txVal = amount ?? '0';
+    if (isFromEthereum && isEthereumAddress(to) && networkKey !== 'Moonriver' && networkKey !== 'Moonbeam') {
+      const fromAccountFreeBalance = tokenBalance
+        ? tokenBalance.balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0'
+        : '0';
+      const txVal = fromAccountFreeBalance || '0';
 
       // Estimate with EVM API
       if (!isMainToken && tokenInfo.smartContract) {

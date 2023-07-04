@@ -1,5 +1,4 @@
 import { Contract, ethers } from 'ethers';
-import { FPNumber } from '@sora-substrate/util';
 import { ETHEREUM_REFRESH_BALANCE_INTERVAL, SUB_TOKEN_REFRESH_BALANCE_INTERVAL } from '../../const/intervals';
 import { APIItemState } from '../types/networks';
 import { state } from '../../background/handlers';
@@ -7,7 +6,7 @@ import { BalanceItem } from './types/ether';
 import { getERC20Contract } from './utils/eth';
 
 export async function getEtherBalance(networkKey: string, address: string): Promise<string> {
-  const eth = state.getEvmApiMap[networkKey].provider;
+  const eth = state.getEvmApiMap[networkKey];
 
   const balance = await eth.getBalance(address);
 

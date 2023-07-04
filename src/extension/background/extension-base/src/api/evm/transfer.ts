@@ -50,7 +50,7 @@ export async function handleTransfer(
   callback: (data: BasicTxResponse) => void
 ) {
   const web3Api = state.getEvmApiMap[networkKey];
-  const signer = new ethers.Wallet(privateKey, web3Api.provider);
+  const signer = new ethers.Wallet(privateKey, web3Api);
 
   const response: BasicTxResponse = {
     errors: [],
@@ -80,7 +80,7 @@ export async function getEVMTransactionObject(
   value: string
 ): Promise<{ tx: ethers.TransactionRequest; value: string; fee: bigint }> {
   const web3Api = state.getEvmApiMap[networkKey];
-  const { maxFeePerGas, maxPriorityFeePerGas, gasPrice } = await web3Api.provider.getFeeData();
+  const { maxFeePerGas, maxPriorityFeePerGas, gasPrice } = await web3Api.getFeeData();
 
   const nonce = await web3Api.provider.getTransactionCount(to);
   const transactionObject = {
@@ -127,7 +127,7 @@ export async function getERC20TransactionObject(
   }
 
   const transferData = await generateTransferData(to, value);
-  const { gasPrice } = await web3Api.provider.getFeeData();
+  const { gasPrice } = await web3Api.getFeeData();
   //TODO getTokenInfo
   const transactionObject = {
     gasPrice,

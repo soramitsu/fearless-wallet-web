@@ -1,5 +1,5 @@
-import EthProvider from '@extension-base/api/evm/ethProvider';
+import { WebSocketProvider } from 'ethers';
 
-export const initWeb3Api = (url: string): EthProvider => {
-  return new EthProvider(url);
+export const initWeb3Api = (url: string): WebSocketProvider => {
+  return new WebSocketProvider(url);
 };

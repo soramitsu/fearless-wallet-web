@@ -7,8 +7,8 @@ import { Subscription } from 'rxjs';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ALLOWED_PATH } from '@extension-base/defaults';
 import MetadataStore from '@extension-base/stores/Metadata';
-import EthProvider from '@extension-base/api/evm/ethProvider';
 import { NetworkJson } from '@extension-base/types';
+import { WebSocketProvider } from 'ethers';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type { SubmittableExtrinsicFunction } from '@polkadot/api/promise/types';
@@ -529,7 +529,7 @@ export interface TokenBalanceRaw {
 }
 export interface ApiMap {
   substrate: Record<string, ApiProps>;
-  evm: Record<string, EthProvider>;
+  evm: Record<string, WebSocketProvider>;
 }
 
 export interface ServiceInfo {

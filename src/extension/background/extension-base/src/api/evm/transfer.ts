@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { ethers, TransactionRequest } from 'ethers';
 import {
   BasicTxResponse,
   ExternalRequestPromise,
@@ -57,10 +57,11 @@ export async function handleTransfer(
   };
 
   try {
-    const tx = await signer.sendTransaction(transactionObject);
+    const tx = await signer.sendTransaction({ ...transactionObject, value: ethers.parseUnits('0', 'ether') });
     response.callHash = tx.hash;
     response.status = true;
     response.txError = false;
+    callback(response);
   } catch (error) {
     response.status = false;
     response.txError = true;
@@ -122,26 +123,26 @@ export async function getERC20TransactionObject(
   const web3Api = state.getEvmApiMap[networkKey];
   const erc20Contract = getERC20Contract(networkKey, assetAddress);
 
-  function generateTransferData(to: string, transferValue: ethers.BigNumberish): string {
-    return erc20Contract.interface.encodeFunctionData('transfer', [to, transferValue]);
+  function generateTransferData(to: string, transferValue: string): string {
+    const value = ethers.parseUnits(transferValue, 6);
+
+    return erc20Contract.interface.encodeFunctionData('transfer', [to, value]);
   }
 
-  const transferData = await generateTransferData(to, value);
-  const { gasPrice } = await web3Api.getFeeData();
-  //TODO getTokenInfo
-  const transactionObject = {
-    gasPrice,
+  const transferData = generateTransferData(to, value);
+
+  const transactionObject: TransactionRequest = {
     from,
-    to: '0x509Ee0d083DdF8AC028f2a56731412edD63223B9',
+    to: erc20Contract.target,
     data: transferData,
-    value: ethers.parseEther('0'),
-  } as ethers.TransactionRequest;
+    value: ethers.parseUnits('0', 6),
+  };
 
-  const estimatedGas = await web3Api.provider.estimateGas(transactionObject);
-  const gasLimit = estimatedGas;
+  const gasLimit = await web3Api.estimateGas(transactionObject);
   transactionObject.gasLimit = gasLimit;
-
-  const estimateFee = gasPrice ? gasPrice * gasLimit : BigInt(0);
+  const { gasPrice } = await web3Api.getFeeData();
+  const prepGasPrice = gasPrice ? gasPrice : BigInt(0);
+  const estimateFee = prepGasPrice * gasLimit;
 
   return { tx: transactionObject, value, fee: estimateFee };
 }
@@ -156,6 +157,6 @@ export async function makeERC20Transfer(
   callback: (data: BasicTxResponse) => void
 ) {
   const { tx } = await getERC20TransactionObject(assetAddress, networkKey, from, to, value);
-
+  tx.value = ethers.parseUnits(value, 6);
   await handleTransfer(tx, networkKey, privateKey, callback);
 }

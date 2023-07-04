@@ -64,13 +64,6 @@ export class FWSubscription {
     const getAccountsExeptCurrent = this.state
       .getSubstrateAccounts()
       .filter((el) => el.address !== currentAccount?.address);
-
-    getAccountsExeptCurrent.forEach((account) => {
-      const ethAddress = account.meta.ethereumAddress as string;
-
-      this.subscribeBalances(account.address, ethAddress, true);
-    });
-
     !this.serviceSubscription &&
       (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
         next: (serviceInfo) => {
@@ -83,6 +76,12 @@ export class FWSubscription {
           this.subscribeBalances(address, ethereumAddress);
         },
       }));
+
+    getAccountsExeptCurrent.forEach((account) => {
+      const ethAddress = account.meta.ethereumAddress as string;
+
+      this.subscribeBalances(account.address, ethAddress, true);
+    });
   }
 
   stop() {

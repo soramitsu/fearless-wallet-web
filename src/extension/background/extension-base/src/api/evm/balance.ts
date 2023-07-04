@@ -23,14 +23,14 @@ function subscribeERC20Interval(
   const getTokenBalances = () => {
     const assets = state.networkMap[networkKey].assets.filter((el) => !el.isUtility);
 
-    assets.map(async ({ symbol, name, icon, id }) => {
+    assets.map(async ({ symbol, name, icon, id, precision }) => {
       let free = '0';
 
       try {
         const contract = ERC20ContractMap[symbol];
-        const bal = await contract.balanceOf(address);
+        const balance = await contract.balanceOf(address);
 
-        free = bal.toString();
+        free = ethers.formatUnits(balance, precision);
 
         subCallback({
           state: APIItemState.READY,
@@ -131,11 +131,7 @@ export function subscribeEvmBalance(
 
   return () => {
     unsubList.forEach((subProm) => {
-      subProm
-        .then((unsub) => {
-          unsub && unsub();
-        })
-        .catch((err) => err);
+      subProm.then((unsub) => unsub && unsub()).catch((err) => err);
     });
   };
 }

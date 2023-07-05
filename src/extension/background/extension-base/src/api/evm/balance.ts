@@ -124,8 +124,6 @@ export function subscribeEvmBalance(
   state.generateDefaultBalance(address);
 
   const unsubList = Object.entries(state.getEvmApiMap).map(async ([networkKey, apiProps]) => {
-    await apiProps.provider._waitUntilReady();
-
     return subscribeEVMBalance(networkKey, ethereumAddress, setBalance); // todo [ethereumAddress] -> ethereumAddress
   });
 

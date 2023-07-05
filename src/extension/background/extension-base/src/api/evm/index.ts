@@ -1,7 +1,5 @@
-import { WebSocketProvider } from 'ethers';
+import { JsonRpcProvider } from 'ethers';
 
-export const initWeb3Api = (url: string): WebSocketProvider => {
-  const api = new WebSocketProvider(url);
-
-  return api;
+export const initWeb3Api = (url: string): JsonRpcProvider => {
+  return new JsonRpcProvider(url);
 };

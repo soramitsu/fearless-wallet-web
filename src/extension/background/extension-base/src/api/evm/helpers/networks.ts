@@ -58,7 +58,7 @@ export const EVM_NETWORKS_JSON: NetworkJson[] = [
     ],
     nodes: [
       {
-        url: 'wss://eth-mainnet.g.alchemy.com/v2/r2rCN7zWhPZ0cggKYqk_MElwxrrRM4Kw',
+        url: 'https://mainnet.infura.io/v3/69a249c61c2d469c8695ddf3a9205961',
         name: 'Infura',
       },
     ],
@@ -136,7 +136,7 @@ export const EVM_NETWORKS_JSON: NetworkJson[] = [
     ],
     nodes: [
       {
-        url: 'wss://eth-goerli.g.alchemy.com/v2/WJz4vP6DoqLvRxiJDofxQWq8Fc9UCLbH',
+        url: 'https://goerli.infura.io/v3/69a249c61c2d469c8695ddf3a9205961',
         name: 'Infura Goerli',
       },
     ],

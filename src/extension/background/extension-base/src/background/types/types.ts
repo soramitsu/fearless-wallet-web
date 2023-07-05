@@ -8,7 +8,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { ALLOWED_PATH } from '@extension-base/defaults';
 import MetadataStore from '@extension-base/stores/Metadata';
 import { NetworkJson } from '@extension-base/types';
-import { WebSocketProvider } from 'ethers';
+import { JsonRpcProvider } from 'ethers';
 import type { RequestSignatures } from '@extension-base/background/types/messages';
 import type { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type { SubmittableExtrinsicFunction } from '@polkadot/api/promise/types';
@@ -529,7 +529,7 @@ export interface TokenBalanceRaw {
 }
 export interface ApiMap {
   substrate: Record<string, ApiProps>;
-  evm: Record<string, WebSocketProvider>;
+  evm: Record<string, JsonRpcProvider>;
 }
 
 export interface ServiceInfo {

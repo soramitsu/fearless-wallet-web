@@ -14,7 +14,6 @@ import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import MetadataStore from '@extension-base/stores/Metadata';
 import { storage } from '@extension-base/stores/Storage';
-import EthProvider from '@extension-base/api/evm/ethProvider';
 import CustomTokenStore from '@extension-base/stores/CustomEvmToken';
 import CurrentAccountStore, { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import BalanceService from '@extension-base/shared/balanceService';
@@ -33,7 +32,7 @@ import { MobileSigningRequest, MobileSignRequest, POPUP_WINDOW_OPTS } from '@ext
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 import { SignerPayloadRaw } from '@polkadot/types/types';
-import { WebSocketProvider } from 'ethers';
+import { JsonRpcProvider } from 'ethers';
 import { EVM_NETWORKS_JSON } from '../../api/evm/helpers/networks';
 
 import type {
@@ -118,7 +117,7 @@ function extractMetadata(store: MetadataStore): void {
 
 export const registry = new TypeRegistry();
 type APIs = {
-  evm: Record<NetworkName, WebSocketProvider>;
+  evm: Record<NetworkName, JsonRpcProvider>;
   substrate: Record<NetworkName, ApiProps>;
 };
 const metaStore = new MetadataStore();

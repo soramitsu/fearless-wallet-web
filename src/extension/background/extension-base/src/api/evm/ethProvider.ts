@@ -1,15 +1,11 @@
 import { ethers } from 'ethers';
 import { EvmNetworkType } from '@/interfaces/ether';
 export default class EthProvider {
-  provider: ethers.WebSocketProvider;
+  provider: ethers.JsonRpcProvider;
   isReady = false;
 
   constructor(url: string) {
-    this.provider = new ethers.WebSocketProvider(url);
-
-    this.provider._waitUntilReady().then(() => {
-      this.isReady = true;
-    });
+    this.provider = new ethers.JsonRpcProvider(url);
 
     console.info(`Ethereum provider is init`);
   }

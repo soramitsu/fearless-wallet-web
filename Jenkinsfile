@@ -12,8 +12,7 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'RAMP_TEST_API_KEY', variable: 'RAMP_TEST_API_KEY'],
     [$class: 'StringBinding', credentialsId: 'RAMP_PROD_API_KEY', variable: 'RAMP_PROD_API_KEY'],
     [$class: 'StringBinding', credentialsId: 'MOONPAY_TEST_API_KEY', variable: 'MOONPAY_TEST_API_KEY'],
-    [$class: 'StringBinding', credentialsId: 'MOONPAY_PROD_API_KEY', variable: 'MOONPAY_PROD_API_KEY'],
-    [$class: 'StringBinding', credentialsId: 'fearlessTelegramBotToken', variable: 'TELEGRAM_TOKEN']
+    [$class: 'StringBinding', credentialsId: 'MOONPAY_PROD_API_KEY', variable: 'MOONPAY_PROD_API_KEY']
 ]
 
 def pipeline = new org.js.AppArtifactsPipeline(

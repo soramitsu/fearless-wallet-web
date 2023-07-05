@@ -987,7 +987,7 @@ export default class State {
     const { data: xcmLocations } = await axios.get<XcmLocations>(URLS.XCM_LOCATIONS);
     const { data: xcmFees } = await axios.get<XcmFees>(URLS.XCM_FEES);
 
-    this.networksJson = [...EVM_NETWORKS_JSON].filter((el) => !el.disabled);
+    this.networksJson = [...networks, ...EVM_NETWORKS_JSON].filter((el) => !el.disabled);
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
 

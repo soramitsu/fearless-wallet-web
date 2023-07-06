@@ -179,8 +179,4 @@ export default class BaseApi {
   public static useIsPopup(): boolean {
     return window.innerWidth <= 561 && IS_EXTENSION;
   }
-
-  // public static getEquilibriumAssetId(symbol: string): number {
-  //   return assetFromToken(symbol)[0];
-  // }
 }

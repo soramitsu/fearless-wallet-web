@@ -156,6 +156,7 @@ export default class ConfirmationPasswordPopup extends Vue {
     return {
       ...(this.tx as RequestCheckCrossChain),
       isSavePass: this.isSavePass,
+      isMobile: !!this.isSignMobile,
       password: this.password,
     };
   }
@@ -291,28 +292,32 @@ export default class ConfirmationPasswordPopup extends Vue {
         return;
       }
 
+      // TODO Выводить юзеру ошибку ???
+      // TODO ошибку balanceTooLow по хорошему нужно обработать и показать
+      console.info('errors:', data.errors);
+
       this.transactionState = data.status ? 'success' : 'failed';
     };
 
-    const mobileCb = () => {
-      this.transactionState = 'pending';
-    };
-
-    const onMobileCancel = (id: string) => {
-      this.transactionState = 'failed';
-
-      cancelMobileSignRequest(id);
-    };
-
     if (this.isSignMobile) {
+      const mobileCb = () => {
+        this.transactionState = 'pending';
+      };
+
+      const onMobileCancel = (id: string) => {
+        this.transactionState = 'failed';
+
+        cancelMobileSignRequest(id);
+      };
+
       await beaconController.subscribeRawRequests(mobileCb, onMobileCancel);
 
-      return makeTransfer(this.requestTransfer, callback);
+      return await makeTransfer(this.requestTransfer, callback);
     }
 
-    if (this.extrinsicType === 'transfer') return makeTransfer(this.requestTransfer, callback);
+    if (this.extrinsicType === 'transfer') return await makeTransfer(this.requestTransfer, callback);
 
-    if (this.extrinsicType === 'crossChain') return makeCrossChain(this.requestCrossChain, callback);
+    if (this.extrinsicType === 'crossChain') return await makeCrossChain(this.requestCrossChain, callback);
   }
 
   async keypress({ key }: KeyboardEvent) {

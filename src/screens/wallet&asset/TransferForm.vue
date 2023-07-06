@@ -118,8 +118,8 @@
                 icon="info"
               />
 
-              <Tooltip text="Original network fee" target=".origin-fee" placement="right" />
-              <Tooltip text="Cross-Chain fee" target=".cross-chain-fee" placement="right" />
+              <Tooltip text="assets.feeDescription" target=".origin-fee" placement="right" />
+              <Tooltip text="assets.feeDescription" target=".cross-chain-fee" placement="right" />
             </template>
 
             <slot v-else-if="step === 2"></slot>
@@ -185,7 +185,6 @@ import { Component, Vue, Prop, Watch, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
-import MaxButton from './MaxButton.vue';
 import HistoryBook from './HistoryBook.vue';
 import EditAddressBook from './EditAddressBook.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
@@ -213,7 +212,6 @@ import WalletInfo from '@/screens/main/WalletInfo.vue';
 
 @Component({
   components: {
-    MaxButton,
     WalletInfo,
     FloatInput,
     HistoryBook,

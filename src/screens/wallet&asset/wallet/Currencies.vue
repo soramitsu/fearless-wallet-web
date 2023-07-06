@@ -53,7 +53,7 @@ export default class Currencies extends Vue {
   @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
   @Getter(NetworksGettersTypes.getPrice) prices!: AssetsPrice;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
+  @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
 

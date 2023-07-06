@@ -114,12 +114,19 @@ function getNativeTeleportParams(
 
   const relayChain = CHAIN_IDS[parentId!] ?? firstCharToUp(name);
 
-  const receiverLocation = {
-    AccountId32: {
-      network: { [relayChain]: '' },
-      id: publicKey,
-    },
-  };
+  const receiverLocation = isEthereumNetwork(destNet)
+    ? {
+        AccountKey20: {
+          network: { [relayChain]: '' },
+          key: publicKey, // TODO проверить декодирование eth адреса, корректно ли работает decodeAddress функция
+        },
+      }
+    : {
+        AccountId32: {
+          network: { [relayChain]: '' },
+          id: publicKey,
+        },
+      };
 
   const destinationChain = {
     [xcmVersion]: isToRelayChain

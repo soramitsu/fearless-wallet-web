@@ -36,7 +36,7 @@ function isRelayChain(network: string) {
 }
 
 function interiorHelper(interiors: Interior, nativeParachainIds: number[], originNetParaId?: string) {
-  const originNetIsExistInNativeParachainIds = nativeParachainIds.some(
+  const originNetIsExistInNativeParachainIds = nativeParachainIds?.some(
     (id) => id.toString() === originNetParaId?.toString()
   );
 
@@ -78,7 +78,7 @@ function getConcreteAsset(originNet: NetworkName, isToRelayChain: boolean, asset
 
   const interiorsByXcmVersion = interiors[xcm!.xcmVersion]!;
   const interiorXcmLength = interiorsByXcmVersion.length;
-  const haveParachainParameter = interiorsByXcmVersion.some((interior) =>
+  const haveParachainParameter = interiorsByXcmVersion?.some((interior) =>
     Object.keys(interior).some((key) => key === 'parachain')
   );
 

@@ -31,7 +31,7 @@ import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { state } from '@extension-base/background/handlers';
 import {
   createCrossChainExtrinsic,
-  estimateFee as estimateCrossChainFee,
+  estimateCrossChainFee,
   makeCrossChain,
 } from '@extension-base/api/substrate/crossChain';
 import {
@@ -1178,46 +1178,37 @@ export default class Extension extends FWExtensionBase {
 
     console.info('checkCrossChain', extrinsic);
 
-    // токены мунбим, мунривер сетей являются аналогами из других сабстрейт сетей, но хранятся отдельными сущностями
-    // по сути они являются отдельной сущностью TokenBalance
-    const tokenBalanceByDestNet = isEthereumNetwork(destinationNet)
-      ? this.state.balanceMap[from].find(
-          (balance) =>
-            balance.symbol === `xc${tokenBalance.symbol.toLowerCase()}` &&
-            balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
-        )!
-      : tokenBalance;
-
-    const { precision: precisionDest } = tokenBalanceByDestNet.balances.find(({ name }) => {
-      return name.toLowerCase() === destinationNet.toLowerCase();
-    })!;
-
-    const fee = await estimateCrossChainFee(extrinsic, to, originNet);
-
-    const destFees = state.xcmFees.find(({ destChain }) => {
-      const destChainLower = destChain.toLowerCase();
-      const destinationNetLower = destinationNet.toLowerCase();
-
-      return (
-        (NETWORKS_ALIASES[destChainLower] ?? destChainLower) ===
-        (NETWORKS_ALIASES[destinationNetLower] ?? destinationNetLower)
-      );
-    });
-
-    const destEstimateFee = destFees?.destXcmFee?.find(
-      ({ symbol: _symbol }) => _symbol.toLowerCase() === tokenBalance.symbol.toLowerCase()
+    const [fee, crossChainFee] = await estimateCrossChainFee(
+      from,
+      to,
+      originNet,
+      destinationNet,
+      tokenBalance,
+      relayChain,
+      extrinsic
     );
 
     return {
       estimateFee: fee.toString(),
-      destEstimateFee: FPNumber.fromCodecValue(destEstimateFee?.feeInPlanks ?? '0', precisionDest).toString(),
+      destEstimateFee: crossChainFee.toString(),
     } as ResponseCheckCrossChain;
   }
 
   private async makeCrossChain(
     id: string,
     port: Port,
-    { from, originNet, destinationNet, amount, password, to, assetId, isSavePass, isMobile }: RequestCrossChain
+    {
+      from,
+      originNet,
+      destinationNet,
+      amount,
+      password,
+      to,
+      assetId,
+      isSavePass,
+      isMobile,
+      relayChain,
+    }: RequestCrossChain
   ): Promise<void> {
     const address = keyring.encodeAddress(from);
 
@@ -1244,6 +1235,7 @@ export default class Extension extends FWExtensionBase {
       password,
       isSavePass,
       callback,
+      relayChain,
     });
 
     transferProm

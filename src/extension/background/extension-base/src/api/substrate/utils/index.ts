@@ -69,10 +69,6 @@ export function createExtrinsicTransfer(props: ExtrinsicTransferProps): Submitta
       case 'assets':
         return api.tx.assets.transfer(ormlOptions, to, precisionAmount);
 
-      // TODO
-      case 'assetId':
-        return api.tx.assets.transfer(ormlOptions, to, precisionAmount);
-
       default:
         return api.tx.currencies.transfer(to, ormlOptions, precisionAmount);
     }

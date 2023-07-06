@@ -20,20 +20,6 @@ type Extrinsic = Nullable<SubmittableExtrinsic<'promise'>>;
 
 const XCM_NATIVE_PALLETS = ['xcmPallet', 'polkadotXcm'];
 
-function interiorHelper(interiors: Interior) {
-  const array = interiors.map((interior) => {
-    return Object.fromEntries(
-      Object.entries(interior).map(([key, value]) => {
-        const newKey = key.startsWith('generalKey') ? 'generalKey' : key;
-
-        return [firstCharToUp(newKey, false), value];
-      })
-    );
-  });
-
-  return array.length === 1 ? array[0] : array;
-}
-
 function isNativeNetwork(networkName: NetworkName) {
   return NATIVE_NETWORKS.includes(networkName.toLowerCase());
 }
@@ -49,11 +35,79 @@ function isRelayChain(network: string) {
   return RELAY_CHAINS.includes(network.toLowerCase());
 }
 
-function getNativeTeleportParams(originNet: NetworkName, destNet: NetworkName, toAddress: string, amount: string) {
+function interiorHelper(interiors: Interior, nativeParachainIds: number[], originNetParaId?: string) {
+  const originNetIsExistInNativeParachainIds = nativeParachainIds.some(
+    (id) => id.toString() === originNetParaId?.toString()
+  );
+
+  const array = interiors.reduce((result, interior) => {
+    // Убираем параметр parachain если для ассета оригин сеть содержится в nativeParachainIds
+    if (originNetIsExistInNativeParachainIds && interior.parachain !== undefined) return result;
+
+    const formattedInterior = Object.fromEntries(
+      Object.entries(interior).map(([key, value]) => {
+        const newKey = key.startsWith('generalKey') ? 'generalKey' : key;
+
+        return [firstCharToUp(newKey, false), value];
+      })
+    );
+
+    return [...result, formattedInterior];
+  }, []);
+
+  return array.length === 1 ? array[0] : array;
+}
+
+function getConcreteAsset(originNet: NetworkName, isToRelayChain: boolean, assetId: string, isNative = false) {
+  const tokenInfo = getAssetInfo(assetId);
+  const { paraId: originNetParaId } = state.networkMap[originNet];
+
+  const { xcm, parentId } = state.networkMap[originNet];
+
+  // This Polkadot or Kusama
+  if (parentId === undefined)
+    return {
+      interior: { Here: '' },
+      parents: isToRelayChain ? 1 : 0, // Это isNative телепорт, соответственно parents формируется как для isNative
+    };
+
+  const { assets: xcmLocationsAssets } = state.xcmLocations.find(({ chainId }) => chainId === parentId)!;
+  const { interiors, nativeParachainIds } = xcmLocationsAssets.find(
+    ({ symbol }) => symbol.toLowerCase() === tokenInfo.symbol.toLowerCase()
+  )!;
+
+  const interiorsByXcmVersion = interiors[xcm!.xcmVersion]!;
+  const interiorXcmLength = interiorsByXcmVersion.length;
+  const haveParachainParameter = interiorsByXcmVersion.some((interior) =>
+    Object.keys(interior).some((key) => key === 'parachain')
+  );
+
+  const interior =
+    interiorXcmLength === 0
+      ? { Here: '' }
+      : {
+          [`X${interiorXcmLength}`]: interiorHelper(interiorsByXcmVersion, nativeParachainIds, originNetParaId),
+        };
+
+  const parents1 = isToRelayChain ? 1 : 0;
+  const parents2 = interiorXcmLength === 0 || haveParachainParameter ? 1 : 0;
+
+  return {
+    interior: interior,
+    parents: isNative ? parents1 : parents2,
+  };
+}
+
+function getNativeTeleportParams(
+  originNet: NetworkName,
+  destNet: NetworkName,
+  toAddress: string,
+  amount: string,
+  assetId: string
+) {
   const isToRelayChain = isRelayChain(destNet);
   const { xcm, parentId, name } = state.networkMap[originNet];
-  const { paraId: _paraId } = state.networkMap[destNet];
-  const paraId = isToRelayChain ? -1 : +_paraId!;
+  const { paraId } = state.networkMap[destNet];
   const xcmVersion = xcm!.xcmVersion.toUpperCase();
   const publicKey = decodeAddress(toAddress);
   const value = new BN(amount);
@@ -62,9 +116,7 @@ function getNativeTeleportParams(originNet: NetworkName, destNet: NetworkName, t
 
   const receiverLocation = {
     AccountId32: {
-      network: {
-        [relayChain]: '',
-      },
+      network: { [relayChain]: '' },
       id: publicKey,
     },
   };
@@ -72,17 +124,11 @@ function getNativeTeleportParams(originNet: NetworkName, destNet: NetworkName, t
   const destinationChain = {
     [xcmVersion]: isToRelayChain
       ? {
-          interior: {
-            Here: '',
-          },
+          interior: { Here: '' },
           parents: 1,
         }
       : {
-          interior: {
-            X1: {
-              Parachain: paraId,
-            },
-          },
+          interior: { X1: { Parachain: paraId } },
           parents: 0,
         },
   };
@@ -90,26 +136,15 @@ function getNativeTeleportParams(originNet: NetworkName, destNet: NetworkName, t
   const receiver = {
     [xcmVersion]: {
       parents: 0,
-      interior: {
-        X1: receiverLocation,
-      },
+      interior: { X1: receiverLocation },
     },
   };
 
   const asset = {
     [xcmVersion]: [
       {
-        fun: {
-          Fungible: value,
-        },
-        id: {
-          Concrete: {
-            interior: {
-              Here: '',
-            },
-            parents: isToRelayChain ? 1 : 0,
-          },
-        },
+        fun: { Fungible: value },
+        id: { Concrete: getConcreteAsset(originNet, isToRelayChain, assetId, true) },
       },
     ],
   };
@@ -120,20 +155,12 @@ function getNativeTeleportParams(originNet: NetworkName, destNet: NetworkName, t
 }
 
 function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: string, amount: string, assetId: string) {
+  const isToRelayChain = isRelayChain(destNet);
   const { xcm, parentId, name } = state.networkMap[originNet];
-  const { paraId: _paraId } = state.networkMap[destNet];
-  const paraId = +_paraId!;
+  const { paraId } = state.networkMap[destNet];
   const xcmVersion = xcm!.xcmVersion.toUpperCase();
   const publicKey = decodeAddress(toAddress);
   const value = new BN(amount);
-
-  const { assets: xcmLocationsAssets } = state.xcmLocations.find(({ chainId }) => chainId === parentId)!;
-  const tokenInfo = getAssetInfo(assetId);
-  const { interiors } = xcmLocationsAssets.find(
-    ({ symbol }) => symbol.toLowerCase() === tokenInfo.symbol.toLowerCase()
-  )!;
-  const interiorsByXcmVersion = interiors[xcm!.xcmVersion]!;
-  const interiorXcmLength = interiorsByXcmVersion.length;
 
   const relayChain = CHAIN_IDS[parentId!] ?? firstCharToUp(name);
 
@@ -151,45 +178,16 @@ function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: st
         },
       };
 
-  const interiorAsset =
-    interiorXcmLength === 0
-      ? { Here: '' }
-      : {
-          [`X${interiorXcmLength}`]: interiorHelper(interiorsByXcmVersion),
-        };
-
-  const haveParachainParameter = interiorsByXcmVersion.some((interior) =>
-    Object.keys(interior).some((key) => key === 'parachain')
-  );
-
-  const parentsAsset = interiorXcmLength === 0 || haveParachainParameter ? 1 : 0;
-
   const asset = {
     [xcmVersion]: {
-      fun: {
-        Fungible: value,
-      },
-      id: {
-        Concrete: {
-          interior: interiorAsset,
-          parents: parentsAsset,
-        },
-      },
+      fun: { Fungible: value },
+      id: { Concrete: getConcreteAsset(originNet, isToRelayChain, assetId) },
     },
   };
 
-  const interiorDestinationChain = isRelayChain(destNet)
-    ? {
-        X1: receiverLocation,
-      }
-    : {
-        X2: [
-          {
-            Parachain: paraId,
-          },
-          receiverLocation,
-        ],
-      };
+  const interiorDestinationChain = isToRelayChain
+    ? { X1: receiverLocation }
+    : { X2: [{ Parachain: +paraId! }, receiverLocation] };
 
   const destinationChain = {
     [xcmVersion]: {
@@ -204,6 +202,7 @@ function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: st
 }
 
 async function createNativeTeleportExtrinsic(
+  assetId: NetworkName,
   originNet: NetworkName,
   destNet: NetworkName,
   toAddress: string,
@@ -222,7 +221,7 @@ async function createNativeTeleportExtrinsic(
   const module = isNativeNetwork(destNet) ? 'limitedTeleportAssets' : 'limitedReserveTransferAssets';
   const pallet = XCM_NATIVE_PALLETS.find((pallet) => api!.tx[pallet] && isFunction(api!.tx[pallet][module]))!;
   const tx = api!.tx[pallet][module];
-  const params = getNativeTeleportParams(originNet, destNet, toAddress, precisionAmount);
+  const params = getNativeTeleportParams(originNet, destNet, toAddress, precisionAmount, assetId);
 
   return tx(...params);
 }
@@ -253,7 +252,7 @@ async function createOrmlTeleportExtrinsic(
   }
 
   const module = isRelayChain(destNet) ? 'limitedReserveWithdrawAssets' : 'limitedReserveTransferAssets';
-  const params = getNativeTeleportParams(originNet, destNet, toAddress, precisionAmount);
+  const params = getNativeTeleportParams(originNet, destNet, toAddress, precisionAmount, assetId);
 
   // Если нет xTokens используется polkadotXcm, с соответствующим модулем
   return api.tx?.polkadotXcm[module](...params);
@@ -290,7 +289,7 @@ async function createCrossChainExtrinsic(
     // Case Native ParaChain -> RelayChain (statemint -> polkadot; statemine, encointer -> kusama) pallet = polkadotXcm, module = limitedTeleportAssets
     // TODO: add case: Native ParaChain -> Nonnative ParaChain
     // TODO: add case: Native ParaChain -> Native ParaChain
-    return createNativeTeleportExtrinsic(originNet, destNet, toAddress, amount, tokenBalance);
+    return createNativeTeleportExtrinsic(assetId, originNet, destNet, toAddress, amount, tokenBalance);
   } else {
     // Case Nonnative ParaChain -> Nonnative ParaChain (karura, etc -> bifrost, etc)
     // Case Nonnative ParaChain -> RelayChain (karura, etc -> kusama, etc; acala, etc -> polkadot)
@@ -326,7 +325,7 @@ async function makeCrossChain({
 
   await apiProps.api?.isReady;
 
-  const tokenBalance = state.balanceMap[from].find(({ assetId }) => assetId === assetId)!;
+  const tokenBalance = state.balanceMap[from].find(({ assetId: _assetId }) => _assetId === assetId)!;
   const extrinsic = await createCrossChainExtrinsic(assetId, originNet, destinationNet, to, amount!, tokenBalance);
 
   await signAndSendExtrinsic({

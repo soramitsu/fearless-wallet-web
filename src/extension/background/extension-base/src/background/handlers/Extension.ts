@@ -40,6 +40,7 @@ import {
   RequestMobileSign,
   TransferErrorCode,
 } from '@extension-base/background/types/types';
+import { isEthereumNetwork } from '../utils/utils';
 import type {
   ActiveTabAuthorizeStatus,
   BalanceJson,
@@ -110,7 +111,9 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
-import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
+import { ASSETS_ALIASES, LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
+import { NETWORKS_ALIASES } from '@/consts/networks';
+
 import { googleManage } from '@/controllers/googleController';
 import {
   DerivationPath,
@@ -839,9 +842,10 @@ export default class Extension extends FWExtensionBase {
     portCallback: (res: BasicTxResponse) => void,
     cb: () => void
   ): (res: BasicTxResponse) => void {
-    cb();
-
-    return (res: BasicTxResponse) => portCallback(res);
+    return (res: BasicTxResponse) => {
+      cb();
+      portCallback(res);
+    };
   }
 
   public async getSoraFees() {
@@ -1106,7 +1110,7 @@ export default class Extension extends FWExtensionBase {
       });
     }
 
-    transferProm
+    await transferProm
       .then(() => {
         // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         console.info(`Start transfer ${amount} from ${from} to ${to}`);
@@ -1140,6 +1144,7 @@ export default class Extension extends FWExtensionBase {
 
     if (isSavePass) {
       this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
+
       if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
     } else if (remainTime) {
       this.cachedUnlocks[address] = 0;
@@ -1173,16 +1178,34 @@ export default class Extension extends FWExtensionBase {
 
     console.info('checkCrossChain', extrinsic);
 
-    const { symbol } = tokenBalance.balances.find(({ name }) => name.toLowerCase() === originNet.toLowerCase())!;
+    // токены мунбим, мунривер сетей являются аналогами из других сабстрейт сетей, но хранятся отдельными сущностями
+    // по сути они являются отдельной сущностью TokenBalance
+    const tokenBalanceByDestNet = isEthereumNetwork(destinationNet)
+      ? this.state.balanceMap[from].find(
+          (balance) =>
+            balance.symbol === `xc${tokenBalance.symbol.toLowerCase()}` &&
+            balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
+        )!
+      : tokenBalance;
 
-    const { precision: precisionDest } = tokenBalance.balances.find(
-      ({ name }) => name.toLowerCase() === destinationNet.toLowerCase()
-    )!;
+    const { precision: precisionDest } = tokenBalanceByDestNet.balances.find(({ name }) => {
+      return name.toLowerCase() === destinationNet.toLowerCase();
+    })!;
 
     const fee = await estimateCrossChainFee(extrinsic, to, originNet);
-    const destFees = state.xcmFees.find(({ destChain }) => destChain.toLowerCase() === destinationNet.toLowerCase());
+
+    const destFees = state.xcmFees.find(({ destChain }) => {
+      const destChainLower = destChain.toLowerCase();
+      const destinationNetLower = destinationNet.toLowerCase();
+
+      return (
+        (NETWORKS_ALIASES[destChainLower] ?? destChainLower) ===
+        (NETWORKS_ALIASES[destinationNetLower] ?? destinationNetLower)
+      );
+    });
+
     const destEstimateFee = destFees?.destXcmFee?.find(
-      ({ symbol: _symbol }) => _symbol.toLowerCase() === symbol.toLowerCase()
+      ({ symbol: _symbol }) => _symbol.toLowerCase() === tokenBalance.symbol.toLowerCase()
     );
 
     return {
@@ -1194,8 +1217,10 @@ export default class Extension extends FWExtensionBase {
   private async makeCrossChain(
     id: string,
     port: Port,
-    { from, originNet, destinationNet, amount, password, to, assetId, isSavePass }: RequestCrossChain
+    { from, originNet, destinationNet, amount, password, to, assetId, isSavePass, isMobile }: RequestCrossChain
   ): Promise<void> {
+    const address = keyring.encodeAddress(from);
+
     const [, fromKeyPair] = this.validateTransfer(assetId, from, password);
 
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
@@ -1204,22 +1229,7 @@ export default class Extension extends FWExtensionBase {
     const remainTime = this.refreshAccountPasswordCache(fromKeyPair!);
 
     const savePass = () => {
-      if (isSavePass) {
-        this.cachedUnlocks[fromKeyPair!.address] = Date.now() + PASSWORD_EXPIRY_MS;
-
-        if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
-      } else if (remainTime) {
-        this.cachedUnlocks[fromKeyPair!.address] = 0;
-
-        fromKeyPair!.lock();
-
-        if (ethereumAddress) {
-          this.cachedUnlocks[ethereumAddress] = 0;
-          const ethereumPair = keyring.getPair(ethereumAddress);
-
-          ethereumPair.lock();
-        }
-      }
+      this.savePass(address, ethereumAddress, remainTime, !!isSavePass, !!isMobile);
     };
 
     const callback = this.makeExtrinsicCallback(cb, savePass);

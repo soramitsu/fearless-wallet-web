@@ -353,23 +353,23 @@ export type BasicTxWarning = {
 export type BaseRequestSign = {};
 
 export interface RequestCheckTransfer extends BaseRequestSign {
-  networkKey: string;
+  networkKey: NetworkName;
   from: string;
   to: string;
   assetId: string;
-  relayChain?: string;
+  relayChain?: RelayChainName;
   amount?: string;
   password?: string;
   isMobile?: boolean;
 }
 
 export interface RequestCheckCrossChain extends BaseRequestSign {
-  originNet: string;
-  destinationNet: string;
+  originNet: NetworkName;
+  destinationNet: NetworkName;
   from: string;
   to: string;
   assetId: string;
-  relayChain?: string;
+  relayChain?: RelayChainName;
   amount?: string;
   password?: string;
   isMobile?: boolean;

@@ -12,8 +12,8 @@ import {
   BasicTxResponse,
   SignerType,
 } from '@/extension/background/extension-base/src/background/types/types';
-import { NATIVE_NETWORKS, RELAY_CHAINS, CHAIN_IDS } from '@/consts/networks';
-import { NetworkName } from '@/interfaces';
+import { NATIVE_NETWORKS, RELAY_CHAINS, CHAIN_IDS, NETWORKS_ALIASES } from '@/consts/networks';
+import { NetworkName, RelayChainName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
 
 type Extrinsic = Nullable<SubmittableExtrinsic<'promise'>>;
@@ -258,20 +258,62 @@ async function createOrmlTeleportExtrinsic(
   return api.tx?.polkadotXcm[module](...params);
 }
 
-async function estimateFee(extrinsic: Extrinsic, to: string, network: string): Promise<number> {
-  if (!extrinsic) return 0;
+async function estimateCrossChainFee(
+  from: string,
+  to: string,
+  originNet: NetworkName,
+  destinationNet: NetworkName,
+  tokenBalance: TokenBalance,
+  relayChain?: RelayChainName,
+  extrinsic?: Extrinsic
+): Promise<[FPNumber, FPNumber]> {
+  // Рассчет cross chain fee
+  const destFees = state.xcmFees.find(({ destChain }) => {
+    const destChainLower = destChain.toLowerCase();
+    const destinationNetLower = destinationNet.toLowerCase();
 
-  const { precision: utilityPrecision } = getUtilityProps(network)!;
+    // В файле XCM_FEES старые названия Statemint and Statemine, ищем их по элиасам
+    return (
+      (NETWORKS_ALIASES[destChainLower] ?? destChainLower) ===
+      (NETWORKS_ALIASES[destinationNetLower] ?? destinationNetLower)
+    );
+  });
+
+  const destEstimateFee = destFees?.destXcmFee?.find(
+    ({ symbol: _symbol }) => _symbol.toLowerCase() === tokenBalance.symbol.toLowerCase()
+  );
+
+  // Токены мунбим, мунривер сетей являются аналогами из других сабстрейт сетей, но хранятся отдельными сущностями
+  // По сути они являются отдельной сущностью TokenBalance
+  // Если телепорт в эфириум сеть, нужно искать precision в другой сущности TokenBalance, для токена `xcTOKEN`
+  const tokenBalanceByDestNet = isEthereumNetwork(destinationNet)
+    ? state.balanceMap[from].find(
+        (balance) =>
+          balance.symbol === `xc${tokenBalance.symbol.toLowerCase()}` &&
+          balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
+      )!
+    : tokenBalance;
+
+  const { precision: precisionDest } = tokenBalanceByDestNet.balances.find(({ name }) => {
+    return name.toLowerCase() === destinationNet.toLowerCase();
+  })!;
+
+  const crossChainFee = FPNumber.fromCodecValue(destEstimateFee?.feeInPlanks ?? '0', precisionDest);
+
+  // Далее рассчет origin fee
+  if (!extrinsic) return [FPNumber.ZERO, crossChainFee];
+
+  const { precision: utilityPrecision } = getUtilityProps(originNet)!;
 
   try {
     const paymentInfo = await extrinsic?.paymentInfo(to);
     const partialFee = paymentInfo ? +paymentInfo.partialFee : 0;
 
-    const result = FPNumber.fromCodecValue(partialFee, utilityPrecision);
+    const originFee = FPNumber.fromCodecValue(partialFee, utilityPrecision);
 
-    return result.toNumber();
+    return [originFee, crossChainFee];
   } catch {
-    return 0;
+    return [FPNumber.ZERO, crossChainFee];
   }
 }
 
@@ -307,6 +349,7 @@ export interface MakeCrossChainProps {
   password: string | undefined;
   isSavePass?: boolean;
   callback: (data: BasicTxResponse) => void;
+  relayChain?: RelayChainName;
 }
 
 async function makeCrossChain({
@@ -319,6 +362,7 @@ async function makeCrossChain({
   password,
   amount,
   callback,
+  relayChain,
 }: MakeCrossChainProps): Promise<void> {
   const txState: BasicTxResponse = {};
   const apiProps = state.getSubstrateApiMap[originNet];
@@ -326,7 +370,18 @@ async function makeCrossChain({
   await apiProps.api?.isReady;
 
   const tokenBalance = state.balanceMap[from].find(({ assetId: _assetId }) => _assetId === assetId)!;
-  const extrinsic = await createCrossChainExtrinsic(assetId, originNet, destinationNet, to, amount!, tokenBalance);
+  const [, crossChainFee] = await estimateCrossChainFee(from, to, originNet, destinationNet, tokenBalance, relayChain);
+
+  const amountWithCrossChain = new FPNumber(amount).add(crossChainFee).toString();
+
+  const extrinsic = await createCrossChainExtrinsic(
+    assetId,
+    originNet,
+    destinationNet,
+    to,
+    amountWithCrossChain!,
+    tokenBalance
+  );
 
   await signAndSendExtrinsic({
     type: SignerType.PASSWORD,
@@ -341,6 +396,6 @@ async function makeCrossChain({
   });
 }
 
-export { estimateFee, makeCrossChain, createCrossChainExtrinsic };
+export { estimateCrossChainFee, makeCrossChain, createCrossChainExtrinsic };
 
 export type { Extrinsic };

@@ -4,13 +4,7 @@
       <div class="column left-column">
         <div class="header">{{ header }}</div>
 
-        <input
-          v-model="amountInternal"
-          type="number"
-          placeholder="0.00"
-          @focus="setFocusValue(true)"
-          @blur="setFocusValue(false)"
-        />
+        <input v-model="amountInternal" placeholder="0.00" @focus="setFocusValue(true)" @blur="setFocusValue(false)" />
 
         <div class="price">{{ fiatSymbol }}{{ valueCut }}</div>
       </div>

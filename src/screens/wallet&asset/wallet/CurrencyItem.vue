@@ -136,12 +136,16 @@ export default class CurrencyItem extends Vue {
     );
   }
 
+  get balancesLength() {
+    return this.filteredBalances.length;
+  }
+
   get isAdditional() {
-    return this.filteredBalances.length > this.countDisplayedNetworks;
+    return this.balancesLength > this.countDisplayedNetworks;
   }
 
   get additionalCount() {
-    return this.filteredBalances.length - (this.countDisplayedNetworks - 1);
+    return this.balancesLength - (this.countDisplayedNetworks - 1);
   }
 
   get tokenName() {

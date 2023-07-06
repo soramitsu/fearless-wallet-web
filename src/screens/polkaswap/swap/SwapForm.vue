@@ -515,12 +515,11 @@ export default class SwapForm extends Vue {
   }
 
   get transferableReceiveAmount() {
-    const count =
+    return +(
       this.receiveCurrency?.balances.find(
         (balance) => balance.name.toLowerCase() === this.soraNetworkName.toLowerCase()
-      )?.transferable ?? 0;
-
-    return this.$n(+count, 'decimal');
+      )?.transferable ?? 0
+    );
   }
 
   get sendValue() {

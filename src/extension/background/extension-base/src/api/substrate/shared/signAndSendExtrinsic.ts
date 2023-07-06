@@ -85,7 +85,7 @@ export const signAndSendExtrinsic = async ({
   }
 
   try {
-    sendExtrinsic({
+    await sendExtrinsic({
       apiProps,
       callback,
       extrinsic,

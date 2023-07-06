@@ -58,10 +58,14 @@ export default class SelectInput extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get amountInternal() {
+    if (this.syncedAmount === '') return '';
+
     return FPNumber.fromCodecValue(this.syncedAmount || 0, 0).toLocaleString();
   }
 
   set amountInternal(value: string) {
+    if (value === '') return;
+
     if (FPNumber.fromCodecValue(value || 0, 0).toLocaleString() !== 'NaN')
       this.syncedAmount = FPNumber.fromCodecValue(value || 0, 0).toString();
   }

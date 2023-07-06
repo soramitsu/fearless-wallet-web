@@ -12,7 +12,15 @@ const ETHEREUM_NETWORKS = [
   'ethereum goerli',
 ];
 const RELAY_CHAINS = ['polkadot', 'kusama', 'westend', 'rococo'];
-const NATIVE_PARACHAINS = ['statemint', 'statemine', 'encointer on kusama', 'westmint', 'rockmine'];
+const NATIVE_PARACHAINS = [
+  'statemint',
+  'polkadot assethub',
+  'statemine',
+  'kusama assethub',
+  'encointer on kusama',
+  'westmint',
+  'rockmine',
+];
 const NATIVE_NETWORKS = [...RELAY_CHAINS, ...NATIVE_PARACHAINS];
 const ALL_NETWORKS = 'All';
 
@@ -22,6 +30,11 @@ const KUSAMA_ID = 'b0a8d493285c2df73290dfb7e61f870f17b41801197a149ca93654499ea3d
 const CHAIN_IDS: Record<string, NetworkName> = {
   [POLKADOT_ID]: 'Polkadot',
   [KUSAMA_ID]: 'Kusama',
+};
+
+const NETWORKS_ALIASES: Record<string, string> = {
+  'polkadot assethub': 'statemint',
+  'kusama assethub': 'statemine',
 };
 
 // названия сетей должны быть в таком же регистре, как и в json
@@ -77,4 +90,5 @@ export {
   CHAIN_IDS,
   SORA_MAINNET,
   SORA_TEST,
+  NETWORKS_ALIASES,
 };

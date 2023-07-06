@@ -10,7 +10,7 @@ type SoraFees = {
 
 type NetworkName = string;
 
-type HistoryServiceType = 'subsquid' | 'giantsquid' | 'subquery';
+type HistoryServiceType = 'subsquid' | 'giantsquid' | 'subquery' | 'ethereum';
 
 interface ExternalApiElement {
   url: string;
@@ -20,7 +20,7 @@ interface ExternalApiElement {
 interface Explorer {
   types: string[];
   url: string;
-  type: 'subscan' | 'polkascan';
+  type: 'subscan' | 'polkascan' | 'etherscan';
 }
 
 type ExternalApi = {
@@ -86,6 +86,35 @@ interface ApiOptions {
   provider?: WsProvider;
 }
 
+type EthereumHistoryData = {
+  blockHash: string;
+  blockNumber: string;
+  confirmations: string;
+  contractAddress: string;
+  cumulativeGasUsed: string;
+  from: string;
+  functionName: string;
+  gas: string;
+  gasPrice: string;
+  gasUsed: string;
+  hash: string;
+  input: string;
+  isError: string;
+  methodId: string;
+  nonce: string;
+  timeStamp: string;
+  to: string;
+  transactionIndex: string;
+  txreceipt_status: string;
+  value: string;
+};
+
+type EthereumHistoryResponse = {
+  message: string;
+  result: EthereumHistoryData[];
+  status: string;
+};
+
 export {
   Networks,
   Network,
@@ -97,4 +126,6 @@ export {
   HistoryServiceType,
   SoraFees,
   RelayChainName,
+  EthereumHistoryResponse,
+  EthereumHistoryData,
 };

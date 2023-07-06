@@ -20,21 +20,26 @@ export const EVM_NETWORKS_JSON: NetworkJson[] = [
       url: '',
     },
     externalApi: {
+      history: {
+        type: 'ethereum',
+        url: 'https://api.etherscan.io/api/',
+      },
       explorers: [
         {
-          type: 'polkascan',
-          types: ['extrinsic', 'account', 'event'],
-          url: 'https://polkascan.io/polkadot/{type}/{value}',
+          type: 'etherscan',
+          types: ['account'],
+          url: 'https://api.etherscan.io/api{type}/{value}',
         },
       ],
     },
+
     assets: [
       {
         isUtility: true,
         id: '887a17c7-1370-4de0-97dd-5422e294fa75dfs',
         name: 'ethereum',
         symbol: 'eth',
-        precision: 10,
+        precision: 18,
         priceId: 'ethereum',
         icon: 'https://raw.githubusercontent.com/soramitsu/fearless-utils/master/icons/tokens/coloured/ETH.svg',
         color: 'FF0066',
@@ -99,7 +104,7 @@ export const EVM_NETWORKS_JSON: NetworkJson[] = [
         id: '887a17c7-1370-4de0-97dd-5422e294fa7fsdfw5',
         name: 'ethereum',
         symbol: 'eth',
-        precision: 10,
+        precision: 18,
         priceId: 'ethereum',
         icon: 'https://raw.githubusercontent.com/soramitsu/fearless-utils/master/icons/tokens/coloured/ETH.svg',
         color: 'FF0066',

@@ -100,6 +100,8 @@ type Placement =
   | 'bottom-end'
   | 'left-end';
 
+type ToggleFnProp = (type: string, flag: boolean, data: object) => void;
+
 export {
   DerivationPath,
   DerivationPaths,
@@ -108,6 +110,7 @@ export {
   FilterHistory,
   ImportType,
   MenuItem,
+  ToggleFnProp,
   MenuItems,
   ParentAddress,
   Fn,

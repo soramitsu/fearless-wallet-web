@@ -40,7 +40,7 @@ import {
   RequestMobileSign,
   TransferErrorCode,
 } from '@extension-base/background/types/types';
-import { isEthereumNetwork } from '../utils/utils';
+import { isEthereumNetwork, getSubstrateAddressByEthAddress } from '../utils/utils';
 import type {
   ActiveTabAuthorizeStatus,
   BalanceJson,
@@ -996,7 +996,7 @@ export default class Extension extends FWExtensionBase {
     const warnings: BasicTxWarning[] = [];
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
 
-    const address = this.encodeAddress(from);
+    const address = isEthereumAddress(from) ? getSubstrateAddressByEthAddress(from) : this.encodeAddress(from);
     let fee = 0;
     let fromAccountFreeBalance = '0';
 
@@ -1004,7 +1004,7 @@ export default class Extension extends FWExtensionBase {
       (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
 
-    if (isEthereumAddress(from) && isEthereumAddress(to)) {
+    if (isEthereumAddress(from) && isEthereumAddress(to) && networkKey !== 'Moonriver' && networkKey !== 'Moonbeam') {
       const fromAccountFreeBalance = tokenBalance
         ? tokenBalance.balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0'
         : '0';

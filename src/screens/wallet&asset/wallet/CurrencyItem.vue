@@ -98,7 +98,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
-import type { CustomEvent, Fn } from '@/interfaces';
+import type { CustomEvent, Fn, ToggleFnProp } from '@/interfaces';
 import type { SetHiddenAsset, SelectedWallet } from '@/store';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -118,7 +118,7 @@ export default class CurrencyItem extends Vue {
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) showAssetsManagementForm!: boolean;
   @Prop({ required: false }) timeoutCallback!: (fn: () => void) => VoidFunction;
-  @Prop(Function) toggleVisibleActivityForm!: VoidFunction;
+  @Prop(Function) toggleVisibleActivityForm!: ToggleFnProp;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;

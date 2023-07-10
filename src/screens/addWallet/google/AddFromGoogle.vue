@@ -141,9 +141,13 @@ export default class AddFromGoogle extends Vue {
     this.isLoading = false;
   }
 
+  goBack() {
+    this.$router.replace('/').catch((e) => e);
+  }
+
   back() {
     if (this.step === 1) {
-      this.$router.replace('/');
+      this.goBack();
 
       return;
     }
@@ -161,7 +165,7 @@ export default class AddFromGoogle extends Vue {
 
   proceed() {
     if (this.isFinishForm || this.isAccessDenied) {
-      this.$router.push('/');
+      this.goBack();
 
       return;
     }

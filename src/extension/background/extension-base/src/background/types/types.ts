@@ -267,7 +267,7 @@ export enum BasicTxErrorCode {
   CREATE_COMPOUND_ERROR = 'createCompoundError',
   CANCEL_COMPOUND_ERROR = 'cancelCompoundError',
   TIMEOUT = 'timeout',
-  BALANCE_TO_LOW = 'balanceTooLow1',
+  BALANCE_TO_LOW = 'balanceTooLow',
   UNKNOWN_ERROR = 'unknownError',
 }
 
@@ -353,25 +353,26 @@ export type BasicTxWarning = {
 export type BaseRequestSign = {};
 
 export interface RequestCheckTransfer extends BaseRequestSign {
-  networkKey: string;
+  networkKey: NetworkName;
   from: string;
   to: string;
   assetId: string;
-  relayChain?: string;
+  relayChain?: RelayChainName;
   amount?: string;
   password?: string;
   isMobile?: boolean;
 }
 
 export interface RequestCheckCrossChain extends BaseRequestSign {
-  originNet: string;
-  destinationNet: string;
+  originNet: NetworkName;
+  destinationNet: NetworkName;
   from: string;
   to: string;
   assetId: string;
-  relayChain?: string;
+  relayChain?: RelayChainName;
   amount?: string;
   password?: string;
+  isMobile?: boolean;
 }
 
 export interface ResponseCheckTransfer {

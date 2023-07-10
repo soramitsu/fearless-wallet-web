@@ -60,8 +60,8 @@
           />
         </div>
 
-        <Tooltip text="Original network fee" target=".origin-fee" placement="right" />
-        <Tooltip text="Cross-Chain fee" target=".cross-chain-fee" placement="right" />
+        <Tooltip text="assets.feeDescription" target=".origin-fee" placement="right" />
+        <Tooltip text="assets.feeDescription" target=".cross-chain-fee" placement="right" />
       </Corners>
     </div>
   </TransferForm>

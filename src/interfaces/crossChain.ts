@@ -14,6 +14,7 @@ type XcmLocations = {
   chainId: string;
   assets: [
     {
+      nativeParachainIds: number[];
       symbol: string;
       parents: number;
       interiors: Interiors;

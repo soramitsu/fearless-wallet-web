@@ -121,6 +121,7 @@ import {
   SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
+import { SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
 
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
@@ -1070,7 +1071,11 @@ export default class Extension extends FWExtensionBase {
 
     let transferProm: Promise<void> | undefined;
 
-    if (isEthereumAddress(from) && isEthereumAddress(to)) {
+    if (
+      isEthereumAddress(from) &&
+      isEthereumAddress(to) &&
+      !SUBSTRATE_ETHEREUM_NETWORKS.includes(networkKey.toLowerCase())
+    ) {
       // Make transfer with EVM API
       const { privateKey } = this.accountExportPrivateKey({ address: from, password });
       const web3ApiMap = this.state.getApiMap.evm;

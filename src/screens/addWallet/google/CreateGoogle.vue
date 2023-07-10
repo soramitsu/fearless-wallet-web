@@ -322,7 +322,7 @@ export default class CreateGoogle extends Vue {
     let ethRes;
 
     if (ethAddress) {
-      const ethJson = await exportAccount(ethAddress, this.walletPassword);
+      const { exportedJson: ethJson } = await exportAccount(ethAddress, this.walletPassword);
 
       ethRes = await createGoogleFile({
         json: JSON.stringify(ethJson),

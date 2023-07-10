@@ -37,12 +37,9 @@
         />
 
         <div v-if="isPopup" class="background-ellipse button-margin" @click="toggleConnectionPopup">
-          <Loading v-if="!tabStatus" />
+          <Loading width="16" v-if="!tabStatus" />
 
-          <template v-else>
-            <div class="connect" :class="statusConnectedClasses"></div>
-            <span>{{ $t(statusConnectedText) }}</span>
-          </template>
+          <div v-else class="connect" :class="statusConnectedClasses"></div>
         </div>
 
         <ConnectionPopup v-if="showConnectionPopup" :tabStatus="tabStatus" :handlerClose="toggleConnectionPopup" />
@@ -215,9 +212,7 @@ export default class Header extends Vue {
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 32px;
-      width: 145px;
-      padding: 0 12px;
+      padding: 8px;
       font-size: 12px;
       line-height: 18px;
       border-radius: 20px;
@@ -230,7 +225,6 @@ export default class Header extends Vue {
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    margin-right: 8px;
   }
 
   .success-connect {

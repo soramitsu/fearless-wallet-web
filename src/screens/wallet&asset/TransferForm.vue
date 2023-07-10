@@ -184,6 +184,7 @@
 import { Component, Vue, Prop, Watch, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
+import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import HistoryBook from './HistoryBook.vue';
 import EditAddressBook from './EditAddressBook.vue';
@@ -488,10 +489,10 @@ export default class TransferForm extends Vue {
     // used only for crossChain
     if (this.isTransfer) return [];
 
+    const asset = getNativeAssetName(this.sendAssetName);
+
     return this.originNet
-      .xcm!.availableDestinations.filter(({ assets }) =>
-        assets.some((assetName) => assetName.toLowerCase() === this.sendAssetName.toLowerCase())
-      )
+      .xcm!.availableDestinations.filter(({ assets }) => assets.some((assetName) => assetName.toLowerCase() === asset))
       .map(({ chainId }) => {
         const { name, icon } = this.getNetwork(chainId);
 

@@ -2,7 +2,12 @@ import { BN, isFunction } from '@polkadot/util';
 import { FPNumber } from '@sora-substrate/util';
 import { decodeAddress } from '@polkadot/util-crypto';
 import { state } from '@extension-base/background/handlers';
-import { isEthereumNetwork, getUtilityProps } from '@extension-base/background/utils/utils';
+import {
+  isEthereumNetwork,
+  getUtilityProps,
+  getNativeAssetName,
+  getSubstrateAddressByEthAddress,
+} from '@extension-base/background/utils/utils';
 import { getAssetInfo } from '@extension-base/api/substrate/registry';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
@@ -72,8 +77,11 @@ function getConcreteAsset(originNet: NetworkName, isToRelayChain: boolean, asset
     };
 
   const { assets: xcmLocationsAssets } = state.xcmLocations.find(({ chainId }) => chainId === parentId)!;
+
+  const asset = getNativeAssetName(tokenInfo.symbol);
+
   const { interiors, nativeParachainIds } = xcmLocationsAssets.find(
-    ({ symbol }) => symbol.toLowerCase() === tokenInfo.symbol.toLowerCase()
+    ({ symbol }) => symbol.toLowerCase() === asset.toLowerCase()
   )!;
 
   const interiorsByXcmVersion = interiors[xcm!.xcmVersion]!;
@@ -286,19 +294,27 @@ async function estimateCrossChainFee(
     );
   });
 
-  const destEstimateFee = destFees?.destXcmFee?.find(
-    ({ symbol: _symbol }) => _symbol.toLowerCase() === tokenBalance.symbol.toLowerCase()
-  );
+  const asset = getNativeAssetName(tokenBalance.symbol);
+
+  const destEstimateFee = destFees?.destXcmFee?.find(({ symbol: _symbol }) => _symbol.toLowerCase() === asset);
 
   // Токены мунбим, мунривер сетей являются аналогами из других сабстрейт сетей, но хранятся отдельными сущностями
   // По сути они являются отдельной сущностью TokenBalance
-  // Если телепорт в эфириум сеть, нужно искать precision в другой сущности TokenBalance, для токена `xcTOKEN`
-  const tokenBalanceByDestNet = isEthereumNetwork(destinationNet)
-    ? state.balanceMap[from].find(
-        (balance) =>
-          balance.symbol === `xc${tokenBalance.symbol.toLowerCase()}` &&
-          balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
-      )!
+  // Если телепорт в эфириум сеть из НЕ эфириум сити ИЛИ из эфириум сети в НЕ эфириум сеть, нужно искать precision в другой сущности TokenBalance, для токена `xcTOKEN`
+
+  const toEthereum = !isEthereumNetwork(originNet) && isEthereumNetwork(destinationNet);
+  const fromEthereum = isEthereumNetwork(originNet) && !isEthereumNetwork(destinationNet);
+  const isSeparateRecord = toEthereum || fromEthereum;
+
+  const address = getSubstrateAddressByEthAddress(from);
+
+  const tokenBalanceByDestNet = isSeparateRecord
+    ? state.balanceMap[address].find((balance) => {
+        // Соответственно либо подставляем префикс xc либо убираем его
+        const asset = toEthereum ? `xc${tokenBalance.symbol.toLowerCase()}` : getNativeAssetName(tokenBalance.symbol);
+
+        return balance.symbol === asset && balance.relayChain.toLowerCase() === relayChain?.toLowerCase();
+      })!
     : tokenBalance;
 
   const { precision: precisionDest } = tokenBalanceByDestNet.balances.find(({ name }) => {
@@ -376,7 +392,8 @@ async function makeCrossChain({
 
   await apiProps.api?.isReady;
 
-  const tokenBalance = state.balanceMap[from].find(({ assetId: _assetId }) => _assetId === assetId)!;
+  const address = getSubstrateAddressByEthAddress(from);
+  const tokenBalance = state.balanceMap[address].find(({ assetId: _assetId }) => _assetId === assetId)!;
   const [, crossChainFee] = await estimateCrossChainFee(from, to, originNet, destinationNet, tokenBalance, relayChain);
 
   const amountWithCrossChain = new FPNumber(amount).add(crossChainFee).toString();
@@ -399,7 +416,7 @@ async function makeCrossChain({
     password,
     isSavePass,
     address: from,
-    errorMessage: 'error Cross Chain',
+    errorMessage: 'CrossChain error',
   });
 }
 

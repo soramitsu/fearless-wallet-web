@@ -12,6 +12,7 @@
           class="row"
           errorDescriptions="accounts.invalidNodeAddress"
           :isError="isErrorUrlNode"
+          :maxlength="150"
         />
       </div>
 

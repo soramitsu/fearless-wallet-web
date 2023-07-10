@@ -1,5 +1,3 @@
-// Copyright 2019-2022 @polkadot/extension authors & contributors
-// SPDX-License-Identifier: Apache-2.0
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
@@ -40,7 +38,7 @@ import {
   RequestMobileSign,
   TransferErrorCode,
 } from '@extension-base/background/types/types';
-import { isEthereumNetwork, getSubstrateAddressByEthAddress } from '../utils/utils';
+import { getSubstrateAddressByEthAddress } from '@extension-base/background/utils/utils';
 import type {
   ActiveTabAuthorizeStatus,
   BalanceJson,
@@ -111,8 +109,7 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
-import { ASSETS_ALIASES, LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
-import { NETWORKS_ALIASES } from '@/consts/networks';
+import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
 
 import { googleManage } from '@/controllers/googleController';
 import {
@@ -996,7 +993,7 @@ export default class Extension extends FWExtensionBase {
     const warnings: BasicTxWarning[] = [];
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
 
-    const address = isEthereumAddress(from) ? getSubstrateAddressByEthAddress(from) : this.encodeAddress(from);
+    const address = getSubstrateAddressByEthAddress(from);
     let fee = 0;
     let fromAccountFreeBalance = '0';
 
@@ -1037,8 +1034,6 @@ export default class Extension extends FWExtensionBase {
     port: Port,
     { from, networkKey, password, to, assetId, amount, isSavePass, isMobile }: RequestTransfer
   ): Promise<BasicTxResponse | undefined> {
-    const address = keyring.encodeAddress(from);
-
     const txState: BasicTxResponse = {};
 
     const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(assetId, from, password);
@@ -1068,7 +1063,7 @@ export default class Extension extends FWExtensionBase {
     const remainTime = fromKeyPair ? this.refreshAccountPasswordCache(fromKeyPair) : 0;
 
     const savePass = () => {
-      this.savePass(address, ethereumAddress, remainTime, !!isSavePass, !!isMobile);
+      this.savePass(from, ethereumAddress, remainTime, !!isSavePass, !!isMobile);
     };
 
     const callback = this.makeExtrinsicCallback(cb, savePass);
@@ -1170,13 +1165,14 @@ export default class Extension extends FWExtensionBase {
     relayChain,
     amount,
   }: RequestCheckCrossChain): Promise<ResponseCheckCrossChain> {
-    const tokenBalance = this.state.balanceMap[from].find(
+    const address = getSubstrateAddressByEthAddress(from);
+    const tokenBalance = this.state.balanceMap[address].find(
       (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
 
     const extrinsic = await createCrossChainExtrinsic(assetId, originNet, destinationNet, to, amount!, tokenBalance);
 
-    console.info('checkCrossChain', extrinsic);
+    console.info('CrossChain', extrinsic);
 
     const [fee, crossChainFee] = await estimateCrossChainFee(
       from,
@@ -1210,8 +1206,6 @@ export default class Extension extends FWExtensionBase {
       relayChain,
     }: RequestCrossChain
   ): Promise<void> {
-    const address = keyring.encodeAddress(from);
-
     const [, fromKeyPair] = this.validateTransfer(assetId, from, password);
 
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
@@ -1220,7 +1214,7 @@ export default class Extension extends FWExtensionBase {
     const remainTime = this.refreshAccountPasswordCache(fromKeyPair!);
 
     const savePass = () => {
-      this.savePass(address, ethereumAddress, remainTime, !!isSavePass, !!isMobile);
+      this.savePass(from, ethereumAddress, remainTime, !!isSavePass, !!isMobile);
     };
 
     const callback = this.makeExtrinsicCallback(cb, savePass);
@@ -1254,7 +1248,7 @@ export default class Extension extends FWExtensionBase {
           errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (e as Error).message }],
         });
 
-        console.error('Transfer error', e);
+        console.error('CrossChain error', e);
 
         setTimeout(() => this.cancelSubscription(id), 500);
 

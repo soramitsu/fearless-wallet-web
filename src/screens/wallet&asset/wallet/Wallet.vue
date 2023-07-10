@@ -279,7 +279,7 @@ export default class Wallet extends Vue {
   }
 
   closeGoogleExportPopup() {
-    this.$router.replace('/');
+    this.$router.replace('/').catch((e) => e);
 
     this.$emit('closeSelectWalletPopup');
   }
@@ -351,7 +351,7 @@ export default class Wallet extends Vue {
   toggleVisibleActivityForm(
     field: 'showSendForm' | 'showReceiveForm',
     value = true,
-    currency: { mainNetwork: string; assetId: string }
+    currency: { mainNetwork?: string; assetId?: string }
   ) {
     this.selectedCurrency = currency;
     this[field] = value;

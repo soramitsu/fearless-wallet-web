@@ -22,8 +22,6 @@
     <AdvancedForm
       v-if="showAdvancedForm"
       :derivationPaths="derivationPaths"
-      :showEthereumDP="showEthereumDP"
-      :showSubstrateDP="showSubstrateDP"
       @updateDP="updateDP"
       @toggleAdvancedFormVisible="toggleAdvancedFormVisible"
     />
@@ -99,7 +97,7 @@ import { DerivationPaths, MnemonicConfirmation, AsyncFn } from '@/interfaces';
 import AdvancedForm from '@/screens/addWallet/AdvancedForm.vue';
 import { ETHEREUM_DEFAULT_DERIVATION_PATH, INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 import BaseApi from '@/util/BaseApi';
-import { createAccountSuri, createGoogleFile, exportAccount } from '@/extension/messaging';
+import { createAccountSuri, createGoogleFile, exportAccount, updateCurrentAccountAddress } from '@/extension/messaging';
 import { SelectedWallet } from '@/store/accounts/types';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -224,13 +222,14 @@ export default class CreateGoogle extends Vue {
   @Watch('step')
   async watchStep() {
     if (this.step === 5) {
-      this.isLoading = false;
+      this.isLoading = true;
 
       const address = await this.saveKeypairFromSeed();
 
-      this.isLoading = true;
+      await this.backupWallet(address);
+      updateCurrentAccountAddress(address);
 
-      this.backupWallet(address);
+      this.isLoading = false;
     }
   }
 
@@ -258,10 +257,13 @@ export default class CreateGoogle extends Vue {
     this.step += 1;
   }
 
+  goBack() {
+    this.$router.replace('/').catch((e) => e);
+  }
+
   back() {
     if (this.step === 1) {
-      this.$router.replace('/');
-      this.$router.push({ name: Components.Welcome });
+      this.goBack();
 
       return;
     }
@@ -271,8 +273,7 @@ export default class CreateGoogle extends Vue {
 
   proceed() {
     if (this.step === this.countSteps) {
-      this.$router.replace('/');
-      this.$router.push({ name: Components.Wallet });
+      this.goBack();
 
       return;
     }
@@ -317,11 +318,12 @@ export default class CreateGoogle extends Vue {
   async backupWallet(address: string) {
     const { exportedJson: json } = await exportAccount(address, this.walletPassword);
     const ethAddress = json.meta.ethereumAddress as string;
-    let ethRes;
     const token = this.$route.params.access_token;
+    let ethRes;
 
     if (ethAddress) {
       const ethJson = await exportAccount(ethAddress, this.walletPassword);
+
       ethRes = await createGoogleFile({
         json: JSON.stringify(ethJson),
         options: { name: this.nickname, address: ethAddress },

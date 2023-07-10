@@ -20,6 +20,7 @@ import {
 import { NATIVE_NETWORKS, RELAY_CHAINS, CHAIN_IDS, NETWORKS_ALIASES } from '@/consts/networks';
 import { NetworkName, RelayChainName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
+import { ETHEREUM_UTILITY_ASSETS } from '@/consts/currencies';
 
 type Extrinsic = Nullable<SubmittableExtrinsic<'promise'>>;
 
@@ -60,7 +61,7 @@ function interiorHelper(interiors: Interior, nativeParachainIds: number[], origi
     return [...result, formattedInterior];
   }, []);
 
-  return array.length === 1 ? array[0] : array;
+  return array.length === 1 ? (array[0] as Record<string, string>) : (array as Record<string, string>[]);
 }
 
 function getConcreteAsset(originNet: NetworkName, isToRelayChain: boolean, assetId: string, isNative = false) {
@@ -85,17 +86,20 @@ function getConcreteAsset(originNet: NetworkName, isToRelayChain: boolean, asset
   )!;
 
   const interiorsByXcmVersion = interiors[xcm!.xcmVersion]!;
-  const interiorXcmLength = interiorsByXcmVersion.length;
-  const haveParachainParameter = interiorsByXcmVersion?.some((interior) =>
-    Object.keys(interior).some((key) => key === 'parachain')
-  );
+
+  const interiorValue = interiorHelper(interiorsByXcmVersion, nativeParachainIds, originNetParaId);
+  const interiorXcmLength = Array.isArray(interiorValue) ? interiorValue.length : 1;
 
   const interior =
     interiorXcmLength === 0
       ? { Here: '' }
       : {
-          [`X${interiorXcmLength}`]: interiorHelper(interiorsByXcmVersion, nativeParachainIds, originNetParaId),
+          [`X${interiorXcmLength}`]: interiorValue,
         };
+
+  const haveParachainParameter = Array.isArray(interiorValue)
+    ? interiorValue?.some((interior) => Object.keys(interior).some((key) => key === 'Parachain'))
+    : interiorValue.Parachain !== undefined;
 
   const parents1 = isToRelayChain ? 1 : 0;
   const parents2 = interiorXcmLength === 0 || haveParachainParameter ? 1 : 0;
@@ -304,7 +308,7 @@ async function estimateCrossChainFee(
 
   const toEthereum = !isEthereumNetwork(originNet) && isEthereumNetwork(destinationNet);
   const fromEthereum = isEthereumNetwork(originNet) && !isEthereumNetwork(destinationNet);
-  const isSeparateRecord = toEthereum || fromEthereum;
+  const isSeparateRecord = (toEthereum || fromEthereum) && !Object.values(ETHEREUM_UTILITY_ASSETS).includes(asset);
 
   const address = getSubstrateAddressByEthAddress(from);
 

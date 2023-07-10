@@ -70,6 +70,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import TransferForm from './TransferForm.vue';
 import type { SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -184,8 +185,10 @@ export default class CrossChainForm extends Vue {
 
     this.$nextTick(() => {
       const originNet = this.networks.find(({ name }) => name.toLowerCase() === this._originalNetwork.toLowerCase());
+      const asset = getNativeAssetName(this.assetName);
+
       const destChainId = originNet?.xcm?.availableDestinations.find(({ assets }) =>
-        assets.some((assetName) => assetName.toLowerCase() === this.assetName.toLowerCase())
+        assets.some((assetName) => assetName.toLowerCase() === asset)
       )?.chainId;
 
       const { name: destName } = this.networks.find(({ chainId }) => chainId === destChainId)!;

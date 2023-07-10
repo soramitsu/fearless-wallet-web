@@ -133,6 +133,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import HistoryDetailsForm from './HistoryDetailsForm.vue';
 import History from './History.vue';
 import type { HistoryElement } from '@/interfaces/history';
@@ -204,7 +205,9 @@ export default class Asset extends Vue {
   get showCrossChainButton() {
     const network = this.networks.find(({ name }) => name.toLowerCase() === this.selectedNetwork?.toLowerCase())!;
 
-    return network?.xcm?.availableAssets.some((assetName) => assetName.toLowerCase() === this.selectedAsset);
+    const asset = getNativeAssetName(this.selectedAsset);
+
+    return network?.xcm?.availableAssets.some((assetName) => assetName.toLowerCase() === asset);
   }
 
   get showSwapButton() {

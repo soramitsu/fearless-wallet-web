@@ -942,11 +942,20 @@ export default class Extension extends FWExtensionBase {
       console.info(`Swap transaction failed ${ex}`);
     }
 
-    if (isSavePass) this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
-    else if (remainTime) {
+    const ethereumAddress = keyring.getAccount(address)?.meta.ethreumAddress as string | undefined;
+
+    if (isSavePass) {
+      this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
+      if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
+    } else if (remainTime) {
       this.cachedUnlocks[address] = 0;
 
       pair.lock();
+
+      if (ethereumAddress) {
+        this.cachedUnlocks[ethereumAddress] = 0;
+        keyring.getPair(ethereumAddress).lock();
+      }
     }
 
     return {
@@ -961,12 +970,22 @@ export default class Extension extends FWExtensionBase {
     password: string | undefined
   ): [Array<BasicTxError>, KeyringPair | undefined, Asset] {
     const errors = [] as Array<BasicTxError>;
+    const substrateAddress = getSubstrateAddressByEthAddress(from);
+    const substratePair = keyring.getAccount(substrateAddress) ? keyring.getPair(substrateAddress) : undefined;
 
-    const keypair = keyring.getAccount(from) ? keyring.getPair(from) : undefined;
-
-    if (keypair && password) {
+    if (password) {
       try {
-        keypair.unlock(password);
+        if (substratePair) {
+          substratePair.unlock(password);
+          const { meta } = substratePair;
+          const ethereumAddress = meta.ethereumAddress as string | undefined;
+
+          if (ethereumAddress) {
+            const pair = keyring.getPair(ethereumAddress);
+
+            pair.unlock(password);
+          }
+        }
       } catch (e: any) {
         errors.push({
           code: BasicTxErrorCode.KEYRING_ERROR,
@@ -976,8 +995,9 @@ export default class Extension extends FWExtensionBase {
     }
 
     const tokenInfo = getAssetInfo(tokenId);
+    const resultPair = isEthereumAddress(from) ? keyring.getPair(from) : substratePair;
 
-    return [errors, keypair, tokenInfo];
+    return [errors, resultPair, tokenInfo];
   }
 
   private async checkTransfer({
@@ -1060,11 +1080,12 @@ export default class Extension extends FWExtensionBase {
     const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
 
     const ethereumAddress = fromKeyPair ? (fromKeyPair.meta.ethereumAddress as string | undefined) : '';
-
+    const isEthereum = isEthereumAddress(from);
+    const address = isEthereum ? getSubstrateAddressByEthAddress(from) : from; // if Ethereum we need to get substrate address related to eth wallet to save pass
     const remainTime = fromKeyPair ? this.refreshAccountPasswordCache(fromKeyPair) : 0;
 
     const savePass = () => {
-      this.savePass(from, ethereumAddress, remainTime, !!isSavePass, !!isMobile);
+      this.savePass(address, isEthereum ? from : ethereumAddress, remainTime, !!isSavePass, !!isMobile);
     };
 
     const callback = this.makeExtrinsicCallback(cb, savePass);
@@ -1212,14 +1233,15 @@ export default class Extension extends FWExtensionBase {
     }: RequestCrossChain
   ): Promise<void> {
     const [, fromKeyPair] = this.validateTransfer(assetId, from, password);
-
+    const isEthereum = isEthereumAddress(from);
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
     const ethereumAddress = fromKeyPair!.meta.ethereumAddress as string | undefined;
-
-    const remainTime = this.refreshAccountPasswordCache(fromKeyPair!);
+    const address = isEthereum ? getSubstrateAddressByEthAddress(from) : from; // if Ethereum we need to get substrate address related to eth wallet
+    const substratePair = keyring.getPair(address);
+    const remainTime = this.refreshAccountPasswordCache(isEthereum ? substratePair : fromKeyPair!);
 
     const savePass = () => {
-      this.savePass(from, ethereumAddress, remainTime, !!isSavePass, !!isMobile);
+      this.savePass(address, isEthereum ? from : ethereumAddress, remainTime, !!isSavePass, !!isMobile);
     };
 
     const callback = this.makeExtrinsicCallback(cb, savePass);

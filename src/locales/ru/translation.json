@@ -139,6 +139,13 @@
         "text": "Язык",
         "translated": "Переведено командой"
       }
+    },
+    "networkManagement": {
+      "header": "Выберите Сеть",
+      "all": "Все",
+      "allNetworks": "Все сети",
+      "favorites": "Избранные",
+      "popular": "Популярные"
     }
   },
   "menu": {
@@ -357,7 +364,7 @@
       "step4": "Отправьте свою личную информацию",
       "stepDescription4": "Заполните форму, указав свое имя и адрес"
     },
-    "statuses" : {
+    "statuses": {
       "pending": {
         "statusText": "Выполняется проверка",
         "text1": "Ваш KYC завершен. В ожидании результатов",
@@ -432,8 +439,6 @@
     "alreadyHaveAccount": "У меня уже есть аккаунт",
     "sourceType": "Тип источника",
     "allNetworks": "Все сети",
-    "favorites": "Любимые",
-    "popular": "Популярные",
     "offlineStatus": "Отсутствует интернет",
     "networkDisconnected": "Сеть отключена",
     "acceptContinue": "Принять и продолжить",

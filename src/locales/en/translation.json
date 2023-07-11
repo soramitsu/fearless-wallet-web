@@ -141,6 +141,13 @@
         "text": "Language",
         "translated": "Translated by the team"
       }
+    },
+    "networkManagement": {
+      "header": "Select Network",
+      "all": "All",
+      "allNetworks": "All networks",
+      "favorites": "Favorite",
+      "popular": "Popular"
     }
   },
   "menu": {
@@ -175,6 +182,7 @@
     "invalidAccountAddress": "Invalid account address",
     "addContact": "Add contact",
     "recent": "Recent",
+    "all": "All",
     "chooseFromHistory": "Choose from history",
     "myWallets": "My wallets",
     "direction": "Direction",
@@ -434,8 +442,6 @@
     "sourceType": "Source Type",
     "all": "All",
     "allNetworks": "All networks",
-    "favorites": "Favorite",
-    "popular": "Popular",
     "offlineStatus": "No Internet connection",
     "networkDisconnected": "Network disconnected",
     "acceptContinue": "Accept and continue",

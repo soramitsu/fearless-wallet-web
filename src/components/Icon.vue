@@ -56,8 +56,13 @@ export default class Icon extends Vue {
 .icon--success {
   color: $success-color;
 }
+
 .icon--purple {
   color: #7700ee;
+}
+
+.icon--purple:hover {
+  color: #7700ee50;
 }
 
 .icon--default {

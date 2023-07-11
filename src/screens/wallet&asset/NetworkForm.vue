@@ -13,24 +13,26 @@
       <STab :label="$t('common.popular')" name="popular" class="button" />
       <STab :label="$t('common.favorites')" name="favorite" class="button" />
     </STabs>
-    <ul class="network__list">
-      <li
-        v-for="({ name, icon }, index) in filterNetwork"
-        :key="name"
-        class="network"
-        :class="rowClasses(value)"
-        @click="toggle()"
-      >
-        <Icon v-if="index === 0" :icon="icon" width="24" height="24" className="network__icon" />
-        <ExternalLogo v-else :name="icon" width="24" height="24" class="img" />
+    <Scroll>
+      <ul class="network__list">
+        <li
+          v-for="({ name, icon }, index) in filterNetwork"
+          :key="name"
+          class="network"
+          :class="rowClasses(value)"
+          @click="toggle()"
+        >
+          <Icon v-if="index === 0" :icon="icon" width="24" height="24" className="network__icon" />
+          <ExternalLogo v-else :name="icon" width="24" height="24" class="img" />
 
-        <span class="network__name">{{ name }}</span>
-        <div class="network__state">
-          <Icon v-if="index !== 0" icon="star" iconColor="purple" width="24" height="24" className="network__icon" />
-          <Icon v-else icon="check" iconColor="purple" width="24" height="24" className="network__icon" />
-        </div>
-      </li>
-    </ul>
+          <span class="network__name">{{ name }}</span>
+          <div class="network__state">
+            <Icon v-if="index !== 0" icon="star" iconColor="purple" width="24" height="24" className="network__icon" />
+            <Icon v-else icon="check" iconColor="purple" width="24" height="24" className="network__icon" />
+          </div>
+        </li>
+      </ul>
+    </Scroll>
   </AboveForm>
 </template>
 

@@ -98,7 +98,7 @@ export default class SelectInput extends Vue {
   }
 
   IsNumber(event: KeyboardEvent) {
-    if (!/\d/.test(event.key) && event.key !== '.') return event.preventDefault();
+    if (!/\d/.test(event.key) && event.key !== '.' && event.key !== ',') return event.preventDefault();
   }
 
   setFocusValue(value: boolean) {

@@ -137,7 +137,7 @@ import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import HistoryDetailsForm from './HistoryDetailsForm.vue';
 import History from './History.vue';
 import type { HistoryElement } from '@/interfaces/history';
-import type { GetAssetPrice, SelectedWallet, GetNetwork } from '@/store';
+import type { GetAssetPrice, SelectedWallet } from '@/store';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
@@ -187,7 +187,6 @@ export default class Asset extends Vue {
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
-  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
@@ -196,10 +195,7 @@ export default class Asset extends Vue {
   }
 
   get providers() {
-    const network = this.getNetwork(this.selectedNetwork);
-    const asset = network?.assets.find(({ id }) => id === this.selectedAssetId);
-
-    return asset?.purchaseProviders ?? [];
+    return this.currentCurrency.providers ?? [];
   }
 
   get showCrossChainButton() {

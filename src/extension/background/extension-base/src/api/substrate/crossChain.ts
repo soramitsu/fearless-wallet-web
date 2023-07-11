@@ -141,15 +141,10 @@ function getNativeTeleportParams(
       };
 
   const destinationChain = {
-    [xcmVersion]: isToRelayChain
-      ? {
-          interior: { Here: '' },
-          parents: 1,
-        }
-      : {
-          interior: { X1: { Parachain: paraId } },
-          parents: 0,
-        },
+    [xcmVersion]: {
+      interior: isToRelayChain ? { Here: '' } : { X1: { Parachain: paraId } },
+      parents: 1,
+    },
   };
 
   const receiver = {

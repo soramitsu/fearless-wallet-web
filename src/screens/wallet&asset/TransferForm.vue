@@ -128,8 +128,10 @@
           <Button
             size="big"
             class="button"
-            :text="buttonText"
             :disabled="buttonDisabled"
+            :iconName="buttonLoading ? 'loader' : ''"
+            :iconType="buttonLoading ? 'loading' : ''"
+            :text="buttonLoading ? '' : buttonText"
             @click="handlerContinueButton"
           />
         </div>
@@ -233,6 +235,7 @@ export default class TransferForm extends Vue {
   showConfirmationPasswordPopup = false;
   showMyWallets = false;
   showHistoryBook = false;
+  buttonLoading = false;
   newAddress = '';
   filterValue = '';
   step = 1;
@@ -392,6 +395,8 @@ export default class TransferForm extends Vue {
   }
 
   get buttonDisabled() {
+    if (this.buttonLoading) return true;
+
     if (!this.isOnline) return true;
 
     if (this.step === 2) return false;
@@ -692,7 +697,13 @@ export default class TransferForm extends Vue {
     } as RequestCheckCrossChain;
   }
 
-  verifyTx(_amount?: string) {
+  toggleButtonLoading(value = true) {
+    this.buttonLoading = value;
+  }
+
+  async verifyTx(_amount?: string) {
+    this.toggleButtonLoading();
+
     // комиссия не зависит от адреса получателя, поэтому подставляем всегда мок
     const to = BaseApi.formatAddress(
       { address: VALID_SUBSTRATE_ADDRESS, ethereumAddress: VALID_ETHEREUM_ADDRESS },
@@ -701,8 +712,8 @@ export default class TransferForm extends Vue {
 
     const amount = _amount ?? (this.syncedAmount !== '' && this.syncedAmount !== '0') ? this.syncedAmount : '1';
 
-    if (this.isTransfer)
-      return checkTransfer({
+    if (this.isTransfer) {
+      const ex = await checkTransfer({
         networkKey: this.syncedNetwork,
         from: this.transactionAddress,
         to,
@@ -711,7 +722,12 @@ export default class TransferForm extends Vue {
         assetId: this.syncedAssetId,
       });
 
-    return checkCrossChain({
+      this.toggleButtonLoading(false);
+
+      return ex;
+    }
+
+    const ex = await checkCrossChain({
       originNet: this.syncedNetwork,
       destinationNet: this.syncedDestNet,
       from: this.transactionAddress,
@@ -720,6 +736,10 @@ export default class TransferForm extends Vue {
       amount,
       assetId: this.syncedAssetId,
     });
+
+    this.toggleButtonLoading(false);
+
+    return ex;
   }
 
   async handlerContinueButton(skipWarning = false) {

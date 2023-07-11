@@ -117,6 +117,7 @@ function getNativeTeleportParams(
   amount: string,
   assetId: string
 ) {
+  const isFromRelayChain = isRelayChain(originNet);
   const isToRelayChain = isRelayChain(destNet);
   const { xcm, parentId, name } = state.networkMap[originNet];
   const { paraId } = state.networkMap[destNet];
@@ -143,7 +144,7 @@ function getNativeTeleportParams(
   const destinationChain = {
     [xcmVersion]: {
       interior: isToRelayChain ? { Here: '' } : { X1: { Parachain: paraId } },
-      parents: 1,
+      parents: isFromRelayChain ? 0 : 1,
     },
   };
 

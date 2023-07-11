@@ -67,7 +67,7 @@
           @click="toggleSettingsVisible"
         />
 
-        <NetworkManage v-if="showSelectNetworkPopup" :handlerClose="() => {}" />
+        <NetworkManage v-if="showSelectNetworkPopup" :handlerClose="toggleSelectNetworkPopupVisible" />
       </div>
     </header>
   </div>

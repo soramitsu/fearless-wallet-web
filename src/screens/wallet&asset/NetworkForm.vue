@@ -8,26 +8,29 @@
   >
     <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
 
-    <STabs v-model="active" type="rounded" class="network-nav" position="top">
+    <STabs v-model="active" type="rounded" position="top">
       <STab :label="$t('common.all')" name="all" class="button" />
       <STab :label="$t('common.popular')" name="popular" class="button" />
       <STab :label="$t('common.favorites')" name="favorite" class="button" />
     </STabs>
+    <ul class="network__list">
+      <li
+        v-for="({ name, icon }, index) in filterNetwork"
+        :key="name"
+        class="network"
+        :class="rowClasses(value)"
+        @click="toggle()"
+      >
+        <Icon v-if="index === 0" :icon="icon" width="24" height="24" className="network__icon" />
+        <ExternalLogo v-else :name="icon" width="24" height="24" class="img" />
 
-    <div v-for="({ name, icon }, index) in filterNetwork" :key="name" :class="rowClasses(value)" @click="toggle()">
-      <div class="description">
-        <template>
-          <Icon v-if="index === 0" :icon="icon" className="img" />
-
-          <ExternalLogo v-else :name="icon" class="img" />
-        </template>
-
-        {{ name }}
-      </div>
-
-      <SIcon name="basic-check-mark-24" v-show="getIconVisible()" />
-      <Icon v-if="index !== 0" icon="star" iconColor="purple" className="img" />
-    </div>
+        <span class="network__name">{{ name }}</span>
+        <div class="network__state">
+          <Icon v-if="index !== 0" icon="star" iconColor="purple" width="24" height="24" className="network__icon" />
+          <Icon v-else icon="check" iconColor="purple" width="24" height="24" className="network__icon" />
+        </div>
+      </li>
+    </ul>
   </AboveForm>
 </template>
 
@@ -167,7 +170,35 @@ export default class NetworkManage extends Vue {
     background: $default-background-color;
   }
 }
-.network-nav {
+.network__list {
   display: flex;
+  flex-flow: column nowrap;
+  padding: 0;
+  gap: 16px;
+  .network {
+    display: flex;
+    flex-flow: row nowrap;
+    gap: 16px;
+    color: $default-white;
+    font-size: 16px;
+    border: solid 1px transparent;
+    border-bottom-color: $default-background-color;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    justify-content: center;
+    .network__name {
+      white-space: nowrap;
+    }
+    .network__icon {
+      width: 24px;
+      height: 24px;
+    }
+    .network__state {
+      flex-grow: 3;
+      width: 100%;
+      display: flex;
+      justify-content: flex-end;
+    }
+  }
 }
 </style>

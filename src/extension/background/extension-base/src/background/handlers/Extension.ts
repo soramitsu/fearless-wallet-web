@@ -1212,14 +1212,15 @@ export default class Extension extends FWExtensionBase {
     }: RequestCrossChain
   ): Promise<void> {
     const [, fromKeyPair] = this.validateTransfer(assetId, from, password);
-
+    const isEthereum = isEthereumAddress(from);
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
-    const ethereumAddress = fromKeyPair!.meta.ethereumAddress as string | undefined;
+    const ethereumAddress = fromKeyPair!.meta.ethereumAddress as string | undefined; //this will be undefined if fromKeypair is substrate
+    const address = isEthereum ? getSubstrateAddressByEthAddress(from) : from; // if Ethereum we need to get substrate address related to eth wallet
 
     const remainTime = this.refreshAccountPasswordCache(fromKeyPair!);
 
     const savePass = () => {
-      this.savePass(from, ethereumAddress, remainTime, !!isSavePass, !!isMobile);
+      this.savePass(address, isEthereum ? from : ethereumAddress, remainTime, !!isSavePass, !!isMobile);
     };
 
     const callback = this.makeExtrinsicCallback(cb, savePass);

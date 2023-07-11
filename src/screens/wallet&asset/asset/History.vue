@@ -46,7 +46,7 @@ import { NetworksController } from '@/controllers';
 })
 export default class History extends Vue {
   readonly historyDropdownOption = [
-    { label: 'assets.all', value: 'all' },
+    { label: 'common.all', value: 'all' },
     { label: 'assets.transfer', value: 'transfer' },
     { label: 'assets.reward', value: 'reward' },
     { label: 'assets.extrinsic', value: 'extrinsic' },

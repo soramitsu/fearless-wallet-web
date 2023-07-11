@@ -24,24 +24,31 @@
         <Tooltip text="header.walletManagement" target=".header-part-left" placement="right" />
       </div>
 
-      <div class="header-part">
+      <div class="header-part header-part-right">
         <CircleButton
           v-if="isPopup"
           iconName="expand"
           backgroundColor="light-black"
-          class="button-margin"
           tooltipText="common.fullScreen"
           target=".expand"
           placement="bottom"
           @click="openFullScreen"
         />
+        <div
+          class="background-ellipse network-management"
+          :ref="selectNetworkButtonRef"
+          @click="toggleSelectNetworkPopupVisible"
+        >
+          <Icon icon="all-networks" className="icon--network" width="16" height="16" />
+          <span>{{ selectedNetworkType }}</span>
+          <Icon icon="down" className="icon--down" width="10" height="9" />
+        </div>
 
-        <div v-if="isPopup" class="background-ellipse button-margin" @click="toggleConnectionPopup">
+        <div v-if="isPopup" class="background-ellipse" @click="toggleConnectionPopup">
           <Loading v-if="!tabStatus" />
 
           <template v-else>
             <div class="connect" :class="statusConnectedClasses"></div>
-            <span>{{ $t(statusConnectedText) }}</span>
           </template>
         </div>
 
@@ -52,13 +59,15 @@
         <CircleButton
           :ref="settingsNameRef"
           iconName="settings"
-          class="button-margin"
+          size="big"
           backgroundColor="none"
           placement="left"
           target=".settings"
           tooltipText="header.settingsAndManagement"
           @click="toggleSettingsVisible"
         />
+
+        <NetworkManage v-if="showSelectNetworkPopup" :handlerClose="() => {}" />
       </div>
     </header>
   </div>
@@ -66,20 +75,27 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
-import { Getter, Action } from 'vuex-class';
+import { Getter, Action, Mutation } from 'vuex-class';
+import { HexString } from '@polkadot/util/types';
 import type { SelectedWallet } from '@/store';
+import NetworkManage from '@/screens/wallet&asset/NetworkForm.vue';
+
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
-import { windowOpen } from '@/extension/messaging';
+import { tieAccount, windowOpen } from '@/extension/messaging';
 import { ActiveTabAuthorizeStatus } from '@/extension/background/extension-base/src/background/types/types';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
-import { AsyncFn } from '@/interfaces';
+import { AsyncFn, Fn } from '@/interfaces';
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+import { ALL_NETWORKS } from '@/consts/networks';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component({
-  components: { ConnectionPopup },
+  components: { ConnectionPopup, NetworkManage },
 })
 export default class Header extends Vue {
   readonly walletNameRef = 'walletName';
@@ -87,15 +103,24 @@ export default class Header extends Vue {
   readonly isPopup = BaseApi.useIsPopup();
 
   showConnectionPopup = false;
+  showSelectNetworkPopup = false;
+  readonly selectNetworkButtonRef = 'selectNetworkButton';
 
   @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(ExtensionGettersTypes.tabStatus) tabStatus!: ActiveTabAuthorizeStatus;
   @Action(ExtensionActionTypes.FETCH_TAB_STATUS) fetchTabStatus!: AsyncFn<ActiveTabAuthorizeStatus>;
+  @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
 
   get showBackIcon() {
     return this.$route.name === Components.Asset;
+  }
+
+  get selectedNetworkType() {
+    return 'networks';
   }
 
   get name() {
@@ -108,6 +133,22 @@ export default class Header extends Vue {
 
   get statusConnectedText() {
     return !this.tabStatus || !this.tabStatus.isAuthorize ? 'header.notConnected' : 'header.connected';
+  }
+
+  toggleSelectedNetwork(network: string) {
+    if (this.selectedNetwork === network) return;
+
+    const prepNetwork: HexString | null = network === ALL_NETWORKS ? null : `0x${this.getNetwork(network).chainId}`;
+
+    this.setSelectedNetwork(network);
+
+    tieAccount(this.selectedWallet.address, prepNetwork);
+
+    this.toggleSelectNetworkPopupVisible();
+  }
+
+  toggleSelectNetworkPopupVisible() {
+    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
   }
 
   @Watch('syncedShowSelectWalletPopup')
@@ -159,6 +200,7 @@ export default class Header extends Vue {
   justify-content: space-between;
   height: $header-height;
   margin-bottom: 16px;
+  gap: 2px;
 
   .logo-container {
     width: 48px;
@@ -171,7 +213,9 @@ export default class Header extends Vue {
   .s-icon-arrows-arrows-diagonals-bltr-24 {
     font-size: 18px !important;
   }
-
+  .header-part-right {
+    gap: 4px;
+  }
   .header-part-left {
     &:hover {
       cursor: pointer;
@@ -192,10 +236,10 @@ export default class Header extends Vue {
       height: 48px;
 
       .name {
-        max-width: 220px;
+        max-width: 190px;
         font-weight: 700;
         font-size: 24px;
-        margin: 0 5px 0 10px;
+        margin-left: 10px;
         align-items: center;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -207,17 +251,12 @@ export default class Header extends Vue {
       margin-top: 5px;
     }
 
-    .button-margin {
-      margin-left: 5px;
-    }
-
     .background-ellipse {
       display: flex;
       justify-content: center;
       align-items: center;
       height: 32px;
-      width: 145px;
-      padding: 0 12px;
+      padding: 12px;
       font-size: 12px;
       line-height: 18px;
       border-radius: 20px;
@@ -230,7 +269,20 @@ export default class Header extends Vue {
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    margin-right: 8px;
+  }
+  .network-management {
+    width: 137px;
+    height: 32px;
+    display: flex;
+    gap: 4px;
+  }
+
+  .icon--down {
+    height: 9px;
+  }
+
+  .icon--network {
+    height: 16px;
   }
 
   .success-connect {

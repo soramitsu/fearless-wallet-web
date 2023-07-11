@@ -14,23 +14,23 @@
         </div>
       </div>
 
-      <SelectNetworkButton
+      <!-- <SelectNetworkButton
         :ref="selectNetworkButtonRef"
         :text="selectedNetwork"
         :isActive="showSelectNetworkPopup"
         :showWarningIcon="showWarningIcon"
         @openNetworkPopup="toggleSelectNetworkPopupVisible"
         @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
-      />
+      /> -->
     </header>
 
-    <SelectNetworkPopup
+    <!-- <SelectNetworkPopup
       v-if="showSelectNetworkPopup"
       :selectedNetwork="selectedNetwork"
       :height="410"
       :toggleSelectedNetwork="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
-    />
+    /> -->
 
     <SoraCardBanner />
 

@@ -432,6 +432,8 @@
     "alreadyHaveAccount": "У меня уже есть аккаунт",
     "sourceType": "Тип источника",
     "allNetworks": "Все сети",
+    "favorites": "Любимые",
+    "popular": "Популярные",
     "offlineStatus": "Отсутствует интернет",
     "networkDisconnected": "Сеть отключена",
     "acceptContinue": "Принять и продолжить",

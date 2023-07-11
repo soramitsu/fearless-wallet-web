@@ -169,7 +169,6 @@
     "googleExportSuccess": "The secret data has been successfully saved on Google Drive"
   },
   "assets": {
-    "all": "All",
     "createContact": "Create contact",
     "feeDescription": "Every time you send cryptography to the blockchain, a network fee is charged. In fact, the network fee is a reward for miners and nodes that broadcast your transaction to the blockchain.",
     "saveAddressForAllNetwork": "Save address for all networks",
@@ -255,7 +254,7 @@
     "minMaxReceiveInfo": "Your transaction will revert if there is a large, unfavorable price movement before it is confirmed.",
     "liquidityProvideFeeInfo": "A portion of each trade goes to liquidity providers as a protocol incentive.",
     "existentialDepositSubtext": "This transaction will result in the account going below the Existential Deposit, which will cause it to be reaped (the account will be wiped from the blockchain’s state to conserve space). If you choose to continue you will lose any funds that are below the existential deposit amount set by the network. For detailed information please refer to the official network documentation (e.g., the Polkadot Wiki). Fearless Wallet is a fully non-custodial application and has no control or knowledge of any of your actions on the network itself. ONLY CONTINUE IF YOU FULLY AGREE TO AND UNDERSTAND THE IMPLICATIONS;"
-   },
+  },
   "accounts": {
     "walletName": "Wallet name",
     "createNewAccount": "Create a new account",
@@ -359,7 +358,7 @@
       "step4": "Submit your personal info",
       "stepDescription4": "Fill in the form with your name and address"
     },
-    "statuses" : {
+    "statuses": {
       "pending": {
         "statusText": "Verification in progress",
         "text1": "Your KYC is completed. Waiting for the results",
@@ -433,7 +432,10 @@
     "manageDApp": "Manage dApp access",
     "alreadyHaveAccount": "I already have an account",
     "sourceType": "Source Type",
+    "all": "All",
     "allNetworks": "All networks",
+    "favorites": "Favorite",
+    "popular": "Popular",
     "offlineStatus": "No Internet connection",
     "networkDisconnected": "Network disconnected",
     "acceptContinue": "Accept and continue",

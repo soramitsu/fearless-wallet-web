@@ -942,11 +942,20 @@ export default class Extension extends FWExtensionBase {
       console.info(`Swap transaction failed ${ex}`);
     }
 
-    if (isSavePass) this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
-    else if (remainTime) {
+    const ethereumAddress = keyring.getAccount(address)?.meta.ethreumAddress as string | undefined;
+
+    if (isSavePass) {
+      this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
+      if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
+    } else if (remainTime) {
       this.cachedUnlocks[address] = 0;
 
       pair.lock();
+
+      if (ethereumAddress) {
+        this.cachedUnlocks[ethereumAddress] = 0;
+        keyring.getPair(ethereumAddress).lock();
+      }
     }
 
     return {

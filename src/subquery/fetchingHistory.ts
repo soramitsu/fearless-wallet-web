@@ -147,6 +147,15 @@ async function fetchEthereumHistory(url: string, address: string, precision?: nu
     signal,
   });
 
+  const ethres = await axios.get(
+    `https://api.covalenthq.com/v1/eth-mainnet/address/${address}/transactions_v3/page/0/`,
+    {
+      headers: {
+        Authorization: 'Bearer cqt_rQX4bHqRcwDGbPgydh7G7HBmmhtc',
+      },
+    }
+  );
+
   if (res.status !== 200) {
     abort.abort();
 

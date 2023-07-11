@@ -4,7 +4,14 @@
   "short_name": "FW",
   "author": "Soramitsu",
   "manifest_version": 3,
-  "permissions": ["storage", "tabs", "identity", "alarms", "clipboardRead"],
+  "permissions": [
+    "storage",
+    "tabs",
+    "identity",
+    "clipboardRead",
+    "declarativeNetRequest",
+    "declarativeNetRequestWithHostAccess"
+  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"
@@ -19,6 +26,16 @@
   "action": {
     "default_title": "Fearless Wallet",
     "default_popup": "popup.html"
+  },
+  "host_permissions": ["<all_urls>"],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
   },
   "oauth2": {
     "scopes": ["https://www.googleapis.com/auth/drive.appdata"]

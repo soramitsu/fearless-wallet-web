@@ -2,7 +2,7 @@ import { FPNumber } from '@sora-substrate/util';
 import { state } from '@extension-base/background/handlers';
 import { signAndSendExtrinsic } from '@extension-base/api/substrate/shared/signAndSendExtrinsic';
 import { createExtrinsicTransfer } from '@extension-base/api/substrate/utils';
-import { getUtilityProps } from '@extension-base/background/utils/utils';
+import { getUtilityProps, getSubstrateAddressByEthAddress } from '@extension-base/background/utils/utils';
 import {
   BasicTxResponse,
   TransferErrorCode,
@@ -86,7 +86,8 @@ export async function makeTransfer({
 
   await apiProps.api?.isReady;
 
-  const tokenBalance = state.balanceMap[from].find(({ assetId: _assetId }) => _assetId === assetId)!;
+  const address = getSubstrateAddressByEthAddress(from);
+  const tokenBalance = state.balanceMap[address].find(({ assetId: _assetId }) => _assetId === assetId)!;
 
   const extrinsic = createExtrinsicTransfer({
     amount,

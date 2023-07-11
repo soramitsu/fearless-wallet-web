@@ -81,7 +81,10 @@ async function subscribeTokensBalance(
     assets.map(({ precision, symbol, id, type }) => {
       try {
         const options = getAssetOptions(id);
-        const query = api!.rx.query;
+
+        if (!api || !api.rx) return undefined;
+
+        const query = api.rx.query;
 
         let pallet;
 

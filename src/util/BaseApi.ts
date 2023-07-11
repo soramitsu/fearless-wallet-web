@@ -173,7 +173,12 @@ export default class BaseApi {
   }
 
   public static encodeAddress(publicKey: string | Uint8Array, prefix = 42) {
-    return encodeAddress(publicKey, prefix);
+    try {
+      return encodeAddress(publicKey, prefix);
+    } catch {
+      // dot ETH addresses
+      return publicKey as string;
+    }
   }
 
   public static useIsPopup(): boolean {

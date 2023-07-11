@@ -6,11 +6,9 @@ const LIQUID_SOURCE_FOR_MARKET = {
   [MarketType.TBC]: LiquiditySourceTypes.MulticollateralBondingCurvePool,
 };
 
-const ASSETS_ALIASES: Record<string, string> = {
-  moonriver_xcksm: 'ksm',
-  moonriver_ksm: 'xcksm',
-  moonbeam_xcdot: 'dot',
-  moonbeam_dot: 'xcdot',
+const ETHEREUM_UTILITY_ASSETS: Record<string, string> = {
+  moonriver: 'movr',
+  moonbeam: 'glmr',
 };
 
-export { LIQUID_SOURCE_FOR_MARKET, ASSETS_ALIASES };
+export { LIQUID_SOURCE_FOR_MARKET, ETHEREUM_UTILITY_ASSETS };

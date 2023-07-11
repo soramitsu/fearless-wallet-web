@@ -131,11 +131,11 @@ export default class FWExtensionBase {
 
     if (remainingTime < 0) {
       this.cachedUnlocks[address] = 0;
-      if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = 0;
 
       pair.lock();
 
       if (ethereumAddress) {
+        this.cachedUnlocks[ethereumAddress] = 0;
         const ethereumPair = keyring.getPair(ethereumAddress);
 
         ethereumPair.lock();

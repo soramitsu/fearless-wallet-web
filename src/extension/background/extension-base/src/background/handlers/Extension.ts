@@ -1,5 +1,3 @@
-// Copyright 2019-2022 @polkadot/extension authors & contributors
-// SPDX-License-Identifier: Apache-2.0
 import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import { ALLOWED_PATH, PASSWORD_EXPIRY_MS } from '@extension-base/defaults';
 import { accounts as accountsObservable } from '@polkadot/ui-keyring/observable/accounts';
@@ -31,12 +29,12 @@ import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { state } from '@extension-base/background/handlers';
 import {
   createCrossChainExtrinsic,
-  estimateFee as estimateCrossChainFee,
   makeCrossChain,
+  estimateCrossChainFee,
 } from '@extension-base/api/substrate/crossChain';
 import { BasicTxErrorCode, TransferErrorCode } from '@extension-base/background/types/types';
 import { ethers } from 'ethers';
-import { getSubstrateAddressByEthAddress, isEthereumNetwork } from '@extension-base/background/utils/utils';
+import { getSubstrateAddressByEthAddress } from '@extension-base/background/utils/utils';
 
 import type {
   MobileSigningRequest,
@@ -111,7 +109,7 @@ import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
-import { NETWORKS_ALIASES } from '@/consts/networks';
+import { NETWORKS_ALIASES, SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
 
 import { googleManage } from '@/controllers/googleController';
 import {
@@ -943,11 +941,20 @@ export default class Extension extends FWExtensionBase {
       console.info(`Swap transaction failed ${ex}`);
     }
 
-    if (isSavePass) this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
-    else if (remainTime) {
+    const ethereumAddress = keyring.getAccount(address)?.meta.ethreumAddress as string | undefined;
+
+    if (isSavePass) {
+      this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
+      if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
+    } else if (remainTime) {
       this.cachedUnlocks[address] = 0;
 
       pair.lock();
+
+      if (ethereumAddress) {
+        this.cachedUnlocks[ethereumAddress] = 0;
+        keyring.getPair(ethereumAddress).lock();
+      }
     }
 
     return {
@@ -962,12 +969,22 @@ export default class Extension extends FWExtensionBase {
     password: string | undefined
   ): [Array<BasicTxError>, KeyringPair | undefined, Asset] {
     const errors = [] as Array<BasicTxError>;
+    const substrateAddress = getSubstrateAddressByEthAddress(from);
+    const substratePair = keyring.getAccount(substrateAddress) ? keyring.getPair(substrateAddress) : undefined;
 
-    const keypair = keyring.getAccount(from) ? keyring.getPair(from) : undefined;
-
-    if (keypair && password) {
+    if (password) {
       try {
-        keypair.unlock(password);
+        if (substratePair) {
+          substratePair.unlock(password);
+          const { meta } = substratePair;
+          const ethereumAddress = meta.ethereumAddress as string | undefined;
+
+          if (ethereumAddress) {
+            const pair = keyring.getPair(ethereumAddress);
+
+            pair.unlock(password);
+          }
+        }
       } catch (e: any) {
         errors.push({
           code: BasicTxErrorCode.KEYRING_ERROR,
@@ -977,8 +994,9 @@ export default class Extension extends FWExtensionBase {
     }
 
     const tokenInfo = getAssetInfo(tokenId);
+    const resultPair = isEthereumAddress(from) ? keyring.getPair(from) : substratePair;
 
-    return [errors, keypair, tokenInfo];
+    return [errors, resultPair, tokenInfo];
   }
 
   private async checkTransfer({
@@ -995,8 +1013,8 @@ export default class Extension extends FWExtensionBase {
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
     const isFromEthereum = isEthereumAddress(from);
 
-    const address = isFromEthereum ? getSubstrateAddressByEthAddress(from) : this.encodeAddress(from);
-    let fee = '0';
+    const address = getSubstrateAddressByEthAddress(from);
+    let fee = 0;
     let fromAccountFreeBalance = '0';
 
     const tokenBalance = this.state.balanceMap[address].find(
@@ -1013,17 +1031,17 @@ export default class Extension extends FWExtensionBase {
       if (!isMainToken && tokenInfo.smartContract) {
         const { fee: feeValue } = await getERC20TransactionObject(tokenInfo.smartContract, networkKey, from, to, txVal);
 
-        fee = ethers.formatEther(feeValue);
+        fee = +ethers.formatEther(feeValue);
       } else {
         const { fee: feeValue } = await getEVMTransactionObject(networkKey, to, txVal);
 
-        fee = ethers.formatEther(feeValue);
+        fee = +ethers.formatEther(feeValue);
       }
     } else {
       // Estimate with DotSama API
 
       const feeNumber = await estimateFee(networkKey, to, amount, tokenBalance);
-      fee = feeNumber.toString();
+      fee = feeNumber;
       fromAccountFreeBalance =
         tokenBalance.balances.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0';
     }
@@ -1033,7 +1051,7 @@ export default class Extension extends FWExtensionBase {
       warnings,
       fromAccountFree: fromAccountFreeBalance,
       estimateFee: fee,
-    } as ResponseCheckTransfer;
+    } as unknown as ResponseCheckTransfer;
   }
 
   private async makeTransfer(
@@ -1041,8 +1059,6 @@ export default class Extension extends FWExtensionBase {
     port: Port,
     { from, networkKey, password, to, assetId, amount, isSavePass, isMobile }: RequestTransfer
   ): Promise<BasicTxResponse | undefined> {
-    const address = isEthereumAddress(from) ? getSubstrateAddressByEthAddress(from) : keyring.encodeAddress(from);
-
     const txState: BasicTxResponse = {};
 
     const [errors, fromKeyPair, tokenInfo] = this.validateTransfer(assetId, from, password);
@@ -1068,18 +1084,23 @@ export default class Extension extends FWExtensionBase {
     const cb = createSubscription<'pri(accounts.transfer)'>(id, port);
 
     const ethereumAddress = fromKeyPair ? (fromKeyPair.meta.ethereumAddress as string | undefined) : '';
-
+    const isEthereum = isEthereumAddress(from);
+    const address = isEthereum ? getSubstrateAddressByEthAddress(from) : from; // if Ethereum we need to get substrate address related to eth wallet to save pass
     const remainTime = fromKeyPair ? this.refreshAccountPasswordCache(fromKeyPair) : 0;
 
     const savePass = () => {
-      this.savePass(address, ethereumAddress, remainTime, !!isSavePass, !!isMobile);
+      this.savePass(address, isEthereum ? from : ethereumAddress, remainTime, !!isSavePass, !!isMobile);
     };
 
     const callback = this.makeExtrinsicCallback(cb, savePass);
 
     let transferProm: Promise<void> | undefined;
 
-    if (isEthereumAddress(from) && isEthereumAddress(to)) {
+    if (
+      isEthereumAddress(from) &&
+      isEthereumAddress(to) &&
+      !SUBSTRATE_ETHEREUM_NETWORKS.includes(networkKey.toLowerCase())
+    ) {
       // Make transfer with EVM API
       const { privateKey } = this.accountExportPrivateKey({ address: from, password });
       const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
@@ -1173,66 +1194,57 @@ export default class Extension extends FWExtensionBase {
     relayChain,
     amount,
   }: RequestCheckCrossChain): Promise<ResponseCheckCrossChain> {
-    const tokenBalance = this.state.balanceMap[from].find(
+    const address = getSubstrateAddressByEthAddress(from);
+    const tokenBalance = this.state.balanceMap[address].find(
       (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
 
     const extrinsic = await createCrossChainExtrinsic(assetId, originNet, destinationNet, to, amount!, tokenBalance);
 
-    console.info('checkCrossChain', extrinsic);
+    console.info('CrossChain', extrinsic);
 
-    // токены мунбим, мунривер сетей являются аналогами из других сабстрейт сетей, но хранятся отдельными сущностями
-    // по сути они являются отдельной сущностью TokenBalance
-    const tokenBalanceByDestNet = isEthereumNetwork(destinationNet)
-      ? this.state.balanceMap[from].find(
-          (balance) =>
-            balance.symbol === `xc${tokenBalance.symbol.toLowerCase()}` &&
-            balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
-        )!
-      : tokenBalance;
-
-    const { precision: precisionDest } = tokenBalanceByDestNet.balances.find(({ name }) => {
-      return name.toLowerCase() === destinationNet.toLowerCase();
-    })!;
-
-    const fee = await estimateCrossChainFee(extrinsic, to, originNet);
-
-    const destFees = state.xcmFees.find(({ destChain }) => {
-      const destChainLower = destChain.toLowerCase();
-      const destinationNetLower = destinationNet.toLowerCase();
-
-      return (
-        (NETWORKS_ALIASES[destChainLower] ?? destChainLower) ===
-        (NETWORKS_ALIASES[destinationNetLower] ?? destinationNetLower)
-      );
-    });
-
-    const destEstimateFee = destFees?.destXcmFee?.find(
-      ({ symbol: _symbol }) => _symbol.toLowerCase() === tokenBalance.symbol.toLowerCase()
+    const [fee, crossChainFee] = await estimateCrossChainFee(
+      from,
+      to,
+      originNet,
+      destinationNet,
+      tokenBalance,
+      relayChain,
+      extrinsic
     );
 
     return {
       estimateFee: fee.toString(),
-      destEstimateFee: FPNumber.fromCodecValue(destEstimateFee?.feeInPlanks ?? '0', precisionDest).toString(),
+      destEstimateFee: crossChainFee.toString(),
     } as ResponseCheckCrossChain;
   }
 
   private async makeCrossChain(
     id: string,
     port: Port,
-    { from, originNet, destinationNet, amount, password, to, assetId, isSavePass, isMobile }: RequestCrossChain
+    {
+      from,
+      originNet,
+      destinationNet,
+      amount,
+      password,
+      to,
+      assetId,
+      isSavePass,
+      isMobile,
+      relayChain,
+    }: RequestCrossChain
   ): Promise<void> {
-    const address = keyring.encodeAddress(from);
-
     const [, fromKeyPair] = this.validateTransfer(assetId, from, password);
-
+    const isEthereum = isEthereumAddress(from);
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
     const ethereumAddress = fromKeyPair!.meta.ethereumAddress as string | undefined;
-
-    const remainTime = this.refreshAccountPasswordCache(fromKeyPair!);
+    const address = isEthereum ? getSubstrateAddressByEthAddress(from) : from; // if Ethereum we need to get substrate address related to eth wallet
+    const substratePair = keyring.getPair(address);
+    const remainTime = this.refreshAccountPasswordCache(isEthereum ? substratePair : fromKeyPair!);
 
     const savePass = () => {
-      this.savePass(address, ethereumAddress, remainTime, !!isSavePass, !!isMobile);
+      this.savePass(address, isEthereum ? from : ethereumAddress, remainTime, !!isSavePass, !!isMobile);
     };
 
     const callback = this.makeExtrinsicCallback(cb, savePass);
@@ -1247,6 +1259,7 @@ export default class Extension extends FWExtensionBase {
       password,
       isSavePass,
       callback,
+      relayChain,
     });
 
     transferProm
@@ -1265,7 +1278,7 @@ export default class Extension extends FWExtensionBase {
           errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (e as Error).message }],
         });
 
-        console.error('Transfer error', e);
+        console.error('CrossChain error', e);
 
         setTimeout(() => this.cancelSubscription(id), 500);
 

@@ -2,7 +2,12 @@ import { BN, isFunction } from '@polkadot/util';
 import { FPNumber } from '@sora-substrate/util';
 import { decodeAddress } from '@polkadot/util-crypto';
 import { state } from '@extension-base/background/handlers';
-import { isEthereumNetwork, getUtilityProps } from '@extension-base/background/utils/utils';
+import {
+  isEthereumNetwork,
+  getUtilityProps,
+  getNativeAssetName,
+  getSubstrateAddressByEthAddress,
+} from '@extension-base/background/utils/utils';
 import { getAssetInfo } from '@extension-base/api/substrate/registry';
 import { signAndSendExtrinsic } from './shared/signAndSendExtrinsic';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
@@ -12,9 +17,10 @@ import {
   BasicTxResponse,
   SignerType,
 } from '@/extension/background/extension-base/src/background/types/types';
-import { NATIVE_NETWORKS, RELAY_CHAINS, CHAIN_IDS } from '@/consts/networks';
-import { NetworkName } from '@/interfaces';
+import { NATIVE_NETWORKS, RELAY_CHAINS, CHAIN_IDS, NETWORKS_ALIASES } from '@/consts/networks';
+import { NetworkName, RelayChainName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
+import { ETHEREUM_UTILITY_ASSETS } from '@/consts/currencies';
 
 type Extrinsic = Nullable<SubmittableExtrinsic<'promise'>>;
 
@@ -55,7 +61,7 @@ function interiorHelper(interiors: Interior, nativeParachainIds: number[], origi
     return [...result, formattedInterior];
   }, []);
 
-  return array.length === 1 ? array[0] : array;
+  return array.length === 1 ? (array[0] as Record<string, string>) : (array as Record<string, string>[]);
 }
 
 function getConcreteAsset(originNet: NetworkName, isToRelayChain: boolean, assetId: string, isNative = false) {
@@ -72,22 +78,28 @@ function getConcreteAsset(originNet: NetworkName, isToRelayChain: boolean, asset
     };
 
   const { assets: xcmLocationsAssets } = state.xcmLocations.find(({ chainId }) => chainId === parentId)!;
+
+  const asset = getNativeAssetName(tokenInfo.symbol);
+
   const { interiors, nativeParachainIds } = xcmLocationsAssets.find(
-    ({ symbol }) => symbol.toLowerCase() === tokenInfo.symbol.toLowerCase()
+    ({ symbol }) => symbol.toLowerCase() === asset.toLowerCase()
   )!;
 
   const interiorsByXcmVersion = interiors[xcm!.xcmVersion]!;
-  const interiorXcmLength = interiorsByXcmVersion.length;
-  const haveParachainParameter = interiorsByXcmVersion?.some((interior) =>
-    Object.keys(interior).some((key) => key === 'parachain')
-  );
+
+  const interiorValue = interiorHelper(interiorsByXcmVersion, nativeParachainIds, originNetParaId);
+  const interiorXcmLength = Array.isArray(interiorValue) ? interiorValue.length : 1;
 
   const interior =
     interiorXcmLength === 0
       ? { Here: '' }
       : {
-          [`X${interiorXcmLength}`]: interiorHelper(interiorsByXcmVersion, nativeParachainIds, originNetParaId),
+          [`X${interiorXcmLength}`]: interiorValue,
         };
+
+  const haveParachainParameter = Array.isArray(interiorValue)
+    ? interiorValue?.some((interior) => Object.keys(interior).some((key) => key === 'Parachain'))
+    : interiorValue.Parachain !== undefined;
 
   const parents1 = isToRelayChain ? 1 : 0;
   const parents2 = interiorXcmLength === 0 || haveParachainParameter ? 1 : 0;
@@ -114,23 +126,25 @@ function getNativeTeleportParams(
 
   const relayChain = CHAIN_IDS[parentId!] ?? firstCharToUp(name);
 
-  const receiverLocation = {
-    AccountId32: {
-      network: { [relayChain]: '' },
-      id: publicKey,
-    },
-  };
+  const receiverLocation = isEthereumNetwork(destNet)
+    ? {
+        AccountKey20: {
+          network: { [relayChain]: '' },
+          key: publicKey, // TODO проверить декодирование eth адреса, корректно ли работает decodeAddress функция
+        },
+      }
+    : {
+        AccountId32: {
+          network: { [relayChain]: '' },
+          id: publicKey,
+        },
+      };
 
   const destinationChain = {
-    [xcmVersion]: isToRelayChain
-      ? {
-          interior: { Here: '' },
-          parents: 1,
-        }
-      : {
-          interior: { X1: { Parachain: paraId } },
-          parents: 0,
-        },
+    [xcmVersion]: {
+      interior: isToRelayChain ? { Here: '' } : { X1: { Parachain: paraId } },
+      parents: 1,
+    },
   };
 
   const receiver = {
@@ -258,20 +272,70 @@ async function createOrmlTeleportExtrinsic(
   return api.tx?.polkadotXcm[module](...params);
 }
 
-async function estimateFee(extrinsic: Extrinsic, to: string, network: string): Promise<number> {
-  if (!extrinsic) return 0;
+async function estimateCrossChainFee(
+  from: string,
+  to: string,
+  originNet: NetworkName,
+  destinationNet: NetworkName,
+  tokenBalance: TokenBalance,
+  relayChain?: RelayChainName,
+  extrinsic?: Extrinsic
+): Promise<[FPNumber, FPNumber]> {
+  // Рассчет cross chain fee
+  const destFees = state.xcmFees.find(({ destChain }) => {
+    const destChainLower = destChain.toLowerCase();
+    const destinationNetLower = destinationNet.toLowerCase();
 
-  const { precision: utilityPrecision } = getUtilityProps(network)!;
+    // В файле XCM_FEES старые названия Statemint and Statemine, ищем их по элиасам
+    return (
+      (NETWORKS_ALIASES[destChainLower] ?? destChainLower) ===
+      (NETWORKS_ALIASES[destinationNetLower] ?? destinationNetLower)
+    );
+  });
+
+  const asset = getNativeAssetName(tokenBalance.symbol);
+
+  const destEstimateFee = destFees?.destXcmFee?.find(({ symbol: _symbol }) => _symbol.toLowerCase() === asset);
+
+  // Токены мунбим, мунривер сетей являются аналогами из других сабстрейт сетей, но хранятся отдельными сущностями
+  // По сути они являются отдельной сущностью TokenBalance
+  // Если телепорт в эфириум сеть из НЕ эфириум сити ИЛИ из эфириум сети в НЕ эфириум сеть, нужно искать precision в другой сущности TokenBalance, для токена `xcTOKEN`
+
+  const toEthereum = !isEthereumNetwork(originNet) && isEthereumNetwork(destinationNet);
+  const fromEthereum = isEthereumNetwork(originNet) && !isEthereumNetwork(destinationNet);
+  const isSeparateRecord = (toEthereum || fromEthereum) && !Object.values(ETHEREUM_UTILITY_ASSETS).includes(asset);
+
+  const address = getSubstrateAddressByEthAddress(from);
+
+  const tokenBalanceByDestNet = isSeparateRecord
+    ? state.balanceMap[address].find((balance) => {
+        // Соответственно либо подставляем префикс xc либо убираем его
+        const asset = toEthereum ? `xc${tokenBalance.symbol.toLowerCase()}` : getNativeAssetName(tokenBalance.symbol);
+
+        return balance.symbol === asset && balance.relayChain.toLowerCase() === relayChain?.toLowerCase();
+      })!
+    : tokenBalance;
+
+  const { precision: precisionDest } = tokenBalanceByDestNet.balances.find(({ name }) => {
+    return name.toLowerCase() === destinationNet.toLowerCase();
+  })!;
+
+  const crossChainFee = FPNumber.fromCodecValue(destEstimateFee?.feeInPlanks ?? '0', precisionDest);
+
+  // Далее рассчет origin fee
+  if (!extrinsic) return [FPNumber.ZERO, crossChainFee];
+
+  const { precision: utilityPrecision } = getUtilityProps(originNet)!;
 
   try {
     const paymentInfo = await extrinsic?.paymentInfo(to);
     const partialFee = paymentInfo ? +paymentInfo.partialFee : 0;
 
-    const result = FPNumber.fromCodecValue(partialFee, utilityPrecision);
+    const originFee = FPNumber.fromCodecValue(partialFee, utilityPrecision);
 
-    return result.toNumber();
+    return [originFee, crossChainFee];
   } catch {
-    return 0;
+    return [FPNumber.ZERO, crossChainFee];
   }
 }
 
@@ -307,6 +371,7 @@ export interface MakeCrossChainProps {
   password: string | undefined;
   isSavePass?: boolean;
   callback: (data: BasicTxResponse) => void;
+  relayChain?: RelayChainName;
 }
 
 async function makeCrossChain({
@@ -319,14 +384,27 @@ async function makeCrossChain({
   password,
   amount,
   callback,
+  relayChain,
 }: MakeCrossChainProps): Promise<void> {
   const txState: BasicTxResponse = {};
   const apiProps = state.getSubstrateApiMap[originNet];
 
   await apiProps.api?.isReady;
 
-  const tokenBalance = state.balanceMap[from].find(({ assetId: _assetId }) => _assetId === assetId)!;
-  const extrinsic = await createCrossChainExtrinsic(assetId, originNet, destinationNet, to, amount!, tokenBalance);
+  const address = getSubstrateAddressByEthAddress(from);
+  const tokenBalance = state.balanceMap[address].find(({ assetId: _assetId }) => _assetId === assetId)!;
+  const [, crossChainFee] = await estimateCrossChainFee(from, to, originNet, destinationNet, tokenBalance, relayChain);
+
+  const amountWithCrossChain = new FPNumber(amount).add(crossChainFee).toString();
+
+  const extrinsic = await createCrossChainExtrinsic(
+    assetId,
+    originNet,
+    destinationNet,
+    to,
+    amountWithCrossChain!,
+    tokenBalance
+  );
 
   await signAndSendExtrinsic({
     type: SignerType.PASSWORD,
@@ -337,10 +415,10 @@ async function makeCrossChain({
     password,
     isSavePass,
     address: from,
-    errorMessage: 'error Cross Chain',
+    errorMessage: 'CrossChain error',
   });
 }
 
-export { estimateFee, makeCrossChain, createCrossChainExtrinsic };
+export { estimateCrossChainFee, makeCrossChain, createCrossChainExtrinsic };
 
 export type { Extrinsic };

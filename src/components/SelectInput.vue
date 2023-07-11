@@ -2,9 +2,15 @@
   <Corners size="big" :isSelected="inputIsFocused">
     <div :class="selectClasses">
       <div class="column left-column">
-        <div class="header">{{ $t(text).toUpperCase() }}</div>
+        <div class="header">{{ header }}</div>
 
-        <input v-model="amountInternal" placeholder="0.00" @focus="setFocusValue(true)" @blur="setFocusValue(false)" />
+        <input
+          v-model="amountInternal"
+          placeholder="0.00"
+          @focus="setFocusValue(true)"
+          @blur="setFocusValue(false)"
+          @keypress="IsNumber"
+        />
 
         <div class="price">{{ fiatSymbol }}{{ valueCut }}</div>
       </div>
@@ -70,6 +76,10 @@ export default class SelectInput extends Vue {
       this.syncedAmount = FPNumber.fromCodecValue(value || 0, 0).toString();
   }
 
+  get header() {
+    return this.$t(this.text);
+  }
+
   get assetIcon() {
     return this.balances.find(({ assetId }) => assetId === this.assetId)?.icon;
   }
@@ -85,6 +95,10 @@ export default class SelectInput extends Vue {
         'select-focused': this.inputIsFocused,
       },
     ];
+  }
+
+  IsNumber(event: KeyboardEvent) {
+    if (!/\d/.test(event.key) && event.key !== '.') return event.preventDefault();
   }
 
   setFocusValue(value: boolean) {

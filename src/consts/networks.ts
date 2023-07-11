@@ -2,15 +2,8 @@ import { IS_PRODUCTION } from '@/consts/global';
 import { NetworkName } from '@/interfaces';
 
 const NOT_SUPPORTED_ALL_TRANSFER_NETWORKS = ['karura', 'acala', 'acala_testnet'];
-const ETHEREUM_NETWORKS = [
-  'moonbeam',
-  'moonriver',
-  'moonbase alpha',
-  'astarEvm',
-  'shidenEvm',
-  'ethereum',
-  'ethereum goerli',
-];
+const SUBSTRATE_ETHEREUM_NETWORKS = ['moonbeam', 'moonriver', 'moonbase alpha', 'astarEvm', 'shidenEvm'];
+const ETHEREUM_NETWORKS = [...SUBSTRATE_ETHEREUM_NETWORKS, 'ethereum', 'ethereum gorli'];
 const RELAY_CHAINS = ['polkadot', 'kusama', 'westend', 'rococo'];
 const NATIVE_PARACHAINS = [
   'statemint',
@@ -91,4 +84,5 @@ export {
   SORA_MAINNET,
   SORA_TEST,
   NETWORKS_ALIASES,
+  SUBSTRATE_ETHEREUM_NETWORKS,
 };

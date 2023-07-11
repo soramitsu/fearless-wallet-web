@@ -34,12 +34,11 @@ import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 export default class App extends Vue {
   @Getter(AccountsGettersTypes.showPolkaswapAlert) showPolkaswapAlert!: boolean;
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
-  @Getter(AccountsGettersTypes.getOnlineStatus) isOnline!: boolean;
+  @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetsPriceInterval) assetsPriceInterval!: NodeJS.Timer | null;
   @Mutation(NetworksMutationTypes.SET_NETWORKS) setNetworks!: Fn<SetNetworksStatusProps>;
   @Mutation(AccountsMutationTypes.SET_ACCOUNTS) setAccounts!: Fn<SetAccountsProps>;
   @Mutation(NetworksMutationTypes.SET_ASSETS_PRICE) setPrices!: Fn<SetAssetsPriceProps>;
-  @Mutation(AccountsMutationTypes.SET_ONLINE_STATUS) setOnlineStatus!: Fn<boolean>;
   @Mutation(AccountsMutationTypes.SET_SELECTED_FIAT) setSelectedFiat!: Fn<string>;
   @Action(ExtensionActionTypes.SUBSCRIBE_EXTENSION_REQUESTS) extensionSubscribe!: AsyncFn;
   @Action(NetworksActionTypes.FETCH_FIATS) fetchFiats!: AsyncFn;
@@ -57,7 +56,9 @@ export default class App extends Vue {
   }
 
   async created() {
-    this.onUpdateOnlineStatus();
+    // TODO разкомментить перед релизом
+    // TODO в state.ts тоже
+    // this.onUpdateOnlineStatus();
 
     if (IS_EXTENSION) this.extensionSubscribe();
 

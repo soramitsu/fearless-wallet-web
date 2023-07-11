@@ -95,8 +95,8 @@
           fontSize="big"
           width="100%"
           type="secondary"
-          :border="false"
           text="addWallet.skipConfirmation"
+          :border="false"
           @click="skipStep"
         />
 

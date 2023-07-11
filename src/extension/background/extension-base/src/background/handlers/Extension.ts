@@ -961,8 +961,7 @@ export default class Extension extends FWExtensionBase {
     password: string | undefined
   ): [Array<BasicTxError>, KeyringPair | undefined, Asset] {
     const errors = [] as Array<BasicTxError>;
-    const isEthereum = isEthereumAddress(from);
-    const substrateAddress = isEthereum ? getSubstrateAddressByEthAddress(from) : from;
+    const substrateAddress = getSubstrateAddressByEthAddress(from);
     const substratePair = keyring.getAccount(substrateAddress) ? keyring.getPair(substrateAddress) : undefined;
 
     if (password) {
@@ -987,7 +986,7 @@ export default class Extension extends FWExtensionBase {
     }
 
     const tokenInfo = getAssetInfo(tokenId);
-    const resultPair = isEthereum ? keyring.getPair(from) : substratePair;
+    const resultPair = isEthereumAddress(from) ? keyring.getPair(from) : substratePair;
 
     return [errors, resultPair, tokenInfo];
   }

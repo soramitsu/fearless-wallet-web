@@ -97,9 +97,9 @@ export default class SendForm extends Vue {
   }
 
   get partialFeeString() {
-    const utilityAsset = getUtilityAsset(this.balances, this.selectedNetwork);
+    const { symbol } = getUtilityAsset(this.balances, this.selectedNetwork);
 
-    return `${this.$n(+this.partialFee, 'decimalPrecise')} ${utilityAsset.toUpperCase()}`;
+    return `${this.$n(+this.partialFee, 'decimalPrecise')} ${symbol.toUpperCase()}`;
   }
 
   get showValue() {

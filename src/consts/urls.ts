@@ -1,7 +1,7 @@
 import { IS_PRODUCTION } from '@/consts/global';
 
 const CHAINS = IS_PRODUCTION
-  ? 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop-free/chains/chains.json'
+  ? 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop-free/chains/v1/chains.json'
   : 'https://raw.githubusercontent.com/soramitsu/shared-features-utils/develop-free/chains/v1/chains_dev.json';
 
 const FIATS = 'https://raw.githubusercontent.com/soramitsu/fearless-utils/android/2.0.8/fiat/fiats.json';

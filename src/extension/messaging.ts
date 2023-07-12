@@ -45,6 +45,7 @@ import type {
   ResponseMakeSwap,
   ResponseTotalBalances,
   MobileSigningRequest,
+  NetworkType,
 } from '@/extension/background/extension-base/src/background/types/types';
 import type { Message, NetworkJson, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
@@ -519,24 +520,24 @@ export function upsertNetworkMap(data: NetworkJson): Promise<boolean> {
   return sendMessage('pri(networkMap.upsert)', data);
 }
 
+export function toggleNetworkType(type: NetworkType): Promise<void> {
+  return sendMessage('pri(networkMap.enable.type)', type);
+}
+
+export function toggleFavoriteNetwork(name: string): Promise<void> {
+  return sendMessage('pri(networkMap.toggle.favorite)', name);
+}
+
+export function getNetworkType(): Promise<NetworkType | 'single'> {
+  return sendMessage('pri(networkMap.get.type)');
+}
+
+export function setSingleNetwork(networkKey: string): Promise<void> {
+  return sendMessage('pri(networkMap.enable.single)', networkKey);
+}
+
 export function getNetworkMap(): Promise<Record<string, NetworkJson>> {
   return sendMessage('pri(networkMap.getNetworkMap)');
-}
-
-export function removeNetworkMap(networkKey: string): Promise<boolean> {
-  return sendMessage('pri(networkMap.removeOne)', networkKey);
-}
-
-export function disableNetworkMap(networkKey: string): Promise<DisableNetworkResponse> {
-  return sendMessage('pri(networkMap.disableOne)', networkKey);
-}
-
-export function enableNetworks(targetKeys: string[]): Promise<boolean> {
-  return sendMessage('pri(networkMap.enableMany)', targetKeys);
-}
-
-export function disableNetworks(targetKeys: string[]): Promise<boolean> {
-  return sendMessage('pri(networkMap.disableMany)', targetKeys);
 }
 
 export function validateNetwork(
@@ -545,18 +546,6 @@ export function validateNetwork(
   existedNetwork?: NetworkJson
 ): Promise<ValidateNetworkResponse> {
   return sendMessage('pri(apiMap.validate)', { provider, isEthereum, existedNetwork });
-}
-
-export function disableAllNetwork(): Promise<boolean> {
-  return sendMessage('pri(networkMap.disableAll)', null);
-}
-
-export function enableAllNetwork(): Promise<boolean> {
-  return sendMessage('pri(networkMap.enableAll)', null);
-}
-
-export function resetDefaultNetwork(): Promise<boolean> {
-  return sendMessage('pri(networkMap.resetDefault)', null);
 }
 
 export function pingServiceWorker(): Promise<boolean> {

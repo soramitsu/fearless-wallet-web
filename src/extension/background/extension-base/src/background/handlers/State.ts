@@ -31,7 +31,12 @@ import { DEFAULT_EVM_TOKENS } from '@extension-base/api/tokens/evm/defaultEvmTok
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
 import { getMockCurrencies, isEthereumNetwork } from '@extension-base/background/utils/utils';
-import { MobileSigningRequest, MobileSignRequest, POPUP_WINDOW_OPTS } from '@extension-base/background/types/types';
+import {
+  MobileSigningRequest,
+  MobileSignRequest,
+  NetworkType,
+  POPUP_WINDOW_OPTS,
+} from '@extension-base/background/types/types';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 
@@ -164,6 +169,7 @@ export default class State {
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
   public networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
+  public networkType: NetworkType | 'single' = 'all';
   public networksJson: NetworkJson[] = []; // from github
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJson>>();
@@ -587,6 +593,31 @@ export default class State {
     const network = this.networkMap[key];
 
     if (network && network.apiStatus && network.apiStatus === NETWORK_STATUS.DISCONNECTED) initApi(network);
+  }
+
+  public setActiveSingleNetwork(networkKey: string) {
+    Object.keys(this.networkMap).forEach((key) => {
+      this.networkMap[key].active = networkKey === key;
+    });
+
+    this.initNetworkStates();
+  }
+
+  public setActiveNetworks(type: NetworkType) {
+    Object.keys(this.networkMap).forEach((key) => {
+      const network = this.networkMap[key];
+
+      switch (type) {
+        case 'all':
+          return (network.active = true);
+        case 'favorites':
+          return (network.active = !!network.favorite);
+        case 'popular':
+          return (network.active = !!network.popular);
+      }
+    });
+
+    this.initNetworkStates();
   }
 
   getCurrentTabStatus() {

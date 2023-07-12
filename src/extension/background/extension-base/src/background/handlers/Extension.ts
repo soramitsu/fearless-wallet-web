@@ -35,6 +35,7 @@ import {
 import {
   BasicTxErrorCode,
   MobileSigningRequest,
+  NetworkType,
   RequestMobileSign,
   TransferErrorCode,
 } from '@extension-base/background/types/types';
@@ -420,6 +421,14 @@ export default class Extension extends FWExtensionBase {
     } else {
       throw new Error('Unable to decode using the supplied passphrase');
     }
+  }
+
+  private async enableNetworkType(type: NetworkType): Promise<void> {
+    return this.state.setActiveNetworks(type);
+  }
+
+  private async enableSingleNetwork(networkName: string): Promise<void> {
+    return this.state.setActiveSingleNetwork(networkName);
   }
 
   private async upsertNetworkMap(data: NetworkJson): Promise<boolean> {
@@ -1342,6 +1351,12 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(networkMap.upsert)':
         return this.upsertNetworkMap(request as NetworkJson);
+
+      case 'pri(networkMap.enable.type)':
+        return this.enableNetworkType(request as NetworkType);
+
+      case 'pri(networkMap.enable.single)':
+        return this.enableSingleNetwork(request as string);
 
       case 'pri(networkMap.getSubscription)':
         return this.subscribeNetworkMap(id, port);

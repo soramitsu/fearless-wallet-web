@@ -89,6 +89,7 @@ import type {
   RequestUpdateMeta,
   ResponseTotalBalances,
   MobileSigningRequest,
+  NetworkType,
 } from '@extension-base/background/types/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
@@ -134,20 +135,14 @@ export interface RequestSignatures {
   //App Managment - networks
   // Network, APIs, Custom tokens functions
   'pri(app.port.ping)': [null, boolean];
-  'pri(networkMap.recoverDotSama)': [string, boolean];
-  'pri(networkMap.disableAll)': [null, boolean];
-  'pri(networkMap.enableAll)': [null, boolean];
-  'pri(networkMap.resetDefault)': [null, boolean];
   'pri(apiMap.validate)': [ValidateNetworkRequest, ValidateNetworkResponse];
-  'pri(networkMap.enableMany)': [string[], boolean];
-  'pri(networkMap.disableMany)': [string[], boolean];
-  'pri(networkMap.enableOne)': [string, boolean];
-  'pri(networkMap.disableOne)': [string, DisableNetworkResponse];
-  'pri(networkMap.removeOne)': [string, boolean];
   'pri(networkMap.upsert)': [NetworkJson, boolean];
-  'pri(networkMap.addCustomNode)': [string, boolean];
   'pri(networkMap.getNetworkMap)': [null, Record<string, NetworkJson>];
   'pri(networkMap.getSubscription)': [null, Record<string, NetworkJson>, Record<string, NetworkJson>];
+  'pri(networkMap.enable.single)': [string, void];
+  'pri(networkMap.toggle.favorite)': [string, void];
+  'pri(networkMap.enable.type)': [NetworkType, void];
+  'pri(networkMap.get.type)': [null, NetworkType | 'single'];
 
   //Authorize
   'pri(authorize.approve.polkaswap)': [string[], null];

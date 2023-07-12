@@ -8,6 +8,7 @@ import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
 import { fetchHistory } from '@/subquery/fetchingHistory';
 import { URLS } from '@/consts/urls';
+import { getUtilityAsset } from '@/helpers/currencies';
 
 export enum ActionTypes {
   FETCH_FIATS = 'FETCH_FIATS',
@@ -28,13 +29,19 @@ const actions: ActionTree<State, State> & Actions = {
     }
   },
 
-  async [ActionTypes.FETCH_HISTORY]({ commit, getters }, { networkName, wallet, assetId, isPreviously }) {
+  async [ActionTypes.FETCH_HISTORY]({ commit, getters, rootState }, { networkName, wallet, assetId, isPreviously }) {
     const { externalApi } = getters.getNetwork(networkName) as Network;
 
     if (!externalApi || !externalApi.history) return;
 
     const { type, url } = externalApi.history;
     const formattedAddress = BaseApi.formatAddress(wallet, networkName);
+
+    const { assetId: utilityAssetId } = getUtilityAsset(rootState.account.balances, networkName)!;
+
+    // сейчас эндпоинт истории парсит только историю утилити токена
+    // TODO: когда появится история других токенов отрефаткорить данную логику
+    if (utilityAssetId !== assetId) return;
 
     const history = await fetchHistory(url, formattedAddress, type, networkName);
 

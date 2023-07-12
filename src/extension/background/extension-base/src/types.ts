@@ -47,7 +47,7 @@ export interface RequestTransactionHistoryGet {
 }
 
 export interface DeleteCustomTokenParams {
-  smartContract: string;
+  id: string;
   chain: string;
   type: CustomTokenType;
 }
@@ -104,7 +104,6 @@ export type Asset = {
   isUtility?: true;
   isNative?: true;
   existentialDeposit?: string;
-  smartContract?: string;
 };
 
 export interface NetworkJson {

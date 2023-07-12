@@ -52,9 +52,9 @@ function subscribeERC20Interval(
     });
   };
 
-  state.networkMap[networkKey].assets.forEach(({ smartContract, symbol }) => {
-    if (smartContract) {
-      ERC20ContractMap[symbol] = getERC20Contract(networkKey, smartContract);
+  state.networkMap[networkKey].assets.forEach(({ id, isUtility, symbol }) => {
+    if (!isUtility) {
+      ERC20ContractMap[symbol] = getERC20Contract(networkKey, id);
     }
   });
 

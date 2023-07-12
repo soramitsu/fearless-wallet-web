@@ -1028,8 +1028,8 @@ export default class Extension extends FWExtensionBase {
       const txVal = fromAccountFreeBalance || '0';
 
       // Estimate with EVM API
-      if (!isMainToken && tokenInfo.smartContract) {
-        const { fee: feeValue } = await getERC20TransactionObject(tokenInfo.smartContract, networkKey, from, to, txVal);
+      if (!isMainToken && tokenInfo.id) {
+        const { fee: feeValue } = await getERC20TransactionObject(tokenInfo.id, networkKey, from, to, txVal);
 
         fee = +ethers.formatEther(feeValue);
       } else {
@@ -1105,16 +1105,8 @@ export default class Extension extends FWExtensionBase {
       const { privateKey } = this.accountExportPrivateKey({ address: from, password });
       const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
 
-      if (tokenInfo && !isMainToken && tokenInfo.smartContract) {
-        transferProm = makeERC20Transfer(
-          tokenInfo.smartContract,
-          networkKey,
-          from,
-          to,
-          privateKey,
-          amount || '0',
-          callback
-        );
+      if (tokenInfo && !isMainToken && tokenInfo.id) {
+        transferProm = makeERC20Transfer(tokenInfo.id, networkKey, from, to, privateKey, amount || '0', callback);
       } else {
         transferProm = makeEVMTransfer(networkKey, to, privateKey, amount || '0', callback);
       }

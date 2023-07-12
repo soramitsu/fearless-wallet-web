@@ -75,7 +75,7 @@ export function upsertCustomToken(targetToken: CustomToken, customTokenState: Cu
   let newTokenList = tokenList;
 
   for (const token of tokenList) {
-    if (isEqualContractAddress(token.smartContract, targetToken.smartContract) && token.chain === targetToken.chain) {
+    if (isEqualContractAddress(token.id, targetToken.id) && token.chain === targetToken.chain) {
       isExisted = true;
       break;
     }
@@ -85,11 +85,11 @@ export function upsertCustomToken(targetToken: CustomToken, customTokenState: Cu
     newTokenList.push(targetToken);
   } else {
     newTokenList = tokenList.map((token: CustomToken) => {
-      if (isEqualContractAddress(token.smartContract, targetToken.smartContract)) {
+      if (isEqualContractAddress(token.id, targetToken.id)) {
         if (token.isDeleted) {
           return {
             name: token.name,
-            smartContract: token.smartContract,
+            id: token.id,
             chain: token.chain,
             type: token.type,
           };
@@ -142,7 +142,7 @@ export function deleteCustomTokens(
 
     for (let index = 0; index < tokenList.length; index++) {
       if (
-        isEqualContractAddress(tokenList[index].smartContract, targetToken.smartContract) &&
+        isEqualContractAddress(tokenList[index].id, targetToken.id) &&
         tokenList[index].chain === targetToken.chain &&
         tokenList[index].type === targetToken.type
       ) {
@@ -175,7 +175,7 @@ export function deleteCustomTokens(
         let deleteKey = '';
 
         for (const [key, token] of Object.entries(chainRegistry.assetsMap)) {
-          if (token.smartContract && isEqualContractAddress(token.smartContract, targetToken.smartContract)) {
+          if (token.id && isEqualContractAddress(token.id, targetToken.id)) {
             deleteKey = key;
 
             break;

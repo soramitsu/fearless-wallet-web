@@ -48,25 +48,25 @@ import store from '@/store';
 
 type SNotificationParams = {
   message: string;
+  title: string;
   type: string;
 };
 
 // TODO: [arch] CHECK IT LATER
-const notificationFn = ({ message, type }: SNotificationParams) => {
+const notificationFn = ({ message, title, type }: SNotificationParams) => {
   Notification({
     message,
-    title: '',
+    title,
     duration: 4500, // If is will be changed you should change animation duration as well
     type,
-    customClass: 'sora s-flex',
+    customClass: 'sora s-flex fearless-notify',
   });
-  const elements = Array.from(document.getElementsByClassName('el-notification'));
-  const current = elements[elements.length - 1];
-  const appContent = document.getElementsByClassName('app-main').item(0) as Element;
-  appContent.appendChild(current);
+  // const elements = Array.from(document.querySelectorAll('el-notification'));
+  // const current = elements[elements.length - 1];
+  const appContent = document.querySelector('app') as Element;
+  // appContent.appendChild(current);
   const el = document.createElement('div');
-  el.className = 'loader';
-  current.appendChild(el);
+  // current.appendChild(el);
 };
 
 Vue.use(ElementUIPlugin)

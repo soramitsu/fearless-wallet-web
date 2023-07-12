@@ -1,0 +1,12 @@
+.fearless-notify {
+  // position: relative;
+  background-color: #1d1d1d;
+  border-color: $default-background-color;
+
+  .el-notification__title,
+  .el-notification__content {
+    color: $default-white;
+    font-size: 18px;
+    font-weight: 700;
+  }
+}

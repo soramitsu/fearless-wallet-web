@@ -565,6 +565,13 @@ export default class TransferForm extends Vue {
     if (this.isTransfer) this.syncedNetwork = this.optionsNetworks?.[0]?.value ?? '';
   }
 
+  @Watch('syncedDestNet')
+  async cleatRecipient() {
+    this.$nextTick(() => {
+      if (!this.isValidRecipientAddress) this.setRecipient();
+    });
+  }
+
   @Watch('syncedAssetId')
   @Watch('syncedNetwork')
   @Watch('syncedDestNet')

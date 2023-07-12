@@ -762,6 +762,9 @@ export default class TransferForm extends Vue {
     }
 
     this.step += 1;
+    this.showSelectedAssetPopup = false;
+    this.showSelectNetworkPopup = false;
+    this.showDestNetPopup = false;
   }
 
   handlerCloseExistentialPopup() {

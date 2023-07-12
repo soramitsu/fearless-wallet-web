@@ -201,7 +201,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 import { cut, firstCharToUp, getClipboard } from '@/helpers/common';
-import { getCurrencyOptions } from '@/helpers/currencies';
+import { getCurrencyOptions, getUtilityAsset } from '@/helpers/currencies';
 import { VALID_SUBSTRATE_ADDRESS, VALID_ETHEREUM_ADDRESS, CHAIN_IDS } from '@/consts/networks';
 import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHelpers';
 import {
@@ -391,7 +391,18 @@ export default class TransferForm extends Vue {
     if (!this.isValidSendAsset)
       return { text: 'assets.insufficientBalance', localeProps: { asset: this.sendAssetName.toUpperCase() } };
 
+    if (!this.isValidTransferByUtility)
+      return { text: 'assets.insufficientBalance', localeProps: { asset: this.utilityAssetName.toUpperCase() } };
+
     return 'common.continue';
+  }
+
+  get utilityAsset() {
+    return getUtilityAsset(this.balances, this.syncedNetwork);
+  }
+
+  get utilityAssetName() {
+    return this.utilityAsset.symbol.toLowerCase();
   }
 
   get buttonDisabled() {
@@ -412,6 +423,7 @@ export default class TransferForm extends Vue {
       !!this.syncedNetwork &&
       !!this.syncedAmount &&
       this.isValidSendAsset &&
+      this.isValidTransferByUtility &&
       this.isValidRecipientAddress
     );
   }
@@ -516,12 +528,22 @@ export default class TransferForm extends Vue {
   get isValidSendAsset() {
     const maxSendFP = new FPNumber(this.calcTransferableSendMinusFee(this.syncedFee ?? '0'));
 
-    // если количество токенов равно нулю, тотранзакция невалидна,
-    // для xor количество токенов за вычетом комиссии
+    // sendAsset !== Utility, если количество токенов равно нулю, то транзакция невалидна
+    // sendAsset === Utility, если количество токенов за вычетом комиссии равно нулю, то транзакция невалидна
     if (FPNumber.isEqualTo(maxSendFP, FPNumber.ZERO)) return false;
 
     // если syncedAmount меньше или равен максимальному количеству токенов, то транзакция валидна
     return FPNumber.lte(new FPNumber(this.syncedAmount), maxSendFP);
+  }
+
+  get isValidTransferByUtility() {
+    if (this.syncedFee === '') return false;
+
+    // этот кейс проверяется в this.isValidSendAsset, когда sendAsset это utility asset для сети
+    if (this.sendAssetName.toLowerCase() === this.utilityAssetName) return true;
+
+    // проверяем, что utility достаточно на оплату комиссии
+    return FPNumber.gte(new FPNumber(this.calcTransferableUtility()), new FPNumber(this.syncedFee));
   }
 
   @Watch('showSelectedAssetPopup')
@@ -652,6 +674,12 @@ export default class TransferForm extends Vue {
     );
 
     return currentAddress === currentRecipientAddress;
+  }
+
+  calcTransferableUtility() {
+    const balance = this.utilityAsset!.balances.find(({ isUtility }) => isUtility)!;
+
+    return balance.transferable?.toString() ?? '';
   }
 
   calcTransferableSendMinusFee(fee: string) {

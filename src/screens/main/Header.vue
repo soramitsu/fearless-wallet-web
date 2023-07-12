@@ -85,8 +85,11 @@ import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
-import { tieAccount, windowOpen } from '@/extension/messaging';
-import { ActiveTabAuthorizeStatus } from '@/extension/background/extension-base/src/background/types/types';
+import { getNetworkType, tieAccount, windowOpen } from '@/extension/messaging';
+import {
+  ActiveTabAuthorizeStatus,
+  NetworkType,
+} from '@/extension/background/extension-base/src/background/types/types';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
 import { AsyncFn, Fn } from '@/interfaces';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
@@ -101,7 +104,7 @@ export default class Header extends Vue {
   readonly walletNameRef = 'walletName';
   readonly settingsNameRef = 'settingsName';
   readonly isPopup = BaseApi.useIsPopup();
-
+  networkType: NetworkType | 'single' = 'all';
   showConnectionPopup = false;
   showSelectNetworkPopup = false;
   readonly selectNetworkButtonRef = 'selectNetworkButton';
@@ -166,9 +169,12 @@ export default class Header extends Vue {
   }
 
   async mounted() {
+    this.getNetworkType();
     this.fetchTabStatus();
   }
-
+  async getNetworkType() {
+    this.networkType = await getNetworkType();
+  }
   toggleConnectionPopup() {
     if (!this.tabStatus) return;
 

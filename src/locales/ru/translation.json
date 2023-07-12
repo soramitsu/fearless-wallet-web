@@ -141,11 +141,15 @@
       }
     },
     "networkManagement": {
+      "tabs": {
+        "all": "Все",
+        "favorites": "Избранные",
+        "popular": "Популярные"
+      },
       "header": "Выберите Сеть",
-      "all": "Все",
-      "allNetworks": "Все сети",
-      "favorites": "Избранные",
-      "popular": "Популярные"
+      "all": "Все сети",
+      "favorites": "Избранные сети",
+      "popular": "Популярные сети"
     }
   },
   "menu": {

@@ -143,11 +143,15 @@
       }
     },
     "networkManagement": {
+      "tabs": {
+        "all": "All",
+        "favorites": "Favorites",
+        "popular": "Popular"
+      },
       "header": "Select Network",
-      "all": "All",
-      "allNetworks": "All networks",
-      "favorites": "Favorite",
-      "popular": "Popular"
+      "all": "All networks",
+      "favorites": "Favorite networks",
+      "popular": "Popular networks"
     }
   },
   "menu": {

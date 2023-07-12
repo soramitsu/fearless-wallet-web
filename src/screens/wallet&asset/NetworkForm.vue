@@ -3,36 +3,25 @@
     <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
 
     <STabs v-model="active" type="rounded" position="top">
-      <STab :label="$t('header.networkManagement.all')" name="all" class="button" />
-      <STab :label="$t('header.networkManagement.popular')" name="popular" class="button" />
-      <STab :label="$t('header.networkManagement.favorites')" name="favorite" class="button" />
+      <STab v-for="tab in tabs" :label="$t(tab.label)" :name="tab.name" :key="tab.name" class="button" />
     </STabs>
     <div class="container">
       <Scroll>
         <ul class="network__list">
-          <li
-            v-for="({ name, icon }, index) in filterNetwork"
-            :key="name"
-            class="network"
-            :class="rowClasses(value)"
-            @click="toggle()"
-          >
-            <Icon v-if="index === 0" :icon="icon" width="24" height="24" className="network__icon" />
-            <ExternalLogo v-else :name="icon" width="24" height="24" class="img" />
+          <NetworkItem
+            :network="networkGroup"
+            :isNetworkGroup="true"
+            :isActive="true"
+            @onToggleState="toggleNetworkType()"
+          />
 
-            <span class="network__name">{{ name }}</span>
-            <div class="network__state">
-              <Icon
-                v-if="index !== 0"
-                icon="star"
-                iconColor="purple"
-                width="18"
-                height="18"
-                className="network__icon-state"
-              />
-              <Icon v-else icon="check" iconColor="purple" width="18" height="18" className="network__icon-state" />
-            </div>
-          </li>
+          <NetworkItem
+            v-for="network in filterNetwork"
+            :key="network.name"
+            :network="network"
+            :isActive="network.favorite"
+            @onToggleState="toggleFavorite(network.name)"
+          />
         </ul>
       </Scroll>
     </div>
@@ -43,59 +32,56 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { STab, STabs } from '@soramitsu/soramitsu-js-ui';
-import { AuthUrlInfo } from '@/extension/background/extension-base/src/background/types/types';
-import { Networks } from '@/interfaces';
-import AuthItem from '@/screens/extension-ui/authorize/AuthItem.vue';
+import NetworkItem from './NetworkItem.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
+import { toggleFavoriteNetwork, toggleNetworkType } from '@/extension/messaging';
 type Tab = {
   label: string;
   name: string;
 };
+
 type Tabs = {
   all: Tab;
   popular: Tab;
   favorites: Tab;
 };
+
 @Component({
   components: {
-    AuthItem,
     STab,
     STabs,
+    NetworkItem,
   },
 })
 export default class NetworkManage extends Vue {
-  filteredList: Record<string, AuthUrlInfo> = {};
   filterValue = '';
-  url = '';
   active: keyof Tabs = 'all';
   value = '';
 
   tabs: Tabs = {
     all: {
-      label: 'header.networkManagement.all',
+      label: 'header.networkManagement.tabs.all',
       name: 'all',
     },
     popular: {
-      label: 'header.networkManagement.popular',
+      label: 'header.networkManagement.tabs.popular',
       name: 'popular',
     },
     favorites: {
-      label: 'header.networkManagement.favorites',
+      label: 'header.networkManagement.tabs.favorites',
       name: 'favorites',
     },
   };
   @Prop(Function) handlerClose!: VoidFunction;
-  @Getter(NetworksGettersTypes.allNetworks) networks!: Networks;
+  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
 
-  get showUpdateAuths() {
-    return this.url !== '';
+  get networkGroup() {
+    return { name: this.$t(`header.networkManagement.${this.active}`), icon: 'all-networks' };
   }
 
   get filterNetwork() {
-    const prepFirst = { name: this.$t(this.tabs[this.active].label), icon: 'all-networks' };
-
-    return [prepFirst, ...this.networks];
+    return this.networks;
   }
 
   get header() {
@@ -106,8 +92,12 @@ export default class NetworkManage extends Vue {
     //
   }
 
-  toggle() {
-    //
+  toggleNetworkType() {
+    toggleNetworkType(this.active);
+  }
+
+  toggleFavorite(name: string) {
+    toggleFavoriteNetwork(name);
   }
 
   rowClasses(value: string) {
@@ -158,37 +148,6 @@ export default class NetworkManage extends Vue {
   padding: 0;
   height: 100%;
   gap: 16px;
-
-  .network {
-    display: flex;
-    flex-flow: row nowrap;
-    gap: 16px;
-    color: $default-white;
-    font-size: 16px;
-    border: solid 1px transparent;
-    border-bottom-color: $default-background-color;
-    padding-top: 16px;
-    padding-bottom: 16px;
-    justify-content: center;
-    align-items: center;
-    .network__name {
-      white-space: nowrap;
-    }
-    .network__icon-state {
-      width: 18px;
-      height: 18px;
-    }
-    .network__icon {
-      width: 24px;
-      height: 24px;
-    }
-    .network__state {
-      flex-grow: 3;
-      width: 100%;
-      display: flex;
-      justify-content: flex-end;
-    }
-  }
 }
 </style>
 

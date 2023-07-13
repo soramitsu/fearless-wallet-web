@@ -26,14 +26,14 @@ export function canDerive(type?: KeypairType): boolean {
   return !!type && ['ed25519', 'sr25519', 'ecdsa', 'ethereum'].includes(type);
 }
 
-export const getCurrentProvider = (data: NetworkJson): string | null => {
+export const getCurrentProvider = (data: NetworkJson): string | undefined => {
   if (!data?.currentProvider) {
-    return null;
+    return undefined;
   }
 
-  if (data.currentProvider.startsWith('custom') && data.customProviders) {
-    return data.customProviders[data.currentProvider];
+  if (data.currentProvider.startsWith('custom') && data.customNodes.length) {
+    return data.customNodes.find((value) => value.url === data.currentProvider)?.url;
   } else {
-    return data.providers[data.currentProvider];
+    return data.nodes.find((value) => value.url === data.currentProvider)?.url;
   }
 };

@@ -478,8 +478,11 @@ export default class TransferForm extends Vue {
       ? this.balances
       : this.balances.filter(
           ({ symbol, relayChain }) =>
-            xcm?.availableAssets.some((assetName) => assetName.toLowerCase() === symbol.toLowerCase()) &&
-            relayChain.toLowerCase() === relay
+            xcm?.availableAssets.some((asset) => {
+              const assetName = BaseApi.isEthereumNetwork(this.syncedNetwork) ? `xc${asset}` : asset;
+
+              return assetName.toLowerCase() === symbol.toLowerCase();
+            }) && relayChain.toLowerCase() === relay
         );
 
     return getCurrencyOptions(balances);

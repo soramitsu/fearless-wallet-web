@@ -140,21 +140,12 @@ async function fetchEthereumHistory(url: string, address: string, precision?: nu
       action: 'txlist',
       address,
       page: 1,
-      offset: 10,
+      offset: 50,
       sort: 'asc',
-      apikey: 'ZWNEGMN2EBP34B8B25MQWGTBPSNZG4VBY1',
+      apikey: process.env.ETHERSCAN_API_KEY,
     },
     signal,
   });
-
-  const ethres = await axios.get(
-    `https://api.covalenthq.com/v1/eth-mainnet/address/${address}/transactions_v3/page/0/`,
-    {
-      headers: {
-        Authorization: 'Bearer cqt_rQX4bHqRcwDGbPgydh7G7HBmmhtc',
-      },
-    }
-  );
 
   if (res.status !== 200) {
     abort.abort();
@@ -162,17 +153,17 @@ async function fetchEthereumHistory(url: string, address: string, precision?: nu
     return [];
   }
 
-  return res.data.result.map((el, index) => ({
+  return res.data.result.map(({ timeStamp, value, gasUsed, from, isError, to }, index) => ({
     address,
     id: String(index),
-    timestamp: el.timeStamp,
+    timestamp: timeStamp,
     transfer: {
-      amount: el.value,
+      amount: value,
       eventIdx: 0,
-      fee: el.gasUsed,
-      from: el.from,
-      success: el.isError === '0',
-      to: el.to,
+      fee: gasUsed,
+      from: from,
+      success: isError === '0',
+      to,
     },
   }));
 }

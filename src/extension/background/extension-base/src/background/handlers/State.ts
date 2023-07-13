@@ -520,8 +520,6 @@ export default class State {
 
       if (data.isEthereum && key in this.apis.evm) delete this.apis.evm[key];
 
-      const currentProvider = getCurrentProvider(data);
-
       if (currentProvider) {
         initApi(data);
 

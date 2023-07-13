@@ -255,7 +255,7 @@
     "minMaxReceiveInfo": "Your transaction will revert if there is a large, unfavorable price movement before it is confirmed.",
     "liquidityProvideFeeInfo": "A portion of each trade goes to liquidity providers as a protocol incentive.",
     "existentialDepositSubtext": "This transaction will result in the account going below the Existential Deposit, which will cause it to be reaped (the account will be wiped from the blockchain’s state to conserve space). If you choose to continue you will lose any funds that are below the existential deposit amount set by the network. For detailed information please refer to the official network documentation (e.g., the Polkadot Wiki). Fearless Wallet is a fully non-custodial application and has no control or knowledge of any of your actions on the network itself. ONLY CONTINUE IF YOU FULLY AGREE TO AND UNDERSTAND THE IMPLICATIONS;"
-   },
+  },
   "accounts": {
     "walletName": "Wallet name",
     "createNewAccount": "Create a new account",
@@ -275,6 +275,7 @@
     "careful": "Be careful",
     "sharingSecret": "Sharing or copying your secret is a high risk operation, don’t send it to anyone. Would you like to proceed with sharing/copying process?",
     "invalidNodeAddress": "Invalid node address format",
+    "customNodeDuplicate": "You already have that node ",
     "addNode": "Add node",
     "urlAddress": "Url address",
     "network": "Network",
@@ -359,7 +360,7 @@
       "step4": "Submit your personal info",
       "stepDescription4": "Fill in the form with your name and address"
     },
-    "statuses" : {
+    "statuses": {
       "pending": {
         "statusText": "Verification in progress",
         "text1": "Your KYC is completed. Waiting for the results",

@@ -17,7 +17,14 @@ import {
   BasicTxResponse,
   SignerType,
 } from '@/extension/background/extension-base/src/background/types/types';
-import { NATIVE_NETWORKS, RELAY_CHAINS, CHAIN_IDS, NETWORKS_ALIASES } from '@/consts/networks';
+import {
+  NATIVE_NETWORKS,
+  RELAY_CHAINS,
+  CHAIN_IDS,
+  NETWORKS_ALIASES,
+  VALID_ETHEREUM_ADDRESS,
+  VALID_SUBSTRATE_ADDRESS,
+} from '@/consts/networks';
 import { NetworkName, RelayChainName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
 
@@ -273,12 +280,9 @@ async function createOrmlTeleportExtrinsic(
 }
 
 async function estimateCrossChainFee(
-  from: string,
-  to: string,
   originNet: NetworkName,
   destinationNet: NetworkName,
   tokenBalance: TokenBalance,
-  relayChain?: RelayChainName,
   extrinsic?: Extrinsic
 ): Promise<[FPNumber, FPNumber]> {
   // Рассчет cross chain fee
@@ -311,7 +315,8 @@ async function estimateCrossChainFee(
   const { precision: utilityPrecision } = getUtilityProps(originNet)!;
 
   try {
-    const paymentInfo = await extrinsic?.paymentInfo(to);
+    const address = isEthereumNetwork(originNet) ? VALID_ETHEREUM_ADDRESS : VALID_SUBSTRATE_ADDRESS;
+    const paymentInfo = await extrinsic?.paymentInfo(address);
     const partialFee = paymentInfo ? +paymentInfo.partialFee : 0;
 
     const originFee = FPNumber.fromCodecValue(partialFee, utilityPrecision);
@@ -367,7 +372,6 @@ async function makeCrossChain({
   password,
   amount,
   callback,
-  relayChain,
 }: MakeCrossChainProps): Promise<void> {
   const txState: BasicTxResponse = {};
   const apiProps = state.getSubstrateApiMap[originNet];
@@ -376,7 +380,7 @@ async function makeCrossChain({
 
   const address = getSubstrateAddressByEthAddress(from);
   const tokenBalance = state.balanceMap[address].find(({ assetId: _assetId }) => _assetId === assetId)!;
-  const [, crossChainFee] = await estimateCrossChainFee(from, to, originNet, destinationNet, tokenBalance, relayChain);
+  const [, crossChainFee] = await estimateCrossChainFee(originNet, destinationNet, tokenBalance);
 
   const amountWithCrossChain = new FPNumber(amount).add(crossChainFee).toString();
 

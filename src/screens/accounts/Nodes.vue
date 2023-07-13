@@ -33,7 +33,7 @@
         :url="url"
         :isActive="getActiveStatus(name, url)"
         :isRemoveBorderBottom="getRemoveBorderBottomValue(index)"
-        @changeNode="changeNode(url, name)"
+        @changeNode="changeNode(url)"
       />
     </div>
     <div class="custom-nodes">

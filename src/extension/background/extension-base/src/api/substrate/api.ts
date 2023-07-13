@@ -127,9 +127,8 @@ export async function initApi(network: NetworkJson): Promise<void> {
   }
 
   const { nodeIndex } = state.apis.substrate[networkName];
-  const autoSelectNode = network.isManual ? nodes[nodeIndex].url : null;
+  const autoSelectNode = network.isManual ? null : nodes[nodeIndex].url;
   const currentProvider = autoSelectNode ?? network.currentProvider;
-
   const eventListeners: Array<[ApiInterfaceEvents, ProviderInterfaceEmitCb]> = [
     ['connected', () => onConnected(networkName)],
     ['disconnected', () => onDisconnect(networkName)],

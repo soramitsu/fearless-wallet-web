@@ -742,7 +742,7 @@ export default class TransferForm extends Vue {
     // комиссия не зависит от адреса получателя, поэтому подставляем всегда мок
     const to = BaseApi.formatAddress(
       { address: VALID_SUBSTRATE_ADDRESS, ethereumAddress: VALID_ETHEREUM_ADDRESS },
-      this.isTransfer ? this.syncedNetwork : this.syncedDestNet
+      this.syncedNetwork
     );
 
     const amount = _amount ?? (this.syncedAmount !== '' && this.syncedAmount !== '0') ? this.syncedAmount : '1';

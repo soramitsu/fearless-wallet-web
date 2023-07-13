@@ -6,9 +6,4 @@ const LIQUID_SOURCE_FOR_MARKET = {
   [MarketType.TBC]: LiquiditySourceTypes.MulticollateralBondingCurvePool,
 };
 
-const ETHEREUM_UTILITY_ASSETS: Record<string, string> = {
-  moonriver: 'movr',
-  moonbeam: 'glmr',
-};
-
-export { LIQUID_SOURCE_FOR_MARKET, ETHEREUM_UTILITY_ASSETS };
+export { LIQUID_SOURCE_FOR_MARKET };

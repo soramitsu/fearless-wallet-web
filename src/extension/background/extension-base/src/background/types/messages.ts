@@ -139,9 +139,8 @@ export interface RequestSignatures {
   'pri(networkMap.upsert)': [NetworkJson, boolean];
   'pri(networkMap.getNetworkMap)': [null, Record<string, NetworkJson>];
   'pri(networkMap.getSubscription)': [null, Record<string, NetworkJson>, Record<string, NetworkJson>];
-  'pri(networkMap.enable.single)': [string, void];
   'pri(networkMap.toggle.favorite)': [string, void];
-  'pri(networkMap.enable.type)': [NetworkType, void];
+  'pri(networkMap.enable.type)': [NetworkType | string, void];
   'pri(networkMap.get.type)': [null, NetworkType | string];
 
   //Authorize

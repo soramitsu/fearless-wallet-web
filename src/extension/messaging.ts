@@ -520,7 +520,7 @@ export function upsertNetworkMap(data: NetworkJson): Promise<boolean> {
   return sendMessage('pri(networkMap.upsert)', data);
 }
 
-export function toggleNetworkType(type: NetworkType): Promise<void> {
+export function toggleNetworkType(type: NetworkType | string): Promise<void> {
   return sendMessage('pri(networkMap.enable.type)', type);
 }
 
@@ -530,10 +530,6 @@ export function toggleFavoriteNetwork(name: string): Promise<void> {
 
 export function getNetworkType(): Promise<NetworkType | string> {
   return sendMessage('pri(networkMap.get.type)');
-}
-
-export function setSingleNetwork(networkKey: string): Promise<void> {
-  return sendMessage('pri(networkMap.enable.single)', networkKey);
 }
 
 export function getNetworkMap(): Promise<Record<string, NetworkJson>> {

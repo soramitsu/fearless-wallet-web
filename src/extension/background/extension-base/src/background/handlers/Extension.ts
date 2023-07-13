@@ -423,7 +423,7 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
-  private async enableNetworkType(type: NetworkType): Promise<void> {
+  private async enableNetworkType(type: NetworkType | string): Promise<void> {
     return this.state.setActiveNetworks(type);
   }
 
@@ -437,6 +437,7 @@ export default class Extension extends FWExtensionBase {
     if (favs.has(networkKey)) {
       favs.delete(networkKey);
       this.state.networkMap[networkKey].favorite = false;
+      this.state.networkMapSubject.next(this.state.networkMap);
 
       return;
     }
@@ -444,10 +445,6 @@ export default class Extension extends FWExtensionBase {
     favs.add(networkKey);
     this.state.networkMap[networkKey].favorite = true;
     this.state.networkMapSubject.next(this.state.networkMap);
-  }
-
-  private async enableSingleNetwork(networkName: string): Promise<void> {
-    return this.state.setActiveSingleNetwork(networkName);
   }
 
   private async upsertNetworkMap(data: NetworkJson): Promise<boolean> {
@@ -1379,9 +1376,6 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(networkMap.toggle.favorite)':
         return this.toggleNetworkFavorite(request as string);
-
-      case 'pri(networkMap.enable.single)':
-        return this.enableSingleNetwork(request as string);
 
       case 'pri(networkMap.getSubscription)':
         return this.subscribeNetworkMap(id, port);

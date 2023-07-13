@@ -597,27 +597,31 @@ export default class State {
     if (network && network.apiStatus && network.apiStatus === NETWORK_STATUS.DISCONNECTED) initApi(network);
   }
 
-  public setActiveSingleNetwork(networkKey: string) {
-    Object.keys(this.networkMap).forEach((key) => {
-      this.networkMap[key].active = networkKey === key;
-    });
-
-    this.initNetworkStates();
-  }
   public getNetworkGroupType() {
     return this.getNetworkGroupType;
   }
-  public setActiveNetworks(type: NetworkType) {
+  public setActiveNetworks(type: NetworkType | string) {
+    this.networkGroupType = type;
+
     Object.keys(this.networkMap).forEach((key) => {
       const network = this.networkMap[key];
 
       switch (type) {
         case 'all':
-          return (network.active = true);
+          network.active = true;
+
+          return;
         case 'favorites':
-          return (network.active = !!network.favorite);
+          network.active = !!network.favorite;
+
+          return;
         case 'popular':
-          return (network.active = !!network.popular);
+          network.active = !!network.popular;
+
+          return;
+        default:
+          if (network.name === type) network.active = true;
+          else network.active = false;
       }
     });
 

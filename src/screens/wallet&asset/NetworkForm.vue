@@ -122,6 +122,8 @@ export default class NetworkManage extends Vue {
   }
 
   async enableSingleNetwork(network: string) {
+    await toggleNetworkType(network);
+
     const prepNotification = this.$t(`header.networkManagement.networkSelected`, { network });
 
     this.$notify({ title: prepNotification as string, message: '', type: 'success' });

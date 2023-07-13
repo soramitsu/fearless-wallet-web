@@ -169,6 +169,8 @@ export default class State {
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
   public networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
+  public favoriteNetworks = new Set();
+  public networkGroupType = 'popular';
   public networkType: NetworkType | 'single' = 'all';
   public networksJson: NetworkJson[] = []; // from github
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
@@ -602,7 +604,9 @@ export default class State {
 
     this.initNetworkStates();
   }
-
+  public getNetworkGroupType() {
+    return this.getNetworkGroupType;
+  }
   public setActiveNetworks(type: NetworkType) {
     Object.keys(this.networkMap).forEach((key) => {
       const network = this.networkMap[key];

@@ -528,7 +528,7 @@ export function toggleFavoriteNetwork(name: string): Promise<void> {
   return sendMessage('pri(networkMap.toggle.favorite)', name);
 }
 
-export function getNetworkType(): Promise<NetworkType | 'single'> {
+export function getNetworkType(): Promise<NetworkType | string> {
   return sendMessage('pri(networkMap.get.type)');
 }
 

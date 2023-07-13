@@ -2,24 +2,25 @@
   <AboveForm :header="header" :fullScreen="true" :closeHandler="handlerClose">
     <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
 
-    <STabs v-model="active" type="rounded" position="top">
-      <STab v-for="tab in tabs" :label="$t(tab.label)" :name="tab.name" :key="tab.name" class="button" />
+    <STabs v-model="activeTab" type="rounded" position="top">
+      <STab v-for="tab in tabs" :label="$t(tab.label)" :name="tab.name" :key="tab.name" class="button">
+        <NetworkItem
+          :network="networkGroup"
+          :isNetworkGroup="true"
+          :isActive="isGroupSelected"
+          @onToggleNetworkType="toggleNetworkType()"
+        />
+      </STab>
     </STabs>
     <div class="container">
       <Scroll>
         <ul class="network__list">
           <NetworkItem
-            :network="networkGroup"
-            :isNetworkGroup="true"
-            :isActive="true"
-            @onToggleState="toggleNetworkType()"
-          />
-
-          <NetworkItem
-            v-for="network in filterNetwork"
+            v-for="network in sortedNetworks"
             :key="network.name"
             :network="network"
-            :isActive="network.favorite"
+            :isActive="isNetworkSelected(network)"
+            @onToggleNetworkType="enableSingleNetwork()"
             @onToggleState="toggleFavorite(network.name)"
           />
         </ul>
@@ -56,7 +57,7 @@ type Tabs = {
 })
 export default class NetworkManage extends Vue {
   filterValue = '';
-  active: keyof Tabs = 'all';
+  activeTab: keyof Tabs = 'all';
   value = '';
 
   tabs: Tabs = {
@@ -74,40 +75,55 @@ export default class NetworkManage extends Vue {
     },
   };
   @Prop(Function) handlerClose!: VoidFunction;
+  @Prop(String) type!: keyof Tabs | string;
   @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
 
+  get isGroupSelected() {
+    return this.type === this.activeTab;
+  }
+
   get networkGroup() {
-    return { name: this.$t(`header.networkManagement.${this.active}`), icon: 'all-networks' };
+    return { name: this.$t(`header.networkManagement.${this.activeTab}`), icon: 'all-networks' };
   }
 
   get filterNetwork() {
-    return this.networks;
+    if (this.activeTab === 'all') return this.networks;
+
+    return this.networks.filter((network) => {
+      if (this.activeTab === 'popular') return network.popular;
+      if (this.activeTab === 'favorites') return network.favorite;
+    });
+  }
+
+  get sortedNetworks() {
+    return this.filterNetwork.sort((a, b) => {
+      if (a.active) return 1;
+
+      return 0;
+    });
+  }
+
+  isNetworkSelected(network: NetworkJson) {
+    return this.type === network.name && network.active;
   }
 
   get header() {
     return 'header.networkManagement.header';
   }
 
-  getIconVisible() {
-    //
+  async toggleNetworkType() {
+    await toggleNetworkType(this.activeTab);
+    this.$notify({ title: `${this.activeTab} network selected`, message: '', type: 'success' });
   }
 
-  toggleNetworkType() {
-    toggleNetworkType(this.active);
+  async enableSingleNetwork() {
+    await toggleNetworkType(this.activeTab);
+    this.$notify({ title: `${this.activeTab} network selected`, message: '', type: 'success' });
   }
 
-  toggleFavorite(name: string) {
-    toggleFavoriteNetwork(name);
-  }
-
-  rowClasses(value: string) {
-    return [
-      'row',
-      {
-        'row-active': this.value === value,
-      },
-      // `padding-${this.space}`,
-    ];
+  async toggleFavorite(name: string) {
+    await toggleFavoriteNetwork(name);
+    this.$notify({ title: `${name} network selected`, message: '', type: 'success' });
   }
 }
 </script>
@@ -147,7 +163,6 @@ export default class NetworkManage extends Vue {
   flex-flow: column nowrap;
   padding: 0;
   height: 100%;
-  gap: 16px;
 }
 </style>
 
@@ -178,7 +193,15 @@ export default class NetworkManage extends Vue {
   color: #ffffff50 !important;
 }
 
-.el-tabs__content {
-  display: none;
+.el-tab-pane {
+  background-color: #111111 !important;
+  height: 100% !important;
+  width: 100% !important;
+  border-radius: 0 !important;
+}
+.el-tab-pane.button {
+  padding: 0;
+  display: block;
+  text-transform: none;
 }
 </style>

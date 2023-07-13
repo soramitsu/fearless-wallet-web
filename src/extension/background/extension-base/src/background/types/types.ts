@@ -956,3 +956,4 @@ export interface TokenBalance {
 export type BeaconRawSignCallBack = (tx: SignerPayloadRaw) => string;
 
 export type BalanceMap = Record<WalletAddress, TokenBalance[]>;
+export type NetworkMap = Record<string, NetworkJson>;

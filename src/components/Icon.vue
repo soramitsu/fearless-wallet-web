@@ -1,6 +1,6 @@
 <template>
-  <svg :class="getSvgClasses" aria-hidden="true" v-on="$listeners">
-    <use :xlink:href="getIconName" :style="styles" :class="getUseClasses" />
+  <svg :class="getSvgClasses" aria-hidden="true">
+    <use :xlink:href="getIconName" :style="styles" :class="getUseClasses" v-on="$listeners" />
   </svg>
 </template>
 
@@ -48,7 +48,9 @@ export default class Icon extends Vue {
   overflow: hidden;
   outline: none;
 }
-
+.svg-icon:hover {
+  opacity: 0.5;
+}
 .icon__inner {
   outline: none;
 }

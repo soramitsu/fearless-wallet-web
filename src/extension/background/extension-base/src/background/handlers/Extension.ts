@@ -427,6 +427,25 @@ export default class Extension extends FWExtensionBase {
     return this.state.setActiveNetworks(type);
   }
 
+  private getNetworkType(): string {
+    return this.state.networkGroupType;
+  }
+
+  private async toggleNetworkFavorite(networkKey: string): Promise<void> {
+    const favs = this.state.favoriteNetworks;
+
+    if (favs.has(networkKey)) {
+      favs.delete(networkKey);
+      this.state.networkMap[networkKey].favorite = false;
+
+      return;
+    }
+
+    favs.add(networkKey);
+    this.state.networkMap[networkKey].favorite = true;
+    this.state.networkMapSubject.next(this.state.networkMap);
+  }
+
   private async enableSingleNetwork(networkName: string): Promise<void> {
     return this.state.setActiveSingleNetwork(networkName);
   }
@@ -1354,6 +1373,12 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(networkMap.enable.type)':
         return this.enableNetworkType(request as NetworkType);
+
+      case 'pri(networkMap.get.type)':
+        return this.getNetworkType();
+
+      case 'pri(networkMap.toggle.favorite)':
+        return this.toggleNetworkFavorite(request as string);
 
       case 'pri(networkMap.enable.single)':
         return this.enableSingleNetwork(request as string);

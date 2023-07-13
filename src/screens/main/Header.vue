@@ -39,7 +39,9 @@
           :ref="selectNetworkButtonRef"
           @click="toggleSelectNetworkPopupVisible"
         >
-          <Icon icon="all-networks" className="icon--network" width="16" height="16" />
+          <Icon v-if="isGroupIcon" :icon="selectedNetworkIcon" className="icon--network" width="16" height="16" />
+          <ExternalLogo v-else :name="selectedNetworkIcon" width="16" height="16" class="icon--network" />
+
           <span>{{ selectedNetworkType }}</span>
           <Icon icon="down" className="icon--down" width="10" height="9" />
         </div>
@@ -67,7 +69,11 @@
           @click="toggleSettingsVisible"
         />
 
-        <NetworkManage v-if="showSelectNetworkPopup" :handlerClose="toggleSelectNetworkPopupVisible" />
+        <NetworkManage
+          v-if="showSelectNetworkPopup"
+          :type="networkType"
+          :handlerClose="toggleSelectNetworkPopupVisible"
+        />
       </div>
     </header>
   </div>
@@ -104,7 +110,7 @@ export default class Header extends Vue {
   readonly walletNameRef = 'walletName';
   readonly settingsNameRef = 'settingsName';
   readonly isPopup = BaseApi.useIsPopup();
-  networkType: NetworkType | 'single' = 'all';
+  networkType: NetworkType | string = 'all';
   showConnectionPopup = false;
   showSelectNetworkPopup = false;
   readonly selectNetworkButtonRef = 'selectNetworkButton';
@@ -123,7 +129,17 @@ export default class Header extends Vue {
   }
 
   get selectedNetworkType() {
-    return 'networks';
+    return this.networkType;
+  }
+
+  get isGroupIcon() {
+    return this.networkType === 'all' || this.networkType === 'popular' || this.networkType === 'favorites';
+  }
+
+  get selectedNetworkIcon() {
+    if (this.isGroupIcon) return 'all-networks';
+
+    return this.getNetwork(this.networkType).icon;
   }
 
   get name() {
@@ -172,9 +188,11 @@ export default class Header extends Vue {
     this.getNetworkType();
     this.fetchTabStatus();
   }
+
   async getNetworkType() {
     this.networkType = await getNetworkType();
   }
+
   toggleConnectionPopup() {
     if (!this.tabStatus) return;
 

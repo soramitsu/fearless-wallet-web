@@ -142,7 +142,7 @@ export interface RequestSignatures {
   'pri(networkMap.enable.single)': [string, void];
   'pri(networkMap.toggle.favorite)': [string, void];
   'pri(networkMap.enable.type)': [NetworkType, void];
-  'pri(networkMap.get.type)': [null, NetworkType | 'single'];
+  'pri(networkMap.get.type)': [null, NetworkType | string];
 
   //Authorize
   'pri(authorize.approve.polkaswap)': [string[], null];

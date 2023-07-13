@@ -20,8 +20,8 @@
             :key="network.name"
             :network="network"
             :isActive="isNetworkSelected(network)"
-            @onToggleNetworkType="enableSingleNetwork()"
-            @onToggleState="toggleFavorite(network.name)"
+            @onToggleNetworkType="enableSingleNetwork(network.name)"
+            @onToggleState="toggleFavorite(network.name, !!network.favorite)"
           />
         </ul>
       </Scroll>
@@ -113,17 +113,30 @@ export default class NetworkManage extends Vue {
 
   async toggleNetworkType() {
     await toggleNetworkType(this.activeTab);
-    this.$notify({ title: `${this.activeTab} network selected`, message: '', type: 'success' });
+
+    const prepNotification = this.$t(`header.networkManagement.groupSelected`, {
+      group: this.$t(this.tabs[this.activeTab].label),
+    });
+
+    this.$notify({ title: prepNotification as string, message: '', type: 'success' });
   }
 
-  async enableSingleNetwork() {
-    await toggleNetworkType(this.activeTab);
-    this.$notify({ title: `${this.activeTab} network selected`, message: '', type: 'success' });
+  async enableSingleNetwork(network: string) {
+    const prepNotification = this.$t(`header.networkManagement.networkSelected`, { network });
+
+    this.$notify({ title: prepNotification as string, message: '', type: 'success' });
   }
 
-  async toggleFavorite(name: string) {
-    await toggleFavoriteNetwork(name);
-    this.$notify({ title: `${name} network selected`, message: '', type: 'success' });
+  async toggleFavorite(network: string, isFavorite: boolean) {
+    await toggleFavoriteNetwork(network);
+    const t = `header.networkManagement.${isFavorite ? 'deleteFavorite' : 'addFavorite'}`;
+    const prepNotification = this.$t(t, { network });
+
+    this.$notify({
+      title: prepNotification as string,
+      message: '',
+      type: 'success',
+    });
   }
 }
 </script>

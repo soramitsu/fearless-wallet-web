@@ -38,7 +38,7 @@ import {
   RequestMobileSign,
   TransferErrorCode,
 } from '@extension-base/background/types/types';
-import { getSubstrateAddressByEthAddress } from '@extension-base/background/utils/utils';
+import { getSubstrateAddressByEthAddress, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
 import type {
   ActiveTabAuthorizeStatus,
   BalanceJson,
@@ -1025,7 +1025,7 @@ export default class Extension extends FWExtensionBase {
       (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
 
-    if (isEthereumAddress(from) && isEthereumAddress(to) && networkKey !== 'Moonriver' && networkKey !== 'Moonbeam') {
+    if (isEthereumAddress(from) && isEthereumAddress(to) && !isRequireSubstrateAPI(networkKey)) {
       const fromAccountFreeBalance = tokenBalance
         ? tokenBalance.balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0'
         : '0';

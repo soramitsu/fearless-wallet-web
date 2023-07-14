@@ -277,8 +277,6 @@ async function createOrmlTeleportExtrinsic(
   if (api.tx?.xTokens?.transferMultiasset) {
     const params = getOrmlTeleportParams(originNet, destNet, toAddress, precisionAmount, assetId);
 
-    console.log('params 2', params);
-
     return api.tx?.xTokens?.transferMultiasset(...params);
   }
 

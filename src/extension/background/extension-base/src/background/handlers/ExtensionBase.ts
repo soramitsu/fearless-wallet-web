@@ -120,14 +120,21 @@ export default class FWExtensionBase {
     return this.state.knownMetadata;
   }
 
-  refreshAccountPasswordCache(pair: KeyringPair): number {
-    const { address, meta } = pair;
-
-    const ethereumAddress = meta.ethereumAddress as string;
+  getRemainingTime(pair: KeyringPair): number {
+    const { address } = pair;
 
     const savedExpiry = this.cachedUnlocks[address] || 0;
 
     const remainingTime = savedExpiry - Date.now();
+
+    return remainingTime;
+  }
+
+  refreshAccountPasswordCache(pair: KeyringPair): number {
+    const remainingTime = this.getRemainingTime(pair);
+    const { address, meta } = pair;
+
+    const ethereumAddress = meta.ethereumAddress as string;
 
     if (remainingTime < 0) {
       this.cachedUnlocks[address] = 0;

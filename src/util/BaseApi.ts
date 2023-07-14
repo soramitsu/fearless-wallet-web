@@ -13,7 +13,7 @@ import type { ValidateJsonResult, DerivationPath } from '@/interfaces';
 import type { Wallet } from '@/store';
 import type { ExtrinsicEra } from '@polkadot/types/interfaces';
 import { isDerivationPathValid, isJsonValid, jsonRestore } from '@/extension/messaging';
-import { ETHEREUM_NETWORKS, ETHEREUM_ADDRESS_LENGTH, ETHEREUM_ADDRESS_PREFIX } from '@/consts/networks';
+import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { NetworksController } from '@/controllers';
 import store from '@/store';
 import { AccountJson } from '@/extension/background/extension-base/src/background/types/types';

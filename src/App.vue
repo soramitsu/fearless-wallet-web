@@ -58,7 +58,7 @@ export default class App extends Vue {
   async created() {
     // TODO разкомментить перед релизом
     // TODO в state.ts тоже
-    // this.onUpdateOnlineStatus();
+    this.onUpdateOnlineStatus();
 
     if (IS_EXTENSION) this.extensionSubscribe();
 

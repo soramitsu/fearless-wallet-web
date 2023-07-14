@@ -38,7 +38,7 @@ import {
   RequestMobileSign,
   TransferErrorCode,
 } from '@extension-base/background/types/types';
-import { getSubstrateAddressByEthAddress } from '@extension-base/background/utils/utils';
+import { getSubstrateAddressByEthAddress, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
 import type {
   ActiveTabAuthorizeStatus,
   BalanceJson,
@@ -946,6 +946,7 @@ export default class Extension extends FWExtensionBase {
 
     if (isSavePass) {
       this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;
+
       if (ethereumAddress) this.cachedUnlocks[ethereumAddress] = Date.now() + PASSWORD_EXPIRY_MS;
     } else if (remainTime) {
       this.cachedUnlocks[address] = 0;
@@ -954,6 +955,7 @@ export default class Extension extends FWExtensionBase {
 
       if (ethereumAddress) {
         this.cachedUnlocks[ethereumAddress] = 0;
+
         keyring.getPair(ethereumAddress).lock();
       }
     }
@@ -977,6 +979,7 @@ export default class Extension extends FWExtensionBase {
       try {
         if (substratePair) {
           substratePair.unlock(password);
+
           const { meta } = substratePair;
           const ethereumAddress = meta.ethereumAddress as string | undefined;
 
@@ -1022,7 +1025,7 @@ export default class Extension extends FWExtensionBase {
       (balance) => balance.assetId === assetId && balance.relayChain.toLowerCase() === relayChain?.toLowerCase()
     )!;
 
-    if (isEthereumAddress(from) && isEthereumAddress(to) && networkKey !== 'Moonriver' && networkKey !== 'Moonbeam') {
+    if (isEthereumAddress(from) && isEthereumAddress(to) && !isRequireSubstrateAPI(networkKey)) {
       const fromAccountFreeBalance = tokenBalance
         ? tokenBalance.balances.find((net) => net.name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0'
         : '0';
@@ -1082,7 +1085,7 @@ export default class Extension extends FWExtensionBase {
     const ethereumAddress = fromKeyPair ? (fromKeyPair.meta.ethereumAddress as string | undefined) : '';
     const isEthereum = isEthereumAddress(from);
     const address = isEthereum ? getSubstrateAddressByEthAddress(from) : from; // if Ethereum we need to get substrate address related to eth wallet to save pass
-    const remainTime = fromKeyPair ? this.refreshAccountPasswordCache(fromKeyPair) : 0;
+    const remainTime = fromKeyPair ? this.getRemainingTime(fromKeyPair) : 0;
 
     const savePass = () => {
       this.savePass(address, isEthereum ? from : ethereumAddress, remainTime, !!isSavePass, !!isMobile);
@@ -1214,15 +1217,17 @@ export default class Extension extends FWExtensionBase {
     { from, originNet, destinationNet, amount, password, to, assetId, isSavePass, isMobile }: RequestCrossChain
   ): Promise<void> {
     const [, fromKeyPair] = this.validateTransfer(assetId, from, password);
-    const isEthereum = isEthereumAddress(from);
+
     const cb = createSubscription<'pri(accounts.crossChain)'>(id, port);
-    const ethereumAddress = fromKeyPair!.meta.ethereumAddress as string | undefined;
-    const address = isEthereum ? getSubstrateAddressByEthAddress(from) : from; // if Ethereum we need to get substrate address related to eth wallet
+
+    const address = getSubstrateAddressByEthAddress(from);
     const substratePair = keyring.getPair(address);
-    const remainTime = this.refreshAccountPasswordCache(isEthereum ? substratePair : fromKeyPair!);
+    const ethereumAddress = substratePair.meta.ethereumAddress as string;
+
+    const remainTime = this.getRemainingTime(substratePair);
 
     const savePass = () => {
-      this.savePass(address, isEthereum ? from : ethereumAddress, remainTime, !!isSavePass, !!isMobile);
+      this.savePass(address, ethereumAddress, remainTime, !!isSavePass, !!isMobile);
     };
 
     const callback = this.makeExtrinsicCallback(cb, savePass);

@@ -16,7 +16,7 @@
               class="account__checkbox"
               size="big"
               :name="account.address"
-              :label="account.name"
+              :label="$t(account.name)"
               v-model.lazy="account.active"
               @change="(value) => $emit('onSelect', value, account.name)"
             />

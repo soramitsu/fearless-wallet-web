@@ -10,8 +10,8 @@
           v-model="url"
           placeholder="accounts.urlAddress"
           class="row"
-          errorDescriptions="accounts.invalidNodeAddress"
-          :isError="isErrorUrlNode"
+          :errorDescriptions="errorMessage"
+          :isError="isErrorUrlNode || isUrlDuplicate"
           :maxlength="150"
         />
       </div>
@@ -53,8 +53,21 @@ export default class EditNodeForm extends Vue {
     return this._name !== '';
   }
 
+  get isUrlDuplicate() {
+    return (
+      this.networkJson.nodes.some((node) => node.url === this.url) ||
+      this.networkJson.customNodes.some((node) => node.url === this.url)
+    );
+  }
+
   get isErrorUrlNode() {
     return this.url.length !== 0 && (this.url.length < 7 || !this.url.startsWith('wss://'));
+  }
+
+  get errorMessage() {
+    if (this.isErrorUrlNode) return 'accounts.invalidNodeAddress';
+
+    return 'accounts.customNodeDuplicate';
   }
 
   get networkCharUp() {
@@ -94,7 +107,7 @@ export default class EditNodeForm extends Vue {
     upsertNetworkMap({
       ...this.networkJson,
       ...prepData,
-      isManual: true,
+      isManual: false,
     });
 
     this.closeForm(true);

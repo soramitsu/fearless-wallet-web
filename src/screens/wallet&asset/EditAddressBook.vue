@@ -39,9 +39,11 @@ export default class EditAddressBook extends Vue {
   }
 
   get isErrorAddress() {
+    const address = this.address.trim();
+
     return (
-      this.address.trim().length !== 0 &&
-      !(BaseApi.validateAddress(this.address.trim(), 'polkadot') || BaseApi.validateAddress(this.address, 'moonbeam'))
+      address.length !== 0 &&
+      !(BaseApi.validateAddress(address, 'polkadot') || BaseApi.validateAddress(address, 'moonbeam'))
     );
   }
 

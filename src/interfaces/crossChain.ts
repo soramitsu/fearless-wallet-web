@@ -28,6 +28,7 @@ type XcmFees = {
   destXcmFee: {
     feeInPlanks: string;
     symbol: AssetName;
+    precision: string;
   }[];
   weight: string;
 }[];

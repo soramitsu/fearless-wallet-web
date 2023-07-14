@@ -1195,15 +1195,7 @@ export default class Extension extends FWExtensionBase {
 
     console.info('CrossChain', extrinsic);
 
-    const [fee, crossChainFee] = await estimateCrossChainFee(
-      from,
-      to,
-      originNet,
-      destinationNet,
-      tokenBalance,
-      relayChain,
-      extrinsic
-    );
+    const [fee, crossChainFee] = await estimateCrossChainFee(originNet, destinationNet, tokenBalance, extrinsic);
 
     return {
       estimateFee: fee.toString(),
@@ -1214,18 +1206,7 @@ export default class Extension extends FWExtensionBase {
   private async makeCrossChain(
     id: string,
     port: Port,
-    {
-      from,
-      originNet,
-      destinationNet,
-      amount,
-      password,
-      to,
-      assetId,
-      isSavePass,
-      isMobile,
-      relayChain,
-    }: RequestCrossChain
+    { from, originNet, destinationNet, amount, password, to, assetId, isSavePass, isMobile }: RequestCrossChain
   ): Promise<void> {
     const [, fromKeyPair] = this.validateTransfer(assetId, from, password);
     const isEthereum = isEthereumAddress(from);
@@ -1251,7 +1232,6 @@ export default class Extension extends FWExtensionBase {
       password,
       isSavePass,
       callback,
-      relayChain,
     });
 
     transferProm

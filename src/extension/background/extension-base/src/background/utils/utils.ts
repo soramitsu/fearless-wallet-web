@@ -8,6 +8,7 @@ import { isEthereumAddress } from '@polkadot/util-crypto';
 import type { AssetName, NetworkName } from '@/interfaces';
 import { MAIN_NETWORKS, ETHEREUM_NETWORKS } from '@/consts/networks';
 import { RelayChainName } from '@/interfaces';
+import { ETHEREUM_UTILITY_ASSETS } from '@/consts/currencies';
 
 export function getMockCurrencies(networks: NetworkJson[]) {
   const currencies = networks.reduce<TokenBalance[]>((result, network) => {
@@ -99,6 +100,14 @@ export function getUtilityProps(_network: NetworkName) {
 
 export function getNativeAssetName(asset: AssetName) {
   return asset.toLowerCase().replace('xc', '');
+}
+
+export function getEthereumAssetName(asset: AssetName, network: NetworkName) {
+  const assetLower = asset.toLowerCase();
+
+  return isEthereumNetwork(network) && !Object.values(ETHEREUM_UTILITY_ASSETS).includes(assetLower)
+    ? `xc${assetLower}`
+    : assetLower;
 }
 
 export function getSubstrateAddressByEthAddress(address: string) {

@@ -17,10 +17,16 @@ import {
   BasicTxResponse,
   SignerType,
 } from '@/extension/background/extension-base/src/background/types/types';
-import { NATIVE_NETWORKS, RELAY_CHAINS, CHAIN_IDS, NETWORKS_ALIASES } from '@/consts/networks';
+import {
+  NATIVE_NETWORKS,
+  RELAY_CHAINS,
+  CHAIN_IDS,
+  NETWORKS_ALIASES,
+  VALID_ETHEREUM_ADDRESS,
+  VALID_SUBSTRATE_ADDRESS,
+} from '@/consts/networks';
 import { NetworkName, RelayChainName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers/common';
-import { ETHEREUM_UTILITY_ASSETS } from '@/consts/currencies';
 
 type Extrinsic = Nullable<SubmittableExtrinsic<'promise'>>;
 
@@ -274,12 +280,9 @@ async function createOrmlTeleportExtrinsic(
 }
 
 async function estimateCrossChainFee(
-  from: string,
-  to: string,
   originNet: NetworkName,
   destinationNet: NetworkName,
   tokenBalance: TokenBalance,
-  relayChain?: RelayChainName,
   extrinsic?: Extrinsic
 ): Promise<[FPNumber, FPNumber]> {
   // Рассчет cross chain fee
@@ -287,7 +290,6 @@ async function estimateCrossChainFee(
     const destChainLower = destChain.toLowerCase();
     const destinationNetLower = destinationNet.toLowerCase();
 
-    // В файле XCM_FEES старые названия Statemint and Statemine, ищем их по элиасам
     return (
       (NETWORKS_ALIASES[destChainLower] ?? destChainLower) ===
       (NETWORKS_ALIASES[destinationNetLower] ?? destinationNetLower)
@@ -298,30 +300,14 @@ async function estimateCrossChainFee(
 
   const destEstimateFee = destFees?.destXcmFee?.find(({ symbol: _symbol }) => _symbol.toLowerCase() === asset);
 
-  // Токены мунбим, мунривер сетей являются аналогами из других сабстрейт сетей, но хранятся отдельными сущностями
-  // По сути они являются отдельной сущностью TokenBalance
-  // Если телепорт в эфириум сеть из НЕ эфириум сити ИЛИ из эфириум сети в НЕ эфириум сеть, нужно искать precision в другой сущности TokenBalance, для токена `xcTOKEN`
+  const { precision: originPrecision } = tokenBalance.balances.find(
+    ({ name }) => name.toLowerCase() === originNet.toLowerCase()
+  )!;
 
-  const toEthereum = !isEthereumNetwork(originNet) && isEthereumNetwork(destinationNet);
-  const fromEthereum = isEthereumNetwork(originNet) && !isEthereumNetwork(destinationNet);
-  const isSeparateRecord = (toEthereum || fromEthereum) && !Object.values(ETHEREUM_UTILITY_ASSETS).includes(asset);
-
-  const address = getSubstrateAddressByEthAddress(from);
-
-  const tokenBalanceByDestNet = isSeparateRecord
-    ? state.balanceMap[address].find((balance) => {
-        // Соответственно либо подставляем префикс xc либо убираем его
-        const asset = toEthereum ? `xc${tokenBalance.symbol.toLowerCase()}` : getNativeAssetName(tokenBalance.symbol);
-
-        return balance.symbol === asset && balance.relayChain.toLowerCase() === relayChain?.toLowerCase();
-      })!
-    : tokenBalance;
-
-  const { precision: precisionDest } = tokenBalanceByDestNet.balances.find(({ name }) => {
-    return name.toLowerCase() === destinationNet.toLowerCase();
-  })!;
-
-  const crossChainFee = FPNumber.fromCodecValue(destEstimateFee?.feeInPlanks ?? '0', precisionDest);
+  const crossChainFee = FPNumber.fromCodecValue(
+    destEstimateFee?.feeInPlanks ?? '0',
+    +(destEstimateFee?.precision ?? originPrecision)
+  );
 
   // Далее рассчет origin fee
   if (!extrinsic) return [FPNumber.ZERO, crossChainFee];
@@ -329,7 +315,8 @@ async function estimateCrossChainFee(
   const { precision: utilityPrecision } = getUtilityProps(originNet)!;
 
   try {
-    const paymentInfo = await extrinsic?.paymentInfo(to);
+    const address = isEthereumNetwork(originNet) ? VALID_ETHEREUM_ADDRESS : VALID_SUBSTRATE_ADDRESS;
+    const paymentInfo = await extrinsic?.paymentInfo(address);
     const partialFee = paymentInfo ? +paymentInfo.partialFee : 0;
 
     const originFee = FPNumber.fromCodecValue(partialFee, utilityPrecision);
@@ -385,7 +372,6 @@ async function makeCrossChain({
   password,
   amount,
   callback,
-  relayChain,
 }: MakeCrossChainProps): Promise<void> {
   const txState: BasicTxResponse = {};
   const apiProps = state.getSubstrateApiMap[originNet];
@@ -394,7 +380,7 @@ async function makeCrossChain({
 
   const address = getSubstrateAddressByEthAddress(from);
   const tokenBalance = state.balanceMap[address].find(({ assetId: _assetId }) => _assetId === assetId)!;
-  const [, crossChainFee] = await estimateCrossChainFee(from, to, originNet, destinationNet, tokenBalance, relayChain);
+  const [, crossChainFee] = await estimateCrossChainFee(originNet, destinationNet, tokenBalance);
 
   const amountWithCrossChain = new FPNumber(amount).add(crossChainFee).toString();
 

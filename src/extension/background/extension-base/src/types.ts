@@ -1,10 +1,10 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { BalanceItem, CustomTokenType, NetWorkGroup } from '@extension-base/api/evm/types/ether';
+import { CustomTokenType, NetWorkGroup } from '@extension-base/api/evm/types/ether';
 import { NETWORK_STATUS } from './api/types/networks';
 import type { AssetType } from '@/interfaces';
-import { RelayChainName, ExternalApi } from '@/interfaces';
+import { ExternalApi } from '@/interfaces';
 
 import { ContractType } from '@/interfaces/ether';
 
@@ -115,7 +115,7 @@ export interface NetworkJson {
   // Provider Information
   isManual?: boolean;
   providers: Record<string, string>; // Predefined provider map
-  currentProvider: string | null; // Current provider key
+  currentProvider: string; // Current provider key
   // currentProviderMode: 'http' | 'ws'; // Current provider mode, compute depend on provider protocol. the feature need to know this to decide use subscribe or cronjob to use this features.
   customProviders?: Record<string, string>; // Custom provider map, provider name same with provider map
   // Metadata get after connect to provider

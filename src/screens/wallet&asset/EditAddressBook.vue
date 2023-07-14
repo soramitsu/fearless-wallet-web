@@ -11,7 +11,7 @@
         :isError="isErrorAddress"
       />
 
-      <Checkbox v-model="saveForAllNetworks" size="medium" label="assets.saveAddressForAllNetwork" class="row" />
+      <Checkbox v-model="saveForAllNetworks" size="medium" :label="$t('assets.saveAddressForAllNetwork')" class="row" />
     </div>
 
     <Button size="big" text="common.save" :disabled="buttonDisabled" @click="updateContact" />

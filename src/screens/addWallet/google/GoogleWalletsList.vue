@@ -13,7 +13,7 @@
                 :name="file.name"
                 :label="file.name"
                 :value="file.active"
-                @change.self="(value) => onSelect(!file.active, index)"
+                @change.self="() => onSelect(!file.active, index)"
               />
 
               <span @click.self="onSelect(!file.active, index)">{{ cutAddress(file.address) }}</span>
@@ -112,7 +112,9 @@ export default class GoogleWalletsList extends Vue {
     this.setItemValue(index, { active: value });
   }
 
-  cutAddress(address: string) {
+  cutAddress(address?: string) {
+    if (!address) return '';
+
     return cut(address);
   }
 }

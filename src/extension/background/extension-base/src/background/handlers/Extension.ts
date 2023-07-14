@@ -36,6 +36,7 @@ import {
   BasicTxErrorCode,
   MobileSigningRequest,
   RequestMobileSign,
+  RequestUpdateMeta,
   TransferErrorCode,
 } from '@extension-base/background/types/types';
 import { getSubstrateAddressByEthAddress, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
@@ -1390,6 +1391,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(accounts.update.current)':
         return this.updateCurrentAccountAddress(request as string);
+
+      case 'pri(accounts.update.meta)':
+        return this.updatePairMeta(request as RequestUpdateMeta);
 
       case 'pri(accounts.export)':
         return this.accountsExport(request as RequestAccountExport);

@@ -291,6 +291,7 @@
     "careful": "Be careful",
     "sharingSecret": "Sharing or copying your secret is a high risk operation, don’t send it to anyone. Would you like to proceed with sharing/copying process?",
     "invalidNodeAddress": "Invalid node address format",
+    "customNodeDuplicate": "You already have that node ",
     "addNode": "Add node",
     "urlAddress": "Url address",
     "network": "Network",

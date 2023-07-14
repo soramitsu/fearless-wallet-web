@@ -69,6 +69,8 @@ export class FWSubscription {
       this.subscribeBalances(account.address, ethAddress, true);
     });
 
+    if (currentAccount) this.subscribeBalances(currentAccount?.address, currentAccount.ethereumAddress);
+
     !this.serviceSubscription &&
       (this.serviceSubscription = this.state.subscribeServiceInfo().subscribe({
         next: (serviceInfo) => {

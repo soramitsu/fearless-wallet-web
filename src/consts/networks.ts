@@ -28,6 +28,7 @@ const CHAIN_IDS: Record<string, NetworkName> = {
 const NETWORKS_ALIASES: Record<string, string> = {
   'polkadot assethub': 'statemint',
   'kusama assethub': 'statemine',
+  bifrost: 'bifrost kusama',
 };
 
 // названия сетей должны быть в таком же регистре, как и в json

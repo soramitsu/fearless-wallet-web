@@ -6,6 +6,7 @@ import { TokenBalance } from '@/extension/background/extension-base/src/backgrou
 import { isSora } from '@/helpers/common';
 import { addNumbers } from '@/helpers/numbers';
 import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
+import { getNativeAssetName } from '@/extension/background/extension-base/src/background/utils/utils';
 
 function getTransferableBalanceInNetwork(token: TokenBalance, network: string) {
   return token.balances.find(({ name }) => name.toLowerCase() === network.toLowerCase())?.transferable ?? '0';
@@ -134,19 +135,17 @@ function getCurrencyOptions(currencies: TokenBalance[]) {
     const label = filteredOptions.length > 1 ? `${assetUpper} (${relayChain.toUpperCase()})` : assetUpper;
 
     return {
-      name: label,
+      name: getNativeAssetName(label).toUpperCase(),
       value: id,
       icon,
     };
   });
 }
 
-function getUtilityAsset(currencies: TokenBalance[], _network: NetworkName) {
-  const currency = currencies.find(({ balances }) =>
+function getUtilityAsset(balances: TokenBalance[], _network: NetworkName) {
+  return balances.find(({ balances }) =>
     balances.some(({ name, isUtility }) => name.toLowerCase() === _network.toLowerCase() && isUtility)
-  );
-
-  return currency!.symbol;
+  )!;
 }
 
 const getXORCurrency = (balances: TokenBalance[]) => {

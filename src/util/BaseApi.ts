@@ -4,6 +4,7 @@ import {
   mnemonicGenerate,
   mnemonicValidate,
   hdValidatePath,
+  isEthereumAddress,
 } from '@polkadot/util-crypto';
 import { isHex, bnToBn, formatNumber } from '@polkadot/util';
 import type { KeyringPairs$Json } from '@polkadot/ui-keyring/types';
@@ -119,12 +120,8 @@ export default class BaseApi {
     return decodeAddress(address, false);
   }
 
-  public static validateEthereumAddress(address: string): boolean {
-    if (!address.toLowerCase().startsWith(ETHEREUM_ADDRESS_PREFIX)) return false;
-
-    if (address.length !== ETHEREUM_ADDRESS_LENGTH) return false;
-
-    return true;
+  public static isEthereumAddress(address: string): boolean {
+    return isEthereumAddress(address);
   }
 
   public static isSameAddress(wallet: Wallet, address: string, network: string): boolean {
@@ -134,7 +131,9 @@ export default class BaseApi {
   public static validateAddress(address: string, network: string): boolean {
     const isEthereumNetwork = BaseApi.isEthereumNetwork(network);
 
-    if (isEthereumNetwork && !BaseApi.validateEthereumAddress(address)) return false;
+    if (isEthereumNetwork && !BaseApi.isEthereumAddress(address)) return false;
+
+    if (!isEthereumNetwork && BaseApi.isEthereumAddress(address)) return false;
 
     try {
       const publicKey = BaseApi.decodeAddress(address);
@@ -150,7 +149,7 @@ export default class BaseApi {
   }
 
   public static validateAddressByNetwork(address: string, network: string): boolean {
-    if (BaseApi.isEthereumNetwork(network)) return BaseApi.validateEthereumAddress(address);
+    if (BaseApi.isEthereumNetwork(network)) return BaseApi.isEthereumAddress(address);
 
     return address === BaseApi.formatAddress({ address, ethereumAddress: address }, network);
   }

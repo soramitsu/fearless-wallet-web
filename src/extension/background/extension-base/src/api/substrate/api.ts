@@ -119,7 +119,7 @@ function onReady(networkName: string) {
 }
 
 export async function initApi(network: NetworkJson): Promise<void> {
-  const { name: networkName, providers, isEthereum } = network;
+  const { name: networkName, nodes, isEthereum } = network;
 
   if (state.apis.substrate[networkName] === undefined) {
     // return EVM HTTP Placeholder
@@ -127,9 +127,8 @@ export async function initApi(network: NetworkJson): Promise<void> {
   }
 
   const { nodeIndex } = state.apis.substrate[networkName];
-  const autoSelectNode = network.isManual ? getCurrentProvider(network) : null;
-  const currentProvider = autoSelectNode ?? Object.values(providers)[nodeIndex];
-
+  const autoSelectNode = network.isManual ? null : nodes[nodeIndex].url;
+  const currentProvider = autoSelectNode ?? network.currentProvider;
   const eventListeners: Array<[ApiInterfaceEvents, ProviderInterfaceEmitCb]> = [
     ['connected', () => onConnected(networkName)],
     ['disconnected', () => onDisconnect(networkName)],

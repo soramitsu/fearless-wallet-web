@@ -108,7 +108,7 @@ const getters: GetterTree<State, State> & Getters = {
     (networkName: string) => {
       const { currentProvider, nodes } = networks.find((net) => net.name.toLowerCase() === networkName.toLowerCase())!;
 
-      const node = nodes.find((node) => node.name === currentProvider);
+      const node = nodes.find((node) => node.url === currentProvider);
 
       return !node ? nodes[0] : node;
     },

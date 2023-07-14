@@ -23,9 +23,9 @@
 <script lang="ts">
 import { Component, Vue, Watch, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
-import { AuthUrlInfo } from '@extension-base/background/types';
 import UpdateAuths from './UpdateAuths.vue';
-import { TAction } from '@/interfaces';
+import { AuthUrlInfo } from '@/extension/background/extension-base/src/background/types/types';
+import { AsyncFn } from '@/interfaces';
 import AuthItem from '@/screens/extension-ui/authorize/AuthItem.vue';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
@@ -42,8 +42,8 @@ export default class ManageAuths extends Vue {
   url = '';
 
   @Prop(Function) handlerClose!: VoidFunction;
-  @Getter(ExtensionGettersTypes.getAuthList) authlist!: Record<string, AuthUrlInfo>;
-  @Action(ExtensionActionTypes.GET_AUTHLIST) getAuthList!: TAction<void>;
+  @Getter(ExtensionGettersTypes.authList) authlist!: Record<string, AuthUrlInfo>;
+  @Action(ExtensionActionTypes.GET_AUTHLIST) getAuthList!: AsyncFn;
 
   get showUpdateAuths() {
     return this.url !== '';

@@ -8,7 +8,7 @@ import type {
   RequestTypes,
   ResponseTypes,
   SubscriptionMessageTypes,
-} from '../background/types';
+} from '@extension-base/background/types/types';
 export interface Handler {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   resolve: (data?: any) => void;

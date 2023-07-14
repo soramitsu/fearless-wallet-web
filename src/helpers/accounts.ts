@@ -1,44 +1,15 @@
-import type { Wallet, CustomAccounts } from '@/store';
+import type { Wallet } from '@/store';
 import type { ChainAccount, Networks } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 
 function getChainAccounts(networks: Networks, wallet: Wallet): ChainAccount[] {
   return networks.map(({ name, icon }) => {
-    const replacedAccount = BaseApi.getReplacedAccountByNetwork(wallet, name);
-    const replacedAddress = replacedAccount?.address;
-
-    const finalWallet: Wallet = replacedAddress
-      ? {
-          address: replacedAddress,
-          ethereumAddress: replacedAddress,
-        }
-      : wallet;
-
     return {
       network: name,
       networkIcon: icon,
-      address: BaseApi.formatAddress(finalWallet, name),
-      isReplaced: !!replacedAddress,
+      address: BaseApi.formatAddress(wallet, name),
     };
   });
 }
 
-function getAccounts(): CustomAccounts {
-  const accounts = BaseApi.getAccounts().reduce((result, { address, meta }) => {
-    const { type } = BaseApi.getPair(address);
-
-    result[address] = { type, json: { address, meta } };
-
-    return result;
-  }, {} as CustomAccounts);
-
-  const mobileAccount = BaseApi.getMobileAddresses().reduce((result, { address, meta }) => {
-    result[address] = { type: undefined, json: { address, meta } };
-
-    return result;
-  }, {} as CustomAccounts);
-
-  return { ...accounts, ...mobileAccount };
-}
-
-export { getChainAccounts, getAccounts };
+export { getChainAccounts };

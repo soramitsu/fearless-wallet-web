@@ -29,14 +29,14 @@
 <script lang="ts">
 import { Vue, Component, Watch } from 'vue-property-decorator';
 import { Action, Getter } from 'vuex-class';
-import { MetadataRequest } from '@extension-base/background/types';
+import { MetadataRequest } from '@/extension/background/extension-base/src/background/types/types';
 import InfoItem from '@/screens/extension-ui/InfoItem.vue';
 import Hint from '@/components/Hint.vue';
 import { Components } from '@/router/routes';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import InfoList from '@/screens/extension-ui/InfoList.vue';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
-import { TAction } from '@/interfaces';
+import { AsyncFn } from '@/interfaces';
 
 @Component({
   components: {
@@ -46,9 +46,9 @@ import { TAction } from '@/interfaces';
   },
 })
 export default class MetaRequest extends Vue {
-  @Getter(ExtensionGettersTypes.getMetaRequests) requests!: MetadataRequest[];
-  @Action(ExtensionActionTypes.APPROVE_META_REQUEST) onApproveMetaRequest!: TAction<MetadataRequest>;
-  @Action(ExtensionActionTypes.REJECT_META_REQUEST) onRejectMetaRequest!: TAction<MetadataRequest>;
+  @Getter(ExtensionGettersTypes.metaRequests) requests!: MetadataRequest[];
+  @Action(ExtensionActionTypes.APPROVE_META_REQUEST) onApproveMetaRequest!: AsyncFn<MetadataRequest>;
+  @Action(ExtensionActionTypes.REJECT_META_REQUEST) onRejectMetaRequest!: AsyncFn<MetadataRequest>;
 
   get request() {
     return this.requests[0];

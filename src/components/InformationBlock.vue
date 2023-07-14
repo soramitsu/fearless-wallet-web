@@ -12,7 +12,7 @@
 import { Vue, Component, Prop } from 'vue-property-decorator';
 
 @Component
-export default class ExportForm extends Vue {
+export default class InformationBlock extends Vue {
   @Prop(String) text!: string;
 }
 </script>

@@ -1,12 +1,15 @@
 // Copyright 2019-2022 @polkadot/extension authors & contributors
 // SPDX-License-Identifier: Apache-2.0
 import { assert } from '@polkadot/util';
+import { PORT_EXTENSION } from '@extension-base/defaults';
+import Extension from '@extension-base/background/handlers/Extension';
+import Tabs from '@extension-base/background/handlers/Tabs';
+import State from '@extension-base/background/handlers/State';
+import type { MessageTypes, Port, TransportRequestMessage } from '@extension-base/background/types/types';
 
-import { PORT_EXTENSION } from '../../defaults';
-import Extension from './Extension';
-import Tabs from './Tabs';
-import State from './State';
-import type { MessageTypes, Port, TransportRequestMessage } from '../types';
+export const state = new State();
+export const extension = new Extension(state);
+export const tabs = new Tabs(state);
 
 export default function handler<TMessageType extends MessageTypes>(
   { id, message, request }: TransportRequestMessage<TMessageType>,
@@ -14,28 +17,28 @@ export default function handler<TMessageType extends MessageTypes>(
   extensionPortName = PORT_EXTENSION
 ): void {
   const isExtension = !port || port?.name === extensionPortName;
-  const sender = port?.sender as chrome.runtime.MessageSender;
+
+  if (!port) return;
+
+  const sender = port.sender as chrome.runtime.MessageSender;
   const from = isExtension ? 'extension' : (sender.tab && sender.tab.url) || sender.url || '<unknown>';
   const source = `${from}: ${id}: ${message}`;
 
-  console.info(` [in] ${source}`); // :: ${JSON.stringify(request)}`);
+  console.info(` [in] ${source}`);
 
   const promise = isExtension
-    ? Extension.handle(id, message, request, port)
-    : Tabs.handle(id, message, request, from, port);
+    ? extension.handle(id, message, request, port)
+    : tabs.handle(id, message, request, from, port);
 
   promise
     .then((response): void => {
-      console.info(`[out] ${source}`); // :: ${JSON.stringify(response)}`);
+      console.info(`[out] ${source}`);
 
       // between the start and the end of the promise, the user may have closed
       // the tab, in which case port will be undefined
       assert(port, 'Port has been disconnected');
 
       port.postMessage({ id, response });
-    })
-    .then(() => {
-      State.signature = null;
     })
     .catch((error: Error): void => {
       console.info(`[err] ${source}:: ${error.message}`);

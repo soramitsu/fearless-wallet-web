@@ -38,22 +38,20 @@
 
     <ManageAuths v-if="showManageAuthsVisible" :handlerClose="toggleManageAuthsVisible" />
 
-    <keep-alive include="Wallet">
-      <router-view
-        class="main-child"
-        @openFiatsPopup="toggleFiatsPopupVisible"
-        @closeSelectWalletPopup="setSelectWalletPopupVisible(false)"
-      />
-    </keep-alive>
+    <router-view
+      class="main-child"
+      @openFiatsPopup="toggleFiatsPopupVisible"
+      @closeSelectWalletPopup="setSelectWalletPopupVisible(false)"
+    />
 
-    <Menu />
+    <!-- <Menu /> -->
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import Header from './Header.vue';
-import Menu from './Menu.vue';
+// import Menu from './Menu.vue';
 import SelectWalletPopup from './SelectWalletPopup.vue';
 import WalletDetailsPopup from './WalletDetailsPopup.vue';
 import SettingsPopup from './SettingsPopup.vue';
@@ -64,7 +62,7 @@ import ManageAuths from '@/screens/extension-ui/authorize/ManageAuths.vue';
 
 @Component({
   components: {
-    Menu,
+    // Menu,
     Header,
     FiatsPopup,
     AboutPopup,

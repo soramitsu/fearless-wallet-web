@@ -1,127 +1,41 @@
-import type { ISubmittableResult } from '@polkadot/api/node_modules/@polkadot/types/types/extrinsic';
-import type { Currencies, Currency, Networks, RelayChainName, Balances, NetworkName } from '@/interfaces';
-import type { Wallet } from '@/store';
-import BaseApi from '@/util/BaseApi';
-import { CurrencyController, NetworksController } from '@/controllers';
-import { MAIN_NETWORKS } from '@/consts/networks';
-import { MOCK_FP_BALANCE } from '@/consts/currencies';
+import type { NetworkName, AssetsPrice, ChangeWalletBalance } from '@/interfaces';
+import { ALL_NETWORKS, SORA_UTILITY_ASSET, SORA_NETWORK_NAME } from '@/consts/networks';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import { isSora } from '@/helpers/common';
+import { addNumbers } from '@/helpers/numbers';
+import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
+import { getNativeAssetName } from '@/extension/background/extension-base/src/background/utils/utils';
 
-type CurrencyMock = {
-  mainNetwork: string;
-  assetId: string;
-  assetFullName: string;
-  symbol: string;
-  displayName: string;
-  relayChain: RelayChainName;
-  icon: string;
-  providers: string[];
-  balances: Balances;
-};
-
-function getMockCurrencies(networks: Networks): Currencies {
-  const assetsJson = NetworksController.getAssetsJson();
-
-  const currencies = networks
-    .reduce<CurrencyMock[]>((result, network) => {
-      const { assets: networkAssets, name: mainNet, parentId, isEthereumNetwork, icon } = network;
-      const relayChain = (networks.find(({ chainId }) => chainId === parentId)?.name ?? mainNet) as RelayChainName;
-
-      networkAssets.forEach(({ assetId, purchaseProviders, isUtility, isNative, type }) => {
-        const {
-          symbol,
-          name,
-          displayName: _displayName,
-          precision,
-          existentialDeposit,
-        } = assetsJson.find(({ id }) => id === assetId)!;
-        const displayName = _displayName ?? symbol;
-        const mainNetwork = MAIN_NETWORKS[displayName] ?? mainNet;
-        const currencyIndex = result.findIndex(
-          ({ assetId: _assetId, relayChain: _relayChain, displayName: _displayName }) => {
-            const isExistingAssetId = _assetId === assetId;
-            const isExistingDisplayName = _displayName === displayName;
-            const isExistingAsset = isExistingDisplayName && _relayChain === relayChain;
-
-            return isExistingAssetId || isExistingAsset;
-          }
-        );
-
-        if (currencyIndex === -1) {
-          const newCurrency = {
-            mainNetwork,
-            assetId,
-            assetFullName: name,
-            symbol,
-            displayName,
-            relayChain,
-            icon,
-            providers: purchaseProviders ?? [],
-            balances: [],
-          };
-
-          result.push(newCurrency);
-        } else if (isUtility || isNative) {
-          result[currencyIndex].mainNetwork = mainNetwork;
-          result[currencyIndex].assetId = assetId;
-        }
-
-        // Add mock balances
-        const index = currencyIndex === -1 ? result.length - 1 : currencyIndex;
-        const balances: Balances = [
-          ...result[index].balances,
-          {
-            network: mainNet,
-            existentialDeposit,
-            type: type ?? 'native',
-            precision,
-            balance: {},
-            assetId,
-          },
-        ];
-
-        balances.forEach(({ balance }) => {
-          BaseApi.getAccounts().forEach(({ address }) => {
-            const isEthereumAccountType = BaseApi.getPair(address).type === 'ethereum';
-
-            if ((isEthereumNetwork && isEthereumAccountType) || (!isEthereumNetwork && !isEthereumAccountType))
-              balance[address] = MOCK_FP_BALANCE;
-          });
-        });
-
-        result[index].balances = balances;
-      });
-
-      return result;
-    }, [])
-    .map(
-      ({ mainNetwork, assetId, symbol, relayChain, providers, displayName, balances, icon, assetFullName }) =>
-        new CurrencyController(
-          mainNetwork,
-          assetId,
-          assetFullName,
-          symbol,
-          providers,
-          relayChain,
-          balances,
-          icon,
-          displayName
-        )
-    );
-
-  return currencies;
+function getTransferableBalanceInNetwork(token: TokenBalance, network: string) {
+  return token.balances.find(({ name }) => name.toLowerCase() === network.toLowerCase())?.transferable ?? '0';
 }
 
-function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet, network?: NetworkName) {
+function getSummaryTransferableBalance(token: TokenBalance, network = ALL_NETWORKS) {
+  if (network !== ALL_NETWORKS) return getTransferableBalanceInNetwork(token, network);
+
+  return token.balances.reduce((result, { state, transferable }) => {
+    if (state === APIItemState.READY && transferable) result += +transferable;
+
+    return result;
+  }, 0);
+}
+
+function defaultSortingCurrencies(currencies: TokenBalance[], { tokenPriceMap }: AssetsPrice, network: NetworkName) {
   const relayChains = [];
-  const currenciesWithAssets = currencies.filter((currency) => currency.getTotalCountAssets(wallet, network) !== '0');
-  const currenciesWithoutAssets = currencies.filter(
-    (currency) => currency.getTotalCountAssets(wallet, network) === '0'
+
+  const currenciesWithAssetsAndWithFiatBalance = currencies.filter(
+    ({ balances, priceId }) => balances.some(({ total }) => total !== '0') && tokenPriceMap[priceId ?? ''] !== 0
   );
 
-  const dotIndex = currenciesWithoutAssets.findIndex(({ displayName }) => displayName === 'dot');
-  const ksmIndex = currenciesWithoutAssets.findIndex(({ displayName }) => displayName === 'ksm');
+  const currenciesWithAssetsAndWithoutFiatBalance = currencies.filter(
+    ({ balances, priceId }) => balances.some(({ total }) => total !== '0') && tokenPriceMap[priceId ?? ''] === 0
+  );
+
+  const currenciesWithoutAssets = currencies.filter(({ balances }) => balances.every(({ total }) => total === '0'));
+
+  const dotIndex = currenciesWithoutAssets.findIndex(({ symbol }) => symbol === 'dot');
 
   if (dotIndex !== -1) {
     const dot = currenciesWithoutAssets.splice(dotIndex, 1)[0];
@@ -129,22 +43,78 @@ function defaultSortingCurrencies(currencies: Currency[], wallet: Wallet, networ
     relayChains.push(dot);
   }
 
+  const ksmIndex = currenciesWithoutAssets.findIndex(({ symbol }) => symbol === 'ksm');
+
   if (ksmIndex !== -1) {
     const ksm = currenciesWithoutAssets.splice(ksmIndex, 1)[0];
 
     relayChains.push(ksm);
   }
 
-  currenciesWithAssets.sort((currency1, currency2) => {
-    const totalBalanceOne = +currency1.getTransferableFiatBalance(wallet, network);
-    const totalBalanceTwo = +currency2.getTransferableFiatBalance(wallet, network);
+  currenciesWithAssetsAndWithFiatBalance.sort((currency1, currency2) => {
+    const totalFiatBalanceOne = +getSummaryTransferableBalance(currency1, network);
+    const totalFiatBalanceTwo = +getSummaryTransferableBalance(currency2, network);
 
-    return totalBalanceTwo - totalBalanceOne;
+    const tokenPriceOne = tokenPriceMap[currency1.priceId ?? ''] ?? 0;
+    const tokenPriceTwo = tokenPriceMap[currency2.priceId ?? ''] ?? 0;
+
+    return totalFiatBalanceTwo * tokenPriceTwo - totalFiatBalanceOne * tokenPriceOne;
   });
 
-  currenciesWithoutAssets.sort(({ asset: asset1 }, { asset: asset2 }) => asset1.localeCompare(asset2));
+  currenciesWithAssetsAndWithoutFiatBalance.sort((currency1, currency2) => {
+    const totalFiatBalanceOne = +getSummaryTransferableBalance(currency1, network);
+    const totalFiatBalanceTwo = +getSummaryTransferableBalance(currency2, network);
 
-  return [...currenciesWithAssets, ...relayChains, ...currenciesWithoutAssets];
+    return totalFiatBalanceTwo - totalFiatBalanceOne;
+  });
+
+  currenciesWithoutAssets.sort(({ symbol: symbol1 }, { symbol: symbol2 }) => symbol1.localeCompare(symbol2));
+
+  return [
+    ...currenciesWithAssetsAndWithFiatBalance,
+    ...currenciesWithAssetsAndWithoutFiatBalance,
+    ...relayChains,
+    ...currenciesWithoutAssets,
+  ];
+}
+
+function getSummaryTransferableWalletBalance(tokens: TokenBalance[], price: AssetsPrice, network: NetworkName): number {
+  return tokens.reduce((result, { balances, priceId }) => {
+    balances.forEach(({ state, transferable, name }) => {
+      if (network !== ALL_NETWORKS && name !== network) return;
+
+      if (state === APIItemState.READY) {
+        const tokenPrice = price.tokenPriceMap[priceId ?? ''] ?? 0;
+        const assetCount = +(transferable ?? 0);
+        const assetValue = assetCount * tokenPrice;
+
+        result += assetValue;
+      }
+    });
+
+    return result;
+  }, 0);
+}
+
+function getChangeWalletBalance(tokens: TokenBalance[], price: AssetsPrice, network: NetworkName): ChangeWalletBalance {
+  const changeAssets = tokens.map((token) => {
+    const priceChange = price?.tokenPriceChange[token.priceId ?? ''] ?? 0;
+    const totalBalance = +getSummaryTransferableBalance(token, network);
+    const currentPercent = 100 + (priceChange ?? 0);
+    const oldBalance = (totalBalance / currentPercent) * 100;
+    const changeAmount = totalBalance - oldBalance;
+
+    return { totalBalance, changeAmount };
+  });
+
+  const totalChange = +addNumbers(changeAssets.map(({ changeAmount }) => changeAmount));
+  const totalBalance = +addNumbers(changeAssets.map(({ totalBalance }) => totalBalance));
+  const totalPercentChange = totalBalance === 0 ? 0 : (totalChange / totalBalance) * 100;
+
+  return {
+    percent: totalPercentChange,
+    amount: totalChange,
+  };
 }
 
 function getProviderUrl(name: 'moonpay' | 'ramp', asset: string, address: string) {
@@ -158,46 +128,37 @@ function getProviderUrl(name: 'moonpay' | 'ramp', asset: string, address: string
   return provider[name];
 }
 
-function getCurrencyOptions(currencies: Currencies) {
-  return currencies.map(({ assetId, relayChain, displayName }) => {
-    const assetUpper = displayName.toUpperCase();
-    const filteredOptions = currencies.filter(({ displayName: _displayName }) => _displayName === displayName);
+function getCurrencyOptions(currencies: TokenBalance[]) {
+  return currencies.map(({ assetId: id, symbol: _symbol, icon, relayChain }) => {
+    const assetUpper = _symbol.toUpperCase();
+    const filteredOptions = currencies.filter(({ symbol }) => symbol === _symbol);
     const label = filteredOptions.length > 1 ? `${assetUpper} (${relayChain.toUpperCase()})` : assetUpper;
 
     return {
-      label,
-      value: assetId,
-      path: assetId,
-      relayChain,
+      name: getNativeAssetName(label).toUpperCase(),
+      value: id,
+      icon,
     };
   });
 }
 
-function getUtilityAsset(currencies: Currencies, _network: NetworkName): string {
-  const currency = currencies.find(({ balances }) =>
-    balances.some(({ network, type }) => network === _network && (type === 'native' || type === 'equilibrium'))
+function getUtilityAsset(balances: TokenBalance[], _network: NetworkName) {
+  return balances.find(({ balances }) =>
+    balances.some(({ name, isUtility }) => name.toLowerCase() === _network.toLowerCase() && isUtility)
   )!;
-
-  return currency.displayName;
 }
 
-function statusLogging(callback: () => void) {
-  return (result: ISubmittableResult) => {
-    const { status } = result;
-
-    if (status.isBroadcast) {
-      console.info(`Successful transfer with hash ${status.asBroadcast.toString()}`);
-
-      callback();
-    }
-  };
-}
+const getXORCurrency = (balances: TokenBalance[]) => {
+  return balances.find(({ symbol }) => symbol === SORA_UTILITY_ASSET && isSora(SORA_NETWORK_NAME))!;
+};
 
 export {
   getCurrencyOptions,
   getProviderUrl,
   defaultSortingCurrencies,
-  getMockCurrencies,
   getUtilityAsset,
-  statusLogging,
+  getXORCurrency,
+  getChangeWalletBalance,
+  getSummaryTransferableWalletBalance,
+  getSummaryTransferableBalance,
 };

@@ -1,10 +1,11 @@
 <template>
-  <AboveForm header="assets.receiveFunds" :blur="true" :closeHandler="closeForm">
+  <AboveForm header="assets.receiveFunds" :fullScreen="true" :closeHandler="closeForm">
     <div class="receive-form">
       <div>
-        <RotateInput
+        <InputWithIcon
           v-model="selectedNetwork"
           placeholder="assets.network"
+          icon="rotate"
           :ref="selectNetworkInputRef"
           :isActiveRotate="showSelectNetworkPopup"
           @click="toggleSelectNetworkPopupVisible"
@@ -55,7 +56,7 @@
       :top="148"
       :left="-160"
       :height="360"
-      :options="optionsNetworks"
+      :options="assetNetworks"
       :handlerFilter="handlerFilter"
       :toggleValue="toggleSelectedNetwork"
       :handlerClose="toggleSelectNetworkPopupVisible"
@@ -67,19 +68,17 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { saveAs } from 'file-saver';
-import RotateInput from './RotateInput.vue';
-import type { Currencies } from '@/interfaces';
+import InputWithIcon from '@/screens/wallet&asset/InputWithIcon.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { SelectedWallet } from '@/store';
-import { firstCharToUp } from '@/helpers/common';
-import { cut } from '@/helpers/history';
-import { ETHEREUM_NETWORKS } from '@/consts/networks';
-import { NetworksController } from '@/controllers';
+import { cut } from '@/helpers/common';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component({
-  components: { RotateInput },
+  components: { InputWithIcon },
 })
 export default class ReceiveForm extends Vue {
   readonly selectNetworkInputRef = 'selectNetworkInput';
@@ -92,74 +91,38 @@ export default class ReceiveForm extends Vue {
   @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(NetworksGettersTypes.getCurrencies) currencies!: Currencies;
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
-  get currency() {
-    return this.currencies.find(({ assetId }) => assetId === this.selectedAssetId);
+  get assetNetworks() {
+    const currency = this.balances.find(({ assetId }) => assetId === this.selectedAssetId)!;
+
+    return (
+      currency?.balances
+        .map(({ name, icon }) => ({ name, icon, value: name }))
+        .filter(({ name }) => name.toLowerCase().includes(this.filterValue.toLowerCase())) ?? []
+    );
+  }
+
+  get decimals() {
+    return this.networks?.find((network) => network.name.toLowerCase() === this.selectedNetwork.toLowerCase())
+      ?.addressPrefix;
   }
 
   get address() {
     if (this.selectedWallet.address === '') return '';
 
-    return BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.selectedNetwork);
+    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
+
+    return BaseApi.encodeAddress(this.selectedWallet.address, this.decimals);
   }
 
   get cutAddress() {
     return cut(this.address, 5);
   }
 
-  get optionsNetworks() {
-    const haveEthereumAccount = this.selectedWallet.ethereumAddress !== '';
-    const walletBalance = (this.currency?.getNetworkList() ?? []).filter(({ network }) =>
-      ETHEREUM_NETWORKS.includes(network) ? haveEthereumAccount : true
-    );
-    const filter = this.filterValue.trim().toLowerCase();
-
-    return walletBalance
-      .map(({ network, type }) => {
-        const icon = NetworksController.getNetwork(network).icon;
-
-        return {
-          label: firstCharToUp(network),
-          value: network,
-          path: icon,
-          type,
-          relayChain: this.currency?.relayChain,
-        };
-      })
-      .filter(({ value }) => {
-        return value.includes(filter);
-      });
-  }
-
   mounted() {
-    const nativeNet = this.getNetworkNameByAsset();
-
-    if (nativeNet === undefined) {
-      const utilityNet = this.getNetworkNameByAsset(false);
-
-      if (utilityNet !== undefined) this.selectedNetwork = utilityNet.value;
-      else
-        this.selectedNetwork = this._selectedNetwork === 'all' ? this.optionsNetworks[0].value : this._selectedNetwork;
-
-      return;
-    }
-
-    this.selectedNetwork = nativeNet.value;
-  }
-
-  getNetworkNameByAsset(isNative = true) {
-    return this.optionsNetworks.find(({ value }) => {
-      const network = NetworksController.getNetwork(value);
-
-      const assetIndex = network.assets.findIndex((asset) => {
-        const key = isNative ? 'isNative' : 'isUtility';
-
-        return asset.assetId === this.selectedAssetId && asset[key];
-      });
-
-      return assetIndex !== -1;
-    });
+    this.selectedNetwork = this._selectedNetwork;
   }
 
   toggleSelectNetworkPopupVisible() {
@@ -183,7 +146,6 @@ export default class ReceiveForm extends Vue {
   createBlob() {
     const el = (this.$refs.qr as Vue).$el;
     const imgQR = el.firstChild as Element;
-    // const imgLogo = el.lastChild as Element;
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
 
@@ -191,7 +153,6 @@ export default class ReceiveForm extends Vue {
     canvas.height = imgQR.clientHeight;
 
     context?.drawImage(imgQR as CanvasImageSource, 0, 0);
-    // context?.drawImage(imgLogo as CanvasImageSource, 67.5, 85, 65, 30);
 
     return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   }

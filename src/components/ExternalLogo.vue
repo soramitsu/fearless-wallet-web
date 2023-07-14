@@ -1,5 +1,5 @@
 <template>
-  <img :src="iconName" :style="style" :alt="name" />
+  <img :src="iconName" :style="style" :alt="name" :width="width" :height="width" />
 </template>
 
 <script lang="ts">
@@ -27,10 +27,9 @@ export default class ExternalLogo extends Vue {
 
     if (this.name.startsWith('https://')) return this.name;
 
-    const assetIcon = NetworksController.getAssetIcon(this.name);
     const networkIcon = NetworksController.getNetwork(this.name)?.icon;
 
-    return assetIcon || networkIcon || this.name;
+    return networkIcon || this.name;
   }
 }
 </script>

@@ -49,9 +49,10 @@ export default class AddFromGoogle extends Vue {
   isLoading = true;
   step = 1;
   token = '';
+  tokenValidation: 'pending' | 'valid' | 'invalid' = 'pending';
 
   get isAccessDenied() {
-    return this.getToken === 'null';
+    return this.getToken === 'null' || this.tokenValidation === 'invalid';
   }
 
   get isFinishForm() {
@@ -91,7 +92,7 @@ export default class AddFromGoogle extends Vue {
   }
 
   get header() {
-    if (this.getToken === 'null') return this.$t('addWallet.google.accessDenied');
+    if (this.isAccessDenied) return this.$t('addWallet.google.accessDenied');
     if (this.isFinishForm) return this.$t('');
 
     return this.isLoading ? this.$t('addWallet.google.fetchInfo') : this.$t('addWallet.google.selectToImport');
@@ -120,6 +121,7 @@ export default class AddFromGoogle extends Vue {
 
     files.forEach(({ id, description, name }) => {
       const [prepName] = name.split('.');
+
       const [address, ethID] = description.split('/');
       if (ethID === undefined) return;
 
@@ -139,10 +141,13 @@ export default class AddFromGoogle extends Vue {
     this.isLoading = false;
   }
 
+  goBack() {
+    this.$router.replace('/').catch((e) => e);
+  }
+
   back() {
     if (this.step === 1) {
-      this.$router.replace('/');
-      this.$router.push({ name: Components.Welcome });
+      this.goBack();
 
       return;
     }
@@ -160,8 +165,7 @@ export default class AddFromGoogle extends Vue {
 
   proceed() {
     if (this.isFinishForm || this.isAccessDenied) {
-      this.$router.replace('/');
-      this.$router.push({ name: Components.Wallet });
+      this.goBack();
 
       return;
     }
@@ -182,12 +186,14 @@ export default class AddFromGoogle extends Vue {
 
     const data = await verifyToken(this.getToken);
 
-    if (!data || +data.expires_in <= 0) {
-      this.$router.push({ name: Components.Welcome });
+    if (data === null || +data.expires_in <= 0) {
+      this.tokenValidation = 'invalid';
       this.isLoading = false;
 
       return false;
     }
+
+    this.tokenValidation = 'valid';
 
     return true;
   }

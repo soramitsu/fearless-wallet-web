@@ -1,5 +1,4 @@
 import { FPNumber } from '@sora-substrate/util';
-import type { Currencies, ChangeWalletBalance } from '@/interfaces';
 
 interface Options {
   decimalsValue?: number;
@@ -33,25 +32,4 @@ function addNumbers(values: (string | number)[]): string {
   return values.reduce((sum, number) => sum.add(new FPNumber(number)), FPNumber.ZERO).toString();
 }
 
-function getChangeWalletBalance(currencies: Currencies, address: string, ethereumAddress: string): ChangeWalletBalance {
-  const changeAssets = currencies.map((currency) => {
-    const { hours24Change } = currency;
-    const totalBalance = +currency.getTransferableFiatBalance({ address, ethereumAddress });
-    const currentPercent = 100 + (hours24Change ?? 0);
-    const oldBalance = (totalBalance / currentPercent) * 100;
-    const changeAmount = totalBalance - oldBalance;
-
-    return { totalBalance, changeAmount };
-  });
-
-  const totalChange = +addNumbers(changeAssets.map(({ changeAmount }) => changeAmount));
-  const totalBalance = +addNumbers(changeAssets.map(({ totalBalance }) => totalBalance));
-  const totalPercentChange = totalBalance === 0 ? 0 : (totalChange / totalBalance) * 100;
-
-  return {
-    percent: totalPercentChange,
-    amount: totalChange,
-  };
-}
-
-export { formattedNumber, addNumbers, getChangeWalletBalance };
+export { formattedNumber, addNumbers };

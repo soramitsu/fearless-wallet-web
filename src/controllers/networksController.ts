@@ -1,15 +1,13 @@
-import { api as apiSora } from '@sora-substrate/util';
-import type { Wallet, CustomAccounts } from '@/store';
-import type { AssetJson, Networks, Network, AssetPrice, NetworkName, WalletAddress, AssetId } from '@/interfaces';
+// import { api as apiSora } from '@sora-substrate/util';
+import type { Wallet } from '@/store';
+import type { NetworkName, WalletAddress, AssetId, Network, AssetPrice } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import store from '@/store';
 import { ActionTypes as NetworksActionTypes } from '@/store/networks/actions';
-import { MutationTypes as NetworksMutationTypes } from '@/store/networks/mutations';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { URLS } from '@/consts/urls';
 import { LocalStorage } from '@/controllers/localStorageController';
 
-const lsNetworks = new LocalStorage('networks');
+const lsNetworks = new LocalStorage('networks_');
 const zeroBalance = 'zero-balance';
 
 type NetworksZeroBalance = Record<WalletAddress, Record<NetworkName, Record<AssetId, string>>>;
@@ -54,16 +52,8 @@ export class NetworksController {
     lsNetworks.set(zeroBalance, newValue);
   }
 
-  static getNetworks(): Networks {
-    return store.getters[NetworksGettersTypes.getNetworks];
-  }
-
   static getNetwork(networkName: string): Network {
     return store.getters[NetworksGettersTypes.getNetwork](networkName);
-  }
-
-  public static getAssetsJson(): AssetJson[] {
-    return store.getters[NetworksGettersTypes.getAssetsJson];
   }
 
   public static getAssetIcon(assetId: string): string {
@@ -75,17 +65,7 @@ export class NetworksController {
   }
 
   public static async connectToNodes(): Promise<void> {
-    await store.dispatch(NetworksActionTypes.CONNECT_TO_NODES);
-  }
-
-  public static async fetchJsons(): Promise<void> {
-    await store.dispatch(NetworksActionTypes.FETCH_JSONS, {
-      chainsUrl: URLS.CHAINS,
-      assetsUrl: URLS.ASSETS,
-      fiatsUrl: URLS.FIATS,
-    });
-
-    await store.dispatch(NetworksActionTypes.FETCH_ASSETS_PRICE);
+    // await store.dispatch(NetworksActionTypes.CONNECT_TO_NODES);
   }
 
   public static async fetchHistory(
@@ -99,43 +79,35 @@ export class NetworksController {
       const timeout = delay * 1000;
 
       setTimeout(() => {
-        store.dispatch(NetworksActionTypes.FETCH_HISTORY, { networkName, wallet, assetId, isPreviously });
+        store.dispatch(NetworksActionTypes.FETCH_HISTORY, {
+          networkName,
+          wallet,
+          assetId,
+          isPreviously,
+        });
       }, timeout);
 
       return;
     }
 
-    await store.dispatch(NetworksActionTypes.FETCH_HISTORY, { networkName, wallet, assetId, isPreviously });
+    await store.dispatch(NetworksActionTypes.FETCH_HISTORY, {
+      networkName,
+      wallet,
+      assetId,
+      isPreviously,
+    });
   }
 
-  public static subscribeToBalancesOfNetworks(accounts: CustomAccounts, networksProps?: Networks): void {
-    store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, networksProps });
-  }
-
-  public static async toggleActiveNode(
-    network: string,
-    nodeName?: string,
-    nodeUrl?: string,
-    oldNodeUrl?: string
-  ): Promise<void> {
-    await store.dispatch(NetworksActionTypes.TOGGLE_ACTIVE_NODE, { network, nodeName, nodeUrl, oldNodeUrl });
-  }
-
-  public static async initializeSora() {
-    try {
-      await apiSora.initialize(false);
-    } catch (ex) {
-      console.info('[Sora]', ex);
-    }
-  }
-
-  public static async calcSoraFee() {
-    try {
-      await apiSora.calcStaticNetworkFees();
-    } catch (ex) {
-      console.info('[Sora]', ex);
-    }
-
-    store.commit(NetworksMutationTypes.SET_SORA_FEE);
-  }
+  // public static subscribeToBalancesOfNetworks(accounts: CustomAccounts, networksProps?: Networks): void {
+  // store.dispatch(NetworksActionTypes.SUBSCRIBE_TO_BALANCES, { accounts, networksProps });
+  // }
+  //
+  // public static async toggleActiveNode(
+  //   network: string,
+  //   nodeName?: string,
+  //   nodeUrl?: string,
+  //   oldNodeUrl?: string
+  // ): Promise<void> {
+  //   await store.dispatch(NetworksActionTypes.TOGGLE_ACTIVE_NODE, { network, nodeName, nodeUrl, oldNodeUrl });
+  // }
 }

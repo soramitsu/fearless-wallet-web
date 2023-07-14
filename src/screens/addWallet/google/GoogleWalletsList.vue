@@ -13,7 +13,7 @@
                 :name="file.name"
                 :label="file.name"
                 :value="file.active"
-                @change.self="(value) => onSelect(!file.active, index)"
+                @change.self="() => onSelect(!file.active, index)"
               />
 
               <span @click.self="onSelect(!file.active, index)">{{ cutAddress(file.address) }}</span>
@@ -24,11 +24,11 @@
                   v-model="file.password"
                   class="input__validate-pass"
                   typeText="text"
-                  :placeholder="$t('addWallet.enterPassword')"
+                  placeholder="addWallet.enterPassword"
+                  errorDescriptions="common.invalidPassword"
                   :showPassword="true"
                   :readonly="file.isComplete || file.isLoading"
                   :isError="file.isError"
-                  :errorDescriptions="$t('common.invalidPassword')"
                 />
 
                 <Button
@@ -39,7 +39,7 @@
                   :iconName="file.isComplete ? 'check' : file.isLoading ? 'loader' : ''"
                   :iconType="file.isLoading ? 'loading' : ''"
                   :disabled="!file.password.length || file.isLoading || file.isComplete"
-                  :text="file.isLoading || file.isComplete ? '' : $t('common.confirm')"
+                  :text="file.isLoading || file.isComplete ? '' : 'common.confirm'"
                   @click="onConfirm(index)"
                 />
               </div>
@@ -54,19 +54,18 @@
 <script lang="ts">
 import { Getter, Action } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import type { FilesState, TAction } from '@/interfaces';
-import { cut } from '@/helpers/history';
-import BaseApi from '@/util/BaseApi';
+import type { FilesState, AsyncFn } from '@/interfaces';
+import { cut } from '@/helpers/common';
 import { SelectedWallet } from '@/store/accounts/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as ActionActionTypes } from '@/store/accounts/actions';
-import { isJsonValid } from '@/extension/messaging';
+import { isJsonValid, jsonRestore } from '@/extension/messaging';
 
 @Component
 export default class GoogleWalletsList extends Vue {
   @Prop(Array) items!: FilesState[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: TAction<string>;
+  @Action(ActionActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<string>;
 
   setItemValue(index: number, data: Record<string, string | boolean>) {
     this.items.splice(index, 1, { ...this.items[index], ...data });
@@ -79,9 +78,9 @@ export default class GoogleWalletsList extends Vue {
 
     if (!json || !ethJson || !password) return;
 
-    const res = await isJsonValid(json, password);
+    const { value: isValid } = await isJsonValid(json, password);
 
-    if (!res) {
+    if (!isValid) {
       this.setItemValue(index, { isError: true, isLoading: false });
 
       return false;
@@ -89,12 +88,12 @@ export default class GoogleWalletsList extends Vue {
 
     if (this.items[index].isError) this.setItemValue(index, { isError: false });
 
-    BaseApi.addKeypairFromJson(ethJson, password);
+    await jsonRestore(ethJson, password);
 
-    const pair = BaseApi.addKeypairFromJson(json, password);
+    const address = await jsonRestore(json, password);
 
     this.setItemValue(index, { isComplete: true, isLoading: false });
-    this.setSelectedWallet(pair.address || this.selectedWallet.address);
+    this.setSelectedWallet(address || this.selectedWallet.address);
 
     return true;
   }
@@ -113,7 +112,9 @@ export default class GoogleWalletsList extends Vue {
     this.setItemValue(index, { active: value });
   }
 
-  cutAddress(address: string) {
+  cutAddress(address?: string) {
+    if (!address) return '';
+
     return cut(address);
   }
 }

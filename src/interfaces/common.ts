@@ -2,8 +2,8 @@ import type { WarningValueName } from '@/consts/messages';
 import type { AssetName } from './assets';
 import { INITIAL_DERIVATION_PATHS } from '@/consts/derivationPath';
 
-type TMutation<T> = (props?: T) => void;
-type TAction<T> = (props?: T) => Promise<void>;
+type Fn<T = null, R = void> = (props?: T) => R;
+type AsyncFn<T = null, R = void> = (props?: T) => Promise<R>;
 type TCallback<T> = (payload: T) => void;
 
 interface CustomEvent extends Event {
@@ -13,6 +13,7 @@ interface CustomEvent extends Event {
 interface Meta {
   name: string;
   ethereumAddress: string;
+  isMobile: boolean;
 }
 
 interface AddressMeta extends Meta {
@@ -20,11 +21,6 @@ interface AddressMeta extends Meta {
 }
 
 type ParentAddress = string;
-
-interface ReplacedMeta {
-  isReplacedAccount: true;
-  replacedSettings: Record<ParentAddress, string[]>;
-}
 
 type TabWallet = 'Currencies' | 'NFTs';
 type ImportType = 'mnemonic' | 'rawSeed' | 'json';
@@ -72,7 +68,6 @@ type ChainAccount = {
   network: string;
   networkIcon: string;
   address: string;
-  isReplaced: boolean;
 };
 
 type TextLocaleProps = Record<string, string> & {
@@ -105,6 +100,8 @@ type Placement =
   | 'bottom-end'
   | 'left-end';
 
+type ToggleFnProp = (type: string, flag: boolean, data: object) => void;
+
 export {
   DerivationPath,
   DerivationPaths,
@@ -113,14 +110,14 @@ export {
   FilterHistory,
   ImportType,
   MenuItem,
+  ToggleFnProp,
   MenuItems,
   ParentAddress,
-  TAction,
-  TMutation,
+  Fn,
+  AsyncFn,
   TabWallet,
   ValidateJsonResult,
   WalletAddress,
-  ReplacedMeta,
   Meta,
   MnemonicConfirmation,
   ChainAccount,

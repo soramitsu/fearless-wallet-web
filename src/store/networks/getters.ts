@@ -1,55 +1,41 @@
-import type { AssetJson, FiatJson, Networks, GetHistory, Currencies, KeysAssetPricesJson } from '@/interfaces';
-import type {
-  GetNetwork,
-  GetAssetName,
-  GetAssetPrice,
-  GetNetworkGenesisHash,
-  GetNetworkStatus,
-  GetActiveNodesByNetwork,
-  GetAssetIcon,
-} from './types';
+import type { AssetsPrice, FiatJson, GetHistory } from '@/interfaces';
+import type { GetNetwork, GetAssetPrice, GetNetworkGenesisHash, GetActiveNodesByNetwork } from './types';
 import type { GetterTree } from 'vuex';
 import type { State } from './state';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 export enum GettersTypes {
-  getNetworks = 'getNetworks',
-  getAllNetworks = 'getAllNetworks',
+  networks = 'networks',
+  allNetworks = 'allNetworks',
   getNetwork = 'getNetwork',
   getNetworkGenesisHash = 'getNetworkGenesisHash',
-  getAssetsJson = 'getAssetsJson',
+  getPrice = 'getPrice',
   getAssetPrice = 'getAssetPrice',
-  getAssetName = 'getAssetName',
   getAssetIcon = 'getAssetIcon',
   getFiats = 'getFiats',
   getHistory = 'getHistory',
-  getCurrencies = 'getCurrencies',
   getActiveNodesByNetwork = 'getActiveNodesByNetwork',
   getAllNetworksIsReadyToUse = 'getAllNetworksIsReadyToUse',
-  getNetworkStatus = 'getNetworkStatus',
   getAssetsPriceInterval = 'getAssetsPriceInterval',
 }
 
 export type Getters = {
-  [GettersTypes.getNetworks](state: State, getters?: GetterTree<State, State> & Getters, rootState?: any): Networks;
-  [GettersTypes.getAllNetworks](state: State, getters?: GetterTree<State, State> & Getters, rootState?: any): Networks;
+  [GettersTypes.networks](state: State, getters?: GetterTree<State, State> & Getters, rootState?: any): NetworkJson[];
+  [GettersTypes.allNetworks](
+    state: State,
+    getters?: GetterTree<State, State> & Getters,
+    rootState?: any
+  ): NetworkJson[];
   [GettersTypes.getNetwork](state: State, getters?: GetterTree<State, State> & Getters): GetNetwork;
-  [GettersTypes.getAssetsJson](state: State, getters?: GetterTree<State, State> & Getters): AssetJson[];
-  [GettersTypes.getAssetName](state: State, getters?: GetterTree<State, State> & Getters): GetAssetName;
-  [GettersTypes.getAssetIcon](state: State, getters?: GetterTree<State, State> & Getters): GetAssetIcon;
   [GettersTypes.getFiats](state: State, getters?: GetterTree<State, State> & Getters): FiatJson[];
   [GettersTypes.getHistory](state: State, getters?: GetterTree<State, State> & Getters): GetHistory;
-  [GettersTypes.getCurrencies](state: State, getters?: GetterTree<State, State> & Getters): Currencies;
-  [GettersTypes.getAssetsPriceInterval](
-    state: State,
-    getters?: GetterTree<State, State> & Getters
-  ): NodeJS.Timer | null;
+
   [GettersTypes.getActiveNodesByNetwork](
     state: State,
     getters?: GetterTree<State, State> & Getters
   ): GetActiveNodesByNetwork;
   [GettersTypes.getAllNetworksIsReadyToUse](state: State, getters?: GetterTree<State, State> & Getters): boolean;
-  [GettersTypes.getNetworkStatus](state: State, getters?: GetterTree<State, State> & Getters): GetNetworkStatus;
   [GettersTypes.getNetworkGenesisHash](
     state: State,
     getters?: GetterTree<State, State> & Getters
@@ -60,23 +46,28 @@ export type Getters = {
     getters?: GetterTree<State, State> & Getters,
     rootState?: any
   ): GetAssetPrice;
+  [GettersTypes.getPrice](state: State): AssetsPrice;
 };
 
 const getters: GetterTree<State, State> & Getters = {
-  [GettersTypes.getNetworks]({ networks }, getters, rootState): Networks {
+  [GettersTypes.networks](state, getters, rootState): NetworkJson[] {
     const haveEthereumAccount = rootState.account.selectedWallet.ethereumAddress !== '';
 
-    return haveEthereumAccount ? networks : networks.filter(({ name }) => !ETHEREUM_NETWORKS.includes(name));
+    return haveEthereumAccount
+      ? state.networks
+      : state.networks.filter(({ name }) => !ETHEREUM_NETWORKS.includes(name));
   },
 
-  [GettersTypes.getAllNetworks]({ networks }): Networks {
+  [GettersTypes.allNetworks]({ networks }): NetworkJson[] {
     return networks;
   },
 
   [GettersTypes.getNetwork]:
     ({ networks }) =>
-    (networkName: string) => {
-      return networks.find(({ name }) => name === networkName)!;
+    (networkNameOrChainId: string) => {
+      const value = networkNameOrChainId?.toLowerCase();
+
+      return networks.find(({ name, chainId }) => name.toLowerCase() === value || chainId.toLowerCase() === value);
     },
 
   [GettersTypes.getNetworkGenesisHash]:
@@ -87,78 +78,44 @@ const getters: GetterTree<State, State> & Getters = {
       return `0x${network.chainId}`;
     },
 
-  [GettersTypes.getAssetsJson]({ assetsJson }): AssetJson[] {
-    return assetsJson;
-  },
-
   [GettersTypes.getFiats]({ fiats }): FiatJson[] {
     return fiats;
   },
 
+  [GettersTypes.getPrice]: ({ assetsPrice }) => {
+    return assetsPrice;
+  },
+
   [GettersTypes.getAssetPrice]:
-    ({ assetsPrice }, getters, rootState) =>
-    (assetId: string) => {
-      const selectedFiat = rootState.account.selectedFiat;
-      const hours24ChangeField = `${selectedFiat}_24h_change` as KeysAssetPricesJson;
-      const price = assetsPrice[assetId]?.[selectedFiat as KeysAssetPricesJson];
-      const hours24Change = assetsPrice[assetId]?.[hours24ChangeField];
+    ({ assetsPrice }) =>
+    (priceId: string) => {
+      if (assetsPrice.tokenPriceMap[priceId] === undefined) return { price: 0, priceChange: 0 };
 
-      return { price, hours24Change };
-    },
+      const price = assetsPrice.tokenPriceMap[priceId];
+      const priceChange = assetsPrice.tokenPriceChange[priceId] / 100;
 
-  [GettersTypes.getAssetName]:
-    ({ assetsJson }) =>
-    (assetId: string) => {
-      const asset = assetsJson.find(({ id }) => id === assetId);
-
-      if (!asset) return '';
-
-      const { symbol, displayName } = asset;
-
-      return displayName ?? symbol;
-    },
-
-  [GettersTypes.getAssetIcon]:
-    ({ assetsJson }) =>
-    (assetId: string) => {
-      const asset = assetsJson.find(({ id }) => id === assetId);
-
-      if (!asset) return '';
-
-      return asset?.icon ?? '';
+      return { price, priceChange };
     },
 
   [GettersTypes.getHistory]:
     ({ history }) =>
     (assetId: string, walletAddress: string, networkName: string) => {
-      return history[assetId]?.[walletAddress]?.[networkName];
+      return history[assetId]?.[walletAddress]?.[networkName.toLowerCase()];
     },
 
-  [GettersTypes.getCurrencies]({ currencies }): Currencies {
-    return currencies;
-  },
-
-  [GettersTypes.getAssetsPriceInterval]({ assetsPriceInterval }): NodeJS.Timer | null {
-    return assetsPriceInterval;
-  },
-
   [GettersTypes.getActiveNodesByNetwork]:
-    ({ activeNodes }) =>
+    ({ networks }) =>
     (networkName: string) => {
-      return activeNodes[networkName] ?? { name: '', url: '' };
+      const { currentProvider, nodes } = networks.find((net) => net.name.toLowerCase() === networkName.toLowerCase())!;
+
+      const node = nodes.find((node) => node.url === currentProvider);
+
+      return !node ? nodes[0] : node;
     },
 
   [GettersTypes.getAllNetworksIsReadyToUse]({ networks }): boolean {
-    return !networks.some(({ status }) => status === 'pending' || status === 'connected');
+    return !networks.some(({ apiStatus }) => apiStatus === 'pending' || apiStatus === 'connected');
   },
-
-  [GettersTypes.getNetworkStatus]:
-    ({ networks }) =>
-    (networkName: string) => {
-      const network = networks.find(({ name }) => name === networkName);
-
-      return network?.status ?? 'pending';
-    },
 };
 
 export default getters;

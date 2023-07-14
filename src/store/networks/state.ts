@@ -1,26 +1,22 @@
-import type { Networks, AssetsPrice, Currencies, History, FiatJson, AssetJson, ActiveNodes } from '@/interfaces';
+import type { AssetsPrice, History, FiatJson } from '@/interfaces';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 export type State = {
-  networks: Networks;
+  networks: NetworkJson[];
   assetsPrice: AssetsPrice;
-  assetsJson: AssetJson[];
   fiats: FiatJson[];
   history: History;
-  currencies: Currencies;
-  activeNodes: ActiveNodes;
-  assetsPriceInterval: NodeJS.Timer | null;
 };
 
 const state = (): State => {
   return {
     networks: [],
-    assetsPrice: {},
-    assetsJson: [],
+    assetsPrice: {
+      tokenPriceChange: {},
+      tokenPriceMap: {},
+    },
     fiats: [],
-    currencies: [],
     history: {},
-    activeNodes: {},
-    assetsPriceInterval: null,
   };
 };
 

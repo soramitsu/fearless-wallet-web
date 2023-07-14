@@ -94,7 +94,7 @@
         </div>
       </div>
 
-      <Button size="big" text="View in Subscan" @click="openSubscan" />
+      <Button size="big" :text="$t('accounts.subscan')" @click="openSubscan" />
     </div>
 
     <Tooltip text="common.copied" target=".copy" placement="bottom" trigger="click" />
@@ -107,14 +107,8 @@ import { Identicon } from '@polkadot/vue-identicon';
 import { Getter } from 'vuex-class';
 import type { HistoryElement } from '@/interfaces/history';
 import type { SelectedWallet } from '@/store';
-import {
-  cut,
-  getType,
-  getSignTransfer,
-  getHistoryValue,
-  getFormattedDate,
-  getHumanTransferFee,
-} from '@/helpers/history';
+import { getType, getSignTransfer, getHistoryValue, getFormattedDate, getHumanTransferFee } from '@/helpers/history';
+import { cut } from '@/helpers/common';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 
@@ -219,7 +213,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get transferFee() {
-    return getHumanTransferFee(this.historyElement, this.assetId);
+    return getHumanTransferFee(this.historyElement, this.assetId, this.selectedNetwork);
   }
 
   get date() {
@@ -227,7 +221,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get value() {
-    const { signTransfer, value } = getHistoryValue(this.historyElement, this.assetId);
+    const { signTransfer, value } = getHistoryValue(this.historyElement, this.assetId, this.selectedNetwork);
 
     return `${signTransfer}${this.$n(value, 'decimalPrecise')}`;
   }
@@ -257,7 +251,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   openSubscan() {
-    const addressByNetwork = BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.selectedNetwork);
+    const addressByNetwork = BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
     const url = this.isExtrinsic
       ? `https://${this.selectedNetwork}.subscan.io/extrinsic/${this.hash}`
       : `https://${this.selectedNetwork}.subscan.io/account/${addressByNetwork}`;

@@ -4,7 +4,7 @@
   "short_name": "FW",
   "author": "Soramitsu",
   "manifest_version": 2,
-  "permissions": ["storage", "tabs", "identity", "*://www.googleapis.com/*"],
+  "permissions": ["storage", "tabs", "identity", "*://www.googleapis.com/*", "clipboardRead"],
   "background": {
     "scripts": ["background.js"],
     "persistent": true
@@ -28,7 +28,7 @@
     }
   ],
   "web_accessible_resources": ["page.js"],
-  "content_security_policy": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self';  style-src 'unsafe-inline';img-src 'self' https://raw.githubusercontent.com data:; connect-src 'self' https://accounts.google.com https://www.googleapis.com https://api.subquery.network https://squid.subsquid.io/ https://polkadot.js.org https://raw.githubusercontent.com https://api.coingecko.com https://beacon-node-1.hope-5.papers.tech https://beacon-node-1.hope-4.papers.tech https://beacon-node-1.sky.papers.tech https://beacon-node-2.sky.papers.tech https://beacon-node-1.hope.papers.tech https://beacon-node-1.hope-2.papers.tech https://beacon-node-1.diamond.papers.tech https://beacon-node-1.hope-3.papers.tech ws:",
+  "content_security_policy": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'self';  style-src 'unsafe-inline';img-src 'self' https://raw.githubusercontent.com data:; frame-src https://soracard.com/; connect-src 'self' https://accounts.google.com https://www.googleapis.com https://api.subquery.network https://squid.subsquid.io/ https://polkadot.js.org https://raw.githubusercontent.com https://api.coingecko.com https://beacon-node-1.hope-5.papers.tech https://beacon-node-1.hope-4.papers.tech https://beacon-node-1.sky.papers.tech https://beacon-node-2.sky.papers.tech https://beacon-node-1.hope.papers.tech https://beacon-node-1.hope-2.papers.tech https://beacon-node-1.diamond.papers.tech https://beacon-node-1.hope-3.papers.tech https://api-auth-test.soracard.com https://backend.dev.sora-card.tachi.soramitsu.co.jp wss: ws:",
   "browser_specific_settings": {
     "gecko": {
       "id": "{6a9332b9-e864-4d0a-a591-140fe75a29ba}"

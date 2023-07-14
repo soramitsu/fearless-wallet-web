@@ -51,9 +51,9 @@
 import { Component, Vue, Prop, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { TabWallet } from '@/interfaces/common';
-import type { Currency } from '@/interfaces/currencies';
 import type { SelectedWallet } from '@/store';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 
 interface TabsOptions {
   label: string;
@@ -73,30 +73,21 @@ export default class ContentSettings extends Vue {
       classes: 'currencies-tab',
       target: '.currencies-tab',
     },
-    // {
-    //   tabName: 'wallet.nfts',
-    //   tooltipText: 'wallet.nonFungibleTokens',
-    //   classes: 'nft-tab',
-    //   target: '.nft-tab',
-    // },
   ];
 
   @PropSync('activeTabName', { type: String }) syncedActiveTabName!: TabWallet;
   @PropSync('filterValue', { type: String }) syncedFilterValue!: TabWallet;
   @PropSync('showAssetsManagementForm', { type: Boolean }) syncedShowAssetsManagementForm!: boolean;
-  @Prop(Array) currencies!: Currency[];
+  @Prop(Array) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
 
   get target() {
     return `.${this.iconName}`;
   }
 
   get allCurrenciesHidden() {
-    const visibleCurrencies = this.currencies.filter((currency) =>
-      currency.getCurrencyVisibility(this.selectedWallet.address)
-    );
-
-    return visibleCurrencies.length === 0;
+    return this.hiddenAssets.length === this.balances.length;
   }
 
   get toggleButtonText() {

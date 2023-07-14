@@ -12,6 +12,7 @@
     <Input
       v-if="notJsonImport"
       v-model="inputValue"
+      ref="valueInput"
       type="textarea"
       class="row"
       size="big"
@@ -40,8 +41,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch, VModel, PropSync } from 'vue-property-decorator';
+import { Component, Vue, Prop, Watch, VModel, PropSync, Ref } from 'vue-property-decorator';
 import type { ImportType } from '@/interfaces';
+import type Input from '@/components/Input.vue';
 
 @Component
 export default class ImportWallet extends Vue {
@@ -59,9 +61,8 @@ export default class ImportWallet extends Vue {
   @Prop(String) ethereumJson!: string;
   @Prop(Number) step!: number;
   @Prop(Boolean) isOnlyEthereumAccountFlow!: boolean;
-  @Prop(Boolean) isReplaceAccountFlow!: boolean;
-  @Prop(Boolean) isEthereumReplacedNetwork!: boolean;
   @PropSync('passwordJson', { type: String }) syncedPasswordJson!: string;
+  @Ref('valueInput') readonly valueInputComponent!: Input;
 
   get inputValue() {
     return this[this.field];
@@ -75,10 +76,6 @@ export default class ImportWallet extends Vue {
     if (this.typeImport === 'mnemonic') return 'mnemonic';
 
     if (this.typeImport === 'rawSeed') {
-      if (this.isReplaceAccountFlow) {
-        return this.isEthereumReplacedNetwork ? 'ethereumRawSeed' : 'substrateRawSeed';
-      }
-
       if (this.isOnlyEthereumAccountFlow) {
         return 'ethereumRawSeed';
       }
@@ -87,10 +84,6 @@ export default class ImportWallet extends Vue {
     }
 
     // typeImport === 'json'
-    if (this.isReplaceAccountFlow) {
-      return this.isEthereumReplacedNetwork ? 'ethereumJson' : 'substrateJson';
-    }
-
     if (this.isOnlyEthereumAccountFlow) {
       return 'ethereumJson';
     }
@@ -107,17 +100,11 @@ export default class ImportWallet extends Vue {
   }
 
   get showSlot() {
-    return this.isReplaceAccountFlow ? this.typeImport === 'mnemonic' : this.notJsonImport && this.step === 1;
+    return this.typeImport === 'mnemonic' || (this.typeImport === 'rawSeed' && this.step === 1);
   }
 
   get placeholderTypeImportValue() {
     if (this.typeImport === 'rawSeed') {
-      if (this.isReplaceAccountFlow) {
-        const type = this.isEthereumReplacedNetwork ? 'ETH' : 'Substrate';
-
-        return this.t('rawSeed', { type });
-      }
-
       if (this.isOnlyEthereumAccountFlow) {
         return this.t('rawSeed', { type: 'ETH' });
       }
@@ -139,6 +126,12 @@ export default class ImportWallet extends Vue {
   @Watch('typeImport')
   onTypeImportChanged() {
     this.$emit('reset');
+
+    this.$nextTick(() => this.valueInputComponent?.input.focus());
+  }
+
+  mounted() {
+    this.valueInputComponent.input.focus();
   }
 
   t(value: string, obj: Record<string, string> = {}) {

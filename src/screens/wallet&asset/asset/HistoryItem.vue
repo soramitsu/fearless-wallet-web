@@ -1,6 +1,6 @@
 <template>
   <div class="history-item">
-    <ExternalLogo :name="assetId" />
+    <ExternalLogo :name="token.icon" />
 
     <div class="column">
       <div class="first-row">
@@ -20,25 +20,24 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
-import type { GetAssetName } from '@/store';
-import type { HistoryElement } from '@/interfaces';
-import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, getSignTransfer, cut } from '@/helpers/history';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import type { HistoryElement, NetworkName } from '@/interfaces';
+import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, getSignTransfer } from '@/helpers/history';
 import { TransactionType } from '@/interfaces/history';
+import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import { cut } from '@/helpers/common';
 
 @Component
 export default class HistoryItem extends Vue {
   @Prop(Object) historyElement!: HistoryElement;
-  @Prop(String) assetId!: string;
-  @Getter(NetworksGettersTypes.getAssetName) getAssetName!: GetAssetName;
+  @Prop(Object) token!: TokenBalance;
+  @Prop(String) network!: NetworkName;
 
   get signTransfer() {
     return getSignTransfer(this.historyElement);
   }
 
   get asset() {
-    return this.getAssetName(this.assetId);
+    return this.token.symbol;
   }
 
   get date() {
@@ -54,7 +53,7 @@ export default class HistoryItem extends Vue {
   }
 
   get value() {
-    const { signTransfer, value } = getHistoryValue(this.historyElement, this.assetId);
+    const { signTransfer, value } = getHistoryValue(this.historyElement, this.token.assetId, this.network);
 
     return `${signTransfer}${this.$n(value, 'decimalPrecise')}`;
   }

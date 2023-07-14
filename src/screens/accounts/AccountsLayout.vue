@@ -1,6 +1,7 @@
 <template>
   <div class="layout">
-    <ContentForm :height="453">
+    <!-- IMPORTANT: if <Menu /> showed use 453 -->
+    <ContentForm :height="513">
       <div class="accounts-layout">
         <div class="navigation">
           <div class="left-part">
@@ -42,7 +43,6 @@
       :showExport="!isExportRoute"
       :showReplaceAccount="showReplaceAccount"
       :buttonTopClick="buttonTopClick"
-      @openReplacePopup="openReplacePopup"
       @openNotificationPopup="openNotificationPopup"
     />
 
@@ -76,8 +76,6 @@
       :handlerAccept="handlerAccept"
     />
 
-    <ReplacePopup v-if="showReplacePopup" :selectedNetwork="selectedNetwork" :handlerClose="closeReplacePopup" />
-
     <AddEthereumAccountPopup v-if="showAddEthereumAccountPopup" :handlerClose="closeAddEthereumAccountPopup" />
 
     <ExportForm v-if="showExportForm" :password="password" :closeHandler="setPassword" />
@@ -90,22 +88,21 @@ import { Getter } from 'vuex-class';
 import ExportForm from './ExportForm.vue';
 import EditNodeForm from './EditNodeForm.vue';
 import NodeSettingsPopup from './NodeSettingsPopup.vue';
-import ReplacePopup from './ReplacePopup.vue';
 import AddEthereumAccountPopup from './AddEthereumAccountPopup.vue';
 import AccountSettingsPopup from './AccountSettingsPopup.vue';
 import Nodes from './Nodes.vue';
 import type { SelectedWallet } from '@/store';
-import { accountController } from '@/controllers';
 import { Components } from '@/router/routes';
-import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { upsertNetworkMap } from '@/extension/messaging';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 type NotificationType = 'delete' | 'export' | '';
 
 @Component({
   components: {
     ExportForm,
-    ReplacePopup,
     EditNodeForm,
     NodeSettingsPopup,
     AccountSettingsPopup,
@@ -122,7 +119,6 @@ export default class AccountsLayout extends Vue {
   selectedNodeIsActive = false;
   buttonTopClick = 0;
   showReplaceAccount = true;
-  showReplacePopup = false;
   showAddEthereumAccountPopup = false;
   showAccountSettingsPopup = false;
   showEditNodeForm = false;
@@ -130,6 +126,7 @@ export default class AccountsLayout extends Vue {
   notificationType: NotificationType = '';
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
 
   get headers() {
     return this.notificationType === 'delete'
@@ -140,6 +137,10 @@ export default class AccountsLayout extends Vue {
           subtext: 'accounts.exportWarning',
         }
       : '';
+  }
+
+  get networkJson() {
+    return this.networks.find(({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase())!;
   }
 
   get showExportForm() {
@@ -222,12 +223,9 @@ export default class AccountsLayout extends Vue {
   }
 
   openAccountSettingsPopup(network = '', buttonTop: number) {
-    const replacedAccount = BaseApi.getReplacedAccountByNetwork(this.selectedWallet, network);
-
     this.showAccountSettingsPopup = true;
     this.selectedNetwork = network;
     this.buttonTopClick = buttonTop;
-    this.showReplaceAccount = replacedAccount === undefined;
   }
 
   closeAccountSettings(isReset = true) {
@@ -263,16 +261,19 @@ export default class AccountsLayout extends Vue {
   }
 
   deleteNode() {
-    accountController.deleteNode({ name: this.selectedNodeName, url: this.selectedNodeUrl }, this.selectedNetwork);
-
+    const customNodes = this.networkJson.customNodes.filter(
+      (node) => node.name !== this.selectedNodeName && node.url !== this.selectedNodeUrl
+    );
+    upsertNetworkMap({
+      ...this.networkJson,
+      customNodes,
+    });
     this.childUpdatedNode(true);
     this.closeNotificationPopup();
   }
 
   childUpdatedNode(setAuto = false) {
     const nodesComponent = this.$refs[this.routerViewRef] as Nodes;
-
-    nodesComponent.updatedCustomNodes();
 
     if (setAuto && this.selectedNodeIsActive) nodesComponent.autoSelectNode = true;
   }
@@ -281,12 +282,6 @@ export default class AccountsLayout extends Vue {
     this.notificationType = type;
 
     this.closeNodeSettings();
-    this.closeAccountSettings(false);
-  }
-
-  openReplacePopup() {
-    this.showReplacePopup = true;
-
     this.closeAccountSettings(false);
   }
 
@@ -303,14 +298,10 @@ export default class AccountsLayout extends Vue {
   closeNodeSettings() {
     this.showNodeSettingsPopup = false;
 
-    if (!this.showEditNodeForm) {
+    if (this.showEditNodeForm) {
       this.selectedNodeName = '';
       this.selectedNodeUrl = '';
     }
-  }
-
-  closeReplacePopup() {
-    this.showReplacePopup = false;
   }
 
   closeAddEthereumAccountPopup() {

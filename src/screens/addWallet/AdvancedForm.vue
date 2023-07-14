@@ -5,19 +5,17 @@
     :closeHandler="closeAdvancedForm"
     :saveChanges="saveChanges"
   >
-    <template v-if="showSubstrateDP">
-      <Select
-        v-model="substrateKeypairType"
-        :options="optionsSubstrateKeyPair"
-        placeholder="addWallet.substrateCryptoType"
-        size="big"
-        class="row"
-      />
+    <Select
+      v-model="substrateKeypairType"
+      :options="optionsSubstrateKeyPair"
+      placeholder="addWallet.substrateCryptoType"
+      size="big"
+      class="row"
+    />
 
-      <Input v-model="substrateDP" class="row" placeholder="addWallet.substrateDP" size="big" />
+    <Input v-model="substrateDP" class="row" placeholder="addWallet.substrateDP" size="big" />
 
-      <div class="example-prompt">{{ $t('addWallet.example', { example }) }}</div>
-    </template>
+    <div class="example-prompt">{{ $t('addWallet.example', { example }) }}</div>
 
     <template v-if="showEthereumDP">
       <Input
@@ -57,14 +55,29 @@ export default class AdvancedForm extends Vue {
 
   @Prop(Object) derivationPaths!: DerivationPaths;
   @Prop({ default: true }) showEthereumDP!: boolean;
-  @Prop({ default: true }) showSubstrateDP!: boolean;
 
   get example() {
     return this.optionsSubstrateKeyPair.find(({ value }) => value === this.substrateKeypairType)?.example;
   }
 
   get showAcceptIcon() {
-    return !!this.substrateDP || !!this.ethereumDP;
+    const { ethereum, substrate } = this.derivationPaths;
+    const isSubstrateSaved = substrate.value !== '';
+    const isEthereumSaved = ethereum.value !== '';
+
+    if (isSubstrateSaved && isEthereumSaved) {
+      return this.substrateDP !== substrate.value || this.ethereumDP !== ethereum.value;
+    }
+
+    if (isSubstrateSaved && ethereum.value === '') {
+      return this.substrateDP !== substrate.value || this.ethereumDP !== '';
+    }
+
+    if (isEthereumSaved && substrate.value === '') {
+      return this.ethereumDP !== ethereum.value || this.substrateDP !== '';
+    }
+
+    return this.substrateDP !== '' || this.ethereumDP !== '';
   }
 
   mounted() {

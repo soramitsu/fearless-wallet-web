@@ -1,25 +1,18 @@
 <template>
-  <AboveForm header="accounts.newNode" :closeHandler="closeForm">
+  <AboveForm :fullScreen="true" header="accounts.newNode" :closeHandler="closeForm">
     <div class="add-node-form">
       <div>
-        <Input v-model="networkCharUp" :placeholder="getPath('network')" size="big" class="row" :readonly="true" />
+        <Input v-model="networkCharUp" placeholder="accounts.network" size="big" class="row" :readonly="true" />
 
-        <Input
-          v-model="name"
-          :placeholder="getPath('nodeName')"
-          typeText="uppercase"
-          size="big"
-          class="row"
-          :maxlength="45"
-        />
+        <Input v-model="name" placeholder="common.name" typeText="uppercase" size="big" class="row" :maxlength="45" />
 
         <ValidatedInput
           v-model="url"
-          :placeholder="getPath('urlAddress')"
-          typeText="uppercase"
+          placeholder="accounts.urlAddress"
           class="row"
-          errorDescriptions="accounts.invalidNodeAddress"
-          :isError="isErrorUrlNode"
+          :errorDescriptions="errorMessage"
+          :isError="isErrorUrlNode || isUrlDuplicate"
+          :maxlength="150"
         />
       </div>
 
@@ -30,9 +23,11 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-
-import { accountController, NetworksController } from '@/controllers';
+import { Getter } from 'vuex-class';
 import { firstCharToUp } from '@/helpers/common';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
+import { upsertNetworkMap } from '@/extension/messaging';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
 export default class EditNodeForm extends Vue {
@@ -44,17 +39,35 @@ export default class EditNodeForm extends Vue {
   @Prop(String) _name!: string;
   @Prop(String) _url!: string;
   @Prop(Boolean) isActive!: boolean;
+  @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
 
   get buttonText() {
-    return this.isEdit ? 'common.save' : this.getPath('addNode');
+    return this.isEdit ? 'common.save' : 'accounts.addNode';
+  }
+
+  get networkJson() {
+    return this.networks.find(({ name }) => name.toLowerCase() === this.network.toLowerCase())!;
   }
 
   get isEdit() {
     return this._name !== '';
   }
 
+  get isUrlDuplicate() {
+    return (
+      this.networkJson.nodes.some((node) => node.url === this.url) ||
+      this.networkJson.customNodes.some((node) => node.url === this.url)
+    );
+  }
+
   get isErrorUrlNode() {
     return this.url.length !== 0 && (this.url.length < 7 || !this.url.startsWith('wss://'));
+  }
+
+  get errorMessage() {
+    if (this.isErrorUrlNode) return 'accounts.invalidNodeAddress';
+
+    return 'accounts.customNodeDuplicate';
   }
 
   get networkCharUp() {
@@ -79,18 +92,25 @@ export default class EditNodeForm extends Vue {
   }
 
   updateNodes() {
-    accountController.updateCustomNodes({ name: this.name, url: this.url }, this.network, {
-      name: this._name,
-      url: this._url,
+    const prepData: Partial<NetworkJson> = {};
+    const customNodeIndex = this.networkJson.customNodes.findIndex(
+      (el) => el.url === this._url && el.name === this._name
+    );
+
+    prepData.customNodes = this.networkJson.customNodes ?? [];
+
+    if (customNodeIndex >= 0) prepData.customNodes[customNodeIndex] = { name: this.name, url: this.url };
+    else prepData.customNodes.push({ name: this.name, url: this.url });
+
+    prepData.currentProvider = this.url;
+
+    upsertNetworkMap({
+      ...this.networkJson,
+      ...prepData,
+      isManual: false,
     });
 
-    if (this.isActive) NetworksController.toggleActiveNode(this.network, this.name, this.url);
-
     this.closeForm(true);
-  }
-
-  getPath(value: string) {
-    return `accounts.${value}`;
   }
 }
 </script>

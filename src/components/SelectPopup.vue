@@ -18,13 +18,15 @@
     :top="top"
     :left="left"
   >
-    <div v-for="{ label, value, path } in options" :key="label" :class="rowClasses(value)" @click="toggle(value)">
+    <div v-for="{ name, value, icon } in options" :key="value" :class="rowClasses(value)" @click="toggle(value)">
       <div class="description">
-        <Icon v-if="path === 'globus' && showIcon" :icon="path" className="img" />
-        <Icon v-else-if="path === '_default' && showIcon" :icon="path" className="img" />
+        <template v-if="showIcon">
+          <Icon v-if="icon === 'globus' && showIcon" :icon="icon" className="img" />
 
-        <ExternalLogo v-else-if="showIcon" :name="path" class="img" />
-        {{ label }}
+          <ExternalLogo v-else-if="showIcon" :name="icon" class="img" />
+        </template>
+
+        {{ name }}
       </div>
 
       <SIcon name="basic-check-mark-24" v-show="getIconVisible(value)" />

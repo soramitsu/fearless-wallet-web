@@ -13,13 +13,16 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'RAMP_PROD_API_KEY', variable: 'RAMP_PROD_API_KEY'],
     [$class: 'StringBinding', credentialsId: 'MOONPAY_TEST_API_KEY', variable: 'MOONPAY_TEST_API_KEY'],
     [$class: 'StringBinding', credentialsId: 'MOONPAY_PROD_API_KEY', variable: 'MOONPAY_PROD_API_KEY']
-  ]
+]
 
 def pipeline = new org.js.AppArtifactsPipeline(
     steps:                      this,
+    secretScannerExclusion:     '/src/extension/background/extension-base/src/api/evm/history.ts',
     buildCmds:                  ['yarn build:extension:all'],
     nexusCredential:            'bot-fearless-rw',
     nexusProjectPath:           'fearless/extension',
+    nexusNotif:                 true,
+    nexusChatID:                "-1001934877683",
     sonarProjectKey:            'fearless:fearless-wallet-web',
     sonarProjectName:           'fearless-wallet-web',
     sonarCredential:            'sonar_fearless_token',

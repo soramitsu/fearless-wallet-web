@@ -16,12 +16,6 @@
         <div class="label">{{ $t('accounts.export') }}</div>
       </div>
 
-      <div v-if="showReplaceAccount" class="row" @click="openReplacePopup">
-        <Icon icon="account-switch" className="icon" />
-
-        <div class="label">{{ $t('accounts.replace') }}</div>
-      </div>
-
       <div v-if="!isNodesRoute" class="row" @click="openNetwork">
         <Icon icon="currency-switch" className="icon" />
 
@@ -57,7 +51,6 @@ export default class AccountSettingsPopup extends Vue {
   @Prop(String) selectedNetwork!: string;
   @Prop(Boolean) isNodesRoute!: boolean;
   @Prop(Boolean) showExport!: boolean;
-  @Prop(Boolean) showReplaceAccount!: boolean;
   @Prop(Number) buttonTopClick!: number;
   @Prop(Function) handlerClose!: VoidFunction;
 
@@ -66,17 +59,13 @@ export default class AccountSettingsPopup extends Vue {
   get top() {
     if (this.buttonTopClick === undefined) return 110;
 
-    if (this.buttonTopClick > 300) {
-      const subtractionNumber = this.showReplaceAccount ? 221 : 181;
-
-      return this.buttonTopClick - subtractionNumber;
-    }
+    if (this.buttonTopClick > 300) return this.buttonTopClick - 181;
 
     return this.buttonTopClick + 7;
   }
 
   get addressByNetwork() {
-    return BaseApi.getDisplayAddressByNetwork(this.selectedWallet, this.selectedNetwork);
+    return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
   }
 
   copyAddress() {
@@ -100,10 +89,6 @@ export default class AccountSettingsPopup extends Vue {
     });
 
     this.close();
-  }
-
-  openReplacePopup() {
-    this.$emit('openReplacePopup');
   }
 
   openNotificationPopup() {

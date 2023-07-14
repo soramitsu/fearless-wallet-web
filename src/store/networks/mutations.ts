@@ -1,52 +1,19 @@
-import { FPNumber, api as apiSora } from '@sora-substrate/util';
 import type { MutationTree } from 'vuex';
 import type { State } from './state';
-import type {
-  SetNetworksStatusProps,
-  UpdateCurrencyBalanceProps,
-  SetAssetsJsonProps,
-  SetFiatsJsonProps,
-  SetAssetsPriceProps,
-  SetCurrenciesProps,
-  SetHistoryProps,
-  SetActiveNodeProps,
-  SetNetworkApiProps,
-  SetNetworkStatusProps,
-  SetAssetsPriceIntervalProps,
-} from './types';
-import type { SoraFees } from '@/interfaces';
-import { accountController } from '@/controllers';
-import { isSora } from '@/helpers/common';
+import type { SetFiatsJsonProps, SetHistoryProps, SetNetworksStatusProps, SetAssetsPriceProps } from './types';
 import { getFormattedHistory } from '@/helpers/history';
 export enum MutationTypes {
   SET_NETWORKS = 'SET_NETWORKS',
-  SET_ASSETS_JSON = 'SET_ASSETS_JSON',
   SET_FIATS_JSON = 'SET_FIATS_JSON',
   SET_ASSETS_PRICE = 'SET_ASSETS_PRICE',
-  SET_ASSETS_PRICE_INTERVAL = 'SET_ASSETS_PRICE_INTERVAL',
-  SET_CURRENCIES = 'SET_CURRENCIES',
-  SORT_CURRENCIES = 'SORT_CURRENCIES',
   SET_HISTORY = 'SET_HISTORY',
-  UPDATE_CURRENCY_BALANCE = 'UPDATE_CURRENCY_BALANCE',
-  SET_ACTIVE_NODE = 'SET_ACTIVE_NODE',
-  SET_NETWORK_API = 'SET_NETWORK_API',
-  SET_NETWORK_STATUS = 'SET_NETWORK_STATUS',
-  SET_SORA_FEE = 'SET_SORA_FEE',
 }
 
 export type Mutations = {
   [MutationTypes.SET_NETWORKS](state: State, props: SetNetworksStatusProps): void;
-  [MutationTypes.SET_ASSETS_JSON](state: State, props: SetAssetsJsonProps): void;
   [MutationTypes.SET_FIATS_JSON](state: State, props: SetFiatsJsonProps): void;
   [MutationTypes.SET_ASSETS_PRICE](state: State, props: SetAssetsPriceProps): void;
-  [MutationTypes.SET_ASSETS_PRICE_INTERVAL](state: State, props: SetAssetsPriceIntervalProps): void;
-  [MutationTypes.SET_CURRENCIES](state: State, props: SetCurrenciesProps): void;
   [MutationTypes.SET_HISTORY](state: State, props: SetHistoryProps): void;
-  [MutationTypes.UPDATE_CURRENCY_BALANCE](state: State, props: UpdateCurrencyBalanceProps): void;
-  [MutationTypes.SET_ACTIVE_NODE](state: State, props: SetActiveNodeProps): void;
-  [MutationTypes.SET_NETWORK_API](state: State, props: SetNetworkApiProps): void;
-  [MutationTypes.SET_NETWORK_STATUS](state: State, props: SetNetworkStatusProps): void;
-  [MutationTypes.SET_SORA_FEE](state: State): void;
 };
 
 const mutations: MutationTree<State> & Mutations = {
@@ -54,65 +21,18 @@ const mutations: MutationTree<State> & Mutations = {
     state.networks = networks;
   },
 
-  [MutationTypes.SET_CURRENCIES](state, { currencies, address, network }) {
-    if (address && network) {
-      if (Array.isArray(currencies)) {
-        const sequence = currencies.map(({ assetId }) => assetId);
-
-        accountController.setSequenceAssets(sequence, address, network);
-      } else {
-        const entries = Object.entries(currencies).map(([network, currencies]) => {
-          const sequence = currencies.map(({ assetId }) => assetId).join();
-
-          return [network, sequence];
-        });
-
-        accountController.setSequenceAssets(Object.fromEntries(entries), address);
-      }
-    }
-
-    state.currencies = Array.isArray(currencies) ? currencies : currencies[network!];
-  },
-
-  [MutationTypes.SET_ASSETS_JSON](state, { assetsJson }) {
-    state.assetsJson = assetsJson;
+  [MutationTypes.SET_ASSETS_PRICE](state, price) {
+    state.assetsPrice = { ...price };
   },
 
   [MutationTypes.SET_FIATS_JSON](state, { fiats }) {
     state.fiats = fiats.map((fiat) => ({ ...fiat }));
   },
 
-  [MutationTypes.SET_ASSETS_PRICE](state, { assetsPrice }) {
-    state.assetsPrice = assetsPrice;
-
-    state.currencies.forEach((currency) => currency.updatePrice());
-  },
-
-  [MutationTypes.SET_ASSETS_PRICE_INTERVAL](state, { interval }) {
-    state.assetsPriceInterval = interval;
-  },
-
-  [MutationTypes.UPDATE_CURRENCY_BALANCE]({ currencies, assetsJson, networks }, props) {
-    const { walletAddress, network, assetId, balance, parentId } = props;
-
-    const { symbol, displayName } = assetsJson.find(({ id }) => id === assetId)!;
-    const relayChain = networks.find(({ chainId }) => chainId === parentId)?.name ?? network;
-
-    const currentCurrency = currencies.find(
-      ({ assetId: _assetId, relayChain: _relayChain, displayName: _displayName }) => {
-        const isExistingAssetId = _assetId === assetId;
-        const isExistingDisplayName = _displayName === symbol || displayName === _displayName;
-        const isExistingAsset = isExistingDisplayName && _relayChain === relayChain;
-
-        return isExistingAssetId || isExistingAsset;
-      }
-    )!;
-
-    currentCurrency.updateCurrencyBalance({ walletAddress, network, balance });
-  },
-
-  [MutationTypes.SET_HISTORY](state, props) {
-    const { history, networkName, walletAddress, isPreviously, assetId, serviceType, isMock } = props;
+  [MutationTypes.SET_HISTORY](
+    state,
+    { history, networkName, walletAddress, isPreviously, assetId, serviceType, isMock }
+  ) {
     const { nodes, pageInfo } = getFormattedHistory(history, serviceType);
     const { startCursor: startCursorProp, endCursor: endCursorProp } = pageInfo;
     const oldHistory = state.history[assetId]?.[walletAddress]?.[networkName];
@@ -186,43 +106,6 @@ const mutations: MutationTree<State> & Mutations = {
     };
 
     state.history = { ...state.history, [assetId]: historyForAssetId };
-  },
-
-  [MutationTypes.SET_ACTIVE_NODE](state, { network, name, url, saveNode }) {
-    const oldActiveNodes = state.activeNodes;
-
-    if (saveNode) accountController.setActiveNode({ name, url }, network);
-
-    state.activeNodes = { ...oldActiveNodes, [network]: { name, url } };
-  },
-
-  [MutationTypes.SET_NETWORK_API](state, { network, provider, api }) {
-    const networkIndex = state.networks.findIndex(({ name }) => name === network)!;
-
-    state.networks[networkIndex].provider = provider;
-    state.networks[networkIndex].api = api;
-  },
-
-  [MutationTypes.SET_NETWORK_STATUS](state, { network, status }) {
-    const networkIndex = state.networks.findIndex(({ name }) => name === network)!;
-
-    if (status === 'connected' || status === 'ready') {
-      setTimeout(() => {
-        state.networks[networkIndex].status = status;
-      }, 3000);
-    } else {
-      state.networks[networkIndex].status = status;
-    }
-  },
-
-  [MutationTypes.SET_SORA_FEE](state) {
-    const fees = Object.fromEntries(
-      Object.entries(apiSora.NetworkFee).map(([key, value]) => [key, FPNumber.fromCodecValue(value)])
-    ) as SoraFees;
-    const soraIndex = state.networks.findIndex(({ name }) => isSora(name))!;
-    const newSoraItem = { ...state.networks[soraIndex], fees };
-
-    state.networks.splice(soraIndex, 1, newSoraItem);
   },
 };
 

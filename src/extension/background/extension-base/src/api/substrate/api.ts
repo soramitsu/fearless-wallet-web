@@ -3,7 +3,6 @@ import { TypeRegistry } from '@polkadot/types/create';
 import { api as apiSora, connection as soraConnection } from '@sora-substrate/util';
 import { DOTSAMA_AUTO_CONNECT_MS } from '@extension-base/const/intervals';
 import { state } from '@extension-base/background/handlers';
-import { getCurrentProvider } from '@extension-base/utils/utils';
 import type { ProviderInterfaceEmitCb } from '@polkadot/rpc-provider/types';
 import type { ApiProps } from '@extension-base/background/types/types';
 import type { NetworkJson } from '@extension-base/types';
@@ -90,10 +89,10 @@ function onDisconnect(networkName: string) {
 
   api.provider?.disconnect();
   const network = state.networkMap[networkName];
+  api.nodeIndex += 1;
 
   if (nodeIndex <= network.nodes.length - 1) {
     api.apiRetry = 0;
-    api.nodeIndex += 1;
     api.provider = undefined;
     api.api = undefined;
     api.apiUrl = '';
@@ -127,6 +126,7 @@ export async function initApi(network: NetworkJson): Promise<void> {
   }
 
   const { nodeIndex } = state.apis.substrate[networkName];
+
   const autoSelectNode = network.isManual ? null : nodes[nodeIndex].url;
   const currentProvider = autoSelectNode ?? network.currentProvider;
   const eventListeners: Array<[ApiInterfaceEvents, ProviderInterfaceEmitCb]> = [

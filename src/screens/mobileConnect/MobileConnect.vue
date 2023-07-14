@@ -24,19 +24,11 @@ import { Vue, Component } from 'vue-property-decorator';
 import { Action, Getter, Mutation } from 'vuex-class';
 import type { KeyringJson$Meta } from '@polkadot/ui-keyring/types';
 import type { PermissionResponseOutput } from '@airgap/beacon-sdk';
-import type {
-  PermissionSuccess,
-  AsyncFn,
-  RequestSentInfo,
-  Networks,
-  Fn,
-  PermissionResponsePayload,
-} from '@/interfaces';
+import type { PermissionSuccess, AsyncFn, RequestSentInfo, Fn, PermissionResponsePayload } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 import { createMobileWallet } from '@/extension/messaging';
 import { beaconController } from '@/controllers';
 import { ActionTypes as AccountActionTypes } from '@/store/accounts/actions';
-import { GettersTypes as NetworkGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutations';
 import PermissionRequestPopup from '@/screens/mobileConnect/PermissionRequestPopup.vue';

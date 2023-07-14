@@ -30,6 +30,11 @@ import { firstCharToUp } from '@/helpers/common';
 
 type Extrinsic = Nullable<SubmittableExtrinsic<'promise'>>;
 
+enum XcmVersions {
+  V1 = 'V1',
+  V3 = 'V3',
+}
+
 const XCM_NATIVE_PALLETS = ['xcmPallet', 'polkadotXcm'];
 
 function isNativeNetwork(networkName: NetworkName) {
@@ -132,17 +137,18 @@ function getNativeTeleportParams(
   const value = new BN(amount);
 
   const relayChain = CHAIN_IDS[parentId!] ?? firstCharToUp(name);
+  const network = xcmVersion === XcmVersions.V1 ? { network: { Any: '' } } : { network: { [relayChain]: '' } };
 
   const receiverLocation = isEthereumNetwork(destNet)
     ? {
         AccountKey20: {
-          network: { [relayChain]: '' },
+          ...network,
           key: publicKey, // TODO проверить декодирование eth адреса, корректно ли работает decodeAddress функция
         },
       }
     : {
         AccountId32: {
-          network: { [relayChain]: '' },
+          ...network,
           id: publicKey,
         },
       };
@@ -185,16 +191,18 @@ function getOrmlTeleportParams(originNet: string, destNet: string, toAddress: st
 
   const relayChain = CHAIN_IDS[parentId!] ?? firstCharToUp(name);
 
+  const network = xcmVersion === XcmVersions.V1 ? { network: { Any: '' } } : { network: { [relayChain]: '' } };
+
   const receiverLocation = isEthereumNetwork(destNet)
     ? {
         AccountKey20: {
-          [relayChain]: '',
+          ...network,
           key: publicKey, // TODO проверить декодирование eth адреса, корректно ли работает decodeAddress функция
         },
       }
     : {
         AccountId32: {
-          [relayChain]: '',
+          ...network,
           id: publicKey,
         },
       };
@@ -268,6 +276,8 @@ async function createOrmlTeleportExtrinsic(
   // В большинстве случаев используется xTokens, но он есть не всегда
   if (api.tx?.xTokens?.transferMultiasset) {
     const params = getOrmlTeleportParams(originNet, destNet, toAddress, precisionAmount, assetId);
+
+    console.log('params 2', params);
 
     return api.tx?.xTokens?.transferMultiasset(...params);
   }

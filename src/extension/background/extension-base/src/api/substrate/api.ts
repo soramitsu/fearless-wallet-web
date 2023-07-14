@@ -90,10 +90,10 @@ function onDisconnect(networkName: string) {
 
   api.provider?.disconnect();
   const network = state.networkMap[networkName];
+  api.nodeIndex += 1;
 
   if (nodeIndex <= network.nodes.length - 1) {
     api.apiRetry = 0;
-    api.nodeIndex += 1;
     api.provider = undefined;
     api.api = undefined;
     api.apiUrl = '';
@@ -127,6 +127,7 @@ export async function initApi(network: NetworkJson): Promise<void> {
   }
 
   const { nodeIndex } = state.apis.substrate[networkName];
+
   const autoSelectNode = network.isManual ? null : nodes[nodeIndex].url;
   const currentProvider = autoSelectNode ?? network.currentProvider;
   const eventListeners: Array<[ApiInterfaceEvents, ProviderInterfaceEmitCb]> = [

@@ -186,7 +186,7 @@
 import { Component, Vue, Prop, Watch, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
-import { getNativeAssetName } from '@extension-base/background/utils/utils';
+import { getEthereumAssetName, getNativeAssetName } from '@extension-base/background/utils/utils';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import HistoryBook from './HistoryBook.vue';
 import EditAddressBook from './EditAddressBook.vue';
@@ -478,8 +478,11 @@ export default class TransferForm extends Vue {
       ? this.balances
       : this.balances.filter(
           ({ symbol, relayChain }) =>
-            xcm?.availableAssets.some((assetName) => assetName.toLowerCase() === symbol.toLowerCase()) &&
-            relayChain.toLowerCase() === relay
+            xcm?.availableAssets.some((asset) => {
+              const assetName = getEthereumAssetName(asset, this.syncedNetwork);
+
+              return assetName === symbol.toLowerCase();
+            }) && relayChain.toLowerCase() === relay
         );
 
     return getCurrencyOptions(balances);
@@ -742,7 +745,7 @@ export default class TransferForm extends Vue {
     // комиссия не зависит от адреса получателя, поэтому подставляем всегда мок
     const to = BaseApi.formatAddress(
       { address: VALID_SUBSTRATE_ADDRESS, ethereumAddress: VALID_ETHEREUM_ADDRESS },
-      this.syncedNetwork
+      this.targetNetwork
     );
 
     const amount = _amount ?? (this.syncedAmount !== '' && this.syncedAmount !== '0') ? this.syncedAmount : '1';

@@ -39,7 +39,7 @@ const actions: ActionTree<State, State> & Actions = {
       router.currentRoute.name !== Components.AddFromGoogle &&
       router.currentRoute.name !== Components.AddWallet
     )
-      router.replace('/');
+      router.replace('/').catch((e) => e);
   },
 
   async [ActionTypes.SET_BALANCE]({ commit, state }, { details, reset, saveSequence = false }) {

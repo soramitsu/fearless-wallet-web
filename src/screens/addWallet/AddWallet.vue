@@ -674,6 +674,10 @@ export default class AddWallet extends Vue {
       ethereum: { keypairType: ethereumKeypairType },
     } = this.derivationPaths;
 
+    if (this.isOnlyEthereumAccountFlow) {
+      meta.name = this.selectedWallet.name;
+    }
+
     if (this.suriEthereum !== '') {
       const ethereumAddress = await createAccountSuri(
         this.walletPassword,
@@ -681,6 +685,12 @@ export default class AddWallet extends Vue {
         ethereumKeypairType,
         meta
       );
+
+      if (this.isOnlyEthereumAccountFlow) {
+        updatePairMeta(this.selectedWallet.address, { ethereumAddress });
+
+        return '';
+      }
 
       meta.ethereumAddress = ethereumAddress;
     }

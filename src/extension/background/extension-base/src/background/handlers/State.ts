@@ -27,7 +27,7 @@ import { axios } from '@extension-base/utils/axios';
 import { prepNetworkNames } from '@extension-base/const/networks';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
-import { getMockCurrencies, isEthereumNetwork } from '@extension-base/background/utils/utils';
+import { getMockCurrencies, isEthereumNetwork, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
 import { MobileSigningRequest, MobileSignRequest, POPUP_WINDOW_OPTS } from '@extension-base/background/types/types';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
@@ -483,10 +483,10 @@ export default class State {
     if (this.lockNetworkMap) return false;
 
     this.lockNetworkMap = true;
-    const { key, currentProvider, chain, blockExplorer, paraId, nativeToken, decimals, customNodes } = data;
+    const { name, currentProvider, chain, blockExplorer, paraId, nativeToken, decimals, customNodes } = data;
 
-    if (key in this.networkMap) {
-      const network = this.networkMap[key];
+    if (name in this.networkMap) {
+      const network = this.networkMap[name];
       //make network active if it was disabled previously
       network.active = true;
       // update provider for existed network
@@ -506,23 +506,23 @@ export default class State {
       network.blockExplorer = blockExplorer;
     } else {
       // insert
-      this.networkMap[key] = data;
+      this.networkMap[name] = data;
     }
 
-    if (this.networkMap[key].active) {
+    if (this.networkMap[name].active) {
       // update API map if network is active
-      if (data.key in this.apis.substrate) {
-        this.apis.substrate[key].api?.disconnect && this.apis.substrate[key].api?.disconnect();
-        delete this.apis.substrate[key];
+      if (data.name in this.apis.substrate) {
+        this.apis.substrate[name].api?.disconnect && this.apis.substrate[name].api?.disconnect();
+        delete this.apis.substrate[name];
       }
 
-      if (data.isEthereum && key in this.apis.evm) delete this.apis.evm[key];
+      if (data.isEthereum && name in this.apis.evm) delete this.apis.evm[name];
 
       if (currentProvider) {
         initApi(data);
 
-        if (data.isEthereum && data.isEthereum) {
-          this.apis.evm[data.key] = initWeb3Api(currentProvider);
+        if (data.isEthereum && data.isEthereum && !isRequireSubstrateAPI(data.name)) {
+          this.apis.evm[data.name] = initWeb3Api(currentProvider);
         }
       }
     }

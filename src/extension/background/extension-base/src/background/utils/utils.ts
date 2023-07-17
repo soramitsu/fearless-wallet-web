@@ -6,7 +6,7 @@ import { state } from '@extension-base/background/handlers';
 import { keyring } from '@polkadot/ui-keyring';
 import { isEthereumAddress } from '@polkadot/util-crypto';
 import type { AssetName, NetworkName } from '@/interfaces';
-import { MAIN_NETWORKS, ETHEREUM_NETWORKS } from '@/consts/networks';
+import { MAIN_NETWORKS, ETHEREUM_NETWORKS, SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
 import { RelayChainName } from '@/interfaces';
 import { ETHEREUM_UTILITY_ASSETS } from '@/consts/currencies';
 
@@ -92,6 +92,10 @@ export function getMockCurrencies(networks: NetworkJson[]) {
 
 export function isEthereumNetwork(network: string) {
   return ETHEREUM_NETWORKS.includes(network.toLowerCase());
+}
+
+export function isRequireSubstrateAPI(network: string) {
+  return SUBSTRATE_ETHEREUM_NETWORKS.includes(network.toLowerCase());
 }
 
 export function getUtilityProps(_network: NetworkName) {

@@ -21,7 +21,7 @@
         />
 
         <div v-if="isExtension" class="remember-checkbox">
-          <Checkbox v-model="isSavePass" size="medium" :label="min15Label" />
+          <Checkbox v-model="isSavePass" size="medium" :label="$t(min15Label)" />
         </div>
 
         <Button

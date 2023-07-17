@@ -11,7 +11,7 @@
     :handlerClose="close"
     :zIndex="500"
   >
-    <Checkbox v-model="isDontShowAgain" size="big" label="common.dontShowAgain" class="dont-show-again" />
+    <Checkbox v-model="isDontShowAgain" size="big" :label="$t('common.dontShowAgain')" class="dont-show-again" />
   </NotificationPopup>
 </template>
 

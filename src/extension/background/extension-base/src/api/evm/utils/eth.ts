@@ -120,20 +120,6 @@ export function initEvmTokenState(customTokenState: CustomTokenJson, networkMap:
   for (const defaultToken of { erc20: [] }.erc20) {
     const exist = false;
 
-    for (const storedToken of evmTokenState.erc20) {
-      // if (
-      // isEqualContractAddress(defaultToken.smartContract, storedToken.smartContract) &&
-      // defaultToken.chain === storedToken.chain
-      // ) {
-      //   if (storedToken.isCustom) {
-      // if existed, migrate the custom token -> default token
-      //     delete storedToken.isCustom;
-      //   }
-      //   exist = true;
-      //   break;
-      // }
-    }
-
     if (!exist) {
       evmTokenState.erc20.push(defaultToken);
     }

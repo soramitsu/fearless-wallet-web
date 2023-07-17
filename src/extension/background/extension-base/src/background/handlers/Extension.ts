@@ -35,7 +35,6 @@ import {
 import {
   BasicTxErrorCode,
   MobileSigningRequest,
-  NetworkType,
   RequestMobileSign,
   RequestUpdateMeta,
   TransferErrorCode,
@@ -424,28 +423,12 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
-  private async enableNetworkType(type: NetworkType | string): Promise<void> {
+  private async enableNetworkType(type: string): Promise<void> {
     return this.state.setActiveNetworks(type);
   }
 
-  private getNetworkType(): string {
-    return this.state.networkGroupType;
-  }
-
   private async toggleNetworkFavorite(networkKey: string): Promise<void> {
-    const favs = this.state.favoriteNetworks;
-
-    // if (favs.has(networkKey)) {
-    // favs.delete(networkKey);
-    // this.state.networkMap[networkKey].favorite = false;
-    // this.state.networkMapSubject.next(this.state.networkMap);
-
-    // return;
-    // }
-
-    // favs.add(networkKey);
-    // this.state.networkMap[networkKey].favorite = true;
-    this.state.networkMapSubject.next(this.state.networkMap);
+    await this.state.setFavoriteNetwork(networkKey);
   }
 
   private async upsertNetworkMap(data: NetworkJson): Promise<boolean> {
@@ -1355,12 +1338,12 @@ export default class Extension extends FWExtensionBase {
         return this.upsertNetworkMap(request as NetworkJson);
 
       case 'pri(networkMap.enable.type)':
-        return this.enableNetworkType(request as NetworkType);
-
-      case 'pri(networkMap.get.type)':
-        return this.getNetworkType();
+        return this.enableNetworkType(request as string);
 
       case 'pri(networkMap.toggle.favorite)':
+        return this.toggleNetworkFavorite(request as string);
+
+      case 'pri(networkMap.setNetworks)':
         return this.toggleNetworkFavorite(request as string);
 
       case 'pri(networkMap.getSubscription)':

@@ -37,7 +37,6 @@ import type {
   ValidateJsonResult,
   RequestAccountMeta,
   ResponseAccountMeta,
-  DisableNetworkResponse,
   ValidateNetworkResponse,
   RequestCheckSwap,
   ResponseCheckSwap,
@@ -45,8 +44,7 @@ import type {
   ResponseMakeSwap,
   ResponseTotalBalances,
   MobileSigningRequest,
-  NetworkType,
-} from '@/extension/background/extension-base/src/background/types/types';
+} from '@extension-base/background/types/types';
 import type { Message, NetworkJson, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
 import type { KeyringAddress, KeyringPairs$Json } from '@polkadot/ui-keyring/types';
@@ -520,16 +518,12 @@ export function upsertNetworkMap(data: NetworkJson): Promise<boolean> {
   return sendMessage('pri(networkMap.upsert)', data);
 }
 
-export function toggleNetworkType(type: NetworkType | string): Promise<void> {
-  return sendMessage('pri(networkMap.enable.type)', type);
+export function toggleNetworkType(type: string): Promise<void> {
+  return sendMessage('pri(networkMap.setNetwork)', type);
 }
 
 export function toggleFavoriteNetwork(name: string): Promise<void> {
   return sendMessage('pri(networkMap.toggle.favorite)', name);
-}
-
-export function getNetworkType(): Promise<NetworkType | string> {
-  return sendMessage('pri(networkMap.get.type)');
 }
 
 export function getNetworkMap(): Promise<Record<string, NetworkJson>> {

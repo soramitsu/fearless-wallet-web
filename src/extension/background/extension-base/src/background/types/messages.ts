@@ -29,7 +29,6 @@ import type {
   RequestAccountChangePassword,
   ValidateNetworkRequest,
   ValidateNetworkResponse,
-  DisableNetworkResponse,
   RequestAuthorizeApprove,
   ResponseAuthorizeList,
   RequestAuthorizeSubscribe,
@@ -89,7 +88,6 @@ import type {
   RequestUpdateMeta,
   ResponseTotalBalances,
   MobileSigningRequest,
-  NetworkType,
 } from '@extension-base/background/types/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
@@ -140,8 +138,7 @@ export interface RequestSignatures {
   'pri(networkMap.getNetworkMap)': [null, Record<string, NetworkJson>];
   'pri(networkMap.getSubscription)': [null, Record<string, NetworkJson>, Record<string, NetworkJson>];
   'pri(networkMap.toggle.favorite)': [string, void];
-  'pri(networkMap.enable.type)': [NetworkType | string, void];
-  'pri(networkMap.get.type)': [null, NetworkType | string];
+  'pri(networkMap.setNetwork)': [string, void];
 
   //Authorize
   'pri(authorize.approve.polkaswap)': [string[], null];

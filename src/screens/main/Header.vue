@@ -83,6 +83,7 @@
 import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
 import { HexString } from '@polkadot/util/types';
+import { ActiveTabAuthorizeStatus } from '@extension-base/background/types/types';
 import type { SelectedWallet } from '@/store';
 import NetworkManage from '@/screens/wallet&asset/NetworkForm.vue';
 
@@ -91,11 +92,7 @@ import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
-import { getNetworkType, tieAccount, windowOpen } from '@/extension/messaging';
-import {
-  ActiveTabAuthorizeStatus,
-  NetworkType,
-} from '@/extension/background/extension-base/src/background/types/types';
+import { tieAccount, windowOpen } from '@/extension/messaging';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
 import { AsyncFn, Fn } from '@/interfaces';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';

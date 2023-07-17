@@ -31,12 +31,7 @@ import { DEFAULT_EVM_TOKENS } from '@extension-base/api/tokens/evm/defaultEvmTok
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
 import { getMockCurrencies, isEthereumNetwork, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
-import {
-  MobileSigningRequest,
-  MobileSignRequest,
-  NetworkType,
-  POPUP_WINDOW_OPTS,
-} from '@extension-base/background/types/types';
+import { MobileSigningRequest, MobileSignRequest, POPUP_WINDOW_OPTS } from '@extension-base/background/types/types';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 
@@ -82,7 +77,13 @@ import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types
 import type { HexString } from '@polkadot/util/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
 import { URLS } from '@/consts/urls';
-import { ALL_NETWORKS, SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/networks';
+import {
+  ALL_NETWORKS,
+  FAVORITE_NETWORKS,
+  POPULAR_NETWORKS,
+  SORA_NETWORK_NAME,
+  SORA_XOR_ASSET_ID,
+} from '@/consts/networks';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/currencies';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
@@ -170,8 +171,6 @@ export default class State {
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
   public networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
-  public networkGroupType = 'popular';
-  public networkType: NetworkType | 'single' = 'all';
   public networksJson: NetworkJson[] = []; // from github
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJson>>();
@@ -600,28 +599,41 @@ export default class State {
   public getNetworkGroupType() {
     return this.getNetworkGroupType;
   }
-  public setActiveNetworks(type: NetworkType | string) {
-    this.networkGroupType = type;
 
+  async setFavoriteNetwork(networkName: string): Promise<boolean> {
+    const network = this.networkMap[networkName];
+    const currentAccount = await this.currentAccount;
+
+    if (!currentAccount) return false;
+
+    const addressIndex = network.favorite.findIndex((address) => address === currentAccount.address);
+
+    addressIndex !== -1 ? network.favorite.splice(addressIndex, 1) : network.favorite.push(currentAccount.address);
+
+    this.networkMapSubject.next(this.networkMap);
+
+    return true;
+  }
+
+  public setActiveNetworks(type: string) {
     Object.keys(this.networkMap).forEach((key) => {
       const network = this.networkMap[key];
 
       switch (type) {
-        case 'all':
+        case ALL_NETWORKS:
           network.active = true;
 
           return;
-        case 'favorites':
+        case FAVORITE_NETWORKS:
           network.active = !!network.favorite;
 
           return;
-        case 'popular':
+        case POPULAR_NETWORKS:
           network.active = !!network.popular;
 
           return;
         default:
-          if (network.name === type) network.active = true;
-          else network.active = false;
+          network.active = network.name === type ?? false;
       }
     });
 

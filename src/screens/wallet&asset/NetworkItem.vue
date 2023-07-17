@@ -7,7 +7,7 @@
 
     <div class="network__state">
       <Icon
-        v-if="isSelected && !isNetworkGroup"
+        v-if="isNetworkSelected"
         icon="check"
         :iconColor="iconColor"
         width="18"
@@ -44,6 +44,10 @@ export default class NetworkItem extends Vue {
     return this.isSelected ? 'purple' : '';
   }
 
+  get isNetworkSelected() {
+    return this.isSelected && !this.isNetworkGroup;
+  }
+
   get isFavorite() {
     if (this.isNetworkGroup) return false;
 
@@ -78,21 +82,21 @@ export default class NetworkItem extends Vue {
   align-items: center;
   gap: 16px;
 
-  .network__name {
+  &__name {
     white-space: nowrap;
   }
 
-  .network__icon-state {
+  &__icon-state {
     width: 18px;
     height: 18px;
   }
 
-  .network__icon {
+  &__icon {
     width: 24px;
     height: 24px;
   }
 
-  .network__state {
+  &__state {
     flex-grow: 3;
     width: 100%;
     display: flex;

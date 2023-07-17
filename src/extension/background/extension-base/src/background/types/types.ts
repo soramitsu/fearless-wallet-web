@@ -175,7 +175,7 @@ export interface RequestCurrentAccountAddress {
   address: string;
 }
 export type MessageTypes = keyof RequestSignatures;
-export type NetworkType = 'all' | 'popular' | 'favorites';
+
 // Requests
 export type RequestTypes = {
   [MessageType in keyof RequestSignatures]: RequestSignatures[MessageType][0];

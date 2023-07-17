@@ -1,9 +1,9 @@
 <template>
-  <AboveForm :header="header" :fullScreen="true" :closeHandler="handlerClose">
+  <AboveForm :header="getLocale('header')" :fullScreen="true" :closeHandler="handlerClose">
     <SearchInput v-model="filterValue" placeholder="common.searchNetwork" class="search-input" width="100%" />
 
     <STabs v-model="activeTab" type="rounded" position="top">
-      <STab v-for="tab in tabs" :label="$t(tab.label)" :name="tab.name" :key="tab.name" class="button">
+      <STab v-for="{ name, label } in tabs" class="button" :label="$t(label)" :name="name" :key="name">
         <NetworkItem
           :network="networkGroup"
           :isNetworkGroup="true"
@@ -17,11 +17,11 @@
         <ul class="network__list">
           <NetworkItem
             v-for="network in sortedNetworks"
-            :key="network.name"
             :network="network"
             :isSelected="isNetworkSelected(network)"
             @onToggleNetworkType="enableSingleNetwork(network.name)"
             @onToggleState="toggleFavorite(network.name)"
+            :key="network.name"
           />
         </ul>
       </Scroll>
@@ -41,15 +41,16 @@ import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutatio
 
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { SetFavoriteNetwork, Wallet } from '@/store/accounts/types';
+import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 type Tab = {
   label: string;
   name: string;
 };
 
 type Tabs = {
-  all: Tab;
-  popular: Tab;
-  favorites: Tab;
+  [ALL_NETWORKS]: Tab;
+  [POPULAR_NETWORKS]: Tab;
+  [FAVORITE_NETWORKS]: Tab;
 };
 
 @Component({
@@ -61,21 +62,21 @@ type Tabs = {
 })
 export default class NetworkManage extends Vue {
   filterValue = '';
-  activeTab: keyof Tabs = 'all';
+  activeTab: keyof Tabs = ALL_NETWORKS;
   value = '';
 
   tabs: Tabs = {
-    all: {
+    [ALL_NETWORKS]: {
       label: 'header.networkManagement.tabs.all',
-      name: 'all',
+      name: ALL_NETWORKS,
     },
-    popular: {
+    [POPULAR_NETWORKS]: {
       label: 'header.networkManagement.tabs.popular',
-      name: 'popular',
+      name: POPULAR_NETWORKS,
     },
-    favorites: {
+    [FAVORITE_NETWORKS]: {
       label: 'header.networkManagement.tabs.favorites',
-      name: 'favorites',
+      name: FAVORITE_NETWORKS,
     },
   };
   @Prop(Function) handlerClose!: VoidFunction;
@@ -96,11 +97,12 @@ export default class NetworkManage extends Vue {
   }
 
   get filterNetwork() {
-    if (this.activeTab === 'all') return this.networks;
+    if (this.activeTab === ALL_NETWORKS) return this.networks;
 
     return this.networks.filter(({ favorite, popular }) => {
-      if (this.activeTab === 'popular') return popular;
-      if (this.activeTab === 'favorites') return favorite.some((address) => address === this.selectedWallet.address);
+      if (this.activeTab === POPULAR_NETWORKS) return popular;
+      if (this.activeTab === FAVORITE_NETWORKS)
+        return favorite.some((address) => address === this.selectedWallet.address);
     });
   }
 
@@ -112,36 +114,36 @@ export default class NetworkManage extends Vue {
     });
   }
 
-  isNetworkSelected(network: NetworkJson) {
-    return this.selectedNetwork === network.name;
+  getLocale(key: string): string {
+    return `header.networkManagement.${key}`;
   }
 
-  get header() {
-    return 'header.networkManagement.header';
+  isNetworkSelected({ name }: NetworkJson) {
+    return this.selectedNetwork === name;
   }
 
   toggleNetworkType() {
     this.setSelectedNetwork(this.tabs[this.activeTab].name);
 
-    const prepNotification = this.$t(`header.networkManagement.groupSelected`, {
+    const prepNotification = this.$t(this.getLocale('groupSelected'), {
       group: this.$t(this.tabs[this.activeTab].label),
     });
 
     this.$notify({ title: prepNotification as string, message: '', type: 'success' });
   }
 
-  async enableSingleNetwork(network: string) {
+  enableSingleNetwork(network: string) {
     this.setSelectedNetwork(network);
 
-    const prepNotification = this.$t(`header.networkManagement.networkSelected`, { network });
+    const prepNotification = this.$t(this.getLocale('networkSelected'), { network });
 
     this.$notify({ title: prepNotification as string, message: '', type: 'success' });
   }
 
-  async toggleFavorite(network: string) {
+  toggleFavorite(network: string) {
     const isFavorite = this.setFavorite({ networkName: network, address: this.selectedWallet.address });
 
-    const t = `header.networkManagement.${isFavorite ? 'deleteFavorite' : 'addFavorite'}`;
+    const t = this.getLocale(isFavorite ? 'deleteFavorite' : 'addFavorite');
     const prepNotification = this.$t(t, { network });
 
     this.$notify({

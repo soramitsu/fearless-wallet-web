@@ -41,6 +41,7 @@ import { stripUrl, withErrorLog } from '@extension-base/background/handlers/help
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
 
 import { SignerPayloadRaw } from '@polkadot/types/types';
+import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -169,12 +170,13 @@ export default class State {
   public xcmFees: XcmFees = [];
   public xcmLocations: XcmLocations = [];
   public networkMap: Record<string, NetworkJson> = {}; // mapping to networkMapStore, for uses in background
-  public favoriteNetworks = new Set();
   public networkGroupType = 'popular';
   public networkType: NetworkType | 'single' = 'all';
   public networksJson: NetworkJson[] = []; // from github
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJson>>();
+  public favoriteNetworks: Record<string, Set<string>> = {};
+
   public serviceInfoSubject = new Subject<ServiceInfo>();
   public balanceMap: BalanceMap = {};
   public balanceSubject = new Subject<BalanceJson>();
@@ -1039,6 +1041,7 @@ export default class State {
           chainType: 'substrate',
           active: true,
           customNodes: [],
+          favorite: [],
           currentProvider: network.nodes[0].url,
           providers: network.nodes.reduce<Record<string, string>>((result, { name, url }) => {
             result[name] = url;
@@ -1073,6 +1076,10 @@ export default class State {
 
       this.initCustomTokenState();
     });
+  }
+
+  public getWallets(): KeyringAddress[] {
+    return [...keyring.getAccounts(), ...keyring.getAddresses()];
   }
 
   public initCustomTokenState() {

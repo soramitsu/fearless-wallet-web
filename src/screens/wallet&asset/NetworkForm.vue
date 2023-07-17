@@ -7,7 +7,7 @@
         <NetworkItem
           :network="networkGroup"
           :isNetworkGroup="true"
-          :isActive="isGroupSelected"
+          :isSelected="isGroupSelected"
           @onToggleNetworkType="toggleNetworkType()"
         />
       </STab>
@@ -20,9 +20,8 @@
             :key="network.name"
             :network="network"
             :isSelected="isNetworkSelected(network)"
-            :isFavorite="network.favorite"
             @onToggleNetworkType="enableSingleNetwork(network.name)"
-            @onToggleState="toggleFavorite(network.name, !!network.favorite)"
+            @onToggleState="toggleFavorite(network.name)"
           />
         </ul>
       </Scroll>
@@ -32,12 +31,16 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+import { Action, Getter, Mutation } from 'vuex-class';
 import { STab, STabs } from '@soramitsu/soramitsu-js-ui';
 import NetworkItem from './NetworkItem.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
+import { ActionTypes as NetworksActionsTypes } from '@/store/networks/actions';
+import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutations';
+
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
-import { toggleFavoriteNetwork, toggleNetworkType } from '@/extension/messaging';
+import { SetFavoriteNetwork, Wallet } from '@/store/accounts/types';
 type Tab = {
   label: string;
   name: string;
@@ -78,9 +81,14 @@ export default class NetworkManage extends Vue {
   @Prop(Function) handlerClose!: VoidFunction;
   @Prop(String) type!: keyof Tabs | string;
   @Getter(NetworksGettersTypes.allNetworks) networks!: NetworkJson[];
+  @Getter(AccountGettersTypes.getSelectedNetwork) selectedNetwork!: string;
+  @Getter(AccountGettersTypes.getSelectedWallet) selectedWallet!: Wallet;
+
+  @Action(NetworksActionsTypes.TOGGLE_FAVORITE_NETWORK) setFavorite!: (props: SetFavoriteNetwork) => boolean;
+  @Mutation(AccountMutationsTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;
 
   get isGroupSelected() {
-    return this.type === this.activeTab;
+    return this.selectedNetwork === this.activeTab;
   }
 
   get networkGroup() {
@@ -90,14 +98,14 @@ export default class NetworkManage extends Vue {
   get filterNetwork() {
     if (this.activeTab === 'all') return this.networks;
 
-    return this.networks.filter((network) => {
-      if (this.activeTab === 'popular') return network.popular;
-      if (this.activeTab === 'favorites') return network.favorite;
+    return this.networks.filter(({ favorite, popular }) => {
+      if (this.activeTab === 'popular') return popular;
+      if (this.activeTab === 'favorites') return favorite.some((address) => address === this.selectedWallet.address);
     });
   }
 
   get sortedNetworks() {
-    return this.filterNetwork.sort((a, b) => {
+    return this.filterNetwork.sort((a) => {
       if (a.active) return 1;
 
       return 0;
@@ -105,15 +113,15 @@ export default class NetworkManage extends Vue {
   }
 
   isNetworkSelected(network: NetworkJson) {
-    return this.type === network.name && network.active;
+    return this.selectedNetwork === network.name;
   }
 
   get header() {
     return 'header.networkManagement.header';
   }
 
-  async toggleNetworkType() {
-    await toggleNetworkType(this.activeTab);
+  toggleNetworkType() {
+    this.setSelectedNetwork(this.tabs[this.activeTab].name);
 
     const prepNotification = this.$t(`header.networkManagement.groupSelected`, {
       group: this.$t(this.tabs[this.activeTab].label),
@@ -123,15 +131,16 @@ export default class NetworkManage extends Vue {
   }
 
   async enableSingleNetwork(network: string) {
-    await toggleNetworkType(network);
+    this.setSelectedNetwork(network);
 
     const prepNotification = this.$t(`header.networkManagement.networkSelected`, { network });
 
     this.$notify({ title: prepNotification as string, message: '', type: 'success' });
   }
 
-  async toggleFavorite(network: string, isFavorite: boolean) {
-    await toggleFavoriteNetwork(network);
+  async toggleFavorite(network: string) {
+    const isFavorite = this.setFavorite({ networkName: network, address: this.selectedWallet.address });
+
     const t = `header.networkManagement.${isFavorite ? 'deleteFavorite' : 'addFavorite'}`;
     const prepNotification = this.$t(t, { network });
 

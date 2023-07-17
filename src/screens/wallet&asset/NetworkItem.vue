@@ -28,25 +28,30 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Fragment } from 'vue-fragment';
+import { Getter } from 'vuex-class';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
+import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
+import { SelectedWallet } from '@/store/accounts/types';
 
-@Component({
-  components: {
-    Fragment,
-  },
-})
+@Component({})
 export default class NetworkItem extends Vue {
   @Prop(Object) network!: NetworkJson;
   @Prop(Boolean) isSelected!: boolean;
-  @Prop(Boolean) isFavorite!: boolean;
   @Prop({ default: false }) isNetworkGroup!: boolean;
+  @Getter(AccountGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
 
   get iconColor() {
     return this.isSelected ? 'purple' : '';
   }
+
+  get isFavorite() {
+    if (this.isNetworkGroup) return false;
+
+    return this.network.favorite.includes(this.selectedWallet.address);
+  }
+
   get iconColorFavorite() {
-    return this.isFavorite ? 'purple' : '';
+    return this.isFavorite || (this.isSelected && this.isNetworkGroup) ? 'purple' : '';
   }
 
   get iconType() {

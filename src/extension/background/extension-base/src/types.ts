@@ -157,7 +157,7 @@ export interface NetworkJson {
   types: TypesForMobile;
   options?: string[];
   popular?: boolean;
-  favorite?: boolean;
+  favorite: string[];
   xcm?: {
     xcmVersion: 'v1' | 'v2' | 'v3';
     availableAssets: string[];

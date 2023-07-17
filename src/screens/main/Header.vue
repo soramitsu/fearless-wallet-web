@@ -42,7 +42,7 @@
           <Icon v-if="isGroupIcon" :icon="selectedNetworkIcon" className="icon--network" width="16" height="16" />
           <ExternalLogo v-else :name="selectedNetworkIcon" width="16" height="16" class="icon--network" />
 
-          <span>{{ selectedNetworkType }}</span>
+          <span>{{ selectedNetwork }}</span>
           <Icon icon="down" className="icon--down" width="10" height="9" />
         </div>
 
@@ -71,7 +71,7 @@
 
         <NetworkManage
           v-if="showSelectNetworkPopup"
-          :type="networkType"
+          :type="selectedNetwork"
           :handlerClose="toggleSelectNetworkPopupVisible"
         />
       </div>
@@ -110,11 +110,10 @@ export default class Header extends Vue {
   readonly walletNameRef = 'walletName';
   readonly settingsNameRef = 'settingsName';
   readonly isPopup = BaseApi.useIsPopup();
-  networkType: NetworkType | string = 'all';
   showConnectionPopup = false;
   showSelectNetworkPopup = false;
   readonly selectNetworkButtonRef = 'selectNetworkButton';
-
+  networkGoups = ['all', 'popular', 'favorites'];
   @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -128,18 +127,14 @@ export default class Header extends Vue {
     return this.$route.name === Components.Asset;
   }
 
-  get selectedNetworkType() {
-    return this.networkType;
-  }
-
   get isGroupIcon() {
-    return this.networkType === 'all' || this.networkType === 'popular' || this.networkType === 'favorites';
+    return this.networkGoups.includes(this.selectedNetwork.toLowerCase());
   }
 
   get selectedNetworkIcon() {
     if (this.isGroupIcon) return 'all-networks';
 
-    return this.getNetwork(this.networkType).icon;
+    return this.getNetwork(this.selectedNetwork).icon;
   }
 
   get name() {
@@ -185,12 +180,7 @@ export default class Header extends Vue {
   }
 
   async mounted() {
-    this.getNetworkType();
     this.fetchTabStatus();
-  }
-
-  async getNetworkType() {
-    this.networkType = await getNetworkType();
   }
 
   toggleConnectionPopup() {

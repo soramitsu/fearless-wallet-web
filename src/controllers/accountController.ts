@@ -13,6 +13,8 @@ class AccountController {
   private readonly selectedFiatStorageName = 'selected-fiat';
   private readonly selectedWalletStorageName = 'selected-wallet';
   private readonly selectedNetworkStorageName = 'selected-network';
+  private readonly favoriteNetworkStorageName = 'favorite-networks';
+
   private readonly customSort = 'custom-sort';
   private readonly accounts = 'accounts';
   private readonly hiddenAssets = 'hidden-assets';
@@ -101,6 +103,10 @@ class AccountController {
     this.lsAccount.set(this.hiddenAssets, hiddenAssets);
   }
 
+  public setFavoriteNetworks(favoriteNetworks: Record<WalletAddress, string[]>): void {
+    this.lsAccount.set(this.hiddenAssets, favoriteNetworks);
+  }
+
   public getAccounts(): AccountJson[] {
     return this.lsAccount.get(this.accounts).value ?? [];
   }
@@ -111,6 +117,12 @@ class AccountController {
 
   public getSelectedNetwork(): Record<string, string> {
     const lsNetwork = this.lsAccount.get(this.selectedNetworkStorageName);
+
+    return lsNetwork.value ?? {};
+  }
+
+  public getFavoriteNetwork(): Record<string, string[]> {
+    const lsNetwork = this.lsAccount.get(this.favoriteNetworkStorageName);
 
     return lsNetwork.value ?? {};
   }

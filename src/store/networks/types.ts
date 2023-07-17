@@ -33,6 +33,15 @@ export type SetNetworksStatusProps = {
   networks: NetworkJson[];
 };
 
+export type SetNetworkFavoriteProps = {
+  networksName: string;
+  address: string;
+};
+export type RemoveNetworkFavoriteProps = {
+  networksName: string;
+  index: number;
+};
+
 export type SetFiatsJsonProps = {
   fiats: FiatJson[];
 };
@@ -93,6 +102,11 @@ export type FetchHistory = {
   wallet: Wallet;
   assetId: string;
   isPreviously: boolean;
+};
+
+export type ToggleFavorite = {
+  networkName: NetworkName;
+  address: string;
 };
 
 export type CustomAccounts = Record<string, { type?: KeypairType; json: KeyringJson }>;

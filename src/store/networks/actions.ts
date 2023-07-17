@@ -2,7 +2,7 @@ import axios from 'axios';
 
 import type { State } from '@/store/networks/state';
 import type { ActionTree } from 'vuex';
-import type { FetchHistory, AugmentedActionContext } from '@/store';
+import type { FetchHistory, AugmentedActionContext, ToggleFavorite } from '@/store';
 import type { FiatJson, Network } from '@/interfaces';
 import { MutationTypes } from '@/store/networks/mutations';
 import BaseApi from '@/util/BaseApi';
@@ -13,11 +13,13 @@ import { getUtilityAsset } from '@/helpers/currencies';
 export enum ActionTypes {
   FETCH_FIATS = 'FETCH_FIATS',
   FETCH_HISTORY = 'FETCH_HISTORY',
+  TOGGLE_FAVORITE_NETWORK = 'TOGGLE_FAVORITE_NETWORK',
 }
 
 export type Actions = {
   [ActionTypes.FETCH_FIATS](store: AugmentedActionContext): Promise<void>;
   [ActionTypes.FETCH_HISTORY](store: AugmentedActionContext, props: FetchHistory): Promise<void>;
+  [ActionTypes.TOGGLE_FAVORITE_NETWORK](store: AugmentedActionContext, props: ToggleFavorite): boolean;
 };
 
 const actions: ActionTree<State, State> & Actions = {
@@ -54,6 +56,21 @@ const actions: ActionTree<State, State> & Actions = {
         assetId,
         serviceType: type,
       });
+  },
+  [ActionTypes.TOGGLE_FAVORITE_NETWORK]({ state, commit }, { address, networkName }): boolean {
+    const index = state.networks.findIndex(({ name }) => name === networkName);
+    const network = state.networks[index];
+    const favoriteIndex = network.favorite.findIndex((el) => el === address);
+
+    if (favoriteIndex !== -1) {
+      commit(MutationTypes.REMOVE_FAVORITE_NETWORK, { index: favoriteIndex, networksName: networkName });
+
+      return false;
+    }
+
+    commit(MutationTypes.SET_FAVORITE_NETWORK, { address, networksName: networkName });
+
+    return true;
   },
 };
 

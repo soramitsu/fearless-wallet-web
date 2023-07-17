@@ -435,16 +435,16 @@ export default class Extension extends FWExtensionBase {
   private async toggleNetworkFavorite(networkKey: string): Promise<void> {
     const favs = this.state.favoriteNetworks;
 
-    if (favs.has(networkKey)) {
-      favs.delete(networkKey);
-      this.state.networkMap[networkKey].favorite = false;
-      this.state.networkMapSubject.next(this.state.networkMap);
+    // if (favs.has(networkKey)) {
+    // favs.delete(networkKey);
+    // this.state.networkMap[networkKey].favorite = false;
+    // this.state.networkMapSubject.next(this.state.networkMap);
 
-      return;
-    }
+    // return;
+    // }
 
-    favs.add(networkKey);
-    this.state.networkMap[networkKey].favorite = true;
+    // favs.add(networkKey);
+    // this.state.networkMap[networkKey].favorite = true;
     this.state.networkMapSubject.next(this.state.networkMap);
   }
 

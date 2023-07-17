@@ -19,7 +19,8 @@
             v-for="network in sortedNetworks"
             :key="network.name"
             :network="network"
-            :isActive="isNetworkSelected(network)"
+            :isSelected="isNetworkSelected(network)"
+            :isFavorite="network.favorite"
             @onToggleNetworkType="enableSingleNetwork(network.name)"
             @onToggleState="toggleFavorite(network.name, !!network.favorite)"
           />

@@ -7,16 +7,16 @@
 
     <div class="network__state">
       <Icon
-        v-if="isActive && !isNetworkGroup"
+        v-if="isSelected && !isNetworkGroup"
         icon="check"
-        :iconColor="active"
+        :iconColor="iconColor"
         width="18"
         height="18"
         className="network__icon-state"
       />
       <Icon
         :icon="iconType"
-        :iconColor="active"
+        :iconColor="iconColorFavorite"
         width="18"
         height="18"
         className="network__icon-state"
@@ -38,17 +38,15 @@ import { NetworkJson } from '@/extension/background/extension-base/src/types';
 })
 export default class NetworkItem extends Vue {
   @Prop(Object) network!: NetworkJson;
-  @Prop(Boolean) isActive!: boolean;
+  @Prop(Boolean) isSelected!: boolean;
+  @Prop(Boolean) isFavorite!: boolean;
   @Prop({ default: false }) isNetworkGroup!: boolean;
 
-  get active() {
-    if ((!this.isNetworkGroup && this.isFavorite) || (this.isNetworkGroup && this.isActive)) return 'purple';
-
-    return '';
+  get iconColor() {
+    return this.isSelected ? 'purple' : '';
   }
-
-  get isFavorite() {
-    return !!this.network.favorite;
+  get iconColorFavorite() {
+    return this.isFavorite ? 'purple' : '';
   }
 
   get iconType() {

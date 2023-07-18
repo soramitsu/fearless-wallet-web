@@ -36,6 +36,7 @@ import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extensi
 import { ethers } from 'ethers';
 import { getSubstrateAddressByEthAddress, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
 
+import { storage } from '../../stores/Storage';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -424,6 +425,13 @@ export default class Extension extends FWExtensionBase {
   }
 
   private async enableNetworkType(type: string): Promise<void> {
+    const currentAccount = await this.state.currentAccount;
+
+    if (currentAccount) {
+      this.state.selectedNetwork[currentAccount.address] = type;
+      storage.set({ selectedNetwork: this.state.selectedNetwork });
+    }
+
     return this.state.setActiveNetworks(type);
   }
 

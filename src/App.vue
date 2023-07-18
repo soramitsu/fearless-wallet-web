@@ -129,7 +129,6 @@ export default class App extends Vue {
 
     if (selectedAccount || !this.wallets.length) {
       this.setSelectedWallet(selectedAccount);
-
       this.setSelectedNetwork(selectedAccount && selectedAccount.network ? selectedAccount.network : ALL_NETWORKS);
     }
   }

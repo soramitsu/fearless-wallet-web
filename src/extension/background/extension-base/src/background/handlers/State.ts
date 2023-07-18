@@ -328,19 +328,28 @@ export default class State {
   async injectFromStorage() {
     extractMetadata(metaStore);
 
-    const { authUrls, defaultAuthAccountSelection, fiatSymbol, injectedProviders, providers, windows } =
-      await this.getFromStorage([
-        'fiatSymbol',
-        'authUrls',
-        'defaultAuthAccountSelection',
-        'injectedProviders',
-        'providers',
-        'windows',
-      ]);
+    const {
+      authUrls,
+      defaultAuthAccountSelection,
+      fiatSymbol,
+      injectedProviders,
+      providers,
+      windows,
+      selectedNetwork,
+    } = await this.getFromStorage([
+      'fiatSymbol',
+      'authUrls',
+      'selectedNetwork',
+      'defaultAuthAccountSelection',
+      'injectedProviders',
+      'providers',
+      'windows',
+    ]);
 
     if (authUrls && Object.keys(authUrls).length) this.authUrls = authUrls;
     if (windows && windows.length) this.windows = windows;
     if (fiatSymbol) this.setFiatSymbol(fiatSymbol);
+    if (selectedNetwork) this.selectedNetwork = selectedNetwork;
     if (injectedProviders) this.injectedProviders = new Map(injectedProviders);
     if (providers) this.providers = providers;
     if (defaultAuthAccountSelection && defaultAuthAccountSelection.length)
@@ -460,8 +469,6 @@ export default class State {
 
     if (currentAccount) {
       this.setCurrentAccount({ ...currentAccount });
-      this.selectedNetwork[currentAccount.address] = ALL_NETWORKS;
-      storage.set({ selectedNetwork: this.selectedNetwork });
 
       return;
     }
@@ -482,8 +489,6 @@ export default class State {
         ethereumAddress: ethereumAddress as string,
         isMobile: isMobile as boolean,
       });
-      this.selectedNetwork[address] = ALL_NETWORKS;
-      storage.set({ selectedNetwork: this.selectedNetwork });
 
       return;
     }
@@ -637,6 +642,7 @@ export default class State {
           network.active = network.name === type ?? false;
       }
     });
+
     this.networkMapStore.set('NetworkMap', this.networkMap);
     this.cron.stop();
     this.initNetworkStates();

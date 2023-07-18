@@ -57,7 +57,7 @@ const notificationFn = ({ message, title, type }: SNotificationParams) => {
   Notification({
     message,
     title,
-    duration: 4500, // If is will be changed you should change animation duration as well
+    duration: 2500, // If is will be changed you should change animation duration as well
     type,
     customClass: 'sora s-flex fearless-notify',
   });

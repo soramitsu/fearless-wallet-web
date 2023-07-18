@@ -109,7 +109,7 @@ import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
-import { SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
+import { ALL_NETWORKS, SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
 
 import { googleManage } from '@/controllers/googleController';
 import {
@@ -141,6 +141,7 @@ async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> 
     .filter((el) => !isEthereumAddress(el.json.address))
     .map(({ json: { address, meta }, type }): AccountJson => {
       const isDefault = address === currentAccount?.address;
+      const currentNetwork = state.selectedNetwork[address] ?? ALL_NETWORKS;
 
       return {
         address,
@@ -148,6 +149,7 @@ async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> 
         active: isDefault,
         name: meta.name ?? '',
         type,
+        network: currentNetwork,
         ...meta,
       };
     });

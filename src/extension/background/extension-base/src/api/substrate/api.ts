@@ -126,7 +126,7 @@ export async function initApi(network: NetworkJson): Promise<void> {
   }
 
   const { nodeIndex } = state.apis.substrate[networkName];
-
+  console.info(nodeIndex, nodes, networkName);
   const autoSelectNode = network.isManual ? null : nodes[nodeIndex].url;
   const currentProvider = autoSelectNode ?? network.currentProvider;
   const eventListeners: Array<[ApiInterfaceEvents, ProviderInterfaceEmitCb]> = [

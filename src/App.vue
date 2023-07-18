@@ -9,6 +9,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Mutation, Getter, Action } from 'vuex-class';
+import { ALL_NETWORKS } from './consts/networks';
 import type { SetAccountsProps, SetNetworksStatusProps, SetAssetsPriceProps } from '@/store';
 import type { AsyncFn, Fn } from '@/interfaces';
 import { AccountJson, BalanceJson, PriceJson } from '@/extension/background/extension-base/src/background/types/types';
@@ -46,6 +47,7 @@ export default class App extends Vue {
   @Action(AccountsActionTypes.ONLINE_STATUS_UPDATE) updateOnlineStatus!: AsyncFn;
   @Action(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: AsyncFn<AccountJson>;
   @Action(AccountsActionTypes.SET_BALANCE) setBalance!: AsyncFn<BalanceJson>;
+  @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: (network: string) => void;
 
   get includeKeepAlive() {
     const components = ['Main'];
@@ -123,10 +125,13 @@ export default class App extends Vue {
 
   onAccountUpdate(accounts: AccountJson[], isMobileUpdate = false) {
     const selectedAccount = accounts.find((account) => account.active);
-
     this.setAccounts({ accounts, isMobileUpdate });
 
-    if (selectedAccount || !this.wallets.length) this.setSelectedWallet(selectedAccount);
+    if (selectedAccount || !this.wallets.length) {
+      this.setSelectedWallet(selectedAccount);
+
+      this.setSelectedNetwork(selectedAccount && selectedAccount.network ? selectedAccount.network : ALL_NETWORKS);
+    }
   }
 
   setupWallet() {

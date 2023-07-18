@@ -83,7 +83,6 @@ import {
   SORA_XOR_ASSET_ID,
 } from '@/consts/networks';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/currencies';
-import { updateCurrentAccountAddress } from '@/extension/messaging';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -462,6 +461,7 @@ export default class State {
     if (currentAccount) {
       this.setCurrentAccount({ ...currentAccount });
       this.selectedNetwork[currentAccount.address] = ALL_NETWORKS;
+      storage.set({ selectedNetwork: this.selectedNetwork });
 
       return;
     }
@@ -483,6 +483,7 @@ export default class State {
         isMobile: isMobile as boolean,
       });
       this.selectedNetwork[address] = ALL_NETWORKS;
+      storage.set({ selectedNetwork: this.selectedNetwork });
 
       return;
     }
@@ -1043,6 +1044,11 @@ export default class State {
     this.networksJson = networks.filter((el) => !el.disabled);
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
+    const networksFromStorage = await new Promise<Record<string, NetworkJson>>((res) => {
+      this.networkMapStore.get('NetworkMap', (accountsFromStorage) => {
+        res(accountsFromStorage);
+      });
+    });
 
     this.networksJson.forEach((network) => {
       const prepCurrentProvider = network.nodes[0].url;
@@ -1051,8 +1057,9 @@ export default class State {
       network.nodes.map((node) => {
         prepNodes[node.name] = node.url;
       });
-      const isEthereum = isEthereumNetwork(network.name);
 
+      const isEthereum = isEthereumNetwork(network.name);
+      const favorite = networksFromStorage[network.name].favorite ?? [];
       result[network.name] = {
         ...network,
         key: network.name,
@@ -1061,7 +1068,7 @@ export default class State {
         chainType: isEthereum ? 'ethereum' : 'substrate',
         active: true,
         customNodes: [],
-        favorite: [],
+        favorite,
         providers: prepNodes,
         currentProvider: prepCurrentProvider,
       };

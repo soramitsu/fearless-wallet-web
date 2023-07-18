@@ -85,6 +85,7 @@ import {
   SORA_XOR_ASSET_ID,
 } from '@/consts/networks';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/currencies';
+import { updateCurrentAccountAddress } from '@/extension/messaging';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -174,8 +175,7 @@ export default class State {
   public networksJson: NetworkJson[] = []; // from github
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJson>>();
-  public favoriteNetworks: Record<string, Set<string>> = {};
-
+  public selectedNetwork: Record<string, string> = {};
   public serviceInfoSubject = new Subject<ServiceInfo>();
   public balanceMap: BalanceMap = {};
   public balanceSubject = new Subject<BalanceJson>();
@@ -463,6 +463,7 @@ export default class State {
 
     if (currentAccount) {
       this.setCurrentAccount({ ...currentAccount });
+      this.selectedNetwork[currentAccount.address] = ALL_NETWORKS;
 
       return;
     }
@@ -483,6 +484,7 @@ export default class State {
         ethereumAddress: ethereumAddress as string,
         isMobile: isMobile as boolean,
       });
+      this.selectedNetwork[address] = ALL_NETWORKS;
 
       return;
     }
@@ -636,7 +638,8 @@ export default class State {
           network.active = network.name === type ?? false;
       }
     });
-
+    this.networkMapStore.set('NetworkMap', this.networkMap);
+    this.cron.stop();
     this.initNetworkStates();
   }
 
@@ -1086,7 +1089,7 @@ export default class State {
         }
       }
 
-      this.initCustomTokenState();
+      this.onReady();
     });
   }
 

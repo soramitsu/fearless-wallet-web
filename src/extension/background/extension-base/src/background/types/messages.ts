@@ -128,6 +128,7 @@ export interface RequestSignatures {
   'pri(accounts.validate)': [RequestAccountValidate, boolean];
   'pri(accounts.changePassword)': [RequestAccountChangePassword, boolean];
   'pri(accounts.update.current)': [string, boolean];
+  'pri(accounts.update.currentNetwork)': [string, boolean];
   'pri(accounts.get.totalBalances)': [null, ResponseTotalBalances[]];
 
   //App Managment - networks

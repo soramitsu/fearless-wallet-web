@@ -42,6 +42,7 @@ import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutatio
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { SetFavoriteNetwork, Wallet } from '@/store/accounts/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
+import { updateCurrentAccountNetwork } from '@/extension/messaging';
 type Tab = {
   label: string;
   name: string;
@@ -123,7 +124,10 @@ export default class NetworkManage extends Vue {
   }
 
   toggleNetworkType() {
-    this.setSelectedNetwork(this.tabs[this.activeTab].name);
+    const network = this.tabs[this.activeTab].name;
+    this.setSelectedNetwork(network);
+
+    updateCurrentAccountNetwork(network);
 
     const prepNotification = this.$t(this.getLocale('groupSelected'), {
       group: this.$t(this.tabs[this.activeTab].label),
@@ -134,7 +138,7 @@ export default class NetworkManage extends Vue {
 
   enableSingleNetwork(network: string) {
     this.setSelectedNetwork(network);
-
+    updateCurrentAccountNetwork(network);
     const prepNotification = this.$t(this.getLocale('networkSelected'), { network });
 
     this.$notify({ title: prepNotification as string, message: '', type: 'success' });

@@ -9,6 +9,7 @@ import BaseApi from '@/util/BaseApi';
 import { fetchHistory } from '@/subquery/fetchingHistory';
 import { URLS } from '@/consts/urls';
 import { getUtilityAsset } from '@/helpers/currencies';
+import { toggleFavoriteNetwork } from '@/extension/messaging';
 
 export enum ActionTypes {
   FETCH_FIATS = 'FETCH_FIATS',
@@ -69,6 +70,8 @@ const actions: ActionTree<State, State> & Actions = {
     }
 
     commit(MutationTypes.SET_FAVORITE_NETWORK, { address, networksName: networkName });
+
+    toggleFavoriteNetwork(networkName);
 
     return true;
   },

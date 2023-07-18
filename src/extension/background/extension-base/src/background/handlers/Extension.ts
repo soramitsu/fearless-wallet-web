@@ -122,7 +122,7 @@ import {
   SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
-import { SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
+import { ALL_NETWORKS, SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
 
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
@@ -491,6 +491,16 @@ export default class Extension extends FWExtensionBase {
     this._saveCurrentAccountAddress(address, () => {
       this.triggerWalletsSubscription();
     });
+
+    return true;
+  }
+
+  private async updateCurrentAccountNetwork(network: string): Promise<boolean> {
+    const current = await this.state.currentAccount;
+
+    if (!current) return false;
+
+    this.state.selectedNetwork[current?.address] = network;
 
     return true;
   }
@@ -1408,6 +1418,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(accounts.update.current)':
         return this.updateCurrentAccountAddress(request as string);
+
+      case 'pri(accounts.update.currentNetwork)':
+        return this.enableNetworkType(request as string);
 
       case 'pri(accounts.update.meta)':
         return this.updatePairMeta(request as RequestUpdateMeta);

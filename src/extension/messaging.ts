@@ -309,6 +309,10 @@ export function triggerAccountsSubscription(): Promise<boolean> {
   return sendMessage('pri(accounts.triggerSubscription)');
 }
 
+export function updateCurrentAccountNetwork(address: string): Promise<boolean> {
+  return sendMessage('pri(accounts.update.currentNetwork)', address);
+}
+
 export function updateCurrentAccountAddress(address: string): Promise<boolean> {
   return sendMessage('pri(accounts.update.current)', address);
 }

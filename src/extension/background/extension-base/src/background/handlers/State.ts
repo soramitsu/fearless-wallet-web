@@ -1027,7 +1027,7 @@ export default class State {
     this.networkMapStore.get('NetworkMap', async (storedNetworkMap) => {
       for (const [key, network] of Object.entries(storedNetworkMap)) {
         if (network.active) {
-          if ((network.isEthereum && key === 'Ethereum') || key === 'Ethereum Goerli') {
+          if (network.isEthereum && !isRequireSubstrateAPI(key)) {
             this.apis.evm[key] = initWeb3Api(network.currentProvider as string);
           } else initApi(network);
         }

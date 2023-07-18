@@ -108,10 +108,11 @@ export default class NetworkManage extends Vue {
   }
 
   get sortedNetworks() {
-    return this.filterNetwork.sort((a) => {
-      if (a.active) return 1;
+    return this.filterNetwork.sort((a, b) => {
+      const value1 = Number(a.name === this.selectedNetwork) + Number(a.favorite.includes(this.selectedWallet.address));
+      const value2 = Number(b.name === this.selectedNetwork) + Number(b.favorite.includes(this.selectedWallet.address));
 
-      return 0;
+      return value2 - value1;
     });
   }
 

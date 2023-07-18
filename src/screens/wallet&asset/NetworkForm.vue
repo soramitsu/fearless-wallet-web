@@ -185,7 +185,7 @@ export default class NetworkManage extends Vue {
   }
 }
 .container {
-  height: 400px;
+  height: 350px;
   overflow-y: hidden;
 }
 

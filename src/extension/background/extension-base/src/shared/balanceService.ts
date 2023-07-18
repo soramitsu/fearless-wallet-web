@@ -22,6 +22,11 @@ export default class BalanceService {
     if (!symbol) return;
 
     if (!copyBalance[address]) copyBalance[address] = {};
+    if (item.state !== APIItemState.READY) return;
+
+    if (!symbol) return;
+
+    if (copyBalance[address]) copyBalance[address] = {};
 
     if (!copyBalance[address][symbol]) copyBalance[address][symbol] = {};
 

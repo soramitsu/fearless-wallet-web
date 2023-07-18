@@ -1,12 +1,12 @@
-import { ethers } from 'ethers';
+import { ethers, TransactionRequest } from 'ethers';
 import {
   BasicTxResponse,
   ExternalRequestPromise,
   ExternalRequestPromiseStatus,
   TransferErrorCode,
 } from '@extension-base/background/types/types';
-import EthProvider from '@extension-base/api/evm/ethProvider';
 import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
+import { state } from '../../background/handlers';
 
 export type HandleBasicTx = (data: BasicTxResponse) => void;
 export type HandleTxResponse<T extends BasicTxResponse> = (data: T) => void;
@@ -15,7 +15,7 @@ interface HandleTransferBalanceResultProps {
   callback: HandleBasicTx;
   changeValue: string;
   networkKey: string;
-  receipt: ethers.providers.TransactionReceipt;
+  receipt: ethers.TransactionReceipt;
   response: BasicTxResponse;
   updateState?: (promise: Partial<ExternalRequestPromise>) => void;
 }
@@ -29,7 +29,7 @@ export const handleTransferBalanceResult = ({
 }: HandleTransferBalanceResultProps) => {
   response.status = true;
 
-  const fee = (receipt.gasUsed.toNumber() * receipt.effectiveGasPrice.toNumber()).toString();
+  const fee = (receipt.gasUsed * receipt.gasPrice).toString();
 
   response.txResult = {
     change: changeValue || '0',
@@ -44,38 +44,24 @@ export const handleTransferBalanceResult = ({
 };
 
 export async function handleTransfer(
-  transactionObject: ethers.providers.TransactionRequest,
-  changeValue: string,
+  transactionObject: ethers.TransactionRequest,
   networkKey: string,
   privateKey: string,
-  web3ApiMap: Record<string, EthProvider>,
   callback: (data: BasicTxResponse) => void
 ) {
-  const web3Api = web3ApiMap[networkKey];
-  const signer = new ethers.Wallet(privateKey);
+  const web3Api = state.getEvmApiMap[networkKey];
+  const signer = new ethers.Wallet(privateKey, web3Api);
 
-  const signedTransaction = await signer.signTransaction(transactionObject);
   const response: BasicTxResponse = {
     errors: [],
   };
 
   try {
-    signedTransaction && web3Api.provider.sendTransaction(signedTransaction);
-
-    web3Api.provider
-      .on('transactionHash', (hash: string) => {
-        response.extrinsicHash = hash;
-        callback(response);
-      })
-      .on('receipt', (receipt: ethers.providers.TransactionReceipt) => {
-        handleTransferBalanceResult({
-          receipt: receipt,
-          response: response,
-          callback: callback,
-          networkKey: networkKey,
-          changeValue: changeValue,
-        });
-      });
+    const tx = await signer.sendTransaction({ ...transactionObject, value: ethers.parseUnits('0', 'ether') });
+    response.callHash = tx.hash;
+    response.status = true;
+    response.txError = false;
+    callback(response);
   } catch (error) {
     response.status = false;
     response.txError = true;
@@ -92,26 +78,27 @@ export async function handleTransfer(
 export async function getEVMTransactionObject(
   networkKey: string,
   to: string,
-  value: string,
-  web3ApiMap: Record<string, EthProvider>
-): Promise<[ethers.providers.TransactionRequest, string, number]> {
-  const web3Api = web3ApiMap[networkKey];
-  const feeData = await web3Api.provider.getFeeData();
-  const gasPrice = feeData.gasPrice;
-  const nonce = await web3Api.provider.getTransactionCount('0x599dC6fD485E0eD55C1BCc7D8AE02EDAF7bE4f4e'); // TODO mock ???
+  value: string
+): Promise<{ tx: ethers.TransactionRequest; value: string; fee: bigint }> {
+  const web3Api = state.getEvmApiMap[networkKey];
+  const { maxFeePerGas, maxPriorityFeePerGas, gasPrice } = await web3Api.getFeeData();
+
+  const nonce = await web3Api.provider.getTransactionCount(to);
   const transactionObject = {
-    gasPrice: gasPrice,
+    maxFeePerGas,
+    maxPriorityFeePerGas,
     nonce,
-    to: to,
-  } as ethers.providers.TransactionRequest;
+    to,
+    value: ethers.parseEther(value),
+  } as ethers.TransactionRequest;
+  const gas = await web3Api.provider.estimateGas(transactionObject);
+  transactionObject.gasLimit = gas;
+  const prepGasPrice = gasPrice ?? BigInt(0);
+  const estimateFee = prepGasPrice * gas;
 
-  const gasLimit = (await web3Api.provider.estimateGas(transactionObject)).toNumber();
-  transactionObject.gasLimit = gasLimit;
-  const estimateFee = gasPrice!.toNumber() * gasLimit;
+  transactionObject.value = ethers.parseEther(value);
 
-  transactionObject.value = ethers.utils.parseEther(value);
-
-  return [transactionObject, transactionObject.value.toString(), estimateFee];
+  return { tx: transactionObject, value: BigInt(0).toString(), fee: estimateFee };
 }
 
 export async function makeEVMTransfer(
@@ -119,12 +106,11 @@ export async function makeEVMTransfer(
   to: string,
   privateKey: string,
   value: string,
-  web3ApiMap: Record<string, EthProvider>,
   callback: (data: BasicTxResponse) => void
 ): Promise<void> {
-  const [transactionObject, changeValue] = await getEVMTransactionObject(networkKey, to, value, web3ApiMap);
+  const { tx } = await getEVMTransactionObject(networkKey, to, value);
 
-  await handleTransfer(transactionObject, changeValue, networkKey, privateKey, web3ApiMap, callback);
+  await handleTransfer(tx, networkKey, privateKey, callback);
 }
 
 export async function getERC20TransactionObject(
@@ -132,35 +118,33 @@ export async function getERC20TransactionObject(
   networkKey: string,
   from: string,
   to: string,
-  value: string,
-  web3ApiMap: Record<string, EthProvider>
-): Promise<[ethers.providers.TransactionRequest, string, number]> {
-  const web3Api = web3ApiMap[networkKey];
-  const erc20Contract = getERC20Contract(networkKey, assetAddress, web3ApiMap);
-
-  const transferValue = value;
+  value: string
+): Promise<{ tx: ethers.TransactionRequest; value: string; fee: bigint }> {
+  const web3Api = state.getEvmApiMap[networkKey];
+  const erc20Contract = getERC20Contract(networkKey, assetAddress);
 
   function generateTransferData(to: string, transferValue: string): string {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-    return erc20Contract.methods.transfer(to, transferValue).encodeABI() as string;
+    const value = ethers.parseUnits(transferValue, 6);
+
+    return erc20Contract.interface.encodeFunctionData('transfer', [to, value]);
   }
 
-  const transferData = generateTransferData(to, transferValue);
-  const gasPrice = await web3Api.getGasPrice();
-  const transactionObject = {
-    gasPrice: gasPrice,
+  const transferData = generateTransferData(to, value);
+
+  const transactionObject: TransactionRequest = {
     from,
-    to: assetAddress,
+    to: erc20Contract.target,
     data: transferData,
-  } as ethers.providers.TransactionRequest;
+    value: ethers.parseUnits('0', 6),
+  };
 
-  const gasLimit = await web3Api.provider.estimateGas(transactionObject);
+  const gasLimit = await web3Api.estimateGas(transactionObject);
+  transactionObject.gasLimit = gasLimit;
+  const { gasPrice } = await web3Api.getFeeData();
+  const prepGasPrice = gasPrice ? gasPrice : BigInt(0);
+  const estimateFee = prepGasPrice * gasLimit;
 
-  transactionObject.gasLimit = gasLimit.toNumber();
-
-  const estimateFee = gasPrice.toNumber() * gasLimit.toNumber();
-
-  return [transactionObject, transferValue, estimateFee];
+  return { tx: transactionObject, value, fee: estimateFee };
 }
 
 export async function makeERC20Transfer(
@@ -170,17 +154,9 @@ export async function makeERC20Transfer(
   to: string,
   privateKey: string,
   value: string,
-  web3ApiMap: Record<string, EthProvider>,
   callback: (data: BasicTxResponse) => void
 ) {
-  const [transactionObject, changeValue] = await getERC20TransactionObject(
-    assetAddress,
-    networkKey,
-    from,
-    to,
-    value,
-    web3ApiMap
-  );
-
-  await handleTransfer(transactionObject, changeValue, networkKey, privateKey, web3ApiMap, callback);
+  const { tx } = await getERC20TransactionObject(assetAddress, networkKey, from, to, value);
+  tx.value = ethers.parseUnits(value, 6);
+  await handleTransfer(tx, networkKey, privateKey, callback);
 }

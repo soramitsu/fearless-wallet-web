@@ -3,7 +3,7 @@ import { NetworkName } from '@/interfaces';
 
 const NOT_SUPPORTED_ALL_TRANSFER_NETWORKS = ['karura', 'acala', 'acala_testnet'];
 const SUBSTRATE_ETHEREUM_NETWORKS = ['moonbeam', 'moonriver', 'moonbase alpha', 'astarEvm', 'shidenEvm'];
-const ETHEREUM_NETWORKS = [...SUBSTRATE_ETHEREUM_NETWORKS, 'ethereum', 'ethereum_gorli'];
+const ETHEREUM_NETWORKS = [...SUBSTRATE_ETHEREUM_NETWORKS, 'ethereum', 'ethereum goerli'];
 const RELAY_CHAINS = ['polkadot', 'kusama', 'westend', 'rococo'];
 const NATIVE_PARACHAINS = [
   'statemint',

@@ -14,10 +14,8 @@ import { api as apiSora, FPNumber } from '@sora-substrate/util';
 import NetworkMapStore from '@extension-base/stores/NetworkMap';
 import MetadataStore from '@extension-base/stores/Metadata';
 import { storage } from '@extension-base/stores/Storage';
-import EthProvider from '@extension-base/api/evm/ethProvider';
 import CustomTokenStore from '@extension-base/stores/CustomEvmToken';
 import CurrentAccountStore, { CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
-import { initEvmTokenState } from '@extension-base/api/evm/utils/eth';
 import BalanceService from '@extension-base/shared/balanceService';
 import AuthorizeStore from '@extension-base/stores/Authorize';
 import { initWeb3Api } from '@extension-base/api/evm';
@@ -27,15 +25,15 @@ import { getCurrentProvider, getId } from '@extension-base/utils/utils';
 import { initApi } from '@extension-base/api/substrate/api';
 import { axios } from '@extension-base/utils/axios';
 import { prepNetworkNames } from '@extension-base/const/networks';
-import { DEFAULT_EVM_TOKENS } from '@extension-base/api/tokens/evm/defaultEvmToken';
 import { NETWORK_STATUS } from '@extension-base/api/types/networks';
 import { FWCron } from '@extension-base/background/cron';
 import { getMockCurrencies, isEthereumNetwork, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
 import { MobileSigningRequest, MobileSignRequest, POPUP_WINDOW_OPTS } from '@extension-base/background/types/types';
 import { stripUrl, withErrorLog } from '@extension-base/background/handlers/helpers';
 import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-base/background/handlers/subscriptions';
-
 import { SignerPayloadRaw } from '@polkadot/types/types';
+import { JsonRpcProvider } from 'ethers';
+
 import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import type {
   AuthorizeRequest,
@@ -126,7 +124,7 @@ function extractMetadata(store: MetadataStore): void {
 
 export const registry = new TypeRegistry();
 type APIs = {
-  evm: Record<NetworkName, EthProvider>;
+  evm: Record<NetworkName, JsonRpcProvider>;
   substrate: Record<NetworkName, ApiProps>;
 };
 const metaStore = new MetadataStore();
@@ -1046,25 +1044,28 @@ export default class State {
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
 
-    this.networksJson.forEach(
-      (network) =>
-        (result[network.name] = {
-          ...network,
-          key: network.name,
-          isEthereum: isEthereumNetwork(network.name),
-          genesisHash: `0x${network.chainId}`,
-          chainType: 'substrate',
-          active: true,
-          customNodes: [],
-          favorite: [],
-          currentProvider: network.nodes[0].url,
-          providers: network.nodes.reduce<Record<string, string>>((result, { name, url }) => {
-            result[name] = url;
+    this.networksJson.forEach((network) => {
+      const prepCurrentProvider = network.nodes[0].url;
+      const prepNodes: Record<string, string> = {};
 
-            return result;
-          }, {}),
-        })
-    );
+      network.nodes.map((node) => {
+        prepNodes[node.name] = node.url;
+      });
+      const isEthereum = isEthereumNetwork(network.name);
+
+      result[network.name] = {
+        ...network,
+        key: network.name,
+        isEthereum,
+        genesisHash: `0x${network.chainId}`,
+        chainType: isEthereum ? 'ethereum' : 'substrate',
+        active: true,
+        customNodes: [],
+        favorite: [],
+        providers: prepNodes,
+        currentProvider: prepCurrentProvider,
+      };
+    });
 
     this.networkMapStore.set('NetworkMap', result);
     this.networkMap = result;
@@ -1083,8 +1084,8 @@ export default class State {
     this.networkMapStore.get('NetworkMap', async (storedNetworkMap) => {
       for (const [key, network] of Object.entries(storedNetworkMap)) {
         if (network.active) {
-          if ((network.isEthereum && key === 'ethereum') || key === 'ethereum_goerli') {
-            this.apis.evm[key] = initWeb3Api(key === 'ethereum' ? 'ethereum' : 'ethereum_goerli');
+          if ((network.isEthereum && key === 'Ethereum') || key === 'Ethereum Goerli') {
+            this.apis.evm[key] = initWeb3Api(network.currentProvider as string);
           } else initApi(network);
         }
       }
@@ -1095,22 +1096,6 @@ export default class State {
 
   public getWallets(): KeyringAddress[] {
     return [...keyring.getAccounts(), ...keyring.getAddresses()];
-  }
-
-  public initCustomTokenState() {
-    this.customTokenStore.get('EvmToken', (storedCustomTokens) => {
-      if (!storedCustomTokens) this.customTokenState = DEFAULT_EVM_TOKENS;
-      else {
-        const processedEvmTokens = initEvmTokenState(storedCustomTokens, this.networkMap);
-
-        this.customTokenState = { ...processedEvmTokens };
-      }
-
-      this.customTokenStore.set('EvmToken', this.customTokenState);
-      this.customTokenSubject.next(this.customTokenState);
-    });
-
-    this.onReady();
   }
 
   public setPrice(priceData: PriceJson, callback?: (priceData: PriceJson) => void): void {
@@ -1161,25 +1146,29 @@ export default class State {
   }
 
   public setBalanceItem(networkKey: string, item: Partial<BalanceItem>, address: string) {
-    const currencyIndex = this.balanceMap[address].findIndex(({ assetId: _assetId, symbol, relayChain }) => {
-      const isExistingAssetId = _assetId === item.id;
-      const isExistingDisplayName = symbol === item.symbol;
-      const isExistingAsset = isExistingDisplayName && relayChain === item.relayChain;
+    const { reserved, free, locked, frozen, total, transferable, state, id, relayChain, symbol } = item;
 
-      return isExistingAssetId || isExistingAsset;
-    });
+    const balancesByAddress = this.balanceMap[address];
+    const currencyIndex = balancesByAddress.findIndex(
+      ({ assetId: _assetId, symbol: _symbol, relayChain: _relayChain }) => {
+        const isExistingAssetId = _assetId === id;
+        const isExistingDisplayName = _symbol === symbol;
+        const isExistingAsset = isExistingDisplayName && _relayChain === relayChain;
 
-    const token = this.balanceMap[address][currencyIndex];
-    const index = token.balances.findIndex(({ name }) => {
+        return isExistingAssetId || isExistingAsset;
+      }
+    );
+
+    const asset = balancesByAddress[currencyIndex];
+    const assetIndex = asset.balances.findIndex(({ name }) => {
       const key = prepNetworkNames[name] ?? name;
 
       return key === networkKey;
     });
 
-    const balanceItem = this.balanceMap[address][currencyIndex].balances[index];
-    const { reserved, free, locked, frozen, total, transferable, state } = item;
+    const balanceItem = asset.balances[assetIndex];
 
-    this.balanceMap[address][currencyIndex].balances[index] = {
+    asset.balances[assetIndex] = {
       ...balanceItem,
       reserved,
       free,

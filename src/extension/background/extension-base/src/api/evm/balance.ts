@@ -48,7 +48,7 @@ function subscribeERC20Interval(
           chain: networkKey,
         });
       } catch (err) {
-        console.info('There is problem when fetching ' + symbol + ' token balance', err);
+        console.info(`There is problem when fetching ${symbol} token balance on ${networkKey}`, err);
       }
     }
   };

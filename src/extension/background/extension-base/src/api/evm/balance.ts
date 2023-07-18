@@ -19,11 +19,12 @@ function subscribeERC20Interval(
   subCallback: (rs: Partial<BalanceItem>) => void
 ): () => void {
   const ERC20ContractMap = {} as Record<string, Contract>;
+  const network = state.networkMap[networkKey];
 
-  const getTokenBalances = () => {
-    const assets = state.networkMap[networkKey].assets.filter((el) => !el.isUtility);
+  const getTokenBalances = async () => {
+    const assets = network.assets.filter((el) => !el.isUtility);
 
-    assets.map(async ({ symbol, name, icon, id, precision }) => {
+    for (const { symbol, name, icon, id, precision } of assets) {
       let free = '0';
 
       try {
@@ -49,10 +50,10 @@ function subscribeERC20Interval(
       } catch (err) {
         console.info('There is problem when fetching ' + symbol + ' token balance', err);
       }
-    });
+    }
   };
 
-  state.networkMap[networkKey].assets.forEach(({ id, isUtility, symbol }) => {
+  network.assets.forEach(({ id, isUtility, symbol }) => {
     if (!isUtility) {
       ERC20ContractMap[symbol] = getERC20Contract(networkKey, id);
     }
@@ -123,13 +124,13 @@ export function subscribeEvmBalance(
 ) {
   state.generateDefaultBalance(address);
 
-  const unsubList = Object.entries(state.getEvmApiMap).map(async ([networkKey, apiProps]) => {
+  const unsubList = Object.entries(state.getEvmApiMap).map(([networkKey]) => {
     return subscribeEVMBalance(networkKey, ethereumAddress, setBalance); // todo [ethereumAddress] -> ethereumAddress
   });
 
   return () => {
-    unsubList.forEach((subProm) => {
-      subProm.then((unsub) => unsub && unsub()).catch((err) => err);
+    unsubList.forEach((sub) => {
+      sub && sub();
     });
   };
 }

@@ -1,6 +1,5 @@
-import EthProvider from '@extension-base/api/evm/ethProvider';
-import { EvmNetworkType } from '@/interfaces/ether';
+import { JsonRpcProvider } from 'ethers';
 
-export const initWeb3Api = (provider: string): EthProvider => {
-  return new EthProvider(provider as EvmNetworkType);
+export const initWeb3Api = (url: string): JsonRpcProvider => {
+  return new JsonRpcProvider(url);
 };

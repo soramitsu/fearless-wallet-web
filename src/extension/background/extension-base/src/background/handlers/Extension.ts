@@ -18,7 +18,7 @@ import {
   makeERC20Transfer,
   makeEVMTransfer,
 } from '@extension-base/api/evm/transfer';
-import { checkMainToken } from '@extension-base/api/substrate/balance';
+import { checkMainToken } from '@extension-base/api/helpers';
 import { estimateFee, makeTransfer } from '@extension-base/api/substrate/transfer';
 import { getAssetInfo } from '@extension-base/api/substrate/registry';
 import { createSwap } from '@extension-base/api/substrate/swaps';
@@ -29,18 +29,16 @@ import FWExtensionBase from '@extension-base/background/handlers/ExtensionBase';
 import { state } from '@extension-base/background/handlers';
 import {
   createCrossChainExtrinsic,
-  estimateCrossChainFee,
   makeCrossChain,
+  estimateCrossChainFee,
 } from '@extension-base/api/substrate/crossChain';
-import {
-  BasicTxErrorCode,
+import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extension-base/background/types/types';
+import { ethers } from 'ethers';
+import { getSubstrateAddressByEthAddress, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
+
+import type {
   MobileSigningRequest,
   RequestMobileSign,
-  RequestUpdateMeta,
-  TransferErrorCode,
-} from '@extension-base/background/types/types';
-import { getSubstrateAddressByEthAddress, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
-import type {
   ActiveTabAuthorizeStatus,
   BalanceJson,
   BasicTxError,
@@ -111,6 +109,7 @@ import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
+import { NETWORKS_ALIASES, SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
 
 import { googleManage } from '@/controllers/googleController';
 import {
@@ -122,7 +121,6 @@ import {
   SoraFees,
   VerifyTokenResponse,
 } from '@/interfaces';
-import { SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
 
 const SEED_DEFAULT_LENGTH = 12;
 const SEED_LENGTHS = [12, 15, 18, 21, 24];
@@ -1014,9 +1012,9 @@ export default class Extension extends FWExtensionBase {
     password,
   }: RequestCheckTransfer): Promise<ResponseCheckTransfer> {
     const [errors, , tokenInfo] = this.validateTransfer(assetId, from, password);
-    const web3ApiMap = this.state.getApiMap.evm;
     const warnings: BasicTxWarning[] = [];
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
+    const isFromEthereum = isEthereumAddress(from);
 
     const address = getSubstrateAddressByEthAddress(from);
     let fee = 0;
@@ -1033,15 +1031,20 @@ export default class Extension extends FWExtensionBase {
       const txVal = fromAccountFreeBalance || '0';
 
       // Estimate with EVM API
-      if (!isMainToken && tokenInfo.contractAddress) {
-        [, , fee] = await getERC20TransactionObject(tokenInfo.contractAddress, networkKey, from, to, txVal, web3ApiMap);
+      if (!isMainToken && tokenInfo.id) {
+        const { fee: feeValue } = await getERC20TransactionObject(tokenInfo.id, networkKey, from, to, txVal);
+
+        fee = +ethers.formatEther(feeValue);
       } else {
-        [, , fee] = await getEVMTransactionObject(networkKey, to, txVal, web3ApiMap);
+        const { fee: feeValue } = await getEVMTransactionObject(networkKey, to, txVal);
+
+        fee = +ethers.formatEther(feeValue);
       }
     } else {
       // Estimate with DotSama API
 
-      fee = await estimateFee(networkKey, to, amount, tokenBalance);
+      const feeNumber = await estimateFee(networkKey, to, amount, tokenBalance);
+      fee = feeNumber;
       fromAccountFreeBalance =
         tokenBalance.balances.find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())?.transferable ?? '0';
     }
@@ -1050,8 +1053,8 @@ export default class Extension extends FWExtensionBase {
       errors,
       warnings,
       fromAccountFree: fromAccountFreeBalance,
-      estimateFee: fee.toString(),
-    } as ResponseCheckTransfer;
+      estimateFee: fee,
+    } as unknown as ResponseCheckTransfer;
   }
 
   private async makeTransfer(
@@ -1103,22 +1106,12 @@ export default class Extension extends FWExtensionBase {
     ) {
       // Make transfer with EVM API
       const { privateKey } = this.accountExportPrivateKey({ address: from, password });
-      const web3ApiMap = this.state.getApiMap.evm;
       const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;
 
-      if (tokenInfo && !isMainToken && tokenInfo.contractAddress) {
-        transferProm = makeERC20Transfer(
-          tokenInfo.contractAddress,
-          networkKey,
-          from,
-          to,
-          privateKey,
-          amount || '0',
-          web3ApiMap,
-          callback
-        );
+      if (tokenInfo && !isMainToken && tokenInfo.id) {
+        transferProm = makeERC20Transfer(tokenInfo.id, networkKey, from, to, privateKey, amount || '0', callback);
       } else {
-        transferProm = makeEVMTransfer(networkKey, to, privateKey, amount || '0', web3ApiMap, callback);
+        transferProm = makeEVMTransfer(networkKey, to, privateKey, amount || '0', callback);
       }
     } else {
       // Make transfer with Dotsama API
@@ -1141,12 +1134,13 @@ export default class Extension extends FWExtensionBase {
         console.info(`Start transfer ${amount} from ${from} to ${to}`);
       })
       .catch((e) => {
+        console.error('Transfer error', e);
+
         cb({
           txError: true,
           status: false,
           errors: [{ code: TransferErrorCode.TRANSFER_ERROR, message: (e as Error).message }],
         });
-        console.error('Transfer error', e);
 
         setTimeout(() => this.cancelSubscription(id), 500);
 

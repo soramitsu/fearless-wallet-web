@@ -5,6 +5,7 @@ import type {
   HistoryElement,
   HistoryServiceType,
   NetworkName,
+  EthereumHistoryResponse,
 } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 
@@ -130,8 +131,53 @@ async function fetchSubsquidHistory(url: string, address: string): Promise<Histo
   return data?.historyElements;
 }
 
-async function fetchHistory(url: string, address: string, type: HistoryServiceType, networkName: NetworkName) {
+async function fetchEthereumHistory(url: string, address: string, precision?: number): Promise<HistoryElement[]> {
+  const abort = new AbortController();
+  const signal = abort.signal;
+  const res = await axios.get<EthereumHistoryResponse>(url, {
+    params: {
+      module: 'account',
+      action: 'txlist',
+      address,
+      page: 1,
+      offset: 50,
+      sort: 'asc',
+      apikey: process.env.ETHERSCAN_API_KEY,
+    },
+    signal,
+  });
+
+  if (res.status !== 200) {
+    abort.abort();
+
+    return [];
+  }
+
+  return res.data.result.map(({ timeStamp, value, gasUsed, from, isError, to }, index) => ({
+    address,
+    id: String(index),
+    timestamp: timeStamp,
+    transfer: {
+      amount: value,
+      eventIdx: 0,
+      fee: gasUsed,
+      from: from,
+      success: isError === '0',
+      to,
+    },
+  }));
+}
+
+async function fetchHistory(
+  url: string,
+  address: string,
+  type: HistoryServiceType,
+  networkName: NetworkName,
+  precision?: number
+) {
   try {
+    if (type === 'ethereum') return fetchEthereumHistory(url, address, precision);
+
     if (type === 'subquery') return fetchSubqueryHistory(url, address);
     else if (type === 'subsquid') return fetchSubsquidHistory(url, address);
     else if (type === 'giantsquid') {

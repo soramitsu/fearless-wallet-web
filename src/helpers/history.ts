@@ -140,8 +140,6 @@ function getFormattedHistory(
         id,
         timestamp: (new Date(timestamp).getTime() / 1000).toString(),
         address: '',
-        extrinsic: null,
-        reward: null,
         transfer: {
           amount,
           success,
@@ -157,6 +155,17 @@ function getFormattedHistory(
   }
 
   if (serviceType === 'subsquid') {
+    const nodes: HistoryElement[] = (history as HistoryElement[]).map((historyElement) => {
+      return {
+        ...historyElement,
+        timestamp: (+historyElement.timestamp / 1000).toString(),
+      };
+    });
+
+    return { nodes, pageInfo: { endCursor: '', startCursor: '' } };
+  }
+
+  if (serviceType === 'ethereum') {
     const nodes: HistoryElement[] = (history as HistoryElement[]).map((historyElement) => {
       return {
         ...historyElement,

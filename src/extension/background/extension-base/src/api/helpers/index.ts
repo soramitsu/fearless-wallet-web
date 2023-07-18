@@ -1,28 +1,59 @@
-// Copyright 2019-2022 @subwallet/extension-koni-base authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-
+import { Contract } from 'ethers';
+import ERC20Contract from '@extension-base/api/evm/helpers/ERC20Contract.json';
 import { isEthereumAddress } from '@polkadot/util-crypto';
-import EthProvider from '@extension-base/api/evm/ethProvider';
-import { CustomTokenType } from '@extension-base/api/evm/types/ether';
-import { validateEvmToken } from '@extension-base/api/tokens/evm/utils';
+import { state } from '@extension-base/background/handlers';
+import { CustomTokenType, CustomTokenJson, CustomToken } from '@extension-base/api/evm/types/ether';
 import type { ChainRegistry, DeleteCustomTokenParams } from '@extension-base/types';
-import type { CustomTokenJson, CustomToken } from '@extension-base/api/evm/types/ether';
 
-export async function validateCustomToken(
-  contractAddress: string,
-  tokenType: CustomTokenType,
-  web3: EthProvider | undefined
-) {
-  if (tokenType === CustomTokenType.erc20 && web3 !== undefined) {
-    return await validateEvmToken(contractAddress, tokenType, web3);
+export function checkMainToken(networkKey: string, id: string): boolean {
+  if (id === undefined) return false;
+
+  return (
+    state.networksJson
+      .find(({ name }) => name.toLowerCase() === networkKey.toLowerCase())!
+      .assets.find((asset) => asset.id === id)?.isUtility ?? false
+  );
+}
+
+export async function validateEvmToken(contractAddress: string) {
+  let tokenContract: Contract;
+  let name = '';
+  let decimals: number | undefined = -1;
+  let symbol = '';
+  let contractError = false;
+
+  try {
+    tokenContract = new Contract(contractAddress, ERC20Contract.abi);
+
+    const [_decimals, _symbol] = await Promise.all([
+      tokenContract.decimals() as unknown as number,
+      tokenContract.symbol() as unknown as string,
+    ]);
+
+    name = _symbol;
+    decimals = _decimals;
+    symbol = _symbol;
+
+    if (name === '' || symbol === '') {
+      contractError = true;
+    }
+
+    return {
+      name,
+      decimals,
+      symbol,
+      contractError,
+    };
+  } catch (e) {
+    console.error('Error response while validating EVM contract', e);
+
+    return {
+      name,
+      decimals,
+      symbol,
+      contractError: true,
+    };
   }
-
-  return {
-    name: '',
-    decimals: -1,
-    symbol: '',
-    contractError: true,
-  };
 }
 
 export interface UpsertCustomTokenResp {
@@ -44,7 +75,7 @@ export function upsertCustomToken(targetToken: CustomToken, customTokenState: Cu
   let newTokenList = tokenList;
 
   for (const token of tokenList) {
-    if (isEqualContractAddress(token.smartContract, targetToken.smartContract) && token.chain === targetToken.chain) {
+    if (isEqualContractAddress(token.id, targetToken.id) && token.chain === targetToken.chain) {
       isExisted = true;
       break;
     }
@@ -54,11 +85,11 @@ export function upsertCustomToken(targetToken: CustomToken, customTokenState: Cu
     newTokenList.push(targetToken);
   } else {
     newTokenList = tokenList.map((token: CustomToken) => {
-      if (isEqualContractAddress(token.smartContract, targetToken.smartContract)) {
+      if (isEqualContractAddress(token.id, targetToken.id)) {
         if (token.isDeleted) {
           return {
             name: token.name,
-            smartContract: token.smartContract,
+            id: token.id,
             chain: token.chain,
             type: token.type,
           };
@@ -111,7 +142,7 @@ export function deleteCustomTokens(
 
     for (let index = 0; index < tokenList.length; index++) {
       if (
-        isEqualContractAddress(tokenList[index].smartContract, targetToken.smartContract) &&
+        isEqualContractAddress(tokenList[index].id, targetToken.id) &&
         tokenList[index].chain === targetToken.chain &&
         tokenList[index].type === targetToken.type
       ) {
@@ -144,7 +175,7 @@ export function deleteCustomTokens(
         let deleteKey = '';
 
         for (const [key, token] of Object.entries(chainRegistry.assetsMap)) {
-          if (token.contractAddress && isEqualContractAddress(token.contractAddress, targetToken.smartContract)) {
+          if (token.id && isEqualContractAddress(token.id, targetToken.id)) {
             deleteKey = key;
 
             break;

@@ -3,6 +3,8 @@
 import { logger as createLogger } from '@polkadot/util';
 import { Subscription } from 'rxjs';
 import { subscribeBalance } from '@extension-base/api/substrate/balance';
+import { subscribeEvmBalance } from '../../api/evm/balance';
+import { BalanceItem } from '../../api/evm/types/ether';
 import type State from '@extension-base/background/handlers/State';
 import type { Logger } from '@polkadot/util/types';
 import type {
@@ -83,6 +85,12 @@ export class FWSubscription {
           this.subscribeBalances(address, ethereumAddress);
         },
       }));
+
+    getAccountsExeptCurrent.forEach((account) => {
+      const ethAddress = account.meta.ethereumAddress as string;
+
+      this.subscribeBalances(account.address, ethAddress, true);
+    });
   }
 
   stop() {
@@ -129,17 +137,25 @@ export class FWSubscription {
   }
 
   initBalanceSubscription(address: string, ethereumAddress: string, onlyRunOnFirstTime?: boolean) {
-    const unsub = subscribeBalance(address, ethereumAddress, (networkKey, rs) => {
+    const setBalance = (networkKey: string, rs: Partial<BalanceItem>) => {
       this.state.setBalanceItem(networkKey, rs, address);
-    });
+    };
+
+    const unsub = subscribeBalance(address, ethereumAddress, setBalance);
+
+    const unsubEvm = subscribeEvmBalance(address, ethereumAddress, setBalance);
 
     if (onlyRunOnFirstTime) {
       unsub && unsub();
+      unsubEvm && unsubEvm();
 
       return;
     }
 
-    return () => unsub && unsub();
+    return () => {
+      unsub && unsub();
+      unsubEvm && unsubEvm();
+    };
   }
 }
 

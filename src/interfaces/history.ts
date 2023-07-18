@@ -30,9 +30,9 @@ type HistoryElement = {
   id: string;
   address: string;
   timestamp: string;
-  extrinsic: Extrinsic | null;
-  reward: Reward | null;
-  transfer: Transfer | null;
+  extrinsic?: Extrinsic;
+  reward?: Reward;
+  transfer?: Transfer;
   isMock?: true;
 };
 

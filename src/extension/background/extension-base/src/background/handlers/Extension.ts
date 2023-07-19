@@ -1014,7 +1014,6 @@ export default class Extension extends FWExtensionBase {
     const [errors, , tokenInfo] = this.validateTransfer(assetId, from, password);
     const warnings: BasicTxWarning[] = [];
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
-    const isFromEthereum = isEthereumAddress(from);
 
     const address = getSubstrateAddressByEthAddress(from);
     let fee = 0;

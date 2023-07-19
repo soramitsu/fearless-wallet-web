@@ -27,7 +27,6 @@
           sizeWidth="medium"
           :address="payload.address"
           :transactionId="request.id"
-          :firstIcon="f"
           :payload="payload"
           @close="onClose"
         />

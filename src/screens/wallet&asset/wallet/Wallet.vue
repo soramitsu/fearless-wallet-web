@@ -13,24 +13,7 @@
           <Loading :width="28" v-if="showShimmers" />
         </div>
       </div>
-
-      <!-- <SelectNetworkButton
-        :ref="selectNetworkButtonRef"
-        :text="selectedNetwork"
-        :isActive="showSelectNetworkPopup"
-        :showWarningIcon="showWarningIcon"
-        @openNetworkPopup="toggleSelectNetworkPopupVisible"
-        @toggleNetworkManagementVisible="toggleNetworkManagementVisible"
-      /> -->
     </header>
-
-    <!-- <SelectNetworkPopup
-      v-if="showSelectNetworkPopup"
-      :selectedNetwork="selectedNetwork"
-      :height="410"
-      :toggleSelectedNetwork="toggleSelectedNetwork"
-      :handlerClose="toggleSelectNetworkPopupVisible"
-    /> -->
 
     <SoraCardBanner />
 
@@ -117,7 +100,7 @@ import WalletBalance from '@/screens/main/WalletBalance.vue';
 import NetworkManagement from '@/screens/wallet&asset/wallet/NetworkManagement.vue';
 import NetworkUnavailablePopup from '@/screens/wallet&asset/wallet/NetworkUnavailablePopup.vue';
 import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.vue';
-import { ALL_NETWORKS } from '@/consts/networks';
+import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { AssetsPrice } from '@/interfaces';
 import {
@@ -129,6 +112,7 @@ import { tieAccount } from '@/extension/messaging';
 import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
 import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
+import { filterBalanceItemsByNetwork } from '@/util/networks';
 
 @Component({
   components: {
@@ -249,14 +233,14 @@ export default class Wallet extends Vue {
 
     return !this.isOnline || isPendingExists;
   }
-
   get filteredCurrencies() {
     const isAllNetworks = this.selectedNetwork === ALL_NETWORKS;
+
     const filteredByNetwork = isAllNetworks
       ? this.sortedCurrencies
-      : this.sortedCurrencies.filter(({ balances }) =>
-          balances.some(({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase())
-        );
+      : this.sortedCurrencies.filter(({ balances }) => {
+          return balances.some((balance) => filterBalanceItemsByNetwork(balance, this.selectedNetwork));
+        });
 
     if (this.showAssetsManagementForm) return filteredByNetwork;
 

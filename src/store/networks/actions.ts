@@ -65,6 +65,7 @@ const actions: ActionTree<State, State> & Actions = {
 
     if (favoriteIndex !== -1) {
       commit(MutationTypes.REMOVE_FAVORITE_NETWORK, { index: favoriteIndex, networksName: networkName });
+      toggleFavoriteNetwork(networkName);
 
       return false;
     }

@@ -616,12 +616,16 @@ export default class State {
 
     addressIndex !== -1 ? network.favorite.splice(addressIndex, 1) : network.favorite.push(currentAccount.address);
 
-    this.networkMapSubject.next(this.networkMap);
+    this.setActiveNetworks(FAVORITE_NETWORKS);
 
     return true;
   }
 
-  public setActiveNetworks(type: string) {
+  public async setActiveNetworks(type: string) {
+    const currentAccount = await this.currentAccount;
+    if (!currentAccount) return;
+    this.subscription.stop();
+
     Object.keys(this.networkMap).forEach((key) => {
       const network = this.networkMap[key];
 
@@ -629,22 +633,34 @@ export default class State {
         case ALL_NETWORKS:
           network.active = true;
 
-          return;
+          break;
         case FAVORITE_NETWORKS:
-          network.active = !!network.favorite;
+          network.active = network.favorite.some((el) => el === currentAccount.address);
 
-          return;
+          break;
         case POPULAR_NETWORKS:
           network.active = !!network.popular;
 
-          return;
+          break;
         default:
           network.active = network.name === type ?? false;
       }
+
+      if (!network.active) {
+        if (this.apis.substrate[network.name]) {
+          this.apis.substrate[network.name].provider?.disconnect();
+          delete this.apis.substrate[network.name];
+        } else if (this.apis.evm[network.name]) {
+          this.apis.evm[network.name].provider.destroy();
+          delete this.apis.evm[network.name];
+        }
+      }
     });
 
+    this.networkMapSubject.next(this.networkMap);
     this.networkMapStore.set('NetworkMap', this.networkMap);
-    this.cron.stop();
+    this.updateServiceInfo();
+
     this.initNetworkStates();
   }
 
@@ -1065,7 +1081,10 @@ export default class State {
       });
 
       const isEthereum = isEthereumNetwork(network.name);
-      const favorite = networksFromStorage[network.name].favorite ?? [];
+      const networkFromStorage = networksFromStorage ? networksFromStorage[network.name] : undefined;
+
+      const favorite = networkFromStorage && networkFromStorage.favorite ? networkFromStorage.favorite : [];
+
       result[network.name] = {
         ...network,
         key: network.name,

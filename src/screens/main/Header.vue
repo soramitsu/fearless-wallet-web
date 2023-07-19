@@ -35,7 +35,7 @@
           @click="openFullScreen"
         />
         <div
-          class="background-ellipse network-management"
+          class="network-management background-ellipse"
           :ref="selectNetworkButtonRef"
           @click="toggleSelectNetworkPopupVisible"
         >
@@ -264,7 +264,6 @@ export default class Header extends Vue {
 
     .background-ellipse {
       display: flex;
-      justify-content: center;
       align-items: center;
       height: 32px;
       padding: 12px;
@@ -282,6 +281,7 @@ export default class Header extends Vue {
     border-radius: 50%;
   }
   .network-management {
+    justify-content: space-between;
     width: 137px;
     height: 32px;
     display: flex;
@@ -290,10 +290,12 @@ export default class Header extends Vue {
 
   .icon--down {
     height: 9px;
+    width: 9px;
   }
 
   .icon--network {
     height: 16px;
+    width: 16px;
   }
 
   .success-connect {

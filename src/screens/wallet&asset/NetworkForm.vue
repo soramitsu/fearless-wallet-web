@@ -16,7 +16,7 @@
       <Scroll>
         <ul class="network__list">
           <NetworkItem
-            v-for="network in sortedNetworks"
+            v-for="network in filteredOptionsNetworks"
             :network="network"
             :isSelected="isNetworkSelected(network)"
             @onToggleNetworkType="enableSingleNetwork(network.name)"
@@ -97,22 +97,22 @@ export default class NetworkManage extends Vue {
     return { name: this.$t(`header.networkManagement.${this.activeTab}`), icon: 'all-networks' };
   }
 
-  get filterNetwork() {
+  get filterNetworks() {
     if (this.activeTab === ALL_NETWORKS) return this.networks;
 
     return this.networks.filter(({ favorite, popular }) => {
       if (this.activeTab === POPULAR_NETWORKS) return popular;
+
       if (this.activeTab === FAVORITE_NETWORKS)
         return favorite.some((address) => address === this.selectedWallet.address);
     });
   }
 
-  get sortedNetworks() {
-    return this.filterNetwork.sort((a, b) => {
-      const value1 = Number(a.name === this.selectedNetwork) + Number(a.favorite.includes(this.selectedWallet.address));
-      const value2 = Number(b.name === this.selectedNetwork) + Number(b.favorite.includes(this.selectedWallet.address));
+  get filteredOptionsNetworks() {
+    const filter = this.filterValue.trim().toLowerCase();
 
-      return value2 - value1;
+    return this.filterNetworks.filter(({ name }) => {
+      return name.toLowerCase().includes(filter);
     });
   }
 

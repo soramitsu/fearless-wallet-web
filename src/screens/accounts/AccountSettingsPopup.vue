@@ -31,7 +31,7 @@
       <div class="row" @click="openSubscan">
         <Icon icon="globus" className="icon" />
 
-        <div class="label">{{ $t('accounts.subscan') }}</div>
+        <div class="label">{{ $t('accounts.explorer') }}</div>
       </div>
     </div>
   </Popup>

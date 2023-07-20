@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { ethers } from 'ethers';
 import type {
   SubqueryHistory,
   GiantsquidHistoryItem,
@@ -6,6 +7,8 @@ import type {
   HistoryServiceType,
   NetworkName,
   EthereumHistoryResponse,
+  EthereumTokenHistoryData,
+  EthereumHistoryData,
 } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
 
@@ -131,10 +134,54 @@ async function fetchSubsquidHistory(url: string, address: string): Promise<Histo
   return data?.historyElements;
 }
 
-async function fetchEthereumHistory(url: string, address: string, precision?: number): Promise<HistoryElement[]> {
+async function fetchEthereumTokenHistory(
+  url: string,
+  address: string,
+  contractAddress: string
+): Promise<HistoryElement[]> {
   const abort = new AbortController();
   const signal = abort.signal;
-  const res = await axios.get<EthereumHistoryResponse>(url, {
+  const res = await axios.get<EthereumHistoryResponse<EthereumTokenHistoryData>>(url, {
+    params: {
+      module: 'account',
+      action: 'tokentx',
+      contractAddress,
+      page: 1,
+      offset: 50,
+      sort: 'asc',
+      apikey: process.env.ETHERSCAN_API_KEY,
+    },
+    signal,
+  });
+
+  if (res.status !== 200) {
+    abort.abort();
+
+    return [];
+  }
+
+  const decimal = +res.data.result[0].tokenDecimal;
+
+  return res.data.result.map(({ timeStamp, value, gasUsed, from, to, hash }, index) => ({
+    address,
+    id: String(index),
+    timestamp: timeStamp,
+    transfer: {
+      amount: ethers.formatUnits(value, decimal),
+      hash,
+      eventIdx: 0,
+      fee: gasUsed,
+      from: from,
+      success: true,
+      to,
+    },
+  }));
+}
+
+async function fetchEthereumHistory(url: string, address: string): Promise<HistoryElement[]> {
+  const abort = new AbortController();
+  const signal = abort.signal;
+  const res = await axios.get<EthereumHistoryResponse<EthereumHistoryData>>(url, {
     params: {
       module: 'account',
       action: 'txlist',
@@ -153,12 +200,13 @@ async function fetchEthereumHistory(url: string, address: string, precision?: nu
     return [];
   }
 
-  return res.data.result.map(({ timeStamp, value, gasUsed, from, isError, to }, index) => ({
+  return res.data.result.map(({ timeStamp, value, gasUsed, from, isError, to, hash }, index) => ({
     address,
     id: String(index),
     timestamp: timeStamp,
     transfer: {
       amount: value,
+      hash,
       eventIdx: 0,
       fee: gasUsed,
       from: from,
@@ -173,10 +221,13 @@ async function fetchHistory(
   address: string,
   type: HistoryServiceType,
   networkName: NetworkName,
-  precision?: number
+  assetId: string,
+  isUtility: boolean
 ) {
   try {
-    if (type === 'ethereum') return fetchEthereumHistory(url, address, precision);
+    if (type === 'etherscan' && isUtility) return fetchEthereumHistory(url, address);
+
+    if (type === 'etherscan') return fetchEthereumTokenHistory(url, address, assetId);
 
     if (type === 'subquery') return fetchSubqueryHistory(url, address);
     else if (type === 'subsquid') return fetchSubsquidHistory(url, address);

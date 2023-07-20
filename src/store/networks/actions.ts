@@ -38,12 +38,13 @@ const actions: ActionTree<State, State> & Actions = {
     const formattedAddress = BaseApi.formatAddress(wallet, networkName);
 
     const { assetId: utilityAssetId } = getUtilityAsset(rootState.account.balances, networkName)!;
+    const isUtility = utilityAssetId === assetId;
 
     // сейчас эндпоинт истории парсит только историю утилити токена
     // TODO: когда появится история других токенов отрефаткорить данную логику
-    if (utilityAssetId !== assetId) return;
 
-    const history = await fetchHistory(url, formattedAddress, type, networkName);
+    if (isUtility && type !== 'etherscan') return;
+    const history = await fetchHistory(url, formattedAddress, type, networkName, assetId, isUtility);
 
     if (history)
       commit(MutationTypes.SET_HISTORY, {

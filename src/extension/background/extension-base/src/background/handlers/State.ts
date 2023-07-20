@@ -621,13 +621,73 @@ export default class State {
     return true;
   }
 
+  public async isNetworkNeedForAnotherWallet(network: NetworkJson, selectedType: string, currentAddress: string) {
+    const selectedNetworks = Object.keys(this.selectedNetwork).filter((el) => el !== currentAddress);
+    const isSelectedCommonTypesInOtherWallets = Object.values(selectedNetworks).some(
+      (el) => el === POPULAR_NETWORKS || el === ALL_NETWORKS
+    );
+
+    if ((selectedType === ALL_NETWORKS || selectedType === POPULAR_NETWORKS) && isSelectedCommonTypesInOtherWallets)
+      return true;
+
+    const isSelectedTypeNotGroup =
+      selectedType !== POPULAR_NETWORKS && selectedType !== ALL_NETWORKS && selectedType !== FAVORITE_NETWORKS;
+    const selectedNetworksValues = Object.values(this.selectedNetwork);
+
+    if (isSelectedTypeNotGroup && selectedNetworksValues.includes(selectedType)) return true;
+  }
+
+  public selectedNetworksExceptAddress(address: string): string[] {
+    const result: string[] = [];
+    Object.keys(this.selectedNetwork).forEach((el) => {
+      if (el !== address) result.push(this.selectedNetwork[el]);
+    });
+
+    return result;
+  }
+
+  public isPopularNetworksSelected(network: NetworkJson, address: string) {
+    const networks = this.selectedNetworksExceptAddress(address);
+
+    return network.popular && networks.some((el) => el === POPULAR_NETWORKS);
+  }
+
+  public isNetworkSelectedInAnotherWallet(network: NetworkJson, selectedType: string, address: string) {
+    if (Object.values(this.selectedNetwork).some((el) => el === ALL_NETWORKS)) return true;
+    if (this.isPopularNetworksSelected(network, address)) return true;
+    if (this.isFavoriteNetworkSelected(network, address)) return true;
+    if (this.isSingleNetworkSelected(selectedType, address)) return true;
+
+    return false;
+  }
+
+  public isSingleNetworkSelected(selectedType: string, address: string) {
+    const networks = this.selectedNetworksExceptAddress(address);
+    const isTypeAlreadySelected = networks.some((network) => network === selectedType);
+    const isNotGroup =
+      selectedType !== ALL_NETWORKS && selectedType !== POPULAR_NETWORKS && selectedType !== FAVORITE_NETWORKS;
+
+    return isNotGroup && isTypeAlreadySelected;
+  }
+
+  public isFavoriteNetworkSelected(network: NetworkJson, address: string) {
+    const favorites = network.favorite.filter((el) => el !== address);
+
+    return favorites.some((el) => this.selectedNetwork[el] === FAVORITE_NETWORKS);
+  }
+
   public async setActiveNetworks(type: string) {
     const currentAccount = await this.currentAccount;
+
     if (!currentAccount) return;
+
     this.subscription.stop();
 
     Object.keys(this.networkMap).forEach((key) => {
       const network = this.networkMap[key];
+      const { name } = network;
+      const isFavorite = network.favorite.some((address) => address === currentAccount.address);
+      const isAlreadySelectedType = this.isNetworkSelectedInAnotherWallet(network, type, currentAccount.address);
 
       switch (type) {
         case ALL_NETWORKS:
@@ -635,24 +695,36 @@ export default class State {
 
           break;
         case FAVORITE_NETWORKS:
-          network.active = network.favorite.some((el) => el === currentAccount.address);
+          if (isFavorite) {
+            network.active = true;
+            break;
+          }
+
+          if (isAlreadySelectedType) break;
+
+          network.active = false;
 
           break;
         case POPULAR_NETWORKS:
-          network.active = !!network.popular;
+          if (network.popular) network.active = true;
 
+          if (isAlreadySelectedType) break;
+
+          network.active = false;
           break;
-        default:
-          network.active = network.name === type ?? false;
+        default: //type = single network, like Moonriver etc
+          if (isAlreadySelectedType) break;
+
+          network.active = type === network.name;
       }
 
       if (!network.active) {
-        if (this.apis.substrate[network.name]) {
-          this.apis.substrate[network.name].provider?.disconnect();
-          delete this.apis.substrate[network.name];
-        } else if (this.apis.evm[network.name]) {
-          this.apis.evm[network.name].provider.destroy();
-          delete this.apis.evm[network.name];
+        if (this.apis.substrate[name]) {
+          this.apis.substrate[name].provider?.disconnect();
+          delete this.apis.substrate[name];
+        } else if (this.apis.evm[name]) {
+          this.apis.evm[name].provider.destroy();
+          delete this.apis.evm[name];
         }
       }
     });

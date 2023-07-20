@@ -271,6 +271,7 @@
     "switchNode": "Switch node",
     "copyAddress": "Copy address",
     "subscan": "View in Subscan",
+    "etherscan": "View in Etherscan",
     "deleteCustomNode": "Delete custom node?",
     "careful": "Be careful",
     "sharingSecret": "Sharing or copying your secret is a high risk operation, don’t send it to anyone. Would you like to proceed with sharing/copying process?",

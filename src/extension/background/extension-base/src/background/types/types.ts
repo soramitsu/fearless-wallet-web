@@ -946,6 +946,7 @@ export interface TokenBalance {
   priceId?: string;
   tokenName: string;
   symbol: string;
+  precision: number;
   relayChain: RelayChainName;
   icon: string;
   providers: string[];

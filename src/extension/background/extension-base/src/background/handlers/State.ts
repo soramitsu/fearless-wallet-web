@@ -34,6 +34,7 @@ import { FWSubscription, isSubscriptionRunning, unsubscribe } from '@extension-b
 import { SignerPayloadRaw } from '@polkadot/types/types';
 import { JsonRpcProvider } from 'ethers';
 
+import { KeyringAddress } from '@polkadot/ui-keyring/types';
 import type {
   AuthorizeRequest,
   AuthRequest,
@@ -74,8 +75,14 @@ import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types
 import type { HexString } from '@polkadot/util/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
 import { URLS } from '@/consts/urls';
-import { ALL_NETWORKS, SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/networks';
-import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/currencies';
+import {
+  ALL_NETWORKS,
+  FAVORITE_NETWORKS,
+  POPULAR_NETWORKS,
+  SORA_NETWORK_NAME,
+  SORA_XOR_ASSET_ID,
+} from '@/consts/networks';
+import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/common';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 
@@ -165,6 +172,7 @@ export default class State {
   public networksJson: NetworkJson[] = []; // from github
   readonly networkMapStore = new NetworkMapStore(); // persist custom networkMap by user
   public networkMapSubject = new Subject<Record<string, NetworkJson>>();
+  public selectedNetwork: Record<string, string> = {};
   public serviceInfoSubject = new Subject<ServiceInfo>();
   public balanceMap: BalanceMap = {};
   public balanceSubject = new Subject<BalanceJson>();
@@ -320,19 +328,28 @@ export default class State {
   async injectFromStorage() {
     extractMetadata(metaStore);
 
-    const { authUrls, defaultAuthAccountSelection, fiatSymbol, injectedProviders, providers, windows } =
-      await this.getFromStorage([
-        'fiatSymbol',
-        'authUrls',
-        'defaultAuthAccountSelection',
-        'injectedProviders',
-        'providers',
-        'windows',
-      ]);
+    const {
+      authUrls,
+      defaultAuthAccountSelection,
+      fiatSymbol,
+      injectedProviders,
+      providers,
+      windows,
+      selectedNetwork,
+    } = await this.getFromStorage([
+      'fiatSymbol',
+      'authUrls',
+      'selectedNetwork',
+      'defaultAuthAccountSelection',
+      'injectedProviders',
+      'providers',
+      'windows',
+    ]);
 
     if (authUrls && Object.keys(authUrls).length) this.authUrls = authUrls;
     if (windows && windows.length) this.windows = windows;
     if (fiatSymbol) this.setFiatSymbol(fiatSymbol);
+    if (selectedNetwork) this.selectedNetwork = selectedNetwork;
     if (injectedProviders) this.injectedProviders = new Map(injectedProviders);
     if (providers) this.providers = providers;
     if (defaultAuthAccountSelection && defaultAuthAccountSelection.length)
@@ -583,6 +600,124 @@ export default class State {
     const network = this.networkMap[key];
 
     if (network && network.apiStatus && network.apiStatus === NETWORK_STATUS.DISCONNECTED) initApi(network);
+  }
+
+  public getNetworkGroupType() {
+    return this.getNetworkGroupType;
+  }
+
+  async setFavoriteNetwork(networkName: string): Promise<boolean> {
+    const network = this.networkMap[networkName];
+    const currentAccount = await this.currentAccount;
+
+    if (!currentAccount) return false;
+
+    const addressIndex = network.favorite.findIndex((address) => address === currentAccount.address);
+
+    addressIndex !== -1 ? network.favorite.splice(addressIndex, 1) : network.favorite.push(currentAccount.address);
+
+    this.setActiveNetworks(FAVORITE_NETWORKS);
+
+    return true;
+  }
+
+  public selectedNetworksExceptAddress(address: string): string[] {
+    const result: string[] = [];
+    Object.keys(this.selectedNetwork).forEach((el) => {
+      if (el !== address) result.push(this.selectedNetwork[el]);
+    });
+
+    return result;
+  }
+
+  public isPopularNetworksSelected(network: NetworkJson, address: string) {
+    const networks = this.selectedNetworksExceptAddress(address);
+
+    return network.popular && networks.some((el) => el === POPULAR_NETWORKS);
+  }
+
+  public isNetworkSelectedInAnotherWallet(network: NetworkJson, selectedType: string, address: string) {
+    if (Object.values(this.selectedNetwork).some((el) => el === ALL_NETWORKS)) return true;
+    if (this.isPopularNetworksSelected(network, address)) return true;
+    if (this.isFavoriteNetworkSelected(network, address)) return true;
+    if (this.isSingleNetworkSelected(selectedType, address)) return true;
+
+    return false;
+  }
+
+  public isSingleNetworkSelected(selectedType: string, address: string) {
+    const networks = this.selectedNetworksExceptAddress(address);
+    const isTypeAlreadySelected = networks.some((network) => network === selectedType);
+    const isNotGroup =
+      selectedType !== ALL_NETWORKS && selectedType !== POPULAR_NETWORKS && selectedType !== FAVORITE_NETWORKS;
+
+    return isNotGroup && isTypeAlreadySelected;
+  }
+
+  public isFavoriteNetworkSelected(network: NetworkJson, address: string) {
+    const favorites = network.favorite.filter((el) => el !== address);
+
+    return favorites.some((el) => this.selectedNetwork[el] === FAVORITE_NETWORKS);
+  }
+
+  public async setActiveNetworks(type: string) {
+    const currentAccount = await this.currentAccount;
+
+    if (!currentAccount) return;
+
+    this.subscription.stop();
+
+    Object.keys(this.networkMap).forEach((key) => {
+      const network = this.networkMap[key];
+      const { name } = network;
+      const isFavorite = network.favorite.some((address) => address === currentAccount.address);
+      const isAlreadySelectedType = this.isNetworkSelectedInAnotherWallet(network, type, currentAccount.address);
+
+      switch (type) {
+        case ALL_NETWORKS:
+          network.active = true;
+
+          break;
+        case FAVORITE_NETWORKS:
+          if (isFavorite) {
+            network.active = true;
+            break;
+          }
+
+          if (isAlreadySelectedType) break;
+
+          network.active = false;
+
+          break;
+        case POPULAR_NETWORKS:
+          if (network.popular) network.active = true;
+
+          if (isAlreadySelectedType) break;
+
+          network.active = false;
+          break;
+        default: //type = single network, like Moonriver etc
+          if (isAlreadySelectedType) break;
+
+          network.active = type === network.name;
+      }
+
+      if (!network.active) {
+        if (this.apis.substrate[name]) {
+          this.apis.substrate[name].provider?.disconnect();
+          delete this.apis.substrate[name];
+        } else if (this.apis.evm[name]) {
+          this.apis.evm[name].provider.destroy();
+          delete this.apis.evm[name];
+        }
+      }
+    });
+
+    this.networkMapSubject.next(this.networkMap);
+    this.networkMapStore.set('NetworkMap', this.networkMap);
+    this.updateServiceInfo();
+
+    this.initNetworkStates();
   }
 
   getCurrentTabStatus() {
@@ -987,6 +1122,11 @@ export default class State {
     this.networksJson = networks.filter((el) => !el.disabled);
     this.xcmLocations = xcmLocations;
     this.xcmFees = xcmFees;
+    const networksFromStorage = await new Promise<Record<string, NetworkJson>>((res) => {
+      this.networkMapStore.get('NetworkMap', (accountsFromStorage) => {
+        res(accountsFromStorage);
+      });
+    });
 
     this.networksJson.forEach((network) => {
       const prepCurrentProvider = network.nodes[0].url;
@@ -995,7 +1135,11 @@ export default class State {
       network.nodes.map((node) => {
         prepNodes[node.name] = node.url;
       });
+
       const isEthereum = isEthereumNetwork(network.name);
+      const networkFromStorage = networksFromStorage ? networksFromStorage[network.name] : undefined;
+
+      const favorite = networkFromStorage && networkFromStorage.favorite ? networkFromStorage.favorite : [];
 
       result[network.name] = {
         ...network,
@@ -1005,6 +1149,7 @@ export default class State {
         chainType: isEthereum ? 'ethereum' : 'substrate',
         active: true,
         customNodes: [],
+        favorite,
         providers: prepNodes,
         currentProvider: prepCurrentProvider,
       };
@@ -1035,6 +1180,10 @@ export default class State {
 
       this.onReady();
     });
+  }
+
+  public getWallets(): KeyringAddress[] {
+    return [...keyring.getAccounts(), ...keyring.getAddresses()];
   }
 
   public setPrice(priceData: PriceJson, callback?: (priceData: PriceJson) => void): void {

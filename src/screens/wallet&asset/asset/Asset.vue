@@ -150,9 +150,9 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
-import { firstCharToUp, isSora } from '@/helpers/common';
+import { firstCharToUp, isSora } from '@/helpers';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { getSummaryTransferableBalance } from '@/helpers/currencies';
+import { getSummaryTransferableBalance } from '@/helpers/common';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';

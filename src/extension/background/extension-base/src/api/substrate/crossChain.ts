@@ -26,7 +26,7 @@ import {
   VALID_SUBSTRATE_ADDRESS,
 } from '@/consts/networks';
 import { NetworkName, RelayChainName } from '@/interfaces';
-import { firstCharToUp } from '@/helpers/common';
+import { firstCharToUp } from '@/helpers';
 
 type Extrinsic = Nullable<SubmittableExtrinsic<'promise'>>;
 

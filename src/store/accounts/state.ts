@@ -26,7 +26,6 @@ const state = (): State => {
     selectedFiat: accountController.getSelectedFiat(),
     selectedNetworks: accountController.getSelectedNetwork(),
     isOnline: navigator.onLine,
-    // isOnline: true,
     balances: [],
     hiddenAssets: accountController.getHiddenAssets(),
     accounts: accountController.getAccounts(),

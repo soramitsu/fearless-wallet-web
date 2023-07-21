@@ -36,6 +36,7 @@ import { BasicTxErrorCode, RequestUpdateMeta, TransferErrorCode } from '@extensi
 import { ethers } from 'ethers';
 import { getSubstrateAddressByEthAddress, isRequireSubstrateAPI } from '@extension-base/background/utils/utils';
 
+import { storage } from '../../stores/Storage';
 import type {
   MobileSigningRequest,
   RequestMobileSign,
@@ -109,7 +110,7 @@ import type { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 import type { SignerPayloadJSON, SignerPayloadRaw } from '@polkadot/types/types';
 import type { MetadataDef } from '@polkadot/extension-inject/types';
 import { LIQUID_SOURCE_FOR_MARKET } from '@/consts/currencies';
-import { NETWORKS_ALIASES, SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
+import { ALL_NETWORKS, SUBSTRATE_ETHEREUM_NETWORKS } from '@/consts/networks';
 
 import { googleManage } from '@/controllers/googleController';
 import {
@@ -141,6 +142,7 @@ async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> 
     .filter((el) => !isEthereumAddress(el.json.address))
     .map(({ json: { address, meta }, type }): AccountJson => {
       const isDefault = address === currentAccount?.address;
+      const currentNetwork = state.selectedNetwork[address] ?? ALL_NETWORKS;
 
       return {
         address,
@@ -148,6 +150,7 @@ async function transformAccounts(accounts: SubjectInfo): Promise<AccountJson[]> 
         active: isDefault,
         name: meta.name ?? '',
         type,
+        network: currentNetwork,
         ...meta,
       };
     });
@@ -421,6 +424,21 @@ export default class Extension extends FWExtensionBase {
     }
   }
 
+  private async enableNetworkType(type: string): Promise<void> {
+    const currentAccount = await this.state.currentAccount;
+
+    if (currentAccount) {
+      this.state.selectedNetwork[currentAccount.address] = type;
+      storage.set({ selectedNetwork: this.state.selectedNetwork });
+    }
+
+    return this.state.setActiveNetworks(type);
+  }
+
+  private async toggleNetworkFavorite(networkKey: string): Promise<void> {
+    await this.state.setFavoriteNetwork(networkKey);
+  }
+
   private async upsertNetworkMap(data: NetworkJson): Promise<boolean> {
     try {
       return await this.state.upsertNetworkMap(data);
@@ -481,6 +499,16 @@ export default class Extension extends FWExtensionBase {
     this._saveCurrentAccountAddress(address, () => {
       this.triggerWalletsSubscription();
     });
+
+    return true;
+  }
+
+  private async updateCurrentAccountNetwork(network: string): Promise<boolean> {
+    const current = await this.state.currentAccount;
+
+    if (!current) return false;
+
+    this.state.selectedNetwork[current?.address] = network;
 
     return true;
   }
@@ -1318,6 +1346,15 @@ export default class Extension extends FWExtensionBase {
       case 'pri(networkMap.upsert)':
         return this.upsertNetworkMap(request as NetworkJson);
 
+      case 'pri(networkMap.enable.type)':
+        return this.enableNetworkType(request as string);
+
+      case 'pri(networkMap.toggle.favorite)':
+        return this.toggleNetworkFavorite(request as string);
+
+      case 'pri(networkMap.setNetworks)':
+        return this.toggleNetworkFavorite(request as string);
+
       case 'pri(networkMap.getSubscription)':
         return this.subscribeNetworkMap(id, port);
 
@@ -1380,6 +1417,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(accounts.update.current)':
         return this.updateCurrentAccountAddress(request as string);
+
+      case 'pri(accounts.update.currentNetwork)':
+        return this.enableNetworkType(request as string);
 
       case 'pri(accounts.update.meta)':
         return this.updatePairMeta(request as RequestUpdateMeta);

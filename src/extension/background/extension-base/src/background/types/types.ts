@@ -60,6 +60,7 @@ export interface AccountJson extends KeyringPair$Meta {
   address: string;
   ethereumAddress: string;
   genesisHash?: HexString | null;
+  network?: string;
   isExternal?: boolean;
   isHardware?: boolean;
   isMobile?: boolean;
@@ -836,6 +837,7 @@ export interface IState {
   metaStore: MetadataStore;
   authUrls: AuthUrls;
   addresses: Record<string, string>;
+  selectedNetwork: Record<string, string>;
   defaultAuthAccountSelection: string[];
   injectedProviders: Map<Port, ProviderInterface>;
   notification: string;
@@ -957,3 +959,4 @@ export interface TokenBalance {
 export type BeaconRawSignCallBack = (tx: SignerPayloadRaw) => string;
 
 export type BalanceMap = Record<WalletAddress, TokenBalance[]>;
+export type NetworkMap = Record<string, NetworkJson>;

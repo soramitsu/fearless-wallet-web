@@ -62,7 +62,7 @@ import type ValidatedInput from '@/components/ValidatedInput.vue';
 import type Input from '@/components/Input.vue';
 import type { AsyncFn, Fn } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
-import { validatePhoneNumber } from '@/helpers/common';
+import { validatePhoneNumber } from '@/helpers';
 import { RESEND_INTERVAL, OTP_CODE_LENGTH, VerificationStatus, StepsKyc } from '@/consts/soraCard';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';

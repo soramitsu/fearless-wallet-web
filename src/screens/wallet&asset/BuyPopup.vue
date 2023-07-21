@@ -21,7 +21,7 @@ import { getProviderUrl } from '@/helpers/currencies';
 export default class BuyPopup extends Vue {
   @Prop(String) asset!: string;
   @Prop(String) address!: string;
-  @Prop(Array) providers!: string[];
+  @Prop(Array) providers!: ('ramp' | 'moonpay')[];
   @Prop(Function) closePopup!: VoidFunction;
 
   get headerText() {

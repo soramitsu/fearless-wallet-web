@@ -30,7 +30,6 @@ import type {
   RequestAccountChangePassword,
   ValidateNetworkRequest,
   ValidateNetworkResponse,
-  DisableNetworkResponse,
   RequestAuthorizeApprove,
   ResponseAuthorizeList,
   RequestAuthorizeSubscribe,
@@ -130,25 +129,18 @@ export interface RequestSignatures {
   'pri(accounts.validate)': [RequestAccountValidate, boolean];
   'pri(accounts.changePassword)': [RequestAccountChangePassword, boolean];
   'pri(accounts.update.current)': [string, boolean];
+  'pri(accounts.update.currentNetwork)': [string, boolean];
   'pri(accounts.get.totalBalances)': [null, ResponseTotalBalances[]];
 
   //App Managment - networks
   // Network, APIs, Custom tokens functions
   'pri(app.port.ping)': [null, boolean];
-  'pri(networkMap.recoverDotSama)': [string, boolean];
-  'pri(networkMap.disableAll)': [null, boolean];
-  'pri(networkMap.enableAll)': [null, boolean];
-  'pri(networkMap.resetDefault)': [null, boolean];
   'pri(apiMap.validate)': [ValidateNetworkRequest, ValidateNetworkResponse];
-  'pri(networkMap.enableMany)': [string[], boolean];
-  'pri(networkMap.disableMany)': [string[], boolean];
-  'pri(networkMap.enableOne)': [string, boolean];
-  'pri(networkMap.disableOne)': [string, DisableNetworkResponse];
-  'pri(networkMap.removeOne)': [string, boolean];
   'pri(networkMap.upsert)': [NetworkJson, boolean];
-  'pri(networkMap.addCustomNode)': [string, boolean];
   'pri(networkMap.getNetworkMap)': [null, Record<string, NetworkJson>];
   'pri(networkMap.getSubscription)': [null, Record<string, NetworkJson>, Record<string, NetworkJson>];
+  'pri(networkMap.toggle.favorite)': [string, void];
+  'pri(networkMap.setNetwork)': [string, void];
 
   //Authorize
   'pri(authorize.approve.polkaswap)': [string[], null];

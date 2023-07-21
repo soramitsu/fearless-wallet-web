@@ -26,6 +26,7 @@ export enum GettersTypes {
   showPolkaswapAlert = 'showPolkaswapAlert',
   getShowWarningNetwork = 'getShowWarningNetwork',
   showSoraCardBanner = 'showSoraCardBanner',
+  isNetworkFavorite = 'isNetworkFavorite',
 }
 
 export type Getters = {

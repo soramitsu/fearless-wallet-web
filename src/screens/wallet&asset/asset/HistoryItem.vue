@@ -24,7 +24,7 @@ import type { HistoryElement, NetworkName } from '@/interfaces';
 import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, getSignTransfer } from '@/helpers/history';
 import { TransactionType } from '@/interfaces/history';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { cut } from '@/helpers/common';
+import { cut } from '@/helpers';
 
 @Component
 export default class HistoryItem extends Vue {

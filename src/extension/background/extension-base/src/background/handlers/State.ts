@@ -82,7 +82,7 @@ import {
   SORA_NETWORK_NAME,
   SORA_XOR_ASSET_ID,
 } from '@/consts/networks';
-import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/currencies';
+import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/common';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 

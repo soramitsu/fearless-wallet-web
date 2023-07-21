@@ -18,7 +18,7 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import { cut } from '@/helpers/common';
+import { cut } from '@/helpers';
 
 @Component
 export default class WalletInfo extends Vue {

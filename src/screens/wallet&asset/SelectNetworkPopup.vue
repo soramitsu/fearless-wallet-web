@@ -23,7 +23,7 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { RelayChainName } from '@/interfaces';
-import { firstCharToUp } from '@/helpers/common';
+import { firstCharToUp } from '@/helpers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 

@@ -52,7 +52,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { validateEmail } from '@/helpers/common';
+import { validateEmail } from '@/helpers';
 import Disclaimer from '@/screens/soraCard/stepsKYC/Disclaimer.vue';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import { RESEND_INTERVAL } from '@/consts/soraCard';

@@ -80,7 +80,6 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Mutation, Action } from 'vuex-class';
-import { HexString } from '@polkadot/util/types';
 import type { SelectedWallet, GetShowWarningNetworks, SetHiddenAsset } from '@/store';
 import type { AsyncFn, Fn, TabWallet } from '@/interfaces';
 import { BalanceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
@@ -103,16 +102,11 @@ import GoogleExportPopup from '@/screens/wallet&asset/wallet/GoogleExportPopup.v
 import { ALL_NETWORKS } from '@/consts/networks';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { AssetsPrice } from '@/interfaces';
-import {
-  defaultSortingCurrencies,
-  getChangeWalletBalance,
-  getSummaryTransferableWalletBalance,
-} from '@/helpers/currencies';
-import { tieAccount } from '@/extension/messaging';
+import { defaultSortingCurrencies, filterBalanceItemsByNetwork } from '@/helpers/currencies';
+import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/common';
 import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
 import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
-import { filterBalanceItemsByNetwork } from '@/util/networks';
 
 @Component({
   components: {

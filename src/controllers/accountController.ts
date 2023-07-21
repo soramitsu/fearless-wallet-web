@@ -13,7 +13,6 @@ class AccountController {
   private readonly selectedFiatStorageName = 'selected-fiat';
   private readonly selectedWalletStorageName = 'selected-wallet';
   private readonly selectedNetworkStorageName = 'selected-network';
-
   private readonly customSort = 'custom-sort';
   private readonly accounts = 'accounts';
   private readonly hiddenAssets = 'hidden-assets';

@@ -621,22 +621,6 @@ export default class State {
     return true;
   }
 
-  public async isNetworkNeedForAnotherWallet(network: NetworkJson, selectedType: string, currentAddress: string) {
-    const selectedNetworks = Object.keys(this.selectedNetwork).filter((el) => el !== currentAddress);
-    const isSelectedCommonTypesInOtherWallets = Object.values(selectedNetworks).some(
-      (el) => el === POPULAR_NETWORKS || el === ALL_NETWORKS
-    );
-
-    if ((selectedType === ALL_NETWORKS || selectedType === POPULAR_NETWORKS) && isSelectedCommonTypesInOtherWallets)
-      return true;
-
-    const isSelectedTypeNotGroup =
-      selectedType !== POPULAR_NETWORKS && selectedType !== ALL_NETWORKS && selectedType !== FAVORITE_NETWORKS;
-    const selectedNetworksValues = Object.values(this.selectedNetwork);
-
-    if (isSelectedTypeNotGroup && selectedNetworksValues.includes(selectedType)) return true;
-  }
-
   public selectedNetworksExceptAddress(address: string): string[] {
     const result: string[] = [];
     Object.keys(this.selectedNetwork).forEach((el) => {

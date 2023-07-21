@@ -1,28 +1,29 @@
 <template>
   <div class="asset">
-    <div class="asset-header">
-      <div class="descriptions" @click="toggleBalanceDetailsPopup">
-        <Shimmer v-if="showShimmers" height="32px" width="140px" />
-
-        <div v-else class="count-assets">
-          <div class="count-value">{{ countAssetsString }}</div>
-
-          <Icon icon="info" class="details-icon" />
+    <ContentForm :height="157" :bottomRightCorner="true">
+      <div class="asset-info">
+        <div class="asset__icon">
+          <ExternalLogo :name="assetIcon" :width="82" :height="82" />
         </div>
-        <div class="balance-in-network">{{ transferableFiatBalanceInNetworkString }}</div>
 
-        <div class="price">{{ assetPriceString }}</div>
+        <div class="asset-info__content" @click="toggleBalanceDetailsPopup">
+          <div class="asset__price">
+            <span class="asset__price-item">{{ '+5.3% ($1.12)' }}</span>
+            <span class="asset__price-item">{{ '$3,353.021' }}</span>
+            <span class="asset__price-item">{{ 'XOR = $2.05' }}</span>
+          </div>
+          <div class="asset__balance count-value">{{ countAssetsString }}</div>
+          <div class="asset__locked">
+            <div class="asset__locked-content">
+              <span class="asset__locked-title">Locked</span>
+              <span class="asset__locked-balance">{{ '16 XOR ($32.80)' }}</span>
+              <Icon icon="info" class="details-icon" />
+            </div>
+          </div>
+        </div>
       </div>
-
-      <SelectNetworkButton
-        :ref="selectNetworkButtonRef"
-        :text="selectedNetwork"
-        :isActive="showSelectNetworkPopup"
-        @openNetworkPopup="toggleSelectNetworkPopupVisible"
-      />
-    </div>
-
-    <div class="activity">
+    </ContentForm>
+    <div v-if="isMainNetwork" class="activity">
       <BorderButton
         class="activity-button"
         text="assets.sendButtonText"
@@ -62,7 +63,7 @@
       />
     </div>
 
-    <History :currency="currentCurrency" @openHistoryDetailsForm="openHistoryDetailsForm" />
+    <History v-if="isMainNetwork" :currency="currentCurrency" @openHistoryDetailsForm="openHistoryDetailsForm" />
 
     <SendForm
       v-if="showSendForm"
@@ -194,6 +195,10 @@ export default class Asset extends Vue {
     return !this.isOnline || !this.balances.length || !this.currentNetwork || this.currentNetwork?.state === 'pending';
   }
 
+  get assetIcon() {
+    return this.currentCurrency.icon;
+  }
+
   get providers() {
     return this.currentCurrency.providers ?? [];
   }
@@ -214,6 +219,10 @@ export default class Asset extends Vue {
     return this.currentCurrency.balances?.find(
       ({ name }) => name.toLowerCase() === this.selectedNetwork?.toLowerCase()
     );
+  }
+
+  get isMainNetwork() {
+    return this.currentNetwork && this.currentNetwork.name === this.mainNetwork;
   }
 
   get mainNetwork() {
@@ -257,12 +266,12 @@ export default class Asset extends Vue {
   }
 
   get countAssetsString() {
-    if (!this.currentCurrency) return `${this.selectedAssetUpper} 0`;
+    if (!this.currentCurrency) return `0 ${this.selectedAssetUpper}`;
 
     const totalCountAssets = +getSummaryTransferableBalance(this.currentCurrency, this.selectedNetwork);
     const total = this.$n(totalCountAssets, 'decimal');
 
-    return `${this.selectedAssetUpper} ${total}`;
+    return `${total} ${this.selectedAssetUpper}`;
   }
 
   get transferableAssetBalance() {
@@ -374,60 +383,80 @@ export default class Asset extends Vue {
   width: 100%;
   height: 450px;
 
-  .asset-header {
+  .asset-info {
     display: flex;
-    justify-content: space-between;
-    margin-bottom: 16px;
+    align-items: center;
+    height: 100%;
+    gap: 20px;
 
-    .descriptions {
+    .asset__icon {
+      background: $secondary-background-color;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      margin: 16px;
+    }
+
+    .asset-info__content {
       display: flex;
       justify-content: space-between;
       flex-direction: column;
       align-items: flex-start;
-      height: 70px;
-
+      gap: 10px;
       &:hover {
         cursor: pointer;
       }
-
-      .count-assets {
+      .asset__price {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-weight: 600;
-        font-size: 28px;
-        text-align: left;
-        max-width: 265px;
-        height: 32px;
+        flex-flow: row nowrap;
+        font-family: Sora;
+        color: $gray-color;
+        line-height: 1px;
 
-        .count-value {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+        .asset__price-item {
+          font-size: 12px;
+          font-weight: 400;
+          border-right: solid 1px transparent;
+          padding: 4px;
         }
 
+        & > :not(:last-child) {
+          border-right: solid 1px $gray-color;
+          line-height: 1px;
+        }
+
+        > :first-child {
+          padding-left: 0px;
+        }
+      }
+      .asset__balance {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 24px;
+        font-style: normal;
+        font-weight: 700;
+      }
+      .asset__locked-content {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        .asset__locked-title {
+          color: $default-white;
+        }
         .details-icon {
-          width: 18px;
-          height: 18px;
-          min-height: 18px;
-          min-width: 18px;
-          margin-left: 10px;
+          width: 14px;
+          height: 14px;
+          min-height: 14px;
+          min-width: 14px;
           color: $grayish-white;
 
           &:hover {
             color: $default-white;
           }
         }
-      }
-
-      .balance-in-network {
-        color: $gray-color;
-      }
-
-      .price {
-        color: $gray-color;
-        font-size: 12px;
-        line-height: 15px;
       }
     }
   }

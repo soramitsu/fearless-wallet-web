@@ -136,7 +136,6 @@ export default class Wallet extends Vue {
   showAssetsManagementForm = false;
   showSendForm = false;
   showReceiveForm = false;
-  showSelectNetworkPopup = false;
   networkUnavailable = '';
   activeTabName: TabWallet = 'Currencies';
   filterValue = '';
@@ -282,8 +281,6 @@ export default class Wallet extends Vue {
 
   toggleNetworkManagementVisible() {
     this.showNetworkManagement = !this.showNetworkManagement;
-
-    this.toggleSelectNetworkPopupVisible(false);
   }
 
   toggleAssetsManagementFormVisible(value = true) {
@@ -341,26 +338,6 @@ export default class Wallet extends Vue {
     this[field] = value;
 
     if (this.selectedNetwork !== ALL_NETWORKS) this.selectedCurrency.mainNetwork = this.selectedNetwork;
-  }
-
-  toggleSelectedNetwork(network: string) {
-    if (this.selectedNetwork === network) return;
-
-    const prepNetwork: HexString | null = network === ALL_NETWORKS ? null : `0x${this.getNetwork(network).chainId}`;
-
-    this.setSelectedNetwork(network);
-
-    tieAccount(this.selectedWallet.address, prepNetwork);
-
-    this.toggleSelectNetworkPopupVisible();
-  }
-
-  toggleSelectNetworkPopupVisible(value?: boolean) {
-    const targetElement = (this.$refs[this.selectNetworkButtonRef] as Vue).$el as HTMLElement;
-
-    this.showSelectNetworkPopup = value ?? !this.showSelectNetworkPopup;
-
-    targetElement.style.zIndex = this.showSelectNetworkPopup ? '400' : '0';
   }
 
   updateFilterValue(value: string) {

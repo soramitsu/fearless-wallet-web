@@ -18,10 +18,16 @@ export enum GettersTypes {
   getActiveNodesByNetwork = 'getActiveNodesByNetwork',
   getAllNetworksIsReadyToUse = 'getAllNetworksIsReadyToUse',
   getAssetsPriceInterval = 'getAssetsPriceInterval',
+  getFavoriteNetworksNames = 'getFavoriteNetworksNames',
 }
 
 export type Getters = {
   [GettersTypes.networks](state: State, getters?: GetterTree<State, State> & Getters, rootState?: any): NetworkJson[];
+  [GettersTypes.getFavoriteNetworksNames](
+    state: State,
+    getters?: GetterTree<State, State> & Getters,
+    rootState?: any
+  ): { name: string; favorite: string[] }[];
   [GettersTypes.allNetworks](
     state: State,
     getters?: GetterTree<State, State> & Getters,
@@ -56,6 +62,9 @@ const getters: GetterTree<State, State> & Getters = {
     return haveEthereumAccount
       ? state.networks
       : state.networks.filter(({ name }) => !ETHEREUM_NETWORKS.includes(name));
+  },
+  [GettersTypes.getFavoriteNetworksNames]({ networks }): { name: string; favorite: string[] }[] {
+    return networks.filter((el) => el.favorite.length).map(({ name, favorite }) => ({ name, favorite }));
   },
 
   [GettersTypes.allNetworks]({ networks }): NetworkJson[] {

@@ -141,6 +141,22 @@
         "text": "Language",
         "translated": "Translated by the team"
       }
+    },
+    "networkManagement": {
+      "tabs": {
+        "all": "All",
+        "favorites": "Favorites",
+        "popular": "Popular"
+      },
+      "header": "Select Network",
+      "all": "All networks",
+      "favorites": "Favorite networks",
+      "favorite": "Favorite",
+      "popular": "Popular networks",
+      "networkSelected": "{network} network selected",
+      "groupSelected": "{group} networks selected",
+      "addFavorite": "{network} network added to favorites",
+      "deleteFavorite": "{network} network deleted from favorites"
     }
   },
   "menu": {

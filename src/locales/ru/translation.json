@@ -139,6 +139,22 @@
         "text": "Язык",
         "translated": "Переведено командой"
       }
+    },
+    "networkManagement": {
+      "tabs": {
+        "all": "Все",
+        "favorites": "Избранные",
+        "popular": "Популярные"
+      },
+      "header": "Выберите сеть",
+      "all": "Все сети",
+      "favorites": "Избранные сети",
+      "favorite": "Избранная",
+      "popular": "Популярные сети",
+      "networkSelected": "{network} сеть выбрана",
+      "groupSelected": "{group} сети выбраны",
+      "addFavorite": "{network} сеть добавлена в избранные",
+      "deleteFavorite": "{network} сеть удалена из избранного"
     }
   },
   "menu": {

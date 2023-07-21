@@ -72,7 +72,7 @@ import InputWithIcon from '@/screens/wallet&asset/InputWithIcon.vue';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { cut } from '@/helpers/common';
+import { cut } from '@/helpers/';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';

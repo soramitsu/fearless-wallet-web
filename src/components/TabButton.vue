@@ -41,7 +41,7 @@ export default class TabButton extends Vue {
   font-size: 13px;
   line-height: 36px;
   clip-path: $medium-clip-path-left-top-and-right-bottom;
-  border: 1px solid $default-background-color;
+  border: $default-border;
   height: 36px;
   user-select: none;
 

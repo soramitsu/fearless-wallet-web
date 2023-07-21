@@ -43,13 +43,13 @@ import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet } from '@/store';
 import { X1Api } from '@/util/x1';
-import { SORA_NETWORK_NAME } from '@/consts/networks';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { calculateXOREuroBalance } from '@/util/soraCard';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import { getXORCurrency } from '@/helpers/currencies';
+import { SORA_NETWORK_NAME } from '@/consts/sora';
 
 @Component({})
 export default class X1Form extends Vue {

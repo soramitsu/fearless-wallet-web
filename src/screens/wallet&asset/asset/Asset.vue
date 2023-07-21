@@ -68,21 +68,21 @@
       v-if="showSendForm"
       :_selectedNetwork="selectedNetwork"
       :_selectedAssetId="selectedAssetId"
-      :closeForm="toggleVisible.bind(null, 'showSendForm', false)"
+      @closeForm="toggleVisible('showSendForm', false)"
     />
 
     <ReceiveForm
       v-if="showReceiveForm"
       :_selectedNetwork="selectedNetwork"
       :selectedAssetId="selectedAssetId"
-      :closeForm="toggleVisible.bind(null, 'showReceiveForm', false)"
+      @closeForm="toggleVisible('showReceiveForm', false)"
     />
 
     <CrossChainForm
       v-if="showCrossChainForm"
       :_originalNetwork="selectedNetwork"
       :_selectedAssetId="selectedAssetId"
-      :closeForm="toggleVisible.bind(null, 'showCrossChainForm', false)"
+      @closeForm="toggleVisible('showCrossChainForm', false)"
     />
 
     <BuyPopup

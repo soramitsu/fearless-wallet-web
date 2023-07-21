@@ -1,5 +1,5 @@
 import type { NetworkName, AssetsPrice, ChangeWalletBalance } from '@/interfaces';
-import { ALL_NETWORKS, SORA_UTILITY_ASSET, SORA_NETWORK_NAME } from '@/consts/networks';
+import { ALL_NETWORKS } from '@/consts/networks';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
@@ -7,6 +7,7 @@ import { isSora } from '@/helpers/common';
 import { addNumbers } from '@/helpers/numbers';
 import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 import { getNativeAssetName } from '@/extension/background/extension-base/src/background/utils/utils';
+import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/sora';
 
 function getTransferableBalanceInNetwork(token: TokenBalance, network: string) {
   return token.balances.find(({ name }) => name.toLowerCase() === network.toLowerCase())?.transferable ?? '0';

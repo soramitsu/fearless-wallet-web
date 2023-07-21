@@ -23,7 +23,7 @@
 
       <SettingMenuItem title="header.settings.language.text" icon="language" @onOpen="openPopup('openLanguagePopup')" />
 
-      <SettingMenuItem title="common.aboutApp" icon="info" @onOpen="openPopup('openAboutPopup')" />
+      <SettingMenuItem title="common.about" icon="info" @onOpen="openPopup('openAboutPopup')" />
 
       <SettingMenuItem
         v-if="isExtension"

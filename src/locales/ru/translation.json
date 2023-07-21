@@ -399,6 +399,22 @@
     "polkaswapMemorandum": "Polkaswap Memorandum and Terms of Services",
     "importantText": "I confirm that I have read all of the documents mentioned and pressing 'Сontinue' I accept them."
   },
+  "staking": {
+    "stakingBalance": "Баланс стейкинга",
+    "myStaked": "Мой стейкинг",
+    "staking": "Стейкинг",
+    "unstaking": "Анстейкинг",
+    "unstakingDays": "Период анстейкинга {value} дней",
+    "days": "дней",
+    "unstakingPeriod": "Период анстейкинга",
+    "stakeMore": "Застейкать еще",
+    "unstake": "Анстейк",
+    "alerts": "Оповещения",
+    "history": "История",
+    "redeem": "Выкупить",
+    "unstakingDisclaimers1": "Токены в период анстейкинга не приносят вознаграждения",
+    "unstakingDisclaimers2": "После периода анстейкинга вам нужно будет выкупить свои токены."
+  },
   "common": {
     "privacyPolicy": "Политика Конфиденциальности",
     "termsConditions": "Условия и положения",
@@ -440,7 +456,7 @@
     "start": "Начать",
     "and": "и",
     "read": "Читать",
-    "aboutApp": "О приложении",
+    "about": "О приложении",
     "supportFeedback": "Поддержка & Фидбек",
     "socialMedia": "Социальные медиа",
     "communityWallet": "Сообщество кошелька",
@@ -461,6 +477,7 @@
     "Resolve Option": "Варианты решения",
     "dontShowAgain": "не показывать снова",
     "iAmReady": "ОК, я готов",
+    "all": "Все",
     "name": "Имя"
   }
 }

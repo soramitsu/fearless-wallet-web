@@ -78,7 +78,7 @@ export default class Corners extends Vue {
   }
 
   .corner-border {
-    border-top: 1px solid $default-background-color;
+    border-top: $default-border;
   }
 
   .hover:hover ~ .corner-border {

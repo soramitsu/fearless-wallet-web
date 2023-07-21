@@ -386,7 +386,7 @@ export default class CreateGoogle extends Vue {
   gap: 16px;
   padding-left: 10px;
   padding-right: 10px;
-  color: #ffffffbf;
+  color: $grayish-white-2;
 
   .divider {
     background: rgba(255, 255, 255, 0.1);

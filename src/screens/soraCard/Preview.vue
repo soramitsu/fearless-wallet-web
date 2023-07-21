@@ -106,7 +106,6 @@ import { FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet } from '@/store';
 import type { AsyncFn } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SORA_NETWORK_NAME } from '@/consts/networks';
 import UnsupportedCountries from '@/screens/soraCard/UnsupportedCountries.vue';
 import { soraCardController } from '@/controllers';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
@@ -118,6 +117,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { getXORCurrency } from '@/helpers/currencies';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
+import { SORA_NETWORK_NAME } from '@/consts/sora';
 
 @Component({
   components: { UnsupportedCountries },

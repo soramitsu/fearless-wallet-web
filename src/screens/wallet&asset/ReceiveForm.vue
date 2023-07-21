@@ -88,7 +88,6 @@ export default class ReceiveForm extends Vue {
   showSelectNetworkPopup = false;
 
   @Prop(String) _selectedNetwork!: string;
-  @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
@@ -123,6 +122,10 @@ export default class ReceiveForm extends Vue {
 
   mounted() {
     this.selectedNetwork = this._selectedNetwork;
+  }
+
+  closeForm() {
+    this.$emit('closeForm');
   }
 
   toggleSelectNetworkPopupVisible() {

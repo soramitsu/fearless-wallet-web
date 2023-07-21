@@ -123,7 +123,7 @@ export default class SelectInput extends Vue {
   background-color: $secondary-background-color;
   clip-path: $big-clip-path-left-top-and-right-bottom;
   border-radius: $default-border-radius;
-  border: 1px solid $secondary-background-color;
+  border: $secondary-border;
   display: flex;
   justify-content: space-between;
   color: $gray-color;
@@ -194,7 +194,7 @@ export default class SelectInput extends Vue {
       min-width: 122px;
       background-color: $secondary-background-color;
       color: white;
-      border: 1px solid $default-background-color;
+      border: $default-border;
       border-radius: 4px;
       cursor: pointer;
 

@@ -146,7 +146,7 @@ export default class GoogleWalletsList extends Vue {
     flex-flow: column nowrap;
     justify-content: space-between;
     align-items: center;
-    border: 1px solid $default-background-color;
+    border: $default-border;
     background-color: $default-background-color;
     clip-path: $big-clip-path-left-top-and-right-bottom;
     padding: 10px;

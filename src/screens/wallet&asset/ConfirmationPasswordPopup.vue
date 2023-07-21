@@ -65,7 +65,14 @@ import { Getter, Action } from 'vuex-class';
 import type { RequestSentInfo, AsyncFn, SignerPayloadJSON, PayloadJSON, SwapOptions } from '@/interfaces';
 import type { GetNetworkGenesisHash, SelectedWallet } from '@/store';
 import type ValidatedInput from '@/components/ValidatedInput.vue';
-import { isSignLocked, makeSwap, makeTransfer, makeCrossChain, cancelMobileSignRequest } from '@/extension/messaging';
+import {
+  isSignLocked,
+  makeSwap,
+  makeTransfer,
+  makeCrossChain,
+  makeStaking,
+  cancelMobileSignRequest,
+} from '@/extension/messaging';
 import { beaconController, ExtensionController } from '@/controllers';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -78,6 +85,7 @@ import {
   RequestCheckCrossChain,
   RequestTransfer,
   RequestCrossChain,
+  RequestStaking,
   TokenBalance,
 } from '@/extension/background/extension-base/src/background/types/types';
 import { IS_EXTENSION } from '@/consts/global';
@@ -100,22 +108,22 @@ export default class ConfirmationPasswordPopup extends Vue {
   @Prop(String) amount!: string;
   @Prop(String) value!: string;
   @Prop(String) firstIcon!: string;
-  @Prop(String) network!: string;
   @Prop(String) secondIcon!: string;
   @Prop(String) transactionId?: string;
   @Prop(Object) currency?: TokenBalance;
   @Prop(Object) tx!: RequestCheckTransfer | RequestCheckCrossChain;
   @Prop(Object) payload?: SignerPayloadJSON;
   @Prop(Object) swapOptions?: SwapOptions;
-  @Prop(String) extrinsicType!: 'transfer' | 'crossChain' | 'swap';
+  @Prop(String) extrinsicType!: 'transfer' | 'crossChain' | 'swap' | 'staking';
 
-  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Action(ExtensionActionTypes.APPROVE_SIGN_PASSWORD) onSignApprove!: AsyncFn<ApprovePayload>;
   @Action(ExtensionActionTypes.SIGN_CANCEL) onSignCancel!: AsyncFn<string>;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
   @Getter(NetworksGettersTypes.getNetworkGenesisHash) getNetworkGenesisHash!: GetNetworkGenesisHash;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getAccounts) accounts!: AccountJson[];
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get classesInput() {
     return [
@@ -128,19 +136,17 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get firstIconUrl() {
-    if (this.extrinsicType === 'transfer' || this.extrinsicType === 'swap')
-      return this.balances.find(({ assetId }) => assetId === this.firstIcon)?.icon;
+    if (this.extrinsicType === 'crossChain')
+      return this.networks.find(({ name }) => name.toLowerCase() === this.firstIcon.toLowerCase())?.icon ?? '';
 
-    // firstIcon === networkName for crossChain
-    return this.networks.find(({ name }) => name.toLowerCase() === this.firstIcon.toLowerCase())?.icon ?? '';
+    return this.balances.find(({ assetId }) => assetId === this.firstIcon)?.icon;
   }
 
   get secondIconUrl() {
-    if (this.extrinsicType === 'transfer' || this.extrinsicType === 'swap')
-      return this.balances.find(({ assetId }) => assetId === this.secondIcon)?.icon;
+    if (this.extrinsicType === 'crossChain')
+      return this.networks.find(({ name }) => name.toLowerCase() === this.secondIcon.toLowerCase())?.icon ?? '';
 
-    // secondIcon === networkName for crossChain
-    return this.networks.find(({ name }) => name.toLowerCase() === this.secondIcon.toLowerCase())?.icon ?? '';
+    return this.balances.find(({ assetId }) => assetId === this.secondIcon)?.icon;
   }
 
   get requestTransfer() {
@@ -153,6 +159,15 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get requestCrossChain(): RequestCrossChain {
+    return {
+      ...(this.tx as RequestCheckCrossChain),
+      isSavePass: this.isSavePass,
+      isMobile: !!this.isSignMobile,
+      password: this.password,
+    };
+  }
+
+  get requestStaking(): RequestStaking {
     return {
       ...(this.tx as RequestCheckCrossChain),
       isSavePass: this.isSavePass,
@@ -213,7 +228,7 @@ export default class ConfirmationPasswordPopup extends Vue {
   }
 
   get transferValueString() {
-    return `$${this.$n(+this.value, 'price')}`;
+    return `${this.fiatSymbol}${this.$n(+this.value, 'price')}`;
   }
 
   get isTransactionNotInit() {
@@ -318,6 +333,8 @@ export default class ConfirmationPasswordPopup extends Vue {
     if (this.extrinsicType === 'transfer') return await makeTransfer(this.requestTransfer, callback);
 
     if (this.extrinsicType === 'crossChain') return await makeCrossChain(this.requestCrossChain, callback);
+
+    if (this.extrinsicType === 'staking') return await makeStaking(this.requestStaking, callback);
   }
 
   async keypress({ key }: KeyboardEvent) {

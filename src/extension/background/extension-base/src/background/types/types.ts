@@ -375,6 +375,18 @@ export interface RequestCheckCrossChain extends BaseRequestSign {
   isMobile?: boolean;
 }
 
+export interface RequestCheckStaking extends BaseRequestSign {
+  originNet: NetworkName;
+  destinationNet: NetworkName;
+  from: string;
+  to: string;
+  assetId: string;
+  relayChain?: RelayChainName;
+  amount?: string;
+  password?: string;
+  isMobile?: boolean;
+}
+
 export interface ResponseCheckTransfer {
   errors?: Array<BasicTxError>;
   warnings?: Array<BasicTxWarning>;
@@ -436,6 +448,8 @@ export interface BasicSwapResponse {
 export type RequestTransfer = PasswordRequestSign<RequestCheckTransfer>;
 
 export type RequestCrossChain = PasswordRequestSign<RequestCheckCrossChain>;
+
+export type RequestStaking = PasswordRequestSign<RequestCheckStaking>;
 
 export interface RequestAccountExportPrivateKey {
   address: string;

@@ -90,6 +90,7 @@ import type {
   RequestUpdateMeta,
   ResponseTotalBalances,
   MobileSigningRequest,
+  RequestStaking,
 } from '@extension-base/background/types/types';
 import type { KeyringPair$Json } from '@polkadot/keyring/types';
 import type {
@@ -198,7 +199,8 @@ export interface RequestSignatures {
   'pri(accounts.checkTransfer)': [RequestCheckTransfer, ResponseCheckTransfer];
   'pri(accounts.transfer)': [RequestTransfer, BasicTxResponse, BasicTxResponse];
   'pri(accounts.checkCrossChain)': [RequestCheckCrossChain, ResponseCheckCrossChain];
-  'pri(accounts.crossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse]; // TODO
+  'pri(accounts.crossChain)': [RequestCrossChain, BasicTxResponse, BasicTxResponse];
+  'pri(accounts.staking)': [RequestStaking, BasicTxResponse, BasicTxResponse];
   'pri(accounts.checkSwap)': [RequestCheckSwap, ResponseCheckSwap];
   'pri(accounts.swap)': [RequestSwap, ResponseMakeSwap];
   'pri(accounts.get.soraFees)': [null, SoraFees];

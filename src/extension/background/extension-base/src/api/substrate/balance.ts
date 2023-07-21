@@ -9,7 +9,8 @@ import type { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type { RelayChainName } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
 import { formatBalance } from '@/util/balances';
-import { CHAIN_IDS, SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/networks';
+import { CHAIN_IDS } from '@/consts/networks';
+import { SORA_MAINNET, SORA_TEST, SORA_UTILITY_ASSET } from '@/consts/sora';
 
 async function subscribeTokensBalance(
   address: string,

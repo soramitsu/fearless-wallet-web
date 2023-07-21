@@ -8,7 +8,6 @@ import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import { SORA_CARD_VISIBILITY } from '@/consts/global';
 
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
-const Staking = () => import('@/screens/staking/Staking.vue');
 const History = () => import('@/screens/history/History.vue');
 const Accounts = () => import('@/screens/accounts/Accounts.vue');
 const Nodes = () => import('@/screens/accounts/Nodes.vue');
@@ -26,6 +25,9 @@ const Polkaswap = () => import(/* webpackChunkName: "sora" */ '@/screens/polkasw
 const AddWallet = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/AddWallet.vue');
 const AddFromGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/AddFromGoogle.vue');
 const CreateGoogle = () => import(/* webpackChunkName: "add-wallet" */ '@/screens/addWallet/google/CreateGoogle.vue');
+
+const MyStake = () => import(/* webpackChunkName: "staking */ '@/screens/staking/myStake/MyStake.vue');
+const Staking = () => import(/* webpackChunkName: "staking */ '@/screens/staking/Staking.vue');
 
 export enum Components {
   Welcome = 'Welcome',
@@ -51,6 +53,7 @@ export enum Components {
   SoraSwap = 'SoraSwap',
   SoraCard = 'SoraCard',
   NoFound = 'NoFound',
+  MyStake = 'MyStake',
 }
 
 const haveSelectedWallet = () => {
@@ -172,6 +175,11 @@ const routes: Array<RouteConfig> = [
             component: Export,
           },
         ],
+      },
+      {
+        path: 'my-stake/:network',
+        name: Components.MyStake,
+        component: MyStake,
       },
       {
         path: ':network/:assetId',

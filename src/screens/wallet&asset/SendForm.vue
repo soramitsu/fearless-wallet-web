@@ -81,7 +81,6 @@ export default class SendForm extends Vue {
   amount = '';
   value = '';
 
-  @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) _selectedNetwork!: string;
   @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -139,6 +138,10 @@ export default class SendForm extends Vue {
   created() {
     this.assetId = this._selectedAssetId;
     this.selectedNetwork = this._selectedNetwork;
+  }
+
+  closeForm() {
+    this.$emit('closeForm');
   }
 
   updateAssetId(value: string) {

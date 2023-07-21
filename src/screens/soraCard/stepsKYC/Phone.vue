@@ -70,10 +70,10 @@ import Disclaimer from '@/screens/soraCard/stepsKYC/Disclaimer.vue';
 import { soraCardController } from '@/controllers';
 import { MutationTypes as SoraCardMutationTypes } from '@/store/soraCard/mutations';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { SORA_UTILITY_ASSET, SORA_NETWORK_NAME } from '@/consts/networks';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { calculateXOREuroBalance, isValidEuroBalanceXor } from '@/util/soraCard';
 import { getXORCurrency } from '@/helpers/currencies';
+import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET } from '@/consts/sora';
 
 @Component({
   components: { Disclaimer },

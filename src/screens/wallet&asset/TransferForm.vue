@@ -160,7 +160,6 @@
       :currency="currency"
       :amount="syncedAmount"
       :value="syncedValue"
-      :network="syncedNetwork"
       :firstIcon="firstIcon"
       :secondIcon="syncedDestNet"
       :extrinsicType="extrinsicType"

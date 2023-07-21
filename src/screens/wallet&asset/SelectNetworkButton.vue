@@ -112,6 +112,6 @@ export default class SelectNetworkButton extends Vue {
 }
 
 .active {
-  border: 1px solid $default-background-color;
+  border: $default-border;
 }
 </style>

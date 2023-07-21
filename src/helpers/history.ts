@@ -1,4 +1,3 @@
-import { format, isToday, isThisYear, secondsToMilliseconds } from 'date-fns';
 import { FPNumber } from '@sora-substrate/util';
 import type {
   HistoryElement,
@@ -53,20 +52,6 @@ function getTypeFormatted(historyElement: HistoryElement) {
 
   // reward
   return firstCharToUp(type);
-}
-
-function getFormattedDate({ timestamp }: HistoryElement) {
-  const date = new Date(secondsToMilliseconds(+timestamp));
-
-  if (isToday(date)) {
-    return format(date, 'HH:mm');
-  }
-
-  if (isThisYear(date)) {
-    return format(date, 'dd MMMM HH:mm');
-  }
-
-  return format(date, 'dd MMMM yyyy HH:mm');
 }
 
 function getHumanValue(value: string, assetId: string, networkName: NetworkName) {
@@ -179,12 +164,4 @@ function getFormattedHistory(
   return history as SubqueryHistory;
 }
 
-export {
-  getType,
-  getTypeFormatted,
-  getHumanTransferFee,
-  getHistoryValue,
-  getFormattedDate,
-  getSignTransfer,
-  getFormattedHistory,
-};
+export { getType, getTypeFormatted, getHumanTransferFee, getHistoryValue, getSignTransfer, getFormattedHistory };

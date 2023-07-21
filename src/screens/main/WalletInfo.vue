@@ -94,10 +94,10 @@ export default class WalletInfo extends Vue {
   align-items: center;
   text-align: left;
   opacity: 0.9;
-  border: 1px solid $default-background-color;
+  border: $default-border;
   padding: 10px $default-padding;
   clip-path: $big-clip-path-left-top-and-right-bottom;
-  border: 1px solid $default-background-color;
+  border: $default-border;
   border-radius: $default-border-radius;
   background: $secondary-background-color;
   user-select: none;

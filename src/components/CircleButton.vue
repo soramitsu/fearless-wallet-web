@@ -13,7 +13,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { Placement } from '@/interfaces';
 
 type BackgroundType = 'none' | 'black' | 'light-black';
-type Size = 'small' | 'medium';
+type Size = 'small' | 'medium' | 'big';
 
 @Component
 export default class CircleButton extends Vue {
@@ -122,6 +122,16 @@ export default class CircleButton extends Vue {
   .image {
     width: 16px;
     height: 16px;
+  }
+}
+
+.circle-button-big {
+  width: 48px;
+  height: 48px;
+
+  .image {
+    width: 24px;
+    height: 24px;
   }
 }
 

@@ -25,7 +25,8 @@ type MenuItemType = 'wallet' | 'crowdloans' | 'staking' | 'polkaswap' | 'history
   components: { MenuItem },
 })
 export default class Menu extends Vue {
-  walletItems = [Components.Accounts, Components.Export, Components.Nodes];
+  walletItems: string[] = [Components.Accounts, Components.Export, Components.Nodes];
+  stakingItems: string[] = [Components.MyStake];
   menuItems: MenuItemType[] = ['wallet', 'crowdloans', 'staking', 'polkaswap', 'history'];
 
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -36,13 +37,26 @@ export default class Menu extends Vue {
     return route;
   }
 
-  checkActive(menuItem: MenuItemType) {
-    const isHighlightWalletItem = this.walletItems.includes(this.$route.name as any);
+  get routeName() {
+    return this.$route.name as string;
+  }
 
-    return (
-      menuItem.toLowerCase() === this.currentRouteName ||
-      (menuItem === 'wallet' && (this.$route.params.assetId !== undefined || isHighlightWalletItem))
-    );
+  checkActive(menuItem: MenuItemType) {
+    if (menuItem === 'wallet') {
+      const isHighlightWalletItem = this.walletItems.includes(this.routeName);
+
+      if (isHighlightWalletItem) return true;
+
+      if (this.$route.params.assetId !== undefined) return true;
+    }
+
+    if (menuItem === 'staking') {
+      const isHighlightWalletItem = this.stakingItems.includes(this.routeName);
+
+      if (isHighlightWalletItem) return true;
+    }
+
+    return menuItem.toLowerCase() === this.currentRouteName;
   }
 
   clickMenuItem(menuItem: MenuItemType) {

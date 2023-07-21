@@ -191,7 +191,6 @@
       :currency="sendCurrency"
       :amount="sendAmount"
       :value="sendValue"
-      :network="soraNetworkName"
       :firstIcon="sendAssetId"
       :secondIcon="receiveAssetId"
       :swapOptions="swapOptions"
@@ -213,7 +212,6 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import Disclaimer from '@/screens/polkaswap/swap/Disclaimer.vue';
-import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET, SORA_XOR_ASSET_ID } from '@/consts/networks';
 import { Components } from '@/router/routes';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { checkSwap, getSoraFees } from '@/extension/messaging';
@@ -221,6 +219,7 @@ import { getCurrencyOptions, getXORCurrency } from '@/helpers/currencies';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { MarketType, SwapOptions } from '@/interfaces';
 import { addNumbers } from '@/helpers/numbers';
+import { SORA_NETWORK_NAME, SORA_UTILITY_ASSET, SORA_XOR_ASSET_ID } from '@/consts/sora';
 
 const SWAP_INTERVAL_RECALCULATE = 10000;
 
@@ -759,7 +758,7 @@ export default class SwapForm extends Vue {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid $secondary-background-color;
+  border-bottom: $secondary-border;
 
   .fiat-info {
     text-align: right;
@@ -794,7 +793,7 @@ export default class SwapForm extends Vue {
   justify-content: space-between;
   align-items: center;
   padding: $default-padding;
-  border-bottom: 1px solid $default-background-color;
+  border-bottom: $default-border;
 }
 
 .header {
@@ -866,7 +865,7 @@ export default class SwapForm extends Vue {
     justify-content: center;
     align-items: center;
     margin: -46px auto 0;
-    border: 1px solid $secondary-background-color;
+    border: $secondary-border;
     opacity: 1;
     position: relative;
     top: -110px;

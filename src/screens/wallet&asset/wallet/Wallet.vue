@@ -1,7 +1,7 @@
 <template>
   <div class="wallet">
     <header class="wallet-header">
-      <div class="wallet-balance__container">
+      <div class="balance-container">
         <WalletBalance
           class="balance"
           :balance="summaryTransferableBalance"
@@ -36,7 +36,7 @@
 
     <ContentForm :height="contentFormHeight">
       <div class="content">
-        <ContentSettings
+        <WalletSettings
           :activeTabName="activeTabName"
           :filterValue="filterValue"
           :showAssetsManagementForm="showAssetsManagementForm"
@@ -63,14 +63,14 @@
       v-if="showSendForm"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :_selectedAssetId="selectedCurrency.assetId"
-      :closeForm="toggleVisibleActivityForm.bind(null, 'showSendForm', false, {})"
+      @closeForm="toggleVisibleActivityForm('showSendForm', false, {})"
     />
 
     <ReceiveForm
       v-if="showReceiveForm"
       :_selectedNetwork="selectedCurrency.mainNetwork"
       :selectedAssetId="selectedCurrency.assetId"
-      :closeForm="toggleVisibleActivityForm.bind(null, 'showReceiveForm', false, {})"
+      @closeForm="toggleVisibleActivityForm('showReceiveForm', false, {})"
     />
 
     <NetworkManagement
@@ -103,7 +103,7 @@ import type { AsyncFn, Fn, TabWallet } from '@/interfaces';
 import { BalanceJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import NFTs from '@/screens/wallet&asset/wallet/NFTs.vue';
 import Currencies from '@/screens/wallet&asset/wallet/Currencies.vue';
-import ContentSettings from '@/screens/wallet&asset/wallet/ContentSettings.vue';
+import WalletSettings from '@/screens/wallet&asset/wallet/WalletSettings.vue';
 import SelectNetworkPopup from '@/screens/wallet&asset/SelectNetworkPopup.vue';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
@@ -127,8 +127,10 @@ import {
 } from '@/helpers/currencies';
 import { tieAccount } from '@/extension/messaging';
 import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
+import { CONTENT_FORM_HEIGHT } from '@/consts/global';
 import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
+import { getShimmersVisibility } from '@/helpers/wallets';
 
 @Component({
   components: {
@@ -138,7 +140,7 @@ import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/ty
     ReceiveForm,
     WalletBalance,
     SoraCardBanner,
-    ContentSettings,
+    WalletSettings,
     NetworkManagement,
     SelectNetworkPopup,
     SelectNetworkButton,
@@ -154,7 +156,7 @@ export default class Wallet extends Vue {
   showReceiveForm = false;
   showSelectNetworkPopup = false;
   networkUnavailable = '';
-  activeTabName: TabWallet = 'Currencies';
+  activeTabName: TabWallet = 'currencies';
   filterValue = '';
   selectedCurrency!: {
     mainNetwork?: string;
@@ -166,7 +168,7 @@ export default class Wallet extends Vue {
   @Getter(AccountsGettersTypes.getShowWarningNetwork) getShowWarningNetwork!: GetShowWarningNetworks;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getIsCustomSort) isCustomSort!: (address: string) => boolean;
-  @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
+  @Getter(AccountsGettersTypes.selectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(AccountsGettersTypes.showSoraCardBanner) showSoraCardBanner!: boolean;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
@@ -181,8 +183,8 @@ export default class Wallet extends Vue {
   get contentFormHeight() {
     const subtractionNumber = this.showSoraCardBanner ? SORA_CARD_BANNER_HEIGHT : 0;
 
-    // IMPORTANT: if <Menu /> showed use 397
-    return 457 - subtractionNumber;
+    // IMPORTANT: if <Menu /> not showed use 457
+    return CONTENT_FORM_HEIGHT - subtractionNumber;
   }
 
   get showNetworkUnavailablePopup() {
@@ -237,17 +239,7 @@ export default class Wallet extends Vue {
   }
 
   get showShimmers() {
-    if (this.selectedNetwork !== ALL_NETWORKS) {
-      const apiStatus = this.networks.find(
-        ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
-      )?.apiStatus;
-
-      return apiStatus === NETWORK_STATUS.PENDING;
-    }
-
-    const isPendingExists = this.networks.some(({ apiStatus }) => apiStatus === NETWORK_STATUS.PENDING);
-
-    return !this.isOnline || isPendingExists;
+    return getShimmersVisibility();
   }
 
   get filteredCurrencies() {
@@ -266,7 +258,7 @@ export default class Wallet extends Vue {
   }
 
   get showCurrencies() {
-    return this.activeTabName === 'Currencies';
+    return this.activeTabName === 'currencies';
   }
 
   get showGoogleExportPopup() {
@@ -408,7 +400,7 @@ export default class Wallet extends Vue {
     margin-bottom: 10px;
   }
 
-  .wallet-balance__container {
+  .balance-container {
     display: flex;
     flex-flow: row;
     gap: 5px;

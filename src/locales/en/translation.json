@@ -401,6 +401,22 @@
     "polkaswapMemorandum": "Polkaswap Memorandum and Terms of Services",
     "importantText": "I confirm that I have read all of the documents mentioned and pressing 'Сontinue' I accept them."
   },
+  "staking": {
+    "stakingBalance": "Staking balance",
+    "myStaked": "My staked",
+    "staking": "Staking",
+    "unstaking": "Unstaking",
+    "unstakingDays": "Unstaking period {value} days",
+    "days": "days",
+    "unstakingPeriod": "Unstaking period",
+    "stakeMore": "Stake more",
+    "unstake": "Unstake",
+    "alerts": "Alerts",
+    "history": "History",
+    "redeem": "Redeem",
+    "unstakingDisclaimers1": "Tokens in unstaking period generate no rewards",
+    "unstakingDisclaimers2": "After unstaking period you will need to redeem your tokens"
+  },
   "common": {
     "privacyPolicy": "Privacy Policy",
     "termsConditions": "Terms and Conditions",
@@ -442,7 +458,7 @@
     "start": "Let’s start",
     "and": "and",
     "read": "Read",
-    "aboutApp": "About",
+    "about": "About",
     "supportFeedback": "Support & Feedback",
     "socialMedia": "Social Media",
     "communityWallet": "Community wallet",
@@ -463,6 +479,7 @@
     "resolveOption": "Resolve Option",
     "dontShowAgain": "Don't show me again",
     "iAmReady": "OK, I am ready",
+    "all": "All",
     "name": "Name"
   }
 }

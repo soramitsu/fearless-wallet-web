@@ -94,7 +94,6 @@ export default class CrossChainForm extends Vue {
   value = '';
   step = 1;
 
-  @Prop(Function) closeForm!: VoidFunction;
   @Prop(String) _originalNetwork!: string;
   @Prop(String) _selectedAssetId!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -195,6 +194,10 @@ export default class CrossChainForm extends Vue {
 
       this.destinationNetwork = destName;
     });
+  }
+
+  closeForm() {
+    this.$emit('closeForm');
   }
 
   cut(value: string) {

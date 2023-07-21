@@ -21,10 +21,10 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { HistoryElement, NetworkName } from '@/interfaces';
-import { getType, getTypeFormatted, getFormattedDate, getHistoryValue, getSignTransfer } from '@/helpers/history';
+import { getType, getTypeFormatted, getHistoryValue, getSignTransfer } from '@/helpers/history';
+import { getFormattedDate, cut } from '@/helpers/common';
 import { TransactionType } from '@/interfaces/history';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { cut } from '@/helpers/common';
 
 @Component
 export default class HistoryItem extends Vue {
@@ -41,7 +41,7 @@ export default class HistoryItem extends Vue {
   }
 
   get date() {
-    return getFormattedDate(this.historyElement);
+    return getFormattedDate(this.historyElement.timestamp);
   }
 
   get assetToUpperCase() {
@@ -86,7 +86,7 @@ export default class HistoryItem extends Vue {
   display: flex;
   margin: 0 16px;
   padding: $default-padding 0;
-  border-bottom: 1px solid $default-background-color;
+  border-bottom: $default-border;
 
   &:hover {
     cursor: pointer;

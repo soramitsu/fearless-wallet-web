@@ -217,7 +217,7 @@ export default class Popup extends Vue {
   }
 
   .border {
-    border: 1px solid $default-background-color;
+    border: $default-border;
   }
 
   .content {

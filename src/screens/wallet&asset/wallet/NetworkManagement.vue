@@ -55,13 +55,13 @@ export default class NetworkManagement extends Vue {
         display: flex;
         justify-content: space-between;
         padding: 16px 0 16px 16px;
-        border-bottom: 1px solid $default-background-color;
+        border-bottom: $default-border;
         align-items: center;
         height: 68px;
         margin-bottom: 10px;
         clip-path: $big-clip-path-left-top-and-right-bottom;
         background-color: $secondary-background-color;
-        border: 1px solid $default-background-color;
+        border: $default-border;
         border-radius: $default-border-radius;
 
         .network-img {

@@ -74,8 +74,9 @@ import type { MetadataDef, ProviderMeta } from '@polkadot/extension-inject/types
 import type { HexString } from '@polkadot/util/types';
 import type { SoraFees, XcmLocations, XcmFees, NetworkName } from '@/interfaces';
 import { URLS } from '@/consts/urls';
-import { ALL_NETWORKS, SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/networks';
+import { ALL_NETWORKS } from '@/consts/networks';
 import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/currencies';
+import { SORA_NETWORK_NAME, SORA_XOR_ASSET_ID } from '@/consts/sora';
 
 export const cacheRegistryMap: Record<string, ChainRegistry> = {};
 

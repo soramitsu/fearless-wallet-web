@@ -207,7 +207,7 @@ export default class HistoryBook extends Vue {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid $default-background-color;
+      border-bottom: $default-border;
 
       &:last-child {
         border: none;

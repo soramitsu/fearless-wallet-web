@@ -95,6 +95,7 @@ import type {
   ResponseSeedValidate,
   ResponseType,
   SigningRequest,
+  RequestStaking,
 } from '@extension-base/background/types/types';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
@@ -1265,6 +1266,16 @@ export default class Extension extends FWExtensionBase {
     port.onDisconnect.addListener(() => this.cancelSubscription(id));
   }
 
+  private async makeStaking(
+    id: string,
+    port: Port,
+    { from, originNet, destinationNet, amount, password, to, assetId, isSavePass, isMobile }: RequestStaking
+  ): Promise<void> {
+    const [, fromKeyPair] = this.validateTransfer(assetId, from, password);
+
+    const cb = createSubscription<'pri(accounts.staking)'>(id, port);
+  }
+
   private getNetworkMap(): Record<string, NetworkJson> {
     return this.state.getNetworkMap;
   }
@@ -1530,6 +1541,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(accounts.crossChain)':
         return this.makeCrossChain(id, port, request as RequestCrossChain);
+
+      case 'pri(accounts.staking)':
+        return this.makeStaking(id, port, request as RequestStaking);
 
       case 'pri(accounts.checkSwap)':
         return this.validateSwap(request as RequestCheckSwap);

@@ -107,8 +107,8 @@ import { Identicon } from '@polkadot/vue-identicon';
 import { Getter } from 'vuex-class';
 import type { HistoryElement } from '@/interfaces/history';
 import type { SelectedWallet } from '@/store';
-import { getType, getSignTransfer, getHistoryValue, getFormattedDate, getHumanTransferFee } from '@/helpers/history';
-import { cut } from '@/helpers/common';
+import { getType, getSignTransfer, getHistoryValue, getHumanTransferFee } from '@/helpers/history';
+import { getFormattedDate, cut } from '@/helpers/common';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
 
@@ -217,7 +217,7 @@ export default class HistoryDetailsForm extends Vue {
   }
 
   get date() {
-    return getFormattedDate(this.historyElement);
+    return getFormattedDate(this.historyElement.timestamp);
   }
 
   get value() {
@@ -273,7 +273,7 @@ export default class HistoryDetailsForm extends Vue {
 
     .item {
       color: $default-white;
-      border-bottom: 1px solid $default-background-color;
+      border-bottom: $default-border;
       padding: $default-padding 0;
       display: flex;
       justify-content: space-between;

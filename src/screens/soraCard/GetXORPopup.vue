@@ -18,13 +18,13 @@ import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import type { SelectedWallet } from '@/store';
 import { Components } from '@/router/routes';
-import { SORA_NETWORK_NAME } from '@/consts/networks';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { IS_EXTENSION } from '@/consts/global';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { calculateXorRestPrice } from '@/util/soraCard';
 import { GettersTypes as SoraCardGettersTypes } from '@/store/soraCard/getters';
 import { getXORCurrency } from '@/helpers/currencies';
+import { SORA_NETWORK_NAME } from '@/consts/sora';
 
 @Component
 export default class GetXORPopup extends Vue {

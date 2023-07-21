@@ -1,7 +1,7 @@
 <template>
   <div class="layout">
-    <!-- IMPORTANT: if <Menu /> showed use 453 -->
-    <ContentForm :height="513">
+    <!-- IMPORTANT: if <Menu /> not showed use 513 -->
+    <ContentForm :height="453">
       <div class="accounts-layout">
         <div class="navigation">
           <div class="left-part">

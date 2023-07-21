@@ -58,7 +58,7 @@ export default class AccountsItem extends Vue {
 .accounts-item {
   display: flex;
   padding: 8px 0 8px 0px;
-  border-bottom: 1px solid $default-background-color;
+  border-bottom: $default-border;
   justify-content: space-between;
   align-items: center;
   height: 78px;

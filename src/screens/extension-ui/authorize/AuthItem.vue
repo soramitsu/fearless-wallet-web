@@ -59,7 +59,7 @@ export default class AuthItem extends Vue {
 
 .auth-content {
   padding: 16px 0;
-  border-bottom: 1px solid $default-background-color;
+  border-bottom: $default-border;
 }
 
 .authorized-account__count {

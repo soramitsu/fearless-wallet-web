@@ -11,7 +11,7 @@ import { SORA_CARD_VISIBILITY } from '@/consts/global';
 export enum GettersTypes {
   getSelectedWallet = 'getSelectedWallet',
   getSelectedFiat = 'getSelectedFiat',
-  getSelectedNetwork = 'getSelectedNetwork',
+  selectedNetwork = 'selectedNetwork',
   fiatSymbol = 'fiatSymbol',
   isOnline = 'isOnline',
   getFiatId = 'getFiatId',
@@ -32,7 +32,7 @@ export type Getters = {
   [GettersTypes.getSelectedWallet](state: State, getters?: GetterTree<State, State> & Getters): SelectedWallet;
   [GettersTypes.getBalances](state: State, getters?: GetterTree<State, State> & Getters): TokenBalance[];
   [GettersTypes.getSelectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
-  [GettersTypes.getSelectedNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
+  [GettersTypes.selectedNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.fiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.isOnline](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getFiatId](state: State, getters?: GetterTree<State, State> & Getters): string;
@@ -75,7 +75,7 @@ const getters: GetterTree<State, State> & Getters = {
     return selectedFiat;
   },
 
-  [GettersTypes.getSelectedNetwork]({ selectedNetworks, selectedWallet: { address } }): string {
+  [GettersTypes.selectedNetwork]({ selectedNetworks, selectedWallet: { address } }): string {
     return selectedNetworks[address] ?? ALL_NETWORKS;
   },
 

@@ -45,7 +45,7 @@ import { AsyncFn } from '@/interfaces';
     Hint,
   },
 })
-export default class MetaRequest extends Vue {
+export default class Metadata extends Vue {
   @Getter(ExtensionGettersTypes.metaRequests) requests!: MetadataRequest[];
   @Action(ExtensionActionTypes.APPROVE_META_REQUEST) onApproveMetaRequest!: AsyncFn<MetadataRequest>;
   @Action(ExtensionActionTypes.REJECT_META_REQUEST) onRejectMetaRequest!: AsyncFn<MetadataRequest>;

@@ -39,7 +39,7 @@ export default class InfoRow extends Vue {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid $secondary-background-color;
+  border-bottom: $secondary-border;
   color: $default-white;
 
   .value {

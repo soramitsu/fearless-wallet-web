@@ -45,6 +45,7 @@ import type {
   ResponseMakeSwap,
   ResponseTotalBalances,
   MobileSigningRequest,
+  RequestStaking,
 } from '@/extension/background/extension-base/src/background/types/types';
 import type { Message, NetworkJson, TransactionHistoryItemType } from '@extension-base/types';
 import type { Chain } from '@polkadot/extension-chains/types';
@@ -495,6 +496,13 @@ export function makeCrossChain(
   callback: (data: BasicTxResponse) => void
 ): Promise<BasicTxResponse> {
   return sendMessage('pri(accounts.crossChain)', request, callback);
+}
+
+export function makeStaking(
+  request: RequestStaking,
+  callback: (data: BasicTxResponse) => void
+): Promise<BasicTxResponse> {
+  return sendMessage('pri(accounts.staking)', request, callback);
 }
 
 export function getSoraFees(): Promise<SoraFees> {

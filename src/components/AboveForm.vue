@@ -141,7 +141,7 @@ export default class AboveForm extends Vue {
       display: flex;
       justify-content: space-between;
       padding: $default-padding;
-      border-bottom: 1px solid $default-background-color;
+      border-bottom: $default-border;
     }
 
     .icon {

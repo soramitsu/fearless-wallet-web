@@ -78,7 +78,7 @@ export default class BalanceDetailsPopup extends Vue {
     display: flex;
     justify-content: space-between;
     padding: 8px 0;
-    border-bottom: 1px solid $default-background-color;
+    border-bottom: $default-border;
     margin: 0 16px;
     color: $default-white;
     min-height: 57px;

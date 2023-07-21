@@ -57,16 +57,10 @@ const notificationFn = ({ message, title, type }: SNotificationParams) => {
   Notification({
     message,
     title,
-    duration: 2500, // If is will be changed you should change animation duration as well
+    duration: 4500, // If is will be changed you should change animation duration as well
     type,
     customClass: 'sora s-flex fearless-notify',
   });
-  // const elements = Array.from(document.querySelectorAll('el-notification'));
-  // const current = elements[elements.length - 1];
-  const appContent = document.querySelector('app') as Element;
-  // appContent.appendChild(current);
-  const el = document.createElement('div');
-  // current.appendChild(el);
 };
 
 Vue.use(ElementUIPlugin)

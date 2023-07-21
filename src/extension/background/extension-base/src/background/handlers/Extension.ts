@@ -1126,11 +1126,7 @@ export default class Extension extends FWExtensionBase {
 
     let transferProm: Promise<void> | undefined;
 
-    if (
-      isEthereumAddress(from) &&
-      isEthereumAddress(to) &&
-      !SUBSTRATE_ETHEREUM_NETWORKS.includes(networkKey.toLowerCase())
-    ) {
+    if (isEthereumAddress(from) && isEthereumAddress(to) && !isRequireSubstrateAPI(networkKey)) {
       // Make transfer with EVM API
       const { privateKey } = this.accountExportPrivateKey({ address: from, password });
       const isMainToken = tokenInfo ? checkMainToken(networkKey, tokenInfo.id) : false;

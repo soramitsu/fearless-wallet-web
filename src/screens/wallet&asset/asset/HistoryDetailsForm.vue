@@ -94,7 +94,7 @@
         </div>
       </div>
 
-      <Button size="big" :text="$t('accounts.subscan')" @click="openSubscan" />
+      <Button size="big" :text="buttonText" @click="openExplorer" />
     </div>
 
     <Tooltip text="common.copied" target=".copy" placement="bottom" trigger="click" />
@@ -111,7 +111,9 @@ import { getType, getSignTransfer, getHistoryValue, getFormattedDate, getHumanTr
 import { cut } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import BaseApi from '@/util/BaseApi';
-
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
+import { URLS } from '@/consts/urls';
 @Component({
   components: {
     Identicon,
@@ -119,12 +121,30 @@ import BaseApi from '@/util/BaseApi';
 })
 export default class HistoryDetailsForm extends Vue {
   @Prop(String) assetId!: string;
+  @Prop(String) historyType!: string;
   @Prop(Object) historyElement!: HistoryElement;
   @Prop(Function) handlerClose!: VoidFunction;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
 
   get isTransfer() {
     return this.type === 'transfer';
+  }
+
+  get getNetworkByAsset() {
+    return this.allNetworks.find((network) => network.assets.some((asset) => asset.id === this.assetId));
+  }
+
+  get explorerType() {
+    return this.getNetworkByAsset?.externalApi?.history?.type;
+  }
+
+  get explorerUrl() {
+    return this.getNetworkByAsset?.externalApi?.history?.url;
+  }
+
+  get buttonText() {
+    return this.$t(this.explorerType === 'etherscan' ? 'accounts.etherscan' : 'accounts.subscan');
   }
 
   get isExtrinsic() {
@@ -250,8 +270,15 @@ export default class HistoryDetailsForm extends Vue {
     navigator.clipboard.writeText(value);
   }
 
-  openSubscan() {
+  openExplorer() {
     const addressByNetwork = BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
+
+    if (this.explorerType === 'etherscan') {
+      window.open(`${URLS.EXPLORERS[this.selectedNetwork]}/tx/${this.historyElement?.transfer?.hash}`);
+
+      return;
+    }
+
     const url = this.isExtrinsic
       ? `https://${this.selectedNetwork}.subscan.io/extrinsic/${this.hash}`
       : `https://${this.selectedNetwork}.subscan.io/account/${addressByNetwork}`;

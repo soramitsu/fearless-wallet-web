@@ -21,6 +21,11 @@ const BASE_URLS_SUFFIX = {
   SUBSCAN: 'subscan.io',
 };
 
+const EXPLORERS: Record<string, string> = {
+  Ethereum: 'https://etherscan.io/',
+  'Ethereum Goerli': 'https://goerli.etherscan.io/',
+};
+
 const FEARLESS_TERMS = 'https://fearlesswallet.io/terms/';
 const FEARLESS_PRIVACY = 'https://fearlesswallet.io/privacy/';
 const SORA_CARD_PRIVACY = 'https://soracard.com/terms/en/polkaswap/';
@@ -44,6 +49,7 @@ const POLKASWAP = IS_PRODUCTION ? 'https://polkaswap.io' : 'https://exchange.dev
 const URLS = {
   FIATS,
   CHAINS,
+  EXPLORERS,
   FEARLESS_TERMS,
   FEARLESS_PRIVACY,
   FEARLESS_WALLET,

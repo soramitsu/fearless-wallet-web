@@ -15,6 +15,7 @@ type Transfer = {
   fee: string;
   from: string;
   success: boolean;
+  hash: string;
   to: string;
 };
 

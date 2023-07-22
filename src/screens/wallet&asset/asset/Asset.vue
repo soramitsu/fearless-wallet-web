@@ -9,14 +9,14 @@
         <div class="asset-info__content" @click="toggleBalanceDetailsPopup">
           <div class="asset__price">
             <span class="asset__price-item">{{ '+5.3% ($1.12)' }}</span>
-            <span class="asset__price-item">{{ '$3,353.021' }}</span>
-            <span class="asset__price-item">{{ 'XOR = $2.05' }}</span>
+            <span class="asset__price-item">{{ transferableFiatBalanceInNetworkString }}</span>
+            <span class="asset__price-item">{{ assetPriceString }}</span>
           </div>
           <div class="asset__balance count-value">{{ countAssetsString }}</div>
           <div class="asset__locked">
             <div class="asset__locked-content">
-              <span class="asset__locked-title">Locked</span>
-              <span class="asset__locked-balance">{{ '16 XOR ($32.80)' }}</span>
+              <span class="asset__locked-title">{{ $t('assets.locked') }}</span>
+              <span class="asset__locked-balance">{{ countAssetsString }}</span>
               <Icon icon="info" class="details-icon" />
             </div>
           </div>
@@ -63,7 +63,8 @@
       />
     </div>
 
-    <History v-if="isMainNetwork" :currency="currentCurrency" @openHistoryDetailsForm="openHistoryDetailsForm" />
+    <History v-if="false" :currency="currentCurrency" @openHistoryDetailsForm="openHistoryDetailsForm" />
+    <Networks :currency="currentCurrency" @openHistoryDetailsForm="openHistoryDetailsForm" />
 
     <SendForm
       v-if="showSendForm"
@@ -137,6 +138,7 @@ import { Getter } from 'vuex-class';
 import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import HistoryDetailsForm from './HistoryDetailsForm.vue';
 import History from './History.vue';
+import Networks from './Networks.vue';
 import type { HistoryElement } from '@/interfaces/history';
 import type { GetAssetPrice, SelectedWallet } from '@/store';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
@@ -161,6 +163,7 @@ type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'sh
 @Component({
   components: {
     History,
+    Networks,
     SendForm,
     BuyPopup,
     ReceiveForm,

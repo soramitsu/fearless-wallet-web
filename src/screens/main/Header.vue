@@ -1,82 +1,80 @@
 <template>
-  <div>
-    <header class="header">
-      <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
-        <div class="logo-container">
-          <CircleButton
-            v-if="showBackIcon"
-            backgroundColor="light-black"
-            iconName="chevron-left"
-            @click.stop="backToWallet"
-          />
-
-          <Logo v-else size="small" />
-        </div>
-
-        <div class="wallet-name">
-          <div class="name">{{ name }}</div>
-
-          <Rotate :isActive="syncedShowSelectWalletPopup">
-            <SIcon name="chevron-bottom-16" />
-          </Rotate>
-        </div>
-
-        <Tooltip text="header.walletManagement" target=".header-part-left" placement="right" />
-      </div>
-
-      <div class="header-part header-part-right">
+  <header class="header">
+    <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
+      <div class="logo-container">
         <CircleButton
-          v-if="isPopup"
-          iconName="expand"
+          v-if="showBackIcon"
           backgroundColor="light-black"
-          tooltipText="common.fullScreen"
-          target=".expand"
-          placement="bottom"
-          @click="openFullScreen"
-        />
-        <div
-          class="network-management background-ellipse"
-          :ref="selectNetworkButtonRef"
-          @click="toggleSelectNetworkPopupVisible"
-        >
-          <Icon v-if="isGroupIcon" :icon="selectedNetworkIcon" className="icon--network" width="16" height="16" />
-          <ExternalLogo v-else :name="selectedNetworkIcon" width="16" height="16" class="icon--network" />
-
-          <span>{{ selectedNetwork }}</span>
-          <Icon icon="down" className="icon--down" width="10" height="9" />
-        </div>
-
-        <div v-if="isPopup" class="background-ellipse" @click="toggleConnectionPopup">
-          <Loading v-if="!tabStatus" />
-
-          <template v-else>
-            <div class="connect" :class="statusConnectedClasses"></div>
-          </template>
-        </div>
-
-        <ConnectionPopup v-if="showConnectionPopup" :tabStatus="tabStatus" :handlerClose="toggleConnectionPopup" />
-
-        <Tooltip text="header.connectionStatus" target=".background-ellipse" placement="top" />
-
-        <CircleButton
-          :ref="settingsNameRef"
-          iconName="settings"
-          size="big"
-          backgroundColor="none"
-          placement="left"
-          target=".settings"
-          tooltipText="header.settingsAndManagement"
-          @click="toggleSettingsVisible"
+          iconName="chevron-left"
+          @click.stop="backToWallet"
         />
 
-        <NetworkManage
-          v-if="showSelectNetworkPopup"
-          :type="selectedNetwork"
-          :handlerClose="toggleSelectNetworkPopupVisible"
-        />
+        <Logo v-else size="small" />
       </div>
-    </header>
-  </div>
+
+      <div class="wallet-name">
+        <div class="name">{{ name }}</div>
+
+        <Rotate :isActive="syncedShowSelectWalletPopup">
+          <SIcon name="chevron-bottom-16" />
+        </Rotate>
+      </div>
+
+      <Tooltip text="header.walletManagement" target=".header-part-left" placement="right" />
+    </div>
+
+    <div class="header-part header-part-right">
+      <CircleButton
+        v-if="isPopup"
+        iconName="expand"
+        backgroundColor="light-black"
+        tooltipText="common.fullScreen"
+        target=".expand"
+        placement="bottom"
+        @click="openFullScreen"
+      />
+      <div
+        class="network-management background-ellipse"
+        :ref="selectNetworkButtonRef"
+        @click="toggleSelectNetworkPopupVisible"
+      >
+        <Icon v-if="isGroupIcon" :icon="selectedNetworkIcon" className="icon--network" width="16" height="16" />
+        <ExternalLogo v-else :name="selectedNetworkIcon" width="16" height="16" class="icon--network" />
+
+        <span>{{ selectedNetwork }}</span>
+        <Icon icon="down" className="icon--down" width="10" height="9" />
+      </div>
+
+      <div v-if="isPopup" class="background-ellipse" @click="toggleConnectionPopup">
+        <Loading v-if="!tabStatus" />
+
+        <template v-else>
+          <div class="connect" :class="statusConnectedClasses"></div>
+        </template>
+      </div>
+
+      <ConnectionPopup v-if="showConnectionPopup" :tabStatus="tabStatus" :handlerClose="toggleConnectionPopup" />
+
+      <Tooltip text="header.connectionStatus" target=".background-ellipse" placement="top" />
+
+      <CircleButton
+        :ref="settingsNameRef"
+        iconName="settings"
+        size="big"
+        backgroundColor="none"
+        placement="left"
+        target=".settings"
+        tooltipText="header.settingsAndManagement"
+        @click="toggleSettingsVisible"
+      />
+
+      <NetworkManage
+        v-if="showSelectNetworkPopup"
+        :type="selectedNetwork"
+        :handlerClose="toggleSelectNetworkPopupVisible"
+      />
+    </div>
+  </header>
 </template>
 
 <script lang="ts">

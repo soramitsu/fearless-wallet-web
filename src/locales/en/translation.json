@@ -189,6 +189,7 @@
     "locked": "Locked",
     "myNetworks":"My networks",
     "availableNetworks": "Available networks",
+    "networkAssets": "Assets on networks",
     "filters": {
       "fiat":"Fiat balance",
       "popularity":"Popularity",

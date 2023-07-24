@@ -28,14 +28,14 @@
         class="activity-button"
         text="assets.sendButtonText"
         iconName="send"
-        @click="toggleVisible('showSendForm', true)"
+        @click="toggleVisible('showSendForm')"
       />
 
       <BorderButton
         class="activity-button"
         text="assets.receiveButtonText"
         iconName="receive"
-        @click="toggleVisible('showReceiveForm', true)"
+        @click="toggleVisible('showReceiveForm')"
       />
 
       <BorderButton
@@ -43,7 +43,7 @@
         class="activity-button"
         text="assets.crossChain"
         iconName="cross-chain"
-        @click="toggleVisible('showCrossChainForm', true)"
+        @click="toggleVisible('showCrossChainForm')"
       />
 
       <BorderButton
@@ -51,7 +51,7 @@
         class="activity-button"
         text="assets.buy"
         iconName="plus-pink"
-        @click="toggleVisible('showBuyPopup', true)"
+        @click="toggleVisible('showBuyPopup')"
       />
 
       <BorderButton
@@ -60,6 +60,13 @@
         text="assets.swap"
         iconName="swap"
         @click="openSoraSwap"
+      />
+
+      <BorderButton
+        v-if="isMainNetwork"
+        class="activity-button activity-button--settings"
+        iconName="three-dots-vertical"
+        @click="() => {}"
       />
     </div>
 
@@ -155,8 +162,8 @@ import { Components } from '@/router/routes';
 import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { firstCharToUp, isSora } from '@/helpers';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { getSummaryTransferableBalance } from '@/helpers/common';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
+import { getSummaryTransferableBalance } from '@/helpers/common/index';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 
@@ -339,7 +346,7 @@ export default class Asset extends Vue {
     this.filterValue = '';
   }
 
-  toggleVisible(field: ShowField, value: boolean) {
+  toggleVisible(field: ShowField, value = true) {
     this[field] = value;
   }
 
@@ -468,13 +475,18 @@ export default class Asset extends Vue {
     display: flex;
     justify-content: space-between;
     margin-bottom: 10px;
+    gap: 5px;
 
     .activity-button {
       flex-grow: 1;
-      margin-left: 5px;
 
       &:first-child {
         margin-left: 0;
+      }
+
+      &--settings {
+        flex-grow: 0;
+        margin: 0;
       }
     }
   }

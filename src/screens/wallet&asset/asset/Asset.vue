@@ -8,7 +8,10 @@
 
         <div class="asset-info__content" @click="toggleBalanceDetailsPopup">
           <div class="asset__price">
-            <span class="asset__price-item">{{ '+5.3% ($1.12)' }}</span>
+            <div class="asset__price-item asset__price-item-change">
+              <span :class="changePriceClasses">{{ priceChangeString }}</span>
+              <span>{{ fiatPriceChangeString }}</span>
+            </div>
             <span class="asset__price-item">{{ transferableFiatBalanceInNetworkString }}</span>
             <span class="asset__price-item">{{ assetPriceString }}</span>
           </div>
@@ -200,9 +203,22 @@ export default class Asset extends Vue {
   @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
 
   get showShimmers() {
     return !this.isOnline || !this.balances.length || !this.currentNetwork || this.currentNetwork?.state === 'pending';
+  }
+
+  get getPrice() {
+    return this.getAssetPrice(this.currentCurrency.priceId ?? '0');
+  }
+
+  get priceChangeString() {
+    return this.$n(this.getPrice.priceChange, 'percent');
+  }
+
+  get fiatPriceChangeString() {
+    return `(${this.fiatSymbol}${this.$n(this.transferableFiatBalance * this.getPrice.priceChange, 'price')})`;
   }
 
   get assetIcon() {
@@ -236,7 +252,9 @@ export default class Asset extends Vue {
   }
 
   get mainNetwork() {
-    return this.currentCurrency.balances?.find((network) => network.isUtility || network.isNative)!.name ?? '';
+    const currency = this.currentCurrency.balances?.find((network) => network.isUtility || network.isNative);
+
+    return currency ? currency.name : '';
   }
 
   get showBuyButton() {
@@ -282,6 +300,15 @@ export default class Asset extends Vue {
     const total = this.$n(totalCountAssets, 'decimal');
 
     return `${total} ${this.selectedAssetUpper}`;
+  }
+
+  get changePriceClasses() {
+    const classes = ['price-change'];
+
+    if (this.getPrice.priceChange > 0) classes.push('up-price');
+    else if (this.getPrice.priceChange < 0) classes.push('down-price');
+
+    return classes;
   }
 
   get transferableAssetBalance() {
@@ -431,7 +458,11 @@ export default class Asset extends Vue {
           border-right: solid 1px transparent;
           padding: 4px;
         }
-
+        .asset__price-item-change {
+          display: flex;
+          flex-flow: row nowrap;
+          gap: 4px;
+        }
         & > :not(:last-child) {
           border-right: solid 1px $gray-color;
           line-height: 1px;

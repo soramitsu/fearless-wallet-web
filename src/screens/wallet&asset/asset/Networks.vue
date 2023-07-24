@@ -22,13 +22,14 @@
           <Loader v-if="showLoader" />
 
           <template v-else-if="!isEmptyHistory">
-            <HistoryItem
-              v-for="(historyElement, index) in filteredHistory"
+            <AssetRow
+              v-for="(network, index) in getNetworkByAsset"
               :key="index"
-              :historyElement="historyElement"
-              :token="currency"
-              :network="selectedNetwork"
-              @click.native="$emit('openHistoryDetailsForm', historyElement)"
+              :text="network.name"
+              value="1"
+              price="12"
+              :icon="network.icon"
+              :isIconPrepend="true"
             />
           </template>
 
@@ -40,15 +41,17 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import HistoryItem from './HistoryItem.vue';
-import type { FilterHistory, GetHistory, TabWallet } from '@/interfaces';
+import type { FilterHistory, GetHistory } from '@/interfaces';
 import type { SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { NetworksController } from '@/controllers';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
+import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
+
 interface TabsOptions {
   label: string;
   tabName: 'Assets' | 'Networks';
@@ -56,8 +59,9 @@ interface TabsOptions {
   classes: string;
   target: string;
 }
+
 @Component({
-  components: { HistoryItem },
+  components: { HistoryItem, AssetRow },
 })
 export default class Networks extends Vue {
   readonly tabsOptions: TabsOptions[] = [
@@ -83,6 +87,18 @@ export default class Networks extends Vue {
     { label: 'assets.reward', value: 'reward' },
     { label: 'assets.extrinsic', value: 'extrinsic' },
   ];
+  readonly mocks: Record<string, string>[] = [
+    {
+      label: 'Eth',
+      icon: 'filter',
+      price: '12.4',
+    },
+    {
+      label: 'Eth',
+      icon: 'filter',
+      price: '12.4',
+    },
+  ];
 
   filterHistoryValue: FilterHistory = 'all';
   showLoader = false;
@@ -90,13 +106,14 @@ export default class Networks extends Vue {
   @Prop(Object) currency!: TokenBalance;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
+
+  get getNetworkByAsset() {
+    return this.allNetworks.filter((network) => network.assets.some(({ id }) => id === this.currency.assetId))!;
+  }
 
   get selectedNetwork() {
     return this.$route.params.network;
-  }
-
-  get isEmptyHistory() {
-    return this.filteredHistory?.length === 0;
   }
 
   get historyContainerClasses() {
@@ -108,30 +125,6 @@ export default class Networks extends Vue {
     ];
   }
 
-  get history() {
-    if (!this.selectedNetwork) return [];
-
-    return (
-      this.getHistory(this.currency?.assetId, this.selectedWallet.address, this.selectedNetwork.toLowerCase())?.nodes ??
-      []
-    );
-  }
-
-  get filteredHistory() {
-    if (this.filterHistoryValue === 'all') return this.history;
-
-    const field = this.filterHistoryValue as 'transfer' | 'reward' | 'extrinsic';
-    const filteredHistory = this.history.filter((historyItem) => historyItem[field]);
-
-    return filteredHistory;
-  }
-
-  @Watch('selectedNetwork')
-  @Watch('selectedWallet')
-  async watchSelectedNetwork() {
-    this.fetchHistory();
-  }
-
   get isMainNetwork() {
     return !!this.currency.balances?.find(
       ({ name, isUtility, isNative }) =>
@@ -139,26 +132,12 @@ export default class Networks extends Vue {
     );
   }
 
-  mounted() {
-    setTimeout(() => this.fetchHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
+  get isEmptyHistory() {
+    return false;
   }
 
   openTab(name: string) {
     this.activeTabName = name;
-  }
-
-  async fetchHistory() {
-    if (
-      this.history.length !== 0 ||
-      (!this.isMainNetwork && this.selectedNetwork !== 'Ethereum' && this.selectedNetwork !== 'Ethereum Goerli')
-    )
-      return;
-
-    this.showLoader = true;
-
-    await NetworksController.fetchHistory(this.selectedNetwork, this.selectedWallet, this.currency.assetId);
-
-    this.showLoader = false;
   }
 
   filterHistoryValueUpdate(name: FilterHistory) {

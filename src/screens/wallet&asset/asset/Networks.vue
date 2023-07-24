@@ -1,57 +1,60 @@
 <template>
-  <!-- IMPORTANT: if <Menu /> showed use 306 -->
-  <ContentForm :height="366">
-    <div class="history">
-      <div class="history-settings">
-        <TabButton
-          v-for="{ label, tabName, tooltipText, target, classes } in tabsOptions"
-          class="tab"
-          :key="tabName"
-          :tooltipText="tooltipText"
-          :target="target"
-          :class="classes"
-          :text="label"
-          :isActive="activeTabName === tabName"
-          @click="openTab(tabName)"
-        />
-        <Icon icon="filter" className="filter" />
-      </div>
-
-      <Scroll>
-        <div :class="historyContainerClasses">
-          <Loader v-if="showLoader" />
-
-          <template v-else-if="!isEmptyHistory">
-            <AssetRow
-              v-for="(network, index) in getNetworkByAsset"
-              :key="index"
-              :text="network.name"
-              value="1"
-              price="12"
-              :icon="network.icon"
-              :isIconPrepend="true"
-            />
-          </template>
-
-          <div v-else>{{ $t('assets.noHistory') }}</div>
+  <Fragment>
+    <!-- IMPORTANT: if <Menu /> showed use 306 -->
+    <ContentForm :height="295">
+      <div class="history">
+        <div class="history-settings">
+          <TabButton
+            v-for="{ label, tabName, tooltipText, target, classes } in tabsOptions"
+            class="tab"
+            :key="tabName"
+            :tooltipText="tooltipText"
+            :target="target"
+            :class="classes"
+            :text="label"
+            :isActive="activeTabName === tabName"
+            @click="openTab(tabName)"
+          />
+          <Icon icon="filter" className="filter" />
         </div>
-      </Scroll>
-    </div>
-  </ContentForm>
+
+        <Scroll>
+          <div :class="historyContainerClasses">
+            <Loader v-if="showLoader" />
+
+            <template v-else-if="!isEmptyHistory">
+              <AssetRow
+                v-for="(network, index) in getNetworkByAsset"
+                :key="index"
+                :text="network.name"
+                :value="getBalanceInNetwork(network.name)"
+                :price="price"
+                :icon="network.icon"
+                :isIconPrepend="true"
+              />
+            </template>
+
+            <div v-else>{{ $t('assets.noHistory') }}</div>
+          </div>
+        </Scroll>
+      </div>
+    </ContentForm>
+    <AssetTip />
+  </Fragment>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import { TokenBalance } from '@extension-base/background/types/types';
+import { NetworkJson } from '@extension-base/types';
 import HistoryItem from './HistoryItem.vue';
 import type { FilterHistory, GetHistory } from '@/interfaces';
-import type { SelectedWallet } from '@/store';
+import type { GetAssetPrice, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
-
+import AssetTip from '@/screens/wallet&asset/asset/AssetTip.vue';
 interface TabsOptions {
   label: string;
   tabName: 'Assets' | 'Networks';
@@ -61,7 +64,7 @@ interface TabsOptions {
 }
 
 @Component({
-  components: { HistoryItem, AssetRow },
+  components: { HistoryItem, AssetRow, AssetTip },
 })
 export default class Networks extends Vue {
   readonly tabsOptions: TabsOptions[] = [
@@ -87,18 +90,6 @@ export default class Networks extends Vue {
     { label: 'assets.reward', value: 'reward' },
     { label: 'assets.extrinsic', value: 'extrinsic' },
   ];
-  readonly mocks: Record<string, string>[] = [
-    {
-      label: 'Eth',
-      icon: 'filter',
-      price: '12.4',
-    },
-    {
-      label: 'Eth',
-      icon: 'filter',
-      price: '12.4',
-    },
-  ];
 
   filterHistoryValue: FilterHistory = 'all';
   showLoader = false;
@@ -107,6 +98,8 @@ export default class Networks extends Vue {
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get getNetworkByAsset() {
     return this.allNetworks.filter((network) => network.assets.some(({ id }) => id === this.currency.assetId))!;
@@ -140,8 +133,16 @@ export default class Networks extends Vue {
     this.activeTabName = name;
   }
 
+  getBalanceInNetwork(network: string) {
+    return this.currency.balances.find((el) => el.name === network)?.transferable;
+  }
+
   filterHistoryValueUpdate(name: FilterHistory) {
     this.filterHistoryValue = name;
+  }
+
+  get price() {
+    return this.$n(this.getTokenPrice(this.currency.priceId ?? '').price, 'price');
   }
 }
 </script>

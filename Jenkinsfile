@@ -1,4 +1,4 @@
-@Library('jenkins-library')
+@Library('jenkins-library@feature/DOPS-2580/add-new-fields-to-notifications')
 
 def buildWithCred  = [
     [$class: 'UsernamePasswordMultiBinding', credentialsId: 'OAUTH_CLIENT_UPLOAD', usernameVariable: 'OAUTH_CLIENT_ID_UPLOAD', passwordVariable: 'OAUTH_CLIENT_SECRET_UPLOAD'],
@@ -22,7 +22,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     nexusCredential:            'bot-fearless-rw',
     nexusProjectPath:           'fearless/extension',
     nexusNotif:                 true,
-    nexusChatID:                "-1001934877683",
+    nexusChatID:                "-1001727151155",
     sonarProjectKey:            'fearless:fearless-wallet-web',
     sonarProjectName:           'fearless-wallet-web',
     sonarCredential:            'sonar_fearless_token',

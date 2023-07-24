@@ -14,6 +14,7 @@
           :isActive="activeTabName === tabName"
           @click="openTab(tabName)"
         />
+        <Icon icon="filter" className="filter" />
       </div>
 
       <Scroll>
@@ -50,7 +51,7 @@ import { TokenBalance } from '@/extension/background/extension-base/src/backgrou
 import { NetworksController } from '@/controllers';
 interface TabsOptions {
   label: string;
-  tabName: TabWallet;
+  tabName: 'Assets' | 'Networks';
   tooltipText: string;
   classes: string;
   target: string;
@@ -61,20 +62,21 @@ interface TabsOptions {
 export default class Networks extends Vue {
   readonly tabsOptions: TabsOptions[] = [
     {
-      label: 'wallet.currencies',
-      tabName: 'Currencies',
-      tooltipText: 'wallet.fungibleTokens',
+      label: 'assets.networkAssets',
+      tabName: 'Assets',
+      tooltipText: 'assets.networkAssets',
       classes: 'currencies-tab',
       target: '.currencies-tab',
     },
     {
-      label: 'wallet.currencies',
-      tabName: 'Currencies',
-      tooltipText: 'wallet.fungibleTokens',
+      label: 'assets.myNetworks',
+      tabName: 'Networks',
+      tooltipText: 'assets.myNetworks',
       classes: 'currencies-tab',
       target: '.currencies-tab',
     },
   ];
+
   readonly historyDropdownOption = [
     { label: 'assets.all', value: 'all' },
     { label: 'assets.transfer', value: 'transfer' },
@@ -84,7 +86,7 @@ export default class Networks extends Vue {
 
   filterHistoryValue: FilterHistory = 'all';
   showLoader = false;
-
+  activeTabName = 'Networks';
   @Prop(Object) currency!: TokenBalance;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -141,6 +143,10 @@ export default class Networks extends Vue {
     setTimeout(() => this.fetchHistory(), 300); // TODO setTimeout, когда будет история для всех сетей токена, также удалить isMainNetwork
   }
 
+  openTab(name: string) {
+    this.activeTabName = name;
+  }
+
   async fetchHistory() {
     if (
       this.history.length !== 0 ||
@@ -169,12 +175,18 @@ export default class Networks extends Vue {
 
   .history-settings {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     margin: 11px $default-padding 5px 18px;
-
+    gap: 12px;
     .history-label {
       font-weight: 600;
+    }
+    .filter {
+      width: 24px;
+      height: 24px;
+      color: $grayish-white;
+      margin-left: auto;
+      margin-right: 0;
     }
   }
 
@@ -183,7 +195,6 @@ export default class Networks extends Vue {
     display: flex;
     flex-direction: column;
   }
-
   .empty-history {
     align-items: center;
     justify-content: center;

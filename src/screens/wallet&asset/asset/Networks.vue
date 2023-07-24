@@ -24,12 +24,12 @@
 
             <template v-else-if="!isEmptyHistory">
               <AssetRow
-                v-for="(network, index) in getNetworkByAsset"
+                v-for="({ name, icon }, index) in getNetworkByAsset"
                 :key="index"
-                :text="network.name"
-                :value="getBalanceInNetwork(network.name)"
+                :text="name"
+                :value="getBalanceInNetwork(name)"
                 :price="price"
-                :icon="network.icon"
+                :icon="icon"
                 :isIconPrepend="true"
               />
             </template>
@@ -100,6 +100,7 @@ export default class Networks extends Vue {
   @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
 
   get getNetworkByAsset() {
     return this.allNetworks.filter((network) => network.assets.some(({ id }) => id === this.currency.assetId))!;
@@ -134,7 +135,10 @@ export default class Networks extends Vue {
   }
 
   getBalanceInNetwork(network: string) {
-    return this.currency.balances.find((el) => el.name === network)?.transferable;
+    const balance = this.currency.balances.find((el) => el.name === network)?.transferable;
+    const prepBalance = balance ? Number(balance) : 0;
+
+    return `${this.$n(prepBalance, 'decimal')} ${this.currency.symbol.toUpperCase()}`;
   }
 
   filterHistoryValueUpdate(name: FilterHistory) {
@@ -142,7 +146,10 @@ export default class Networks extends Vue {
   }
 
   get price() {
-    return this.$n(this.getTokenPrice(this.currency.priceId ?? '').price, 'price');
+    const price = this.getTokenPrice(this.currency.priceId ?? '').price;
+    const prepPrice = price ? +price : 0;
+
+    return `${this.fiatSymbol} ${this.$n(prepPrice, 'price')}`;
   }
 }
 </script>

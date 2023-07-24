@@ -1,5 +1,5 @@
 <template>
-  <Row :value="value" price="price" :icon="icon">
+  <Row :value="value" :price="price" :icon="icon">
     <ExternalLogo v-if="icon" :name="icon" :width="24" class="icon-info" :class="classes" />
     {{ text }}
   </Row>

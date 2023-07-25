@@ -97,6 +97,7 @@ import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutatio
 import { ALL_NETWORKS } from '@/consts/networks';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
+import { isNetworkGroup } from '@/helpers/common';
 
 @Component({
   components: { ConnectionPopup, NetworkManage },
@@ -123,7 +124,7 @@ export default class Header extends Vue {
   }
 
   get isGroupIcon() {
-    return this.networkGoups.includes(this.selectedNetwork.toLowerCase());
+    return isNetworkGroup(this.selectedNetwork);
   }
 
   get selectedNetworkIcon() {

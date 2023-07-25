@@ -100,12 +100,23 @@ export default class NetworkManage extends Vue {
   get filterNetworks() {
     if (this.activeTab === ALL_NETWORKS) return this.networks;
 
-    return this.networks.filter(({ favorite, popular }) => {
-      if (this.activeTab === POPULAR_NETWORKS) return popular;
+    const networks = this.networks.filter(({ favorite, rank }) => {
+      if (this.activeTab === POPULAR_NETWORKS) return rank !== undefined;
 
       if (this.activeTab === FAVORITE_NETWORKS)
         return favorite.some((address) => address === this.selectedWallet.address);
     });
+
+    if (this.activeTab === POPULAR_NETWORKS) {
+      return networks.sort((a, b) => {
+        if (a.rank === undefined || b.rank === undefined) return 0;
+        if (a.rank > b.rank) return 1;
+
+        return -1;
+      });
+    }
+
+    return networks;
   }
 
   get filteredOptionsNetworks() {

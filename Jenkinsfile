@@ -21,7 +21,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     buildCmds:                  ['yarn build:extension:all'],
     nexusCredential:            'bot-fearless-rw',
     nexusProjectPath:           'fearless/extension',
-    nexusNotif:                 true,
+    nexusNotification:           true,
     nexusChatID:                "-1001727151155",
     sonarProjectKey:            'fearless:fearless-wallet-web',
     sonarProjectName:           'fearless-wallet-web',

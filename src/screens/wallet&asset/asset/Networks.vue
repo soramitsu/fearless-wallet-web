@@ -15,7 +15,29 @@
             :isActive="activeTabName === tabName"
             @click="openTab(tabName)"
           />
-          <Icon icon="filter" className="filter" />
+
+          <div class="filter__icon" @click="toggleSelectFilter">
+            <Icon icon="filter" className="filter" />
+          </div>
+
+          <SelectPopup
+            v-if="showSelectNetworkPopup"
+            sizeWidth="medium"
+            placeholder="common.searchNetwork"
+            verticalPlacement="top"
+            horizontalPlacement="center"
+            :value="filterHistoryValue"
+            :showBlur="true"
+            :showBackground="true"
+            :height="210"
+            :top="55"
+            :left="50"
+            :showSearch="false"
+            :showIcon="false"
+            :options="historyDropdownOption"
+            :toggleValue="filterValueUpdate"
+            :handlerClose="toggleSelectFilter"
+          />
         </div>
 
         <Scroll>
@@ -79,13 +101,13 @@ export default class Networks extends Vue {
   ];
 
   readonly historyDropdownOption = [
-    { label: 'assets.all', value: 'all' },
-    { label: 'assets.transfer', value: 'transfer' },
-    { label: 'assets.reward', value: 'reward' },
-    { label: 'assets.extrinsic', value: 'extrinsic' },
+    { name: this.$t('assets.filters.fiat'), value: 'fiat' },
+    { name: this.$t('assets.filters.popularity'), value: 'popularity' },
+    { name: this.$t('assets.filters.name'), value: 'name' },
   ];
-
+  filterHistoryValue = 'fiat';
   activeTabName = 'Assets';
+  showSelectNetworkPopup = false;
   @Prop(Object) currency!: TokenBalance;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -118,6 +140,13 @@ export default class Networks extends Vue {
     ];
   }
 
+  get price() {
+    const price = this.getTokenPrice(this.currency.priceId ?? '').price;
+    const prepPrice = price ? +price : 0;
+
+    return `${this.fiatSymbol} ${this.$n(prepPrice, 'price')}`;
+  }
+
   get isMainNetwork() {
     return !!this.currency.balances?.find(
       ({ name, isUtility, isNative }) =>
@@ -133,6 +162,10 @@ export default class Networks extends Vue {
     this.activeTabName = name;
   }
 
+  toggleSelectFilter() {
+    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
+  }
+
   getBalanceInNetwork(network: string) {
     const balance = this.currency.balances.find((el) => el.name === network)?.transferable;
     const prepBalance = balance ? Number(balance) : 0;
@@ -140,11 +173,8 @@ export default class Networks extends Vue {
     return `${this.$n(prepBalance, 'decimal')} ${this.currency.symbol.toUpperCase()}`;
   }
 
-  get price() {
-    const price = this.getTokenPrice(this.currency.priceId ?? '').price;
-    const prepPrice = price ? +price : 0;
-
-    return `${this.fiatSymbol} ${this.$n(prepPrice, 'price')}`;
+  filterValueUpdate(name: string) {
+    this.filterHistoryValue = name;
   }
 }
 </script>
@@ -163,12 +193,17 @@ export default class Networks extends Vue {
     .history-label {
       font-weight: 600;
     }
-    .filter {
-      width: 24px;
-      height: 24px;
-      color: $grayish-white;
-      margin-left: auto;
+    .filter__icon {
       margin-right: 0;
+      margin-left: auto;
+
+      .filter {
+        width: 24px;
+        height: 24px;
+        color: $grayish-white;
+        margin-left: auto;
+        margin-right: 0;
+      }
     }
   }
   .asset-row {

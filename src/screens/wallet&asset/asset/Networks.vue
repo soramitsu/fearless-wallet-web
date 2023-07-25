@@ -19,22 +19,16 @@
         </div>
 
         <Scroll>
-          <div :class="historyContainerClasses">
-            <Loader v-if="showLoader" />
-
-            <template v-else-if="!isEmptyHistory">
-              <AssetRow
-                v-for="({ name, icon }, index) in getNetworkByAsset"
-                :key="index"
-                :text="name"
-                :value="getBalanceInNetwork(name)"
-                :price="price"
-                :icon="icon"
-                :isIconPrepend="true"
-              />
-            </template>
-
-            <div v-else>{{ $t('assets.noHistory') }}</div>
+          <div class="networks" :class="historyContainerClasses">
+            <AssetRow
+              v-for="({ name, icon }, index) in filteredNetworks"
+              :key="index"
+              :text="name"
+              :value="getBalanceInNetwork(name)"
+              :price="price"
+              :icon="icon"
+              :isIconPrepend="true"
+            />
           </div>
         </Scroll>
       </div>
@@ -49,7 +43,7 @@ import { Getter } from 'vuex-class';
 import { TokenBalance } from '@extension-base/background/types/types';
 import { NetworkJson } from '@extension-base/types';
 import HistoryItem from './HistoryItem.vue';
-import type { FilterHistory, GetHistory } from '@/interfaces';
+import type { GetHistory } from '@/interfaces';
 import type { GetAssetPrice, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -57,7 +51,7 @@ import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
 import AssetTip from '@/screens/wallet&asset/asset/AssetTip.vue';
 interface TabsOptions {
   label: string;
-  tabName: 'Assets' | 'Networks';
+  tabName: 'Assets' | 'MyAssets';
   tooltipText: string;
   classes: string;
   target: string;
@@ -77,7 +71,7 @@ export default class Networks extends Vue {
     },
     {
       label: 'assets.myNetworks',
-      tabName: 'Networks',
+      tabName: 'MyAssets',
       tooltipText: 'assets.myNetworks',
       classes: 'currencies-tab',
       target: '.currencies-tab',
@@ -91,9 +85,7 @@ export default class Networks extends Vue {
     { label: 'assets.extrinsic', value: 'extrinsic' },
   ];
 
-  filterHistoryValue: FilterHistory = 'all';
-  showLoader = false;
-  activeTabName = 'Networks';
+  activeTabName = 'Assets';
   @Prop(Object) currency!: TokenBalance;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -102,10 +94,17 @@ export default class Networks extends Vue {
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
 
-  get getNetworkByAsset() {
-    return this.allNetworks.filter((network) => network.assets.some(({ id }) => id === this.currency.assetId))!;
-  }
+  get filteredNetworks() {
+    if (this.activeTabName === 'MyAssets') {
+      return this.currency.balances.filter(({ transferable }) => {
+        if (transferable && +transferable > 0) return true;
 
+        return false;
+      });
+    }
+
+    return this.currency.balances;
+  }
   get selectedNetwork() {
     return this.$route.params.network;
   }
@@ -141,10 +140,6 @@ export default class Networks extends Vue {
     return `${this.$n(prepBalance, 'decimal')} ${this.currency.symbol.toUpperCase()}`;
   }
 
-  filterHistoryValueUpdate(name: FilterHistory) {
-    this.filterHistoryValue = name;
-  }
-
   get price() {
     const price = this.getTokenPrice(this.currency.priceId ?? '').price;
     const prepPrice = price ? +price : 0;
@@ -176,16 +171,18 @@ export default class Networks extends Vue {
       margin-right: 0;
     }
   }
+  .asset-row {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
 
   .history-content {
     height: 100%;
     display: flex;
     flex-direction: column;
   }
-  .empty-history {
-    align-items: center;
-    justify-content: center;
-    margin-top: -26px;
+  .networks {
+    height: 250px;
   }
 }
 </style>

@@ -19,7 +19,7 @@
           <div class="asset__locked">
             <div class="asset__locked-content">
               <span class="asset__locked-title">{{ $t('assets.locked') }}</span>
-              <span class="asset__locked-balance">{{ countAssetsString }}</span>
+              <span class="asset__locked-balance">{{ lockedBalanceString }}</span>
               <Icon icon="info" class="details-icon" />
             </div>
           </div>
@@ -166,7 +166,7 @@ import { ETHEREUM_NETWORKS } from '@/consts/networks';
 import { firstCharToUp, isSora } from '@/helpers';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
-import { getSummaryTransferableBalance } from '@/helpers/common/index';
+import { getSummaryLockedBalance, getSummaryTransferableBalance } from '@/helpers/common/index';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 
@@ -302,6 +302,12 @@ export default class Asset extends Vue {
     return `${total} ${this.selectedAssetUpper}`;
   }
 
+  get lockedBalanceString() {
+    const lockedBalance = getSummaryLockedBalance(this.currentCurrency);
+
+    return `${this.$n(lockedBalance, 'price')} ${this.selectedAssetUpper}`;
+  }
+
   get changePriceClasses() {
     const classes = ['price-change'];
 
@@ -417,6 +423,7 @@ export default class Asset extends Vue {
 .asset {
   display: flex;
   flex-direction: column;
+  gap: 6px;
   width: 100%;
   height: 450px;
 
@@ -505,7 +512,6 @@ export default class Asset extends Vue {
   .activity {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 10px;
     gap: 5px;
 
     .activity-button {

@@ -1,5 +1,5 @@
 <template>
-  <div class="row">
+  <div class="row" :class="rowClasses">
     <div class="label">
       <slot></slot>
     </div>
@@ -21,6 +21,7 @@ export default class Row extends Vue {
   @Prop(String) value!: string;
   @Prop(String) price!: string;
   @Prop(String) icon?: string;
+  @Prop(String) rowClasses?: string;
   @Prop({ default: false }) isIconPrepend!: boolean;
   @Prop({ default: () => [] }) iconClasses!: string[];
 
@@ -47,7 +48,6 @@ export default class Row extends Vue {
   align-items: center;
   border-bottom: 1px solid $secondary-background-color;
   color: $default-white;
-
   .value {
     text-align: right;
 

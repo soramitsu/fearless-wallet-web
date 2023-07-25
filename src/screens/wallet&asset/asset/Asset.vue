@@ -26,19 +26,14 @@
         </div>
       </div>
     </ContentForm>
-    <div v-if="isMainNetwork" class="activity">
+    <div v-if="!isSelectedNetworkGroup" class="activity">
       <BorderButton
-        class="activity-button"
-        text="assets.sendButtonText"
-        iconName="send"
-        @click="toggleVisible('showSendForm')"
-      />
-
-      <BorderButton
-        class="activity-button"
-        text="assets.receiveButtonText"
-        iconName="receive"
-        @click="toggleVisible('showReceiveForm')"
+        v-for="(button, index) in basicButtons"
+        :class="button.class"
+        :text="button.text"
+        :iconName="button.icon"
+        @click="toggleVisible(button.formName)"
+        :key="index"
       />
 
       <BorderButton
@@ -50,14 +45,6 @@
       />
 
       <BorderButton
-        v-if="showBuyButton"
-        class="activity-button"
-        text="assets.buy"
-        iconName="plus-pink"
-        @click="toggleVisible('showBuyPopup')"
-      />
-
-      <BorderButton
         v-if="showSwapButton"
         class="activity-button"
         text="assets.swap"
@@ -66,10 +53,18 @@
       />
 
       <BorderButton
-        v-if="isMainNetwork"
+        v-if="showBuyButton && !isNeedPopupButton"
+        class="activity-button"
+        text="assets.buy"
+        iconName="plus-pink"
+        @click="toggleVisible('showBuyPopup')"
+      />
+
+      <BorderButton
+        v-if="isNeedPopupButton"
         class="activity-button activity-button--settings"
         iconName="three-dots-vertical"
-        @click="() => {}"
+        @click="togglePopupButton"
       />
     </div>
 
@@ -102,14 +97,6 @@
       :closeForm="toggleVisible.bind(null, 'showCrossChainForm', false)"
     />
 
-    <BuyPopup
-      v-if="showBuyPopup"
-      :asset="selectedAssetUpper"
-      :address="displayAddressByNetwork"
-      :providers="providers"
-      :closePopup="toggleVisible.bind(null, 'showBuyPopup', false)"
-    />
-
     <HistoryDetailsForm
       v-if="showHistoryDetailsForm"
       :handlerClose="closeHistoryDetailsForm"
@@ -125,6 +112,30 @@
       :closePopup="toggleBalanceDetailsPopup"
     />
 
+    <BuyPopup
+      v-if="showBuyPopup"
+      :asset="selectedAssetUpper"
+      :address="displayAddressByNetwork"
+      :providers="providers"
+      :closePopup="toggleVisible.bind(null, 'showBuyPopup', false)"
+    />
+
+    <Blur v-if="showPopupButton" @click="togglePopupButton">
+      <div class="popup-button">
+        <BorderButton
+          class="activity-button activity-button--settings popup__button-width"
+          iconName="three-dots-vertical"
+          @click="togglePopupButton"
+        />
+        <BorderButton
+          v-if="showBuyButton"
+          class="activity-button"
+          text="assets.buy"
+          iconName="plus-pink"
+          @click="toggleVisible('showBuyPopup')"
+        />
+      </div>
+    </Blur>
     <Tooltip text="common.networkManagement" target=".select-network-button" placement="bottom" />
   </div>
 </template>
@@ -140,6 +151,7 @@ import type { HistoryElement } from '@/interfaces/history';
 import type { GetAssetPrice, SelectedWallet } from '@/store';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
+import Blur from '@/components/Blur.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import CrossChainForm from '@/screens/wallet&asset/CrossChainForm.vue';
 import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
@@ -156,9 +168,16 @@ import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { getSummaryLockedBalance, getSummaryTransferableBalance } from '@/helpers/common/index';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
-
+type ControlButtons = {
+  class: string;
+  text: string;
+  icon: string;
+  formName: ShowField;
+  isActive: boolean;
+};
 @Component({
   components: {
+    Blur,
     History,
     Networks,
     SendForm,
@@ -173,12 +192,28 @@ type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'sh
 })
 export default class Asset extends Vue {
   readonly selectNetworkButtonRef = 'selectNetworkButton';
-
+  readonly basicButtons: ControlButtons[] = [
+    {
+      class: 'activity-button',
+      text: 'assets.sendButtonText',
+      icon: 'send',
+      formName: 'showSendForm',
+      isActive: true,
+    },
+    {
+      class: 'activity-button',
+      text: 'assets.receiveButtonText',
+      icon: 'receive',
+      formName: 'showReceiveForm',
+      isActive: true,
+    },
+  ];
   historyElement: HistoryElement | Record<string, string> = {};
   showSendForm = false;
   showReceiveForm = false;
   showCrossChainForm = false;
   showBuyPopup = false;
+  showPopupButton = false;
   showHistoryDetailsForm = false;
   showSelectNetworkPopup = false;
   showBalanceDetailsPopup = false;
@@ -195,6 +230,10 @@ export default class Asset extends Vue {
 
   get showShimmers() {
     return !this.isOnline || !this.balances.length || !this.currentNetwork || this.currentNetwork?.state === 'pending';
+  }
+
+  get isNeedPopupButton() {
+    return this.showCrossChainButton && this.showBuyButton && this.showSwapButton;
   }
 
   get isSelectedNetworkGroup() {
@@ -225,8 +264,9 @@ export default class Asset extends Vue {
     const network = this.networks.find(({ name }) => name.toLowerCase() === this.selectedNetwork?.toLowerCase())!;
 
     const asset = getNativeAssetName(this.selectedAsset);
+    if (!network.xcm) return false;
 
-    return network?.xcm?.availableAssets.some((assetName) => assetName.toLowerCase() === asset);
+    return network.xcm.availableAssets.some((assetName) => assetName.toLowerCase() === asset);
   }
 
   get showSwapButton() {
@@ -348,6 +388,10 @@ export default class Asset extends Vue {
     this.showBalanceDetailsPopup = !this.showBalanceDetailsPopup;
   }
 
+  togglePopupButton() {
+    this.showPopupButton = !this.showPopupButton;
+  }
+
   openSoraSwap() {
     this.$router.push({
       name: Components.SoraSwap,
@@ -447,6 +491,19 @@ export default class Asset extends Vue {
           }
         }
       }
+    }
+  }
+  .popup-button {
+    position: absolute;
+    display: flex;
+    flex-flow: column;
+    align-items: flex-end;
+    top: 250px;
+    left: 465px;
+    height: 100px;
+    gap: 10px;
+    .popup__button-width {
+      width: 42px;
     }
   }
 

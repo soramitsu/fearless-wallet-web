@@ -1,7 +1,6 @@
 <template>
   <Fragment>
-    <!-- IMPORTANT: if <Menu /> showed use 306 -->
-    <ContentForm :height="295">
+    <ContentForm :height="300">
       <div class="history">
         <div class="history-settings">
           <TabButton
@@ -71,6 +70,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
 import AssetTip from '@/screens/wallet&asset/asset/AssetTip.vue';
+import { isNetworkGroup } from '@/helpers/common';
 interface TabsOptions {
   label: string;
   tabName: 'Assets' | 'MyAssets';
@@ -217,7 +217,7 @@ export default class Networks extends Vue {
     flex-direction: column;
   }
   .networks {
-    height: 250px;
+    height: 200px;
   }
 }
 </style>

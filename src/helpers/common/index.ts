@@ -1,8 +1,12 @@
 import { addNumbers } from '../numbers';
-import { ALL_NETWORKS } from '@/consts/networks';
+import { ALL_NETWORKS, NETWORK_GROUP } from '@/consts/networks';
 import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { AssetsPrice, ChangeWalletBalance, NetworkName } from '@/interfaces';
+
+export function isNetworkGroup(network: string) {
+  return NETWORK_GROUP.some((group) => group === network);
+}
 
 export function getSummaryTransferableWalletBalance(
   tokens: TokenBalance[],

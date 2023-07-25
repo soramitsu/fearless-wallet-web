@@ -633,7 +633,7 @@ export default class State {
   public isPopularNetworksSelected(network: NetworkJson, address: string) {
     const networks = this.selectedNetworksExceptAddress(address);
 
-    return network.popular && networks.some((el) => el === POPULAR_NETWORKS);
+    return network.rank !== undefined && networks.some((el) => el === POPULAR_NETWORKS);
   }
 
   public isNetworkSelectedInAnotherWallet(network: NetworkJson, selectedType: string, address: string) {
@@ -690,7 +690,7 @@ export default class State {
 
           break;
         case POPULAR_NETWORKS:
-          if (network.popular) network.active = true;
+          if (network.rank) network.active = true;
 
           if (isAlreadySelectedType) break;
 

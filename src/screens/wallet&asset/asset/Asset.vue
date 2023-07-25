@@ -110,24 +110,6 @@
       :closePopup="toggleVisible.bind(null, 'showBuyPopup', false)"
     />
 
-    <SelectPopup
-      v-if="showSelectNetworkPopup"
-      sizeWidth="big"
-      placeholder="common.searchNetwork"
-      verticalPlacement="top"
-      horizontalPlacement="right"
-      :value="selectedNetwork"
-      :showBlur="true"
-      :showBackground="true"
-      :height="410"
-      :top="105"
-      :left="0"
-      :options="optionsNetworks"
-      :handlerFilter="handlerFilter"
-      :toggleValue="toggleSelectedNetwork"
-      :handlerClose="toggleSelectNetworkPopupVisible"
-    />
-
     <HistoryDetailsForm
       v-if="showHistoryDetailsForm"
       :handlerClose="closeHistoryDetailsForm"
@@ -167,8 +149,8 @@ import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
-import { ETHEREUM_NETWORKS, NETWORK_GROUP } from '@/consts/networks';
-import { firstCharToUp, isSora } from '@/helpers';
+import { NETWORK_GROUP } from '@/consts/networks';
+import { isSora } from '@/helpers';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { getSummaryLockedBalance, getSummaryTransferableBalance } from '@/helpers/common/index';
@@ -336,51 +318,6 @@ export default class Asset extends Vue {
     if (!this.currentCurrency) return `${this.fiatSymbol} 0`;
 
     return `${this.fiatSymbol} ${this.$n(this.transferableFiatBalance, 'price')}`;
-  }
-
-  get optionsNetworks() {
-    const haveEthereumAccount = this.selectedWallet.ethereumAddress !== '';
-    const walletBalance = (this.currentCurrency?.balances ?? []).filter(({ name }) =>
-      ETHEREUM_NETWORKS.includes(name) ? haveEthereumAccount : true
-    );
-    const filter = this.filterValue.trim().toLowerCase();
-
-    return walletBalance
-      .map(({ name, type, icon }) => {
-        return {
-          name: firstCharToUp(name),
-          value: name,
-          icon,
-          type,
-        };
-      })
-      .filter(({ value }) => {
-        return value.toLowerCase().includes(filter);
-      });
-  }
-
-  toggleSelectedNetwork(network: string) {
-    if (this.selectedNetwork === network) return;
-
-    this.$router.push({
-      name: Components.Asset,
-      params: {
-        assetId: this.selectedAssetId,
-        network: network,
-      },
-    });
-
-    this.toggleSelectNetworkPopupVisible();
-  }
-
-  toggleSelectNetworkPopupVisible() {
-    const targetElement = (this.$refs[this.selectNetworkButtonRef] as Vue).$el as HTMLElement;
-
-    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
-
-    targetElement.style.zIndex = this.showSelectNetworkPopup ? '400' : '0';
-
-    this.filterValue = '';
   }
 
   toggleVisible(field: ShowField, value = true) {

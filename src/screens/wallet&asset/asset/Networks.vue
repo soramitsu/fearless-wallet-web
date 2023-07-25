@@ -18,31 +18,12 @@
           <div class="filter__icon" @click="toggleSelectFilter">
             <Icon icon="filter" className="filter" />
           </div>
-
-          <SelectPopup
-            v-if="showSelectNetworkPopup"
-            sizeWidth="medium"
-            placeholder="common.searchNetwork"
-            verticalPlacement="top"
-            horizontalPlacement="center"
-            :value="filterHistoryValue"
-            :showBlur="true"
-            :showBackground="true"
-            :height="210"
-            :top="55"
-            :left="50"
-            :showSearch="false"
-            :showIcon="false"
-            :options="historyDropdownOption"
-            :toggleValue="filterValueUpdate"
-            :handlerClose="toggleSelectFilter"
-          />
         </div>
 
         <Scroll>
           <div class="networks" :class="historyContainerClasses">
             <AssetRow
-              v-for="({ name, icon }, index) in filteredNetworks"
+              v-for="({ name, icon }, index) in sortedNetoworks"
               :key="index"
               :text="name"
               :value="getBalanceInNetwork(name)"
@@ -55,6 +36,24 @@
       </div>
     </ContentForm>
     <AssetTip />
+    <SelectPopup
+      v-if="showSelectNetworkPopup"
+      sizeWidth="medium"
+      placeholder="common.searchNetwork"
+      verticalPlacement="top"
+      horizontalPlacement="center"
+      :value="filterValue"
+      :showBlur="true"
+      :showBackground="true"
+      :height="210"
+      :top="285"
+      :left="50"
+      :showSearch="false"
+      :showIcon="false"
+      :options="historyDropdownOption"
+      :toggleValue="filterValueUpdate"
+      :handlerClose="toggleSelectFilter"
+    />
   </Fragment>
 </template>
 
@@ -71,6 +70,7 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
 import AssetTip from '@/screens/wallet&asset/asset/AssetTip.vue';
 import { isNetworkGroup } from '@/helpers/common';
+import { NetworksController } from '@/controllers';
 interface TabsOptions {
   label: string;
   tabName: 'Assets' | 'MyAssets';
@@ -105,7 +105,7 @@ export default class Networks extends Vue {
     { name: this.$t('assets.filters.popularity'), value: 'popularity' },
     { name: this.$t('assets.filters.name'), value: 'name' },
   ];
-  filterHistoryValue = 'fiat';
+  filterValue = 'fiat';
   activeTabName = 'Assets';
   showSelectNetworkPopup = false;
   @Prop(Object) currency!: TokenBalance;
@@ -126,6 +126,28 @@ export default class Networks extends Vue {
     }
 
     return this.currency.balances;
+  }
+
+  get sortedNetoworks() {
+    return this.filteredNetworks.sort((a, b) => {
+      if (this.filterValue === 'fiat') {
+        const value1 = a.transferable ? +a.transferable : 0;
+        const value2 = b.transferable ? +b.transferable : 0;
+
+        return value2 - value1;
+      }
+
+      if (this.filterValue === 'popularity') {
+        const value1 = NetworksController.getNetwork(a.name).rank ?? Infinity;
+        const value2 = NetworksController.getNetwork(a.name).rank ?? Infinity;
+
+        if (value1 === value2) return 0;
+
+        return value1 > value2 ? 1 : -1;
+      }
+
+      return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+    });
   }
   get selectedNetwork() {
     return this.$route.params.network;
@@ -174,7 +196,7 @@ export default class Networks extends Vue {
   }
 
   filterValueUpdate(name: string) {
-    this.filterHistoryValue = name;
+    this.filterValue = name;
   }
 }
 </script>

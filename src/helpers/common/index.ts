@@ -40,6 +40,14 @@ export function getSummaryTransferableBalance(token: TokenBalance, network = ALL
   }, 0);
 }
 
+export function getSummaryLockedBalance(token: TokenBalance) {
+  return token.balances.reduce((result, { state, locked }) => {
+    if (state === APIItemState.READY && locked) result += +locked;
+
+    return result;
+  }, 0);
+}
+
 export function getChangeWalletBalance(
   tokens: TokenBalance[],
   price: AssetsPrice,

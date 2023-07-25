@@ -1,6 +1,6 @@
 <template>
   <div class="asset">
-    <ContentForm :height="157" :bottomRightCorner="true">
+    <ContentForm :height="160" :bottomRightCorner="true">
       <div class="asset-info">
         <div class="asset__icon">
           <ExternalLogo :name="assetIcon" :width="82" :height="82" />
@@ -19,7 +19,7 @@
           <div class="asset__locked">
             <div class="asset__locked-content">
               <span class="asset__locked-title">{{ $t('assets.locked') }}</span>
-              <span class="asset__locked-balance">{{ lockedBalanceString }}</span>
+              <span>{{ lockedBalanceString }}</span>
               <Icon icon="info" class="details-icon" />
             </div>
           </div>
@@ -73,8 +73,13 @@
       />
     </div>
 
-    <History v-if="false" :currency="currentCurrency" @openHistoryDetailsForm="openHistoryDetailsForm" />
-    <Networks :currency="currentCurrency" @openHistoryDetailsForm="openHistoryDetailsForm" />
+    <Networks
+      v-if="isSelectedNetworkGroup"
+      :currency="currentCurrency"
+      @openHistoryDetailsForm="openHistoryDetailsForm"
+    />
+
+    <History v-else :currency="currentCurrency" @openHistoryDetailsForm="openHistoryDetailsForm" />
 
     <SendForm
       v-if="showSendForm"
@@ -162,7 +167,7 @@ import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
-import { ETHEREUM_NETWORKS } from '@/consts/networks';
+import { ETHEREUM_NETWORKS, NETWORK_GROUP } from '@/consts/networks';
 import { firstCharToUp, isSora } from '@/helpers';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
@@ -199,6 +204,7 @@ export default class Asset extends Vue {
 
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
@@ -207,6 +213,10 @@ export default class Asset extends Vue {
 
   get showShimmers() {
     return !this.isOnline || !this.balances.length || !this.currentNetwork || this.currentNetwork?.state === 'pending';
+  }
+
+  get isSelectedNetworkGroup() {
+    return NETWORK_GROUP.includes(this.selectedNetwork);
   }
 
   get getPrice() {
@@ -266,15 +276,13 @@ export default class Asset extends Vue {
   }
 
   get displayAddressByNetwork() {
+    if (this.isSelectedNetworkGroup) return BaseApi.formatAddress(this.selectedWallet, this.mainNetwork);
+
     return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
   }
 
   get assetPriceString() {
     return `1 ${this.selectedAssetUpper} = ${this.fiatSymbol}${this.$n(this.assetPrice.price, 'price')}`;
-  }
-
-  get selectedNetwork() {
-    return this.$route.params.network ?? '';
   }
 
   get selectedAssetId() {

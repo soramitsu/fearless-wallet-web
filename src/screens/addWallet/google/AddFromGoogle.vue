@@ -119,24 +119,27 @@ export default class AddFromGoogle extends Vue {
       return;
     }
 
-    files.forEach(({ id, description, name }) => {
-      const [prepName] = name.split('.');
+    const regex = new RegExp('\\w+/\\w+');
+    files
+      .filter((el) => el.description || (el.description && el.description.match(regex)))
+      .forEach(({ id, description, name }) => {
+        const [prepName] = name.split('.');
 
-      const [address, ethID] = description.split('/');
-      if (ethID === undefined) return;
+        const [address, ethID] = description.split('/');
+        if (ethID === undefined) return;
 
-      this.files.push({
-        id,
-        name: prepName,
-        address,
-        isComplete: false,
-        isLoading: false,
-        isError: false,
-        ethWalletID: ethID,
-        password: '',
-        active: false,
+        this.files.push({
+          id,
+          name: prepName,
+          address,
+          isComplete: false,
+          isLoading: false,
+          isError: false,
+          ethWalletID: ethID,
+          password: '',
+          active: false,
+        });
       });
-    });
 
     this.isLoading = false;
   }

@@ -1,6 +1,6 @@
 <template>
   <Fragment>
-    <ContentForm :height="300">
+    <ContentForm :height="330">
       <div class="history">
         <div class="history-settings">
           <TabButton

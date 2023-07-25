@@ -304,8 +304,7 @@ export default class Asset extends Vue {
   get countAssetsString() {
     if (!this.currentCurrency) return `0 ${this.selectedAssetUpper}`;
 
-    const totalCountAssets = +getSummaryTransferableBalance(this.currentCurrency, this.selectedNetwork);
-    const total = this.$n(totalCountAssets, 'decimal');
+    const total = this.$n(this.transferableAssetBalance, 'decimal');
 
     return `${total} ${this.selectedAssetUpper}`;
   }
@@ -326,10 +325,7 @@ export default class Asset extends Vue {
   }
 
   get transferableAssetBalance() {
-    return this.currentCurrency?.balances?.reduce((result, { transferable }) => {
-      if (transferable) return result + +transferable;
-      else return result;
-    }, 0);
+    return +getSummaryTransferableBalance(this.currentCurrency, this.selectedNetwork);
   }
 
   get transferableFiatBalance() {

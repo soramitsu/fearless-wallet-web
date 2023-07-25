@@ -5,7 +5,7 @@ import { TokenBalance } from '@/extension/background/extension-base/src/backgrou
 import { AssetsPrice, ChangeWalletBalance, NetworkName } from '@/interfaces';
 
 export function isNetworkGroup(network: string) {
-  return NETWORK_GROUP.some((group) => group === network);
+  return NETWORK_GROUP.some((group) => group.toLowerCase() === network.toLowerCase());
 }
 
 export function getSummaryTransferableWalletBalance(
@@ -35,7 +35,7 @@ function getTransferableBalanceInNetwork(token: TokenBalance, network: string) {
 }
 
 export function getSummaryTransferableBalance(token: TokenBalance, network = ALL_NETWORKS) {
-  if (network !== ALL_NETWORKS) return getTransferableBalanceInNetwork(token, network);
+  if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);
 
   return token.balances.reduce((result, { state, transferable }) => {
     if (state === APIItemState.READY && transferable) result += +transferable;

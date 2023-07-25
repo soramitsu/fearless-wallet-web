@@ -68,8 +68,6 @@ import type { GetAssetPrice, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
-import AssetTip from '@/screens/wallet&asset/asset/AssetTip.vue';
-import { isNetworkGroup } from '@/helpers/common';
 import { NetworksController } from '@/controllers';
 interface TabsOptions {
   label: string;
@@ -80,7 +78,7 @@ interface TabsOptions {
 }
 
 @Component({
-  components: { HistoryItem, AssetRow, AssetTip },
+  components: { HistoryItem, AssetRow },
 })
 export default class Networks extends Vue {
   readonly tabsOptions: TabsOptions[] = [

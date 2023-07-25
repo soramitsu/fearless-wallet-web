@@ -13,7 +13,7 @@ import Row from '@/components/Row.vue';
     Row,
   },
 })
-export default class RowWithExternalIcon extends Vue {
+export default class AssetRow extends Vue {
   @Prop(String) text!: string;
   @Prop(String) value!: string;
   @Prop(String) price!: string;

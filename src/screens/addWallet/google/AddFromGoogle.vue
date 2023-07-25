@@ -119,9 +119,8 @@ export default class AddFromGoogle extends Vue {
       return;
     }
 
-    const regex = new RegExp('\\w+/\\w+');
     files
-      .filter((el) => el.description || (el.description && el.description.match(regex)))
+      .filter((el) => el.description || (el && el.description.match('\\w+/\\w+')))
       .forEach(({ id, description, name }) => {
         const [prepName] = name.split('.');
 

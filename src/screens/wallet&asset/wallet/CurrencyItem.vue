@@ -368,14 +368,6 @@ export default class CurrencyItem extends Vue {
         margin-left: 2px;
       }
 
-      .up-price {
-        color: rgba(126, 222, 155, 0.75);
-      }
-
-      .down-price {
-        color: #d0021b;
-      }
-
       .total-balance {
         max-width: 200px;
       }

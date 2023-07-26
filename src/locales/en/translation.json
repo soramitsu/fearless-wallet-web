@@ -186,6 +186,15 @@
   },
   "assets": {
     "all": "All",
+    "locked": "Locked",
+    "myNetworks": "My networks",
+    "availableNetworks": "Available networks",
+    "networkAssets": "Assets on networks",
+    "filters": {
+      "fiat": "Fiat balance",
+      "popularity": "Popularity",
+      "name": "Name"
+    },
     "createContact": "Create contact",
     "feeDescription": "Every time you send cryptography to the blockchain, a network fee is charged. In fact, the network fee is a reward for miners and nodes that broadcast your transaction to the blockchain.",
     "saveAddressForAllNetwork": "Save address for all networks",
@@ -210,7 +219,7 @@
     "slippageWarning": "Your transactions will revert if the price changes unfavorably by more than this percentage",
     "preview": "Preview",
     "calculateFee": "Fee calculation",
-    "balanceDetails": "Balance details",
+    "lockedDetails": "Locked details",
     "buyHeader": "Buy {asset} with",
     "buy": "Buy",
     "swap": "Swap",
@@ -236,6 +245,8 @@
     "value": "VALUE",
     "valueIn": "VALUE IN {asset}",
     "summary": "Summary",
+    "reserved": "Reserved",
+    "frozen": "Frozen",
     "transferable": "Transferable",
     "fee": "Fee",
     "total": "Total",

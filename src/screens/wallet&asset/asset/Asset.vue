@@ -1,40 +1,39 @@
 <template>
   <div class="asset">
-    <div class="asset-header">
-      <div class="descriptions" @click="toggleBalanceDetailsPopup">
-        <Shimmer v-if="showShimmers" height="32px" width="140px" />
-
-        <div v-else class="count-assets">
-          <div class="count-value">{{ countAssetsString }}</div>
-
-          <Icon icon="info" class="details-icon" />
+    <ContentForm :height="160" :bottomRightCorner="true">
+      <div class="asset-info">
+        <div class="asset__icon">
+          <ExternalLogo :name="assetIcon" :width="82" :height="82" />
         </div>
-        <div class="balance-in-network">{{ transferableFiatBalanceInNetworkString }}</div>
 
-        <div class="price">{{ assetPriceString }}</div>
+        <div class="asset-info__content" @click="toggleBalanceDetailsPopup">
+          <div class="asset__price">
+            <div class="asset__price-item asset__price-item-change">
+              <span :class="changePriceClasses">{{ priceChangeString }}</span>
+              <span>{{ fiatPriceChangeString }}</span>
+            </div>
+            <span class="asset__price-item">{{ transferableFiatBalanceInNetworkString }}</span>
+            <span class="asset__price-item">{{ assetPriceString }}</span>
+          </div>
+          <div class="asset__balance count-value">{{ countAssetsString }}</div>
+          <div class="asset__locked">
+            <div class="asset__locked-content">
+              <span class="asset__locked-title">{{ $t('assets.locked') }}</span>
+              <span>{{ lockedBalanceString }}</span>
+              <Icon icon="info" class="details-icon" />
+            </div>
+          </div>
+        </div>
       </div>
-
-      <SelectNetworkButton
-        :ref="selectNetworkButtonRef"
-        :text="selectedNetwork"
-        :isActive="showSelectNetworkPopup"
-        @openNetworkPopup="toggleSelectNetworkPopupVisible"
-      />
-    </div>
-
-    <div class="activity">
+    </ContentForm>
+    <div v-if="!isSelectedNetworkGroup" class="activity">
       <BorderButton
-        class="activity-button"
-        text="assets.sendButtonText"
-        iconName="send"
-        @click="toggleVisible('showSendForm', true)"
-      />
-
-      <BorderButton
-        class="activity-button"
-        text="assets.receiveButtonText"
-        iconName="receive"
-        @click="toggleVisible('showReceiveForm', true)"
+        v-for="(button, index) in basicButtons"
+        :class="button.class"
+        :text="button.text"
+        :iconName="button.icon"
+        @click="toggleVisible(button.formName)"
+        :key="index"
       />
 
       <BorderButton
@@ -42,15 +41,7 @@
         class="activity-button"
         text="assets.crossChain"
         iconName="cross-chain"
-        @click="toggleVisible('showCrossChainForm', true)"
-      />
-
-      <BorderButton
-        v-if="showBuyButton"
-        class="activity-button"
-        text="assets.buy"
-        iconName="plus-pink"
-        @click="toggleVisible('showBuyPopup', true)"
+        @click="toggleVisible('showCrossChainForm')"
       />
 
       <BorderButton
@@ -60,9 +51,30 @@
         iconName="swap"
         @click="openSoraSwap"
       />
+
+      <BorderButton
+        v-if="showBuyButton && !isNeedPopupButton"
+        class="activity-button"
+        text="assets.buy"
+        iconName="plus-pink"
+        @click="toggleVisible('showBuyPopup')"
+      />
+
+      <BorderButton
+        v-if="isNeedPopupButton"
+        class="activity-button activity-button--settings"
+        iconName="three-dots-vertical"
+        @click="togglePopupButton"
+      />
     </div>
 
-    <History :currency="currentCurrency" @openHistoryDetailsForm="openHistoryDetailsForm" />
+    <Networks
+      v-if="isSelectedNetworkGroup"
+      :currency="currentCurrency"
+      @openHistoryDetailsForm="openHistoryDetailsForm"
+    />
+
+    <History v-else :currency="currentCurrency" @openHistoryDetailsForm="openHistoryDetailsForm" />
 
     <SendForm
       v-if="showSendForm"
@@ -85,32 +97,6 @@
       :closeForm="toggleVisible.bind(null, 'showCrossChainForm', false)"
     />
 
-    <BuyPopup
-      v-if="showBuyPopup"
-      :asset="selectedAssetUpper"
-      :address="displayAddressByNetwork"
-      :providers="providers"
-      :closePopup="toggleVisible.bind(null, 'showBuyPopup', false)"
-    />
-
-    <SelectPopup
-      v-if="showSelectNetworkPopup"
-      sizeWidth="big"
-      placeholder="common.searchNetwork"
-      verticalPlacement="top"
-      horizontalPlacement="right"
-      :value="selectedNetwork"
-      :showBlur="true"
-      :showBackground="true"
-      :height="410"
-      :top="105"
-      :left="0"
-      :options="optionsNetworks"
-      :handlerFilter="handlerFilter"
-      :toggleValue="toggleSelectedNetwork"
-      :handlerClose="toggleSelectNetworkPopupVisible"
-    />
-
     <HistoryDetailsForm
       v-if="showHistoryDetailsForm"
       :handlerClose="closeHistoryDetailsForm"
@@ -126,6 +112,30 @@
       :closePopup="toggleBalanceDetailsPopup"
     />
 
+    <BuyPopup
+      v-if="showBuyPopup"
+      :asset="selectedAssetUpper"
+      :address="displayAddressByNetwork"
+      :providers="providers"
+      :closePopup="toggleVisible.bind(null, 'showBuyPopup', false)"
+    />
+
+    <Blur v-if="showPopupButton" @click="togglePopupButton">
+      <div class="popup-button">
+        <BorderButton
+          class="activity-button activity-button--settings popup__button-width"
+          iconName="three-dots-vertical"
+          @click="togglePopupButton"
+        />
+        <BorderButton
+          v-if="showBuyButton"
+          class="activity-button"
+          text="assets.buy"
+          iconName="plus-pink"
+          @click="toggleVisible('showBuyPopup')"
+        />
+      </div>
+    </Blur>
     <Tooltip text="common.networkManagement" target=".select-network-button" placement="bottom" />
   </div>
 </template>
@@ -136,10 +146,12 @@ import { Getter } from 'vuex-class';
 import { getNativeAssetName } from '@extension-base/background/utils/utils';
 import HistoryDetailsForm from './HistoryDetailsForm.vue';
 import History from './History.vue';
+import Networks from './Networks.vue';
 import type { HistoryElement } from '@/interfaces/history';
 import type { GetAssetPrice, SelectedWallet } from '@/store';
 import SelectNetworkButton from '@/screens/wallet&asset/SelectNetworkButton.vue';
 import ReceiveForm from '@/screens/wallet&asset/ReceiveForm.vue';
+import Blur from '@/components/Blur.vue';
 import SendForm from '@/screens/wallet&asset/SendForm.vue';
 import CrossChainForm from '@/screens/wallet&asset/CrossChainForm.vue';
 import BuyPopup from '@/screens/wallet&asset/BuyPopup.vue';
@@ -149,17 +161,25 @@ import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { Components } from '@/router/routes';
-import { ETHEREUM_NETWORKS } from '@/consts/networks';
-import { firstCharToUp, isSora } from '@/helpers';
+import { NETWORK_GROUP } from '@/consts/networks';
+import { isSora } from '@/helpers';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { getSummaryTransferableBalance } from '@/helpers/common';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
+import { getSummaryLockedBalance, getSummaryTransferableBalance } from '@/helpers/common/index';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
-
+type ControlButtons = {
+  class: string;
+  text: string;
+  icon: string;
+  formName: ShowField;
+  isActive: boolean;
+};
 @Component({
   components: {
+    Blur,
     History,
+    Networks,
     SendForm,
     BuyPopup,
     ReceiveForm,
@@ -172,12 +192,28 @@ type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'sh
 })
 export default class Asset extends Vue {
   readonly selectNetworkButtonRef = 'selectNetworkButton';
-
+  readonly basicButtons: ControlButtons[] = [
+    {
+      class: 'activity-button',
+      text: 'assets.sendButtonText',
+      icon: 'send',
+      formName: 'showSendForm',
+      isActive: true,
+    },
+    {
+      class: 'activity-button',
+      text: 'assets.receiveButtonText',
+      icon: 'receive',
+      formName: 'showReceiveForm',
+      isActive: true,
+    },
+  ];
   historyElement: HistoryElement | Record<string, string> = {};
   showSendForm = false;
   showReceiveForm = false;
   showCrossChainForm = false;
   showBuyPopup = false;
+  showPopupButton = false;
   showHistoryDetailsForm = false;
   showSelectNetworkPopup = false;
   showBalanceDetailsPopup = false;
@@ -185,13 +221,39 @@ export default class Asset extends Vue {
 
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
 
   get showShimmers() {
     return !this.isOnline || !this.balances.length || !this.currentNetwork || this.currentNetwork?.state === 'pending';
+  }
+
+  get isNeedPopupButton() {
+    return this.showCrossChainButton && this.showBuyButton && this.showSwapButton;
+  }
+
+  get isSelectedNetworkGroup() {
+    return NETWORK_GROUP.includes(this.selectedNetwork);
+  }
+
+  get getPrice() {
+    return this.getAssetPrice(this.currentCurrency.priceId ?? '0');
+  }
+
+  get priceChangeString() {
+    return this.$n(this.getPrice.priceChange, 'percent');
+  }
+
+  get fiatPriceChangeString() {
+    return `(${this.fiatSymbol}${this.$n(this.transferableFiatBalance * this.getPrice.priceChange, 'price')})`;
+  }
+
+  get assetIcon() {
+    return this.currentCurrency.icon;
   }
 
   get providers() {
@@ -202,8 +264,9 @@ export default class Asset extends Vue {
     const network = this.networks.find(({ name }) => name.toLowerCase() === this.selectedNetwork?.toLowerCase())!;
 
     const asset = getNativeAssetName(this.selectedAsset);
+    if (!network.xcm) return false;
 
-    return network?.xcm?.availableAssets.some((assetName) => assetName.toLowerCase() === asset);
+    return network.xcm.availableAssets.some((assetName) => assetName.toLowerCase() === asset);
   }
 
   get showSwapButton() {
@@ -216,8 +279,14 @@ export default class Asset extends Vue {
     );
   }
 
+  get isMainNetwork() {
+    return this.currentNetwork && this.currentNetwork.name === this.mainNetwork;
+  }
+
   get mainNetwork() {
-    return this.currentCurrency.balances?.find((network) => network.isUtility || network.isNative)!.name ?? '';
+    const currency = this.currentCurrency.balances?.find((network) => network.isUtility || network.isNative);
+
+    return currency ? currency.name : '';
   }
 
   get showBuyButton() {
@@ -229,15 +298,13 @@ export default class Asset extends Vue {
   }
 
   get displayAddressByNetwork() {
+    if (this.isSelectedNetworkGroup) return BaseApi.formatAddress(this.selectedWallet, this.mainNetwork);
+
     return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
   }
 
   get assetPriceString() {
     return `1 ${this.selectedAssetUpper} = ${this.fiatSymbol}${this.$n(this.assetPrice.price, 'price')}`;
-  }
-
-  get selectedNetwork() {
-    return this.$route.params.network ?? '';
   }
 
   get selectedAssetId() {
@@ -257,19 +324,30 @@ export default class Asset extends Vue {
   }
 
   get countAssetsString() {
-    if (!this.currentCurrency) return `${this.selectedAssetUpper} 0`;
+    if (!this.currentCurrency) return `0 ${this.selectedAssetUpper}`;
 
-    const totalCountAssets = +getSummaryTransferableBalance(this.currentCurrency, this.selectedNetwork);
-    const total = this.$n(totalCountAssets, 'decimal');
+    const total = this.$n(this.transferableAssetBalance, 'decimal');
 
-    return `${this.selectedAssetUpper} ${total}`;
+    return `${total} ${this.selectedAssetUpper}`;
+  }
+
+  get lockedBalanceString() {
+    const lockedBalance = getSummaryLockedBalance(this.currentCurrency);
+
+    return `${this.$n(lockedBalance, 'price')} ${this.selectedAssetUpper}`;
+  }
+
+  get changePriceClasses() {
+    const classes = ['price-change'];
+
+    if (this.getPrice.priceChange > 0) classes.push('up-price');
+    else if (this.getPrice.priceChange < 0) classes.push('down-price');
+
+    return classes;
   }
 
   get transferableAssetBalance() {
-    return this.currentCurrency?.balances?.reduce((result, { transferable }) => {
-      if (transferable) return result + +transferable;
-      else return result;
-    }, 0);
+    return +getSummaryTransferableBalance(this.currentCurrency, this.selectedNetwork);
   }
 
   get transferableFiatBalance() {
@@ -282,52 +360,7 @@ export default class Asset extends Vue {
     return `${this.fiatSymbol} ${this.$n(this.transferableFiatBalance, 'price')}`;
   }
 
-  get optionsNetworks() {
-    const haveEthereumAccount = this.selectedWallet.ethereumAddress !== '';
-    const walletBalance = (this.currentCurrency?.balances ?? []).filter(({ name }) =>
-      ETHEREUM_NETWORKS.includes(name) ? haveEthereumAccount : true
-    );
-    const filter = this.filterValue.trim().toLowerCase();
-
-    return walletBalance
-      .map(({ name, type, icon }) => {
-        return {
-          name: firstCharToUp(name),
-          value: name,
-          icon,
-          type,
-        };
-      })
-      .filter(({ value }) => {
-        return value.toLowerCase().includes(filter);
-      });
-  }
-
-  toggleSelectedNetwork(network: string) {
-    if (this.selectedNetwork === network) return;
-
-    this.$router.push({
-      name: Components.Asset,
-      params: {
-        assetId: this.selectedAssetId,
-        network: network,
-      },
-    });
-
-    this.toggleSelectNetworkPopupVisible();
-  }
-
-  toggleSelectNetworkPopupVisible() {
-    const targetElement = (this.$refs[this.selectNetworkButtonRef] as Vue).$el as HTMLElement;
-
-    this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
-
-    targetElement.style.zIndex = this.showSelectNetworkPopup ? '400' : '0';
-
-    this.filterValue = '';
-  }
-
-  toggleVisible(field: ShowField, value: boolean) {
+  toggleVisible(field: ShowField, value = true) {
     this[field] = value;
   }
 
@@ -355,6 +388,10 @@ export default class Asset extends Vue {
     this.showBalanceDetailsPopup = !this.showBalanceDetailsPopup;
   }
 
+  togglePopupButton() {
+    this.showPopupButton = !this.showPopupButton;
+  }
+
   openSoraSwap() {
     this.$router.push({
       name: Components.SoraSwap,
@@ -371,47 +408,82 @@ export default class Asset extends Vue {
 .asset {
   display: flex;
   flex-direction: column;
+  gap: 6px;
   width: 100%;
   height: 450px;
 
-  .asset-header {
+  .asset-info {
     display: flex;
-    justify-content: space-between;
-    margin-bottom: 16px;
+    align-items: center;
+    height: 100%;
+    gap: 20px;
 
-    .descriptions {
+    .asset__icon {
+      background: $secondary-background-color;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      margin: 16px;
+    }
+
+    .asset-info__content {
       display: flex;
       justify-content: space-between;
       flex-direction: column;
       align-items: flex-start;
-      height: 70px;
-
+      gap: 10px;
       &:hover {
         cursor: pointer;
       }
-
-      .count-assets {
+      .asset__price {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-weight: 600;
-        font-size: 28px;
-        text-align: left;
-        max-width: 265px;
-        height: 32px;
+        flex-flow: row nowrap;
+        font-family: Sora;
+        color: $gray-color;
+        line-height: 1px;
 
-        .count-value {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+        .asset__price-item {
+          font-size: 12px;
+          font-weight: 400;
+          border-right: solid 1px transparent;
+          padding: 4px;
+        }
+        .asset__price-item-change {
+          display: flex;
+          flex-flow: row nowrap;
+          gap: 4px;
+        }
+        & > :not(:last-child) {
+          border-right: solid 1px $gray-color;
+          line-height: 1px;
         }
 
+        > :first-child {
+          padding-left: 0px;
+        }
+      }
+      .asset__balance {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 24px;
+        font-style: normal;
+        font-weight: 700;
+      }
+      .asset__locked-content {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        .asset__locked-title {
+          color: $default-white;
+        }
         .details-icon {
-          width: 18px;
-          height: 18px;
-          min-height: 18px;
-          min-width: 18px;
-          margin-left: 10px;
+          width: 14px;
+          height: 14px;
+          min-height: 14px;
+          min-width: 14px;
           color: $grayish-white;
 
           &:hover {
@@ -419,30 +491,37 @@ export default class Asset extends Vue {
           }
         }
       }
-
-      .balance-in-network {
-        color: $gray-color;
-      }
-
-      .price {
-        color: $gray-color;
-        font-size: 12px;
-        line-height: 15px;
-      }
+    }
+  }
+  .popup-button {
+    position: absolute;
+    display: flex;
+    flex-flow: column;
+    align-items: flex-end;
+    top: 250px;
+    left: 465px;
+    height: 100px;
+    gap: 10px;
+    .popup__button-width {
+      width: 42px;
     }
   }
 
   .activity {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 10px;
+    gap: 5px;
 
     .activity-button {
       flex-grow: 1;
-      margin-left: 5px;
 
       &:first-child {
         margin-left: 0;
+      }
+
+      &--settings {
+        flex-grow: 0;
+        margin: 0;
       }
     }
   }

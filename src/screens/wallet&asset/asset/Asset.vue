@@ -1,6 +1,6 @@
 <template>
   <div class="asset">
-    <ContentForm :height="160" :bottomRightCorner="true">
+    <ContentForm :height="160" :isStaticHeight="true" :bottomRightCorner="true">
       <div class="asset-info">
         <div class="asset__icon">
           <ExternalLogo :name="assetIcon" :width="82" :height="82" />
@@ -196,6 +196,7 @@ import { TokenBalance } from '@/extension/background/extension-base/src/backgrou
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { getSummaryLockedBalance, getSummaryTransferableBalance, isNetworkGroup } from '@/helpers/common/index';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
+import { ONE_WEEK } from '@/consts/global';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 type ControlButtons = {
@@ -476,7 +477,7 @@ export default class Asset extends Vue {
   toggleTipPopup() {
     this.showTipPopup = !this.showTipPopup;
 
-    this.setAssetTipData({ count: +this.getAssetTipData.count + 1, time: Date.now() + 604800000 });
+    this.setAssetTipData({ count: +this.getAssetTipData.count + 1, time: Date.now() + ONE_WEEK });
   }
 
   toggleSelectNetworkPopupVisible() {

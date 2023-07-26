@@ -1,5 +1,5 @@
 <template>
-  <div class="network-management" :class="classes" @click="onToggle">
+  <div class="network-management" :class="classes" @click.stop="onToggle">
     <Icon v-if="isGroupIcon" :icon="icon" className="icon--network" width="16" height="16" />
     <ExternalLogo v-else :name="icon" width="16" height="16" class="icon--network" />
 

@@ -195,6 +195,7 @@
       "popularity": "Popularity",
       "name": "Name"
     },
+    "networkManagementTip": "To complete a transaction and view transactions history, select a network",
     "createContact": "Create contact",
     "feeDescription": "Every time you send cryptography to the blockchain, a network fee is charged. In fact, the network fee is a reward for miners and nodes that broadcast your transaction to the blockchain.",
     "saveAddressForAllNetwork": "Save address for all networks",

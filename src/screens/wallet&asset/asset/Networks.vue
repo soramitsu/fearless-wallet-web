@@ -35,6 +35,7 @@
         </Scroll>
       </div>
     </ContentForm>
+
     <AssetTip />
     <SelectPopup
       v-if="showSelectNetworkPopup"

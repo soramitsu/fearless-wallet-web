@@ -1,5 +1,5 @@
 <template>
-  <Row :text="text" :value="value" :price="price" :icon="icon">
+  <Row :value="value" :price="price" :icon="icon">
     {{ $t(text) }}
 
     <Icon v-if="icon" :icon="icon" class="icon-info" :class="classes" />

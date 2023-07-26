@@ -33,17 +33,14 @@
         placement="bottom"
         @click="openFullScreen"
       />
-      <div
-        class="network-management background-ellipse"
-        :ref="selectNetworkButtonRef"
-        @click="toggleSelectNetworkPopupVisible"
-      >
-        <Icon v-if="isGroupIcon" :icon="selectedNetworkIcon" className="icon--network" width="16" height="16" />
-        <ExternalLogo v-else :name="selectedNetworkIcon" width="16" height="16" class="icon--network" />
 
-        <span>{{ selectedNetwork }}</span>
-        <Icon icon="down" className="icon--down" width="10" height="9" />
-      </div>
+      <NetworkManagementButton
+        classes="background-ellipse"
+        :isGroupIcon="isGroupIcon"
+        :icon="selectedNetworkIcon"
+        :selectedNetwork="selectedNetwork"
+        @onToggle="toggleSelectNetworkPopupVisible"
+      />
 
       <div v-if="isPopup" class="background-ellipse" @click="toggleConnectionPopup">
         <Loading v-if="!tabStatus" />
@@ -68,7 +65,7 @@
         @click="toggleSettingsVisible"
       />
 
-      <NetworkManage
+      <NetworkManagement
         v-if="showSelectNetworkPopup"
         :type="selectedNetwork"
         :handlerClose="toggleSelectNetworkPopupVisible"
@@ -82,8 +79,10 @@ import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
 import { HexString } from '@polkadot/util/types';
 import { ActiveTabAuthorizeStatus } from '@extension-base/background/types/types';
+import NetworkManagementButton from './NetworkManagementButton.vue';
 import type { SelectedWallet } from '@/store';
-import NetworkManage from '@/screens/wallet&asset/NetworkForm.vue';
+import type { NetworkJson } from '@/extension/background/extension-base/src/types';
+import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
 
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
@@ -96,11 +95,10 @@ import { AsyncFn, Fn } from '@/interfaces';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { isNetworkGroup } from '@/helpers/common';
 
 @Component({
-  components: { ConnectionPopup, NetworkManage },
+  components: { ConnectionPopup, NetworkManagement, NetworkManagementButton },
 })
 export default class Header extends Vue {
   readonly walletNameRef = 'walletName';

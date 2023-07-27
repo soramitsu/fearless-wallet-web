@@ -204,21 +204,19 @@ export class FWCron {
     for (const [key, evm] of Object.entries(apiMap.evm)) {
       const apiStatus = networkMap[key].apiStatus;
 
-      // evm
-      //   ._waitUntilReady()
-      //   .then(() => {
-      if (!apiStatus) this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
-      else if (apiStatus !== NETWORK_STATUS.CONNECTED) {
-        this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
-      }
-      // })
-      // .catch(() => {
-      //   if (!apiStatus) {
-      //     this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING);
-      //   } else if (apiStatus !== NETWORK_STATUS.CONNECTING) {
-      //     this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING);
-      //   }
-      // });
+      evm
+        ._waitUntilReady()
+        .then(() => {
+          if (!apiStatus) this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
+          else if (apiStatus !== NETWORK_STATUS.CONNECTED) {
+            this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTED);
+          }
+        })
+        .catch(() => {
+          if (!apiStatus || apiStatus !== NETWORK_STATUS.CONNECTING) {
+            this.state.updateNetworkStatus(key, NETWORK_STATUS.CONNECTING);
+          }
+        });
     }
   };
 

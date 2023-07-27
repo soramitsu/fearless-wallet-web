@@ -440,7 +440,7 @@ export type RequestCrossChain = PasswordRequestSign<RequestCheckCrossChain>;
 
 export interface RequestAccountExportPrivateKey {
   address: string;
-  password: string;
+  password?: string;
 }
 
 export interface ExternalRequestPromise {

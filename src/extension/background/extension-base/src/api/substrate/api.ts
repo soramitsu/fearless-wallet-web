@@ -82,7 +82,7 @@ async function onDisconnect(networkName: string) {
   api.isApiConnected = false;
   api.isApiReady = false;
 
-  const { apiRetry, nodeIndex } = api;
+  const { apiRetry } = api;
 
   if (apiRetry < MAX_CONTINUE_RETRY) return;
 

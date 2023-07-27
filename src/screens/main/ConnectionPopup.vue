@@ -9,7 +9,7 @@
     zIndex="299"
   >
     <div class="notification-popup-content">
-      <div class="message">{{ $t(message) }}</div>
+      <div class="message">{{ message }}</div>
     </div>
   </Popup>
 </template>

@@ -670,6 +670,7 @@ export default class State {
     if (!currentAccount) return;
 
     this.subscription.stop();
+    this.cron.stop();
 
     Object.keys(this.networkMap).forEach((key) => {
       const network = this.networkMap[key];

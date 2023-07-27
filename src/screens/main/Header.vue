@@ -38,7 +38,7 @@
         classes="background-ellipse"
         :isGroupIcon="isGroupIcon"
         :icon="selectedNetworkIcon"
-        :selectedNetwork="selectedNetwork"
+        :selectedNetwork="networkManagementButtonText"
         @onToggle="toggleSelectNetworkPopupVisible"
       />
 
@@ -123,6 +123,14 @@ export default class Header extends Vue {
 
   get isGroupIcon() {
     return isNetworkGroup(this.selectedNetwork);
+  }
+
+  get networkManagementButtonText() {
+    if (this.isGroupIcon) {
+      return this.$t(`header.networkManagement.${this.selectedNetwork}`);
+    }
+
+    return this.selectedNetwork;
   }
 
   get selectedNetworkIcon() {
@@ -223,6 +231,7 @@ export default class Header extends Vue {
   }
   .header-part-right {
     gap: 4px;
+    justify-content: flex-end;
   }
   .header-part-left {
     &:hover {

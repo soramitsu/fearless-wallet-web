@@ -36,7 +36,6 @@
       </div>
     </ContentForm>
 
-    <AssetTip />
     <SelectPopup
       v-if="showSelectNetworkPopup"
       sizeWidth="medium"

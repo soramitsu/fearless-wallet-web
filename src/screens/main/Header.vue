@@ -108,6 +108,7 @@ export default class Header extends Vue {
   showSelectNetworkPopup = false;
   readonly selectNetworkButtonRef = 'selectNetworkButton';
   networkGoups = ['all', 'popular', 'favorites'];
+  readonly allNetworksIcon = 'all-networks';
   @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -134,9 +135,13 @@ export default class Header extends Vue {
   }
 
   get selectedNetworkIcon() {
-    if (this.isGroupIcon) return 'all-networks';
+    if (this.isGroupIcon) return this.allNetworksIcon;
 
-    return this.getNetwork(this.selectedNetwork).icon;
+    const network = this.getNetwork(this.selectedNetwork);
+
+    if (network) return network.icon;
+
+    return this.allNetworksIcon;
   }
 
   get name() {

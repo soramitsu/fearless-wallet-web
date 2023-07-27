@@ -1,6 +1,6 @@
 <template>
   <!-- IMPORTANT: if <Menu /> showed use 306 -->
-  <ContentForm :height="330">
+  <ContentForm :height="285" :isStaticHeight="true">
     <div class="history">
       <div class="history-settings">
         <div class="history-label">{{ $t('assets.history') }}:</div>
@@ -58,10 +58,7 @@ export default class History extends Vue {
   @Prop(Object) currency!: TokenBalance;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-
-  get selectedNetwork() {
-    return this.$route.params.network;
-  }
+  @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
 
   get isEmptyHistory() {
     return this.filteredHistory?.length === 0;

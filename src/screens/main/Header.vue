@@ -79,9 +79,9 @@ import { Component, Vue, Prop, PropSync, Watch } from 'vue-property-decorator';
 import { Getter, Action, Mutation } from 'vuex-class';
 import { HexString } from '@polkadot/util/types';
 import { ActiveTabAuthorizeStatus } from '@extension-base/background/types/types';
-import NetworkManagementButton from './NetworkManagementButton.vue';
 import type { SelectedWallet } from '@/store';
 import type { NetworkJson } from '@/extension/background/extension-base/src/types';
+import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
 
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';

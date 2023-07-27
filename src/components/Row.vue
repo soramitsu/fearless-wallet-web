@@ -5,9 +5,14 @@
     </div>
 
     <div v-if="value" class="value">
-      <div>{{ value }}</div>
+      <div>
+        <Loading v-if="isLoading" />
+        <span v-else>{{ value }}</span>
+      </div>
 
-      <div v-if="price" class="price">{{ price }}</div>
+      <div v-if="price" class="price">
+        <span>{{ price }}</span>
+      </div>
     </div>
     <div v-else>-</div>
   </div>
@@ -22,6 +27,7 @@ export default class Row extends Vue {
   @Prop(String) price!: string;
   @Prop(String) icon?: string;
   @Prop(String) rowClasses?: string;
+  @Prop(Boolean) isLoading!: boolean;
   @Prop({ default: false }) isIconPrepend!: boolean;
   @Prop({ default: () => [] }) iconClasses!: string[];
 

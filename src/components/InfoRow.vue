@@ -1,5 +1,5 @@
 <template>
-  <Row :value="value" :price="price" :icon="icon">
+  <Row :value="value" :price="price" :icon="icon" :isLoading="isLoading">
     {{ $t(text) }}
 
     <Icon v-if="icon" :icon="icon" class="icon-info" :class="classes" />
@@ -19,6 +19,7 @@ export default class InfoRow extends Vue {
   @Prop(String) value!: string;
   @Prop(String) price!: string;
   @Prop(String) icon?: string;
+  @Prop({ default: false }) isLoading!: boolean;
   @Prop({ default: false }) isIconPrepend!: boolean;
   @Prop({ default: () => [] }) iconClasses!: string[];
 

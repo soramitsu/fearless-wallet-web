@@ -38,6 +38,9 @@ def pipeline = new org.js.AppArtifactsPipeline(
     uploadToNexusFor:           ['master','develop','stage'],
     uploadToGoogleFor:          ['master'],
     uploadToFirefoxFor:         ['master'],
-    buildWithCred:              buildWithCred
+    buildWithCred:              buildWithCred,
+    dojoProductType:            'fearless',
+    sonarSrcPath:               'src',
+    sonarTestsPath:             'tests'
 )
 pipeline.runPipeline()

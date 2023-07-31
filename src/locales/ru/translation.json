@@ -283,6 +283,7 @@
     "editNode": "Редактировать ноду",
     "deleteNode": "Удалить ноду",
     "newNode": "Новая нода",
+    "account": "Аккаунт",
     "addEthereumAccounts": "Добавить аккаунты Moonbeam и Moonriver?"
   },
   "auth": {
@@ -412,6 +413,7 @@
     "alerts": "Оповещения",
     "history": "История",
     "redeem": "Выкупить",
+    "rewards": "Награды",
     "unstakingDisclaimers1": "Токены в период анстейкинга не приносят вознаграждения",
     "unstakingDisclaimers2": "После периода анстейкинга вам нужно будет выкупить свои токены."
   },
@@ -438,6 +440,7 @@
     "no": "Нет",
     "search": "Поиск",
     "searchNetwork": "Поиск по сетям",
+    "searchAccounts": "Поиск по аккаунтам",
     "searchAmongAssets": "Поиск по ассетам",
     "searchCurrency": "Поиск по валютам",
     "invalidPassword": "Неверный пароль",

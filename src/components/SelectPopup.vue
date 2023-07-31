@@ -18,12 +18,19 @@
     :top="top"
     :left="left"
   >
-    <div v-for="{ name, value, icon } in options" :key="value" :class="rowClasses(value)" @click="toggle(value)">
+    <div
+      v-for="{ name, value, icon, iconType } in options"
+      :key="value"
+      :class="rowClasses(value)"
+      @click="toggle(value)"
+    >
       <div class="description">
         <template v-if="showIcon">
-          <Icon v-if="icon === 'globus' && showIcon" :icon="icon" className="img" />
+          <Identicon v-if="iconType === 'address'" :address="value" class="img" />
 
-          <ExternalLogo v-else-if="showIcon" :name="icon" class="img" />
+          <Icon v-else-if="icon === 'globus'" :icon="icon" className="img" />
+
+          <ExternalLogo v-else :name="icon" class="img" />
         </template>
 
         {{ name }}

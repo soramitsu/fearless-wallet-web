@@ -10,9 +10,7 @@
 
             <div v-for="address in historyAddresses" :key="address" class="row" @click="setRecipient(address)">
               <div class="description">
-                <div v-if="isEthereumAddress(address)" v-html="getJdenticon(address)" class="identicon"></div>
-
-                <Identicon v-else class="identicon" :size="24" theme="polkadot" :value="address" />
+                <Identicon :address="address" />
 
                 <div class="full-description">
                   <div class="address">{{ cut(address) }}</div>
@@ -33,9 +31,7 @@
               @click="setRecipient(address)"
             >
               <div class="description">
-                <div v-if="isEthereumAddress(address)" v-html="getJdenticon(address)" class="identicon"></div>
-
-                <Identicon v-else class="identicon" :size="24" theme="polkadot" :value="address" />
+                <Identicon :address="address" />
 
                 <div class="full-description">
                   <div class="name">{{ name }}</div>
@@ -58,7 +54,6 @@
 <script lang="ts">
 import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { Identicon } from '@polkadot/vue-identicon';
 import { storage } from '@extension-base/stores/Storage';
 import { toSvg } from 'jdenticon';
 import type { GetHistory } from '@/interfaces';
@@ -72,9 +67,7 @@ import { NetworksController } from '@/controllers';
 import { getType } from '@/helpers/history';
 import { TransactionType } from '@/interfaces/history';
 
-@Component({
-  components: { Identicon },
-})
+@Component
 export default class HistoryBook extends Vue {
   addressBook: AddressBook = {};
 
@@ -158,10 +151,6 @@ export default class HistoryBook extends Vue {
     if (this.historyAddresses.length !== 0) return;
 
     await NetworksController.fetchHistory(this.network, this.selectedWallet, this.assetId);
-  }
-
-  isEthereumAddress(address: string) {
-    return BaseApi.isEthereumAddress(address);
   }
 
   getJdenticon(address: string) {

@@ -191,7 +191,6 @@ import HistoryBook from './HistoryBook.vue';
 import EditAddressBook from './EditAddressBook.vue';
 import ExistentialPopup from './ExistentialPopup.vue';
 import WarningAddressPopup from './WarningAddressPopup.vue';
-import InputWithIcon from './InputWithIcon.vue';
 import type { GetAssetPrice } from '@/store';
 import type { AccountJson } from '@/extension/background/extension-base/src/background/types/types';
 import BaseApi from '@/util/BaseApi';
@@ -217,7 +216,6 @@ import WalletInfo from '@/screens/main/WalletInfo.vue';
     WalletInfo,
     FloatInput,
     HistoryBook,
-    InputWithIcon,
     EditAddressBook,
     ExistentialPopup,
     WarningAddressPopup,

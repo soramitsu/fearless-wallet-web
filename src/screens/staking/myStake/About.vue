@@ -1,5 +1,5 @@
 <template>
-  <ContentForm :height="210" :isStaticHeight="true" :bottomRightCorner="true">
+  <ContentForm :height="210" :isStaticHeight="true" :bottomRightCorner="true" class="about">
     <div class="about-stake">
       <div class="one block">
         <div class="label">{{ $t('staking.stakingBalance') }}</div>
@@ -91,62 +91,66 @@ export default class About extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.about-stake {
-  display: grid;
-  grid-auto-columns: 247px;
-  grid-auto-rows: 105px;
-  text-transform: uppercase;
+.about {
+  margin-top: 10px;
 
-  .block {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    text-align: left;
-    padding-left: 35px;
-  }
+  .about-stake {
+    display: grid;
+    grid-auto-columns: 247px;
+    grid-auto-rows: 105px;
+    text-transform: uppercase;
 
-  .label {
-    font-size: 12px;
-    font-weight: 600;
-    text-align: left;
-    color: #ffffffa6;
-    margin-bottom: 5px;
-  }
+    .block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      text-align: left;
+      padding-left: 35px;
+    }
 
-  .amount {
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 5px;
-  }
+    .label {
+      font-size: 12px;
+      font-weight: 600;
+      text-align: left;
+      color: #ffffffa6;
+      margin-bottom: 5px;
+    }
 
-  .value {
-    font-size: 14px;
-    color: #ffffffa6;
-  }
+    .amount {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
 
-  .one {
-    grid-column: 1;
-    grid-row: 1;
-    border-right: $default-border;
-    border-bottom: $default-border;
-  }
+    .value {
+      font-size: 14px;
+      color: #ffffffa6;
+    }
 
-  .two {
-    grid-column: 2;
-    grid-row: 1;
-    border-bottom: $default-border;
-  }
+    .one {
+      grid-column: 1;
+      grid-row: 1;
+      border-right: $default-border;
+      border-bottom: $default-border;
+    }
 
-  .three {
-    grid-column: 1;
-    grid-row: 2;
-    border-right: $default-border;
-  }
+    .two {
+      grid-column: 2;
+      grid-row: 1;
+      border-bottom: $default-border;
+    }
 
-  .four {
-    grid-column: 2;
-    grid-row: 2;
+    .three {
+      grid-column: 1;
+      grid-row: 2;
+      border-right: $default-border;
+    }
+
+    .four {
+      grid-column: 2;
+      grid-row: 2;
+    }
   }
 }
 </style>

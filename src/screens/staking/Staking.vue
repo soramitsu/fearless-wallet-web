@@ -72,9 +72,8 @@ import { TokenBalance } from '@/extension/background/extension-base/src/backgrou
 })
 export default class Staking extends Vue {
   readonly selectNetworkButtonRef = 'selectNetworkButton';
-  showSelectNetworkPopup = false;
   showNetworkManagement = false;
-  activeTabName: StakingTab = 'my';
+  activeTabName: StakingTab = 'all';
   filterValue = '';
 
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];

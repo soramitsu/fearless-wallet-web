@@ -285,6 +285,7 @@
     "editNode": "Edit node",
     "deleteNode": "Delete node",
     "newNode": "New Node",
+    "account": "Account",
     "addEthereumAccounts": "Add Moonbeam and Moonriver accounts?"
   },
   "auth": {
@@ -414,6 +415,7 @@
     "alerts": "Alerts",
     "history": "History",
     "redeem": "Redeem",
+    "rewards": "Rewards",
     "unstakingDisclaimers1": "Tokens in unstaking period generate no rewards",
     "unstakingDisclaimers2": "After unstaking period you will need to redeem your tokens"
   },
@@ -440,6 +442,7 @@
     "no": "No",
     "search": "Search",
     "searchNetwork": "Search in networks",
+    "searchAccounts": "Search in accounts",
     "searchAmongAssets": "Search among assets",
     "searchCurrency": "Search in currencies",
     "invalidPassword": "Incorrect password",

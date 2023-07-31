@@ -1,27 +1,25 @@
 <template>
   <div class="unstaking-form">
-    <div class="descriptions">
-      <div class="fee">
-        {{ $t('assets.networkFee') }}
+    <div class="fee">
+      {{ $t('assets.networkFee') }}
 
-        <div class="column">
-          <div class="amount">{{ fee }} {{ asset }}</div>
+      <div class="column">
+        <div class="amount">{{ fee }} {{ asset }}</div>
 
-          <div class="value">{{ fiatSymbol }}{{ feeValue }}</div>
-        </div>
+        <div class="value">{{ valueString }}</div>
       </div>
+    </div>
 
-      <div class="disclaimer">
-        <Icon icon="wallet-2" class="img" />
+    <div class="disclaimer">
+      <Icon icon="wallet-2" class="img" />
 
-        {{ $t('staking.unstakingDisclaimers1') }}
-      </div>
+      {{ $t('staking.unstakingDisclaimers1') }}
+    </div>
 
-      <div class="disclaimer">
-        <Icon icon="logout" class="img" />
+    <div class="disclaimer">
+      <Icon icon="logout" class="img" />
 
-        {{ $t('staking.unstakingDisclaimers2') }}
-      </div>
+      {{ $t('staking.unstakingDisclaimers2') }}
     </div>
   </div>
 </template>
@@ -36,9 +34,10 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
 export default class UnstakingForm extends Vue {
-  fee = 1;
+  readonly selectAccountInputRef = 'selectAccountInput';
 
   @Prop({ type: Object }) currency!: TokenBalance;
+  @Prop({ type: String }) fee!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
@@ -46,67 +45,70 @@ export default class UnstakingForm extends Vue {
     return this.currency.symbol;
   }
 
-  get feePrice() {
+  get assetPrice() {
     const priceId = this.currency?.priceId ?? '';
 
     return this.getAssetPrice(priceId).price;
   }
 
-  get feeValue() {
-    return this.fee * this.feePrice;
+  get valueString() {
+    const value = +this.fee * this.assetPrice;
+
+    return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
   }
 }
 </script>
 
 <style lang="scss" scoped>
 .unstaking-form {
-  .descriptions {
-    .fee {
-      font-size: 14px;
-      border-bottom: $default-border;
+  padding: 0 16px;
+
+  .fee {
+    font-size: 14px;
+    border-bottom: $default-border;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 10px 0 20px;
+    padding: 10px 0;
+
+    .column {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 10px 0 20px;
-      padding: 10px 16px;
-
-      .column {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-
-        .amount {
-          font-weight: 600;
-          text-align: right;
-          text-transform: uppercase;
-          margin-bottom: 5px;
-        }
-
-        .value {
-          font-size: 12px;
-          text-align: right;
-          color: $grayish-white-2;
-        }
-      }
-    }
-
-    .disclaimer {
-      display: flex;
-      align-items: center;
-      font-size: 14px;
+      flex-direction: column;
+      align-items: flex-end;
       color: #ffffffbf;
-      margin-bottom: 10px;
 
-      &:last-child {
-        margin-bottom: none;
+      .amount {
+        font-weight: 600;
+        text-align: right;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+      }
+
+      .value {
+        font-size: 12px;
+        text-align: right;
+        color: $grayish-white-2;
       }
     }
+  }
 
-    .img {
-      margin-right: 10px;
-      height: 30px;
-      width: 30px;
+  .disclaimer {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #ffffffbf;
+    margin-bottom: 10px;
+
+    &:last-child {
+      margin-bottom: none;
     }
+  }
+
+  .img {
+    margin-right: 10px;
+    height: 30px;
+    width: 30px;
   }
 }
 </style>

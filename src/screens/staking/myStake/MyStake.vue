@@ -181,6 +181,8 @@ export default class MyStake extends Vue {
   }
 
   get stakingAssetId() {
+    if (this.balances.length === 0) return '';
+
     const { assetId } = getUtilityAsset(this.balances, this.network);
 
     return assetId;

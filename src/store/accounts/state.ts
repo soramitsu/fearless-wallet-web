@@ -1,4 +1,4 @@
-import type { SelectedWallet, SelectedNetworks, AutoSelectNode } from './types';
+import type { SelectedWallet, SelectedNetworks, AutoSelectNode, AssetTipDataProps } from './types';
 import type { NetworkName, WalletAddress } from '@/interfaces';
 import { accountController } from '@/controllers';
 import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
@@ -18,6 +18,7 @@ export type State = {
   qr: string | null;
   showPolkaswapAlert: boolean;
   showSoraCardBanner: boolean;
+  assetTipShowed: AssetTipDataProps;
 };
 
 const state = (): State => {
@@ -35,6 +36,7 @@ const state = (): State => {
     hiddenWarningNetworks: accountController.getHiddenWarningNetworks(),
     showSoraCardBanner: Date.now() - accountController.getHidingSoraCardBannerTime() >= SORA_CARD_BANNER_RERUN,
     qr: null,
+    assetTipShowed: accountController.getAssetTipData(),
   };
 };
 

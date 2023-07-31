@@ -35,7 +35,10 @@ export type SetAutoSelectNode = {
   network: string;
   value: boolean;
 };
-
+export type AssetTipDataProps = {
+  count: number;
+  time: number;
+};
 export type SetHiddenAsset = {
   assetId: string;
   value: boolean;

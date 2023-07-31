@@ -969,7 +969,7 @@ export default class Extension extends FWExtensionBase {
       console.info(`Swap transaction failed ${ex}`);
     }
 
-    const ethereumAddress = keyring.getAccount(address)?.meta.ethreumAddress as string | undefined;
+    const ethereumAddress = keyring.getAccount(address)?.meta.ethereumAddress as string | undefined;
 
     if (isSavePass) {
       this.cachedUnlocks[address] = Date.now() + PASSWORD_EXPIRY_MS;

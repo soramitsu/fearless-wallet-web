@@ -107,6 +107,7 @@
                 :text="`assets.${isTransfer ? 'networkFee' : 'originalNetworkFee'}`"
                 :value="syncedFeeCut"
                 :iconClasses="['origin-fee']"
+                :isLoading="isFetchingFees"
                 icon="info"
               />
 
@@ -238,6 +239,7 @@ export default class TransferForm extends Vue {
   buttonLoading = false;
   newAddress = '';
   filterValue = '';
+  isFetchingFees = false;
   step = 1;
 
   @Prop(Function) closeForm!: VoidFunction;
@@ -735,12 +737,13 @@ export default class TransferForm extends Vue {
     } as RequestCheckCrossChain;
   }
 
-  toggleButtonLoading(value = true) {
+  toggleLoading(value = true) {
     this.buttonLoading = value;
+    this.isFetchingFees = value;
   }
 
   async verifyTx(_amount?: string) {
-    this.toggleButtonLoading();
+    this.toggleLoading();
 
     // комиссия не зависит от адреса получателя, поэтому подставляем всегда мок
     const to = BaseApi.formatAddress(
@@ -760,7 +763,7 @@ export default class TransferForm extends Vue {
         assetId: this.syncedAssetId,
       });
 
-      this.toggleButtonLoading(false);
+      this.toggleLoading(false);
 
       return ex;
     }
@@ -775,7 +778,7 @@ export default class TransferForm extends Vue {
       assetId: this.syncedAssetId,
     });
 
-    this.toggleButtonLoading(false);
+    this.toggleLoading(false);
 
     return ex;
   }

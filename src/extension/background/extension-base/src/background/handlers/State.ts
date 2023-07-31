@@ -556,23 +556,21 @@ export default class State {
     if (this.lockNetworkMap) return false; // todo ???
 
     this.lockNetworkMap = true; // todo ???
+    const network = this.networkMap[networkKey];
 
-    delete this.apis.substrate[networkKey]; // todo можно и не удалять по идее, значение api для сети будет = undefined
+    delete this.apis.substrate[networkKey];
 
-    if (this.networkMap[networkKey].isEthereum && this.networkMap[networkKey].isEthereum)
-      delete this.apis.evm[networkKey]; // todo аналогично
+    if (network.isEthereum && network.isEthereum) delete this.apis.evm[networkKey]; // todo аналогично
 
-    this.networkMap[networkKey].active = false;
-    this.networkMap[networkKey].apiStatus = NETWORK_STATUS.DISCONNECTED;
+    network.active = false;
+    network.apiStatus = NETWORK_STATUS.DISCONNECTED;
     this.networkMapSubject.next(this.networkMap);
-    this.networkMapStore.set('NetworkMap', this.networkMap);
     this.updateServiceInfo();
+    this.networkMapStore.set('NetworkMap', this.networkMap);
     this.lockNetworkMap = false;
 
     this.getAuthorize((data) => {
-      if (this.networkMap[networkKey].isEthereum) {
-        this.evmChainSubject.next(data);
-      }
+      if (network.isEthereum) this.evmChainSubject.next(data);
 
       this.authorizeUrlSubject.next(data);
     });
@@ -598,6 +596,12 @@ export default class State {
 
   public refreshDotSamaApi(key: string) {
     const network = this.networkMap[key];
+    const api = this.getSubstrateApiMap[key];
+
+    if (api) {
+      api.nodeIndex = 0;
+      api.apiRetry = 0;
+    }
 
     if (network && network.apiStatus && network.apiStatus === NETWORK_STATUS.DISCONNECTED) initApi(network);
   }
@@ -666,6 +670,7 @@ export default class State {
     if (!currentAccount) return;
 
     this.subscription.stop();
+    this.cron.stop();
 
     Object.keys(this.networkMap).forEach((key) => {
       const network = this.networkMap[key];
@@ -717,7 +722,7 @@ export default class State {
     this.networkMapStore.set('NetworkMap', this.networkMap);
     this.updateServiceInfo();
 
-    this.initNetworkStates();
+    this.initNetworkStates(true);
   }
 
   getCurrentTabStatus() {
@@ -1168,13 +1173,23 @@ export default class State {
     this.updateServiceInfo();
   }
 
-  public initNetworkStates() {
+  resetApiRetries() {
+    Object.values(this.getSubstrateApiMap).forEach((api) => {
+      api.nodeIndex = 0;
+      api.apiRetry = 0;
+    });
+  }
+
+  public initNetworkStates(reset?: boolean) {
     this.networkMapStore.get('NetworkMap', async (storedNetworkMap) => {
       for (const [key, network] of Object.entries(storedNetworkMap)) {
         if (network.active) {
           if (network.isEthereum && !isRequireSubstrateAPI(key)) {
             this.apis.evm[key] = initWeb3Api(network.currentProvider as string);
-          } else initApi(network);
+          } else {
+            if (reset) this.resetApiRetries();
+            initApi(network);
+          }
         }
       }
 
@@ -1354,7 +1369,7 @@ export default class State {
     address,
     password,
   }: RequestAccountExportPrivateKey): ResponseAccountExportPrivateKey {
-    const exportedJson = keyring.backupAccount(keyring.getPair(address), password);
+    const exportedJson = keyring.getPair(address).toJson(password);
     const decoded = decodePair(password, base64Decode(exportedJson.encoded), exportedJson.encoding.type);
 
     return {

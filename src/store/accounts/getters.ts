@@ -1,5 +1,11 @@
 import type { GetterTree } from 'vuex';
-import type { SelectedWallet, WalletInfo, GetAutoSelectNodesValueByNetwork, GetShowWarningNetworks } from './types';
+import type {
+  SelectedWallet,
+  WalletInfo,
+  GetAutoSelectNodesValueByNetwork,
+  GetShowWarningNetworks,
+  AssetTipDataProps,
+} from './types';
 import type { State } from './state';
 import type { FiatJson } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -27,6 +33,7 @@ export enum GettersTypes {
   getShowWarningNetwork = 'getShowWarningNetwork',
   showSoraCardBanner = 'showSoraCardBanner',
   isNetworkFavorite = 'isNetworkFavorite',
+  getAssetTipData = 'getAssetTipData',
 }
 
 export type Getters = {
@@ -51,6 +58,7 @@ export type Getters = {
     getters?: GetterTree<State, State> & Getters
   ): GetAutoSelectNodesValueByNetwork;
   [GettersTypes.GET_QR](state: State, getters?: GetterTree<State, State> & Getters): Nullable<string>;
+  [GettersTypes.getAssetTipData](state: State, getters?: GetterTree<State, State> & Getters): AssetTipDataProps;
   [GettersTypes.getIsCustomSort](
     state: State,
     getters?: GetterTree<State, State> & Getters
@@ -64,6 +72,10 @@ const getters: GetterTree<State, State> & Getters = {
 
   [GettersTypes.getBalances]({ balances }): TokenBalance[] {
     return balances;
+  },
+
+  [GettersTypes.getAssetTipData]({ assetTipShowed }): AssetTipDataProps {
+    return assetTipShowed;
   },
 
   [GettersTypes.hiddenAssets]({ selectedWallet, hiddenAssets }): any {

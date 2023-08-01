@@ -256,6 +256,7 @@ export default class Header extends Vue {
       display: flex;
       align-items: center;
       height: 48px;
+      gap: 5px;
 
       .name {
         max-width: 190px;

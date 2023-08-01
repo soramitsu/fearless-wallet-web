@@ -76,6 +76,8 @@ function onConnected(networkName: string) {
 async function onDisconnect(networkName: string) {
   const api = state.getSubstrateApiMap[networkName];
 
+  if (!state.networkMap[networkName].active) return;
+
   if (api === undefined) return;
 
   api.apiRetry += 1;

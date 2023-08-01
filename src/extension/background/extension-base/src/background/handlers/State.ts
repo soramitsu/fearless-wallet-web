@@ -693,7 +693,10 @@ export default class State {
 
           break;
         case POPULAR_NETWORKS:
-          if (network.rank) network.active = true;
+          if (network.rank !== undefined) {
+            network.active = true;
+            break;
+          }
 
           if (isAlreadySelectedType) break;
 

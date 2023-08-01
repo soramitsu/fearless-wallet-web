@@ -110,20 +110,23 @@ export default class Networks extends Vue {
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.allNetworks) allNetworks!: NetworkJson[];
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
 
   get filteredNetworks() {
+    const baseFilter = this.currency.balances.filter((el) => this.getNetwork(el.name).active);
+
     if (this.activeTabName === 'MyAssets') {
-      return this.currency.balances.filter(({ transferable }) => {
+      return baseFilter.filter(({ transferable }) => {
         if (transferable && +transferable > 0) return true;
 
         return false;
       });
     }
 
-    return this.currency.balances;
+    return baseFilter;
   }
 
   get sortedNetoworks() {

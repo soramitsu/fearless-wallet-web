@@ -50,7 +50,7 @@
               :isRotate="isSendAssetType"
               @update:amount="updateSendAmount"
               @setMax="setMax"
-              @toggleSelectAssetPopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'send')"
+              @togglePopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'send')"
             />
 
             <SelectInput
@@ -63,7 +63,7 @@
               :amount="receiveAmount"
               :isRotate="isReceiveAssetType"
               @update:amount="updateReceiveAmount"
-              @toggleSelectAssetPopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'receive')"
+              @togglePopupVisibility="toggleSelectAssetPopupVisibility.call(null, 'receive')"
             />
 
             <div :class="classesSwapIcon" @click="swapAssets">
@@ -215,7 +215,12 @@ import Disclaimer from '@/screens/polkaswap/swap/Disclaimer.vue';
 import { Components } from '@/router/routes';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { checkSwap, getSoraFees } from '@/extension/messaging';
-import { getCurrencyOptions, getXORCurrency } from '@/helpers/currencies';
+import {
+  getCurrencyOptions,
+  getXORCurrency,
+  calcTransferableSendMinusFee,
+  isValidAmountAsset,
+} from '@/helpers/currencies';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { MarketType, SwapOptions } from '@/interfaces';
 import { addNumbers } from '@/helpers/numbers';
@@ -465,14 +470,7 @@ export default class SwapForm extends Vue {
   }
 
   get isValidSendAsset() {
-    const maxSendFP = new FPNumber(this.calcTransferableSendMinusFee());
-
-    // sendAsset !== xor, если количество токенов равно нулю, то своп невалиден
-    // sendAsset === xor, если количество токенов за вычетом комиссии равно нулю, то своп невалиден
-    if (FPNumber.isEqualTo(maxSendFP, FPNumber.ZERO)) return false;
-
-    // если sendAmount меньше или равен максимальному количеству токенов, то своп валиден
-    return FPNumber.lte(new FPNumber(this.sendAmount), maxSendFP);
+    return isValidAmountAsset(this.sendCurrency, this.soraNetworkName, this.fee, this.sendAmount);
   }
 
   get isValidTransferByXOR() {
@@ -506,11 +504,14 @@ export default class SwapForm extends Vue {
     return this.receiveAssetName.toUpperCase();
   }
 
-  get transferableSendAmount() {
-    return +(
-      this.sendCurrency?.balances.find((balance) => balance.name.toLowerCase() === this.soraNetworkName.toLowerCase())
-        ?.transferable ?? 0
+  get sendCurrencyBalance() {
+    return this.sendCurrency?.balances.find(
+      (balance) => balance.name.toLowerCase() === this.soraNetworkName.toLowerCase()
     );
+  }
+
+  get transferableSendAmount() {
+    return +(this.sendCurrencyBalance?.transferable ?? 0);
   }
 
   get transferableReceiveAmount() {
@@ -726,20 +727,7 @@ export default class SwapForm extends Vue {
   }
 
   calcTransferableSendMinusFee() {
-    if (this.sendCurrency === undefined) return '0';
-
-    const balance = this.sendCurrency.balances.find(
-      ({ name }) => name.toLowerCase() === this.soraNetworkName.toLowerCase()
-    )!;
-    const transferable = balance.transferable ? +balance.transferable : 0;
-
-    if (this.sendCurrency?.symbol === SORA_UTILITY_ASSET) {
-      const result = new FPNumber(transferable).sub(new FPNumber(this.fee));
-
-      return FPNumber.lt(result, FPNumber.ZERO) ? '0' : result.toString();
-    }
-
-    return transferable.toString();
+    return calcTransferableSendMinusFee(this.sendCurrency, this.soraNetworkName, this.fee);
   }
 
   setMax() {

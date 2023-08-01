@@ -1,7 +1,7 @@
 import { FPNumber } from '@sora-substrate/util';
 import type { AccountData } from '@polkadot/types/interfaces/balances';
 import type { OrmlAccountData } from '@open-web3/orml-types/interfaces/tokens';
-import type { AccountBalance } from '@/interfaces/balances';
+import type { AccountBalance } from '@/interfaces';
 import type { u128 } from '@polkadot/types-codec';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

@@ -96,6 +96,8 @@ import type {
   ResponseType,
   SigningRequest,
   RequestStaking,
+  RequestCheckStaking,
+  ResponseCheckStaking,
 } from '@extension-base/background/types/types';
 import type { CurrentAccountInfo, CurrentAccountState } from '@extension-base/stores/CurrentAccountStore';
 import type {
@@ -1015,7 +1017,6 @@ export default class Extension extends FWExtensionBase {
     const [errors, , tokenInfo] = this.validateTransfer(assetId, from, password);
     const warnings: BasicTxWarning[] = [];
     const isMainToken = checkMainToken(networkKey, tokenInfo.id);
-    const isFromEthereum = isEthereumAddress(from);
 
     const address = getSubstrateAddressByEthAddress(from);
     let fee = 0;
@@ -1266,14 +1267,16 @@ export default class Extension extends FWExtensionBase {
     port.onDisconnect.addListener(() => this.cancelSubscription(id));
   }
 
-  private async makeStaking(
+  private async checkStaking(
     id: string,
     port: Port,
-    { from, originNet, destinationNet, amount, password, to, assetId, isSavePass, isMobile }: RequestStaking
-  ): Promise<void> {
-    const [, fromKeyPair] = this.validateTransfer(assetId, from, password);
+    { from, originNet, amount, to, assetId }: RequestCheckStaking
+  ): Promise<ResponseCheckStaking> {
+    return { estimateFee: '0.1' };
+  }
 
-    const cb = createSubscription<'pri(accounts.staking)'>(id, port);
+  private async makeStaking(id: string, port: Port, { from, originNet }: RequestStaking): Promise<void> {
+    console.info(2);
   }
 
   private getNetworkMap(): Record<string, NetworkJson> {
@@ -1541,6 +1544,9 @@ export default class Extension extends FWExtensionBase {
 
       case 'pri(accounts.crossChain)':
         return this.makeCrossChain(id, port, request as RequestCrossChain);
+
+      case 'pri(accounts.checkStaking)':
+        return this.checkStaking(id, port, request as RequestCrossChain);
 
       case 'pri(accounts.staking)':
         return this.makeStaking(id, port, request as RequestStaking);

@@ -1,0 +1,340 @@
+<template>
+  <AboveForm
+    :fullScreen="true"
+    :showBackIcon="showBackIcon"
+    :header="header"
+    :closeHandler="closeForm"
+    :handlerBack="handlerBack"
+  >
+    <div class="staking-management">
+      <Scroll>
+        <InputWithIcon
+          v-if="step === 1 || step === 6"
+          v-model="selectedAccountName"
+          placeholder="accounts.account"
+          icon="rotate"
+          :ref="selectAccountInputRef"
+          :isActiveRotate="showSelectAccountPopup"
+          @click="toggleSelectAccountPopupVisible"
+        />
+
+        <SelectInput
+          v-if="step === 1 || step === 6"
+          class="amount-input"
+          text="assets.amount"
+          :transferableAmount="transferableAmount"
+          :value="amountPriceValue"
+          :asset="stakingAssetName"
+          :assetId="stakingAssetId"
+          :amount="amount"
+          :showRotateIcon="false"
+          :readonly="assetInputReadonly"
+          @update:amount="updateAmount"
+          @setMax="setMax"
+        />
+
+        <StakingForm
+          v-if="isStaking"
+          :step="step"
+          :stakingCurrency="stakingCurrency"
+          :rewardedCurrency="rewardedCurrency"
+          :fee="fee"
+          @confirm="confirm"
+        />
+
+        <UnstakingForm v-else-if="isUnstaking" :stakingCurrency="stakingCurrency" :fee="fee" />
+
+        <RedeemForm v-else-if="isRedeeam" :stakingCurrency="stakingCurrency" :fee="fee" :rewards="rewards" />
+      </Scroll>
+
+      <Button
+        v-if="showConfirmButton"
+        width="100%"
+        :text="btnText"
+        size="big"
+        fontSize="big"
+        :disabled="confirmBtnDisabled"
+        @click="confirm"
+      />
+    </div>
+
+    <SelectPopup
+      v-if="showSelectAccountPopup"
+      placeholder="common.searchAccounts"
+      verticalPlacement="top"
+      horizontalPlacement="left"
+      :value="selectedAddress"
+      :showBlur="false"
+      :showBackground="false"
+      :top="148"
+      :left="-160"
+      :height="360"
+      :options="accounts"
+      :handlerFilter="handlerFilter"
+      :toggleValue="toggleSelectedAccount"
+      :handlerClose="toggleSelectAccountPopupVisible"
+    />
+
+    <ConfirmationPasswordPopup
+      v-if="showConfirmationPasswordPopup"
+      :currency="stakingCurrency"
+      :amount="amount"
+      :value="amountPriceValue"
+      :firstIcon="stakingAssetId"
+      extrinsicType="staking"
+      @close="confirmationPasswordPopupClose"
+    />
+  </AboveForm>
+</template>
+
+<script lang="ts">
+import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
+import { Getter } from 'vuex-class';
+import type { GetAssetPrice, SelectedWallet } from '@/store';
+import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { AccountJson, TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
+import StakingForm from '@/screens/staking/myStake/stakingForms/StakingForm.vue';
+import RedeemForm from '@/screens/staking/myStake/stakingForms/RedeemForm.vue';
+import UnstakingForm from '@/screens/staking/myStake/stakingForms/UnstakingForm.vue';
+import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
+import { getCostOfAssets } from '@/controllers/transferHelpers';
+import { NetworkName } from '@/interfaces';
+import { calcTransferableSendMinusFee, isValidAmountAsset } from '@/helpers/currencies';
+import { checkStaking } from '@/extension/messaging';
+
+@Component({
+  components: {
+    RedeemForm,
+    StakingForm,
+    UnstakingForm,
+    ConfirmationPasswordPopup,
+  },
+})
+export default class StakingManagement extends Vue {
+  readonly selectAccountInputRef = 'selectAccountInput';
+  showConfirmationPasswordPopup = false;
+  amount = '';
+  showSelectAccountPopup = false;
+  selectedAddress = '';
+  filterValue = '';
+  fee = '0';
+  rewards = '2';
+  step = 1;
+
+  @Prop({ type: Object }) stakingCurrency!: TokenBalance;
+  @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
+  @Prop({ type: String }) network!: NetworkName;
+  @Prop({ type: String }) type!: 'staking' | 'unstaking' | 'redeem';
+  @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
+  @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
+  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
+
+  get btnText() {
+    if (this.isStaking) {
+      if (this.step === 1) return 'common.next';
+
+      if (this.step === 3) return 'common.iAgree';
+    }
+
+    return 'common.confirm';
+  }
+
+  get showConfirmButton() {
+    return this.step !== 2;
+  }
+
+  get showBackIcon() {
+    if (this.isRedeeam || this.isUnstaking) return false;
+
+    return this.step !== 1;
+  }
+
+  get header() {
+    if (this.isStaking) {
+      if (this.step === 2) return 'staking.validators';
+
+      if (this.step === 3) return 'common.warning';
+
+      if (this.step === 4) return 'staking.recommended';
+
+      if (this.step === 5) return 'staking.yourself';
+    }
+
+    return `staking.${this.type}`;
+  }
+
+  get assetInputReadonly() {
+    return this.step !== 1;
+  }
+
+  get isStaking() {
+    return this.type === 'staking';
+  }
+
+  get isUnstaking() {
+    return this.type === 'unstaking';
+  }
+
+  get isRedeeam() {
+    return this.type === 'redeem';
+  }
+
+  get confirmBtnDisabled() {
+    if (this.step === 1) return this.amount === '' || +this.amount === 0 || !this.isValidAmountAsset;
+
+    return false;
+  }
+
+  get isValidAmountAsset() {
+    return isValidAmountAsset(this.stakingCurrency, this.network, this.fee ?? '0', this.amount);
+  }
+
+  get stakingAssetId() {
+    return this.stakingCurrency!.assetId;
+  }
+
+  get stakingAssetName() {
+    return this.stakingCurrency!.symbol;
+  }
+
+  get stakingCurrencyBalance() {
+    return this.stakingCurrency?.balances.find(({ name }) => name.toLowerCase() === this.network.toLowerCase());
+  }
+
+  get transferableAmount() {
+    return +(this.stakingCurrencyBalance?.transferable ?? 0);
+  }
+
+  get stakingAssetPrice() {
+    const priceId = this.stakingCurrency?.priceId ?? '';
+
+    return this.getAssetPrice(priceId).price;
+  }
+
+  get amountPriceValue() {
+    return getCostOfAssets(this.amount, this.stakingAssetPrice).toString();
+  }
+
+  get accounts() {
+    return (
+      this.wallets
+        .map(({ address, name }) => ({ name, value: address, iconType: 'address' }))
+        .filter(({ name }) => name.toLowerCase().includes(this.filterValue.toLowerCase())) ?? []
+    );
+  }
+
+  get selectedAccountName() {
+    if (this.selectedAddress === '') return '';
+
+    const { name } = this.accounts.find(({ value }) => value === this.selectedAddress)!;
+
+    return name;
+  }
+
+  @Watch('amount')
+  async calculateEstimates() {
+    const { estimateFee } = await this.verifyTx();
+
+    this.fee = estimateFee ?? '0';
+  }
+
+  mounted() {
+    this.selectedAddress = this.selectedWallet.address;
+  }
+
+  async verifyTx(_amount?: string) {
+    const amount = _amount ?? (this.amount !== '' && this.amount !== '0') ? this.amount : '1';
+
+    const ex = await checkStaking({
+      originNet: this.network,
+      from: '',
+      to: '',
+      relayChain: this.stakingCurrency?.relayChain,
+      amount,
+      assetId: this.stakingAssetId,
+    });
+
+    return ex;
+  }
+
+  handlerFilter(value: string) {
+    this.filterValue = value;
+  }
+
+  closeForm() {
+    this.$emit('closeForm');
+  }
+
+  confirm(step?: number) {
+    if (step !== undefined) {
+      this.step = step;
+
+      return;
+    }
+
+    if (this.isStaking) {
+      if (this.step === 4) this.step += 1;
+
+      if (this.step === 6) this.showConfirmationPasswordPopup = true;
+      else this.step += 1;
+    } else {
+      this.showConfirmationPasswordPopup = true;
+    }
+  }
+
+  confirmationPasswordPopupClose(closeForm: boolean) {
+    this.showConfirmationPasswordPopup = false;
+
+    if (closeForm) this.closeForm();
+  }
+
+  toggleSelectedAccount(value: string) {
+    this.selectedAddress = value;
+
+    this.toggleSelectAccountPopupVisible();
+  }
+
+  toggleSelectAccountPopupVisible() {
+    if (this.step === 6) return;
+
+    this.showSelectAccountPopup = !this.showSelectAccountPopup;
+  }
+
+  updateAmount(amount: string) {
+    this.amount = amount;
+  }
+
+  calcTransferableSendMinusFee(fee: string) {
+    return calcTransferableSendMinusFee(this.stakingCurrency, this.network, fee);
+  }
+
+  async setMax() {
+    if (!this.stakingCurrency) return;
+
+    const { estimateFee } = await this.verifyTx(this.transferableAmount.toString());
+
+    this.amount = this.calcTransferableSendMinusFee(estimateFee ?? '0');
+  }
+
+  handlerBack() {
+    if (this.step === 5) this.step -= 2;
+
+    this.step -= 1;
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+.staking-management {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+
+  .amount-input {
+    margin-top: 10px;
+  }
+}
+</style>

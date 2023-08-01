@@ -377,7 +377,6 @@ export interface RequestCheckCrossChain extends BaseRequestSign {
 
 export interface RequestCheckStaking extends BaseRequestSign {
   originNet: NetworkName;
-  destinationNet: NetworkName;
   from: string;
   to: string;
   assetId: string;
@@ -400,6 +399,12 @@ export interface ResponseCheckCrossChain {
   warnings?: Array<BasicTxWarning>;
   estimateFee?: string;
   destEstimateFee?: string;
+}
+
+export interface ResponseCheckStaking {
+  errors?: Array<BasicTxError>;
+  warnings?: Array<BasicTxWarning>;
+  estimateFee?: string;
 }
 
 export interface RequestCheckSwap extends BaseRequestSign {

@@ -34,7 +34,7 @@
       :iconClasses="['network-fee']"
     />
 
-    <Tooltip text="assets.networkFeeInfo" target=".network-fee" placement="right" />
+    <Tooltip text="assets.networkFeeSora" target=".network-fee" placement="right" />
   </div>
 </template>
 

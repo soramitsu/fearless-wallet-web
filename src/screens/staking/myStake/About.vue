@@ -1,31 +1,41 @@
 <template>
-  <ContentForm :height="210" :isStaticHeight="true" :bottomRightCorner="true" class="about">
-    <div class="about-stake">
-      <div class="one block">
-        <div class="label">{{ $t('staking.stakingBalance') }}</div>
-        <div class="amount">{{ stakingAmount }} {{ stakingAsset }}</div>
-        <div class="value">{{ fiatSymbol }}{{ stakingValue }}</div>
-      </div>
+  <div>
+    <ContentForm :height="210" :isStaticHeight="true" :bottomRightCorner="true" class="about-form">
+      <div class="about-stake">
+        <div class="one block">
+          <div class="label">{{ $t('staking.stakingBalance') }}</div>
+          <div class="amount">{{ stakingAmount }} {{ stakingAsset }}</div>
+          <div class="value">{{ fiatSymbol }}{{ stakingValue }}</div>
+        </div>
 
-      <div class="two block">
-        <div class="label">{{ $t('staking.stakingBalance') }}</div>
-        <div class="amount">{{ rewardedAmount }} {{ rewardedAsset }}</div>
-        <div class="value">{{ fiatSymbol }}{{ rewardedValue }}</div>
-      </div>
+        <div class="two block">
+          <div class="label">{{ $t('staking.stakingBalance') }}</div>
+          <div class="amount">{{ rewardedAmount }} {{ rewardedAsset }}</div>
+          <div class="value">{{ fiatSymbol }}{{ rewardedValue }}</div>
+        </div>
 
-      <div class="three block">
-        <div class="label">{{ $t('staking.stakingBalance') }}</div>
-        <div class="amount">{{ unstakingAmount }} {{ stakingAsset }}</div>
-        <div class="value">{{ fiatSymbol }}{{ unstakingValue }}</div>
-      </div>
+        <div class="three block">
+          <div class="label">{{ $t('staking.stakingBalance') }}</div>
+          <div class="amount">{{ unstakingAmount }} {{ stakingAsset }}</div>
+          <div class="value">{{ fiatSymbol }}{{ unstakingValue }}</div>
+        </div>
 
-      <div class="four block">
-        <div class="label">{{ $t('staking.stakingBalance') }}</div>
-        <div class="amount">{{ redeemableAmount }} {{ stakingAsset }}</div>
-        <div class="value">{{ fiatSymbol }}{{ redeemableValue }}</div>
+        <div class="four block">
+          <div class="label">{{ $t('staking.stakingBalance') }}</div>
+          <div class="amount">{{ redeemableAmount }} {{ stakingAsset }}</div>
+          <div class="value">{{ fiatSymbol }}{{ redeemableValue }}</div>
+        </div>
       </div>
+    </ContentForm>
+
+    <div class="about-label">
+      {{ $t('common.about') }}
     </div>
-  </ContentForm>
+
+    <div class="descriptions">
+      {{ $t('staking.about') }}
+    </div>
+  </div>
 </template>
 
 <script lang="ts">
@@ -53,11 +63,11 @@ export default class About extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   get stakingAsset() {
-    return this.stakingCurrency.symbol;
+    return this.stakingCurrency?.symbol;
   }
 
   get rewardedAsset() {
-    return this.rewardedCurrency.symbol;
+    return this.rewardedCurrency?.symbol;
   }
 
   get stakingAssetPrice() {
@@ -91,7 +101,21 @@ export default class About extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.about {
+.about-label {
+  font-weight: 600;
+  color: $default-white;
+  margin: 15px 0;
+  text-align: left;
+}
+
+.descriptions {
+  font-size: 14px;
+  color: $default-white;
+  text-align: left;
+  line-height: 20px;
+}
+
+.about-form {
   margin-top: 10px;
 
   .about-stake {
@@ -113,7 +137,7 @@ export default class About extends Vue {
       font-size: 12px;
       font-weight: 600;
       text-align: left;
-      color: #ffffffa6;
+      color: $grayish-white;
       margin-bottom: 5px;
     }
 
@@ -125,7 +149,7 @@ export default class About extends Vue {
 
     .value {
       font-size: 14px;
-      color: #ffffffa6;
+      color: $grayish-white;
     }
 
     .one {

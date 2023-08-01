@@ -26,7 +26,7 @@ export default class NegativeMessage extends Vue {
 
 .subtext {
   font-size: 18px;
-  color: #ffffffbf;
+  color: $default-white;
 }
 
 .img {

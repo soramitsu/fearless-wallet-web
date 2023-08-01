@@ -1,0 +1,70 @@
+<template>
+  <div class="validator">
+    <div class="left-part">
+      <Checkbox
+        v-model="validator.isSelect"
+        size="medium"
+        label=""
+        class="validator-checkbox"
+        @change="(value) => $emit('onSelect', value, validator.address)"
+      />
+
+      <Identicon :address="validator.address" class="ident" />
+
+      <div>{{ validator.name }}</div>
+    </div>
+
+    <div class="right-part">
+      <div>{{ validator.apy }}%</div>
+
+      <Icon icon="info" class="icon-info" />
+
+      <Tooltip :text="validator.description" target=".icon-info" placement="left" />
+    </div>
+  </div>
+</template>
+
+<script lang="ts">
+import { Component, Vue, Prop } from 'vue-property-decorator';
+import type { Validator } from '@/interfaces';
+
+@Component
+export default class ValidatorItem extends Vue {
+  @Prop({ type: Object }) validator!: Validator;
+}
+</script>
+
+<style lang="scss" scoped>
+.validator {
+  padding: 10px 0;
+  border-bottom: $default-border;
+  display: flex;
+  justify-content: space-between;
+  color: $default-white;
+
+  .left-part {
+    display: flex;
+    align-items: center;
+
+    .ident {
+      margin: 0 10px;
+    }
+
+    .validator-checkbox {
+      height: 36px;
+    }
+  }
+
+  .right-part {
+    display: flex;
+    align-items: center;
+
+    .icon-info {
+      margin-left: 10px;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+  }
+}
+</style>

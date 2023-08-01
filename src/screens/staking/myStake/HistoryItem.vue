@@ -82,7 +82,7 @@ export default class HistoryItem extends Vue {
   .column {
     .name {
       font-size: 16px;
-      color: #ffffffbf;
+      color: $default-white;
     }
 
     .date {
@@ -108,7 +108,7 @@ export default class HistoryItem extends Vue {
     }
 
     .amount {
-      color: #ffffffbf;
+      color: $default-white;
       text-transform: uppercase;
     }
 

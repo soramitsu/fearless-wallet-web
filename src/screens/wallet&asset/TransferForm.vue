@@ -71,7 +71,7 @@
                 :isRotate="showSelectedAssetPopup"
                 @update:amount="updateAmount"
                 @setMax="setMax"
-                @toggleSelectAssetPopupVisibility="toggleAssetPopupVisibility"
+                @togglePopupVisibility="toggleAssetPopupVisibility"
               />
 
               <InputWithIcon
@@ -199,7 +199,12 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 import { cut, firstCharToUp, getClipboard } from '@/helpers/common';
-import { getCurrencyOptions, getUtilityAsset } from '@/helpers/currencies';
+import {
+  getCurrencyOptions,
+  getUtilityAsset,
+  calcTransferableSendMinusFee,
+  isValidAmountAsset,
+} from '@/helpers/currencies';
 import { VALID_SUBSTRATE_ADDRESS, VALID_ETHEREUM_ADDRESS, CHAIN_IDS } from '@/consts/networks';
 import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHelpers';
 import {
@@ -526,14 +531,7 @@ export default class TransferForm extends Vue {
   }
 
   get isValidSendAsset() {
-    const maxSendFP = new FPNumber(this.calcTransferableSendMinusFee(this.syncedFee ?? '0'));
-
-    // sendAsset !== Utility, если количество токенов равно нулю, то транзакция невалидна
-    // sendAsset === Utility, если количество токенов за вычетом комиссии равно нулю, то транзакция невалидна
-    if (FPNumber.isEqualTo(maxSendFP, FPNumber.ZERO)) return false;
-
-    // если syncedAmount меньше или равен максимальному количеству токенов, то транзакция валидна
-    return FPNumber.lte(new FPNumber(this.syncedAmount), maxSendFP);
+    return isValidAmountAsset(this.currency, this.syncedNetwork, this.syncedFee ?? '0', this.syncedAmount);
   }
 
   get isValidTransferByUtility() {
@@ -683,16 +681,7 @@ export default class TransferForm extends Vue {
   }
 
   calcTransferableSendMinusFee(fee: string) {
-    if (this.currency === undefined) return 0;
-
-    // Для Utility ассета вычитаем комиссию, тк комиссия всегда списывается в Utility токене
-    if (this.currencyBalance?.isUtility) {
-      const result = new FPNumber(this.transferableAmount).sub(new FPNumber(fee));
-
-      return FPNumber.lt(result, FPNumber.ZERO) ? 0 : result.toNumber();
-    }
-
-    return this.transferableAmount;
+    return calcTransferableSendMinusFee(this.currency, this.syncedNetwork, fee);
   }
 
   async setMax() {
@@ -702,7 +691,7 @@ export default class TransferForm extends Vue {
 
     const transferableCountAssets = this.calcTransferableSendMinusFee(estimateFee ?? '0');
 
-    this.syncedAmount = transferableCountAssets.toString();
+    this.syncedAmount = transferableCountAssets;
     this.syncedValue = getCostOfAssets(transferableCountAssets, this.assetPrice).toString();
   }
 

@@ -139,7 +139,7 @@ export default class MyStakingItem extends Vue {
     padding: 5px 0;
     min-height: 45px;
     width: 100%;
-    color: #ffffffbf;
+    color: $default-white;
 
     &:last-child {
       border-bottom: none;

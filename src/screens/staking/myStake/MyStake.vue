@@ -43,26 +43,35 @@
     </div>
 
     <ContentForm :height="329">
-      <div class="content">
-        <MyStakeSettings :activeTabName="activeTabName" @update:activeTabName="updateActiveTabName" />
+      <Scroll>
+        <div class="content">
+          <MyStakeSettings :activeTabName="activeTabName" @update:activeTabName="updateActiveTabName" />
 
-        <About
-          v-if="isAbout"
-          :stakingCurrency="stakingCurrency"
-          :rewardedCurrency="rewardedCurrency"
-          :stakingAmount="stakingAmount"
-          :rewardedAmount="rewardedAmount"
-          :unstakingAmount="unstakingAmount"
-          :redeemableAmount="redeemableAmount"
-        />
+          <About
+            v-if="isAbout"
+            :stakingCurrency="stakingCurrency"
+            :rewardedCurrency="rewardedCurrency"
+            :stakingAmount="stakingAmount"
+            :rewardedAmount="rewardedAmount"
+            :unstakingAmount="unstakingAmount"
+            :redeemableAmount="redeemableAmount"
+          />
 
-        <Alerts v-else-if="isAlerts" :alerts="alerts" />
+          <Alerts v-else-if="isAlerts" :alerts="alerts" />
 
-        <History v-else-if="isHistory" :history="history" />
-      </div>
+          <History v-else-if="isHistory" :history="history" />
+        </div>
+      </Scroll>
     </ContentForm>
 
-    <StakingManagement v-if="showStakeForm" :assetId="stakingAssetId" :type="type" @closeForm="closeStakeForm" />
+    <StakingManagement
+      v-if="showStakeForm"
+      :stakingCurrency="stakingCurrency"
+      :rewardedCurrency="rewardedCurrency"
+      :type="type"
+      :network="network"
+      @closeForm="closeStakeForm"
+    />
   </div>
 </template>
 
@@ -74,12 +83,13 @@ import MyStakeSettings from '@/screens/staking/myStake/MyStakeSettings.vue';
 import About from '@/screens/staking/myStake/About.vue';
 import Alerts from '@/screens/staking/myStake/Alerts.vue';
 import History from '@/screens/staking/myStake/History.vue';
-import StakingManagement from '@/screens/staking/myStake/StakingManagement.vue';
+import StakingManagement from '@/screens/staking/myStake/stakingForms/StakingManagement.vue';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { getUtilityAsset } from '@/helpers/currencies';
 import { SORA_NETWORK_NAME, SORA_REWARD_ASSET } from '@/consts/sora';
+import Scroll from '@/components/Scroll.vue';
 
 type ShowField = 'showStakingForm' | 'showUnstakingForm' | 'showRedeemForm';
 
@@ -90,11 +100,12 @@ type ShowField = 'showStakingForm' | 'showUnstakingForm' | 'showRedeemForm';
     History,
     MyStakeSettings,
     StakingManagement,
+    Scroll,
   },
 })
 export default class MyStake extends Vue {
   readonly dotsVerticalRef = 'dotsVertical';
-  activeTabName: MyStakingTab = 'history';
+  activeTabName: MyStakingTab = 'about';
   showStakingForm = false;
   showUnstakingForm = false;
   showRedeemForm = false;
@@ -278,7 +289,7 @@ export default class MyStake extends Vue {
         font-size: 12px;
         font-weight: 600;
         text-align: left;
-        color: #ffffffa6;
+        color: $grayish-white;
         margin-bottom: 5px;
       }
 
@@ -290,7 +301,7 @@ export default class MyStake extends Vue {
 
       .value {
         font-size: 14px;
-        color: #ffffffa6;
+        color: $grayish-white;
       }
 
       .one {

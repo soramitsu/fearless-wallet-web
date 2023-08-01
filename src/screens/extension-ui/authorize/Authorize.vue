@@ -88,9 +88,9 @@ export default class Authorize extends Vue {
   mounted() {
     this.accounts.forEach(({ name, address, isMobile }) =>
       Vue.set(this.state, name, {
-        name: name,
-        address: address,
-        isMobile: isMobile,
+        name,
+        address,
+        isMobile,
         active: true,
       })
     );
@@ -151,11 +151,11 @@ export default class Authorize extends Vue {
   }
 
   .authorize__content--name {
-    color: #bb77ff;
+    color: $pink-lavender-color;
   }
 
   .authorize__content--link {
-    color: #bb77ff;
+    color: $pink-lavender-color;
     cursor: pointer;
   }
 

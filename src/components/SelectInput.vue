@@ -1,5 +1,5 @@
 <template>
-  <Corners size="big" :isSelected="inputIsFocused">
+  <Corners size="big" :isSelected="inputIsFocused && !readonly">
     <div :class="selectClasses">
       <div class="column left-column">
         <div class="header">{{ header }}</div>
@@ -7,6 +7,7 @@
         <input
           v-model="amountInternal"
           placeholder="0.00"
+          :readonly="readonly"
           @focus="setFocusValue(true)"
           @blur="setFocusValue(false)"
           @keypress="IsNumber"
@@ -16,8 +17,8 @@
       </div>
 
       <div class="column right-column">
-        <Corners class="corners-button" @click.native="$emit('toggleSelectAssetPopupVisibility')">
-          <button class="select-button">
+        <Corners class="corners-button" @click.native="click">
+          <button :class="selectButtonClasses">
             <template v-if="asset !== ''">
               <ExternalLogo class="asset-icon" :name="assetIcon" :width="32" />
 
@@ -26,7 +27,7 @@
 
             <div v-else class="select-label">Select</div>
 
-            <Rotate :isActive="syncedIsRotate" class="rotate-asset">
+            <Rotate v-if="showRotateIcon" :isActive="syncedIsRotate" class="rotate-asset">
               <SIcon name="chevron-bottom-16" />
             </Rotate>
           </button>
@@ -35,7 +36,7 @@
         <div class="balance">
           {{ $t('assets.balance') }}
 
-          <div class="balance-value" @click="setMax">&nbsp;{{ $n(transferableAmount, 'decimal') }}</div>
+          <div :class="balanceValueClasses" @click="setMax">&nbsp;{{ $n(transferableAmount, 'decimal') }}</div>
         </div>
       </div>
     </div>
@@ -58,6 +59,8 @@ export default class SelectInput extends Vue {
   @Prop({ default: '' }) assetId!: string;
   @Prop({ default: '' }) value!: string;
   @Prop({ default: 0 }) transferableAmount!: number;
+  @Prop({ default: true }) showRotateIcon!: boolean;
+  @Prop({ default: false }) readonly!: boolean;
   @PropSync('amount', { type: String }) syncedAmount!: string;
   @PropSync('isRotate', { type: Boolean }) syncedIsRotate!: boolean;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
@@ -88,11 +91,30 @@ export default class SelectInput extends Vue {
     return this.$n(+this.value, 'price');
   }
 
+  get balanceValueClasses() {
+    return [
+      'balance-value',
+      {
+        'balance-value-readonly': this.readonly,
+      },
+    ];
+  }
+
+  get selectButtonClasses() {
+    return [
+      'select-button',
+      {
+        'select-button-rotate': this.showRotateIcon && !this.readonly,
+        'select-button-readonly': this.readonly,
+      },
+    ];
+  }
+
   get selectClasses() {
     return [
       'select',
       {
-        'select-focused': this.inputIsFocused,
+        'select-focused': this.inputIsFocused && !this.readonly,
       },
     ];
   }
@@ -106,7 +128,15 @@ export default class SelectInput extends Vue {
   }
 
   setMax() {
+    if (this.readonly) return;
+
     this.$emit('setMax');
+  }
+
+  click() {
+    if (!this.showRotateIcon) return;
+
+    this.$emit('togglePopupVisibility');
   }
 }
 </script>
@@ -185,13 +215,17 @@ export default class SelectInput extends Vue {
       width: fit-content;
     }
 
+    .select-button-rotate {
+      min-width: 122px;
+    }
+
     .select-button {
       display: flex;
       justify-content: center;
       align-items: center;
       clip-path: $medium-clip-path-left-top-and-right-bottom;
       height: 42px;
-      min-width: 122px;
+      min-width: 100px;
       background-color: $secondary-background-color;
       color: white;
       border: $default-border;
@@ -216,6 +250,10 @@ export default class SelectInput extends Vue {
       }
     }
 
+    .select-button-readonly {
+      cursor: default;
+    }
+
     .balance {
       display: flex;
       font-size: 12px;
@@ -228,6 +266,10 @@ export default class SelectInput extends Vue {
       .balance-value {
         cursor: pointer;
         color: $pink-lavender-color;
+      }
+
+      .balance-value-readonly {
+        cursor: default;
       }
     }
   }

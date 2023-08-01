@@ -2,22 +2,38 @@
   <div class="hint">
     <Icon :icon="iconName" :className="getClasses" />
 
-    <span class="info-text" :class="getSize">{{ $t(text) }}</span>
+    <span class="info-text" :class="getSize">{{ tText }}</span>
   </div>
 </template>
 
 <script lang="ts">
 import { Vue, Prop, Component } from 'vue-property-decorator';
+import type { ComponentText } from '@/interfaces';
 
 type IconNameType = 'notification' | 'warning';
 
 type Size = 'big' | 'medium';
 @Component
 export default class Hint extends Vue {
-  @Prop(String) iconName!: IconNameType;
-  @Prop(String) text!: string;
-  @Prop({ default: 'medium' }) size!: Size;
   baseClass = 'notifications-icon';
+
+  @Prop(String) iconName!: IconNameType;
+  @Prop({ default: '' }) text!: ComponentText;
+  @Prop({ default: 'medium' }) size!: Size;
+
+  get tText() {
+    if (typeof this.text === 'string') return this.$t(this.text);
+
+    const { text, localeProps } = this.text;
+
+    if (localeProps) {
+      const { tc } = localeProps;
+
+      if (tc) return this.$tc(text, tc, localeProps);
+    }
+
+    return this.$t(text, localeProps);
+  }
 
   get getClasses() {
     if (this.iconName === 'warning') return [`${this.baseClass} warning--orange`];

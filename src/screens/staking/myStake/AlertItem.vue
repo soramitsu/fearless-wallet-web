@@ -63,7 +63,7 @@ export default class AlertItem extends Vue {
 
     .descriptions {
       font-size: 14px;
-      color: #ffffffa6;
+      color: $grayish-white;
       margin: 7px 0;
       width: 425px;
     }

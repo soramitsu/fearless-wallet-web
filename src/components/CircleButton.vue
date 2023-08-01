@@ -130,8 +130,8 @@ export default class CircleButton extends Vue {
   height: 48px;
 
   .image {
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
   }
 }
 

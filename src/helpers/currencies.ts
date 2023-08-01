@@ -1,3 +1,4 @@
+import { FPNumber } from '@sora-substrate/util';
 import type { NetworkName, AssetsPrice, ChangeWalletBalance } from '@/interfaces';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
@@ -153,6 +154,33 @@ const getXORCurrency = (balances: TokenBalance[]) => {
   return balances.find(({ symbol }) => symbol === SORA_UTILITY_ASSET && isSora(SORA_NETWORK_NAME))!;
 };
 
+function calcTransferableSendMinusFee(currency: TokenBalance | undefined, network: NetworkName, fee: string) {
+  if (currency === undefined) return '0';
+
+  const currencyBalance = currency.balances.find(({ name }) => name.toLowerCase() === network.toLowerCase())!;
+  const transferable = currencyBalance.transferable ? +currencyBalance.transferable : 0;
+
+  // Для Utility ассета вычитаем комиссию, тк комиссия всегда списывается в Utility токене
+  if (currencyBalance?.isUtility) {
+    const result = new FPNumber(transferable).sub(new FPNumber(fee));
+
+    return FPNumber.lt(result, FPNumber.ZERO) ? '0' : result.toString();
+  }
+
+  return transferable.toString();
+}
+
+function isValidAmountAsset(currency: TokenBalance | undefined, network: NetworkName, fee: string, amount: string) {
+  const maxSendFP = new FPNumber(calcTransferableSendMinusFee(currency, network, fee));
+
+  // asset !== Utility: если количество токенов равно нулю, то транзакция невалидна
+  // asset === Utility: если количество токенов за вычетом комиссии равно нулю, то транзакция невалидна
+  if (FPNumber.isEqualTo(maxSendFP, FPNumber.ZERO)) return false;
+
+  // если amount меньше или равен максимальному количеству токенов, то своп валиден
+  return FPNumber.lte(new FPNumber(amount), maxSendFP);
+}
+
 export {
   getCurrencyOptions,
   getProviderUrl,
@@ -162,4 +190,6 @@ export {
   getChangeWalletBalance,
   getSummaryTransferableWalletBalance,
   getSummaryTransferableBalance,
+  calcTransferableSendMinusFee,
+  isValidAmountAsset,
 };

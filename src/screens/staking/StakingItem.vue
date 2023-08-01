@@ -112,7 +112,7 @@ export default class StakingItem extends Vue {
       font-size: 12px;
       font-weight: 400;
       text-align: right;
-      color: #ffffffbf;
+      color: $default-white;
     }
 
     .apy {

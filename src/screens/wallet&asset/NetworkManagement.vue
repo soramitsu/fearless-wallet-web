@@ -12,7 +12,7 @@
         />
       </STab>
     </STabs>
-    <div class="container">
+    <div class="container" :class="networkListClasses">
       <Scroll>
         <ul class="network__list">
           <NetworkItem
@@ -43,6 +43,7 @@ import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { SetFavoriteNetwork, Wallet } from '@/store/accounts/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { updateCurrentAccountNetwork } from '@/extension/messaging';
+import BaseApi from '@/util/BaseApi';
 type Tab = {
   label: string;
   name: string;
@@ -92,7 +93,9 @@ export default class NetworkManagement extends Vue {
   get isGroupSelected() {
     return this.selectedNetwork === this.activeTab;
   }
-
+  get networkListClasses() {
+    return BaseApi.useIsPopup() ? '' : 'container--fullscreen';
+  }
   get networkGroup() {
     return { name: this.$t(`header.networkManagement.${this.activeTab}`), icon: 'all-networks' };
   }
@@ -199,6 +202,9 @@ export default class NetworkManagement extends Vue {
 .container {
   height: 350px;
   overflow-y: hidden;
+}
+.container--fullscreen {
+  height: calc(100vh - 270px);
 }
 
 .network__list {

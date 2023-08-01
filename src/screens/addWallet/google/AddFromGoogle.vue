@@ -106,7 +106,9 @@ export default class AddFromGoogle extends Vue {
     this.token = this.getToken;
     const { files } = await getGoogleFiles(this.token);
 
-    if (files.length === 0) {
+    const filterFiles = files.filter((el) => el.description || (el && el.description.match('\\w+/\\w+')));
+
+    if (filterFiles.length === 0) {
       this.$router.push({
         name: Components.CreateGoogle,
         params: {
@@ -119,26 +121,24 @@ export default class AddFromGoogle extends Vue {
       return;
     }
 
-    files
-      .filter((el) => el.description || (el && el.description.match('\\w+/\\w+')))
-      .forEach(({ id, description, name }) => {
-        const [prepName] = name.split('.');
+    filterFiles.forEach(({ id, description, name }) => {
+      const [prepName] = name.split('.');
 
-        const [address, ethID] = description.split('/');
-        if (ethID === undefined) return;
+      const [address, ethID] = description.split('/');
+      if (ethID === undefined) return;
 
-        this.files.push({
-          id,
-          name: prepName,
-          address,
-          isComplete: false,
-          isLoading: false,
-          isError: false,
-          ethWalletID: ethID,
-          password: '',
-          active: false,
-        });
+      this.files.push({
+        id,
+        name: prepName,
+        address,
+        isComplete: false,
+        isLoading: false,
+        isError: false,
+        ethWalletID: ethID,
+        password: '',
+        active: false,
       });
+    });
 
     this.isLoading = false;
   }

@@ -106,7 +106,9 @@ export default class AddFromGoogle extends Vue {
     this.token = this.getToken;
     const { files } = await getGoogleFiles(this.token);
 
-    const filterFiles = files.filter((el) => el.description || (el && el.description.match('\\w+/\\w+')));
+    const regex = new RegExp('\\w+/\\w+');
+
+    const filterFiles = files.filter((el) => el && regex.test(el.description));
 
     if (filterFiles.length === 0) {
       this.$router.push({

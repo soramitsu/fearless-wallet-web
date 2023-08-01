@@ -26,8 +26,8 @@
               v-for="({ name, icon }, index) in sortedNetoworks"
               :key="index"
               :text="name"
-              :value="getBalanceInNetwork(name)"
-              :price="price"
+              :value="getBalanceInNetworkString(name)"
+              :price="getFiatInNetworkString(name)"
               :icon="icon"
               :isIconPrepend="true"
             />
@@ -160,11 +160,14 @@ export default class Networks extends Vue {
     ];
   }
 
+  get priceString() {
+    return `${this.fiatSymbol} ${this.$n(this.price, 'price')}`;
+  }
+
   get price() {
     const price = this.getTokenPrice(this.currency.priceId ?? '').price;
-    const prepPrice = price ? +price : 0;
 
-    return `${this.fiatSymbol} ${this.$n(prepPrice, 'price')}`;
+    return price ? +price : 0;
   }
 
   get isMainNetwork() {
@@ -186,13 +189,27 @@ export default class Networks extends Vue {
     this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
   }
 
+  getBalanceInNetworkString(network: string) {
+    return `${this.$n(this.getBalanceInNetwork(network), 'decimal')} ${this.currency.symbol.toUpperCase()}`;
+  }
+
   getBalanceInNetwork(network: string) {
     const balance = this.currency.balances.find((el) => el.name === network)?.transferable;
     const prepBalance = balance ? Number(balance) : 0;
 
-    return `${this.$n(prepBalance, 'decimal')} ${this.currency.symbol.toUpperCase()}`;
+    return prepBalance;
   }
 
+  getFiatBalanceInNetwork(network: string) {
+    const balance = this.currency.balances.find((el) => el.name === network)?.transferable;
+    const prepBalance = balance ? Number(balance) : 0;
+
+    return prepBalance * +this.price ?? 0;
+  }
+
+  getFiatInNetworkString(network: string) {
+    return `${this.fiatSymbol} ${this.$n(this.getFiatBalanceInNetwork(network), 'price')}`;
+  }
   filterValueUpdate(name: string) {
     this.filterValue = name;
   }

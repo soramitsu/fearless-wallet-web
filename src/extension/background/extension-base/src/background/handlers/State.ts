@@ -620,8 +620,6 @@ export default class State {
 
     addressIndex !== -1 ? network.favorite.splice(addressIndex, 1) : network.favorite.push(currentAccount.address);
 
-    this.setActiveNetworks(FAVORITE_NETWORKS);
-
     return true;
   }
 

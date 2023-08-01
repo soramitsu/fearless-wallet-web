@@ -20,7 +20,7 @@ export enum ActionTypes {
 export type Actions = {
   [ActionTypes.FETCH_FIATS](store: AugmentedActionContext): Promise<void>;
   [ActionTypes.FETCH_HISTORY](store: AugmentedActionContext, props: FetchHistory): Promise<void>;
-  [ActionTypes.TOGGLE_FAVORITE_NETWORK](store: AugmentedActionContext, props: ToggleFavorite): boolean;
+  [ActionTypes.TOGGLE_FAVORITE_NETWORK](store: AugmentedActionContext, props: ToggleFavorite): Promise<boolean>;
 };
 
 const actions: ActionTree<State, State> & Actions = {
@@ -59,23 +59,22 @@ const actions: ActionTree<State, State> & Actions = {
         serviceType: type,
       });
   },
-  [ActionTypes.TOGGLE_FAVORITE_NETWORK]({ state, commit }, { address, networkName }): boolean {
+
+  async [ActionTypes.TOGGLE_FAVORITE_NETWORK]({ state, commit }, { address, networkName }): Promise<boolean> {
     const index = state.networks.findIndex(({ name }) => name === networkName);
     const network = state.networks[index];
     const favoriteIndex = network.favorite.findIndex((el) => el === address);
+    const isFavorite = favoriteIndex !== -1;
 
-    if (favoriteIndex !== -1) {
+    if (isFavorite) {
       commit(MutationTypes.REMOVE_FAVORITE_NETWORK, { index: favoriteIndex, networksName: networkName });
-      toggleFavoriteNetwork(networkName);
-
-      return false;
+    } else {
+      commit(MutationTypes.SET_FAVORITE_NETWORK, { address, networksName: networkName });
     }
-
-    commit(MutationTypes.SET_FAVORITE_NETWORK, { address, networksName: networkName });
 
     toggleFavoriteNetwork(networkName);
 
-    return true;
+    return isFavorite;
   },
 };
 

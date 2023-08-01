@@ -11,6 +11,7 @@ import type {
   EthereumHistoryData,
 } from '@/interfaces';
 import BaseApi from '@/util/BaseApi';
+import { getEthereumApiKey } from '@/helpers/history';
 
 async function fetchSubqueryHistory(
   url: string,
@@ -141,6 +142,7 @@ async function fetchEthereumTokenHistory(
 ): Promise<HistoryElement[]> {
   const abort = new AbortController();
   const signal = abort.signal;
+  const apikey = getEthereumApiKey(url);
   const res = await axios.get<EthereumHistoryResponse<EthereumTokenHistoryData>>(url, {
     params: {
       module: 'account',
@@ -149,7 +151,7 @@ async function fetchEthereumTokenHistory(
       page: 1,
       offset: 50,
       sort: 'asc',
-      apikey: process.env.ETHERSCAN_API_KEY,
+      apikey,
     },
     signal,
   });
@@ -181,6 +183,7 @@ async function fetchEthereumTokenHistory(
 async function fetchEthereumHistory(url: string, address: string): Promise<HistoryElement[]> {
   const abort = new AbortController();
   const signal = abort.signal;
+  const apikey = getEthereumApiKey(url);
   const res = await axios.get<EthereumHistoryResponse<EthereumHistoryData>>(url, {
     params: {
       module: 'account',
@@ -189,7 +192,7 @@ async function fetchEthereumHistory(url: string, address: string): Promise<Histo
       page: 1,
       offset: 50,
       sort: 'asc',
-      apikey: process.env.ETHERSCAN_API_KEY,
+      apikey,
     },
     signal,
   });

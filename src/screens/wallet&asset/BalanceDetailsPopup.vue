@@ -1,8 +1,8 @@
 <template>
-  <Popup headerText="assets.balanceDetails" :showBorder="true" :handlerClose="closePopup" sizeWidth="big">
+  <Popup headerText="assets.lockedDetails" :showBorder="true" :handlerClose="closePopup" sizeWidth="big">
     <div class="content">
       <div v-for="{ name, value, fiat } in detailsBalance" :key="name" class="balance-row">
-        <div class="label">{{ name }}</div>
+        <div class="label">{{ $t(`assets.${name}`) }}</div>
 
         <div class="count">
           <div class="value">{{ $n(value, 'decimalPrecise') }} {{ assetNameUpper }}</div>
@@ -27,7 +27,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { AssetPrice } from '@/interfaces';
 
 @Component
-export default class BalanceDetailsPopup extends Vue {
+export default class LockedDetailsPopup extends Vue {
   @Prop(String) network!: string;
   @Prop(Object) currency!: TokenBalance;
   @Prop(Object) assetPrice!: AssetPrice;
@@ -50,11 +50,11 @@ export default class BalanceDetailsPopup extends Vue {
     )!;
 
     return [
-      { name: 'reserved', value: reserved, fiat: +reserved! * +this.assetPrice.price },
-      { name: 'locked', value: locked, fiat: +locked! * +this.assetPrice.price },
-      { name: 'frozen', value: frozen, fiat: +frozen! * +this.assetPrice.price },
-      { name: 'transferable', value: transferable, fiat: +transferable! * +this.assetPrice.price },
-      { name: 'total', value: total, fiat: +total! * +this.assetPrice.price },
+      { name: 'reserved', value: +reserved!, fiat: +reserved! * +this.assetPrice.price },
+      { name: 'locked', value: +locked!, fiat: +locked! * +this.assetPrice.price },
+      { name: 'frozen', value: +frozen!, fiat: +frozen! * +this.assetPrice.price },
+      { name: 'transferable', value: +transferable!, fiat: +transferable! * +this.assetPrice.price },
+      { name: 'total', value: +total!, fiat: +total! * +this.assetPrice.price },
     ];
   }
 
@@ -66,8 +66,8 @@ export default class BalanceDetailsPopup extends Vue {
     return this.getTokenPrice(this.currency.priceId ?? '').price ?? 0;
   }
 
-  getFiatValueVisible(value: string) {
-    return value !== '0';
+  getFiatValueVisible(value: number) {
+    return value.toString() !== '0';
   }
 }
 </script>

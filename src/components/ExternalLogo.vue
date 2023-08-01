@@ -1,5 +1,5 @@
 <template>
-  <img :src="iconName" :style="style" :alt="name" :width="width" :height="width" />
+  <img :src="iconName" :style="style" :alt="altName" :width="width" :height="width" loading="lazy" decoding="async" />
 </template>
 
 <script lang="ts">
@@ -9,6 +9,7 @@ import { NetworksController } from '@/controllers';
 @Component
 export default class ExternalLogo extends Vue {
   @Prop(String) name!: string;
+  @Prop(String) alt?: string;
   @Prop({ default: 32 }) width!: number;
 
   get style() {
@@ -20,6 +21,10 @@ export default class ExternalLogo extends Vue {
     }
 
     return styles;
+  }
+
+  get altName() {
+    return this.alt ?? this.name;
   }
 
   get iconName() {

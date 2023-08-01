@@ -20,7 +20,7 @@
         width="18"
         height="18"
         className="network__icon-state"
-        @click.stop.self="onToggleState"
+        @click.stop="onToggleState"
       />
     </div>
   </li>

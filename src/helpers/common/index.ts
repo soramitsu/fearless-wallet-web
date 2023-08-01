@@ -1,8 +1,12 @@
 import { addNumbers } from '../numbers';
-import { ALL_NETWORKS } from '@/consts/networks';
+import { ALL_NETWORKS, NETWORK_GROUP } from '@/consts/networks';
 import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { AssetsPrice, ChangeWalletBalance, NetworkName } from '@/interfaces';
+
+export function isNetworkGroup(network: string) {
+  return NETWORK_GROUP.some((group) => group.toLowerCase() === network.toLowerCase());
+}
 
 export function getSummaryTransferableWalletBalance(
   tokens: TokenBalance[],
@@ -31,10 +35,18 @@ function getTransferableBalanceInNetwork(token: TokenBalance, network: string) {
 }
 
 export function getSummaryTransferableBalance(token: TokenBalance, network = ALL_NETWORKS) {
-  if (network !== ALL_NETWORKS) return getTransferableBalanceInNetwork(token, network);
+  if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);
 
   return token.balances.reduce((result, { state, transferable }) => {
     if (state === APIItemState.READY && transferable) result += +transferable;
+
+    return result;
+  }, 0);
+}
+
+export function getSummaryLockedBalance(token: TokenBalance) {
+  return token.balances.reduce((result, { state, locked }) => {
+    if (state === APIItemState.READY && locked) result += +locked;
 
     return result;
   }, 0);

@@ -12,7 +12,9 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'RAMP_TEST_API_KEY', variable: 'RAMP_TEST_API_KEY'],
     [$class: 'StringBinding', credentialsId: 'RAMP_PROD_API_KEY', variable: 'RAMP_PROD_API_KEY'],
     [$class: 'StringBinding', credentialsId: 'MOONPAY_TEST_API_KEY', variable: 'MOONPAY_TEST_API_KEY'],
-    [$class: 'StringBinding', credentialsId: 'MOONPAY_PROD_API_KEY', variable: 'MOONPAY_PROD_API_KEY']
+    [$class: 'StringBinding', credentialsId: 'MOONPAY_PROD_API_KEY', variable: 'MOONPAY_PROD_API_KEY'],
+    [$class: 'StringBinding', credentialsId: 'WEB_ETHERSCAN_API_KEY', variable: 'ETHERSCAN_API_KEY'],
+    [$class: 'StringBinding', credentialsId: 'WEB_BSCSCAN_API_KEY', variable: 'BSCSCAN_API_KEY']
 ]
 
 def pipeline = new org.js.AppArtifactsPipeline(
@@ -21,7 +23,7 @@ def pipeline = new org.js.AppArtifactsPipeline(
     buildCmds:                  ['yarn build:extension:all'],
     nexusCredential:            'bot-fearless-rw',
     nexusProjectPath:           'fearless/extension',
-    nexusNotif:                 true,
+    nexusNotification:           true,
     nexusChatID:                "-1001934877683",
     sonarProjectKey:            'fearless:fearless-wallet-web',
     sonarProjectName:           'fearless-wallet-web',
@@ -33,9 +35,12 @@ def pipeline = new org.js.AppArtifactsPipeline(
     nexusFiles:                 [ '.zip'],
     chromeExtFile:              'fearless-wallet-extension-chrome.zip',
     mozillaExtFile:             'fearless-wallet-extension-firefox.zip',
-    uploadToNexusFor:           ['master','develop'],
+    uploadToNexusFor:           ['master','develop','stage'],
     uploadToGoogleFor:          ['master'],
     uploadToFirefoxFor:         ['master'],
-    buildWithCred:              buildWithCred
+    buildWithCred:              buildWithCred,
+    dojoProductType:            'fearless',
+    sonarSrcPath:               'src',
+    sonarTestsPath:             'tests'
 )
 pipeline.runPipeline()

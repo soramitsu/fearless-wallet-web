@@ -1,82 +1,77 @@
 <template>
-  <div>
-    <header class="header">
-      <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
-        <div class="logo-container">
-          <CircleButton
-            v-if="showBackIcon"
-            backgroundColor="light-black"
-            iconName="chevron-left"
-            @click.stop="backToWallet"
-          />
-
-          <Logo v-else size="small" />
-        </div>
-
-        <div class="wallet-name">
-          <div class="name">{{ name }}</div>
-
-          <Rotate :isActive="syncedShowSelectWalletPopup">
-            <SIcon name="chevron-bottom-16" />
-          </Rotate>
-        </div>
-
-        <Tooltip text="header.walletManagement" target=".header-part-left" placement="right" />
-      </div>
-
-      <div class="header-part header-part-right">
+  <header class="header">
+    <div class="header-part header-part-left" :ref="walletNameRef" @click="toggleSelectWalletPopupVisible">
+      <div class="logo-container">
         <CircleButton
-          v-if="isPopup"
-          iconName="expand"
+          v-if="showBackIcon"
           backgroundColor="light-black"
-          tooltipText="common.fullScreen"
-          target=".expand"
-          placement="bottom"
-          @click="openFullScreen"
-        />
-        <div
-          class="network-management background-ellipse"
-          :ref="selectNetworkButtonRef"
-          @click="toggleSelectNetworkPopupVisible"
-        >
-          <Icon v-if="isGroupIcon" :icon="selectedNetworkIcon" className="icon--network" width="16" height="16" />
-          <ExternalLogo v-else :name="selectedNetworkIcon" width="16" height="16" class="icon--network" />
-
-          <span>{{ selectedNetwork }}</span>
-          <Icon icon="down" className="icon--down" width="10" height="9" />
-        </div>
-
-        <div v-if="isPopup" class="background-ellipse" @click="toggleConnectionPopup">
-          <Loading v-if="!tabStatus" />
-
-          <template v-else>
-            <div class="connect" :class="statusConnectedClasses"></div>
-          </template>
-        </div>
-
-        <ConnectionPopup v-if="showConnectionPopup" :tabStatus="tabStatus" :handlerClose="toggleConnectionPopup" />
-
-        <Tooltip text="header.connectionStatus" target=".background-ellipse" placement="top" />
-
-        <CircleButton
-          :ref="settingsNameRef"
-          iconName="settings"
-          size="big"
-          backgroundColor="none"
-          placement="left"
-          target=".settings"
-          tooltipText="header.settingsAndManagement"
-          @click="toggleSettingsVisible"
+          iconName="chevron-left"
+          @click.stop="backToWallet"
         />
 
-        <NetworkManage
-          v-if="showSelectNetworkPopup"
-          :type="selectedNetwork"
-          :handlerClose="toggleSelectNetworkPopupVisible"
-        />
+        <Logo v-else size="small" />
       </div>
-    </header>
-  </div>
+
+      <div class="wallet-name">
+        <div class="name">{{ name }}</div>
+
+        <Rotate :isActive="syncedShowSelectWalletPopup">
+          <SIcon name="chevron-bottom-16" />
+        </Rotate>
+      </div>
+
+      <Tooltip text="header.walletManagement" target=".header-part-left" placement="right" />
+    </div>
+
+    <div class="header-part header-part-right">
+      <CircleButton
+        v-if="isPopup"
+        iconName="expand"
+        backgroundColor="light-black"
+        tooltipText="common.fullScreen"
+        target=".expand"
+        placement="bottom"
+        @click="openFullScreen"
+      />
+
+      <NetworkManagementButton
+        classes="background-ellipse"
+        :isGroupIcon="isGroupIcon"
+        :icon="selectedNetworkIcon"
+        :selectedNetwork="networkManagementButtonText"
+        @onToggle="toggleSelectNetworkPopupVisible"
+      />
+
+      <div v-if="isPopup" class="background-ellipse" @click="toggleConnectionPopup">
+        <Loading v-if="!tabStatus" />
+
+        <template v-else>
+          <div class="connect" :class="statusConnectedClasses"></div>
+        </template>
+      </div>
+
+      <ConnectionPopup v-if="showConnectionPopup" :tabStatus="tabStatus" :handlerClose="toggleConnectionPopup" />
+
+      <Tooltip text="header.connectionStatus" target=".background-ellipse" placement="top" />
+
+      <CircleButton
+        :ref="settingsNameRef"
+        iconName="settings"
+        size="big"
+        backgroundColor="none"
+        placement="left"
+        target=".settings"
+        tooltipText="header.settingsAndManagement"
+        @click="toggleSettingsVisible"
+      />
+
+      <NetworkManagement
+        v-if="showSelectNetworkPopup"
+        :type="selectedNetwork"
+        :handlerClose="toggleSelectNetworkPopupVisible"
+      />
+    </div>
+  </header>
 </template>
 
 <script lang="ts">
@@ -85,7 +80,9 @@ import { Getter, Action, Mutation } from 'vuex-class';
 import { HexString } from '@polkadot/util/types';
 import { ActiveTabAuthorizeStatus } from '@extension-base/background/types/types';
 import type { SelectedWallet } from '@/store';
-import NetworkManage from '@/screens/wallet&asset/NetworkForm.vue';
+import type { NetworkJson } from '@/extension/background/extension-base/src/types';
+import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
+import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
 
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
@@ -98,10 +95,10 @@ import { AsyncFn, Fn } from '@/interfaces';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
+import { isNetworkGroup } from '@/helpers/common';
 
 @Component({
-  components: { ConnectionPopup, NetworkManage },
+  components: { ConnectionPopup, NetworkManagement, NetworkManagementButton },
 })
 export default class Header extends Vue {
   readonly walletNameRef = 'walletName';
@@ -111,6 +108,7 @@ export default class Header extends Vue {
   showSelectNetworkPopup = false;
   readonly selectNetworkButtonRef = 'selectNetworkButton';
   networkGoups = ['all', 'popular', 'favorites'];
+  readonly allNetworksIcon = 'all-networks';
   @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -125,13 +123,25 @@ export default class Header extends Vue {
   }
 
   get isGroupIcon() {
-    return this.networkGoups.includes(this.selectedNetwork.toLowerCase());
+    return isNetworkGroup(this.selectedNetwork);
+  }
+
+  get networkManagementButtonText() {
+    if (this.isGroupIcon) {
+      return this.$t(`header.networkManagement.${this.selectedNetwork}`);
+    }
+
+    return this.selectedNetwork;
   }
 
   get selectedNetworkIcon() {
-    if (this.isGroupIcon) return 'all-networks';
+    if (this.isGroupIcon) return this.allNetworksIcon;
 
-    return this.getNetwork(this.selectedNetwork).icon;
+    const network = this.getNetwork(this.selectedNetwork);
+
+    if (network) return network.icon;
+
+    return this.allNetworksIcon;
   }
 
   get name() {
@@ -226,6 +236,7 @@ export default class Header extends Vue {
   }
   .header-part-right {
     gap: 4px;
+    justify-content: flex-end;
   }
   .header-part-left {
     &:hover {

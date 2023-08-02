@@ -43,6 +43,8 @@
         <UnstakingForm v-else-if="isUnstaking" :stakingCurrency="stakingCurrency" :fee="fee" />
 
         <RedeemForm v-else-if="isRedeeam" :stakingCurrency="stakingCurrency" :fee="fee" :rewards="rewards" />
+
+        <UnbondForm v-else-if="isUnbond" :stakingCurrency="stakingCurrency" :fee="fee" @updateAmount="updateAmount" />
       </Scroll>
 
       <Button
@@ -78,6 +80,7 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import StakingForm from '@/screens/staking/myStake/stakingForms/StakingForm.vue';
 import RedeemForm from '@/screens/staking/myStake/stakingForms/RedeemForm.vue';
 import UnstakingForm from '@/screens/staking/myStake/stakingForms/UnstakingForm.vue';
+import UnbondForm from '@/screens/staking/myStake/stakingForms/UnbondForm.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import { NetworkName } from '@/interfaces';
@@ -86,6 +89,7 @@ import { checkStaking } from '@/extension/messaging';
 
 @Component({
   components: {
+    UnbondForm,
     RedeemForm,
     StakingForm,
     UnstakingForm,
@@ -103,7 +107,7 @@ export default class StakingManagement extends Vue {
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
   @Prop({ type: String }) network!: NetworkName;
-  @Prop({ type: String }) type!: 'staking' | 'unstaking' | 'redeem';
+  @Prop({ type: String }) type!: 'staking' | 'unstaking' | 'redeem' | 'unbond';
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
@@ -157,6 +161,10 @@ export default class StakingManagement extends Vue {
 
   get isRedeeam() {
     return this.type === 'redeem';
+  }
+
+  get isUnbond() {
+    return this.type === 'unbond';
   }
 
   get confirmBtnDisabled() {

@@ -34,9 +34,7 @@
         :iconClasses="['network-fee']"
       />
 
-      <div class="about-rewards">
-        {{ $t('staking.learnAboutRewards') }}
-      </div>
+      <Link text="staking.learnAboutRewards" class="about-rewards" @click="openAboutRewards" />
 
       <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
     </template>
@@ -161,6 +159,10 @@ export default class StakingForm extends Vue {
   updateSelectedValidators(value: boolean, address: string) {
     this.state[address].isSelect = value;
   }
+
+  openAboutRewards() {
+    console.info('openAboutRewards');
+  }
 }
 </script>
 
@@ -171,11 +173,7 @@ export default class StakingForm extends Vue {
   }
 
   .about-rewards {
-    color: $pink-lavender-color;
-    text-decoration: underline;
     margin: 20px 16px 16px;
-    text-align: left;
-    cursor: pointer;
   }
 }
 </style>

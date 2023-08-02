@@ -30,7 +30,7 @@ export function getSummaryTransferableWalletBalance(
   }, 0);
 }
 
-function getTransferableBalanceInNetwork(token: TokenBalance, network: string) {
+export function getTransferableBalanceInNetwork(token: TokenBalance, network: string) {
   return token.balances.find(({ name }) => name.toLowerCase() === network.toLowerCase())?.transferable ?? '0';
 }
 

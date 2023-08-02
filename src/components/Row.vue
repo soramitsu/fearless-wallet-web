@@ -1,5 +1,5 @@
 <template>
-  <div class="row" :class="rowClasses">
+  <div class="row" :class="rowClasses" v-on="$listeners">
     <div class="label">
       <slot></slot>
     </div>

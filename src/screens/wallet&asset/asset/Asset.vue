@@ -26,7 +26,7 @@
         </div>
       </div>
     </ContentForm>
-    <div v-if="!isSelectedNetworkGroup" class="activity">
+    <div v-if="!isSelectedNetworkHistory" class="activity">
       <BorderButton
         v-for="(button, index) in basicButtons"
         :class="button.class"
@@ -69,12 +69,18 @@
     </div>
 
     <Networks
-      v-if="isSelectedNetworkGroup"
+      v-if="isSelectedNetworkHistory"
       :currency="currentCurrency"
       @openHistoryDetailsForm="openHistoryDetailsForm"
+      @selectNetworkHistory="selectNetworkHistory"
     />
 
-    <History v-else :currency="currentCurrency" @openHistoryDetailsForm="openHistoryDetailsForm" />
+    <History
+      v-else
+      :currency="currentCurrency"
+      :selectedNetwork="selectedNetworkForHistory"
+      @openHistoryDetailsForm="openHistoryDetailsForm"
+    />
 
     <SendForm
       v-if="showSendForm"
@@ -194,9 +200,10 @@ import { NETWORK_GROUP } from '@/consts/networks';
 import { isSora } from '@/helpers';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
-import { getSummaryLockedBalance, getSummaryTransferableBalance, isNetworkGroup } from '@/helpers/common/index';
+import { getSummaryLockedBalance, isNetworkGroup } from '@/helpers/common/index';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
 import { ONE_WEEK } from '@/consts/global';
+import { getSummaryTransferableBalanceFilteredByActiveNetworks } from '@/helpers/currencies';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
 type ControlButtons = {
@@ -258,12 +265,16 @@ export default class Asset extends Vue {
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getAssetTipData) getAssetTipData!: AssetTipDataProps;
+  @Getter(AccountsGettersTypes.getAssetPageNetwork) assetPageNetwork!: string;
+
   @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
   @Mutation(AccountsMutationTypes.SET_ASSET_TIP_STATE) setAssetTipData!: (props: AssetTipDataProps) => void;
+  @Mutation(AccountsMutationTypes.SET_ASSET_PAGE_NETWORK) setAssetPageNetwork!: (props: string) => void;
+
   get isGroupIcon() {
     return isNetworkGroup(this.selectedNetwork);
   }
@@ -282,8 +293,16 @@ export default class Asset extends Vue {
     return this.showCrossChainButton && this.showBuyButton && this.showSwapButton;
   }
 
-  get isSelectedNetworkGroup() {
-    return NETWORK_GROUP.includes(this.selectedNetwork);
+  get selectedNetworkForHistory() {
+    if (!NETWORK_GROUP.includes(this.selectedNetwork)) return this.selectedNetwork;
+
+    return this.assetPageNetwork;
+  }
+
+  get isSelectedNetworkHistory() {
+    if (!NETWORK_GROUP.includes(this.selectedNetwork)) return false;
+
+    return this.assetPageNetwork === '';
   }
 
   get getPrice() {
@@ -307,7 +326,9 @@ export default class Asset extends Vue {
   }
 
   get showCrossChainButton() {
-    const network = this.networks.find(({ name }) => name.toLowerCase() === this.selectedNetwork?.toLowerCase())!;
+    const network = this.networks.find(
+      ({ name }) => name.toLowerCase() === this.selectedNetworkForHistory?.toLowerCase()
+    )!;
 
     const asset = getNativeAssetName(this.selectedAsset);
     if (!network.xcm) return false;
@@ -374,7 +395,7 @@ export default class Asset extends Vue {
   }
 
   get displayAddressByNetwork() {
-    if (this.isSelectedNetworkGroup) return BaseApi.formatAddress(this.selectedWallet, this.mainNetwork);
+    if (this.isSelectedNetworkHistory) return BaseApi.formatAddress(this.selectedWallet, this.mainNetwork);
 
     return BaseApi.formatAddress(this.selectedWallet, this.selectedNetwork);
   }
@@ -429,7 +450,7 @@ export default class Asset extends Vue {
   }
 
   get transferableAssetBalance() {
-    return +getSummaryTransferableBalance(this.currentCurrency, this.selectedNetwork);
+    return +getSummaryTransferableBalanceFilteredByActiveNetworks(this.currentCurrency, this.selectedNetwork);
   }
 
   get transferableFiatBalance() {
@@ -458,6 +479,10 @@ export default class Asset extends Vue {
   closeHistoryDetailsForm() {
     this.showHistoryDetailsForm = false;
     this.historyElement = {};
+  }
+
+  selectNetworkHistory(name: string) {
+    this.setAssetPageNetwork(name);
   }
 
   toggleBalanceDetailsPopup() {

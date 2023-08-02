@@ -2,7 +2,6 @@ interface Validator {
   name: string;
   address: string;
   description: string;
-  isSelect: boolean;
   apy: number;
   isRecommended?: true;
   isSlashed: boolean;
@@ -11,4 +10,8 @@ interface Validator {
   onchainIdentity: boolean;
 }
 
-export { Validator };
+interface SelectionValidator extends Validator {
+  isSelect: boolean;
+}
+
+export { Validator, SelectionValidator };

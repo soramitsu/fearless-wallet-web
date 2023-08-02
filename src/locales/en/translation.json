@@ -429,7 +429,7 @@
     "onchainIdentity": "Having onchain identity",
     "slashed": "Not slashed",
     "validatorsIdentity": "Limit of 2 validators per identity",
-    "yourValidators": "Stake with your validators",
+    "stakeYourValidators": "Stake with your validators",
     "yourValidatorsDisclaimer": "You should trust your nominations to act competently and honest, basing your decision purely on their current profitability could lead to reduced profits or even loss of funds.",
     "suggested": "Select suggested",
     "selectYourself": "Select by yourself",
@@ -449,7 +449,18 @@
     "limit2Validators": "Limit of 2 validators per identity",
     "estimatedRewards": "Estimated rewards (% APY)",
     "selectedValidators": "Selected validators",
-    "about": "All-inone DeFi hub of KusamaContrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of the more obscure Latin words, consectetur, from a Lorem Ipsum passage, and going through the cites of the word in classical literature, discovered the undoubtable source. Lorem Ipsum comes from sections 1.10.32 and 1.10.33 of 'de Finibus Bonorum et Malorum' (The Extremes of Good and Evil) by Cicero, written in 45 BC. This book is a treatise on the theory of ethics, very popular during the Renaissance. The first line of Lorem Ipsum, 'Lorem ipsum dolor sit amet..'', comes from a line in section 1.10.32.. "
+    "yourValidators": "Your validators",
+    "validatorInfo": "Validator info",
+    "tokensAllocated": "Your tokens allocated to the oversubscribed validator. You will not receive rewards in this era.",
+    "about": "All-inone DeFi hub of KusamaContrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of the more obscure Latin words, consectetur, from a Lorem Ipsum passage, and going through the cites of the word in classical literature, discovered the undoubtable source. Lorem Ipsum comes from sections 1.10.32 and 1.10.33 of 'de Finibus Bonorum et Malorum' (The Extremes of Good and Evil) by Cicero, written in 45 BC. This book is a treatise on the theory of ethics, very popular during the Renaissance. The first line of Lorem Ipsum, 'Lorem ipsum dolor sit amet..'', comes from a line in section 1.10.32.. ",
+    "elected": "Elected",
+    "stakeAllocated": "Your stake is allocated to the following validators.",
+    "withoutAllocation": "Others, who are active without your stake allocation.",
+    "totalStake": "Total stake",
+    "nominators": "Nominators",
+    "identity": "Identity",
+    "validatorSlashed": "Validator is slashed for misbehaves (e.g. goes offline, attacks the network, or runs modified software) in the network",
+    "oversubscribedOnly": "Oversubscribed. Only the top staked nominators are paid rewards."
   },
   "common": {
     "privacyPolicy": "Privacy Policy",
@@ -520,6 +531,9 @@
     "warning": "Warning",
     "iAgree": "I agree",
     "filters": "Filters",
+    "edit": "Edit",
+    "status": "Status",
+    "confirmation": "Confirmation",
     "searchByAddress": "Search by address or name"
   }
 }

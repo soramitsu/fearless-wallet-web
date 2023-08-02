@@ -266,7 +266,7 @@ export default class Preview extends Vue {
     justify-content: space-evenly;
     align-items: center;
     height: 100%;
-    padding: 16px;
+    padding: $default-padding;
 
     .icon {
       width: 15px;

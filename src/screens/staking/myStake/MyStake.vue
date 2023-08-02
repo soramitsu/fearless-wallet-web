@@ -40,6 +40,8 @@
         iconName="redeem"
         @click="toggleVisible('showRedeemForm', true)"
       />
+
+      <BorderButton class="activity-button" text="validators" @click="toggleVisible('showYourValidators', true)" />
     </div>
 
     <ContentForm :height="329">
@@ -72,6 +74,12 @@
       :network="network"
       @closeForm="closeStakeForm"
     />
+
+    <YourValidatorsManagement
+      v-if="showYourValidators"
+      :stakingCurrency="stakingCurrency"
+      @closeForm="toggleVisible('showYourValidators', false)"
+    />
   </div>
 </template>
 
@@ -89,9 +97,9 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { getUtilityAsset } from '@/helpers/currencies';
 import { SORA_NETWORK_NAME, SORA_REWARD_ASSET } from '@/consts/sora';
-import Scroll from '@/components/Scroll.vue';
+import YourValidatorsManagement from '@/screens/staking/myStake/validators/YourValidatorsManagement.vue';
 
-type ShowField = 'showStakingForm' | 'showUnstakingForm' | 'showRedeemForm';
+type ShowField = 'showStakingForm' | 'showUnstakingForm' | 'showRedeemForm' | 'showYourValidators';
 
 @Component({
   components: {
@@ -100,7 +108,7 @@ type ShowField = 'showStakingForm' | 'showUnstakingForm' | 'showRedeemForm';
     History,
     MyStakeSettings,
     StakingManagement,
-    Scroll,
+    YourValidatorsManagement,
   },
 })
 export default class MyStake extends Vue {
@@ -109,6 +117,7 @@ export default class MyStake extends Vue {
   showStakingForm = false;
   showUnstakingForm = false;
   showRedeemForm = false;
+  showYourValidators = false;
 
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
@@ -254,6 +263,7 @@ export default class MyStake extends Vue {
     this.showStakingForm = false;
     this.showUnstakingForm = false;
     this.showRedeemForm = false;
+    this.showYourValidators = false;
   }
 
   toggleVisible(field: ShowField, value: boolean) {

@@ -1,6 +1,10 @@
 <template>
   <div class="staking-form">
     <template v-if="step === 1">
+      <Hint class="hint" iconName="notification" :text="text" />
+
+      <Input v-model="payoutAccount" placeholder="staking.payoutAccount" size="big" />
+
       <InfoRow
         text="staking.payout"
         :value="`${payout} ${rewardedAsset}`"
@@ -10,20 +14,17 @@
         :iconClasses="['payout']"
       />
 
-      <Hint class="hint" iconName="notification" :text="text" />
-
-      <Input v-model="payoutAccount" placeholder="staking.payoutAccount" size="big" />
-
       <Tooltip text="staking.payout" target=".payout" placement="right" />
     </template>
 
-    <template v-if="step === 1 || step === 6">
-      <InfoRow
-        text="staking.selectedValidators"
-        :value="`${selectedQuantity} (${$t('common.max')} ${maxValidators})`"
-        borderType="default"
-      />
+    <InfoRow
+      v-if="step === 6"
+      text="staking.selectedValidators"
+      :value="`${selectedQuantity} (${$t('common.max')} ${maxValidators})`"
+      borderType="default"
+    />
 
+    <template v-if="step === 1 || step === 6">
       <InfoRow
         text="assets.networkFee"
         :value="`${fee} ${stakingAsset}`"
@@ -40,37 +41,13 @@
       <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
     </template>
 
-    <OfferValidators v-else-if="step === 2" @openValidatorsForm="openValidatorsForm" />
-
-    <SuggestedValidatorDisclaimer v-else-if="step === 3" />
-
-    <SelectValidator
-      v-else-if="step === 4 || step === 5"
+    <SelectionValidatorsForm
+      v-else
       :step="step"
-      :onchainIdentity="onchainIdentity"
-      :notSlashed="notSlashed"
-      :limitValidatorsIdentity="limitValidatorsIdentity"
-      :notOversubscribed="notOversubscribed"
-      :sortByApy="sortByApy"
       :validators="validators"
       :maxValidators="maxValidators"
+      @openValidatorList="openValidatorList"
       @updateSelectedValidators="updateSelectedValidators"
-      @openFiltersPopup="toggleFiltersPopupVisibility"
-    />
-
-    <FiltersPopup
-      v-if="showFiltersPopup"
-      :handlerClose="toggleFiltersPopupVisibility"
-      :onchainIdentity="onchainIdentity"
-      :notSlashed="notSlashed"
-      :limitValidatorsIdentity="limitValidatorsIdentity"
-      :notOversubscribed="notOversubscribed"
-      :sortByApy="sortByApy"
-      @update:onchainIdentity="updateOnchainIdentity"
-      @update:notSlashed="updateNotSlashed"
-      @update:notOversubscribed="updateNotOversubscribed"
-      @update:limitValidatorsIdentity="updateLimitValidatorsIdentity"
-      @update:sortByApy="updateSortByApy"
     />
   </div>
 </template>
@@ -78,35 +55,27 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
-import { validators } from './mock';
+import { validators } from '../validators/mock';
 import type { GetAssetPrice } from '@/store';
-import type { Validator } from '@/interfaces';
+import type { SelectionValidator } from '@/interfaces';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import SuggestedValidatorDisclaimer from '@/screens/staking/myStake/stakingForms/SuggestedValidatorDisclaimer.vue';
-import OfferValidators from '@/screens/staking/myStake/stakingForms/OfferValidators.vue';
-import SelectValidator from '@/screens/staking/myStake/stakingForms/SelectValidator.vue';
-import FiltersPopup from '@/screens/staking/myStake/stakingForms/FiltersPopup.vue';
+import SelectValidator from '@/screens/staking/myStake/validators/SelectValidator.vue';
+import FiltersPopup from '@/screens/staking/myStake/validators/FiltersPopup.vue';
+import SelectionValidatorsForm from '@/screens/staking/myStake/validators/SelectionValidatorsForm.vue';
 
 @Component({
   components: {
     FiltersPopup,
-    OfferValidators,
     SelectValidator,
-    SuggestedValidatorDisclaimer,
+    SelectionValidatorsForm,
   },
 })
 export default class StakingForm extends Vue {
-  state: Record<string, Validator> = {};
+  state: Record<string, SelectionValidator> = {};
   payoutAccount = '';
   payout = '1';
-  showFiltersPopup = false;
-  onchainIdentity = false;
-  notSlashed = false;
-  notOversubscribed = false;
-  limitValidatorsIdentity = false;
-  sortByApy = true;
   validators = validators;
 
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
@@ -164,7 +133,7 @@ export default class StakingForm extends Vue {
   }
 
   get selectedQuantity() {
-    return this.validators.filter(({ isSelect }) => isSelect).length;
+    return Object.values(this.state).filter(({ isSelect }) => isSelect).length;
   }
 
   mounted() {
@@ -177,43 +146,20 @@ export default class StakingForm extends Vue {
         isSelect,
       })
     );
-
-    if (this.step === 4)
-      this.validators = this.validators.map((validator) => {
-        return { ...validator, isSelect: !!validator.isRecommended };
-      });
   }
 
-  openValidatorsForm(isSuggested: boolean) {
-    this.$emit('confirm', isSuggested ? 3 : 5);
-  }
+  openValidatorList(isSuggested: boolean) {
+    this.validators = this.validators.map((validator) => {
+      const isSelect = isSuggested ? !!validator.isRecommended : false;
 
-  toggleFiltersPopupVisibility() {
-    this.showFiltersPopup = !this.showFiltersPopup;
+      return { ...validator, isSelect };
+    });
+
+    this.$emit('openValidatorList', isSuggested);
   }
 
   updateSelectedValidators(value: boolean, address: string) {
     this.state[address].isSelect = value;
-  }
-
-  updateOnchainIdentity(value: boolean) {
-    this.onchainIdentity = value;
-  }
-
-  updateNotSlashed(value: boolean) {
-    this.notSlashed = value;
-  }
-
-  updateNotOversubscribed(value: boolean) {
-    this.notOversubscribed = value;
-  }
-
-  updateLimitValidatorsIdentity(value: boolean) {
-    this.limitValidatorsIdentity = value;
-  }
-
-  updateSortByApy(value: boolean) {
-    this.sortByApy = value;
   }
 }
 </script>

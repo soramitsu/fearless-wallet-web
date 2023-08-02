@@ -18,7 +18,7 @@ import { Vue, Component, Prop } from 'vue-property-decorator';
 type SizeTextType = 'small' | 'medium' | 'big';
 
 @Component
-export default class Container extends Vue {
+export default class Alert extends Vue {
   @Prop(String) message!: string;
   @Prop({ default: 'medium' }) sizeText!: SizeTextType;
   @Prop({ default: 'common.attention' }) headerText!: string;

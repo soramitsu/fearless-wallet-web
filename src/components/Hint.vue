@@ -50,15 +50,14 @@ export default class Hint extends Vue {
 <style lang="scss" scoped>
 .hint {
   color: $grayish-white;
-
-  i {
-    color: $grayish-white;
-  }
-
   display: flex;
   font-size: 12px;
   align-items: center;
   text-align: left;
+
+  i {
+    color: $grayish-white;
+  }
 
   .warning--orange {
     color: $simple-orange-color;

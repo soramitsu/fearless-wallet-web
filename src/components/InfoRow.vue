@@ -29,6 +29,7 @@ export default class InfoRow extends Vue {
   @Prop(String) price!: string;
   @Prop(String) icon!: string;
   @Prop({ default: 'secondary' }) borderType!: BorderType;
+  @Prop({ default: true }) showBorder!: boolean;
   @Prop({ default: () => [] }) iconClasses!: string[];
 
   get classes() {
@@ -36,7 +37,11 @@ export default class InfoRow extends Vue {
   }
 
   get rowClasses() {
-    return ['row', `border-${this.borderType}`, `font-${this.textSize}`];
+    const classes = ['row'];
+
+    if (this.showBorder) classes.push(`border-${this.borderType}`, `font-${this.textSize}`);
+
+    return classes;
   }
 }
 </script>

@@ -8,14 +8,12 @@
   >
     <div class="staking-management">
       <Scroll>
-        <InputWithIcon
+        <Input
           v-if="step === 1 || step === 6"
           v-model="selectedAccountName"
           placeholder="accounts.account"
-          icon="rotate"
-          :ref="selectAccountInputRef"
-          :isActiveRotate="showSelectAccountPopup"
-          @click="toggleSelectAccountPopupVisible"
+          size="big"
+          :readonly="true"
         />
 
         <SelectInput
@@ -39,7 +37,7 @@
           :stakingCurrency="stakingCurrency"
           :rewardedCurrency="rewardedCurrency"
           :fee="fee"
-          @confirm="confirm"
+          @openValidatorList="openValidatorList"
         />
 
         <UnstakingForm v-else-if="isUnstaking" :stakingCurrency="stakingCurrency" :fee="fee" />
@@ -50,30 +48,13 @@
       <Button
         v-if="showConfirmButton"
         width="100%"
-        :text="btnText"
         size="big"
         fontSize="big"
+        :text="btnText"
         :disabled="confirmBtnDisabled"
         @click="confirm"
       />
     </div>
-
-    <SelectPopup
-      v-if="showSelectAccountPopup"
-      placeholder="common.searchAccounts"
-      verticalPlacement="top"
-      horizontalPlacement="left"
-      :value="selectedAddress"
-      :showBlur="false"
-      :showBackground="false"
-      :top="148"
-      :left="-160"
-      :height="360"
-      :options="accounts"
-      :handlerFilter="handlerFilter"
-      :toggleValue="toggleSelectedAccount"
-      :handlerClose="toggleSelectAccountPopupVisible"
-    />
 
     <ConfirmationPasswordPopup
       v-if="showConfirmationPasswordPopup"
@@ -112,12 +93,9 @@ import { checkStaking } from '@/extension/messaging';
   },
 })
 export default class StakingManagement extends Vue {
-  readonly selectAccountInputRef = 'selectAccountInput';
   showConfirmationPasswordPopup = false;
+  isSuggested = false;
   amount = '';
-  showSelectAccountPopup = false;
-  selectedAddress = '';
-  filterValue = '';
   fee = '0';
   rewards = '2';
   step = 1;
@@ -217,20 +195,8 @@ export default class StakingManagement extends Vue {
     return getCostOfAssets(this.amount, this.stakingAssetPrice).toString();
   }
 
-  get accounts() {
-    return (
-      this.wallets
-        .map(({ address, name }) => ({ name, value: address, iconType: 'address' }))
-        .filter(({ name }) => name.toLowerCase().includes(this.filterValue.toLowerCase())) ?? []
-    );
-  }
-
   get selectedAccountName() {
-    if (this.selectedAddress === '') return '';
-
-    const { name } = this.accounts.find(({ value }) => value === this.selectedAddress)!;
-
-    return name;
+    return this.selectedWallet.name;
   }
 
   @Watch('amount')
@@ -238,10 +204,6 @@ export default class StakingManagement extends Vue {
     const { estimateFee } = await this.verifyTx();
 
     this.fee = estimateFee ?? '0';
-  }
-
-  mounted() {
-    this.selectedAddress = this.selectedWallet.address;
   }
 
   async verifyTx(_amount?: string) {
@@ -259,21 +221,17 @@ export default class StakingManagement extends Vue {
     return ex;
   }
 
-  handlerFilter(value: string) {
-    this.filterValue = value;
-  }
-
   closeForm() {
     this.$emit('closeForm');
   }
 
-  confirm(step?: number) {
-    if (step !== undefined) {
-      this.step = step;
+  openValidatorList(isSuggested: boolean) {
+    this.isSuggested = isSuggested;
 
-      return;
-    }
+    this.step = isSuggested ? 3 : 5;
+  }
 
+  confirm() {
     if (this.isStaking) {
       if (this.step === 4) this.step += 1;
 
@@ -288,18 +246,6 @@ export default class StakingManagement extends Vue {
     this.showConfirmationPasswordPopup = false;
 
     if (closeForm) this.closeForm();
-  }
-
-  toggleSelectedAccount(value: string) {
-    this.selectedAddress = value;
-
-    this.toggleSelectAccountPopupVisible();
-  }
-
-  toggleSelectAccountPopupVisible() {
-    if (this.step === 6) return;
-
-    this.showSelectAccountPopup = !this.showSelectAccountPopup;
   }
 
   updateAmount(amount: string) {
@@ -319,7 +265,8 @@ export default class StakingManagement extends Vue {
   }
 
   handlerBack() {
-    if (this.step === 5) this.step -= 2;
+    if (this.step === 6 && this.isSuggested) this.step -= 1;
+    else if (this.step === 5) this.step -= 2;
 
     this.step -= 1;
   }

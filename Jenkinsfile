@@ -1,4 +1,4 @@
-@Library('jenkins-library@fix/DOPS-2645/pr-links') 
+@Library('jenkins-library@fix/DOPS-2645/pr-links')
 
 def buildWithCred  = [
     [$class: 'UsernamePasswordMultiBinding', credentialsId: 'OAUTH_CLIENT_UPLOAD', usernameVariable: 'OAUTH_CLIENT_ID_UPLOAD', passwordVariable: 'OAUTH_CLIENT_SECRET_UPLOAD'],

@@ -103,7 +103,7 @@ import { ALL_NETWORKS } from '@/consts/networks';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { AssetsPrice } from '@/interfaces';
 import { defaultSortingCurrencies, filterBalanceItemsByNetwork } from '@/helpers/currencies';
-import { getChangeWalletBalance, getSummaryTransferableWalletBalance } from '@/helpers/common';
+import { getChangeWalletBalance, getSummaryTransferableWalletBalance, isNetworkGroup } from '@/helpers/common';
 import { SORA_CARD_BANNER_HEIGHT } from '@/consts/soraCard';
 import SoraCardBanner from '@/screens/soraCard/SoraCardBanner.vue';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
@@ -331,7 +331,7 @@ export default class Wallet extends Vue {
     this.selectedCurrency = currency;
     this[field] = value;
 
-    if (this.selectedNetwork !== ALL_NETWORKS) this.selectedCurrency.mainNetwork = this.selectedNetwork;
+    if (!isNetworkGroup(this.selectedNetwork)) this.selectedCurrency.mainNetwork = this.selectedNetwork;
   }
 
   updateFilterValue(value: string) {

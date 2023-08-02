@@ -17,7 +17,6 @@ def buildWithCred  = [
     [$class: 'StringBinding', credentialsId: 'WEB_BSCSCAN_API_KEY', variable: 'BSCSCAN_API_KEY']
 ]
 
-
 def pipeline = new org.js.AppArtifactsPipeline(
     steps:                      this,
     secretScannerExclusion:     '/src/extension/background/extension-base/src/api/evm/history.ts',

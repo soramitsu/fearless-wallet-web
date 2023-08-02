@@ -96,6 +96,10 @@ export default class SendForm extends Vue {
     return !!this.currency?.balances.find((el) => el.isUtility || el.isNative);
   }
 
+  get getSelectedNetwork() {
+    return this.balances;
+  }
+
   get partialFeeString() {
     const { symbol } = getUtilityAsset(this.balances, this.selectedNetwork);
 

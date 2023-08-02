@@ -83,7 +83,6 @@ import type { SelectedWallet } from '@/store';
 import type { NetworkJson } from '@/extension/background/extension-base/src/types';
 import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
-
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
@@ -96,6 +95,7 @@ import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutatio
 import { ALL_NETWORKS } from '@/consts/networks';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { isNetworkGroup } from '@/helpers/common';
+import store from '@/store';
 
 @Component({
   components: { ConnectionPopup, NetworkManagement, NetworkManagementButton },
@@ -111,11 +111,14 @@ export default class Header extends Vue {
   readonly allNetworksIcon = 'all-networks';
   @Prop(Boolean) highlightSettingsIcon!: boolean;
   @PropSync('showSelectWalletPopup', { type: Boolean }) syncedShowSelectWalletPopup!: boolean;
+  @Getter(AccountsGettersTypes.getAssetPageNetwork) assetPageNetwork!: string;
   @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
   @Getter(ExtensionGettersTypes.tabStatus) tabStatus!: ActiveTabAuthorizeStatus;
   @Action(ExtensionActionTypes.FETCH_TAB_STATUS) fetchTabStatus!: AsyncFn<ActiveTabAuthorizeStatus>;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
+  @Mutation(AccountsMutationTypes.SET_ASSET_PAGE_NETWORK) setAssetPageNetwork!: Fn<string>;
+
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
 
   get showBackIcon() {
@@ -197,6 +200,12 @@ export default class Header extends Vue {
   }
 
   backToWallet() {
+    if (this.assetPageNetwork !== '') {
+      this.setAssetPageNetwork('');
+
+      return;
+    }
+
     this.$router.push({ name: Components.Wallet });
   }
 

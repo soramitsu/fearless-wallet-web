@@ -21,6 +21,7 @@ export enum MutationTypes {
   SET_BALANCE = 'SET_BALANCE',
   SET_SORA_CARD_BANNER_VISIBILITY = 'SET_SORA_CARD_BANNER_VISIBILITY',
   SET_ASSET_TIP_STATE = 'SET_ASSET_TIP_STATE',
+  SET_ASSET_PAGE_NETWORK = 'SET_ASSET_PAGE_NETWORK',
 }
 
 export type Mutations = {
@@ -34,6 +35,7 @@ export type Mutations = {
   [MutationTypes.SET_QR](state: State, props: string): void;
   [MutationTypes.SET_ASSET_TIP_STATE](state: State, props: AssetTipDataProps): void;
   [MutationTypes.DELETE_QR](state: State): void;
+  [MutationTypes.SET_ASSET_PAGE_NETWORK](state: State, props: string): void;
   [MutationTypes.SET_HIDDEN_ASSET](state: State, props: SetHiddenAsset): void;
   [MutationTypes.SET_CUSTOM_SORT](state: State, props: string): void;
   [MutationTypes.HIDE_POLKASWAP_ALERT](state: State, value: boolean): void;
@@ -112,6 +114,10 @@ const mutations: MutationTree<State> & Mutations = {
 
   [MutationTypes.SET_QR](state, payload) {
     state.qr = payload;
+  },
+
+  [MutationTypes.SET_ASSET_PAGE_NETWORK](state, payload) {
+    state.selectNetworkAssetPage = payload;
   },
 
   [MutationTypes.SET_SORA_CARD_BANNER_VISIBILITY](state, value) {

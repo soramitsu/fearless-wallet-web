@@ -1,6 +1,12 @@
 import { Wallet } from 'ethers';
 import type { NetworkName, AssetsPrice } from '@/interfaces';
-import { SORA_UTILITY_ASSET, SORA_NETWORK_NAME, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
+import {
+  SORA_UTILITY_ASSET,
+  SORA_NETWORK_NAME,
+  FAVORITE_NETWORKS,
+  POPULAR_NETWORKS,
+  ALL_NETWORKS,
+} from '@/consts/networks';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
@@ -9,7 +15,8 @@ import { getNativeAssetName } from '@/extension/background/extension-base/src/ba
 import { BalanceItem } from '@/extension/background/extension-base/src/api/evm/types/ether';
 import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import store from '@/store';
-import { getSummaryTransferableBalance } from '@/helpers/common';
+import { getSummaryTransferableBalance, getTransferableBalanceInNetwork, isNetworkGroup } from '@/helpers/common';
+import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 
 function defaultSortingCurrencies(currencies: TokenBalance[], { tokenPriceMap }: AssetsPrice, network: NetworkName) {
   const relayChains = [];
@@ -117,6 +124,18 @@ function filterBalanceItemsByNetwork(balance: BalanceItem, selectedNetwork: stri
   }
 
   return balance.name.toLowerCase() === selectedNetwork.toLowerCase();
+}
+
+export function getSummaryTransferableBalanceFilteredByActiveNetworks(token: TokenBalance, network = ALL_NETWORKS) {
+  if (!isNetworkGroup(network)) return getTransferableBalanceInNetwork(token, network);
+
+  return token.balances.reduce((result, { state, name, transferable }) => {
+    const network = store.getters.getNetwork(name) as NetworkJson;
+
+    if (state === APIItemState.READY && network.active && transferable) result += +transferable;
+
+    return result;
+  }, 0);
 }
 
 export {

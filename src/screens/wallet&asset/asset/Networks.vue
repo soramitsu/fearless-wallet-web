@@ -30,6 +30,7 @@
               :price="getFiatInNetworkString(name)"
               :icon="icon"
               :isIconPrepend="true"
+              @selectHistory="selectHistory(name)"
             />
           </div>
         </Scroll>
@@ -59,7 +60,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Getter } from 'vuex-class';
+import { Getter, Mutation } from 'vuex-class';
 import { TokenBalance } from '@extension-base/background/types/types';
 import { NetworkJson } from '@extension-base/types';
 import HistoryItem from './HistoryItem.vue';
@@ -68,6 +69,8 @@ import type { GetAssetPrice, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import AssetRow from '@/screens/wallet&asset/asset/AssetRow.vue';
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+
 import { NetworksController } from '@/controllers';
 interface TabsOptions {
   label: string;
@@ -114,6 +117,7 @@ export default class Networks extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
+  @Mutation(AccountsMutationTypes.SET_ASSET_PAGE_NETWORK) setAssetPageNetwork!: (props: string) => void;
 
   get filteredNetworks() {
     const baseFilter = this.currency.balances.filter((el) => this.getNetwork(el.name).active);
@@ -186,6 +190,10 @@ export default class Networks extends Vue {
 
   openTab(name: string) {
     this.activeTabName = name;
+  }
+
+  selectHistory(network: string) {
+    this.setAssetPageNetwork(network);
   }
 
   toggleSelectFilter() {

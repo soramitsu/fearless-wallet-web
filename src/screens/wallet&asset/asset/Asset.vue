@@ -10,12 +10,13 @@
           <div class="asset__price">
             <div class="asset__price-item asset__price-item-change">
               <span :class="changePriceClasses">{{ priceChangeString }}</span>
-              <span>{{ fiatPriceChangeString }}</span>
+              <span :class="changePriceClasses">{{ fiatPriceChangeString }}</span>
             </div>
-            <span class="asset__price-item">{{ transferableFiatBalanceInNetworkString }}</span>
             <span class="asset__price-item">{{ assetPriceString }}</span>
           </div>
-          <div class="asset__balance count-value">{{ countAssetsString }}</div>
+          <div class="asset__balance">{{ countAssetsString }}</div>
+          <span class="asset__balance asset__balance--fiat">{{ transferableFiatBalanceInNetworkString }}</span>
+
           <div class="asset__locked">
             <div class="asset__locked-content">
               <span class="asset__locked-title">{{ $t('assets.locked') }}</span>
@@ -586,10 +587,15 @@ export default class Asset extends Vue {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-size: 24px;
+        font-size: 22px;
         font-style: normal;
         font-weight: 700;
+
+        &--fiat {
+          font-size: 18px;
+        }
       }
+
       .asset__locked-content {
         display: flex;
         gap: 6px;

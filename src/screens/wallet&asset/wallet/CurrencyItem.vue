@@ -107,7 +107,10 @@ import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutatio
 import { Components } from '@/router/routes';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { GetAssetPrice, GetNetwork } from '@/store/networks/types';
-import { filterBalanceItemsByNetwork } from '@/helpers/currencies';
+import {
+  filterBalanceItemsByNetwork,
+  getSummaryTransferableBalanceFilteredByActiveNetworks,
+} from '@/helpers/currencies';
 import { APIItemState, NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
 import { getSummaryTransferableBalance } from '@/helpers/common';
 
@@ -226,7 +229,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get transferableAssetBalance() {
-    return +getSummaryTransferableBalance(this.assetData, this.selectedNetwork);
+    return +getSummaryTransferableBalanceFilteredByActiveNetworks(this.assetData, this.selectedNetwork);
   }
 
   get transferableFiatBalance() {

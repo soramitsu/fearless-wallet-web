@@ -42,5 +42,5 @@ def pipeline = new org.js.AppArtifactsPipeline(
     dojoProductType:            'fearless',
     sonarSrcPath:               'src',
     sonarTestsPath:             'tests'
-)
+) 
 pipeline.runPipeline()

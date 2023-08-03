@@ -33,13 +33,13 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Action, Getter, Mutation } from 'vuex-class';
 import { STab, STabs } from '@soramitsu/soramitsu-js-ui';
+import { NetworkJson } from '@extension-base/types';
 import NetworkItem from './NetworkItem.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountGettersTypes } from '@/store/accounts/getters';
 import { ActionTypes as NetworksActionsTypes } from '@/store/networks/actions';
 import { MutationTypes as AccountMutationsTypes } from '@/store/accounts/mutations';
 
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { SetFavoriteNetwork, Wallet } from '@/store/accounts/types';
 import { ALL_NETWORKS, FAVORITE_NETWORKS, POPULAR_NETWORKS } from '@/consts/networks';
 import { updateCurrentAccountNetwork } from '@/extension/messaging';

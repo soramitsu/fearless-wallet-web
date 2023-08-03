@@ -188,6 +188,7 @@ import { Component, Vue, Prop, Watch, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import { getEthereumAssetName, getNativeAssetName } from '@extension-base/background/utils/utils';
+import { NetworkJson } from '@extension-base/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import HistoryBook from './HistoryBook.vue';
 import EditAddressBook from './EditAddressBook.vue';
@@ -210,7 +211,6 @@ import {
   RequestCheckCrossChain,
   TokenBalance,
 } from '@/extension/background/extension-base/src/background/types/types';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { checkTransfer, checkCrossChain } from '@/extension/messaging';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 

@@ -178,6 +178,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Getter, Mutation } from 'vuex-class';
 import { getNativeAssetName } from '@extension-base/background/utils/utils';
+import { NetworkJson } from '@extension-base/types';
 import HistoryDetailsForm from './HistoryDetailsForm.vue';
 import History from './History.vue';
 import Networks from './Networks.vue';
@@ -200,7 +201,6 @@ import { Components } from '@/router/routes';
 import { NETWORK_GROUP } from '@/consts/networks';
 import { isSora } from '@/helpers';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { getSummaryLockedBalance, isNetworkGroup } from '@/helpers/common/index';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
 import { ONE_WEEK } from '@/consts/global';

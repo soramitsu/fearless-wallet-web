@@ -6,7 +6,7 @@ import {
   TransferErrorCode,
 } from '@extension-base/background/types/types';
 import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
-import { state } from '../../background/handlers';
+import { state } from '@extension-base/background/handlers';
 
 export type HandleBasicTx = (data: BasicTxResponse) => void;
 export type HandleTxResponse<T extends BasicTxResponse> = (data: T) => void;

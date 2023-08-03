@@ -41,12 +41,11 @@
 import { Getter } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { SelectedWallet } from '@/store';
-
+import type { NetworkJson } from '@extension-base/types';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component
 export default class AccountSettingsPopup extends Vue {

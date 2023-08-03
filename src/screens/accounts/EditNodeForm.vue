@@ -24,8 +24,8 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import type { NetworkJson } from '@extension-base/types';
 import { firstCharToUp } from '@/helpers';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { upsertNetworkMap } from '@/extension/messaging';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 

@@ -71,11 +71,11 @@ import type {
   GetActiveNodesByNetwork,
 } from '@/store';
 import type { Fn } from '@/interfaces';
+import type { NetworkJson } from '@extension-base/types';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { upsertNetworkMap } from '@/extension/messaging';
 
 @Component({

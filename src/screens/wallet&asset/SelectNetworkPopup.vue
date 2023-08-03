@@ -22,10 +22,10 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import { NetworkJson } from '@extension-base/types';
 import type { RelayChainName } from '@/interfaces';
 import { firstCharToUp } from '@/helpers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 interface Options {
   name: string;

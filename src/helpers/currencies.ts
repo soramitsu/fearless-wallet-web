@@ -1,4 +1,9 @@
 import { Wallet } from 'ethers';
+import { getNativeAssetName } from '@extension-base/background/utils/utils';
+import { APIItemState } from '@extension-base/api/types/networks';
+import type { NetworkJson } from '@extension-base/types';
+import type { BalanceItem } from '@extension-base/api/evm/types/ether';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import type { NetworkName, AssetsPrice } from '@/interfaces';
 import {
   SORA_UTILITY_ASSET,
@@ -9,14 +14,9 @@ import {
 } from '@/consts/networks';
 import { RAMP_API_KEY, MOONPAY_API_KEY } from '@/consts/global';
 import { BASE_URLS_PREFIX } from '@/consts/urls';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { isSora } from '@/helpers';
-import { getNativeAssetName } from '@/extension/background/extension-base/src/background/utils/utils';
-import { BalanceItem } from '@/extension/background/extension-base/src/api/evm/types/ether';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import store from '@/store';
 import { getSummaryTransferableBalance, getTransferableBalanceInNetwork, isNetworkGroup } from '@/helpers/common';
-import { APIItemState } from '@/extension/background/extension-base/src/api/types/networks';
 
 function defaultSortingCurrencies(currencies: TokenBalance[], { tokenPriceMap }: AssetsPrice, network: NetworkName) {
   const relayChains = [];

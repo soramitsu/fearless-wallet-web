@@ -95,7 +95,6 @@ import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutatio
 import { ALL_NETWORKS } from '@/consts/networks';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { isNetworkGroup } from '@/helpers/common';
-import store from '@/store';
 
 @Component({
   components: { ConnectionPopup, NetworkManagement, NetworkManagementButton },

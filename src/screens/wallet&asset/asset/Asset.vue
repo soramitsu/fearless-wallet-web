@@ -6,7 +6,7 @@
           <ExternalLogo :name="assetIcon" :width="82" :height="82" />
         </div>
 
-        <div class="asset-info__content" @click="toggleBalanceDetailsPopup">
+        <div class="asset-info__content">
           <div class="asset__price">
             <div class="asset__price-item asset__price-item-change">
               <span :class="changePriceClasses">{{ priceChangeString }}</span>
@@ -17,7 +17,7 @@
           <div class="asset__balance">{{ countAssetsString }}</div>
           <span class="asset__balance asset__balance--fiat">{{ transferableFiatBalanceInNetworkString }}</span>
 
-          <div class="asset__locked">
+          <div class="asset__locked" @click="toggleBalanceDetailsPopup">
             <div class="asset__locked-content">
               <span class="asset__locked-title">{{ $t('assets.locked') }}</span>
               <span>{{ lockedBalanceString }}</span>
@@ -127,27 +127,6 @@
       :closePopup="toggleVisible.bind(null, 'showBuyPopup', false)"
     />
 
-    <Blur v-if="showTipPopup" @click="toggleTipPopup">
-      <div class="popup-tip" :style="iconPosition">
-        <div class="controls">
-          <NetworkManagementButton
-            classes="background-ellipse"
-            :isGroupIcon="isGroupIcon"
-            :icon="selectedNetworkIcon"
-            :selectedNetwork="selectedNetwork"
-            @onToggle="toggleSelectNetworkPopupVisible"
-          />
-
-          <Icon icon="close" class="icon__close" @click.stop="toggleTipPopup" />
-        </div>
-
-        <div class="icon-arrow-tip">
-          <Icon icon="arrow-tip" width="120" height="100" />
-          <span class="popup-tip__message">{{ $t('assets.networkManagementTip') }}</span>
-        </div>
-      </div>
-    </Blur>
-
     <Blur v-if="showPopupButton" @click="togglePopupButton">
       <div class="popup-button">
         <BorderButton
@@ -203,7 +182,6 @@ import { isSora } from '@/helpers';
 import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
 import { getSummaryLockedBalance, isNetworkGroup } from '@/helpers/common/index';
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
-import { ONE_WEEK } from '@/consts/global';
 import { getSummaryTransferableBalanceFilteredByActiveNetworks } from '@/helpers/currencies';
 
 type ShowField = 'showSendForm' | 'showReceiveForm' | 'showCrossChainForm' | 'showBuyPopup';
@@ -287,7 +265,7 @@ export default class Asset extends Vue {
   }
 
   get showShimmers() {
-    return !this.isOnline || !this.balances.length || !this.currentNetwork || this.currentNetwork?.state === 'pending';
+    return !this.isOnline || !this.balances.length || this.currentNetwork?.state === 'pending';
   }
 
   get isNeedPopupButton() {
@@ -500,14 +478,7 @@ export default class Asset extends Vue {
     this.showPopupButton = !this.showPopupButton;
   }
 
-  toggleTipPopup() {
-    this.showTipPopup = !this.showTipPopup;
-
-    this.setAssetTipData({ count: +this.getAssetTipData.count + 1, time: Date.now() + ONE_WEEK });
-  }
-
   toggleSelectNetworkPopupVisible() {
-    if (this.showTipPopup === true) this.toggleTipPopup();
     this.showSelectNetworkPopup = !this.showSelectNetworkPopup;
   }
 

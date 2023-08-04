@@ -1,20 +1,8 @@
 <template>
   <div class="rebond-form">
-    <div class="buttons">
-      <div
-        v-for="{ label, value } in unbondValues"
-        :key="value"
-        :class="getUnbondClasses(value)"
-        @click="setUnbond(value)"
-      >
-        {{ label }}
-      </div>
-    </div>
-
     <InfoRow
       class="info-fee"
       text="assets.networkFee"
-      textSize="mini"
       borderType="default"
       :value="`${fee} ${asset}`"
       :price="valueString"
@@ -24,7 +12,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { GetAssetPrice } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
@@ -34,25 +22,12 @@ import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 @Component
 export default class RebondForm extends Vue {
   readonly selectAccountInputRef = 'selectAccountInput';
-  readonly unbondValues = [
-    // { label: `${this.$t('staking.latestUnstake')}: ${this.lastUnstake} ${this.asset}`, value: 100 },
-    { label: '100%', value: 100 },
-    { label: '75%', value: 75 },
-    { label: '50%', value: 50 },
-    { label: '25%', value: 25 },
-  ];
-
-  unbondParameter = 0;
 
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: String }) fee!: string;
   @Prop({ type: String }) amount!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-
-  get lastUnstake() {
-    return '1.1';
-  }
 
   get asset() {
     return this.stakingCurrency.symbol;
@@ -69,68 +44,12 @@ export default class RebondForm extends Vue {
 
     return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
   }
-
-  get amountByPercent() {
-    const value = this.unbondParameter / 100;
-
-    return (+this.lastUnstake * value).toString();
-  }
-
-  @Watch('amount')
-  amountChanged() {
-    if (this.amount !== this.amountByPercent) this.unbondParameter = 0;
-  }
-
-  getUnbondClasses(value: number) {
-    return [
-      'button',
-      {
-        'selected-button': value === this.unbondParameter,
-      },
-    ];
-  }
-
-  setUnbond(value: number) {
-    this.unbondParameter = value;
-
-    this.$emit('updateAmount', this.amountByPercent);
-  }
 }
 </script>
 
 <style lang="scss" scoped>
 .rebond-form {
   margin-top: 15px;
-
-  .buttons {
-    display: flex;
-    color: $default-white;
-
-    .button {
-      text-transform: uppercase;
-      background: $secondary-background-color;
-      border-radius: 30px;
-      height: 30px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 8px 10px;
-      font-weight: 700;
-      font-size: 12px;
-      margin-right: 16px;
-      cursor: pointer;
-      user-select: none;
-      width: 60px;
-
-      &:hover {
-        border: $default-border;
-      }
-    }
-
-    .selected-button {
-      background-color: $pink-purple-color;
-    }
-  }
 
   .info-fee {
     margin-bottom: 20px;

@@ -25,7 +25,6 @@
           :asset="stakingAssetName"
           :assetId="stakingAssetId"
           :amount="amount"
-          :showRotateIcon="false"
           :readonly="assetInputReadonly"
           @update:amount="updateAmount"
           @setMax="setMax"
@@ -40,17 +39,11 @@
           @openValidatorList="openValidatorList"
         />
 
-        <UnstakingForm v-else-if="isUnstaking" :stakingCurrency="stakingCurrency" :fee="fee" />
+        <UnbondForm v-else-if="isUnbond" :stakingCurrency="stakingCurrency" :fee="fee" />
 
         <RedeemForm v-else-if="isRedeeam" :stakingCurrency="stakingCurrency" :fee="fee" :rewards="rewards" />
 
-        <RebondForm
-          v-else-if="isRebond"
-          :stakingCurrency="stakingCurrency"
-          :fee="fee"
-          :amount="amount"
-          @updateAmount="updateAmount"
-        />
+        <RebondForm v-else-if="isRebond" :stakingCurrency="stakingCurrency" :fee="fee" :amount="amount" />
       </Scroll>
 
       <Button
@@ -85,7 +78,7 @@ import { AccountJson, TokenBalance } from '@/extension/background/extension-base
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import StakingForm from '@/screens/staking/myStake/stakingForms/StakingForm.vue';
 import RedeemForm from '@/screens/staking/myStake/stakingForms/RedeemForm.vue';
-import UnstakingForm from '@/screens/staking/myStake/stakingForms/UnstakingForm.vue';
+import UnbondForm from '@/screens/staking/myStake/stakingForms/UnbondForm.vue';
 import RebondForm from '@/screens/staking/myStake/stakingForms/RebondForm.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
@@ -97,8 +90,8 @@ import { checkStaking } from '@/extension/messaging';
   components: {
     RebondForm,
     RedeemForm,
+    UnbondForm,
     StakingForm,
-    UnstakingForm,
     ConfirmationPasswordPopup,
   },
 })
@@ -113,7 +106,7 @@ export default class StakingManagement extends Vue {
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: Object }) rewardedCurrency!: TokenBalance;
   @Prop({ type: String }) network!: NetworkName;
-  @Prop({ type: String }) type!: 'staking' | 'unstaking' | 'redeem' | 'rebond';
+  @Prop({ type: String }) type!: 'staking' | 'unbond' | 'redeem' | 'rebond';
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
   @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
@@ -134,7 +127,7 @@ export default class StakingManagement extends Vue {
   }
 
   get showBackIcon() {
-    if (this.isRedeeam || this.isUnstaking) return false;
+    if (this.isRedeeam || this.isUnbond) return false;
 
     return this.step !== 1;
   }
@@ -154,6 +147,8 @@ export default class StakingManagement extends Vue {
   }
 
   get assetInputReadonly() {
+    if (this.isRebond) return true;
+
     return this.step !== 1;
   }
 
@@ -161,8 +156,8 @@ export default class StakingManagement extends Vue {
     return this.type === 'staking';
   }
 
-  get isUnstaking() {
-    return this.type === 'unstaking';
+  get isUnbond() {
+    return this.type === 'unbond';
   }
 
   get isRedeeam() {
@@ -233,6 +228,14 @@ export default class StakingManagement extends Vue {
     });
 
     return ex;
+  }
+
+  get lastUnstake() {
+    return '1.1';
+  }
+
+  mounted() {
+    if (this.isRebond) this.amount = this.lastUnstake;
   }
 
   closeForm() {

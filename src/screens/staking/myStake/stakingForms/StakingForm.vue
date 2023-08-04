@@ -29,7 +29,6 @@
         text="assets.networkFee"
         borderType="default"
         icon="info"
-        textSize="mini"
         :value="`${fee} ${stakingAsset}`"
         :price="feeValueString"
         :iconClasses="['network-fee']"

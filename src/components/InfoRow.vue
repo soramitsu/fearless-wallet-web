@@ -11,14 +11,12 @@ import { Vue, Component, Prop } from 'vue-property-decorator';
 import Row from './Row.vue';
 
 type BorderType = 'default' | 'secondary';
-type TextSize = 'mini' | 'default';
 
 @Component({
   components: { Row },
 })
 export default class InfoRow extends Vue {
   @Prop(String) text!: string;
-  @Prop({ default: 'default' }) textSize!: TextSize;
   @Prop(String) value!: string;
   @Prop(String) price!: string;
   @Prop(String) icon?: string;
@@ -35,7 +33,7 @@ export default class InfoRow extends Vue {
   get rowClasses() {
     const classes = ['info-row'];
 
-    if (this.showBorder) classes.push(`border-${this.borderType}`, `font-${this.textSize}`);
+    if (this.showBorder) classes.push(`border-${this.borderType}`);
 
     if (this.hideLastBorder) classes.push(`border-last`);
 
@@ -53,14 +51,6 @@ export default class InfoRow extends Vue {
   border-bottom: $secondary-border;
 }
 
-.font-mini {
-  font-size: 14px;
-}
-
-.font-default {
-  font-size: 16px;
-}
-
 .border-last {
   &:last-child {
     border: none;
@@ -74,6 +64,7 @@ export default class InfoRow extends Vue {
   justify-content: space-between;
   align-items: center;
   color: $default-white;
+  font-size: 16px;
 
   .icon-info {
     margin-left: 13px;

@@ -1,16 +1,9 @@
 <template>
   <div class="redeem-form">
-    <InfoRow
-      text="staking.rewards"
-      :value="`${rewards} ${asset}`"
-      :price="rewardsValueString"
-      textSize="mini"
-      borderType="default"
-    />
+    <InfoRow text="staking.rewards" :value="`${rewards} ${asset}`" :price="rewardsValueString" borderType="default" />
 
     <InfoRow
       text="assets.networkFee"
-      textSize="mini"
       borderType="default"
       :value="`${fee} ${asset}`"
       :price="feeValueString"

@@ -200,13 +200,6 @@ export default class MyStakingItem extends Vue {
         color: $grayish-white-2;
       }
 
-      .unstaking {
-        font-size: 12px;
-        font-weight: 400;
-        text-align: right;
-        color: $grayish-white-2;
-      }
-
       .fiat {
         font-weight: 700;
       }

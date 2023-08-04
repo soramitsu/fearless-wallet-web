@@ -27,7 +27,7 @@
 
             <div v-else class="select-label">Select</div>
 
-            <Rotate v-if="showRotateIcon" :isActive="syncedIsRotate" class="rotate-asset">
+            <Rotate :isActive="syncedIsRotate" class="rotate-asset">
               <SIcon name="chevron-bottom-16" />
             </Rotate>
           </button>
@@ -59,7 +59,6 @@ export default class SelectInput extends Vue {
   @Prop({ default: '' }) assetId!: string;
   @Prop({ default: '' }) value!: string;
   @Prop({ default: 0 }) transferableAmount!: number;
-  @Prop({ default: true }) showRotateIcon!: boolean;
   @Prop({ default: true }) showBalance!: boolean;
   @Prop({ default: false }) readonly!: boolean;
   @PropSync('amount', { type: String }) syncedAmount!: string;
@@ -109,7 +108,6 @@ export default class SelectInput extends Vue {
     return [
       'select-button',
       {
-        'select-button--rotate': this.showRotateIcon && !this.readonly,
         'select-button-readonly': this.readonly,
       },
     ];
@@ -139,7 +137,7 @@ export default class SelectInput extends Vue {
   }
 
   click() {
-    if (!this.showRotateIcon) return;
+    if (this.readonly) return;
 
     this.$emit('togglePopupVisibility');
   }
@@ -221,10 +219,6 @@ export default class SelectInput extends Vue {
       width: fit-content;
     }
 
-    .select-button--rotate {
-      min-width: 122px;
-    }
-
     .select-button {
       display: flex;
       justify-content: center;
@@ -236,6 +230,7 @@ export default class SelectInput extends Vue {
       color: white;
       border: $default-border;
       border-radius: 4px;
+      min-width: 122px;
       cursor: pointer;
 
       .asset-icon {
@@ -258,6 +253,7 @@ export default class SelectInput extends Vue {
 
     .select-button-readonly {
       cursor: default;
+      opacity: 0.5;
     }
 
     .balance {
@@ -268,6 +264,7 @@ export default class SelectInput extends Vue {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      margin-top: 5px;
 
       .balance-value {
         cursor: pointer;

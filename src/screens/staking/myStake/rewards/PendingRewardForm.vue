@@ -31,10 +31,9 @@
             class="amount-input"
             text="assets.amount"
             :value="amountPriceValue"
-            :asset="stakingAssetName"
-            :assetId="stakingAssetId"
+            :asset="rewardedAssetName"
+            :assetId="rewardedAssetId"
             :amount="summaryRewards"
-            :showRotateIcon="false"
             :showBalance="false"
             :readonly="true"
           />
@@ -48,7 +47,6 @@
           :price="feeValueString"
           borderType="default"
           icon="info"
-          textSize="mini"
           :iconClasses="['network-fee']"
         />
 
@@ -82,7 +80,6 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import StakingForm from '@/screens/staking/myStake/stakingForms/StakingForm.vue';
 import RedeemForm from '@/screens/staking/myStake/stakingForms/RedeemForm.vue';
-import UnstakingForm from '@/screens/staking/myStake/stakingForms/UnstakingForm.vue';
 import ConfirmationPasswordPopup from '@/screens/wallet&asset/ConfirmationPasswordPopup.vue';
 import { getCostOfAssets } from '@/controllers/transferHelpers';
 import ValidatorItem from '@/screens/staking/myStake/rewards/ValidatorItem.vue';
@@ -94,7 +91,6 @@ import WarningPopup from '@/screens/staking/myStake/rewards/WarningPopup.vue';
     StakingForm,
     WarningPopup,
     ValidatorItem,
-    UnstakingForm,
     ConfirmationPasswordPopup,
   },
 })
@@ -143,6 +139,12 @@ export default class StakingManagement extends Vue {
     return this.stakingCurrency?.symbol;
   }
 
+  get rewardedAssetName() {
+    console.log('rewardedCurrency', this.rewardedCurrency);
+
+    return this.rewardedCurrency?.symbol;
+  }
+
   get showBackIcon() {
     return this.step !== 1;
   }
@@ -155,6 +157,10 @@ export default class StakingManagement extends Vue {
     return '';
   }
 
+  get rewardedAssetId() {
+    return this.rewardedCurrency!.assetId;
+  }
+
   get stakingAssetId() {
     return this.stakingCurrency!.assetId;
   }
@@ -165,8 +171,14 @@ export default class StakingManagement extends Vue {
     return this.getAssetPrice(priceId).price;
   }
 
+  get rewardedAssetPrice() {
+    const priceId = this.stakingCurrency?.priceId ?? '';
+
+    return this.getAssetPrice(priceId).price;
+  }
+
   get amountPriceValue() {
-    return getCostOfAssets(this.summaryRewards, this.stakingAssetPrice).toString();
+    return getCostOfAssets(this.summaryRewards, this.rewardedAssetPrice).toString();
   }
 
   closeForm() {

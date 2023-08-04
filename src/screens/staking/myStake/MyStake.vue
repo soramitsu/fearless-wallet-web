@@ -125,6 +125,7 @@ import { SORA_NETWORK_NAME, SORA_REWARD_ASSET } from '@/consts/sora';
 import YourValidatorsManagement from '@/screens/staking/myStake/validators/YourValidatorsManagement.vue';
 import ControllerAccount from '@/screens/staking/myStake/ControllerAccount.vue';
 import PendingRewardForm from '@/screens/staking/myStake/rewards/PendingRewardForm.vue';
+import { isSora } from '@/helpers';
 
 type ShowField = 'showStakingForm' | 'showUnstakingForm' | 'showRedeemForm' | 'showYourValidatorsForm';
 
@@ -243,7 +244,7 @@ export default class MyStake extends Vue {
   }
 
   get rewardedAssetId() {
-    if (this.network === SORA_NETWORK_NAME) {
+    if (isSora(this.network)) {
       const { assetId } = this.balances.find(({ symbol }) => symbol === SORA_REWARD_ASSET)!;
 
       return assetId;

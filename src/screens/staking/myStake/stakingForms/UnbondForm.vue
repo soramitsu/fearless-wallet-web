@@ -1,58 +1,47 @@
 <template>
-  <div class="unbond-form">
-    <div class="buttons">
-      <div
-        v-for="{ label, value } in unbondValues"
-        :key="value"
-        :class="getUnbondClasses(value)"
-        @click="setUnbond(value)"
-      >
-        {{ label }}
-      </div>
-    </div>
-
+  <div class="unstaking-form">
     <InfoRow
       class="info-fee"
       text="assets.networkFee"
+      borderType="default"
+      icon="info"
       :value="`${fee} ${asset}`"
       :price="valueString"
-      :hideLastBorder="false"
-      textSize="mini"
-      borderType="default"
+      :iconClasses="['network-fee']"
     />
+
+    <div class="disclaimer">
+      <Icon icon="wallet-2" class="img" />
+
+      {{ $t('staking.unstakingDisclaimers1') }}
+    </div>
+
+    <div class="disclaimer">
+      <Icon icon="logout" class="img" />
+
+      {{ $t('staking.unstakingDisclaimers2') }}
+    </div>
+
+    <Tooltip text="assets.networkFee" target=".network-fee" placement="right" />
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import type { GetAssetPrice } from '@/store';
-import { TokenBalance } from '@/extension/background/extension-base/src/background/types/types';
+import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
-export default class UnbondForm extends Vue {
+export default class UnstakingForm extends Vue {
   readonly selectAccountInputRef = 'selectAccountInput';
-  readonly unbondValues = [
-    // { label: `${this.$t('staking.latestUnstake')}: ${this.lastUnstake} ${this.asset}`, value: 100 },
-    { label: '100%', value: 100 },
-    { label: '75%', value: 75 },
-    { label: '50%', value: 50 },
-    { label: '25%', value: 25 },
-  ];
-
-  unbondParameter = 0;
 
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Prop({ type: String }) fee!: string;
-  @Prop({ type: String }) amount!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
-
-  get lastUnstake() {
-    return '1.1';
-  }
 
   get asset() {
     return this.stakingCurrency.symbol;
@@ -69,68 +58,42 @@ export default class UnbondForm extends Vue {
 
     return `${this.fiatSymbol}${this.$n(+value, 'price')}`;
   }
-
-  get amountByPercent() {
-    const value = this.unbondParameter / 100;
-
-    return (+this.lastUnstake * value).toString();
-  }
-
-  @Watch('amount')
-  amountChanged() {
-    if (this.amount !== this.amountByPercent) this.unbondParameter = 0;
-  }
-
-  getUnbondClasses(value: number) {
-    return [
-      'button',
-      {
-        'selected-button': value === this.unbondParameter,
-      },
-    ];
-  }
-
-  setUnbond(value: number) {
-    this.unbondParameter = value;
-
-    this.$emit('updateAmount', this.amountByPercent);
-  }
 }
 </script>
 
 <style lang="scss" scoped>
-.unbond-form {
-  margin-top: 15px;
+.unstaking-form {
+  // padding: 0 16px;
 
-  .buttons {
-    display: flex;
-    color: $default-white;
+  // .fee {
+  //   font-size: 14px;
+  //   border-bottom: $default-border;
+  //   display: flex;
+  //   justify-content: space-between;
+  //   align-items: center;
+  //   margin: 10px 0 20px;
+  //   padding: 10px 0;
 
-    .button {
-      text-transform: uppercase;
-      background: $secondary-background-color;
-      border-radius: 30px;
-      height: 30px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 8px 10px;
-      font-weight: 700;
-      font-size: 12px;
-      margin-right: 16px;
-      cursor: pointer;
-      user-select: none;
-      width: 60px;
+  //   .column {
+  //     display: flex;
+  //     flex-direction: column;
+  //     align-items: flex-end;
+  //     color: $default-white;
 
-      &:hover {
-        border: $default-border;
-      }
-    }
+  //     .amount {
+  //       font-weight: 600;
+  //       text-align: right;
+  //       text-transform: uppercase;
+  //       margin-bottom: 5px;
+  //     }
 
-    .selected-button {
-      background-color: $pink-purple-color;
-    }
-  }
+  //     .value {
+  //       font-size: 12px;
+  //       text-align: right;
+  //       color: $grayish-white-2;
+  //     }
+  //   }
+  // }
 
   .info-fee {
     margin-bottom: 20px;

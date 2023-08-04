@@ -13,11 +13,18 @@
       </div>
 
       <div class="wallet-name">
-        <div class="name">{{ name }}</div>
+        <div class="name" @click.stop="toggleSelectWalletPopupVisible">
+          <span class="wallet-title">{{ name }}</span>
 
-        <Rotate :isActive="syncedShowSelectWalletPopup">
-          <SIcon name="chevron-bottom-16" />
-        </Rotate>
+          <Rotate :isActive="syncedShowSelectWalletPopup">
+            <SIcon name="chevron-bottom-16" />
+          </Rotate>
+        </div>
+        <div v-if="!isGroup" class="copy-adress" @click.stop="copyAddress">
+          <span>{{ cutAddress }}</span>
+          <Icon icon="copy" className="copy" />
+          <Tooltip text="common.copied" target=".copy" placement="top" trigger="click" />
+        </div>
       </div>
 
       <Tooltip text="header.walletManagement" target=".header-part-left" placement="right" />
@@ -36,7 +43,7 @@
 
       <NetworkManagementButton
         classes="background-ellipse"
-        :isGroupIcon="isGroupIcon"
+        :isGroupIcon="isGroup"
         :icon="selectedNetworkIcon"
         :selectedNetwork="networkManagementButtonText"
         @onToggle="toggleSelectNetworkPopupVisible"
@@ -95,6 +102,7 @@ import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutatio
 import { ALL_NETWORKS } from '@/consts/networks';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { isNetworkGroup } from '@/helpers/common';
+import { cut } from '@/helpers';
 
 @Component({
   components: { ConnectionPopup, NetworkManagement, NetworkManagementButton },
@@ -117,6 +125,7 @@ export default class Header extends Vue {
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
   @Mutation(AccountsMutationTypes.SET_ASSET_PAGE_NETWORK) setAssetPageNetwork!: Fn<string>;
+  @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
 
@@ -124,12 +133,12 @@ export default class Header extends Vue {
     return this.$route.name === Components.Asset;
   }
 
-  get isGroupIcon() {
+  get isGroup() {
     return isNetworkGroup(this.selectedNetwork);
   }
 
   get networkManagementButtonText() {
-    if (this.isGroupIcon) {
+    if (this.isGroup) {
       return this.$t(`header.networkManagement.${this.selectedNetwork}`);
     }
 
@@ -137,13 +146,30 @@ export default class Header extends Vue {
   }
 
   get selectedNetworkIcon() {
-    if (this.isGroupIcon) return this.allNetworksIcon;
+    if (this.isGroup) return this.allNetworksIcon;
 
     const network = this.getNetwork(this.selectedNetwork);
 
     if (network) return network.icon;
 
     return this.allNetworksIcon;
+  }
+
+  get cutAddress() {
+    return cut(this.address, 5);
+  }
+
+  get decimals() {
+    return this.networks?.find((network) => network.name.toLowerCase() === this.selectedNetwork.toLowerCase())
+      ?.addressPrefix;
+  }
+
+  get address() {
+    if (this.selectedWallet.address === '') return '';
+
+    if (BaseApi.isEthereumNetwork(this.selectedNetwork)) return this.selectedWallet.ethereumAddress;
+
+    return BaseApi.encodeAddress(this.selectedWallet.address, this.decimals);
   }
 
   get name() {
@@ -156,6 +182,10 @@ export default class Header extends Vue {
 
   get statusConnectedText() {
     return !this.tabStatus || !this.tabStatus.isAuthorize ? 'header.notConnected' : 'header.connected';
+  }
+
+  copyAddress() {
+    navigator.clipboard.writeText(this.address);
   }
 
   toggleSelectedNetwork(network: string) {
@@ -247,6 +277,7 @@ export default class Header extends Vue {
     justify-content: flex-end;
   }
   .header-part-left {
+    gap: 10px;
     &:hover {
       cursor: pointer;
     }
@@ -262,19 +293,32 @@ export default class Header extends Vue {
 
     .wallet-name {
       display: flex;
-      align-items: center;
-      height: 48px;
+      align-items: flex-start;
+      flex-direction: column;
       gap: 5px;
 
       .name {
+        display: flex;
         max-width: 190px;
         font-weight: 700;
         font-size: 24px;
-        margin-left: 10px;
         align-items: center;
         overflow: hidden;
         text-overflow: ellipsis;
-        white-space: nowrap;
+        .wallet-title {
+          text-overflow: ellipsis;
+          overflow: hidden;
+          white-space: nowrap;
+        }
+      }
+      .copy-adress {
+        display: flex;
+        flex-flow: row nowrap;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 400;
+        color: $default-white;
       }
     }
 
@@ -316,6 +360,11 @@ export default class Header extends Vue {
   .icon--network {
     height: 16px;
     width: 16px;
+  }
+  .copy {
+    filter: invert(0.5);
+    width: 20px;
+    height: 20px;
   }
 
   .success-connect {

@@ -92,15 +92,16 @@ import NetworkManagementButton from '@/screens/main/NetworkManagementButton.vue'
 import NetworkManagement from '@/screens/wallet&asset/NetworkManagement.vue';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GettersTypes as ExtensionGettersTypes } from '@/store/extension/getters';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { ActionTypes as ExtensionActionTypes } from '@/store/extension/actions';
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 import { Components } from '@/router/routes';
 import BaseApi from '@/util/BaseApi';
 import { tieAccount, windowOpen } from '@/extension/messaging';
 import ConnectionPopup from '@/screens/main/ConnectionPopup.vue';
 import { AsyncFn, Fn } from '@/interfaces';
-import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
+
 import { ALL_NETWORKS } from '@/consts/networks';
-import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { isNetworkGroup } from '@/helpers/common';
 import { cut } from '@/helpers';
 
@@ -124,7 +125,6 @@ export default class Header extends Vue {
   @Action(ExtensionActionTypes.FETCH_TAB_STATUS) fetchTabStatus!: AsyncFn<ActiveTabAuthorizeStatus>;
   @Getter(AccountsGettersTypes.getSelectedNetwork) selectedNetwork!: string;
   @Mutation(AccountsMutationTypes.SET_SELECTED_NETWORK) setSelectedNetwork!: Fn<string>;
-  @Mutation(AccountsMutationTypes.SET_ASSET_PAGE_NETWORK) setAssetPageNetwork!: Fn<string>;
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];
 
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
@@ -229,12 +229,6 @@ export default class Header extends Vue {
   }
 
   backToWallet() {
-    if (this.assetPageNetwork !== '') {
-      this.setAssetPageNetwork('');
-
-      return;
-    }
-
     this.$router.push({ name: Components.Wallet });
   }
 

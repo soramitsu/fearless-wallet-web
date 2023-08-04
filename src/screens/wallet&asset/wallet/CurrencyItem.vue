@@ -1,5 +1,5 @@
 <template>
-  <Lazy v-if="showCurrencyItem" :timeoutCallback="timeoutCallback" class="currency-item" @click.native="openAssetPage">
+  <div class="currency-item" @click="openAssetPage">
     <div v-if="showAssetsManagementForm" class="drag-icon">
       <SIcon name="basic-menu-24" class="handle" />
     </div>
@@ -9,9 +9,7 @@
 
     <div class="descriptions-column">
       <div class="row first-row">
-        <div>
-          {{ tokenName }}
-        </div>
+        <div>{{ tokenName }}</div>
 
         <template>
           <Shimmer v-if="showShimmers" height="14px" width="60px" />
@@ -92,7 +90,7 @@
 
       <Switcher v-else v-model="currencyVisible" />
     </div>
-  </Lazy>
+  </div>
 </template>
 
 <script lang="ts">

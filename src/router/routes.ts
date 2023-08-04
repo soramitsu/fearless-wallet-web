@@ -6,6 +6,7 @@ import Asset from '@/screens/wallet&asset/asset/Asset.vue';
 import Wallet from '@/screens/wallet&asset/wallet/Wallet.vue';
 import AccountsLayout from '@/screens/accounts/AccountsLayout.vue';
 import { SORA_CARD_VISIBILITY } from '@/consts/global';
+import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutations';
 
 const Crowdloans = () => import('@/screens/crowdloans/Crowdloans.vue');
 const Staking = () => import('@/screens/staking/Staking.vue');
@@ -177,6 +178,10 @@ const routes: Array<RouteConfig> = [
         path: ':network/:assetId',
         name: Components.Asset,
         component: Asset,
+        beforeEnter: (to, from, next) => {
+          store.commit(AccountsMutationTypes.SET_ASSET_PAGE_NETWORK, '');
+          next();
+        },
       },
       {
         path: 'crowdloans',

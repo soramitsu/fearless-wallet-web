@@ -110,7 +110,6 @@ import {
   getSummaryTransferableBalanceFilteredByActiveNetworks,
 } from '@/helpers/currencies';
 import { APIItemState, NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
-import { getSummaryTransferableBalance } from '@/helpers/common';
 
 @Component
 export default class CurrencyItem extends Vue {

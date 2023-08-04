@@ -42,8 +42,8 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { firstCharToUp } from '@/helpers/common';
 import { SORA_UTILITY_ASSET } from '@/consts/sora';
+import { firstCharToUp } from '@/helpers';
 
 @Component
 export default class SwapInfo extends Vue {

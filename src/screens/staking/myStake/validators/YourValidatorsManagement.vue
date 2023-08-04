@@ -99,7 +99,7 @@ export default class YourValidatorsManagement extends Vue {
   @Prop({ type: Object }) stakingCurrency!: TokenBalance;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
   get selectedAccountName() {
     return this.selectedWallet.name;

@@ -107,6 +107,7 @@
                 :text="`assets.${isTransfer ? 'networkFee' : 'originalNetworkFee'}`"
                 :value="syncedFeeCut"
                 :iconClasses="['origin-fee']"
+                :isLoading="isFetchingFees"
                 icon="info"
               />
 
@@ -186,6 +187,7 @@ import { Component, Vue, Prop, Watch, PropSync } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
 import { getEthereumAssetName, getNativeAssetName } from '@extension-base/background/utils/utils';
+import { NetworkJson } from '@extension-base/types';
 import ConfirmationPasswordPopup from './ConfirmationPasswordPopup.vue';
 import HistoryBook from './HistoryBook.vue';
 import EditAddressBook from './EditAddressBook.vue';
@@ -198,13 +200,13 @@ import FloatInput from '@/components/FloatInput.vue';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { cut, firstCharToUp, getClipboard } from '@/helpers/common';
 import {
   getCurrencyOptions,
-  getUtilityAsset,
   calcTransferableSendMinusFee,
   isValidAmountAsset,
+  getUtilityAsset,
 } from '@/helpers/currencies';
+import { cut, firstCharToUp, getClipboard } from '@/helpers';
 import { VALID_SUBSTRATE_ADDRESS, VALID_ETHEREUM_ADDRESS, CHAIN_IDS } from '@/consts/networks';
 import { getCostOfAssets, getTransactionAddress } from '@/controllers/transferHelpers';
 import {
@@ -212,7 +214,6 @@ import {
   RequestCheckCrossChain,
   TokenBalance,
 } from '@/extension/background/extension-base/src/background/types/types';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { checkTransfer, checkCrossChain } from '@/extension/messaging';
 import WalletInfo from '@/screens/main/WalletInfo.vue';
 
@@ -240,6 +241,7 @@ export default class TransferForm extends Vue {
   buttonLoading = false;
   newAddress = '';
   filterValue = '';
+  isFetchingFees = false;
   step = 1;
 
   @Prop(Function) closeForm!: VoidFunction;
@@ -253,7 +255,7 @@ export default class TransferForm extends Vue {
   @PropSync('value', { type: String }) syncedValue!: string;
   @PropSync('partialFee', { type: String }) syncedFee!: string;
   @PropSync('destNetFee', { type: String }) syncedDestNetFee!: string;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.isOnline) isOnline!: boolean;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
@@ -721,12 +723,13 @@ export default class TransferForm extends Vue {
     } as RequestCheckCrossChain;
   }
 
-  toggleButtonLoading(value = true) {
+  toggleLoading(value = true) {
     this.buttonLoading = value;
+    this.isFetchingFees = value;
   }
 
   async verifyTx(_amount?: string) {
-    this.toggleButtonLoading();
+    this.toggleLoading();
 
     // комиссия не зависит от адреса получателя, поэтому подставляем всегда мок
     const to = BaseApi.formatAddress(
@@ -746,7 +749,7 @@ export default class TransferForm extends Vue {
         assetId: this.syncedAssetId,
       });
 
-      this.toggleButtonLoading(false);
+      this.toggleLoading(false);
 
       return ex;
     }
@@ -761,7 +764,7 @@ export default class TransferForm extends Vue {
       assetId: this.syncedAssetId,
     });
 
-    this.toggleButtonLoading(false);
+    this.toggleLoading(false);
 
     return ex;
   }

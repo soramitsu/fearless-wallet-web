@@ -23,7 +23,7 @@ import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { HistoryElement, NetworkName } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { getType, getTypeFormatted, getHistoryValue, getSignTransfer } from '@/helpers/history';
-import { getFormattedDate, cut } from '@/helpers/common';
+import { getFormattedDate, cut } from '@/helpers';
 import { TransactionType } from '@/interfaces/history';
 
 @Component

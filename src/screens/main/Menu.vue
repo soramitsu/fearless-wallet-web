@@ -15,7 +15,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { Components } from '@/router/routes';
 import MenuItem from '@/screens/main/MenuItem.vue';
-import { firstCharToUp } from '@/helpers/common';
+import { firstCharToUp } from '@/helpers';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
 
@@ -29,7 +29,7 @@ export default class Menu extends Vue {
   stakingItems: string[] = [Components.MyStake];
   menuItems: MenuItemType[] = ['wallet', 'crowdloans', 'staking', 'polkaswap', 'history'];
 
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
   get currentRouteName() {
     const route = this.$route.path.split('/')[2];

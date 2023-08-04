@@ -1,0 +1,62 @@
+<template>
+  <div class="row" :class="rowClasses" v-on="$listeners">
+    <div class="label">
+      <slot></slot>
+    </div>
+
+    <div v-if="value" class="value">
+      <div>
+        <Loading v-if="isLoading" />
+
+        <span v-else>{{ value }}</span>
+      </div>
+
+      <div v-if="price" class="price">
+        {{ price }}
+      </div>
+    </div>
+    <div v-else>-</div>
+  </div>
+</template>
+
+<script lang="ts">
+import { Vue, Component, Prop } from 'vue-property-decorator';
+
+@Component
+export default class Row extends Vue {
+  @Prop(String) value!: string;
+  @Prop(String) price!: string;
+  @Prop(String) icon?: string;
+  @Prop(Array) rowClasses?: string[];
+  @Prop(Boolean) isLoading!: boolean;
+  @Prop({ default: () => [] }) iconClasses!: string[];
+}
+</script>
+
+<style lang="scss" scoped>
+.row {
+  margin: 0 16px;
+  height: 55px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid $secondary-background-color;
+  color: $default-white;
+
+  .value {
+    text-align: right;
+
+    .price {
+      color: $gray-color;
+      margin-top: 3px;
+    }
+  }
+
+  .label {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
+}
+</style>

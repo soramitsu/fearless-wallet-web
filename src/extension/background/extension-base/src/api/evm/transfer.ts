@@ -6,7 +6,7 @@ import {
   TransferErrorCode,
 } from '@extension-base/background/types/types';
 import { getERC20Contract } from '@extension-base/api/evm/utils/eth';
-import { state } from '../../background/handlers';
+import { state } from '@extension-base/background/handlers';
 
 export type HandleBasicTx = (data: BasicTxResponse) => void;
 export type HandleTxResponse<T extends BasicTxResponse> = (data: T) => void;
@@ -57,12 +57,13 @@ export async function handleTransfer(
   };
 
   try {
-    const tx = await signer.sendTransaction({ ...transactionObject, value: ethers.parseUnits('0', 'ether') });
+    const tx = await signer.sendTransaction(transactionObject);
     response.callHash = tx.hash;
     response.status = true;
     response.txError = false;
     callback(response);
   } catch (error) {
+    console.warn(error);
     response.status = false;
     response.txError = true;
     response.errors?.push({
@@ -83,14 +84,13 @@ export async function getEVMTransactionObject(
   const web3Api = state.getEvmApiMap[networkKey];
   const { maxFeePerGas, maxPriorityFeePerGas, gasPrice } = await web3Api.getFeeData();
 
-  const nonce = await web3Api.provider.getTransactionCount(to);
   const transactionObject = {
     maxFeePerGas,
     maxPriorityFeePerGas,
-    nonce,
     to,
     value: ethers.parseEther(value),
   } as ethers.TransactionRequest;
+
   const gas = await web3Api.provider.estimateGas(transactionObject);
   transactionObject.gasLimit = gas;
   const prepGasPrice = gasPrice ?? BigInt(0);
@@ -157,6 +157,6 @@ export async function makeERC20Transfer(
   callback: (data: BasicTxResponse) => void
 ) {
   const { tx } = await getERC20TransactionObject(assetAddress, networkKey, from, to, value);
-  tx.value = ethers.parseUnits(value, 6);
+  tx.value = ethers.parseEther('0');
   await handleTransfer(tx, networkKey, privateKey, callback);
 }

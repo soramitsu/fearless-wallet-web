@@ -28,15 +28,15 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
+import { NetworkJson } from '@extension-base/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { SelectedWallet } from '@/store';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component
 export default class NetworkManagement extends Vue {
   @Prop(Array) networks!: NetworkJson[];
   @Prop(Function) closeForm!: VoidFunction;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 }
 </script>
 

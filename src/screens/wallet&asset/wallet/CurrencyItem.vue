@@ -107,7 +107,10 @@ import { MutationTypes as AccountsMutationTypes } from '@/store/accounts/mutatio
 import { Components } from '@/router/routes';
 import { ALL_NETWORKS } from '@/consts/networks';
 import { GetAssetPrice, GetNetwork } from '@/store/networks/types';
-import { getSummaryTransferableBalance } from '@/helpers/currencies';
+import {
+  filterBalanceItemsByNetwork,
+  getSummaryTransferableBalanceFilteredByActiveNetworks,
+} from '@/helpers/currencies';
 import { APIItemState, NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
 
 @Component
@@ -123,7 +126,7 @@ export default class CurrencyItem extends Vue {
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
   @Getter(AccountsGettersTypes.hiddenAssets) hiddenAssets!: string[];
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(AccountsMutationTypes.SET_HIDDEN_ASSET) setHiddenAssets!: Fn<SetHiddenAsset>;
 
   get networkJson() {
@@ -178,9 +181,9 @@ export default class CurrencyItem extends Vue {
 
   get networkBadges() {
     if (this.isCurrentNetwork) {
-      const { icon, name } = this.assetData.balances.find(
-        ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
-      )!;
+      const { icon, name } = this.assetData.balances.find((balance) => {
+        return filterBalanceItemsByNetwork(balance, this.selectedNetwork);
+      })!;
 
       return [{ icon, name }];
     }
@@ -225,7 +228,7 @@ export default class CurrencyItem extends Vue {
   }
 
   get transferableAssetBalance() {
-    return +getSummaryTransferableBalance(this.assetData, this.selectedNetwork);
+    return +getSummaryTransferableBalanceFilteredByActiveNetworks(this.assetData, this.selectedNetwork);
   }
 
   get transferableFiatBalance() {
@@ -365,14 +368,6 @@ export default class CurrencyItem extends Vue {
 
       .price-change {
         margin-left: 2px;
-      }
-
-      .up-price {
-        color: rgba(126, 222, 155, 0.75);
-      }
-
-      .down-price {
-        color: #d0021b;
       }
 
       .total-balance {

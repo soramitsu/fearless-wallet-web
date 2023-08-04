@@ -8,7 +8,7 @@ import type {
 } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { TransactionType, TransferType } from '@/interfaces';
-import { firstCharToUp } from '@/helpers/common';
+import { firstCharToUp } from '@/helpers';
 import { formattedNumber } from '@/helpers/numbers';
 import store from '@/store';
 
@@ -119,7 +119,7 @@ function getFormattedHistory(
 ): SubqueryHistory {
   if (serviceType === 'giantsquid') {
     const nodes: HistoryElement[] = (history as GiantsquidHistoryItem[]).map(({ id, transfer }) => {
-      const { amount, from, success, timestamp, to } = transfer;
+      const { amount, from, success, timestamp, to, extrinsicHash } = transfer;
 
       return {
         id,
@@ -128,6 +128,7 @@ function getFormattedHistory(
         transfer: {
           amount,
           success,
+          hash: extrinsicHash,
           from: from.id,
           to: to.id,
           eventIdx: -1,
@@ -139,18 +140,7 @@ function getFormattedHistory(
     return { nodes, pageInfo: { endCursor: '', startCursor: '' } };
   }
 
-  if (serviceType === 'subsquid') {
-    const nodes: HistoryElement[] = (history as HistoryElement[]).map((historyElement) => {
-      return {
-        ...historyElement,
-        timestamp: (+historyElement.timestamp / 1000).toString(),
-      };
-    });
-
-    return { nodes, pageInfo: { endCursor: '', startCursor: '' } };
-  }
-
-  if (serviceType === 'ethereum') {
+  if (serviceType === 'subsquid' || serviceType === 'etherscan') {
     const nodes: HistoryElement[] = (history as HistoryElement[]).map((historyElement) => {
       return {
         ...historyElement,
@@ -164,4 +154,21 @@ function getFormattedHistory(
   return history as SubqueryHistory;
 }
 
-export { getType, getTypeFormatted, getHumanTransferFee, getHistoryValue, getSignTransfer, getFormattedHistory };
+function getEthereumApiKey(url: string): string | undefined {
+  const keys = [
+    { name: 'etherscan', key: process.env.ETHERSCAN_API_KEY },
+    { name: 'bscscan', key: process.env.BSC_API_KEY },
+  ];
+
+  return keys.find((el) => url.includes(el.name))?.key;
+}
+
+export {
+  getType,
+  getTypeFormatted,
+  getEthereumApiKey,
+  getHumanTransferFee,
+  getHistoryValue,
+  getSignTransfer,
+  getFormattedHistory,
+};

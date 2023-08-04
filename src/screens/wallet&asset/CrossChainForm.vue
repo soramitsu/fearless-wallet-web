@@ -71,14 +71,14 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter } from 'vuex-class';
 import { getNativeAssetName } from '@extension-base/background/utils/utils';
+import { NetworkJson } from '@extension-base/types';
 import TransferForm from './TransferForm.vue';
 import type { SelectedWallet } from '@/store';
 import type { TokenBalance } from '@extension-base/background/types/types';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { firstCharToUp, cut } from '@/helpers/common';
+import { firstCharToUp, cut } from '@/helpers/';
 import { formattedNumber } from '@/helpers/numbers';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component({
   components: { TransferForm },
@@ -96,7 +96,7 @@ export default class CrossChainForm extends Vue {
 
   @Prop(String) _originalNetwork!: string;
   @Prop(String) _selectedAssetId!: string;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(NetworksGettersTypes.networks) networks!: NetworkJson[];

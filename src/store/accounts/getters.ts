@@ -1,5 +1,11 @@
 import type { GetterTree } from 'vuex';
-import type { SelectedWallet, WalletInfo, GetAutoSelectNodesValueByNetwork, GetShowWarningNetworks } from './types';
+import type {
+  SelectedWallet,
+  WalletInfo,
+  GetAutoSelectNodesValueByNetwork,
+  GetShowWarningNetworks,
+  AssetTipDataProps,
+} from './types';
 import type { State } from './state';
 import type { FiatJson } from '@/interfaces';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
@@ -9,7 +15,7 @@ import { ALL_NETWORKS } from '@/consts/networks';
 import { SORA_CARD_VISIBILITY } from '@/consts/global';
 
 export enum GettersTypes {
-  getSelectedWallet = 'getSelectedWallet',
+  selectedWallet = 'selectedWallet',
   getSelectedFiat = 'getSelectedFiat',
   selectedNetwork = 'selectedNetwork',
   fiatSymbol = 'fiatSymbol',
@@ -26,14 +32,18 @@ export enum GettersTypes {
   showPolkaswapAlert = 'showPolkaswapAlert',
   getShowWarningNetwork = 'getShowWarningNetwork',
   showSoraCardBanner = 'showSoraCardBanner',
+  isNetworkFavorite = 'isNetworkFavorite',
+  getAssetTipData = 'getAssetTipData',
+  getAssetPageNetwork = 'getAssetPageNetwork',
 }
 
 export type Getters = {
-  [GettersTypes.getSelectedWallet](state: State, getters?: GetterTree<State, State> & Getters): SelectedWallet;
+  [GettersTypes.selectedWallet](state: State, getters?: GetterTree<State, State> & Getters): SelectedWallet;
   [GettersTypes.getBalances](state: State, getters?: GetterTree<State, State> & Getters): TokenBalance[];
   [GettersTypes.getSelectedFiat](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.selectedNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.fiatSymbol](state: State, getters?: GetterTree<State, State> & Getters): string;
+  [GettersTypes.getAssetPageNetwork](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.isOnline](state: State, getters?: GetterTree<State, State> & Getters): boolean;
   [GettersTypes.getFiatId](state: State, getters?: GetterTree<State, State> & Getters): string;
   [GettersTypes.hiddenAssets](state: State, getters?: GetterTree<State, State> & Getters): string[];
@@ -50,6 +60,7 @@ export type Getters = {
     getters?: GetterTree<State, State> & Getters
   ): GetAutoSelectNodesValueByNetwork;
   [GettersTypes.GET_QR](state: State, getters?: GetterTree<State, State> & Getters): Nullable<string>;
+  [GettersTypes.getAssetTipData](state: State, getters?: GetterTree<State, State> & Getters): AssetTipDataProps;
   [GettersTypes.getIsCustomSort](
     state: State,
     getters?: GetterTree<State, State> & Getters
@@ -57,12 +68,20 @@ export type Getters = {
 };
 
 const getters: GetterTree<State, State> & Getters = {
-  [GettersTypes.getSelectedWallet]({ selectedWallet }): SelectedWallet {
+  [GettersTypes.selectedWallet]({ selectedWallet }): SelectedWallet {
     return selectedWallet;
+  },
+
+  [GettersTypes.getAssetPageNetwork]({ selectNetworkAssetPage }): string {
+    return selectNetworkAssetPage;
   },
 
   [GettersTypes.getBalances]({ balances }): TokenBalance[] {
     return balances;
+  },
+
+  [GettersTypes.getAssetTipData]({ assetTipShowed }): AssetTipDataProps {
+    return assetTipShowed;
   },
 
   [GettersTypes.hiddenAssets]({ selectedWallet, hiddenAssets }): any {

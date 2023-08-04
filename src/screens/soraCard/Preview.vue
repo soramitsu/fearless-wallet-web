@@ -103,6 +103,7 @@
 import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
 import { FPNumber } from '@sora-substrate/util';
+import { NetworkJson } from '@extension-base/types';
 import type { SelectedWallet } from '@/store';
 import type { AsyncFn } from '@/interfaces';
 import type { TokenBalance } from '@extension-base/background/types/types';
@@ -114,7 +115,6 @@ import { IS_EXTENSION } from '@/consts/global';
 import { calculateXorRestPrice, calculateXOREuroBalance, isValidEuroBalanceXor } from '@/util/soraCard';
 import { ActionTypes as SoraCardActionTypes } from '@/store/soraCard/actions';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 import { getXORCurrency } from '@/helpers/currencies';
 import { NETWORK_STATUS } from '@/extension/background/extension-base/src/api/types/networks';
 import { SORA_NETWORK_NAME } from '@/consts/sora';
@@ -127,7 +127,7 @@ export default class Preview extends Vue {
   readonly soraNetworkName = SORA_NETWORK_NAME;
 
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(SoraCardGettersTypes.hasFreeAttempts) hasFreeAttempts!: boolean;
   @Getter(SoraCardGettersTypes.xorPerEuroRatio) xorPerEuroRatio!: FPNumber;

@@ -10,31 +10,12 @@
 
     <InfoRow
       text="assets.networkFee"
-      :value="`${fee} ${asset}`"
-      :price="feeValueString"
       textSize="mini"
       borderType="default"
+      :value="`${fee} ${asset}`"
+      :price="feeValueString"
+      :hideLastBorder="false"
     />
-
-    <!-- <div class="row">
-      {{ $t('staking.rewards') }}
-
-      <div class="column">
-        <div class="amount">{{ rewards }} {{ asset }}</div>
-
-        <div class="value">{{ rewardsValueString }}</div>
-      </div>
-    </div>
-
-    <div class="row">
-      {{ $t('assets.networkFee') }}
-
-      <div class="column">
-        <div class="amount">{{ fee }} {{ asset }}</div>
-
-        <div class="value">{{ feeValueString }}</div>
-      </div>
-    </div> -->
   </div>
 </template>
 

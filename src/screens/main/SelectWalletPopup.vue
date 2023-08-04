@@ -49,7 +49,7 @@ import { getTotalBalances, updateCurrentAccountAddress } from '@/extension/messa
 })
 export default class SelectWalletPopup extends Vue {
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Mutation(AccountsActionTypes.SET_SELECTED_WALLET) setSelectedWallet!: Fn<CurrentAccountInfo>;
 
   totalBalances: ResponseTotalBalances[] = [];

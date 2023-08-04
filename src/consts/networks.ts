@@ -2,7 +2,13 @@ import { NetworkName } from '@/interfaces';
 
 const NOT_SUPPORTED_ALL_TRANSFER_NETWORKS = ['karura', 'acala', 'acala_testnet'];
 const SUBSTRATE_ETHEREUM_NETWORKS = ['moonbeam', 'moonriver', 'moonbase alpha', 'astarEvm', 'shidenEvm'];
-const ETHEREUM_NETWORKS = [...SUBSTRATE_ETHEREUM_NETWORKS, 'ethereum', 'ethereum goerli'];
+const ETHEREUM_NETWORKS = [
+  ...SUBSTRATE_ETHEREUM_NETWORKS,
+  'ethereum',
+  'ethereum goerli',
+  'binance smart chain',
+  'binance smart chain testnet',
+];
 const RELAY_CHAINS = ['polkadot', 'kusama', 'westend', 'rococo'];
 const NATIVE_PARACHAINS = [
   'statemint',
@@ -14,8 +20,10 @@ const NATIVE_PARACHAINS = [
   'rockmine',
 ];
 const NATIVE_NETWORKS = [...RELAY_CHAINS, ...NATIVE_PARACHAINS];
-const ALL_NETWORKS = 'All';
-
+const ALL_NETWORKS = 'all';
+const POPULAR_NETWORKS = 'popular';
+const FAVORITE_NETWORKS = 'favorites';
+const NETWORK_GROUP = [ALL_NETWORKS, POPULAR_NETWORKS, FAVORITE_NETWORKS];
 const POLKADOT_ID = '91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3';
 const KUSAMA_ID = 'b0a8d493285c2df73290dfb7e61f870f17b41801197a149ca93654499ea3dafe';
 
@@ -53,6 +61,9 @@ const VALID_ETHEREUM_ADDRESS = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
 
 export {
   ALL_NETWORKS,
+  POPULAR_NETWORKS,
+  FAVORITE_NETWORKS,
+  NETWORK_GROUP,
   RELAY_CHAINS,
   MAIN_NETWORKS,
   NATIVE_NETWORKS,

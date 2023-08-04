@@ -3,8 +3,8 @@
 import { logger as createLogger } from '@polkadot/util';
 import { Subscription } from 'rxjs';
 import { subscribeBalance } from '@extension-base/api/substrate/balance';
-import { subscribeEvmBalance } from '../../api/evm/balance';
-import { BalanceItem } from '../../api/evm/types/ether';
+import { subscribeEvmBalance } from '@extension-base/api/evm/balance';
+import { BalanceItem } from '@extension-base/api/evm/types/ether';
 import type State from '@extension-base/background/handlers/State';
 import type { Logger } from '@polkadot/util/types';
 import type {

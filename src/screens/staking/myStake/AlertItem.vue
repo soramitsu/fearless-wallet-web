@@ -14,7 +14,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { getFormattedDate } from '@/helpers/common';
+import { getFormattedDate } from '@/helpers';
 
 @Component
 export default class AlertItem extends Vue {

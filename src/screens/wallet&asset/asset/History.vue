@@ -1,6 +1,5 @@
 <template>
-  <!-- IMPORTANT: if <Menu /> not showed use 366 -->
-  <ContentForm :height="306">
+  <ContentForm :height="225">
     <div class="history">
       <div class="history-settings">
         <div class="history-label">{{ $t('assets.history') }}:</div>
@@ -56,12 +55,9 @@ export default class History extends Vue {
   showLoader = false;
 
   @Prop(Object) currency!: TokenBalance;
+  @Prop(String) selectedNetwork!: string;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
-
-  get selectedNetwork() {
-    return this.$route.params.network;
-  }
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
   get isEmptyHistory() {
     return this.filteredHistory?.length === 0;
@@ -112,7 +108,11 @@ export default class History extends Vue {
   }
 
   async fetchHistory() {
-    if (this.history.length !== 0 || !this.isMainNetwork) return;
+    if (
+      this.history.length !== 0 ||
+      (!this.isMainNetwork && this.selectedNetwork !== 'Ethereum' && this.selectedNetwork !== 'Ethereum Goerli')
+    )
+      return;
 
     this.showLoader = true;
 

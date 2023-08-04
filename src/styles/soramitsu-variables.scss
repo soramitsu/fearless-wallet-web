@@ -69,7 +69,7 @@ $s-font-feature-settings-button: normal;
 // Transition
 $s-transition-default: all 0.125s ease-in-out;
 
-@import '../../node_modules/@soramitsu/soramitsu-js-ui/lib/styles/index';
+@import '@soramitsu/soramitsu-js-ui/lib/styles/index';
 
 :root {
   --s-color-brand-day: #{$s-color-brand-day};

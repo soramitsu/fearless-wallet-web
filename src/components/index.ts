@@ -41,6 +41,7 @@ import TabButton from '@/components/TabButton.vue';
 import Tooltip from '@/components/Tooltip.vue';
 import ValidatedInput from '@/components/ValidatedInput.vue';
 
+//add component to component.d.ts as well
 Vue.component('AboveForm', AboveForm);
 Vue.component('Alert', Alert);
 Vue.component('BorderButton', BorderButton);

@@ -40,7 +40,7 @@ export default class ControllerAccount extends Vue {
   controllerAccount = '';
 
   @Prop({ type: String }) network!: NetworkName;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
   get accountName() {
     return this.selectedWallet.name;

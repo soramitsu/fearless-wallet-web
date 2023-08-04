@@ -155,6 +155,8 @@ export interface NetworkJson {
   addressPrefix: number;
   types: TypesForMobile;
   options?: string[];
+  rank?: number;
+  favorite: string[];
   xcm?: {
     xcmVersion: 'v1' | 'v2' | 'v3';
     availableAssets: string[];

@@ -53,7 +53,7 @@ export default class SettingsPopup extends Vue {
   readonly isExtension = IS_EXTENSION;
 
   @Prop(Function) handlerClose!: VoidFunction;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
 
   get showSoraCard() {
     return SORA_CARD_VISIBILITY;

@@ -1,8 +1,8 @@
 <template>
-  <Popup headerText="assets.balanceDetails" :showBorder="true" :handlerClose="closePopup" sizeWidth="big">
+  <Popup headerText="assets.lockedDetails" :showBorder="true" :handlerClose="closePopup" sizeWidth="big">
     <div class="content">
       <div v-for="{ name, value, fiat } in detailsBalance" :key="name" class="balance-row">
-        <div class="label">{{ name }}</div>
+        <div class="label">{{ $t(`assets.${name}`) }}</div>
 
         <div class="count">
           <div class="value">{{ $n(value, 'decimalPrecise') }} {{ assetNameUpper }}</div>
@@ -25,16 +25,19 @@ import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
 import { GetAssetPrice, SelectedWallet } from '@/store';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { AssetPrice } from '@/interfaces';
+import { NetworksController } from '@/controllers';
+import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 @Component
-export default class BalanceDetailsPopup extends Vue {
+export default class LockedDetailsPopup extends Vue {
   @Prop(String) network!: string;
   @Prop(Object) currency!: TokenBalance;
   @Prop(Object) assetPrice!: AssetPrice;
   @Prop(Function) closePopup!: VoidFunction;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(NetworksGettersTypes.getAssetPrice) getTokenPrice!: GetAssetPrice;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
 
   get selectedNetwork() {
     return this.$route.params.network;
@@ -45,16 +48,34 @@ export default class BalanceDetailsPopup extends Vue {
   }
 
   get detailsBalance() {
-    const { transferable, total, reserved, locked, frozen } = this.currency.balances.find(
-      ({ name }) => name.toLowerCase() === this.selectedNetwork.toLowerCase()
-    )!;
+    const { frozen, locked, reserved, total, transferable } = this.currency.balances.reduce(
+      (prev, curr) => {
+        const network = this.getNetwork(curr.name);
+        if (!network.active) return prev;
+
+        const frozen = (prev.frozen += curr.frozen ? +curr.frozen : 0);
+        const locked = (prev.locked += curr.locked ? +curr.locked : 0);
+        const reserved = (prev.reserved += curr.reserved ? +curr.reserved : 0);
+        const transferable = (prev.transferable += curr.transferable ? +curr.transferable : 0);
+        const total = (prev.total += curr.total ? +curr.total : 0);
+
+        return {
+          reserved,
+          locked,
+          frozen,
+          transferable,
+          total,
+        };
+      },
+      { reserved: 0, locked: 0, frozen: 0, transferable: 0, total: 0 }
+    );
 
     return [
-      { name: 'reserved', value: reserved, fiat: +reserved! * +this.assetPrice.price },
-      { name: 'locked', value: locked, fiat: +locked! * +this.assetPrice.price },
-      { name: 'frozen', value: frozen, fiat: +frozen! * +this.assetPrice.price },
-      { name: 'transferable', value: transferable, fiat: +transferable! * +this.assetPrice.price },
-      { name: 'total', value: total, fiat: +total! * +this.assetPrice.price },
+      { name: 'reserved', value: reserved, fiat: reserved * +this.assetPrice.price },
+      { name: 'locked', value: locked, fiat: locked * +this.assetPrice.price },
+      { name: 'frozen', value: frozen, fiat: frozen * +this.assetPrice.price },
+      { name: 'transferable', value: transferable, fiat: transferable * +this.assetPrice.price },
+      { name: 'total', value: total, fiat: total * +this.assetPrice.price },
     ];
   }
 
@@ -66,8 +87,8 @@ export default class BalanceDetailsPopup extends Vue {
     return this.getTokenPrice(this.currency.priceId ?? '').price ?? 0;
   }
 
-  getFiatValueVisible(value: string) {
-    return value !== '0';
+  getFiatValueVisible(value: number) {
+    return value.toString() !== '0';
   }
 }
 </script>

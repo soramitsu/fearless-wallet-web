@@ -22,7 +22,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { CustomEvent } from '@/interfaces';
-import { firstCharToUp } from '@/helpers/common';
+import { firstCharToUp } from '@/helpers';
 
 @Component
 export default class SelectNetworkButton extends Vue {

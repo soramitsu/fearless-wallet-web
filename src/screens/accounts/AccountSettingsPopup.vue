@@ -31,7 +31,7 @@
       <div class="row" @click="openSubscan">
         <Icon icon="globus" className="icon" />
 
-        <div class="label">{{ $t('accounts.subscan') }}</div>
+        <div class="label">{{ buttonText }}</div>
       </div>
     </div>
   </Popup>
@@ -41,10 +41,11 @@
 import { Getter } from 'vuex-class';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import type { SelectedWallet } from '@/store';
-
+import type { NetworkJson } from '@extension-base/types';
 import BaseApi from '@/util/BaseApi';
 import { Components } from '@/router/routes';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
+import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 
 @Component
 export default class AccountSettingsPopup extends Vue {
@@ -54,7 +55,16 @@ export default class AccountSettingsPopup extends Vue {
   @Prop(Number) buttonTopClick!: number;
   @Prop(Function) handlerClose!: VoidFunction;
 
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(NetworksGettersTypes.getNetwork) getNetwork!: (value: string) => NetworkJson;
+
+  get explorerType() {
+    return this.getNetwork(this.selectedNetwork)?.externalApi?.history?.type;
+  }
+
+  get buttonText() {
+    return this.$t(this.explorerType === 'etherscan' ? 'accounts.etherscan' : 'accounts.subscan');
+  }
 
   get top() {
     if (this.buttonTopClick === undefined) return 110;

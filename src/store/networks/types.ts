@@ -1,4 +1,4 @@
-import { Wallet } from '../accounts/types';
+import { NetworkJson } from '@extension-base/types';
 import type { ApiPromise, WsProvider } from '@polkadot/api';
 import type { HexString } from '@polkadot/util/types';
 import type {
@@ -18,8 +18,8 @@ import type { KeypairType } from '@polkadot/util-crypto/types';
 import type { ActionContext } from 'vuex';
 import type { State } from '@/store/networks/state';
 import type { Mutations } from '@/store/networks/mutations';
+import { Wallet } from '@/store/accounts/types';
 import { GiantsquidHistoryItem, HistoryElement } from '@/interfaces';
-import { NetworkJson } from '@/extension/background/extension-base/src/types';
 
 // getters
 export type GetNetwork = (networkName: NetworkName) => NetworkJson | undefined;
@@ -31,6 +31,15 @@ export type GetActiveNodesByNetwork = (networkName: NetworkName) => Node;
 // Mutations
 export type SetNetworksStatusProps = {
   networks: NetworkJson[];
+};
+
+export type SetNetworkFavoriteProps = {
+  networksName: string;
+  address: string;
+};
+export type RemoveNetworkFavoriteProps = {
+  networksName: string;
+  index: number;
 };
 
 export type SetFiatsJsonProps = {
@@ -93,6 +102,11 @@ export type FetchHistory = {
   wallet: Wallet;
   assetId: string;
   isPreviously: boolean;
+};
+
+export type ToggleFavorite = {
+  networkName: NetworkName;
+  address: string;
 };
 
 export type CustomAccounts = Record<string, { type?: KeypairType; json: KeyringJson }>;

@@ -83,7 +83,8 @@ export default class SendForm extends Vue {
 
   @Prop(String) _selectedNetwork!: string;
   @Prop(String) _selectedAssetId!: string;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.getAssetPageNetwork) assetPageNetwork!: string;
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
@@ -137,7 +138,8 @@ export default class SendForm extends Vue {
 
   created() {
     this.assetId = this._selectedAssetId;
-    this.selectedNetwork = this._selectedNetwork;
+
+    this.selectedNetwork = this.assetPageNetwork !== '' ? this.assetPageNetwork : this._selectedNetwork;
   }
 
   closeForm() {

@@ -1,36 +1,31 @@
 <template>
-  <div :class="rowClasses">
-    <div class="label">
-      {{ $t(text) }}
+  <Row :value="value" :price="price" :icon="icon" :isLoading="isLoading" :rowClasses="rowClasses">
+    {{ $t(text) }}
 
-      <Icon v-if="icon" :icon="icon" class="icon-info" :class="classes" />
-    </div>
-
-    <div v-if="value" class="value">
-      <div>{{ value }}</div>
-
-      <div v-if="price" class="price">{{ price }}</div>
-    </div>
-    <div v-else>-</div>
-  </div>
+    <Icon v-if="icon" :icon="icon" class="icon-info" :class="classes" />
+  </Row>
 </template>
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator';
+import Row from './Row.vue';
 
 type BorderType = 'default' | 'secondary';
 type TextSize = 'mini' | 'default';
 
-@Component
+@Component({
+  components: { Row },
+})
 export default class InfoRow extends Vue {
   @Prop(String) text!: string;
   @Prop({ default: 'default' }) textSize!: TextSize;
   @Prop(String) value!: string;
   @Prop(String) price!: string;
-  @Prop(String) icon!: string;
+  @Prop(String) icon?: string;
   @Prop({ default: 'secondary' }) borderType!: BorderType;
   @Prop({ default: true }) showBorder!: boolean;
   @Prop({ default: true }) hideLastBorder!: boolean;
+  @Prop({ default: false }) isLoading!: boolean;
   @Prop({ default: () => [] }) iconClasses!: string[];
 
   get classes() {
@@ -38,7 +33,7 @@ export default class InfoRow extends Vue {
   }
 
   get rowClasses() {
-    const classes = ['row'];
+    const classes = ['info-row'];
 
     if (this.showBorder) classes.push(`border-${this.borderType}`, `font-${this.textSize}`);
 
@@ -72,7 +67,7 @@ export default class InfoRow extends Vue {
   }
 }
 
-.row {
+.info-row {
   margin: 0 16px;
   height: 55px;
   display: flex;
@@ -80,29 +75,15 @@ export default class InfoRow extends Vue {
   align-items: center;
   color: $default-white;
 
-  .value {
-    text-align: right;
-    text-transform: uppercase;
+  .icon-info {
+    margin-left: 13px;
+    width: 18px;
+    height: 18px;
+    color: $grayish-white;
+    cursor: pointer;
 
-    .price {
-      color: $gray-color;
-      margin-top: 3px;
-    }
-  }
-
-  .label {
-    display: flex;
-
-    .icon-info {
-      margin-left: 13px;
-      width: 18px;
-      height: 18px;
-      color: $grayish-white;
-      cursor: pointer;
-
-      &:hover {
-        color: $default-white;
-      }
+    &:hover {
+      color: $default-white;
     }
   }
 }

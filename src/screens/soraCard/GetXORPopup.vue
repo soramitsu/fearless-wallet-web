@@ -32,7 +32,7 @@ export default class GetXORPopup extends Vue {
   readonly isExtension = IS_EXTENSION;
 
   @Prop(Function) handlerClose!: VoidFunction;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(SoraCardGettersTypes.xorPerEuroRatio) xorPerEuroRatio!: FPNumber;
 

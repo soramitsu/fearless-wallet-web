@@ -62,7 +62,7 @@ import type { AddressBook } from '@extension-base/background/types/types';
 import BaseApi from '@/util/BaseApi';
 import { GettersTypes as NetworksGettersTypes } from '@/store/networks/getters';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
-import { cut } from '@/helpers/common';
+import { cut } from '@/helpers/';
 import { NetworksController } from '@/controllers';
 import { getType } from '@/helpers/history';
 import { TransactionType } from '@/interfaces/history';
@@ -74,7 +74,7 @@ export default class HistoryBook extends Vue {
   @Prop(String) network!: string;
   @Prop(String) assetId!: string;
   @Getter(NetworksGettersTypes.getHistory) getHistory!: GetHistory;
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getNetwork) getNetwork!: GetNetwork;
 
   get showHistoryAndBook() {

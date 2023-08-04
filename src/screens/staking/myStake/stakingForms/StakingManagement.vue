@@ -116,7 +116,7 @@ export default class StakingManagement extends Vue {
   @Prop({ type: String }) type!: 'staking' | 'unstaking' | 'redeem' | 'rebond';
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
   @Getter(AccountsGettersTypes.getAccounts) wallets!: AccountJson[];
-  @Getter(AccountsGettersTypes.getSelectedWallet) selectedWallet!: SelectedWallet;
+  @Getter(AccountsGettersTypes.selectedWallet) selectedWallet!: SelectedWallet;
   @Getter(NetworksGettersTypes.getAssetPrice) getAssetPrice!: GetAssetPrice;
 
   get btnText() {

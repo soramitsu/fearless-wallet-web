@@ -2,20 +2,28 @@
   <Scroll>
     <div v-if="showAllAssetsHiddenText" class="info-text">{{ $t(mainText) }}</div>
 
-    <Draggable v-else v-model="filteredBalances" handle=".handle" :key="selectedWallet.address">
-      <CurrencyItem
-        v-for="(asset, assetKey) in filteredBalances"
-        :assetData="asset"
-        :price="getAssetPrice(asset.priceId)"
-        :priceChange="getPriceChange(asset.priceId)"
-        :key="assetKey"
-        :selectedNetwork="selectedNetwork"
-        :showAssetsManagementForm="showAssetsManagementForm"
-        :toggleVisibleActivityForm="toggleVisibleActivityForm"
-        :timeoutCallback="timeoutCallback"
-        @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible')"
-      />
-    </Draggable>
+    <VirtualDragList
+      v-else
+      :dataSource="filteredBalances"
+      dataKey="assetId"
+      handle=".handle"
+      style="height: 387px"
+      @drop="onDrop"
+    >
+      <template v-slot:item="{ record: asset, index }">
+        <CurrencyItem
+          :assetData="asset"
+          :price="getAssetPrice(asset.priceId)"
+          :priceChange="getPriceChange(asset.priceId)"
+          :key="index"
+          :selectedNetwork="selectedNetwork"
+          :showAssetsManagementForm="showAssetsManagementForm"
+          :toggleVisibleActivityForm="toggleVisibleActivityForm"
+          :timeoutCallback="timeoutCallback"
+          @toggleNetworkManagementVisible="$emit('toggleNetworkManagementVisible')"
+        />
+      </template>
+    </VirtualDragList>
   </Scroll>
 </template>
 
@@ -23,6 +31,7 @@
 import Draggable from 'vuedraggable';
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import { Getter, Action } from 'vuex-class';
+import VirtualDragList from 'vue-virtual-draglist';
 import type { SelectedWallet } from '@/store';
 import type { AsyncFn } from '@/interfaces';
 import { GettersTypes as AccountsGettersTypes } from '@/store/accounts/getters';
@@ -41,6 +50,7 @@ type TimeoutSubscription = {
   components: {
     Draggable,
     CurrencyItem,
+    VirtualDragList,
   },
 })
 export default class Currencies extends Vue {
@@ -75,9 +85,9 @@ export default class Currencies extends Vue {
     return this.balances;
   }
 
-  set filteredBalances(balances) {
+  onDrop(props: any) {
     this.setBalance({
-      details: balances,
+      details: props.list,
       reset: false,
       saveSequence: true,
     });

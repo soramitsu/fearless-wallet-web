@@ -76,7 +76,7 @@ export default class UnstakingForm extends Vue {
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      color: #ffffffbf;
+      color: #$default-white;
 
       .amount {
         font-weight: 600;
@@ -97,7 +97,7 @@ export default class UnstakingForm extends Vue {
     display: flex;
     align-items: center;
     font-size: 14px;
-    color: #ffffffbf;
+    color: $default-white;
     margin-bottom: 10px;
 
     &:last-child {

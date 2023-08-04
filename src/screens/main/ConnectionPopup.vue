@@ -5,7 +5,7 @@
     sizeWidth="big"
     :showBorder="true"
     :headerText="activeTabName"
-    :closeBuBackground="true"
+    :closeByBackground="true"
     zIndex="299"
   >
     <div class="notification-popup-content">

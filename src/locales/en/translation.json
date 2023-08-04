@@ -460,7 +460,19 @@
     "nominators": "Nominators",
     "identity": "Identity",
     "validatorSlashed": "Validator is slashed for misbehaves (e.g. goes offline, attacks the network, or runs modified software) in the network",
-    "oversubscribedOnly": "Oversubscribed. Only the top staked nominators are paid rewards."
+    "oversubscribedOnly": "Oversubscribed. Only the top staked nominators are paid rewards.",
+    "controllerAccount": "Controller account",
+    "separateAccountController": "Set a separate account as a controller to increase staking management security",
+    "stashBond": "Stash can bond more and set the controller.",
+    "controllerUnbond": "Controller can unbond, redeem, rebond, change reward destination and validators.",
+    "stashAccount": "Stash Account",
+    "learnAboutControllers": "Learn more about controllers",
+    "returnStake": "Return to stake",
+    "latestUnstake": "Latest unstake",
+    "pendingRewards": "Pending rewards",
+    "payoutAll": "Payout all",
+    "rewardLess": "The reward is less than the network fee",
+    "validatorsPayoutRewards": "Validators payout the rewards every 2-5 days. However, you can payout them by yourself, especially if rewards are close to expiring, but you will pay the fee."
   },
   "common": {
     "privacyPolicy": "Privacy Policy",
@@ -534,6 +546,7 @@
     "edit": "Edit",
     "status": "Status",
     "confirmation": "Confirmation",
+    "areYouSure": "Are you sure?",
     "searchByAddress": "Search by address or name"
   }
 }

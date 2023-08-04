@@ -44,7 +44,13 @@
 
         <RedeemForm v-else-if="isRedeeam" :stakingCurrency="stakingCurrency" :fee="fee" :rewards="rewards" />
 
-        <UnbondForm v-else-if="isUnbond" :stakingCurrency="stakingCurrency" :fee="fee" @updateAmount="updateAmount" />
+        <UnbondForm
+          v-else-if="isUnbond"
+          :stakingCurrency="stakingCurrency"
+          :fee="fee"
+          :amount="amount"
+          @updateAmount="updateAmount"
+        />
       </Scroll>
 
       <Button
@@ -178,11 +184,11 @@ export default class StakingManagement extends Vue {
   }
 
   get stakingAssetId() {
-    return this.stakingCurrency!.assetId;
+    return this.stakingCurrency?.assetId;
   }
 
   get stakingAssetName() {
-    return this.stakingCurrency!.symbol;
+    return this.stakingCurrency?.symbol;
   }
 
   get stakingCurrencyBalance() {

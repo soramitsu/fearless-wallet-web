@@ -34,14 +34,26 @@
         @click="toggleVisible('showUnstakingForm', true)"
       />
 
-      <BorderButton
+      <!-- <BorderButton
         class="activity-button"
         text="staking.redeem"
         iconName="redeem"
         @click="toggleVisible('showRedeemForm', true)"
+      /> -->
+
+      <!-- TEST -->
+      <!-- <BorderButton class="activity-button" text="validators" @click="toggleVisible('showYourValidatorsForm', true)" />
+
+      <BorderButton
+        class="activity-button"
+        text="controllers"
+        @click="toggleVisible('showControllerAccountForm', true)"
       />
 
-      <BorderButton class="activity-button" text="validators" @click="toggleVisible('showYourValidators', true)" />
+      <BorderButton class="activity-button" text="unbond" @click="toggleVisible('showUnbondForm', true)" /> -->
+
+      <BorderButton class="activity-button" text="rewards" @click="toggleVisible('showPendingRewardForm', true)" />
+      <!-- TEST -->
     </div>
 
     <ContentForm :height="329">
@@ -76,9 +88,22 @@
     />
 
     <YourValidatorsManagement
-      v-if="showYourValidators"
+      v-if="showYourValidatorsForm"
       :stakingCurrency="stakingCurrency"
-      @closeForm="toggleVisible('showYourValidators', false)"
+      @closeForm="toggleVisible('showYourValidatorsForm', false)"
+    />
+
+    <ControllerAccount
+      v-if="showControllerAccountForm"
+      :network="network"
+      @closeForm="toggleVisible('showControllerAccountForm', false)"
+    />
+
+    <PendingRewardForm
+      v-if="showPendingRewardForm"
+      :stakingCurrency="stakingCurrency"
+      :rewardedCurrency="rewardedCurrency"
+      @closeForm="toggleVisible('showPendingRewardForm', false)"
     />
   </div>
 </template>
@@ -98,8 +123,10 @@ import { TokenBalance } from '@/extension/background/extension-base/src/backgrou
 import { getUtilityAsset } from '@/helpers/currencies';
 import { SORA_NETWORK_NAME, SORA_REWARD_ASSET } from '@/consts/sora';
 import YourValidatorsManagement from '@/screens/staking/myStake/validators/YourValidatorsManagement.vue';
+import ControllerAccount from '@/screens/staking/myStake/ControllerAccount.vue';
+import PendingRewardForm from '@/screens/staking/myStake/rewards/PendingRewardForm.vue';
 
-type ShowField = 'showStakingForm' | 'showUnstakingForm' | 'showRedeemForm' | 'showYourValidators';
+type ShowField = 'showStakingForm' | 'showUnstakingForm' | 'showRedeemForm' | 'showYourValidatorsForm';
 
 @Component({
   components: {
@@ -107,7 +134,9 @@ type ShowField = 'showStakingForm' | 'showUnstakingForm' | 'showRedeemForm' | 's
     Alerts,
     History,
     MyStakeSettings,
+    PendingRewardForm,
     StakingManagement,
+    ControllerAccount,
     YourValidatorsManagement,
   },
 })
@@ -117,19 +146,24 @@ export default class MyStake extends Vue {
   showStakingForm = false;
   showUnstakingForm = false;
   showRedeemForm = false;
-  showYourValidators = false;
+  showUnbondForm = false;
+  showYourValidatorsForm = false;
+  showControllerAccountForm = false;
+  showPendingRewardForm = false;
 
   @Getter(AccountsGettersTypes.fiatSymbol) fiatSymbol!: string;
   @Getter(AccountsGettersTypes.getBalances) balances!: TokenBalance[];
 
   get showStakeForm() {
-    return this.showStakingForm || this.showUnstakingForm || this.showRedeemForm;
+    return this.showStakingForm || this.showUnstakingForm || this.showRedeemForm || this.showUnbondForm;
   }
 
   get type() {
     if (this.showStakingForm) return 'staking';
 
     if (this.showUnstakingForm) return 'unstaking';
+
+    if (this.showUnbondForm) return 'unbond';
 
     return 'redeem';
   }
@@ -263,7 +297,9 @@ export default class MyStake extends Vue {
     this.showStakingForm = false;
     this.showUnstakingForm = false;
     this.showRedeemForm = false;
-    this.showYourValidators = false;
+    this.showUnbondForm = false;
+    this.showYourValidatorsForm = false;
+    this.showControllerAccountForm = false;
   }
 
   toggleVisible(field: ShowField, value: boolean) {

@@ -14,4 +14,8 @@ interface SelectionValidator extends Validator {
   isSelect: boolean;
 }
 
-export { Validator, SelectionValidator };
+interface MyValidator extends Validator {
+  rewards: string;
+}
+
+export { Validator, SelectionValidator, MyValidator };

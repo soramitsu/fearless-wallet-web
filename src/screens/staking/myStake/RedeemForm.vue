@@ -84,7 +84,7 @@ export default class RedeemForm extends Vue {
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      color: #ffffffbf;
+      color: $default-white;
 
       .amount {
         font-weight: 600;

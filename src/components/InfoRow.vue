@@ -30,6 +30,7 @@ export default class InfoRow extends Vue {
   @Prop(String) icon!: string;
   @Prop({ default: 'secondary' }) borderType!: BorderType;
   @Prop({ default: true }) showBorder!: boolean;
+  @Prop({ default: true }) hideLastBorder!: boolean;
   @Prop({ default: () => [] }) iconClasses!: string[];
 
   get classes() {
@@ -40,6 +41,8 @@ export default class InfoRow extends Vue {
     const classes = ['row'];
 
     if (this.showBorder) classes.push(`border-${this.borderType}`, `font-${this.textSize}`);
+
+    if (this.hideLastBorder) classes.push(`border-last`);
 
     return classes;
   }
@@ -63,6 +66,12 @@ export default class InfoRow extends Vue {
   font-size: 16px;
 }
 
+.border-last {
+  &:last-child {
+    border: none;
+  }
+}
+
 .row {
   margin: 0 16px;
   height: 55px;
@@ -79,10 +88,6 @@ export default class InfoRow extends Vue {
       color: $gray-color;
       margin-top: 3px;
     }
-  }
-
-  &:last-child {
-    border: none;
   }
 
   .label {
